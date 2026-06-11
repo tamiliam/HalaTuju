@@ -107,6 +107,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     Unlocks the #55 mononym father-link (the BAPA name+IC the relationship check needs).
   - +31 pytest (13 scaffold + 6 STR + 4 TNB + 4 EPF + 4 BC); full scholarship suite green (1046). No migration (the tag
     lives in `vision_fields`).
+- **#55 — mononym student's father link via the birth certificate (P4b; income_engine + verdict_engine, no migration).**
+  A student whose name carries no patronymic (e.g. "DIVIYA") can't prove a father/sibling earner by the shared name, so
+  `father_relationship` returned `unknown` (officer review) with no deterministic path. New `father_via_bc` (mirror of
+  `mother_relationship`, using the BC's child + **father**) + `father_link` (patronymic first; defers to the BC only on
+  an `unknown` AND only when a BC was uploaded — so normal applicants are unaffected). Wired through
+  `member_relationship_status` (new `bc_father_name`), `_relationship_inputs` (now pulls the BC father), and both
+  verdict-engine routes (STR-earner father + salary per-member). Siblings stay patronymic-only (the BAPA field is the
+  father's, not the sibling's). Builds on the P4 deterministic BC capture of the BAPA name+IC. +9 pytest; full suite
+  green (1054).
 - **Officer cockpit — Documents drawer polish + in-cockpit document viewer (live-testing, no migration).**
   - **Per-type tinted icons + standard labels.** Each document row shows a per-doc-TYPE glyph (🪪🎓💵💧… via
     `officerCockpit.docIconFor`) in a badge tinted by the doc's verdict, instead of a 2-way IC/generic emoji. The row's

@@ -5,8 +5,8 @@ from types import SimpleNamespace
 from django.test import SimpleTestCase
 
 from apps.scholarship.income_engine import (
-    father_name_from_ic, father_relationship, mother_relationship,
-    guardian_relationship, relationship_doc_for, income_requirements,
+    father_name_from_ic, father_relationship, father_via_bc, father_link,
+    mother_relationship, guardian_relationship, relationship_doc_for, income_requirements,
     working_members, salary_member_blocks, member_relationship_status,
     student_income_ic_check, _str_currency,
 )
@@ -120,6 +120,50 @@ class TestRelationshipChecks(SimpleTestCase):
 
     def test_father_pending_without_earner_name(self):
         self.assertEqual(father_relationship('DIVASHINI A/P MURUGAN', ''), 'pending')
+
+    # ── #55: mononym student → father link via the birth certificate ──────────────
+    def test_father_via_bc_match(self):
+        # student DIVIYA (no patronymic); BC child=DIVIYA, BC father=SARAVANAN A/L VENU;
+        # earner IC = SARAVANAN A/L VENU.
+        self.assertEqual(
+            father_via_bc('DIVIYA', 'SARAVANAN A/L VENU', 'DIVIYA', 'SARAVANAN A/L VENU'), 'match')
+
+    def test_father_via_bc_mismatch_wrong_child_or_father(self):
+        self.assertEqual(
+            father_via_bc('SOMEONE A/P ELSE', 'SARAVANAN A/L VENU', 'DIVIYA', 'SARAVANAN A/L VENU'),
+            'mismatch')
+        self.assertEqual(
+            father_via_bc('DIVIYA', 'OTHERMAN A/L X', 'DIVIYA', 'SARAVANAN A/L VENU'), 'mismatch')
+
+    def test_father_via_bc_pending_when_bc_not_read(self):
+        self.assertEqual(father_via_bc('', '', 'DIVIYA', 'SARAVANAN A/L VENU'), 'pending')
+
+    def test_father_link_patronymic_wins_ignores_bc(self):
+        # A normal applicant (has a patronymic) is unaffected — the BC is never consulted.
+        self.assertEqual(
+            father_link('SHAARVESHWAAR A/L SARAVANAN', 'SARAWANAN A/L SUPRAMANIAM'), 'match')
+
+    def test_father_link_mononym_uses_bc(self):
+        self.assertEqual(
+            father_link('DIVIYA', 'SARAVANAN A/L VENU', 'DIVIYA', 'SARAVANAN A/L VENU'), 'match')
+
+    def test_father_link_mononym_without_bc_stays_unknown(self):
+        # No BC uploaded yet → still 'officer reviews', never a false match/mismatch.
+        self.assertEqual(father_link('DIVIYA', 'SARAVANAN A/L VENU'), 'unknown')
+
+    def test_member_status_father_uses_bc_fallback(self):
+        self.assertEqual(
+            member_relationship_status('father', 'DIVIYA', 'SARAVANAN A/L VENU',
+                                       bc_child_name='DIVIYA', bc_father_name='SARAVANAN A/L VENU'),
+            'match')
+
+    def test_member_status_sibling_does_not_use_bc(self):
+        # A sibling earner is verified by the shared patronymic only; the BAPA field is the
+        # father's, not the sibling's, so a mononym student's sibling stays 'unknown'.
+        self.assertEqual(
+            member_relationship_status('brother', 'DIVIYA', 'BROTHER A/L VENU',
+                                       bc_child_name='DIVIYA', bc_father_name='VENU'),
+            'unknown')
 
     def test_mother_match(self):
         self.assertEqual(

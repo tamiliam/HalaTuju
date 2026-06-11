@@ -253,7 +253,7 @@ def _verdict_income(application):
     name-matched STR already settles it on its own.
 
     The SALARY route delegates to ``_verdict_income_salary`` (multi-earner)."""
-    from .income_engine import (father_relationship, mother_relationship,
+    from .income_engine import (father_link, mother_relationship,
                                 guardian_relationship)
     evidence, gap, review = _utility_context(application), [], []
     present = _present_doc_types(application)
@@ -288,7 +288,10 @@ def _verdict_income(application):
     # ── Relationship: prove the earner is the student's family ────────────────
     rel = None
     if earner == 'father':
-        rel = father_relationship(student_name, earner_ic_name)
+        # Patronymic, with a BC fallback for a mononym student (#55) when a BC is uploaded.
+        bcf = _doc_assist_fields(_latest_doc(application, 'birth_certificate'))
+        rel = father_link(student_name, earner_ic_name,
+                          bcf.get('bc_child_name', ''), bcf.get('bc_father_name', ''))
     elif earner == 'mother':
         if 'birth_certificate' not in present:
             gap.append(_item('birth_cert_missing'))
@@ -379,6 +382,7 @@ def _verdict_income_salary(application, student_name, present):
     # Birth certificate / guardianship letter are single household docs (read once).
     bcf = _doc_assist_fields(_latest_doc(application, 'birth_certificate'))
     bc_child, bc_mother = bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', '')
+    bc_father = bcf.get('bc_father_name', '')      # #55: mononym father fallback
     g_doc = _latest_doc(application, 'guardianship_letter')
     letter_name = (getattr(g_doc, 'vision_name', '') or '') if g_doc else ''
 
@@ -403,8 +407,10 @@ def _verdict_income_salary(application, student_name, present):
             letter_missing = True
             all_confirmed = False
 
-        # Relationship verdict (father/brother/sister share the patronymic).
-        rel = member_relationship_status(m, student_name, ic_name, bc_child, bc_mother, letter_name)
+        # Relationship verdict (father/brother/sister share the patronymic; father also has
+        # the #55 BC fallback for a mononym student).
+        rel = member_relationship_status(m, student_name, ic_name, bc_child, bc_mother,
+                                         letter_name, bc_father)
         if rel == 'match':
             evidence.append(_item('relationship_confirmed', member=m))
         elif rel == 'mismatch':
