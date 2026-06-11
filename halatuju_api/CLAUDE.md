@@ -488,7 +488,10 @@ migration. Phase-by-phase, each validated on REAL files (synthetic fixtures in-r
 (a) **IC name LEADING-break** — `_extract_name`/`_with_trailing_surname` handle a surname spilling AFTER the A/L marker,
 but NOT a given name on the line ABOVE it: app #61's father IC "SARAWANAN\nA/L SUPRAMANIAM" captured only "A/L
 SUPRAMANIAM" (given name dropped). Add the mirror rule: when the chosen name line STARTS with a parentage marker,
-prepend the preceding name line. (#61 record hand-corrected in the meantime.) Validate on real ICs.
+prepend the preceding name line. **`_extract_name` is the SHARED extractor for the applicant `ic` AND every `parent_ic`
+(father/mother/guardian) — one fix covers all; regression-test BOTH break directions across relationships.** A prod scan
+(names whose extracted value STARTS with a marker) found exactly 2 cases — app #61 (father) + app #31 (MOTHER,
+"A/P JAYARAM" → "RUSHAINDRA KUMARI A/P JAYARAM"); **both hand-corrected** in the meantime. Validate on real ICs.
 (b) **Mononym father-link via BC** — a student whose name carries no patronymic (app #55 "DIVIYA") can't prove a
 father/sibling link by shared name; `father_relationship` correctly returns `unknown` (→ officer review, never blocks).
 The frontend now SURFACES the birth certificate as an optional proof (shipped, see below); the SPRINT adds the
