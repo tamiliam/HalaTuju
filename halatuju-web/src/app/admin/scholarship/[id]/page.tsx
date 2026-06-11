@@ -58,6 +58,27 @@ const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
 const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done', 'family_done'] as const
 
 const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: '' }
+
+// Status pill colour bands — amber = in-progress/under review, green = accepted/funded,
+// red = closed (rejected/withdrawn/expired). The label itself is the real status (i18n).
+const STATUS_TONE: Record<string, string> = {
+  submitted: 'bg-amber-100 text-amber-700',
+  shortlisted: 'bg-amber-100 text-amber-700',
+  profile_complete: 'bg-amber-100 text-amber-700',
+  interviewing: 'bg-amber-100 text-amber-700',
+  interviewed: 'bg-amber-100 text-amber-700',
+  accepted: 'bg-green-100 text-green-700',
+  sponsored: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-700',
+  withdrawn: 'bg-gray-100 text-gray-600',
+  expired: 'bg-gray-100 text-gray-600',
+}
+const statusTone = (s: string) => STATUS_TONE[s] || 'bg-blue-100 text-blue-700'
+
+// Non-parent guardian relationships — drive the dynamic "Parent" vs "Guardian" label (#5).
+const NON_PARENT_RELATIONSHIPS = new Set([
+  'legal_guardian', 'grandparent', 'older_sibling', 'brother', 'sister', 'relative', 'other_relative',
+])
 // Referees aren't in play yet — hide the capture UI (the handlers stay wired so this
 // is a one-line re-enable, and so they don't become unused). Flip to true to restore.
 const SHOW_REFEREES = false
@@ -122,6 +143,18 @@ export default function AdminScholarshipDetailPage() {
   const [viewerDoc, setViewerDoc] = useState<ViewerDoc | null>(null)   // in-cockpit doc viewer
   const [refForm, setRefForm] = useState({ ...EMPTY_REFEREE })
   const [genLang, setGenLang] = useState('en')
+  // #7 prev/next: the ordered id list the list page last rendered (current filters).
+  // Read once from sessionStorage; if this id isn't in it (e.g. a direct link), nav hides.
+  const [navIds, setNavIds] = useState<number[]>([])
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('halatuju_admin_scholarship_nav')
+      if (raw) setNavIds(JSON.parse(raw))
+    } catch { /* sessionStorage unavailable — nav just won't show */ }
+  }, [])
+  const navIdx = navIds.indexOf(id)
+  const prevId = navIdx > 0 ? navIds[navIdx - 1] : null
+  const nextId = navIdx >= 0 && navIdx < navIds.length - 1 ? navIds[navIdx + 1] : null
   // Phase C
   const [admins, setAdmins] = useState<Array<{ id: number; name: string; role: string }>>([])
   const [findings, setFindings] = useState<Record<string, { verdict: string; rationale: string }>>({})
@@ -400,15 +433,29 @@ export default function AdminScholarshipDetailPage() {
       <DocViewer doc={viewerDoc} onClose={() => setViewerDoc(null)} />
       {/* Header — applicant identity, status, and key facts at a glance */}
       <header className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <Link href="/admin/scholarship" className="text-xs text-gray-400 hover:text-gray-600">‹ {t('admin.scholarship.back')}</Link>
+        <div className="flex items-center justify-between">
+          <Link href="/admin/scholarship" className="text-xs text-gray-400 hover:text-gray-600">‹ {t('admin.scholarship.back')}</Link>
+          {(prevId != null || nextId != null) && (
+            <div className="flex items-center gap-1 text-xs">
+              {prevId != null ? (
+                <Link href={`/admin/scholarship/${prevId}`} className="rounded px-2 py-1 font-medium text-gray-600 hover:bg-gray-100">‹ {t('admin.scholarship.prev')}</Link>
+              ) : (
+                <span className="rounded px-2 py-1 text-gray-300">‹ {t('admin.scholarship.prev')}</span>
+              )}
+              {nextId != null ? (
+                <Link href={`/admin/scholarship/${nextId}`} className="rounded px-2 py-1 font-medium text-gray-600 hover:bg-gray-100">{t('admin.scholarship.next')} ›</Link>
+              ) : (
+                <span className="rounded px-2 py-1 text-gray-300">{t('admin.scholarship.next')} ›</span>
+              )}
+            </div>
+          )}
+        </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">{app.name || '—'}</h1>
-          {/* Show "In review" amber pill when the application is in a review state */}
-          {['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">In review</span>
-          ) : (
-            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">{app.status}</span>
-          )}
+          {/* The actual application status (Shortlisted, Rejected, …), colour-banded. */}
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(app.status)}`}>
+            {t(`admin.scholarship.statuses.${app.status}`)}
+          </span>
           {/* Primary action button — scrolls to the Record Verdict panel */}
           {canWrite && ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) && (
             <button
@@ -437,6 +484,9 @@ export default function AdminScholarshipDetailPage() {
           )}
           {app.submitted_at && (
             <span>{t('admin.scholarship.submitted')} {new Date(app.submitted_at).toLocaleDateString()}</span>
+          )}
+          {app.profile_completed_at && (
+            <span>{t('admin.scholarship.applied')} {new Date(app.profile_completed_at).toLocaleDateString()}</span>
           )}
           <span>{t('admin.scholarship.assigned')} <span className="text-gray-700">{app.assigned_to_name || '—'}</span></span>
         </div>
@@ -478,6 +528,15 @@ export default function AdminScholarshipDetailPage() {
           app.preferred_state,
         ])
         const guardian = (app.guardians && app.guardians[0]) || null
+        // #5: name the relationship precisely. The minor-consent record carries the
+        // real relationship; a non-parent guardian (legal_guardian/grandparent/sibling/
+        // relative) → "Guardian", father/mother (or an adult self-consent) → "Parent".
+        const activeConsent = (app.consents || []).find((c) => c.is_active) || null
+        const isNonParentGuardian = activeConsent?.granted_by === 'guardian'
+          && NON_PARENT_RELATIONSHIPS.has(activeConsent?.guardian_relationship || '')
+        const personLabel = isNonParentGuardian
+          ? t('admin.scholarship.guardianLabel')
+          : t('admin.scholarship.parentLabel')
         return (
           <div className="space-y-4">
             {/* Two independent columns rather than a row-major grid, so each column
@@ -508,8 +567,8 @@ export default function AdminScholarshipDetailPage() {
                   <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
                   <Field label="STR" value={yn(app.receives_str)} />
                   <Field label="JKM" value={yn(app.receives_jkm)} />
-                  <Field label={t('admin.scholarship.guardianName')} value={guardian?.name} />
-                  <Field label={t('admin.scholarship.guardianPhone')} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
+                  <Field label={personLabel} value={guardian?.name} />
+                  <Field label={t('admin.scholarship.guardianPhone', { role: personLabel })} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
                 </dl>
               </Card>
               </div>
@@ -818,7 +877,15 @@ export default function AdminScholarshipDetailPage() {
       {(() => {
         const hasStory = !!(app.aspirations || app.plans || app.fears || app.justification
           || app.daily_life || app.first_in_family || app.parents_occupation
-          || app.siblings_studying_count || app.family_context)
+          || app.siblings_studying_count || app.siblings_in_school || app.siblings_in_tertiary
+          || app.family_context)
+        // #6: the legacy single "siblings studying" count is superseded by the
+        // school/tertiary split. Show it ONLY as a fallback for old rows that have a
+        // positive legacy count but no split yet (migration 0044 left those null) —
+        // captioned so the officer knows to confirm the breakdown at interview.
+        const showLegacySiblings = app.siblings_in_school == null
+          && app.siblings_in_tertiary == null
+          && (app.siblings_studying_count ?? 0) > 0
         if (!(app.uncertainty_note || app.anything_else || hasStory || app.funding_need)) return null
         return (
         <div className="space-y-4">
@@ -862,9 +929,11 @@ export default function AdminScholarshipDetailPage() {
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-1 md:grid-cols-3">
                     <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
                     <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
-                    <Field label={t('admin.scholarship.siblingsStudying')} value={app.siblings_studying_count} />
                     <Field label={t('admin.scholarship.siblingsInSchool')} value={app.siblings_in_school} />
                     <Field label={t('admin.scholarship.siblingsInTertiary')} value={app.siblings_in_tertiary} />
+                    {showLegacySiblings && (
+                      <Field label={t('admin.scholarship.siblingsStudying')} value={`${app.siblings_studying_count} — ${t('admin.scholarship.siblingsLegacyNote')}`} />
+                    )}
                   </dl>
                   <Field label={t('admin.scholarship.familyContext')} value={app.family_context} />
                 </div>
