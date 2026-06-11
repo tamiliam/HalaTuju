@@ -407,3 +407,15 @@ export function earnerMemberFor(docType: string, householdMember: string, route:
   if (docType === 'parent_ic' && route === 'str') return earner || ''
   return ''
 }
+
+// How to render a document in the in-cockpit viewer (Option B): images via <img>, PDFs via
+// <iframe>; HEIC/HEIF can't render in any browser → 'unsupported' (the viewer offers the
+// original + we convert HEIC server-side on upload). Decided by content-type, filename as backup.
+export function viewerKind(contentType: string, filename: string): 'image' | 'pdf' | 'unsupported' {
+  const ct = (contentType || '').toLowerCase()
+  const fn = (filename || '').toLowerCase()
+  if (ct === 'application/pdf' || fn.endsWith('.pdf')) return 'pdf'
+  if (ct.includes('heic') || ct.includes('heif') || fn.endsWith('.heic') || fn.endsWith('.heif')) return 'unsupported'
+  if (ct.startsWith('image/') || /\.(jpe?g|png|gif|webp|bmp)$/.test(fn)) return 'image'
+  return 'unsupported'
+}

@@ -784,6 +784,7 @@ export interface AdminApplicantDocument {
   // Salary-route income docs: whose IC/salary slip/EPF this is (father/mother/…); '' otherwise.
   household_member?: string
   original_filename: string
+  content_type: string
   size: number
   verification_status: string
   download_url: string | null

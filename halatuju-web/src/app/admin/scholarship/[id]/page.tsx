@@ -46,9 +46,11 @@ import {
   incomeDocLayout,
   docIconFor,
   earnerMemberFor,
+  viewerKind,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
+import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { localiseParams } from '@/lib/actionCentre'
 
 const VERDICTS = ['resolved', 'still_unclear', 'new_concern'] as const
@@ -117,6 +119,7 @@ export default function AdminScholarshipDetailPage() {
   const [markdown, setMarkdown] = useState('')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
+  const [viewerDoc, setViewerDoc] = useState<ViewerDoc | null>(null)   // in-cockpit doc viewer
   const [refForm, setRefForm] = useState({ ...EMPTY_REFEREE })
   const [genLang, setGenLang] = useState('en')
   // Phase C
@@ -394,6 +397,7 @@ export default function AdminScholarshipDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-10">
+      <DocViewer doc={viewerDoc} onClose={() => setViewerDoc(null)} />
       {/* Header — applicant identity, status, and key facts at a glance */}
       <header className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <Link href="/admin/scholarship" className="text-xs text-gray-400 hover:text-gray-600">‹ {t('admin.scholarship.back')}</Link>
@@ -1204,6 +1208,14 @@ export default function AdminScholarshipDetailPage() {
               ? t(`admin.scholarship.docsDrawer.type.${d.doc_type}`)
               : (d.original_filename || d.doc_type)
           }
+          // Open the document in the in-cockpit viewer (embedded, never a download).
+          const openViewer = (d: AdminApplicantDocument) => {
+            if (!d.download_url) return
+            setViewerDoc({
+              label: docLabel(d), filename: d.original_filename || '', url: d.download_url,
+              kind: viewerKind(d.content_type || '', d.original_filename || ''),
+            })
+          }
           const factClass = (s: FactStatus) =>
             s === 'verified' ? 'text-green-600' : s === 'partial' ? 'text-amber-600'
               : s === 'not' ? 'text-red-600' : 'text-gray-400'
@@ -1242,11 +1254,11 @@ export default function AdminScholarshipDetailPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {d.download_url ? (
-                      <a href={d.download_url} target="_blank" rel="noreferrer"
+                      <button type="button" onClick={() => openViewer(d)}
                         title={t('admin.scholarship.docsDrawer.view')}
-                        className="text-sm font-medium text-gray-800 hover:text-blue-600 hover:underline truncate max-w-[200px]">
+                        className="text-left text-sm font-medium text-gray-800 hover:text-blue-600 hover:underline truncate max-w-[200px]">
                         {docLabel(d)} <span aria-hidden className="text-[10px] text-gray-400">↗</span>
-                      </a>
+                      </button>
                     ) : (
                       <span className="text-sm font-medium text-gray-800 truncate max-w-[200px]">
                         {docLabel(d)}

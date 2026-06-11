@@ -2743,6 +2743,11 @@
         "notUploaded": "belum dimuat naik",
         "view": "Lihat",
         "rerun": "Jalankan semula",
+        "viewer": {
+          "newTab": "Buka dalam tab baharu",
+          "close": "Tutup",
+          "noPreview": "Pratonton tidak tersedia untuk format fail ini (HEIC). Buka fail asal untuk melihatnya."
+        },
         "pill": {
           "verified": "Disahkan",
           "check": "Semak",
