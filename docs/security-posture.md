@@ -3,6 +3,8 @@
 **Last audited:** 2026-06-11 · **Method:** read-only configuration + code review (Supabase security advisors, live RLS-policy inspection, code audit, infra config). **NOT** a penetration test.
 **Scope:** both products in the one database — the **course-advisory** app (browser ↔ Supabase directly, RLS-guarded) and the **B40 scholarship** app (browser ↔ Django ↔ DB, Django-guarded).
 
+> **Hardening shipped 2026-06-12 — backlog items A–E all LIVE.** Document-vault off-platform backup (A), DRF rate-limiting (B), Cloudflare Turnstile captcha on every auth entry point + the contact form (C), anomaly detection (D — *pending*), and explicit deny policies on the deny-all tables (E). Leaked-password protection (item 1) also enabled. Only **anomaly/breach detection (item 6/D)** remains open. See the backlog table below for per-item status.
+
 > Re-run this audit after any migration or auth/storage change. The repo's pre-deploy checklist already requires the Supabase Security Advisor; this doc is the broader companion. Re-run commands are in the appendix.
 
 ---
@@ -25,17 +27,21 @@
 | **Backups (database)** | Supabase **Pro** — **daily backups verified** (last 7 days present + restorable). PITR is a paid add-on (~US$100/mo); **deliberately not enabled** — cost not justified at this write-volume (worst case without it = ~24h of a few applications, recoverable). | `get_organization` + dashboard (Database → Backups) |
 | **Process** | Documented pre-deploy security checklist + RLS discipline, written after a prior RLS incident (`docs/incident-001-rls-disabled.md`). | `halatuju_api/CLAUDE.md` |
 
-## 🟡 Hardening backlog (none urgent; ordered by ease)
+## 🟡 Hardening backlog — status (as of 2026-06-12)
 
-| # | Item | Severity | Who / how |
-|---|------|----------|-----------|
-| 1 | Enable **leaked-password protection** (HaveIBeenPwned check) | Low | **Dashboard toggle** — Auth → Providers/Policies → Password security |
-| 2 | **Back up the document Storage bucket.** Daily DB backups **exclude Storage objects** (and PITR would too) — so the 311 ID/income/STR scans in `b40-documents` currently have **NO backup**. This is the real backup gap (PITR is *not* — skip that). Set up a periodic **off-platform export** of the bucket. | **Med-High** | Manual download now (Storage → bucket → download to Drive); scheduled bucket→GCS/Drive sync later (small-change-lane) |
-| 3 | Confirm tracked `halatuju-web/.env.production` + `Dockerfile` hold only `NEXT_PUBLIC_*` (no service-role key / DB URL) | Med | Read-only check (done in this audit — see note) |
-| 4 | Add **request rate-limiting** on sensitive custom DRF endpoints (login itself is covered by Supabase's built-in limits) | Med | **Code** — DRF throttles; small-change-lane (test + deploy) |
-| 5 | Tighten `field-images` public-listing; add captcha/limit to the anonymous contact form | Low | **Code/policy** — small-change-lane |
-| 6 | Add **breach/anomaly detection** (action-audit data exists; nothing alerts on a mass-read) | Med | **Code/infra** — design + small-change-lane |
-| 7 | Add explicit **deny policies** on the deny-all tables to match the repo's own "RLS + policies" standard | Low | **Migration** — clarity only; behaviour already deny-all |
+| # | Item | Severity | Status |
+|---|------|----------|--------|
+| 1 | Enable **leaked-password protection** (HaveIBeenPwned check) | Low | ✅ **Done** — Auth → Attack Protection toggle ENABLED |
+| 2 | **Back up the document Storage bucket** (daily DB backups exclude Storage objects). | **Med-High** | ✅ **Done (item A)** — `backup_documents` management command mirrors `b40-documents` → GCS `halatuju-doc-backups` (versioned), weekly Cloud Scheduler (Mon 03:00 MYT), incremental/resumable; 320 docs backfilled |
+| 3 | Confirm tracked `Dockerfile` / env hold only `NEXT_PUBLIC_*` (no service-role key / DB URL) | Med | ✅ **Done** — verified; the only added build var is the **public** Turnstile site key |
+| 4 | Add **request rate-limiting** on sensitive custom DRF endpoints | Med | ✅ **Done (item B)** — proxy-aware DRF throttles (`halatuju/throttling.py`): anon/upload/public-count scopes |
+| 5 | Add **captcha/limit to the anonymous contact form** (+ tighten `field-images` listing) | Low | ✅ **Captcha done (item C)** — contact form now posts to the `contact-submit` Edge Function (Turnstile-verified, service-role insert, anon INSERT revoked). `field-images` listing tightening still open |
+| 6 | Add **breach/anomaly detection** (action-audit data exists; nothing alerts on a mass-read) | Med | 🟡 **Open (item D)** — needs a threshold (e.g. one session reading > N applications in 10 min) → Cloud Logging metric + alert to admin email |
+| 7 | Add explicit **deny policies** on the deny-all tables | Low | ✅ **Done (item E)** — `Backend service role only` policies on 19 tables (`docs/security/deny-all-policies.sql`) |
+
+**Also shipped with C:** Cloudflare Turnstile captcha (invisible, Managed mode) now gates **every** Supabase Auth entry point — student anonymous sign-in, sponsor/admin sign-in, sign-up, password reset — enforced via the project-wide captcha toggle. Rollout/rollback: `halatuju_api/docs/security/turnstile-rollout.md`.
+
+**Remaining:** item 6/D (anomaly detection) and the minor `field-images` public-listing tightening from item 5.
 
 ## ⚠️ Caveats (state these to anyone who asks)
 - This is a **static/config audit, not a penetration test.** Before scaling the user base, commission an **independent pen-test** — for government-adjacent PII (B40/NRIC/STR) it's the right assurance layer and it exercises the *running* system in ways a code review can't.
