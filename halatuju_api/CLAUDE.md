@@ -443,7 +443,20 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-10)
+## Next Sprint (as of 2026-06-12)
+
+**▶ MERGED TO `main` 2026-06-12 — NOT YET PUSHED/DEPLOYED (owner gates the deploy). Live-review backlog #1–#9, two
+sprints, NO migration. Retros `docs/retrospective-cockpit-school-ux.md` + `docs/retrospective-verification-soft-signals.md`.**
+**Sprint A (#1–#7, FE+i18n):** guided optional school in onboarding (#1) + editable in profile above Angka Giliran (#3),
+both via existing `StudentProfile.school`; cockpit real status pill (#2, `admin.scholarship.statuses.*`), "Applied"
+milestone (#4), dynamic Parent/Guardian label from the consent relationship (#5), legacy `siblings_studying_count` row
+hidden w/ captioned fallback for the 10/76 unsplit-legacy rows (#6), prev/next applicant nav following the list filter (#7).
+**Sprint B (#8–#9, backend soft-signals, never gate):** `income_engine.utility_holder_unknown`/`utility_address_mismatch`
+(hard mismatch only) → officer pre-interview flags (active) + student Check-2 clarify queries (**dark** behind
+`CHECK2_STUDENT_QUERIES_ENABLED`); `income_engine.slip_epf_divergence` (payslip gross vs EPF-implied, 0.6–1.67 band) →
+officer flag (#9). Gates: web `next build` clean + 297→ jest + (Sprint B) **1104 scholarship pytest** + parity 2531×3
+(combined). **Deploy = push only (no migrate-first).** Tamil first-draft on all new keys (refine queue). Carried: #6/cockpit
+overlaps the parked `feature/family-section-redesign` (reconcile at that branch's merge).
 
 **▶ ALL SHIPPED & LIVE.** The B40 Phase E/F sponsor programme (13 sprints + go-live, `SPONSOR_POOL_ENABLED=true`),
 the **Admin Roles realignment** (`super/admin/partner/reviewer` + full students/B40 scoping; nav/invite/profile
