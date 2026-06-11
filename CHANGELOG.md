@@ -53,6 +53,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     masters intact (SPM 5319 / STPM 2026). No migration. Retro `docs/retrospective-verification-accuracy-fixes.md`.
 
 ### Added
+- **Officer cockpit — Documents drawer polish + in-cockpit document viewer (live-testing, no migration).**
+  - **Per-type tinted icons + standard labels.** Each document row shows a per-doc-TYPE glyph (🪪🎓💵💧… via
+    `officerCockpit.docIconFor`) in a badge tinted by the doc's verdict, instead of a 2-way IC/generic emoji. The row's
+    primary text is now the **standard doc-type label** ("STR proof", "Mother's IC" — via `earnerMemberFor` for the
+    untagged STR-route earner IC) with the actual filename shown muted + truncated in brackets (keeps the clue, e.g.
+    spotting a "…SARA…" upload). New `admin.scholarship.docsDrawer.type.*` for every doc type + `parentIcOf`.
+  - **Label-as-view-link.** The standard label is the click target that opens the document (↗ affordance); the redundant
+    top-right "View" link is dropped ("Re-run" stays).
+  - **In-cockpit document viewer** (`components/DocViewer.tsx`). Clicking a document opens it **embedded** in a modal
+    beside the verdict (`<img>` for images, `<iframe>` for PDFs) instead of a raw signed URL whose open-vs-download
+    behaviour varied by browser + content-type. Consistent, in-context, never clutters Downloads / leaves PII on disk;
+    offers "open in new tab" + Esc/backdrop close. `viewerKind()` decides img/pdf/unsupported; `content_type` surfaced
+    on the admin doc serializer/type. +10 jest.
+- **HEIC/HEIF uploads convert to JPEG server-side** (`apps.scholarship.imaging.convert_heic_to_jpeg`). iPhone photos
+  arrive as `image/heic`, which no browser renders inline (the cockpit "View" silently downloaded them) and Cloud
+  Vision can't OCR. We now fetch the stored object, convert to JPEG (pillow-heif + Pillow), upsert it in place
+  (`storage.upload_object`) + update the row, wired into `recordDocument` BEFORE Vision/extraction — so OCR + the viewer
+  + the download URL all see a JPEG. Soft (any failure leaves the original untouched; the viewer falls back to "open
+  original"). `convert_heic_documents` management command converts the already-stored HEIC files. `pillow-heif` added to
+  requirements. +5 pytest.
 - **Action Centre Phase 2 — Cikgu Gopal nudges a totally off-topic answer.** When a student types an answer to a
   query, a flag-gated relevance check (`help_engine.judge_answer_relevance` → one cheap Gemini JSON call, firewalled to
   the question + answer text only) decides whether to accept it. It is **deliberately very lenient** (owner D2): only a
