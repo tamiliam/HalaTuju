@@ -714,16 +714,44 @@ def name_present(text: str, names) -> bool:
     return False
 
 
-def address_present(text: str, *, postcode: str = '', city: str = '') -> bool:
-    """Soft home-address presence for utility bills. Postcode is the strong signal:
-    if the 5-digit postcode appears in the doc AND the city token appears, call it
-    found. With no postcode on file, require the city token alone (weak but soft)."""
+# Generic Malaysian address words that carry NO distinguishing information (both the full form
+# and the common abbreviation) — dropped so only the road NAME / number / taman / city remain.
+_ADDR_GENERIC = {
+    'no', 'jalan', 'jln', 'taman', 'tmn', 'lorong', 'lrg', 'lengkok', 'persiaran', 'psn',
+    'lebuh', 'lebuhraya', 'kampung', 'kg', 'lot', 'blok', 'block', 'tingkat', 'aras', 'unit',
+}
+
+
+def _address_tokens(s: str) -> set:
+    """Distinctive address tokens: lowercase, keep ALPHANUMERICS (so house/road numbers like
+    '36' and '5/8' → '5','8' count — they survive, unlike _canonical_name_tokens which drops
+    digits), then drop the generic road words (jalan/jln/taman/tmn/no/…) so only the
+    distinguishing parts (road name, numbers, taman name, city) are compared."""
+    return {t for t in re.findall(r'[a-z0-9]+', (s or '').lower()) if t not in _ADDR_GENERIC}
+
+
+def address_present(text: str, *, postcode: str = '', city: str = '', street: str = '') -> bool:
+    """Soft home-address presence for utility bills. The 5-digit postcode is the strong signal:
+    postcode in the doc + the city token → found. But a real bill often OMITS the postcode (the
+    Swetha case), so when it's absent we fall back to a STRONG overlap of the distinctive STREET
+    tokens (road name + numbers + taman) plus the city — a confident match even without the
+    postcode (#3). With nothing useful on file, require the city token alone (weak but soft)."""
     text_tokens = _canonical_name_tokens(text)
     city_ok = bool(city) and _canonical_name_tokens(city).issubset(text_tokens)
     pc = re.sub(r'\D', '', postcode or '')
-    if pc:
-        return pc in re.sub(r'\D', '', text or '') and (city_ok or not city)
-    return city_ok
+    if pc and pc in re.sub(r'\D', '', text or ''):
+        return city_ok or not city                       # postcode present → strong, done
+    # Postcode absent from the doc → try a strong street-token overlap (keeps the address-line
+    # numbers, which the postcode-digit check would otherwise be the only numeric signal).
+    street_tokens = _address_tokens(street)
+    if street_tokens:
+        doc_addr_tokens = _address_tokens(text)
+        overlap = street_tokens & doc_addr_tokens
+        strong = len(overlap) >= max(2, (len(street_tokens) + 1) // 2)   # ≥ half, at least 2
+        if strong and (city_ok or not city):
+            return True
+    # No usable street on file: city alone only when there is also no postcode requirement.
+    return city_ok and not pc
 
 
 def ocr_document(doc) -> dict:
@@ -747,7 +775,7 @@ def read_text_document(doc, *, ocr=None) -> dict:
     return doc.vision_fields
 
 
-def run_vision_match_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
+def run_vision_match_for_document(doc, *, names, postcode='', city='', street='', check_address=False, ocr=None) -> dict:
     """OCR a supporting document and record soft verdicts: does an expected name
     appear (``vision_name_match``), and — for bills — does the home address appear
     (``vision_address_match``)? Verdicts: 'found' / 'not_found' / 'unreadable'.
@@ -760,7 +788,8 @@ def run_vision_match_for_document(doc, *, names, postcode='', city='', check_add
     else:
         doc.vision_name_match = 'found' if name_present(r['text'], names) else 'not_found'
         doc.vision_address_match = (
-            ('found' if address_present(r['text'], postcode=postcode, city=city) else 'not_found')
+            ('found' if address_present(r['text'], postcode=postcode, city=city, street=street)
+             else 'not_found')
             if check_address else ''
         )
         doc.vision_error = ''
@@ -1039,7 +1068,7 @@ def _any_field_filled(fields: dict) -> bool:
     return False
 
 
-def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', check_address=False) -> str:
+def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street='', check_address=False) -> str:
     """Deterministic verdict from the Gemini-extracted fields (never hallucinated):
     'ok' | 'name_mismatch' | 'address_mismatch' | 'wrong_doc'."""
     if not _any_field_filled(fields):
@@ -1051,7 +1080,7 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', check_
             return 'name_mismatch'
     if check_address:
         addr = (fields.get('address') or '').strip()
-        if addr and not address_present(addr, postcode=postcode, city=city):
+        if addr and not address_present(addr, postcode=postcode, city=city, street=street):
             return 'address_mismatch'
     return 'ok'
 
@@ -1089,7 +1118,7 @@ def _extract_slip_deterministic(doc, image):
     return {'fields': parsed, 'warnings': [], 'error': ''}, {'reason': 'ok'}
 
 
-def run_field_extraction_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
+def run_field_extraction_for_document(doc, *, names, postcode='', city='', street='', check_address=False, ocr=None) -> dict:
     """Extract fields + a deterministic student-facing verdict, store on the doc.
     Never blocks, never raises. Pass ``ocr`` to reuse a prior OCR pass.
 
@@ -1120,7 +1149,8 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', check
         result = {'fields': {}, 'warnings': [], 'student_verdict': 'unreadable', 'error': ex['error']}
     else:
         verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
-                                      postcode=postcode, city=city, check_address=check_address)
+                                      postcode=postcode, city=city, street=street,
+                                      check_address=check_address)
         result = {'fields': ex['fields'], 'warnings': ex['warnings'],
                   'student_verdict': verdict, 'error': ''}
     doc.vision_fields = result

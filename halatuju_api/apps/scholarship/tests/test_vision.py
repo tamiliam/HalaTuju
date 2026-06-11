@@ -8,7 +8,7 @@ from django.test import TestCase, override_settings
 from apps.scholarship.vision import (
     _as_image_for_gemini, _canonical_name_tokens, _canonical_nric, _extract_address,
     _extract_name, _extract_nric, _is_card_label_line, _merge_ic_reads, _should_gemini_ic,
-    extract_mykad, name_match, nric_match,
+    address_present, extract_mykad, name_match, nric_match,
 )
 
 
@@ -177,6 +177,33 @@ NO 12 JALAN MAHKOTA
     def test_no_text_returns_empty(self):
         self.assertEqual(_extract_nric(''), '')
         self.assertEqual(_extract_name(''), '')
+
+
+class TestAddressPresent(TestCase):
+    """#3 (2026-06-11) — a utility bill that OMITS the postcode but clearly matches the street
+    must not read as 'not_found'. Validated against Swetha's REAL bill OCR text (app #25)."""
+
+    # Swetha's profile (app #25)
+    HOME = dict(postcode='86000', city='Kluang', street='No.36, Jalan 5/8, Taman Intan')
+
+    def test_real_water_bill_without_postcode_now_matches(self):
+        # Her water bill OCR: same address, NO postcode, JLN/TMN abbreviations.
+        bill = 'AIR JOHOR  36 JLN INTAN 5/8 TMN INTAN KLUANG, JOHOR'
+        self.assertTrue(address_present(bill, **self.HOME))
+
+    def test_real_electricity_bill_with_postcode_still_matches(self):
+        bill = 'TNB  NO 36, JLN INTAN 5/8 TMN INTAN 86000 KLUANG JOHOR'
+        self.assertTrue(address_present(bill, **self.HOME))
+
+    def test_unrelated_address_still_not_found(self):
+        # A different street + city must NOT match (the relaxation mustn't open the gate).
+        other = 'NO 12, JALAN MAWAR 3, TAMAN MELATI 81100 JOHOR BAHRU JOHOR'
+        self.assertFalse(address_present(other, **self.HOME))
+
+    def test_same_postcode_alone_is_not_enough_without_street_or_city(self):
+        # Just the bare postcode digits appearing, with no city match, isn't a match.
+        self.assertFalse(address_present('random text 86000 somewhere',
+                                         postcode='86000', city='Kluang', street=''))
 
 
 class TestExtractAddress(TestCase):
