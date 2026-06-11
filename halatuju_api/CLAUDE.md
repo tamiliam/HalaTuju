@@ -465,6 +465,26 @@ TOTALLY off-topic**, behind **`CHECK2_ANSWER_RELEVANCE_ENABLED` (default OFF, bi
 AI-clarify-query switch `CHECK2_STUDENT_QUERIES_ENABLED` stays OFF** (owner's call — both flags are one env var from on).
 Tests: 989 scholarship backend pytest + 276 jest; i18n parity 2474.
 
+**▶ JUST SHIPPED 2026-06-11 (b) — SARA≠STR fix + cockpit doc UX + in-cockpit viewer + HEIC (NO migration; retro
+`docs/retrospective-cockpit-doc-ux-and-sara.md`; branch `fix/sara-not-str`).** **#5b SARA≠STR:** the Gemini
+`source_type` now GATES `_str_currency` — a SARA-only Perdana Menteri letter (app #63) classified `unknown` →
+`unconfirmed` whatever AI status was read; SARA "Layak" removed from STR approval words; blank/legacy source_type falls
+through (existing approvals safe). **Cockpit:** per-doc-type tinted icons + standard labels ("STR proof"/"Mother's IC")
++ filename muted in brackets; the label IS the view-link (corner "View" dropped). **In-cockpit viewer**
+(`components/DocViewer.tsx`): click a doc → embedded modal (img/iframe) — standardises "view, never download".
+**HEIC→JPEG** server-side on upload (`apps.scholarship.imaging`; `pillow-heif`; `convert_heic_documents` command for the
+existing files). Gates: 1015 scholarship + 1063 courses/reports pytest, 290 jest, parity 2486×3, next build clean.
+**Post-deploy:** re-classify #63's STR (source_type='unknown'); `convert_heic_documents --apply`; watch the pillow-heif
+install on the first build.
+
+**▶ NEXT SPRINT — deterministic label-anchored capture layer** (rationale in `docs/retrospective-cockpit-doc-ux-and-sara.md`
+"Audit finding", grounded in real-file sampling). Most "AI-captured" docs are actually fixed-format standardised-issuer
+docs (TNB elec, KWSP EPF, JPN birth cert, govt offers, MySTR STR) and many are digital PDFs with clean text layers
+(already extracted, then needlessly fed to Gemini). Build a shared `parse_by_labels` (text-layer/OCR → fixed labels)
+running BEFORE Gemini (Gemini = fallback), tagging `capture: deterministic|ai` + flagging mis-slotted uploads. Ranked
+STR → TNB → KWSP → JPN BC → govt-offer-identity → water(soft). Kills the SARA AI-inference deterministically. No
+migration. Phase-by-phase, each validated on REAL files (synthetic fixtures in-repo — no PII).
+
 **▶ JUST SHIPPED 2026-06-11 — Verification-accuracy pass (5 live-testing fixes; NO migration; retro
 `docs/retrospective-verification-accuracy-fixes.md`).** Upstream gaps from real-applicant review:
 **(#4)** an optional wrong-person income doc (father's payslip on a mother-STR cluster; EPF) no longer hard-blocks
