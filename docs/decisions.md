@@ -1,5 +1,38 @@
 # Architectural Decisions — HalaTuju
 
+## B40 applications snapshot the chosen course; the catalogue is deactivated, never hard-deleted — Course-data robustness, 2026-06-12
+
+**Decision:** Two linked rules that keep the course catalogue and B40 applications decoupled:
+1. A B40 application captures the student's pathway/course choice as **point-in-time snapshots** — denormalised
+   strings + JSON (`intended_pathway`, `chosen_pathway`, `chosen_field`, `pre_u_institution`,
+   `chosen_programme = {course_id, course_name, institution, source}`, `top_choices = [{course_id, course_name,
+   institution}]`). There is **no foreign key** from `ScholarshipApplication` to `Course`/`StpmCourse`, and no B40
+   view re-reads the live catalogue by the stored `course_id` (only the merit *calculator*, on the student's grades).
+2. Catalogue courses are **deactivated** (`is_active=False`), **never hard-deleted**. STPM already soft-deletes via
+   `sync_stpm_mohe`; the same rule applies to the SPM `Course` catalogue.
+
+**Alternatives considered:** (1) Normalise `chosen_programme` into a real FK to the course row ("tidier"). (2) Hard-delete
+courses that MOHE drops. (3) Snapshot + soft-delete (chosen).
+
+**Rationale:** Course data is accurate only at a point in time — offerings, merit, requirements and links change yearly.
+A B40 application is a *historical record* of what the student chose then, and its eligibility verdict keys off the
+stored pathway + the cohort's own thresholds + the student's grades (and is ultimately anchored to the uploaded offer
+letter), **not** live course data. Snapshotting means a catalogue refresh never mutates or breaks a submitted
+application. Soft-delete (not hard-delete) keeps the convenience link from the officer review screen
+(`chosen_programme.course_id` → `/course/<id>` or `/stpm/<id>`) alive even after a course is withdrawn — the detail
+views are intentionally unfiltered by `is_active`, so a deactivated course still renders via a direct link; only a
+*hard* delete would 404 it. The displayed course **name** always comes from the snapshot, so it is correct regardless.
+
+**Trade-offs:** The officer link shows the course's *current* details, not the apply-time version (usually a feature —
+the officer wants "where / how long" now). The stored `course_id` is a loose string, not referentially enforced. A
+hard-deleted course would dead-link (mitigated: the detail page already degrades to a `CourseNotFound` card, never a
+raw 404).
+
+**Revisit if:** a feature genuinely needs the application to track the *live* course (then add a read-only, clearly
+labelled "current status — for reference" view that never feeds the verdict — do NOT convert the snapshot to an FK), or
+if apply-time course facts (duration/institution/level) must be preserved verbatim (then snapshot those 2–3 fields into
+`chosen_programme` at capture, rather than relying on the live link).
+
 ## progress_state is a DERIVED card field (stub now), not a stored column — B40 Phase E/F Sprint 8, 2026-06-09
 
 **Decision:** The sponsor-facing `progress_state` (on_track / semester_completed / needs_attention / graduated) is a
