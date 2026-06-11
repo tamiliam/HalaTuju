@@ -25,7 +25,7 @@ import {
   type IncomeEarner,
   type WorkingMember,
 } from '@/lib/incomeWizard'
-import { earningMembers } from '@/lib/familyRoster'
+import { earningMembers, sameMemberSet } from '@/lib/familyRoster'
 import DocumentHelpCoach from './DocumentHelpCoach'
 import IncomeClusterCoach from './IncomeClusterCoach'
 import { clusterAnchorKey, clusterDocKey } from '@/lib/documentHelp'
@@ -949,6 +949,12 @@ function IncomeWizard({
       ? app.income_working_members
       : rosterEarners) as WorkingMember[],
   })
+  // #1: the prefill above only runs on first mount (useState), so a roster filled or refetched
+  // AFTER the income step initialised wouldn't flow through. Keep the salary-route "who works"
+  // default in sync with the family roster UNTIL the student explicitly customises it (then we
+  // respect their choice). Source of truth: the persisted income_working_members is non-empty
+  // once they save, and `touchedMembers` covers the moment before that save round-trips.
+  const [touchedMembers, setTouchedMembers] = useState(false)
 
   const save = async (patch: Record<string, unknown>) => {
     setAns((a) => ({ ...a, ...patch }))
@@ -971,6 +977,22 @@ function IncomeWizard({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // #1: re-seed the roster-derived "who works" / earner default when the roster changes, as long
+  // as the student hasn't explicitly chosen (touched, or already saved a non-empty selection).
+  useEffect(() => {
+    if (touchedMembers) return
+    if (app.income_working_members && app.income_working_members.length) return
+    const next = earningMembers(app) as WorkingMember[]
+    setAns((a) => {
+      if (sameMemberSet(a.income_working_members, next)) return a
+      const earner = a.income_earner
+        || (next.find((r) => r === 'father' || r === 'mother' || r === 'guardian') || '')
+      return { ...a, income_working_members: next, income_earner: earner as typeof a.income_earner }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [app.father_occupation, app.mother_occupation,
+      JSON.stringify(app.other_family_members), app.income_working_members, touchedMembers])
 
   const iq = (k: string) => t(`scholarship.docs.income.wizard.${k}`)
 
@@ -1021,6 +1043,7 @@ function IncomeWizard({
   const MEMBER_OPTIONS: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
   const members = ans.income_working_members
   const toggleMember = (m: WorkingMember) => {
+    setTouchedMembers(true)   // #1: the student is now choosing — stop syncing from the roster
     const next = members.includes(m) ? members.filter((x) => x !== m) : [...members, m]
     save({ income_working_members: next })
   }
