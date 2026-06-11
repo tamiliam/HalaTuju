@@ -457,3 +457,32 @@ def _parse_offer(text: str) -> Optional[dict]:
     return {'candidate_name': name, 'candidate_nric': nric, 'programme': programme or '',
             'institution': '', 'issuer': issuer,
             'offer_date': find_value(text, r'tarikh\s*:'), 'intake': '', 'candidate_address': ''}
+
+
+# ── P6: water bill (SOFT signal, per-company) ─────────────────────────────────
+# Malaysian water bills (Air Selangor, SAMB, SAJ, PBAPP, …) differ by company but share the
+# regulated Malay labels: "Bil Semasa" (the month's charge), "Baki Terdahulu" / "Tunggakan"
+# (arrears), "No. Akaun", under a "BIL AIR" header. Conservative — None → Gemini for an
+# unrecognised layout. A SOFT signal (never gates), so name is best-effort (some companies
+# mask it, e.g. Air Selangor "L*****G"). amount=Bil Semasa, unpaid=arrears — matches the
+# convention income_engine.utility_check reads.
+
+
+def _labelled_rm(text: str, label: str) -> str:
+    """The first ``RM <amount>`` on the same line as ``label`` (the value may sit after an
+    inline "(Bayar Sebelum dd/mm/yyyy)" clause). '' if not found."""
+    m = re.search(label + r'.*?RM\s*([\d,]+(?:\.\d{2})?)', text or '', re.IGNORECASE)
+    return f'RM{m.group(1).replace(",", "")}' if m else ''
+
+
+@register('water_bill')
+def _parse_water(text: str) -> Optional[dict]:
+    if not has(text, r'bil\s+air') or not has(
+            text, r'baki\s+terdahulu', r'bil\s+semasa', r'jumlah\s+perlu\s+dibayar', r'tunggakan'):
+        return None                          # not a recognised Malaysian water bill → Gemini
+    amount = _labelled_rm(text, r'bil\s+semasa')
+    unpaid = _labelled_rm(text, r'baki\s+terdahulu') or _labelled_rm(text, r'tunggakan')
+    if not amount:                           # the soft signal's point — bail to Gemini if unsure
+        return None
+    return {'name': _patronymic_name(text), 'address': '', 'amount': amount,
+            'unpaid_balance': unpaid, 'billing_period': ''}

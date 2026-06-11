@@ -422,3 +422,52 @@ class TestOfferParser(SimpleTestCase):
 
     def test_non_offer_text_returns_none(self):
         self.assertIsNone(parse_by_labels('offer_letter', 'some random document with no offer markers'))
+
+
+# Water bills — shared Malay labels (Bil Semasa = current, Baki Terdahulu / Tunggakan = arrears).
+_WATER_AIRSGR = """INVOIS
+BIL AIR
+KANDASAMY A/L TESTSAMY
+NO 2 JLN 25/27C TMN SRI MUDA
+40400 SHAH ALAM
+RINGKASAN BIL
+Baki Terdahulu RM 39.85
+Bayaran Sehingga Kini RM 0.00
+Bil Semasa (Bayar Sebelum 15/06/2026) RM 13.00
+Jumlah Perlu Dibayar RM 52.85
+No. Akaun :3482012000
+"""
+
+_WATER_MASKED = """INVOIS
+BIL AIR
+L*****G
+42200 KAPAR SELANGOR
+Baki Terdahulu RM 25.70
+Bil Semasa (Bayar Sebelum 11/06/2026) RM 25.95
+Jumlah Perlu Dibayar RM 51.65
+No. Akaun :6400040000
+"""
+
+
+class TestWaterParser(SimpleTestCase):
+    def test_air_selangor_amount_and_arrears(self):
+        r = parse_by_labels('water_bill', _WATER_AIRSGR)
+        self.assertEqual(r['name'], 'KANDASAMY A/L TESTSAMY')
+        self.assertEqual(r['amount'], 'RM13.00')          # Bil Semasa (after the inline date clause)
+        self.assertEqual(r['unpaid_balance'], 'RM39.85')  # Baki Terdahulu
+
+    def test_masked_name_still_reads_amounts(self):
+        r = parse_by_labels('water_bill', _WATER_MASKED)
+        self.assertEqual(r['name'], '')                   # company masked it → soft, fine
+        self.assertEqual(r['amount'], 'RM25.95')
+        self.assertEqual(r['unpaid_balance'], 'RM25.70')
+
+    def test_tunggakan_arrears_variant(self):
+        txt = "BIL AIR\nTESTNAME A/P RAJU\nTunggakan RM 10.00\nBil Semasa RM 27.22\nNo. Akaun 123\n"
+        r = parse_by_labels('water_bill', txt)
+        self.assertEqual(r['amount'], 'RM27.22')
+        self.assertEqual(r['unpaid_balance'], 'RM10.00')  # via the Tunggakan alternate
+
+    def test_non_water_or_unrecognised_defers(self):
+        self.assertIsNone(parse_by_labels('water_bill', 'CamScanner'))
+        self.assertIsNone(parse_by_labels('water_bill', 'SYARIKAT XYZ\nsome bill\nRM50'))

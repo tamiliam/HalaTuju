@@ -79,6 +79,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     masters intact (SPM 5319 / STPM 2026). No migration. Retro `docs/retrospective-verification-accuracy-fixes.md`.
 
 ### Added
+- **Capture layer — water-bill parser (P6, soft signal; no migration).** Malaysian water bills (Air Selangor / SAMB /
+  SAJ / PBAPP…) differ by company but share the regulated Malay labels — `Bil Semasa` (current charge → amount),
+  `Baki Terdahulu` / `Tunggakan` (arrears → unpaid_balance), under a `BIL AIR` header. `parse_by_labels('water_bill', …)`
+  reads them (matching `utility_check`'s convention); name is best-effort (some companies mask it, e.g. Air Selangor
+  `L*****G`). Conservative — None → Gemini for an unrecognised layout. **Validated on real bills** — Air Selangor PDFs
+  parse amount + arrears cleanly; other companies + image photos defer. +4 pytest; full suite green (1067).
 - **Deterministic label-anchored capture layer — scaffold + STR parser (Sprint 1; no migration).** New
   `apps/scholarship/doc_parse.py` `parse_by_labels(doc_type, text)` runs BEFORE Gemini in
   `run_field_extraction_for_document` (returns `None` → Gemini reads it), tagging
