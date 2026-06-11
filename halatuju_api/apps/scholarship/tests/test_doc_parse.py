@@ -179,3 +179,58 @@ class TestStrParser(SimpleTestCase):
     def test_str_marked_but_no_recipient_falls_to_gemini(self):
         # An STR mention with no name + no NRIC → don't trust a deterministic read.
         self.assertIsNone(parse_by_labels('str', 'Sumbangan Tunai Rahmah STR 2026 portal'))
+
+
+# A TNB "Bil Elektrik Anda" — label then value on the next line; amount = Caj Semasa (the
+# month's charge that + Baki Terdahulu arrears = Jumlah Bil Anda). Mirrors the real layout
+# validated against 8 live bills. (Sabah=SESB / Sarawak=SEB differ → fall to Gemini.)
+_TNB = """Bil Elektrik Anda
+ALAMAT POS
+AHMAD BIN TESTABU
+12 JALAN UJIAN
+TAMAN TEST
+50000 KUALA LUMPUR
+WP KUALA LUMPUR
+TARIKH BIL
+05.05.2026
+TEMPOH BIL
+04.04.2026 - 03.05.2026
+(30 Hari)
+NO. AKAUN
+220000000000
+TARIF
+Domestik Am
+BAYARAN BAGI TEMPOH
+04.04.2026 - 03.05.2026
+RM72.15
+Jumlah Bil Anda (RM)
+576.65
+Baki Terdahulu (RM)
+268.45
+Caj Semasa (RM)
+308.22
+Tenaga Nasional Berhad 199001009294 (200866-W)
+"""
+
+
+class TestElectricityParser(SimpleTestCase):
+    def test_tnb_bill_full_read(self):
+        r = parse_by_labels('electricity_bill', _TNB)
+        self.assertEqual(r['name'], 'AHMAD BIN TESTABU')
+        self.assertEqual(r['address'], '12 JALAN UJIAN, TAMAN TEST, 50000 KUALA LUMPUR, WP KUALA LUMPUR')
+        self.assertEqual(r['amount'], 'RM308.22')          # Caj Semasa, NOT Jumlah Bil (576.65)
+        self.assertEqual(r['unpaid_balance'], 'RM268.45')  # Baki Terdahulu (arrears)
+        self.assertEqual(r['billing_period'], '04.04.2026 - 03.05.2026')
+
+    def test_rm_label_value_on_next_line_not_the_unit(self):
+        # "Caj Semasa (RM)" then "308.22" — must read the value line, not the "(RM)" unit.
+        self.assertEqual(parse_by_labels('electricity_bill', _TNB)['amount'], 'RM308.22')
+
+    def test_non_tnb_utility_falls_to_gemini(self):
+        # A Sarawak Energy / water bill etc. lacks the TNB markers → Gemini.
+        self.assertIsNone(parse_by_labels('electricity_bill',
+                          'SARAWAK ENERGY BERHAD\nBil Elektrik\nJumlah RM50'))
+        self.assertIsNone(parse_by_labels('electricity_bill', 'SYARIKAT AIR MELAKA\nBIL AIR\nRM27'))
+
+    def test_no_text_layer_falls_to_gemini(self):
+        self.assertIsNone(parse_by_labels('electricity_bill', 'CamScanner'))

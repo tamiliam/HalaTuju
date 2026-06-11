@@ -84,8 +84,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     application copy → `unknown` → `unconfirmed`), both via the existing `_str_currency` gate. Conservative — returns
     `None` (→ Gemini) unless it clearly recognises an STR surface with a recipient.
   - **Validated against 9 real uploads** across all four surfaces (L86 — not just synthetic fixtures); the real OCR
-    surfaced + fixed two bugs (SALINAN mis-classed as semakan; a stray info-icon `i` read as the status). +19 pytest
-    (13 scaffold + 6 STR); full scholarship suite green (1034). No migration (the tag lives in `vision_fields`).
+    surfaced + fixed two bugs (SALINAN mis-classed as semakan; a stray info-icon `i` read as the status).
+  - **TNB electricity parser (P2)** — Tenaga Nasional "Bil Elektrik Anda" (one West-Malaysia issuer; Sabah/Sarawak
+    differ → Gemini). Reads `ALAMAT POS` → name + address, `TEMPOH BIL` → period, `Caj Semasa` → the month's charge
+    (= `amount`, since Caj Semasa + Baki Terdahulu arrears = Jumlah Bil), `Baki Terdahulu` → `unpaid_balance` —
+    matching the convention `utility_check` already reads, but normalised + consistent. **Validated against 8 live
+    bills**; the deterministic read *improved* on Gemini for two digital bills it had left blank, and falls through to
+    Gemini for scanned PDFs / messy photos / non-TNB issuers.
+  - +23 pytest (13 scaffold + 6 STR + 4 TNB); full scholarship suite green (1038). No migration (the tag lives in
+    `vision_fields`).
 - **Officer cockpit — Documents drawer polish + in-cockpit document viewer (live-testing, no migration).**
   - **Per-type tinted icons + standard labels.** Each document row shows a per-doc-TYPE glyph (🪪🎓💵💧… via
     `officerCockpit.docIconFor`) in a badge tinted by the doc's verdict, instead of a 2-way IC/generic emoji. The row's

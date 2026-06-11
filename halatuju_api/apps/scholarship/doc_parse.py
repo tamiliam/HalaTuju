@@ -213,3 +213,43 @@ def _parse_str(text: str) -> Optional[dict]:
 
     return {'recipient_name': name, 'recipient_nric': nric, 'status': status,
             'year': year, 'amount': amount, 'source_type': source_type}
+
+
+# ── P2: TNB electricity bill ──────────────────────────────────────────────────
+# Tenaga Nasional "Bil Elektrik Anda" — one national issuer (West Malaysia; Sabah=SESB /
+# Sarawak=SEB differ → None → Gemini). Highly standardised, label then value on the next
+# OCR line:
+#   ALAMAT POS → <name> then the address block (until TARIKH BIL)
+#   TEMPOH BIL → billing period · Caj Semasa (RM) → the month's charge · Baki Terdahulu
+#   (RM) → arrears. amount = Caj Semasa (+ arrears = Jumlah Bil Anda) and unpaid_balance =
+#   Baki Terdahulu — matches the convention the income_engine utility_check already reads.
+
+
+def _money(v: str) -> str:
+    """First currency figure in ``v`` → ``RM<n>`` (commas stripped). '' if none."""
+    m = re.search(r'([\d,]+(?:\.\d{2})?)', v or '')
+    return f'RM{m.group(1).replace(",", "")}' if m else ''
+
+
+@register('electricity_bill')
+def _parse_electricity(text: str) -> Optional[dict]:
+    if not has(text, r'bil\s+elektrik') or not has(text, r'tenaga\s+nasional', r'alamat\s+pos', r'no\.?\s*akaun'):
+        return None                          # not a TNB bill → Gemini
+    lines = _lines(text)
+    name, address_lines = '', []
+    # The ALAMAT POS block: first line is the account holder, the rest is the address,
+    # ending at TARIKH BIL.
+    idx = next((k for k, ln in enumerate(lines) if re.search(r'alamat\s+pos', ln, re.IGNORECASE)), -1)
+    if idx >= 0:
+        end = next((k for k in range(idx + 1, len(lines))
+                    if re.search(r'tarikh\s+bil', lines[k], re.IGNORECASE)), len(lines))
+        block = [ln for ln in lines[idx + 1:end] if ln]
+        if block:
+            name, address_lines = block[0], block[1:]
+    period = find_value(text, r'tempoh\s+bil')
+    amount = _money(find_value(text, r'caj\s+semasa\s*\(?\s*rm\s*\)?'))
+    unpaid = _money(find_value(text, r'baki\s+terdahulu\s*\(?\s*rm\s*\)?'))
+    if not (name or amount):                 # didn't lock onto the bill → Gemini
+        return None
+    return {'name': name, 'address': ', '.join(address_lines), 'amount': amount,
+            'unpaid_balance': unpaid, 'billing_period': period}
