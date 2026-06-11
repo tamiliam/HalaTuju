@@ -25,7 +25,10 @@ from __future__ import annotations
 import datetime
 import re
 
-from .vision import name_match
+# Every name comparison in this module is the SAME real person across TWO documents
+# (relationships, earner-IC ↔ income-proof, STR-recipient ↔ IC, BC names) — never the student's
+# own identity — so they all use the transliteration-tolerant matcher (#2, Sarawanan A/L case).
+from .vision import relationship_name_match as name_match
 
 
 # ── Father's name from the student's IC patronymic ───────────────────────────
@@ -277,7 +280,7 @@ def student_income_proof_check(doc):
 
     name_status / nric_status: 'match' | 'mismatch' | 'no_ref' (that earner's IC not
     uploaded yet, or the field wasn't read) — a soft, never-blocking signal."""
-    from .vision import name_match, nric_match
+    from .vision import relationship_name_match as name_match, nric_match
     dt = getattr(doc, 'doc_type', '')
     if dt not in ('salary_slip', 'epf'):
         return None
@@ -358,7 +361,7 @@ def student_str_check(doc):
 
     name_status / nric_status: 'match' | 'mismatch' | 'no_ref'.
     current_status: 'current' | 'stale' | 'rejected'."""
-    from .vision import name_match, nric_match
+    from .vision import relationship_name_match as name_match, nric_match
     if getattr(doc, 'doc_type', '') != 'str':
         return None
     app = doc.application

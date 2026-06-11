@@ -10,6 +10,7 @@ from apps.scholarship.income_engine import (
     working_members, salary_member_blocks, member_relationship_status,
     student_income_ic_check, _str_currency,
 )
+from apps.scholarship.vision import relationship_name_match, name_match
 
 
 class TestStrCurrency(SimpleTestCase):
@@ -115,6 +116,41 @@ class TestRelationshipChecks(SimpleTestCase):
         self.assertEqual(guardian_relationship('RAJA A/L KUMAR', 'RAJA A/L KUMAR'), 'match')
         self.assertEqual(guardian_relationship('RAJA A/L KUMAR', 'STRANGER PERSON'), 'mismatch')
         self.assertEqual(guardian_relationship('', 'RAJA A/L KUMAR'), 'pending')
+
+
+class TestNameTransliterationTolerance(SimpleTestCase):
+    """#2 (2026-06-11) — relationship / cross-document name matching tolerates Malaysian-
+    Tamil/Indian romanisation + OCR variance, so a real family link is not falsely red-flagged
+    (the 'Sarawanan A/L Supramaniam' call). It is STRICTLY more lenient than the exact identity
+    matcher — it can only turn a mismatch into a match, never the reverse."""
+
+    def test_father_v_w_transliteration_matches(self):
+        # Student IC patronymic 'SARAVANAN' (v) vs the father's own IC 'SARAWANAN' (w) is ONE
+        # name — it must NOT read as a mismatch.
+        self.assertEqual(
+            father_relationship('SHAARVESHWAAR A/L SARAVANAN', 'SARAWANAN A/L SUPRAMANIAM'),
+            'match')
+
+    def test_matcher_folds_w_v_doubles_and_trailing_h(self):
+        self.assertNotEqual(relationship_name_match('SARAVANAN', 'SARAWANAN'), 'mismatch')     # v/w
+        self.assertNotEqual(relationship_name_match('LETCHUMANAN', 'LECHUMANAN'), 'mismatch')  # 1-char
+        self.assertNotEqual(relationship_name_match('VINOTH', 'VINOT'), 'mismatch')            # silent h
+
+    def test_genuinely_different_people_still_mismatch(self):
+        # The tolerance must NOT merge distinct names — a false family link is the real harm.
+        for a, b in [('SUPPIAH', 'RAMASAMY'), ('RAMASAMY', 'RAMAKRISHNAN'),
+                     ('MURUGAN', 'KESAVAN'), ('SIVA', 'SIRA'), ('VANI', 'RATHA')]:
+            self.assertEqual(relationship_name_match(a, b), 'mismatch', f'{a} vs {b}')
+
+    def test_strictly_more_lenient_than_identity_matcher(self):
+        # Differential audit: wherever the EXACT identity matcher matches, the tolerant one must
+        # too (it only ADDS matches) — so the untouched identity path is never weakened.
+        pairs = [('MURUGAN', 'MURUGAN A/L KESAVAN'), ('AHMAD BIN ALI', 'ALI BIN OSMAN'),
+                 ('KAMALA A/P RAMAN', 'KAMALA A/P RAMAN'), ('SARAVANAN', 'SUPPIAH'),
+                 ('VASAGI A/P SADAYEL', 'VASAGI A/P SADAYEL')]
+        for a, b in pairs:
+            if name_match(a, b) != 'mismatch':
+                self.assertNotEqual(relationship_name_match(a, b), 'mismatch', f'{a} vs {b}')
 
 
 class TestBirthCertificateWiring(SimpleTestCase):

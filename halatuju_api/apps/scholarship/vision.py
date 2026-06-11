@@ -68,6 +68,73 @@ def name_match(extracted: str, profile_name: str) -> str:
     return 'mismatch'
 
 
+# ── Relationship / cross-document name matching (transliteration-tolerant) ────────────
+# name_match above is EXACT token-set — correct for the student's OWN IC vs the name they
+# typed (identity). But the income/relationship checks compare the SAME real person's name
+# across TWO documents (the father's name in the student's IC patronymic vs the father's own
+# IC; an STR recipient vs the earner's IC), where Malaysian-Tamil/Indian romanisation legit-
+# imately varies — Sara**v**anan vs Sara**w**anan (v/w), a doubled letter, a trailing silent
+# 'h', or a single-character OCR slip. A false 'mismatch' there wrongly red-flags a real
+# family link (the "Sarawanan A/L Supramaniam" call), so those comparisons use the tolerant
+# matcher below. It is STRICTLY more lenient than name_match (it can only turn a mismatch into
+# a match, never the reverse), so identity — which keeps using name_match — is never weakened.
+
+def _fold_name_token(tok: str) -> str:
+    """Conservative romanisation folding so two spellings of ONE Tamil/Indian name agree:
+    w→v, collapse a doubled letter (Pilaapparao≈Pilaaparao), drop a trailing silent 'h'."""
+    t = tok.replace('w', 'v')
+    folded = []
+    for ch in t:
+        if not folded or folded[-1] != ch:
+            folded.append(ch)
+    t = ''.join(folded)
+    return t[:-1] if len(t) > 2 and t.endswith('h') else t
+
+
+def _levenshtein(a: str, b: str) -> int:
+    """Plain edit distance (no dependency) — used only to allow a single-char token slip."""
+    if a == b:
+        return 0
+    if not a or not b:
+        return len(a) or len(b)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[-1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def _tokens_close(x: str, y: str) -> bool:
+    """True iff two name tokens are the same person's name under romanisation / OCR variance."""
+    fx, fy = _fold_name_token(x), _fold_name_token(y)
+    if fx == fy:
+        return True
+    # a single-character difference between LONGER tokens (an OCR slip or spelling variant);
+    # short tokens must fold-match exactly (keeps Siva≠Sira, Vani≠Vasu from merging).
+    return min(len(fx), len(fy)) >= 5 and _levenshtein(fx, fy) <= 1
+
+
+def relationship_name_match(extracted: str, reference: str) -> str:
+    """Like name_match, but tolerant of Malaysian-Tamil/Indian romanisation + OCR variance —
+    for comparing the SAME person's name across two documents (relationship / income-proof
+    checks). 'match' when the token sets agree under folding; 'partial' when one is a tolerant
+    subset of the other; 'mismatch' otherwise. STRICTLY more lenient than name_match."""
+    a = list(_canonical_name_tokens(extracted))
+    b = list(_canonical_name_tokens(reference))
+    if not a or not b:
+        return 'mismatch'
+    small, large = (a, b) if len(a) <= len(b) else (b, a)
+    used = [False] * len(large)
+    for x in small:
+        hit = next((i for i, y in enumerate(large) if not used[i] and _tokens_close(x, y)), None)
+        if hit is None:
+            return 'mismatch'
+        used[hit] = True
+    return 'match' if len(a) == len(b) else 'partial'
+
+
 _NRIC_REGEX = re.compile(r'\b(\d{6}[-\s]?\d{2}[-\s]?\d{4})\b')
 
 
