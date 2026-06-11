@@ -384,3 +384,26 @@ export function incomeDocLayout(app: IncomeAnswerSource, incomeDocs: AdminApplic
   const optional = incomeDocs.filter((d) => !usedIds.has(d.id))
   return { required, optional }
 }
+
+// ── Document row presentation (cockpit Documents drawer) ─────────────────────────────
+// A per-doc-TYPE glyph so the icon space carries meaning (not just "is it an IC"); the row
+// tints the badge by the doc's verdict. Emoji (the cockpit has no icon library).
+const DOC_ICON: Record<string, string> = {
+  ic: '🪪', parent_ic: '🪪', results_slip: '🎓', offer_letter: '🏫',
+  str: '💵', salary_slip: '🧾', epf: '🏦', water_bill: '💧',
+  electricity_bill: '⚡', birth_certificate: '👶', guardianship_letter: '📜',
+  statement_of_intent: '✍️', photo: '🖼️',
+}
+
+export function docIconFor(docType: string): string {
+  return DOC_ICON[docType] || '📄'
+}
+
+// The household member an earner-IC belongs to, for the standard label ("Mother's IC"): its own
+// tag, or — on the STR route, where the single earner IC is stored UNTAGGED — the application's
+// income_earner. '' when it can't be derived (label falls back to a generic "Earner's IC").
+export function earnerMemberFor(docType: string, householdMember: string, route: string, earner: string): string {
+  if (householdMember) return householdMember
+  if (docType === 'parent_ic' && route === 'str') return earner || ''
+  return ''
+}

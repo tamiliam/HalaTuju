@@ -44,6 +44,8 @@ import {
   documentPill,
   documentFacts,
   incomeDocLayout,
+  docIconFor,
+  earnerMemberFor,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
@@ -1180,6 +1182,28 @@ export default function AdminScholarshipDetailPage() {
             if (p === 'check') return 'bg-amber-100 text-amber-700'
             return 'bg-gray-100 text-gray-500'
           }
+          // The doc-type icon sits in a badge tinted by the SAME verdict as the pill.
+          const iconBadge = (p: 'verified' | 'check' | 'unread') =>
+            p === 'verified' ? 'bg-green-50' : p === 'check' ? 'bg-amber-50' : 'bg-gray-100'
+          const trunc = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
+          // Standard, student-independent label per doc type (the actual filename is shown
+          // muted in brackets below). parent_ic → "Mother's IC" etc. when the earner is known.
+          const TYPE_KEYS = new Set(['ic', 'parent_ic', 'results_slip', 'offer_letter', 'str',
+            'salary_slip', 'epf', 'water_bill', 'electricity_bill', 'birth_certificate',
+            'guardianship_letter', 'statement_of_intent', 'photo'])
+          const docLabel = (d: AdminApplicantDocument) => {
+            if (d.doc_type === 'parent_ic') {
+              const m = earnerMemberFor(d.doc_type, d.household_member || '',
+                app.income_route || '', app.income_earner || '')
+              return m
+                ? t('admin.scholarship.docsDrawer.parentIcOf',
+                    { member: t(`scholarship.docs.income.wizard.member.${m}`) })
+                : t('admin.scholarship.docsDrawer.type.parent_ic')
+            }
+            return TYPE_KEYS.has(d.doc_type)
+              ? t(`admin.scholarship.docsDrawer.type.${d.doc_type}`)
+              : (d.original_filename || d.doc_type)
+          }
           const factClass = (s: FactStatus) =>
             s === 'verified' ? 'text-green-600' : s === 'partial' ? 'text-amber-600'
               : s === 'not' ? 'text-red-600' : 'text-gray-400'
@@ -1212,18 +1236,31 @@ export default function AdminScholarshipDetailPage() {
             const p = documentPill(d)
             return (
               <li key={d.id} className="flex items-start gap-2 rounded-lg border border-gray-100 p-2.5 hover:bg-gray-50">
-                <span className="shrink-0 mt-0.5 text-gray-400 text-base" aria-hidden>
-                  {d.doc_type === 'ic' || d.doc_type === 'parent_ic' ? '🪪' : '📄'}
+                <span className={`shrink-0 mt-0.5 flex h-7 w-7 items-center justify-center rounded-md text-sm ${iconBadge(p)}`} aria-hidden>
+                  {docIconFor(d.doc_type)}
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-sm font-medium text-gray-800 truncate max-w-[180px]">
-                      {d.original_filename || d.doc_type}
-                    </span>
+                    {d.download_url ? (
+                      <a href={d.download_url} target="_blank" rel="noreferrer"
+                        title={t('admin.scholarship.docsDrawer.view')}
+                        className="text-sm font-medium text-gray-800 hover:text-blue-600 hover:underline truncate max-w-[200px]">
+                        {docLabel(d)} <span aria-hidden className="text-[10px] text-gray-400">↗</span>
+                      </a>
+                    ) : (
+                      <span className="text-sm font-medium text-gray-800 truncate max-w-[200px]">
+                        {docLabel(d)}
+                      </span>
+                    )}
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${pillClass(p)}`}>
                       {t(`admin.scholarship.docsDrawer.pill.${p}`)}
                     </span>
                   </div>
+                  {d.original_filename && (
+                    <p className="text-[11px] text-gray-400 truncate max-w-[230px]" title={d.original_filename}>
+                      ({trunc(d.original_filename, 30)})
+                    </p>
+                  )}
                   {factLine(d)}
                   {d.utility_check?.name_note === 'unrelated' && (
                     <p className="text-[11px] text-orange-600 mt-0.5">
@@ -1241,12 +1278,6 @@ export default function AdminScholarshipDetailPage() {
                   )}
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
-                  {d.download_url && (
-                    <a href={d.download_url} target="_blank" rel="noreferrer"
-                      className="text-xs text-blue-600 hover:underline">
-                      {t('admin.scholarship.docsDrawer.view')}
-                    </a>
-                  )}
                   <button onClick={() => doReRunVision(d.id)} disabled={busy === 'vision'}
                     className="text-[11px] text-gray-500 hover:text-gray-700 hover:underline disabled:opacity-50">
                     {busy === 'vision' ? t('common.loading') : t('admin.scholarship.docsDrawer.rerun')}

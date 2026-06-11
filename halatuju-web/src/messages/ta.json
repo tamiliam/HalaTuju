@@ -2771,12 +2771,21 @@
           "outstanding": "நிலுவை"
         },
         "type": {
+          "ic": "விண்ணப்பதாரரின் IC",
           "parent_ic": "வருமானதாரரின் IC",
-          "str": "STR ஆவணம்",
+          "results_slip": "SPM முடிவுச் சீட்டு",
+          "offer_letter": "சேர்க்கைக் கடிதம்",
+          "str": "STR சான்று",
           "salary_slip": "சம்பளச் சீட்டு",
+          "epf": "EPF அறிக்கை",
+          "water_bill": "தண்ணீர் பில்",
+          "electricity_bill": "மின்சாரப் பில்",
           "birth_certificate": "பிறப்புச் சான்றிதழ்",
-          "guardianship_letter": "பாதுகாவலர் கடிதம்"
+          "guardianship_letter": "பாதுகாவலர் கடிதம்",
+          "statement_of_intent": "நோக்க அறிக்கை",
+          "photo": "புகைப்படம்"
         },
+        "parentIcOf": "{member}-இன் IC",
         "utilityNote": {
           "unrelated": "வேறு பெயரில் உள்ள கட்டணச்சீட்டு: {name}",
           "water_only": "நீர் கட்டணச்சீட்டு மட்டும் — மின்சாரச் சீட்டு இல்லை, நுகர்வை மதிப்பிட முடியாது",
