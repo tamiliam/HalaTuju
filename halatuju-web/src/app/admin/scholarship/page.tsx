@@ -76,6 +76,18 @@ export default function AdminScholarshipList() {
 
   const apps = data?.applications ?? []
 
+  // #7: persist the current filtered/sorted page's ordered ids so the detail cockpit
+  // can offer prev/next navigation that follows what the officer is looking at.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !data) return
+    try {
+      sessionStorage.setItem(
+        'halatuju_admin_scholarship_nav',
+        JSON.stringify((data.applications ?? []).map((a) => a.id)),
+      )
+    } catch { /* sessionStorage unavailable — nav just won't show */ }
+  }, [data])
+
   // Changing any filter resets to page 1 — otherwise you can land on a page
   // that no longer exists for the narrowed result set ("page 5 of 2").
   const changeFilter = (setter: (v: string) => void) => (value: string) => {
