@@ -4,7 +4,7 @@ import { useState } from 'react'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
-import { getSupabase } from '@/lib/supabase'
+import { getTurnstileToken } from '@/lib/turnstile'
 
 export default function ContactPage() {
   const { t } = useT()
@@ -25,16 +25,36 @@ export default function ContactPage() {
     setSubmitting(true)
     setError(false)
 
-    const { error: insertError } = await getSupabase()
-      .from('contact_submissions')
-      .insert({
-        name: name.trim(),
-        contact: contact.trim(),
-        category,
-        message: message.trim(),
-      })
+    // Posts to the contact-submit Edge Function, which verifies the Turnstile
+    // token server-side before writing the row (anon INSERT is revoked, so this
+    // is the only write path). The anon key is public and just identifies the
+    // project to the Supabase gateway.
+    const token = await getTurnstileToken('contact')
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/contact-submit`
 
-    if (insertError) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: anon,
+          Authorization: `Bearer ${anon}`,
+        },
+        body: JSON.stringify({
+          token,
+          name: name.trim(),
+          contact: contact.trim(),
+          category,
+          message: message.trim(),
+        }),
+      })
+      if (!res.ok) {
+        setError(true)
+        setSubmitting(false)
+        return
+      }
+    } catch {
       setError(true)
       setSubmitting(false)
       return

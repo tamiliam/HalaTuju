@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { getTurnstileToken } from '@/lib/turnstile'
 
 let _supabase: SupabaseClient | null = null
 
@@ -68,7 +69,12 @@ export async function getUser() {
 }
 
 export async function signInAnonymously() {
-  const { data, error } = await getSupabase().auth.signInAnonymously()
+  // Supabase captcha protection (once enabled) enforces a token on anonymous
+  // sign-ins too. Fetch one invisibly; undefined when Turnstile is unconfigured.
+  const captchaToken = await getTurnstileToken('anonymous')
+  const { data, error } = await getSupabase().auth.signInAnonymously(
+    captchaToken ? { options: { captchaToken } } : undefined,
+  )
   return { data, error }
 }
 

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Cloudflare Turnstile (captcha) on every auth entry point + the contact form (security item C; no migration).**
+  Protects against credential-stuffing, fake-account/email-flood abuse, and contact-form spam. An invisible widget
+  (Managed mode, `execution: 'execute'`) fetches a single-use token on demand — real users see nothing; only flagged
+  traffic gets a visible challenge. New `lib/turnstile.ts` (`getTurnstileToken`) is wired into the student automatic
+  anonymous sign-in, sponsor sign-in/sign-up/reset, and admin sign-in/reset (`options.captchaToken`); Google OAuth is
+  exempt (Supabase doesn't enforce captcha on the redirect). The public contact form, which wrote **straight to the
+  `contact_submissions` table** with the anon key, now posts to a new Supabase Edge Function `contact-submit` that
+  verifies the token via Cloudflare `siteverify` and inserts with the service role — after which anon INSERT is revoked,
+  making the function the only write path. Site key is public (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`); the secret lives only
+  in Supabase Auth config + the Edge Function secret, never in a tracked file. Graceful degradation: with no site key,
+  `getTurnstileToken` resolves `undefined` so flows keep working until the Supabase captcha toggle is flipped (the
+  enforcing step). Rollout order is safety-critical — see `halatuju_api/docs/security/turnstile-rollout.md`. +4 jest
+  (turnstile util: graceful path, token fetch, error-callback, serialised concurrent fetches); full web suite green (301).
+
 ### Fixed
 - **TNB myTNB "Express Payment" screenshot now reads (electricity capture; no migration).** Students often submit the
   myTNB *Express Payment / Verify Your Account* screen instead of the full "Bil Elektrik Anda" bill — a different layout
