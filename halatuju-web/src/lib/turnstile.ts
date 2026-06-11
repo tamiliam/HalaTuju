@@ -8,7 +8,8 @@
  *
  * Design — invisible with a visible fallback:
  *   We render ONE explicit widget with `execution: 'execute'` + `appearance:
- *   'execute'`, so nothing runs or shows until we call `turnstile.execute()`.
+ *   'interaction-only'`, so nothing runs until we call `turnstile.execute()` and
+ *   nothing is shown on a silent pass (no lingering Cloudflare "Success!" badge).
  *   For the vast majority (Managed mode) the challenge is non-interactive and the
  *   visitor sees nothing. Only genuinely suspicious traffic gets a visible,
  *   centred interaction modal — so a flagged real user can still pass, rather than
@@ -82,7 +83,7 @@ function ensureWidget(api: TurnstileAPI): void {
   widgetId = api.render(container, {
     sitekey: SITE_KEY,
     execution: 'execute', // run only when execute() is called
-    appearance: 'execute', // invisible until a challenge actually begins
+    appearance: 'interaction-only', // show nothing on a silent pass; only appear if interaction is required
     retry: 'never', // we handle failure by resolving undefined, no auto-retry loop
     callback: (token: string) => {
       const r = currentResolve
