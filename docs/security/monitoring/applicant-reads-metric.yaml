@@ -1,0 +1,26 @@
+# Log-based metric: applicant_record_reads (security item D — access anomaly detection)
+#
+# Counts the structured audit line emitted by AdminApplicationDetailView on every
+# applicant-record open, labelled by admin_id so the alert can fire per account.
+#
+# Apply:
+#   gcloud logging metrics create applicant_record_reads \
+#     --config-from-file=applicant-reads-metric.yaml \
+#     --account=tamiliam@gmail.com --project=gen-lang-client-0871147736
+# Update an existing one: same command with `update` instead of `create`.
+name: applicant_record_reads
+description: "Per-admin count of applicant-record detail reads (security item D anomaly detection)."
+filter: |-
+  resource.type="cloud_run_revision"
+  resource.labels.service_name="halatuju-api"
+  jsonPayload.message=~"^AUDIT applicant_detail_read"
+metricDescriptor:
+  metricKind: DELTA
+  valueType: INT64
+  unit: "1"
+  labels:
+    - key: admin_id
+      valueType: STRING
+      description: "The PartnerAdmin id that read the record."
+labelExtractors:
+  admin_id: REGEXP_EXTRACT(jsonPayload.message, "admin_id=([0-9]+)")
