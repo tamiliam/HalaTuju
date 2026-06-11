@@ -329,27 +329,33 @@ _STR_YEAR_RE = re.compile(r'(20\d{2})')
 
 
 def _str_currency(status_raw, year_str, cohort_year):
-    """Whether an STR positively PROVES current B40. An STR only proves B40 when it shows it
-    was APPROVED ('Lulus' / 'Diluluskan' / SARA 'Layak') AND is for the current cycle. So:
+    """Whether an STR positively PROVES current B40. It proves B40 when it shows an APPROVED
+    status ('Lulus' / 'Diluluskan' / SARA 'Layak'); the MySTR 'Semakan Status' / Dashboard pages
+    show that status as CURRENT ("Semasa") and print NO cohort year, so an approval is accepted
+    even without a readable year (a year only adds the ability to catch a stale prior-year STR).
       'rejected'    — a clear negative status (Ditolak / Tidak Layak / Gagal);
-      'stale'       — a readable year older than the cohort year (STR is annual);
-      'current'     — an approval word AND a readable current/this-cohort year;
-      'unconfirmed' — everything else: a record with NO approval status (e.g. a SALINAN /
-                      application printout the applicant fills in), or an approval we can't
-                      tie to a current year. NOT proof — the student is asked for the MySTR
-                      'Lulus' status or the official approval letter.
+      'stale'       — APPROVED but a readable year OLDER than the cohort year (STR is annual);
+      'current'     — an approval word (with the current year, or no year at all);
+      'unconfirmed' — NO approval status: a SALINAN / application printout the applicant fills
+                      in, or a status we couldn't read. NOT proof — the student is asked for the
+                      MySTR page showing 'Lulus' or the official approval letter.
     Earlier this returned 'current' by default (benefit of the doubt), which wrongly accepted
     unapproved application records as B40 proof."""
     s = (status_raw or '').lower()
     if any(w in s for w in _STR_REJECTED_WORDS):
         return 'rejected'
+    if not any(w in s for w in _STR_APPROVED_WORDS):
+        return 'unconfirmed'    # no approval status shown (a SALINAN / application printout, or
+                                # a status we couldn't read) → still NOT proof of approval.
+    # Approved. A readable PRIOR-year STR is stale (STR is annual); but the MySTR 'Semakan
+    # Status' / Dashboard page shows "Status Permohonan SEMASA: Lulus" with NO printed year —
+    # "Semasa" (current) IS the currency signal — so an approval WITHOUT a year is accepted as
+    # current (the live portal reflects this cycle). The year is a bonus that only ADDS the
+    # ability to catch a stale prior-year STR; its absence no longer demotes a valid Lulus. (#5)
     m = _STR_YEAR_RE.search(year_str or '')
     if m and cohort_year and int(m.group(1)) < int(cohort_year):
         return 'stale'
-    approved = any(w in s for w in _STR_APPROVED_WORDS)
-    if approved and m:
-        return 'current'        # approved AND a readable (current/this-cohort) year
-    return 'unconfirmed'        # no approval signal, or approval without a confirmable year
+    return 'current'
 
 
 def student_str_check(doc):

@@ -56,6 +56,28 @@ class TestExtractDocumentFields(TestCase):
         self.assertNotIn('warnings', r['fields'])   # warnings split out
         self.assertEqual(r['warnings'], ['blurry'])
 
+    @patch('apps.scholarship.vision._call_gemini_json')
+    def test_extract_str_classifies_source_type(self, mock_call):
+        # #5: the STR extractor returns source_type (closed set) alongside the currency facts.
+        mock_call.return_value = {'recipient_name': 'Susila A/P Kanniah', 'recipient_nric': '601006055058',
+                                  'status': 'Lulus', 'year': '', 'amount': 'RM 1,200',
+                                  'source_type': 'semakan_status', 'warnings': []}
+        r = vision.extract_document_fields('Semakan Status ... Status Permohonan Semasa Lulus', 'str')
+        self.assertEqual(r['error'], '')
+        self.assertEqual(r['fields']['source_type'], 'semakan_status')
+        self.assertEqual(r['fields']['status'], 'Lulus')
+
+    def test_str_schema_has_closed_source_type_enum(self):
+        props = vision._FIELD_SCHEMAS['str']['properties']
+        self.assertIn('source_type', props)
+        self.assertEqual(set(props['source_type']['enum']),
+                         {'letter', 'semakan_status', 'dashboard', 'unknown'})
+
+    def test_str_hint_describes_the_three_layouts_and_tarikh_kredit(self):
+        h = vision._DOC_HINTS['str'].lower()
+        for token in ('semakan_status', 'dashboard', 'letter', 'tarikh', 'semasa'):
+            self.assertIn(token, h)
+
     def test_unknown_doc_type(self):
         self.assertIn('no extractor', vision.extract_document_fields('text', 'photo')['error'])
 
