@@ -1692,6 +1692,14 @@
         "transport_cost_unknown": {
           "title": "How do you get to your studies?",
           "desc": "How do you travel to school or college, and roughly what does it cost you a month?"
+        },
+        "utility_holder_unknown": {
+          "title": "Whose name is on your utility bill?",
+          "desc": "The water or electricity bill you uploaded is in someone else's name. Tell us who they are and how they are related to you."
+        },
+        "utility_address_mismatch": {
+          "title": "Is your utility bill for your current home?",
+          "desc": "The address on your utility bill looks different from your home address. Let us know which one is your current home."
         }
       }
     },
@@ -2513,6 +2521,18 @@
           "fact": "Utility bills total RM {utility}/month — about {percent}% of the declared household income of RM {income}/month.",
           "question": "Your utility bills are a large share of the income on file — is the declared income the full household picture, or is there other income that helps cover the bills?"
         },
+        "utility_holder_unknown": {
+          "fact": "A utility bill is in another person's name: {name} — neither the student nor an uploaded parent.",
+          "question": "Whose bill is this — {name}? How are they related to you, and who lives at the address on the bill?"
+        },
+        "utility_address_mismatch": {
+          "fact": "A utility bill's supply address differs from the home address on file.",
+          "question": "The address on the utility bill looks different from the stated home address — which is the current home, and whose bill is the other one?"
+        },
+        "payslip_epf_divergence": {
+          "fact": "A working member's payslip (RM {slip}) and EPF-implied salary (RM {epf_implied}) differ noticeably.",
+          "question": "The payslip and EPF figures don't line up — is there overtime or commission, or were contributions paid late? What is the regular monthly pay?"
+        },
         "first_in_family_with_siblings_studying": {
           "fact": "Student claims to be first-to-university, but {count} sibling(s) are studying.",
           "question": "You'd be the first in your family to go to university, but {count} sibling(s) are also studying — are they younger and still in school, or already at university?"
@@ -2697,7 +2717,9 @@
           "course_unspecified": "No course/field chosen yet — the student has been asked what they plan to study.",
           "sibling_level_unknown": "Sibling school-vs-tertiary split not captured — the student has been asked to split the count.",
           "device_status_unknown": "Device need unknown — the student has been asked whether they have a laptop/tablet.",
-          "transport_cost_unknown": "Transport cost unknown — the student has been asked how they travel and the rough monthly cost."
+          "transport_cost_unknown": "Transport cost unknown — the student has been asked how they travel and the rough monthly cost.",
+          "utility_holder_unknown": "Utility bill is in another person's name — the student has been asked who they are and the relationship.",
+          "utility_address_mismatch": "Utility-bill address differs from the home address — the student has been asked which is their current home."
         }
       },
       "decision": {

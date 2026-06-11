@@ -90,3 +90,46 @@ class TestSyncCheck2Queries(_Base):
             self.app.resolution_items.filter(code='transport_cost_unknown').count(), 1)
         item.refresh_from_db()
         self.assertEqual(item.status, 'resolved')
+
+
+class TestUtilityClarifyQueries(_Base):
+    """#8: the utility holder/address consistency checks also surface as student
+    clarify queries (dark until CHECK2_STUDENT_QUERIES_ENABLED gates the call sites)."""
+
+    def _add_water_bill(self, *, name='', address_match=''):
+        from apps.scholarship.models import ApplicantDocument
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type='water_bill', storage_path=f'{self.app.id}/water/u',
+            vision_fields={'fields': {'amount': '20', 'name': name}},
+            vision_address_match=address_match, vision_fields_run_at=timezone.now(),
+        )
+
+    def test_stranger_bill_raises_holder_query(self):
+        self._add_water_bill(name='STRANGER PERSON')
+        sync_check2_queries(self.app)
+        self.assertIn('utility_holder_unknown', self._codes())
+
+    def test_address_mismatch_raises_address_query(self):
+        self._add_water_bill(address_match='mismatch')
+        sync_check2_queries(self.app)
+        self.assertIn('utility_address_mismatch', self._codes())
+
+    def test_no_utility_query_when_bill_clean(self):
+        self._add_water_bill(name=self.profile.name, address_match='found')
+        sync_check2_queries(self.app)
+        codes = self._codes()
+        self.assertNotIn('utility_holder_unknown', codes)
+        self.assertNotIn('utility_address_mismatch', codes)
+
+    def test_holder_query_auto_resolves_when_bill_replaced(self):
+        self._add_water_bill(name='STRANGER PERSON')
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='utility_holder_unknown')
+        self.assertEqual(item.status, 'open')
+        # The stranger bill is swept and a parent's bill uploaded → the gap clears.
+        self.app.documents.filter(doc_type='water_bill').delete()
+        self._add_water_bill(name=self.profile.name)
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+        self.assertEqual(item.resolved_by, 'system')

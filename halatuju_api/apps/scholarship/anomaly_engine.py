@@ -316,6 +316,46 @@ def _detect_parent_ic_underage(application) -> Optional[Anomaly]:
     })
 
 
+# ─── #8/#9 verification soft-signals (utility holder/address + payslip-vs-EPF) ──
+
+def _detect_utility_holder_unknown(application) -> Optional[Anomaly]:
+    """#8: a water/electricity bill is in a stranger's name — matches neither the student
+    nor any uploaded parent IC. Raise a 'who is this?' question for the interview."""
+    from . import income_engine
+    name = income_engine.utility_holder_unknown(application)
+    if not name:
+        return None
+    return Anomaly('utility_holder_unknown', {'name': name})
+
+
+def _detect_utility_address_mismatch(application) -> Optional[Anomaly]:
+    """#8: a utility bill's supply address is a HARD mismatch against the stated home
+    address. A partial / missing-postcode read stays silent (handled upstream), so this
+    only fires on a genuinely different address — worth confirming at interview."""
+    from . import income_engine
+    if income_engine.utility_address_mismatch(application):
+        return Anomaly('utility_address_mismatch', {})
+    return None
+
+
+def _detect_payslip_epf_divergence(application) -> Optional[Anomaly]:
+    """#9: a working member has BOTH a payslip and an EPF, and the payslip salary diverges
+    a lot from the EPF-implied salary. Often overtime / late pay — surface the figures so
+    the reviewer can confirm the regular income at interview. Never a gate."""
+    from . import income_engine
+    slip_members = {income_engine._proof_member(d)
+                    for d in application.documents.filter(doc_type='salary_slip')}
+    epf_members = {income_engine._proof_member(d)
+                   for d in application.documents.filter(doc_type='epf')}
+    for member in sorted(m for m in (slip_members & epf_members) if m):
+        d = income_engine.slip_epf_divergence(application, member)
+        if d:
+            return Anomaly('payslip_epf_divergence', {
+                'slip': d['slip'], 'epf_implied': d['epf_implied'],
+            })
+    return None
+
+
 # ─── Aggregator ─────────────────────────────────────────────────────────────
 
 _DETECTORS = (
@@ -332,6 +372,10 @@ _DETECTORS = (
     # S17 — minor consent flow
     _detect_parent_ic_name_mismatch,
     _detect_parent_ic_underage,
+    # #8/#9 — verification soft-signals (utility holder/address + payslip vs EPF)
+    _detect_utility_holder_unknown,
+    _detect_utility_address_mismatch,
+    _detect_payslip_epf_divergence,
 )
 
 
