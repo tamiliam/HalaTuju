@@ -485,7 +485,7 @@ export interface AdminScholarshipDetail {
   interview_gaps_run_at: string | null
   documents: AdminApplicantDocument[]
   referees: AdminReferee[]
-  consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; is_active: boolean; granted_at: string }>
+  consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; guardian_relationship: string; is_active: boolean; granted_at: string }>
   sponsor_profile: AdminSponsorProfile | null
   // Phase C
   profile_completed_at: string | null

@@ -8,6 +8,7 @@ import { useT } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth-context'
 import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
+import SchoolSelect from '@/components/SchoolSelect'
 import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn } from '@/lib/scholarship'
 
@@ -25,6 +26,9 @@ export default function ProfileInputPage() {
   const [gender, setGender] = useState<string>('')
   const [nationality, setNationality] = useState<string>('malaysian')
   const [state, setState] = useState<string>('')
+  // Optional guided school (reuses the MOE secondary-school list). Captured here so
+  // the normal course-guide signup records it the same guided way the B40 apply form does.
+  const [school, setSchool] = useState<string>('')
   const [colorblind, setColorblind] = useState<boolean>(false)
   const [disability, setDisability] = useState<boolean>(false)
   // Entered from the scholarship apply form's "edit results"? Then this final
@@ -40,6 +44,7 @@ export default function ProfileInputPage() {
       if (parsed.gender) setGender(parsed.gender)
       if (parsed.nationality) setNationality(parsed.nationality)
       if (parsed.state) setState(parsed.state)
+      if (parsed.school) setSchool(parsed.school)
       if (parsed.colorblind !== undefined) setColorblind(parsed.colorblind)
       if (parsed.disability !== undefined) setDisability(parsed.disability)
     }
@@ -47,6 +52,7 @@ export default function ProfileInputPage() {
     if (token && !isAnonymous) {
       getProfile({ token }).then(p => {
         if (p.preferred_state) setState(p.preferred_state)
+        if (p.school) setSchool(p.school)
         if (p.gender) setGender(p.gender)
         if (p.nationality) setNationality(p.nationality)
         if (p.colorblind !== undefined) setColorblind(!!p.colorblind)
@@ -75,6 +81,7 @@ export default function ProfileInputPage() {
       gender,
       nationality,
       state,
+      school,
       colorblind,
       disability,
     }
@@ -89,6 +96,10 @@ export default function ProfileInputPage() {
         colorblind,
         disability,
       }
+
+      // School is optional — only sync it when the student actually entered one,
+      // so a blank doesn't overwrite a school captured elsewhere (e.g. the apply form).
+      if (school.trim()) syncPayload.school = school.trim()
 
       // Include SPM grades
       const gradesStr = localStorage.getItem(KEY_GRADES)
@@ -245,6 +256,14 @@ export default function ProfileInputPage() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Row 1b: School (optional, guided from the MOE secondary-school list) */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('onboarding.school')} <span className="text-gray-400 font-normal">({t('onboarding.optional')})</span>
+            </label>
+            <SchoolSelect value={school} onChange={setSchool} />
           </div>
 
           {/* Row 2: Jantina */}

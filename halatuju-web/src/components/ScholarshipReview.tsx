@@ -140,7 +140,14 @@ export default function ScholarshipReview({
       <Card title={s('section.story')} editStep="story">
         <Field label={s('field.parentsWork')} value={app.parents_occupation} />
         <Field label={s('field.firstInFamily')} value={yn(app.first_in_family)} />
-        <Field label={s('field.siblings')} value={app.siblings_studying_count != null ? String(app.siblings_studying_count) : ''} />
+        <Field label={s('field.siblings')} value={(() => {
+          // Prefer the school/tertiary split the student actually enters now; fall back
+          // to the legacy single count only for old applications that predate the split.
+          const inSchool = app.siblings_in_school
+          const inTertiary = app.siblings_in_tertiary
+          if (inSchool != null || inTertiary != null) return String((inSchool ?? 0) + (inTertiary ?? 0))
+          return app.siblings_studying_count != null ? String(app.siblings_studying_count) : ''
+        })()} />
         {app.family_context ? <Field label={s('field.familyContext')} value={app.family_context} /> : null}
         <Field label={s('field.address')} value={addr} />
         <Field label={s('field.aspirations')} value={app.aspirations} />

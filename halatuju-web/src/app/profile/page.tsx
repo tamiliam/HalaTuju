@@ -16,6 +16,7 @@ import {
 } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
 import { isValidPhone, formatPhone } from '@/lib/scholarship'
+import SchoolSelect from '@/components/SchoolSelect'
 import AppHeader from '@/components/AppHeader'
 import { useToast } from '@/components/Toast'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
@@ -93,6 +94,8 @@ export default function ProfilePage() {
   const [colorblind, setColorblind] = useState(false)
   const [disability, setDisability] = useState(false)
   const [angkaGiliran, setAngkaGiliran] = useState('')
+  // Guided school (optional) — shown in the Application Tracking card above Angka Giliran.
+  const [school, setSchool] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [contactEmailVerified, setContactEmailVerified] = useState(false)
   const [contactPhone, setContactPhone] = useState('')
@@ -131,6 +134,7 @@ export default function ProfilePage() {
       setColorblind(!!profileData.colorblind)
       setDisability(!!profileData.disability)
       setAngkaGiliran(profileData.angka_giliran || '')
+      setSchool(profileData.school || '')
       setContactEmail(profileData.contact_email || '')
       setContactEmailVerified(profileData.contact_email_verified || false)
       setContactPhone(profileData.contact_phone || '')
@@ -185,6 +189,7 @@ export default function ProfilePage() {
         colorblind,
         disability,
         angka_giliran: angkaGiliran,
+        school,
       }, { token })
 
       // Keep localStorage in sync so onboarding uses the same values
@@ -204,7 +209,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, contactEmail, contactPhone })
+    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone })
     setEditingSection(section)
   }
 
@@ -222,6 +227,7 @@ export default function ProfilePage() {
     setColorblind(snapshot.colorblind as boolean || false)
     setDisability(snapshot.disability as boolean || false)
     setAngkaGiliran(snapshot.angkaGiliran as string || '')
+    setSchool(snapshot.school as string || '')
     setContactEmail(snapshot.contactEmail as string || '')
     setContactPhone(snapshot.contactPhone as string || '')
     setEditingSection(null)
@@ -829,6 +835,12 @@ export default function ProfilePage() {
             {editingSection === 'application' ? (
               <div className="space-y-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t('profile.school')} <span className="text-gray-400 font-normal">({t('profile.optional')})</span>
+                  </label>
+                  <SchoolSelect value={school} onChange={setSchool} />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.angkaGiliran')}</label>
                   <input
                     type="text"
@@ -858,6 +870,14 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div className="space-y-3">
+                <div className="flex justify-between">
+                  <FieldLabel label={t('profile.school')} empty={!school} />
+                  {school ? (
+                    <span className="text-sm text-gray-900 text-right">{school}</span>
+                  ) : (
+                    <FieldValue value="" t={t} />
+                  )}
+                </div>
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.angkaGiliran')} empty={!angkaGiliran} />
                   {angkaGiliran ? (
