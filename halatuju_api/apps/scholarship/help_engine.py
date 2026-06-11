@@ -77,7 +77,7 @@ VERDICT_GUIDANCE = {
     'income_rel_doc_unreadable': "the document that should link the earner to the student (a birth certificate for a mother, or a guardianship letter for a guardian) has been uploaded, but we could not read the names on it that prove the link — either the photo was unclear or it was the wrong document — so it must be re-uploaded as a clear copy of the correct document before the application can be completed",
     # The STR document is for an older year, or its status is not 'approved' — STR is
     # awarded annually, so an out-of-date STR no longer proves the family's current need.
-    'str_not_current': "the STR uploaded does not positively show it was APPROVED — it may be an application record/printout (a SALINAN) with no approval status, an out-of-date (prior-year) STR, or one whose status couldn't be read; an STR proves B40 when it clearly shows 'Lulus'/'Diluluskan'/'Layak'",
+    'str_not_current': "the STR uploaded does not positively show it was APPROVED — it may be an application record/printout (a SALINAN) with no approval status, an out-of-date (prior-year) STR, a document about a DIFFERENT aid (a SARA / Sumbangan Asas Rahmah letter is NOT the same as STR), or one whose status couldn't be read; an STR proves B40 when it clearly shows 'Lulus'/'Diluluskan'",
 }
 
 # Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
@@ -208,9 +208,12 @@ VERDICT_FIX_HINT = {
     ),
     'str_not_current': (
         'We could not confirm this STR was APPROVED — it looks like an application record / '
-        'printout (a "SALINAN") that shows no approval status, an out-of-date (prior-year) STR, '
-        'or one whose status we could not read. Gently explain that the STR proves the family '
-        'qualifies when it clearly shows it was approved ("Lulus" / "Diluluskan" / "Layak"). '
+        'printout (a "SALINAN") that shows no approval status, an out-of-date (prior-year) STR, a '
+        'document about a DIFFERENT aid (a SARA / Sumbangan Asas Rahmah letter is NOT the same as '
+        'STR), or one whose status we could not read. Gently explain that the STR proves the '
+        'family qualifies when it clearly shows it was approved ("Lulus" / "Diluluskan"). If it '
+        'looks like a SARA letter, kindly say we specifically need their STR (Sumbangan Tunai '
+        'Rahmah) approval, not the SARA letter. '
         'Kindly ask them to upload that — the MySTR app (bantuantunai.hasil.gov.my) "Semakan '
         'Status" or Dashboard page showing the status "Lulus", OR the official STR approval '
         'letter. A plain screenshot that clearly shows "Lulus" is ENOUGH — they do NOT need to '
