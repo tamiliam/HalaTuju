@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
+from halatuju.throttling import PublicCountRateThrottle
 
 from . import pool
 from . import in_programme as in_programme_service
@@ -193,6 +194,7 @@ class SponsorPoolCountView(APIView):
     landing hides the counter and the whole sponsor programme stays dark until go-live.
     No auth (a public marketing page calls it); the NRIC gate skips anonymous callers."""
     permission_classes = [AllowAny]
+    throttle_classes = [PublicCountRateThrottle]
 
     def get(self, request):
         if not getattr(settings, 'SPONSOR_POOL_ENABLED', False):

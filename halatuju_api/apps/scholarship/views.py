@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from apps.courses.models import StudentProfile
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
+from halatuju.throttling import UploadRateThrottle
 
 from .models import ApplicantDocument, Consent, Referee, ScholarshipApplication
 from .serializers import (
@@ -407,6 +408,7 @@ def _is_allowed_upload(content_type, filename):
 class DocumentListCreateView(APIView):
     """GET list / POST record the caller's documents."""
     permission_classes = [SupabaseIsAuthenticated]
+    throttle_classes = [UploadRateThrottle]
 
     def get(self, request):
         app = _current_application(request.user_id)

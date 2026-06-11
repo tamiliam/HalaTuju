@@ -99,6 +99,17 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'halatuju.middleware.supabase_auth.SupabaseIsAuthenticated',
     ],
+    # Proxy-aware rate-limiting — see halatuju/throttling.py. The global default
+    # is a generous anti-scrape ceiling on ANONYMOUS traffic only; authenticated
+    # requests are throttled per-endpoint (e.g. document upload) where it matters.
+    'DEFAULT_THROTTLE_CLASSES': [
+        'halatuju.throttling.ClientAnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '1000/min',         # anti-runaway-scrape only; safe for shared-NAT classrooms
+        'upload': '40/hour',        # document uploads — each triggers a billable Vision-OCR call
+        'public_count': '120/min',  # public (AllowAny) sponsor-count endpoint
+    },
 }
 
 # Supabase Auth settings
