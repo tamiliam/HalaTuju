@@ -77,6 +77,31 @@ class SponsorProfileSerializer(serializers.ModelSerializer):
         ]
 
 
+def _application_merit_score(obj):
+    """The course-guide merit (0-100) used for ranking — a single number rolling up grades
+    + co-curriculum. SPM: computed academic+CoQ merit. STPM: the PNGK (CGPA) is the merit
+    indicator. None if there's nothing to score. Derived LIVE from the persisted
+    grades/CoQ/stream — there is no stored merit column (the inputs are the source of truth)."""
+    p = obj.profile
+    if not p:
+        return None
+    if p.exam_type == 'stpm':
+        return p.stpm_cgpa
+    grades = dict(p.grades or {})
+    if not grades:
+        return None
+    # The engine's core uses 'history'; profiles store it as 'hist'. The eligibility flow
+    # renames it before scoring, so mirror that — else History reads as a fail (G) and the
+    # merit is understated.
+    if 'hist' in grades:
+        grades['history'] = grades.pop('hist')
+    from apps.courses.engine import prepare_merit_inputs, calculate_merit_score
+    s1, s2, s3 = prepare_merit_inputs(grades, getattr(p, 'stream_subjects', None) or None)
+    coq = p.coq_score if p.coq_score is not None else 0
+    result = calculate_merit_score(s1, s2, s3, coq)
+    return round(result['final_merit'], 1)
+
+
 class AdminApplicationListSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     cohort_code = serializers.CharField(source='cohort.code', read_only=True)
@@ -84,6 +109,9 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     qualification = serializers.CharField(source='profile.exam_type', read_only=True)
     stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
     spm_a_count = serializers.SerializerMethodField()
+    # Source (the referring org, chosen at apply) + the course-guide merit, for the list table.
+    referral_source = serializers.CharField(source='profile.referral_source', read_only=True, allow_null=True)
+    merit_score = serializers.SerializerMethodField()
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
 
@@ -91,13 +119,17 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
         model = ScholarshipApplication
         fields = [
             'id', 'name', 'profile_id', 'cohort_code', 'qualification',
-            'spm_a_count', 'stpm_pngk', 'status', 'bucket', 'shortlist_reason',
+            'spm_a_count', 'stpm_pngk', 'referral_source', 'merit_score',
+            'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
             'assigned_to_id', 'assigned_to_name',
         ]
 
     def get_name(self, obj):
         return _full_name(obj)
+
+    def get_merit_score(self, obj):
+        return _application_merit_score(obj)
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades
@@ -228,27 +260,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         return count_spm_a_grades(getattr(obj.profile, 'grades', None)) if obj.profile else 0
 
     def get_merit_score(self, obj):
-        """The course-guide merit (0-100) used for ranking — a single number that
-        rolls up grades + co-curriculum. SPM: computed academic+CoQ merit. STPM:
-        the PNGK (CGPA) is the merit indicator. None if there's nothing to score."""
-        p = obj.profile
-        if not p:
-            return None
-        if p.exam_type == 'stpm':
-            return p.stpm_cgpa
-        grades = dict(p.grades or {})
-        if not grades:
-            return None
-        # The engine's core uses 'history'; profiles store it as 'hist'. The
-        # eligibility flow renames it before scoring, so mirror that here —
-        # otherwise History is read as a fail (G) and the merit is understated.
-        if 'hist' in grades:
-            grades['history'] = grades.pop('hist')
-        from apps.courses.engine import prepare_merit_inputs, calculate_merit_score
-        s1, s2, s3 = prepare_merit_inputs(grades, getattr(p, 'stream_subjects', None) or None)
-        coq = p.coq_score if p.coq_score is not None else 0
-        result = calculate_merit_score(s1, s2, s3, coq)
-        return round(result['final_merit'], 1)
+        return _application_merit_score(obj)
 
     def get_verified_email(self, obj):
         """The verified email to display on the admin card (see _verified_email)."""
