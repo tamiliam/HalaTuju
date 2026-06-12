@@ -17,6 +17,7 @@ from .serializers import (
     ApplicationDetailsUpdateSerializer,
     ApplicationReadSerializer,
     ConsentCreateSerializer,
+    IncomeRouteSwitchSerializer,
     ConsentSerializer,
     DocumentCreateSerializer,
     GraduationMessageSerializer,
@@ -42,6 +43,7 @@ from .services import (
     revert_if_profile_incomplete,
     save_application_details,
     score_application,
+    switch_income_route,
 )
 
 
@@ -155,6 +157,37 @@ class ApplicationDetailView(APIView):
         # the funnel stays honest.
         revert_if_profile_incomplete(application)
         return Response(ApplicationReadSerializer(application).data)
+
+
+class IncomeRouteSwitchView(APIView):
+    """POST /api/v1/scholarship/applications/<id>/income-route/ — student self-serve
+    income route switch (STR ↔ salary) from the post-submit Action Centre.
+
+    Own application; allowed across the whole editable + post-submit funnel
+    (POST_SHORTLIST_EDITABLE). Recomputes the resolution queue (the new route's doc
+    tickets appear, the old route's gap clears) and returns the refreshed income
+    requirements. Deliberately separate from the broad details PATCH so it NEVER
+    reverts the submission — a submitted student is not re-blocked (consent-gate-v2)."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request, pk):
+        application = ScholarshipApplication.objects.filter(
+            pk=pk, profile_id=request.user_id).select_related('cohort', 'profile').first()
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if application.status not in POST_SHORTLIST_EDITABLE:
+            return Response(
+                {'error': 'Your income details can only be changed while your application is active.',
+                 'code': 'not_editable'}, status=status.HTTP_403_FORBIDDEN)
+        serializer = IncomeRouteSwitchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        d = serializer.validated_data
+        switch_income_route(application, route=d['income_route'],
+                            earner=d.get('income_earner', ''),
+                            members=d.get('income_working_members', []), by='student')
+        from .income_engine import income_requirements
+        return Response({'income_route': application.income_route,
+                         'requirements': income_requirements(application)})
 
 
 class ApplicationConfirmView(APIView):
