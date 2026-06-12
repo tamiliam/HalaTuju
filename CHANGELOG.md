@@ -8,7 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- **Check-2 query email reworded to cover documents, not just questions.** Now that the email also covers
+- **Name matching is now OCR-boundary-agnostic + income-doc blockers name the specific document (systemic, no migration).**
+  A real applicant (#31) was blocked at consent: her mother's salary slip OCR'd `RUSHAINDRA` as `RUSHAIND RA` (a spurious
+  space), so the salary-slip-vs-earner-IC name check failed → `income_document_mismatch` in `consent_blockers` →
+  submission disabled — while the error message pointed at the IC, which read fine. **Two systemic fixes.** (1) Both name
+  matchers (`vision.name_match` identity + the tolerant `relationship_name_match` for cross-doc) gain a `_glued_equal`
+  fallback: when token-set matching fails they compare the names with word-boundaries removed (order-preserving), so an
+  OCR space that **split** a token (`RUSHAINDRA` ↔ `RUSHAIND RA`) or **glued** two no longer causes a false mismatch.
+  Strictly mismatch→match (spelling-exact for identity, folded for cross-doc), so identity is never weakened. Mirrored in
+  the FE consent matcher (`ScholarshipConsent` `nameSetsMatch`). (2) The catch-all `income_document_mismatch` blocker is
+  split into per-document codes — `salary_slip_person_mismatch`, `str_person_mismatch`, `birth_cert_person_mismatch`,
+  `guardianship_person_mismatch`, `parent_ic_person_mismatch` — each with a message naming the actual red document
+  (en/ms/ta), so the student is sent to the right doc instead of a generic "an income document"/the IC. Verified live:
+  #31's `consent_blockers` recomputes to `[]` (no re-upload needed). +5 scholarship pytest; 303 jest; next build clean.
   missing-document upload requests (not only clarify questions), the hardcoded *"a few short questions … answer them"*
   copy was misleading (a student got it, then saw only Upload tasks). Both the raised + reminder emails (subject + body,
   en/ms/ta) now say *"a few things we need … {n} item(s) (a few questions and/or documents) … respond to each one,"*

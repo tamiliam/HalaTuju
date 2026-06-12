@@ -1200,27 +1200,27 @@ def document_red_blockers(application):
         elif dt == 'parent_ic':
             chk = income_engine.student_income_ic_check(doc)
             if has(chk, 'name_status', 'proof_name_status', 'proof_nric_status'):
-                codes.add('income_document_mismatch')
+                codes.add('parent_ic_person_mismatch')
         elif dt == 'salary_slip':
             # Only a COMPULSORY salary slip (salary route + a SELECTED working member) blocks on a
             # person-mismatch — an optional/extraneous slip must not (see the note above).
             compulsory = route == 'salary' and (doc.household_member or '') in selected_members
             if compulsory and has(income_engine.student_income_proof_check(doc),
                                   'name_status', 'nric_status'):
-                codes.add('income_document_mismatch')
+                codes.add('salary_slip_person_mismatch')
         elif dt == 'epf':
             pass  # EPF is supplementary on BOTH routes (never substitutes the salary slip), so a
                   # person-mismatch on it never blocks submission — the cluster coach handles it.
         elif dt == 'str':
             chk = income_engine.student_str_check(doc)
             if has(chk, 'name_status', 'nric_status') or chk.get('current_status') in ('rejected', 'stale'):
-                codes.add('income_document_mismatch')
+                codes.add('str_person_mismatch')
         elif dt == 'birth_certificate':
             if has(income_engine.student_bc_check(doc), 'child_status', 'mother_status', 'father_status'):
-                codes.add('income_document_mismatch')
+                codes.add('birth_cert_person_mismatch')
         elif dt == 'guardianship_letter':
             if has(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):
-                codes.add('income_document_mismatch')
+                codes.add('guardianship_person_mismatch')
     return list(codes)
 
 

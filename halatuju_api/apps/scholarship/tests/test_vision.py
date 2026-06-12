@@ -8,7 +8,7 @@ from django.test import TestCase, override_settings
 from apps.scholarship.vision import (
     _as_image_for_gemini, _canonical_name_tokens, _canonical_nric, _extract_address,
     _extract_name, _extract_nric, _is_card_label_line, _merge_ic_reads, _should_gemini_ic,
-    address_present, extract_mykad, name_match, nric_match,
+    address_present, extract_mykad, name_match, nric_match, relationship_name_match,
 )
 
 
@@ -87,6 +87,38 @@ class TestNameMatch(TestCase):
         self.assertEqual(name_match('', 'Priya'), 'mismatch')
         self.assertEqual(name_match('Priya', ''), 'mismatch')
         self.assertEqual(name_match('', ''), 'mismatch')
+
+    def test_ocr_space_split_in_name_still_matches(self):
+        # An OCR space split a token (RUSHAINDRA → "RUSHAIND RA") — the boundary moved so
+        # the token sets differ, but it is the same name; the glued fallback rescues it.
+        # (#31: the mother's salary slip OCR'd "RUSHAIND RA" vs her IC "RUSHAINDRA".)
+        self.assertEqual(
+            name_match('RUSHAIND RA KUMARI A/P JAYARAM', 'RUSHAINDRA KUMARI A/P JAYARAM'), 'match')
+        # the merge direction too (OCR glued two words).
+        self.assertEqual(
+            name_match('RUSHAINDRAKUMARI JAYARAM', 'RUSHAINDRA KUMARI JAYARAM'), 'match')
+        # but a genuinely different spelling must STILL mismatch — no over-merge.
+        self.assertEqual(name_match('SIVA KUMAR', 'SIRA KUMAR'), 'mismatch')
+
+
+class TestRelationshipNameMatch(TestCase):
+    """The tolerant cross-document matcher: romanisation folding PLUS OCR boundary tolerance,
+    strictly more lenient than name_match (only ever turns a mismatch into a match)."""
+
+    def test_ocr_space_split_matches(self):
+        # The #31 income-document case end-to-end: salary slip vs the earner's IC.
+        self.assertEqual(
+            relationship_name_match('RUSHAIND RA KUMARI A/P JAYARAM',
+                                    'RUSHAINDRA KUMARI A/P JAYARAM'), 'match')
+
+    def test_romanisation_still_folds(self):
+        self.assertEqual(
+            relationship_name_match('Sarawanan A/L Supramaniam',
+                                    'Saravanan A/L Supramaniam'), 'match')
+
+    def test_genuinely_different_person_still_mismatches(self):
+        self.assertEqual(
+            relationship_name_match('Siva A/L Kumar', 'Sira A/L Kumar'), 'mismatch')
 
 
 class TestTextExtraction(TestCase):

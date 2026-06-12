@@ -484,7 +484,7 @@ class TestIncomeGateV2(TestCase):
         slip.vision_fields = {'fields': {'name': 'Pilaapparao Appana', 'nric': '601006-05-5058'}}
         slip.save()
         self.assertEqual(student_income_proof_check(slip)['name_status'], 'mismatch')  # it IS wrong-person
-        self.assertNotIn('income_document_mismatch', self._red_blockers(app))          # …but does NOT block
+        self.assertNotIn('salary_slip_person_mismatch', self._red_blockers(app))       # …but does NOT block
 
     def test_str_route_optional_epf_mismatch_does_not_block(self):
         app = self._app(route='str', earner='mother')
@@ -499,7 +499,7 @@ class TestIncomeGateV2(TestCase):
         epf = self._doc(app, 'epf')
         epf.vision_fields = {'fields': {'name': 'Pilaapparao Appana', 'nric': '601006-05-5058'}}
         epf.save()
-        self.assertNotIn('income_document_mismatch', self._red_blockers(app))
+        self.assertEqual(self._red_blockers(app), [])   # EPF mismatch on the STR route never blocks
 
     def test_salary_route_compulsory_slip_mismatch_still_blocks(self):
         # A salary-route slip tagged to a SELECTED member IS the compulsory income proof — a
@@ -511,7 +511,7 @@ class TestIncomeGateV2(TestCase):
         slip = self._doc(app, 'salary_slip', member='father')
         slip.vision_fields = {'fields': {'name': 'Someone Else Entirely', 'nric': '999999-99-9999'}}
         slip.save()
-        self.assertIn('income_document_mismatch', self._red_blockers(app))
+        self.assertIn('salary_slip_person_mismatch', self._red_blockers(app))
 
     # ── offer letter + documents_done + grandfather ──────────────────────────
     def test_offer_letter_compulsory(self):
