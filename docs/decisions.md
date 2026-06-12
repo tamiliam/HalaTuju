@@ -2650,3 +2650,22 @@ soft, flag-gated signal that nothing queries relationally); the JSON read path i
 **Rationale:** Ships dark with zero schema risk; the flag lets us validate on prod before relying on it; cost stays
 bounded (one call per IC, only when on).
 **Revisit if:** the authenticity signal ever needs relational querying/reporting (then promote to columns).
+
+## Genuineness verdict cap is a uniform soft post-step in build_verdict — Doc genuineness Sprint 2, 2026-06-12
+**Decision:** Rather than threading a genuineness check into each fact's verdict function (many exit points),
+`build_verdict` applies `_apply_genuineness_caps` as a single post-step: a per-fact doc map
+(`academic→[results_slip]`, `income→[str,epf,birth_certificate]`) is checked for a suspect/wrong-type
+`vision_fields['authenticity']`; if found, the fact is downgraded verified→review and a `document_not_genuine`
+caveat appended. Downgrade-only (never gap/fail, never upgrade). The IC keeps its cap inside `_verdict_identity`
+(Sprint 1) — not re-applied here.
+**Alternatives considered:** (a) wire genuineness into each `_verdict_*` at every return — rejected: many exit
+points, easy to miss one, and the genuineness logic would be duplicated; (b) make it only an officer flag / student
+note (no verdict change) — rejected: the owner wants the AI to *predict* per fact, so a suspect document must lower
+the fact's confidence, not just sit in a side panel.
+**Rationale:** One place, one rule, applied uniformly; the per-fact doc map is the single source of which documents
+feed which fact's genuineness; downgrade-only keeps it strictly soft. Salary slip + offer letter are excluded (too
+varied to fingerprint; the engine doesn't check them, so they can't trigger a cap).
+**Trade-offs:** A coarser cap than bespoke per-fact logic (it can't, say, distinguish which of several income docs is
+suspect in the verdict status — the officer flag + the document drawer carry that detail).
+**Revisit if:** a fact needs finer-grained genuineness handling than a single downgrade (then move that fact's cap
+back into its verdict function).

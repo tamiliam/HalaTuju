@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Document genuineness — supporting docs + wrong-type (verification-assurance Sprint 2; flag-gated, no migration).**
+  Extends the IC fingerprint (Sprint 1) to the standardised supporting documents — **STR, SPM results slip, birth
+  certificate, EPF** — and adds **wrong-document-type** detection. Validated on our real files first: genuine official
+  docs pass; typed/screenshot copies → suspect; a typed-text "birth cert" and a KWSP *withdrawal* form mis-filed as an
+  EPF statement → `wrong_type`. The spike also surfaced the rule that **a genuine MySTR app screenshot is legitimate for
+  STR** (the existing currency/source-type logic still decides approval), so the "what counts as official" criteria are
+  doc-type-specific. `vision.doc_genuineness()` does one per-type multimodal read → `{status, doc_seen, reason}` in
+  `vision_fields['authenticity']`. Three soft surfaces, reusing Sprint 1's machinery: **verdict caps** (a suspect/
+  wrong-type results-slip lowers **Academic** to Unsure; STR/EPF/BC lower **Income**) — a soft post-cap that never moves
+  a fact to fail and never upgrades; officer flag `document_not_genuine` (names the doc + what the AI thinks it actually
+  is); a student amber note on the supporting-doc cards. en/ms/ta; also closed a Sprint 1 i18n gap (the `ic_low_confidence`
+  verdict-item copy). `DOC_GENUINENESS_CHECK_ENABLED` is already ON in prod. +~15 tests; 1190 scholarship pytest, 303
+  jest, parity 2570×3, next build clean.
 - **Document genuineness — IC fingerprint (verification-assurance roadmap, Sprint 1; flag-gated, no migration).** A soft
   "does this look like a real photo of a physical MyKad?" check on the IC, to catch typed/printed/screenshot fakes that
   carry the right name + IC number but none of the card's physical fingerprints. Empirically validated first: on our real
