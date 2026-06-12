@@ -13,8 +13,15 @@ Usage:
     python manage.py sync_stpm_mohe --csv data/stpm/mohe_latest.csv --apply
 """
 import csv
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from apps.courses.models import StpmCourse
+
+# Safety guard for --apply: a partial/failed scrape (e.g. MOHE redesigns their DOM
+# and few/zero cards parse) makes most of the catalogue look "removed", which would
+# deactivate it and empty the student-facing site. Refuse a mass deactivation on a
+# non-trivial catalogue unless --force.
+GUARD_MIN_ACTIVE = 50           # below this the catalogue is too small to guard (tests / fresh DB)
+MAX_DEACTIVATE_FRACTION = 0.10  # abort --apply if it would deactivate more than this share of active courses
 
 
 class Command(BaseCommand):
@@ -23,10 +30,14 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--csv', type=str, required=True, help='Path to scraped CSV')
         parser.add_argument('--apply', action='store_true', help='Apply changes (default: report only)')
+        parser.add_argument(
+            '--force', action='store_true',
+            help='Override the mass-deactivation safety guard (only after verifying a large removal is real).')
 
     def handle(self, *args, **options):
         csv_path = options['csv']
         apply = options['apply']
+        force = options['force']
 
         # Load scraped data
         scraped = {}
@@ -47,6 +58,10 @@ class Command(BaseCommand):
         removed_ids = db_ids - mohe_ids
         common_ids = db_ids & mohe_ids
 
+        # Courses currently active that the scrape no longer lists — the deactivation set.
+        active_removed = [cid for cid in removed_ids if db_courses[cid].is_active]
+        active_before = sum(1 for c in db_courses.values() if c.is_active)
+
         inactive_count = StpmCourse.objects.filter(is_active=False).count()
 
         self.stdout.write(f'\n=== STPM MOHE Sync Report ===')
@@ -64,7 +79,6 @@ class Command(BaseCommand):
 
         # Removed programmes (in DB but not in MOHE)
         if removed_ids:
-            active_removed = [cid for cid in removed_ids if db_courses[cid].is_active]
             already_inactive = [cid for cid in removed_ids if not db_courses[cid].is_active]
 
             if active_removed:
@@ -128,6 +142,21 @@ class Command(BaseCommand):
             ))
             return
 
+        # SAFETY GUARD — block a catalogue-wiping apply from a partial/failed scrape.
+        # If applying would deactivate more than MAX_DEACTIVATE_FRACTION of a non-trivial
+        # live catalogue, abort: this is almost always a bad scrape, not that many real
+        # removals. --force overrides once the operator has verified the removals are real.
+        if not force and active_before >= GUARD_MIN_ACTIVE and active_removed:
+            frac = len(active_removed) / active_before
+            if frac > MAX_DEACTIVATE_FRACTION:
+                raise CommandError(
+                    f'Refusing to apply: this would deactivate {len(active_removed)} of '
+                    f'{active_before} active courses ({frac:.0%}), from a CSV of only '
+                    f'{len(mohe_ids)} programmes. That looks like a partial or failed scrape '
+                    f'(e.g. a MOHE site change), not real removals. Re-scrape and verify the '
+                    f'count, or pass --force if the removals are genuinely correct.'
+                )
+
         # Apply URL updates
         updated = 0
         for cid in common_ids:
@@ -146,7 +175,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'\nApplied: {updated} URL updates'))
 
         # Deactivate removed courses
-        active_removed = [cid for cid in removed_ids if db_courses[cid].is_active]
         if active_removed:
             deactivated = StpmCourse.objects.filter(
                 course_id__in=active_removed
