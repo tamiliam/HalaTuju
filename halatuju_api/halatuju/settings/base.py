@@ -134,6 +134,9 @@ CRON_SECRET = os.environ.get('CRON_SECRET', '')
 # A GCS bucket (same GCP project) that `backup_documents` mirrors b40-documents into.
 # Empty → the backup command is an explicit no-op (logs a warning, never crashes the cron).
 DOCUMENT_BACKUP_BUCKET = os.environ.get('DOCUMENT_BACKUP_BUCKET', '')
+# Recipient for the annual "refresh the STPM/UPU course catalogue" reminder
+# (CronRunView job 'refresh-reminder'). Empty → falls back to DEFAULT_FROM_EMAIL.
+COURSE_REFRESH_REMINDER_EMAIL = os.environ.get('COURSE_REFRESH_REMINDER_EMAIL', '')
 # Phase E2: master switch for the anonymised sponsor discovery pool. OFF until the
 # lawyer signs off on exposing (anonymised) student data to sponsors. While off,
 # every sponsor-pool browse endpoint returns 404. Build + test run on dummy data.

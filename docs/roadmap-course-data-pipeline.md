@@ -39,7 +39,7 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
 
 ## Sprint roadmap
 
-### Sprint 1 — STPM refresh wrapper + dated archive + annual reminder  ·  *complexity: low*
+### Sprint 1 — STPM refresh wrapper + dated archive + annual reminder  ·  *complexity: low*  ·  ✅ **BUILT 2026-06-12 (branch `feature/refresh-stpm-wrapper`; pending owner-gated deploy + Cloud Scheduler job)**
 - **Goal:** Turn the fragile 5-step STPM refresh into one auditable command with rollback history.
 - **Scope:** new `refresh_stpm` management command (scrape → sanity-check → validate-urls →
   sync dry-run → audit, single summary); date-stamped CSV archive (`mohe_<date>.csv`, keep last N);
