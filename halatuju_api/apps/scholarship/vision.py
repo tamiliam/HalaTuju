@@ -44,6 +44,30 @@ def _canonical_name_tokens(s: str) -> set:
     return {t for t in re.split(r'[^a-z]+', cleaned) if t}
 
 
+def _canonical_name_seq(s: str) -> list:
+    """Like _canonical_name_tokens but ORDER-PRESERVING (a list) — so the words can be
+    glued back in their printed order. Needed to compare a name that an OCR space SPLIT
+    inside a token (RUSHAINDRA → "RUSHAIND RA") or GLUED across a real space."""
+    if not s:
+        return []
+    cleaned = _NAME_NOISE.sub(' ', s.lower())
+    return [t for t in re.split(r'[^a-z]+', cleaned) if t]
+
+
+def _glued_equal(a: str, b: str, *, fold: bool) -> bool:
+    """True iff two names reduce to the SAME string once their word-boundaries are removed
+    (order preserved). A spurious OCR space inside a name token, or two tokens glued
+    together, shifts a boundary so the token SETS differ even though the printed name is
+    identical — this comparison is agnostic to that. ``fold=True`` also applies the
+    romanisation folding (cross-document use); ``fold=False`` keeps spelling exact
+    (identity). Pure boundary tolerance — it can only turn a mismatch INTO a match."""
+    def reduce(name: str) -> str:
+        toks = _canonical_name_seq(name)
+        return ''.join(_fold_name_token(t) for t in toks) if fold else ''.join(toks)
+    ra, rb = reduce(a), reduce(b)
+    return bool(ra) and ra == rb
+
+
 def nric_match(extracted: str, profile_nric: str) -> bool:
     """True iff the two NRICs are equal after canonicalisation (digits only)."""
     a, b = _canonical_nric(extracted), _canonical_nric(profile_nric)
@@ -65,6 +89,11 @@ def name_match(extracted: str, profile_name: str) -> str:
         return 'match'
     if a < b or b < a:
         return 'partial'
+    # An OCR space split or glued a name token (RUSHAINDRA ↔ "RUSHAIND RA"), shifting a
+    # boundary so the token sets differ — compare the names glued (spelling-exact for
+    # identity). Strictly boundary tolerance; spelling differences still mismatch.
+    if _glued_equal(extracted, profile_name, fold=False):
+        return 'match'
     return 'mismatch'
 
 
@@ -127,12 +156,19 @@ def relationship_name_match(extracted: str, reference: str) -> str:
         return 'mismatch'
     small, large = (a, b) if len(a) <= len(b) else (b, a)
     used = [False] * len(large)
+    matched = True
     for x in small:
         hit = next((i for i, y in enumerate(large) if not used[i] and _tokens_close(x, y)), None)
         if hit is None:
-            return 'mismatch'
+            matched = False
+            break
         used[hit] = True
-    return 'match' if len(a) == len(b) else 'partial'
+    if matched:
+        return 'match' if len(a) == len(b) else 'partial'
+    # Token-by-token failed: an OCR space split a name token (RUSHAINDRA → "RUSHAIND RA")
+    # or glued two — the boundary moved, so the token sets can't line up. Compare the names
+    # GLUED (folded), which is agnostic to where the spaces fell. Strictly mismatch→match.
+    return 'match' if _glued_equal(extracted, reference, fold=True) else 'mismatch'
 
 
 _NRIC_REGEX = re.compile(r'\b(\d{6}[-\s]?\d{2}[-\s]?\d{4})\b')
