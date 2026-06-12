@@ -603,16 +603,25 @@ class ResolutionItemListView(APIView):
         queries_live = getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False)
         if queries_live:
             sync_check2_queries(app)
-        # The student's Action Centre shows ONLY deliberately-raised items: a reviewer's
-        # (officer) query/doc-request and the AI clarify queries (flag-gated). The system's
-        # OWN verdict gaps are NOT surfaced here — they live on the officer cockpit (the four
-        # cards) for the reviewer to triage. (Owner call 2026-06-10: a mismatched/unreadable
-        # upload must not spawn a duplicate 'system' ticket alongside the reviewer task +
-        # Gopal's coach. 'human' = reviewer-only. ALL Check-2 items (source='check2' —
-        # clarify questions + the pathway confirm) are held until the flag is on.)
-        items = [i for i in app.resolution_items.all()
-                 if i.source != 'system' and i.kind != 'human'
-                 and (queries_live or i.source != 'check2')]
+        # The student's Action Centre shows: a reviewer's (officer) query/doc-request, the
+        # Check-2 student queries (clarify + pathway confirm, source='check2'), AND the
+        # "review assistant" (Check 2) asking for any MISSING compulsory document (a `doc`
+        # system gap — birth cert / offer letter / earner IC / …). All flag-gated.
+        # The uploaded-but-bad system tickets (*_unreadable / *_name_mismatch /
+        # str_not_current) stay HIDDEN — those are reviewer-raised re-uploads, coached inline
+        # by Gopal (the 2026-06-10 duplicate-noise fix). 'human' = reviewer-only.
+        from .resolution import STUDENT_DOC_REQUEST_CODES
+
+        def _student_visible(i):
+            if i.kind == 'human':
+                return False
+            if i.source == 'system':
+                return queries_live and i.code in STUDENT_DOC_REQUEST_CODES
+            if i.source == 'check2':
+                return queries_live
+            return True   # officer items always show
+
+        items = [i for i in app.resolution_items.all() if _student_visible(i)]
         openq = [i for i in items if i.status == 'open']
         resolved = [i for i in items if i.status == 'resolved'][:10]
         return Response({

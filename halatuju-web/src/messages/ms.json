@@ -1562,6 +1562,8 @@
       "percentComplete": "{pct}% Lengkap",
       "toDo": "Untuk dibuat",
       "done": "Selesai",
+      "fromAssistant": "Daripada pembantu semakan kami",
+      "fromReviewer": "Daripada penyemak anda",
       "upload": "Muat naik",
       "uploading": "Memuat naik…",
       "uploadError": "Maaf, muat naik itu tidak berjaya. Sila cuba lagi.",

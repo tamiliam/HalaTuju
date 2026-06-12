@@ -72,6 +72,17 @@ CODE_TO_TICKET = {
     # from the student queue, so only the officer ever saw it.)
 }
 
+# The "review assistant" (Check 2) asks the STUDENT to upload any MISSING compulsory
+# document — birth cert, offer letter, earner IC, results slip, etc. These `doc`/`_missing`
+# system tickets ARE surfaced in the Action Centre (flag-gated) with an Upload button.
+# The uploaded-but-bad cases (`*_unreadable` / `*_name_mismatch` / `str_not_current`) are
+# NOT here: those are reviewer-raised re-uploads, coached inline by Gopal — surfacing them
+# as separate system tickets is the duplicate noise removed on 2026-06-10. (check2-design
+# §4: `doc` is a first-class Check-2 student kind.)
+STUDENT_DOC_REQUEST_CODES = frozenset(
+    code for code, spec in CODE_TO_TICKET.items()
+    if spec.get('kind') == 'doc' and code.endswith('_missing'))
+
 
 def _ticketable_unresolved(application):
     """{code: {fact, params}} for every unresolved verdict item that maps to a
