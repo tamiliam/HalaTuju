@@ -39,14 +39,20 @@ const canonicalNameTokens = (s: string): Set<string> => {
   if (!s) return new Set()
   return new Set(s.toLowerCase().replace(NAME_NOISE, ' ').split(/[^a-z]+/).filter(Boolean))
 }
+/** The name's words glued back in order (boundaries removed) — agnostic to an OCR space
+ *  that split a token (RUSHAINDRA → "RUSHAIND RA") or glued two. Mirrors backend _glued_equal. */
+const gluedName = (s: string): string =>
+  s.toLowerCase().replace(NAME_NOISE, ' ').split(/[^a-z]+/).filter(Boolean).join('')
 const nameSetsMatch = (a: string, b: string): boolean => {
   const sa = canonicalNameTokens(a)
   const sb = canonicalNameTokens(b)
   if (sa.size === 0 || sb.size === 0) return false
-  if (sa.size !== sb.size) return false
   // Avoid Set iteration (downlevel target issue in this project's tsconfig);
   // Array.from gives a plain string[] which iterates cleanly.
-  return Array.from(sa).every((t) => sb.has(t))
+  if (sa.size === sb.size && Array.from(sa).every((t) => sb.has(t))) return true
+  // Token sets differ — but an OCR space may have just moved a boundary; compare glued.
+  const ga = gluedName(a)
+  return !!ga && ga === gluedName(b)
 }
 
 export default function ScholarshipConsent({

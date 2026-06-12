@@ -214,7 +214,7 @@ class ConsentRedGateTests(TestCase):
         app = self._app_with_doc('str')
         with patch('apps.scholarship.income_engine.student_str_check',
                    return_value={'name_status': 'match', 'nric_status': 'match', 'current_status': 'rejected'}):
-            self.assertIn('income_document_mismatch', document_red_blockers(app))
+            self.assertIn('str_person_mismatch', document_red_blockers(app))
 
     def test_bc_child_mismatch_blocks(self):
         from unittest.mock import patch
@@ -222,7 +222,7 @@ class ConsentRedGateTests(TestCase):
         app = self._app_with_doc('birth_certificate')
         with patch('apps.scholarship.income_engine.student_bc_check',
                    return_value={'child_status': 'mismatch', 'mother_status': 'match', 'father_status': 'match'}):
-            self.assertIn('income_document_mismatch', document_red_blockers(app))
+            self.assertIn('birth_cert_person_mismatch', document_red_blockers(app))
 
     def test_offer_pathway_clash_is_soft_not_gated(self):
         from unittest.mock import patch
