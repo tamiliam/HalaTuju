@@ -1,8 +1,8 @@
 # Roadmap — Course-Data Freshness Pipeline
 
-**Status:** APPROVED + IN PROGRESS. **Sprint 1 SHIPPED & LIVE 2026-06-13.** `NEXT = Sprint 2` (catalogue-wide
-link-checker + freshness audit) — do when the owner picks it up. Decomposed via `implementation-planning.md`.
-**Owner decision still needed before Sprint 4** (degree candidate-category completeness — worth it or not?).
+**Status:** APPROVED + IN PROGRESS. **Sprints 1 & 2 SHIPPED & LIVE 2026-06-13.** `NEXT = Sprint 3` (post-SPM catalogue
+via e-Panduan `jenprog=spm` — the big win, de-risked by the spike) — do when the owner picks it up. Decomposed via
+`implementation-planning.md`. **Owner decision still needed before Sprint 4** (degree candidate-category completeness).
 
 ## Why this exists
 Course data is accurate only at a point in time — offerings, entry requirements, merit
@@ -49,7 +49,7 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
   re-running is idempotent; tests for the wrapper's orchestration + archive naming.
 - **Files:** ~4–6 (1 new command, small archive helper, test, doc).
 
-### Sprint 2 — Catalogue-wide link-checker + freshness audit  ·  *complexity: low*
+### Sprint 2 — Catalogue-wide link-checker + freshness audit  ·  *complexity: low*  ·  ✅ **BUILT 2026-06-13 (branch `feature/validate-course-urls`; pending owner-gated deploy)** — `validate_course_urls` (HTTP reachability) + `audit_data` LINK HEALTH section. NOTE: chose option (A) — **no `last_verified` field/migration**; freshness is audit-run-derived.
 - **Goal:** Detect dead links and stale records across the **whole** catalogue (SPM + STPM),
   regardless of source.
 - **Scope:** generalise `validate_stpm_urls` to cover `Course`/`CourseInstitution` hyperlinks;

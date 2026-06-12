@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Catalogue-wide link reachability check + audit link-health (course-data pipeline Sprint 2; no migration).** Extends
+  link validation beyond STPM to the **SPM/post-SPM catalogue**. New `validate_course_urls` checks the distinct external
+  URLs on `Institution.url` + `CourseInstitution.hyperlink` (deduped) with a lightweight HTTP GET (**stdlib `urllib` — no
+  new dependency, no browser**), classifying each alive / dead (404/410/5xx) / error (timeout/DNS/SSL — transient, never
+  auto-fixed); `--fix` clears confirmed-dead URLs, `--limit`/`--timeout` for control. Complements `validate_stpm_urls`
+  (Selenium, content-aware): this answers "is the link reachable", the STPM one "does MOHE still list this programme" —
+  HTTP status can't detect a server-rendered portal that 200s on a dead page (documented). `audit_data` gains a **LINK
+  HEALTH** section (distinct external URL counts per catalogue + how to check liveness) — the audit-derived freshness
+  signal (no per-row `last_verified` this sprint). +10 pytest (check_url classification, report counts, dry-run vs --fix,
+  limit, audit section).
 - **Course-data refresh wrapper + dated archive + annual reminder (course-data pipeline Sprint 1; no migration).** Turns
   the fragile multi-step STPM/UPU refresh into one auditable command. New `refresh_stpm` management command orchestrates
   `scrape_mohe_stpm` (sanity-checked) → optional `validate_stpm_urls` → `sync_stpm_mohe` (**dry-run by default**) →
