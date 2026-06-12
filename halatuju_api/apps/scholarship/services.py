@@ -517,17 +517,23 @@ def send_due_query_emails(now=None):
                   profile_completed_at__isnull=False, profile_completed_at__lte=cutoff,
                   query_raised_notified_at__isnull=True)
           .select_related('cohort', 'profile'))
+    from .resolution import STUDENT_DOC_REQUEST_CODES
     for app in qs:
-        # Every open Check-2 student query counts — the clarify questions AND the one-tap
-        # pathway confirm — so a student whose only open item is "confirm your final course"
-        # is still told to check their Action Centre.
+        # Every open thing the student must act on counts — the Check-2 clarify questions +
+        # the one-tap pathway confirm (sync_check2_queries) AND the "review assistant"
+        # missing-compulsory-document requests (a `doc` system gap, created at submit by
+        # confirm_profile). So a student whose only open item is "upload your birth
+        # certificate" is still told to check their Action Centre.
         queries = list(sync_check2_queries(app))
-        if not queries:
+        doc_requests = app.resolution_items.filter(
+            source='system', status='open', code__in=STUDENT_DOC_REQUEST_CODES).count()
+        n_open = len(queries) + doc_requests
+        if n_open == 0:
             continue
         name = getattr(app.profile, 'name', '') if app.profile else ''
         send_query_raised_email(
             to_email=app.notify_email, applicant_name=name,
-            programme_name=app.cohort.name, n_queries=len(queries), lang=app.locale)
+            programme_name=app.cohort.name, n_queries=n_open, lang=app.locale)
         app.query_raised_notified_at = now
         app.save(update_fields=['query_raised_notified_at'])
         sent += 1
@@ -687,7 +693,11 @@ def confirm_profile(application):
                                    programme_name=application.cohort.name, lang=application.locale)
     try:
         from .check2_queries import sync_check2_queries
+        from .resolution import sync_resolution_items
         sync_check2_queries(application)
+        # Also materialise the system gaps NOW (missing-compulsory-doc requests etc.) so the
+        # delayed query email can count them — the "review assistant" asks for them too.
+        sync_resolution_items(application)
     except Exception:  # noqa: BLE001 — query raising must never fail a submission
         import logging
         logging.getLogger(__name__).warning(
