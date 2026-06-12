@@ -1229,6 +1229,9 @@
         "unreadable": "Kami tidak dapat membaca gambar secara automatik — tidak mengapa, pasukan akan menyemak secara manual.",
         "note": "Hanya petunjuk — pasukan sentiasa menyemak dokumen anda."
       },
+      "genuineness": {
+        "note": "Ini tidak kelihatan seperti dokumen rasmi yang tulen. Sila muat naik semula foto atau imbasan dokumen sebenar yang jelas. Tiada apa-apa disekat."
+      },
       "icCheck": {
         "icNo": "No. KP",
         "name": "Nama",
@@ -2596,6 +2599,10 @@
           "fact": "Kad pengenalan ibu bapa/penjaga tidak kelihatan seperti foto MyKad fizikal (berkemungkinan teks taip, cetakan, atau tangkapan skrin).",
           "question": "Imej IC ibu bapa/penjaga tidak kelihatan seperti kad tulen — sahkan kad fizikal semasa temu duga."
         },
+        "document_not_genuine": {
+          "fact": "Dokumen {doc} yang dimuat naik tidak kelihatan seperti dokumen rasmi yang tulen — ia kelihatan seperti: {seen}.",
+          "question": "Dokumen {doc} mungkin bukan dokumen asal yang tulen (ia kelihatan seperti {seen}) — minta untuk melihat dokumen rasmi semasa temu duga."
+        },
         "first_in_family_with_siblings_studying": {
           "fact": "Pelajar mendakwa pertama ke universiti, tetapi {count} adik-beradik sedang belajar.",
           "question": "Anda akan menjadi yang pertama dalam keluarga ke universiti, tetapi {count} adik-beradik juga sedang belajar — adakah mereka masih bersekolah, atau sudah di universiti?"
@@ -2728,6 +2735,8 @@
           "unverifiable": "Tidak dapat disahkan"
         },
         "item": {
+          "ic_low_confidence": "Kad pengenalan mungkin bukan foto MyKad fizikal yang tulen — sahkan kad semasa temu duga.",
+          "document_not_genuine": "Dokumen ini mungkin bukan dokumen asal rasmi yang tulen — sahkan semasa temu duga.",
           "nric_match": "Nombor KP sepadan dengan kad pengenalan ({nric}).",
           "name_match": "Nama sepadan merentas dokumen.",
           "name_resolved_truncation": "Nama disahkan melalui NRIC — nama bercetak pada IC terbaca pendek (“{ocr_name}”), bentuk ringkas bagi nama yang ditaip “{profile_name}”.",
