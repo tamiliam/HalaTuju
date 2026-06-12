@@ -107,6 +107,7 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.filter(assigned_to=admin)   # reviewer sees only their assigned applicants
         status_f = request.GET.get('status')
         bucket_f = request.GET.get('bucket')
+        source_f = request.GET.get('source')   # referring org chosen at apply
         assigned_f = request.GET.get('assigned')
         q = (request.GET.get('q') or '').strip()
         if q:
@@ -117,6 +118,8 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.filter(status=status_f)
         if bucket_f:
             qs = qs.filter(bucket=bucket_f)
+        if source_f:
+            qs = qs.filter(profile__referral_source=source_f)
         # Phase C: ?assigned=me|none|<admin_id>
         if assigned_f == 'me':
             qs = qs.filter(assigned_to=admin)

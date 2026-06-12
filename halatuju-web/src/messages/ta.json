@@ -2323,6 +2323,7 @@
       "showingRange": "{total} விண்ணப்பங்களில் {start}–{end} காட்டப்படுகிறது",
       "allStatuses": "அனைத்து நிலைகள்",
       "allBuckets": "அனைத்து வகைகள்",
+      "allSources": "அனைத்து மூலங்கள்",
       "allAssignees": "யாராக இருந்தாலும்",
       "assignedToMe": "எனக்கு ஒதுக்கப்பட்டது",
       "unassigned": "ஒதுக்கப்படவில்லை",
