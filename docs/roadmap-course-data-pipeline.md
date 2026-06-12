@@ -57,25 +57,30 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
   "stale/last-verified" section; tests for the checker + audit additions.
 - **Files:** ~4–6.
 
-### Sprint 3 — UPU pipeline (part 1): scrape + course-list sync  ·  *complexity: high*  ·  **riskiest — DOM spike first**
-- **Goal:** Acquire the course **listing** for Asasi + Politeknik + UA + Kolej Komuniti from UPU
-  and sync it into `Course`/`CourseInstitution` with the safety guards.
-- **Scope:** spike the UPU portal DOM first (the main unknown); a `scrape_upu` command (mirrors
-  `scrape_mohe_stpm`, inherits `scrape_shortfall`); a `sync_upu` command (mirrors `sync_stpm_mohe`,
-  inherits the mass-deactivation guard); map UPU fields → existing models. Extract a shared
-  scrape/sync base if a clean one emerges.
-- **Acceptance:** dry-run report of new/removed/changed for the 4 pathways; `--apply` guarded;
-  scrape fails on shortfall; tests; a real scrape of the live UPU portal validates the parser.
-- **Files:** ~8–12. **Split into 3a (spike+scrape) / 3b (sync) if it overflows.**
+### Sprint 3 — Post-SPM catalogue via e-Panduan `jenprog=spm`  ·  *complexity: medium*  ·  **(was 2 high sprints — collapsed after the 2026-06-12 spike)**
+- **SPIKE RESULT (confirmed live):** e-Panduan exposes exactly two `jenprog` values — `stpm` and
+  **`spm`**. The `spm` branch (Asasi/diploma/cert at Poly/KK/UA) is **2 categories** (`A` current-year
+  = 363 programmes, `B` past-year) and uses the **identical card structure** the existing scraper
+  already parses (`KOD PROGRAM`, `TAHUN`, `PURATA MARKAH MERIT`). So this is an **extension of the
+  existing scraper, not a new build**.
+- **Goal:** Acquire the SPM-leaver catalogue (Asasi + Politeknik + UA + Kolej Komuniti diploma/cert)
+  and sync it into `Course`/`CourseRequirement`/`CourseInstitution` with the safety guards.
+- **Scope:** parameterise `scrape_mohe_stpm` for `jenprog` + categories (add `spm` A/B); a sync that
+  mirrors `sync_stpm_mohe` (inherits the mass-deactivation guard); map fields → existing models;
+  **reuse the existing `Settings/_tools/stpm_requirements/` parser** for the per-programme requirement
+  detail pages (same portal HTML — confirm parity, then load with the parse+validate discipline).
+- **Acceptance:** dry-run report (new/removed/changed) for the SPM-leaver set; `--apply` guarded;
+  scrape fails on shortfall; requirements load with <2% parse warnings; tests; a real scrape validates.
+- **Files:** ~8–12. Split scrape/sync vs requirements if it overflows.
 
-### Sprint 4 — UPU pipeline (part 2): entry-requirements parse + load  ·  *complexity: high*
-- **Goal:** Acquire and load **entry requirements** for the UPU pathways (the high-stakes data the
-  eligibility engine depends on), with the parse + validate discipline of the STPM requirements tool.
-- **Scope:** parse UPU requirement blocks → structured form; validate (completeness, grade validity)
-  before load; load into `CourseRequirement`; spot-check against the engine's golden master.
-- **Acceptance:** requirements load with <2% parse warnings; validation passes; golden-master diff
-  reviewed; tests on the parser + validator.
-- **Files:** ~8–12.
+### Sprint 4 (optional) — Degree candidate-category completeness  ·  *complexity: medium*
+- **From the spike:** the `jenprog=stpm` (degree) branch has ~20 candidate categories but the scraper
+  reads only 2 (S, A). The rest — **Matrikulasi** (N/J/P), **Asasi** (K/M/V), **STAM** (T), **Diploma**
+  (G1/G2/E1/E2) — are on the same portal, unscraped.
+- **Goal:** Scrape the remaining candidate categories to sharpen **degree eligibility/merit for
+  non-STPM applicants** (matric/asasi/STAM/diploma holders). Distinct value stream from Sprint 3.
+- **Trigger:** do after Sprint 3, only if improving non-STPM degree-eligibility accuracy is a priority.
+- **Files:** ~5–8 (mostly the same parameterised scraper + per-category merit handling).
 
 ### Sprint 5 (optional, deferred) — Matrikulasi + PISMP + UPTVET scrapers  ·  *complexity: medium each*
 - **Goal:** Thin source-specific scrapers on the Sprint 3 base for the remaining structured pathways.
@@ -94,6 +99,11 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
   on-demand. Institution metadata stays manual (no sprint).
 
 ## Open questions for the owner
-1. UPU portal: is it a single listing per pathway (like ePanduan) or per-institution? (affects Sprint 3 size)
-2. Do you want Sprint 1's annual reminder as a real `/schedule`, and to which date?
-3. Any pathway where staleness already worries you (would re-prioritise Sprint 5)?
+1. ~~UPU portal structure~~ — **RESOLVED (spike 2026-06-12):** it's MOHE e-Panduan, one portal,
+   `jenprog=spm` (2 categories) for the whole post-SPM catalogue; same parser as STPM. Sprint 3
+   shrank from 2 high sprints to 1 medium.
+2. Do you want Sprint 1's annual reminder as a real `/schedule`, and to which date (≈ Dec–Jan, before
+   the UPU window — see the source inventory)?
+3. Any pathway where staleness already worries you (would re-prioritise)?
+4. Sprint 4 (degree candidate-category completeness) — worth doing, or is STPM-only degree eligibility
+   acceptable for now?
