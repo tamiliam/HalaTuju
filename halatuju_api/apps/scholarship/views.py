@@ -493,8 +493,12 @@ class DocumentListCreateView(APIView):
                 doc, names=names, postcode=postcode, city=city, street=street,
                 check_address=check_address, ocr=ocr)
             if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
+                # force=True: this is the ONE document the student just uploaded in
+                # response to a request — always read it now, even if the hourly
+                # doc-assist cap is hit. A deferred read here is exactly what let an
+                # unscanned re-upload greenlight its task (see resolution.doc_match_verdict).
                 self._maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city, street,
-                                           check_address, match, _settings)
+                                           check_address, match, _settings, force=True)
         # P1 (Check 2): the letter of intent — OCR its plain text so the submission
         # review can read motivation. No matching/extraction, just the text. Soft.
         elif doc.doc_type in TEXT_READ_DOC_TYPES:
@@ -524,9 +528,15 @@ class DocumentListCreateView(APIView):
         return Response(data, status=status.HTTP_201_CREATED)
 
     @staticmethod
-    def _maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city, street, check_address, match, _settings):
+    def _maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city, street, check_address, match, _settings, force=False):
         """Run Gemini doc-assist if the cost knob + hourly throttle allow; otherwise
-        mark 'review_manually'. Never blocks the upload."""
+        mark 'review_manually'. Never blocks the upload.
+
+        ``force=True`` (the interactive upload) bypasses BOTH the cost knob and the
+        hourly cap and always reads the document — so the file the student just
+        submitted is scanned before its accept/keep-open verdict is computed, never
+        deferred to a 'review_manually' state that would greenlight an unread doc.
+        Abuse is still bounded by the per-request UploadRateThrottle + MAX_DOCS_PER_APPLICATION."""
         from datetime import timedelta
         from django.utils import timezone
         uncertain = (match.get('name_match') in ('not_found', 'unreadable')
@@ -535,11 +545,11 @@ class DocumentListCreateView(APIView):
         # fields (child/mother names), which a name-presence "found" wouldn't surface. Never
         # let the cost knob skip them.
         always = doc.doc_type in RELATIONSHIP_DOC_TYPES
-        if getattr(_settings, 'DOC_ASSIST_ONLY_WHEN_UNCERTAIN', False) and not uncertain and not always:
+        if not force and getattr(_settings, 'DOC_ASSIST_ONLY_WHEN_UNCERTAIN', False) and not uncertain and not always:
             return  # clean upload + knob on → skip the billable call
         recent = ApplicantDocument.objects.filter(
             application=app, vision_fields_run_at__gte=timezone.now() - timedelta(hours=1)).count()
-        if recent >= getattr(_settings, 'DOC_ASSIST_RATE_LIMIT_PER_HOUR', 15):
+        if not force and recent >= getattr(_settings, 'DOC_ASSIST_RATE_LIMIT_PER_HOUR', 15):
             doc.vision_fields = {'fields': {}, 'warnings': [],
                                  'student_verdict': 'review_manually', 'error': 'rate_limited'}
             doc.vision_fields_run_at = timezone.now()

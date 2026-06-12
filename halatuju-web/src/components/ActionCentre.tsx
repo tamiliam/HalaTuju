@@ -92,6 +92,10 @@ function ActionCard({
   // hold the uploaded doc so Cikgu Gopal can advise inline — the same contextual coach
   // as the Documents tab. Cleared on a clean upload (the card then unmounts on refresh).
   const [coachDoc, setCoachDoc] = useState<ApplicantDocument | null>(null)
+  // A rare 'pending' verdict — the upload arrived but its scan hasn't finished (a true
+  // read failure; the interactive upload normally reads synchronously). The task stays
+  // open; we reassure calmly rather than showing Gopal's "this is wrong" coach.
+  const [stillChecking, setStillChecking] = useState(false)
   // Phase 2: when a typed answer comes back judged TOTALLY off-topic, Gopal's gentle
   // one-line steer; the task stays open. Cleared as soon as the student edits the text.
   const [nudge, setNudge] = useState<string | null>(null)
@@ -110,7 +114,14 @@ function ActionCard({
         { doc_type: item.doc_type, storage_path, original_filename: file.name, content_type: file.type, size: file.size },
         { token },
       )
-      setCoachDoc(doc.match_verdict && doc.match_verdict !== 'ok' ? doc : null)
+      if (doc.match_verdict === 'pending') {
+        // Not scanned yet — hold the task open, reassure (no red coach).
+        setStillChecking(true)
+        setCoachDoc(null)
+      } else {
+        setStillChecking(false)
+        setCoachDoc(doc.match_verdict && doc.match_verdict !== 'ok' ? doc : null)
+      }
       onResolved()
     } catch {
       setError(t('scholarship.actionCentre.uploadError'))
@@ -216,6 +227,11 @@ function ActionCard({
                     didn't pass its scan; advises the fix, then the student re-uploads. */}
                 {coachDoc && (
                   <DocumentHelpCoach doc={coachDoc} token={token} t={t} lang={locale} />
+                )}
+                {/* Rare: the upload landed but its scan hasn't finished yet — keep the task
+                    open and reassure, rather than ticking it Done on an unchecked file. */}
+                {stillChecking && (
+                  <p className="mt-3 text-sm text-gray-500">{t('scholarship.actionCentre.stillChecking')}</p>
                 )}
               </>
             )}
