@@ -518,13 +518,16 @@ def send_due_query_emails(now=None):
                   query_raised_notified_at__isnull=True)
           .select_related('cohort', 'profile'))
     for app in qs:
-        clarify = [r for r in sync_check2_queries(app) if r.kind == 'clarify']
-        if not clarify:
+        # Every open Check-2 student query counts — the clarify questions AND the one-tap
+        # pathway confirm — so a student whose only open item is "confirm your final course"
+        # is still told to check their Action Centre.
+        queries = list(sync_check2_queries(app))
+        if not queries:
             continue
         name = getattr(app.profile, 'name', '') if app.profile else ''
         send_query_raised_email(
             to_email=app.notify_email, applicant_name=name,
-            programme_name=app.cohort.name, n_queries=len(clarify), lang=app.locale)
+            programme_name=app.cohort.name, n_queries=len(queries), lang=app.locale)
         app.query_raised_notified_at = now
         app.save(update_fields=['query_raised_notified_at'])
         sent += 1

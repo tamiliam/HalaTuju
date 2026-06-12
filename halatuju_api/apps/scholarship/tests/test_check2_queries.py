@@ -133,3 +133,75 @@ class TestUtilityClarifyQueries(_Base):
         item.refresh_from_db()
         self.assertEqual(item.status, 'resolved')
         self.assertEqual(item.resolved_by, 'system')
+
+
+class TestPathwayConfirmQuery(_Base):
+    """The offer-vs-declared clash confirmation ("is this offer your final course?"),
+    routed through Check 2 (source='check2', kind='confirm') so the flag governs it and it
+    rides the query email — instead of being a hidden source='system' verdict item."""
+
+    _OFFER = {'candidate_name': 'Priya Devi', 'candidate_nric': '030101141234',
+              'programme': 'Tingkatan Enam', 'institution': 'SMK Temerloh'}
+
+    def _add_offer(self, **over):
+        from apps.scholarship.models import ApplicantDocument
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type='offer_letter', storage_path=f'{self.app.id}/offer/x',
+            vision_fields={'fields': {**self._OFFER, **over}, 'student_verdict': 'ok',
+                           'warnings': [], 'error': ''},
+            vision_run_at=timezone.now())
+
+    def _clash(self):
+        self.app.pre_u_institution = 'SMK Mentakab'   # declared a genuinely different school
+        self.app.save()
+        self._add_offer()
+
+    def test_clash_creates_check2_confirm(self):
+        self._clash()
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='pathway_confirm')
+        self.assertEqual(item.source, 'check2')   # NOT 'system' → it reaches the student
+        self.assertEqual(item.kind, 'confirm')
+        self.assertEqual(item.status, 'open')
+        self.assertEqual(item.params.get('institution'), 'SMK Temerloh')
+
+    def test_no_confirm_without_clash(self):
+        # Offer agrees with the declared school → nothing to confirm.
+        self.app.pre_u_institution = 'SMK Temerloh'
+        self.app.save()
+        self._add_offer()
+        sync_check2_queries(self.app)
+        self.assertFalse(self.app.resolution_items.filter(code='pathway_confirm').exists())
+
+    def test_confirm_is_outside_the_clarify_cap(self):
+        # All four clarify gaps PLUS a clash → the confirm is extra, never eats a slot.
+        self.app.field_of_study = ''
+        self.app.siblings_in_tertiary = None
+        self.app.siblings_studying_count = 2
+        self._clash()
+        sync_check2_queries(self.app)
+        self.assertEqual(self.app.resolution_items.filter(kind='clarify').count(), MAX_CLARIFY)
+        self.assertTrue(self.app.resolution_items.filter(
+            code='pathway_confirm', kind='confirm').exists())
+
+    def test_confirm_auto_resolves_once_settled(self):
+        self._clash()
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='pathway_confirm')
+        self.assertEqual(item.status, 'open')
+        # The student confirms (or a matching offer arrives) → no more clash.
+        self.app.pathway_confirmed_at = timezone.now()
+        self.app.save()
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+        self.assertEqual(item.resolved_by, 'system')
+
+    def test_not_created_as_a_system_item(self):
+        # sync_resolution_items (the verdict→system path) must NOT make a pathway_confirm —
+        # it moved to Check 2, so a duplicate would otherwise appear.
+        from apps.scholarship.resolution import sync_resolution_items
+        self._clash()
+        sync_resolution_items(self.app)
+        self.assertFalse(self.app.resolution_items.filter(
+            source='system', code='pathway_confirm').exists())
