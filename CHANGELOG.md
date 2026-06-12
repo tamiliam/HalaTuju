@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Unread uploads no longer greenlight their Action-Centre task + the income request names the exact document (no migration).**
+  Two live-testing fixes. **(1) Upload race.** A re-uploaded document could auto-close its task before its scan finished:
+  `resolution.doc_match_verdict` treated a not-yet-read doc as `'ok'` (accept), so under the hourly doc-assist cap (hit
+  during heavy testing) a deferred/`review_manually` read greenlit the task — a wrong/blurry re-upload satisfied an
+  officer's "this is unclear, send a better one" request. Fix: `doc_match_verdict` now returns a distinct `'pending'`
+  (keep the task open) for an unscanned doc — results-slip name/subjects not read, an **unreadable subject table** (not
+  just the name — the gap that let a wrong slip through), and an `ic`/`parent_ic` whose Vision scan hasn't run. The
+  interactive upload also **force-reads** the just-submitted file past the cap (`views._maybe_extract_fields force=True`),
+  so it's scanned before its verdict. FE shows a calm "still checking" note on `'pending'`, never Gopal's error coach.
+  **(2) Exact income document.** `income_proof_missing` only ever fires on the STR route, but its student/officer/consent
+  copy generically said "salary slip, EPF, or STR" — inviting a wrong upload that gets filed as an STR and silently
+  fails. Reworded to name the STR (Sumbangan Tunai Rahmah) specifically (en/ms/ta, Tamil first-draft). Verified on prod
+  #16 (STR route). +9 scholarship pytest (1156 total); 303 jest; parity 2543×3; next build clean.
 - **Name matching is now OCR-boundary-agnostic + income-doc blockers name the specific document (systemic, no migration).**
   A real applicant (#31) was blocked at consent: her mother's salary slip OCR'd `RUSHAINDRA` as `RUSHAIND RA` (a spurious
   space), so the salary-slip-vs-earner-IC name check failed → `income_document_mismatch` in `consent_blockers` →

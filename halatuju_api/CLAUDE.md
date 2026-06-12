@@ -445,6 +445,26 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-12)
 
+**▶ JUST SHIPPED 2026-06-12 — upload-race fix + exact income-doc request (NO migration; on `main` `a38f484`; retro
+`docs/retrospective-upload-race-and-income-request.md`).** (1) `resolution.doc_match_verdict` now returns a distinct
+`'pending'` (hold the task) for a NOT-YET-SCANNED doc instead of `'ok'` — closes the race where an unread re-upload
+(deferred/`review_manually` under the hourly doc-assist cap, hit in heavy testing) auto-closed its task before the scan
+finished; covers results-slip name/subjects + unreadable subject-table (not just the name) + `ic`/`parent_ic` with no
+`vision_run_at`. The interactive upload force-reads the just-submitted file past the cap (`views._maybe_extract_fields
+force=True`); `resolve_doc_items_for_upload` only closes on `'ok'`. FE shows a calm "still checking" note on `'pending'`.
+(2) `income_proof_missing` (STR-route-ONLY, `verdict_engine._verdict_income`) copy now names the STR (Sumbangan Tunai
+Rahmah) specifically in en/ms/ta — student Action Centre + officer cockpit + consent blocker — instead of the generic
+"salary slip, EPF, or STR" that invited a wrong upload (str-typed Upload button files any pick as `doc_type='str'`).
+1156 scholarship pytest + 303 jest + parity 2543×3 + next build clean. Verified on prod #16 (STR route, earner mother).
+
+**▶ NEXT (owner-approved, design next) — student self-serve income ROUTE-SWITCH.** A submitted student on the STR route
+with no STR has NO exit today (form locked post-submit, `income_route` only editable while `shortlisted`, no switch
+endpoint). Build: an "I don't have an STR — prove my income another way" action in the Action Centre that re-runs the
+income mini-wizard post-submit, flips `income_route` (+ `income_earner`/`income_working_members`), recomputes
+`income_engine.income_requirements` → the alternative route's doc tickets appear. Needs a post-submit income-route
+endpoint + an Action-Centre UI (**Stitch-first, per discipline**). Driver = student self-serve (owner's call). Fold in
+the Tamil refine of the 4 new 2026-06-12 strings (`income_proof_missing` ×3 surfaces + `actionCentre.stillChecking`).
+
 **▶ MERGED TO `main` 2026-06-12 — NOT YET PUSHED/DEPLOYED (owner gates the deploy). Live-review backlog #1–#9, two
 sprints, NO migration. Retros `docs/retrospective-cockpit-school-ux.md` + `docs/retrospective-verification-soft-signals.md`.**
 **Sprint A (#1–#7, FE+i18n):** guided optional school in onboarding (#1) + editable in profile above Angka Giliran (#3),

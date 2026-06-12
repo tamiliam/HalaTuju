@@ -695,7 +695,10 @@
   mismatch/unreadable using the same status sets, so they must be kept in lockstep (the Action Centre and the consent
   gate must agree on a document). **To resolve:** extract one shared per-doc helper (e.g. `income_engine`/a new
   `doc_verdicts` module) that both call, when either is next touched. Low priority (a paired comment + the cross-check
-  is the current mitigation). (Logged 2026-06-10, Action Centre.)
+  is the current mitigation). (Logged 2026-06-10, Action Centre.) **Update 2026-06-12:** `doc_match_verdict` now also
+  returns a `'pending'` (not-yet-scanned → hold the task) state that the consent-gate blockers don't have — by design
+  (the pre-submit gate's wizard is still open), but a future shared helper must keep the `'pending'` branch on the
+  Action-Centre side only.
 - TD-111: **Check-2 student-query coverage — the anomaly engine detects more than the clarify generator can ask, so
   student-answerable issues are silently dropped.** Check-2's student clarify questions come from a FIXED 4-item list
   (`check2_queries.CLARIFY_SPECS`: course/sibling/device/transport) tied to STEP-1 completeness gaps; the
