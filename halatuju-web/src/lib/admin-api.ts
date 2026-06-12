@@ -567,6 +567,7 @@ export async function getScholarshipApplications(
   filters: {
     status?: string
     bucket?: string
+    source?: string
     assigned?: string
     q?: string
     page?: number
@@ -577,6 +578,7 @@ export async function getScholarshipApplications(
   const q = new URLSearchParams()
   if (filters.status) q.set('status', filters.status)
   if (filters.bucket) q.set('bucket', filters.bucket)
+  if (filters.source) q.set('source', filters.source)
   if (filters.assigned) q.set('assigned', filters.assigned)
   if (filters.q) q.set('q', filters.q)
   if (filters.page && filters.page > 1) q.set('page', String(filters.page))

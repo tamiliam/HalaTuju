@@ -12,6 +12,7 @@ import {
   type AdminScholarshipListData,
 } from '@/lib/admin-api'
 import { Pagination } from '@/components/Pagination'
+import { REFERRING_ORG_OPTIONS } from '@/lib/scholarship'
 
 const bucketBadge = (b: string) =>
   b === 'A' ? 'bg-green-100 text-green-700'
@@ -43,6 +44,7 @@ export default function AdminScholarshipList() {
   const [assignNote, setAssignNote] = useState<Record<number, string>>({})
   const [bucket, setBucket] = useState('')
   const [statusF, setStatusF] = useState('')
+  const [source, setSource] = useState('')
   const [assignedF, setAssignedF] = useState('')
   const [search, setSearch] = useState('')
   const [q, setQ] = useState('') // debounced value actually sent to the API
@@ -67,6 +69,7 @@ export default function AdminScholarshipList() {
       {
         bucket: bucket || undefined,
         status: statusF || undefined,
+        source: source || undefined,
         assigned: assignedF || undefined,
         q: q || undefined,
         page,
@@ -78,7 +81,7 @@ export default function AdminScholarshipList() {
       .catch(() => setError(t('admin.scholarship.loadFailed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, bucket, statusF, assignedF, q, page, pageSize])
+  }, [token, bucket, statusF, source, assignedF, q, page, pageSize])
 
   const apps = data?.applications ?? []
 
@@ -152,14 +155,18 @@ export default function AdminScholarshipList() {
             className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
-        <select value={statusF} onChange={(e) => changeFilter(setStatusF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
-          <option value="">{t('admin.scholarship.allStatuses')}</option>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+        <select value={source} onChange={(e) => changeFilter(setSource)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+          <option value="">{t('admin.scholarship.allSources')}</option>
+          {REFERRING_ORG_OPTIONS.map((code) => <option key={code} value={code}>{t(`scholarship.apply.org.${code}`)}</option>)}
         </select>
         <select value={bucket} onChange={(e) => changeFilter(setBucket)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allBuckets')}</option>
           <option value="A">Bucket A</option>
           <option value="B">Bucket B</option>
+        </select>
+        <select value={statusF} onChange={(e) => changeFilter(setStatusF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+          <option value="">{t('admin.scholarship.allStatuses')}</option>
+          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <select value={assignedF} onChange={(e) => changeFilter(setAssignedF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allAssignees')}</option>

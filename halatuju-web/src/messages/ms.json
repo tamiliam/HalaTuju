@@ -2323,6 +2323,7 @@
       "showingRange": "Papar {start}–{end} daripada {total} permohonan",
       "allStatuses": "Semua status",
       "allBuckets": "Semua kategori",
+      "allSources": "Semua sumber",
       "allAssignees": "Sesiapa sahaja",
       "assignedToMe": "Ditugaskan kepada saya",
       "unassigned": "Belum ditugaskan",
