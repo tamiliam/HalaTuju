@@ -1,7 +1,8 @@
 # Roadmap — Course-Data Freshness Pipeline
 
-**Status:** DRAFT, pending owner approval (2026-06-12). Decomposed via `implementation-planning.md`.
-**Owner decision needed before Sprint 3.** Do not begin Sprint 1 until this roadmap is approved.
+**Status:** APPROVED + IN PROGRESS. **Sprint 1 SHIPPED & LIVE 2026-06-13.** `NEXT = Sprint 2` (catalogue-wide
+link-checker + freshness audit) — do when the owner picks it up. Decomposed via `implementation-planning.md`.
+**Owner decision still needed before Sprint 4** (degree candidate-category completeness — worth it or not?).
 
 ## Why this exists
 Course data is accurate only at a point in time — offerings, entry requirements, merit
@@ -39,7 +40,7 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
 
 ## Sprint roadmap
 
-### Sprint 1 — STPM refresh wrapper + dated archive + annual reminder  ·  *complexity: low*  ·  ✅ **BUILT 2026-06-12 (branch `feature/refresh-stpm-wrapper`; pending owner-gated deploy + Cloud Scheduler job)**
+### Sprint 1 — STPM refresh wrapper + dated archive + annual reminder  ·  *complexity: low*  ·  ✅ **SHIPPED & LIVE 2026-06-13** (`main` `b16f7d5`; annual scheduler `halatuju-refresh-reminder` enabled; retro `docs/retrospective-course-data-sprint1.md`)
 - **Goal:** Turn the fragile 5-step STPM refresh into one auditable command with rollback history.
 - **Scope:** new `refresh_stpm` management command (scrape → sanity-check → validate-urls →
   sync dry-run → audit, single summary); date-stamped CSV archive (`mohe_<date>.csv`, keep last N);
