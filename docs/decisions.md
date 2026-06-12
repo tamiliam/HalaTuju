@@ -2568,3 +2568,26 @@ the AI inference behind the SARA→STR false-pass (#63) AND closes the SALINAN-a
 MySTR application copy → `unknown` → `unconfirmed`), both via the existing `_str_currency`
 gate. **Validation:** every parser MUST be checked against REAL OCR/text-layer samples before
 its path is trusted (L86) — STR was validated against 9 live uploads across all four surfaces.
+
+## An unread document holds its task ('pending' ≠ 'ok') — Upload-race fix, 2026-06-12
+**Decision:** `resolution.doc_match_verdict` returns a distinct `'pending'` for a document whose
+scan hasn't actually run (results-slip name/subjects not read; an unreadable subject table; an
+`ic`/`parent_ic` with no `vision_run_at`). `resolve_doc_items_for_upload` only closes a task on
+`'ok'`, so `'pending'` keeps it open. Separately, the interactive upload force-reads the
+just-submitted file past the hourly doc-assist cap (`views._maybe_extract_fields(force=True)`).
+**Alternatives considered:** (a) keep the original D1 "pending → accept" and rely only on the
+force-read to make pending rare — rejected: leaves the greenlight hole whenever a read genuinely
+fails; (b) hard-block on pending with an error coach — rejected: misrepresents a transient
+"still reading" as "your document is wrong"; (c) add a vision_fields pre-check at the top of
+`doc_match_verdict` — rejected: the existing tests mock the per-type check functions (not
+`vision_fields`), and a true OCR-service outage on an IC must still accept so we don't trap a
+student behind our own broken scanner.
+**Rationale:** A verification gate must treat "not yet read" as unknown, not as a pass. The
+force-read makes 'pending' rare at upload; when it does persist (real read failure) holding the
+task is safer than greenlighting an unverified doc, and the reviewer remains the backstop.
+**Trade-offs:** The force-read removes the hourly doc-assist cap for the interactive upload path
+(one Gemini read per upload); abuse stays bounded by `UploadRateThrottle` + `MAX_DOCS_PER_APPLICATION`.
+A rare genuine 'pending' shows a calm "still checking" note and asks the student to refresh.
+**Revisit if:** doc-assist cost becomes material at scale (then cap forced reads at a high
+per-application ceiling), or a background re-read job is added (then 'pending' could auto-resolve
+without the refresh).
