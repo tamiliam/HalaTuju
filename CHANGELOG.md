@@ -34,6 +34,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   band (overtime / late-pay safe). i18n en/ms/ta: anomaly ×3, Check-2 query ×2, admin summary ×2. Gates: 1104 scholarship
   pytest (+23), actionCentre jest 23, `next build` clean, parity 2512×3. See `docs/retrospective-verification-soft-signals.md`.
 
+### Changed
+- **Course-data pipeline safety guards — a bad scrape can no longer wipe the STPM catalogue (no migration).** Two P0
+  guards from the pipeline audit. (1) `scrape_mohe_stpm` now **fails loudly** if it scraped >5% fewer programmes than
+  MOHE's own reported "daripada N" total — catching a silent DOM-change that returns partial/zero cards (the CSV is still
+  written for inspection; `--allow-partial` overrides). (2) `sync_stpm_mohe --apply` now **refuses** to deactivate more
+  than 10% of a non-trivial active catalogue (>=50 courses) — the signature of a partial scrape making most courses look
+  "removed"; `--force` overrides after the operator verifies a large removal is real. Previously a fully-broken scrape
+  (0 rows) would have deactivated the entire student-facing STPM catalogue with only the dry-run report as a human
+  safeguard. +7 pytest (mass-deactivation aborts, `--force` overrides, small change applies, tiny-catalogue exempt,
+  shortfall helper). SOP updated: `Settings/_workflows/stpm-requirements-update.md`.
+
 ### Security
 - **Closed anonymous enumeration of the public `field-images` bucket (security item 5 leftover; storage policy only).**
   The bucket is public-read (category/pathway illustrations), but its single `storage.objects` SELECT policy granted
