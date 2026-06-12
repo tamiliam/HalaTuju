@@ -548,14 +548,53 @@ def _verdict_pathway(application):
 
 # ── Aggregator ───────────────────────────────────────────────────────────────
 
+# Which documents feed each fact's genuineness (Sprint 2). Only the docs the fingerprint
+# engine actually checks (`vision._GENUINENESS_DOCS`) — salary slip + offer letter vary too
+# much to fingerprint reliably, so they're excluded. The IC feeds identity but is already
+# capped inside _verdict_identity (Sprint 1), so it is not repeated here.
+_FACT_GENUINENESS_DOCS = {
+    'academic': ['results_slip'],
+    'income': ['str', 'epf', 'birth_certificate'],
+}
+
+
+def _suspect_genuineness(application, doc_types):
+    """The worst genuineness status among the latest of the given doc types if it warrants a
+    soft cap ('low_confidence'/'wrong_type'/'not_an_ic'), else ''. Reads vision_fields only."""
+    for dt in doc_types:
+        d = _latest_doc(application, dt)
+        vf = d.vision_fields if (d and isinstance(d.vision_fields, dict)) else {}
+        st = (vf.get('authenticity') or {}).get('status', '')
+        if st in ('low_confidence', 'wrong_type', 'not_an_ic'):
+            return st
+    return ''
+
+
+def _apply_genuineness_caps(application, facts):
+    """Soft post-cap (Sprint 2): a suspect/wrong-type feeding document lowers a fact from
+    'verified' to 'review' and adds a `document_not_genuine` caveat — the AI is less certain
+    when the evidence may not be a genuine document. NEVER moves a fact to 'gap'/fail and
+    never upgrades. Only bites when the (flag-gated) genuineness check has run."""
+    for fact in facts:
+        dts = _FACT_GENUINENESS_DOCS.get(fact['fact'])
+        if not dts or any(i['code'] == 'document_not_genuine' for i in fact['unresolved']):
+            continue
+        st = _suspect_genuineness(application, dts)
+        if st:
+            if fact['status'] == 'verified':
+                fact['status'] = 'review'
+            fact['unresolved'].append(_item('document_not_genuine', status=st))
+    return facts
+
+
 def build_verdict(application) -> list[dict]:
     """The four-fact verification verdict in fixed order (identity, academic,
     pathway, income). Pure + deterministic — safe to call inside a serializer
     GET. Each fact: ``{fact, status, evidence[], unresolved[]}`` where evidence
     and unresolved items are ``{code, params}`` dicts resolved on the frontend."""
-    return [
+    return _apply_genuineness_caps(application, [
         _verdict_identity(application),
         _verdict_academic(application),
         _verdict_pathway(application),
         _verdict_income(application),
-    ]
+    ])
