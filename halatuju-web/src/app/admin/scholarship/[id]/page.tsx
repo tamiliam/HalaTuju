@@ -624,7 +624,10 @@ export default function AdminScholarshipDetailPage() {
                       </div>
                     )}
                     {app.pathways_considered?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
-                    {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
+                    {/* "Still deciding" reasons are hidden once the pathway is settled
+                        (e.g. a verified offer letter auto-confirmed it) — they'd contradict
+                        the now-shown chosen pathway/programme. */}
+                    {app.pathway_certainty !== 'sure' && app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
                   </div>
                 )}
               </Card>
