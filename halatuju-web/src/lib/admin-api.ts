@@ -326,6 +326,8 @@ export interface AdminScholarshipListItem {
   qualification: string
   spm_a_count: number | null
   stpm_pngk: number | null
+  referral_source: string | null   // the referring org chosen at apply (Source column)
+  merit_score: number | null       // course-guide merit (SPM 0-100 / STPM PNGK), computed live
   status: string
   bucket: string
   shortlist_reason: string
