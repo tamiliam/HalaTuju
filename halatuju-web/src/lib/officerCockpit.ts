@@ -6,7 +6,7 @@
  * re-implements them.
  */
 
-import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
+import type { AdminVerdictFact, AdminApplicantDocument, VerdictMetrics } from '@/lib/admin-api'
 
 // ── Fact tile tone ───────────────────────────────────────────────────────────
 
@@ -158,6 +158,33 @@ export function aiSuggestionFor(verdictFacts: AdminVerdictFact[]): AiSuggestions
     }
   }
   return defaults
+}
+
+// ── AI reliability (the scorekeeper — verification-assurance Sprint 3) ─────────
+
+export const RELIABILITY_FACTS = ['identity', 'academic', 'pathway', 'income'] as const
+export interface FactReliability { fact: string; decided: number; agree: number; pct: number }
+export interface Reliability {
+  applications: number
+  perFact: FactReliability[]
+  overall: { decided: number; agree: number; pct: number }
+}
+
+/** Turn the raw override metrics (how often the human DISAGREED with the AI) into the
+ *  AGREEMENT view the card renders — per fact + overall. Agreement = 1 − override rate.
+ *  Pure; `pct` is a 0–1 fraction (the component formats it). */
+export function verdictReliability(m: VerdictMetrics): Reliability {
+  const perFact = RELIABILITY_FACTS.map((fact) => {
+    const f = m.per_fact?.[fact] || { decided: 0, overrides: 0 }
+    const agree = Math.max(0, f.decided - f.overrides)
+    return { fact, decided: f.decided, agree, pct: f.decided ? agree / f.decided : 0 }
+  })
+  const agree = Math.max(0, m.fact_decisions - m.overrides)
+  return {
+    applications: m.applications,
+    perFact,
+    overall: { decided: m.fact_decisions, agree, pct: m.fact_decisions ? agree / m.fact_decisions : 0 },
+  }
 }
 
 // ── Per-document verification facts (Sprint 2 redesign) ──────────────────────

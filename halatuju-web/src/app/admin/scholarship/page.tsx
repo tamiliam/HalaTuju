@@ -12,6 +12,7 @@ import {
   type AdminScholarshipListData,
 } from '@/lib/admin-api'
 import { Pagination } from '@/components/Pagination'
+import AiReliabilityCard from '@/components/AiReliabilityCard'
 import { REFERRING_ORG_OPTIONS } from '@/lib/scholarship'
 
 const bucketBadge = (b: string) =>
@@ -141,6 +142,8 @@ export default function AdminScholarshipList() {
       <p className="text-sm text-gray-500 mt-1 mb-4">
         {data ? t('admin.scholarship.countSubtitle', { count: String(data.count) }) : ' '}
       </p>
+
+      <AiReliabilityCard token={token} />
 
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="relative flex-1 min-w-[180px] sm:flex-none sm:w-64">

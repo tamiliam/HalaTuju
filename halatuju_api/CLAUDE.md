@@ -445,11 +445,12 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-12)
 
-**▶ IN PROGRESS — Verification-assurance programme (document genuineness + measured reliability). Roadmap
-`docs/scholarship/verification-assurance-roadmap.md` (3 sprints; layers 1–3; audit-VIEW + verify-before-disbursement
-DEFERRED). Governing principle: not certainty — a "highly probable" genuineness confidence from a few independent
-fingerprints, shown with evidence, scored against human review; SOFT throughout (reviewer is the authority); threat model
-= casual/wrong-document fakes, not forgers.**
+**▶ COMPLETE — Verification-assurance programme (document genuineness + measured reliability). All 3 sprints SHIPPED & LIVE
+2026-06-12. Roadmap `docs/scholarship/verification-assurance-roadmap.md` (layers 1–3 done). Governing principle: not
+certainty — a "highly probable" genuineness confidence from a few independent fingerprints, shown with evidence, scored
+against human review; SOFT throughout (reviewer is the authority); threat model = casual/wrong-document fakes, not forgers.
+Owner-deferred (not built): the full audit-trail VIEW; verify-before-disbursement (money-gate); an explicit
+`officer_verdict.overall` accept/decline toggle.**
 
 **▶ Sprint 1 SHIPPED & LIVE (flag ON) 2026-06-12 — IC genuineness fingerprint (on `main` `29d5e7e`; NO migration; retro
 `docs/retrospective-ic-genuineness.md`).** `vision.ic_genuineness()` — one multimodal read of the MyKad fingerprints
@@ -473,12 +474,22 @@ verdict-item copy). NOTE: NOT "zero extra cost" — genuineness needs a multimod
 doc), since the supporting-doc extraction reads OCR text. Flag already ON. ~15 tests; 1190 scholarship pytest, 303 jest,
 parity 2570×3. Salary slip + offer letter deliberately un-fingerprinted (too varied).
 
-**▶ NEXT — Sprint 3 (roadmap, last): the SCOREKEEPER. Capture the AI's per-fact suggestion when the reviewer saves their
-four-fact Pass/Fail (the Decision panel), store the (AI, human) pairs, and surface the agreement rate per fact + overall
-(finish the parked TD-083 verdict-metrics/`overall`). The AI suggestion + the Decision panel already exist — the missing
-piece is the silent capture + the metric. Then the verification-assurance programme (layers 1–3) is complete; the
-audit-trail VIEW + verify-before-disbursement remain owner-deferred. Tamil refine of the new genuineness strings
-(`icCheck.notGenuine`, `genuineness.note`, `anomaly.document_not_genuine`/`ic_low_confidence`, `verdict.item.*`).**
+**▶ Sprint 3 SHIPPED & LIVE 2026-06-12 — the SCOREKEEPER (NO migration, NO backend change; retro
+`docs/retrospective-verdict-scorekeeper.md`).** The reviewer's authority is now MEASURED. The (AI, human) verdict pairs +
+the agreement maths were already built (`ai_verdict_snapshot`/`officer_verdict` at verdict-save; `audit.override_metrics`;
+`AdminVerdictMetricsView`; `getVerdictMetrics()`) — TD-083 surfacing. Added the surface only: tested `verdictReliability()`
+(`officerCockpit.ts`, agreement = 1 − override rate per fact + overall) + self-contained `AiReliabilityCard.tsx` at the
+**top of the B40 applications list**, with an honest empty-state (hides until reviewers record verdicts; no prod verdicts
+yet) and `catch → null` so a metrics hiccup never breaks the list. No flag (read-only aggregate). en/ms/ta
+`admin.scholarship.reliability.*`. +2 jest; **305 jest, parity 2574×3, next build clean.** The explicit
+`officer_verdict.overall` toggle (TD-083's other half) deliberately NOT built — the card derives reliability from the four
+per-fact decisions.
+
+**▶ NEXT — no active feature sprint queued. Standing follow-up: Tamil refine of the first-draft strings shipped across the
+programme (`reliability.*`, `icCheck.notGenuine`, `genuineness.note`, `anomaly.document_not_genuine`/`ic_low_confidence`,
+`verdict.item.*`, and the income route-switch strings). A separately-planned thread exists in
+`.claude/plans/dapper-leaping-cloud.md` (school capture + cockpit refinements + verification soft-signals, 9 tasks) —
+NOT started; revisit when the owner picks it up.**
 
 **▶ JUST SHIPPED 2026-06-12 — upload-race fix + exact income-doc request (NO migration; on `main` `a38f484`; retro
 `docs/retrospective-upload-race-and-income-request.md`).** (1) `resolution.doc_match_verdict` now returns a distinct

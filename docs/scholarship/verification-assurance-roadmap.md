@@ -35,42 +35,19 @@ is strongest where it counts; the two varied ones lean on name cross-checks + in
 
 ---
 
-## Sprint 1 — IC genuineness fingerprint, end-to-end (the identity anchor)
-- **Goal:** an uploaded IC gets a genuineness CONFIDENCE from its standard fingerprints, shown honestly,
-  flagged to the reviewer when low, fed into the Identity prediction as a confidence (never auto-fails).
-- **Scope:** new genuineness read on the IC (one Gemini multimodal call, **flag-gated `DOC_GENUINENESS_CHECK_ENABLED`,
-  default OFF**); store the result in the existing `vision_fields['authenticity']` JSON (**no migration**);
-  downgrade the over-confident IC "Match" badge to confidence-aware on the student page + cockpit; officer
-  pre-interview flag (`ic_low_confidence`); student "upload a clear photo of your physical MyKad" nudge.
-  Tests + i18n + **Stitch** (badge + flag). Builds the reusable machinery (confidence model, flag, badge
-  pattern, anomaly flag, rollout playbook) on the riskiest single document.
-- **Acceptance:** typed/fake IC → low confidence + flag + honest badge + nudge; genuine IC → "highly
-  probable", normal badge; never blocks; dark behind the flag until prod-validated.
-- **Complexity:** high (new IC AI call, two UI surfaces, Stitch). No migration (JSON storage).
+## Status — ALL THREE SPRINTS SHIPPED & LIVE 2026-06-12. Programme (layers 1–3) complete.
+Per-sprint detail now lives in the retrospectives; this file remains the durable governing-principle + coverage reference.
 
-## Sprint 2 — Fingerprints for the standardised documents + wrong-type
-- **Goal:** the other key documents get the same confidence, folded into the AI reads they already get
-  (~zero extra cost); a document in the wrong slot (the IC-in-STR case) is caught as wrong-type.
-- **Scope:** add marker/`looks_official` fields to the existing extraction prompts (results slip, BC, EPF,
-  STR, salary slip, offer letter); teach the STR path to recognise an IC/wrong-type; per-doc confidence +
-  reviewer flags + honest "this is an IC, not an STR / upload the original" messaging; official-source
-  preference (a plain typed letter = weak → interview). Each strong doc validated on our real files first.
-  Tests + i18n. Reuses Sprint 1's machinery.
-- **Acceptance:** IC-in-STR named as wrong-type (no phantom recipient); typed doc → low confidence + flag;
-  genuine docs unaffected; zero extra Gemini calls on already-extracted docs.
-- **Complexity:** medium.
+- **Sprint 1 — IC genuineness fingerprint** ✅ SHIPPED (`main` `29d5e7e`; flag `DOC_GENUINENESS_CHECK_ENABLED` ON; no
+  migration). `vision.ic_genuineness()` → `vision_fields['authenticity']`; Identity caps at review on a suspect card;
+  officer flags `ic_low_confidence`/`parent_ic_low_confidence`; honest student amber note. Retro `retrospective-ic-genuineness.md`.
+- **Sprint 2 — standardised supporting docs + wrong-type** ✅ SHIPPED (`main` `4922003`; no migration).
+  `vision.doc_genuineness()` for STR / results slip / BC / EPF; uniform `_apply_genuineness_caps` (Academic/Income,
+  downgrade-only); officer flag `document_not_genuine`; shared `GenuinenessNote`. Retro `retrospective-doc-genuineness-s2.md`.
+- **Sprint 3 — the scorekeeper (measured reliability)** ✅ SHIPPED (no migration, no backend change — TD-083 surfacing).
+  `verdictReliability()` + `AiReliabilityCard.tsx` at the top of the B40 list: agreement = 1 − override rate per fact +
+  overall, over the pre-existing `getVerdictMetrics()`. Retro `retrospective-verdict-scorekeeper.md`.
 
-## Sprint 3 — The scorekeeper (measured AI-vs-human reliability)
-- **Goal:** every time a reviewer saves their four-fact Pass/Fail, capture what the AI had suggested, and
-  compute the agreement rate — the measured evidence of reliability ("can you rely on it?").
-- **Scope:** at verdict-save (the Decision panel), snapshot the AI's per-fact suggestion (Identity /
-  Academic / Pathway / Income); store the (AI, human) pairs; finish/surface the parked `verdict-metrics` /
-  `overall` (TD-083) as an agreement figure per fact + overall, in an admin view. Tests + i18n.
-- **Acceptance:** after a handful of reviews, the admin sees "AI agreed on Identity X%, Academic Y%, …";
-  no change to the reviewer's clicks beyond the silent capture.
-- **Complexity:** medium.
-
----
-**Total: 3 sprints.** Vertical slices; riskiest/highest-value first (IC — the validated headline fix);
-cheap fold-ins next (share one mechanism); measurement last (scores predictions that are richer by then).
-Flag-gated where billable; nothing hard-blocks; reviewer remains the authority.
+**Owner-deferred (not built):** the full audit-trail VIEW; verify-before-disbursement (the money-gate); the explicit
+`officer_verdict.overall` accept/decline toggle (the unbuilt half of TD-083). Salary slip + offer letter remain
+deliberately un-fingerprinted (too varied — name cross-checks + interview carry them).
