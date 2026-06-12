@@ -447,6 +447,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     # S13: server-computed match verdicts (so client doesn't reimplement matchers).
     vision_nric_verdict = serializers.SerializerMethodField()
     vision_name_verdict = serializers.SerializerMethodField()
+    # Genuineness fingerprint (verification-assurance): {status, reason} for an IC — soft,
+    # flag-gated. status ∈ likely_genuine / low_confidence / not_an_ic. Null if it didn't run.
+    authenticity = serializers.SerializerMethodField()
     # Check-1 Academic: the three clinical checks for a results slip (name/subjects/
     # results), server-computed against the student's own profile — null for other types.
     academic_check = serializers.SerializerMethodField()
@@ -474,7 +477,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             # Post-S14: vision_address surfaced for admin cross-check, no matcher.
             'vision_nric', 'vision_name', 'vision_address',
             'vision_run_at', 'vision_error',
-            'vision_nric_verdict', 'vision_name_verdict',
+            'vision_nric_verdict', 'vision_name_verdict', 'authenticity',
             # Supporting-doc soft checks (name/address presence). Stored at upload.
             'vision_name_match', 'vision_address_match',
             # Document-assist: Gemini-extracted fields + student verdict (stored).
@@ -522,6 +525,17 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return 'unreadable'
         from .vision import name_match
         return name_match(obj.vision_name, getattr(obj.application.profile, 'name', '') or '')
+
+    def get_authenticity(self, obj):
+        """Genuineness fingerprint summary {status, reason} for an IC / parent_ic — soft,
+        flag-gated. Null when the check didn't run (flag off / AI outage / other doc type)."""
+        if obj.doc_type not in ('ic', 'parent_ic'):
+            return None
+        vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
+        auth = vf.get('authenticity')
+        if not isinstance(auth, dict) or not auth.get('status'):
+            return None
+        return {'status': auth.get('status'), 'reason': auth.get('reason', '')}
 
     def get_academic_check(self, obj):
         """{name, subjects, results, candidate_name, missing, mismatched, slip_count}

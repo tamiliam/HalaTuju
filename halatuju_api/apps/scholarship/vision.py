@@ -656,6 +656,36 @@ _IC_GEMINI_PROMPT = (
     'If a field is unclear, leave it empty. Do NOT invent or guess.'
 )
 
+# ── Genuineness fingerprint (verification-assurance roadmap, Sprint 1) ─────────
+# A SEPARATE concern from field extraction: does the image look like a genuine photo/scan
+# of a physical MyKad, or a typed sheet / screenshot / printout? Multimodal — Gemini inspects
+# the picture for the card's standard fingerprints: the header words it can't omit AND the
+# physical face/chip/card-look a typed fake can't carry. We don't claim certainty — we read a
+# handful of independent markers and call it "highly probable" or not. SOFT: never blocks; the
+# reviewer is the authority. Validated on our real ICs 2026-06-12 (genuine = all 8 markers; a
+# typed fake carried only the words someone typed and failed every physical one → 'suspect').
+_IC_GENUINENESS_MARKERS = ('has_kad_pengenalan', 'has_malaysia', 'has_identity_card',
+                           'has_mykad', 'has_warganegara', 'has_face_photo', 'has_chip',
+                           'looks_like_physical_card')
+_IC_GENUINENESS_SCHEMA = {'type': 'object', 'properties': {
+    **{m: {'type': 'boolean'} for m in _IC_GENUINENESS_MARKERS},
+    'verdict': {'type': 'string'}, 'reason': {'type': 'string'}},
+    'required': list(_IC_GENUINENESS_MARKERS) + ['verdict', 'reason']}
+
+_IC_GENUINENESS_PROMPT = (
+    'Inspect this image. It was uploaded as a Malaysian MyKad (national identity card). '
+    'Decide if it is a genuine PHOTO or SCAN of a physical MyKad, NOT a typed document, a '
+    'screenshot of text, or a printout. Report which standard MyKad features are present: the '
+    "header text 'KAD PENGENALAN', 'MALAYSIA', 'IDENTITY CARD'; the 'MyKad' wordmark; the "
+    "'WARGANEGARA' field; a portrait FACE PHOTO of a person; an embedded gold CHIP; and whether "
+    'the overall image looks like a photograph/scan of a physical plastic card (colour, layout, '
+    "design) rather than plain text on white. verdict = 'genuine' (clearly a real MyKad), "
+    "'suspect' (missing key physical features - likely typed/printed/screenshot), or 'not_an_ic' "
+    '(not an identity card at all). reason = one short sentence.')
+
+# Gemini verdict word → our stored status. 'likely_genuine' is the honest ceiling — never "verified".
+_GENUINENESS_STATUS = {'genuine': 'likely_genuine', 'suspect': 'low_confidence', 'not_an_ic': 'not_an_ic'}
+
 
 def _as_image_for_gemini(data: bytes, content_type: str):
     """Return ``(image_bytes, mime_type)`` Gemini can read, or ``(None, '')``. A PDF
@@ -726,6 +756,25 @@ def _merge_ic_reads(det: dict, g: dict, profile) -> dict:
     return out
 
 
+def ic_genuineness(data: bytes, content_type: str = '') -> dict:
+    """Soft genuineness fingerprint for an IC image → ``{status, markers, reason}`` or ``{}``.
+    ``status`` ∈ ``likely_genuine`` / ``low_confidence`` / ``not_an_ic`` (or '' if unclassified).
+    NEVER raises; an AI outage / unreadable image returns ``{}`` — NO signal, because we must not
+    penalise a student for OUR failure. This only informs the Identity prediction + a pre-interview
+    flag; the reviewer is the authority (verification-assurance roadmap)."""
+    img, mime = _as_image_for_gemini(data, content_type)
+    if img is None:
+        return {}
+    r = _call_gemini_json(_IC_GENUINENESS_PROMPT, _IC_GENUINENESS_SCHEMA, image=img, mime_type=mime)
+    if not isinstance(r, dict) or r.get('_error'):
+        return {}
+    return {
+        'status': _GENUINENESS_STATUS.get((r.get('verdict') or '').strip().lower(), ''),
+        'markers': {m: bool(r.get(m)) for m in _IC_GENUINENESS_MARKERS},
+        'reason': (r.get('reason') or '')[:300],
+    }
+
+
 def run_vision_for_document(doc) -> dict:
     """
     Run Vision on an ``ApplicantDocument`` (expected ``doc_type='ic'``) and
@@ -734,6 +783,10 @@ def run_vision_for_document(doc) -> dict:
 
     When the deterministic read is low-confidence (see ``_should_gemini_ic``), a
     cost-gated Gemini second opinion re-reads the card image and is merged in.
+
+    Flag-gated genuineness fingerprint (``DOC_GENUINENESS_CHECK_ENABLED``): a soft
+    "does this look like a real MyKad?" multimodal read, stored in
+    ``vision_fields['authenticity']`` (no migration). Never blocks.
     """
     image = _fetch_image_bytes(doc.storage_path)
     if image is None:
@@ -751,7 +804,15 @@ def run_vision_for_document(doc) -> dict:
     doc.vision_address = result.get('address', '') or ''
     doc.vision_error = result['error'] or ''
     doc.vision_run_at = timezone.now()
-    doc.save(update_fields=['vision_nric', 'vision_name', 'vision_address', 'vision_error', 'vision_run_at'])
+    update_fields = ['vision_nric', 'vision_name', 'vision_address', 'vision_error', 'vision_run_at']
+    if image is not None and getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False):
+        auth = ic_genuineness(image, doc.content_type)
+        if auth:
+            vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+            vf['authenticity'] = auth
+            doc.vision_fields = vf
+            update_fields.append('vision_fields')
+    doc.save(update_fields=update_fields)
     return result
 
 
