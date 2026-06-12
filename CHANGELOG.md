@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Offer letter auto-settles an undecided pathway (no student query; backend + cockpit display, no migration).** When a
+  verified offer letter (identity matches, programme readable) settles a pathway the student hadn't yet locked
+  — the *undecided→decided* case — the system now silently records it instead of leaving the cockpit showing
+  "still exploring / —". New `offer_pathway.py` (pure `detect_pathway_type`/`parse_stpm_stream` + a **conservative**
+  catalogue resolver: a canonical `course_id` only on a confident, unique subset-token match, else plain labels — never a
+  fabricated id) + `services.autofill_pathway_from_offer`, mirroring the apply form's own storage shapes (**pre-U** →
+  `chosen_pathway`+`pre_u_track`+`pre_u_institution`; **tertiary** → `chosen_programme` with `course_id`-else-labels), and
+  clearing the "still deciding" framing (`pathway_certainty='sure'`). A genuine **clash** (declared a specific X, offer says
+  a different Y) is left for the existing `pathway_confirm` query — auto-fill skips it, along with wrong-person / unreadable
+  / already-locked picks. Deliberately does **not** stamp `pathway_confirmed_at`, so a later genuinely-different offer is
+  still caught. Runs on offer-letter upload + admin re-run (event-driven, never in the dashboard read); cockpit hides the
+  "still-deciding" lines once decided; `backfill_offer_pathways` (dry-run default) settles existing offers. +17 scholarship
+  pytest; `next build` clean.
 - **Guided school capture + officer-cockpit refinements (live-review backlog #1–#7; frontend + i18n, no migration).**
   Seven UX/clarity fixes from the owner's live review. **#1** the normal course-guide onboarding now offers a *guided,
   optional* school field (reuses `SchoolSelect` + the 2,480-school MOE list) instead of free text; **#3** the same guided
