@@ -6,6 +6,8 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import {
   getScholarshipApplications,
+  getAssignableAdmins,
+  assignApplication,
   DEFAULT_ADMIN_PAGE_SIZE,
   type AdminScholarshipListData,
 } from '@/lib/admin-api'
@@ -32,9 +34,13 @@ const STATUS_OPTIONS = [
 const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
 export default function AdminScholarshipList() {
-  const { token } = useAdminAuth()
+  const { token, role } = useAdminAuth()
+  const isSuper = role?.role === 'super' || !!role?.is_super_admin
   const { t } = useT()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
+  // Super-only inline reviewer assignment (the "Assigned" column dropdown).
+  const [reviewers, setReviewers] = useState<Array<{ id: number; name: string }>>([])
+  const [assignNote, setAssignNote] = useState<Record<number, string>>({})
   const [bucket, setBucket] = useState('')
   const [statusF, setStatusF] = useState('')
   const [assignedF, setAssignedF] = useState('')
@@ -75,6 +81,37 @@ export default function AdminScholarshipList() {
   }, [token, bucket, statusF, assignedF, q, page, pageSize])
 
   const apps = data?.applications ?? []
+
+  // Reviewers for the assignment dropdown — fetched once, super-admins only (the endpoint
+  // itself is super-only on the backend).
+  useEffect(() => {
+    if (!token || !isSuper) return
+    getAssignableAdmins({ token })
+      .then((r) => setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name }))))
+      .catch(() => {})
+  }, [token, isSuper])
+
+  // Inline (re)assign — option A: attempt and surface a 'not ready' / error inline. The
+  // backend enforces super-only + reviewer-target; first-assign needs the app to be ready.
+  const handleAssign = async (appId: number, reviewerId: number | null) => {
+    if (!token) return
+    setAssignNote((n) => ({ ...n, [appId]: '' }))
+    try {
+      const updated = await assignApplication(appId, reviewerId, { token })
+      setData((d) => d && {
+        ...d,
+        applications: d.applications.map((a) => a.id === appId
+          ? { ...a, assigned_to_id: updated.assigned_to_id, assigned_to_name: updated.assigned_to_name }
+          : a),
+      })
+    } catch (e) {
+      const code = e instanceof Error ? e.message : ''
+      const known = ['not_ready', 'not_reviewer', 'bad_assignee']
+      setAssignNote((n) => ({ ...n, [appId]: known.includes(code)
+        ? t(`admin.scholarship.assign.error.${code}`)
+        : t('admin.scholarship.assignError') }))
+    }
+  }
 
   // #7: persist the current filtered/sorted page's ordered ids so the detail cockpit
   // can offer prev/next navigation that follows what the officer is looking at.
@@ -143,11 +180,13 @@ export default function AdminScholarshipList() {
             <thead className="bg-gray-50/80 border-b">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.name')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.qualification')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.status')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.source')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.bucket')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.qualShort')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.merit')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.status')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.submitted')}</th>
+                {isSuper && <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -158,15 +197,35 @@ export default function AdminScholarshipList() {
                       {a.name || '—'}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{a.qualification?.toUpperCase()}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(a.status)}`}>{a.status}</span>
-                  </td>
+                  <td className="px-4 py-3 text-gray-600">{a.referral_source ? t(`scholarship.apply.org.${a.referral_source}`) : '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${bucketBadge(a.bucket)}`}>{a.bucket || '—'}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{a.assigned_to_name || '—'}</td>
+                  <td className="px-4 py-3 text-gray-600">{a.qualification?.toUpperCase()}</td>
+                  <td className="px-4 py-3 text-gray-700 tabular-nums">{a.merit_score ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(a.status)}`}>{a.status}</span>
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{new Date(a.submitted_at).toLocaleDateString('ms-MY')}</td>
+                  {isSuper && (
+                    <td className="px-4 py-3">
+                      <select
+                        value={a.assigned_to_id ?? ''}
+                        onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
+                        className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[160px]"
+                      >
+                        <option value="">{t('admin.scholarship.unassigned')}</option>
+                        {/* keep the current assignee selectable even if not in the reviewer list */}
+                        {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
+                          <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
+                        )}
+                        {reviewers.map((rv) => (
+                          <option key={rv.id} value={rv.id}>{rv.name}</option>
+                        ))}
+                      </select>
+                      {assignNote[a.id] && <p className="text-xs text-red-500 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
