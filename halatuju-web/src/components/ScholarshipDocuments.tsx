@@ -167,20 +167,36 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
     </div>
   )
 
+  // Genuineness fingerprint (verification-assurance): when the card doesn't look like a
+  // real MyKad photo, an honest amber note — the matched name/IC stay green (they DID
+  // match what was typed), but we don't pretend the document is verified. Never blocks;
+  // the existing "Replace" link is the re-upload path.
+  const suspect = doc.authenticity?.status === 'low_confidence' || doc.authenticity?.status === 'not_an_ic'
+
   return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
-      {row(t('scholarship.docs.icCheck.icNo'), formatNric(doc.vision_nric || ''), badge(icVerdictKind(doc.vision_nric_verdict)))}
-      {row(t('scholarship.docs.icCheck.name'), doc.vision_name, badge(icVerdictKind(doc.vision_name_verdict)))}
-      {doc.vision_address
-        ? row(
-            t('scholarship.docs.icCheck.address'),
-            doc.vision_address,
-            <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
-              {t('scholarship.docs.icCheck.fromIc')}
-            </span>,
-          )
-        : null}
-    </div>
+    <>
+      <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+        {row(t('scholarship.docs.icCheck.icNo'), formatNric(doc.vision_nric || ''), badge(icVerdictKind(doc.vision_nric_verdict)))}
+        {row(t('scholarship.docs.icCheck.name'), doc.vision_name, badge(icVerdictKind(doc.vision_name_verdict)))}
+        {doc.vision_address
+          ? row(
+              t('scholarship.docs.icCheck.address'),
+              doc.vision_address,
+              <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+                {t('scholarship.docs.icCheck.fromIc')}
+              </span>,
+            )
+          : null}
+      </div>
+      {suspect && (
+        <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+          <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <p className="text-xs text-amber-800">{t('scholarship.docs.icCheck.notGenuine')}</p>
+        </div>
+      )}
+    </>
   )
 }
 
