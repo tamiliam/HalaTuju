@@ -2622,3 +2622,31 @@ RLS) for no read path. Keeps the sprint no-migration.
 **Trade-offs:** Not queryable via the ORM/cockpit; retention is bounded by log retention, not forever.
 **Revisit if:** an officer/admin needs to see route-change history in-app, or compliance wants permanent retention — then
 add the model.
+
+## Genuineness is a soft confidence that lowers the prediction — never auto-fails, never blocks — IC genuineness, 2026-06-12
+**Decision:** The document-genuineness fingerprint is a SOFT signal. On the IC it caps the Identity verdict at
+`review`/Unsure (and raises an officer pre-interview flag + a student amber note), but NEVER moves it to `gap`/fail and
+NEVER blocks submission. The reviewer is the authority; the AI lowers confidence, it does not accuse.
+**Alternatives considered:** (a) hard-fail / block on a suspect document — rejected: a high-performing student pool with
+a genuine card photographed badly would be wrongly stopped, and OCR/AI can't prove forgery anyway; (b) leave it purely a
+pre-interview flag (don't touch the verdict) — rejected: the owner wants the AI to make a real *prediction*, so a suspect
+card must lower the Identity confidence, not just sit in a side panel.
+**Rationale:** Matches the threat model (casual/wrong-doc, not forgers) and the standard of proof ("highly probable",
+human-scored). Capping at Unsure is the honest middle: the per-row name/IC "Match" stays accurate (it did match the
+entry), while the tile + flag + student note carry the genuineness caveat. Never penalises a student for our AI outage
+(no signal then).
+**Trade-offs:** A determined forger still passes the automated layer (accepted — the interview + declaration are the
+real controls). The signal only bites when the flag is on.
+**Revisit if:** the programme moves to less human review at scale (then genuineness may warrant more weight), or a
+verify-before-disbursement gate is added (the deferred money-gate layer).
+
+## Genuineness stored in vision_fields JSON; the IC's extra Gemini call is flag-gated — IC genuineness, 2026-06-12
+**Decision:** The genuineness result is written into the existing `ApplicantDocument.vision_fields` JSON column
+(`['authenticity']`), not new columns — so Sprint 1 needs NO migration. The IC's one extra multimodal call is gated by
+`DOC_GENUINENESS_CHECK_ENABLED` (default OFF; the supporting docs in Sprint 2 fold into reads they already make, ~zero
+extra cost).
+**Alternatives considered:** dedicated `vision_authenticity_*` columns — rejected for Sprint 1 (a migration + RLS for a
+soft, flag-gated signal that nothing queries relationally); the JSON read path is sufficient.
+**Rationale:** Ships dark with zero schema risk; the flag lets us validate on prod before relying on it; cost stays
+bounded (one call per IC, only when on).
+**Revisit if:** the authenticity signal ever needs relational querying/reporting (then promote to columns).

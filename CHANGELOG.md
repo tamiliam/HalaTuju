@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Document genuineness — IC fingerprint (verification-assurance roadmap, Sprint 1; flag-gated, no migration).** A soft
+  "does this look like a real photo of a physical MyKad?" check on the IC, to catch typed/printed/screenshot fakes that
+  carry the right name + IC number but none of the card's physical fingerprints. Empirically validated first: on our real
+  ICs every genuine card scored all 8 markers (KAD PENGENALAN / MALAYSIA / IDENTITY CARD / MyKad / WARGANEGARA + a face +
+  a chip + a physical-card look); a typed-text fake carried only the words someone typed and failed every physical one.
+  We don't claim certainty — a few independent markers → a "highly probable" call. `vision.ic_genuineness()` does one
+  multimodal read → `{status, markers, reason}` stored in `vision_fields['authenticity']` (no migration); returns NO signal
+  on an AI outage (never penalise a student for our failure). Three soft surfaces: the **Identity** prediction caps at
+  *review/Unsure* on a suspect card (never auto-fails — we lower confidence, we don't accuse); officer pre-interview flags
+  `ic_low_confidence` / `parent_ic_low_confidence`; and an honest amber note on the student's IC card (the matched name/IC
+  stay green — they *did* match what was typed — but no over-confident "verified"). Reviewer remains the authority.
+  **Flag-gated `DOC_GENUINENESS_CHECK_ENABLED` (default OFF, ships dark).** +12 tests; 1179 scholarship pytest, 303 jest,
+  parity 2565×3, next build clean.
 - **Student self-serve income route switch (post-submit Action Centre; no migration).** A submitted student on the
   wrong income route (e.g. told "Upload your STR" but they have no STR) can now change it themselves instead of being
   stuck contacting support. New audited endpoint `POST /api/v1/scholarship/applications/<id>/income-route/` +

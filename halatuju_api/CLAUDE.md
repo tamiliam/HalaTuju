@@ -445,6 +445,29 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-12)
 
+**▶ IN PROGRESS — Verification-assurance programme (document genuineness + measured reliability). Roadmap
+`docs/scholarship/verification-assurance-roadmap.md` (3 sprints; layers 1–3; audit-VIEW + verify-before-disbursement
+DEFERRED). Governing principle: not certainty — a "highly probable" genuineness confidence from a few independent
+fingerprints, shown with evidence, scored against human review; SOFT throughout (reviewer is the authority); threat model
+= casual/wrong-document fakes, not forgers.**
+
+**▶ Sprint 1 SHIPPED & LIVE (flag ON) 2026-06-12 — IC genuineness fingerprint (on `main` `29d5e7e`; NO migration; retro
+`docs/retrospective-ic-genuineness.md`).** `vision.ic_genuineness()` — one multimodal read of the MyKad fingerprints
+(header words + face + chip + physical-card look) → `{status, markers, reason}` in `vision_fields['authenticity']`
+(no migration); NO signal on an AI outage. Three soft surfaces: Identity prediction caps at `review`/Unsure on a suspect
+card (never auto-fails), officer flags `ic_low_confidence`/`parent_ic_low_confidence`, honest amber note on the student IC
+card (matched name/IC stay green). **Flag `DOC_GENUINENESS_CHECK_ENABLED` flipped ON in prod (api rev `…00363-slj`);**
+validated live on #16's typed fake (→ low_confidence + Identity Unsure + officer flag). Validated empirically first on our
+real ICs. 12 tests; 1179 scholarship pytest, 303 jest, parity 2565×3. **Re-dark with one `--update-env-vars
+DOC_GENUINENESS_CHECK_ENABLED=0`.**
+
+**▶ NEXT — Sprint 2 (roadmap): fold the fingerprint into the documents that already get an AI read — SPM results slip,
+BC, EPF, STR (+ best-effort salary slip / offer letter) — ~zero extra cost — plus wrong-document-type detection (the
+IC-in-STR case: an IC uploaded as an STR is read as a bad STR, not flagged as wrong-type). Each strong doc validated on
+our real files first. Then Sprint 3 = the scorekeeper (AI per-fact suggestion vs reviewer Pass/Fail → measured agreement;
+leverages the existing 4-fact AI suggestion + the Decision panel + TD-083 verdict-metrics). Tamil refine of the new
+`icCheck.notGenuine` + `anomaly.ic_low_confidence`/`parent_ic_low_confidence` strings (first-draft).**
+
 **▶ JUST SHIPPED 2026-06-12 — upload-race fix + exact income-doc request (NO migration; on `main` `a38f484`; retro
 `docs/retrospective-upload-race-and-income-request.md`).** (1) `resolution.doc_match_verdict` now returns a distinct
 `'pending'` (hold the task) for a NOT-YET-SCANNED doc instead of `'ok'` — closes the race where an unread re-upload
