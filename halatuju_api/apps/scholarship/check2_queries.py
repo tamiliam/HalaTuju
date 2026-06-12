@@ -103,4 +103,44 @@ def sync_check2_queries(application):
             item.resolved_at = now
             item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
 
+    # The one-tap pathway confirmation (offer differs from the declared course) — a
+    # 'confirm', NOT a clarify, so it sits outside the MAX_CLARIFY cap and the gap loop.
+    _sync_pathway_confirm(application, existing, now)
+
     return application.resolution_items.filter(source='check2', status='open')
+
+
+def _sync_pathway_confirm(application, existing, now):
+    """Reconcile the Check-2 ``pathway_confirm`` item (one-tap "is this offer your final
+    course?") from the live verdict. Routed through Check 2 (``source='check2'``) so the
+    flag governs visibility + the email and the student answers Yes in place
+    (``confirm_pathway`` writes their final pathway). The clash itself is detected by the
+    verdict engine; here we only mirror it into the student queue + auto-resolve it once
+    the offer is confirmed or changed so it no longer clashes."""
+    from .models import ApplicantDocument
+    item = existing.get('pathway_confirm')
+    # A clash can only exist when there's an offer letter — skip the verdict compute (and
+    # its cost) otherwise. If a confirm lingers after the offer is gone, close it below.
+    params = None
+    if ApplicantDocument.objects.filter(application=application, doc_type='offer_letter').exists():
+        from .verdict_engine import build_verdict
+        for fact in build_verdict(application):
+            if fact['fact'] != 'pathway':
+                continue
+            for it in fact['unresolved']:
+                if it['code'] == 'pathway_confirm':
+                    params = it.get('params', {})
+    if params is not None and item is None:
+        try:
+            ResolutionItem.objects.create(
+                application=application, source='check2', code='pathway_confirm',
+                fact='pathway', kind='confirm', params=params,
+            )
+        except IntegrityError:
+            pass  # created concurrently — fine
+    elif params is None and item is not None and item.status == 'open':
+        # The clash cleared (offer confirmed / replaced) → close the question.
+        item.status = 'resolved'
+        item.resolved_by = 'system'
+        item.resolved_at = now
+        item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
