@@ -461,12 +461,24 @@ validated live on #16's typed fake (→ low_confidence + Identity Unsure + offic
 real ICs. 12 tests; 1179 scholarship pytest, 303 jest, parity 2565×3. **Re-dark with one `--update-env-vars
 DOC_GENUINENESS_CHECK_ENABLED=0`.**
 
-**▶ NEXT — Sprint 2 (roadmap): fold the fingerprint into the documents that already get an AI read — SPM results slip,
-BC, EPF, STR (+ best-effort salary slip / offer letter) — ~zero extra cost — plus wrong-document-type detection (the
-IC-in-STR case: an IC uploaded as an STR is read as a bad STR, not flagged as wrong-type). Each strong doc validated on
-our real files first. Then Sprint 3 = the scorekeeper (AI per-fact suggestion vs reviewer Pass/Fail → measured agreement;
-leverages the existing 4-fact AI suggestion + the Decision panel + TD-083 verdict-metrics). Tamil refine of the new
-`icCheck.notGenuine` + `anomaly.ic_low_confidence`/`parent_ic_low_confidence` strings (first-draft).**
+**▶ Sprint 2 SHIPPED & LIVE 2026-06-12 — genuineness for the standardised supporting docs + wrong-type (on `main`
+`4922003`; NO migration; retro `docs/retrospective-doc-genuineness-s2.md`).** `vision.doc_genuineness()` — a per-type
+multimodal read (STR allows a genuine MySTR app screenshot; results-slip/BC/EPF expect a real scan/photo) →
+`vision_fields['authenticity']` ({status, doc_seen, reason}; status adds `wrong_type`). Validated on real files first
+(genuine pass; typed/screenshot → suspect; a typed BC + a KWSP withdrawal form mis-filed as a statement → wrong_type).
+Soft surfaces: **verdict caps** (`verdict_engine._apply_genuineness_caps` in `build_verdict` — suspect/wrong-type
+results-slip → Academic Unsure; str/epf/birth_certificate → Income; downgrade-only, never gap, never upgrade); officer
+flag `document_not_genuine`; student amber note (shared `GenuinenessNote`). Fixed a Sprint-1 i18n gap (`ic_low_confidence`
+verdict-item copy). NOTE: NOT "zero extra cost" — genuineness needs a multimodal IMAGE read (one extra Gemini call per
+doc), since the supporting-doc extraction reads OCR text. Flag already ON. ~15 tests; 1190 scholarship pytest, 303 jest,
+parity 2570×3. Salary slip + offer letter deliberately un-fingerprinted (too varied).
+
+**▶ NEXT — Sprint 3 (roadmap, last): the SCOREKEEPER. Capture the AI's per-fact suggestion when the reviewer saves their
+four-fact Pass/Fail (the Decision panel), store the (AI, human) pairs, and surface the agreement rate per fact + overall
+(finish the parked TD-083 verdict-metrics/`overall`). The AI suggestion + the Decision panel already exist — the missing
+piece is the silent capture + the metric. Then the verification-assurance programme (layers 1–3) is complete; the
+audit-trail VIEW + verify-before-disbursement remain owner-deferred. Tamil refine of the new genuineness strings
+(`icCheck.notGenuine`, `genuineness.note`, `anomaly.document_not_genuine`/`ic_low_confidence`, `verdict.item.*`).**
 
 **▶ JUST SHIPPED 2026-06-12 — upload-race fix + exact income-doc request (NO migration; on `main` `a38f484`; retro
 `docs/retrospective-upload-race-and-income-request.md`).** (1) `resolution.doc_match_verdict` now returns a distinct
