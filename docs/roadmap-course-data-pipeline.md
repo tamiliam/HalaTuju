@@ -49,7 +49,7 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
   re-running is idempotent; tests for the wrapper's orchestration + archive naming.
 - **Files:** ~4–6 (1 new command, small archive helper, test, doc).
 
-### Sprint 2 — Catalogue-wide link-checker + freshness audit  ·  *complexity: low*  ·  ✅ **BUILT 2026-06-13 (branch `feature/validate-course-urls`; pending owner-gated deploy)** — `validate_course_urls` (HTTP reachability) + `audit_data` LINK HEALTH section. NOTE: chose option (A) — **no `last_verified` field/migration**; freshness is audit-run-derived.
+### Sprint 2 — Catalogue-wide link-checker + freshness audit  ·  *complexity: low*  ·  ✅ **SHIPPED & LIVE 2026-06-13** (`main` `49d2e12`; retro `docs/retrospective-course-data-sprint2.md`) — `validate_course_urls` (HTTP reachability) + `audit_data` LINK HEALTH section. Chose option (A) — **no `last_verified` field/migration**; freshness is audit-run-derived.
 - **Goal:** Detect dead links and stale records across the **whole** catalogue (SPM + STPM),
   regardless of source.
 - **Scope:** generalise `validate_stpm_urls` to cover `Course`/`CourseInstitution` hyperlinks;
