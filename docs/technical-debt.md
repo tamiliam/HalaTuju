@@ -728,3 +728,13 @@
   documents to upload" + the income_requirements checklist set the expectation. **To resolve (if wanted):** add a
   `salary_slip_missing` ticketable verdict code on the salary route + entry in `CODE_TO_TICKET`. **Needs sign-off** — it
   reopens the "never hard-block post-submit income" decision (consent-gate-v2). (Logged 2026-06-12, income route switch.)
+- TD-114: **A fact can read CERTAIN off documents whose genuineness was never checked — a folder of typed sheets
+  passed as Pathway + Income CERTAIN (test #16).** CERTAIN is asserted on field-match alone (typed text matches the
+  application); it does not require the *document* to be genuine. Two holes: (A) genuineness runs at upload only and
+  is never backfilled, so pre-feature uploads sit unscored and the verdict treats unscored as fine; (B) structural —
+  `offer_letter`/`salary_slip` are un-fingerprinted (so Pathway can never be capped), and the engine never gates
+  CERTAIN on a passed genuineness check. Demo (2026-06-13): re-running genuineness on #16's income docs dropped Income
+  CERTAIN→Probable, but Pathway stayed CERTAIN (offer letter uncovered). **Approved design + full scope: `docs/scholarship/
+  verification-genuineness-gating-plan.md`** (gate CERTAIN on genuineness; confirmed fake → Unsure; cover the offer
+  letter; backfill command). **DEFERRED — edge case for our population; lower priority than current fixes.** Owner
+  go-ahead required before building. (Logged 2026-06-13, test #16 finding.)
