@@ -1562,6 +1562,8 @@
       "percentComplete": "{pct}% Complete",
       "toDo": "To do",
       "done": "Done",
+      "fromAssistant": "From our review assistant",
+      "fromReviewer": "From your reviewer",
       "upload": "Upload",
       "uploading": "Uploading…",
       "uploadError": "Sorry, that upload didn't work. Please try again.",

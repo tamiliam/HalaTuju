@@ -165,6 +165,18 @@ class TestDueQueryEmails(_Base):
         self.assertFalse(mock_email.called)
 
     @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
+    def test_sends_for_a_missing_doc_only(self, mock_email):
+        # No clarify queries, but a compulsory document is missing → the "review assistant"
+        # upload request counts, so the delayed email still goes out.
+        self.app.profile_completed_at = timezone.now() - timedelta(hours=3)
+        self.app.save()
+        ResolutionItem.objects.create(
+            application=self.app, source='system', code='birth_cert_missing',
+            fact='income', kind='doc', doc_type='birth_certificate', status='open')
+        self.assertEqual(send_due_query_emails()['sent'], 1)
+        self.assertTrue(mock_email.called)
+
+    @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
     def test_no_email_when_no_questions(self, mock_email):
         # No clarify gaps: course set, sibling known, device ticked, residential pathway.
         self.app.profile_completed_at = timezone.now() - timedelta(hours=3)
