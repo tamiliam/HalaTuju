@@ -26,6 +26,7 @@ class Command(BaseCommand):
         self.audit_stpm_courses()
         self.audit_stpm_requirements()
         self.audit_stpm_careers()
+        self.audit_link_health()
         self.stdout.write(self.style.SUCCESS('\nAudit complete.'))
 
     def audit_courses(self):
@@ -163,3 +164,23 @@ class Command(BaseCommand):
         self.stdout.write(f'\nSTPM CAREER MAPPINGS: {with_careers} / {total_stpm} courses mapped')
         self.stdout.write(f'  Courses without career links: {without}')
         self.stdout.write(f'  Total M2M links: {total_links}')
+
+    def audit_link_health(self):
+        """The checkable external-link surface + how to verify liveness. This is the
+        audit-derived freshness signal (no per-row last_verified): run the validators
+        to check the links are still reachable / still listed."""
+        inst_urls = set(Institution.objects.exclude(url='').values_list('url', flat=True))
+        offer_urls = set(CourseInstitution.objects.exclude(hyperlink='').values_list('hyperlink', flat=True))
+        distinct = inst_urls | offer_urls
+        stpm_with_url = (
+            StpmCourse.objects.exclude(mohe_url='').exclude(mohe_url__isnull=True).count()
+        )
+
+        self.stdout.write('\nLINK HEALTH (run the validators to check liveness):')
+        self.stdout.write(
+            f'  SPM catalogue — distinct external URLs: {len(distinct)} '
+            f'({len(inst_urls)} institution, {len(offer_urls)} offering)')
+        self.stdout.write(f'  STPM — programmes with a MOHE URL: {stpm_with_url}')
+        self.stdout.write('  Check liveness:')
+        self.stdout.write('    python manage.py validate_course_urls   # SPM reachability (fast, HTTP)')
+        self.stdout.write('    python manage.py validate_stpm_urls     # STPM MOHE listing (Selenium, content)')
