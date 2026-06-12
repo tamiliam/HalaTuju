@@ -382,6 +382,28 @@ def _detect_parent_ic_low_confidence(application) -> Optional[Anomaly]:
     return Anomaly('parent_ic_low_confidence', {'status': status})
 
 
+# Sprint 2 — genuineness for the standardised supporting documents.
+_GENUINENESS_DOC_LABELS = {
+    'str': 'STR', 'results_slip': 'results slip',
+    'birth_certificate': 'birth certificate', 'epf': 'EPF statement',
+}
+
+
+def _detect_document_not_genuine(application) -> Optional[Anomaly]:
+    """A standardised supporting document (STR / results slip / BC / EPF) doesn't look like a
+    genuine official document, or is the WRONG document type. Soft — confirm at interview;
+    never gates. Flag-gated (only fires when the check ran). Returns the first hit; params carry
+    a human doc label, the status, and what the AI thought the document actually was."""
+    for dt, label in _GENUINENESS_DOC_LABELS.items():
+        doc = application.documents.filter(doc_type=dt).order_by('-uploaded_at').first()
+        status = _ic_authenticity_status(doc)   # reads vision_fields['authenticity'].status — type-agnostic
+        if status in ('low_confidence', 'wrong_type'):
+            vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
+            seen = (vf.get('authenticity') or {}).get('doc_seen', '')
+            return Anomaly('document_not_genuine', {'doc': label, 'status': status, 'seen': seen})
+    return None
+
+
 # ─── Aggregator ─────────────────────────────────────────────────────────────
 
 _DETECTORS = (
@@ -405,6 +427,7 @@ _DETECTORS = (
     # Verification-assurance — document genuineness fingerprint (flag-gated)
     _detect_ic_low_confidence,
     _detect_parent_ic_low_confidence,
+    _detect_document_not_genuine,
 )
 
 
