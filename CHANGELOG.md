@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Check-2 query email reworded to cover documents, not just questions.** Now that the email also covers
+  missing-document upload requests (not only clarify questions), the hardcoded *"a few short questions … answer them"*
+  copy was misleading (a student got it, then saw only Upload tasks). Both the raised + reminder emails (subject + body,
+  en/ms/ta) now say *"a few things we need … {n} item(s) (a few questions and/or documents) … respond to each one,"*
+  matching the Action Centre's *"A few things we need from you."* Copy-only; no logic change.
+
 ### Added
 - **The "review assistant" (Check 2) now asks the student to upload missing compulsory documents (backend + Action
   Centre attribution, no migration).** Restores tested behaviour the 2026-06-10 Action-Centre over-correction removed:
