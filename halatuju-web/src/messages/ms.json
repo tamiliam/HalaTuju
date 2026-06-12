@@ -2711,6 +2711,12 @@
         "ipts": "Swasta (IPTS)",
         "unknown": "Tidak pasti"
       },
+      "reliability": {
+        "title": "Kebolehharapan AI",
+        "subtitle": "Berapa kerap cadangan AI sepadan dengan keputusan penyemak — merentas {n} permohonan yang telah disemak.",
+        "overall": "Keseluruhan",
+        "empty": "Belum ada permohonan yang disemak — kebolehharapan AI akan dipaparkan di sini setelah penyemak merekod keputusan mereka."
+      },
       "verdict": {
         "title": "Keputusan pengesahan",
         "intro": "Apa yang disahkan oleh semakan, dan apa yang masih memerlukan anda. Audit sahaja — jangan bina semula.",

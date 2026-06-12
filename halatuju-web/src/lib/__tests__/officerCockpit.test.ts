@@ -8,6 +8,7 @@ import {
   docIconFor,
   earnerMemberFor,
   viewerKind,
+  verdictReliability,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
 
@@ -371,5 +372,32 @@ describe('viewerKind — how the in-cockpit viewer renders a doc', () => {
   })
   it('unknown types are unsupported', () => {
     expect(viewerKind('application/octet-stream', 'blob')).toBe('unsupported')
+  })
+})
+
+describe('verdictReliability (the scorekeeper)', () => {
+  it('computes per-fact + overall agreement as 1 - override rate', () => {
+    const r = verdictReliability({
+      applications: 12, fact_decisions: 44, overrides: 6, override_rate: 0.1364,
+      per_fact: {
+        identity: { decided: 12, overrides: 1 },
+        academic: { decided: 12, overrides: 3 },
+        pathway: { decided: 8, overrides: 1 },
+        income: { decided: 12, overrides: 1 },
+      },
+    })
+    expect(r.applications).toBe(12)
+    const id = r.perFact.find((f) => f.fact === 'identity')!
+    expect(id.agree).toBe(11)
+    expect(id.pct).toBeCloseTo(11 / 12)
+    expect(r.overall.agree).toBe(38)          // 44 decided - 6 overrides
+    expect(r.overall.pct).toBeCloseTo(38 / 44)
+  })
+
+  it('handles zero decisions without divide-by-zero', () => {
+    const r = verdictReliability({ applications: 0, fact_decisions: 0, overrides: 0, override_rate: 0, per_fact: {} })
+    expect(r.overall.pct).toBe(0)
+    expect(r.perFact).toHaveLength(4)
+    expect(r.perFact.every((f) => f.pct === 0 && f.decided === 0)).toBe(true)
   })
 })
