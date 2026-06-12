@@ -177,6 +177,29 @@ class TestDueQueryEmails(_Base):
         self.assertEqual(send_due_query_emails()['sent'], 0)
         self.assertFalse(mock_email.called)
 
+    @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
+    def test_sends_for_a_pathway_confirm_only(self, mock_email):
+        # No clarify gaps, but the offer clashes with the declared school → the one-tap
+        # pathway confirm is an open Check-2 query, so the email still goes out.
+        from apps.scholarship.models import ApplicantDocument
+        self.app.profile_completed_at = timezone.now() - timedelta(hours=3)
+        self.app.field_of_study = 'Education'
+        self.app.siblings_in_tertiary = 0
+        self.app.chosen_pathway = 'matric'
+        self.app.pathway_certainty = 'sure'
+        self.app.pre_u_institution = 'SMK Mentakab'
+        self.app.aspirations = 'Teach.'
+        self.app.save()
+        FundingNeed.objects.create(application=self.app, categories=['device'])
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='offer_letter', storage_path=f'{self.app.id}/o/x',
+            vision_fields={'fields': {'candidate_name': 'Priya', 'candidate_nric': '030101141234',
+                           'programme': 'Program Matrikulasi', 'institution': 'SMK Temerloh'},
+                           'student_verdict': 'ok', 'warnings': [], 'error': ''},
+            vision_run_at=timezone.now())
+        self.assertEqual(send_due_query_emails()['sent'], 1)
+        self.assertTrue(mock_email.called)
+
     @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=False)
     @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
     def test_held_when_flag_off(self, mock_email):
