@@ -608,10 +608,11 @@ class ResolutionItemListView(APIView):
         # OWN verdict gaps are NOT surfaced here — they live on the officer cockpit (the four
         # cards) for the reviewer to triage. (Owner call 2026-06-10: a mismatched/unreadable
         # upload must not spawn a duplicate 'system' ticket alongside the reviewer task +
-        # Gopal's coach. 'human' = reviewer-only; 'clarify' hidden until the flag is on.)
+        # Gopal's coach. 'human' = reviewer-only. ALL Check-2 items (source='check2' —
+        # clarify questions + the pathway confirm) are held until the flag is on.)
         items = [i for i in app.resolution_items.all()
                  if i.source != 'system' and i.kind != 'human'
-                 and (queries_live or i.kind != 'clarify')]
+                 and (queries_live or i.source != 'check2')]
         openq = [i for i in items if i.status == 'open']
         resolved = [i for i in items if i.status == 'resolved'][:10]
         return Response({

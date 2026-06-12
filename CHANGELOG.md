@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pathway-clash confirmation is now a real Check-2 student query (backend, no migration).** When an offer letter is for
+  a genuinely different course than the student declared, the "is this offer your final course?" one-tap confirmation
+  (`pathway_confirm`) was created as a hidden `source='system'` verdict item — so only the officer ever saw it, and the
+  student could never tap "Yes" to auto-realign their record. It's now reconciled through Check 2
+  (`check2_queries._sync_pathway_confirm` → `source='check2'`, `kind='confirm'`), so **`CHECK2_STUDENT_QUERIES_ENABLED`
+  governs it** and it rides the same Action-Centre queue + "we have a few questions" email as the clarify queries (the
+  student FE one-tap button + i18n already existed). It sits *outside* the `MAX_CLARIFY` cap, auto-resolves once the
+  clash clears (offer confirmed/replaced), and is removed from the system `CODE_TO_TICKET` so there's no duplicate; the
+  officer still sees the clash on the cockpit Pathway verdict tile. The Action-Centre flag filter now gates **all**
+  `source='check2'` items (clarify + confirm), and the query email counts every open Check-2 item. +6 scholarship pytest.
 - **Offer letter auto-settles an undecided pathway (no student query; backend + cockpit display, no migration).** When a
   verified offer letter (identity matches, programme readable) settles a pathway the student hadn't yet locked
   — the *undecided→decided* case — the system now silently records it instead of leaving the cockpit showing
