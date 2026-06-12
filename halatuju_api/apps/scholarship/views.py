@@ -1,4 +1,6 @@
 """B40 Assistance Programme API — application intake (Phase 1, Sprint 1)."""
+import logging
+
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -502,6 +504,17 @@ class DocumentListCreateView(APIView):
         # (and link the doc), or surface a fresh ticket. Idempotent, never blocks.
         from .resolution import sync_resolution_items, resolve_doc_items_for_upload
         sync_resolution_items(app)
+        # A verified offer letter silently settles a pathway the student hadn't locked
+        # (undecided→decided) — no query; mirrors the apply form's storage shapes. A
+        # genuine clash with a specific declared pick is left for the pathway_confirm
+        # query. Soft + best-effort: never let it break the upload response.
+        if doc.doc_type == 'offer_letter':
+            try:
+                from .services import autofill_pathway_from_offer
+                autofill_pathway_from_offer(app)
+            except Exception:
+                logging.getLogger(__name__).warning(
+                    'autofill_pathway_from_offer failed for app %s', app.id, exc_info=True)
         # Action Centre (post-submit): a clean upload also clears its OFFICER doc task,
         # and the returned verdict tells the frontend whether to surface Cikgu Gopal's
         # advice (mismatch/unreadable) or treat the task as done (ok).
