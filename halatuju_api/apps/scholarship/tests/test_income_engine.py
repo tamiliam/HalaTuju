@@ -424,7 +424,7 @@ import datetime  # noqa: E402
 from apps.scholarship.income_engine import (  # noqa: E402
     _parse_billing_month, _utility_currency, utility_reasonable, utility_check,
     _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
-    slip_epf_divergence, _reconciled_holder_name,
+    slip_epf_divergence, _reconciled_holder_name, _arrears_amount,
 )
 
 
@@ -555,6 +555,35 @@ class TestHolderNameReconciliation(SimpleTestCase):
     def test_single_bill_unchanged(self):
         app = _app([_bill('water_bill', {'amount': '40', 'name': 'HANA BALAN A/L NARAYANAN'})], household_size=4)
         self.assertEqual(_reconciled_holder_name(app, 'HANA BALAN A/L NARAYANAN'), 'HANA BALAN A/L NARAYANAN')
+
+
+# ── Arrears: a CREDIT balance must read as zero owed, not positive arrears ────────────
+
+class TestArrearsCredit(SimpleTestCase):
+    TODAY = datetime.date(2026, 6, 5)
+
+    def test_credit_balance_parses_as_zero(self):
+        self.assertEqual(_arrears_amount('-1.29'), 0.0)
+        self.assertEqual(_arrears_amount('RM -1.29'), 0.0)
+        self.assertEqual(_arrears_amount('200.00 CR'), 0.0)
+
+    def test_normal_arrears_still_parse(self):
+        self.assertEqual(_arrears_amount('RM 145.92'), 145.92)
+        self.assertEqual(_arrears_amount('1,234.50'), 1234.50)
+        self.assertIsNone(_arrears_amount(''))
+
+    def test_credit_does_not_show_outstanding(self):
+        # A household IN CREDIT (-1.29) must not read as 'arrears' on the bill row.
+        app = _app([_bill('water_bill', {'amount': '31', 'unpaid_balance': '-1.29'})], household_size=4)
+        chk = utility_check(app.documents.filter(doc_type='water_bill').first(), today=self.TODAY)
+        self.assertEqual(chk['outstanding_status'], '')
+
+    def test_credit_does_not_count_as_hardship(self):
+        from apps.scholarship.income_engine import utility_hardship
+        # A large credit (e.g. a RM200 deposit refund) must NOT trip the hardship signal.
+        app = _app([_bill('water_bill', {'amount': '31', 'unpaid_balance': '-200.00'}),
+                    _bill('electricity_bill', {'amount': '50', 'unpaid_balance': '-200.00'})], household_size=4)
+        self.assertFalse(utility_hardship(app))
 
 
 class TestUtilityCheck(SimpleTestCase):
