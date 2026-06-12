@@ -2323,6 +2323,7 @@
       "showingRange": "Showing {start}–{end} of {total} applications",
       "allStatuses": "All statuses",
       "allBuckets": "All buckets",
+      "allSources": "All sources",
       "allAssignees": "Anyone",
       "assignedToMe": "Assigned to me",
       "unassigned": "Unassigned",

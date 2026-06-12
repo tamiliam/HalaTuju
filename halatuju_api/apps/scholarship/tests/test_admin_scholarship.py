@@ -83,6 +83,14 @@ class TestAdminScholarship(TestCase):
         r = self.client.get('/api/v1/admin/scholarship/applications/?bucket=B')
         self.assertEqual(r.json()['total_count'], 0)
 
+    def test_admin_list_filter_source(self):
+        StudentProfile.objects.filter(pk=self.profile.pk).update(referral_source='smc')
+        self._auth(ADMIN)
+        self.assertEqual(
+            self.client.get('/api/v1/admin/scholarship/applications/?source=smc').json()['total_count'], 1)
+        self.assertEqual(
+            self.client.get('/api/v1/admin/scholarship/applications/?source=pptm').json()['total_count'], 0)
+
     def test_admin_detail(self):
         self._auth(ADMIN)
         r = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/')
