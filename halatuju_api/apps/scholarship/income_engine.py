@@ -480,6 +480,20 @@ def _parse_rm(s):
         return None
 
 
+def _arrears_amount(raw):
+    """Parse a utility bill's arrears (unpaid balance), treating a CREDIT as zero owed.
+    A negative balance ('-1.29', 'RM -1.29') or a 'CR'/'kredit' marker means the household
+    is AHEAD on the account, not behind — so it must not read as arrears (``_parse_rm``
+    strips the minus sign and would otherwise record a credit as a positive amount owed).
+    Returns the arrears (float), 0.0 for a credit, or None when nothing parseable."""
+    s = str(raw or '').strip()
+    if not s:
+        return None
+    if re.search(r'-\s*\d', s) or re.search(r'\b(cr|kredit|credit)\b', s, re.IGNORECASE):
+        return 0.0
+    return _parse_rm(s)
+
+
 def _doc_fields(doc):
     vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
     f = vf.get('fields', {})
@@ -791,7 +805,7 @@ def utility_check(doc, today=None):
     # the full name (e.g. 'HANA BALAN' read from a creased bill → 'THANA BALAN').
     name = _reconciled_holder_name(app, (f.get('name', '') or '').strip())
     monthly = _parse_rm(f.get('amount'))
-    arrears = _parse_rm(f.get('unpaid_balance'))
+    arrears = _arrears_amount(f.get('unpaid_balance'))
     reasonable = utility_reasonable(app)
     return {
         'name': name,
@@ -875,7 +889,7 @@ def utility_hardship(application):
     total = 0.0
     for dt in ('water_bill', 'electricity_bill'):
         doc = _latest_doc(application, dt)
-        amt = _parse_rm(_doc_fields(doc).get('unpaid_balance')) if doc else None
+        amt = _arrears_amount(_doc_fields(doc).get('unpaid_balance')) if doc else None
         if amt:
             total += amt
     return total > 100
