@@ -13,7 +13,15 @@ import csv
 import re
 import time
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
+
+
+def scrape_shortfall(actual, expected, tolerance=0.95):
+    """True when a scrape looks incomplete — far fewer programmes than MOHE's own
+    reported total (the 'daripada N' count it prints on page 1). Guards against a
+    silent DOM-change failure that returns partial/zero cards. ``expected == 0``
+    means we couldn't read the total, so we can't judge → treated as not-a-shortfall."""
+    return expected > 0 and actual < expected * tolerance
 
 
 LISTING_URL = 'https://online.mohe.gov.my/epanduan/ProgramPengajian/kategoriCalon/{cat}?jenprog=stpm&page={page}'
@@ -40,6 +48,11 @@ class Command(BaseCommand):
             '--delay', type=float, default=1.0,
             help='Seconds to wait between page loads (be polite to MOHE servers)',
         )
+        parser.add_argument(
+            '--allow-partial', action='store_true',
+            help='Write the CSV even if far fewer programmes were scraped than MOHE reports '
+                 '(use only when MOHE genuinely has fewer programmes, not when the parser broke).',
+        )
 
     def handle(self, *args, **options):
         try:
@@ -59,6 +72,7 @@ class Command(BaseCommand):
             categories = [(c, s) for c, s in CATEGORIES if c == cat_filter]
 
         all_programmes = []
+        expected_total = 0  # sum of MOHE's own "daripada N" counts, for the sanity check
 
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -90,6 +104,7 @@ class Command(BaseCommand):
                     if page_num == 1:
                         total_match = re.search(r'daripada (\d+)', heading_text)
                         total = int(total_match.group(1)) if total_match else 0
+                        expected_total += total
                         self.stdout.write(f'  Found {total} programmes')
 
                     # Parse programme cards
@@ -125,6 +140,17 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f'\nDone: {len(all_programmes)} programmes written to {output_path}'
         ))
+
+        # Sanity check: did we scrape roughly what MOHE says it has? A silent DOM
+        # change returns partial/zero cards — fail loudly so a bad CSV is never synced.
+        actual_total = len(all_programmes)
+        if scrape_shortfall(actual_total, expected_total) and not options['allow_partial']:
+            raise CommandError(
+                f'Scrape looks INCOMPLETE: got {actual_total} programmes but MOHE reports '
+                f'{expected_total}. The CSV was written to {output_path} for inspection, but '
+                f'do NOT sync it — the likely cause is a MOHE site change breaking the parser. '
+                f'Fix the scraper, or pass --allow-partial if MOHE genuinely has fewer programmes.'
+            )
 
     def _parse_cards(self, page, cat_code, stream_name):
         """Parse programme cards from the current page."""
