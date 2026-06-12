@@ -713,3 +713,17 @@
   + prioritise (BC before funding note). Exclude the empty-`justification` field (owner: not a good question). FE/BE, no
   migration; student stream still flag-gated (CHECK2_STUDENT_QUERIES_ENABLED) so it surfaces to the officer until on.
   (Logged 2026-06-10, Action Centre follow-up.)
+- TD-112: **Income route-switch not yet click-tested in a browser.** The post-submit self-serve income route switch
+  (endpoint `.../income-route/` + `IncomeRouteSwitch` mini-wizard) is integration-tested via Django's test client (11
+  tests: both directions, recompute, no-re-block) and the FE type-checks, but the live in-browser flow on a real
+  `profile_complete` student isn't click-tested. Verify on prod after deploy: open the Action Centre on an STR-route
+  student with an income task → "Change how you prove your income" → switch to salary → confirm → the STR task clears,
+  the earner-IC task appears, status stays `profile_complete`. (Logged 2026-06-12, income route switch. TD-070 pattern.)
+- TD-113: **Switching to the salary route does not ticket the salary slip (soft signal only).** The salary verdict
+  (`verdict_engine._verdict_income_salary`) raises ticketable gaps for the earner IC + relationship docs, but a missing
+  salary slip keeps income at `recommend`/`income_unverified_needs_interview` (an officer/interview flag, never a student
+  task) — by design (the salary route never hard-blocks post-submit). So a student who switches STR→salary is prompted
+  for the IC but not, via an Action-Centre task, for the salary slip; the route-switch wizard's "we'll show you which
+  documents to upload" + the income_requirements checklist set the expectation. **To resolve (if wanted):** add a
+  `salary_slip_missing` ticketable verdict code on the salary route + entry in `CODE_TO_TICKET`. **Needs sign-off** — it
+  reopens the "never hard-block post-submit income" decision (consent-gate-v2). (Logged 2026-06-12, income route switch.)
