@@ -2669,3 +2669,22 @@ varied to fingerprint; the engine doesn't check them, so they can't trigger a ca
 suspect in the verdict status — the officer flag + the document drawer carry that detail).
 **Revisit if:** a fact needs finer-grained genuineness handling than a single downgrade (then move that fact's cap
 back into its verdict function).
+
+## Reliability surfaced as four-fact agreement, not an explicit overall-stance toggle — Verdict scorekeeper (Sprint 3), 2026-06-12
+**Decision:** The AI-reliability card reports agreement (= 1 − override rate) per fact (Identity / Academic /
+Pathway / Income) + an overall, derived from the four per-fact Pass/Fail decisions the reviewer already records.
+We did NOT add the `officer_verdict.overall` ('accept'|'decline'|'hold') UI toggle that TD-083 also contemplated;
+`overall` stays inferred (sent as `''`).
+**Alternatives considered:** (a) add an explicit overall accept/decline/hold control to the Decision panel and
+score reliability on that single stance — rejected for now; (b) score per-fact only with no overall line — rejected
+(the overall figure is the headline a sponsor asks for).
+**Rationale:** The four per-fact decisions are already captured at verdict-save and already feed `override_metrics`;
+deriving agreement from them needs zero reviewer-workflow change and zero new field. An explicit overall toggle is a
+separate UX with its own ambiguity (how does it reconcile with the four facts?) and wasn't needed to answer "can you
+rely on the AI per fact?". The card is a read-only aggregate (no flag) and hides itself on any data error so it can
+never break the applications list.
+**Trade-offs:** No single deliberate "officer's overall stance" signal — the overall agreement is computed from the
+facts, not stated by the officer. Fine while the four facts are the unit of review; insufficient if a coordinator
+dashboard later needs an explicit accept/decline rate.
+**Revisit if:** a coordinator dashboard wants an explicit overall stance (then build just the toggle — the unbuilt
+half of TD-083).

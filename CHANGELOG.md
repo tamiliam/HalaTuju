@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **AI reliability scorekeeper — measured AI-vs-human agreement (verification-assurance Sprint 3, the last; no migration, no backend change).**
+  Closes the verification-assurance programme (layers 1–3): the reviewer's authority is now *measured*, not asserted. Every
+  time a reviewer saves their four-fact Pass/Fail in the Decision panel, the system already snapshots what the AI had
+  suggested (`ai_verdict_snapshot` + `officer_verdict`) and `audit.override_metrics` already computes the agreement — this
+  sprint adds the **missing surface** (TD-083): an **AI reliability card** at the top of the B40 applications list showing
+  **agreement = 1 − override rate** per fact (Identity / Academic / Pathway / Income) + overall, with the raw `(agree/decided)`
+  counts. New tested pure helper `verdictReliability()` (`officerCockpit.ts`) turns the metrics into per-fact + overall bars;
+  `AiReliabilityCard.tsx` is self-contained, reads `getVerdictMetrics()`, and **never breaks the page** (a metrics hiccup
+  falls back to hidden). Honest empty-state until reviewers record verdicts (none on prod yet → the card hides). No reviewer
+  workflow change beyond the already-silent capture; non-identifying aggregate. en/ms/ta (`admin.scholarship.reliability.*`).
+  +2 jest (`verdictReliability`); 305 jest, parity 2574×3, next build clean. No migration, no new backend.
 - **Document genuineness — supporting docs + wrong-type (verification-assurance Sprint 2; flag-gated, no migration).**
   Extends the IC fingerprint (Sprint 1) to the standardised supporting documents — **STR, SPM results slip, birth
   certificate, EPF** — and adds **wrong-document-type** detection. Validated on our real files first: genuine official

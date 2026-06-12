@@ -2711,6 +2711,12 @@
         "ipts": "Private (IPTS)",
         "unknown": "Not sure"
       },
+      "reliability": {
+        "title": "AI reliability",
+        "subtitle": "How often the AI's suggestion matched the reviewer's decision — across {n} reviewed application(s).",
+        "overall": "Overall",
+        "empty": "No reviewed applications yet — the AI's reliability will appear here once reviewers record their verdicts."
+      },
       "verdict": {
         "title": "Verification verdict",
         "intro": "What the checks confirm, and what still needs you. Audit it — don't rebuild it.",
