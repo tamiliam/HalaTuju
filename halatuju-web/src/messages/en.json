@@ -1234,6 +1234,7 @@
         "name": "Name",
         "address": "Address",
         "fromIc": "from your IC",
+        "notGenuine": "This doesn't look like a photo of a real MyKad. Please re-upload a clear photo of your actual MyKad. Nothing is blocked.",
         "match": "Match",
         "partial": "Partial match",
         "mismatch": "Mismatch — re-check",
@@ -2586,6 +2587,14 @@
         "payslip_epf_divergence": {
           "fact": "A working member's payslip (RM {slip}) and EPF-implied salary (RM {epf_implied}) differ noticeably.",
           "question": "The payslip and EPF figures don't line up — is there overtime or commission, or were contributions paid late? What is the regular monthly pay?"
+        },
+        "ic_low_confidence": {
+          "fact": "The identity card doesn't look like a photo of a physical MyKad (likely typed text, a printout, or a screenshot) — the name and IC number may still match what was entered.",
+          "question": "The IC image doesn't look like a genuine card — confirm the applicant's physical MyKad at interview."
+        },
+        "parent_ic_low_confidence": {
+          "fact": "The parent/guardian's identity card doesn't look like a photo of a physical MyKad (likely typed text, a printout, or a screenshot).",
+          "question": "The parent/guardian IC image doesn't look like a genuine card — confirm the physical card at interview."
         },
         "first_in_family_with_siblings_studying": {
           "fact": "Student claims to be first-to-university, but {count} sibling(s) are studying.",

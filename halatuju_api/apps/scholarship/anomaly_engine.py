@@ -356,6 +356,32 @@ def _detect_payslip_epf_divergence(application) -> Optional[Anomaly]:
     return None
 
 
+def _ic_authenticity_status(doc) -> str:
+    """The stored genuineness status for an IC doc — '' if the check didn't run."""
+    if doc is None or not isinstance(getattr(doc, 'vision_fields', None), dict):
+        return ''
+    a = doc.vision_fields.get('authenticity')
+    return a.get('status', '') if isinstance(a, dict) else ''
+
+
+def _detect_ic_low_confidence(application) -> Optional[Anomaly]:
+    """The IC genuineness fingerprint says the uploaded image doesn't look like a real photo
+    of a physical MyKad (likely typed / printed / a screenshot). Soft — confirm the physical
+    card at interview; never gates. Flag-gated: only fires when the check actually ran."""
+    status = _ic_authenticity_status(_latest_ic_doc(application))
+    if status not in ('low_confidence', 'not_an_ic'):
+        return None
+    return Anomaly('ic_low_confidence', {'status': status})
+
+
+def _detect_parent_ic_low_confidence(application) -> Optional[Anomaly]:
+    """Same genuineness check for the parent / guardian IC."""
+    status = _ic_authenticity_status(_latest_parent_ic_doc(application))
+    if status not in ('low_confidence', 'not_an_ic'):
+        return None
+    return Anomaly('parent_ic_low_confidence', {'status': status})
+
+
 # ─── Aggregator ─────────────────────────────────────────────────────────────
 
 _DETECTORS = (
@@ -376,6 +402,9 @@ _DETECTORS = (
     _detect_utility_holder_unknown,
     _detect_utility_address_mismatch,
     _detect_payslip_epf_divergence,
+    # Verification-assurance — document genuineness fingerprint (flag-gated)
+    _detect_ic_low_confidence,
+    _detect_parent_ic_low_confidence,
 )
 
 

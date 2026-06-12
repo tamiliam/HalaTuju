@@ -149,6 +149,16 @@ def _verdict_identity(application):
     # pre-interview flag ("ask which is current" — `_detect_address_state_mismatch` in
     # anomaly_engine), NOT a verdict downgrade. So identity reads green when name + NRIC
     # match, consistent with the Documents panel and the student's own identity card.
+
+    # Genuineness fingerprint (soft, flag-gated — only present when the check ran): if the
+    # IC doesn't look like a real card, the AI cannot be CERTAIN of identity even when the
+    # typed name + NRIC match — so it caps the verdict at 'review' (the reviewer confirms
+    # the physical card at interview). It NEVER auto-fails on genuineness alone — we don't
+    # accuse; we lower confidence (see the verification-assurance roadmap's threat model).
+    auth = ic.vision_fields.get('authenticity') if isinstance(ic.vision_fields, dict) else None
+    if isinstance(auth, dict) and auth.get('status') in ('low_confidence', 'not_an_ic'):
+        unresolved.append(_item('ic_low_confidence', status=auth['status'],
+                                reason=auth.get('reason', '')))
     return _fact('identity', 'verified' if not unresolved else 'review',
                  evidence, unresolved)
 

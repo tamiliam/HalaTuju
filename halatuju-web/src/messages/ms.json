@@ -1234,6 +1234,7 @@
         "name": "Nama",
         "address": "Alamat",
         "fromIc": "daripada KP anda",
+        "notGenuine": "Ini tidak kelihatan seperti foto MyKad sebenar. Sila muat naik semula foto MyKad sebenar anda yang jelas. Tiada apa-apa disekat.",
         "match": "Sepadan",
         "partial": "Sepadan sebahagian",
         "mismatch": "Tidak sepadan — semak semula",
@@ -2586,6 +2587,14 @@
         "payslip_epf_divergence": {
           "fact": "Slip gaji ahli yang bekerja (RM {slip}) dan gaji anggaran KWSP (RM {epf_implied}) berbeza ketara.",
           "question": "Angka slip gaji dan KWSP tidak sepadan — adakah kerja lebih masa atau komisen, atau caruman dibayar lewat? Berapakah gaji bulanan tetap?"
+        },
+        "ic_low_confidence": {
+          "fact": "Kad pengenalan tidak kelihatan seperti foto MyKad fizikal (berkemungkinan teks taip, cetakan, atau tangkapan skrin) — nama dan nombor IC mungkin masih sepadan.",
+          "question": "Imej IC tidak kelihatan seperti kad tulen — sahkan MyKad fizikal pemohon semasa temu duga."
+        },
+        "parent_ic_low_confidence": {
+          "fact": "Kad pengenalan ibu bapa/penjaga tidak kelihatan seperti foto MyKad fizikal (berkemungkinan teks taip, cetakan, atau tangkapan skrin).",
+          "question": "Imej IC ibu bapa/penjaga tidak kelihatan seperti kad tulen — sahkan kad fizikal semasa temu duga."
         },
         "first_in_family_with_siblings_studying": {
           "fact": "Pelajar mendakwa pertama ke universiti, tetapi {count} adik-beradik sedang belajar.",
