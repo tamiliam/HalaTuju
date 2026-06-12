@@ -1556,6 +1556,29 @@
       "acceptedTitle": "Your application is confirmed",
       "acceptedBody": "You've been accepted. Tap to view the details."
     },
+    "incomeRouteSwitch": {
+      "cta": "Change how you prove your income",
+      "title": "Change how you prove your income",
+      "help": "Choose how your household shows its income — you can switch any time.",
+      "route": {
+        "str": "We receive STR (Sumbangan Tunai Rahmah)",
+        "salary": "We don't receive STR"
+      },
+      "earnerQ": "Whose name is the STR registered in?",
+      "membersQ": "Who in your household earns an income? Tick everyone.",
+      "member": {
+        "father": "Father",
+        "mother": "Mother",
+        "guardian": "Guardian",
+        "brother": "Elder brother",
+        "sister": "Elder sister"
+      },
+      "note": "After you confirm, we'll show you exactly which documents to upload.",
+      "cancel": "Cancel",
+      "confirm": "Confirm & update my documents",
+      "confirming": "Updating…",
+      "error": "Sorry, we couldn't update that. Please try again."
+    },
     "actionCentre": {
       "title": "Almost there, {name}",
       "intro": "A few quick things and your application is complete.",

@@ -3,9 +3,12 @@ Business logic for B40 Assistance Programme intake.
 
 Pure-ish functions kept out of the view (mirrors apps/courses/eligibility_service.py).
 """
+import logging
 from datetime import timedelta
 
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 from .emails import (
     send_acknowledgement_email, send_pass_email, send_fail_email,
@@ -489,6 +492,43 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     application.assigned_to = reviewer
     application.assigned_at = now if reviewer is not None else None
     application.save(update_fields=['assigned_to', 'assigned_at'])
+    return application
+
+
+def switch_income_route(application, *, route, earner='', members=None, by='student'):
+    """Student self-serve income route switch (post-submit, Action Centre). Writes
+    ``income_route`` + the route's identifying fields, audits the change to the
+    structured log, and recomputes the resolution queue so the new route's missing-doc
+    tickets appear and the old route's gap auto-resolves.
+
+    Deliberately does NOT touch submission status or call ``revert_if_profile_incomplete``:
+    a submitted student is NEVER re-blocked (consent-gate-v2) — the new route's missing
+    documents become Check-2 Action-Centre tickets, not a submission block. (Routing the
+    switch through the broad details PATCH would revert profile_complete → shortlisted the
+    moment the salary route's new docs are unmet — the trap this endpoint avoids.)
+
+      route='str'    → income_earner set, income_working_members cleared.
+      route='salary' → income_working_members set, income_earner cleared.
+    """
+    members = list(members or [])
+    from_route = (getattr(application, 'income_route', '') or '').strip()
+    if route == 'str':
+        application.income_route = 'str'
+        application.income_earner = earner or ''
+        application.income_working_members = []
+    elif route == 'salary':
+        application.income_route = 'salary'
+        application.income_working_members = members
+        application.income_earner = ''
+    else:
+        raise ValueError(f'switch_income_route: bad route {route!r}')
+    application.save(update_fields=['income_route', 'income_earner', 'income_working_members'])
+    # Audit (owner's call: audit-log only, no officer pre-interview flag). Cloud Logging
+    # is the durable trail; no in-app surface + no migration.
+    logger.info('income_route_switch app=%s from=%s to=%s earner=%s members=%s by=%s',
+                application.id, from_route or '(none)', route, earner or '-', members or '-', by)
+    from .resolution import sync_resolution_items
+    sync_resolution_items(application)
     return application
 
 

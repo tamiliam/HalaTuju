@@ -270,6 +270,33 @@ class FundingNeedSerializer(serializers.ModelSerializer):
         fields = ['categories', 'funding_note', 'programme_months']
 
 
+class IncomeRouteSwitchSerializer(serializers.Serializer):
+    """Post-submit income route switch (student self-serve, Action Centre). The student
+    re-runs the income route question: STR (single earner) or salary (≥1 working member).
+    Mirrors the income wizard's completeness rules (`incomeWizard.wizardComplete`)."""
+    income_route = serializers.ChoiceField(choices=['str', 'salary'])
+    income_earner = serializers.ChoiceField(
+        choices=['', 'father', 'mother', 'guardian'], required=False, allow_blank=True, default='')
+    income_working_members = serializers.ListField(
+        child=serializers.ChoiceField(choices=['father', 'mother', 'guardian', 'brother', 'sister']),
+        required=False, allow_empty=True, default=list)
+
+    def validate(self, data):
+        route = data['income_route']
+        if route == 'str' and not data.get('income_earner'):
+            raise serializers.ValidationError(
+                {'income_earner': 'Choose whose income the STR is in (father / mother / guardian).'})
+        if route == 'salary':
+            members = data.get('income_working_members') or []
+            if not members:
+                raise serializers.ValidationError(
+                    {'income_working_members': 'Pick at least one working household member.'})
+            if len(set(members)) != len(members):
+                raise serializers.ValidationError(
+                    {'income_working_members': 'Duplicate members are not allowed.'})
+        return data
+
+
 class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     """PATCH payload for STEP 2 deeper-info + funding need."""
     aspirations = serializers.CharField(required=False, allow_blank=True, max_length=STORY_TEXT_MAX)

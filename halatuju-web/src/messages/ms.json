@@ -1556,6 +1556,29 @@
       "acceptedTitle": "Permohonan anda disahkan",
       "acceptedBody": "Anda telah diterima. Ketik untuk melihat butiran."
     },
+    "incomeRouteSwitch": {
+      "cta": "Tukar cara anda membuktikan pendapatan",
+      "title": "Tukar cara anda membuktikan pendapatan",
+      "help": "Pilih cara isi rumah anda menunjukkan pendapatannya — anda boleh tukar bila-bila masa.",
+      "route": {
+        "str": "Kami menerima STR (Sumbangan Tunai Rahmah)",
+        "salary": "Kami tidak menerima STR"
+      },
+      "earnerQ": "STR didaftarkan atas nama siapa?",
+      "membersQ": "Siapa dalam isi rumah anda yang memperoleh pendapatan? Tandakan semua.",
+      "member": {
+        "father": "Bapa",
+        "mother": "Ibu",
+        "guardian": "Penjaga",
+        "brother": "Abang",
+        "sister": "Kakak"
+      },
+      "note": "Selepas anda mengesahkan, kami akan tunjukkan dokumen yang perlu dimuat naik.",
+      "cancel": "Batal",
+      "confirm": "Sahkan & kemas kini dokumen saya",
+      "confirming": "Mengemas kini…",
+      "error": "Maaf, kami tidak dapat mengemas kini. Sila cuba lagi."
+    },
     "actionCentre": {
       "title": "Hampir siap, {name}",
       "intro": "Beberapa perkara cepat lagi dan permohonan anda lengkap.",

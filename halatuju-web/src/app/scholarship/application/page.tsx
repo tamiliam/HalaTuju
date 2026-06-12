@@ -152,6 +152,7 @@ export default function ScholarshipApplicationPage() {
         token={token}
         studentName={profile?.name}
         email={commsEmail || app.notify_email || ''}
+        applicationId={app.id}
         formLocked
       />,
     )
