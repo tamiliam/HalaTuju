@@ -37,6 +37,7 @@ import {
   type ConfirmTarget,
 } from '@/lib/actionCentre'
 import DocumentHelpCoach, { CoachCard } from '@/components/DocumentHelpCoach'
+import IncomeRouteSwitch from '@/components/IncomeRouteSwitch'
 
 // ── Icons (inline SVG, blue circle bg set by the caller) ──────────────────
 
@@ -302,6 +303,7 @@ export default function ActionCentre({
   onConfirm,
   formLocked = false,
   email = '',
+  applicationId,
 }: {
   token: string | null
   studentName?: string
@@ -313,6 +315,9 @@ export default function ActionCentre({
   formLocked?: boolean
   /** The address updates are sent to — shown in the locked empty-state message. */
   email?: string
+  /** Post-submit only: enables the in-place income route switch on an income task
+   *  (the form/wizard is locked, so this is the student's only way to change route). */
+  applicationId?: number
 }) {
   const { t } = useT()
   const [open, setOpen] = useState<ResolutionItem[]>([])
@@ -413,6 +418,14 @@ export default function ActionCentre({
               formLocked={formLocked}
             />
           ))}
+        </div>
+      )}
+      {/* Post-submit, when an income task is open, the student can change how they prove
+          income (the form/wizard is locked, so this is their only route to switch). One
+          entry for the whole income section, not per-ticket. */}
+      {formLocked && applicationId && open.some((i) => i.fact === 'income') && (
+        <div className="mt-4">
+          <IncomeRouteSwitch token={token} applicationId={applicationId} onDone={fetchItems} />
         </div>
       )}
       {doneCards}
