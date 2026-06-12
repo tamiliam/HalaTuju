@@ -348,9 +348,11 @@ class TestStudentDocRequestCodes(TestCase):
 
 
 class TestDocMatchVerdict(_Base):
-    """The Action Centre's per-document accept/keep-open verdict (Phase 1). Only a
-    CONFIRMED mismatch or an UNREADABLE scan keeps a task open; uncertain / soft /
-    pending are accepted (D1). Engines are patched — the reduction logic is what's tested."""
+    """The Action Centre's per-document accept/keep-open verdict (Phase 1). A CONFIRMED
+    mismatch or an UNREADABLE scan keeps a task open; uncertain / soft are accepted (D1).
+    Race fix (2026-06-12): a NOT-YET-SCANNED document returns 'pending' (hold the task),
+    not 'ok' — so an unread upload can't greenlight a task before its scan finishes.
+    Engines are patched — the reduction logic is what's tested."""
 
     def _doc(self, doc_type, **kw):
         return ApplicantDocument.objects.create(
@@ -387,6 +389,29 @@ class TestDocMatchVerdict(_Base):
                    return_value={'name': 'match', 'subjects': 'match', 'results': 'uncertain'}):
             self.assertEqual(doc_match_verdict(doc), 'ok')
 
+    def test_results_slip_subjects_unreadable(self):
+        # A slip whose NAME reads but whose SUBJECT TABLE can't be read is still a
+        # re-upload — previously this slipped through as 'ok' (only name was checked).
+        doc = self._doc('results_slip')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'match', 'subjects': 'unreadable', 'results': 'unreadable'}):
+            self.assertEqual(doc_match_verdict(doc), 'unreadable')
+
+    def test_results_slip_not_scanned_is_pending(self):
+        # Extraction hasn't run yet → hold the task (don't greenlight an unread slip).
+        doc = self._doc('results_slip')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'pending', 'subjects': 'pending', 'results': 'pending'}):
+            self.assertEqual(doc_match_verdict(doc), 'pending')
+
+    def test_results_slip_no_grades_to_compare_still_ok(self):
+        # results=='pending' because the profile has NO grades to compare against — the
+        # slip itself read fine (name+subjects), so we still accept (not a 'pending' hold).
+        doc = self._doc('results_slip')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'match', 'subjects': 'match', 'results': 'pending'}):
+            self.assertEqual(doc_match_verdict(doc), 'ok')
+
     def test_str_rejected_is_mismatch(self):
         doc = self._doc('str')
         with patch('apps.scholarship.income_engine.student_str_check',
@@ -416,6 +441,17 @@ class TestDocMatchVerdict(_Base):
         with patch('apps.scholarship.income_engine.student_income_ic_check',
                    return_value={'name_status': 'mismatch', 'readable': True}):
             self.assertEqual(doc_match_verdict(doc), 'mismatch')
+
+    def test_parent_ic_not_scanned_is_pending(self):
+        # No vision_run_at → Cloud Vision hasn't read the IC yet → hold the task.
+        doc = self._doc('parent_ic')   # vision_run_at unset
+        with patch('apps.scholarship.income_engine.student_income_ic_check',
+                   return_value={'name_status': 'pending', 'readable': False}):
+            self.assertEqual(doc_match_verdict(doc), 'pending')
+
+    def test_ic_not_scanned_is_pending(self):
+        doc = self._doc('ic')   # vision_run_at unset
+        self.assertEqual(doc_match_verdict(doc), 'pending')
 
     def test_utility_always_ok(self):
         self.assertEqual(doc_match_verdict(self._doc('water_bill')), 'ok')
@@ -448,6 +484,16 @@ class TestResolveDocItemsForUpload(_Base):
         doc = self._doc('birth_certificate')
         with patch('apps.scholarship.resolution.doc_match_verdict', return_value='mismatch'):
             self.assertEqual(resolve_doc_items_for_upload(self.app, doc), 'mismatch')
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')
+
+    def test_pending_keeps_officer_doc_item_open(self):
+        # The race fix: a not-yet-scanned upload must NOT close the task.
+        item = add_officer_item(self.app, kind='doc', prompt='Upload your BC',
+                                admin_email='o@x', doc_type='birth_certificate')
+        doc = self._doc('birth_certificate')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='pending'):
+            self.assertEqual(resolve_doc_items_for_upload(self.app, doc), 'pending')
         item.refresh_from_db()
         self.assertEqual(item.status, 'open')
 
