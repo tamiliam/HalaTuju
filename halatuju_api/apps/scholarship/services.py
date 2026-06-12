@@ -716,6 +716,91 @@ def confirm_pathway(application):
     return True
 
 
+def autofill_pathway_from_offer(application):
+    """Silently settle a pathway the student had NOT yet locked, from a verified offer
+    letter — no student query (the undecided→decided case the ``pathway_confirm`` query
+    is *not* for). Mirrors the apply form's own storage shapes (see ``offer_pathway``):
+    pre-U → ``chosen_pathway`` + ``pre_u_track`` + ``pre_u_institution`` (school as text);
+    tertiary → ``chosen_programme`` with a canonical ``course_id`` on a confident catalogue
+    match, else plain labels. Also clears the "still deciding" framing (``pathway_certainty
+    = 'sure'``) so the cockpit stops showing the student as exploring.
+
+    Deliberately does NOT stamp ``pathway_confirmed_at`` — that short-circuits the verdict
+    BEFORE the clash check, so stamping here would mask a future genuinely-different offer.
+    The verdict reaches 'verified' on its own (readable, non-clashing offer); writing
+    ``chosen_programme`` also means a later clashing offer is now compared against it and
+    correctly raises ``pathway_confirm``.
+
+    Fires only when the offer is the applicant's (identity not mismatched), readable, and
+    NOT a genuine clash with an already-specific declared programme (that stays the
+    ``pathway_confirm`` query's job). No-op (returns False) otherwise. Idempotent."""
+    from .models import ApplicantDocument
+    from .pathway_engine import student_offer_check
+    from . import offer_pathway as op
+
+    offer = (ApplicantDocument.objects.filter(application=application, doc_type='offer_letter')
+             .order_by('-uploaded_at').first())
+    if offer is None:
+        return False
+    chk = student_offer_check(offer)
+    # Wrong-person letter (name OR IC clash) → never adopt.
+    if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
+        return False
+    prog = (chk['programme'] or '').strip()
+    inst = (chk['institution'] or '').strip()
+    if not prog and not inst:
+        return False  # nothing readable to settle
+    # A genuine clash with a SPECIFIC declared programme is the confirm query's job, not a
+    # silent overwrite.
+    if chk['pathway'] == 'mismatch':
+        return False
+
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    locked = bool(cp.get('course_id')) and application.pathway_certainty == 'sure'
+    if locked:
+        return False  # the student already locked a precise, non-clashing pick
+
+    ptype = op.detect_pathway_type(prog, inst)
+    fields = []
+
+    if op.is_pre_u(ptype):
+        # Pre-U: structured pathway + school (apply-form parity). Fill blanks only —
+        # never clobber something the student deliberately typed.
+        if not (application.chosen_pathway or '').strip():
+            application.chosen_pathway = ptype
+            fields.append('chosen_pathway')
+        if not (application.pre_u_institution or '').strip():
+            application.pre_u_institution = inst
+            fields.append('pre_u_institution')
+        if ptype == 'stpm':
+            stream = op.parse_stpm_stream(prog)
+            if stream and not (application.pre_u_track or '').strip():
+                application.pre_u_track = stream
+                fields.append('pre_u_track')
+
+    # Display programme: a canonical course_id for a confident tertiary match, else labels.
+    new_cp = {'course_name': prog, 'institution': inst, 'source': 'offer_letter_auto'}
+    if not op.is_pre_u(ptype):
+        match = op.resolve_catalogue_course(prog, inst)
+        if match:
+            new_cp = {**match, 'source': 'offer_letter_auto'}
+    # Only overwrite when there's no precise existing pick to protect, and only when the
+    # value actually changes (keeps re-runs idempotent).
+    if not cp.get('course_id') and cp != new_cp:
+        application.chosen_programme = new_cp
+        fields.append('chosen_programme')
+
+    # The place is confirmed — drop the "still deciding" framing.
+    if application.pathway_certainty != 'sure':
+        application.pathway_certainty = 'sure'
+        fields.append('pathway_certainty')
+
+    if not fields:
+        return False
+    application.save(update_fields=fields)
+    return True
+
+
 def revert_if_profile_incomplete(application):
     """Honest-funnel guard: if a ``profile_complete`` application is edited back
     into an incomplete state (e.g. the student deletes a compulsory document, or

@@ -364,6 +364,15 @@ class AdminRunVisionView(_AdminBase):
             if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
                 _vision.run_field_extraction_for_document(
                     doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
+            # Re-reading an offer letter may now settle an undecided pathway (same silent
+            # auto-fill as upload; a genuine clash is left for the pathway_confirm query).
+            if doc.doc_type == 'offer_letter':
+                try:
+                    from .services import autofill_pathway_from_offer
+                    autofill_pathway_from_offer(app)
+                except Exception:
+                    logging.getLogger(__name__).warning(
+                        'autofill_pathway_from_offer failed for app %s', app.id, exc_info=True)
         else:
             return Response({'error': 'This document type has no automatic check to re-run.'},
                             status=status.HTTP_400_BAD_REQUEST)
