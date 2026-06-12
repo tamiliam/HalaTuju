@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Course-data refresh wrapper + dated archive + annual reminder (course-data pipeline Sprint 1; no migration).** Turns
+  the fragile multi-step STPM/UPU refresh into one auditable command. New `refresh_stpm` management command orchestrates
+  `scrape_mohe_stpm` (sanity-checked) → optional `validate_stpm_urls` → `sync_stpm_mohe` (**dry-run by default**) →
+  `audit_data`, prints a single step summary, and **stops loudly** if a safety guard trips (scrape shortfall, or the sync
+  mass-deactivation guard). Each run archives the scraped CSV as `data/stpm/archive/mohe_<date>.csv` and prunes to the
+  newest `--keep` (default 12), so a bad refresh can be diffed/rolled back. It's a **local operator tool** (the scrape
+  needs Playwright). New `send_refresh_reminder` command (CronRunView job `refresh-reminder`, recipient
+  `COURSE_REFRESH_REMINDER_EMAIL` → falls back to `DEFAULT_FROM_EMAIL`, no-op without one) emails the admin an annual
+  nudge to run it — fired by a Cloud Scheduler job (mirrors `vision-outage`). +12 pytest (archive helpers, orchestration
+  order, dry-run/apply pass-through, scrape-failure + sync-guard abort, reminder recipient/fallback/no-op). Decision
+  logged: operational reminders stay email/Cloud-Scheduler until ~5+ accrue or >1 admin acts — no in-app notification
+  system yet (`docs/decisions.md`).
 - **AI reliability scorekeeper — measured AI-vs-human agreement (verification-assurance Sprint 3, the last; no migration, no backend change).**
   Closes the verification-assurance programme (layers 1–3): the reviewer's authority is now *measured*, not asserted. Every
   time a reviewer saves their four-fact Pass/Fail in the Decision panel, the system already snapshots what the AI had

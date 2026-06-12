@@ -1,5 +1,25 @@
 # Architectural Decisions — HalaTuju
 
+## Operational reminders stay email/Cloud-Scheduler — no in-app notification system yet — 2026-06-12
+
+**Decision:** Admin/operational reminders (refresh the catalogue, backup status, link-rot, anomaly alerts)
+are delivered by **email via Cloud Scheduler** (mirroring the live `vision-outage` pattern), **not** a
+purpose-built in-app notification centre. User-facing notifications already have homes (student Action
+Centre, sponsor digests); this decision is only about the *operational/admin* class.
+
+**Alternatives considered:** (1) Build an in-app notification/reminder centre now (model + scheduler→DB
+writes + admin UI + read/ack/snooze state + ×3 i18n). (2) Email + Cloud Scheduler (chosen).
+
+**Rationale:** At ~2–3 recurring operational reminders and a single admin operator, a notification
+framework is premature infrastructure — email already does this at zero maintenance, and a centre is just
+one more place to check. Building it now would burn multi-sprint effort to replace what email does free.
+
+**Revisit when** any of: **~5+ recurring operational reminders** accrue, OR **more than one admin** needs to
+act on them, OR we need reminder **state** (snooze/acknowledge/assign). The cheapest first step at that
+point is a **"system freshness" strip on the admin dashboard** (e.g. "STPM catalogue last refreshed N
+months ago · UPU refresh due Dec", derived from the dated archive + job timestamps) — a full notification
+system only if that proves insufficient.
+
 ## B40 applications snapshot the chosen course; the catalogue is deactivated, never hard-deleted — Course-data robustness, 2026-06-12
 
 **Decision:** Two linked rules that keep the course catalogue and B40 applications decoupled:
