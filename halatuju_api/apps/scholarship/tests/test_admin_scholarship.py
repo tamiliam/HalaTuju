@@ -65,6 +65,19 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(r.json()['total_count'], 1)
         self.assertEqual(r.json()['applications'][0]['name'], 'PRIYA')  # names upper-cased for admin
 
+    def test_admin_list_has_source_and_merit(self):
+        """The list table's Source (referring org) + Merit columns. Merit is computed live
+        per row via the same helper the detail card uses (no stored column)."""
+        StudentProfile.objects.filter(pk=self.profile.pk).update(
+            referral_source='smc', coq_score=7, stream_subjects=[],
+            grades={'bm': 'A', 'eng': 'A', 'math': 'A', 'hist': 'A',
+                    'phy': 'A', 'chem': 'A', 'bio': 'A', 'addmath': 'A'},
+        )
+        self._auth(ADMIN)
+        item = self.client.get('/api/v1/admin/scholarship/applications/').json()['applications'][0]
+        self.assertEqual(item['referral_source'], 'smc')
+        self.assertGreater(item['merit_score'], 85)
+
     def test_admin_list_filter_bucket(self):
         self._auth(ADMIN)
         r = self.client.get('/api/v1/admin/scholarship/applications/?bucket=B')
