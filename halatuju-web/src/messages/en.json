@@ -1399,7 +1399,7 @@
         "offer_letter_unreadable": "We couldn't read your offer letter — please re-upload a clearer copy in the Documents step.",
         "income_document_unreadable": "We couldn't read one of your income documents — please re-upload a clearer photo in the Documents step.",
         "parent_ic_missing": "Upload your parent's or guardian's IC in the Documents step.",
-        "income_proof_missing": "Upload proof of household income (STR, salary slip, or EPF) in the Documents step.",
+        "income_proof_missing": "Upload your STR (Sumbangan Tunai Rahmah) document in the Documents step.",
         "income_incomplete": "Complete the Household income section in the Documents step.",
         "offer_letter_missing": "Upload your offer letter in the Documents step.",
         "str_missing": "Upload your STR document in the Documents step.",
@@ -1572,6 +1572,7 @@
       "upload": "Upload",
       "uploading": "Uploading…",
       "uploadError": "Sorry, that upload didn't work. Please try again.",
+      "stillChecking": "We've got your upload and we're still checking it — give it a moment, then refresh this page.",
       "review": "Review",
       "confirmPathwayYes": "Yes, this is my final pathway",
       "send": "Send",
@@ -1623,8 +1624,8 @@
           "desc": "Some grades don't match your results slip. Please re-check what you entered."
         },
         "income_proof_missing": {
-          "title": "Upload proof of income",
-          "desc": "We need one income document (salary slip, EPF, or STR) for your household."
+          "title": "Upload your STR document",
+          "desc": "Your household is on the STR route, so please upload your STR (Sumbangan Tunai Rahmah) document. This is the income proof we need — a salary slip or EPF statement won't replace it."
         },
         "income_earner_undeclared": {
           "title": "Tell us about your family's income",
@@ -2717,7 +2718,7 @@
           "results_slip_unreadable": "The results slip could not be read — ask for a clearer copy.",
           "grades_unverified": "Grades not yet cross-checked against the slip — eyeball them (automated check coming).",
           "str_present_unverified": "STR document present but not yet matched to the household — confirm.",
-          "income_proof_missing": "No proof of income uploaded — request STR, salary slip, or EPF.",
+          "income_proof_missing": "No STR document uploaded — this household is on the STR route, so request the STR (a salary slip or EPF won't substitute).",
           "income_earner_undeclared": "The student hasn't said whose income they're showing (the income wizard is incomplete) — we can't check the documents until they do.",
           "earner_ic_missing": "No IC uploaded for: {members} — we can't confirm the income documents belong to the family. Request it.",
           "earner_ic_unreadable": "Couldn't read the IC for: {members} — ask for a clearer photo.",

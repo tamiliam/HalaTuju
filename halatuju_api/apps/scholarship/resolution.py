@@ -179,17 +179,28 @@ def add_officer_item(application, *, kind, prompt, admin_email, doc_type='', fac
 
 def doc_match_verdict(doc):
     """The Action Centre's per-document verdict for an uploaded file:
-    ``'mismatch'`` (a confirmed red), ``'unreadable'`` (a bad/blurry scan), or
-    ``'ok'`` (accept — resolve the task).
+    ``'mismatch'`` (a confirmed red), ``'unreadable'`` (a bad/blurry scan),
+    ``'pending'`` (not scanned yet — hold the task), or ``'ok'`` (accept — resolve
+    the task).
 
     Mirrors the consent-gate per-document classification
     (``services.document_red_blockers`` / ``document_unreadable_blockers``) so the
-    Action Centre and the gate never disagree: only a CONFIRMED ``mismatch`` (or an
-    STR rejected/stale) or an UNREADABLE scan keeps a task open. Everything else —
-    'pending' (OCR not done / our outage), 'uncertain', soft signals, utilities —
-    is accepted (D1: don't trap a student on weak signals; the reviewer is the
-    backstop). Reads the SAME stored verification the student sees in Documents; runs
-    no new OCR.
+    Action Centre and the gate never disagree: a CONFIRMED ``mismatch`` (or an STR
+    rejected/stale) or an UNREADABLE scan keeps a task open.
+
+    **Race fix (2026-06-12):** a document that has NOT yet been read — the scan was
+    deferred or skipped under the hourly doc-assist cap, so its fields are still
+    blank/``review_manually`` — now returns ``'pending'`` (keep the task open),
+    NOT ``'ok'``. Previously an unread upload greenlit and auto-closed the task
+    before its scan finished, so a wrong/blurry re-upload could satisfy an officer's
+    "this is unclear, send a better one" request. The interactive upload now forces
+    the read first (see ``views._maybe_extract_fields(force=True)``), so 'pending'
+    only persists on a genuine read failure — where holding the task (reviewer is the
+    backstop) is safer than greenlighting an unverified doc. A true OCR-service outage
+    on an IC (ran-but-errored) still accepts, so we don't trap a student behind our
+    own broken scanner. Everything else — 'uncertain', soft signals, utilities — is
+    accepted (D1). Reads the SAME stored verification the student sees in Documents;
+    runs no new OCR.
     """
     from . import income_engine
     from .academic_engine import student_slip_check
@@ -205,22 +216,35 @@ def doc_match_verdict(doc):
         chk = student_slip_check(doc) or {}
         if red(chk, 'name', 'subjects', 'results'):
             return 'mismatch'
-        if chk.get('name') == 'unreadable':
+        # An unreadable scan keeps the task open — and it's unreadable whether the NAME
+        # or the SUBJECT TABLE couldn't be read (a blurry slip whose name happens to
+        # read but whose grades don't is still a re-upload). Previously only the name
+        # was checked, so such a slip slipped through as 'ok'.
+        if chk.get('name') == 'unreadable' or chk.get('subjects') == 'unreadable':
             return 'unreadable'
+        # Not scanned yet (extraction deferred/skipped) → hold, don't greenlight. Keyed
+        # on name/subjects, NOT results: results=='pending' also means "no grades on file
+        # to compare against" (the slip itself read fine), which must still accept.
+        if chk.get('name') == 'pending' or chk.get('subjects') == 'pending':
+            return 'pending'
     elif dt == 'offer_letter':
         chk = student_offer_check(doc) or {}
         if red(chk, 'name', 'ic'):
             return 'mismatch'
         if chk.get('name') == 'unreadable':
             return 'unreadable'
+        if chk.get('name') == 'pending':
+            return 'pending'          # not read yet — hold the task
     elif dt == 'parent_ic':
         chk = income_engine.student_income_ic_check(doc) or {}
         if red(chk, 'name_status', 'proof_name_status', 'proof_nric_status'):
             return 'mismatch'
         ran = bool(getattr(doc, 'vision_run_at', None))
         err = getattr(doc, 'vision_error', '') or ''
+        if not ran:
+            return 'pending'          # not scanned yet — don't greenlight an unread IC
         # An OCR-service outage is not the student's fault — don't call it unreadable.
-        if ran and (not err or _is_ic_decode_error(err)) and not chk.get('readable'):
+        if (not err or _is_ic_decode_error(err)) and not chk.get('readable'):
             return 'unreadable'
     elif dt in ('salary_slip', 'epf'):
         if red(income_engine.student_income_proof_check(doc), 'name_status', 'nric_status'):
@@ -237,20 +261,24 @@ def doc_match_verdict(doc):
             return 'mismatch'
     elif dt == 'ic':
         ran = bool(getattr(doc, 'vision_run_at', None))
-        if ran:
-            err = getattr(doc, 'vision_error', '') or ''
-            service_down = bool(err) and not _is_ic_decode_error(err)
-            if not service_down:
-                from .vision import nric_match, name_match
-                prof = getattr(doc.application, 'profile', None)
-                if not doc.vision_nric or not doc.vision_name:
-                    return 'unreadable'
-                if not nric_match(doc.vision_nric, getattr(prof, 'nric', '') or ''):
-                    return 'mismatch'
-                if name_match(doc.vision_name, getattr(prof, 'name', '') or '') == 'mismatch':
-                    return 'mismatch'
+        if not ran:
+            return 'pending'          # not scanned yet — don't greenlight an unread IC
+        err = getattr(doc, 'vision_error', '') or ''
+        service_down = bool(err) and not _is_ic_decode_error(err)
+        if not service_down:
+            from .vision import nric_match, name_match
+            prof = getattr(doc.application, 'profile', None)
+            if not doc.vision_nric or not doc.vision_name:
+                return 'unreadable'
+            if not nric_match(doc.vision_nric, getattr(prof, 'nric', '') or ''):
+                return 'mismatch'
+            if name_match(doc.vision_name, getattr(prof, 'name', '') or '') == 'mismatch':
+                return 'mismatch'
+    # NB income docs (str / salary_slip / epf / birth_certificate / guardianship_letter)
+    # have no 'pending' branch here: the interactive upload forces their read first
+    # (views._maybe_extract_fields force=True), so they're scanned by the time this runs.
     # water_bill / electricity_bill / statement_of_intent / photo, and every
-    # 'pending'/'uncertain'/soft outcome above → accept.
+    # 'uncertain'/soft outcome above → accept.
     return 'ok'
 
 

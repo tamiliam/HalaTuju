@@ -1399,7 +1399,7 @@
         "offer_letter_unreadable": "Kami tidak dapat membaca surat tawaran anda — sila muat naik semula salinan yang lebih jelas dalam langkah Dokumen.",
         "income_document_unreadable": "Kami tidak dapat membaca salah satu dokumen pendapatan anda — sila muat naik semula foto yang lebih jelas dalam langkah Dokumen.",
         "parent_ic_missing": "Muat naik IC ibu bapa atau penjaga anda dalam langkah Dokumen.",
-        "income_proof_missing": "Muat naik bukti pendapatan isi rumah (STR, slip gaji, atau KWSP) dalam langkah Dokumen.",
+        "income_proof_missing": "Muat naik dokumen STR (Sumbangan Tunai Rahmah) anda dalam langkah Dokumen.",
         "income_incomplete": "Lengkapkan bahagian Pendapatan isi rumah dalam langkah Dokumen.",
         "offer_letter_missing": "Muat naik surat tawaran anda dalam langkah Dokumen.",
         "str_missing": "Muat naik dokumen STR anda dalam langkah Dokumen.",
@@ -1572,6 +1572,7 @@
       "upload": "Muat naik",
       "uploading": "Memuat naik…",
       "uploadError": "Maaf, muat naik itu tidak berjaya. Sila cuba lagi.",
+      "stillChecking": "Kami telah menerima muat naik anda dan sedang menyemaknya — tunggu sebentar, kemudian muat semula halaman ini.",
       "review": "Semak",
       "confirmPathwayYes": "Ya, ini laluan akhir saya",
       "send": "Hantar",
@@ -1623,8 +1624,8 @@
           "desc": "Sesetengah gred tidak sepadan dengan slip keputusan. Sila semak semula yang dimasukkan."
         },
         "income_proof_missing": {
-          "title": "Muat naik bukti pendapatan",
-          "desc": "Kami perlukan satu dokumen pendapatan (slip gaji, KWSP, atau STR) untuk isi rumah anda."
+          "title": "Muat naik dokumen STR anda",
+          "desc": "Isi rumah anda menggunakan laluan STR, jadi sila muat naik dokumen STR (Sumbangan Tunai Rahmah) anda. Inilah bukti pendapatan yang kami perlukan — slip gaji atau penyata KWSP tidak boleh menggantikannya."
         },
         "income_earner_undeclared": {
           "title": "Beritahu kami tentang pendapatan keluarga anda",
@@ -2717,7 +2718,7 @@
           "results_slip_unreadable": "Slip keputusan tidak dapat dibaca — minta salinan yang lebih jelas.",
           "grades_unverified": "Gred belum disemak silang dengan slip — semak sendiri (semakan automatik akan datang).",
           "str_present_unverified": "Dokumen STR ada tetapi belum dipadankan dengan isi rumah — sahkan.",
-          "income_proof_missing": "Tiada bukti pendapatan dimuat naik — minta STR, slip gaji, atau KWSP.",
+          "income_proof_missing": "Tiada dokumen STR dimuat naik — isi rumah ini menggunakan laluan STR, jadi minta STR (slip gaji atau KWSP tidak boleh menggantikannya).",
           "income_earner_undeclared": "Pelajar belum memberitahu pendapatan siapa yang ditunjukkan (wizard pendapatan belum lengkap) — kami tidak dapat menyemak dokumen sehingga itu.",
           "earner_ic_missing": "Tiada KP dimuat naik untuk: {members} — kami tidak dapat mengesahkan dokumen pendapatan milik keluarga. Minta KP itu.",
           "earner_ic_unreadable": "KP untuk {members} tidak dapat dibaca — minta gambar yang lebih jelas.",

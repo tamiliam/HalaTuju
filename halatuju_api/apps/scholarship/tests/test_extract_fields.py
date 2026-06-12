@@ -218,10 +218,13 @@ class TestUploadGuardrails(TestCase):
         self.assertEqual(r.status_code, 201)
 
     @override_settings(DOC_ASSIST_RATE_LIMIT_PER_HOUR=2)
-    def test_ai_throttle_skips_gemini_but_uploads(self):
-        # Two recent extractions already this hour → the 3rd skips Gemini. (Different
-        # doc types so the new salary_slip upload — now single-instance — doesn't sweep
-        # them; the rate cap counts every extracted doc regardless of type.)
+    def test_interactive_upload_forces_read_past_throttle(self):
+        # Race fix (2026-06-12): the doc the student JUST uploaded is always read, even
+        # when the hourly doc-assist cap is already hit. A deferred 'review_manually' read
+        # is exactly what let an unscanned upload greenlight its task (it read as 'pending'
+        # → 'ok' before the scan finished). The interactive upload now forces the read.
+        # (Different doc types so the single-instance salary_slip upload doesn't sweep them;
+        # the rate cap counts every extracted doc regardless of type.)
         ApplicantDocument.objects.bulk_create([
             ApplicantDocument(application=self.app, doc_type=dt,
                               storage_path=f'r-{dt}', vision_fields_run_at=timezone.now())
@@ -229,5 +232,4 @@ class TestUploadGuardrails(TestCase):
         with patch('apps.scholarship.vision.run_field_extraction_for_document') as mock_run:
             r = self._post(doc_type='salary_slip')
             self.assertEqual(r.status_code, 201)          # upload still succeeds
-            mock_run.assert_not_called()                  # Gemini skipped
-        self.assertEqual(r.json()['vision_fields']['student_verdict'], 'review_manually')
+            mock_run.assert_called_once()                 # forced read past the cap
