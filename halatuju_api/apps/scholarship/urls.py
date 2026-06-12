@@ -10,6 +10,7 @@ from .views import (
     CronRunView,
     DocumentDetailView,
     DocumentHelpView,
+    IncomeRouteSwitchView,
     GraduationMessageView,
     IncomeClusterHelpView,
     DocumentListCreateView,
@@ -73,6 +74,7 @@ urlpatterns = [
     path('scholarship/applications/', ApplicationListCreateView.as_view()),
     path('scholarship/applications/<int:pk>/', ApplicationDetailView.as_view()),
     path('scholarship/applications/<int:pk>/confirm/', ApplicationConfirmView.as_view()),
+    path('scholarship/applications/<int:pk>/income-route/', IncomeRouteSwitchView.as_view()),
     path('scholarship/applications/<int:pk>/onboarding-complete/', ApplicationOnboardingCompleteView.as_view()),  # F8a
     # F9a — in-programme student lifecycle (results → progress, 18+ promo consent, graduation relay)
     path('scholarship/applications/<int:pk>/semester-results/', SemesterResultView.as_view()),

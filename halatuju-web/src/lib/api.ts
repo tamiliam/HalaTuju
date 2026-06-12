@@ -1276,6 +1276,21 @@ export async function updateScholarshipDetails(
   })
 }
 
+/** Student self-serve income route switch (post-submit Action Centre). Flips the
+ *  income route (STR ↔ salary), recomputes the document tasks, and returns the new
+ *  route + its requirements. Never re-blocks the submission. */
+export async function switchIncomeRoute(
+  id: number,
+  body: { income_route: 'str' | 'salary'; income_earner?: string; income_working_members?: string[] },
+  options?: ApiOptions
+): Promise<{ income_route: string; requirements: { route: string; members: unknown[]; compulsory: string[]; optional: string[] } }> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/income-route/`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    ...options,
+  })
+}
+
 /** Phase C: the student's explicit "Confirm & submit" action. Resolves to the
  *  updated application (status → profile_complete). Throws on 400
  *  incomplete_profile (the error carries the completeness breakdown). */
