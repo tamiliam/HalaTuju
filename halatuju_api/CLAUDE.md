@@ -457,13 +457,21 @@ Rahmah) specifically in en/ms/ta — student Action Centre + officer cockpit + c
 "salary slip, EPF, or STR" that invited a wrong upload (str-typed Upload button files any pick as `doc_type='str'`).
 1156 scholarship pytest + 303 jest + parity 2543×3 + next build clean. Verified on prod #16 (STR route, earner mother).
 
-**▶ NEXT (owner-approved, design next) — student self-serve income ROUTE-SWITCH.** A submitted student on the STR route
-with no STR has NO exit today (form locked post-submit, `income_route` only editable while `shortlisted`, no switch
-endpoint). Build: an "I don't have an STR — prove my income another way" action in the Action Centre that re-runs the
-income mini-wizard post-submit, flips `income_route` (+ `income_earner`/`income_working_members`), recomputes
-`income_engine.income_requirements` → the alternative route's doc tickets appear. Needs a post-submit income-route
-endpoint + an Action-Centre UI (**Stitch-first, per discipline**). Driver = student self-serve (owner's call). Fold in
-the Tamil refine of the 4 new 2026-06-12 strings (`income_proof_missing` ×3 surfaces + `actionCentre.stillChecking`).
+**▶ JUST SHIPPED 2026-06-12 — student self-serve income ROUTE-SWITCH (on `main` `e1aff91`; NO migration; retro
+`docs/retrospective-income-route-switch.md`).** A submitted student on the wrong income route can change it from the
+Action Centre. New audited endpoint `POST .../applications/<id>/income-route/` + `services.switch_income_route` flips
+`income_route` both ways, recomputes the resolution queue (old gap clears, new doc tasks appear), and **never reverts
+the submission** — deliberately NOT via the details PATCH (which `revert_if_profile_incomplete` would un-submit them).
+Audit = structured log (audit-only, no officer flag). FE `IncomeRouteSwitch` mini-wizard mounted once on an open income
+task post-submit: "We receive STR (Sumbangan Tunai Rahmah)" → whose name, or "We don't receive STR" → who works. 11
+backend tests (1167 scholarship) + 303 jest + parity 2560×3 + next build clean. **Carried:** TD-112 (live browser
+click-through — verify on prod), TD-113 (salary slip stays a soft signal, not a hard task — needs sign-off to change),
+Tamil refine of the new `incomeRouteSwitch.*` block.
+
+**▶ NEXT — no roadmap sprint; do when inputs arrive:** lawyer consent text + `CONSENT_VERSION` bump; real money
+(toyyibPay donate-in/disbursement/tranche, TD-075); reviewer-assignment activation when a real reviewer is invited;
+Tamil refine batch (the income-request strings + `actionCentre.stillChecking` + `incomeRouteSwitch.*`); the carried
+cockpit-school-ux backlog #1–#9 (still merged-not-pushed on another branch — reconcile with the parked family-redesign).
 
 **▶ MERGED TO `main` 2026-06-12 — NOT YET PUSHED/DEPLOYED (owner gates the deploy). Live-review backlog #1–#9, two
 sprints, NO migration. Retros `docs/retrospective-cockpit-school-ux.md` + `docs/retrospective-verification-soft-signals.md`.**

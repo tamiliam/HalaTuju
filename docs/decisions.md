@@ -2591,3 +2591,34 @@ A rare genuine 'pending' shows a calm "still checking" note and asks the student
 **Revisit if:** doc-assist cost becomes material at scale (then cap forced reads at a high
 per-application ceiling), or a background re-read job is added (then 'pending' could auto-resolve
 without the refresh).
+
+## Post-submit income route switch is a dedicated endpoint, not the details PATCH — Income route switch, 2026-06-12
+**Decision:** The student self-serve income route switch is its own endpoint (`POST .../applications/<id>/income-route/`
+→ `services.switch_income_route`), not a reuse of the broad `ApplicationDetailsView` PATCH (which already accepts
+`income_route`). The dedicated path writes only the income fields, audits, and calls `sync_resolution_items`; it does
+NOT call `revert_if_profile_incomplete`.
+**Alternatives considered:** (a) reuse the details PATCH (it accepts `income_route` and `POST_SHORTLIST_EDITABLE` already
+includes the post-submit statuses) — rejected: the PATCH calls `revert_if_profile_incomplete`, so a switch that creates
+a new requirement (e.g. STR→salary needing salary slips) would flip `profile_complete` → `shortlisted` and silently
+un-submit the student; (b) relax the PATCH to skip the revert for income-only payloads — rejected: brittle special-casing
+of a broad mutator.
+**Rationale:** A submitted student is never re-blocked (consent-gate-v2): post-submit gaps are Check-2 Action-Centre
+tasks, not submission blocks. A narrow, audited endpoint makes this eligibility-touching change deterministic and keeps
+the no-revert guarantee explicit and tested.
+**Trade-offs:** A second endpoint covering the same field; mitigated by sharing the serializer choices + the wizard's
+completeness rule. The salary-slip absence remains a soft interview signal (no hard task) on the new route — unchanged
+post-submit income policy.
+**Revisit if:** the post-submit income policy changes to hard-block missing salary slips (then the switch's recompute
+would surface them as tasks), or an in-app audit view of route changes is wanted (then promote the log to a model).
+
+## Income route-switch audit is a structured log line, not a DB model — Income route switch, 2026-06-12
+**Decision:** `switch_income_route` records the change (`from`/`to` route, earner/members, by) via a structured Cloud
+Logging line, not a new `IncomeRouteSwitchEvent` model.
+**Alternatives considered:** a dedicated audit model (mirror `AssignmentEvent`) — rejected for this sprint: it needs a
+migration (migrate-first via MCP + RLS) and the owner chose "audit-only, no officer-facing surface", so nothing queries
+it in-app.
+**Rationale:** Cloud Logging is a durable, queryable trail; with no in-app consumer, a model would be cost (a migration +
+RLS) for no read path. Keeps the sprint no-migration.
+**Trade-offs:** Not queryable via the ORM/cockpit; retention is bounded by log retention, not forever.
+**Revisit if:** an officer/admin needs to see route-change history in-app, or compliance wants permanent retention — then
+add the model.

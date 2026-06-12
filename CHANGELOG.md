@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Student self-serve income route switch (post-submit Action Centre; no migration).** A submitted student on the
+  wrong income route (e.g. told "Upload your STR" but they have no STR) can now change it themselves instead of being
+  stuck contacting support. New audited endpoint `POST /api/v1/scholarship/applications/<id>/income-route/` +
+  `services.switch_income_route` flips `income_route` **both ways** (STR ↔ salary), recomputes the resolution queue
+  (the old route's gap auto-resolves, the new route's document tasks appear), and **never re-blocks the submission** —
+  it deliberately does NOT route through the broad details PATCH, which calls `revert_if_profile_incomplete` and would
+  un-submit the student the moment the switch creates a new requirement (a submitted student is never re-blocked,
+  consent-gate-v2; gaps become Check-2 tasks). Validation mirrors the income wizard (`IncomeRouteSwitchSerializer`:
+  STR needs an earner, salary needs ≥1 working member). Audit = a structured Cloud Logging line (owner's call:
+  audit-only, no officer pre-interview flag) — no model, no migration. **FE:** `IncomeRouteSwitch` mini-wizard mounted
+  once in the Action Centre when an income task is open post-submit — *"We receive STR (Sumbangan Tunai Rahmah)"* →
+  whose name (father/mother/guardian), or *"We don't receive STR"* → who works (father/mother/guardian/elder
+  brother/elder sister) → confirm → tasks refresh. Stitch-approved. en/ms/ta (Tamil first-draft). +11 backend tests
+  (1167 scholarship); 303 jest; parity 2560×3; next build clean.
+
 ### Fixed
 - **Unread uploads no longer greenlight their Action-Centre task + the income request names the exact document (no migration).**
   Two live-testing fixes. **(1) Upload race.** A re-uploaded document could auto-close its task before its scan finished:
