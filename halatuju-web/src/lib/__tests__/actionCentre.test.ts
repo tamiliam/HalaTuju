@@ -2,6 +2,7 @@ import {
   iconFor,
   computeProgress,
   isOfficerItem,
+  attributionFor,
   i18nKeyFor,
   titleSourceFor,
   confirmTargetFor,
@@ -11,6 +12,19 @@ import {
   KNOWN_CODES,
 } from '@/lib/actionCentre'
 import type { ResolutionItem } from '@/lib/api'
+
+describe('attributionFor', () => {
+  it('a known system/Check-2 code is "From our review assistant"', () => {
+    expect(attributionFor({ source: 'system', code: 'birth_cert_missing' })).toBe('assistant')
+    expect(attributionFor({ source: 'check2', code: 'transport_cost_unknown' })).toBe('assistant')
+    expect(attributionFor({ source: 'system', code: 'pathway_confirm' })).toBe('assistant')
+  })
+
+  it('an officer (free-text / unknown code) item is "From your reviewer"', () => {
+    expect(attributionFor({ source: 'officer', code: 'officer_1' })).toBe('reviewer')
+    expect(attributionFor({ source: 'system', code: 'some_unknown_code' })).toBe('reviewer')
+  })
+})
 
 // Minimal ticket factory — only the fields the pure helpers read.
 function item(over: Partial<ResolutionItem> = {}): ResolutionItem {

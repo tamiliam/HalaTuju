@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **The "review assistant" (Check 2) now asks the student to upload missing compulsory documents (backend + Action
+  Centre attribution, no migration).** Restores tested behaviour the 2026-06-10 Action-Centre over-correction removed:
+  it excluded *all* `source='system'` items to kill the uploaded-but-bad duplicate noise, but also hid the legitimate
+  *missing-compulsory-document* requests (e.g. "upload your birth certificate"). Now the Action Centre surfaces the
+  `doc`/`_missing` system gaps to the student (`resolution.STUDENT_DOC_REQUEST_CODES` = `birth_cert_missing`,
+  `offer_letter_missing`, `earner_ic_missing`, `guardianship_letter_missing`, `income_proof_missing`,
+  `results_slip_missing`, `ic_missing`) with the existing Upload button, **flag-gated** by `CHECK2_STUDENT_QUERIES_ENABLED`
+  and counted in the delayed query email (created at submit via `confirm_profile` → `sync_resolution_items`). The
+  uploaded-but-bad tickets (`*_unreadable` / `*_name_mismatch` / `str_not_current`) stay **hidden** — reviewer-raised
+  re-uploads coached inline by Gopal (the noise that was removed). Restores the **"From our review assistant"** (system /
+  Check 2) vs **"From your reviewer"** (officer) attribution on each task (`actionCentre.attributionFor`; en/ms/ta).
+  check2-design §4 (`doc` is a first-class Check-2 student kind). +6 scholarship pytest, +2 jest.
 - **Pathway-clash confirmation is now a real Check-2 student query (backend, no migration).** When an offer letter is for
   a genuinely different course than the student declared, the "is this offer your final course?" one-tap confirmation
   (`pathway_confirm`) was created as a hidden `source='system'` verdict item — so only the officer ever saw it, and the

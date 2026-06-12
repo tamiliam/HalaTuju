@@ -126,6 +126,15 @@ export function isOfficerItem(item: Pick<ResolutionItem, 'source' | 'code'>): bo
   return !(KNOWN_CODES as readonly string[]).includes(item.code)
 }
 
+/** Who raised this task, for the "From …" attribution line.
+ *  - 'reviewer'  → a human reviewer raised it (free-text officer tickets)
+ *  - 'assistant' → the system / Check-2 "review assistant" raised it (known codes:
+ *                  the AI clarify questions, the pathway confirm, and the
+ *                  missing-compulsory-document upload requests). */
+export function attributionFor(item: Pick<ResolutionItem, 'source' | 'code'>): 'reviewer' | 'assistant' {
+  return isOfficerItem(item) ? 'reviewer' : 'assistant'
+}
+
 /** The i18n key prefix for a system code's title/desc copy. */
 export function i18nKeyFor(code: string): string {
   return `scholarship.actionCentre.item.${code}`

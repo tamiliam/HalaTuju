@@ -29,6 +29,7 @@ import {
   computeProgress,
   iconFor,
   titleSourceFor,
+  attributionFor,
   confirmTargetFor,
   localiseParams,
   sortByWeight,
@@ -78,6 +79,11 @@ function ActionCard({
   const tParams = localiseParams(item.params, t)
   const title = src.kind === 'raw' ? src.text : t(src.titleKey, tParams)
   const desc = src.kind === 'i18n' ? t(src.descKey, tParams) : ''
+  // "From our review assistant" (system / Check 2) vs "From your reviewer" (officer) —
+  // so the student knows who's asking, matching the tested Action-Centre design.
+  const fromLabel = t(attributionFor(item) === 'reviewer'
+    ? 'scholarship.actionCentre.fromReviewer'
+    : 'scholarship.actionCentre.fromAssistant')
 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -159,6 +165,7 @@ function ActionCard({
             </svg>
           </div>
           <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-gray-400">{fromLabel}</p>
             <div className="flex items-start justify-between gap-3">
               <h3 className="font-semibold text-gray-500 line-through decoration-green-300">{title}</h3>
               <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-green-800">
@@ -178,6 +185,7 @@ function ActionCard({
           <KindIcon icon={iconFor(item.kind)} />
         </div>
         <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-gray-400">{fromLabel}</p>
           <div className="flex items-start justify-between gap-3">
             <h3 className="font-semibold text-gray-900">{title}</h3>
             <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-800">

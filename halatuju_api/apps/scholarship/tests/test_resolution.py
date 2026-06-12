@@ -312,6 +312,40 @@ class TestCheck2QueriesInStudentQueue(TestCase):
         self.assertFalse(
             self.app.resolution_items.filter(source='check2', kind='clarify').exists())
 
+    def test_missing_compulsory_doc_request_shows(self):
+        # The app has no offer letter → the verdict raises offer_letter_missing; with Check 2
+        # on, the "review assistant" surfaces it to the student as an Upload task.
+        codes = {i['code'] for i in self.client.get(self.URL).json()['open']}
+        self.assertIn('offer_letter_missing', codes)
+
+    def test_uploaded_but_bad_system_ticket_stays_hidden(self):
+        # A bad-upload ticket (unreadable) is the reviewer's + Gopal's job, not a student
+        # to-do — it must NOT surface even with the flag on.
+        ResolutionItem.objects.create(
+            application=self.app, source='system', code='ic_unreadable',
+            fact='identity', kind='doc', doc_type='ic', status='open')
+        codes = {i['code'] for i in self.client.get(self.URL).json()['open']}
+        self.assertNotIn('ic_unreadable', codes)
+
+    @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=False)
+    def test_doc_request_hidden_when_flag_off(self):
+        codes = {i['code'] for i in self.client.get(self.URL).json()['open']}
+        self.assertNotIn('offer_letter_missing', codes)
+
+
+class TestStudentDocRequestCodes(TestCase):
+    """The set the "review assistant" asks the student to upload = MISSING-compulsory docs
+    only; never the uploaded-but-bad re-upload tickets (those are reviewer + Gopal)."""
+
+    def test_missing_only(self):
+        from apps.scholarship.resolution import STUDENT_DOC_REQUEST_CODES
+        for c in ('birth_cert_missing', 'offer_letter_missing', 'earner_ic_missing',
+                  'results_slip_missing', 'guardianship_letter_missing', 'ic_missing'):
+            self.assertIn(c, STUDENT_DOC_REQUEST_CODES)
+        for c in ('ic_unreadable', 'results_slip_name_mismatch', 'offer_name_mismatch',
+                  'str_not_current', 'offer_no_identity'):
+            self.assertNotIn(c, STUDENT_DOC_REQUEST_CODES)
+
 
 class TestDocMatchVerdict(_Base):
     """The Action Centre's per-document accept/keep-open verdict (Phase 1). Only a
