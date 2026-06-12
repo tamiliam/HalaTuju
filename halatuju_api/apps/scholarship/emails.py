@@ -730,25 +730,26 @@ def send_request_info_email(to_email, applicant_name, programme_name, note, lang
 
 
 QUERY_REMINDER_SUBJECTS = {
-    'en': 'A few quick questions on your {programme} application',
-    'ms': 'Beberapa soalan ringkas untuk permohonan {programme} anda',
-    'ta': 'உங்கள் {programme} விண்ணப்பம் குறித்து சில விரைவு கேள்விகள்',
+    'en': 'A few things we need for your {programme} application',
+    'ms': 'Beberapa perkara yang kami perlukan untuk permohonan {programme} anda',
+    'ta': 'உங்கள் {programme} விண்ணப்பத்திற்கு எங்களுக்குத் தேவையான சில விவரங்கள்',
 }
 QUERY_REMINDER_BODIES = {
-    'en': ('Dear {name},\n\nWe have {n} short question(s) waiting in your Action Centre to '
-           'help us complete your {programme} profile. Please sign in and answer them within '
-           'about {days} day(s): {link}\n\nIf we do not hear back in time we will proceed with '
-           'what we have, so it is best to reply.\n\nThank you.'),
-    'ms': ('Salam {name},\n\nKami mempunyai {n} soalan ringkas menunggu di Pusat Tindakan anda '
-           'untuk membantu kami melengkapkan profil {programme} anda. Sila log masuk dan jawab '
-           'dalam kira-kira {days} hari: {link}\n\nJika kami tidak menerima maklum balas tepat '
-           'pada masanya, kami akan teruskan dengan maklumat sedia ada, jadi eloklah membalas.\n\n'
-           'Terima kasih.'),
-    'ta': ('அன்புள்ள {name},\n\nஉங்கள் {programme} விவரக்குறிப்பை முழுமைப்படுத்த உதவ உங்கள் '
-           'செயல் மையத்தில் {n} சிறு கேள்வி(கள்) காத்திருக்கின்றன. தயவுசெய்து உள்நுழைந்து '
-           'சுமார் {days} நாட்களுக்குள் பதிலளிக்கவும்: {link}\n\nசரியான நேரத்தில் பதில் '
-           'கிடைக்காவிட்டால், எங்களிடம் உள்ள தகவலுடன் தொடர்வோம், எனவே பதிலளிப்பது நல்லது.\n\n'
-           'நன்றி.'),
+    'en': ('Dear {name},\n\nThere are {n} item(s) waiting in your Action Centre — a few '
+           'questions and/or documents — to help us complete your {programme} profile. Please '
+           'sign in and respond to each one within about {days} day(s): {link}\n\nIf we do not '
+           'hear back in time we will proceed with what we have, so it is best to respond.\n\n'
+           'Thank you.'),
+    'ms': ('Salam {name},\n\nTerdapat {n} perkara menunggu di Pusat Tindakan anda — beberapa '
+           'soalan dan/atau dokumen — untuk membantu kami melengkapkan profil {programme} anda. '
+           'Sila log masuk dan lengkapkan setiap satu dalam kira-kira {days} hari: {link}\n\n'
+           'Jika kami tidak menerima maklum balas tepat pada masanya, kami akan teruskan dengan '
+           'maklumat sedia ada, jadi eloklah membalas.\n\nTerima kasih.'),
+    'ta': ('அன்புள்ள {name},\n\nஉங்கள் {programme} விவரக்குறிப்பை முழுமைப்படுத்த உதவ உங்கள் செயல் '
+           'மையத்தில் {n} விவரம்(கள்) — சில கேள்விகள் மற்றும்/அல்லது ஆவணங்கள் — காத்திருக்கின்றன. '
+           'தயவுசெய்து உள்நுழைந்து சுமார் {days} நாட்களுக்குள் ஒவ்வொன்றுக்கும் பதிலளிக்கவும்: {link}'
+           '\n\nசரியான நேரத்தில் பதில் கிடைக்காவிட்டால், எங்களிடம் உள்ள தகவலுடன் தொடர்வோம், எனவே '
+           'பதிலளிப்பது நல்லது.\n\nநன்றி.'),
 }
 
 
@@ -777,23 +778,26 @@ def send_query_reminder_email(to_email, applicant_name, programme_name, n_querie
 
 
 QUERY_RAISED_SUBJECTS = {
-    'en': 'A few quick questions on your {programme} application',
-    'ms': 'Beberapa soalan ringkas untuk permohonan {programme} anda',
-    'ta': 'உங்கள் {programme} விண்ணப்பம் குறித்து சில விரைவு கேள்விகள்',
+    'en': 'A few things we need for your {programme} application',
+    'ms': 'Beberapa perkara yang kami perlukan untuk permohonan {programme} anda',
+    'ta': 'உங்கள் {programme} விண்ணப்பத்திற்கு எங்களுக்குத் தேவையான சில விவரங்கள்',
 }
 QUERY_RAISED_BODIES = {
-    'en': ('Dear {name},\n\nThank you for submitting your {programme} application. We have {n} '
-           'short question(s) for you to help complete your profile. Please sign in and answer '
-           'them here: {link}\n\nIt only takes a few minutes, and your answers help us put your '
-           'case forward well.\n\nThank you.'),
+    'en': ('Dear {name},\n\nThank you for submitting your {programme} application. We are '
+           'reviewing it and need a little more from you — {n} item(s) (a few questions and/or '
+           'documents) are waiting in your Action Centre. Please sign in and respond to each one '
+           'here: {link}\n\nIt only takes a few minutes, and it helps us put your case forward '
+           'well.\n\nThank you.'),
     'ms': ('Salam {name},\n\nTerima kasih kerana menghantar permohonan {programme} anda. Kami '
-           'mempunyai {n} soalan ringkas untuk membantu melengkapkan profil anda. Sila log masuk '
-           'dan jawab di sini: {link}\n\nIa hanya mengambil beberapa minit, dan jawapan anda '
+           'sedang menyemaknya dan memerlukan sedikit lagi daripada anda — {n} perkara (beberapa '
+           'soalan dan/atau dokumen) menunggu di Pusat Tindakan anda. Sila log masuk dan '
+           'lengkapkan setiap satu di sini: {link}\n\nIa hanya mengambil beberapa minit, dan ia '
            'membantu kami mengetengahkan kes anda dengan baik.\n\nTerima kasih.'),
-    'ta': ('அன்புள்ள {name},\n\nஉங்கள் {programme} விண்ணப்பத்தைச் சமர்ப்பித்ததற்கு நன்றி. உங்கள் '
-           'விவரக்குறிப்பை முழுமைப்படுத்த உதவ {n} சிறு கேள்வி(கள்) உள்ளன. தயவுசெய்து உள்நுழைந்து '
-           'இங்கே பதிலளிக்கவும்: {link}\n\nஇதற்கு சில நிமிடங்களே ஆகும்; உங்கள் பதில்கள் உங்கள் '
-           'வழக்கை நன்கு முன்வைக்க உதவும்.\n\nநன்றி.'),
+    'ta': ('அன்புள்ள {name},\n\nஉங்கள் {programme} விண்ணப்பத்தைச் சமர்ப்பித்ததற்கு நன்றி. நாங்கள் '
+           'அதை மதிப்பாய்வு செய்து வருகிறோம்; உங்களிடமிருந்து இன்னும் சிறிது தேவை — {n} விவரம்(கள்) '
+           '(சில கேள்விகள் மற்றும்/அல்லது ஆவணங்கள்) உங்கள் செயல் மையத்தில் காத்திருக்கின்றன. '
+           'தயவுசெய்து உள்நுழைந்து ஒவ்வொன்றுக்கும் இங்கே பதிலளிக்கவும்: {link}\n\nஇதற்கு சில '
+           'நிமிடங்களே ஆகும்; இது உங்கள் வழக்கை நன்கு முன்வைக்க உதவும்.\n\nநன்றி.'),
 }
 
 
