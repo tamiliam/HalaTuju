@@ -527,15 +527,17 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         return name_match(obj.vision_name, getattr(obj.application.profile, 'name', '') or '')
 
     def get_authenticity(self, obj):
-        """Genuineness fingerprint summary {status, reason} for an IC / parent_ic — soft,
-        flag-gated. Null when the check didn't run (flag off / AI outage / other doc type)."""
-        if obj.doc_type not in ('ic', 'parent_ic'):
+        """Genuineness fingerprint summary {status, reason, doc_seen} — soft, flag-gated.
+        IC/parent_ic (Sprint 1) + the standardised supporting docs (Sprint 2: STR, results
+        slip, birth cert, EPF). Null when the check didn't run (flag off / AI outage)."""
+        if obj.doc_type not in ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf'):
             return None
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         auth = vf.get('authenticity')
         if not isinstance(auth, dict) or not auth.get('status'):
             return None
-        return {'status': auth.get('status'), 'reason': auth.get('reason', '')}
+        return {'status': auth.get('status'), 'reason': auth.get('reason', ''),
+                'doc_seen': auth.get('doc_seen', '')}
 
     def get_academic_check(self, obj):
         """{name, subjects, results, candidate_name, missing, mismatched, slip_count}

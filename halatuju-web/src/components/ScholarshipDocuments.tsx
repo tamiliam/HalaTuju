@@ -365,6 +365,23 @@ function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string)
  *  currency facts (Status · Year) and verifies Name + IC against the STR EARNER's IC —
  *  the STR is the household benefit in the earner's name. A stale/rejected STR is
  *  flagged (STR is annual — an out-of-date one no longer proves B40). */
+/** Shared honest genuineness note for the standardised supporting documents (STR / results
+ *  slip / BC / EPF) — verification-assurance Sprint 2. Shows an amber "this doesn't look like
+ *  a genuine document" note when the fingerprint is low-confidence or wrong-type. Never blocks;
+ *  re-upload via the card's existing controls. (The IC has its own note in ICChecklist.) */
+function GenuinenessNote({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const s = doc.authenticity?.status
+  if (s !== 'low_confidence' && s !== 'wrong_type') return null
+  return (
+    <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+      <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+      </svg>
+      <p className="text-xs text-amber-800">{t('scholarship.docs.genuineness.note')}</p>
+    </div>
+  )
+}
+
 function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
   const chk = doc.str_check
   if (!chk) return null
@@ -812,6 +829,7 @@ function SingleDocCard({
           ) : (
             <SupportingDocChip doc={d} t={t} />
           )}
+          <GenuinenessNote doc={d} t={t} />
           {!suppressCoach && <DocumentHelpCoach doc={d} token={token} t={t} lang={lang} />}
         </div>
       ))}

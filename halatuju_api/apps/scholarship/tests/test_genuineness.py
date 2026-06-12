@@ -98,7 +98,85 @@ class TestSurfaces(_Base):
     def test_serializer_exposes_authenticity(self):
         doc = self._ic(auth={'status': 'low_confidence', 'reason': 'typed'})
         self.assertEqual(ApplicantDocumentSerializer().get_authenticity(doc),
-                         {'status': 'low_confidence', 'reason': 'typed'})
+                         {'status': 'low_confidence', 'reason': 'typed', 'doc_seen': ''})
 
     def test_serializer_null_when_absent(self):
         self.assertIsNone(ApplicantDocumentSerializer().get_authenticity(self._ic()))
+
+
+class TestSupportingDocGenuineness(_Base):
+    """Sprint 2 — genuineness + wrong-type for the standardised supporting documents."""
+
+    def _doc(self, doc_type, auth=None):
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type=doc_type, storage_path=f'{self.app.id}/{doc_type}/x',
+            vision_fields={'authenticity': auth} if auth else {})
+
+    def test_engine_maps_verdicts(self):
+        for verdict, status in {'genuine': 'likely_genuine', 'suspect': 'low_confidence',
+                                'wrong_type': 'wrong_type'}.items():
+            with patch('apps.scholarship.vision._call_gemini_json',
+                       return_value={'verdict': verdict, 'is_official': verdict == 'genuine',
+                                     'is_expected_type': verdict != 'wrong_type', 'doc_seen': 'X', 'reason': 'r'}):
+                self.assertEqual(vision.doc_genuineness(b'img', 'image/png', 'str')['status'], status)
+
+    def test_engine_unsupported_type_empty(self):
+        self.assertEqual(vision.doc_genuineness(b'img', 'image/png', 'photo'), {})
+
+    def test_engine_ai_outage_empty(self):
+        with patch('apps.scholarship.vision._call_gemini_json', return_value={'_error': 'down'}):
+            self.assertEqual(vision.doc_genuineness(b'img', 'image/png', 'str'), {})
+
+    def test_officer_flag_on_wrong_type(self):
+        self._doc('str', auth={'status': 'wrong_type', 'doc_seen': 'an identity card'})
+        flags = {a['code']: a for a in detect_anomalies(self.app)}
+        self.assertIn('document_not_genuine', flags)
+        self.assertEqual(flags['document_not_genuine']['params']['doc'], 'STR')
+
+    def test_officer_flag_on_low_confidence(self):
+        self._doc('birth_certificate', auth={'status': 'low_confidence', 'doc_seen': 'typed text'})
+        self.assertIn('document_not_genuine', [a['code'] for a in detect_anomalies(self.app)])
+
+    def test_no_flag_when_genuine(self):
+        self._doc('epf', auth={'status': 'likely_genuine'})
+        self.assertNotIn('document_not_genuine', [a['code'] for a in detect_anomalies(self.app)])
+
+    def test_serializer_for_supporting_doc(self):
+        doc = self._doc('birth_certificate',
+                        auth={'status': 'low_confidence', 'reason': 'typed', 'doc_seen': 'typed text'})
+        self.assertEqual(ApplicantDocumentSerializer().get_authenticity(doc),
+                         {'status': 'low_confidence', 'reason': 'typed', 'doc_seen': 'typed text'})
+
+
+class TestVerdictCaps(_Base):
+    """Sprint 2 — a suspect/wrong-type supporting doc lowers its fact (soft), never upgrades."""
+
+    def _doc(self, doc_type, auth):
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type=doc_type, storage_path=f'{self.app.id}/{doc_type}/x',
+            vision_fields={'authenticity': auth})
+
+    def test_cap_appends_caveat_to_income(self):
+        self._doc('str', {'status': 'wrong_type'})
+        income = next(f for f in build_verdict(self.app) if f['fact'] == 'income')
+        self.assertIn('document_not_genuine', [i['code'] for i in income['unresolved']])
+
+    def test_cap_downgrades_verified_to_review(self):
+        from apps.scholarship.verdict_engine import _apply_genuineness_caps
+        self._doc('results_slip', {'status': 'low_confidence'})
+        facts = _apply_genuineness_caps(self.app, [{'fact': 'academic', 'status': 'verified',
+                                                    'evidence': [], 'unresolved': []}])
+        self.assertEqual(facts[0]['status'], 'review')
+        self.assertIn('document_not_genuine', [i['code'] for i in facts[0]['unresolved']])
+
+    def test_cap_never_upgrades_a_gap(self):
+        from apps.scholarship.verdict_engine import _apply_genuineness_caps
+        self._doc('str', {'status': 'wrong_type'})
+        facts = _apply_genuineness_caps(self.app, [{'fact': 'income', 'status': 'gap',
+                                                    'evidence': [], 'unresolved': []}])
+        self.assertEqual(facts[0]['status'], 'gap')
+
+    def test_genuine_doc_no_cap(self):
+        self._doc('epf', {'status': 'likely_genuine'})
+        income = next(f for f in build_verdict(self.app) if f['fact'] == 'income')
+        self.assertNotIn('document_not_genuine', [i['code'] for i in income['unresolved']])

@@ -1229,6 +1229,9 @@
         "unreadable": "We couldn't read the photo automatically — that's fine, the team will check it manually.",
         "note": "Just a hint — the team always reviews your documents."
       },
+      "genuineness": {
+        "note": "This doesn't look like a genuine official document. Please re-upload a clear photo or scan of the real document. Nothing is blocked."
+      },
       "icCheck": {
         "icNo": "IC No",
         "name": "Name",
@@ -2596,6 +2599,10 @@
           "fact": "The parent/guardian's identity card doesn't look like a photo of a physical MyKad (likely typed text, a printout, or a screenshot).",
           "question": "The parent/guardian IC image doesn't look like a genuine card — confirm the physical card at interview."
         },
+        "document_not_genuine": {
+          "fact": "The uploaded {doc} doesn't look like a genuine official document — it appears to be: {seen}.",
+          "question": "The {doc} may not be the genuine original (it looks like {seen}) — ask to see the official document at interview."
+        },
         "first_in_family_with_siblings_studying": {
           "fact": "Student claims to be first-to-university, but {count} sibling(s) are studying.",
           "question": "You'd be the first in your family to go to university, but {count} sibling(s) are also studying — are they younger and still in school, or already at university?"
@@ -2728,6 +2735,8 @@
           "unverifiable": "Can't verify"
         },
         "item": {
+          "ic_low_confidence": "The identity card may not be a genuine photo of a physical MyKad — confirm the card at interview.",
+          "document_not_genuine": "This document may not be a genuine official original — confirm it at interview.",
           "nric_match": "NRIC matches the IC ({nric}).",
           "name_match": "Name matches across documents.",
           "name_resolved_truncation": "Name confirmed via NRIC — the IC's printed name was read short (“{ocr_name}”), a shortened form of the name on file “{profile_name}”.",
