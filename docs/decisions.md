@@ -1,5 +1,33 @@
 # Architectural Decisions — HalaTuju
 
+## UP_TVET coverage: scrape + inventory FIRST (no DB writes); ingest deferred; coverage matched by institution name — UP_TVET Sprint 1, 2026-06-13
+
+**Decision:** The first UP_TVET sprint builds only the scraper (`scrape_uptvet`) + a no-write coverage
+inventory (`audit_uptvet`). It does NOT ingest programmes into the DB. Coverage (new-vs-already-held) is
+reported by **institution name overlap**, explicitly as an **upper bound**, not by course code.
+
+**Alternatives considered:** (1) Scrape + ingest the Awam programmes into the `tvet` bucket this sprint.
+(2) Scrape + inventory first, ingest as a separate sprint (chosen). (3) Read-only inventory with no reusable
+scraper.
+
+**Rationale:** The live spike showed UP_TVET is a **~1000-programme acquisition** (not a refresh): codes
+(`TVET/QP…`, `SLW…`) don't match our synthetic `IJTM-*`/`IKBN-*` IDs, requirements sit behind Semak-Kelayakan
+detail pages, and the catalogue mixes Awam/Swasta. Ingesting adds new `CourseRequirement` rows that feed the
+**golden-master** eligibility DataFrame — doing that without first knowing the real Awam/Swasta split + the
+per-institution gap would be reckless. The inventory produces exactly those numbers to scope the ingest +
+settle the Swasta question on evidence. Institution-name matching is fuzzy because the portal uses full names
+("INSTITUT KEMAHIRAN BELIA NEGARA …") while our DB uses abbreviations ("IKBN …"), so the inventory surfaces the
+institution list for human judgement rather than asserting a clean diff (same family as the SPM `course_id`
+mismatch).
+
+**Trade-offs:** No coverage improvement ships this sprint (the inventory is decision-data, not new courses);
+the precise new-vs-existing count needs a name-reconciliation step the ingest sprint must do anyway.
+
+**Revisit if:** the ingest sprint is scoped — then decide Awam-only vs include Swasta from the inventory
+numbers, pick the course_id scheme (likely the portal `id_kursus`), and a TVET requirements strategy
+(parse Semak-Kelayakan pages vs a conservative TVET default).
+
+
 ## Operational reminders stay email/Cloud-Scheduler — no in-app notification system yet — 2026-06-12
 
 **Decision:** Admin/operational reminders (refresh the catalogue, backup status, link-rot, anomaly alerts)

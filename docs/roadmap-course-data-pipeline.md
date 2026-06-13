@@ -38,9 +38,18 @@ classification doc, slow-moving).
 - Axes: ENTRY qualification (SPM `courses` vs STPM `stpm_courses`) × DESTINATION pathway (`source_type`) × FIELD (`field_key`).
 
 ### NEW work items (extend the sprint list below)
-- **Sprint 3b — UP_TVET coverage (the confirmed gap):** scrape the public UP_TVET catalogue → fold into the BE `tvet`
-  bucket, **`Sektor = Awam` only** (public-only scope; private TVET is a scope decision — flag to owner). Mirrors the
-  e-Panduan scrape→sanity→sync pattern + guards. Sibling to Sprint 3.
+- **UP_TVET coverage (the confirmed gap) — split on build (2026-06-13):**
+  - **UP_TVET Sprint 1 — scraper + coverage inventory · ✅ BUILT 2026-06-13** (branch `uptvet-coverage`; NO DB write,
+    NO migration; deploy = owner, merges as harmless admin tooling). `scrape_uptvet` (paginated catalogue → CSV: code,
+    name, kategori, institution, **sektor Awam/Swasta**, fees, `id_kursus`, detail URLs; `--max-pages`) + `audit_uptvet`
+    (total / Awam-Swasta / by-institution / new-vs-held). +9 tests. Live-validated: ~1000 programmes; a 200-sample is
+    ~82% Awam and ~39% from providers we lack (agriculture, MARA, craft, regional colleges). **Spike findings:** codes
+    (`TVET/QP…`) don't match our synthetic `IJTM-*`/`IKBN-*`; requirements sit behind Semak-Kelayakan detail pages; the
+    catalogue mixes Awam/Swasta — so this is a ~1000-programme ACQUISITION, not a refresh.
+  - **UP_TVET Sprint 2 — ingest (PENDING, golden-master-adjacent):** add new programmes into the BE `tvet` bucket. Run
+    the inventory first to settle **`Sektor = Awam` only vs include Swasta** (owner) + the per-institution priority; pick
+    the course_id scheme (likely the portal `id_kursus`); decide a TVET requirements strategy (parse Semak-Kelayakan
+    pages vs a conservative default). New `CourseRequirement` rows feed the eligibility DataFrame → careful validation.
 - **Sprint 6 — "Course Data" admin dashboard (the reporting + updating SYSTEM):** a `/admin/course-data` page.
   - **Reporting** (all server-side): catalogue counts, **freshness per source** (e-Panduan / UP_TVET / eMASCO), link
     health, audit gaps. Mirrors `AdminVerdictMetricsView`. Needs a small status model to store last-refresh/last-check.

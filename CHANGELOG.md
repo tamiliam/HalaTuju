@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **UP_TVET coverage — Sprint 1: catalogue scraper + coverage inventory (no DB writes, no migration).** New
+  `scrape_uptvet` command scrapes the public UP_TVET Perdana catalogue (`mohon.tvet.gov.my`, ~1000 programmes,
+  paginated HTML) → CSV with Kod Tauliah, name, Kategori, Institusi, **Sektor (Awam/Swasta)**, fees, stable
+  `id_kursus` + detail URLs (`--max-pages` for spikes). New `audit_uptvet` reports the gap: total, Awam/Swasta
+  split, by-institution, new-vs-already-held (we hold 83: ILJTM + ILKBS). Confirms a material coverage gap —
+  a 200-programme sample showed ~39% from providers we lack (agriculture, MARA, craft, regional colleges).
+  +9 tests (1056 courses pytest, 0 failures). The golden-master-adjacent INGEST is a deliberate later sprint.
 - **Document slot model — per-person income-doc tagging (TD-115, Sprint 1; data migration, no schema change).** Foundation
   for 27 fixed `(doc_type × person)` slots so every upload lands in exactly one slot and a re-upload overwrites it — fixing
   the "one IC shows under every earner" and "duplicate Mother's IC" bugs. Built **tolerant-then-tighten** for a zero-downtime
