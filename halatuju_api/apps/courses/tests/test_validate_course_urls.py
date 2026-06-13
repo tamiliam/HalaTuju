@@ -44,6 +44,11 @@ class CheckUrlTest(SimpleTestCase):
         uo.side_effect = urllib.error.URLError('dns fail')
         self.assertEqual(check_url('http://x')[0], 'error')
 
+    def test_schemeless_url_is_error_not_raise(self):
+        # Real bug from a live run: a stored hyperlink without http:// (e.g. a mypolycc subdomain)
+        # must classify as 'error', never raise — a malformed URL can't be allowed to abort the run.
+        self.assertEqual(check_url('kkpasirsalak.mypolycc.edu.my')[0], 'error')
+
 
 def _fake_check(url, timeout=10):
     if 'dead' in url:
