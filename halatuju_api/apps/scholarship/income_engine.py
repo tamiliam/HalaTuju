@@ -277,15 +277,21 @@ def student_income_ic_check(doc):
 
 
 def _cluster_docs(application, member, doc_type):
-    """The documents of *doc_type* in *member*'s income cluster, latest first. The two
-    routes store income docs differently: the SALARY route tags each doc with the
-    household member; the STR route stores ONE untagged earner set (single earner). So
-    the storage tag is the member on the salary route and '' on the STR route — this
-    hides that difference so every income check works the same for both routes."""
+    """The documents of *doc_type* in *member*'s income cluster, latest first.
+
+    Slot model (TD-115): income docs are tagged by household member. The SALARY route has
+    always tagged each doc; the STR route historically stored the single earner's docs
+    UNTAGGED (blank). This reads **tolerantly** during the migration to per-person tagging:
+    on the STR route a blank-member doc still counts as the (single) earner's, so the check
+    works whether or not the backfill has run; once tightened it reads the member tag only.
+    The salary route reads the member tag (a blank there is ambiguous, never attributed)."""
     route = (getattr(application, 'income_route', '') or '').strip()
-    tag = member if route == 'salary' else ''
-    return (application.documents.filter(doc_type=doc_type, household_member=tag)
-            .order_by('-uploaded_at'))
+    if route == 'salary':
+        qs = application.documents.filter(doc_type=doc_type, household_member=member)
+    else:
+        # STR route (single earner) or blank wizard: the earner's docs — tagged OR legacy-blank.
+        qs = application.documents.filter(doc_type=doc_type, household_member__in=[member, ''])
+    return qs.order_by('-uploaded_at')
 
 
 def _member_ic_doc(application, member):

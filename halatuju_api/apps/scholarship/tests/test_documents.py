@@ -192,6 +192,29 @@ class TestDocumentApi(TestCase):
         self.assertEqual(ApplicantDocument.objects.filter(
             application=self.app_a, doc_type='parent_ic').count(), 2)
 
+    @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_str_route_income_doc_auto_tagged_to_earner_and_sweeps_legacy_blank(self, mock_del, _mv):
+        """Slot model (TD-115): on the STR route the backend authoritatively tags the earner's
+        income docs, and a re-upload replaces the legacy UNTAGGED copy (no duplicate) — even
+        when the client (e.g. the Action Centre) sends no household_member."""
+        self.app_a.income_route = 'str'
+        self.app_a.income_earner = 'mother'
+        self.app_a.save(update_fields=['income_route', 'income_earner'])
+        ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='parent_ic', household_member='',
+            storage_path=f'{self.app_a.id}/parent_ic/legacy-blank')
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'parent_ic',  # client sends NO member
+            'storage_path': f'{self.app_a.id}/parent_ic/new',
+            'original_filename': 'ic.png', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        ics = ApplicantDocument.objects.filter(application=self.app_a, doc_type='parent_ic')
+        self.assertEqual(ics.count(), 1)                          # legacy blank swept, no dup
+        self.assertEqual(ics.first().household_member, 'mother')  # auto-tagged to the earner
+
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_delete_sweeps_storage(self, mock_storage_delete):
         """Explicit DELETE on a doc also sweeps its Storage blob."""

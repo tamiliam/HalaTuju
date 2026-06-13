@@ -741,6 +741,7 @@ function SingleDocCard({
   helpOverride,
   titleOverride,
   member = '',
+  legacyBlank = false,
   suppressCoach = false,
 }: {
   docType: string
@@ -756,13 +757,17 @@ function SingleDocCard({
   helpOverride?: string
   titleOverride?: string
   member?: string
+  // Slot model (TD-115): an STR earner's income doc may carry the legacy blank tag during the
+  // backfill — show it under the earner's card too (uploads still tag the earner).
+  legacyBlank?: boolean
   // Income cluster docs suppress their per-file coach — one cluster coach speaks for them.
   suppressCoach?: boolean
 }) {
   const busy = busyType === docKey(docType, member)
-  // Salary-route income docs are scoped to a household member; everything else is
-  // member ''. Match on the pair so father's payslip card shows only father's file.
-  const existing = docs.filter((d) => d.doc_type === docType && (d.household_member || '') === member)
+  // Member-scoped income docs match on the (type, member) pair so each earner's card shows only
+  // their file; STR cards also accept the legacy untagged copy during the slot backfill.
+  const existing = docs.filter((d) => d.doc_type === docType
+    && ((d.household_member || '') === member || (legacyBlank && !(d.household_member || ''))))
   const visionDoc = showVisionChip ? existing.find((d) => d.vision_run_at) : null
   const onPick = (dt: string, f: File) => onUpload(dt, f, member)
 
@@ -952,6 +957,11 @@ const CLUSTER_COACH_DOCS = new Set([
   'parent_ic', 'str', 'salary_slip', 'epf', 'birth_certificate', 'guardianship_letter',
 ])
 
+// Slot model (TD-115): on the STR route these income docs belong to the single earner, so
+// their card is tagged with the earner (the backend tags uploads the same way). The
+// relationship docs (birth_certificate / guardianship_letter) stay member-less single slots.
+const STR_EARNER_DOCS = new Set(['str', 'parent_ic', 'salary_slip', 'epf'])
+
 function IncomeWizard({
   app,
   token,
@@ -964,7 +974,7 @@ function IncomeWizard({
   app: ScholarshipApplication
   token: string | null
   t: (key: string) => string
-  renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string; titleOverride?: string; member?: string; suppressCoach?: boolean }) => ReactNode
+  renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string; titleOverride?: string; member?: string; legacyBlank?: boolean; suppressCoach?: boolean }) => ReactNode
   onChange?: () => void
   docs: ApplicantDocument[]
   lang: string
@@ -1179,7 +1189,9 @@ function IncomeWizard({
         <div className="space-y-3 pt-1">
           {ordered(reqs.compulsory).map((dt) => (
             <div key={dt}>
-              {renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt), suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
+              {renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
+                ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
+                suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
               {/* The single cluster coach rides directly under the most recently uploaded cluster doc. */}
               {e && clusterDocKey(dt, '') === strAnchor && (
                 <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
@@ -1188,7 +1200,9 @@ function IncomeWizard({
           ))}
           {ordered(reqs.optional).map((dt) => (
             <div key={dt}>
-              {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt), suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
+              {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
+                ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
+                suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
               {e && clusterDocKey(dt, '') === strAnchor && (
                 <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
               )}
@@ -1325,7 +1339,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   }
 
   // A doc card with the shared handlers closed over — keeps the sections tidy.
-  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean; helpOverride?: string; titleOverride?: string; member?: string } = {}) => (
+  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean; helpOverride?: string; titleOverride?: string; member?: string; legacyBlank?: boolean } = {}) => (
     <SingleDocCard
       key={docKey(docType, extra.member)}
       docType={docType}
