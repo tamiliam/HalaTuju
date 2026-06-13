@@ -2908,6 +2908,7 @@
           "photo": "Photo"
         },
         "parentIcOf": "{member}'s IC",
+        "ofMember": "{member}'s {doc}",
         "utilityNote": {
           "unrelated": "Bill is in another name: {name}",
           "water_only": "Water bill only — electricity not provided, so consumption cannot be judged",

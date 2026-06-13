@@ -2908,6 +2908,7 @@
           "photo": "Gambar"
         },
         "parentIcOf": "IC {member}",
+        "ofMember": "{doc} {member}",
         "utilityNote": {
           "unrelated": "Bil atas nama lain: {name}",
           "water_only": "Bil air sahaja — bil elektrik tiada, penggunaan tidak dapat dinilai",

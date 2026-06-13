@@ -438,12 +438,14 @@ export function docIconFor(docType: string): string {
   return DOC_ICON[docType] || '📄'
 }
 
-// The household member an earner-IC belongs to, for the standard label ("Mother's IC"): its own
-// tag, or — on the STR route, where the single earner IC is stored UNTAGGED — the application's
-// income_earner. '' when it can't be derived (label falls back to a generic "Earner's IC").
+// The household member an income doc belongs to, for the person-qualified label ("Mother's IC",
+// "Father's salary slip"): its own tag, or — on the STR route, where the single earner's income
+// docs may carry a legacy blank tag — the application's income_earner. '' when it can't be derived
+// (label falls back to the generic type, e.g. "Earner's IC").
+const _INCOME_EARNER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf'])
 export function earnerMemberFor(docType: string, householdMember: string, route: string, earner: string): string {
   if (householdMember) return householdMember
-  if (docType === 'parent_ic' && route === 'str') return earner || ''
+  if (route === 'str' && _INCOME_EARNER_DOCS.has(docType)) return earner || ''
   return ''
 }
 

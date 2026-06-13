@@ -1267,14 +1267,19 @@ export default function AdminScholarshipDetailPage() {
           const TYPE_KEYS = new Set(['ic', 'parent_ic', 'results_slip', 'offer_letter', 'str',
             'salary_slip', 'epf', 'water_bill', 'electricity_bill', 'birth_certificate',
             'guardianship_letter', 'statement_of_intent', 'photo'])
+          // Income-earner docs are person-qualified from their slot ("Mother's STR proof",
+          // "Father's salary slip"); the IC keeps its own possessive ("Mother's IC").
+          const INCOME_MEMBER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf'])
           const docLabel = (d: AdminApplicantDocument) => {
-            if (d.doc_type === 'parent_ic') {
+            if (INCOME_MEMBER_DOCS.has(d.doc_type)) {
               const m = earnerMemberFor(d.doc_type, d.household_member || '',
                 app.income_route || '', app.income_earner || '')
-              return m
-                ? t('admin.scholarship.docsDrawer.parentIcOf',
-                    { member: t(`scholarship.docs.income.wizard.member.${m}`) })
-                : t('admin.scholarship.docsDrawer.type.parent_ic')
+              const base = t(`admin.scholarship.docsDrawer.type.${d.doc_type}`)
+              if (!m) return base
+              const member = t(`scholarship.docs.income.wizard.member.${m}`)
+              return d.doc_type === 'parent_ic'
+                ? t('admin.scholarship.docsDrawer.parentIcOf', { member })
+                : t('admin.scholarship.docsDrawer.ofMember', { member, doc: base })
             }
             return TYPE_KEYS.has(d.doc_type)
               ? t(`admin.scholarship.docsDrawer.type.${d.doc_type}`)
@@ -1312,9 +1317,11 @@ export default function AdminScholarshipDetailPage() {
           // Placeholder label for a missing compulsory income doc (+ the member, salary route).
           const slotLabel = (docType: string, member: string) => {
             const base = t(`admin.scholarship.docsDrawer.type.${docType}`)
-            return member
-              ? `${t(`scholarship.docs.income.wizard.member.${member}`)} — ${base}`
-              : base
+            if (!member) return base
+            const m = t(`scholarship.docs.income.wizard.member.${member}`)
+            return docType === 'parent_ic'
+              ? t('admin.scholarship.docsDrawer.parentIcOf', { member: m })
+              : t('admin.scholarship.docsDrawer.ofMember', { member: m, doc: base })
           }
           const docRow = (d: AdminApplicantDocument) => {
             const p = documentPill(d)

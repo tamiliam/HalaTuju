@@ -354,6 +354,12 @@ describe('earnerMemberFor — earner-IC label member', () => {
     expect(earnerMemberFor('parent_ic', '', 'salary', '')).toBe('')
     expect(earnerMemberFor('ic', '', 'str', 'mother')).toBe('')   // not an earner IC
   })
+  it('person-qualifies all STR income docs (str/salary_slip/epf), tag or earner fallback', () => {
+    expect(earnerMemberFor('salary_slip', 'father', 'salary', '')).toBe('father')   // by tag
+    expect(earnerMemberFor('str', '', 'str', 'mother')).toBe('mother')              // STR earner fallback
+    expect(earnerMemberFor('epf', '', 'str', 'mother')).toBe('mother')
+    expect(earnerMemberFor('salary_slip', '', 'str', 'father')).toBe('father')
+  })
 })
 
 describe('viewerKind — how the in-cockpit viewer renders a doc', () => {
