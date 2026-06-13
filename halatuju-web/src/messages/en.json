@@ -2422,6 +2422,7 @@
         "noFlags": "No automated flags. Use the rubric + note to record your judgement.",
         "submitted": "Submitted",
         "inProgress": "In progress",
+        "carryOver": "Unanswered Check 2 queries — ask these at the interview",
         "rationalePlaceholder": "One line: what you found",
         "notePlaceholder": "Overall note (optional)",
         "saveDraft": "Save draft",
@@ -2851,6 +2852,7 @@
       "outstanding": {
         "title": "Check 2 — Outstanding",
         "subtitle": "Student tasks to clear before review",
+        "locked": "Querying closed — the interview is concluded. This is now a read-only record.",
         "itemOne": "item",
         "itemMany": "items",
         "empty": "Nothing outstanding — all student tasks are clear.",

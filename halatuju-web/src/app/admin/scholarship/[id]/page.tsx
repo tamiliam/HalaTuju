@@ -463,6 +463,11 @@ export default function AdminScholarshipDetailPage() {
   if (error && !app) return <div className="text-red-600 mt-8">{error}</div>
   if (!app) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
 
+  // S4: once the interview is concluded it's decision time — querying (raise / Resolve /
+  // Ask again / request a document) closes and Outstanding becomes a read-only record.
+  const queryingLocked = ['interviewed', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired'].includes(app.status)
+    || app.interview_session?.status === 'submitted'
+
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-10">
       <DocViewer doc={viewerDoc} onClose={() => setViewerDoc(null)} />
@@ -1015,6 +1020,11 @@ export default function AdminScholarshipDetailPage() {
             ) : null
           })()}
         </div>
+        {queryingLocked && (
+          <p className="rounded-md bg-gray-100 px-3 py-2 text-xs text-gray-500">
+            {t('admin.scholarship.outstanding.locked')}
+          </p>
+        )}
         {(() => {
           const caveats: AdminResolutionItem[] = app.resolution_items ?? []
           if (caveats.length === 0) {
@@ -1052,7 +1062,7 @@ export default function AdminScholarshipDetailPage() {
                               </div>
                             )}
                           </div>
-                          {canWrite && (
+                          {canWrite && !queryingLocked && (
                             <div className="flex shrink-0 flex-col gap-1">
                               {answered ? (
                                 <>
@@ -1210,6 +1220,24 @@ export default function AdminScholarshipDetailPage() {
             </ul>
           )
         })()}
+        {(() => {
+          // Carry-over: queries the student never answered flow into the interview as
+          // talking points to put to them verbally (no new async ask — querying is closing).
+          const openQ = (app.resolution_items ?? []).filter((i) => i.status === 'open')
+          if (openQ.length === 0) return null
+          return (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-xs font-semibold text-amber-800">{t('admin.scholarship.interview.carryOver')}</p>
+              <ul className="mt-1.5 space-y-1">
+                {openQ.map((i) => (
+                  <li key={i.id} className="text-sm text-gray-800">
+                    ↳ {i.source === 'officer' ? (i.prompt || i.code) : t(`admin.scholarship.verdict.item.${i.code}`, localiseParams(i.params, t))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        })()}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {RUBRIC_DIMS.map((dim) => (
             <div key={dim}>
@@ -1241,8 +1269,8 @@ export default function AdminScholarshipDetailPage() {
         )}
       </div>
 
-      {/* Phase C: request more documentation from the student */}
-      {canWrite && (
+      {/* Phase C: request more documentation from the student (closed once querying locks) */}
+      {canWrite && !queryingLocked && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
           <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
           <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>

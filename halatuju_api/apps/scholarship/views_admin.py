@@ -805,6 +805,9 @@ class AdminResolutionItemView(_AdminBase):
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
+        from .services import querying_locked
+        if querying_locked(app):
+            return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
         kind = (request.data.get('kind') or '').strip()
         prompt = (request.data.get('prompt') or '').strip()
         if kind not in ('doc', 'confirm', 'explanation'):
@@ -838,6 +841,9 @@ class AdminResolutionItemActionView(_AdminBase):
         item = ResolutionItem.objects.filter(pk=item_id).select_related('application').first()
         if item is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        from .services import querying_locked
+        if querying_locked(item.application):
+            return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
         if action == 'reopen':
             # "Ask again" — the officer wasn't satisfied with the student's answer; send
             # the query back to the student's to-do. The typed answer stays in

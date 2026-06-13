@@ -166,6 +166,53 @@ class TestAdminScholarship(TestCase):
         gen.assert_not_called()
         self.assertEqual(SponsorProfile.objects.get(application=self.app).draft_markdown, 'Existing.')
 
+    # ── Check-2/Check-3 redesign S4: querying locks once the interview is concluded ──
+    def test_raise_query_blocked_after_interview_concluded(self):
+        from apps.scholarship.models import InterviewSession
+        InterviewSession.objects.create(application=self.app, status='submitted')
+        self._auth(ADMIN)
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/resolution-items/',
+            {'kind': 'explanation', 'prompt': 'a late question'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json().get('error'), 'querying_closed')
+
+    def test_reopen_blocked_after_interview_concluded(self):
+        from apps.scholarship.models import InterviewSession
+        item = self._make_answered_caveat()
+        InterviewSession.objects.create(application=self.app, status='submitted')
+        self._auth(ADMIN)
+        r = self.client.post(f'/api/v1/admin/scholarship/resolution-items/{item.id}/reopen/')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json().get('error'), 'querying_closed')
+
+    @override_settings(CHECK2_AUTO_GENERATE=True)
+    @patch('apps.scholarship.profile_engine.refine_sponsor_profile',
+           return_value={'markdown': 'Final polished.', 'model_used': 'pro'})
+    def test_submit_interview_autofinalises_when_flag_on(self, _refine):
+        from apps.scholarship.models import SponsorProfile, InterviewSession
+        from apps.scholarship.services import submit_interview
+        SponsorProfile.objects.create(
+            application=self.app, draft_markdown='Draft.', generated_at=timezone.now())
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='interviewing')
+        self.app.refresh_from_db()
+        sess = InterviewSession.objects.create(application=self.app, status='draft')
+        submit_interview(sess)
+        self.assertEqual(SponsorProfile.objects.get(application=self.app).final_markdown, 'Final polished.')
+
+    @override_settings(CHECK2_AUTO_GENERATE=False)
+    @patch('apps.scholarship.profile_engine.refine_sponsor_profile')
+    def test_submit_interview_no_autofinalise_when_flag_off(self, refine):
+        from apps.scholarship.models import SponsorProfile, InterviewSession
+        from apps.scholarship.services import submit_interview
+        SponsorProfile.objects.create(
+            application=self.app, draft_markdown='Draft.', generated_at=timezone.now())
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='interviewing')
+        self.app.refresh_from_db()
+        sess = InterviewSession.objects.create(application=self.app, status='draft')
+        submit_interview(sess)
+        refine.assert_not_called()
+
     def test_admin_list(self):
         self._auth(ADMIN)
         r = self.client.get('/api/v1/admin/scholarship/applications/')

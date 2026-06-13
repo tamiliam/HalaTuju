@@ -888,21 +888,63 @@ def revert_if_profile_incomplete(application):
     return True
 
 
+# S4: querying (officer queries + doc requests) closes once the interview is concluded.
+QUERYING_LOCKED_STATUSES = ('interviewed', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired')
+
+
+def querying_locked(application):
+    """True once the interview is concluded — decision time, no more queries/documents.
+    Fires when the application has advanced past the interview OR a submitted interview
+    session exists (covers the moment of submit before any further status change)."""
+    if application.status in QUERYING_LOCKED_STATUSES:
+        return True
+    return application.interview_sessions.filter(status='submitted').exists()
+
+
+def _maybe_autofinalise(application, session):
+    """S4: on interview submit, refine the draft into the final polished profile from the
+    findings — gated behind CHECK2_AUTO_GENERATE (dark by default; billable Gemini call),
+    idempotent (skips with no draft or an existing final), best-effort (never raises)."""
+    from django.conf import settings as _settings
+    if not getattr(_settings, 'CHECK2_AUTO_GENERATE', False):
+        return
+    try:
+        from .models import SponsorProfile
+        from .profile_engine import refine_sponsor_profile
+        sp = SponsorProfile.objects.filter(application=application).first()
+        if sp is None or not sp.current_markdown.strip() or sp.final_markdown.strip():
+            return  # need a draft; never re-finalise an existing final
+        result = refine_sponsor_profile(application, draft=sp.current_markdown, session=session)
+        if 'error' in result:
+            return
+        sp.final_markdown = result['markdown']
+        sp.final_model_used = result.get('model_used', '')
+        sp.finalised_at = timezone.now()
+        sp.save()
+    except Exception:
+        pass  # never let auto-finalise break interview submission
+
+
 def submit_interview(session):
     """Phase C: finalise an interview session. Marks it submitted and advances the
     application profile_complete/interviewing → interviewed. Idempotent on the
-    session status. Returns True if it advanced the application."""
+    session status. Returns True if it advanced the application.
+
+    S4: submitting also auto-finalises the polished profile from the findings (gated +
+    best-effort — see _maybe_autofinalise) and is the point querying locks."""
     now = timezone.now()
     if session.status != 'submitted':
         session.status = 'submitted'
         session.submitted_at = now
         session.save(update_fields=['status', 'submitted_at'])
     app = session.application
+    advanced = False
     if app.status in ('profile_complete', 'interviewing'):
         app.status = 'interviewed'
         app.save(update_fields=['status'])
-        return True
-    return False
+        advanced = True
+    _maybe_autofinalise(app, session)
+    return advanced
 
 
 def application_completeness(application):
