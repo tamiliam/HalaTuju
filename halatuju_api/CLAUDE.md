@@ -173,6 +173,22 @@ python -m pytest apps/courses/tests/test_stpm_golden_master.py -v
 
 Requires: `pip install selenium` (URL validation) + `pip install playwright && playwright install chromium` (scraper). Local admin tools, not deployed.
 
+### UP_TVET Coverage Inventory (TVET gap analysis — no DB writes)
+
+```bash
+# 1. Scrape the public UP_TVET Perdana catalogue (~1000 programmes, ~50 pages)
+python manage.py scrape_uptvet --output data/tvet/uptvet_latest.csv
+#    (--max-pages N for a quick parser-validation spike)
+
+# 2. Coverage report: total, Awam/Swasta split, by-institution, new-vs-already-held (ILJTM+ILKBS)
+python manage.py audit_uptvet --csv data/tvet/uptvet_latest.csv
+```
+
+UP_TVET covers ~12 ministries / 685 institutions; we hold only ILJTM (ADTEC/JTM) + ILKBS (IKBN/IKTBN), ~83
+courses. **No DB writes** — this is the decision-data step before a (golden-master-adjacent) TVET INGEST sprint.
+Codes (`TVET/QP…`) don't match our synthetic `IJTM-*`/`IKBN-*` IDs, and the portal mixes Awam/Swasta — see
+`docs/roadmap-course-data-pipeline.md` (UP_TVET track) + `docs/decisions.md`.
+
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
@@ -213,6 +229,8 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/management/commands/scrape_mohe_stpm.py` | MOHE ePanduan scraper (annual) | No |
 | `apps/courses/management/commands/sync_stpm_mohe.py` | STPM data sync with diff report | No |
 | `apps/courses/management/commands/validate_stpm_urls.py` | Dead link checker | No |
+| `apps/courses/management/commands/scrape_uptvet.py` | UP_TVET catalogue scraper (mohon.tvet.gov.my → CSV; no DB writes) | No |
+| `apps/courses/management/commands/audit_uptvet.py` | UP_TVET coverage inventory (Awam/Swasta split, new-vs-held; no DB writes) | No |
 | `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
 | `apps/courses/management/commands/generate_stpm_headlines.py` | Gemini-powered STPM headline generator | No |
 | `apps/courses/management/commands/backfill_spm_field_key.py` | Deterministic SPM field_key classifier + backfill | No |
