@@ -173,6 +173,51 @@ python -m pytest apps/courses/tests/test_stpm_golden_master.py -v
 
 Requires: `pip install selenium` (URL validation) + `pip install playwright && playwright install chromium` (scraper). Local admin tools, not deployed.
 
+### UP_TVET Coverage Inventory (TVET gap analysis — no DB writes)
+
+```bash
+# 1. Scrape the public UP_TVET Perdana catalogue (~1000 programmes, ~50 pages)
+python manage.py scrape_uptvet --output data/tvet/uptvet_latest.csv
+#    (--max-pages N for a quick parser-validation spike)
+
+# 2. Coverage report: total, Awam/Swasta split, by-institution, new-vs-already-held (ILJTM+ILKBS)
+python manage.py audit_uptvet --csv data/tvet/uptvet_latest.csv
+```
+
+UP_TVET covers ~12 ministries / 685 institutions; we hold only ILJTM (ADTEC/JTM) + ILKBS (IKBN/IKTBN), ~83
+courses. **No DB writes** — this is the decision-data step before a (golden-master-adjacent) TVET INGEST sprint.
+Codes (`TVET/QP…`) don't match our synthetic `IJTM-*`/`IKBN-*` IDs, and the portal mixes Awam/Swasta — see
+`docs/roadmap-course-data-pipeline.md` (UP_TVET track) + `docs/decisions.md`.
+### Annual SPM Data Refresh (post-SPM `Course` catalogue — MOHE-coded subset only)
+
+```bash
+# 1. Scrape the SPM track (current year). Same scraper, --jenprog spm.
+python manage.py scrape_mohe_stpm --jenprog spm --category A --output data/spm/mohe_2027.csv
+#    (--max-pages N for a quick parser-validation spike; do NOT sync a --max-pages CSV)
+
+# 2. Dry-run diff (report only — restricted to MOHE-coded UA/Asasi courses; synthetic-ID Poly/KK/TVET/PISMP excluded)
+python manage.py sync_spm_mohe --csv data/spm/mohe_2027.csv
+
+# 3. Apply (deactivate removed / reactivate returned / update merit; mass-deactivation guard; --force to override)
+python manage.py sync_spm_mohe --csv data/spm/mohe_2027.csv --apply
+```
+
+**Scope:** `sync_spm_mohe` only touches courses whose `course_id` is a MOHE KOD PROGRAM (`^[A-Z]{2}[0-9]{7}$`, ~89
+UA/Asasi). The ~300 synthetic-ID courses (`POLY-*`/`KKOM-*`/`TVET-*`/`50PD…`) are excluded (they need a name crosswalk —
+roadmap Sprint 3b). New MOHE-coded courses are **reported, not auto-added** (requirements parsing = Sprint 3c). `is_active`
+is set by the sync but **not yet read-filtered** anywhere. See `docs/roadmap-course-data-pipeline.md` + `docs/decisions.md`.
+
+### Course Data dashboard (`/admin/course-data`, reporting-only)
+
+A read-only admin status surface: per-source **freshness** (e-Panduan STPM/SPM, UP_TVET, eMASCO), **coverage**
+(have/available/gap, live from the DB), **link-health** + **audit** (last recorded run). Endpoint
+`GET /api/v1/admin/course-data/` (`AdminCourseDataView`, any admin role). Freshness comes from `CourseDataStatus`
+(`course_data_status` table) which the tools upsert on completion via `course_data_status.record_status(...)`:
+`refresh_stpm`→`epanduan_stpm`, `validate_course_urls`→`link_health`, `audit_data`→`audit`. (The SPM `sync_spm_mohe` + UP_TVET `scrape_uptvet`/`audit_uptvet` tools do NOT yet call `record_status` —
+until they do, the SPM/UP_TVET cards read "never run"; wiring that is a one-line add per tool.) **Reporting-only — no run-triggers this sprint** (matches "no
+harvesting"). Recording is best-effort (never breaks the tool). Migration `0054_coursedatastatus` is a new table →
+migrate-first via MCP + enable RLS at deploy (service-role-only); it parallels `spm-catalogue`'s `0054` (merge-resolve).
+
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
@@ -212,8 +257,12 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/utils.py` | Shared utilities (proper_case_name, build_mohe_url) | No |
 | `apps/courses/management/commands/scrape_mohe_stpm.py` | MOHE ePanduan scraper (annual) | No |
 | `apps/courses/management/commands/sync_stpm_mohe.py` | STPM data sync with diff report | No |
+| `apps/courses/management/commands/sync_spm_mohe.py` | SPM `Course` sync (MOHE-coded UA/Asasi subset; restriction + mass-deactivation guard) | No |
 | `apps/courses/management/commands/validate_stpm_urls.py` | Dead link checker | No |
-| `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
+| `apps/courses/management/commands/scrape_uptvet.py` | UP_TVET catalogue scraper (mohon.tvet.gov.my → CSV; no DB writes) | No |
+| `apps/courses/management/commands/audit_uptvet.py` | UP_TVET coverage inventory (Awam/Swasta split, new-vs-held; no DB writes) | No |
+| `apps/courses/management/commands/audit_data.py` | Data completeness report (records dashboard `audit` status) | No |
+| `apps/courses/course_data_status.py` | Course Data dashboard support: `record_status` + live `coverage_snapshot` | No |
 | `apps/courses/management/commands/generate_stpm_headlines.py` | Gemini-powered STPM headline generator | No |
 | `apps/courses/management/commands/backfill_spm_field_key.py` | Deterministic SPM field_key classifier + backfill | No |
 | `apps/courses/management/commands/classify_stpm_fields.py` | Deterministic STPM field_key classifier + backfill | No |

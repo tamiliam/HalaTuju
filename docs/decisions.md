@@ -1,5 +1,80 @@
 # Architectural Decisions — HalaTuju
 
+## UP_TVET coverage: scrape + inventory FIRST (no DB writes); ingest deferred; coverage matched by institution name — UP_TVET Sprint 1, 2026-06-13
+
+**Decision:** The first UP_TVET sprint builds only the scraper (`scrape_uptvet`) + a no-write coverage
+inventory (`audit_uptvet`). It does NOT ingest programmes into the DB. Coverage (new-vs-already-held) is
+reported by **institution name overlap**, explicitly as an **upper bound**, not by course code.
+
+**Alternatives considered:** (1) Scrape + ingest the Awam programmes into the `tvet` bucket this sprint.
+(2) Scrape + inventory first, ingest as a separate sprint (chosen). (3) Read-only inventory with no reusable
+scraper.
+
+**Rationale:** The live spike showed UP_TVET is a **~1000-programme acquisition** (not a refresh): codes
+(`TVET/QP…`, `SLW…`) don't match our synthetic `IJTM-*`/`IKBN-*` IDs, requirements sit behind Semak-Kelayakan
+detail pages, and the catalogue mixes Awam/Swasta. Ingesting adds new `CourseRequirement` rows that feed the
+**golden-master** eligibility DataFrame — doing that without first knowing the real Awam/Swasta split + the
+per-institution gap would be reckless. The inventory produces exactly those numbers to scope the ingest +
+settle the Swasta question on evidence. Institution-name matching is fuzzy because the portal uses full names
+("INSTITUT KEMAHIRAN BELIA NEGARA …") while our DB uses abbreviations ("IKBN …"), so the inventory surfaces the
+institution list for human judgement rather than asserting a clean diff (same family as the SPM `course_id`
+mismatch).
+
+**Trade-offs:** No coverage improvement ships this sprint (the inventory is decision-data, not new courses);
+the precise new-vs-existing count needs a name-reconciliation step the ingest sprint must do anyway.
+
+**Revisit if:** the ingest sprint is scoped — then decide Awam-only vs include Swasta from the inventory
+numbers, pick the course_id scheme (likely the portal `id_kursus`), and a TVET requirements strategy
+(parse Semak-Kelayakan pages vs a conservative TVET default).
+
+## SPM catalogue sync is restricted to the MOHE-coded (UA/Asasi) subset; synthetic-ID crosswalk deferred — Sprint 3, 2026-06-13
+
+**Decision:** `sync_spm_mohe` compares the e-Panduan `jenprog=spm` scrape against the `courses` catalogue **only for
+courses whose `course_id` is a MOHE/UPU KOD PROGRAM** (`^[A-Z]{2}[0-9]{7}$` — the ~89 `U*` UA/Asasi programmes). The
+other ~300 courses use internal synthetic IDs (`POLY-*`, `KKOM-*`, `IKBN-*`/`ILP-*`, numeric `50PD…` PISMP) that
+e-Panduan never emits, so they are excluded from the diff entirely — never matched, never deactivated. A new
+`Course.is_active` (migration `0054`) is populated by the sync, but **no read path filters on it yet**.
+
+**Alternatives considered:** (1) Diff the whole catalogue against the scrape — would flag ~300 synthetic-ID courses as
+"removed" and trip the mass-deactivation guard (or, forced, wipe most of the catalogue). (2) Build a MOHE-code ↔
+synthetic-ID crosswalk by name+institution now, so all 390 sync. (3) Restrict to the MOHE-coded subset, defer the
+crosswalk (chosen).
+
+**Rationale:** The 89 UA/Asasi courses sync cleanly and safely today (real value: their merit moves yearly). The
+crosswalk is genuinely separate work with real risk — name-based matching across two ID schemes can false-merge into the
+golden-master eligibility data (cf. lessons #19, #88). Shipping the safe 80%-effort/clean part now beats blocking on the
+risky long tail. Mirrors how STPM was done (sync the matchable; parse requirements / add new courses as separate tooling).
+
+**Trade-offs:** Poly/KK/TVET/PISMP courses get no automated refresh until the crosswalk (3b) lands; new MOHE-coded
+courses are reported but not auto-added (requirements parsing = 3c). Adding `is_active` without a read filter means
+deactivated SPM courses still render until a later sprint wires the filter — accepted to keep the golden master provably
+untouched this sprint.
+
+**Revisit if:** the Poly/KK merit/links go materially stale (build 3b), or new UA/Asasi programmes appear often enough
+to want auto-add with parsed requirements (build 3c), or a sponsor/advisory view needs inactive SPM courses hidden
+(wire the `is_active` read filter, mirroring `StpmCourse`).
+## Course Data dashboard: reporting-only first (no run-triggers); coverage live, freshness recorded — Course Data Dashboard Sprint 1, 2026-06-13
+
+**Decision:** The first `/admin/course-data` dashboard is **read-only reporting**: per-source freshness, coverage
+(have/available/gap), link-health, audit. NO buttons that run a scrape/sync/audit. Coverage is computed **live** from
+the DB; freshness/link-health/audit come from a small `CourseDataStatus` store the tools write to when they run.
+
+**Alternatives considered:** (1) Full hybrid (reporting + server-run triggers) now. (2) Reporting-only first, triggers
+later (chosen). (3) Compute everything live with no status store (then no freshness/history possible).
+
+**Rationale:** The owner's directive is *"build the tools, then a dashboard that shows status for decisions — no
+harvesting now."* Reporting-only honours that literally (no UI path can harvest) and is the smaller, safer build.
+Coverage counts don't need persistence; freshness does (a recorded `last_run_at`), so a tiny status model is the
+minimum that makes the dashboard truthful. The empty/"never run" state is first-class and itself decision-useful.
+
+**Trade-offs:** Until a tool is actually run, its card reads "never refreshed" — expected under "no harvesting now".
+The SPM + UP_TVET tools (on separate branches) aren't instrumented yet, so those two read "never" until those branches
+merge and call `record_status`.
+
+**Revisit if:** the owner wants the hybrid update-triggers (server-runnable Run-audit / Check-links / Apply-refresh
+buttons) — a later sprint; the scrape itself stays local (browser), so a trigger would upload a CSV, not scrape server-side.
+
+
 ## Operational reminders stay email/Cloud-Scheduler — no in-app notification system yet — 2026-06-12
 
 **Decision:** Admin/operational reminders (refresh the catalogue, backup status, link-rot, anomaly alerts)

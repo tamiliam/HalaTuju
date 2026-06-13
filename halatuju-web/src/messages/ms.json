@@ -2043,7 +2043,6 @@
     "angkaGiliran": "Angka Giliran",
     "angkaGiliranHelper": "Nombor rujukan permohonan universiti anda (cth. AB123C456)",
     "angkaGiliranInvalid": "Format salah — mestilah AB123C456 (2 huruf, 3 digit, 1 huruf, 3 digit)",
-    "school": "Sekolah",
     "optional": "pilihan",
     "applicationTracking": "Penjejakan Permohonan",
     "notSet": "Belum diisi — ketik untuk tambah",
@@ -3141,6 +3140,35 @@
       "admin": "Melihat setiap halaman — baca sahaja buat masa ini.",
       "partner": "Wakil organisasi — melihat pelajar organisasi mereka sahaja.",
       "reviewer": "Penyemak individu — melihat pemohon yang ditugaskan kepada mereka sahaja, dan membuat keputusan akhir."
+    },
+    "courseData": {
+      "nav": "Data Kursus",
+      "title": "Data Kursus",
+      "subtitle": "Kesegaran dan liputan sumber data kursus. Baca sahaja.",
+      "freshness": "Kesegaran",
+      "coverage": "Liputan",
+      "linkHealth": "Kesihatan pautan",
+      "audit": "Audit data",
+      "never": "Tidak pernah dijalankan",
+      "lastRun": "Kali terakhir",
+      "refreshVia": "Kemas kini melalui",
+      "have": "Ada",
+      "available": "Tersedia",
+      "gap": "Jurang",
+      "source": "Sumber",
+      "courses": "kursus",
+      "alive": "Hidup",
+      "dead": "Mati",
+      "errors": "Ralat",
+      "notRunYet": "Belum dikemas kini",
+      "uptvetHint": "Jalankan scrape_uptvet + audit_uptvet untuk mengisi angka tersedia/jurang UP_TVET.",
+      "readOnlyNote": "Baca sahaja. Alat kemas kini dijalankan secara setempat; halaman ini melaporkan hasil terakhir yang direkodkan.",
+      "src": {
+        "epanduan_stpm": "e-Panduan · STPM",
+        "epanduan_spm": "e-Panduan · SPM",
+        "uptvet": "UP_TVET",
+        "emasco": "eMASCO (pekerjaan)"
+      }
     }
   }
 }

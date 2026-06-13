@@ -1,8 +1,19 @@
 # Roadmap — Course-Data Freshness Pipeline
 
-**Status:** APPROVED + IN PROGRESS. **Sprints 1 & 2 SHIPPED & LIVE 2026-06-13.** `NEXT = Sprint 3` (post-SPM catalogue
-via e-Panduan `jenprog=spm` — the big win, de-risked by the spike) — do when the owner picks it up. Decomposed via
-`implementation-planning.md`. **Owner decision still needed before Sprint 4** (degree candidate-category completeness).
+**Status:** APPROVED + IN PROGRESS. **Sprints 1 & 2 SHIPPED & LIVE 2026-06-13.** **Sprint 3 re-scoped to "3a" + BUILT
+2026-06-13** (on branch `spm-catalogue`; migration `0054` NOT yet applied to prod — ships on the owner's next deploy,
+migrate-first). `NEXT = deploy 3a` (owner), then Sprint 3b (synthetic-ID crosswalk) or 3c (SPM requirement parser).
+Decomposed via `implementation-planning.md`.
+
+> **⚠️ Sprint 3 scope correction (2026-06-13).** The "mirror `sync_stpm_mohe` over the SPM catalogue" plan was based on a
+> spike that validated only the **scrape card structure**, not the **sync target**. On building, two gaps surfaced:
+> (1) the SPM `Course` model is shaped differently from `StpmCourse` (merit in `CourseRequirement`, URL in
+> `CourseInstitution`, no `is_active`); (2) only **89 of 390** SPM courses carry MOHE KOD PROGRAM codes — the other ~300
+> use internal `POLY-*`/`KKOM-*`/`TVET-*`/`50PD…` schemes e-Panduan never emits, so a whole-catalogue diff would flag
+> them all as "removed". Sprint 3 was therefore **split** (owner-approved): **3a** = the 89 MOHE-coded UA/Asasi courses
+> (BUILT — scraper `--jenprog spm`, `Course.is_active` migration `0054`, `sync_spm_mohe` restricted + guarded, +29 tests);
+> **3b** = a name+institution crosswalk for the synthetic-ID courses; **3c** = the SPM requirement-page parser (to
+> auto-add new courses). See `decisions.md` + `retrospective-course-data-sprint3.md`.
 
 ---
 
@@ -38,16 +49,32 @@ classification doc, slow-moving).
 - Axes: ENTRY qualification (SPM `courses` vs STPM `stpm_courses`) × DESTINATION pathway (`source_type`) × FIELD (`field_key`).
 
 ### NEW work items (extend the sprint list below)
-- **Sprint 3b — UP_TVET coverage (the confirmed gap):** scrape the public UP_TVET catalogue → fold into the BE `tvet`
-  bucket, **`Sektor = Awam` only** (public-only scope; private TVET is a scope decision — flag to owner). Mirrors the
-  e-Panduan scrape→sanity→sync pattern + guards. Sibling to Sprint 3.
-- **Sprint 6 — "Course Data" admin dashboard (the reporting + updating SYSTEM):** a `/admin/course-data` page.
-  - **Reporting** (all server-side): catalogue counts, **freshness per source** (e-Panduan / UP_TVET / eMASCO), link
-    health, audit gaps. Mirrors `AdminVerdictMetricsView`. Needs a small status model to store last-refresh/last-check.
-  - **Updating triggers** (hybrid): server-runnable buttons — **Run audit**, **Check links** (`validate_course_urls`,
-    async — slow), **Apply a refresh** (`sync_stpm_mohe --apply` from an **uploaded CSV**, guarded). The **scrape stays
-    local** (run `refresh_stpm` on the laptop → upload the CSV) since it needs a browser. Mirrors `AdminRunVisionView` +
-    `CronRunView`. (Option B — a Chromium Cloud Run Job for server-side scraping — only if the laptop step is worth removing.)
+- **UP_TVET coverage (the confirmed gap) — split on build (2026-06-13):**
+  - **UP_TVET Sprint 1 — scraper + coverage inventory · ✅ SHIPPED 2026-06-13** (merged to `main`; NO DB write,
+    NO migration). `scrape_uptvet` (paginated catalogue → CSV: code,
+    name, kategori, institution, **sektor Awam/Swasta**, fees, `id_kursus`, detail URLs; `--max-pages`) + `audit_uptvet`
+    (total / Awam-Swasta / by-institution / new-vs-held). +9 tests. Live-validated: ~1000 programmes; a 200-sample is
+    ~82% Awam and ~39% from providers we lack (agriculture, MARA, craft, regional colleges). **Spike findings:** codes
+    (`TVET/QP…`) don't match our synthetic `IJTM-*`/`IKBN-*`; requirements sit behind Semak-Kelayakan detail pages; the
+    catalogue mixes Awam/Swasta — so this is a ~1000-programme ACQUISITION, not a refresh.
+  - **UP_TVET Sprint 2 — ingest (PENDING, golden-master-adjacent):** add new programmes into the BE `tvet` bucket. Run
+    the inventory first to settle **`Sektor = Awam` only vs include Swasta** (owner) + the per-institution priority; pick
+    the course_id scheme (likely the portal `id_kursus`); decide a TVET requirements strategy (parse Semak-Kelayakan
+    pages vs a conservative default). New `CourseRequirement` rows feed the eligibility DataFrame → careful validation.
+    **Carry:** instrument `scrape_uptvet`/`audit_uptvet` to call `record_status('uptvet', …)` so the dashboard's UP_TVET
+    card stops reading "never run".
+- **"Course Data" admin dashboard — split on build (owner: "build tools, then a dashboard for decisions — no harvesting now"):**
+  - **Dashboard Sprint 1 — REPORTING-ONLY · ✅ BUILT 2026-06-13** (branch `course-data-dashboard`; migration
+    `0054_coursedatastatus`; deploy = owner). `/admin/course-data` page (super/admin): freshness strip (e-Panduan
+    STPM/SPM · UP_TVET · eMASCO, last-run + count + "never run"), coverage table (have/available/gap, live), link-health +
+    audit cards. `CourseDataStatus` store + `coverage_snapshot()`; `refresh_stpm`/`validate_course_urls`/`audit_data` record
+    status (best-effort). `GET /api/v1/admin/course-data/`. **NO run-triggers** (honours "no harvesting"). +8 tests; next build
+    clean; jest 306; parity 2600×3. **Carry:** instrument `sync_spm_mohe` + `scrape_uptvet`/`audit_uptvet` to call
+    `record_status` when those branches merge (else their cards stay "never run"); migration parallels `spm-catalogue`'s 0054.
+  - **Dashboard Sprint 2 — UPDATE TRIGGERS (hybrid, DEFERRED):** server-runnable buttons — **Run audit**, **Check links**
+    (`validate_course_urls`, async), **Apply a refresh** (`sync_stpm_mohe --apply` from an **uploaded CSV**, guarded). The
+    **scrape stays local** (run on the laptop → upload CSV). Mirrors `AdminRunVisionView` + `CronRunView`. Build only when the
+    owner wants harvesting/updating from the UI. (Option B — a Chromium Cloud Run Job — only if the laptop step is worth removing.)
   - This is the focused "dashboard freshness strip" anticipated in `decisions.md`, not a general notification framework.
 
 ---
@@ -106,7 +133,17 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
   "stale/last-verified" section; tests for the checker + audit additions.
 - **Files:** ~4–6.
 
-### Sprint 3 — Post-SPM catalogue via e-Panduan `jenprog=spm`  ·  *complexity: medium*  ·  **(was 2 high sprints — collapsed after the 2026-06-12 spike)**
+### Sprint 3 — Post-SPM catalogue via e-Panduan `jenprog=spm`  ·  **SPLIT 3a/3b/3c on build (see scope-correction box at top)**
+- **3a — MOHE-coded (UA/Asasi) subset · ✅ BUILT 2026-06-13** (branch `spm-catalogue`; deploy = owner, migrate-first `0054`).
+  `scrape_mohe_stpm --jenprog spm` + `--max-pages`; `Course.is_active` (`0054`, additive, no read filter yet);
+  `sync_spm_mohe` restricted to `^[A-Z]{2}[0-9]{7}$`, mass-deactivation guard, merit→`CourseRequirement.merit_cutoff`,
+  new reported-not-added. +29 tests. Live-validated the `spm` parser (363 programmes, page 1 clean, MOHE codes + merit + URLs).
+- **3b — synthetic-ID crosswalk (PENDING):** map MOHE KOD PROGRAM ↔ our `POLY-*`/`KKOM-*`/`TVET-*`/`50PD…` IDs by
+  name+institution so the ~300 non-MOHE-coded courses can sync. Riskier (false-merge into golden-master eligibility).
+- **3c — SPM requirement-page parser (PENDING):** parse e-Panduan `spm` requirement detail pages → the 60-boolean
+  `CourseRequirement` schema, to auto-add new MOHE-coded courses (currently reported-not-added). Golden-master-adjacent.
+
+_Original Sprint 3 plan (kept for 3b/3c reference):_
 - **SPIKE RESULT (confirmed live):** e-Panduan exposes exactly two `jenprog` values — `stpm` and
   **`spm`**. The `spm` branch (Asasi/diploma/cert at Poly/KK/UA) is **2 categories** (`A` current-year
   = 363 programmes, `B` past-year) and uses the **identical card structure** the existing scraper
