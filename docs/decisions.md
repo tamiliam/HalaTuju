@@ -2726,3 +2726,21 @@ for never breaking on a stray blank. The DB uniqueness constraint (the hard guar
 rests on the app layer until it lands.
 **Revisit if:** the STR route ever gains multiple earners (the single-earner assumption behind blank-as-earner breaks), or
 the DB constraint is added (then the lenient readers can tighten to member-only).
+
+## Check-2 vs Interview-Stage: one querying channel, not two — Check-2/Check-3 redesign Sprint 1, 2026-06-13
+**Decision:** The officer↔student querying activity (raise query / request document) is a SINGLE mechanism
+that lives only in the "Check 2 — Outstanding" box. The "Interview Stage" box does not raise new async
+queries; it consumes any still-unanswered Outstanding query as an agenda item to ask verbally, captures
+findings, and on Submit ends querying. Outstanding stays open until the interview is concluded, then becomes
+a read-only record.
+**Alternatives considered:** (a) duplicate raise-query/request-doc controls in both boxes (stage-tagged); (b)
+collapse everything into one undifferentiated list.
+**Rationale:** The real-world flow has one querying window (assignment → interview); after the interview it's
+decision time, no more asks. Mechanically both controls would be the identical ResolutionItem channel, and
+the student sees one Action Centre regardless — so two entry points are duplication, and merging loses the
+officer's stage view. One channel in Outstanding + carry-over into the agenda matches the lifecycle exactly.
+**Trade-offs:** Sprint 1 only splits display (interview content out of Outstanding); the lock-after-interview
+and carry-over feed are deferred to Sprint 4. Until then the "interview concluded → no more queries" rule is
+not yet enforced in code.
+**Revisit if:** the programme ever needs post-interview document collection (e.g. a conditional offer awaiting
+one more doc) — then Interview Stage would need its own scoped request channel after all.
