@@ -3183,13 +3183,17 @@
         "timeout": "Timed out",
         "conn": "Connection failed",
         "badurl": "Malformed URL",
-        "other": "Other"
+        "other": "Other",
+        "gated": "Forbidden (401/403)"
       },
       "broken": "Broken",
       "couldntVerify": "Couldn't verify",
       "brokenHeader": "Broken — fix these",
       "unverifiedHeader": "Couldn't verify",
-      "unverifiedHint": "Almost certainly live — these were just too slow or blocked from our checker, not a to-do."
+      "unverifiedHint": "Almost certainly live — these were just too slow or blocked from our checker, not a to-do.",
+      "accessBlocked": "Access-blocked",
+      "gatedHeader": "Access-blocked (401/403)",
+      "gatedHint": "The server answered but refused this page — usually a login wall (fine), occasionally a wrong/old path (like Port Dickson). Worth a manual look."
     }
   }
 }

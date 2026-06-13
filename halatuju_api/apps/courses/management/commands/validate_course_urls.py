@@ -71,8 +71,8 @@ def _check_once(url, timeout=10):
             with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as r:
                 return ('alive', getattr(r, 'status', 200))
         except urllib.error.HTTPError as e:
-            if e.code in (401, 403):       # reachable, just gated
-                return ('alive', e.code)
+            if e.code in (401, 403):       # server responded but refused THIS page → AMBIGUOUS:
+                return ('gated', e.code)   # a login wall (fine) OR a wrong/old path (broken, e.g. PD)
             return ('dead', e.code)        # 404/410/5xx → gone
         except Exception as e:             # URLError, timeout, SSL, …
             if _is_ssl_failure(e):
@@ -82,7 +82,7 @@ def _check_once(url, timeout=10):
                         return ('insecure', getattr(r, 'status', 200))
                 except urllib.error.HTTPError as e2:
                     if e2.code in (401, 403):
-                        return ('insecure', e2.code)
+                        return ('gated', e2.code)
                     return ('dead', e2.code)
                 except Exception as e2:
                     return ('error', _error_kind(e2))
@@ -100,16 +100,20 @@ _RETRYABLE = {'timeout', 'conn'}
 def check_url(url, timeout=10, retries=1):
     """Reachability of a single URL → (status, detail), with a retry for transient slowness.
 
-    'alive'    = 2xx/3xx, or 401/403 (reachable but auth-gated, e.g. a login portal);
+    'alive'    = clean 2xx/3xx;
+    'gated'    = 401/403 — the server responded but refused THIS page. AMBIGUOUS: usually a login
+                 wall (fine), occasionally a wrong/old path the user hits as an error page (e.g.
+                 Politeknik Port Dickson's old bare URL 403'd; the real site is at /web/). Reachable,
+                 but surfaced for a human to eyeball — never auto-fixed, never silently "alive".
     'insecure' = reachable ONLY when TLS cert verification is skipped (the site is up, but its cert
                  chain doesn't validate in urllib — common on MY gov/edu sites that are fine in a
                  browser). Counted as reachable, tracked separately, never auto-fixed.
     'dead'     = 404/410/other 4xx/5xx (gone);
     'error'    = timeout / DNS / connection failure, OR a malformed URL.
 
-    The report layer (below) splits 'error' + 'dead' into two SEVERITIES so the dashboard stops
-    crying wolf: genuinely BROKEN (gone/dns/badurl — actionable) vs COULDN'T-VERIFY (timeout/conn —
-    the site is very likely up, we just couldn't confirm it in time). A transient error is retried
+    The report layer (below) splits results into SEVERITIES so the dashboard stops crying wolf:
+    genuinely BROKEN (gone/dns/badurl — actionable) · ACCESS-BLOCKED (gated 401/403 — eyeball) ·
+    COULDN'T-VERIFY (timeout/conn — very likely up, just unconfirmed). A transient error is retried
     once before being reported."""
     result = _check_once(url, timeout)
     if result[0] == 'error' and result[1] in _RETRYABLE and retries > 0:
@@ -166,7 +170,7 @@ class Command(BaseCommand):
 
         alive = 0
         insecure = 0  # reachable only without cert verification — a subset of "reachable"
-        dead, errors = [], []
+        dead, errors, gated = [], [], []  # gated = 401/403 (server refused this page — ambiguous)
 
         def _classify(u, status, detail):
             nonlocal alive, insecure
@@ -175,6 +179,8 @@ class Command(BaseCommand):
             elif status == 'insecure':
                 alive += 1      # reachable → counts as alive
                 insecure += 1   # …but track the cert-invalid subset
+            elif status == 'gated':
+                gated.append((u, detail))   # 401/403 — surfaced for review, NOT silently alive
             elif status == 'dead':
                 dead.append((u, detail))
             else:
@@ -203,24 +209,27 @@ class Command(BaseCommand):
             return {'url': u, 'kind': kind, 'detail': str(detail),
                     'institutions': sorted(names.get(u, []))[:5], 'refs': r['inst'] + r['offer']}
         failures = ([_failure(u, 'gone', code) for u, code in sorted(dead)]
+                    + [_failure(u, 'gated', code) for u, code in sorted(gated)]
                     + [_failure(u, why) for u, why in sorted(errors)])
 
-        # Split failures into the two severities (see BROKEN_KINDS): genuinely broken vs
-        # couldn't-verify (slow/blocked-from-here but almost certainly alive). The dashboard's
-        # headline counts BROKEN only — UNVERIFIED is informational, not a to-do.
+        # Split failures into three severities: genuinely BROKEN (see BROKEN_KINDS) vs ACCESS-BLOCKED
+        # (gated 401/403 — server's there but refused this page; eyeball it) vs COULDN'T-VERIFY
+        # (timeout/conn — almost certainly alive). The dashboard headline counts BROKEN only.
         broken = [f for f in failures if f['kind'] in BROKEN_KINDS]
-        unverified = [f for f in failures if f['kind'] not in BROKEN_KINDS]
+        gated_f = [f for f in failures if f['kind'] == 'gated']
+        unverified = [f for f in failures if f['kind'] not in BROKEN_KINDS and f['kind'] != 'gated']
 
         self.stdout.write('\nAlive:        %d (incl. %d insecure-cert but reachable)' % (alive, insecure))
         self.stdout.write('Broken:       %d (gone/DNS/malformed — actionable)' % len(broken))
+        self.stdout.write('Access-blocked: %d (401/403 — login wall OR wrong path; eyeball)' % len(gated_f))
         self.stdout.write("Couldn't verify: %d (timeout/connection — slow from here, likely alive)" % len(unverified))
 
         # Record link-health for the Course Data dashboard. `insecure` is a subset of `alive`.
-        # `broken`/`unverified` are the headline severities; `dead`/`errors` kept for back-compat.
+        # `broken`/`gated`/`unverified` are the headline severities; `dead`/`errors` kept for back-compat.
         from apps.courses.course_data_status import record_status, LINK_HEALTH
         record_status(LINK_HEALTH,
                       {'checked': len(urls), 'alive': alive, 'insecure': insecure,
-                       'broken': len(broken), 'unverified': len(unverified),
+                       'broken': len(broken), 'gated': len(gated_f), 'unverified': len(unverified),
                        'dead': len(dead), 'errors': len(errors),
                        'failures': failures[:300]},  # bounded; the full list is also printed below
                       detail='python manage.py validate_course_urls')
@@ -231,6 +240,11 @@ class Command(BaseCommand):
                 r = refs.get(f['url'], {'inst': 0, 'offer': 0})
                 self.stdout.write('  [%s/%s] %s  (inst:%d offer:%d)'
                                   % (f['kind'], f['detail'], f['url'], r['inst'], r['offer']))
+        if gated_f:
+            self.stdout.write(self.style.NOTICE(
+                '\n--- ACCESS-BLOCKED (401/403 — login wall OR wrong/old path, review) ---'))
+            for f in gated_f:
+                self.stdout.write('  [%s] %s' % (f['detail'], f['url']))
         if unverified:
             self.stdout.write(self.style.NOTICE(
                 "\n--- COULDN'T VERIFY (slow/blocked from here — likely alive, NOT auto-fixed) ---"))

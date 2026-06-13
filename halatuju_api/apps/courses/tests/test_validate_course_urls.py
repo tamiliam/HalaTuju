@@ -50,9 +50,16 @@ class CheckUrlTest(SimpleTestCase):
         self.assertEqual(check_url('http://x'), ('dead', 500))
 
     @patch(f'{CMD}.urllib.request.urlopen')
-    def test_403_auth_gated_is_alive(self, uo):
+    def test_403_is_gated_not_silently_alive(self, uo):
+        # 401/403 is AMBIGUOUS (login wall vs wrong path, e.g. Port Dickson's old URL) → its own
+        # 'gated' status, surfaced for review rather than counted as plainly alive.
         uo.side_effect = urllib.error.HTTPError('u', 403, 'forbidden', {}, None)
-        self.assertEqual(check_url('http://x'), ('alive', 403))
+        self.assertEqual(check_url('http://x'), ('gated', 403))
+
+    @patch(f'{CMD}.urllib.request.urlopen')
+    def test_401_is_gated(self, uo):
+        uo.side_effect = urllib.error.HTTPError('u', 401, 'unauthorized', {}, None)
+        self.assertEqual(check_url('http://x'), ('gated', 401))
 
     @patch(f'{CMD}.urllib.request.urlopen')
     def test_url_error_is_error(self, uo):
@@ -145,6 +152,21 @@ class ValidateCourseUrlsCommandTest(TestCase):
         s = CourseDataStatus.objects.get(key='link_health').summary
         self.assertEqual(s['broken'], 2)       # dead.test + offer-dead.test
         self.assertEqual(s['unverified'], 1)   # err.test
+
+    @patch(f'{CMD}.check_url', side_effect=lambda u, t=10: ('gated', 403) if 'gate' in u else _fake_check(u, t))
+    def test_gated_403_surfaced_as_own_severity(self, _c):
+        # A 401/403 link is neither 'broken' nor 'couldn't-verify' — it gets its own 'gated' bucket
+        # and is recorded in failures for a human to eyeball (the Port Dickson lesson).
+        Institution.objects.create(
+            institution_id='I4', institution_name='Gated U', type='IPTA', state='S',
+            url='http://gate.test')
+        call_command('validate_course_urls', stdout=StringIO())
+        s = CourseDataStatus.objects.get(key='link_health').summary
+        self.assertEqual(s['gated'], 1)
+        self.assertEqual(s['broken'], 2)        # gated is NOT folded into broken
+        gated = next(f for f in s['failures'] if f['url'] == 'http://gate.test')
+        self.assertEqual(gated['kind'], 'gated')
+        self.assertIn('Gated U', gated['institutions'])
 
     @patch(f'{CMD}.check_url', side_effect=_fake_check)
     def test_dry_run_does_not_clear(self, _c):

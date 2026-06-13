@@ -58,8 +58,10 @@ export default function CourseDataDashboard() {
   const failures: LinkFailure[] = linkHealth?.summary?.failures ?? []
   const BROKEN_KINDS = ['gone', 'dns', 'badurl']
   const brokenFailures = failures.filter(f => BROKEN_KINDS.includes(f.kind))
-  const unverifiedFailures = failures.filter(f => !BROKEN_KINDS.includes(f.kind))
+  const gatedFailures = failures.filter(f => f.kind === 'gated')
+  const unverifiedFailures = failures.filter(f => !BROKEN_KINDS.includes(f.kind) && f.kind !== 'gated')
   const brokenCount = Number(linkHealth?.summary?.broken ?? brokenFailures.length)
+  const gatedCount = Number(linkHealth?.summary?.gated ?? gatedFailures.length)
   const unverifiedCount = Number(linkHealth?.summary?.unverified ?? unverifiedFailures.length)
 
   const groupByReason = (items: LinkFailure[], reasons: string[]) => {
@@ -70,6 +72,7 @@ export default function CourseDataDashboard() {
     return gs
   }
   const brokenGroups = groupByReason(brokenFailures, ['gone', 'dns', 'badurl'])
+  const gatedGroups = groupByReason(gatedFailures, ['gated'])
   const unverifiedGroups = groupByReason(unverifiedFailures, ['timeout', 'conn'])
 
   const downloadCsv = () => {
@@ -216,6 +219,7 @@ export default function CourseDataDashboard() {
                 <ul className="text-sm space-y-1">
                   <li className="flex justify-between"><span>{t('admin.courseData.alive')}</span><span className="text-green-600">{linkHealth.summary.alive ?? dash}</span></li>
                   <li className="flex justify-between"><span>{t('admin.courseData.broken')}</span><span className={brokenCount > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}>{brokenCount}</span></li>
+                  <li className="flex justify-between"><span>{t('admin.courseData.accessBlocked')}</span><span className={gatedCount > 0 ? 'text-amber-600' : 'text-gray-400'}>{gatedCount}</span></li>
                   <li className="flex justify-between"><span>{t('admin.courseData.couldntVerify')}</span><span className="text-gray-500">{unverifiedCount}</span></li>
                   {Number(linkHealth.summary.insecure) > 0 && (
                     <li className="flex justify-between text-gray-400"><span>{t('admin.courseData.insecure')}</span><span>{linkHealth.summary.insecure}</span></li>
@@ -258,6 +262,16 @@ export default function CourseDataDashboard() {
                 {t('admin.courseData.brokenHeader')} ({brokenCount})
               </h3>
               <div className="space-y-3">{renderGroups(brokenGroups, true)}</div>
+            </div>
+          )}
+
+          {gatedGroups.length > 0 && (
+            <div className="mb-5">
+              <h3 className="text-sm font-semibold text-amber-600 mb-1">
+                {t('admin.courseData.gatedHeader')} ({gatedCount})
+              </h3>
+              <p className="text-xs text-gray-400 mb-2">{t('admin.courseData.gatedHint')}</p>
+              <div className="space-y-3">{renderGroups(gatedGroups, brokenGroups.length === 0)}</div>
             </div>
           )}
 
