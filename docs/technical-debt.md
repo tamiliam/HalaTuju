@@ -738,3 +738,11 @@
   verification-genuineness-gating-plan.md`** (gate CERTAIN on genuineness; confirmed fake → Unsure; cover the offer
   letter; backfill command). **DEFERRED — edge case for our population; lower priority than current fixes.** Owner
   go-ahead required before building. (Logged 2026-06-13, test #16 finding.)
+- TD-115: **No fixed document-slot model — uploads share slots and the income engine stores docs by a
+  route-dependent convention, causing the "one IC under all earners" + "duplicate Mother's IC" bugs.** Target: 27 fixed
+  `(doc_type × person)` slots; every upload (wizard or Action Centre) tagged by person; re-upload overwrites the slot;
+  route controls which slots are required vs optional (not storage). Blocker: `income_engine._cluster_docs` reads STR-route
+  docs as blank-member and salary-route docs as tagged — so data can't be re-tagged ahead of the code (one coordinated
+  code + migration). Prod assessed safe: deterministic for ~all docs; only 1 true route correction (#12 salary→STR);
+  duplicates hand-cleaned (#16, #12). **Full spec + confirmed model: `docs/scholarship/document-slot-model-plan.md`.**
+  IN PROGRESS 2026-06-13 (build started; Check-2/Check-3 process flow deferred). (Logged 2026-06-13.)
