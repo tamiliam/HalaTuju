@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "Suggest interview gaps (AI)" button, and shows an "In progress" / "Submitted" status pill. Presentational only — no
   data, model, or behaviour change. jest 306 pass; `next build` clean; i18n parity 2854×3 (added `outstanding.subtitle`
   + `interview.inProgress` to en/ms/ta). Roadmap: `docs/scholarship/check2-check3-roadmap.md`.
+- **Cockpit Check-2 answers review (Check-2/Check-3 redesign, Sprint 2 of 4; backend + FE + i18n, no migration).**
+  The Outstanding box now surfaces queries the student has **answered**, not just open ones: `get_resolution_items`
+  returns open items **plus** those resolved by the student (`status='resolved', resolved_by='student'`), each shown
+  with the student's answer text. The officer reviews and either **Accept** (the existing `resolve` action re-stamps
+  `resolved_by` to the officer, so it drops out of the queue) or **Ask again** (a new `reopen` action returns the query
+  to the student's to-do, preserving the typed answer for the audit trail). No change to the live student resolve
+  endpoint; no migration (chosen lighter/no-migration path). The AI "off-topic" hint is **deferred** — it depends on the
+  (OFF) `CHECK2_ANSWER_RELEVANCE_ENABLED` flag and would require touching that endpoint. 1200 scholarship pytest (+3),
+  jest 306, `next build` clean, i18n parity 2857×3 (added `caveats.studentAnswer/accept/askAgain`).
 
 ### Added
 - **Document slot model — per-person income-doc tagging (TD-115, Sprint 1; data migration, no schema change).** Foundation

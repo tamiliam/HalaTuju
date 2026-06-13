@@ -828,15 +828,23 @@ class AdminResolutionItemActionView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        if action not in ('waive', 'resolve'):
+        if action not in ('waive', 'resolve', 'reopen'):
             return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
         from .models import ResolutionItem
         item = ResolutionItem.objects.filter(pk=item_id).select_related('application').first()
         if item is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        item.status = 'waived' if action == 'waive' else 'resolved'
-        item.resolved_by = getattr(admin, 'email', '') or 'officer'
-        item.resolved_at = timezone.now()
+        if action == 'reopen':
+            # "Ask again" — the officer wasn't satisfied with the student's answer; send
+            # the query back to the student's to-do. The typed answer stays in
+            # resolution_text for the audit trail; only the answered stamp is cleared.
+            item.status = 'open'
+            item.resolved_by = ''
+            item.resolved_at = None
+        else:
+            item.status = 'waived' if action == 'waive' else 'resolved'
+            item.resolved_by = getattr(admin, 'email', '') or 'officer'
+            item.resolved_at = timezone.now()
         item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
         return Response(AdminApplicationDetailSerializer(item.application).data)
 

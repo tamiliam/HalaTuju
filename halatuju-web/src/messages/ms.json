@@ -2836,7 +2836,10 @@
         "empty": "Tiada caveat terbuka — semuanya baik.",
         "ask": "Tanya",
         "resolve": "Selesaikan",
-        "waitingStudent": "Menunggu pelajar"
+        "waitingStudent": "Menunggu pelajar",
+        "studentAnswer": "Jawapan pelajar",
+        "accept": "Terima",
+        "askAgain": "Tanya semula"
       },
       "outstanding": {
         "title": "Semakan 2 — Belum selesai",

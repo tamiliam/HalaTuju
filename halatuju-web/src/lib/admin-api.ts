@@ -927,10 +927,10 @@ export async function raiseResolutionItem(
   )
 }
 
-/** Waive or resolve a resolution item on behalf of the coordinator. */
+/** Waive, resolve, or reopen ("Ask again") a resolution item on behalf of the coordinator. */
 export async function actionResolutionItem(
   itemId: number,
-  action: 'waive' | 'resolve',
+  action: 'waive' | 'resolve' | 'reopen',
   options?: ApiOptions,
 ): Promise<AdminScholarshipDetail> {
   return adminMutate<AdminScholarshipDetail>(

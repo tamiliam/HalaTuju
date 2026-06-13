@@ -2836,7 +2836,10 @@
         "empty": "No open caveats — all clear.",
         "ask": "Ask",
         "resolve": "Resolve",
-        "waitingStudent": "Waiting for student"
+        "waitingStudent": "Waiting for student",
+        "studentAnswer": "Student's answer",
+        "accept": "Accept",
+        "askAgain": "Ask again"
       },
       "outstanding": {
         "title": "Check 2 — Outstanding",
