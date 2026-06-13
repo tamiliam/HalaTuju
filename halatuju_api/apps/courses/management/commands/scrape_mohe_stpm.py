@@ -1,19 +1,41 @@
 """
-Scrape STPM programmes from MOHE ePanduan portal.
+Scrape programmes from the MOHE ePanduan portal — STPM (degree) or SPM (post-SPM) track.
 
-Outputs a CSV with: course_id, course_name, university, merit, stream, mohe_url, badges
-This CSV is the input for the sync command.
+Outputs a CSV with: course_id, course_name, university, merit, stream, mohe_url, badges, year
+This CSV is the input for the sync command (sync_stpm_mohe for STPM, sync_spm_mohe for SPM).
+
+The portal exposes the same card structure under two ``jenprog`` values — ``stpm`` (degree,
+categories S/A) and ``spm`` (Asasi/diploma/cert at Poly/KK/UA, categories A=current-year /
+B=past-year). The parser is identical; only the listing URL's ``jenprog`` + the detail-URL
+suffix differ, so one scraper serves both via --jenprog.
 
 Usage:
+    # STPM (default — unchanged behaviour)
     python manage.py scrape_mohe_stpm --output data/stpm/mohe_latest.csv
     python manage.py scrape_mohe_stpm --output data/stpm/mohe_latest.csv --category S
-    python manage.py scrape_mohe_stpm --output data/stpm/mohe_latest.csv --category A
+    # SPM (post-SPM catalogue; defaults to category A = current year)
+    python manage.py scrape_mohe_stpm --jenprog spm --output data/spm/mohe_latest.csv
+    python manage.py scrape_mohe_stpm --jenprog spm --category A --max-pages 1 --output /tmp/spike.csv
 """
 import csv
 import re
 import time
 
 from django.core.management.base import BaseCommand, CommandError
+
+
+MOHE_DETAIL_BASE = 'https://online.mohe.gov.my/epanduan/carianNamaProgram'
+
+
+def detail_url(code, cat_code, jenprog):
+    """Build the ePanduan programme-detail URL for a scraped card (pure, testable).
+
+    ``jenprog`` ('stpm'|'spm') is the trailing path segment — the only part that differs
+    between the two tracks, so the same builder serves both."""
+    if not code:
+        return ''
+    prefix = code[:2]
+    return f'{MOHE_DETAIL_BASE}/{prefix}/{code}/{cat_code}/{jenprog}'
 
 
 def scrape_shortfall(actual, expected, tolerance=0.95):
@@ -24,12 +46,23 @@ def scrape_shortfall(actual, expected, tolerance=0.95):
     return expected > 0 and actual < expected * tolerance
 
 
-LISTING_URL = 'https://online.mohe.gov.my/epanduan/ProgramPengajian/kategoriCalon/{cat}?jenprog=stpm&page={page}'
+LISTING_URL = 'https://online.mohe.gov.my/epanduan/ProgramPengajian/kategoriCalon/{cat}?jenprog={jenprog}&page={page}'
 
-CATEGORIES = [
-    ('S', 'science'),
-    ('A', 'arts'),
-]
+# Candidate categories per jenprog. STPM = the two streams (unchanged). SPM defaults to the
+# current-year category only (A) — a refresh wants the live catalogue, not past-year (B), which
+# stays available via --category B.
+JENPROG_CATEGORIES = {
+    'stpm': [('S', 'science'), ('A', 'arts')],
+    'spm': [('A', 'current')],
+}
+# All categories that may be requested via --category for each jenprog (validates the filter).
+JENPROG_ALL_CATEGORIES = {
+    'stpm': [('S', 'science'), ('A', 'arts')],
+    'spm': [('A', 'current'), ('B', 'past')],
+}
+
+# Back-compat alias: the STPM categories (some tests/tools import CATEGORIES directly).
+CATEGORIES = JENPROG_CATEGORIES['stpm']
 
 
 class Command(BaseCommand):
@@ -41,12 +74,22 @@ class Command(BaseCommand):
             help='Output CSV file path',
         )
         parser.add_argument(
+            '--jenprog', type=str, default='stpm', choices=sorted(JENPROG_CATEGORIES),
+            help='Which ePanduan track to scrape: stpm (degree, default) or spm (post-SPM catalogue).',
+        )
+        parser.add_argument(
             '--category', type=str, default='',
-            help='Scrape only one category: S (science) or A (arts). Default: both.',
+            help='Scrape only one category. STPM: S (science) / A (arts). '
+                 'SPM: A (current year) / B (past year). Default: the jenprog default set.',
         )
         parser.add_argument(
             '--delay', type=float, default=1.0,
             help='Seconds to wait between page loads (be polite to MOHE servers)',
+        )
+        parser.add_argument(
+            '--max-pages', type=int, default=0,
+            help='Stop after this many listing pages per category (0 = no limit). '
+                 'Use a small value for a quick parser-validation spike.',
         )
         parser.add_argument(
             '--allow-partial', action='store_true',
@@ -65,11 +108,19 @@ class Command(BaseCommand):
 
         output_path = options['output']
         delay = options['delay']
+        jenprog = options['jenprog']
+        max_pages = options['max_pages']
         cat_filter = options['category'].upper()
 
-        categories = CATEGORIES
+        categories = JENPROG_CATEGORIES[jenprog]
         if cat_filter:
-            categories = [(c, s) for c, s in CATEGORIES if c == cat_filter]
+            valid = JENPROG_ALL_CATEGORIES[jenprog]
+            categories = [(c, s) for c, s in valid if c == cat_filter]
+            if not categories:
+                raise CommandError(
+                    f'--category {cat_filter} is not valid for --jenprog {jenprog}. '
+                    f'Valid: {", ".join(c for c, _ in valid)}.'
+                )
 
         all_programmes = []
         expected_total = 0  # sum of MOHE's own "daripada N" counts, for the sanity check
@@ -83,7 +134,7 @@ class Command(BaseCommand):
                 page_num = 1
 
                 while True:
-                    url = LISTING_URL.format(cat=cat_code, page=page_num)
+                    url = LISTING_URL.format(cat=cat_code, jenprog=jenprog, page=page_num)
                     page.goto(url, wait_until='domcontentloaded')
                     # Wait for programme cards to render (executive-data-value elements)
                     try:
@@ -108,7 +159,7 @@ class Command(BaseCommand):
                         self.stdout.write(f'  Found {total} programmes')
 
                     # Parse programme cards
-                    cards = self._parse_cards(page, cat_code, stream_name)
+                    cards = self._parse_cards(page, cat_code, stream_name, jenprog)
                     if not cards:
                         break
 
@@ -117,6 +168,11 @@ class Command(BaseCommand):
                         f'  Page {page_num}: {len(cards)} programmes '
                         f'(total so far: {len(all_programmes)})'
                     )
+
+                    # Stop early for a parser-validation spike.
+                    if max_pages and page_num >= max_pages:
+                        self.stdout.write(f'  Reached --max-pages={max_pages}, stopping this category.')
+                        break
 
                     # Check if there's a next page
                     next_link = page.query_selector(f'a[href*="page={page_num + 1}"]')
@@ -144,7 +200,14 @@ class Command(BaseCommand):
         # Sanity check: did we scrape roughly what MOHE says it has? A silent DOM
         # change returns partial/zero cards — fail loudly so a bad CSV is never synced.
         actual_total = len(all_programmes)
-        if scrape_shortfall(actual_total, expected_total) and not options['allow_partial']:
+        # A --max-pages run is a deliberate partial scrape, so the shortfall guard would
+        # always trip — skip it (the guard only protects full refresh runs that feed a sync).
+        if max_pages:
+            self.stdout.write(self.style.NOTICE(
+                '\n(--max-pages set: this is a partial spike, shortfall guard skipped. '
+                'Do NOT feed this CSV to a sync.)'
+            ))
+        elif scrape_shortfall(actual_total, expected_total) and not options['allow_partial']:
             raise CommandError(
                 f'Scrape looks INCOMPLETE: got {actual_total} programmes but MOHE reports '
                 f'{expected_total}. The CSV was written to {output_path} for inspection, but '
@@ -152,7 +215,7 @@ class Command(BaseCommand):
                 f'Fix the scraper, or pass --allow-partial if MOHE genuinely has fewer programmes.'
             )
 
-    def _parse_cards(self, page, cat_code, stream_name):
+    def _parse_cards(self, page, cat_code, stream_name, jenprog='stpm'):
         """Parse programme cards from the current page."""
         cards = page.evaluate("""() => {
             const results = [];
@@ -210,17 +273,15 @@ class Command(BaseCommand):
             return results;
         }""")
 
-        mohe_base = 'https://online.mohe.gov.my/epanduan/carianNamaProgram'
         programmes = []
         for item in cards:
-            prefix = item['code'][:2] if item['code'] else ''
             programmes.append({
                 'course_id': item['code'],
                 'course_name': item['name'],
                 'university': item['university'],
                 'merit': item['merit'],
                 'stream': stream_name,
-                'mohe_url': f"{mohe_base}/{prefix}/{item['code']}/{cat_code}/stpm" if item['code'] else '',
+                'mohe_url': detail_url(item['code'], cat_code, jenprog),
                 'badges': item['badges'],
                 'year': item['year'],
             })
