@@ -44,6 +44,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clean, parity 2864×3 (added `profileDraftHint`).
 
 ### Added
+- **`refresh_institution_urls` — authoritative-index URL refresher (local operator tool; no migration; on branch `link-refresh`, NOT merged).**
+  Fixes dead/renamed institution links by re-sourcing from the official directory (never guessing). Source registry:
+  `matrikulasi` (moe.gov.my/senarai-matrikulasi, matched by subdomain id), `politeknik` + `kk` (MyPolyCC `portalbpp2`,
+  matched by name). Scrapes the index → pure `build_proposals` classifies **canonicalise** (matched + index URL differs +
+  reachable) / **missing** (ours not in index → renamed/closed) / **extra** (index has one we lack). **Dry-run by default;
+  `--apply` writes ONLY canonicalisations**, guarded by a mass-change cap; missing/extra are report-only. +7 tests.
+  **Constraint found:** these MY gov/edu sites aren't reliably reachable from the agent sandbox / Cloud Run (same cause as
+  the prod "timeouts"), so the reachability gate + live run must execute from a MY-capable network or be confirmed in the
+  owner's browser — don't bulk-write from an environment that can't verify.
 - **Course Data dashboard — "Problem links" drill-down (read-only; no migration).** The link check now STORES the failing
   URLs (was counts-only), so the dashboard can show *which* links failed: `validate_course_urls` records a `failures` list
   in its status — each `{url, kind, institutions, refs}` — and tags errors by kind (`_error_kind`: `dns`/`timeout`/`conn`/
