@@ -138,6 +138,10 @@ class Command(BaseCommand):
                             help='Clear confirmed-dead (4xx/5xx) URLs from the DB. Transient errors are never cleared.')
         parser.add_argument('--limit', type=int, default=0, help='Check only the first N distinct URLs.')
         parser.add_argument('--timeout', type=float, default=10.0, help='Per-URL timeout (seconds).')
+        parser.add_argument('--retries', type=int, default=1,
+                            help='Retries for a transient (timeout/conn) failure. Default 1 (good for '
+                                 'targeted checks). The bulk dashboard run uses 0 — the timeout already '
+                                 'catches slow-but-alive sites, and a retry would double the slow tail.')
         parser.add_argument('--workers', type=int, default=1,
                             help='Concurrent URL checks (read-only HTTP GETs parallelise safely). '
                                  'Default 1 (sequential). The dashboard health-check uses ~20 so ~650 URLs '
@@ -147,6 +151,7 @@ class Command(BaseCommand):
         fix = options['fix']
         limit = options['limit']
         timeout = options['timeout']
+        retries = max(0, options['retries'])
         workers = max(1, options['workers'])
 
         # Distinct non-empty URLs across both fields, with reference counts (so the
@@ -188,7 +193,7 @@ class Command(BaseCommand):
 
         if workers == 1:
             for i, u in enumerate(urls, 1):
-                status, detail = check_url(u, timeout)
+                status, detail = check_url(u, timeout, retries=retries)
                 _classify(u, status, detail)
                 if i % 50 == 0:
                     self.stdout.write('  checked %d/%d...' % (i, len(urls)))
@@ -196,7 +201,7 @@ class Command(BaseCommand):
             # Read-only GETs → safe to parallelise; aggregation stays single-threaded here.
             from concurrent.futures import ThreadPoolExecutor
             with ThreadPoolExecutor(max_workers=workers) as pool:
-                results = pool.map(lambda u: (u, *check_url(u, timeout)), urls)
+                results = pool.map(lambda u: (u, *check_url(u, timeout, retries=retries)), urls)
                 for i, (u, status, detail) in enumerate(results, 1):
                     _classify(u, status, detail)
                     if i % 100 == 0:

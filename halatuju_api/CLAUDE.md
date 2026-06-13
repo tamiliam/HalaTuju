@@ -218,17 +218,22 @@ UP_TVET `scrape_uptvet`/`audit_uptvet` tools do NOT yet call `record_status` —
 "never run"; wiring that is a one-line add per tool.)
 
 **Health monitoring (READ-ONLY — no catalogue writes).** The dashboard's Link-health + Audit + freshness are kept
-current by `course_data_check` = `audit_data` + `validate_course_urls --workers 20` (**no `--fix`/`--apply`/scrape**;
-~650 URLs check concurrently in <1 min). Two ways to run it, both read-only:
+current by `course_data_check` = `audit_data` + `validate_course_urls --workers 40 --timeout 20 --retries 0`
+(**no `--fix`/`--apply`/scrape**). It runs IN-REQUEST (cron + button), so it must fit the api's Cloud Run request
+timeout — **raised 120s → 300s** for this (`gcloud run services update halatuju-api --timeout=300`). The bulk run uses
+40 workers + `retries=0` so the slow MY-gov tail (20s/URL) stays well inside that budget; a per-URL retry would double
+it. (The `--retries` default is 1 for manual/targeted runs.) Two ways to run it, both read-only:
 - **Weekly cron** — `CronRunView` job `course-data-check` ← Cloud Scheduler `halatuju-course-data-check` (Mon 03:00 Asia/KL,
-  `X-Cron-Secret`). Create at deploy (mirror `halatuju-application-reminders`).
+  `X-Cron-Secret`). POST needs a body (`-d '{}'`) or the LB returns 411.
 - **Manual button** — `POST /api/v1/admin/course-data/check/` (`AdminCourseDataCheckView`, **super/admin only**) runs it
-  synchronously and returns the refreshed payload; "Run health check now" on the page.
+  synchronously and returns the refreshed payload; "Run health check now" on the page (~2 min).
 
-`validate_course_urls` stores a `failures` list in its status (`{url, kind, institutions, refs}`; `kind` =
-`gone`/`dns`/`timeout`/`conn`/`badurl` via `_error_kind`), so the dashboard's **"Problem links"** drill-down shows WHICH
-links failed, grouped by reason, with a CSV export. SSL-cert-rejected-but-reachable sites are classified `insecure`
-(counted as alive). FIXING links (writes) is NOT built — owner inspects + corrects at source.
+`validate_course_urls` stores a `failures` list in its status (`{url, kind, institutions, refs}`) and splits results
+into THREE severities so the dashboard doesn't cry wolf: **Broken** (`gone`/`dns`/`badurl` — actionable, the headline
+count) · **Access-blocked** (`gated` = 401/403 — server up but refused this page: login wall OR wrong/old path like
+Politeknik Port Dickson; eyeball) · **Couldn't verify** (`timeout`/`conn` — slow/blocked from Cloud Run, almost
+certainly alive). SSL-cert-rejected-but-reachable sites are `insecure` (counted as alive). FIXING links (writes) is NOT
+built into the check — owner inspects + corrects at source (done via audited MCP `UPDATE`s).
 
 The browser catalogue scrapes (`refresh_stpm`, `scrape_uptvet`) stay manual/local (need Chromium) and only dry-run.
 **UI-driven *updating* (apply-a-refresh) is deliberately NOT built** — owner wants reporting only.

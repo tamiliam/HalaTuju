@@ -17,9 +17,11 @@ Usage:
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
-# Concurrency for the link check — ~650 URLs finish in well under a minute, so a single
-# Cloud Run request (cron or button) completes comfortably inside the timeout.
-DEFAULT_WORKERS = 20
+# Concurrency for the link check. ~650 URLs with a 20s timeout means the slow MY-gov tail
+# dominates wall-clock, so we run 40 in parallel (read-only GETs) AND skip the per-URL retry
+# (retries=0) for this bulk run — the 20s timeout already catches slow-but-alive sites, and a
+# retry would double the slow tail and push the single Cloud Run request past its limit.
+DEFAULT_WORKERS = 40
 # MY gov/edu portals (IPG, matriculation, polytechnics) routinely take 10-15s to first byte from
 # Cloud Run. A 10s budget false-flagged many as "connection failed"; 20s + the one retry in
 # check_url clears almost all of those while still bounding the run well under the request timeout.
@@ -42,8 +44,9 @@ class Command(BaseCommand):
         self.stdout.write('\n[1/2] audit_data...')
         call_command('audit_data')
 
-        # 2. Link reachability (concurrent GETs, NO --fix) — records the 'link_health' status.
+        # 2. Link reachability (concurrent GETs, NO --fix, retries=0) — records 'link_health'.
         self.stdout.write('\n[2/2] validate_course_urls (read-only)...')
-        call_command('validate_course_urls', workers=options['workers'], timeout=options['timeout'])
+        call_command('validate_course_urls', workers=options['workers'],
+                     timeout=options['timeout'], retries=0)
 
         self.stdout.write(self.style.SUCCESS('\nHealth check complete (no catalogue writes).'))

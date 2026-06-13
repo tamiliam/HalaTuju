@@ -23,7 +23,7 @@ def _token(uid):
                       TEST_JWT_SECRET, algorithm='HS256')
 
 
-def _fake_check(url, timeout=10):
+def _fake_check(url, timeout=10, retries=1):
     return ('dead', 404) if 'dead' in url else ('alive', 200)
 
 

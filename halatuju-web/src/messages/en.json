@@ -3171,7 +3171,7 @@
       },
       "runCheck": "Run health check now",
       "checking": "Checking…",
-      "runCheckHint": "Read-only: re-checks links + audit (~1 min). No catalogue changes.",
+      "runCheckHint": "Read-only: re-checks links + audit (~2 min). No catalogue changes.",
       "problemLinks": "Problem links",
       "downloadCsv": "Download CSV",
       "rows": "rows",
