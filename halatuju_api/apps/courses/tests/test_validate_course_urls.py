@@ -44,10 +44,31 @@ class CheckUrlTest(SimpleTestCase):
         uo.side_effect = urllib.error.URLError('dns fail')
         self.assertEqual(check_url('http://x')[0], 'error')
 
-    def test_schemeless_url_is_error_not_raise(self):
-        # Real bug from a live run: a stored hyperlink without http:// (e.g. a mypolycc subdomain)
-        # must classify as 'error', never raise — a malformed URL can't be allowed to abort the run.
-        self.assertEqual(check_url('kkpasirsalak.mypolycc.edu.my')[0], 'error')
+    @patch(f'{CMD}.urllib.request.urlopen')
+    def test_schemeless_url_normalised_to_https(self, uo):
+        # A stored hyperlink without a scheme (e.g. 'kkpasirsalak.mypolycc.edu.my') is normalised to
+        # https:// and checked — not errored. (Was a live crash before the Request moved inside try.)
+        r = MagicMock(); r.status = 200
+        uo.return_value.__enter__.return_value = r
+        self.assertEqual(check_url('kkpasirsalak.mypolycc.edu.my'), ('alive', 200))
+        req = uo.call_args[0][0]
+        self.assertTrue(req.full_url.startswith('https://'))
+
+    @patch(f'{CMD}.urllib.request.urlopen')
+    def test_ssl_failure_retries_unverified_as_insecure(self, uo):
+        import ssl as _ssl
+        ok = MagicMock()
+        ok.__enter__ = MagicMock(return_value=MagicMock(status=200))
+        ok.__exit__ = MagicMock(return_value=False)
+        # 1st (verifying) call: TLS cert rejection; 2nd (no-verify) call: reachable.
+        uo.side_effect = [urllib.error.URLError(_ssl.SSLError('bad cert')), ok]
+        self.assertEqual(check_url('https://gov-with-bad-cert.edu.my'), ('insecure', 200))
+
+    @patch(f'{CMD}.urllib.request.urlopen')
+    def test_non_ssl_url_error_stays_error(self, uo):
+        # A plain DNS/connection URLError is NOT retried — stays 'error'.
+        uo.side_effect = urllib.error.URLError('getaddrinfo failed')
+        self.assertEqual(check_url('https://nope.invalid')[0], 'error')
 
 
 def _fake_check(url, timeout=10):

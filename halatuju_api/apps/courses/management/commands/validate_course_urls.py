@@ -26,28 +26,58 @@ from django.core.management.base import BaseCommand
 
 from apps.courses.models import CourseInstitution, Institution
 
-_UA = 'HalaTuju-linkcheck/1.0 (+https://halatuju.xyz)'
+# A browser-like UA: some portals reject the default urllib UA. (We treat 401/403 as alive anyway,
+# but a real UA avoids servers that hang/close on an unknown client.)
+_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'
 _CTX = ssl.create_default_context()
+_NOVERIFY = ssl._create_unverified_context()  # retry context for cert-invalid-but-reachable sites
+
+
+def _is_ssl_failure(exc):
+    """Did this failure come from TLS/cert verification (so it's worth a no-verify retry)?"""
+    if isinstance(exc, ssl.SSLError):
+        return True
+    reason = getattr(exc, 'reason', None)
+    return isinstance(reason, ssl.SSLError) or 'CERTIFICATE' in str(getattr(exc, 'reason', '')).upper()
 
 
 def check_url(url, timeout=10):
     """Reachability of a single URL → (status, detail).
 
-    'alive' = 2xx/3xx, or 401/403 (reachable but auth-gated, e.g. a login portal);
-    'dead'  = 404/410/other 4xx/5xx (gone);
-    'error' = timeout / DNS / SSL / connection failure, OR a malformed/schemeless stored URL
-    (e.g. 'foo.edu.my' with no http://) — transient or bad-data, never auto-fixed, never crashes.
-    Isolated + tiny so tests can mock `urlopen`. The Request build is INSIDE the try so a malformed
-    URL is classified as 'error' rather than raising and aborting the whole run."""
+    'alive'    = 2xx/3xx, or 401/403 (reachable but auth-gated, e.g. a login portal);
+    'insecure' = reachable ONLY when TLS cert verification is skipped (the site is up, but its cert
+                 chain doesn't validate in urllib — common on MY gov/edu sites that are fine in a
+                 browser). Counted as reachable, tracked separately, never auto-fixed.
+    'dead'     = 404/410/other 4xx/5xx (gone);
+    'error'    = timeout / DNS / connection failure, OR a malformed URL — transient/bad-data.
+
+    Robustness: a schemeless stored value (e.g. 'foo.edu.my') is normalised to https://; the whole
+    body is inside try/except so a bad URL is classified, never raised (one bad row must not abort
+    the run). Isolated + tiny so tests can mock `urlopen`."""
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': _UA})  # GET
-        with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as r:
-            return ('alive', getattr(r, 'status', 200))
-    except urllib.error.HTTPError as e:
-        if e.code in (401, 403):       # reachable, just gated
-            return ('alive', e.code)
-        return ('dead', e.code)        # 404/410/5xx → gone
-    except Exception as e:             # URLError, timeout, SSL, malformed URL (ValueError), …
+        target = url if url.lower().startswith(('http://', 'https://')) else 'https://' + url
+        req = urllib.request.Request(target, headers={'User-Agent': _UA})  # GET
+        try:
+            with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as r:
+                return ('alive', getattr(r, 'status', 200))
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):       # reachable, just gated
+                return ('alive', e.code)
+            return ('dead', e.code)        # 404/410/5xx → gone
+        except Exception as e:             # URLError, timeout, SSL, …
+            if _is_ssl_failure(e):
+                # Cert/TLS rejection on a host that may be perfectly alive → retry without verify.
+                try:
+                    with urllib.request.urlopen(req, timeout=timeout, context=_NOVERIFY) as r:
+                        return ('insecure', getattr(r, 'status', 200))
+                except urllib.error.HTTPError as e2:
+                    if e2.code in (401, 403):
+                        return ('insecure', e2.code)
+                    return ('dead', e2.code)
+                except Exception as e2:
+                    return ('error', type(e2).__name__)
+            return ('error', type(e).__name__)
+    except Exception as e:                 # malformed URL etc. — classify, never crash
         return ('error', type(e).__name__)
 
 
@@ -85,12 +115,16 @@ class Command(BaseCommand):
                           % (len(urls), timeout, workers, '' if workers == 1 else 's'))
 
         alive = 0
+        insecure = 0  # reachable only without cert verification — a subset of "reachable"
         dead, errors = [], []
 
         def _classify(u, status, detail):
-            nonlocal alive
+            nonlocal alive, insecure
             if status == 'alive':
                 alive += 1
+            elif status == 'insecure':
+                alive += 1      # reachable → counts as alive
+                insecure += 1   # …but track the cert-invalid subset
             elif status == 'dead':
                 dead.append((u, detail))
             else:
@@ -112,14 +146,15 @@ class Command(BaseCommand):
                     if i % 100 == 0:
                         self.stdout.write('  checked %d/%d...' % (i, len(urls)))
 
-        self.stdout.write('\nAlive:  %d' % alive)
+        self.stdout.write('\nAlive:  %d (incl. %d insecure-cert but reachable)' % (alive, insecure))
         self.stdout.write('Dead:   %d (4xx/5xx)' % len(dead))
-        self.stdout.write('Errors: %d (timeout/DNS/SSL — transient, not auto-fixed)' % len(errors))
+        self.stdout.write('Errors: %d (timeout/DNS/connection — transient, not auto-fixed)' % len(errors))
 
-        # Record link-health for the Course Data dashboard.
+        # Record link-health for the Course Data dashboard. `insecure` is a subset of `alive`.
         from apps.courses.course_data_status import record_status, LINK_HEALTH
         record_status(LINK_HEALTH,
-                      {'checked': len(urls), 'alive': alive, 'dead': len(dead), 'errors': len(errors)},
+                      {'checked': len(urls), 'alive': alive, 'insecure': insecure,
+                       'dead': len(dead), 'errors': len(errors)},
                       detail='python manage.py validate_course_urls')
 
         if dead:
