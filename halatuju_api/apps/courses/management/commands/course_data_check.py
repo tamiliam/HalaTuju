@@ -12,7 +12,7 @@ no scrape. The browser-based catalogue scrapes (refresh_stpm / scrape_uptvet) st
 
 Usage:
     python manage.py course_data_check
-    python manage.py course_data_check --workers 20 --timeout 10
+    python manage.py course_data_check --workers 20 --timeout 20
 """
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
@@ -20,6 +20,10 @@ from django.core.management.base import BaseCommand
 # Concurrency for the link check — ~650 URLs finish in well under a minute, so a single
 # Cloud Run request (cron or button) completes comfortably inside the timeout.
 DEFAULT_WORKERS = 20
+# MY gov/edu portals (IPG, matriculation, polytechnics) routinely take 10-15s to first byte from
+# Cloud Run. A 10s budget false-flagged many as "connection failed"; 20s + the one retry in
+# check_url clears almost all of those while still bounding the run well under the request timeout.
+DEFAULT_TIMEOUT = 20.0
 
 
 class Command(BaseCommand):
@@ -28,7 +32,8 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--workers', type=int, default=DEFAULT_WORKERS,
                             help='Concurrent link checks (default %d).' % DEFAULT_WORKERS)
-        parser.add_argument('--timeout', type=float, default=10.0, help='Per-URL timeout (seconds).')
+        parser.add_argument('--timeout', type=float, default=DEFAULT_TIMEOUT,
+                            help='Per-URL timeout in seconds (default %g).' % DEFAULT_TIMEOUT)
 
     def handle(self, *args, **options):
         self.stdout.write('=== Course-data health check (read-only) ===')

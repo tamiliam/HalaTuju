@@ -85,6 +85,24 @@ class CheckUrlTest(SimpleTestCase):
         uo.side_effect = urllib.error.URLError('getaddrinfo failed')
         self.assertEqual(check_url('https://nope.invalid')[0], 'error')
 
+    @patch(f'{CMD}.urllib.request.urlopen')
+    def test_transient_timeout_is_retried_then_succeeds(self, uo):
+        # A slow MY gov/edu portal: first attempt times out, retry succeeds → 'alive'
+        # (this is what stops slow-but-live sites being false-flagged as broken).
+        ok = MagicMock()
+        ok.__enter__ = MagicMock(return_value=MagicMock(status=200))
+        ok.__exit__ = MagicMock(return_value=False)
+        uo.side_effect = [TimeoutError('timed out'), ok]
+        self.assertEqual(check_url('http://slow.edu.my', retries=1), ('alive', 200))
+        self.assertEqual(uo.call_count, 2)
+
+    @patch(f'{CMD}.urllib.request.urlopen')
+    def test_dns_failure_is_not_retried(self, uo):
+        # DNS-not-found won't change on a retry, so don't waste a second attempt.
+        uo.side_effect = urllib.error.URLError('getaddrinfo failed')
+        self.assertEqual(check_url('https://nope.invalid', retries=1), ('error', 'dns'))
+        self.assertEqual(uo.call_count, 1)
+
 
 def _fake_check(url, timeout=10):
     if 'dead' in url:
@@ -114,8 +132,19 @@ class ValidateCourseUrlsCommandTest(TestCase):
         out = StringIO()
         call_command('validate_course_urls', stdout=out)
         s = out.getvalue()
-        self.assertIn('Alive:  1', s)
-        self.assertIn('Dead:   2', s)  # dead.test + offer-dead.test
+        self.assertIn('Alive:        1', s)
+        self.assertIn('Broken:       2', s)  # dead.test + offer-dead.test (both 'gone')
+
+    @patch(f'{CMD}.check_url', side_effect=_fake_check)
+    def test_summary_splits_broken_and_unverified(self, _c):
+        # A dead link is BROKEN (actionable); a transient error is COULDN'T-VERIFY (likely alive).
+        Institution.objects.create(
+            institution_id='I3', institution_name='Slow U', type='IPTA', state='S',
+            url='http://err.test')  # _fake_check → ('error', 'URLError') → unverified
+        call_command('validate_course_urls', stdout=StringIO())
+        s = CourseDataStatus.objects.get(key='link_health').summary
+        self.assertEqual(s['broken'], 2)       # dead.test + offer-dead.test
+        self.assertEqual(s['unverified'], 1)   # err.test
 
     @patch(f'{CMD}.check_url', side_effect=_fake_check)
     def test_dry_run_does_not_clear(self, _c):
@@ -145,8 +174,8 @@ class ValidateCourseUrlsCommandTest(TestCase):
         call_command('validate_course_urls', workers=8, stdout=out)
         s = out.getvalue()
         self.assertIn('8 workers', s)
-        self.assertIn('Alive:  1', s)
-        self.assertIn('Dead:   2', s)
+        self.assertIn('Alive:        1', s)
+        self.assertIn('Broken:       2', s)
 
     @patch(f'{CMD}.check_url', side_effect=_fake_check)
     def test_workers_never_clears_without_fix(self, _c):

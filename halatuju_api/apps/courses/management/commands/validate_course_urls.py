@@ -58,15 +58,8 @@ def _error_kind(exc):
     return name
 
 
-def check_url(url, timeout=10):
-    """Reachability of a single URL → (status, detail).
-
-    'alive'    = 2xx/3xx, or 401/403 (reachable but auth-gated, e.g. a login portal);
-    'insecure' = reachable ONLY when TLS cert verification is skipped (the site is up, but its cert
-                 chain doesn't validate in urllib — common on MY gov/edu sites that are fine in a
-                 browser). Counted as reachable, tracked separately, never auto-fixed.
-    'dead'     = 404/410/other 4xx/5xx (gone);
-    'error'    = timeout / DNS / connection failure, OR a malformed URL — transient/bad-data.
+def _check_once(url, timeout=10):
+    """One reachability attempt for a URL → (status, detail). See `check_url` for the taxonomy.
 
     Robustness: a schemeless stored value (e.g. 'foo.edu.my') is normalised to https://; the whole
     body is inside try/except so a bad URL is classified, never raised (one bad row must not abort
@@ -96,6 +89,41 @@ def check_url(url, timeout=10):
             return ('error', _error_kind(e))
     except Exception as e:                 # malformed URL etc. — classify, never crash
         return ('error', _error_kind(e))
+
+
+# A transient 'error' (slow / momentarily-unreachable host) is worth one retry before we report it:
+# MY gov/edu portals routinely take 10-20s to first-byte, so a single 10s attempt produces lots of
+# false "broken" flags. DNS/badurl are NOT retried (they won't change on a retry).
+_RETRYABLE = {'timeout', 'conn'}
+
+
+def check_url(url, timeout=10, retries=1):
+    """Reachability of a single URL → (status, detail), with a retry for transient slowness.
+
+    'alive'    = 2xx/3xx, or 401/403 (reachable but auth-gated, e.g. a login portal);
+    'insecure' = reachable ONLY when TLS cert verification is skipped (the site is up, but its cert
+                 chain doesn't validate in urllib — common on MY gov/edu sites that are fine in a
+                 browser). Counted as reachable, tracked separately, never auto-fixed.
+    'dead'     = 404/410/other 4xx/5xx (gone);
+    'error'    = timeout / DNS / connection failure, OR a malformed URL.
+
+    The report layer (below) splits 'error' + 'dead' into two SEVERITIES so the dashboard stops
+    crying wolf: genuinely BROKEN (gone/dns/badurl — actionable) vs COULDN'T-VERIFY (timeout/conn —
+    the site is very likely up, we just couldn't confirm it in time). A transient error is retried
+    once before being reported."""
+    result = _check_once(url, timeout)
+    if result[0] == 'error' and result[1] in _RETRYABLE and retries > 0:
+        for _ in range(retries):
+            result = _check_once(url, timeout)
+            if not (result[0] == 'error' and result[1] in _RETRYABLE):
+                break
+    return result
+
+
+# Failure severities, derived from the (status, kind) of a failed check. BROKEN is actionable
+# (the link really needs fixing); UNVERIFIED means "almost certainly alive, just slow/blocked from
+# the server we check from" — informational, not a to-do.
+BROKEN_KINDS = {'gone', 'dns', 'badurl'}      # 'gone' = the dead/4xx/5xx bucket
 
 
 class Command(BaseCommand):
@@ -168,10 +196,6 @@ class Command(BaseCommand):
                     if i % 100 == 0:
                         self.stdout.write('  checked %d/%d...' % (i, len(urls)))
 
-        self.stdout.write('\nAlive:  %d (incl. %d insecure-cert but reachable)' % (alive, insecure))
-        self.stdout.write('Dead:   %d (4xx/5xx)' % len(dead))
-        self.stdout.write('Errors: %d (timeout/DNS/connection — transient, not auto-fixed)' % len(errors))
-
         # Build the per-URL failure list (dead + errors) WITH the institution(s) behind each,
         # so the dashboard's "Problem links" drill-down can group + show who owns each bad link.
         def _failure(u, kind, detail=''):
@@ -181,23 +205,37 @@ class Command(BaseCommand):
         failures = ([_failure(u, 'gone', code) for u, code in sorted(dead)]
                     + [_failure(u, why) for u, why in sorted(errors)])
 
+        # Split failures into the two severities (see BROKEN_KINDS): genuinely broken vs
+        # couldn't-verify (slow/blocked-from-here but almost certainly alive). The dashboard's
+        # headline counts BROKEN only — UNVERIFIED is informational, not a to-do.
+        broken = [f for f in failures if f['kind'] in BROKEN_KINDS]
+        unverified = [f for f in failures if f['kind'] not in BROKEN_KINDS]
+
+        self.stdout.write('\nAlive:        %d (incl. %d insecure-cert but reachable)' % (alive, insecure))
+        self.stdout.write('Broken:       %d (gone/DNS/malformed — actionable)' % len(broken))
+        self.stdout.write("Couldn't verify: %d (timeout/connection — slow from here, likely alive)" % len(unverified))
+
         # Record link-health for the Course Data dashboard. `insecure` is a subset of `alive`.
+        # `broken`/`unverified` are the headline severities; `dead`/`errors` kept for back-compat.
         from apps.courses.course_data_status import record_status, LINK_HEALTH
         record_status(LINK_HEALTH,
                       {'checked': len(urls), 'alive': alive, 'insecure': insecure,
+                       'broken': len(broken), 'unverified': len(unverified),
                        'dead': len(dead), 'errors': len(errors),
                        'failures': failures[:300]},  # bounded; the full list is also printed below
                       detail='python manage.py validate_course_urls')
 
-        if dead:
-            self.stdout.write(self.style.WARNING('\n--- DEAD ---'))
-            for u, code in sorted(dead):
-                r = refs[u]
-                self.stdout.write('  [%s] %s  (inst:%d offer:%d)' % (code, u, r['inst'], r['offer']))
-        if errors:
-            self.stdout.write(self.style.NOTICE('\n--- ERRORS (review manually) ---'))
-            for u, why in sorted(errors):
-                self.stdout.write('  [%s] %s' % (why, u))
+        if broken:
+            self.stdout.write(self.style.WARNING('\n--- BROKEN (actionable: gone / DNS / malformed) ---'))
+            for f in broken:
+                r = refs.get(f['url'], {'inst': 0, 'offer': 0})
+                self.stdout.write('  [%s/%s] %s  (inst:%d offer:%d)'
+                                  % (f['kind'], f['detail'], f['url'], r['inst'], r['offer']))
+        if unverified:
+            self.stdout.write(self.style.NOTICE(
+                "\n--- COULDN'T VERIFY (slow/blocked from here — likely alive, NOT auto-fixed) ---"))
+            for f in unverified:
+                self.stdout.write('  [%s] %s' % (f['kind'], f['url']))
 
         if fix and dead:
             dead_urls = [u for u, _ in dead]
