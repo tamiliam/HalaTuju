@@ -35,17 +35,19 @@ def check_url(url, timeout=10):
 
     'alive' = 2xx/3xx, or 401/403 (reachable but auth-gated, e.g. a login portal);
     'dead'  = 404/410/other 4xx/5xx (gone);
-    'error' = timeout / DNS / SSL / connection failure (transient — never auto-fixed).
-    Isolated + tiny so tests can mock `urlopen`."""
-    req = urllib.request.Request(url, headers={'User-Agent': _UA})  # GET
+    'error' = timeout / DNS / SSL / connection failure, OR a malformed/schemeless stored URL
+    (e.g. 'foo.edu.my' with no http://) — transient or bad-data, never auto-fixed, never crashes.
+    Isolated + tiny so tests can mock `urlopen`. The Request build is INSIDE the try so a malformed
+    URL is classified as 'error' rather than raising and aborting the whole run."""
     try:
+        req = urllib.request.Request(url, headers={'User-Agent': _UA})  # GET
         with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as r:
             return ('alive', getattr(r, 'status', 200))
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):       # reachable, just gated
             return ('alive', e.code)
         return ('dead', e.code)        # 404/410/5xx → gone
-    except Exception as e:             # URLError, timeout, SSL, connection reset, …
+    except Exception as e:             # URLError, timeout, SSL, malformed URL (ValueError), …
         return ('error', type(e).__name__)
 
 
