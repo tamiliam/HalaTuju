@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Cockpit Check-2 / Interview-Stage split (Check-2/Check-3 redesign, Sprint 1 of 4; FE + i18n, no schema change).**
+  The officer cockpit's "Outstanding" box previously merged *student-facing* Check-2 tasks (resolution items) with
+  *interview* content (pre-interview flags + AI-suggested gaps) and the "Suggest interview gaps (AI)" button. Split into
+  two clean stages: **"Check 2 — Outstanding"** now holds only student tasks (count + empty-state adjusted to resolution
+  items alone, subtitle "Student tasks to clear before review"); the **"Interview Stage"** box (renamed from "Interview
+  findings") now owns the agenda (flags + AI gaps, already paired with the reviewer's note/verdict), carries the moved
+  "Suggest interview gaps (AI)" button, and shows an "In progress" / "Submitted" status pill. Presentational only — no
+  data, model, or behaviour change. jest 306 pass; `next build` clean; i18n parity 2854×3 (added `outstanding.subtitle`
+  + `interview.inProgress` to en/ms/ta). Roadmap: `docs/scholarship/check2-check3-roadmap.md`.
+
 ### Added
 - **Document slot model — per-person income-doc tagging (TD-115, Sprint 1; data migration, no schema change).** Foundation
   for 27 fixed `(doc_type × person)` slots so every upload lands in exactly one slot and a re-upload overwrites it — fixing

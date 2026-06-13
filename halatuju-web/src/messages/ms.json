@@ -2411,10 +2411,11 @@
         "family_done": "Butiran keluarga"
       },
       "interview": {
-        "title": "Penemuan temu duga",
+        "title": "Peringkat Temu Duga",
         "intro": "Rekod keputusan dan satu baris sebab bagi setiap bendera pra-temu duga, serta penilaian ringkas.",
         "noFlags": "Tiada bendera automatik. Gunakan rubrik + nota untuk merekod penilaian anda.",
         "submitted": "Dihantar",
+        "inProgress": "Sedang berjalan",
         "rationalePlaceholder": "Satu baris: apa yang anda temui",
         "notePlaceholder": "Nota keseluruhan (pilihan)",
         "saveDraft": "Simpan draf",
@@ -2838,10 +2839,11 @@
         "waitingStudent": "Menunggu pelajar"
       },
       "outstanding": {
-        "title": "Belum selesai",
+        "title": "Semakan 2 — Belum selesai",
+        "subtitle": "Tugasan pelajar untuk diselesaikan sebelum semakan",
         "itemOne": "perkara",
         "itemMany": "perkara",
-        "empty": "Tiada yang belum selesai — semuanya jelas dan tiada amaran.",
+        "empty": "Tiada yang belum selesai — semua tugasan pelajar telah jelas.",
         "studentTodo": "Tindakan pelajar",
         "askInterview": "Tanya semasa temu duga"
       },

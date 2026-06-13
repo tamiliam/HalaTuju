@@ -2411,10 +2411,11 @@
         "family_done": "Family details"
       },
       "interview": {
-        "title": "Interview findings",
+        "title": "Interview Stage",
         "intro": "Record a verdict and a one-line reason against each pre-interview flag, plus a quick rating.",
         "noFlags": "No automated flags. Use the rubric + note to record your judgement.",
         "submitted": "Submitted",
+        "inProgress": "In progress",
         "rationalePlaceholder": "One line: what you found",
         "notePlaceholder": "Overall note (optional)",
         "saveDraft": "Save draft",
@@ -2838,10 +2839,11 @@
         "waitingStudent": "Waiting for student"
       },
       "outstanding": {
-        "title": "Outstanding",
+        "title": "Check 2 — Outstanding",
+        "subtitle": "Student tasks to clear before review",
         "itemOne": "item",
         "itemMany": "items",
-        "empty": "Nothing outstanding — caveats clear and no flags raised.",
+        "empty": "Nothing outstanding — all student tasks are clear.",
         "studentTodo": "Student to-do",
         "askInterview": "Ask at interview"
       },
