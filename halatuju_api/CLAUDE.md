@@ -445,7 +445,22 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-13)
 
-**▶ IN PROGRESS — Document slot model (TD-115). Spec `docs/scholarship/document-slot-model-plan.md`. 27 fixed
+**▶ IN PROGRESS — Check-2 / Interview-Stage cockpit redesign (4-sprint roadmap `docs/scholarship/check2-check3-roadmap.md`).**
+Splits the cockpit into Verification verdict → Student profile (own box, + collapsed own-words) → Check 2 — Outstanding (the
+single querying channel, open until the interview concludes, then read-only) → Interview Stage (agenda incl. carried-over
+unanswered queries + findings + Submit → final profile → decision). All 4 sprints accumulate on branch `check2-check3-s1`;
+the feature deploys ONCE at the end (branch pushes don't deploy — the Cloud Run trigger is on `main`).
+**▶ Sprint 1 DONE on branch (`747d5fd`, not merged/deployed) — Outstanding split into Check-2-only vs the renamed
+"Interview Stage" box (Suggest-gaps button + In-progress/Submitted pill moved there). FE + i18n only; jest 306, build clean,
+parity 2854×3.**
+**▶ NEXT — Sprint 2: in Outstanding, show the student's answer under each query + one raise-query/request-document control
+(doc request targets a specific slot incl. person — absorbs the deferred salary-route Action-Centre tagging) + a soft AI
+"off-topic" hint (flag-gated, officer still decides). Then S3 (profile box relocate + auto-draft at handoff) and S4
+(interview lifecycle: carry-over + Submit → final profile + lock querying).**
+
+---
+
+**▶ Document slot model (TD-115) — Spec `docs/scholarship/document-slot-model-plan.md`. 27 fixed
 `(doc_type × person)` slots; every upload lands in one slot; re-upload overwrites; the income route controls which slots
 are required vs optional (display), NOT where a doc is stored.**
 
@@ -458,8 +473,8 @@ blank); wizard tags/displays per-earner. Backfill: 53 STR-route blank income doc
 Verdict-invariant (verdict engine reads STR by doc-type, salary by member tag). #12 corrected → STR/mother (audited switch).
 **▶ NEXT (deferred): (a) DB `UniqueConstraint(application,doc_type,household_member)` — needs test-fixture rework + migrate-first
 (app layer already prevents dups); (b) salary-route Action-Centre member-tagging (STR path already fixed); (c) the Check-2/Check-3
-process flow & display — the separate pass the owner asked to tackle next (investigation already done — Outstanding box mixes
-Check-2 + Check-3, student responses captured but not displayed, doc-request flow has no tracked record).**
+process flow & display — **now IN PROGRESS as the 4-sprint redesign at the top (`docs/scholarship/check2-check3-roadmap.md`);
+S1 done on branch `check2-check3-s1`**.**
 
 **▶ COMPLETE — Verification-assurance programme (document genuineness + measured reliability). All 3 sprints SHIPPED & LIVE
 2026-06-12. Roadmap `docs/scholarship/verification-assurance-roadmap.md` (layers 1–3 done). Governing principle: not
