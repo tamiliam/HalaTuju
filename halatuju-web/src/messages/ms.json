@@ -2400,6 +2400,12 @@
       "requestInfoPlaceholder": "cth. Sila muat naik slip gaji terkini ibu bapa anda.",
       "requestInfoSend": "Hantar permintaan",
       "requestInfoError": "Tidak dapat menghantar permintaan.",
+      "requestDocLabel": "Atau minta dokumen tertentu",
+      "requestDocAny": "Pilih dokumen…",
+      "requestDocWhose": "Milik siapa?",
+      "requestDocSend": "Minta dokumen",
+      "requestDocPrompt": "Sila muat naik {doc} anda.",
+      "requestDocPromptMember": "Sila muat naik {doc} {member}.",
       "completeness": {
         "quiz_done": "Kuiz kerjaya",
         "details_done": "Kisah anda (aspirasi + rancangan)",

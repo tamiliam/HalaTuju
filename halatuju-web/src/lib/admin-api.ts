@@ -916,7 +916,7 @@ export async function getVerdictMetrics(
  *  student's Action Centre. */
 export async function raiseResolutionItem(
   id: number,
-  payload: { kind: 'doc' | 'confirm' | 'explanation'; prompt: string; doc_type?: string; fact?: string },
+  payload: { kind: 'doc' | 'confirm' | 'explanation'; prompt: string; doc_type?: string; fact?: string; household_member?: string },
   options?: ApiOptions,
 ): Promise<AdminScholarshipDetail> {
   return adminMutate<AdminScholarshipDetail>(

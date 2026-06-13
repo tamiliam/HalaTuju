@@ -811,11 +811,15 @@ class AdminResolutionItemView(_AdminBase):
             return Response({'error': 'bad_kind'}, status=status.HTTP_400_BAD_REQUEST)
         if not prompt:
             return Response({'error': 'prompt_required'}, status=status.HTTP_400_BAD_REQUEST)
+        member = (request.data.get('household_member') or '').strip()
+        if member and member not in ('father', 'mother', 'guardian', 'brother', 'sister'):
+            return Response({'error': 'bad_member'}, status=status.HTTP_400_BAD_REQUEST)
         from .resolution import add_officer_item
         add_officer_item(app, kind=kind, prompt=prompt,
                          admin_email=getattr(admin, 'email', '') or '',
                          doc_type=(request.data.get('doc_type') or '').strip(),
-                         fact=(request.data.get('fact') or 'other').strip())
+                         fact=(request.data.get('fact') or 'other').strip(),
+                         household_member=member)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

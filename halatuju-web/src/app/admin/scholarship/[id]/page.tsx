@@ -57,6 +57,19 @@ const VERDICTS = ['resolved', 'still_unclear', 'new_concern'] as const
 const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
 const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done', 'family_done'] as const
 
+// Officer doc-request control (Check-2/Check-3 S2b): the 13 requestable slot types,
+// the income types that also need a person, and each type's verdict fact.
+const REQ_DOC_TYPES = ['ic', 'results_slip', 'offer_letter', 'parent_ic', 'str', 'salary_slip', 'epf', 'birth_certificate', 'guardianship_letter', 'water_bill', 'electricity_bill', 'statement_of_intent', 'photo'] as const
+const REQ_MEMBER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf'])
+const REQ_MEMBERS = ['father', 'mother', 'guardian', 'brother', 'sister'] as const
+const DOC_FACT: Record<string, string> = {
+  ic: 'identity', results_slip: 'academic', offer_letter: 'pathway',
+  parent_ic: 'income', str: 'income', salary_slip: 'income', epf: 'income',
+  birth_certificate: 'income', guardianship_letter: 'income',
+  water_bill: 'income', electricity_bill: 'income',
+  statement_of_intent: 'other', photo: 'other',
+}
+
 const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: '' }
 
 // Status pill colour bands — amber = in-progress/under review, green = accepted/funded,
@@ -161,6 +174,8 @@ export default function AdminScholarshipDetailPage() {
   const [rubric, setRubric] = useState<Record<string, number>>({})
   const [note, setNote] = useState('')
   const [infoNote, setInfoNote] = useState('')
+  const [reqDocType, setReqDocType] = useState('')
+  const [reqDocMember, setReqDocMember] = useState('')
   // Sprint 5 — Officer cockpit
   const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
   const [verdictReason, setVerdictReason] = useState('')
@@ -377,6 +392,26 @@ export default function AdminScholarshipDetailPage() {
     try {
       setApp(await raiseResolutionItem(id, { kind: 'explanation', prompt: infoNote.trim(), fact: 'identity' }, { token }))
       setInfoNote('')
+    } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
+  }
+
+  const doRequestDoc = async () => {
+    if (!token || !reqDocType) return
+    const member = REQ_MEMBER_DOCS.has(reqDocType) ? reqDocMember : ''
+    const docTxt = t(`admin.scholarship.docsDrawer.type.${reqDocType}`)
+    const memberTxt = member ? t(`scholarship.docs.income.wizard.member.${member}`) : ''
+    const auto = member
+      ? t('admin.scholarship.requestDocPromptMember', { member: memberTxt, doc: docTxt })
+      : t('admin.scholarship.requestDocPrompt', { doc: docTxt })
+    const prompt = infoNote.trim() || auto
+    setBusy('reqdoc'); setError('')
+    try {
+      setApp(await raiseResolutionItem(
+        id,
+        { kind: 'doc', doc_type: reqDocType, household_member: member, prompt, fact: DOC_FACT[reqDocType] || 'other' },
+        { token },
+      ))
+      setInfoNote(''); setReqDocType(''); setReqDocMember('')
     } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
   }
 
@@ -1223,6 +1258,31 @@ export default function AdminScholarshipDetailPage() {
               className="px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
               {busy === 'raise' ? t('common.loading') : t('admin.scholarship.caveats.ask')}
             </button>
+          </div>
+          <div className="mt-1 border-t border-gray-100 pt-2 space-y-2">
+            <p className="text-xs text-gray-500">{t('admin.scholarship.requestDocLabel')}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <select value={reqDocType} onChange={(e) => setReqDocType(e.target.value)}
+                className="border rounded-lg px-2 py-1.5 text-sm">
+                <option value="">{t('admin.scholarship.requestDocAny')}</option>
+                {REQ_DOC_TYPES.map((dt) => (
+                  <option key={dt} value={dt}>{t(`admin.scholarship.docsDrawer.type.${dt}`)}</option>
+                ))}
+              </select>
+              {REQ_MEMBER_DOCS.has(reqDocType) && (
+                <select value={reqDocMember} onChange={(e) => setReqDocMember(e.target.value)}
+                  className="border rounded-lg px-2 py-1.5 text-sm">
+                  <option value="">{t('admin.scholarship.requestDocWhose')}</option>
+                  {REQ_MEMBERS.map((m) => (
+                    <option key={m} value={m}>{t(`scholarship.docs.income.wizard.member.${m}`)}</option>
+                  ))}
+                </select>
+              )}
+              <button onClick={doRequestDoc} disabled={!!busy || !reqDocType}
+                className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
+                {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
+              </button>
+            </div>
           </div>
         </div>
       )}

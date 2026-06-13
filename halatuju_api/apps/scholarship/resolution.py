@@ -166,14 +166,19 @@ def resolve_item(item, *, text='', doc=None, by='student'):
     return item
 
 
-def add_officer_item(application, *, kind, prompt, admin_email, doc_type='', fact='other'):
+def add_officer_item(application, *, kind, prompt, admin_email, doc_type='', fact='other',
+                     household_member=''):
     """Officer raises a manual ticket — the structured successor to
-    ``info_request_note``. Codes are synthetic ``officer_<n>``."""
+    ``info_request_note``. Codes are synthetic ``officer_<n>``. For a per-person
+    document request (e.g. the father's salary slip), ``household_member`` is stashed
+    in ``params`` so the student's upload tags the right (doc_type, member) slot —
+    closing the salary-route Action-Centre tagging gap without a schema change."""
     n = application.resolution_items.filter(source='officer').count() + 1
+    params = {'household_member': household_member} if household_member else {}
     return ResolutionItem.objects.create(
         application=application, source='officer', code=f'officer_{n}',
         fact=fact or 'other', kind=kind, doc_type=doc_type, prompt=prompt or '',
-        created_by=admin_email or '',
+        params=params, created_by=admin_email or '',
     )
 
 

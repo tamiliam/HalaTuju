@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   endpoint; no migration (chosen lighter/no-migration path). The AI "off-topic" hint is **deferred** — it depends on the
   (OFF) `CHECK2_ANSWER_RELEVANCE_ENABLED` flag and would require touching that endpoint. 1200 scholarship pytest (+3),
   jest 306, `next build` clean, i18n parity 2857×3 (added `caveats.studentAnswer/accept/askAgain`).
+  Part (b): the "request more documentation" section gains a **single doc-request control** — a doc-type
+  picker (the 13 slot types) with a **person picker** for the income types (`parent_ic/str/salary_slip/epf`).
+  The chosen member rides in the ticket's `params`, and the student's Action-Centre upload now tags
+  `household_member` from there — so a "father's salary slip" request lands in the right `(doc_type, member)`
+  slot, **closing the deferred salary-route Action-Centre tagging gap** (no schema change; STR-route income
+  docs are still re-tagged from `income_earner` server-side). +2 backend tests (1202 scholarship pytest),
+  parity 2863×3 (added `requestDoc*` keys).
 
 ### Added
 - **Document slot model — per-person income-doc tagging (TD-115, Sprint 1; data migration, no schema change).** Foundation

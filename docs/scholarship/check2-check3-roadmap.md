@@ -1,6 +1,6 @@
 # Check-2 / Interview-Stage Cockpit Redesign — Sprint Roadmap
 
-**Status:** Sprint 1 of 4 complete (branch `check2-check3-s1`).
+**Status:** Sprint 2 of 4 complete (branch `check2-check3-s1`).
 **Approved:** 2026-06-13. **Owner:** tamiliam.
 
 ## Problem
@@ -36,8 +36,8 @@ Assigned → reviewer reads profile/docs/responses → raises queries + doc requ
 | # | Goal | Key scope | Complexity | Status |
 |---|------|-----------|------------|--------|
 | 1 | **Split the boxes** — Outstanding = student tasks only; interview flags/gaps + Suggest-gaps button move to the renamed "Interview Stage". | `admin/scholarship/[id]/page.tsx`, `messages/{en,ms,ta}` | Medium | ✅ Done |
-| 2 | **Outstanding: answers under queries + one querying control + AI hint.** Student answer (or "awaiting") shown beneath each query; doc requests link to Documents and target a specific slot (incl. person — absorbs old item-2 multi-earner tagging); dark answer-relevance check surfaces as a soft hint. | `serializers_admin.py`, `views.py`, `resolution.py`, `page.tsx`, `admin-api.ts`, messages | Medium | ⏳ Next |
-| 3 | **Student profile box** — relocate below Verification verdict; collapsed "student's own words" beneath; auto-generate draft once at handoff; Regenerate; info strip. | `page.tsx`, `services.py`/`views.py`, messages | Medium | — |
+| 2 | **Outstanding: answers under queries + one querying control.** Student answer shown beneath each query (lighter/no-migration lifecycle: answer still self-resolves but surfaces for officer review via Accept/Ask-again); single doc-request control targeting a specific slot incl. person (absorbs item-2 salary-route tagging). **AI off-topic hint deferred** (depends on the OFF relevance flag + would touch the live resolve endpoint). | `serializers_admin.py`, `views_admin.py`, `resolution.py`, `ActionCentre.tsx`, `page.tsx`, `admin-api.ts`, messages | Medium | ✅ Done |
+| 3 | **Student profile box** — relocate below Verification verdict; collapsed "student's own words" beneath; auto-generate draft once at handoff; Regenerate; info strip. | `page.tsx`, `services.py`/`views.py`, messages | Medium | ⏳ Next |
 | 4 | **Interview Stage lifecycle** — agenda carry-over of unanswered Outstanding queries; paired findings; Submit ends querying (Outstanding locks read-only at status ≥ interviewed), triggers final profile, moves to decision. | `page.tsx`, `services.py`, `verdict_engine.py`/`gap_engine.py`, `views.py`, messages | High | — |
 
 ## Deploy discipline

@@ -2400,6 +2400,12 @@
       "requestInfoPlaceholder": "எ.கா. உங்கள் பெற்றோரின் சமீபத்திய சம்பள சீட்டை பதிவேற்றவும்.",
       "requestInfoSend": "கோரிக்கையை அனுப்பு",
       "requestInfoError": "கோரிக்கையை அனுப்ப முடியவில்லை.",
+      "requestDocLabel": "அல்லது குறிப்பிட்ட ஆவணத்தைக் கோருங்கள்",
+      "requestDocAny": "ஆவணத்தைத் தேர்ந்தெடுக்கவும்…",
+      "requestDocWhose": "யாருடையது?",
+      "requestDocSend": "ஆவணம் கோருக",
+      "requestDocPrompt": "உங்கள் {doc}-ஐ பதிவேற்றவும்.",
+      "requestDocPromptMember": "{member}-இன் {doc}-ஐ பதிவேற்றவும்.",
       "completeness": {
         "quiz_done": "தொழில் வினாடி வினா",
         "details_done": "உங்கள் கதை (இலக்குகள் + திட்டங்கள்)",

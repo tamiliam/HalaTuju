@@ -111,8 +111,13 @@ function ActionCard({
     try {
       const { upload_url, storage_path } = await signUploadDocument(item.doc_type, { token })
       await uploadFileToSignedUrl(upload_url, file)
+      // A per-person doc request (officer asked for e.g. the father's salary slip) carries
+      // the target member in params — tag it so the upload lands in the right slot (closes
+      // the salary-route Action-Centre tagging gap). STR-route income docs are re-tagged
+      // server-side from income_earner regardless, so this only matters on the salary route.
+      const member = typeof item.params?.household_member === 'string' ? item.params.household_member : ''
       const doc = await recordDocument(
-        { doc_type: item.doc_type, storage_path, original_filename: file.name, content_type: file.type, size: file.size },
+        { doc_type: item.doc_type, household_member: member, storage_path, original_filename: file.name, content_type: file.type, size: file.size },
         { token },
       )
       if (doc.match_verdict === 'pending') {

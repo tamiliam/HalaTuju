@@ -450,13 +450,15 @@ Splits the cockpit into Verification verdict → Student profile (own box, + col
 single querying channel, open until the interview concludes, then read-only) → Interview Stage (agenda incl. carried-over
 unanswered queries + findings + Submit → final profile → decision). All 4 sprints accumulate on branch `check2-check3-s1`;
 the feature deploys ONCE at the end (branch pushes don't deploy — the Cloud Run trigger is on `main`).
-**▶ Sprint 1 DONE on branch (`747d5fd`, not merged/deployed) — Outstanding split into Check-2-only vs the renamed
-"Interview Stage" box (Suggest-gaps button + In-progress/Submitted pill moved there). FE + i18n only; jest 306, build clean,
-parity 2854×3.**
-**▶ NEXT — Sprint 2: in Outstanding, show the student's answer under each query + one raise-query/request-document control
-(doc request targets a specific slot incl. person — absorbs the deferred salary-route Action-Centre tagging) + a soft AI
-"off-topic" hint (flag-gated, officer still decides). Then S3 (profile box relocate + auto-draft at handoff) and S4
-(interview lifecycle: carry-over + Submit → final profile + lock querying).**
+**▶ Sprints 1–2 DONE on branch (not merged/deployed). S1 (`747d5fd`): Outstanding split into Check-2-only vs the renamed
+"Interview Stage" box. S2 (`17e93cf` + S2b): Outstanding surfaces student-answered queries with their text → officer
+Accept (re-stamps resolved_by → officer) / Ask again (new `reopen` action); single doc-request control with a per-person
+slot picker that stashes the member in the ticket's `params` so the student's Action-Centre upload tags the right
+`(doc_type, member)` slot (closes the salary-route tagging gap). Lighter/no-migration path; AI off-topic hint deferred
+(OFF `CHECK2_ANSWER_RELEVANCE_ENABLED`). 1202 scholarship pytest, jest 306, build clean, parity 2863×3.**
+**▶ NEXT — Sprint 3: Student profile box — relocate to its OWN box directly below Verification verdict, with the collapsed
+"student's own words" beneath; auto-generate the draft ONCE at the Check-2→Reviewer handoff (cost-guarded) + Regenerate +
+info strip. Then S4 (interview lifecycle: agenda carry-over of unanswered queries + Submit → final profile + lock querying).**
 
 ---
 
