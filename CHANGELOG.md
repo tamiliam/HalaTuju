@@ -18,12 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   *Code (this branch):* the dashboard's link-health check was crying wolf — MY gov/edu portals (IPG, matriculation,
   polytechnics) routinely take 10-15s to first byte from Cloud Run, so a 10s budget false-flagged dozens of live
   sites as "connection failed". `check_url` now **retries a transient (timeout/conn) failure once**, the health check's
-  per-URL timeout is raised **10s → 20s**, and failures are split into two **severities**: genuinely **Broken**
-  (gone / DNS-not-found / malformed — actionable) vs **Couldn't verify** (timeout / connection — almost certainly
-  alive, just slow/blocked from the checker; informational, not a to-do). The dashboard headline now counts Broken
-  only; the "Problem links" drill-down groups under the two severities. Reporting-only — no catalogue writes from the
-  check. +3 backend tests (1111 courses pytest pass), i18n parity en/ms/ta (added `broken`/`couldntVerify`/
-  `brokenHeader`/`unverifiedHeader`/`unverifiedHint`).
+  per-URL timeout is raised **10s → 20s**, and failures are split into three **severities**: genuinely **Broken**
+  (gone / DNS-not-found / malformed — actionable) · **Access-blocked** (401/403 — the server answered but refused
+  this page: usually a login wall, occasionally a wrong/old path like Politeknik Port Dickson's bare URL; surfaced
+  for a human to eyeball rather than silently counted "alive") · **Couldn't verify** (timeout / connection — almost
+  certainly alive, just slow/blocked from the checker; informational, not a to-do). The dashboard headline counts
+  Broken only; the "Problem links" drill-down groups under the three severities. Reporting-only — no catalogue writes
+  from the check. +6 backend tests (1114 courses pytest pass), i18n parity en/ms/ta.
 
 ### Changed
 - **Cockpit Check-2 / Interview-Stage split (Check-2/Check-3 redesign, Sprint 1 of 4; FE + i18n, no schema change).**
