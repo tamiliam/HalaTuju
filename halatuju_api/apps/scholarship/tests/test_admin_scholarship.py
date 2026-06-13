@@ -105,6 +105,32 @@ class TestAdminScholarship(TestCase):
         self.assertIsNone(item.resolved_at)
         self.assertEqual(item.resolution_text, 'He drives an e-hailing car part-time.')
 
+    def test_officer_doc_request_tags_member_in_params(self):
+        """A per-person document request (e.g. the father's salary slip) stores the target
+        member in params so the student's upload tags the right (doc_type, member) slot."""
+        self._auth(ADMIN)
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/resolution-items/',
+            {'kind': 'doc', 'prompt': "Please upload father's salary slip.",
+             'doc_type': 'salary_slip', 'fact': 'income', 'household_member': 'father'},
+            format='json',
+        )
+        self.assertEqual(r.status_code, 200)
+        from apps.scholarship.models import ResolutionItem
+        item = ResolutionItem.objects.filter(
+            application=self.app, kind='doc', doc_type='salary_slip').first()
+        self.assertIsNotNone(item)
+        self.assertEqual(item.params.get('household_member'), 'father')
+
+    def test_officer_doc_request_rejects_bad_member(self):
+        self._auth(ADMIN)
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/resolution-items/',
+            {'kind': 'doc', 'prompt': 'x', 'doc_type': 'salary_slip', 'household_member': 'cousin'},
+            format='json',
+        )
+        self.assertEqual(r.status_code, 400)
+
     def test_admin_list(self):
         self._auth(ADMIN)
         r = self.client.get('/api/v1/admin/scholarship/applications/')

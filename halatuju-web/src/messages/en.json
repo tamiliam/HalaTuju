@@ -2400,6 +2400,12 @@
       "requestInfoPlaceholder": "e.g. Please upload your parent's latest payslip.",
       "requestInfoSend": "Send request",
       "requestInfoError": "Could not send the request.",
+      "requestDocLabel": "Or request a specific document",
+      "requestDocAny": "Choose document…",
+      "requestDocWhose": "Whose?",
+      "requestDocSend": "Request document",
+      "requestDocPrompt": "Please upload your {doc}.",
+      "requestDocPromptMember": "Please upload {member}'s {doc}.",
       "completeness": {
         "quiz_done": "Career quiz",
         "details_done": "Your story (aspirations + plans)",
