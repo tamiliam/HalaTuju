@@ -3,6 +3,16 @@
 **Compiled 2026-06-12** from (a) URLs hardcoded in HalaTuju, (b) URLs actually in the
 production DB, (c) confirmed official portals. Feeds the course-data pipeline roadmap.
 
+> **Update 2026-06-13 (portal spike):** Course data depends on **THREE** external sources — **e-Panduan** (SPM+STPM
+> catalogue), **UP_TVET** (TVET, 12 ministries), **eMASCO** (course→job). **No official catalogue feed exists**
+> (data.gov.my publishes statistics, not the programme catalogue) → scraping stays the only route; MASCO is the
+> exception (a published, slow-moving standard). **UP_TVET has a PUBLIC, scrapeable catalogue** (no login):
+> `https://mohon.tvet.gov.my/awam-kursus/katalog` — programme cards (code, name, fees, category, institution,
+> **Sektor Awam/Swasta**, eligibility). HalaTuju currently captures only **ILJTM + ILKBS** of its ~12 ministries
+> (**MARA/TVETMARA, agriculture, others missing**); a capture must filter **`Sektor = Awam`** for public-only scope.
+> **eMASCO** (`https://emasco.mohr.gov.my/`, MOHR) is the source for the MASCO code→occupation→job mapping. See the
+> roadmap's "2026-06-13 — refined model" section for the resilience posture + the new work items.
+
 ## A. Central portals — the pipeline data sources
 
 | Portal | URL | Covers | HalaTuju use today |
