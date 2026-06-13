@@ -44,6 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clean, parity 2864×3 (added `profileDraftHint`).
 
 ### Added
+- **Course-data health monitoring — read-only freshness + link checks (cron + manual button; no migration).** Keeps the
+  Course Data dashboard's Link-health, Audit and freshness cards live WITHOUT any catalogue writes. `validate_course_urls`
+  gains a `--workers` concurrent path (~650 URLs in <1 min). New read-only `course_data_check` command (`audit_data` +
+  `validate_course_urls --workers 20`, **no `--fix`/scrape/writes**) recorded as `CronRunView` job `course-data-check`
+  → weekly Cloud Scheduler `halatuju-course-data-check` (Mon 03:00 Asia/KL). Manual "Run health check now" button on
+  `/admin/course-data` via `POST /api/v1/admin/course-data/check/` (super/admin; runs the same check synchronously,
+  returns fresh status). +7 tests (1100 courses pytest), next build clean, jest 306, parity 2603×3.
 - **UP_TVET coverage — Sprint 1: catalogue scraper + coverage inventory (no DB writes, no migration).** New
   `scrape_uptvet` command scrapes the public UP_TVET Perdana catalogue (`mohon.tvet.gov.my`, ~1000 programmes,
   paginated HTML) → CSV with Kod Tauliah, name, Kategori, Institusi, **Sektor (Awam/Swasta)**, fees, stable

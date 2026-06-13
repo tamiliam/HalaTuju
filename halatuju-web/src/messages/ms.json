@@ -3168,7 +3168,10 @@
         "epanduan_spm": "e-Panduan · SPM",
         "uptvet": "UP_TVET",
         "emasco": "eMASCO (pekerjaan)"
-      }
+      },
+      "runCheck": "Jalankan semakan sekarang",
+      "checking": "Menyemak…",
+      "runCheckHint": "Baca sahaja: semak semula pautan + audit (~1 min). Tiada perubahan katalog."
     }
   }
 }
