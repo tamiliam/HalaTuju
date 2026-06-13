@@ -556,3 +556,35 @@ class AdminProfileView(PartnerAdminMixin, APIView):
                 admin.org.save(update_fields=['contact_person', 'phone'])
 
         return Response({'message': 'Profile updated'})
+
+
+class AdminCourseDataView(PartnerAdminMixin, APIView):
+    """GET /api/v1/admin/course-data/ — read-only Course Data dashboard.
+
+    Returns per-source freshness (last-run status the tools record) + live coverage counts.
+    Any admin role may view (read-only reporting). No 'run' triggers this sprint.
+    """
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return Response({'error': 'Not a partner admin'}, status=403)
+
+        from .models import CourseDataStatus
+        from .course_data_status import coverage_snapshot
+
+        statuses = {}
+        for row in CourseDataStatus.objects.all():
+            statuses[row.key] = {
+                'last_run_at': row.last_run_at.isoformat() if row.last_run_at else None,
+                'summary': row.summary or {},
+                'detail': row.detail or '',
+            }
+        # Every known key present (missing → null = "never run").
+        for key, _label in CourseDataStatus.KEY_CHOICES:
+            statuses.setdefault(key, None)
+
+        return Response({
+            'statuses': statuses,
+            'coverage': coverage_snapshot(),
+        })

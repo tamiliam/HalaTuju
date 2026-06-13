@@ -108,6 +108,19 @@ class Command(BaseCommand):
         call_command('audit_data')
         summary.append(('audit', 'OK', ''))
 
+        # Record the STPM refresh for the Course Data dashboard (freshness).
+        # Best-effort: telemetry must never break the refresh (or its no-DB orchestration tests).
+        try:
+            from apps.courses.course_data_status import record_status, EPANDUAN_STPM
+            from apps.courses.models import StpmCourse
+            record_status(EPANDUAN_STPM,
+                          {'mode': 'apply' if apply else 'dry-run',
+                           'stpm_total': StpmCourse.objects.count(),
+                           'stpm_active': StpmCourse.objects.filter(is_active=True).count()},
+                          detail='python manage.py refresh_stpm' + (' --apply' if apply else ''))
+        except Exception:
+            pass
+
         self._summary(summary)
         if not apply:
             self.stdout.write(self.style.NOTICE(

@@ -53,6 +53,26 @@ untouched this sprint.
 **Revisit if:** the Poly/KK merit/links go materially stale (build 3b), or new UA/Asasi programmes appear often enough
 to want auto-add with parsed requirements (build 3c), or a sponsor/advisory view needs inactive SPM courses hidden
 (wire the `is_active` read filter, mirroring `StpmCourse`).
+## Course Data dashboard: reporting-only first (no run-triggers); coverage live, freshness recorded — Course Data Dashboard Sprint 1, 2026-06-13
+
+**Decision:** The first `/admin/course-data` dashboard is **read-only reporting**: per-source freshness, coverage
+(have/available/gap), link-health, audit. NO buttons that run a scrape/sync/audit. Coverage is computed **live** from
+the DB; freshness/link-health/audit come from a small `CourseDataStatus` store the tools write to when they run.
+
+**Alternatives considered:** (1) Full hybrid (reporting + server-run triggers) now. (2) Reporting-only first, triggers
+later (chosen). (3) Compute everything live with no status store (then no freshness/history possible).
+
+**Rationale:** The owner's directive is *"build the tools, then a dashboard that shows status for decisions — no
+harvesting now."* Reporting-only honours that literally (no UI path can harvest) and is the smaller, safer build.
+Coverage counts don't need persistence; freshness does (a recorded `last_run_at`), so a tiny status model is the
+minimum that makes the dashboard truthful. The empty/"never run" state is first-class and itself decision-useful.
+
+**Trade-offs:** Until a tool is actually run, its card reads "never refreshed" — expected under "no harvesting now".
+The SPM + UP_TVET tools (on separate branches) aren't instrumented yet, so those two read "never" until those branches
+merge and call `record_status`.
+
+**Revisit if:** the owner wants the hybrid update-triggers (server-runnable Run-audit / Check-links / Apply-refresh
+buttons) — a later sprint; the scrape itself stays local (browser), so a trigger would upload a CSV, not scrape server-side.
 
 
 ## Operational reminders stay email/Cloud-Scheduler — no in-app notification system yet — 2026-06-12
