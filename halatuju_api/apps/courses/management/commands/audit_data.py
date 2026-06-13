@@ -27,6 +27,13 @@ class Command(BaseCommand):
         self.audit_stpm_requirements()
         self.audit_stpm_careers()
         self.audit_link_health()
+        # Record the run for the Course Data dashboard (freshness + a counts snapshot).
+        # Best-effort: telemetry must never break the audit.
+        try:
+            from apps.courses.course_data_status import record_status, coverage_snapshot, AUDIT
+            record_status(AUDIT, coverage_snapshot(), detail='python manage.py audit_data')
+        except Exception:
+            pass
         self.stdout.write(self.style.SUCCESS('\nAudit complete.'))
 
     def audit_courses(self):

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Course Data admin dashboard — Sprint 1 (reporting-only; `/admin/course-data`).** A read-only status surface for
+  the course-data sources: a **freshness strip** (e-Panduan STPM/SPM, UP_TVET, eMASCO — last-run + count + "never run"
+  state), a **coverage table** (have/available/gap), and **link-health** + **audit** cards. New `CourseDataStatus` model
+  (migration `0054_coursedatastatus`) records each tool's last run; `refresh_stpm`/`validate_course_urls`/`audit_data`
+  now write it (best-effort). New admin-gated `GET /api/v1/admin/course-data/` + nav link (super/admin). NO "run" buttons
+  (matches "no harvesting now"; hybrid triggers are a later sprint). +8 backend tests (1055 courses pytest), next build
+  clean, jest 306, i18n parity 2600×3. Migrate-first + RLS at deploy; migration parallels `spm-catalogue`'s 0054.
 - **Document slot model — per-person income-doc tagging (TD-115, Sprint 1; data migration, no schema change).** Foundation
   for 27 fixed `(doc_type × person)` slots so every upload lands in exactly one slot and a re-upload overwrites it — fixing
   the "one IC shows under every earner" and "duplicate Mother's IC" bugs. Built **tolerant-then-tighten** for a zero-downtime

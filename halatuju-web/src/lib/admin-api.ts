@@ -966,3 +966,31 @@ export async function reviewSponsor(
 ): Promise<AdminSponsor> {
   return adminMutate(`/api/v1/admin/sponsors/${id}/review/`, 'POST', { action }, options)
 }
+
+// ---- Course Data dashboard (read-only) ----
+
+export interface CourseDataStatusEntry {
+  last_run_at: string | null
+  summary: Record<string, number | string>
+  detail: string
+}
+
+export interface CourseDataCoverage {
+  spm_total: number
+  spm_by_source: Record<string, number>
+  stpm_total: number
+  stpm_active: number
+  tvet_have: number
+  uptvet_available: number | null
+  uptvet_gap: number | null
+  emasco_total: number
+}
+
+export interface CourseDataStatusResponse {
+  statuses: Record<string, CourseDataStatusEntry | null>
+  coverage: CourseDataCoverage
+}
+
+export async function getCourseDataStatus(options?: ApiOptions): Promise<CourseDataStatusResponse> {
+  return adminFetch<CourseDataStatusResponse>('/api/v1/admin/course-data/', options)
+}

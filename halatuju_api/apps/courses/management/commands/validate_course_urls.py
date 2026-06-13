@@ -93,6 +93,12 @@ class Command(BaseCommand):
         self.stdout.write('Dead:   %d (4xx/5xx)' % len(dead))
         self.stdout.write('Errors: %d (timeout/DNS/SSL — transient, not auto-fixed)' % len(errors))
 
+        # Record link-health for the Course Data dashboard.
+        from apps.courses.course_data_status import record_status, LINK_HEALTH
+        record_status(LINK_HEALTH,
+                      {'checked': len(urls), 'alive': alive, 'dead': len(dead), 'errors': len(errors)},
+                      detail='python manage.py validate_course_urls')
+
         if dead:
             self.stdout.write(self.style.WARNING('\n--- DEAD ---'))
             for u, code in sorted(dead):
