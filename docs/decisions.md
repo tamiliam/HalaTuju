@@ -27,6 +27,33 @@ the precise new-vs-existing count needs a name-reconciliation step the ingest sp
 numbers, pick the course_id scheme (likely the portal `id_kursus`), and a TVET requirements strategy
 (parse Semak-Kelayakan pages vs a conservative TVET default).
 
+## SPM catalogue sync is restricted to the MOHE-coded (UA/Asasi) subset; synthetic-ID crosswalk deferred — Sprint 3, 2026-06-13
+
+**Decision:** `sync_spm_mohe` compares the e-Panduan `jenprog=spm` scrape against the `courses` catalogue **only for
+courses whose `course_id` is a MOHE/UPU KOD PROGRAM** (`^[A-Z]{2}[0-9]{7}$` — the ~89 `U*` UA/Asasi programmes). The
+other ~300 courses use internal synthetic IDs (`POLY-*`, `KKOM-*`, `IKBN-*`/`ILP-*`, numeric `50PD…` PISMP) that
+e-Panduan never emits, so they are excluded from the diff entirely — never matched, never deactivated. A new
+`Course.is_active` (migration `0054`) is populated by the sync, but **no read path filters on it yet**.
+
+**Alternatives considered:** (1) Diff the whole catalogue against the scrape — would flag ~300 synthetic-ID courses as
+"removed" and trip the mass-deactivation guard (or, forced, wipe most of the catalogue). (2) Build a MOHE-code ↔
+synthetic-ID crosswalk by name+institution now, so all 390 sync. (3) Restrict to the MOHE-coded subset, defer the
+crosswalk (chosen).
+
+**Rationale:** The 89 UA/Asasi courses sync cleanly and safely today (real value: their merit moves yearly). The
+crosswalk is genuinely separate work with real risk — name-based matching across two ID schemes can false-merge into the
+golden-master eligibility data (cf. lessons #19, #88). Shipping the safe 80%-effort/clean part now beats blocking on the
+risky long tail. Mirrors how STPM was done (sync the matchable; parse requirements / add new courses as separate tooling).
+
+**Trade-offs:** Poly/KK/TVET/PISMP courses get no automated refresh until the crosswalk (3b) lands; new MOHE-coded
+courses are reported but not auto-added (requirements parsing = 3c). Adding `is_active` without a read filter means
+deactivated SPM courses still render until a later sprint wires the filter — accepted to keep the golden master provably
+untouched this sprint.
+
+**Revisit if:** the Poly/KK merit/links go materially stale (build 3b), or new UA/Asasi programmes appear often enough
+to want auto-add with parsed requirements (build 3c), or a sponsor/advisory view needs inactive SPM courses hidden
+(wire the `is_active` read filter, mirroring `StpmCourse`).
+
 
 ## Operational reminders stay email/Cloud-Scheduler — no in-app notification system yet — 2026-06-12
 

@@ -188,6 +188,24 @@ UP_TVET covers ~12 ministries / 685 institutions; we hold only ILJTM (ADTEC/JTM)
 courses. **No DB writes** — this is the decision-data step before a (golden-master-adjacent) TVET INGEST sprint.
 Codes (`TVET/QP…`) don't match our synthetic `IJTM-*`/`IKBN-*` IDs, and the portal mixes Awam/Swasta — see
 `docs/roadmap-course-data-pipeline.md` (UP_TVET track) + `docs/decisions.md`.
+### Annual SPM Data Refresh (post-SPM `Course` catalogue — MOHE-coded subset only)
+
+```bash
+# 1. Scrape the SPM track (current year). Same scraper, --jenprog spm.
+python manage.py scrape_mohe_stpm --jenprog spm --category A --output data/spm/mohe_2027.csv
+#    (--max-pages N for a quick parser-validation spike; do NOT sync a --max-pages CSV)
+
+# 2. Dry-run diff (report only — restricted to MOHE-coded UA/Asasi courses; synthetic-ID Poly/KK/TVET/PISMP excluded)
+python manage.py sync_spm_mohe --csv data/spm/mohe_2027.csv
+
+# 3. Apply (deactivate removed / reactivate returned / update merit; mass-deactivation guard; --force to override)
+python manage.py sync_spm_mohe --csv data/spm/mohe_2027.csv --apply
+```
+
+**Scope:** `sync_spm_mohe` only touches courses whose `course_id` is a MOHE KOD PROGRAM (`^[A-Z]{2}[0-9]{7}$`, ~89
+UA/Asasi). The ~300 synthetic-ID courses (`POLY-*`/`KKOM-*`/`TVET-*`/`50PD…`) are excluded (they need a name crosswalk —
+roadmap Sprint 3b). New MOHE-coded courses are **reported, not auto-added** (requirements parsing = Sprint 3c). `is_active`
+is set by the sync but **not yet read-filtered** anywhere. See `docs/roadmap-course-data-pipeline.md` + `docs/decisions.md`.
 
 ### CRITICAL: Pre-Deploy Checklist
 
@@ -228,6 +246,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/utils.py` | Shared utilities (proper_case_name, build_mohe_url) | No |
 | `apps/courses/management/commands/scrape_mohe_stpm.py` | MOHE ePanduan scraper (annual) | No |
 | `apps/courses/management/commands/sync_stpm_mohe.py` | STPM data sync with diff report | No |
+| `apps/courses/management/commands/sync_spm_mohe.py` | SPM `Course` sync (MOHE-coded UA/Asasi subset; restriction + mass-deactivation guard) | No |
 | `apps/courses/management/commands/validate_stpm_urls.py` | Dead link checker | No |
 | `apps/courses/management/commands/scrape_uptvet.py` | UP_TVET catalogue scraper (mohon.tvet.gov.my → CSV; no DB writes) | No |
 | `apps/courses/management/commands/audit_uptvet.py` | UP_TVET coverage inventory (Awam/Swasta split, new-vs-held; no DB writes) | No |

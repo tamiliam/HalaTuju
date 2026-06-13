@@ -72,6 +72,13 @@ class Course(models.Model):
     headline_en = models.TextField(blank=True, default='', help_text="English headline")
     description = models.TextField(blank=True)
     description_en = models.TextField(blank=True, default='', help_text="English description/synopsis")
+    is_active = models.BooleanField(
+        default=True,
+        help_text="False = MOHE no longer lists this programme (soft-delete, never hard-deleted; "
+                  "see docs/decisions.md). Set by sync_spm_mohe. NOTE: read paths are intentionally "
+                  "NOT yet filtered by this — detail/search still show inactive courses until a "
+                  "later sprint wires the filter (mirrors StpmCourse), so the golden master is unaffected.",
+    )
 
     # Career pathway: links to MASCO occupation codes
     career_occupations = models.ManyToManyField(
