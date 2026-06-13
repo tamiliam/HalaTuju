@@ -8,7 +8,7 @@ from .views_admin import (
     AdminListView, AdminRevokeView, AdminProfileView,
     PartnerDashboardView, PartnerStudentListView,
     PartnerStudentDetailView, PartnerStudentExportView,
-    AdminCourseDataView,
+    AdminCourseDataView, AdminCourseDataCheckView,
 )
 
 urlpatterns = [
@@ -24,6 +24,7 @@ urlpatterns = [
     path('admin/admins/<int:admin_id>/revoke/', AdminRevokeView.as_view(), name='admin-revoke'),
     path('admin/profile/', AdminProfileView.as_view(), name='admin-profile'),
     path('admin/course-data/', AdminCourseDataView.as_view(), name='admin-course-data'),
+    path('admin/course-data/check/', AdminCourseDataCheckView.as_view(), name='admin-course-data-check'),
 
     # Eligibility check (main engine endpoint)
     path('eligibility/check/', views.EligibilityCheckView.as_view(), name='eligibility-check'),

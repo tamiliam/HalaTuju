@@ -994,3 +994,8 @@ export interface CourseDataStatusResponse {
 export async function getCourseDataStatus(options?: ApiOptions): Promise<CourseDataStatusResponse> {
   return adminFetch<CourseDataStatusResponse>('/api/v1/admin/course-data/', options)
 }
+
+/** Run the read-only health check (audit + link reachability) now; returns the refreshed status. */
+export async function runCourseDataCheck(options?: ApiOptions): Promise<CourseDataStatusResponse> {
+  return adminMutate<CourseDataStatusResponse>('/api/v1/admin/course-data/check/', 'POST', {}, options)
+}

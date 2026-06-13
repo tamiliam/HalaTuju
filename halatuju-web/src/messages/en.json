@@ -3154,7 +3154,10 @@
         "epanduan_spm": "e-Panduan · SPM",
         "uptvet": "UP_TVET",
         "emasco": "eMASCO (jobs)"
-      }
+      },
+      "runCheck": "Run health check now",
+      "checking": "Checking…",
+      "runCheckHint": "Read-only: re-checks links + audit (~1 min). No catalogue changes."
     }
   }
 }

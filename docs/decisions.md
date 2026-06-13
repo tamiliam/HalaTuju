@@ -1,5 +1,29 @@
 # Architectural Decisions — HalaTuju
 
+## Course-data health monitoring: READ-ONLY (no catalogue writes), concurrent in-request check, weekly cron + manual button — Course Data health, 2026-06-13
+
+**Decision:** Keep the dashboard's freshness/link-health/audit current via a **read-only** check that runs **weekly
+(cron)** and **on demand (a super/admin button)**. The check = `audit_data` + `validate_course_urls` **without `--fix`**;
+it parallelises the ~650 link GETs (`--workers`) so it finishes in <1 min inside a single Cloud Run request. The browser
+catalogue scrapes stay manual/local and only ever dry-run.
+
+**Alternatives considered:** (1) A Cloud Run Job for the long link-check (no request-timeout limit). (2) Sequential
+in-request check (risks the ~300s timeout at 650 URLs). (3) Concurrent in-request check + weekly cron + sync button
+(chosen). (4) Update-triggers from the UI (rejected — owner wants reporting only, no overwrite).
+
+**Rationale:** Owner intent is explicit: *monitor* freshness/links, **never update/overwrite**. Read-only by
+construction (no `--fix`, no `--apply`, no scrape) means no UI/cron path can mutate the catalogue. Concurrency turns the
+651-URL check into a sub-minute request, so neither the cron endpoint nor the synchronous admin button needs a separate
+Cloud Run Job — minimal infra. Manual trigger is gated super/admin because it issues ~650 outbound requests.
+
+**Trade-offs:** The cron only covers the server-runnable reporters (audit + link reachability); STPM/SPM/UP_TVET
+*catalogue* freshness (new/changed programmes) still updates only when the owner runs the browser scrapes locally (dry-run).
+A ~650-URL synchronous button is ~30–60s (acceptable with a spinner).
+
+**Revisit if:** the catalogue URL set grows ~10× (move the check to a Cloud Run Job), or the owner later wants UI-driven
+*updating* (the deferred Dashboard "Sprint B" triggers — explicitly out of scope here).
+
+
 ## UP_TVET coverage: scrape + inventory FIRST (no DB writes); ingest deferred; coverage matched by institution name — UP_TVET Sprint 1, 2026-06-13
 
 **Decision:** The first UP_TVET sprint builds only the scraper (`scrape_uptvet`) + a no-write coverage

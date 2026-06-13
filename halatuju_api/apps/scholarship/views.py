@@ -1020,6 +1020,7 @@ class CronRunView(APIView):
         'rescore-pending': 'rescore_pending_decisions',  # on-demand after a policy change
         'backup-documents': 'backup_documents',  # weekly: mirror the private doc bucket to GCS
         'refresh-reminder': 'send_refresh_reminder',  # annual: nudge the admin to refresh the course catalogue
+        'course-data-check': 'course_data_check',  # weekly: READ-ONLY audit + link reachability for the dashboard
     }
 
     def post(self, request, job):
