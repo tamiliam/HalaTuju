@@ -3184,7 +3184,12 @@
         "conn": "Sambungan gagal",
         "badurl": "URL tidak sah",
         "other": "Lain-lain"
-      }
+      },
+      "broken": "Rosak",
+      "couldntVerify": "Tidak dapat disahkan",
+      "brokenHeader": "Rosak — perlu dibetulkan",
+      "unverifiedHeader": "Tidak dapat disahkan",
+      "unverifiedHint": "Hampir pasti hidup — hanya terlalu perlahan atau disekat daripada pemeriksa kami, bukan tugasan."
     }
   }
 }

@@ -3184,7 +3184,12 @@
         "conn": "Connection failed",
         "badurl": "Malformed URL",
         "other": "Other"
-      }
+      },
+      "broken": "Broken",
+      "couldntVerify": "Couldn't verify",
+      "brokenHeader": "Broken — fix these",
+      "unverifiedHeader": "Couldn't verify",
+      "unverifiedHint": "Almost certainly live — these were just too slow or blocked from our checker, not a to-do."
     }
   }
 }

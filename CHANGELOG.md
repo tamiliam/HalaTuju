@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Course-data link health — 19 genuinely-broken institution URLs corrected + checker false-positives killed.**
+  *Data (live, via MCP, audited; no deploy):* all 15 matriculation-college URLs were stored as the bare subdomain
+  `https://X.matrik.edu.my`, which has no DNS record — the live sites require `www.` (`http://www.X.matrik.edu.my`).
+  Re-pointed all 15 (each verified live in a local browser). Plus 4 owner-flagged links: Politeknik Besut
+  (`bit.ly` shortlink → `polibesut.mypolycc.edu.my`), KK Raub (stale Facebook → `sites.google.com/kkraub.edu.my/main`),
+  KK Tanjung Karang (malformed "url atau url" → single `kktanjongkarang.mypolycc.edu.my`), and UMP→UMPSA
+  (`ump.edu.my` → `umpsa.edu.my/en`).
+  *Code (this branch):* the dashboard's link-health check was crying wolf — MY gov/edu portals (IPG, matriculation,
+  polytechnics) routinely take 10-15s to first byte from Cloud Run, so a 10s budget false-flagged dozens of live
+  sites as "connection failed". `check_url` now **retries a transient (timeout/conn) failure once**, the health check's
+  per-URL timeout is raised **10s → 20s**, and failures are split into two **severities**: genuinely **Broken**
+  (gone / DNS-not-found / malformed — actionable) vs **Couldn't verify** (timeout / connection — almost certainly
+  alive, just slow/blocked from the checker; informational, not a to-do). The dashboard headline now counts Broken
+  only; the "Problem links" drill-down groups under the two severities. Reporting-only — no catalogue writes from the
+  check. +3 backend tests (1111 courses pytest pass), i18n parity en/ms/ta (added `broken`/`couldntVerify`/
+  `brokenHeader`/`unverifiedHeader`/`unverifiedHint`).
+
 ### Changed
 - **Cockpit Check-2 / Interview-Stage split (Check-2/Check-3 redesign, Sprint 1 of 4; FE + i18n, no schema change).**
   The officer cockpit's "Outstanding" box previously merged *student-facing* Check-2 tasks (resolution items) with

@@ -52,12 +52,25 @@ export default function CourseDataDashboard() {
   const audit = statuses['audit']
   const dash = '—'
 
-  // Problem links: the failing URLs the last check recorded, grouped by reason for triage.
+  // Problem links: the failing URLs the last check recorded. Split into two SEVERITIES so the
+  // dashboard stops crying wolf — genuinely BROKEN (actionable) vs COULDN'T-VERIFY (slow/blocked
+  // from the server, almost certainly alive). Counts come from the recorded summary when present.
   const failures: LinkFailure[] = linkHealth?.summary?.failures ?? []
-  const REASONS = ['gone', 'dns', 'timeout', 'conn', 'badurl']
-  const groups = REASONS.map(k => ({ kind: k, items: failures.filter(f => f.kind === k) })).filter(g => g.items.length)
-  const other = failures.filter(f => !REASONS.includes(f.kind))
-  if (other.length) groups.push({ kind: 'other', items: other })
+  const BROKEN_KINDS = ['gone', 'dns', 'badurl']
+  const brokenFailures = failures.filter(f => BROKEN_KINDS.includes(f.kind))
+  const unverifiedFailures = failures.filter(f => !BROKEN_KINDS.includes(f.kind))
+  const brokenCount = Number(linkHealth?.summary?.broken ?? brokenFailures.length)
+  const unverifiedCount = Number(linkHealth?.summary?.unverified ?? unverifiedFailures.length)
+
+  const groupByReason = (items: LinkFailure[], reasons: string[]) => {
+    const gs = reasons.map(k => ({ kind: k, items: items.filter(f => f.kind === k) })).filter(g => g.items.length)
+    const known = new Set(reasons)
+    const other = items.filter(f => !known.has(f.kind))
+    if (other.length) gs.push({ kind: 'other', items: other })
+    return gs
+  }
+  const brokenGroups = groupByReason(brokenFailures, ['gone', 'dns', 'badurl'])
+  const unverifiedGroups = groupByReason(unverifiedFailures, ['timeout', 'conn'])
 
   const downloadCsv = () => {
     const rows = [['reason', 'url', 'http', 'institutions', 'rows'],
@@ -69,6 +82,31 @@ export default function CourseDataDashboard() {
     a.click()
     URL.revokeObjectURL(a.href)
   }
+
+  const renderGroups = (gs: { kind: string; items: LinkFailure[] }[], openFirst: boolean) =>
+    gs.map((g, gi) => (
+      <details key={g.kind} className="border rounded-lg" open={openFirst && gi === 0}>
+        <summary className="cursor-pointer px-4 py-2 text-sm font-medium flex justify-between items-center">
+          <span>{t(`admin.courseData.reason.${g.kind}`)}</span>
+          <span className="text-gray-500">{g.items.length}</span>
+        </summary>
+        <ul className="divide-y border-t">
+          {g.items.map((f, i) => (
+            <li key={i} className="px-4 py-2">
+              <p className="text-sm text-gray-800">
+                {f.institutions.join(', ') || dash}
+                {f.refs > 1 && <span className="text-gray-400"> · {f.refs} {t('admin.courseData.rows')}</span>}
+              </p>
+              <a href={f.url.startsWith('http') ? f.url : `https://${f.url}`}
+                 target="_blank" rel="noopener noreferrer"
+                 className="text-xs text-blue-600 hover:underline break-all">
+                {f.url}{f.detail ? ` (${f.detail})` : ''}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </details>
+    ))
 
   return (
     <div>
@@ -177,8 +215,8 @@ export default function CourseDataDashboard() {
                 </p>
                 <ul className="text-sm space-y-1">
                   <li className="flex justify-between"><span>{t('admin.courseData.alive')}</span><span className="text-green-600">{linkHealth.summary.alive ?? dash}</span></li>
-                  <li className="flex justify-between"><span>{t('admin.courseData.dead')}</span><span className={Number(linkHealth.summary.dead) > 0 ? 'text-red-600 font-medium' : ''}>{linkHealth.summary.dead ?? dash}</span></li>
-                  <li className="flex justify-between"><span>{t('admin.courseData.errors')}</span><span className="text-gray-500">{linkHealth.summary.errors ?? dash}</span></li>
+                  <li className="flex justify-between"><span>{t('admin.courseData.broken')}</span><span className={brokenCount > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}>{brokenCount}</span></li>
+                  <li className="flex justify-between"><span>{t('admin.courseData.couldntVerify')}</span><span className="text-gray-500">{unverifiedCount}</span></li>
                   {Number(linkHealth.summary.insecure) > 0 && (
                     <li className="flex justify-between text-gray-400"><span>{t('admin.courseData.insecure')}</span><span>{linkHealth.summary.insecure}</span></li>
                   )}
@@ -203,41 +241,35 @@ export default function CourseDataDashboard() {
         </div>
       </div>
 
-      {/* Problem links — the failing URLs from the last check, grouped by reason */}
+      {/* Problem links — split into BROKEN (actionable) and COULDN'T-VERIFY (slow/blocked, likely alive) */}
       {failures.length > 0 && (
         <div className="bg-white rounded-lg p-6 shadow-sm border mb-8">
           <div className="flex items-center justify-between mb-1">
-            <h2 className="font-semibold">{t('admin.courseData.problemLinks')} ({failures.length})</h2>
+            <h2 className="font-semibold">{t('admin.courseData.problemLinks')}</h2>
             <button onClick={downloadCsv} className="text-sm text-blue-600 hover:underline">
               {t('admin.courseData.downloadCsv')}
             </button>
           </div>
           <p className="text-xs text-gray-400 mb-4">{t('admin.courseData.problemLinksHint')}</p>
-          <div className="space-y-3">
-            {groups.map(g => (
-              <details key={g.kind} className="border rounded-lg" open={g.kind === 'gone'}>
-                <summary className="cursor-pointer px-4 py-2 text-sm font-medium flex justify-between items-center">
-                  <span>{t(`admin.courseData.reason.${g.kind}`)}</span>
-                  <span className="text-gray-500">{g.items.length}</span>
-                </summary>
-                <ul className="divide-y border-t">
-                  {g.items.map((f, i) => (
-                    <li key={i} className="px-4 py-2">
-                      <p className="text-sm text-gray-800">
-                        {f.institutions.join(', ') || dash}
-                        {f.refs > 1 && <span className="text-gray-400"> · {f.refs} {t('admin.courseData.rows')}</span>}
-                      </p>
-                      <a href={f.url.startsWith('http') ? f.url : `https://${f.url}`}
-                         target="_blank" rel="noopener noreferrer"
-                         className="text-xs text-blue-600 hover:underline break-all">
-                        {f.url}{f.detail ? ` (${f.detail})` : ''}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            ))}
-          </div>
+
+          {brokenGroups.length > 0 && (
+            <div className="mb-5">
+              <h3 className="text-sm font-semibold text-red-600 mb-2">
+                {t('admin.courseData.brokenHeader')} ({brokenCount})
+              </h3>
+              <div className="space-y-3">{renderGroups(brokenGroups, true)}</div>
+            </div>
+          )}
+
+          {unverifiedGroups.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 mb-1">
+                {t('admin.courseData.unverifiedHeader')} ({unverifiedCount})
+              </h3>
+              <p className="text-xs text-gray-400 mb-2">{t('admin.courseData.unverifiedHint')}</p>
+              <div className="space-y-3">{renderGroups(unverifiedGroups, false)}</div>
+            </div>
+          )}
         </div>
       )}
 
