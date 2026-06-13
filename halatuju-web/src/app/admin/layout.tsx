@@ -56,12 +56,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const students = { href: '/admin/students', label: t('admin.students') }
   const scholarship = { href: '/admin/scholarship', label: t('admin.scholarship.nav') }
   const sponsors = { href: '/admin/sponsors', label: t('admin.sponsors.nav') }
+  const courseData = { href: '/admin/course-data', label: t('admin.courseData.nav') }
   const invite = { href: '/admin/invite', label: t('admin.invite') }
   const profile = { href: '/admin/profile', label: t('admin.profile') }
   const navLinks =
     r === 'partner' ? [dashboard, students, profile]
     : r === 'reviewer' ? [scholarship, profile]
-    : [dashboard, students, scholarship, sponsors, ...(r === 'super' ? [invite] : []), profile]  // super + admin
+    : [dashboard, students, scholarship, sponsors, courseData, ...(r === 'super' ? [invite] : []), profile]  // super + admin
 
   return (
     <div className="min-h-screen bg-gray-50">

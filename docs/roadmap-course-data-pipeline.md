@@ -50,8 +50,8 @@ classification doc, slow-moving).
 
 ### NEW work items (extend the sprint list below)
 - **UP_TVET coverage (the confirmed gap) — split on build (2026-06-13):**
-  - **UP_TVET Sprint 1 — scraper + coverage inventory · ✅ BUILT 2026-06-13** (branch `uptvet-coverage`; NO DB write,
-    NO migration; deploy = owner, merges as harmless admin tooling). `scrape_uptvet` (paginated catalogue → CSV: code,
+  - **UP_TVET Sprint 1 — scraper + coverage inventory · ✅ SHIPPED 2026-06-13** (merged to `main`; NO DB write,
+    NO migration). `scrape_uptvet` (paginated catalogue → CSV: code,
     name, kategori, institution, **sektor Awam/Swasta**, fees, `id_kursus`, detail URLs; `--max-pages`) + `audit_uptvet`
     (total / Awam-Swasta / by-institution / new-vs-held). +9 tests. Live-validated: ~1000 programmes; a 200-sample is
     ~82% Awam and ~39% from providers we lack (agriculture, MARA, craft, regional colleges). **Spike findings:** codes
@@ -61,13 +61,20 @@ classification doc, slow-moving).
     the inventory first to settle **`Sektor = Awam` only vs include Swasta** (owner) + the per-institution priority; pick
     the course_id scheme (likely the portal `id_kursus`); decide a TVET requirements strategy (parse Semak-Kelayakan
     pages vs a conservative default). New `CourseRequirement` rows feed the eligibility DataFrame → careful validation.
-- **Sprint 6 — "Course Data" admin dashboard (the reporting + updating SYSTEM):** a `/admin/course-data` page.
-  - **Reporting** (all server-side): catalogue counts, **freshness per source** (e-Panduan / UP_TVET / eMASCO), link
-    health, audit gaps. Mirrors `AdminVerdictMetricsView`. Needs a small status model to store last-refresh/last-check.
-  - **Updating triggers** (hybrid): server-runnable buttons — **Run audit**, **Check links** (`validate_course_urls`,
-    async — slow), **Apply a refresh** (`sync_stpm_mohe --apply` from an **uploaded CSV**, guarded). The **scrape stays
-    local** (run `refresh_stpm` on the laptop → upload the CSV) since it needs a browser. Mirrors `AdminRunVisionView` +
-    `CronRunView`. (Option B — a Chromium Cloud Run Job for server-side scraping — only if the laptop step is worth removing.)
+    **Carry:** instrument `scrape_uptvet`/`audit_uptvet` to call `record_status('uptvet', …)` so the dashboard's UP_TVET
+    card stops reading "never run".
+- **"Course Data" admin dashboard — split on build (owner: "build tools, then a dashboard for decisions — no harvesting now"):**
+  - **Dashboard Sprint 1 — REPORTING-ONLY · ✅ BUILT 2026-06-13** (branch `course-data-dashboard`; migration
+    `0054_coursedatastatus`; deploy = owner). `/admin/course-data` page (super/admin): freshness strip (e-Panduan
+    STPM/SPM · UP_TVET · eMASCO, last-run + count + "never run"), coverage table (have/available/gap, live), link-health +
+    audit cards. `CourseDataStatus` store + `coverage_snapshot()`; `refresh_stpm`/`validate_course_urls`/`audit_data` record
+    status (best-effort). `GET /api/v1/admin/course-data/`. **NO run-triggers** (honours "no harvesting"). +8 tests; next build
+    clean; jest 306; parity 2600×3. **Carry:** instrument `sync_spm_mohe` + `scrape_uptvet`/`audit_uptvet` to call
+    `record_status` when those branches merge (else their cards stay "never run"); migration parallels `spm-catalogue`'s 0054.
+  - **Dashboard Sprint 2 — UPDATE TRIGGERS (hybrid, DEFERRED):** server-runnable buttons — **Run audit**, **Check links**
+    (`validate_course_urls`, async), **Apply a refresh** (`sync_stpm_mohe --apply` from an **uploaded CSV**, guarded). The
+    **scrape stays local** (run on the laptop → upload CSV). Mirrors `AdminRunVisionView` + `CronRunView`. Build only when the
+    owner wants harvesting/updating from the UI. (Option B — a Chromium Cloud Run Job — only if the laptop step is worth removing.)
   - This is the focused "dashboard freshness strip" anticipated in `decisions.md`, not a general notification framework.
 
 ---

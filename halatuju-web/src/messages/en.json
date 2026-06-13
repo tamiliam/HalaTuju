@@ -2043,7 +2043,6 @@
     "angkaGiliran": "Angka Giliran",
     "angkaGiliranHelper": "Your university application reference number (e.g. AB123C456)",
     "angkaGiliranInvalid": "Wrong format — must be AB123C456 (2 letters, 3 digits, 1 letter, 3 digits)",
-    "school": "School",
     "optional": "optional",
     "applicationTracking": "Application Tracking",
     "notSet": "Not set — tap to add",
@@ -3127,6 +3126,35 @@
       "admin": "Sees every page — view-only for now.",
       "partner": "An organisation's representative — sees only their own organisation's students.",
       "reviewer": "An individual reviewer — sees only the applicants assigned to them, and makes the final decision."
+    },
+    "courseData": {
+      "nav": "Course Data",
+      "title": "Course Data",
+      "subtitle": "Freshness and coverage across the course-data sources. Read-only.",
+      "freshness": "Freshness",
+      "coverage": "Coverage",
+      "linkHealth": "Link health",
+      "audit": "Data audit",
+      "never": "Never run",
+      "lastRun": "Last run",
+      "refreshVia": "Refresh via",
+      "have": "Have",
+      "available": "Available",
+      "gap": "Gap",
+      "source": "Source",
+      "courses": "courses",
+      "alive": "Alive",
+      "dead": "Dead",
+      "errors": "Errors",
+      "notRunYet": "Not refreshed yet",
+      "uptvetHint": "Run scrape_uptvet + audit_uptvet to populate the UP_TVET available/gap figures.",
+      "readOnlyNote": "Read-only. The refresh tools run locally; this page reports their last recorded result.",
+      "src": {
+        "epanduan_stpm": "e-Panduan · STPM",
+        "epanduan_spm": "e-Panduan · SPM",
+        "uptvet": "UP_TVET",
+        "emasco": "eMASCO (jobs)"
+      }
     }
   }
 }
