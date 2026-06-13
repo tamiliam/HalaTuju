@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Course-data pipeline Sprint 3 (re-scoped to "3a") — post-SPM catalogue refresh, MOHE-coded subset.** The MOHE
+  e-Panduan scraper now serves the SPM track too: `scrape_mohe_stpm --jenprog spm` (default `stpm` unchanged) with
+  `--max-pages N` for validation spikes and SPM categories (A=current year, B=past). New `sync_spm_mohe` command
+  refreshes the **89 MOHE-coded (UA/Asasi) `Course`s** — reports new (never auto-adds), deactivates removed /
+  reactivates returned behind the mass-deactivation guard, updates merit (→ `CourseRequirement.merit_cutoff`). New
+  `Course.is_active` field (migration `0054`, additive — **no read-path filter yet**, golden master untouched). The
+  ~300 synthetic-ID courses (POLY-*/KKOM-*/TVET-*/PISMP) are deliberately **excluded** from the diff (they use internal
+  codes e-Panduan never emits; bridging them = a future crosswalk sprint). +29 tests (1076 courses pytest, 0 failures).
 - **Document slot model — per-person income-doc tagging (TD-115, Sprint 1; data migration, no schema change).** Foundation
   for 27 fixed `(doc_type × person)` slots so every upload lands in exactly one slot and a re-upload overwrites it — fixing
   the "one IC shows under every earner" and "duplicate Mother's IC" bugs. Built **tolerant-then-tighten** for a zero-downtime

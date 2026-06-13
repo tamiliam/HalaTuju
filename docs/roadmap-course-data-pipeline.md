@@ -1,8 +1,19 @@
 # Roadmap — Course-Data Freshness Pipeline
 
-**Status:** APPROVED + IN PROGRESS. **Sprints 1 & 2 SHIPPED & LIVE 2026-06-13.** `NEXT = Sprint 3` (post-SPM catalogue
-via e-Panduan `jenprog=spm` — the big win, de-risked by the spike) — do when the owner picks it up. Decomposed via
-`implementation-planning.md`. **Owner decision still needed before Sprint 4** (degree candidate-category completeness).
+**Status:** APPROVED + IN PROGRESS. **Sprints 1 & 2 SHIPPED & LIVE 2026-06-13.** **Sprint 3 re-scoped to "3a" + BUILT
+2026-06-13** (on branch `spm-catalogue`; migration `0054` NOT yet applied to prod — ships on the owner's next deploy,
+migrate-first). `NEXT = deploy 3a` (owner), then Sprint 3b (synthetic-ID crosswalk) or 3c (SPM requirement parser).
+Decomposed via `implementation-planning.md`.
+
+> **⚠️ Sprint 3 scope correction (2026-06-13).** The "mirror `sync_stpm_mohe` over the SPM catalogue" plan was based on a
+> spike that validated only the **scrape card structure**, not the **sync target**. On building, two gaps surfaced:
+> (1) the SPM `Course` model is shaped differently from `StpmCourse` (merit in `CourseRequirement`, URL in
+> `CourseInstitution`, no `is_active`); (2) only **89 of 390** SPM courses carry MOHE KOD PROGRAM codes — the other ~300
+> use internal `POLY-*`/`KKOM-*`/`TVET-*`/`50PD…` schemes e-Panduan never emits, so a whole-catalogue diff would flag
+> them all as "removed". Sprint 3 was therefore **split** (owner-approved): **3a** = the 89 MOHE-coded UA/Asasi courses
+> (BUILT — scraper `--jenprog spm`, `Course.is_active` migration `0054`, `sync_spm_mohe` restricted + guarded, +29 tests);
+> **3b** = a name+institution crosswalk for the synthetic-ID courses; **3c** = the SPM requirement-page parser (to
+> auto-add new courses). See `decisions.md` + `retrospective-course-data-sprint3.md`.
 
 ---
 
@@ -106,7 +117,17 @@ advisory recommendations**, not B40 integrity. This lets us build proportionatel
   "stale/last-verified" section; tests for the checker + audit additions.
 - **Files:** ~4–6.
 
-### Sprint 3 — Post-SPM catalogue via e-Panduan `jenprog=spm`  ·  *complexity: medium*  ·  **(was 2 high sprints — collapsed after the 2026-06-12 spike)**
+### Sprint 3 — Post-SPM catalogue via e-Panduan `jenprog=spm`  ·  **SPLIT 3a/3b/3c on build (see scope-correction box at top)**
+- **3a — MOHE-coded (UA/Asasi) subset · ✅ BUILT 2026-06-13** (branch `spm-catalogue`; deploy = owner, migrate-first `0054`).
+  `scrape_mohe_stpm --jenprog spm` + `--max-pages`; `Course.is_active` (`0054`, additive, no read filter yet);
+  `sync_spm_mohe` restricted to `^[A-Z]{2}[0-9]{7}$`, mass-deactivation guard, merit→`CourseRequirement.merit_cutoff`,
+  new reported-not-added. +29 tests. Live-validated the `spm` parser (363 programmes, page 1 clean, MOHE codes + merit + URLs).
+- **3b — synthetic-ID crosswalk (PENDING):** map MOHE KOD PROGRAM ↔ our `POLY-*`/`KKOM-*`/`TVET-*`/`50PD…` IDs by
+  name+institution so the ~300 non-MOHE-coded courses can sync. Riskier (false-merge into golden-master eligibility).
+- **3c — SPM requirement-page parser (PENDING):** parse e-Panduan `spm` requirement detail pages → the 60-boolean
+  `CourseRequirement` schema, to auto-add new MOHE-coded courses (currently reported-not-added). Golden-master-adjacent.
+
+_Original Sprint 3 plan (kept for 3b/3c reference):_
 - **SPIKE RESULT (confirmed live):** e-Panduan exposes exactly two `jenprog` values — `stpm` and
   **`spm`**. The `spm` branch (Asasi/diploma/cert at Poly/KK/UA) is **2 categories** (`A` current-year
   = 363 programmes, `B` past-year) and uses the **identical card structure** the existing scraper
