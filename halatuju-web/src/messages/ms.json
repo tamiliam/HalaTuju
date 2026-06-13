@@ -2460,6 +2460,7 @@
       "consentNone": "Tiada persetujuan aktif lagi.",
       "none": "Tiada lagi.",
       "profileTitle": "Profil penaja (draf AI)",
+      "profileDraftHint": "Dirangka secara automatik semasa penyerahan Semakan 2 → Penyemak. Profil akhir yang digilap dijana daripada penemuan temu duga anda selepas Semakan 3 dihantar.",
       "generate": "Jana profil",
       "generating": "Menjana…",
       "regenerate": "Jana semula",

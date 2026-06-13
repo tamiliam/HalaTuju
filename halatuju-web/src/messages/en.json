@@ -2460,6 +2460,7 @@
       "consentNone": "No active consent yet.",
       "none": "None yet.",
       "profileTitle": "Sponsor profile (AI draft)",
+      "profileDraftHint": "Auto-drafted at the Check 2 → Reviewer handoff. The final polished profile is generated from your interview findings after Check 3 is submitted.",
       "generate": "Generate profile",
       "generating": "Generating…",
       "regenerate": "Regenerate",

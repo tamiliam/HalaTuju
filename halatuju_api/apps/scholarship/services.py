@@ -492,6 +492,22 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     application.assigned_to = reviewer
     application.assigned_at = now if reviewer is not None else None
     application.save(update_fields=['assigned_to', 'assigned_at'])
+
+    # Check-2 → Reviewer handoff: auto-draft the sponsor profile so the reviewer lands on
+    # a ready profile to orient from (the owner's design). Fires only on the FIRST
+    # assignment, reuses the STEP-3 generator (idempotent; omits unresolved claims), and is
+    # gated behind the SAME CHECK2_AUTO_GENERATE flag as the sweep — so it stays dark (no
+    # billable Gemini calls) until deliberately switched on, and never re-drafts an existing
+    # profile. Best-effort: a generation failure or AI outage must never block the handoff.
+    if reviewer is not None and current is None:
+        from django.conf import settings as _settings
+        if getattr(_settings, 'CHECK2_AUTO_GENERATE', False):
+            sp = getattr(application, 'sponsor_profile', None)
+            if sp is None or sp.generated_at is None:
+                try:
+                    generate_ready_profile(application)
+                except Exception:
+                    pass  # never let profile drafting break the assignment
     return application
 
 

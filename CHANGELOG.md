@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   slot, **closing the deferred salary-route Action-Centre tagging gap** (no schema change; STR-route income
   docs are still re-tagged from `income_earner` server-side). +2 backend tests (1202 scholarship pytest),
   parity 2863×3 (added `requestDoc*` keys).
+- **Student-profile box + auto-draft at the reviewer handoff (Check-2/Check-3 redesign, Sprint 3 of 4; backend + FE + i18n, no migration).**
+  The sponsor/student profile already sits in its own box directly below the Verification verdict, with the
+  student's-own-words collapsed beneath it. S3 adds (1) an **info strip** explaining the draft is auto-drafted at the
+  Check-2 → Reviewer handoff and the final polished profile is generated from interview findings after Check 3, and
+  (2) **event-triggered auto-draft at handoff** — `assign_reviewer` now calls the existing idempotent
+  `generate_ready_profile` on the **first** assignment, reusing the `CHECK2_AUTO_GENERATE` flag (default **OFF**, so
+  dark / no billable Gemini calls until switched on) and never re-drafting an existing profile; best-effort (a
+  generation failure never blocks the assignment). +3 backend tests (1205 scholarship pytest), jest 306, `next build`
+  clean, parity 2864×3 (added `profileDraftHint`).
 
 ### Added
 - **Document slot model — per-person income-doc tagging (TD-115, Sprint 1; data migration, no schema change).** Foundation
