@@ -4,6 +4,54 @@
 via e-Panduan `jenprog=spm` — the big win, de-risked by the spike) — do when the owner picks it up. Decomposed via
 `implementation-planning.md`. **Owner decision still needed before Sprint 4** (degree candidate-category completeness).
 
+---
+
+## 2026-06-13 — refined model: 3 sources, resilience, a TVET gap, and a dashboard
+After investigating the portals + data.gov.my, the picture sharpened from "one scrape" to **three sources**, with one
+material coverage gap and a clearer "system" shape (reporting + updating). This section governs; the sprint list below
+is extended accordingly.
+
+### The 3-source model (course data depends on THREE external sources, not one)
+| Source | Feeds | Fragility | Coverage today |
+|---|---|---|---|
+| **MOHE e-Panduan** (`online.mohe.gov.my/epanduan`) | SPM + STPM catalogue, entry requirements, merit | High (JS scrape) | STPM ✅ · SPM partial (Sprint 3 fills) |
+| **UP_TVET** (`mohon.tvet.gov.my/awam-kursus/katalog` — **public, no login**) | TVET catalogue across **12 ministries / 685 institutions** | High (scrape) | **~2–3 ministries only — big gap** |
+| **eMASCO** (`emasco.mohr.gov.my`, MOHR) | course → MASCO occupation code → job | **Low** (published standard, ~rare updates) | loaded; refresh seldom |
+
+**No official feed exists for the catalogue.** data.gov.my / OpenDOSM publish *statistics*, not the programme-level
+catalogue (course lists + requirements + merit) — so scraping stays the only route. MASCO is the exception (a published
+classification doc, slow-moving).
+
+### Source resilience posture (the "spigot could be cut off" risk)
+- **Already decoupled:** the site serves from the **database**; scrapes only *update* it. A source going dark degrades
+  **freshness over time**, never **availability**. This is the key fact.
+- **Permanent versioned snapshots:** keep the raw scraped data + structured CSV forever (Sprint 1's dated archive starts
+  this) → always a last-known-good to recover/diff from.
+- **Loud failure + visible staleness:** the scrape sanity-guard fails loudly; the dashboard shows freshness. No silent rot.
+- **No feed to migrate to** for the catalogue; **fallback** = the institution umbrella sites if a central portal dies.
+
+### Data organisation — DECIDED (owner, 2026-06-13)
+**Backend stays COARSE; frontend DERIVES the finer pathways.** BE `source_type` buckets; FE displays the 9 chips.
+- BE `ua` = **Asasi + UA diploma** (FE shows as two chips).
+- BE `tvet` = **ILKBS + ILJTM + MARA + Agriculture + other UP_TVET ministries** (FE can split). **No re-architecture** —
+  the existing derived-pathway model is correct; missing sources just fold into the right BE bucket.
+- Axes: ENTRY qualification (SPM `courses` vs STPM `stpm_courses`) × DESTINATION pathway (`source_type`) × FIELD (`field_key`).
+
+### NEW work items (extend the sprint list below)
+- **Sprint 3b — UP_TVET coverage (the confirmed gap):** scrape the public UP_TVET catalogue → fold into the BE `tvet`
+  bucket, **`Sektor = Awam` only** (public-only scope; private TVET is a scope decision — flag to owner). Mirrors the
+  e-Panduan scrape→sanity→sync pattern + guards. Sibling to Sprint 3.
+- **Sprint 6 — "Course Data" admin dashboard (the reporting + updating SYSTEM):** a `/admin/course-data` page.
+  - **Reporting** (all server-side): catalogue counts, **freshness per source** (e-Panduan / UP_TVET / eMASCO), link
+    health, audit gaps. Mirrors `AdminVerdictMetricsView`. Needs a small status model to store last-refresh/last-check.
+  - **Updating triggers** (hybrid): server-runnable buttons — **Run audit**, **Check links** (`validate_course_urls`,
+    async — slow), **Apply a refresh** (`sync_stpm_mohe --apply` from an **uploaded CSV**, guarded). The **scrape stays
+    local** (run `refresh_stpm` on the laptop → upload the CSV) since it needs a browser. Mirrors `AdminRunVisionView` +
+    `CronRunView`. (Option B — a Chromium Cloud Run Job for server-side scraping — only if the laptop step is worth removing.)
+  - This is the focused "dashboard freshness strip" anticipated in `decisions.md`, not a general notification framework.
+
+---
+
 ## Why this exists
 Course data is accurate only at a point in time — offerings, entry requirements, merit
 scores and links change yearly. Today only **STPM** has a refresh pipeline (MOHE ePanduan

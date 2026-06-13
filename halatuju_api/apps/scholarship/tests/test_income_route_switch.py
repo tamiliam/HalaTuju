@@ -14,6 +14,7 @@ from apps.scholarship.models import (
     ApplicantDocument, ResolutionItem, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.resolution import sync_resolution_items
+from apps.scholarship.income_engine import _member_ic_doc
 
 _TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
@@ -140,3 +141,31 @@ class TestAuthAndGate(_Base):
         r = self._post({'income_route': 'salary', 'income_working_members': ['father']})
         self.assertEqual(r.status_code, 403)
         self.assertEqual(r.json().get('code'), 'not_editable')
+
+
+@override_settings(SUPABASE_JWT_SECRET=_TEST_JWT_SECRET)
+class TestTolerantClusterReader(_Base):
+    """Slot model (TD-115) tolerant reader: on the STR route the earner's IC is found whether
+    it carries the legacy blank tag (pre-backfill) or the earner tag (post-backfill); the
+    salary route reads the member tag only (a blank is never attributed to a member)."""
+
+    def _ic(self, member):
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type='parent_ic', household_member=member,
+            storage_path=f'p/{member or "blank"}.png', vision_name='MURUGAN A/L SAMY')
+
+    def test_str_earner_ic_found_when_blank_tagged(self):
+        self._ic('')                                   # legacy: untagged earner IC
+        self.assertIsNotNone(_member_ic_doc(self.app, 'father'))
+
+    def test_str_earner_ic_found_when_earner_tagged(self):
+        self._ic('father')                             # post-backfill: tagged to the earner
+        self.assertIsNotNone(_member_ic_doc(self.app, 'father'))
+
+    def test_salary_route_reads_member_tag_only(self):
+        self.app.income_route = 'salary'
+        self.app.save(update_fields=['income_route'])
+        self._ic('')                                   # a stray blank on the salary route
+        self.assertIsNone(_member_ic_doc(self.app, 'father'))   # blank never attributed
+        self._ic('father')
+        self.assertIsNotNone(_member_ic_doc(self.app, 'father'))

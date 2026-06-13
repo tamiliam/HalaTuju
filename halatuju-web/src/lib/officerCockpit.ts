@@ -393,10 +393,15 @@ export function incomeDocLayout(app: IncomeAnswerSource, incomeDocs: AdminApplic
   const required: IncomeSlot[] = []
   if (route === 'str') {
     const earner = app.income_earner || ''
-    required.push({ docType: 'str', member: '', doc: find('str', '') })
-    required.push({ docType: 'parent_ic', member: '', doc: find('parent_ic', '') })
+    // Slot model (TD-115): the STR earner's docs may be tagged with the earner OR carry the
+    // legacy blank tag during the migration — match either so a backfilled IC/STR isn't read
+    // as "missing". The relationship doc (applicant BC / guardian letter) is a single doc.
+    const findE = (dt: string) =>
+      incomeDocs.find((d) => d.doc_type === dt && [earner, ''].includes(d.household_member || '')) || null
+    required.push({ docType: 'str', member: earner, doc: findE('str') })
+    required.push({ docType: 'parent_ic', member: earner, doc: findE('parent_ic') })
     const rel = relationshipDocFor(earner)
-    if (rel) required.push({ docType: rel, member: '', doc: find(rel, '') })
+    if (rel) required.push({ docType: rel, member: '', doc: findE(rel) })
   } else if (route === 'salary') {
     for (const m of workingMembers(app.income_working_members as WorkingMember[] | null)) {
       required.push({ docType: 'parent_ic', member: m, doc: find('parent_ic', m) })
