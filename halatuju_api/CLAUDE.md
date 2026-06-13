@@ -443,7 +443,23 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-12)
+## Next Sprint (as of 2026-06-13)
+
+**▶ IN PROGRESS — Document slot model (TD-115). Spec `docs/scholarship/document-slot-model-plan.md`. 27 fixed
+`(doc_type × person)` slots; every upload lands in one slot; re-upload overwrites; the income route controls which slots
+are required vs optional (display), NOT where a doc is stored.**
+
+**▶ Sprint 1 SHIPPED & LIVE 2026-06-13 — tolerant readers + per-person upload tagging (on `main` `7b460d4` + MCP backfill;
+data migration, no schema change; retro `docs/retrospective-slot-model-s1.md`).** Tolerant-then-tighten rollout:
+`income_engine._cluster_docs` + cockpit `incomeDocLayout` read income docs BY PERSON with a blank-as-earner fallback on the
+STR route; the upload endpoint (`views.DocumentListCreateView`) is AUTHORITATIVE for income-doc tagging (STR route tags
+`income_earner` regardless of client input — also slots Action-Centre/Check-2 uploads — + tolerant sweep replaces the legacy
+blank); wizard tags/displays per-earner. Backfill: 53 STR-route blank income docs → earner (0 blanks, 0 dup slots).
+Verdict-invariant (verdict engine reads STR by doc-type, salary by member tag). #12 corrected → STR/mother (audited switch).
+**▶ NEXT (deferred): (a) DB `UniqueConstraint(application,doc_type,household_member)` — needs test-fixture rework + migrate-first
+(app layer already prevents dups); (b) salary-route Action-Centre member-tagging (STR path already fixed); (c) the Check-2/Check-3
+process flow & display — the separate pass the owner asked to tackle next (investigation already done — Outstanding box mixes
+Check-2 + Check-3, student responses captured but not displayed, doc-request flow has no tracked record).**
 
 **▶ COMPLETE — Verification-assurance programme (document genuineness + measured reliability). All 3 sprints SHIPPED & LIVE
 2026-06-12. Roadmap `docs/scholarship/verification-assurance-roadmap.md` (layers 1–3 done). Governing principle: not
