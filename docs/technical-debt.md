@@ -745,4 +745,9 @@
   docs as blank-member and salary-route docs as tagged — so data can't be re-tagged ahead of the code (one coordinated
   code + migration). Prod assessed safe: deterministic for ~all docs; only 1 true route correction (#12 salary→STR);
   duplicates hand-cleaned (#16, #12). **Full spec + confirmed model: `docs/scholarship/document-slot-model-plan.md`.**
-  IN PROGRESS 2026-06-13 (build started; Check-2/Check-3 process flow deferred). (Logged 2026-06-13.)
+  **Sprint 1 SHIPPED 2026-06-13** (`main` `7b460d4` + MCP backfill; retro `docs/retrospective-slot-model-s1.md`): tolerant
+  readers (by-person, blank-as-earner fallback on STR) + authoritative upload tagging (STR income docs ← `income_earner`,
+  tolerant sweep) + wizard per-earner; 53 docs backfilled (0 blanks, 0 dup slots); #12 corrected → STR/mother. Verdict-invariant.
+  **Still open (deferred):** (a) DB `UniqueConstraint(application,doc_type,household_member)` — the permanent guarantee; needs
+  test-fixture rework (tests pre-create same-slot docs) + migrate-first; app layer already prevents dups. (b) salary-route
+  Action-Centre member-tagging (STR path already fixed). (c) Check-2/Check-3 process flow & display (separate pass). (Logged 2026-06-13.)

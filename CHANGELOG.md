@@ -8,7 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Document slot model — per-person income-doc tagging (TD-115, Sprint 1; data migration, no schema change).** Foundation
+  for 27 fixed `(doc_type × person)` slots so every upload lands in exactly one slot and a re-upload overwrites it — fixing
+  the "one IC shows under every earner" and "duplicate Mother's IC" bugs. Built **tolerant-then-tighten** for a zero-downtime
+  rollout: (1) `income_engine._cluster_docs` + cockpit `incomeDocLayout` now read income docs **by person** with a
+  blank-as-earner fallback on the STR route (work before *and* after the backfill); (2) the upload endpoint is
+  **authoritative** for income-doc tagging — STR-route `str/parent_ic/salary_slip/epf` are tagged with `income_earner`
+  regardless of what the client sends (this also slots **Action-Centre/Check-2** uploads, closing the duplicate path), and
+  the single-instance sweep also replaces the legacy untagged copy; (3) the wizard tags + displays per-earner. **Backfill:**
+  53 STR-route blank income docs tagged to their earner; **0 blanks left, 0 duplicate slots** post-migration. **Verdict-invariant**
+  (the verdict engine reads STR by doc-type, salary by member tag — untouched). Also corrected the one mis-routed application
+  (#12 → STR/mother, via the audited route-switch service). 1197 scholarship pytest + new tolerant-reader/STR-tagging tests;
+  FE build clean. **Deferred** (documented): the DB `UniqueConstraint(application,doc_type,household_member)` belt-and-suspenders
+  (app layer already prevents duplicates; needs test rework + migrate-first), salary-route Action-Centre member-tagging, and
+  the Check-2/Check-3 process flow & display. Spec: `docs/scholarship/document-slot-model-plan.md`.
 - **Catalogue-wide link reachability check + audit link-health (course-data pipeline Sprint 2; no migration).** Extends
+  link validation beyond STPM to the **SPM/post-SPM catalogue**. New `validate_course_urls` checks the distinct external
+  URLs on `Institution.url` + `CourseInstitution.hyperlink` (deduped) with a lightweight HTTP GET (**stdlib `urllib` — no
+  new dependency, no browser**), classifying each alive / dead (404/410/5xx) / error (timeout/DNS/SSL — transient, never
+  auto-fixed); `--fix` clears confirmed-dead URLs, `--limit`/`--timeout` for control. Complements `validate_stpm_urls` Extends
   link validation beyond STPM to the **SPM/post-SPM catalogue**. New `validate_course_urls` checks the distinct external
   URLs on `Institution.url` + `CourseInstitution.hyperlink` (deduped) with a lightweight HTTP GET (**stdlib `urllib` — no
   new dependency, no browser**), classifying each alive / dead (404/410/5xx) / error (timeout/DNS/SSL — transient, never

@@ -2708,3 +2708,21 @@ facts, not stated by the officer. Fine while the four facts are the unit of revi
 dashboard later needs an explicit accept/decline rate.
 **Revisit if:** a coordinator dashboard wants an explicit overall stance (then build just the toggle — the unbuilt
 half of TD-083).
+
+## Slot model — tolerant-then-tighten rollout; route controls display, not storage — TD-115 Sprint 1, 2026-06-13
+**Decision:** Move income documents to fixed `(doc_type × person)` slots via a tolerant-then-tighten rollout: deploy
+readers that accept BOTH the legacy blank tag and the new person tag (blank-as-earner fallback on the STR route), THEN
+backfill the data, so there is never a window where prod code can't find a doc. The upload endpoint is authoritative for
+income-doc tagging (STR route tags `income_earner` regardless of client input — also slotting Action-Centre/Check-2
+uploads), and the income ROUTE governs which slots are required vs optional (display), never WHERE a doc is stored.
+**Alternatives considered:** (a) big-bang — flip readers to by-person + migrate in one deploy: rejected (a broken window
+either side of the migration where STR verdicts can't find docs); (b) keep the route-dependent storage convention
+(STR=blank, salary=tagged): rejected — it is the root cause of the "one IC under every earner" + duplicate bugs.
+**Rationale:** tolerant readers make deploy and backfill each independently safe; the verdict engine already reads STR by
+doc-type and salary by member tag, so the migration is provably verdict-invariant; backend-authoritative tagging fixes the
+wizard AND the Action-Centre path in one place.
+**Trade-offs:** the readers stay permanently lenient on the STR route (accept a blank as the earner's) — a small forever-cost
+for never breaking on a stray blank. The DB uniqueness constraint (the hard guarantee) is deferred; duplicate prevention
+rests on the app layer until it lands.
+**Revisit if:** the STR route ever gains multiple earners (the single-earner assumption behind blank-as-earner breaks), or
+the DB constraint is added (then the lenient readers can tighten to member-only).
