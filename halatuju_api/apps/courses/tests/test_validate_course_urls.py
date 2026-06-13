@@ -97,6 +97,22 @@ class ValidateCourseUrlsCommandTest(TestCase):
         call_command('validate_course_urls', limit=1, stdout=out)
         self.assertIn('Checking 1 distinct', out.getvalue())
 
+    @patch(f'{CMD}.check_url', side_effect=_fake_check)
+    def test_workers_concurrent_same_classification(self, _c):
+        # Concurrency must produce identical counts to the sequential path (read-only GETs).
+        out = StringIO()
+        call_command('validate_course_urls', workers=8, stdout=out)
+        s = out.getvalue()
+        self.assertIn('8 workers', s)
+        self.assertIn('Alive:  1', s)
+        self.assertIn('Dead:   2', s)
+
+    @patch(f'{CMD}.check_url', side_effect=_fake_check)
+    def test_workers_never_clears_without_fix(self, _c):
+        call_command('validate_course_urls', workers=8, stdout=StringIO())
+        self.dead.refresh_from_db()
+        self.assertEqual(self.dead.url, 'http://dead.test')  # concurrent path is still read-only
+
 
 class AuditLinkHealthTest(TestCase):
     def test_audit_reports_link_health_section(self):
