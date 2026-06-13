@@ -455,10 +455,14 @@ the feature deploys ONCE at the end (branch pushes don't deploy — the Cloud Ru
 Accept (re-stamps resolved_by → officer) / Ask again (new `reopen` action); single doc-request control with a per-person
 slot picker that stashes the member in the ticket's `params` so the student's Action-Centre upload tags the right
 `(doc_type, member)` slot (closes the salary-route tagging gap). Lighter/no-migration path; AI off-topic hint deferred
-(OFF `CHECK2_ANSWER_RELEVANCE_ENABLED`). 1202 scholarship pytest, jest 306, build clean, parity 2863×3.**
-**▶ NEXT — Sprint 3: Student profile box — relocate to its OWN box directly below Verification verdict, with the collapsed
-"student's own words" beneath; auto-generate the draft ONCE at the Check-2→Reviewer handoff (cost-guarded) + Regenerate +
-info strip. Then S4 (interview lifecycle: agenda carry-over of unanswered queries + Submit → final profile + lock querying).**
+(OFF `CHECK2_ANSWER_RELEVANCE_ENABLED`). 1202 scholarship pytest, jest 306, build clean, parity 2863×3.** S3 (`+`): the
+profile box already sits below the verdict with own-words collapsed; added an info strip + an **event-triggered auto-draft
+at the reviewer handoff** — `assign_reviewer` calls the existing idempotent `generate_ready_profile` on first assignment,
+reusing the OFF `CHECK2_AUTO_GENERATE` flag (dark/no billable calls until on), best-effort. 1205 scholarship pytest, parity 2864×3.
+**▶ NEXT — Sprint 4 (last, HIGH): Interview Stage lifecycle — agenda carry-over of unanswered Outstanding queries (ask
+verbally); pair findings; **Submit interview findings** ends querying (Outstanding locks read-only at status ≥ interviewed),
+triggers the final polished profile (Gemini Pro), and moves to decision. Then the feature is ready to merge to `main` + deploy
+ONCE (run wat_lint + MEMORY.md/Mission-Control sync at that merge).**
 
 ---
 

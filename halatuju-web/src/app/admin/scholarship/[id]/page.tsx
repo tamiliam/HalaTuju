@@ -833,6 +833,11 @@ export default function AdminScholarshipDetailPage() {
           </div>
         </div>
 
+        <div className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-2 text-xs text-blue-800">
+          <span aria-hidden>ⓘ</span>
+          <span>{t('admin.scholarship.profileDraftHint')}</span>
+        </div>
+
         {!profile ? (
           <button onClick={doGenerate} disabled={busy === 'gen'} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
             {busy === 'gen' ? t('admin.scholarship.generating') : t('admin.scholarship.generate')}
