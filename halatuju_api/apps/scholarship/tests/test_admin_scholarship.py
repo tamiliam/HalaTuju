@@ -58,6 +58,53 @@ class TestAdminScholarship(TestCase):
         r = self.client.get('/api/v1/admin/scholarship/applications/')
         self.assertEqual(r.status_code, 401)
 
+    # ── Check-2/Check-3 redesign S2: officer reviews student-answered caveats ──
+    def _make_answered_caveat(self):
+        from apps.scholarship.resolution import add_officer_item, resolve_item
+        item = add_officer_item(
+            self.app, kind='explanation', prompt="Please clarify your father's job.",
+            admin_email='admin@example.com', fact='income',
+        )
+        resolve_item(item, text='He drives an e-hailing car part-time.', by='student')
+        return item
+
+    def test_cockpit_surfaces_student_answered_caveat(self):
+        """A caveat the student has answered (resolved, by student) still surfaces in the
+        admin Outstanding queue WITH its answer, so the officer can review it."""
+        item = self._make_answered_caveat()
+        self._auth(ADMIN)
+        r = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/')
+        self.assertEqual(r.status_code, 200)
+        rows = {i['id']: i for i in r.json()['resolution_items']}
+        self.assertIn(item.id, rows)
+        self.assertEqual(rows[item.id]['status'], 'resolved')
+        self.assertEqual(rows[item.id]['resolution_text'], 'He drives an e-hailing car part-time.')
+
+    def test_accept_answer_restamps_officer_and_drops_from_queue(self):
+        """Officer 'Accept' (resolve action) re-stamps resolved_by to the officer, so the
+        answered item leaves the cockpit queue."""
+        item = self._make_answered_caveat()
+        self._auth(ADMIN)
+        r = self.client.post(f'/api/v1/admin/scholarship/resolution-items/{item.id}/resolve/')
+        self.assertEqual(r.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+        self.assertNotEqual(item.resolved_by, 'student')
+        self.assertNotIn(item.id, [i['id'] for i in r.json()['resolution_items']])
+
+    def test_reopen_returns_answered_item_to_student(self):
+        """Officer 'Ask again' (reopen) sends the query back to the student's to-do; the
+        typed answer is preserved for the audit trail."""
+        item = self._make_answered_caveat()
+        self._auth(ADMIN)
+        r = self.client.post(f'/api/v1/admin/scholarship/resolution-items/{item.id}/reopen/')
+        self.assertEqual(r.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')
+        self.assertEqual(item.resolved_by, '')
+        self.assertIsNone(item.resolved_at)
+        self.assertEqual(item.resolution_text, 'He drives an e-hailing car part-time.')
+
     def test_admin_list(self):
         self._auth(ADMIN)
         r = self.client.get('/api/v1/admin/scholarship/applications/')

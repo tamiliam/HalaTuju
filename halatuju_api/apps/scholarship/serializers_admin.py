@@ -331,13 +331,20 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         """S3 resolution queue: sync the system tickets against the live verdict AND
         the Check-2 AI clarify queries, then return the OPEN items (system + officer +
         check2) so the officer sees exactly what the student still owes. Idempotent."""
+        from django.db.models import Q
         from .resolution import sync_resolution_items
         from .check2_queries import sync_check2_queries
         from .serializers import ResolutionItemSerializer
         sync_resolution_items(obj)
         sync_check2_queries(obj)
-        openq = obj.resolution_items.filter(status='open')  # ordered -created_at
-        return ResolutionItemSerializer(openq, many=True).data
+        # Open items (awaiting the student) PLUS items the student has answered that no
+        # officer has actioned yet (status='resolved', resolved_by='student'). The latter
+        # surface in the cockpit WITH their answer so the officer can review and Accept
+        # (re-stamps resolved_by → officer, leaving the queue) or Ask again (reopen).
+        queue = obj.resolution_items.filter(
+            Q(status='open') | Q(status='resolved', resolved_by='student')
+        )  # ordered -created_at
+        return ResolutionItemSerializer(queue, many=True).data
 
     def get_completeness(self, obj):
         """Phase C: the 7-part completeness breakdown, so the admin can see

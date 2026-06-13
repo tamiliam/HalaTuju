@@ -380,7 +380,7 @@ export default function AdminScholarshipDetailPage() {
     } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
   }
 
-  const doActionResolution = async (itemId: number, action: 'waive' | 'resolve') => {
+  const doActionResolution = async (itemId: number, action: 'waive' | 'resolve' | 'reopen') => {
     if (!token) return
     setBusy(`res${itemId}`); setError('')
     try {
@@ -984,43 +984,73 @@ export default function AdminScholarshipDetailPage() {
                   <ul className="space-y-2">
                     {caveats.map((item) => {
                       const dotColour = item.source === 'officer' ? 'bg-indigo-400' : 'bg-amber-400'
+                      const answered = item.status === 'resolved'  // student answered; awaiting officer review
                       const text = item.source === 'officer'
                         ? (item.prompt || item.code)
                         : t(`admin.scholarship.verdict.item.${item.code}`,
                             localiseParams(item.params, t))
                       return (
                         <li key={item.id} className="flex items-start gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
-                          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColour}`} aria-hidden />
+                          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${answered ? 'bg-emerald-400' : dotColour}`} aria-hidden />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-gray-800 break-words">{text}</p>
                             <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400">
                               <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.fact}</span>
                               <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.kind}</span>
-                              {item.status !== 'open' && (
+                              {!answered && (
                                 <span className="rounded bg-amber-100 text-amber-700 px-1.5 py-0.5">
                                   {t('admin.scholarship.caveats.waitingStudent')}
                                 </span>
                               )}
                             </div>
+                            {answered && item.resolution_text && (
+                              <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                                  {t('admin.scholarship.caveats.studentAnswer')}
+                                </p>
+                                <p className="mt-0.5 text-sm text-gray-800 break-words">{item.resolution_text}</p>
+                              </div>
+                            )}
                           </div>
                           {canWrite && (
-                            <div className="flex shrink-0 gap-1">
-                              <button
-                                onClick={() => doActionResolution(item.id, 'waive')}
-                                disabled={!!busy}
-                                className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                              >
-                                {t('admin.scholarship.caveats.resolve')}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setInfoNote(item.prompt || '')
-                                }}
-                                disabled={!!busy}
-                                className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                              >
-                                {t('admin.scholarship.caveats.ask')}
-                              </button>
+                            <div className="flex shrink-0 flex-col gap-1">
+                              {answered ? (
+                                <>
+                                  <button
+                                    onClick={() => doActionResolution(item.id, 'resolve')}
+                                    disabled={!!busy}
+                                    className="rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                                  >
+                                    {t('admin.scholarship.caveats.accept')}
+                                  </button>
+                                  <button
+                                    onClick={() => doActionResolution(item.id, 'reopen')}
+                                    disabled={!!busy}
+                                    className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                                  >
+                                    {t('admin.scholarship.caveats.askAgain')}
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => doActionResolution(item.id, 'waive')}
+                                    disabled={!!busy}
+                                    className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                                  >
+                                    {t('admin.scholarship.caveats.resolve')}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setInfoNote(item.prompt || '')
+                                    }}
+                                    disabled={!!busy}
+                                    className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                                  >
+                                    {t('admin.scholarship.caveats.ask')}
+                                  </button>
+                                </>
+                              )}
                             </div>
                           )}
                         </li>
