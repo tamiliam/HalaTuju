@@ -3171,7 +3171,7 @@
       },
       "runCheck": "Jalankan semakan sekarang",
       "checking": "Menyemak…",
-      "runCheckHint": "Baca sahaja: semak semula pautan + audit (~1 min). Tiada perubahan katalog.",
+      "runCheckHint": "Baca sahaja: semak semula pautan + audit (~2 min). Tiada perubahan katalog.",
       "problemLinks": "Pautan bermasalah",
       "downloadCsv": "Muat turun CSV",
       "rows": "baris",

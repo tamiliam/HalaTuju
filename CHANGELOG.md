@@ -24,7 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for a human to eyeball rather than silently counted "alive") · **Couldn't verify** (timeout / connection — almost
   certainly alive, just slow/blocked from the checker; informational, not a to-do). The dashboard headline counts
   Broken only; the "Problem links" drill-down groups under the three severities. Reporting-only — no catalogue writes
-  from the check. +6 backend tests (1114 courses pytest pass), i18n parity en/ms/ta.
+  from the check. +7 backend tests (1114 courses pytest pass), i18n parity en/ms/ta.
+  *Perf/infra:* the heavier 20s-timeout check overran the api's tight 120s Cloud Run request limit (the in-request
+  cron + button path). Fixed by fitting the job to the budget — the bulk health-check now runs **40 concurrent
+  workers** and **skips the per-URL retry** (`retries=0`; the 20s timeout already catches slow-but-alive sites, and a
+  retry only doubled the slow tail) — plus the api request timeout was raised **120s → 300s** as headroom
+  (`gcloud run services update halatuju-api --timeout=300`). First post-deploy full run: 652 checked → **3 broken**,
+  0 access-blocked, 126 couldn't-verify, 523 alive (incl. 33 insecure-cert). `check_url` gains a `--retries` flag
+  (default 1 for targeted/manual runs).
 
 ### Changed
 - **Cockpit Check-2 / Interview-Stage split (Check-2/Check-3 redesign, Sprint 1 of 4; FE + i18n, no schema change).**

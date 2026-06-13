@@ -111,7 +111,7 @@ class CheckUrlTest(SimpleTestCase):
         self.assertEqual(uo.call_count, 1)
 
 
-def _fake_check(url, timeout=10):
+def _fake_check(url, timeout=10, retries=1):
     if 'dead' in url:
         return ('dead', 404)
     if 'err' in url:
@@ -153,7 +153,7 @@ class ValidateCourseUrlsCommandTest(TestCase):
         self.assertEqual(s['broken'], 2)       # dead.test + offer-dead.test
         self.assertEqual(s['unverified'], 1)   # err.test
 
-    @patch(f'{CMD}.check_url', side_effect=lambda u, t=10: ('gated', 403) if 'gate' in u else _fake_check(u, t))
+    @patch(f'{CMD}.check_url', side_effect=lambda u, t=10, retries=1: ('gated', 403) if 'gate' in u else _fake_check(u, t))
     def test_gated_403_surfaced_as_own_severity(self, _c):
         # A 401/403 link is neither 'broken' nor 'couldn't-verify' — it gets its own 'gated' bucket
         # and is recorded in failures for a human to eyeball (the Port Dickson lesson).
@@ -204,6 +204,15 @@ class ValidateCourseUrlsCommandTest(TestCase):
         call_command('validate_course_urls', workers=8, stdout=StringIO())
         self.dead.refresh_from_db()
         self.assertEqual(self.dead.url, 'http://dead.test')  # concurrent path is still read-only
+
+    @patch(f'{CMD}.check_url', side_effect=_fake_check)
+    def test_retries_option_is_passed_through(self, _c):
+        # The bulk dashboard run uses retries=0 (the timeout already catches slow sites; a retry
+        # would double the slow tail and risk the Cloud Run request limit).
+        call_command('validate_course_urls', retries=0, stdout=StringIO())
+        self.assertTrue(_c.call_args_list)
+        for call in _c.call_args_list:
+            self.assertEqual(call.kwargs.get('retries'), 0)
 
     @patch(f'{CMD}.check_url', side_effect=_fake_check)
     def test_records_failures_with_institution_and_kind(self, _c):
