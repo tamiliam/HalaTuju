@@ -12,7 +12,7 @@ import {
   type AdminScholarshipListData,
 } from '@/lib/admin-api'
 import { Pagination } from '@/components/Pagination'
-import AiReliabilityCard from '@/components/AiReliabilityCard'
+// import AiReliabilityCard from '@/components/AiReliabilityCard' // hidden 2026-06-13 — re-add when placement is decided (component retained)
 import { REFERRING_ORG_OPTIONS } from '@/lib/scholarship'
 
 const bucketBadge = (b: string) =>
@@ -143,7 +143,7 @@ export default function AdminScholarshipList() {
         {data ? t('admin.scholarship.countSubtitle', { count: String(data.count) }) : ' '}
       </p>
 
-      <AiReliabilityCard token={token} />
+      {/* AI reliability card hidden 2026-06-13 — placement TBD by owner; component kept in components/AiReliabilityCard.tsx */}
 
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="relative flex-1 min-w-[180px] sm:flex-none sm:w-64">
