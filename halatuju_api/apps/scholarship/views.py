@@ -479,19 +479,33 @@ class DocumentListCreateView(APIView):
             return Response({'error': 'file_too_large', 'max_mb': _settings.MAX_DOC_SIZE_BYTES // (1024 * 1024)},
                             status=status.HTTP_400_BAD_REQUEST)
         new_member = serializer.validated_data.get('household_member', '') or ''
+        # Slot model (TD-115): income docs are tagged by the household member they belong to.
+        # The STR route has a single earner, so the backend AUTHORITATIVELY tags the earner's
+        # income docs (str/parent_ic/salary_slip/epf) regardless of what the client sent — this
+        # also slots Action-Centre / Check-2 uploads, which carry no member. The salary route
+        # keeps the client's per-block member.
+        _INCOME_EARNER_DOCS = {'str', 'parent_ic', 'salary_slip', 'epf'}
+        str_income = (new_doc_type in _INCOME_EARNER_DOCS
+                      and (getattr(app, 'income_route', '') or '').strip() == 'str')
+        if str_income:
+            new_member = (getattr(app, 'income_earner', '') or '').strip()
+            serializer.validated_data['household_member'] = new_member
         single = self._is_single_instance(new_doc_type, new_member)
+        # Slots this upload supersedes — the target (type, member), plus (STR income docs) the
+        # legacy UNTAGGED copy, so a re-upload replaces the old blank instead of duplicating it.
+        sweep_members = [new_member, ''] if str_income else [new_member]
         # Guardrail 2: per-application document cap. A single-instance re-upload
         # replaces an existing doc, so it doesn't count toward growth.
         replaces = (single and ApplicantDocument.objects.filter(
-            application=app, doc_type=new_doc_type, household_member=new_member).exists())
+            application=app, doc_type=new_doc_type, household_member__in=sweep_members).exists())
         if not replaces and ApplicantDocument.objects.filter(application=app).count() >= _settings.MAX_DOCS_PER_APPLICATION:
             return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
                             status=status.HTTP_400_BAD_REQUEST)
-        # For single-instance types, sweep older copies of the SAME (type, member)
-        # for this application first — DB row + Supabase Storage object together.
+        # For single-instance types, sweep older copies of the SAME slot (and the legacy blank
+        # for STR income docs) for this application first — DB row + Supabase Storage object.
         if single:
             stale = ApplicantDocument.objects.filter(
-                application=app, doc_type=new_doc_type, household_member=new_member)
+                application=app, doc_type=new_doc_type, household_member__in=sweep_members)
             stale_paths = [d.storage_path for d in stale if d.storage_path]
             if stale_paths:
                 from .storage import delete_objects
