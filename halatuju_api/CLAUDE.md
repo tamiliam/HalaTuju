@@ -173,6 +173,18 @@ python -m pytest apps/courses/tests/test_stpm_golden_master.py -v
 
 Requires: `pip install selenium` (URL validation) + `pip install playwright && playwright install chromium` (scraper). Local admin tools, not deployed.
 
+### Course Data dashboard (`/admin/course-data`, reporting-only)
+
+A read-only admin status surface: per-source **freshness** (e-Panduan STPM/SPM, UP_TVET, eMASCO), **coverage**
+(have/available/gap, live from the DB), **link-health** + **audit** (last recorded run). Endpoint
+`GET /api/v1/admin/course-data/` (`AdminCourseDataView`, any admin role). Freshness comes from `CourseDataStatus`
+(`course_data_status` table) which the tools upsert on completion via `course_data_status.record_status(...)`:
+`refresh_stpm`→`epanduan_stpm`, `validate_course_urls`→`link_health`, `audit_data`→`audit`. (The SPM `sync_spm_mohe`
+and UP_TVET `scrape_uptvet`/`audit_uptvet` tools — on other branches — should call `record_status('epanduan_spm'/'uptvet', …)`
+when they merge; until then those cards read "never run".) **Reporting-only — no run-triggers this sprint** (matches "no
+harvesting"). Recording is best-effort (never breaks the tool). Migration `0054_coursedatastatus` is a new table →
+migrate-first via MCP + enable RLS at deploy (service-role-only); it parallels `spm-catalogue`'s `0054` (merge-resolve).
+
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
@@ -213,7 +225,8 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/management/commands/scrape_mohe_stpm.py` | MOHE ePanduan scraper (annual) | No |
 | `apps/courses/management/commands/sync_stpm_mohe.py` | STPM data sync with diff report | No |
 | `apps/courses/management/commands/validate_stpm_urls.py` | Dead link checker | No |
-| `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
+| `apps/courses/management/commands/audit_data.py` | Data completeness report (records dashboard `audit` status) | No |
+| `apps/courses/course_data_status.py` | Course Data dashboard support: `record_status` + live `coverage_snapshot` | No |
 | `apps/courses/management/commands/generate_stpm_headlines.py` | Gemini-powered STPM headline generator | No |
 | `apps/courses/management/commands/backfill_spm_field_key.py` | Deterministic SPM field_key classifier + backfill | No |
 | `apps/courses/management/commands/classify_stpm_fields.py` | Deterministic STPM field_key classifier + backfill | No |

@@ -891,3 +891,32 @@ class StpmRequirement(models.Model):
 
     def __str__(self):
         return f"STPM Requirements for {self.course_id}"
+
+
+class CourseDataStatus(models.Model):
+    """Last-run status per course-data source/check, for the admin Course Data dashboard.
+
+    The refresh/validate/audit tools upsert a row here when they run, so the dashboard can
+    show freshness ("STPM refreshed 13 Jun", "SPM never refreshed") and last link-health /
+    audit findings WITHOUT re-running anything. A missing row = 'never run' (rendered as a
+    first-class state). Read-only on the dashboard; written only by the management commands.
+    """
+    KEY_CHOICES = [
+        ('epanduan_stpm', 'e-Panduan — STPM refresh'),
+        ('epanduan_spm', 'e-Panduan — SPM refresh'),
+        ('uptvet', 'UP_TVET inventory'),
+        ('emasco', 'eMASCO occupations'),
+        ('link_health', 'Catalogue link health'),
+        ('audit', 'Data audit'),
+    ]
+    key = models.CharField(max_length=40, primary_key=True, choices=KEY_CHOICES)
+    last_run_at = models.DateTimeField(help_text='When the tool that writes this key last completed')
+    summary = models.JSONField(default=dict, blank=True, help_text='Run summary (counts/findings) for display')
+    detail = models.TextField(blank=True, default='', help_text='Optional human note / command used')
+
+    class Meta:
+        db_table = 'course_data_status'
+        verbose_name_plural = 'Course data statuses'
+
+    def __str__(self):
+        return f"{self.key} @ {self.last_run_at:%Y-%m-%d %H:%M}"

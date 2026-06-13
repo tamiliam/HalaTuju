@@ -41,13 +41,18 @@ classification doc, slow-moving).
 - **Sprint 3b — UP_TVET coverage (the confirmed gap):** scrape the public UP_TVET catalogue → fold into the BE `tvet`
   bucket, **`Sektor = Awam` only** (public-only scope; private TVET is a scope decision — flag to owner). Mirrors the
   e-Panduan scrape→sanity→sync pattern + guards. Sibling to Sprint 3.
-- **Sprint 6 — "Course Data" admin dashboard (the reporting + updating SYSTEM):** a `/admin/course-data` page.
-  - **Reporting** (all server-side): catalogue counts, **freshness per source** (e-Panduan / UP_TVET / eMASCO), link
-    health, audit gaps. Mirrors `AdminVerdictMetricsView`. Needs a small status model to store last-refresh/last-check.
-  - **Updating triggers** (hybrid): server-runnable buttons — **Run audit**, **Check links** (`validate_course_urls`,
-    async — slow), **Apply a refresh** (`sync_stpm_mohe --apply` from an **uploaded CSV**, guarded). The **scrape stays
-    local** (run `refresh_stpm` on the laptop → upload the CSV) since it needs a browser. Mirrors `AdminRunVisionView` +
-    `CronRunView`. (Option B — a Chromium Cloud Run Job for server-side scraping — only if the laptop step is worth removing.)
+- **"Course Data" admin dashboard — split on build (owner: "build tools, then a dashboard for decisions — no harvesting now"):**
+  - **Dashboard Sprint 1 — REPORTING-ONLY · ✅ BUILT 2026-06-13** (branch `course-data-dashboard`; migration
+    `0054_coursedatastatus`; deploy = owner). `/admin/course-data` page (super/admin): freshness strip (e-Panduan
+    STPM/SPM · UP_TVET · eMASCO, last-run + count + "never run"), coverage table (have/available/gap, live), link-health +
+    audit cards. `CourseDataStatus` store + `coverage_snapshot()`; `refresh_stpm`/`validate_course_urls`/`audit_data` record
+    status (best-effort). `GET /api/v1/admin/course-data/`. **NO run-triggers** (honours "no harvesting"). +8 tests; next build
+    clean; jest 306; parity 2600×3. **Carry:** instrument `sync_spm_mohe` + `scrape_uptvet`/`audit_uptvet` to call
+    `record_status` when those branches merge (else their cards stay "never run"); migration parallels `spm-catalogue`'s 0054.
+  - **Dashboard Sprint 2 — UPDATE TRIGGERS (hybrid, DEFERRED):** server-runnable buttons — **Run audit**, **Check links**
+    (`validate_course_urls`, async), **Apply a refresh** (`sync_stpm_mohe --apply` from an **uploaded CSV**, guarded). The
+    **scrape stays local** (run on the laptop → upload CSV). Mirrors `AdminRunVisionView` + `CronRunView`. Build only when the
+    owner wants harvesting/updating from the UI. (Option B — a Chromium Cloud Run Job — only if the laptop step is worth removing.)
   - This is the focused "dashboard freshness strip" anticipated in `decisions.md`, not a general notification framework.
 
 ---
