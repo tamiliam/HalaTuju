@@ -3171,7 +3171,20 @@
       },
       "runCheck": "Jalankan semakan sekarang",
       "checking": "Menyemak…",
-      "runCheckHint": "Baca sahaja: semak semula pautan + audit (~1 min). Tiada perubahan katalog."
+      "runCheckHint": "Baca sahaja: semak semula pautan + audit (~1 min). Tiada perubahan katalog.",
+      "problemLinks": "Pautan bermasalah",
+      "downloadCsv": "Muat turun CSV",
+      "rows": "baris",
+      "insecure": "Sijil tidak sah",
+      "problemLinksHint": "Pautan yang gagal dicapai pada semakan terakhir, dikumpulkan mengikut sebab. Baca sahaja — semak dan betulkan di sumber.",
+      "reason": {
+        "gone": "Tiada (404 / 5xx)",
+        "dns": "Domain tidak dijumpai",
+        "timeout": "Tamat masa",
+        "conn": "Sambungan gagal",
+        "badurl": "URL tidak sah",
+        "other": "Lain-lain"
+      }
     }
   }
 }
