@@ -51,6 +51,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   → weekly Cloud Scheduler `halatuju-course-data-check` (Mon 03:00 Asia/KL). Manual "Run health check now" button on
   `/admin/course-data` via `POST /api/v1/admin/course-data/check/` (super/admin; runs the same check synchronously,
   returns fresh status). +7 tests (1100 courses pytest), next build clean, jest 306, parity 2603×3.
+  **Follow-on (accuracy):** `check_url` hardened from the first full-prod run — normalise schemeless URLs → `https://`,
+  browser User-Agent, and **retry without cert verification on a TLS failure** (MY gov/edu sites with chains `urllib`
+  rejects but browsers accept) → classified `insecure` (reachable, tracked as a subset of alive) instead of a false
+  `error`. Collapses most of the ~172 false "errors" into reachable, leaving a real dead-link count. +3 tests.
 - **UP_TVET coverage — Sprint 1: catalogue scraper + coverage inventory (no DB writes, no migration).** New
   `scrape_uptvet` command scrapes the public UP_TVET Perdana catalogue (`mohon.tvet.gov.my`, ~1000 programmes,
   paginated HTML) → CSV with Kod Tauliah, name, Kategori, Institusi, **Sektor (Awam/Swasta)**, fees, stable
