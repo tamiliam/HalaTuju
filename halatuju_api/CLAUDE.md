@@ -225,6 +225,11 @@ current by `course_data_check` = `audit_data` + `validate_course_urls --workers 
 - **Manual button** — `POST /api/v1/admin/course-data/check/` (`AdminCourseDataCheckView`, **super/admin only**) runs it
   synchronously and returns the refreshed payload; "Run health check now" on the page.
 
+`validate_course_urls` stores a `failures` list in its status (`{url, kind, institutions, refs}`; `kind` =
+`gone`/`dns`/`timeout`/`conn`/`badurl` via `_error_kind`), so the dashboard's **"Problem links"** drill-down shows WHICH
+links failed, grouped by reason, with a CSV export. SSL-cert-rejected-but-reachable sites are classified `insecure`
+(counted as alive). FIXING links (writes) is NOT built — owner inspects + corrects at source.
+
 The browser catalogue scrapes (`refresh_stpm`, `scrape_uptvet`) stay manual/local (need Chromium) and only dry-run.
 **UI-driven *updating* (apply-a-refresh) is deliberately NOT built** — owner wants reporting only.
 Migration `0054_coursedatastatus` is the only schema for this surface (already on prod); the health-monitoring sprint

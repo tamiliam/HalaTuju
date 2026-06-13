@@ -44,6 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clean, parity 2864×3 (added `profileDraftHint`).
 
 ### Added
+- **Course Data dashboard — "Problem links" drill-down (read-only; no migration).** The link check now STORES the failing
+  URLs (was counts-only), so the dashboard can show *which* links failed: `validate_course_urls` records a `failures` list
+  in its status — each `{url, kind, institutions, refs}` — and tags errors by kind (`_error_kind`: `dns`/`timeout`/`conn`/
+  `badurl`, plus `gone` for 4xx/5xx). New "Problem links" card on `/admin/course-data`: failures grouped by reason
+  (Gone · Domain not found · Timed out · Connection failed · Malformed), each row showing the institution(s) + clickable
+  URL, with a **Download CSV** export. `insecure`-cert count also surfaced on the link-health card. Read-only — inspect +
+  fix at source. +5 tests (1108 courses pytest), next build clean, jest 306, parity 2628×3.
 - **Course-data health monitoring — read-only freshness + link checks (cron + manual button; no migration).** Keeps the
   Course Data dashboard's Link-health, Audit and freshness cards live WITHOUT any catalogue writes. `validate_course_urls`
   gains a `--workers` concurrent path (~650 URLs in <1 min). New read-only `course_data_check` command (`audit_data` +

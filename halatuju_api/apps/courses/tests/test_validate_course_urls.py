@@ -11,9 +11,24 @@ from django.core.management import call_command
 from django.test import SimpleTestCase, TestCase
 
 from apps.courses.models import Course, CourseInstitution, FieldTaxonomy, Institution
-from apps.courses.management.commands.validate_course_urls import check_url
+from apps.courses.management.commands.validate_course_urls import check_url, _error_kind
+from apps.courses.models import CourseDataStatus
 
 CMD = 'apps.courses.management.commands.validate_course_urls'
+
+
+class ErrorKindTest(SimpleTestCase):
+    def test_dns(self):
+        self.assertEqual(_error_kind(urllib.error.URLError('[Errno 11001] getaddrinfo failed')), 'dns')
+
+    def test_timeout(self):
+        self.assertEqual(_error_kind(TimeoutError('timed out')), 'timeout')
+
+    def test_conn(self):
+        self.assertEqual(_error_kind(urllib.error.URLError('Connection refused')), 'conn')
+
+    def test_badurl(self):
+        self.assertEqual(_error_kind(ValueError('unknown url type')), 'badurl')
 
 
 class CheckUrlTest(SimpleTestCase):
@@ -138,6 +153,19 @@ class ValidateCourseUrlsCommandTest(TestCase):
         call_command('validate_course_urls', workers=8, stdout=StringIO())
         self.dead.refresh_from_db()
         self.assertEqual(self.dead.url, 'http://dead.test')  # concurrent path is still read-only
+
+    @patch(f'{CMD}.check_url', side_effect=_fake_check)
+    def test_records_failures_with_institution_and_kind(self, _c):
+        call_command('validate_course_urls', stdout=StringIO())
+        failures = CourseDataStatus.objects.get(key='link_health').summary['failures']
+        by_url = {f['url']: f for f in failures}
+        # the dead institution URL is captured, tagged 'gone', with its institution name
+        self.assertIn('http://dead.test', by_url)
+        self.assertEqual(by_url['http://dead.test']['kind'], 'gone')
+        self.assertIn('Dead U', by_url['http://dead.test']['institutions'])
+        # the dead OFFERING url is captured too (backed by ≥1 row)
+        self.assertIn('http://offer-dead.test', by_url)
+        self.assertGreaterEqual(by_url['http://offer-dead.test']['refs'], 1)
 
 
 class AuditLinkHealthTest(TestCase):

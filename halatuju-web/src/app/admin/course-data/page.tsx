@@ -1,7 +1,7 @@
 'use client'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { getCourseDataStatus, runCourseDataCheck, type CourseDataStatusResponse } from '@/lib/admin-api'
+import { getCourseDataStatus, runCourseDataCheck, type CourseDataStatusResponse, type LinkFailure } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 
@@ -51,6 +51,24 @@ export default function CourseDataDashboard() {
   const linkHealth = statuses['link_health']
   const audit = statuses['audit']
   const dash = '—'
+
+  // Problem links: the failing URLs the last check recorded, grouped by reason for triage.
+  const failures: LinkFailure[] = linkHealth?.summary?.failures ?? []
+  const REASONS = ['gone', 'dns', 'timeout', 'conn', 'badurl']
+  const groups = REASONS.map(k => ({ kind: k, items: failures.filter(f => f.kind === k) })).filter(g => g.items.length)
+  const other = failures.filter(f => !REASONS.includes(f.kind))
+  if (other.length) groups.push({ kind: 'other', items: other })
+
+  const downloadCsv = () => {
+    const rows = [['reason', 'url', 'http', 'institutions', 'rows'],
+      ...failures.map(f => [f.kind, f.url, f.detail, f.institutions.join('; '), String(f.refs)])]
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = 'course-data-problem-links.csv'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
 
   return (
     <div>
@@ -161,6 +179,9 @@ export default function CourseDataDashboard() {
                   <li className="flex justify-between"><span>{t('admin.courseData.alive')}</span><span className="text-green-600">{linkHealth.summary.alive ?? dash}</span></li>
                   <li className="flex justify-between"><span>{t('admin.courseData.dead')}</span><span className={Number(linkHealth.summary.dead) > 0 ? 'text-red-600 font-medium' : ''}>{linkHealth.summary.dead ?? dash}</span></li>
                   <li className="flex justify-between"><span>{t('admin.courseData.errors')}</span><span className="text-gray-500">{linkHealth.summary.errors ?? dash}</span></li>
+                  {Number(linkHealth.summary.insecure) > 0 && (
+                    <li className="flex justify-between text-gray-400"><span>{t('admin.courseData.insecure')}</span><span>{linkHealth.summary.insecure}</span></li>
+                  )}
                 </ul>
               </>
             ) : (
@@ -181,6 +202,44 @@ export default function CourseDataDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Problem links — the failing URLs from the last check, grouped by reason */}
+      {failures.length > 0 && (
+        <div className="bg-white rounded-lg p-6 shadow-sm border mb-8">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-semibold">{t('admin.courseData.problemLinks')} ({failures.length})</h2>
+            <button onClick={downloadCsv} className="text-sm text-blue-600 hover:underline">
+              {t('admin.courseData.downloadCsv')}
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 mb-4">{t('admin.courseData.problemLinksHint')}</p>
+          <div className="space-y-3">
+            {groups.map(g => (
+              <details key={g.kind} className="border rounded-lg" open={g.kind === 'gone'}>
+                <summary className="cursor-pointer px-4 py-2 text-sm font-medium flex justify-between items-center">
+                  <span>{t(`admin.courseData.reason.${g.kind}`)}</span>
+                  <span className="text-gray-500">{g.items.length}</span>
+                </summary>
+                <ul className="divide-y border-t">
+                  {g.items.map((f, i) => (
+                    <li key={i} className="px-4 py-2">
+                      <p className="text-sm text-gray-800">
+                        {f.institutions.join(', ') || dash}
+                        {f.refs > 1 && <span className="text-gray-400"> · {f.refs} {t('admin.courseData.rows')}</span>}
+                      </p>
+                      <a href={f.url.startsWith('http') ? f.url : `https://${f.url}`}
+                         target="_blank" rel="noopener noreferrer"
+                         className="text-xs text-blue-600 hover:underline break-all">
+                        {f.url}{f.detail ? ` (${f.detail})` : ''}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </div>
+        </div>
+      )}
 
       <p className="text-xs text-gray-400">{t('admin.courseData.readOnlyNote')}</p>
     </div>

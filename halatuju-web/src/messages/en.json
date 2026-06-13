@@ -3171,7 +3171,20 @@
       },
       "runCheck": "Run health check now",
       "checking": "Checking…",
-      "runCheckHint": "Read-only: re-checks links + audit (~1 min). No catalogue changes."
+      "runCheckHint": "Read-only: re-checks links + audit (~1 min). No catalogue changes.",
+      "problemLinks": "Problem links",
+      "downloadCsv": "Download CSV",
+      "rows": "rows",
+      "insecure": "Insecure cert",
+      "problemLinksHint": "Links the last check could not reach, grouped by reason. Read-only — review and fix at source.",
+      "reason": {
+        "gone": "Gone (404 / 5xx)",
+        "dns": "Domain not found",
+        "timeout": "Timed out",
+        "conn": "Connection failed",
+        "badurl": "Malformed URL",
+        "other": "Other"
+      }
     }
   }
 }

@@ -41,6 +41,23 @@ def _is_ssl_failure(exc):
     return isinstance(reason, ssl.SSLError) or 'CERTIFICATE' in str(getattr(exc, 'reason', '')).upper()
 
 
+def _error_kind(exc):
+    """A short, human category for an 'error' (so the dashboard can group failures).
+    'dns' = domain not found · 'timeout' = too slow · 'conn' = refused/reset/unreachable ·
+    'badurl' = malformed · else the exception class name."""
+    s = (str(getattr(exc, 'reason', exc)) or '').lower()
+    name = type(exc).__name__
+    if isinstance(exc, (TimeoutError,)) or 'timed out' in s or 'timeout' in s:
+        return 'timeout'
+    if 'getaddrinfo' in s or 'name or service' in s or 'nodename' in s or 'no address' in s or '11001' in s:
+        return 'dns'
+    if 'refused' in s or 'reset' in s or 'unreachable' in s or 'connection' in s:
+        return 'conn'
+    if isinstance(exc, ValueError):
+        return 'badurl'
+    return name
+
+
 def check_url(url, timeout=10):
     """Reachability of a single URL → (status, detail).
 
@@ -75,10 +92,10 @@ def check_url(url, timeout=10):
                         return ('insecure', e2.code)
                     return ('dead', e2.code)
                 except Exception as e2:
-                    return ('error', type(e2).__name__)
-            return ('error', type(e).__name__)
+                    return ('error', _error_kind(e2))
+            return ('error', _error_kind(e))
     except Exception as e:                 # malformed URL etc. — classify, never crash
-        return ('error', type(e).__name__)
+        return ('error', _error_kind(e))
 
 
 class Command(BaseCommand):
@@ -101,12 +118,17 @@ class Command(BaseCommand):
         workers = max(1, options['workers'])
 
         # Distinct non-empty URLs across both fields, with reference counts (so the
-        # report + --fix know how many rows each URL backs).
-        refs = {}  # url -> {'inst': n, 'offer': n}
-        for u in Institution.objects.exclude(url='').values_list('url', flat=True):
+        # report + --fix know how many rows each URL backs) + the institution name(s)
+        # behind each URL (so the dashboard can show WHO a broken link belongs to).
+        refs = {}   # url -> {'inst': n, 'offer': n}
+        names = {}  # url -> set of institution names
+        for u, nm in Institution.objects.exclude(url='').values_list('url', 'institution_name'):
             refs.setdefault(u, {'inst': 0, 'offer': 0})['inst'] += 1
-        for u in CourseInstitution.objects.exclude(hyperlink='').values_list('hyperlink', flat=True):
+            names.setdefault(u, set()).add(nm)
+        for u, nm in (CourseInstitution.objects.exclude(hyperlink='')
+                      .values_list('hyperlink', 'institution__institution_name')):
             refs.setdefault(u, {'inst': 0, 'offer': 0})['offer'] += 1
+            names.setdefault(u, set()).add(nm)
 
         urls = sorted(refs)
         if limit:
@@ -150,11 +172,21 @@ class Command(BaseCommand):
         self.stdout.write('Dead:   %d (4xx/5xx)' % len(dead))
         self.stdout.write('Errors: %d (timeout/DNS/connection — transient, not auto-fixed)' % len(errors))
 
+        # Build the per-URL failure list (dead + errors) WITH the institution(s) behind each,
+        # so the dashboard's "Problem links" drill-down can group + show who owns each bad link.
+        def _failure(u, kind, detail=''):
+            r = refs.get(u, {'inst': 0, 'offer': 0})
+            return {'url': u, 'kind': kind, 'detail': str(detail),
+                    'institutions': sorted(names.get(u, []))[:5], 'refs': r['inst'] + r['offer']}
+        failures = ([_failure(u, 'gone', code) for u, code in sorted(dead)]
+                    + [_failure(u, why) for u, why in sorted(errors)])
+
         # Record link-health for the Course Data dashboard. `insecure` is a subset of `alive`.
         from apps.courses.course_data_status import record_status, LINK_HEALTH
         record_status(LINK_HEALTH,
                       {'checked': len(urls), 'alive': alive, 'insecure': insecure,
-                       'dead': len(dead), 'errors': len(errors)},
+                       'dead': len(dead), 'errors': len(errors),
+                       'failures': failures[:300]},  # bounded; the full list is also printed below
                       detail='python manage.py validate_course_urls')
 
         if dead:

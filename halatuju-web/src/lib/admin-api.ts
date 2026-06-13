@@ -969,9 +969,18 @@ export async function reviewSponsor(
 
 // ---- Course Data dashboard (read-only) ----
 
+export interface LinkFailure {
+  url: string
+  kind: string          // 'gone' | 'dns' | 'timeout' | 'conn' | 'badurl' | …
+  detail: string        // HTTP code for 'gone'
+  institutions: string[]
+  refs: number          // how many catalogue rows use this URL
+}
+
 export interface CourseDataStatusEntry {
   last_run_at: string | null
-  summary: Record<string, number | string>
+  // counts (numbers) + the link-health 'failures' array; kept loose for forward-compat.
+  summary: Record<string, number | string> & { failures?: LinkFailure[] }
   detail: string
 }
 
