@@ -702,6 +702,9 @@ class ResolutionItemResolveView(APIView):
         ).select_related('application').first()
         if item is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        from .services import querying_locked
+        if querying_locked(item.application):
+            return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
         if item.kind == 'doc':
             return Response({'error': 'upload_doc_instead', 'doc_type': item.doc_type},
                             status=status.HTTP_400_BAD_REQUEST)

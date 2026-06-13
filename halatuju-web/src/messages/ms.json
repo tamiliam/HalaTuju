@@ -2422,6 +2422,7 @@
         "noFlags": "Tiada bendera automatik. Gunakan rubrik + nota untuk merekod penilaian anda.",
         "submitted": "Dihantar",
         "inProgress": "Sedang berjalan",
+        "carryOver": "Pertanyaan Semakan 2 yang belum dijawab — tanya semasa temu duga",
         "rationalePlaceholder": "Satu baris: apa yang anda temui",
         "notePlaceholder": "Nota keseluruhan (pilihan)",
         "saveDraft": "Simpan draf",
@@ -2851,6 +2852,7 @@
       "outstanding": {
         "title": "Semakan 2 — Belum selesai",
         "subtitle": "Tugasan pelajar untuk diselesaikan sebelum semakan",
+        "locked": "Pertanyaan ditutup — temu duga telah selesai. Ini kini rekod baca-sahaja.",
         "itemOne": "perkara",
         "itemMany": "perkara",
         "empty": "Tiada yang belum selesai — semua tugasan pelajar telah jelas.",
