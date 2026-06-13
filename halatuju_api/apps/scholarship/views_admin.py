@@ -7,7 +7,6 @@ PartnerAdminMixin does the real authorisation.
 """
 import logging
 
-from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -16,6 +15,7 @@ from rest_framework.views import APIView
 from halatuju.pagination import FlexiblePageNumberPagination
 
 from apps.courses.models import PartnerAdmin
+from apps.courses.search import apply_people_search
 from apps.courses.views_admin import PartnerAdminMixin
 
 from . import pool
@@ -109,11 +109,15 @@ class AdminApplicationListView(_AdminBase):
         bucket_f = request.GET.get('bucket')
         source_f = request.GET.get('source')   # referring org chosen at apply
         assigned_f = request.GET.get('assigned')
-        q = (request.GET.get('q') or '').strip()
-        if q:
-            qs = qs.filter(
-                Q(profile__name__icontains=q) | Q(profile__nric__icontains=q)
-                | Q(profile__contact_phone__icontains=q) | Q(profile__contact_email__icontains=q))
+        # Free-text search across name / NRIC / phone / email — digits-only for phone+NRIC,
+        # and email covers notify_email too (most applicants have no contact_email). Shared
+        # with the Students directory via apps.courses.search. notify_email is a direct column
+        # here (no to-many join) → no distinct needed.
+        qs = apply_people_search(
+            qs, request.GET.get('q'),
+            name='profile__name', nric='profile__nric',
+            phone='profile__contact_phone', email='profile__contact_email',
+            extra_email='notify_email')
         if status_f:
             qs = qs.filter(status=status_f)
         if bucket_f:

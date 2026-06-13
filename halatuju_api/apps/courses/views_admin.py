@@ -21,12 +21,13 @@ from collections import Counter
 import requests as http_requests
 from django.conf import settings
 from django.db import connection
-from django.db.models import Q
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from halatuju.pagination import FlexiblePageNumberPagination
+
+from .search import apply_people_search
 from .models import StudentProfile, PartnerOrganisation, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
 
@@ -181,11 +182,14 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
             .distinct()
         )
 
-        q = (request.GET.get('q') or '').strip()
-        if q:
-            students = students.filter(
-                Q(name__icontains=q) | Q(nric__icontains=q)
-                | Q(contact_phone__icontains=q) | Q(contact_email__icontains=q))
+        # Free-text search across name / NRIC / phone / email — digits-only for phone+NRIC,
+        # and email also covers the student's application notify_email (contact_email is blank
+        # for most). Shared with the B40 list via apps.courses.search. The notify_email path
+        # crosses a to-many reverse FK → distinct() to avoid duplicate profile rows.
+        students = apply_people_search(
+            students, request.GET.get('q'),
+            name='name', nric='nric', phone='contact_phone', email='contact_email',
+            extra_email='scholarship_applications__notify_email', needs_distinct=True)
         exam = request.GET.get('exam')
         if exam in ('spm', 'stpm'):
             students = students.filter(exam_type=exam)
