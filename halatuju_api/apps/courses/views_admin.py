@@ -558,33 +558,59 @@ class AdminProfileView(PartnerAdminMixin, APIView):
         return Response({'message': 'Profile updated'})
 
 
+def _course_data_payload():
+    """Dashboard payload: per-source freshness (recorded status) + live coverage counts."""
+    from .models import CourseDataStatus
+    from .course_data_status import coverage_snapshot
+
+    statuses = {}
+    for row in CourseDataStatus.objects.all():
+        statuses[row.key] = {
+            'last_run_at': row.last_run_at.isoformat() if row.last_run_at else None,
+            'summary': row.summary or {},
+            'detail': row.detail or '',
+        }
+    for key, _label in CourseDataStatus.KEY_CHOICES:  # missing → null = "never run"
+        statuses.setdefault(key, None)
+    return {'statuses': statuses, 'coverage': coverage_snapshot()}
+
+
 class AdminCourseDataView(PartnerAdminMixin, APIView):
     """GET /api/v1/admin/course-data/ — read-only Course Data dashboard.
 
     Returns per-source freshness (last-run status the tools record) + live coverage counts.
-    Any admin role may view (read-only reporting). No 'run' triggers this sprint.
+    Any admin role may view (read-only reporting).
     """
 
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return Response({'error': 'Not a partner admin'}, status=403)
+        return Response(_course_data_payload())
 
-        from .models import CourseDataStatus
-        from .course_data_status import coverage_snapshot
 
-        statuses = {}
-        for row in CourseDataStatus.objects.all():
-            statuses[row.key] = {
-                'last_run_at': row.last_run_at.isoformat() if row.last_run_at else None,
-                'summary': row.summary or {},
-                'detail': row.detail or '',
-            }
-        # Every known key present (missing → null = "never run").
-        for key, _label in CourseDataStatus.KEY_CHOICES:
-            statuses.setdefault(key, None)
+class AdminCourseDataCheckView(PartnerAdminMixin, APIView):
+    """POST /api/v1/admin/course-data/check/ — run the READ-ONLY health check on demand.
 
-        return Response({
-            'statuses': statuses,
-            'coverage': coverage_snapshot(),
-        })
+    Runs `course_data_check` (audit_data + concurrent link reachability — NO --fix, NO scrape,
+    NO catalogue writes) synchronously, then returns the refreshed dashboard payload so the page
+    updates immediately. Super/admin only (it issues ~650 outbound link checks). The weekly cron
+    runs the same command. NEVER mutates the catalogue.
+    """
+
+    def post(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return Response({'error': 'Not a partner admin'}, status=403)
+        if not self.has_role(admin, 'super', 'admin'):
+            return Response({'error': 'forbidden'}, status=403)
+
+        import io
+        from django.core.management import call_command
+        try:
+            call_command('course_data_check', stdout=io.StringIO())
+        except Exception as e:  # noqa: BLE001 — report, never 500 the dashboard
+            import logging
+            logging.getLogger(__name__).warning('course_data_check failed: %s', e, exc_info=True)
+            return Response({'error': str(e)[:300], **_course_data_payload()}, status=200)
+        return Response(_course_data_payload())

@@ -57,11 +57,16 @@ class Command(BaseCommand):
                             help='Clear confirmed-dead (4xx/5xx) URLs from the DB. Transient errors are never cleared.')
         parser.add_argument('--limit', type=int, default=0, help='Check only the first N distinct URLs.')
         parser.add_argument('--timeout', type=float, default=10.0, help='Per-URL timeout (seconds).')
+        parser.add_argument('--workers', type=int, default=1,
+                            help='Concurrent URL checks (read-only HTTP GETs parallelise safely). '
+                                 'Default 1 (sequential). The dashboard health-check uses ~20 so ~650 URLs '
+                                 'finish in well under a minute.')
 
     def handle(self, *args, **options):
         fix = options['fix']
         limit = options['limit']
         timeout = options['timeout']
+        workers = max(1, options['workers'])
 
         # Distinct non-empty URLs across both fields, with reference counts (so the
         # report + --fix know how many rows each URL backs).
@@ -74,20 +79,36 @@ class Command(BaseCommand):
         urls = sorted(refs)
         if limit:
             urls = urls[:limit]
-        self.stdout.write('Checking %d distinct catalogue URLs (GET, %ss timeout)...' % (len(urls), timeout))
+        self.stdout.write('Checking %d distinct catalogue URLs (GET, %ss timeout, %d worker%s)...'
+                          % (len(urls), timeout, workers, '' if workers == 1 else 's'))
 
         alive = 0
         dead, errors = [], []
-        for i, u in enumerate(urls, 1):
-            status, detail = check_url(u, timeout)
+
+        def _classify(u, status, detail):
+            nonlocal alive
             if status == 'alive':
                 alive += 1
             elif status == 'dead':
                 dead.append((u, detail))
             else:
                 errors.append((u, detail))
-            if i % 50 == 0:
-                self.stdout.write('  checked %d/%d...' % (i, len(urls)))
+
+        if workers == 1:
+            for i, u in enumerate(urls, 1):
+                status, detail = check_url(u, timeout)
+                _classify(u, status, detail)
+                if i % 50 == 0:
+                    self.stdout.write('  checked %d/%d...' % (i, len(urls)))
+        else:
+            # Read-only GETs → safe to parallelise; aggregation stays single-threaded here.
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                results = pool.map(lambda u: (u, *check_url(u, timeout)), urls)
+                for i, (u, status, detail) in enumerate(results, 1):
+                    _classify(u, status, detail)
+                    if i % 100 == 0:
+                        self.stdout.write('  checked %d/%d...' % (i, len(urls)))
 
         self.stdout.write('\nAlive:  %d' % alive)
         self.stdout.write('Dead:   %d (4xx/5xx)' % len(dead))

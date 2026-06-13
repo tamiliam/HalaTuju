@@ -1,7 +1,7 @@
 'use client'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { getCourseDataStatus, type CourseDataStatusResponse } from '@/lib/admin-api'
+import { getCourseDataStatus, runCourseDataCheck, type CourseDataStatusResponse } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 
@@ -17,6 +17,7 @@ export default function CourseDataDashboard() {
   const { t } = useT()
   const [data, setData] = useState<CourseDataStatusResponse | null>(null)
   const [error, setError] = useState('')
+  const [checking, setChecking] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -24,6 +25,15 @@ export default function CourseDataDashboard() {
       .then(setData)
       .catch(() => setError(t('admin.notPartnerAdmin')))
   }, [token])
+
+  const runCheck = () => {
+    if (!token || checking) return
+    setChecking(true)
+    runCourseDataCheck({ token })
+      .then(setData)
+      .catch(() => { /* leave existing data; the check is best-effort */ })
+      .finally(() => setChecking(false))
+  }
 
   if (error) return <div className="text-red-600 mt-8 text-center">{error}</div>
   if (!data) return <div className="mt-8 text-center text-gray-500">{t('common.loading')}</div>
@@ -44,8 +54,22 @@ export default function CourseDataDashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">{t('admin.courseData.title')}</h1>
-      <p className="text-sm text-gray-500 mb-6">{t('admin.courseData.subtitle')}</p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-1">{t('admin.courseData.title')}</h1>
+          <p className="text-sm text-gray-500">{t('admin.courseData.subtitle')}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <button
+            onClick={runCheck}
+            disabled={checking}
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60 whitespace-nowrap"
+          >
+            {checking ? t('admin.courseData.checking') : t('admin.courseData.runCheck')}
+          </button>
+          <p className="text-[11px] text-gray-400 mt-1 max-w-[14rem]">{t('admin.courseData.runCheckHint')}</p>
+        </div>
+      </div>
 
       {/* Freshness strip */}
       <h2 className="font-semibold mb-3">{t('admin.courseData.freshness')}</h2>

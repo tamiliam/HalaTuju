@@ -207,16 +207,28 @@ UA/Asasi). The ~300 synthetic-ID courses (`POLY-*`/`KKOM-*`/`TVET-*`/`50PD…`) 
 roadmap Sprint 3b). New MOHE-coded courses are **reported, not auto-added** (requirements parsing = Sprint 3c). `is_active`
 is set by the sync but **not yet read-filtered** anywhere. See `docs/roadmap-course-data-pipeline.md` + `docs/decisions.md`.
 
-### Course Data dashboard (`/admin/course-data`, reporting-only)
+### Course Data dashboard (`/admin/course-data`, read-only reporting + health monitoring)
 
 A read-only admin status surface: per-source **freshness** (e-Panduan STPM/SPM, UP_TVET, eMASCO), **coverage**
 (have/available/gap, live from the DB), **link-health** + **audit** (last recorded run). Endpoint
 `GET /api/v1/admin/course-data/` (`AdminCourseDataView`, any admin role). Freshness comes from `CourseDataStatus`
 (`course_data_status` table) which the tools upsert on completion via `course_data_status.record_status(...)`:
-`refresh_stpm`→`epanduan_stpm`, `validate_course_urls`→`link_health`, `audit_data`→`audit`. (The SPM `sync_spm_mohe` + UP_TVET `scrape_uptvet`/`audit_uptvet` tools do NOT yet call `record_status` —
-until they do, the SPM/UP_TVET cards read "never run"; wiring that is a one-line add per tool.) **Reporting-only — no run-triggers this sprint** (matches "no
-harvesting"). Recording is best-effort (never breaks the tool). Migration `0054_coursedatastatus` is a new table →
-migrate-first via MCP + enable RLS at deploy (service-role-only); it parallels `spm-catalogue`'s `0054` (merge-resolve).
+`refresh_stpm`→`epanduan_stpm`, `validate_course_urls`→`link_health`, `audit_data`→`audit`. (The SPM `sync_spm_mohe` +
+UP_TVET `scrape_uptvet`/`audit_uptvet` tools do NOT yet call `record_status` — until they do, the SPM/UP_TVET cards read
+"never run"; wiring that is a one-line add per tool.)
+
+**Health monitoring (READ-ONLY — no catalogue writes).** The dashboard's Link-health + Audit + freshness are kept
+current by `course_data_check` = `audit_data` + `validate_course_urls --workers 20` (**no `--fix`/`--apply`/scrape**;
+~650 URLs check concurrently in <1 min). Two ways to run it, both read-only:
+- **Weekly cron** — `CronRunView` job `course-data-check` ← Cloud Scheduler `halatuju-course-data-check` (Mon 03:00 Asia/KL,
+  `X-Cron-Secret`). Create at deploy (mirror `halatuju-application-reminders`).
+- **Manual button** — `POST /api/v1/admin/course-data/check/` (`AdminCourseDataCheckView`, **super/admin only**) runs it
+  synchronously and returns the refreshed payload; "Run health check now" on the page.
+
+The browser catalogue scrapes (`refresh_stpm`, `scrape_uptvet`) stay manual/local (need Chromium) and only dry-run.
+**UI-driven *updating* (apply-a-refresh) is deliberately NOT built** — owner wants reporting only.
+Migration `0054_coursedatastatus` is the only schema for this surface (already on prod); the health-monitoring sprint
+added NO migration.
 
 ### CRITICAL: Pre-Deploy Checklist
 
@@ -262,6 +274,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/management/commands/scrape_uptvet.py` | UP_TVET catalogue scraper (mohon.tvet.gov.my → CSV; no DB writes) | No |
 | `apps/courses/management/commands/audit_uptvet.py` | UP_TVET coverage inventory (Awam/Swasta split, new-vs-held; no DB writes) | No |
 | `apps/courses/management/commands/audit_data.py` | Data completeness report (records dashboard `audit` status) | No |
+| `apps/courses/management/commands/course_data_check.py` | READ-ONLY dashboard health check: audit + concurrent link reachability (no writes) | No |
 | `apps/courses/course_data_status.py` | Course Data dashboard support: `record_status` + live `coverage_snapshot` | No |
 | `apps/courses/management/commands/generate_stpm_headlines.py` | Gemini-powered STPM headline generator | No |
 | `apps/courses/management/commands/backfill_spm_field_key.py` | Deterministic SPM field_key classifier + backfill | No |
