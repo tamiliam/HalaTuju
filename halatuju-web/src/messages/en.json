@@ -3169,7 +3169,32 @@
         "epanduan_spm": "e-Panduan · SPM",
         "uptvet": "UP_TVET",
         "emasco": "eMASCO (jobs)"
-      }
+      },
+      "runCheck": "Run health check now",
+      "checking": "Checking…",
+      "runCheckHint": "Read-only: re-checks links + audit (~2 min). No catalogue changes.",
+      "problemLinks": "Problem links",
+      "downloadCsv": "Download CSV",
+      "rows": "rows",
+      "insecure": "Insecure cert",
+      "problemLinksHint": "Links the last check could not reach, grouped by reason. Read-only — review and fix at source.",
+      "reason": {
+        "gone": "Gone (404 / 5xx)",
+        "dns": "Domain not found",
+        "timeout": "Timed out",
+        "conn": "Connection failed",
+        "badurl": "Malformed URL",
+        "other": "Other",
+        "gated": "Forbidden (401/403)"
+      },
+      "broken": "Broken",
+      "couldntVerify": "Couldn't verify",
+      "brokenHeader": "Broken — fix these",
+      "unverifiedHeader": "Couldn't verify",
+      "unverifiedHint": "Almost certainly live — these were just too slow or blocked from our checker, not a to-do.",
+      "accessBlocked": "Access-blocked",
+      "gatedHeader": "Access-blocked (401/403)",
+      "gatedHint": "The server answered but refused this page — usually a login wall (fine), occasionally a wrong/old path (like Port Dickson). Worth a manual look."
     }
   }
 }

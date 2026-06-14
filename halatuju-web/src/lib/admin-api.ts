@@ -969,9 +969,18 @@ export async function reviewSponsor(
 
 // ---- Course Data dashboard (read-only) ----
 
+export interface LinkFailure {
+  url: string
+  kind: string          // 'gone' | 'dns' | 'timeout' | 'conn' | 'badurl' | …
+  detail: string        // HTTP code for 'gone'
+  institutions: string[]
+  refs: number          // how many catalogue rows use this URL
+}
+
 export interface CourseDataStatusEntry {
   last_run_at: string | null
-  summary: Record<string, number | string>
+  // counts (numbers) + the link-health 'failures' array; kept loose for forward-compat.
+  summary: Record<string, number | string> & { failures?: LinkFailure[] }
   detail: string
 }
 
@@ -993,4 +1002,9 @@ export interface CourseDataStatusResponse {
 
 export async function getCourseDataStatus(options?: ApiOptions): Promise<CourseDataStatusResponse> {
   return adminFetch<CourseDataStatusResponse>('/api/v1/admin/course-data/', options)
+}
+
+/** Run the read-only health check (audit + link reachability) now; returns the refreshed status. */
+export async function runCourseDataCheck(options?: ApiOptions): Promise<CourseDataStatusResponse> {
+  return adminMutate<CourseDataStatusResponse>('/api/v1/admin/course-data/check/', 'POST', {}, options)
 }
