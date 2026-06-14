@@ -679,7 +679,10 @@ class AdminSponsorListView(_AdminBase):
     def get(self, request):
         if not self.get_admin(request):
             return self._deny()
-        qs = Sponsor.objects.all()
+        # Deterministic ordering (TD audit 2026-06-14) — without it the row order was
+        # undefined. Full pagination is deferred: these are low-cardinality admin tables and
+        # the sponsors table FE does not yet handle a paged envelope (would truncate to 25).
+        qs = Sponsor.objects.all().order_by('-id')
         status_filter = request.query_params.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
@@ -757,7 +760,8 @@ class AdminSponsorshipListView(_AdminBase):
     def get(self, request):
         if not self.get_admin(request):
             return self._deny()
-        qs = Sponsorship.objects.select_related('sponsor', 'application', 'application__profile')
+        qs = (Sponsorship.objects.select_related('sponsor', 'application', 'application__profile')
+              .order_by('-id'))  # deterministic ordering (TD audit 2026-06-14)
         st = request.query_params.get('status')
         if st:
             qs = qs.filter(status=st)
