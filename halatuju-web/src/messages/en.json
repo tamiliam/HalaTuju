@@ -2424,7 +2424,7 @@
       },
       "interview": {
         "title": "Interview Stage",
-        "intro": "Record a verdict and a one-line reason against each pre-interview flag, plus a quick rating.",
+        "intro": "AI-found gaps to raise live — use them, ask your own, or generate more. Then record your findings and conclusions below.",
         "noFlags": "No automated flags. Use the rubric + note to record your judgement.",
         "submitted": "Submitted",
         "inProgress": "In progress",
@@ -2830,6 +2830,9 @@
         "reasonLabel": "Reason / notes",
         "reasonPlaceholder": "Add a note explaining your decision (optional).",
         "save": "Save verdict & generate final profile",
+        "approve": "Approve",
+        "decline": "Decline",
+        "youDecide": "you decide.",
         "saveAccept": "Save verdict & accept",
         "aiSuggested": "AI suggested:",
         "suggest": {

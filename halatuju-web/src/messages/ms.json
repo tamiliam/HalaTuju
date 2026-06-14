@@ -2424,7 +2424,7 @@
       },
       "interview": {
         "title": "Peringkat Temu Duga",
-        "intro": "Rekod keputusan dan satu baris sebab bagi setiap bendera pra-temu duga, serta penilaian ringkas.",
+        "intro": "Jurang yang ditemui AI untuk ditanya secara langsung — gunakannya, tanya soalan anda sendiri, atau jana lagi. Kemudian rekod penemuan dan kesimpulan anda di bawah.",
         "noFlags": "Tiada bendera automatik. Gunakan rubrik + nota untuk merekod penilaian anda.",
         "submitted": "Dihantar",
         "inProgress": "Sedang berjalan",
@@ -2830,6 +2830,9 @@
         "reasonLabel": "Sebab / nota",
         "reasonPlaceholder": "Tambah nota yang menerangkan keputusan anda (pilihan).",
         "save": "Simpan keputusan & jana profil akhir",
+        "approve": "Lulus",
+        "decline": "Tolak",
+        "youDecide": "anda yang putuskan.",
         "saveAccept": "Simpan keputusan & terima",
         "aiSuggested": "AI cadangkan:",
         "suggest": {

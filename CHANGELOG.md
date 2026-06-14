@@ -34,6 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (default 1 for targeted/manual runs).
 
 ### Changed
+- **Cockpit Check-2/Check-3 — post-close review round 5 (FE + i18n only; no migration).** Interview Stage: removed the
+  "Raise work for the student" heading; **removed the Clarity/Financial/Resilience rubric** entirely; intro reworded to
+  "AI-found gaps to raise live — use them, ask your own, or generate more; then record your findings and conclusions below."
+  Decision panel: the **AI-suggested line moved up** to directly under the four facts; **removed** the "Mark Identity =
+  Pass…" hint, the old "Decline (after review)" button, and the "Pose written query"/"Add interview findings" tools; **added
+  explicit Approve + Decline buttons above "Save verdict & generate final profile"** — Approve = record verdict + accept
+  (same completeness/identity gate, now explicit; backend re-checks), Save = record + finalise the profile *without*
+  accepting, Decline = reject. jest 306, `next build` clean, parity 2929×3.
 - **Cockpit Check-2/Check-3 — post-close review round 4 (FE + i18n + 1 backend line; no migration).** Live-review polish:
   (1) the Interview-Stage agenda shows each flag as the **question the reviewer asks live** (`.question`, 2nd-person) not
   the internal description, and the carried-over "ask these at the interview" block was **removed**; (2) each agenda item's
