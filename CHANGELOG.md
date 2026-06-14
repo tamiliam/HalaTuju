@@ -34,6 +34,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (default 1 for targeted/manual runs).
 
 ### Changed
+- **Cockpit Check-2/Check-3 — post-close review round 6 (FE + i18n only; no migration).** Interview Stage: removed the
+  "In progress" pill; "Suggest interview gaps (AI)" -> "Suggest interview questions"; "Overall note" -> "Record your
+  findings and conclusions"; "Submit interview" -> "Submit interview findings". Decision panel: "Reason / notes" ->
+  "Conclusion" (placeholder "State your conclusions / reasons for your decision"); **Approve/Decline now activate only when
+  the interview is submitted, all four facts are pressed, and a conclusion is written**, and are restyled to white +
+  coloured outline that fills solid on hover/press. **#9 sync:** an interview anomaly is suppressed from the agenda when the
+  same concern is already a Check-2 query (utility holder/address, device, siblings) — Check-2 fires first, no repeat.
+  **#10/#11 clarity:** the reviewer's "Request a document" prefill + the student-facing Check-2 upload queries now say what
+  we look for (STR 'Lulus' clearly visible; IC name + number clearly visible; full official results slip). jest 306,
+  `next build` clean, parity 2943x3.
 - **Cockpit Check-2/Check-3 — post-close review round 5 (FE + i18n only; no migration).** Interview Stage: removed the
   "Raise work for the student" heading; **removed the Clarity/Financial/Resilience rubric** entirely; intro reworded to
   "AI-found gaps to raise live — use them, ask your own, or generate more; then record your findings and conclusions below."

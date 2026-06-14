@@ -1612,7 +1612,7 @@
       "item": {
         "ic_missing": {
           "title": "Muat naik IC anda",
-          "desc": "Kami masih perlukan foto atau imbasan jelas MyKad anda (depan)."
+          "desc": "Kami masih perlukan foto atau imbasan jelas MyKad anda (depan). Pastikan nama dan nombor IC anda jelas kelihatan — tanpa silau atau kabur."
         },
         "ic_unreadable": {
           "title": "IC anda sukar dibaca",
@@ -1632,7 +1632,7 @@
         },
         "results_slip_missing": {
           "title": "Muat naik slip keputusan",
-          "desc": "Kami perlukan slip keputusan SPM (atau STPM) untuk mengesahkan gred anda."
+          "desc": "Kami perlukan slip keputusan SPM (atau STPM) untuk mengesahkan gred anda. Muat naik slip rasmi penuh dengan nama dan semua subjek jelas kelihatan."
         },
         "results_slip_unreadable": {
           "title": "Slip keputusan sukar dibaca",
@@ -1660,7 +1660,7 @@
         },
         "earner_ic_missing": {
           "title": "Muat naik KP untuk {members}",
-          "desc": "Kami menggunakannya untuk mengesahkan dokumen pendapatan (STR, slip gaji, KWSP) milik keluarga anda."
+          "desc": "Kami menggunakannya untuk mengesahkan dokumen pendapatan (STR, slip gaji, KWSP) milik keluarga anda. Pastikan nama dan nombor IC jelas kelihatan."
         },
         "earner_ic_unreadable": {
           "title": "Muat naik gambar KP yang lebih jelas untuk {members}",
@@ -2402,6 +2402,21 @@
       "requestDocLabel": "Atau minta dokumen tertentu",
       "requestDocTitle": "Minta dokumen",
       "requestDocNotePlaceholder": "Terangkan apa yang diperlukan (telah diisi — sunting ikut keperluan)",
+      "requestDocStd": {
+        "ic": "Kad Pengenalan (MyKad) — pastikan nama dan nombor IC anda jelas kelihatan",
+        "parent_ic": "Kad Pengenalan (MyKad) — nama dan nombor IC jelas kelihatan",
+        "results_slip": "slip keputusan SPM — slip rasmi penuh dengan nama anda jelas kelihatan",
+        "offer_letter": "surat tawaran — mesti dialamatkan kepada anda dan menunjukkan nama/IC anda",
+        "str": "dokumen STR (Sumbangan Tunai Rahmah) — pastikan status 'Lulus' jelas kelihatan",
+        "salary_slip": "slip gaji terkini — menunjukkan majikan, nama, dan gaji bulanan",
+        "epf": "penyata KWSP (EPF) — menunjukkan caruman bulanan terkini",
+        "water_bill": "bil air terkini — menunjukkan nama pemegang akaun dan alamat",
+        "electricity_bill": "bil elektrik (TNB) terkini — menunjukkan nama pemegang akaun dan alamat",
+        "birth_certificate": "sijil kelahiran — menunjukkan nama anda dan nama ibu bapa anda",
+        "guardianship_letter": "surat penjagaan atau perintah mahkamah",
+        "statement_of_intent": "pernyataan hasrat",
+        "photo": "gambar terkini anda"
+      },
       "raiseSectionTitle": "Kemukakan tugasan untuk pelajar",
       "raiseSectionHint": "Tugasan yang anda ingin berikan kepada pelajar sebelum temu duga",
       "raiseQueryTitle": "Kemukakan pertanyaan",
@@ -2430,9 +2445,9 @@
         "inProgress": "Sedang berjalan",
         "carryOver": "Pertanyaan Semakan 2 yang belum dijawab — tanya semasa temu duga",
         "rationalePlaceholder": "Satu baris: apa yang anda temui",
-        "notePlaceholder": "Nota keseluruhan (pilihan)",
+        "notePlaceholder": "Rekod penemuan dan kesimpulan anda",
         "saveDraft": "Simpan draf",
-        "submit": "Hantar temu duga",
+        "submit": "Hantar penemuan temu duga",
         "saveError": "Tidak dapat menyimpan temu duga.",
         "submitError": "Tidak dapat menghantar temu duga.",
         "verdict": {
@@ -2556,7 +2571,7 @@
         }
       },
       "gaps": {
-        "button": "Cadang soalan temu duga (AI)",
+        "button": "Cadang soalan temu duga",
         "running": "Menjana…",
         "error": "Tidak dapat menjana cadangan. Sila cuba lagi.",
         "title": "Cadangan AI",
@@ -2827,8 +2842,8 @@
         "title": "Rekod keputusan anda",
         "factPass": "Lulus",
         "factFail": "Gagal",
-        "reasonLabel": "Sebab / nota",
-        "reasonPlaceholder": "Tambah nota yang menerangkan keputusan anda (pilihan).",
+        "reasonLabel": "Kesimpulan",
+        "reasonPlaceholder": "Nyatakan kesimpulan / sebab keputusan anda",
         "save": "Simpan keputusan & jana profil akhir",
         "approve": "Lulus",
         "decline": "Tolak",
