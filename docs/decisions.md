@@ -2843,3 +2843,18 @@ and carry-over feed are deferred to Sprint 4. Until then the "interview conclude
 not yet enforced in code.
 **Revisit if:** the programme ever needs post-interview document collection (e.g. a conditional offer awaiting
 one more doc) — then Interview Stage would need its own scoped request channel after all.
+
+## Answered queries auto-accepted; unanswered get Delete; lock at interview conclusion — Check-2/Check-3 S4, 2026-06-14
+**Decision:** A student's answer to a Check-2 query is auto-accepted — the question+answer simply display as the record,
+no officer Accept/Ask-again. Unanswered items offer a single **Delete** (waive) so the reviewer can drop an irrelevant or
+poorly-worded query and raise a better one. All querying (raise / Delete / reopen / student resolve) **locks** once the
+interview is concluded (`querying_locked`: status ≥ interviewed OR a submitted interview session); Outstanding becomes a
+read-only record. Submit also auto-finalises the polished profile, and the reviewer handoff auto-drafts it — both gated
+behind the OFF `CHECK2_AUTO_GENERATE` flag.
+**Alternatives considered:** the S2 "officer explicitly Accepts/Ask-again each answer" model (the owner found it unnecessary
+ceremony — the apply/application stage already accepted these answers); a hard DB-level lock; auto-gen on by default.
+**Rationale:** mirrors the real reviewer flow (query window runs up to the interview, then it's decision time); keeps the
+officer surface minimal; ship-dark gating means no billable Gemini calls until the owner flips one env var.
+**Trade-offs:** auto-accept means a wrong/poor answer isn't formally re-queried after the interview (the reviewer asks
+verbally instead); Delete waives rather than hard-deletes (keeps the audit row, hidden from both sides).
+**Revisit if:** the programme needs post-interview document collection, or an explicit officer sign-off per answer for audit.

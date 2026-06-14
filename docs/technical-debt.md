@@ -748,6 +748,9 @@
   **Sprint 1 SHIPPED 2026-06-13** (`main` `7b460d4` + MCP backfill; retro `docs/retrospective-slot-model-s1.md`): tolerant
   readers (by-person, blank-as-earner fallback on STR) + authoritative upload tagging (STR income docs ← `income_earner`,
   tolerant sweep) + wizard per-earner; 53 docs backfilled (0 blanks, 0 dup slots); #12 corrected → STR/mother. Verdict-invariant.
+  **(b) RESOLVED 2026-06-14** — salary-route Action-Centre member-tagging: an officer per-person doc request stashes the
+  member in the ticket's `params`; the student's Action-Centre upload tags `household_member` from there (Check-2/Check-3 S2b,
+  `main`). **(c) RESOLVED 2026-06-14** — Check-2/Check-3 process flow & display shipped as the cockpit redesign (4 sprints +
+  3 review rounds; `f5243a7` → `762b358`; roadmap `docs/scholarship/check2-check3-roadmap.md`).
   **Still open (deferred):** (a) DB `UniqueConstraint(application,doc_type,household_member)` — the permanent guarantee; needs
-  test-fixture rework (tests pre-create same-slot docs) + migrate-first; app layer already prevents dups. (b) salary-route
-  Action-Centre member-tagging (STR path already fixed). (c) Check-2/Check-3 process flow & display (separate pass). (Logged 2026-06-13.)
+  test-fixture rework (tests pre-create same-slot docs) + migrate-first; app layer already prevents dups. (Logged 2026-06-13; b+c closed 2026-06-14.)
