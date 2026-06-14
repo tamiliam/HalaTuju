@@ -2063,7 +2063,14 @@
     "verified": "Verified",
     "notVerified": "Not verified",
     "verify": "Verify",
-    "verificationSent": "Verification email sent. Check your inbox."
+    "verificationSent": "Verification email sent. Check your inbox.",
+    "meritScore": "Merit score",
+    "meritTapAdd": "Not set — tap to add results",
+    "pathway": "Pathway",
+    "pathwayTapAdd": "Not set — tap to choose",
+    "familyMembers": "Family members",
+    "familyLinkNote": "Shared with your scholarship application while it's open.",
+    "familyOthers": "Other working members"
   },
   "quiz": {
     "pickUpTo": "Pick up to {count}",

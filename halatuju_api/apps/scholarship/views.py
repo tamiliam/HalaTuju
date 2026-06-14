@@ -111,6 +111,15 @@ class ApplicationListCreateView(APIView):
             profile=profile, cohort=cohort,
             validated_data=validated, to_email=to_email, lang=lang,
         )
+        # Prefill the new application's family roster from the profile (the durable
+        # home) so the Story editor opens pre-filled; the two then two-way sync while
+        # the application is open. Only when the profile has roster data and the new
+        # application doesn't.
+        from . import family
+        if ((profile.father_name or profile.mother_name or profile.other_family_members)
+                and not family.has_structured_roster(application)):
+            family.copy_family_roster(profile, application)
+            application.save(update_fields=list(family.PROFILE_FAMILY_FIELDS))
         # Score silently now (S8 delayed reveal): the verdict + decision_due_at are
         # stored, status stays 'submitted', no decision email yet. The scheduler
         # (release_due_decisions) reveals it at +2h (shortlist) / +48h (decline).

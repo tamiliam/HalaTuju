@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **/profile enhancements (a–e).** (a) **Verified badges** — Contact Email shows green "Verified" when it IS the
+  Google login identity (no more false "Not verified"); Name + IC Number show "Verified" once `nric_verified` (admin
+  checked the IC). (b) **Colour Blindness + Physical Disability moved** from Family & Background to Personal Details.
+  (c) **Family roster on /profile** — the structured Father/Mother + roster + sibling steppers, extracted into a shared
+  `<FamilyRosterFields>` (one editor, used by both "Your story" and /profile). The roster now lives on the
+  **`StudentProfile`** (its durable home, edited by everyone), migration `courses/0056` (additive, migrate-first). It is
+  **two-way linked to an OPEN application**: starting an application prefills from the profile; while the application is
+  undecided, editing either side syncs both; once the scholarship is **decided the application copy FREEZES** and
+  /profile edits no longer touch it (the officer's record is preserved). (d) **Merit score** in Application Tracking
+  (the SPM merit computed from the stored grades) — tap routes to the grades editor. (e) **Pathway** above Merit, from
+  the application's chosen pathway — tap routes to the Apply pathway picker. Backend: `ProfileView` GET surfaces
+  `merit_score`/`pathway`/family fields + the email-verified rule; PUT mirrors the roster to an open application;
+  `save_application_details` mirrors back; create prefills. 13 backend tests; 2364 backend pytest, 320 jest, parity
+  2679×3, `next build` clean.
 - **EPF statement mining — average contribution, zero-vs-unreadable, statement date, address.** The KWSP Penyata
   Ahli was under-used (we read only the latest month's contribution). Now the parser + Gemini schema also extract:
   **`avg_monthly_contribution`** (the average across all CARUMAN SEMASA months, with `months_counted`) — and the

@@ -90,6 +90,22 @@ export interface StudentProfile {
   // The SPM subjects picked as electives/tambahan — the durable record of which
   // grade keys are electives, so the grades form survives a logout/login. Up to 7.
   elective_subjects?: string[]
+  // Structured family roster (profile-level home; two-way synced with an open
+  // application). Same field names as ScholarshipApplication's roster columns.
+  father_name?: string
+  father_occupation?: string
+  father_occupation_other?: string
+  mother_name?: string
+  mother_occupation?: string
+  mother_occupation_other?: string
+  other_family_members?: { role: 'brother' | 'sister' | 'guardian'; occupation: string; occupation_other?: string }[]
+  siblings_in_school?: number | null
+  siblings_in_tertiary?: number | null
+  // Application Tracking surfaces (read-only on /profile)
+  merit_score?: number | null   // SPM academic merit, computed from grades
+  pathway?: string              // the latest application's chosen pathway code
+  pre_u_track?: string          // STPM stream / Matric track, when applicable
+  application_open?: boolean     // is the family link currently live (app undecided)
 }
 
 export interface EligibleCourse {

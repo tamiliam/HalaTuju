@@ -17,6 +17,8 @@ import {
 import type { SavedCourseWithStatus } from '@/lib/api'
 import { isValidPhone, formatPhone } from '@/lib/scholarship'
 import SchoolSelect from '@/components/SchoolSelect'
+import FamilyRosterFields, { type FamilyRosterForm } from '@/components/FamilyRosterFields'
+import type { OtherMember } from '@/lib/familyRoster'
 import AppHeader from '@/components/AppHeader'
 import { useToast } from '@/components/Toast'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
@@ -38,6 +40,12 @@ const STATUS_OPTIONS = [
 ]
 
 type EditingSection = 'identity' | 'contactDetails' | 'contact' | 'family' | 'application' | null
+
+const EMPTY_FAMILY: FamilyRosterForm = {
+  fatherName: '', fatherOccupation: '', fatherOccupationOther: '',
+  motherName: '', motherOccupation: '', motherOccupationOther: '',
+  otherFamilyMembers: [], siblingsInSchool: 0, siblingsInTertiary: 0,
+}
 
 function countIncomplete(fields: (string | boolean | number | null | undefined)[]): number {
   return fields.filter(f => f === '' || f === null || f === undefined).length
@@ -93,6 +101,13 @@ export default function ProfilePage() {
   const [householdSize, setHouseholdSize] = useState<string>('')
   const [colorblind, setColorblind] = useState(false)
   const [disability, setDisability] = useState(false)
+  const [nricVerified, setNricVerified] = useState(false)
+  // Structured family roster — the durable profile-level home (two-way synced with
+  // an open B40 application by the backend). Shown in Family & Background.
+  const [family, setFamily] = useState<FamilyRosterForm>(EMPTY_FAMILY)
+  // Application Tracking read-only surfaces.
+  const [meritScore, setMeritScore] = useState<number | null>(null)
+  const [pathway, setPathway] = useState('')
   const [angkaGiliran, setAngkaGiliran] = useState('')
   // Guided school (optional) — shown in the Application Tracking card above Angka Giliran.
   const [school, setSchool] = useState('')
@@ -133,6 +148,20 @@ export default function ProfilePage() {
       setHouseholdSize(profileData.household_size != null ? String(profileData.household_size) : '')
       setColorblind(!!profileData.colorblind)
       setDisability(!!profileData.disability)
+      setNricVerified(!!profileData.nric_verified)
+      setFamily({
+        fatherName: profileData.father_name || '',
+        fatherOccupation: profileData.father_occupation || '',
+        fatherOccupationOther: profileData.father_occupation_other || '',
+        motherName: profileData.mother_name || '',
+        motherOccupation: profileData.mother_occupation || '',
+        motherOccupationOther: profileData.mother_occupation_other || '',
+        otherFamilyMembers: Array.isArray(profileData.other_family_members) ? profileData.other_family_members : [],
+        siblingsInSchool: profileData.siblings_in_school ?? 0,
+        siblingsInTertiary: profileData.siblings_in_tertiary ?? 0,
+      })
+      setMeritScore(profileData.merit_score ?? null)
+      setPathway(profileData.pathway || '')
       setAngkaGiliran(profileData.angka_giliran || '')
       setSchool(profileData.school || '')
       setContactEmail(profileData.contact_email || '')
@@ -153,6 +182,30 @@ export default function ProfilePage() {
       setLoading(false)
     }
   }, [token, session])
+
+  // Family-roster handlers (shape matches FamilyRosterFields' props).
+  const updateFamily = <K extends keyof FamilyRosterForm>(key: K, value: FamilyRosterForm[K]) =>
+    setFamily(prev => ({ ...prev, [key]: value }))
+  const addFamilyMember = () =>
+    setFamily(prev => ({ ...prev, otherFamilyMembers: [...prev.otherFamilyMembers, { role: 'brother', occupation: '' }] }))
+  const removeFamilyMember = (i: number) =>
+    setFamily(prev => ({ ...prev, otherFamilyMembers: prev.otherFamilyMembers.filter((_, j) => j !== i) }))
+  const updateFamilyMember = (i: number, patch: Partial<OtherMember>) =>
+    setFamily(prev => ({ ...prev, otherFamilyMembers: prev.otherFamilyMembers.map((m, j) => (j === i ? { ...m, ...patch } : m)) }))
+
+  // Read-only family summary (Family & Background view mode).
+  const professionLabel = (code: string, other: string) =>
+    !code ? '' : code === 'other'
+      ? (other || t('scholarship.nextSteps.story.cardA.prof.other'))
+      : t(`scholarship.nextSteps.story.cardA.prof.${code}`)
+  const familySummary = (who: 'father' | 'mother') => {
+    const name = who === 'father' ? family.fatherName : family.motherName
+    const occ = who === 'father' ? family.fatherOccupation : family.motherOccupation
+    const other = who === 'father' ? family.fatherOccupationOther : family.motherOccupationOther
+    if (!name && !occ) return '—'
+    const prof = professionLabel(occ, other)
+    return prof ? `${name || '—'} (${prof})` : (name || '—')
+  }
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -190,6 +243,16 @@ export default function ProfilePage() {
         disability,
         angka_giliran: angkaGiliran,
         school,
+        // Structured family roster (backend mirrors it to an open application).
+        father_name: family.fatherName.trim(),
+        father_occupation: family.fatherOccupation,
+        father_occupation_other: family.fatherOccupation === 'other' ? family.fatherOccupationOther.trim() : '',
+        mother_name: family.motherName.trim(),
+        mother_occupation: family.motherOccupation,
+        mother_occupation_other: family.motherOccupation === 'other' ? family.motherOccupationOther.trim() : '',
+        other_family_members: family.otherFamilyMembers,
+        siblings_in_school: family.siblingsInSchool,
+        siblings_in_tertiary: family.siblingsInTertiary,
       }, { token })
 
       // Keep localStorage in sync so onboarding uses the same values
@@ -209,7 +272,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone })
+    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, family })
     setEditingSection(section)
   }
 
@@ -230,6 +293,7 @@ export default function ProfilePage() {
     setSchool(snapshot.school as string || '')
     setContactEmail(snapshot.contactEmail as string || '')
     setContactPhone(snapshot.contactPhone as string || '')
+    setFamily((snapshot.family as FamilyRosterForm) || EMPTY_FAMILY)
     setEditingSection(null)
   }
 
@@ -406,6 +470,22 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.colorBlindness')}</label>
+                    <div className="flex gap-2">
+                      <button onClick={() => setColorblind(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${colorblind ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}>{t('profile.yes')}</button>
+                      <button onClick={() => setColorblind(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!colorblind ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}>{t('profile.no')}</button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.physicalDisability')}</label>
+                    <div className="flex gap-2">
+                      <button onClick={() => setDisability(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${disability ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}>{t('profile.yes')}</button>
+                      <button onClick={() => setDisability(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!disability ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}>{t('profile.no')}</button>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex gap-3 pt-4">
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                     {t('profile.cancel')}
@@ -424,11 +504,25 @@ export default function ProfilePage() {
                     </svg>
                     {t('profile.icMasked')}
                   </span>
-                  <span className="text-sm text-gray-900 font-mono">{nric ? maskIc(nric) : '—'}</span>
+                  <span className="text-sm text-gray-900 font-mono flex items-center gap-1.5">
+                    {nric ? maskIc(nric) : '—'}
+                    {nric && nricVerified && (
+                      <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.name')} empty={!name} />
-                  <FieldValue value={name} t={t} />
+                  {name ? (
+                    <span className="text-sm text-gray-900 flex items-center gap-1.5">
+                      {name}
+                      {nricVerified && (
+                        <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <FieldValue value="" t={t} />
+                  )}
                 </div>
                 <div className="flex justify-between">
                   <FieldLabel label={t('onboarding.gender')} empty={!gender} />
@@ -441,6 +535,14 @@ export default function ProfilePage() {
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">{t('onboarding.nationality')}</span>
                   <span className="text-sm text-gray-900">{nationality === 'malaysian' ? t('onboarding.malaysian') : t('onboarding.nonMalaysian')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.colorBlindness')}</span>
+                  <span className="text-sm text-gray-900">{colorblind ? t('profile.yes') : t('profile.no')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.physicalDisability')}</span>
+                  <span className="text-sm text-gray-900">{disability ? t('profile.yes') : t('profile.no')}</span>
                 </div>
               </div>
             )}
@@ -728,55 +830,19 @@ export default function ProfilePage() {
                   />
                   <p className="text-xs text-gray-400 mt-1">{t('profile.householdSizeHelper')}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.colorBlindness')}</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setColorblind(true)}
-                      className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        colorblind
-                          ? 'bg-primary-50 border-primary-500 text-primary-700'
-                          : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-                      }`}
-                    >
-                      {t('profile.yes')}
-                    </button>
-                    <button
-                      onClick={() => setColorblind(false)}
-                      className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        !colorblind
-                          ? 'bg-primary-50 border-primary-500 text-primary-700'
-                          : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-                      }`}
-                    >
-                      {t('profile.no')}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.physicalDisability')}</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setDisability(true)}
-                      className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        disability
-                          ? 'bg-primary-50 border-primary-500 text-primary-700'
-                          : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-                      }`}
-                    >
-                      {t('profile.yes')}
-                    </button>
-                    <button
-                      onClick={() => setDisability(false)}
-                      className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        !disability
-                          ? 'bg-primary-50 border-primary-500 text-primary-700'
-                          : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-                      }`}
-                    >
-                      {t('profile.no')}
-                    </button>
-                  </div>
+                {/* Structured family roster — the shared editor; while a B40
+                    application is open these values stay linked to it. */}
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="text-sm font-medium text-gray-900 mb-1">{t('profile.familyMembers')}</p>
+                  <p className="text-xs text-gray-400 mb-3">{t('profile.familyLinkNote')}</p>
+                  <FamilyRosterFields
+                    form={family}
+                    onUpdate={updateFamily}
+                    onUpdateMember={updateFamilyMember}
+                    onAddMember={addFamilyMember}
+                    onRemoveMember={removeFamilyMember}
+                    t={t}
+                  />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
@@ -797,13 +863,30 @@ export default function ProfilePage() {
                   <FieldLabel label={t('profile.householdSize')} empty={!householdSize} />
                   <FieldValue value={householdSize} t={t} />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">{t('profile.colorBlindness')}</span>
-                  <span className="text-sm text-gray-900">{colorblind ? t('profile.yes') : t('profile.no')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">{t('profile.physicalDisability')}</span>
-                  <span className="text-sm text-gray-900">{disability ? t('profile.yes') : t('profile.no')}</span>
+                <div className="border-t border-gray-100 pt-3 space-y-2">
+                  <p className="text-sm font-medium text-gray-900">{t('profile.familyMembers')}</p>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-sm text-gray-500 shrink-0">{t('scholarship.nextSteps.story.cardA.father')}</span>
+                    <span className="text-sm text-gray-900 text-right">{familySummary('father')}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-sm text-gray-500 shrink-0">{t('scholarship.nextSteps.story.cardA.mother')}</span>
+                    <span className="text-sm text-gray-900 text-right">{familySummary('mother')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">{t('scholarship.nextSteps.story.cardA.siblingsSchool')}</span>
+                    <span className="text-sm text-gray-900">{family.siblingsInSchool}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-500">{t('scholarship.nextSteps.story.cardA.siblingsTertiary')}</span>
+                    <span className="text-sm text-gray-900">{family.siblingsInTertiary}</span>
+                  </div>
+                  {family.otherFamilyMembers.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">{t('profile.familyOthers')}</span>
+                      <span className="text-sm text-gray-900">{family.otherFamilyMembers.length}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -830,6 +913,25 @@ export default function ProfilePage() {
                   {t('profile.edit')}
                 </button>
               )}
+            </div>
+
+            {/* Pathway + Merit — read-only here; tapping routes to the canonical editor
+                (the Apply pathway picker / the SPM grades editor). Shown above School. */}
+            <div className="space-y-3 mb-4">
+              <button type="button" onClick={() => router.push('/scholarship/apply')}
+                className="w-full flex justify-between items-center gap-3 text-left group">
+                <span className="text-sm text-gray-500">{t('profile.pathway')}</span>
+                <span className={`text-sm text-right ${pathway ? 'text-gray-900' : 'text-amber-500'} group-hover:text-primary-600`}>
+                  {pathway ? t(`scholarship.apply.plan.pathway.${pathway}`) : t('profile.pathwayTapAdd')}
+                </span>
+              </button>
+              <button type="button" onClick={() => router.push('/onboarding/grades')}
+                className="w-full flex justify-between items-center gap-3 text-left group">
+                <span className="text-sm text-gray-500">{t('profile.meritScore')}</span>
+                <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'} group-hover:text-primary-600`}>
+                  {meritScore != null ? meritScore : t('profile.meritTapAdd')}
+                </span>
+              </button>
             </div>
 
             {editingSection === 'application' ? (

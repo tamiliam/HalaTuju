@@ -976,14 +976,49 @@ class ProfileView(APIView):
         email = getattr(request, 'supabase_user', {}).get('email', '')
 
         # Contact email auto-defaults to the auth email when blank — the auth
-        # email is already verified (Google/Supabase). Student can override
-        # to a different contact email later, which then needs re-verification.
+        # email is already verified (Google/Supabase). It is ALSO considered verified
+        # when the student's saved contact email IS that same Google identity (the
+        # common case — they logged in with the address they want contacted on), so
+        # it no longer shows a false "Not verified". An explicitly DIFFERENT contact
+        # email still needs the verify-email flow.
         contact_email = profile.contact_email or email
-        contact_email_verified = (
+        contact_email_verified = bool(
             profile.contact_email_verified
-            if profile.contact_email
-            else bool(email)
+            or (email and contact_email.strip().lower() == email.strip().lower())
         )
+
+        # Merit score (SPM academic merit, computed from the stored grades) — shown on
+        # the /profile Application Tracking card; tapping it routes to the grades editor.
+        merit_score = None
+        if profile.grades:
+            try:
+                from .eligibility_service import compute_student_merit
+                merit_score = round(compute_student_merit({
+                    'grades': profile.grades,
+                    'coq_score': profile.coq_score if profile.coq_score is not None else 5.0,
+                    'stream_subjects': profile.stream_subjects,
+                }), 1)
+            except Exception:
+                merit_score = None
+
+        # The student's latest B40 application — for the pathway display (read-only here;
+        # chosen via the apply flow) and to tell the FE whether the family link is live.
+        latest_app = None
+        try:
+            from apps.scholarship.models import ScholarshipApplication
+            from apps.scholarship.family import DECIDED_STATUSES
+            latest_app = (ScholarshipApplication.objects
+                          .filter(profile=profile).order_by('-id').first())
+        except Exception:
+            latest_app = None
+            DECIDED_STATUSES = frozenset()
+        app_pathway = ''
+        app_pre_u_track = ''
+        application_open = False
+        if latest_app is not None:
+            app_pathway = (latest_app.chosen_pathway or latest_app.intended_pathway or '')
+            app_pre_u_track = (latest_app.pre_u_track or '')
+            application_open = latest_app.status not in DECIDED_STATUSES
 
         return Response({
             'grades': profile.grades,
@@ -1013,6 +1048,21 @@ class ProfileView(APIView):
             # siblings/phone). The /profile family card reads these.
             'household_income': profile.household_income,
             'household_size': profile.household_size,
+            # Structured family roster (profile-level home; two-way synced with an open application)
+            'father_name': profile.father_name,
+            'father_occupation': profile.father_occupation,
+            'father_occupation_other': profile.father_occupation_other,
+            'mother_name': profile.mother_name,
+            'mother_occupation': profile.mother_occupation,
+            'mother_occupation_other': profile.mother_occupation_other,
+            'other_family_members': profile.other_family_members,
+            'siblings_in_school': profile.siblings_in_school,
+            'siblings_in_tertiary': profile.siblings_in_tertiary,
+            # Application Tracking surfaces (read-only here): merit + chosen pathway
+            'merit_score': merit_score,
+            'pathway': app_pathway,
+            'pre_u_track': app_pre_u_track,
+            'application_open': application_open,
             'exam_type': profile.exam_type,
             'stpm_grades': profile.stpm_grades,
             'stpm_cgpa': profile.stpm_cgpa,
@@ -1056,6 +1106,21 @@ class ProfileView(APIView):
                 profile.save(update_fields=['referred_by_org'])
             except PartnerOrganisation.DoesNotExist:
                 pass  # Generic source (whatsapp, google) — no partner FK
+
+        # Family roster is two-way linked to an OPEN application: a /profile edit of the
+        # roster flows into the student's latest undecided application so the two stay
+        # identical. Once the application is decided its copy freezes (it's excluded
+        # here), and a /profile edit no longer touches it.
+        from apps.scholarship.family import PROFILE_FAMILY_FIELDS, DECIDED_STATUSES, copy_family_roster
+        if any(f in serializer.validated_data for f in PROFILE_FAMILY_FIELDS):
+            from apps.scholarship.models import ScholarshipApplication
+            open_app = (ScholarshipApplication.objects
+                        .filter(profile=profile)
+                        .exclude(status__in=DECIDED_STATUSES)
+                        .order_by('-id').first())
+            if open_app is not None:
+                copy_family_roster(profile, open_app)
+                open_app.save(update_fields=list(PROFILE_FAMILY_FIELDS))
 
         return Response({'message': 'Profile updated'})
 
