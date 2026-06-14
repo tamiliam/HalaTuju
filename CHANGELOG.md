@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Tarikh Penyata) and the member **`address`** (a further home-address corroboration). The income card shows avg ·
   months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
 
+### Changed
+- **Tech-debt paydown Sprint 0 — internal cleanup (no behaviour change).** From the 2026-06-14 scholarship audit
+  (`docs/scholarship-tech-debt-audit-2026-06-14.md`): removed dead `emails.send_fail_email` (superseded by
+  `send_decline_email`); trimmed unused imports (`Consent`/`Donation`/`CONSENT_VERSION` in `sponsorship.py`,
+  `is_minor` in `anomaly_engine.py`); de-duplicated the income-engine matchers — three inlined name/NRIC blocks now
+  reuse the existing `_name_bucket`/`_nric_bucket`, and `mother_relationship`/`father_via_bc` share one `_bc_link`
+  helper. 1231 scholarship pytest green.
+
 ### Fixed
 - **Address matching over-flagged legitimate utility bills (class fix, surfaced on #72).** The home-address
   check (`vision.address_present`) demanded the *city word* match even when the exact 5-digit postcode matched, so

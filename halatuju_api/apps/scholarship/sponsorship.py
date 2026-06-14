@@ -16,8 +16,8 @@ from django.utils import timezone
 
 from . import pool
 from .emails import send_award_confirmed_email
-from .models import Consent, Donation, Sponsorship, SponsorProfile
-from .services import CONSENT_VERSION, is_minor, record_consent
+from .models import Sponsorship, SponsorProfile
+from .services import is_minor, record_consent
 
 # Days a student/guardian has to accept an award before it lapses.
 ACCEPT_DEADLINE_DAYS = 14

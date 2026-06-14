@@ -11,7 +11,7 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 from .emails import (
-    send_acknowledgement_email, send_pass_email, send_fail_email,
+    send_acknowledgement_email, send_pass_email,
     send_decline_email, send_profile_complete_admin_email,
     send_submission_received_email,
 )
