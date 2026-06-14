@@ -506,10 +506,6 @@ def send_sponsor_digest_email(to_email, cards, lang='en'):
     return _send_sponsor_notify(to_email, SPONSOR_DIGEST_SUBJECTS, cards, 'weekly', lang, _SPONSOR_DIGEST_INTRO)
 
 
-def send_fail_email(to_email, applicant_name, programme_name, lang='en'):
-    return _send(to_email, FAIL_SUBJECTS, FAIL_BODIES, applicant_name, programme_name, lang)
-
-
 def send_decline_email(to_email, applicant_name, programme_name, category='', lang='en'):
     """Send the right decline email for a rejection bucket. merit/need/interview each
     get suggestive bucket-specific copy; ineligible/contractual/unknown fall back to

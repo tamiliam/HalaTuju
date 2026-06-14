@@ -25,7 +25,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Optional
 
 from .models import ApplicantDocument, FundingNeed
-from .services import age_from_nric, is_minor
+from .services import age_from_nric
 from .vision import _MY_STATES, name_match
 
 

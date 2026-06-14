@@ -69,22 +69,31 @@ def father_relationship(student_name: str, earner_ic_name: str) -> str:
     return 'mismatch' if name_match(father, earner_ic_name) == 'mismatch' else 'match'
 
 
+def _bc_link(bc_child_name: str, bc_parent_name: str,
+             student_name: str, earner_ic_name: str) -> str:
+    """Birth-Certificate linkage: the BC's child must be the student AND its named
+    parent must be the earner IC. Either side disjoint → mismatch; both agree →
+    match; not enough read yet → pending. Shared by mother_relationship (BC mother)
+    and father_via_bc (BC father)."""
+    if not (bc_child_name or '').strip() and not (bc_parent_name or '').strip():
+        return 'pending'                       # BC not uploaded / not read
+    child_ok = (name_match(bc_child_name, student_name) != 'mismatch'
+                if bc_child_name and student_name else None)
+    parent_ok = (name_match(bc_parent_name, earner_ic_name) != 'mismatch'
+                 if bc_parent_name and earner_ic_name else None)
+    if child_ok is False or parent_ok is False:
+        return 'mismatch'
+    if child_ok and parent_ok:
+        return 'match'
+    return 'pending'
+
+
 def mother_relationship(bc_child_name: str, bc_mother_name: str,
                         student_name: str, earner_ic_name: str) -> str:
     """The Birth Certificate ties the earner (mother) to the student: its child
     must be the student AND its mother must be the earner IC. Either side disjoint
     → mismatch; both agree → match; not enough read yet → pending."""
-    if not (bc_child_name or '').strip() and not (bc_mother_name or '').strip():
-        return 'pending'                       # BC not uploaded / not read
-    child_ok = (name_match(bc_child_name, student_name) != 'mismatch'
-                if bc_child_name and student_name else None)
-    mother_ok = (name_match(bc_mother_name, earner_ic_name) != 'mismatch'
-                 if bc_mother_name and earner_ic_name else None)
-    if child_ok is False or mother_ok is False:
-        return 'mismatch'
-    if child_ok and mother_ok:
-        return 'match'
-    return 'pending'
+    return _bc_link(bc_child_name, bc_mother_name, student_name, earner_ic_name)
 
 
 def father_via_bc(bc_child_name: str, bc_father_name: str,
@@ -94,17 +103,7 @@ def father_via_bc(bc_child_name: str, bc_father_name: str,
     ties the earner (father) to the student instead: its child must be the student AND its
     FATHER must be the earner's IC. Mirrors mother_relationship (which uses the BC mother).
     Either side disjoint → mismatch; both agree → match; not enough read → pending."""
-    if not (bc_child_name or '').strip() and not (bc_father_name or '').strip():
-        return 'pending'
-    child_ok = (name_match(bc_child_name, student_name) != 'mismatch'
-                if bc_child_name and student_name else None)
-    father_ok = (name_match(bc_father_name, earner_ic_name) != 'mismatch'
-                 if bc_father_name and earner_ic_name else None)
-    if child_ok is False or father_ok is False:
-        return 'mismatch'
-    if child_ok and father_ok:
-        return 'match'
-    return 'pending'
+    return _bc_link(bc_child_name, bc_father_name, student_name, earner_ic_name)
 
 
 def father_link(student_name: str, earner_ic_name: str,
@@ -234,7 +233,6 @@ def student_income_ic_check(doc):
     ``proof_name_status`` / ``proof_nric_status`` (vs the income proof): 'match' | 'mismatch'
     | 'no_ref' (no proof uploaded yet, or the field wasn't read). ``proof_kind``: 'str' |
     'salary_slip' | 'epf' | '' — drives the "Matches the STR document" student label."""
-    from .vision import nric_match
     if getattr(doc, 'doc_type', '') != 'parent_ic':
         return None
     app = doc.application
@@ -256,12 +254,8 @@ def student_income_ic_check(doc):
     # Cross-check against the cluster's income proof (STR / salary slip) — the reason the
     # earner IC is uploaded. Green when the IC's name + number match the proof's recipient.
     proof_kind, p_name, p_nric = _cluster_proof_identity(app, member) if member else ('', '', '')
-    proof_name_status = 'no_ref'
-    if name and p_name:
-        proof_name_status = 'mismatch' if name_match(name, p_name) == 'mismatch' else 'match'
-    proof_nric_status = 'no_ref'
-    if nric and p_nric:
-        proof_nric_status = 'match' if nric_match(nric, p_nric) else 'mismatch'
+    proof_name_status = _name_bucket(name, p_name)
+    proof_nric_status = _nric_bucket(nric, p_nric)
 
     return {
         'nric': getattr(doc, 'vision_nric', '') or '',
@@ -326,7 +320,6 @@ def student_income_proof_check(doc):
 
     name_status / nric_status: 'match' | 'mismatch' | 'no_ref' (that earner's IC not
     uploaded yet, or the field wasn't read) — a soft, never-blocking signal."""
-    from .vision import relationship_name_match as name_match, nric_match
     dt = getattr(doc, 'doc_type', '')
     if dt not in ('salary_slip', 'epf'):
         return None
@@ -359,12 +352,8 @@ def student_income_proof_check(doc):
     ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
     ic_nric = (getattr(ic, 'vision_nric', '') or '').strip() if ic else ''
 
-    name_status = 'no_ref'
-    if ic_name and name:
-        name_status = 'mismatch' if name_match(name, ic_name) == 'mismatch' else 'match'
-    nric_status = 'no_ref'
-    if ic_nric and nric:
-        nric_status = 'match' if nric_match(nric, ic_nric) else 'mismatch'
+    name_status = _name_bucket(name, ic_name)
+    nric_status = _nric_bucket(nric, ic_nric)
 
     return {
         'name': name, 'nric': nric, 'points': points,
@@ -430,7 +419,6 @@ def student_str_check(doc):
 
     name_status / nric_status: 'match' | 'mismatch' | 'no_ref'.
     current_status: 'current' | 'stale' | 'rejected'."""
-    from .vision import relationship_name_match as name_match, nric_match
     if getattr(doc, 'doc_type', '') != 'str':
         return None
     app = doc.application
@@ -448,12 +436,8 @@ def student_str_check(doc):
     ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
     ic_nric = (getattr(ic, 'vision_nric', '') or '').strip() if ic else ''
 
-    name_status = 'no_ref'
-    if ic_name and name:
-        name_status = 'mismatch' if name_match(name, ic_name) == 'mismatch' else 'match'
-    nric_status = 'no_ref'
-    if ic_nric and nric:
-        nric_status = 'match' if nric_match(nric, ic_nric) else 'mismatch'
+    name_status = _name_bucket(name, ic_name)
+    nric_status = _nric_bucket(nric, ic_nric)
 
     cohort_year = getattr(getattr(app, 'cohort', None), 'year', None)
     return {
