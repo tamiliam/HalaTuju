@@ -257,13 +257,18 @@ describe('documentFacts', () => {
         { key: 'outstanding', status: 'verified' },
       ])
     // Stale bill, only one bill provided, no arrears → Current amber, Reasonable grey, no Outstanding.
+    // Address 'unconfirmed' (couldn't confirm — bilingual town / abbreviation / partial OCR) is
+    // AMBER, not red: only a true 'mismatch' (a different home) is red.
     expect(documentFacts(doc({ doc_type: 'electricity_bill', utility_check: util({
-      address_status: 'not_found', current_status: 'stale', reasonable_status: 'partial', reasonable_detail: 'electricity_only' }) })))
+      address_status: 'unconfirmed', current_status: 'stale', reasonable_status: 'partial', reasonable_detail: 'electricity_only' }) })))
       .toEqual([
-        { key: 'address', status: 'not' },
+        { key: 'address', status: 'partial' },
         { key: 'current', status: 'partial' },
         { key: 'reasonable', status: 'unknown' },
       ])
+    // Only a genuine 'mismatch' (different home) is red.
+    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ address_status: 'mismatch' }) }))
+      .find((f) => f.key === 'address')?.status).toBe('not')
     // High combined consumption stays amber (soft proxy, never red).
     expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ reasonable_status: 'high' }) })).find((f) => f.key === 'reasonable')?.status)
       .toBe('partial')

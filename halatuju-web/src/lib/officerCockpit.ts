@@ -218,6 +218,20 @@ function factStatus(s: string | undefined | null): FactStatus {
   }
 }
 
+/**
+ * Tone for a utility-bill ADDRESS check. Mirrors the backend's weighted matcher + officer-flag
+ * logic: only a genuine 'mismatch' (a different home) is red; 'unconfirmed'/'unreadable' (and the
+ * legacy 'not_found') mean "couldn't confirm" — amber, eyeball at interview, never a hard miss.
+ */
+function addressFactStatus(s: string | undefined | null): FactStatus {
+  switch (s) {
+    case 'found': return 'verified'
+    case 'mismatch': return 'not'
+    case 'unconfirmed': case 'unreadable': case 'not_found': return 'partial'
+    default: return 'unknown'      // '' — never run
+  }
+}
+
 const _PATRONYMIC_MEMBER = new Set(['father', 'brother', 'sister'])
 
 /**
@@ -324,7 +338,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // (a real hardship signal, shown green). 'current'/'stale'/'unknown' map through
     // factStatus directly (current→green, stale→amber, unknown→grey).
     const facts: DocumentFactLabel[] = [
-      { key: 'address', status: factStatus(c.address_status) },
+      { key: 'address', status: addressFactStatus(c.address_status) },
       { key: 'current', status: factStatus(c.current_status) },
       { key: 'reasonable', status: reasonableStatus(c.reasonable_status) },
     ]
