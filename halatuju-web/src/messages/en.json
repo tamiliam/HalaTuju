@@ -2415,7 +2415,8 @@
         "birth_certificate": "birth certificate — showing your name and your parents' names",
         "guardianship_letter": "guardianship letter or court order",
         "statement_of_intent": "statement of intent",
-        "photo": "recent photo of yourself"
+        "photo": "recent photo of yourself",
+        "other": "the requested document — see the note below for exactly what's needed"
       },
       "raiseSectionTitle": "Raise work for the student",
       "raiseSectionHint": "Task you would like to assign to student before the interview",
@@ -2843,6 +2844,8 @@
         "factPass": "Pass",
         "factFail": "Fail",
         "reasonLabel": "Conclusion",
+        "assistanceLabel": "Assistance recommended:",
+        "assistanceNone": "Drag to set a recommended amount.",
         "reasonPlaceholder": "State your conclusions / reasons for your decision",
         "save": "Save verdict & generate final profile",
         "approve": "Approve",
@@ -2945,7 +2948,8 @@
           "birth_certificate": "Birth certificate",
           "guardianship_letter": "Guardianship letter",
           "statement_of_intent": "Statement of intent",
-          "photo": "Photo"
+          "photo": "Photo",
+          "other": "Other document"
         },
         "parentIcOf": "{member}'s IC",
         "ofMember": "{member}'s {doc}",

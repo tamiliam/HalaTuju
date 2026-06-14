@@ -613,6 +613,9 @@ class ApplicantDocument(models.Model):
         # Income Check-1: links the income earner to the student when the earner is the
         # MOTHER (the student-IC patronymic only names the father). OCR: child/mother/father.
         ('birth_certificate', 'Birth Certificate'),
+        # Catch-all for a reviewer-requested document not in the fixed list (e.g. the
+        # current-semester results for a student already studying). Lands under "Other".
+        ('other', 'Other Document'),
     ]
     VERIFICATION_CHOICES = [
         ('pending', 'Pending'),

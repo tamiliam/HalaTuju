@@ -178,6 +178,22 @@ class TestIdempotencyAndLifecycle(_Base):
         self.assertEqual(self.app.resolution_items.get(code='nric_mismatch').status, 'resolved')
 
 
+class TestAssignmentReadiness(_Base):
+    def test_open_student_task_blocks_assign_until_lapse(self):
+        # #3: assignment is blocked until ALL student tasks are done OR the 5-day SLA
+        # from submit lapses — whichever comes first. Now covers doc-requests/officer
+        # items, not just clarify queries.
+        from datetime import timedelta
+        from apps.scholarship.services import is_ready_for_assignment
+        self.assertTrue(is_ready_for_assignment(self.app))  # no open tasks → ready
+        add_officer_item(self.app, kind='doc', prompt='Upload current-sem results',
+                         admin_email='a@e.com', doc_type='other')
+        self.assertFalse(is_ready_for_assignment(self.app))  # open officer doc-request blocks
+        self.app.profile_completed_at = timezone.now() - timedelta(days=6)
+        self.app.save(update_fields=['profile_completed_at'])
+        self.assertTrue(is_ready_for_assignment(self.app))  # 5-day SLA lapsed → ready anyway
+
+
 class TestResolveAndOfficer(_Base):
     def test_resolve_item_records_response(self):
         items = sync_resolution_items(self.app)

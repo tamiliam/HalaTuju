@@ -2415,7 +2415,8 @@
         "birth_certificate": "sijil kelahiran — menunjukkan nama anda dan nama ibu bapa anda",
         "guardianship_letter": "surat penjagaan atau perintah mahkamah",
         "statement_of_intent": "pernyataan hasrat",
-        "photo": "gambar terkini anda"
+        "photo": "gambar terkini anda",
+        "other": "dokumen yang diminta — lihat nota di bawah untuk butiran yang diperlukan"
       },
       "raiseSectionTitle": "Kemukakan tugasan untuk pelajar",
       "raiseSectionHint": "Tugasan yang anda ingin berikan kepada pelajar sebelum temu duga",
@@ -2843,6 +2844,8 @@
         "factPass": "Lulus",
         "factFail": "Gagal",
         "reasonLabel": "Kesimpulan",
+        "assistanceLabel": "Bantuan yang disyorkan:",
+        "assistanceNone": "Seret untuk menetapkan jumlah yang disyorkan.",
         "reasonPlaceholder": "Nyatakan kesimpulan / sebab keputusan anda",
         "save": "Simpan keputusan & jana profil akhir",
         "approve": "Lulus",
@@ -2945,7 +2948,8 @@
           "birth_certificate": "Sijil kelahiran",
           "guardianship_letter": "Surat penjagaan",
           "statement_of_intent": "Penyata hasrat",
-          "photo": "Gambar"
+          "photo": "Gambar",
+          "other": "Dokumen lain"
         },
         "parentIcOf": "IC {member}",
         "ofMember": "{doc} {member}",

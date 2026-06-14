@@ -26,6 +26,7 @@ import {
   submitInterview,
   getAssignableAdmins,
   recordVerdict,
+  setAwardAmount,
   raiseResolutionItem,
   actionResolutionItem,
   type AdminScholarshipDetail,
@@ -56,7 +57,7 @@ const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'docume
 
 // Officer doc-request control (Check-2/Check-3 S2b): the 13 requestable slot types,
 // the income types that also need a person, and each type's verdict fact.
-const REQ_DOC_TYPES = ['ic', 'results_slip', 'offer_letter', 'parent_ic', 'str', 'salary_slip', 'epf', 'birth_certificate', 'guardianship_letter', 'water_bill', 'electricity_bill', 'statement_of_intent', 'photo'] as const
+const REQ_DOC_TYPES = ['ic', 'results_slip', 'offer_letter', 'parent_ic', 'str', 'salary_slip', 'epf', 'birth_certificate', 'guardianship_letter', 'water_bill', 'electricity_bill', 'statement_of_intent', 'photo', 'other'] as const
 const REQ_MEMBER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf'])
 const REQ_MEMBERS = ['father', 'mother', 'guardian', 'brother', 'sister'] as const
 const DOC_FACT: Record<string, string> = {
@@ -64,7 +65,7 @@ const DOC_FACT: Record<string, string> = {
   parent_ic: 'income', str: 'income', salary_slip: 'income', epf: 'income',
   birth_certificate: 'income', guardianship_letter: 'income',
   water_bill: 'income', electricity_bill: 'income',
-  statement_of_intent: 'other', photo: 'other',
+  statement_of_intent: 'other', photo: 'other', other: 'other',
 }
 
 // #9 sync: an interview anomaly is SUPPRESSED from the agenda when the same concern is
@@ -187,6 +188,7 @@ export default function AdminScholarshipDetailPage() {
   // Sprint 5 — Officer cockpit
   const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
   const [verdictReason, setVerdictReason] = useState('')
+  const [recAmount, setRecAmount] = useState<number | null>(null)  // recommended assistance (optimistic)
   const [verdictMsg, setVerdictMsg] = useState('')
   const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
   // Consolidation: the student's own words (note/story/funding) are collapsed by
@@ -390,6 +392,15 @@ export default function AdminScholarshipDetailPage() {
   const doApprove = () => doRecordVerdict(true, true)
   const doSaveVerdict = () => doRecordVerdict(true, false)
 
+  const doSetAwardAmount = async (amount: number) => {
+    if (!token) return
+    setRecAmount(amount)  // optimistic
+    setBusy('award'); setError('')
+    try { setApp(await setAwardAmount(id, amount, { token })) }
+    catch (e) { setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError')) }
+    finally { setBusy('') }
+  }
+
   const doRaiseQuery = async () => {
     if (!token || !infoNote.trim()) return
     setBusy('raise'); setError('')
@@ -543,9 +554,6 @@ export default function AdminScholarshipDetailPage() {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
           <span>NRIC <span className="font-mono text-gray-700">{formatNric(app.nric || '') || '—'}</span></span>
-          {app.merit_score != null && (
-            <span>{t('admin.scholarship.meritScore')} <span className="font-semibold text-gray-800">{app.merit_score}</span></span>
-          )}
           {app.submitted_at && (
             <span>{t('admin.scholarship.submitted')} {new Date(app.submitted_at).toLocaleDateString()}</span>
           )}
@@ -1326,7 +1334,7 @@ export default function AdminScholarshipDetailPage() {
           // muted in brackets below). parent_ic → "Mother's IC" etc. when the earner is known.
           const TYPE_KEYS = new Set(['ic', 'parent_ic', 'results_slip', 'offer_letter', 'str',
             'salary_slip', 'epf', 'water_bill', 'electricity_bill', 'birth_certificate',
-            'guardianship_letter', 'statement_of_intent', 'photo'])
+            'guardianship_letter', 'statement_of_intent', 'photo', 'other'])
           // Income-earner docs are person-qualified from their slot ("Mother's STR proof",
           // "Father's salary slip"); the IC keeps its own possessive ("Mother's IC").
           const INCOME_MEMBER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf'])
@@ -1618,6 +1626,27 @@ export default function AdminScholarshipDetailPage() {
                 </span>
               ))}{' — '}{t('admin.scholarship.recordVerdict.youDecide')}
             </p>
+          )
+        })()}
+
+        {/* #4: recommended assistance — 4-stop slider (RM1,500 / 2,000 / 2,500 / 3,000) */}
+        {canWrite && (() => {
+          const cur = recAmount ?? (app.award_amount != null ? Math.round(Number(app.award_amount)) : null)
+          return (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t('admin.scholarship.recordVerdict.assistanceLabel')}
+                {cur != null && <span className="ml-1 font-semibold text-gray-800">RM{cur.toLocaleString()}</span>}
+              </label>
+              <input type="range" min={1500} max={3000} step={500}
+                value={cur ?? 1500} disabled={!!busy}
+                onChange={(e) => doSetAwardAmount(Number(e.target.value))}
+                className="w-full accent-blue-600" />
+              <div className="flex justify-between text-[11px] text-gray-400">
+                <span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
+              </div>
+              {cur == null && <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.scholarship.recordVerdict.assistanceNone')}</p>}
+            </div>
           )
         })()}
 

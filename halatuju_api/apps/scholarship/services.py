@@ -434,14 +434,21 @@ def query_sla(application, now=None):
     }
 
 
+def open_student_tasks(application):
+    """Every still-open task the student owes — the items shown in their Action Centre /
+    the Check-2 Outstanding box (officer-raised + Check-2 queries/doc-requests). Broader
+    than ``open_clarify_queries`` (which is only the clarify-SLA subset)."""
+    return application.resolution_items.filter(source__in=('officer', 'check2'), status='open')
+
+
 def is_ready_for_assignment(application, now=None):
-    """STEP 3 trigger / the Check-3 assignment gate (design intro): an application is
-    ready when there are NO open clarify queries OR the SLA window has lapsed
+    """The Check-3 assignment gate: an application is ready when ALL student-assigned tasks
+    are done OR the SLA window (5 days from submit) has lapsed — whichever comes first
     (proceed-as-is, flagged for the reviewer). Never ready before submission."""
     if application.profile_completed_at is None:
         return False
     sla = query_sla(application, now)
-    return sla['open_count'] == 0 or sla['lapsed']
+    return (not open_student_tasks(application).exists()) or sla['lapsed']
 
 
 class AssignmentError(Exception):
