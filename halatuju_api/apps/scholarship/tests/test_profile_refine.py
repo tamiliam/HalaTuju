@@ -76,6 +76,23 @@ class TestRefineEngine(TestCase):
         self.assertIn('PTPTN top-up', prompt)
 
     @patch('apps.scholarship.profile_engine._call_gemini_text')
+    def test_refine_includes_verdict_conclusion_and_assistance(self, mock_call):
+        mock_call.return_value = {'markdown': 'x', 'model_used': 'gemini-2.5-pro'}
+        self.app.officer_verdict = {'identity': 'pass', 'academic': 'pass',
+                                    'pathway': 'fail', 'income': 'pass', 'overall': 'accept'}
+        self.app.verdict_reason = 'Genuine need; offer letter still pending.'
+        self.app.award_amount = 2500
+        self.app.save(update_fields=['officer_verdict', 'verdict_reason', 'award_amount'])
+        session = _submitted_session(self.app)
+        profile_engine.refine_sponsor_profile(self.app, 'draft', session, language='en')
+        prompt = mock_call.call_args.args[0]
+        self.assertIn('offer letter still pending', prompt)      # conclusion folded in
+        self.assertIn('RM2500', prompt)                          # recommended assistance
+        self.assertIn('Pathway / offer: fail', prompt)           # four-fact verdict
+        # the final profile runs on the Pro cascade
+        self.assertEqual(mock_call.call_args.kwargs.get('models'), profile_engine.PRO_CASCADE)
+
+    @patch('apps.scholarship.profile_engine._call_gemini_text')
     def test_refine_propagates_engine_error(self, mock_call):
         mock_call.return_value = {'error': 'All AI models failed: boom'}
         session = _submitted_session(self.app)

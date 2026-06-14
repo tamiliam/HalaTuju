@@ -20,6 +20,11 @@ from .shortlisting import count_spm_a_grades
 logger = logging.getLogger(__name__)
 
 MODEL_CASCADE = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+# The FINAL sponsor-facing profile is the conclusive document a sponsor reads, and it
+# is generated rarely (once per accepted student) — so it runs on Pro for the best
+# prose, falling back to the Flash cascade if Pro is unavailable. The high-volume
+# draft + anonymous profiles stay on the Flash cascade (MODEL_CASCADE).
+PRO_CASCADE = ['gemini-2.5-pro'] + MODEL_CASCADE
 
 # Applicant locale code → output language name used in the prompt.
 LANGUAGE_NAMES = {'en': 'English', 'ms': 'Malay (Bahasa Melayu)'}
@@ -74,11 +79,12 @@ Referee(s): {referees}
 """
 
 
-def _call_gemini_text(prompt, target_language):
-    """Shared seam: run ``prompt`` through the model cascade and return
+def _call_gemini_text(prompt, target_language, models=None):
+    """Shared seam: run ``prompt`` through a model cascade and return
     {'markdown', 'model_used', 'language', ...} or {'error': ...}. Both the draft
     and the Phase-D refine go through this one function — tests patch it (no
-    billable call in CI), mirroring vision._call_gemini_json for the JSON engines."""
+    billable call in CI), mirroring vision._call_gemini_json for the JSON engines.
+    ``models`` overrides the cascade (the final refine passes PRO_CASCADE)."""
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
     if not api_key:
         return {'error': 'AI service not configured (missing API key)'}
@@ -89,7 +95,7 @@ def _call_gemini_text(prompt, target_language):
 
     client = genai.Client(api_key=api_key)
     last_error = None
-    for model_name in MODEL_CASCADE:
+    for model_name in (models or MODEL_CASCADE):
         try:
             start = time.time()
             response = client.models.generate_content(model=model_name, contents=prompt)
@@ -235,10 +241,15 @@ Rules:
 - Where the interview CONFIRMED or CLARIFIED something, update the profile to reflect what was learned.
 - Where the interview raised a NEW CONCERN, reflect it honestly and proportionately — do not hide it, \
 do not exaggerate it.
-- Use ONLY the draft and the interview findings below. Do NOT invent facts. If the interview did not \
-touch a section, keep the draft's wording for it.
-- This is the version a sponsor will read, so it must read as one coherent profile, not a draft with \
-notes bolted on.
+- The OFFICER'S DECISION below is the considered outcome of a real review. Use the four-fact verdict to \
+gauge how confidently to present each area (a verified fact can be stated plainly; an area the officer \
+marked "fail" or left unsure should be reflected honestly, not glossed over). Fold the officer's written \
+conclusion into the profile (most naturally under "Why support matters"). If a recommended assistance \
+amount is set, state it plainly. Do NOT print the verdict as a raw pass/fail list, and never contradict it.
+- Use ONLY the draft, the interview findings, and the officer's decision below. Do NOT invent facts. If \
+the interview did not touch a section, keep the draft's wording for it.
+- This is the conclusive version a sponsor will read, so it must read as one coherent, final profile — \
+not a draft with notes bolted on.
 
 === DRAFT PROFILE ===
 {draft}
@@ -248,6 +259,9 @@ notes bolted on.
 
 Interviewer's rubric scores (1-5): {rubric}
 Interviewer's overall note: {overall_note}
+
+=== OFFICER'S DECISION ===
+{officer_decision}
 """
 
 _VERDICT_LABELS = {
@@ -283,18 +297,59 @@ def _render_interview(application, session):
     return findings_str, rubric_str, note
 
 
+_OFFICER_FACT_LABELS = {
+    'identity': 'Identity',
+    'academic': 'Academic record',
+    'pathway': 'Pathway / offer',
+    'income': 'Household income (B40 need)',
+}
+
+
+def _render_officer_decision(application):
+    """Render the officer's recorded four-fact verdict, written conclusion, and the
+    recommended assistance amount as plain text for the refine prompt — so the FINAL
+    profile reflects the actual decision, not just the interview findings."""
+    ov = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
+    lines = []
+    for fact in ('identity', 'academic', 'pathway', 'income'):
+        val = (ov.get(fact) or '').strip()
+        if val:
+            lines.append(f'- {_OFFICER_FACT_LABELS[fact]}: {val}')
+    verdict_str = '\n'.join(lines) if lines else '- not recorded'
+
+    conclusion = (getattr(application, 'verdict_reason', '') or '').strip() or 'none recorded'
+
+    amount = getattr(application, 'award_amount', None)
+    if amount in (None, ''):
+        assistance = 'not set'
+    else:
+        try:
+            assistance = f'RM{int(round(float(amount)))}'
+        except (TypeError, ValueError):
+            assistance = str(amount)
+
+    return (
+        f'Four-fact verification verdict:\n{verdict_str}\n'
+        f'Officer\'s conclusion: {conclusion}\n'
+        f'Recommended assistance: {assistance}'
+    )
+
+
 def refine_sponsor_profile(application, draft, session, language=None):
-    """Second Gemini pass: refine ``draft`` with the submitted interview ``session``.
-    Returns {'markdown', 'model_used', 'language', ...} or {'error': ...}. Mirrors
-    generate_sponsor_profile (same cascade, same graceful-error contract)."""
+    """Second Gemini pass: refine ``draft`` with the submitted interview ``session``,
+    the officer's four-fact verdict, written conclusion, and recommended assistance.
+    Runs on PRO_CASCADE (the final profile is the conclusive sponsor-facing document).
+    Returns {'markdown', 'model_used', 'language', ...} or {'error': ...}; same
+    graceful-error contract as generate_sponsor_profile."""
     target_language = _resolve_language(application, language)
     findings_str, rubric_str, note = _render_interview(application, session)
     prompt = REFINE_PROMPT.format(
         target_language=target_language,
         draft=(draft or '').strip() or 'not provided',
         findings=findings_str, rubric=rubric_str, overall_note=note,
+        officer_decision=_render_officer_decision(application),
     )
-    return _call_gemini_text(prompt, target_language)
+    return _call_gemini_text(prompt, target_language, models=PRO_CASCADE)
 
 
 def generate_sponsor_profile(application, language=None):
