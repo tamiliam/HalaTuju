@@ -51,7 +51,7 @@ import {
   type IncomeSlot,
 } from '@/lib/officerCockpit'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
-import { localiseParams } from '@/lib/actionCentre'
+import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
 
 const VERDICTS = ['resolved', 'still_unclear', 'new_concern'] as const
 const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
@@ -1033,26 +1033,32 @@ export default function AdminScholarshipDetailPage() {
           return (
                   <ul className="space-y-2">
                     {caveats.map((item) => {
-                      const dotColour = item.source === 'officer' ? 'bg-indigo-400' : 'bg-amber-400'
                       const answered = item.status === 'resolved'  // student answered; awaiting officer review
-                      const text = item.source === 'officer'
-                        ? (item.prompt || item.code)
-                        : t(`admin.scholarship.verdict.item.${item.code}`,
-                            localiseParams(item.params, t))
+                      // Show the ACTUAL question the student was asked (same source as their
+                      // Action Centre), not the internal caveat description.
+                      const src = titleSourceFor(item)
+                      const question = src.kind === 'raw'
+                        ? (src.text || item.code)
+                        : t(src.titleKey, localiseParams(item.params, t))
                       return (
-                        <li key={item.id} className="flex items-start gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
-                          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${answered ? 'bg-emerald-400' : dotColour}`} aria-hidden />
+                        <li key={item.id} className="flex items-start gap-2.5 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                          {answered ? (
+                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Awaiting student">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+                            </svg>
+                          )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 break-words">{text}</p>
-                            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400">
-                              <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.fact}</span>
-                              <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.kind}</span>
-                              {!answered && (
-                                <span className="rounded bg-amber-100 text-amber-700 px-1.5 py-0.5">
-                                  {t('admin.scholarship.caveats.waitingStudent')}
-                                </span>
-                              )}
-                            </div>
+                            <p className="text-sm text-gray-800 break-words">
+                              <span className="font-semibold">{t('admin.scholarship.outstanding.questionLabel')}:</span> {question}
+                              {' '}
+                              <span className="ml-0.5 rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 align-middle">{item.fact}</span>
+                              {' '}
+                              <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 align-middle">{item.kind}</span>
+                            </p>
                             {answered && item.resolution_text && (
                               <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2">
                                 <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">
@@ -1110,6 +1116,58 @@ export default function AdminScholarshipDetailPage() {
           )
         })()}
       </div>
+
+      {/* Ask for more documents / raise a query — sits between Outstanding and the
+           Interview Stage; closes once querying locks (interview concluded). */}
+      {canWrite && !queryingLocked && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+          <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
+          <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>
+          {app.info_request_note && (
+            <p className="text-xs text-gray-500 italic">
+              {t('admin.scholarship.requestInfoLast')}: {app.info_request_note}
+            </p>
+          )}
+          <textarea name="infoNote" value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
+            placeholder={t('admin.scholarship.requestInfoPlaceholder')}
+            className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <div className="flex gap-2">
+            <button onClick={doRequestInfo} disabled={!!busy || !infoNote.trim()}
+              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
+              {busy === 'info' ? t('common.loading') : t('admin.scholarship.requestInfoSend')}
+            </button>
+            <button onClick={doRaiseQuery} disabled={!!busy || !infoNote.trim()}
+              className="px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
+              {busy === 'raise' ? t('common.loading') : t('admin.scholarship.caveats.ask')}
+            </button>
+          </div>
+          <div className="mt-1 border-t border-gray-100 pt-2 space-y-2">
+            <p className="text-xs text-gray-500">{t('admin.scholarship.requestDocLabel')}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <select value={reqDocType} onChange={(e) => setReqDocType(e.target.value)}
+                className="border rounded-lg px-2 py-1.5 text-sm">
+                <option value="">{t('admin.scholarship.requestDocAny')}</option>
+                {REQ_DOC_TYPES.map((dt) => (
+                  <option key={dt} value={dt}>{t(`admin.scholarship.docsDrawer.type.${dt}`)}</option>
+                ))}
+              </select>
+              {REQ_MEMBER_DOCS.has(reqDocType) && (
+                <select value={reqDocMember} onChange={(e) => setReqDocMember(e.target.value)}
+                  className="border rounded-lg px-2 py-1.5 text-sm">
+                  <option value="">{t('admin.scholarship.requestDocWhose')}</option>
+                  {REQ_MEMBERS.map((m) => (
+                    <option key={m} value={m}>{t(`scholarship.docs.income.wizard.member.${m}`)}</option>
+                  ))}
+                </select>
+              )}
+              <button onClick={doRequestDoc} disabled={!!busy || !reqDocType}
+                className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
+                {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Referees (consent panel removed — the consent RECORD + sponsor-share gating
            stay untouched; only the cockpit status line is gone). Behind SHOW_REFEREES. ── */}
@@ -1229,11 +1287,13 @@ export default function AdminScholarshipDetailPage() {
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
               <p className="text-xs font-semibold text-amber-800">{t('admin.scholarship.interview.carryOver')}</p>
               <ul className="mt-1.5 space-y-1">
-                {openQ.map((i) => (
-                  <li key={i.id} className="text-sm text-gray-800">
-                    ↳ {i.source === 'officer' ? (i.prompt || i.code) : t(`admin.scholarship.verdict.item.${i.code}`, localiseParams(i.params, t))}
-                  </li>
-                ))}
+                {openQ.map((i) => {
+                  const s = titleSourceFor(i)
+                  const q = s.kind === 'raw' ? (s.text || i.code) : t(s.titleKey, localiseParams(i.params, t))
+                  return (
+                    <li key={i.id} className="text-sm text-gray-800">↳ {q}</li>
+                  )
+                })}
               </ul>
             </div>
           )
@@ -1268,57 +1328,6 @@ export default function AdminScholarshipDetailPage() {
           </div>
         )}
       </div>
-
-      {/* Phase C: request more documentation from the student (closed once querying locks) */}
-      {canWrite && !queryingLocked && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
-          <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
-          <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>
-          {app.info_request_note && (
-            <p className="text-xs text-gray-500 italic">
-              {t('admin.scholarship.requestInfoLast')}: {app.info_request_note}
-            </p>
-          )}
-          <textarea name="infoNote" value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
-            placeholder={t('admin.scholarship.requestInfoPlaceholder')}
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <div className="flex gap-2">
-            <button onClick={doRequestInfo} disabled={!!busy || !infoNote.trim()}
-              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
-              {busy === 'info' ? t('common.loading') : t('admin.scholarship.requestInfoSend')}
-            </button>
-            <button onClick={doRaiseQuery} disabled={!!busy || !infoNote.trim()}
-              className="px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
-              {busy === 'raise' ? t('common.loading') : t('admin.scholarship.caveats.ask')}
-            </button>
-          </div>
-          <div className="mt-1 border-t border-gray-100 pt-2 space-y-2">
-            <p className="text-xs text-gray-500">{t('admin.scholarship.requestDocLabel')}</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <select value={reqDocType} onChange={(e) => setReqDocType(e.target.value)}
-                className="border rounded-lg px-2 py-1.5 text-sm">
-                <option value="">{t('admin.scholarship.requestDocAny')}</option>
-                {REQ_DOC_TYPES.map((dt) => (
-                  <option key={dt} value={dt}>{t(`admin.scholarship.docsDrawer.type.${dt}`)}</option>
-                ))}
-              </select>
-              {REQ_MEMBER_DOCS.has(reqDocType) && (
-                <select value={reqDocMember} onChange={(e) => setReqDocMember(e.target.value)}
-                  className="border rounded-lg px-2 py-1.5 text-sm">
-                  <option value="">{t('admin.scholarship.requestDocWhose')}</option>
-                  {REQ_MEMBERS.map((m) => (
-                    <option key={m} value={m}>{t(`scholarship.docs.income.wizard.member.${m}`)}</option>
-                  ))}
-                </select>
-              )}
-              <button onClick={doRequestDoc} disabled={!!busy || !reqDocType}
-                className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
-                {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
 
       {/* ── Documents drawer — grouped by fact ────────────────────────────────── */}

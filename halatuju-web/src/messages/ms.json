@@ -2851,6 +2851,7 @@
       "outstanding": {
         "title": "Semakan 2 — Belum selesai",
         "subtitle": "Tugasan pelajar untuk diselesaikan sebelum semakan",
+        "questionLabel": "Soalan",
         "locked": "Pertanyaan ditutup — temu duga telah selesai. Ini kini rekod baca-sahaja.",
         "itemOne": "perkara",
         "itemMany": "perkara",

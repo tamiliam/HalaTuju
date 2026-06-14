@@ -2851,6 +2851,7 @@
       "outstanding": {
         "title": "Check 2 — Outstanding",
         "subtitle": "Student tasks to clear before review",
+        "questionLabel": "Question",
         "locked": "Querying closed — the interview is concluded. This is now a read-only record.",
         "itemOne": "item",
         "itemMany": "items",
