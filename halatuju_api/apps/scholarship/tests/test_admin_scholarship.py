@@ -642,6 +642,20 @@ class TestAdminScholarship(TestCase):
         r = self.client.post(self._rerun_vision_url(doc.id))
         self.assertEqual(r.status_code, 400)
 
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_rerun_vision_forbidden_for_non_reviewer(self, mock_vision):
+        """TD audit 2026-06-14: re-running a (billable) document read is a reviewer-gated WRITE.
+        A read-only 'admin' role has full B40 scope but is NOT a reviewer, so it must be refused —
+        this endpoint previously only scope-checked, leaving the role gate off."""
+        PartnerAdmin.objects.create(
+            supabase_user_id='ro-admin-uid', role='admin', is_active=True,
+            name='ReadOnly', email='ro@example.com')
+        ic = ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='ic/ro')
+        self._auth('ro-admin-uid')
+        r = self.client.post(self._rerun_vision_url(ic.id))
+        self.assertEqual(r.status_code, 403)
+        self.assertFalse(mock_vision.called)
+
     def test_admin_rerun_vision_404_for_wrong_application(self):
         other_cohort = ScholarshipCohort.objects.create(code='c3', name='B40-3', year=2028)
         other_app = ScholarshipApplication.objects.create(cohort=other_cohort, profile=self.profile, status='shortlisted')
