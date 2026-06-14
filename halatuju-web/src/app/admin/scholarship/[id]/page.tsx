@@ -47,6 +47,10 @@ import {
   docIconFor,
   earnerMemberFor,
   viewerKind,
+  isClearAccept,
+  isQueryingLocked,
+  isDecisionReady,
+  isApproveReady,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
@@ -350,10 +354,7 @@ export default function AdminScholarshipDetailPage() {
       // identity was already verified at the consent gate.
       let finalApp: AdminScholarshipDetail = result
       let accepted = false
-      const liveStates = ['shortlisted', 'profile_complete', 'interviewing', 'interviewed']
-      const clearAccept = officerVerdict.identity === 'pass'
-        && !(['academic', 'pathway', 'income'] as const).some((f) => officerVerdict[f] === 'fail')
-        && !!result.completeness?.complete && liveStates.includes(result.status)
+      const clearAccept = isClearAccept(officerVerdict, !!result.completeness?.complete, result.status)
       if (accept && clearAccept) {
         try {
           finalApp = await verifyAcceptApplication(id, {}, { token })
@@ -494,17 +495,14 @@ export default function AdminScholarshipDetailPage() {
 
   // S4: once the interview is concluded it's decision time — querying (raise / Resolve /
   // Ask again / request a document) closes and Outstanding becomes a read-only record.
-  const queryingLocked = ['interviewed', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired'].includes(app.status)
-    || app.interview_session?.status === 'submitted'
+  const queryingLocked = isQueryingLocked(app.status, app.interview_session?.status)
   // #7: Approve/Decline activate only once the reviewer has (1) submitted interview
   // findings, (2) pressed Pass/Fail on all four facts, and (3) written a conclusion.
   // (Approve's actual accept is still backend-gated on a complete profile + identity.)
-  const decisionReady = app.interview_session?.status === 'submitted'
-    && (['identity', 'academic', 'pathway', 'income'] as const).every((f) => officerVerdict[f] === 'pass' || officerVerdict[f] === 'fail')
-    && verdictReason.trim().length > 0
+  const decisionReady = isDecisionReady(app.interview_session?.status, officerVerdict, verdictReason)
   // Approve also requires a recommended assistance amount (the slider, or an already-saved one).
   const hasAssistance = recAmount != null || app.award_amount != null
-  const approveReady = decisionReady && hasAssistance
+  const approveReady = isApproveReady(decisionReady, hasAssistance)
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-10">

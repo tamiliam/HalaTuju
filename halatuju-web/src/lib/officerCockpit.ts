@@ -474,3 +474,40 @@ export function viewerKind(contentType: string, filename: string): 'image' | 'pd
   if (ct.startsWith('image/') || /\.(jpe?g|png|gif|webp|bmp)$/.test(fn)) return 'image'
   return 'unsupported'
 }
+
+// ── Officer-decision gates ───────────────────────────────────────────────────
+// Lifted verbatim out of the cockpit page (TD audit 2026-06-14) so the decision
+// rules are pure + unit-testable, instead of inline IIFEs in 1,700 lines of JSX.
+
+type OfficerVerdict = Record<string, string>
+
+// Application states where a "save verdict = accept" can still apply (case still live).
+export const LIVE_STATES = ['shortlisted', 'profile_complete', 'interviewing', 'interviewed']
+// States (or a submitted interview) after which querying is closed and Outstanding is read-only.
+export const QUERYING_LOCKED_STATES = ['interviewed', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired']
+// The four facts the officer rules on.
+export const DECISION_FACTS = ['identity', 'academic', 'pathway', 'income'] as const
+
+/** "Save verdict IS accept": identity passed, nothing failed, profile complete, case still live. */
+export function isClearAccept(officerVerdict: OfficerVerdict, completenessComplete: boolean, status: string): boolean {
+  return officerVerdict.identity === 'pass'
+    && !(['academic', 'pathway', 'income'] as const).some((f) => officerVerdict[f] === 'fail')
+    && !!completenessComplete && LIVE_STATES.includes(status)
+}
+
+/** Querying (raise / Resolve / Ask again / request doc) is closed once the interview is concluded. */
+export function isQueryingLocked(status: string, interviewStatus?: string): boolean {
+  return QUERYING_LOCKED_STATES.includes(status) || interviewStatus === 'submitted'
+}
+
+/** Approve/Decline activate only once the interview is submitted, all four facts are pass/fail, and a reason is written. */
+export function isDecisionReady(interviewStatus: string | undefined, officerVerdict: OfficerVerdict, reason: string): boolean {
+  return interviewStatus === 'submitted'
+    && DECISION_FACTS.every((f) => officerVerdict[f] === 'pass' || officerVerdict[f] === 'fail')
+    && (reason || '').trim().length > 0
+}
+
+/** Approve additionally requires a recommended assistance amount (the slider or an already-saved one). */
+export function isApproveReady(decisionReady: boolean, hasAssistance: boolean): boolean {
+  return decisionReady && hasAssistance
+}
