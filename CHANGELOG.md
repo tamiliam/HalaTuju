@@ -34,6 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (default 1 for targeted/manual runs).
 
 ### Changed
+- **Cockpit Check-2/Check-3 — post-close review round 7 (backend + FE + i18n; choices-only migration 0057, no DDL).**
+  **#1** removed "Merit score" from the applicant header. **#2** added a generic **"Other" document** request — the
+  reviewer can ask for any document not in the list (e.g. current-semester results for a student already studying); it
+  uploads into a new `other` slot and shows under **Other** in the Documents box (new `other` doc_type — choices-only
+  `0057`). **#3** **broadened the assignment-readiness gate**: assign is now blocked until ALL open student tasks are
+  done OR the 5-day SLA from submit lapses, whichever first (was only Check-2 clarify queries; now also officer
+  doc-requests/queries via new `open_student_tasks`). **#4** added a **4-stop assistance slider** (RM1,500 / 2,000 /
+  2,500 / 3,000) above the Conclusion, persisting to `award_amount` via the existing endpoint (+ `setAwardAmount`
+  client). 1211 scholarship pytest (+1), jest 306, `next build` clean, parity 2947x3.
 - **Cockpit Check-2/Check-3 — post-close review round 6 (FE + i18n only; no migration).** Interview Stage: removed the
   "In progress" pill; "Suggest interview gaps (AI)" -> "Suggest interview questions"; "Overall note" -> "Record your
   findings and conclusions"; "Submit interview" -> "Submit interview findings". Decision panel: "Reason / notes" ->

@@ -511,6 +511,8 @@ export interface AdminScholarshipDetail {
   verdict_decided_by: string
   verdict_decided_at: string | null
   resolution_items: AdminResolutionItem[]
+  /** Recommended assistance amount (RM, Decimal serialised as string) or null. */
+  award_amount: string | null
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in
@@ -937,6 +939,20 @@ export async function actionResolutionItem(
     `/api/v1/admin/scholarship/resolution-items/${itemId}/${action}/`,
     'POST',
     {},
+    options,
+  )
+}
+
+/** Set (or clear with null) the recommended assistance amount the reviewer proposes. */
+export async function setAwardAmount(
+  id: number,
+  amount: number | null,
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/award-amount/`,
+    'POST',
+    { amount },
     options,
   )
 }
