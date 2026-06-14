@@ -19,6 +19,9 @@ node_modules/
 # One-time migration SQL batches
 .tmp/
 
+# Scraped data snapshots (UP_TVET inventory CSVs — data, not source)
+halatuju_api/data/tvet/*.csv
+
 # Root package-lock (not a Node project at root)
 /package-lock.json
 
