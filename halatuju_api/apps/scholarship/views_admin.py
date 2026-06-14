@@ -45,7 +45,7 @@ from .services import (
 
 logger = logging.getLogger(__name__)
 
-_VALID_VERDICTS = {'resolved', 'still_unclear', 'new_concern'}
+_VALID_VERDICTS = {'resolved', 'still_unclear', 'new_concern', 'deleted'}
 _RATIONALE_MAX = 140
 
 
