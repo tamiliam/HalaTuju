@@ -67,6 +67,16 @@ const DOC_FACT: Record<string, string> = {
   statement_of_intent: 'other', photo: 'other',
 }
 
+// #9 sync: an interview anomaly is SUPPRESSED from the agenda when the same concern is
+// already a Check-2 query the student is being asked (Check-2 fires first; no repeat).
+// Maps anomaly code → the owning Check-2 clarify code.
+const ANOMALY_CHECK2_OWNER: Record<string, string> = {
+  utility_holder_unknown: 'utility_holder_unknown',
+  utility_address_mismatch: 'utility_address_mismatch',
+  device_in_funding: 'device_status_unknown',
+  first_in_family_with_siblings_studying: 'sibling_level_unknown',
+}
+
 const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: '' }
 
 // Status pill colour bands — amber = in-progress/under review, green = accepted/funded,
@@ -393,7 +403,8 @@ export default function AdminScholarshipDetailPage() {
   // reviewer can elaborate, and is the fallback if they clear it.
   const stdDocRequest = (dt: string, m: string) => {
     if (!dt) return ''
-    const docTxt = t(`admin.scholarship.docsDrawer.type.${dt}`)
+    // Rich per-document clause (says what we look for) — clarity for the student.
+    const docTxt = t(`admin.scholarship.requestDocStd.${dt}`)
     const memberTxt = m ? t(`scholarship.docs.income.wizard.member.${m}`) : ''
     return m
       ? t('admin.scholarship.requestDocPromptMember', { member: memberTxt, doc: docTxt })
@@ -474,11 +485,12 @@ export default function AdminScholarshipDetailPage() {
   // Ask again / request a document) closes and Outstanding becomes a read-only record.
   const queryingLocked = ['interviewed', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired'].includes(app.status)
     || app.interview_session?.status === 'submitted'
-  // Approve is only allowed when the profile is complete, identity is passed, and nothing
-  // is failed (same safety gate the auto-accept used; the backend re-checks completeness).
-  const canApprove = app.completeness.complete
-    && officerVerdict.identity === 'pass'
-    && !(['academic', 'pathway', 'income'] as const).some((f) => officerVerdict[f] === 'fail')
+  // #7: Approve/Decline activate only once the reviewer has (1) submitted interview
+  // findings, (2) pressed Pass/Fail on all four facts, and (3) written a conclusion.
+  // (Approve's actual accept is still backend-gated on a complete profile + identity.)
+  const decisionReady = app.interview_session?.status === 'submitted'
+    && (['identity', 'academic', 'pathway', 'income'] as const).every((f) => officerVerdict[f] === 'pass' || officerVerdict[f] === 'fail')
+    && verdictReason.trim().length > 0
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-10">
@@ -1199,13 +1211,9 @@ export default function AdminScholarshipDetailPage() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h2 className="font-semibold">{t('admin.scholarship.interview.title')}</h2>
-            {app.interview_session?.status === 'submitted' ? (
+            {app.interview_session?.status === 'submitted' && (
               <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
                 {t('admin.scholarship.interview.submitted')}
-              </span>
-            ) : (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                {t('admin.scholarship.interview.inProgress')}
               </span>
             )}
           </div>
@@ -1218,14 +1226,21 @@ export default function AdminScholarshipDetailPage() {
         </div>
         <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
         {(() => {
+          // #9: drop anomalies whose concern is already a Check-2 query (no repeat).
+          const check2Codes = new Set((app.resolution_items ?? []).map((i) => i.code))
           const items = [
             // Reviewer asks these LIVE — show the question form (2nd-person), not the
             // internal flag description.
-            ...app.anomalies.map((a) => ({
-              code: a.code,
-              label: t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
-              ai: false,
-            })),
+            ...app.anomalies
+              .filter((a) => {
+                const owner = ANOMALY_CHECK2_OWNER[a.code]
+                return !(owner && check2Codes.has(owner))
+              })
+              .map((a) => ({
+                code: a.code,
+                label: t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
+                ai: false,
+              })),
             ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
           ].filter((it) => findings[it.code]?.verdict !== 'deleted')  // a Deleted talking point drops off the agenda
           if (items.length === 0) {
@@ -1650,12 +1665,12 @@ export default function AdminScholarshipDetailPage() {
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={doApprove} disabled={!!busy || !canApprove}
-                  className="px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                <button onClick={doApprove} disabled={!!busy || !decisionReady}
+                  className="rounded-lg border border-green-600 bg-white px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-600 hover:text-white active:bg-green-600 active:text-white disabled:opacity-50">
                   {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.approve')}
                 </button>
-                <button onClick={() => doReject('interview')} disabled={!!busy}
-                  className="px-4 py-2.5 border border-red-300 text-red-700 rounded-lg text-sm font-medium disabled:opacity-50">
+                <button onClick={() => doReject('interview')} disabled={!!busy || !decisionReady}
+                  className="rounded-lg border border-red-500 bg-white px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-600 hover:text-white active:bg-red-600 active:text-white disabled:opacity-50">
                   {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.recordVerdict.decline')}
                 </button>
               </div>

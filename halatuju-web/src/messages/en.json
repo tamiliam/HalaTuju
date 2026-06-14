@@ -1612,7 +1612,7 @@
       "item": {
         "ic_missing": {
           "title": "Upload your IC",
-          "desc": "We still need a clear photo or scan of your MyKad (front)."
+          "desc": "We still need a clear photo or scan of your MyKad (front). Make sure your name and IC number are clearly visible — no glare or blur."
         },
         "ic_unreadable": {
           "title": "Your IC was hard to read",
@@ -1632,7 +1632,7 @@
         },
         "results_slip_missing": {
           "title": "Upload your results slip",
-          "desc": "We need your SPM (or STPM) results slip to confirm your grades."
+          "desc": "We need your SPM (or STPM) results slip to confirm your grades. Upload the full official slip with your name and all subjects clearly visible."
         },
         "results_slip_unreadable": {
           "title": "Your results slip was hard to read",
@@ -1660,7 +1660,7 @@
         },
         "earner_ic_missing": {
           "title": "Upload the IC for {members}",
-          "desc": "We use it to confirm the income documents (STR, salary slip, EPF) belong to your family."
+          "desc": "We use it to confirm the income documents (STR, salary slip, EPF) belong to your family. Make sure the name and IC number are clearly visible."
         },
         "earner_ic_unreadable": {
           "title": "Upload a clearer IC photo for {members}",
@@ -2402,6 +2402,21 @@
       "requestDocLabel": "Or request a specific document",
       "requestDocTitle": "Request a document",
       "requestDocNotePlaceholder": "Explain what's needed (prefilled — edit as you like)",
+      "requestDocStd": {
+        "ic": "IC (MyKad) — make sure your name and IC number are clearly visible",
+        "parent_ic": "IC (MyKad) — name and IC number clearly visible",
+        "results_slip": "SPM results slip — the full official slip with your name clearly visible",
+        "offer_letter": "offer letter — it must be addressed to you and show your name/IC",
+        "str": "STR (Sumbangan Tunai Rahmah) document — make sure the 'Lulus' (approved) status is clearly visible",
+        "salary_slip": "latest salary slip — showing the employer, the name, and the monthly pay",
+        "epf": "EPF (KWSP) statement — showing the latest monthly contribution",
+        "water_bill": "recent water bill — showing the account holder's name and the address",
+        "electricity_bill": "recent electricity (TNB) bill — showing the account holder's name and the address",
+        "birth_certificate": "birth certificate — showing your name and your parents' names",
+        "guardianship_letter": "guardianship letter or court order",
+        "statement_of_intent": "statement of intent",
+        "photo": "recent photo of yourself"
+      },
       "raiseSectionTitle": "Raise work for the student",
       "raiseSectionHint": "Task you would like to assign to student before the interview",
       "raiseQueryTitle": "Raise a query",
@@ -2430,9 +2445,9 @@
         "inProgress": "In progress",
         "carryOver": "Unanswered Check 2 queries — ask these at the interview",
         "rationalePlaceholder": "One line: what you found",
-        "notePlaceholder": "Overall note (optional)",
+        "notePlaceholder": "Record your findings and conclusions",
         "saveDraft": "Save draft",
-        "submit": "Submit interview",
+        "submit": "Submit interview findings",
         "saveError": "Could not save the interview.",
         "submitError": "Could not submit the interview.",
         "verdict": {
@@ -2556,7 +2571,7 @@
         }
       },
       "gaps": {
-        "button": "Suggest interview gaps (AI)",
+        "button": "Suggest interview questions",
         "running": "Generating…",
         "error": "Couldn't generate gaps. Please try again.",
         "title": "AI-suggested gaps",
@@ -2827,8 +2842,8 @@
         "title": "Record your verdict",
         "factPass": "Pass",
         "factFail": "Fail",
-        "reasonLabel": "Reason / notes",
-        "reasonPlaceholder": "Add a note explaining your decision (optional).",
+        "reasonLabel": "Conclusion",
+        "reasonPlaceholder": "State your conclusions / reasons for your decision",
         "save": "Save verdict & generate final profile",
         "approve": "Approve",
         "decline": "Decline",
