@@ -24,7 +24,6 @@ import {
   getInterview,
   saveInterview,
   submitInterview,
-  requestMoreInfo,
   getAssignableAdmins,
   recordVerdict,
   raiseResolutionItem,
@@ -322,15 +321,6 @@ export default function AdminScholarshipDetailPage() {
       const d = await submitInterview(id, { token })
       setApp(d); loadInterviewState(d)
     } catch { setError(t('admin.scholarship.interview.submitError')) } finally { setBusy('') }
-  }
-
-  const doRequestInfo = async () => {
-    if (!token || !infoNote.trim()) return
-    setBusy('info'); setError('')
-    try {
-      setApp(await requestMoreInfo(id, infoNote.trim(), { token }))
-      setInfoNote('')
-    } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
   }
 
   const doRecordVerdict = async (finalise: boolean) => {
@@ -1068,45 +1058,19 @@ export default function AdminScholarshipDetailPage() {
                               </div>
                             )}
                           </div>
-                          {canWrite && !queryingLocked && (
-                            <div className="flex shrink-0 flex-col gap-1">
-                              {answered ? (
-                                <>
-                                  <button
-                                    onClick={() => doActionResolution(item.id, 'resolve')}
-                                    disabled={!!busy}
-                                    className="rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                                  >
-                                    {t('admin.scholarship.caveats.accept')}
-                                  </button>
-                                  <button
-                                    onClick={() => doActionResolution(item.id, 'reopen')}
-                                    disabled={!!busy}
-                                    className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                                  >
-                                    {t('admin.scholarship.caveats.askAgain')}
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => doActionResolution(item.id, 'waive')}
-                                    disabled={!!busy}
-                                    className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                                  >
-                                    {t('admin.scholarship.caveats.resolve')}
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setInfoNote(item.prompt || '')
-                                    }}
-                                    disabled={!!busy}
-                                    className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                                  >
-                                    {t('admin.scholarship.caveats.ask')}
-                                  </button>
-                                </>
-                              )}
+                          {/* Answered items are auto-accepted (the Q&A is the record — no
+                              officer action). Only an unanswered item offers Delete, for
+                              the reviewer to drop an irrelevant / poorly-worded query so
+                              they can raise a better one. */}
+                          {canWrite && !queryingLocked && !answered && (
+                            <div className="flex shrink-0">
+                              <button
+                                onClick={() => doActionResolution(item.id, 'waive')}
+                                disabled={!!busy}
+                                className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                              >
+                                {t('admin.scholarship.caveats.delete')}
+                              </button>
                             </div>
                           )}
                         </li>
@@ -1115,59 +1079,53 @@ export default function AdminScholarshipDetailPage() {
                   </ul>
           )
         })()}
-      </div>
-
-      {/* Ask for more documents / raise a query — sits between Outstanding and the
-           Interview Stage; closes once querying locks (interview concluded). */}
-      {canWrite && !queryingLocked && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
-          <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
-          <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>
-          {app.info_request_note && (
-            <p className="text-xs text-gray-500 italic">
-              {t('admin.scholarship.requestInfoLast')}: {app.info_request_note}
-            </p>
-          )}
-          <textarea name="infoNote" value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
-            placeholder={t('admin.scholarship.requestInfoPlaceholder')}
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <div className="flex gap-2">
-            <button onClick={doRequestInfo} disabled={!!busy || !infoNote.trim()}
-              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
-              {busy === 'info' ? t('common.loading') : t('admin.scholarship.requestInfoSend')}
-            </button>
-            <button onClick={doRaiseQuery} disabled={!!busy || !infoNote.trim()}
-              className="px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
-              {busy === 'raise' ? t('common.loading') : t('admin.scholarship.caveats.ask')}
-            </button>
-          </div>
-          <div className="mt-1 border-t border-gray-100 pt-2 space-y-2">
-            <p className="text-xs text-gray-500">{t('admin.scholarship.requestDocLabel')}</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <select value={reqDocType} onChange={(e) => setReqDocType(e.target.value)}
-                className="border rounded-lg px-2 py-1.5 text-sm">
-                <option value="">{t('admin.scholarship.requestDocAny')}</option>
-                {REQ_DOC_TYPES.map((dt) => (
-                  <option key={dt} value={dt}>{t(`admin.scholarship.docsDrawer.type.${dt}`)}</option>
-                ))}
-              </select>
-              {REQ_MEMBER_DOCS.has(reqDocType) && (
-                <select value={reqDocMember} onChange={(e) => setReqDocMember(e.target.value)}
-                  className="border rounded-lg px-2 py-1.5 text-sm">
-                  <option value="">{t('admin.scholarship.requestDocWhose')}</option>
-                  {REQ_MEMBERS.map((m) => (
-                    <option key={m} value={m}>{t(`scholarship.docs.income.wizard.member.${m}`)}</option>
-                  ))}
-                </select>
-              )}
-              <button onClick={doRequestDoc} disabled={!!busy || !reqDocType}
+        {/* Raise work for the student — merged into the Check-2 box with a clear divider.
+            Two roles: (1) raise a query, (2) request a document. Each adds a to-do to the
+            student's Action Centre (they're notified there — no separate per-item email). */}
+        {canWrite && !queryingLocked && (
+          <div className="border-t border-gray-200 pt-3 mt-1 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-gray-700">{t('admin.scholarship.raiseSectionTitle')}</p>
+              <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.scholarship.raiseSectionHint')}</p>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.raiseQueryTitle')}</p>
+              <textarea name="infoNote" value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
+                placeholder={t('admin.scholarship.raiseQueryPlaceholder')}
+                className="w-full border rounded-lg px-3 py-2 text-sm" />
+              <button onClick={doRaiseQuery} disabled={!!busy || !infoNote.trim()}
                 className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
-                {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
+                {busy === 'raise' ? t('common.loading') : t('admin.scholarship.raiseQuerySend')}
               </button>
             </div>
+            <div className="space-y-1.5 border-t border-gray-100 pt-3">
+              <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.requestDocTitle')}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <select value={reqDocType} onChange={(e) => setReqDocType(e.target.value)}
+                  className="border rounded-lg px-2 py-1.5 text-sm">
+                  <option value="">{t('admin.scholarship.requestDocAny')}</option>
+                  {REQ_DOC_TYPES.map((dt) => (
+                    <option key={dt} value={dt}>{t(`admin.scholarship.docsDrawer.type.${dt}`)}</option>
+                  ))}
+                </select>
+                {REQ_MEMBER_DOCS.has(reqDocType) && (
+                  <select value={reqDocMember} onChange={(e) => setReqDocMember(e.target.value)}
+                    className="border rounded-lg px-2 py-1.5 text-sm">
+                    <option value="">{t('admin.scholarship.requestDocWhose')}</option>
+                    {REQ_MEMBERS.map((m) => (
+                      <option key={m} value={m}>{t(`scholarship.docs.income.wizard.member.${m}`)}</option>
+                    ))}
+                  </select>
+                )}
+                <button onClick={doRequestDoc} disabled={!!busy || !reqDocType}
+                  className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
+                  {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── Referees (consent panel removed — the consent RECORD + sponsor-share gating
            stay untouched; only the cockpit status line is gone). Behind SHOW_REFEREES. ── */}

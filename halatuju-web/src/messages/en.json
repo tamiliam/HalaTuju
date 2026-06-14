@@ -2400,6 +2400,12 @@
       "requestInfoSend": "Send request",
       "requestInfoError": "Could not send the request.",
       "requestDocLabel": "Or request a specific document",
+      "requestDocTitle": "Request a document",
+      "raiseSectionTitle": "Raise work for the student",
+      "raiseSectionHint": "Either one adds a to-do to the student's Action Centre — they're notified there. No separate email per item.",
+      "raiseQueryTitle": "Raise a query",
+      "raiseQueryPlaceholder": "e.g. Can you confirm who lives at the address on your utility bill?",
+      "raiseQuerySend": "Raise query",
       "requestDocAny": "Choose document…",
       "requestDocWhose": "Whose?",
       "requestDocSend": "Request document",
@@ -2846,7 +2852,8 @@
         "waitingStudent": "Waiting for student",
         "studentAnswer": "Student's answer",
         "accept": "Accept",
-        "askAgain": "Ask again"
+        "askAgain": "Ask again",
+        "delete": "Delete"
       },
       "outstanding": {
         "title": "Check 2 — Outstanding",

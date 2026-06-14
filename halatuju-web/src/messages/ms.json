@@ -2400,6 +2400,12 @@
       "requestInfoSend": "Hantar permintaan",
       "requestInfoError": "Tidak dapat menghantar permintaan.",
       "requestDocLabel": "Atau minta dokumen tertentu",
+      "requestDocTitle": "Minta dokumen",
+      "raiseSectionTitle": "Kemukakan tugasan untuk pelajar",
+      "raiseSectionHint": "Mana-mana satu menambah tugasan ke Pusat Tindakan pelajar — mereka dimaklumkan di sana. Tiada e-mel berasingan bagi setiap item.",
+      "raiseQueryTitle": "Kemukakan pertanyaan",
+      "raiseQueryPlaceholder": "cth. Boleh sahkan siapa yang tinggal di alamat pada bil utiliti anda?",
+      "raiseQuerySend": "Kemukakan pertanyaan",
       "requestDocAny": "Pilih dokumen…",
       "requestDocWhose": "Milik siapa?",
       "requestDocSend": "Minta dokumen",
@@ -2846,7 +2852,8 @@
         "waitingStudent": "Menunggu pelajar",
         "studentAnswer": "Jawapan pelajar",
         "accept": "Terima",
-        "askAgain": "Tanya semula"
+        "askAgain": "Tanya semula",
+        "delete": "Padam"
       },
       "outstanding": {
         "title": "Semakan 2 — Belum selesai",
