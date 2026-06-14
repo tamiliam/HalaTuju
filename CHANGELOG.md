@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Cockpit restyle — brand-aligned visual pass (web-only, no behaviour change).** Matched the officer review
+  cockpit to the halatuju.xyz brand: every action accent now uses the brand `primary` blue (`#137fec`) — the
+  previous ad-hoc mix of `blue-600`, `indigo`, and stray blues is folded into one cohesive palette (green/amber/red
+  kept as the semantic verdict bands). Cards are softer and airier (`rounded-2xl`, `p-5`), and section headers are
+  stronger (`text-base font-semibold tracking-tight`). Structure/behaviour unchanged.
 - **Cockpit review round 8 — decision/profile/interview-question quality (no migration).**
   - **Final sponsor profile now runs on Gemini 2.5 Pro** (the conclusive, sponsor-facing document, generated rarely);
     the high-volume draft + anonymous profiles stay on the Flash cascade (`profile_engine.PRO_CASCADE`).
