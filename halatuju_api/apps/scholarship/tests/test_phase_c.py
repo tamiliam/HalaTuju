@@ -341,6 +341,18 @@ class TestInterview(PhaseCBase):
         self.assertEqual(r.status_code, 200)
         self.assertIn('agenda', r.json())
 
+    def test_interview_agenda_surfaces_anomaly_codes(self):
+        """TD audit 2026-06-14: the agenda is a projection of the anomaly codes, but the only
+        test asserted the key exists. Seed a known anomaly and assert its code is surfaced — so
+        a regression that drops/filters agenda codes is caught."""
+        self.profile.household_size = 1     # → triggers the 'household_size_one' anomaly
+        self.profile.save()
+        app = self._make_app()
+        self._auth(VIEWER)
+        r = self.client.get(f'/api/v1/admin/scholarship/applications/{app.id}/interview/')
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('household_size_one', r.json()['agenda'])
+
 
 class TestRequestInfo(PhaseCBase):
     @patch('apps.scholarship.views_admin.send_request_info_email')

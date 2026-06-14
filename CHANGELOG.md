@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `is_minor` in `anomaly_engine.py`); de-duplicated the income-engine matchers — three inlined name/NRIC blocks now
   reuse the existing `_name_bucket`/`_nric_bucket`, and `mother_relationship`/`father_via_bc` share one `_bc_link`
   helper. 1231 scholarship pytest green.
+- **Tech-debt paydown Sprint 2a — admin-list determinism + agenda coverage.** Deterministic ordering on the admin
+  sponsor + sponsorship list endpoints (`order_by('-id')` — the row order was previously undefined); + a regression
+  test asserting the interview agenda actually surfaces a seeded anomaly code (the old test only checked the key
+  exists). NOTE: the larger Sprint 2 items — the applicant-detail GET's N+1 (engines re-query the documents table
+  15–25× via `.filter()` that bypasses any prefetch), the GET that performs DB writes
+  (`sync_resolution_items`/`sync_check2_queries`) and re-runs `build_verdict` 2–3×, and computing the verdict once —
+  are a coupled change to the LIVE verification queue + verdict path. They are deferred to a verified follow-up
+  (Sprint 2b) rather than shipped without live cockpit verification.
 
 ### Fixed
 - **Tech-debt paydown Sprint 1 — write-safety + admin-auth hardening.** From the 2026-06-14 scholarship audit:
