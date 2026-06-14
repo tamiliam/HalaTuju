@@ -9,6 +9,10 @@ import {
   earnerMemberFor,
   viewerKind,
   verdictReliability,
+  isClearAccept,
+  isQueryingLocked,
+  isDecisionReady,
+  isApproveReady,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
 
@@ -410,5 +414,67 @@ describe('verdictReliability (the scorekeeper)', () => {
     expect(r.overall.pct).toBe(0)
     expect(r.perFact).toHaveLength(4)
     expect(r.perFact.every((f) => f.pct === 0 && f.decided === 0)).toBe(true)
+  })
+})
+
+// ── Officer-decision gates (lifted from page.tsx — TD audit 2026-06-14) ─────────
+
+describe('isClearAccept', () => {
+  const ok = { identity: 'pass', academic: 'pass', pathway: 'pass', income: 'pass' }
+  it('true when identity passed, nothing failed, complete, and live', () => {
+    expect(isClearAccept(ok, true, 'interviewing')).toBe(true)
+  })
+  it('false when identity is not pass', () => {
+    expect(isClearAccept({ ...ok, identity: '' }, true, 'interviewing')).toBe(false)
+  })
+  it('false when any of academic/pathway/income failed', () => {
+    expect(isClearAccept({ ...ok, income: 'fail' }, true, 'interviewing')).toBe(false)
+  })
+  it('false when profile is not complete', () => {
+    expect(isClearAccept(ok, false, 'interviewing')).toBe(false)
+  })
+  it('false when status is not a live state', () => {
+    expect(isClearAccept(ok, true, 'sponsored')).toBe(false)
+  })
+  it('treats a review/unsure (non-fail) academic as still acceptable', () => {
+    expect(isClearAccept({ ...ok, academic: '' }, true, 'shortlisted')).toBe(true)
+  })
+})
+
+describe('isQueryingLocked', () => {
+  it('locks once the interview is submitted, regardless of status', () => {
+    expect(isQueryingLocked('shortlisted', 'submitted')).toBe(true)
+  })
+  it('locks on a terminal/decided status', () => {
+    expect(isQueryingLocked('rejected', undefined)).toBe(true)
+    expect(isQueryingLocked('accepted', 'draft')).toBe(true)
+  })
+  it('open while still shortlisted with a draft (or no) interview', () => {
+    expect(isQueryingLocked('shortlisted', 'draft')).toBe(false)
+    expect(isQueryingLocked('profile_complete', undefined)).toBe(false)
+  })
+})
+
+describe('isDecisionReady', () => {
+  const all = { identity: 'pass', academic: 'fail', pathway: 'pass', income: 'pass' }
+  it('true when interview submitted, all four facts pass/fail, and a reason is written', () => {
+    expect(isDecisionReady('submitted', all, 'Solid case.')).toBe(true)
+  })
+  it('false until the interview is submitted', () => {
+    expect(isDecisionReady('draft', all, 'Solid case.')).toBe(false)
+  })
+  it('false when a fact has no pass/fail yet', () => {
+    expect(isDecisionReady('submitted', { ...all, pathway: '' }, 'reason')).toBe(false)
+  })
+  it('false when the reason is blank/whitespace', () => {
+    expect(isDecisionReady('submitted', all, '   ')).toBe(false)
+  })
+})
+
+describe('isApproveReady', () => {
+  it('requires decisionReady AND an assistance amount', () => {
+    expect(isApproveReady(true, true)).toBe(true)
+    expect(isApproveReady(true, false)).toBe(false)
+    expect(isApproveReady(false, true)).toBe(false)
   })
 })

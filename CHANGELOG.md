@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`sync_resolution_items`/`sync_check2_queries`) and re-runs `build_verdict` 2–3×, and computing the verdict once —
   are a coupled change to the LIVE verification queue + verdict path. They are deferred to a verified follow-up
   (Sprint 2b) rather than shipped without live cockpit verification.
+- **Tech-debt paydown Sprint 3a — cockpit decision-gates lifted + unit-tested.** The four officer-decision gates
+  (clearAccept / queryingLocked / decisionReady / approveReady) were inline expressions buried in the 1,775-line
+  cockpit page; lifted into pure `isClearAccept`/`isQueryingLocked`/`isDecisionReady`/`isApproveReady` in
+  `lib/officerCockpit.ts` (+14 unit tests; 64 jest green for that module) so the decision rules are now testable and
+  the page consumes them. NOTE: the full Sprint 3 panel extraction + the shared `busy`/`error` reducer + a
+  `runAction` helper + the apply-form per-step split + the exhaustive-deps fix are deferred to Sprint 3b — large
+  behaviour-preserving refactors of the live cockpit with no component-test coverage, needing a live walkthrough.
 
 ### Fixed
 - **Tech-debt paydown Sprint 1 — write-safety + admin-auth hardening.** From the 2026-06-14 scholarship audit:
