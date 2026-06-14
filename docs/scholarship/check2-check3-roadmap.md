@@ -1,6 +1,6 @@
 # Check-2 / Interview-Stage Cockpit Redesign — Sprint Roadmap
 
-**Status:** Sprint 3 of 4 complete (branch `check2-check3-s1`).
+**Status:** COMPLETE & LIVE 2026-06-14 (all 4 sprints + 3 review rounds; merged to `main`, shipped `f5243a7` → `762b358`).
 **Approved:** 2026-06-13. **Owner:** tamiliam.
 
 ## Problem
@@ -38,7 +38,13 @@ Assigned → reviewer reads profile/docs/responses → raises queries + doc requ
 | 1 | **Split the boxes** — Outstanding = student tasks only; interview flags/gaps + Suggest-gaps button move to the renamed "Interview Stage". | `admin/scholarship/[id]/page.tsx`, `messages/{en,ms,ta}` | Medium | ✅ Done |
 | 2 | **Outstanding: answers under queries + one querying control.** Student answer shown beneath each query (lighter/no-migration lifecycle: answer still self-resolves but surfaces for officer review via Accept/Ask-again); single doc-request control targeting a specific slot incl. person (absorbs item-2 salary-route tagging). **AI off-topic hint deferred** (depends on the OFF relevance flag + would touch the live resolve endpoint). | `serializers_admin.py`, `views_admin.py`, `resolution.py`, `ActionCentre.tsx`, `page.tsx`, `admin-api.ts`, messages | Medium | ✅ Done |
 | 3 | **Student profile box** — already sits below Verification verdict with own-words collapsed beneath (no relocation needed); added an **info strip** + **event-triggered auto-draft at the reviewer handoff** (`assign_reviewer` → existing `generate_ready_profile`, reusing the OFF `CHECK2_AUTO_GENERATE` flag, idempotent, best-effort). Regenerate already existed. | `services.py`, `page.tsx`, messages | Medium | ✅ Done |
-| 4 | **Interview Stage lifecycle** — agenda carry-over of unanswered Outstanding queries; paired findings; Submit ends querying (Outstanding locks read-only at status ≥ interviewed), triggers final profile, moves to decision. | `page.tsx`, `services.py`, `verdict_engine.py`/`gap_engine.py`, `views.py`, messages | High | ⏳ Next |
+| 4 | **Interview Stage lifecycle** — agenda carry-over of unanswered Outstanding queries; Submit ends querying (`querying_locked` blocks raise/Delete/reopen + student resolve at status ≥ interviewed; cockpit read-only); Submit auto-finalises the polished profile (gated, best-effort). | `page.tsx`, `services.py`, `views_admin.py`, `views.py`, messages | High | ✅ Done |
+
+## Post-ship review refinements (3 rounds on the live cockpit, 2026-06-14)
+1. Outstanding shows the **actual question** posed (reuses `titleSourceFor`, "Question:" prefix); fact/kind tags inline.
+2. Prominent **status icons** (green check = answered, amber clock = awaiting) replace the dots; "Waiting for student" pill removed.
+3. **Auto-accept** answered queries (no buttons); unanswered items get a single **Delete** (drop a poor query, raise a better one).
+4. "Ask for more documents" **merged into the Check-2 box** (clear divider, two roles: raise a query / request a document); removed the misleading per-item "email the student" path — raised items land in the Action Centre.
 
 ## Deploy discipline
 Push triggers a Cloud Run deploy on `main` (≤2 deploys/feature). All 4 sprints accumulate on the

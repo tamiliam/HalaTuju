@@ -68,6 +68,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dark / no billable Gemini calls until switched on) and never re-drafting an existing profile; best-effort (a
   generation failure never blocks the assignment). +3 backend tests (1205 scholarship pytest), jest 306, `next build`
   clean, parity 2864×3 (added `profileDraftHint`).
+- **Interview lifecycle + review polish (Check-2/Check-3 redesign, Sprint 4 of 4 — feature COMPLETE & LIVE; backend + FE + i18n, no migration).**
+  Closes the loop: (1) the Interview Stage agenda **carries over** still-open Outstanding queries as "ask verbally" talking
+  points; (2) **querying locks** once the interview is concluded — `querying_locked()` (status ≥ interviewed or a submitted
+  session) blocks raise / Delete / reopen (officer) and the student resolve endpoint, and the cockpit hides the controls
+  behind a read-only note; (3) **Submit → final profile** — `submit_interview` auto-refines the draft into the final polished
+  profile, gated behind the OFF `CHECK2_AUTO_GENERATE` flag (dark by default), idempotent, best-effort. **Review refinements
+  (3 rounds on the live cockpit):** Outstanding now shows the **actual question** posed to the student (reuses
+  `titleSourceFor`, prefixed "Question:") with the fact/kind tags inline; prominent status icons (green check = answered,
+  amber clock = awaiting) replace the dots; answered queries are **auto-accepted** (no buttons — the Q&A is the record);
+  unanswered items offer a single **Delete** (drop a poor query, raise a better one); the "Ask for more documents" card is
+  **merged into the Check-2 box** with a clear divider and two roles (raise a query / request a document — incl. per-person
+  slot targeting), and the misleading per-item "email the student" path was removed (raised items land in the Action Centre).
+  1209 scholarship pytest, jest 306, `next build` clean, parity 2925×3. Shipped to `main` across `f5243a7` → `762b358`
+  (2 web deploys + 1 review web deploy). Auto-draft/auto-finalise stay dark until `CHECK2_AUTO_GENERATE=1`.
 
 ### Added
 - **Course Data dashboard — "Problem links" drill-down (read-only; no migration).** The link check now STORES the failing

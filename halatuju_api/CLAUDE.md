@@ -517,24 +517,20 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-13)
 
-**▶ IN PROGRESS — Check-2 / Interview-Stage cockpit redesign (4-sprint roadmap `docs/scholarship/check2-check3-roadmap.md`).**
-Splits the cockpit into Verification verdict → Student profile (own box, + collapsed own-words) → Check 2 — Outstanding (the
-single querying channel, open until the interview concludes, then read-only) → Interview Stage (agenda incl. carried-over
-unanswered queries + findings + Submit → final profile → decision). All 4 sprints accumulate on branch `check2-check3-s1`;
-the feature deploys ONCE at the end (branch pushes don't deploy — the Cloud Run trigger is on `main`).
-**▶ Sprints 1–2 DONE on branch (not merged/deployed). S1 (`747d5fd`): Outstanding split into Check-2-only vs the renamed
-"Interview Stage" box. S2 (`17e93cf` + S2b): Outstanding surfaces student-answered queries with their text → officer
-Accept (re-stamps resolved_by → officer) / Ask again (new `reopen` action); single doc-request control with a per-person
-slot picker that stashes the member in the ticket's `params` so the student's Action-Centre upload tags the right
-`(doc_type, member)` slot (closes the salary-route tagging gap). Lighter/no-migration path; AI off-topic hint deferred
-(OFF `CHECK2_ANSWER_RELEVANCE_ENABLED`). 1202 scholarship pytest, jest 306, build clean, parity 2863×3.** S3 (`+`): the
-profile box already sits below the verdict with own-words collapsed; added an info strip + an **event-triggered auto-draft
-at the reviewer handoff** — `assign_reviewer` calls the existing idempotent `generate_ready_profile` on first assignment,
-reusing the OFF `CHECK2_AUTO_GENERATE` flag (dark/no billable calls until on), best-effort. 1205 scholarship pytest, parity 2864×3.
-**▶ NEXT — Sprint 4 (last, HIGH): Interview Stage lifecycle — agenda carry-over of unanswered Outstanding queries (ask
-verbally); pair findings; **Submit interview findings** ends querying (Outstanding locks read-only at status ≥ interviewed),
-triggers the final polished profile (Gemini Pro), and moves to decision. Then the feature is ready to merge to `main` + deploy
-ONCE (run wat_lint + MEMORY.md/Mission-Control sync at that merge).**
+**▶ COMPLETE & LIVE 2026-06-14 — Check-2 / Interview-Stage cockpit redesign (4 sprints + 3 review rounds; roadmap
+`docs/scholarship/check2-check3-roadmap.md`, retro `docs/retrospective-check2-check3-s4.md`).** The cockpit reads
+Verification verdict → Student profile (own box + collapsed own-words) → **Check 2 — Outstanding** (the single querying
+channel: raise a query / request a document with per-person doc slots; shows the ACTUAL question + the student's answer;
+answered = auto-accepted, unanswered = Delete) → **Interview Stage** (agenda + carried-over unanswered queries to ask
+verbally + findings + Submit). Querying **locks** once the interview is concluded (`querying_locked`, status ≥ interviewed
+or a submitted session); **Submit → final polished profile**, and the Check-2→Reviewer **handoff auto-drafts** the profile —
+both gated behind the **OFF `CHECK2_AUTO_GENERATE`** flag (flip to `1` on the api to enable; billable Gemini). Shipped
+`f5243a7` → `762b358`.
+**▶ Deferred (TD-115):** the DB `UniqueConstraint(application, doc_type, household_member)` belt-and-suspenders (app layer
+already prevents dups). The salary-route Action-Centre tagging gap is now CLOSED (S2b). The AI answer-relevance "off-topic"
+hint stays unbuilt (depends on the OFF `CHECK2_ANSWER_RELEVANCE_ENABLED` + would touch the live resolve endpoint).
+
+**▶ NEXT: nothing queued for the scholarship cockpit — awaiting the owner's next priority.**
 
 ---
 
