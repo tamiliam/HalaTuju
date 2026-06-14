@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **EPF statement mining — average contribution, zero-vs-unreadable, statement date, address.** The KWSP Penyata
+  Ahli was under-used (we read only the latest month's contribution). Now the parser + Gemini schema also extract:
+  **`avg_monthly_contribution`** (the average across all CARUMAN SEMASA months, with `months_counted`) — and the
+  income estimate (`earner_monthly_income`, the per-capita gate, `slip_epf_divergence`) drives off this **average**
+  (steadier than one row, with a graceful fallback to the latest month for older records); **`contribution_status`**
+  that distinguishes a genuine **`zero`** (no contributions / "Tiada Transaksi" — a real *no-formal-salary* signal)
+  from an **`unknown`** unreadable table (so a parse miss is never read as "no income"); the **`statement_date`**
+  (Tarikh Penyata) and the member **`address`** (a further home-address corroboration). The income card shows avg ·
+  months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
+
 ### Fixed
 - **Address matching over-flagged legitimate utility bills (class fix, surfaced on #72).** The home-address
   check (`vision.address_present`) demanded the *city word* match even when the exact 5-digit postcode matched, so

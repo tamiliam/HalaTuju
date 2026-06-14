@@ -281,15 +281,35 @@ _CARUMAN_RE = re.compile(
     re.IGNORECASE)
 
 
-def _last_caruman(text: str) -> str:
-    """The total of the LAST (most recent) monthly contribution row → ``RM<n>``. ''
-    if the CARUMAN table didn't parse."""
-    last = ''
+def _caruman_amounts(text: str) -> list:
+    """Every monthly CONTRIBUTION amount (float) from the CARUMAN SEMASA rows, in order."""
+    out = []
     for ln in _lines(text):
         m = _CARUMAN_RE.match(ln)
         if m:
-            last = m.group(1)
-    return f'RM{last.replace(",", "")}' if last else ''
+            try:
+                out.append(float(m.group(1).replace(',', '')))
+            except ValueError:
+                pass
+    return out
+
+
+def _last_caruman(text: str) -> str:
+    """The LAST (most recent) monthly contribution row → ``RM<n>``. '' if none parsed."""
+    amts = _caruman_amounts(text)
+    return f'RM{amts[-1]:.2f}' if amts else ''
+
+
+def _epf_address(text: str) -> str:
+    """Best-effort member address: the line carrying a 5-digit postcode + the line above it
+    (the Penyata Ahli prints the correspondence address as a short block). '' if none. Soft —
+    the address matcher + officer eyeball decide; never a gate."""
+    lines = [ln for ln in _lines(text) if ln]
+    for i, ln in enumerate(lines):
+        if re.search(r'\b\d{5}\b', ln):
+            prev = lines[i - 1] if i > 0 else ''
+            return ' '.join(p for p in (prev, ln) if p).strip()
+    return ''
 
 
 @register('epf')
@@ -308,10 +328,26 @@ def _parse_epf(text: str) -> Optional[dict]:
     balance = _money(find_value(text, r'jumlah\s+simpanan'))
     ym = re.search(r'penyata\s+ahli\s+tahun\s+(20\d{2})', text, re.IGNORECASE)
     year = ym.group(1) if ym else ''
+    statement_date = find_value(text, r'tarikh\s+penyata') or year
     if not (name or nric or balance):
         return None
+    # The CONTRIBUTION signal: average the months shown (steadier than one row), and
+    # distinguish a GENUINE zero ("Tiada Transaksi" / no current contributions — a real
+    # 'no formal salary' signal) from an UNREADABLE table (couldn't parse → 'unknown').
+    amts = _caruman_amounts(text)
+    positives = [a for a in amts if a > 0]
+    if positives:
+        contribution_status, avg = 'has', round(sum(positives) / len(positives), 2)
+        avg_contribution, months = f'RM{avg:.2f}', str(len(positives))
+    elif has(text, r'tiada\s+transaksi') or amts:    # rows present but all zero, or explicit none
+        contribution_status, avg_contribution, months = 'zero', 'RM0.00', str(len(amts))
+    else:
+        contribution_status, avg_contribution, months = 'unknown', '', ''
     return {'name': name, 'nric': nric, 'employer': employer, 'latest_balance': balance,
-            'last_contribution': '', 'monthly_contribution': _last_caruman(text), 'year': year}
+            'last_contribution': '', 'monthly_contribution': _last_caruman(text),
+            'avg_monthly_contribution': avg_contribution, 'months_counted': months,
+            'contribution_status': contribution_status, 'statement_date': statement_date,
+            'address': _epf_address(text), 'year': year}
 
 
 # ── P4: JPN birth certificate (Sijil Kelahiran) ───────────────────────────────

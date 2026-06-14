@@ -425,6 +425,7 @@ from apps.scholarship.income_engine import (  # noqa: E402
     _parse_billing_month, _utility_currency, utility_reasonable, utility_check,
     _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
     slip_epf_divergence, _reconciled_holder_name, _arrears_amount,
+    earner_monthly_income, _epf_contribution,
 )
 
 
@@ -455,6 +456,27 @@ def _app(docs, household_size=4, student_name=''):
     for d in docs:
         d.application = app
     return app
+
+
+class TestEpfContribution(SimpleTestCase):
+    def test_prefers_average_over_latest_month(self):
+        # The income estimate uses the AVERAGE contribution (steadier), not the last month.
+        self.assertEqual(_epf_contribution({'avg_monthly_contribution': 'RM434.00',
+                                            'monthly_contribution': 'RM460.00'}), 434.0)
+
+    def test_falls_back_to_latest_for_old_records(self):
+        # Older EPFs captured only the latest month → still usable.
+        self.assertEqual(_epf_contribution({'monthly_contribution': 'RM460.00'}), 460.0)
+
+    def test_none_when_no_contribution(self):
+        self.assertIsNone(_epf_contribution({'avg_monthly_contribution': '', 'monthly_contribution': ''}))
+
+    def test_epf_estimate_uses_average(self):
+        app = _app([_bill('epf', {'avg_monthly_contribution': 'RM434.00',
+                                  'monthly_contribution': 'RM460.00'})])
+        amt, src = earner_monthly_income(app, 'father')
+        self.assertEqual(src, 'epf_estimate')
+        self.assertAlmostEqual(amt, round(434.0 / 0.24, 2))   # avg, not the 460 last-month
 
 
 class TestBillingMonthParse(SimpleTestCase):
