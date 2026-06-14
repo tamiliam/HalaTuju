@@ -100,6 +100,23 @@ class TestNameMatch(TestCase):
         # but a genuinely different spelling must STILL mismatch — no over-merge.
         self.assertEqual(name_match('SIVA KUMAR', 'SIRA KUMAR'), 'mismatch')
 
+    def test_spaced_parentage_marker_matches(self):
+        # #20: the student typed "A/ P" with a stray space, so the typed profile/declaration
+        # name keeps orphan "a"/"p" tokens while the IC OCR reads a clean "A/P". The exact
+        # matcher used to read the IC as a strict SUBSET → a false 'partial' on the IC + offer
+        # letter (the results slip stayed green via its tolerant name-present check). The marker
+        # must strip regardless of the spacing, both directions.
+        self.assertEqual(
+            name_match('SHARVANI A/P KANAGEVELLU', 'SHARVANI A/ P KANAGEVELLU'), 'match')
+        self.assertEqual(
+            name_match('SHARVANI A/ P KANAGEVELLU', 'SHARVANI A/P KANAGEVELLU'), 'match')
+        # other spacing variants of every slash marker
+        self.assertEqual(name_match('PRIYA A / P DEVI', 'Priya Devi'), 'match')
+        self.assertEqual(name_match('AHMAD S /O YUSOFF', 'Ahmad Yusoff'), 'match')
+        self.assertEqual(name_match('SITI D/ O OMAR', 'Siti Omar'), 'match')
+        # a genuinely different spelling around a spaced marker still mismatches.
+        self.assertEqual(name_match('SIVA A / P KUMAR', 'Sira Kumar'), 'mismatch')
+
 
 class TestRelationshipNameMatch(TestCase):
     """The tolerant cross-document matcher: romanisation folding PLUS OCR boundary tolerance,

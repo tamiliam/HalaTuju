@@ -338,6 +338,22 @@ export default function AdminScholarshipDetailPage() {
     } catch { setError(t('admin.scholarship.interview.submitError')) } finally { setBusy('') }
   }
 
+  // Deleting an agenda talking point (an AI gap or a flag) must STICK across a refresh —
+  // the rest of the Interview Stage is a draft the officer saves on demand, but a Delete
+  // is a decision, so it persists immediately (write the whole session with that one item
+  // flipped to 'deleted'). Without this, the delete was local-only and the item reappeared
+  // on reload.
+  const doDeleteAgendaItem = async (code: string) => {
+    if (!token) return
+    const prev = findings[code] ?? { verdict: '', rationale: '' }
+    const next = { ...findings, [code]: { ...prev, verdict: 'deleted' } }
+    setFindings(next)
+    setBusy('delgap'); setError('')
+    try {
+      await saveInterview(id, { findings: next, rubric, overall_note: note }, { token })
+    } catch { setError(t('admin.scholarship.interview.saveError')) } finally { setBusy('') }
+  }
+
   const doRecordVerdict = async (finalise: boolean, accept = false) => {
     if (!token) return
     setBusy('verdict'); setError(''); setVerdictMsg('')
@@ -415,6 +431,9 @@ export default function AdminScholarshipDetailPage() {
   // reviewer can elaborate, and is the fallback if they clear it.
   const stdDocRequest = (dt: string, m: string) => {
     if (!dt) return ''
+    // "Other document" has no standard clause — the reviewer types exactly what they need,
+    // so leave the box empty (the generic "the requested document …" prefill was unhelpful).
+    if (dt === 'other') return ''
     // Rich per-document clause (says what we look for) — clarity for the student.
     const docTxt = t(`admin.scholarship.requestDocStd.${dt}`)
     const memberTxt = m ? t(`scholarship.docs.income.wizard.member.${m}`) : ''
@@ -1163,7 +1182,7 @@ export default function AdminScholarshipDetailPage() {
                   <textarea value={reqDocNote} rows={2} onChange={(e) => setReqDocNote(e.target.value)}
                     placeholder={t('admin.scholarship.requestDocNotePlaceholder')}
                     className="w-full border rounded-lg px-3 py-2 text-sm" />
-                  <button onClick={doRequestDoc} disabled={!!busy || !reqDocType}
+                  <button onClick={doRequestDoc} disabled={!!busy || !reqDocType || (reqDocType === 'other' && !reqDocNote.trim())}
                     className="px-3 py-1.5 border border-primary-300 text-primary-700 rounded-lg text-sm disabled:opacity-50">
                     {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
                   </button>
@@ -1279,8 +1298,8 @@ export default function AdminScholarshipDetailPage() {
                       </p>
                       {canWrite && (
                         <div className="flex shrink-0 gap-1.5">
-                          <button onClick={() => setF({ verdict: 'deleted' })}
-                            className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700">
+                          <button onClick={() => doDeleteAgendaItem(it.code)} disabled={!!busy}
+                            className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50">
                             {t('admin.scholarship.caveats.delete')}
                           </button>
                           <button onClick={() => setF({ verdict: resolved ? '' : 'resolved' })}
