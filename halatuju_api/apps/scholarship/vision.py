@@ -1099,7 +1099,9 @@ _FIELD_SCHEMAS = {
                                 'gross_income': _STR, 'net_income': _STR, 'period': _STR}),
     'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
                         'latest_balance': _STR, 'last_contribution': _STR,
-                        'monthly_contribution': _STR, 'year': _STR}),
+                        'monthly_contribution': _STR, 'avg_monthly_contribution': _STR,
+                        'months_counted': _STR, 'contribution_status': _STR,
+                        'statement_date': _STR, 'address': _STR, 'year': _STR}),
     # Income Check-1: utility bills carry the home address + the MONTHLY charge + any
     # UNPAID balance (a high outstanding amount is a soft hardship signal).
     'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR,
@@ -1216,7 +1218,16 @@ _DOC_HINTS = {
             'if the CARUMAN SEMASA section says "Tiada Transaksi" (no transactions) or shows '
             'no contribution, leave "monthly_contribution" EMPTY — do NOT put the JUMLAH '
             'SIMPANAN total there. "last_contribution" = the month/year of that contribution '
-            'if shown. Leave any field empty if it is not present.'),
+            'if shown. "avg_monthly_contribution" = the AVERAGE of ALL the monthly contribution '
+            'amounts in the CARUMAN SEMASA section (sum of the months ÷ the number of months '
+            'with a contribution), as an RM figure; "months_counted" = how many monthly '
+            'contributions you averaged. "contribution_status" = "has" if there is at least one '
+            'real monthly contribution; "zero" ONLY if it clearly shows NO contributions ("Tiada '
+            'Transaksi" / all zero) — a real signal of no formal salary; "unknown" if the '
+            'contributions section is unreadable or absent (do NOT guess "zero" when you simply '
+            'cannot read it). "statement_date" = the "Tarikh Penyata" (statement date) if shown, '
+            'else the statement year. "address" = the member\'s correspondence address if printed. '
+            'Leave any field empty if it is not present.'),
     'water_bill': (' This is a Malaysian water utility bill (e.g. PAIP, SAJ, Air Selangor, '
                    'PBAPP, SADA). "name" = the account holder\'s name ("Nama"); "address" = '
                    'the supply/billing address; "amount" = ONLY the CURRENT month\'s charge '

@@ -289,7 +289,34 @@ class TestEpfParser(SimpleTestCase):
         self.assertEqual(r['employer'], '001307002')
         self.assertEqual(r['latest_balance'], 'RM150000.50')
         self.assertEqual(r['monthly_contribution'], 'RM460.00')   # the LAST (most recent) row
+        # NEW: the AVERAGE over both months (408 + 460) / 2 = 434, with the count + status,
+        # plus the statement date + a best-effort address block.
+        self.assertEqual(r['avg_monthly_contribution'], 'RM434.00')
+        self.assertEqual(r['months_counted'], '2')
+        self.assertEqual(r['contribution_status'], 'has')
+        self.assertEqual(r['statement_date'], '10/06/2026')
+        self.assertIn('40000 SHAH ALAM', r['address'])
         self.assertEqual(r['year'], '2026')
+
+    def test_zero_contribution_is_a_signal_not_unreadable(self):
+        # "Tiada Transaksi" → a GENUINE zero (no formal salary), distinct from an unreadable table.
+        zero = _KWSP.replace(
+            'Jan-26 Caruman - IWS 16/01/2026 221.00 187.00 408.00\n'
+            'Feb-26 Caruman - IWS 20/02/2026 250.00 210.00 460.00\n',
+            'Tiada Transaksi\n')
+        r = parse_by_labels('epf', zero)
+        self.assertEqual(r['contribution_status'], 'zero')
+        self.assertEqual(r['avg_monthly_contribution'], 'RM0.00')
+
+    def test_unreadable_caruman_is_unknown_not_zero(self):
+        # The Penyata is recognised but the CARUMAN table didn't parse → 'unknown', NOT 'zero'
+        # (#72: a parse miss must never be read as "no income").
+        no_rows = _KWSP.replace(
+            'Jan-26 Caruman - IWS 16/01/2026 221.00 187.00 408.00\n'
+            'Feb-26 Caruman - IWS 20/02/2026 250.00 210.00 460.00\n', '')
+        r = parse_by_labels('epf', no_rows)
+        self.assertEqual(r['contribution_status'], 'unknown')
+        self.assertEqual(r['avg_monthly_contribution'], '')
 
     def test_borang_ec_in_epf_slot_returns_none_misslot_detection(self):
         # The deterministic parser refuses a non-KWSP doc → Gemini reads it (and the

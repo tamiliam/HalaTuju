@@ -344,9 +344,15 @@ def student_income_proof_check(doc):
         raw_points = [('amount', f.get('gross_income') or f.get('net_income')),
                       ('period', f.get('period'))]
     else:                                          # epf
-        raw_points = [('monthlyContribution', f.get('monthly_contribution')),
+        # The contribution income figure is the AVERAGE over the months shown (steadier than
+        # one row; RM0.00 when the statement shows no contributions — a 'no active salary'
+        # signal). The lifetime balance + statement date + member address are context.
+        avg = (f.get('avg_monthly_contribution') or f.get('monthly_contribution') or '').strip()
+        raw_points = [('avgContribution', avg),
+                      ('monthsAveraged', f.get('months_counted')),
                       ('totalAccumulated', f.get('latest_balance')),
-                      ('year', f.get('year') or f.get('last_contribution'))]
+                      ('statementDate', f.get('statement_date') or f.get('year') or f.get('last_contribution')),
+                      ('address', f.get('address'))]
     points = [{'key': k, 'value': (v or '').strip()} for k, v in raw_points if (v or '').strip()]
 
     ic = _member_ic_doc(doc.application, member)
@@ -506,18 +512,25 @@ def _doc_fields(doc):
     return f if isinstance(f, dict) else {}
 
 
+def _epf_contribution(f):
+    """The EPF monthly contribution to use for the income estimate: the AVERAGE over the
+    months shown (steadier than one row), falling back to the latest month for older records
+    that only captured one. Returns a float or None."""
+    return _parse_rm(f.get('avg_monthly_contribution')) or _parse_rm(f.get('monthly_contribution'))
+
+
 def earner_monthly_income(application, member):
     """A working member's estimated MONTHLY income from their documents + the source.
     The salary slip's gross is primary; failing that, estimate from the EPF monthly
-    contribution (≈24% of salary). Returns ``(amount: float | None, source)`` where
-    source is 'salary' | 'epf_estimate' | 'unknown'."""
+    contribution (≈24% of salary, AVERAGED over the months shown). Returns
+    ``(amount: float | None, source)`` where source is 'salary' | 'epf_estimate' | 'unknown'."""
     for slip in _cluster_docs(application, member, 'salary_slip'):
         f = _doc_fields(slip)
         amt = _parse_rm(f.get('gross_income') or f.get('net_income'))
         if amt:
             return amt, 'salary'
     for epf in _cluster_docs(application, member, 'epf'):
-        contrib = _parse_rm(_doc_fields(epf).get('monthly_contribution'))
+        contrib = _epf_contribution(_doc_fields(epf))
         if contrib:
             return round(contrib / _EPF_CONTRIB_RATE, 2), 'epf_estimate'
     return None, 'unknown'
@@ -538,7 +551,7 @@ def slip_epf_divergence(application, member):
             break
     epf_implied = None
     for e in _cluster_docs(application, member, 'epf'):
-        contrib = _parse_rm(_doc_fields(e).get('monthly_contribution'))
+        contrib = _epf_contribution(_doc_fields(e))
         if contrib:
             epf_implied = round(contrib / _EPF_CONTRIB_RATE, 2)
             break

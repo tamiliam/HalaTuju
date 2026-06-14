@@ -917,9 +917,11 @@ class TestUtilityAndEpf(TestCase):
                        fields={'name': 'MURUGAN A/L KESAVAN', 'monthly_contribution': 'RM480',
                                'latest_balance': 'RM1,150,410.53', 'year': '2026'})
         pts = {p['key']: p['value'] for p in student_income_proof_check(epf)['points']}
-        self.assertEqual(pts['monthlyContribution'], 'RM480')
+        # The contribution figure (avg over the months; falls back to the single month for
+        # older records) is shown — never the lifetime balance as monthly income.
+        self.assertEqual(pts['avgContribution'], 'RM480')
         self.assertEqual(pts['totalAccumulated'], 'RM1,150,410.53')
-        self.assertEqual(pts['year'], '2026')
+        self.assertEqual(pts['statementDate'], '2026')   # falls back to the year
 
     def test_epf_no_current_contribution_gives_no_income_estimate(self):
         # The RM1.15M sample: CARUMAN SEMASA "Tiada Transaksi" → empty monthly_contribution
