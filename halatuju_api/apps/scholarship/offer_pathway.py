@@ -21,7 +21,7 @@ All functions here are read-only (no model writes). The orchestration + writes l
 """
 from __future__ import annotations
 
-from .pathway_engine import _distinctive_tokens
+from .pathway_engine import distinctive_tokens
 
 
 def detect_pathway_type(programme: str, institution: str) -> str:
@@ -83,14 +83,14 @@ def resolve_catalogue_course(programme: str, institution: str):
     to labels). Conservative by design: a wrong ``course_id`` is worse than no id."""
     from apps.courses.models import Institution, CourseInstitution
 
-    pj = _distinctive_tokens(programme)
-    ij = _distinctive_tokens(institution)
+    pj = distinctive_tokens(programme)
+    ij = distinctive_tokens(institution)
     if not pj or not ij:
         return None
 
     inst_ids = [
         inst.institution_id for inst in Institution.objects.all()
-        if _name_aligns(ij, _distinctive_tokens(inst.institution_name))
+        if _name_aligns(ij, distinctive_tokens(inst.institution_name))
     ]
     if not inst_ids:
         return None
@@ -99,7 +99,7 @@ def resolve_catalogue_course(programme: str, institution: str):
     for off in (CourseInstitution.objects
                 .filter(institution_id__in=inst_ids)
                 .select_related('course', 'institution')):
-        if _name_aligns(pj, _distinctive_tokens(off.course.course)):
+        if _name_aligns(pj, distinctive_tokens(off.course.course)):
             uniq[off.course.course_id] = {
                 'course_id': off.course.course_id,
                 'course_name': off.course.course,

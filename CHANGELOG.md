@@ -40,6 +40,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the page consumes them. NOTE: the full Sprint 3 panel extraction + the shared `busy`/`error` reducer + a
   `runAction` helper + the apply-form per-step split + the exhaustive-deps fix are deferred to Sprint 3b — large
   behaviour-preserving refactors of the live cockpit with no component-test coverage, needing a live walkthrough.
+- **Tech-debt paydown Sprint 4a — promote shared engine helpers to a public surface.** Six cross-module helpers were
+  imported through their leading-underscore "private" names (`_ic_identity_blockers`, `_canonical_name_tokens`,
+  `_MY_STATES`, `_distinctive_tokens`, `_is_ic_decode_error`, `_sibling_tertiary_count`) — so the privacy convention
+  was false and an owning module couldn't safely rename them without silently breaking a sibling. Renamed to public
+  names across every call site (including tests). 1236 scholarship pytest green. The remaining Sprint 4 items —
+  the `services.py` module split, a `@require_reviewer` decorator across ~23 admin handlers, the
+  `services.record_verdict` extraction, an own-application mixin, and the income-rule single source — are deferred as
+  focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
 - **Tech-debt paydown Sprint 1 — write-safety + admin-auth hardening.** From the 2026-06-14 scholarship audit:

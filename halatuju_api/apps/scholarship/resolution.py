@@ -210,7 +210,7 @@ def doc_match_verdict(doc):
     from . import income_engine
     from .academic_engine import student_slip_check
     from .pathway_engine import student_offer_check
-    from .services import _is_ic_decode_error
+    from .services import is_ic_decode_error
 
     dt = doc.doc_type
 
@@ -249,7 +249,7 @@ def doc_match_verdict(doc):
         if not ran:
             return 'pending'          # not scanned yet — don't greenlight an unread IC
         # An OCR-service outage is not the student's fault — don't call it unreadable.
-        if (not err or _is_ic_decode_error(err)) and not chk.get('readable'):
+        if (not err or is_ic_decode_error(err)) and not chk.get('readable'):
             return 'unreadable'
     elif dt in ('salary_slip', 'epf'):
         if red(income_engine.student_income_proof_check(doc), 'name_status', 'nric_status'):
@@ -269,7 +269,7 @@ def doc_match_verdict(doc):
         if not ran:
             return 'pending'          # not scanned yet — don't greenlight an unread IC
         err = getattr(doc, 'vision_error', '') or ''
-        service_down = bool(err) and not _is_ic_decode_error(err)
+        service_down = bool(err) and not is_ic_decode_error(err)
         if not service_down:
             from .vision import nric_match, name_match
             prof = getattr(doc.application, 'profile', None)

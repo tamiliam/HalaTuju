@@ -39,7 +39,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
-from .services import _ic_identity_blockers
+from .services import ic_identity_blockers
 from .vision import name_match
 
 
@@ -111,7 +111,7 @@ def _verdict_identity(application):
     # Reuse the consent-gate identity logic so the verdict and the consent gate
     # can never disagree. It returns at most: ic_service_down / ic_unreadable /
     # ic_nric_mismatch / ic_name_mismatch (a 'partial' name is NOT a blocker).
-    blockers = _ic_identity_blockers(application)
+    blockers = ic_identity_blockers(application)
     if 'ic_service_down' in blockers:
         # The OCR *service* failed (not a bad image) — confirm later, never fail.
         return _fact('identity', 'review', evidence, [_item('ic_service_down')])

@@ -53,7 +53,7 @@ _GENERIC_TOKENS = frozenset({
 })
 
 
-def _distinctive_tokens(text: str) -> set:
+def distinctive_tokens(text: str) -> set:
     """The place/field tokens that actually distinguish one offer from another:
     lowercase words 3+ chars, excluding pure digits and the generic stopwords."""
     if not text:
@@ -66,8 +66,8 @@ def _field_status(declared: str, offer: str) -> str:
     """Compare one field (institution OR programme): 'match' (share a distinctive
     token), 'clash' (both distinctive, none shared), or 'unknown' (one side has
     nothing distinctive to compare)."""
-    d = _distinctive_tokens(declared)
-    o = _distinctive_tokens(offer)
+    d = distinctive_tokens(declared)
+    o = distinctive_tokens(offer)
     if not d or not o:
         return 'unknown'
     return 'match' if (d & o) else 'clash'

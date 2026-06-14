@@ -29,7 +29,7 @@ import re
 # (relationships, earner-IC ↔ income-proof, STR-recipient ↔ IC, BC names) — never the student's
 # own identity — so they all use the transliteration-tolerant matcher (#2, Sarawanan A/L case).
 from .vision import relationship_name_match as name_match
-from .vision import _canonical_name_tokens   # token folding — reused for cross-bill holder reconciliation
+from .vision import canonical_name_tokens   # token folding — reused for cross-bill holder reconciliation
 
 
 # ── Father's name from the student's IC patronymic ───────────────────────────
@@ -762,7 +762,7 @@ def _same_utility_holder(a, b):
     (Siva vs Sira) or a genuinely different name never merges, so reconciliation only ever
     swaps in a cleaner read of the SAME holder, never conflates two people. Token order is
     not significant (the canonical tokens are an unordered set)."""
-    sa, sb = set(_canonical_name_tokens(a)), set(_canonical_name_tokens(b))
+    sa, sb = set(canonical_name_tokens(a)), set(canonical_name_tokens(b))
     if not sa or not sb or len(sa) != len(sb) or len(sa) < 2:
         return False
     only_a, only_b = sa - sb, sb - sa

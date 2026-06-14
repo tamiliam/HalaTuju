@@ -1082,12 +1082,12 @@ def _guardian_docs_done(application, profile, present_doc_types):
 _IC_DECODE_ERROR_MARKERS = ('empty image', 'bad image data', 'could not fetch')
 
 
-def _is_ic_decode_error(err: str) -> bool:
+def is_ic_decode_error(err: str) -> bool:
     e = (err or '').lower()
     return any(m in e for m in _IC_DECODE_ERROR_MARKERS)
 
 
-def _ic_identity_blockers(application):
+def ic_identity_blockers(application):
     """Identity gate on the student's OWN uploaded IC (doc_type='ic').
 
     The IC is OCR'd once at upload (run_vision_for_document, synchronous), so by
@@ -1112,7 +1112,7 @@ def _ic_identity_blockers(application):
         # A genuine service error (module/API/network/quota) → retry later
         # (ic_service_down). Pre-TD-080 this lumped "Bad image data." into
         # service_down, stranding PDF-IC students with a false "system down".
-        return ['ic_unreadable'] if _is_ic_decode_error(ic.vision_error) else ['ic_service_down']
+        return ['ic_unreadable'] if is_ic_decode_error(ic.vision_error) else ['ic_service_down']
     if not (ic.vision_nric or ic.vision_name):
         return ['ic_unreadable']  # OCR succeeded but read nothing usable (poor image)
     out = []
@@ -1155,7 +1155,7 @@ def detect_vision_outage(window_hours=24):
         attempts += 1
         if not d.vision_error and (d.vision_nric or d.vision_name):
             successes += 1
-        elif d.vision_error and not _is_ic_decode_error(d.vision_error):
+        elif d.vision_error and not is_ic_decode_error(d.vision_error):
             service_failures += 1
     is_down = attempts >= 1 and successes == 0 and service_failures >= 1
     return is_down, {
@@ -1255,7 +1255,7 @@ def consent_blockers(application):
     blockers.extend(income_doc_blockers(application))  # route-aware (replaces parent_ic + income_proof)
     # Identity check only once the IC is actually uploaded (else 'ic_missing' leads).
     if 'ic' in present:
-        blockers.extend(_ic_identity_blockers(application))
+        blockers.extend(ic_identity_blockers(application))
     # POLICY (owner): do not receive applications with ANY red document check — every
     # "Doesn't match" the student sees in the Documents tab must clear before consent.
     blockers.extend(document_red_blockers(application))
@@ -1270,7 +1270,7 @@ def document_red_blockers(application):
     clear before consent. Reads the SAME stored verification the student sees in the
     Documents tab (the student_*_check engines — no new OCR). Only a CONFIRMED
     `mismatch` (or STR rejected/stale) blocks; 'pending' / 'unreadable' / 'no_ref' do
-    not. IC identity reds are covered separately by _ic_identity_blockers. Utility
+    not. IC identity reds are covered separately by ic_identity_blockers. Utility
     bills (soft hardship signal) are deliberately NOT gated. Returns blocker codes."""
     from . import income_engine
     from .academic_engine import student_slip_check
@@ -1334,7 +1334,7 @@ def document_unreadable_blockers(application):
     photo the student can simply re-take (Gopal already says exactly this). Owner policy:
     don't accept what we can't verify. EXCLUDES our own OCR-service outages: the Gemini
     docs (slip/offer/relationship) surface an outage as 'pending' (not processed), not
-    'unreadable'; the Vision IC path is guarded with _is_ic_decode_error (a service error
+    'unreadable'; the Vision IC path is guarded with is_ic_decode_error (a service error
     is not the student's fault). Returns blocker codes."""
     from .academic_engine import student_slip_check
     from .pathway_engine import student_offer_check
@@ -1361,7 +1361,7 @@ def document_unreadable_blockers(application):
         if ic is not None:
             ran = bool(getattr(ic, 'vision_run_at', None))
             err = getattr(ic, 'vision_error', '') or ''
-            service_down = bool(err) and not _is_ic_decode_error(err)   # OUR outage → don't block
+            service_down = bool(err) and not is_ic_decode_error(err)   # OUR outage → don't block
             if ran and not service_down and not student_income_ic_check(ic).get('readable'):
                 codes.add('income_document_unreadable')
         # The relationship doc (BC / guardianship letter) is a Gemini field-extraction doc,
