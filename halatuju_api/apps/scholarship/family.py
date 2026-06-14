@@ -77,6 +77,26 @@ ROLE_CODES = frozenset(ROLE_LABELS)
 #: Hard cap on the optional member pool (mirrors the form).
 MAX_OTHER_MEMBERS = 6
 
+#: The structured roster columns shared by StudentProfile (the durable profile-level
+#: home) and ScholarshipApplication (the per-application working copy). Same names on
+#: both → they copy field-for-field. (family_context is Story-only, not mirrored.)
+PROFILE_FAMILY_FIELDS = (
+    'father_name', 'father_occupation', 'father_occupation_other',
+    'mother_name', 'mother_occupation', 'mother_occupation_other',
+    'other_family_members', 'siblings_in_school', 'siblings_in_tertiary',
+)
+
+#: Application statuses where the scholarship decision is settled → the application's
+#: family copy FREEZES (a later /profile edit no longer syncs into it).
+DECIDED_STATUSES = frozenset({'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired'})
+
+
+def copy_family_roster(src, dst):
+    """Copy the structured roster fields between a StudentProfile and a
+    ScholarshipApplication (they share field names). Pure — the caller saves dst."""
+    for field in PROFILE_FAMILY_FIELDS:
+        setattr(dst, field, getattr(src, field))
+
 
 def occupation_label(code, other=''):
     """English label for a profession code; for 'other', the typed text (fallback 'Other')."""

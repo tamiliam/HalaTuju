@@ -532,6 +532,27 @@ class StudentProfile(models.Model):
         default=list, blank=True,
         help_text="Guardian details: [{name, relationship, occupation, income}]")
 
+    # ── Structured family roster (the durable, profile-level home) ────────────
+    # Mirrors apps.scholarship.ScholarshipApplication's roster columns (same field
+    # names so the two copy field-for-field). This is the SOURCE: /profile edits it
+    # for everyone (even with no B40 application). When an application is OPEN it is
+    # kept in two-way sync with the application's copy; once the application is
+    # decided, the application copy FREEZES and /profile edits stop touching it.
+    # Profession codes are the coded values from apps.scholarship.family
+    # (validated by the shared FE editor) — kept as plain CharFields here to avoid a
+    # courses→scholarship import dependency.
+    father_name = models.CharField(max_length=200, blank=True, default='')
+    father_occupation = models.CharField(max_length=40, blank=True, default='')
+    father_occupation_other = models.CharField(max_length=120, blank=True, default='')
+    mother_name = models.CharField(max_length=200, blank=True, default='')
+    mother_occupation = models.CharField(max_length=40, blank=True, default='')
+    mother_occupation_other = models.CharField(max_length=120, blank=True, default='')
+    other_family_members = models.JSONField(
+        default=list, blank=True,
+        help_text="Brother/sister/guardian pool: [{role, occupation, occupation_other?}]")
+    siblings_in_school = models.PositiveSmallIntegerField(null=True, blank=True)
+    siblings_in_tertiary = models.PositiveSmallIntegerField(null=True, blank=True)
+
     # Demographics (for eligibility checking)
     gender = models.CharField(max_length=20, blank=True)
     nationality = models.CharField(max_length=50, default='Warganegara')

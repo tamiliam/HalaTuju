@@ -1422,6 +1422,14 @@ def save_application_details(application, data):
                 derived.append('parents_occupation')
         update_fields = list(dict.fromkeys(list(deeper.keys()) + derived)) + ['updated_at']
         application.save(update_fields=update_fields)
+        # Mirror the roster back to the profile (the durable home) while the application
+        # is still open, so /profile and the Story editor stay identical. Once the
+        # application is decided its copy freezes and the profile is decoupled.
+        if (application.profile
+                and application.status not in family.DECIDED_STATUSES
+                and any(k in deeper for k in family.PROFILE_FAMILY_FIELDS)):
+            family.copy_family_roster(application, application.profile)
+            application.profile.save(update_fields=list(family.PROFILE_FAMILY_FIELDS))
     fn_data = data.get('funding_need')
     if fn_data is not None:
         FundingNeed.objects.update_or_create(application=application, defaults=fn_data)

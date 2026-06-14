@@ -303,6 +303,11 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
             'spm_prereq_grades', 'stream_subjects', 'elective_subjects', 'referral_source',
             'contact_email', 'contact_phone',
+            # Structured family roster (the profile-level home; two-way synced with an
+            # open application by ProfileView.put).
+            'father_name', 'father_occupation', 'father_occupation_other',
+            'mother_name', 'mother_occupation', 'mother_occupation_other',
+            'other_family_members', 'siblings_in_school', 'siblings_in_tertiary',
         ]
         # NRIC only changes via the validated claim endpoint (/profile/claim-nric/),
         # never an unchecked PUT or sync — closes the soft-NRIC write gap.

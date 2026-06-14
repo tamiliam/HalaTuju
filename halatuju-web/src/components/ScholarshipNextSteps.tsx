@@ -22,8 +22,9 @@ import ScholarshipReview from '@/components/ScholarshipReview'
 import ActionCentre from '@/components/ActionCentre'
 import InfoBox from '@/components/InfoBox'
 import FieldLabel from '@/components/FieldLabel'
+import FamilyRosterFields from '@/components/FamilyRosterFields'
 import type { ConfirmTarget } from '@/lib/actionCentre'
-import { PROFESSION_GROUPS, FAMILY_ROLES, MAX_OTHER_MEMBERS, type FamilyRole, type OtherMember } from '@/lib/familyRoster'
+import { type OtherMember } from '@/lib/familyRoster'
 
 // Anti-spam ceiling for the free-text Story fields — mirrors the backend's
 // STORY_TEXT_MAX. Generous (~900 words): well above any genuine answer, well
@@ -42,41 +43,6 @@ function Tips({ title, tips }: { title: string; tips: string[] }) {
         {tips.map((tip) => <li key={tip}>{tip}</li>)}
       </ul>
     </details>
-  )
-}
-
-type TFn = (key: string) => string
-const CA = 'scholarship.nextSteps.story.cardA'
-
-/** Profession <select> with grouped options (employed / informal / not-working).
- *  Codes mirror the backend family.PROFESSION_CHOICES; labels are i18n. */
-function ProfessionSelect({ value, onChange, t }: { value: string; onChange: (v: string) => void; t: TFn }) {
-  return (
-    <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">{t(`${CA}.professionPlaceholder`)}</option>
-      {PROFESSION_GROUPS.map((g) => (
-        <optgroup key={g.groupKey} label={t(`${CA}.group.${g.groupKey}`)}>
-          {g.codes.map((code) => (
-            <option key={code} value={code}>{t(`${CA}.prof.${code}`)}</option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
-  )
-}
-
-/** A +/− stepper for a sibling count. Defaults to 0 (a real "none" answer) — no
- *  confusing "not set" state. */
-function CountStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const btn = 'h-9 w-9 rounded-full border border-gray-300 text-lg leading-none text-gray-600 hover:bg-gray-100 disabled:opacity-40'
-  return (
-    <div className="flex items-center gap-3">
-      <button type="button" aria-label="decrease" className={btn}
-        onClick={() => onChange(Math.max(0, value - 1))}>−</button>
-      <span className="w-6 text-center text-sm font-semibold tabular-nums">{value}</span>
-      <button type="button" aria-label="increase" className={btn}
-        onClick={() => onChange(value + 1)}>+</button>
-    </div>
   )
 }
 
@@ -314,89 +280,14 @@ export default function ScholarshipNextSteps({
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-5">
           <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardA.title')}</h3>
 
-          {/* ── Parents / guardians ─────────────────────────────────────────── */}
-          <div className="space-y-4">
-            {(['father', 'mother'] as const).map((who) => {
-              const nameKey = `${who}Name` as const
-              const occKey = `${who}Occupation` as const
-              const otherKey = `${who}OccupationOther` as const
-              return (
-                <div key={who} className="space-y-2">
-                  <p className="text-sm font-medium text-gray-700">{t(`${CA}.${who}`)}</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div>
-                      <FieldLabel required>{t(`${CA}.name`)}</FieldLabel>
-                      <input className="input" maxLength={200}
-                        value={form[nameKey]} onChange={(e) => update(nameKey, e.target.value)} />
-                    </div>
-                    <div>
-                      <FieldLabel required>{t(`${CA}.profession`)}</FieldLabel>
-                      <ProfessionSelect value={form[occKey]} onChange={(v) => update(occKey, v)} t={t} />
-                    </div>
-                  </div>
-                  {form[occKey] === 'other' && (
-                    <input className="input" maxLength={120}
-                      placeholder={t(`${CA}.otherSpecify`)}
-                      value={form[otherKey]} onChange={(e) => update(otherKey, e.target.value)} />
-                  )}
-                </div>
-              )
-            })}
-
-            {/* Optional member pool — the elective-subjects pattern */}
-            {form.otherFamilyMembers.map((m, i) => (
-              <div key={i} className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
-                <div className="flex items-start gap-2">
-                  <div className="flex-1 grid gap-2 sm:grid-cols-2">
-                    <select className="input" value={m.role}
-                      onChange={(e) => updateMember(i, { role: e.target.value as FamilyRole })}>
-                      {FAMILY_ROLES.map((r) => {
-                        // Only one guardian is possible — disable it once another row has it.
-                        const guardianTaken = r === 'guardian'
-                          && form.otherFamilyMembers.some((mm, j) => j !== i && mm.role === 'guardian')
-                        return <option key={r} value={r} disabled={guardianTaken}>{t(`${CA}.role.${r}`)}</option>
-                      })}
-                    </select>
-                    <ProfessionSelect value={m.occupation} onChange={(v) => updateMember(i, { occupation: v })} t={t} />
-                  </div>
-                  <button type="button" onClick={() => removeMember(i)} aria-label={t(`${CA}.remove`)}
-                    className="mt-1.5 shrink-0 text-gray-400 hover:text-red-500 text-lg leading-none">×</button>
-                </div>
-                {m.occupation === 'other' && (
-                  <input className="input" maxLength={120}
-                    placeholder={t(`${CA}.otherSpecify`)}
-                    value={m.occupation_other || ''}
-                    onChange={(e) => updateMember(i, { occupation_other: e.target.value })} />
-                )}
-              </div>
-            ))}
-            {form.otherFamilyMembers.length < MAX_OTHER_MEMBERS && (
-              <button type="button" onClick={addMember}
-                className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm font-medium text-primary-600 hover:bg-white">
-                + {t(`${CA}.addMember`)}
-              </button>
-            )}
-          </div>
-
-          {/* ── Brothers & sisters (compulsory steppers; derive first-in-family) ── */}
-          <div className="space-y-3 border-t border-gray-200 pt-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-              {t(`${CA}.siblingsHeading`)}
-            </p>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-gray-700">{t(`${CA}.siblingsSchool`)}</span>
-              <CountStepper value={form.siblingsInSchool} onChange={(v) => update('siblingsInSchool', v)} />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-gray-700">{t(`${CA}.siblingsTertiary`)}</span>
-              <CountStepper value={form.siblingsInTertiary} onChange={(v) => update('siblingsInTertiary', v)} />
-            </div>
-            {form.siblingsInTertiary === 0 && (
-              <div className="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 p-2 text-sm text-green-700">
-                <span aria-hidden>✓</span> {t(`${CA}.firstInFamilyNote`)}
-              </div>
-            )}
-          </div>
+          <FamilyRosterFields
+            form={form}
+            onUpdate={update}
+            onUpdateMember={updateMember}
+            onAddMember={addMember}
+            onRemoveMember={removeMember}
+            t={t}
+          />
 
           {/* family_context (kept — the free-text catch-all) */}
           <div className="border-t border-gray-200 pt-4">

@@ -2063,7 +2063,14 @@
     "verified": "Disahkan",
     "notVerified": "Belum disahkan",
     "verify": "Sahkan",
-    "verificationSent": "Emel pengesahan dihantar. Semak peti masuk anda."
+    "verificationSent": "Emel pengesahan dihantar. Semak peti masuk anda.",
+    "meritScore": "Skor merit",
+    "meritTapAdd": "Belum ditetapkan — ketik untuk tambah keputusan",
+    "pathway": "Laluan",
+    "pathwayTapAdd": "Belum ditetapkan — ketik untuk pilih",
+    "familyMembers": "Ahli keluarga",
+    "familyLinkNote": "Dikongsi dengan permohonan biasiswa anda selagi ia dibuka.",
+    "familyOthers": "Ahli lain yang bekerja"
   },
   "quiz": {
     "pickUpTo": "Pilih sehingga {count}",
