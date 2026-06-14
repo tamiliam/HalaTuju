@@ -3169,7 +3169,32 @@
         "epanduan_spm": "e-Panduan · SPM",
         "uptvet": "UP_TVET",
         "emasco": "eMASCO (pekerjaan)"
-      }
+      },
+      "runCheck": "Jalankan semakan sekarang",
+      "checking": "Menyemak…",
+      "runCheckHint": "Baca sahaja: semak semula pautan + audit (~2 min). Tiada perubahan katalog.",
+      "problemLinks": "Pautan bermasalah",
+      "downloadCsv": "Muat turun CSV",
+      "rows": "baris",
+      "insecure": "Sijil tidak sah",
+      "problemLinksHint": "Pautan yang gagal dicapai pada semakan terakhir, dikumpulkan mengikut sebab. Baca sahaja — semak dan betulkan di sumber.",
+      "reason": {
+        "gone": "Tiada (404 / 5xx)",
+        "dns": "Domain tidak dijumpai",
+        "timeout": "Tamat masa",
+        "conn": "Sambungan gagal",
+        "badurl": "URL tidak sah",
+        "other": "Lain-lain",
+        "gated": "Dilarang (401/403)"
+      },
+      "broken": "Rosak",
+      "couldntVerify": "Tidak dapat disahkan",
+      "brokenHeader": "Rosak — perlu dibetulkan",
+      "unverifiedHeader": "Tidak dapat disahkan",
+      "unverifiedHint": "Hampir pasti hidup — hanya terlalu perlahan atau disekat daripada pemeriksa kami, bukan tugasan.",
+      "accessBlocked": "Akses disekat",
+      "gatedHeader": "Akses disekat (401/403)",
+      "gatedHint": "Pelayan menjawab tetapi menolak halaman ini — biasanya dinding log masuk (tidak mengapa), kadangkala laluan salah/lama (seperti Port Dickson). Wajar disemak secara manual."
     }
   }
 }

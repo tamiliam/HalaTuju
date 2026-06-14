@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Course-data link health — 19 genuinely-broken institution URLs corrected + checker false-positives killed.**
+  *Data (live, via MCP, audited; no deploy):* all 15 matriculation-college URLs were stored as the bare subdomain
+  `https://X.matrik.edu.my`, which has no DNS record — the live sites require `www.` (`http://www.X.matrik.edu.my`).
+  Re-pointed all 15 (each verified live in a local browser). Plus 4 owner-flagged links: Politeknik Besut
+  (`bit.ly` shortlink → `polibesut.mypolycc.edu.my`), KK Raub (stale Facebook → `sites.google.com/kkraub.edu.my/main`),
+  KK Tanjung Karang (malformed "url atau url" → single `kktanjongkarang.mypolycc.edu.my`), and UMP→UMPSA
+  (`ump.edu.my` → `umpsa.edu.my/en`).
+  *Code (this branch):* the dashboard's link-health check was crying wolf — MY gov/edu portals (IPG, matriculation,
+  polytechnics) routinely take 10-15s to first byte from Cloud Run, so a 10s budget false-flagged dozens of live
+  sites as "connection failed". `check_url` now **retries a transient (timeout/conn) failure once**, the health check's
+  per-URL timeout is raised **10s → 20s**, and failures are split into three **severities**: genuinely **Broken**
+  (gone / DNS-not-found / malformed — actionable) · **Access-blocked** (401/403 — the server answered but refused
+  this page: usually a login wall, occasionally a wrong/old path like Politeknik Port Dickson's bare URL; surfaced
+  for a human to eyeball rather than silently counted "alive") · **Couldn't verify** (timeout / connection — almost
+  certainly alive, just slow/blocked from the checker; informational, not a to-do). The dashboard headline counts
+  Broken only; the "Problem links" drill-down groups under the three severities. Reporting-only — no catalogue writes
+  from the check. +7 backend tests (1114 courses pytest pass), i18n parity en/ms/ta.
+  *Perf/infra:* the heavier 20s-timeout check overran the api's tight 120s Cloud Run request limit (the in-request
+  cron + button path). Fixed by fitting the job to the budget — the bulk health-check now runs **40 concurrent
+  workers** and **skips the per-URL retry** (`retries=0`; the 20s timeout already catches slow-but-alive sites, and a
+  retry only doubled the slow tail) — plus the api request timeout was raised **120s → 300s** as headroom
+  (`gcloud run services update halatuju-api --timeout=300`). First post-deploy full run: 652 checked → **3 broken**,
+  0 access-blocked, 126 couldn't-verify, 523 alive (incl. 33 insecure-cert). `check_url` gains a `--retries` flag
+  (default 1 for targeted/manual runs).
+
 ### Changed
 - **Cockpit Check-2 / Interview-Stage split (Check-2/Check-3 redesign, Sprint 1 of 4; FE + i18n, no schema change).**
   The officer cockpit's "Outstanding" box previously merged *student-facing* Check-2 tasks (resolution items) with
@@ -44,6 +70,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clean, parity 2864×3 (added `profileDraftHint`).
 
 ### Added
+- **Course Data dashboard — "Problem links" drill-down (read-only; no migration).** The link check now STORES the failing
+  URLs (was counts-only), so the dashboard can show *which* links failed: `validate_course_urls` records a `failures` list
+  in its status — each `{url, kind, institutions, refs}` — and tags errors by kind (`_error_kind`: `dns`/`timeout`/`conn`/
+  `badurl`, plus `gone` for 4xx/5xx). New "Problem links" card on `/admin/course-data`: failures grouped by reason
+  (Gone · Domain not found · Timed out · Connection failed · Malformed), each row showing the institution(s) + clickable
+  URL, with a **Download CSV** export. `insecure`-cert count also surfaced on the link-health card. Read-only — inspect +
+  fix at source. +5 tests (1108 courses pytest), next build clean, jest 306, parity 2628×3.
+- **Course-data health monitoring — read-only freshness + link checks (cron + manual button; no migration).** Keeps the
+  Course Data dashboard's Link-health, Audit and freshness cards live WITHOUT any catalogue writes. `validate_course_urls`
+  gains a `--workers` concurrent path (~650 URLs in <1 min). New read-only `course_data_check` command (`audit_data` +
+  `validate_course_urls --workers 20`, **no `--fix`/scrape/writes**) recorded as `CronRunView` job `course-data-check`
+  → weekly Cloud Scheduler `halatuju-course-data-check` (Mon 03:00 Asia/KL). Manual "Run health check now" button on
+  `/admin/course-data` via `POST /api/v1/admin/course-data/check/` (super/admin; runs the same check synchronously,
+  returns fresh status). +7 tests (1100 courses pytest), next build clean, jest 306, parity 2603×3.
+  **Follow-on (accuracy):** `check_url` hardened from the first full-prod run — normalise schemeless URLs → `https://`,
+  browser User-Agent, and **retry without cert verification on a TLS failure** (MY gov/edu sites with chains `urllib`
+  rejects but browsers accept) → classified `insecure` (reachable, tracked as a subset of alive) instead of a false
+  `error`. Collapses most of the ~172 false "errors" into reachable, leaving a real dead-link count. +3 tests.
 - **UP_TVET coverage — Sprint 1: catalogue scraper + coverage inventory (no DB writes, no migration).** New
   `scrape_uptvet` command scrapes the public UP_TVET Perdana catalogue (`mohon.tvet.gov.my`, ~1000 programmes,
   paginated HTML) → CSV with Kod Tauliah, name, Kategori, Institusi, **Sektor (Awam/Swasta)**, fees, stable
