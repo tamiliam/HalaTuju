@@ -26,7 +26,7 @@ from typing import Optional
 
 from .models import ApplicantDocument, FundingNeed
 from .services import age_from_nric
-from .vision import _MY_STATES, name_match
+from .vision import MY_STATES, name_match
 
 
 @dataclass(frozen=True)
@@ -48,7 +48,7 @@ def _normalize_state(s: str) -> str:
     return re.sub(r'^W\.?\s*P\.?\s*', '', s)
 
 
-_NORMALIZED_STATES = {_normalize_state(s) for s in _MY_STATES}
+_NORMALIZED_STATES = {_normalize_state(s) for s in MY_STATES}
 
 
 def _state_from_address(addr: str) -> Optional[str]:
@@ -202,7 +202,7 @@ def _detect_household_size_one(application) -> Optional[Anomaly]:
     return Anomaly('household_size_one', {})
 
 
-def _sibling_tertiary_count(application):
+def sibling_tertiary_count(application):
     """Authoritative number of siblings in TERTIARY education (P2, Check 2).
 
     Reads the school/tertiary split (the income wizard's two counters) first; it is
@@ -227,7 +227,7 @@ def _detect_first_in_family_with_siblings_studying(application) -> Optional[Anom
     study, we still can't confirm → flag it for a clarify-query."""
     if not application.first_in_family:
         return None
-    tertiary = _sibling_tertiary_count(application)
+    tertiary = sibling_tertiary_count(application)
     if tertiary is None:
         count = application.siblings_studying_count
         if count and count > 0:

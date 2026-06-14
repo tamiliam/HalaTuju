@@ -13,7 +13,7 @@ from apps.courses.models import StudentProfile
 from apps.scholarship.models import (
     ApplicantDocument, ScholarshipApplication, ScholarshipCohort,
 )
-from apps.scholarship.services import _ic_identity_blockers, _is_ic_decode_error
+from apps.scholarship.services import ic_identity_blockers, is_ic_decode_error
 from apps.scholarship.views import _is_allowed_upload
 from apps.scholarship.vision import (
     _is_pdf, _pdf_first_page_png, _pdf_text_layer, extract_mykad, extract_text,
@@ -123,11 +123,11 @@ class TestAllowlist(SimpleTestCase):
 class TestDecodeErrorClassification(SimpleTestCase):
     def test_decode_errors(self):
         for e in ('Bad image data.', 'empty image', 'could not fetch image'):
-            self.assertTrue(_is_ic_decode_error(e), e)
+            self.assertTrue(is_ic_decode_error(e), e)
 
     def test_service_errors(self):
         for e in ('Vision API quota exceeded', 'AI module not installed', 'connection reset'):
-            self.assertFalse(_is_ic_decode_error(e), e)
+            self.assertFalse(is_ic_decode_error(e), e)
 
 
 class TestIcUnreadableRemap(TestCase):
@@ -146,10 +146,10 @@ class TestIcUnreadableRemap(TestCase):
     def test_bad_image_data_is_unreadable_not_service_down(self):
         # The TD-080 fix: a PDF/video IC ("Bad image data.") tells the student to
         # re-upload, instead of a false "service unavailable".
-        self.assertEqual(_ic_identity_blockers(self._app_with_ic('Bad image data.')), ['ic_unreadable'])
+        self.assertEqual(ic_identity_blockers(self._app_with_ic('Bad image data.')), ['ic_unreadable'])
 
     def test_genuine_service_error_stays_service_down(self):
-        self.assertEqual(_ic_identity_blockers(self._app_with_ic('Vision API quota exceeded')),
+        self.assertEqual(ic_identity_blockers(self._app_with_ic('Vision API quota exceeded')),
                          ['ic_service_down'])
 
     def _app_with_read_ic(self, *, vnric, vname, pnric, pname):
@@ -165,12 +165,12 @@ class TestIcUnreadableRemap(TestCase):
         # the hard key, so the name mismatch must NOT block consent.
         app = self._app_with_read_ic(vnric='080923-06-0355', vname='TAMAN SRI LAYANG',
                                      pnric='080923-06-0355', pname='Harish Rish')
-        self.assertNotIn('ic_name_mismatch', _ic_identity_blockers(app))
+        self.assertNotIn('ic_name_mismatch', ic_identity_blockers(app))
 
     def test_name_mismatch_blocks_when_nric_also_fails(self):
         # No NRIC verification → a disjoint name still blocks (genuine wrong-IC risk).
         app = self._app_with_read_ic(vnric='111111-11-1111', vname='SOMEONE ELSE',
                                      pnric='080923-06-0355', pname='Harish Rish')
-        blockers = _ic_identity_blockers(app)
+        blockers = ic_identity_blockers(app)
         self.assertIn('ic_nric_mismatch', blockers)
         self.assertIn('ic_name_mismatch', blockers)

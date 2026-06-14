@@ -31,7 +31,7 @@ Verification taxonomy for a ledger row:
 """
 from __future__ import annotations
 
-from .anomaly_engine import _sibling_tertiary_count, detect_anomalies
+from .anomaly_engine import sibling_tertiary_count, detect_anomalies
 from .verdict_engine import build_verdict
 
 # A verification-verdict status → the ledger verification it implies.
@@ -111,7 +111,7 @@ def build_facts_ledger(application) -> list[dict]:
     # first-to-university — only an assertable claim when the student made it; its
     # verification comes from the P2 sibling split, not a self-tick.
     if application.first_in_family:
-        tertiary = _sibling_tertiary_count(application)
+        tertiary = sibling_tertiary_count(application)
         ver = 'verified' if tertiary == 0 else 'unverified'  # None or >0 → can't assert
         add('first_in_family', True, 'sibling_split', ver)
 
@@ -152,7 +152,7 @@ def completeness_gaps(application) -> list[dict]:
         gaps.append({'code': 'motivation_missing'})
 
     # Sibling level — unknown when the split can't be derived (legacy count, no breakdown).
-    if _sibling_tertiary_count(application) is None and application.siblings_in_tertiary is None:
+    if sibling_tertiary_count(application) is None and application.siblings_in_tertiary is None:
         gaps.append({'code': 'sibling_level_unknown'})
 
     # Device — no structured field. If they didn't tick 'device' under funding we don't

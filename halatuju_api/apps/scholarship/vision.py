@@ -36,7 +36,7 @@ def _canonical_nric(s: str) -> str:
     return re.sub(r'\D', '', s or '')
 
 
-def _canonical_name_tokens(s: str) -> set:
+def canonical_name_tokens(s: str) -> set:
     """Lowercase, strip MyKad parentage tokens + honorific prefixes, return a tokens set."""
     if not s:
         return set()
@@ -45,7 +45,7 @@ def _canonical_name_tokens(s: str) -> set:
 
 
 def _canonical_name_seq(s: str) -> list:
-    """Like _canonical_name_tokens but ORDER-PRESERVING (a list) — so the words can be
+    """Like canonical_name_tokens but ORDER-PRESERVING (a list) — so the words can be
     glued back in their printed order. Needed to compare a name that an OCR space SPLIT
     inside a token (RUSHAINDRA → "RUSHAIND RA") or GLUED across a real space."""
     if not s:
@@ -81,8 +81,8 @@ def name_match(extracted: str, profile_name: str) -> str:
     name omits a middle/surname the IC carries, or vice versa);
     'mismatch' otherwise. Empty inputs return 'mismatch'.
     """
-    a = _canonical_name_tokens(extracted)
-    b = _canonical_name_tokens(profile_name)
+    a = canonical_name_tokens(extracted)
+    b = canonical_name_tokens(profile_name)
     if not a or not b:
         return 'mismatch'
     if a == b:
@@ -150,8 +150,8 @@ def relationship_name_match(extracted: str, reference: str) -> str:
     for comparing the SAME person's name across two documents (relationship / income-proof
     checks). 'match' when the token sets agree under folding; 'partial' when one is a tolerant
     subset of the other; 'mismatch' otherwise. STRICTLY more lenient than name_match."""
-    a = list(_canonical_name_tokens(extracted))
-    b = list(_canonical_name_tokens(reference))
+    a = list(canonical_name_tokens(extracted))
+    b = list(canonical_name_tokens(reference))
     if not a or not b:
         return 'mismatch'
     small, large = (a, b) if len(a) <= len(b) else (b, a)
@@ -365,7 +365,7 @@ _ADDRESS_PREFIX_NOISE = re.compile(
 # (uppercase, sometimes with the `W.P.` prefix). Matched against the line
 # directly after the postcode to pull the state through the "looks like a
 # one-word name" filter without false positives.
-_MY_STATES = frozenset({
+MY_STATES = frozenset({
     'JOHOR', 'KEDAH', 'KELANTAN', 'MELAKA', 'NEGERI SEMBILAN',
     'PAHANG', 'PERAK', 'PERLIS', 'PULAU PINANG', 'SABAH',
     'SARAWAK', 'SELANGOR', 'TERENGGANU',
@@ -378,7 +378,7 @@ _MY_STATES = frozenset({
 def _is_likely_state(ln: str) -> bool:
     """True iff ``ln`` reads as a Malaysian state line on a MyKad."""
     upper = ln.strip().upper()
-    return upper in _MY_STATES
+    return upper in MY_STATES
 
 
 # Card-chrome labels printed on the MyKad face that the OCR can splice INTO the
@@ -907,11 +907,11 @@ def extract_text(data: bytes, content_type: str = '') -> dict:
 def name_present(text: str, names) -> bool:
     """True if any of ``names`` (token-set, MyKad connectors stripped) is fully
     contained in the OCR ``text``. Order / case / extra words in the doc are fine."""
-    text_tokens = _canonical_name_tokens(text)
+    text_tokens = canonical_name_tokens(text)
     if not text_tokens:
         return False
     for n in names:
-        nt = _canonical_name_tokens(n)
+        nt = canonical_name_tokens(n)
         if nt and nt.issubset(text_tokens):
             return True
     return False

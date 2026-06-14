@@ -6,7 +6,7 @@ Google Cloud Vision call itself is never made here.
 from django.test import TestCase, override_settings
 
 from apps.scholarship.vision import (
-    _as_image_for_gemini, _canonical_name_tokens, _canonical_nric, _extract_address,
+    _as_image_for_gemini, canonical_name_tokens, _canonical_nric, _extract_address,
     _extract_name, _extract_nric, _is_card_label_line, _merge_ic_reads, _should_gemini_ic,
     address_present, address_match, extract_mykad, name_match, nric_match, relationship_name_match,
 )
@@ -43,15 +43,15 @@ class TestNricMatch(TestCase):
 class TestNameMatch(TestCase):
     def test_canonical_tokens_strip_parentage_markers(self):
         self.assertEqual(
-            _canonical_name_tokens('Priya A/P Krishnan'),
+            canonical_name_tokens('Priya A/P Krishnan'),
             {'priya', 'krishnan'},
         )
         self.assertEqual(
-            _canonical_name_tokens('Ahmad bin Yusoff'),
+            canonical_name_tokens('Ahmad bin Yusoff'),
             {'ahmad', 'yusoff'},
         )
         self.assertEqual(
-            _canonical_name_tokens('Nurul Binti Hassan'),  # case-insensitive
+            canonical_name_tokens('Nurul Binti Hassan'),  # case-insensitive
             {'nurul', 'hassan'},
         )
 
