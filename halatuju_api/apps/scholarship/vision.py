@@ -25,7 +25,11 @@ _NAME_NOISE = re.compile(
     # MyKad parentage tokens + Malay/English honorifics that prefix a name on official
     # letters (e.g. an offer addressed to "SDRI THEEPICAA …") — stripped so the name
     # matches the profile name regardless of the title.
-    r"\b(bin|binti|a/l|a/p|al|ap|d/o|s/o|@"
+    # The slash markers tolerate stray whitespace around the slash ("A/ P", "A / P",
+    # "A /P") — a student who types their name that way otherwise leaves orphan single
+    # letters "a"/"p" in the token set, which makes the EXACT name_match read a clean
+    # subset → a false 'partial'/mismatch on the IC + offer letter (#20).
+    r"\b(bin|binti|a\s*/\s*l|a\s*/\s*p|al|ap|d\s*/\s*o|s\s*/\s*o|@"
     r"|sdr|sdri|saudara|saudari|encik|puan|cik|tuan|dr|datuk|dato|datin)\b",
     flags=re.IGNORECASE,
 )

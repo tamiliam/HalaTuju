@@ -50,6 +50,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Cockpit live-review round 9 (4 items from reviewing #20/#43).** (1) **Interview-Stage Delete now sticks.**
+  Deleting an AI gap / flag from the agenda was local-only state (persisted only on a later "Save draft"), so it
+  reappeared on refresh — Delete now persists the session immediately (`doDeleteAgendaItem`). (2) **"Other document"
+  request leaves the note box empty** instead of prefilling the unhelpful generic "the requested document — see the
+  note below" (the reviewer types exactly what they need; Send is disabled until they do). (3) **Name false-amber on
+  a spaced parentage marker (#20).** A student who types "A/ P" (stray space) left orphan `a`/`p` tokens in the
+  typed profile/declaration name, so the EXACT `name_match` read the clean IC/offer-letter name as a strict subset →
+  a false `partial` on Identity + Pathway while the results slip (tolerant name-present check) stayed green.
+  `vision._NAME_NOISE` now strips the slash markers regardless of whitespace ("A/ P", "A / P", "A /P"). Class fix —
+  recomputes live on the next cockpit load (no re-run, no billable calls); affected #20 + #15. (4) #43 pathway:
+  investigation only — the student self-declared STPM (social-science stream, certainty "sure") with a verified
+  offer/placement letter and never used the course-guide tool (no generated report, no saved/considered courses), so
+  the system gave no pathway recommendation to second-guess. No migration; web + api.
 - **Tech-debt paydown Sprint 4b — centralise reviewer-role auth + close a vision-rerun gap.** Added
   `_AdminBase._require_reviewer` and collapsed the repeated 5-line `get_admin` + reviewer-role prologue across 23
   admin write-handlers into it, so the auth contract is declared once and a future write endpoint can't silently
