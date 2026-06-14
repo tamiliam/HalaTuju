@@ -50,6 +50,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Tech-debt paydown Sprint 4b — centralise reviewer-role auth + close a vision-rerun gap.** Added
+  `_AdminBase._require_reviewer` and collapsed the repeated 5-line `get_admin` + reviewer-role prologue across 23
+  admin write-handlers into it, so the auth contract is declared once and a future write endpoint can't silently
+  forget the role gate. Closed a real (small) live gap: `AdminRunVisionView` (re-run a billable document read) was
+  only scope-checked, so a read-only `admin` role — which has full B40 scope but is not a reviewer — could trigger
+  it; now reviewer-gated. +1 regression test (read-only admin → 403). 1278 scholarship + courses-auth pytest green.
 - **Tech-debt paydown Sprint 1 — write-safety + admin-auth hardening.** From the 2026-06-14 scholarship audit:
   **(1) Document re-upload data-loss (HIGH).** `DocumentListCreateView` deleted the old Storage blob + DB row
   BEFORE creating the replacement, with no transaction — a failed re-upload could permanently destroy a student's

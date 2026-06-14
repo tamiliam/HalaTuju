@@ -60,6 +60,19 @@ class _AdminBase(PartnerAdminMixin, APIView):
         return Response({'error': 'Your admin role cannot perform this action.'},
                         status=status.HTTP_403_FORBIDDEN)
 
+    def _require_reviewer(self, request):
+        """Auth prologue for reviewer-gated admin WRITES: returns ``(admin, None)`` when the
+        caller is an active admin with the reviewer role, else ``(None, error_response)``.
+        Centralises the get_admin + reviewer-role check (TD audit 2026-06-14) so a write
+        endpoint can't silently forget the role gate and under-protect PII/consent actions
+        (a plain 'admin' has full B40 scope but is read-only — the role check is the guard)."""
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return None, self._deny_role()
+        return admin, None
+
     def _get_application(self, pk):
         return ScholarshipApplication.objects.select_related('profile', 'cohort').filter(pk=pk).first()
 
@@ -166,11 +179,9 @@ class AdminApplicationDetailView(_AdminBase):
         """Admin-editable per-application flags: mentoring-candidate. Writes require
         reviewer/super (admin is read-only). Reviewer assignment moved to the
         super-only audited endpoint (F7: .../assign/)."""
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, err = self._scoped_application(request, pk)
         if err:
             return err
@@ -197,11 +208,9 @@ class AdminVerifyAcceptView(_AdminBase):
     for the admin to resolve rather than silently double-verifying. (Resolves TD-054.)
     """
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -267,11 +276,9 @@ class AdminRejectView(_AdminBase):
     'contractual' = failed post-award steps (allowed only from 'accepted') → generic email.
     Reviewer-gated. The engine buckets (merit/need/ineligible) are NOT settable here."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -304,11 +311,9 @@ class AdminApplicationRefereeView(_AdminBase):
         return Response({'referees': RefereeSerializer(refs, many=True).data})
 
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -321,11 +326,9 @@ class AdminApplicationRefereeView(_AdminBase):
 class AdminRefereeDetailView(_AdminBase):
     """DELETE .../<pk>/referees/<ref_id>/ — remove a referee from the application."""
     def delete(self, request, pk, ref_id):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         ref = Referee.objects.filter(pk=ref_id, application_id=pk).first()
         if ref is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -344,6 +347,11 @@ class AdminRunVisionView(_AdminBase):
     stays the real identity gate. Returns the updated document.
     """
     def post(self, request, pk, doc_id):
+        # Re-running a (billable) document read is a reviewer-gated WRITE action — it was
+        # previously only scope-checked, letting a read-only admin trigger it (TD audit 2026-06-14).
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)   # reviewer assignment-scoped; partner none
         if _err:
             return _err
@@ -390,11 +398,9 @@ class AdminRunVisionView(_AdminBase):
 
 class AdminGenerateProfileView(_AdminBase):
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -412,11 +418,9 @@ class AdminFinaliseProfileView(_AdminBase):
     existing draft profile with the SUBMITTED interview's findings → ``final_markdown``.
     Reviewer-gated, admin-on-demand. Requires both a draft and a submitted interview."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -445,11 +449,9 @@ class AdminGenerateAnonProfileView(_AdminBase):
     sponsor-pool-facing profile (fed only non-identifying inputs). Reviewer-gated,
     billable. Regenerating reverts it to unpublished (an admin must re-publish)."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -472,11 +474,9 @@ class AdminPublishAnonProfileView(_AdminBase):
     human gate that makes the anonymous profile visible in the sponsor pool (with
     an active share consent). Reviewer-gated. Requires a generated anon profile."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         sp = SponsorProfile.objects.filter(application_id=pk).first()
         if sp is None or not sp.anon_markdown.strip():
             return Response({'error': 'Generate an anonymous profile first.', 'code': 'no_anon'},
@@ -508,11 +508,9 @@ class AdminSuggestGapsView(_AdminBase):
     (not repeating the existing ones) and appends; otherwise it replaces with a
     fresh set of 3. Reviewer-gated (billable)."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -532,11 +530,9 @@ class AdminSuggestGapsView(_AdminBase):
 
 class AdminProfileEditView(_AdminBase):
     def put(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         sp = SponsorProfile.objects.filter(application_id=pk).first()
         if sp is None:
             return Response({'error': 'No profile drafted yet'}, status=status.HTTP_404_NOT_FOUND)
@@ -550,11 +546,9 @@ class AdminProfileEditView(_AdminBase):
 
 class AdminPublishProfileView(_AdminBase):
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         sp = SponsorProfile.objects.filter(application_id=pk).first()
         if sp is None or not sp.current_markdown.strip():
             return Response({'error': 'Nothing to publish.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -607,11 +601,9 @@ class AdminInterviewView(_AdminBase):
         return Response({'session': data, 'agenda': _interview_agenda(app)})
 
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -641,11 +633,9 @@ class AdminInterviewSubmitView(_AdminBase):
     """POST .../<pk>/interview/submit/ — finalise the draft session and advance the
     application → interviewed. Reviewer/super only."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -695,11 +685,9 @@ class AdminSponsorReviewView(_AdminBase):
     _ACTION_STATUS = {'approve': 'approved', 'reject': 'rejected', 'suspend': 'suspended'}
 
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         sponsor = Sponsor.objects.filter(pk=pk).first()
         if sponsor is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -718,11 +706,9 @@ class AdminSetAwardAmountView(_AdminBase):
     with null/blank) the admin-approved award amount a sponsor funds in full.
     Reviewer-gated. Gates fundability + shows on the anonymised pool card."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -786,11 +772,9 @@ class AdminRequestInfoView(_AdminBase):
     documentation. Records a note on the application + emails the student. Does
     NOT change status (the student keeps editing). Reviewer/super only."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -812,11 +796,9 @@ class AdminResolutionItemView(_AdminBase):
     (the structured successor to request-info). Body: {kind, prompt, doc_type?,
     fact?}. Reviewer/super only."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -845,11 +827,9 @@ class AdminResolutionItemActionView(_AdminBase):
     """POST .../resolution-items/<item_id>/<action>/ — officer waives or resolves
     a ticket by hand. action ∈ {waive, resolve}. Reviewer/super only."""
     def post(self, request, item_id, action):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         if action not in ('waive', 'resolve', 'reopen'):
             return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
         from .models import ResolutionItem
@@ -888,11 +868,9 @@ class AdminRecordVerdictView(_AdminBase):
     refine to produce the final profile in the same action (reusing AdminFinaliseProfileView's
     preconditions; never duplicates the engine). Reviewer/super only."""
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
@@ -1022,20 +1000,16 @@ class ReviewerProfileView(_AdminBase):
     serializer."""
 
     def get(self, request):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)
         return Response(ReviewerProfileSerializer(profile).data)
 
     def patch(self, request):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)
         serializer = ReviewerProfileSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -1074,11 +1048,9 @@ class AdminGraduationMessageReviewView(_AdminBase):
     can be approved; `pending`/`blocked` can be rejected."""
 
     def post(self, request, pk):
-        admin = self.get_admin(request)
-        if not admin:
-            return self._deny()
-        if not self.has_role(admin, 'reviewer'):
-            return self._deny_role()
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
         message = GraduationMessage.objects.select_related('application__profile').filter(pk=pk).first()
         if message is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
