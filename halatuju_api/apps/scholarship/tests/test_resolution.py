@@ -317,6 +317,22 @@ class TestCheck2QueriesInStudentQueue(TestCase):
         r = self.client.post(f'{self.URL}{item.id}/resolve/', {'text': ''}, format='json')
         self.assertEqual(r.status_code, 400)
 
+    def test_student_resolve_blocked_after_interview_concluded(self):
+        """TD audit 2026-06-14 — the STUDENT-side querying lock (views.py). Once an interview
+        is submitted the student can no longer answer/change a query (mirrors the officer-side
+        lock, which had the only coverage). A regression dropping/inverting this guard would let
+        a student keep editing answers after the officer concluded the interview."""
+        from apps.scholarship.models import InterviewSession
+        self.client.get(self.URL)  # generate the clarify queries
+        item = self.app.resolution_items.get(code='transport_cost_unknown')
+        InterviewSession.objects.create(application=self.app, status='submitted')
+        r = self.client.post(f'{self.URL}{item.id}/resolve/', {'text': 'Bus, ~RM80/month.'},
+                             format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json().get('error'), 'querying_closed')
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')  # the answer was not recorded
+
     @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=False)
     def test_clarify_hidden_from_student_when_flag_off(self):
         # Held: no clarify queries shown to the student, and none are even created.

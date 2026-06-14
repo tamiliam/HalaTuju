@@ -1,6 +1,7 @@
 """B40 Assistance Programme API — application intake (Phase 1, Sprint 1)."""
 import logging
 
+from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -501,17 +502,27 @@ class DocumentListCreateView(APIView):
         if not replaces and ApplicantDocument.objects.filter(application=app).count() >= _settings.MAX_DOCS_PER_APPLICATION:
             return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
                             status=status.HTTP_400_BAD_REQUEST)
-        # For single-instance types, sweep older copies of the SAME slot (and the legacy blank
-        # for STR income docs) for this application first — DB row + Supabase Storage object.
+        # Single-instance re-upload REPLACES the existing copy. Order matters for data safety
+        # (TD audit 2026-06-14): create the replacement row FIRST (inside a transaction), and only
+        # sweep the superseded copies AFTER it is safely committed. The old order (delete blob +
+        # row, THEN create) could destroy a student's existing proof — an income slip, IC or STR —
+        # if the create then failed, leaving the application with no document and no recovery.
+        # Snapshot the stale ids/paths BEFORE the create so the new row (same slot) is never swept.
+        stale_ids, stale_paths = [], []
         if single:
-            stale = ApplicantDocument.objects.filter(
-                application=app, doc_type=new_doc_type, household_member__in=sweep_members)
+            stale = list(ApplicantDocument.objects.filter(
+                application=app, doc_type=new_doc_type, household_member__in=sweep_members))
+            stale_ids = [d.id for d in stale]
             stale_paths = [d.storage_path for d in stale if d.storage_path]
-            if stale_paths:
-                from .storage import delete_objects
-                delete_objects(stale_paths)   # best-effort; leaves orphan blob if it fails (logged)
-            stale.delete()
-        doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
+        with transaction.atomic():
+            doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
+            if stale_ids:
+                ApplicantDocument.objects.filter(id__in=stale_ids).delete()
+        # New row committed → only now sweep the superseded Storage blobs (an irreversible delete).
+        # Best-effort: a failure here merely orphans an old blob (logged), never loses the live doc.
+        if stale_paths:
+            from .storage import delete_objects
+            delete_objects(stale_paths)
         # iPhone HEIC → JPEG, in place, BEFORE any Vision/extraction — so OCR can read it and the
         # cockpit viewer / download URL serve a browser-renderable image (soft; no-op otherwise).
         from .imaging import convert_heic_to_jpeg

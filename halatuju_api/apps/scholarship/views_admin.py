@@ -7,6 +7,7 @@ PartnerAdminMixin does the real authorisation.
 """
 import logging
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -244,14 +245,18 @@ class AdminVerifyAcceptView(_AdminBase):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        if not profile.nric_verified:
-            profile.nric_verified = True
-            profile.save(update_fields=['nric_verified'])
-        app.status = 'accepted'
-        app.verified_at = timezone.now()
-        app.verified_by = admin.email
-        app.verify_checklist = request.data.get('checklist', {}) or {}
-        app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
+        # Verify-&-accept is the highest-stakes admin write: the profile flag and the
+        # application status must move together (TD audit 2026-06-14). Wrap both in one
+        # transaction so a failure can't strand nric_verified=True with an un-accepted app.
+        with transaction.atomic():
+            if not profile.nric_verified:
+                profile.nric_verified = True
+                profile.save(update_fields=['nric_verified'])
+            app.status = 'accepted'
+            app.verified_at = timezone.now()
+            app.verified_by = admin.email
+            app.verify_checklist = request.data.get('checklist', {}) or {}
+            app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
@@ -912,12 +917,16 @@ class AdminRecordVerdictView(_AdminBase):
         app.verdict_reason = (request.data.get('reason') or '').strip()
         app.verdict_decided_by = getattr(admin, 'email', '') or ''
         app.verdict_decided_at = timezone.now()
-        app.save(update_fields=[
+        verdict_fields = [
             'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
             'verdict_decided_by', 'verdict_decided_at',
-        ])
+        ]
 
+        # Optionally finalise the sponsor profile from the interview. The Gemini refine call runs
+        # OUTSIDE the transaction (never hold a DB lock across a network call); its writes are then
+        # committed atomically WITH the verdict so the two can't half-apply (TD audit 2026-06-14).
         finalise_result = None
+        sp_to_save = None
         if request.data.get('finalise'):
             sp = SponsorProfile.objects.filter(application=app).first()
             if sp is None or not sp.current_markdown.strip():
@@ -937,8 +946,13 @@ class AdminRecordVerdictView(_AdminBase):
                         sp.final_markdown = result['markdown']
                         sp.final_model_used = result.get('model_used', '')
                         sp.finalised_at = timezone.now()
-                        sp.save()
+                        sp_to_save = sp
                         finalise_result = {'ok': True}
+
+        with transaction.atomic():
+            app.save(update_fields=verdict_fields)
+            if sp_to_save is not None:
+                sp_to_save.save()
 
         data = AdminApplicationDetailSerializer(app).data
         data['finalise_result'] = finalise_result
