@@ -120,6 +120,12 @@ class ApplicationListCreateView(APIView):
                 and not family.has_structured_roster(application)):
             family.copy_family_roster(profile, application)
             application.save(update_fields=list(family.PROFILE_FAMILY_FIELDS))
+        # The apply Plans step writes the chosen pathway onto the APPLICATION; mirror it
+        # back onto the profile (its durable home) so /profile shows + can edit it, and
+        # the two start two-way-in-sync.
+        if family.has_pathway(application):
+            family.copy_pathway(application, profile)
+            profile.save(update_fields=list(family.PROFILE_PATHWAY_FIELDS))
         # Score silently now (S8 delayed reveal): the verdict + decision_due_at are
         # stored, status stays 'submitted', no decision email yet. The scheduler
         # (release_due_decisions) reveals it at +2h (shortlist) / +48h (decline).

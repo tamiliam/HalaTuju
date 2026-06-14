@@ -98,6 +98,29 @@ def copy_family_roster(src, dst):
         setattr(dst, field, getattr(src, field))
 
 
+#: The pathway / "Your Plans" columns shared by StudentProfile (profile-level home) and
+#: ScholarshipApplication (per-application working copy). Same names → copy field-for-field.
+PROFILE_PATHWAY_FIELDS = (
+    'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
+    'chosen_programme', 'pathways_considered', 'uncertainty_reasons', 'uncertainty_note',
+)
+
+
+def copy_pathway(src, dst):
+    """Copy the pathway fields between a StudentProfile and a ScholarshipApplication
+    (they share field names). Pure — the caller saves dst."""
+    for field in PROFILE_PATHWAY_FIELDS:
+        setattr(dst, field, getattr(src, field))
+
+
+def has_pathway(obj):
+    """True if any pathway field carries data (used to decide prefill direction)."""
+    return bool(
+        getattr(obj, 'chosen_pathway', '') or getattr(obj, 'pathway_certainty', '')
+        or getattr(obj, 'pathways_considered', None) or getattr(obj, 'pre_u_track', '')
+    )
+
+
 def occupation_label(code, other=''):
     """English label for a profession code; for 'other', the typed text (fallback 'Other')."""
     if code == 'other':

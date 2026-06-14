@@ -101,11 +101,19 @@ export interface StudentProfile {
   other_family_members?: { role: 'brother' | 'sister' | 'guardian'; occupation: string; occupation_other?: string }[]
   siblings_in_school?: number | null
   siblings_in_tertiary?: number | null
+  // Pathway / "Your Plans" (profile-level home; two-way synced with an open application)
+  pathway_certainty?: string
+  chosen_pathway?: string
+  pre_u_track?: string          // STPM stream / Matric track, when applicable
+  pre_u_institution?: string
+  chosen_programme?: { courseId?: string; courseName?: string; fieldKey?: string } | Record<string, never>
+  pathways_considered?: string[]
+  uncertainty_reasons?: string[]
+  uncertainty_note?: string
   // Application Tracking surfaces (read-only on /profile)
   merit_score?: number | null   // SPM academic merit, computed from grades
-  pathway?: string              // the latest application's chosen pathway code
-  pre_u_track?: string          // STPM stream / Matric track, when applicable
-  application_open?: boolean     // is the family link currently live (app undecided)
+  pathway?: string              // back-compat alias of chosen_pathway
+  application_open?: boolean     // is the family/pathway link currently live (app undecided)
 }
 
 export interface EligibleCourse {

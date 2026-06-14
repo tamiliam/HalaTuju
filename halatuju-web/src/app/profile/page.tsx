@@ -18,7 +18,9 @@ import type { SavedCourseWithStatus } from '@/lib/api'
 import { isValidPhone, formatPhone } from '@/lib/scholarship'
 import SchoolSelect from '@/components/SchoolSelect'
 import FamilyRosterFields, { type FamilyRosterForm } from '@/components/FamilyRosterFields'
+import PathwayPicker, { type PathwayForm } from '@/components/PathwayPicker'
 import type { OtherMember } from '@/lib/familyRoster'
+import type { StudentProfile } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import { useToast } from '@/components/Toast'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
@@ -45,6 +47,12 @@ const EMPTY_FAMILY: FamilyRosterForm = {
   fatherName: '', fatherOccupation: '', fatherOccupationOther: '',
   motherName: '', motherOccupation: '', motherOccupationOther: '',
   otherFamilyMembers: [], siblingsInSchool: 0, siblingsInTertiary: 0,
+}
+
+const EMPTY_PATHWAY: PathwayForm = {
+  pathwayCertainty: '', chosenPathway: '', chosenProgramme: null,
+  preUTrack: '', preUInstitution: '', pathwaysConsidered: [],
+  uncertaintyReasons: [], uncertaintyNote: '',
 }
 
 function countIncomplete(fields: (string | boolean | number | null | undefined)[]): number {
@@ -105,9 +113,13 @@ export default function ProfilePage() {
   // Structured family roster — the durable profile-level home (two-way synced with
   // an open B40 application by the backend). Shown in Family & Background.
   const [family, setFamily] = useState<FamilyRosterForm>(EMPTY_FAMILY)
-  // Application Tracking read-only surfaces.
+  // Application Tracking surfaces. Merit is read-only (computed). Pathway is editable
+  // here via the shared PathwayPicker (so a shortlisted student locked out of /apply can
+  // still change it); two-way synced with an open application by the backend.
   const [meritScore, setMeritScore] = useState<number | null>(null)
-  const [pathway, setPathway] = useState('')
+  const [pathwayForm, setPathwayForm] = useState<PathwayForm>(EMPTY_PATHWAY)
+  // Full profile object kept for PathwayPicker's eligibility fetch (grades/exam_type/etc).
+  const [profileObj, setProfileObj] = useState<StudentProfile | null>(null)
   const [angkaGiliran, setAngkaGiliran] = useState('')
   // Guided school (optional) — shown in the Application Tracking card above Angka Giliran.
   const [school, setSchool] = useState('')
@@ -161,7 +173,18 @@ export default function ProfilePage() {
         siblingsInTertiary: profileData.siblings_in_tertiary ?? 0,
       })
       setMeritScore(profileData.merit_score ?? null)
-      setPathway(profileData.pathway || '')
+      setProfileObj(profileData)
+      setPathwayForm({
+        pathwayCertainty: (profileData.pathway_certainty as PathwayForm['pathwayCertainty']) || '',
+        chosenPathway: profileData.chosen_pathway || '',
+        chosenProgramme: (profileData.chosen_programme && Object.keys(profileData.chosen_programme).length)
+          ? profileData.chosen_programme as PathwayForm['chosenProgramme'] : null,
+        preUTrack: profileData.pre_u_track || '',
+        preUInstitution: profileData.pre_u_institution || '',
+        pathwaysConsidered: Array.isArray(profileData.pathways_considered) ? profileData.pathways_considered : [],
+        uncertaintyReasons: Array.isArray(profileData.uncertainty_reasons) ? profileData.uncertainty_reasons : [],
+        uncertaintyNote: profileData.uncertainty_note || '',
+      })
       setAngkaGiliran(profileData.angka_giliran || '')
       setSchool(profileData.school || '')
       setContactEmail(profileData.contact_email || '')
@@ -192,6 +215,9 @@ export default function ProfilePage() {
     setFamily(prev => ({ ...prev, otherFamilyMembers: prev.otherFamilyMembers.filter((_, j) => j !== i) }))
   const updateFamilyMember = (i: number, patch: Partial<OtherMember>) =>
     setFamily(prev => ({ ...prev, otherFamilyMembers: prev.otherFamilyMembers.map((m, j) => (j === i ? { ...m, ...patch } : m)) }))
+
+  // Pathway picker patch handler (PathwayPicker computes the patches).
+  const updatePathway = (patch: Partial<PathwayForm>) => setPathwayForm(prev => ({ ...prev, ...patch }))
 
   // Read-only family summary (Family & Background view mode).
   const professionLabel = (code: string, other: string) =>
@@ -253,6 +279,15 @@ export default function ProfilePage() {
         other_family_members: family.otherFamilyMembers,
         siblings_in_school: family.siblingsInSchool,
         siblings_in_tertiary: family.siblingsInTertiary,
+        // Pathway / "Your Plans" (backend mirrors to an open application).
+        pathway_certainty: pathwayForm.pathwayCertainty,
+        chosen_pathway: pathwayForm.chosenPathway,
+        pre_u_track: pathwayForm.preUTrack,
+        pre_u_institution: pathwayForm.preUInstitution,
+        chosen_programme: pathwayForm.chosenProgramme || {},
+        pathways_considered: pathwayForm.pathwaysConsidered,
+        uncertainty_reasons: pathwayForm.uncertaintyReasons,
+        uncertainty_note: pathwayForm.uncertaintyNote,
       }, { token })
 
       // Keep localStorage in sync so onboarding uses the same values
@@ -272,7 +307,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, family })
+    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, family, pathwayForm })
     setEditingSection(section)
   }
 
@@ -294,6 +329,7 @@ export default function ProfilePage() {
     setContactEmail(snapshot.contactEmail as string || '')
     setContactPhone(snapshot.contactPhone as string || '')
     setFamily((snapshot.family as FamilyRosterForm) || EMPTY_FAMILY)
+    setPathwayForm((snapshot.pathwayForm as PathwayForm) || EMPTY_PATHWAY)
     setEditingSection(null)
   }
 
@@ -915,16 +951,19 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Pathway + Merit — read-only here; tapping routes to the canonical editor
-                (the Apply pathway picker / the SPM grades editor). Shown above School. */}
+            {/* Pathway + Merit. Merit is read-only (computed) → tap routes to the grades
+                editor. Pathway shows here when not editing (tap to edit inline below);
+                in edit mode the full PathwayPicker is rendered in the form. */}
             <div className="space-y-3 mb-4">
-              <button type="button" onClick={() => router.push('/scholarship/apply')}
-                className="w-full flex justify-between items-center gap-3 text-left group">
-                <span className="text-sm text-gray-500">{t('profile.pathway')}</span>
-                <span className={`text-sm text-right ${pathway ? 'text-gray-900' : 'text-amber-500'} group-hover:text-primary-600`}>
-                  {pathway ? t(`scholarship.apply.plan.pathway.${pathway}`) : t('profile.pathwayTapAdd')}
-                </span>
-              </button>
+              {editingSection !== 'application' && (
+                <button type="button" onClick={() => startEditing('application')}
+                  className="w-full flex justify-between items-center gap-3 text-left group">
+                  <span className="text-sm text-gray-500">{t('profile.pathway')}</span>
+                  <span className={`text-sm text-right ${pathwayForm.chosenPathway ? 'text-gray-900' : 'text-amber-500'} group-hover:text-primary-600`}>
+                    {pathwayForm.chosenPathway ? t(`scholarship.apply.plan.pathway.${pathwayForm.chosenPathway}`) : t('profile.pathwayTapAdd')}
+                  </span>
+                </button>
+              )}
               <button type="button" onClick={() => router.push('/onboarding/grades')}
                 className="w-full flex justify-between items-center gap-3 text-left group">
                 <span className="text-sm text-gray-500">{t('profile.meritScore')}</span>
@@ -937,6 +976,11 @@ export default function ProfilePage() {
             {editingSection === 'application' ? (
               <div className="space-y-4">
                 <div>
+                  <p className="text-sm font-medium text-gray-900 mb-1">{t('profile.pathway')}</p>
+                  <p className="text-xs text-gray-400 mb-3">{t('profile.pathwayLinkNote')}</p>
+                  <PathwayPicker value={pathwayForm} onChange={updatePathway} profile={profileObj} token={token} />
+                </div>
+                <div className="border-t border-gray-100 pt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     {t('profile.school')} <span className="text-gray-400 font-normal">({t('profile.optional')})</span>
                   </label>

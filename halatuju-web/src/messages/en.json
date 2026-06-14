@@ -2070,7 +2070,8 @@
     "pathwayTapAdd": "Not set — tap to choose",
     "familyMembers": "Family members",
     "familyLinkNote": "Shared with your scholarship application while it's open.",
-    "familyOthers": "Other working members"
+    "familyOthers": "Other working members",
+    "pathwayLinkNote": "Your study pathway. Shared with your scholarship application while it's open."
   },
   "quiz": {
     "pickUpTo": "Pick up to {count}",
