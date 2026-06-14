@@ -52,7 +52,6 @@ import {
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
 
-const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
 const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done', 'family_done'] as const
 
 // Officer doc-request control (Check-2/Check-3 S2b): the 13 requestable slot types,
@@ -323,7 +322,7 @@ export default function AdminScholarshipDetailPage() {
     } catch { setError(t('admin.scholarship.interview.submitError')) } finally { setBusy('') }
   }
 
-  const doRecordVerdict = async (finalise: boolean) => {
+  const doRecordVerdict = async (finalise: boolean, accept = false) => {
     if (!token) return
     setBusy('verdict'); setError(''); setVerdictMsg('')
     try {
@@ -343,7 +342,7 @@ export default function AdminScholarshipDetailPage() {
       const clearAccept = officerVerdict.identity === 'pass'
         && !(['academic', 'pathway', 'income'] as const).some((f) => officerVerdict[f] === 'fail')
         && !!result.completeness?.complete && liveStates.includes(result.status)
-      if (clearAccept) {
+      if (accept && clearAccept) {
         try {
           finalApp = await verifyAcceptApplication(id, {}, { token })
           accepted = true
@@ -375,6 +374,11 @@ export default function AdminScholarshipDetailPage() {
       setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
     } finally { setBusy('') }
   }
+
+  // Approve = record the verdict + accept (the existing completeness/identity gate, now
+  // explicit). Save = record the verdict + generate the final profile, WITHOUT accepting.
+  const doApprove = () => doRecordVerdict(true, true)
+  const doSaveVerdict = () => doRecordVerdict(true, false)
 
   const doRaiseQuery = async () => {
     if (!token || !infoNote.trim()) return
@@ -470,6 +474,11 @@ export default function AdminScholarshipDetailPage() {
   // Ask again / request a document) closes and Outstanding becomes a read-only record.
   const queryingLocked = ['interviewed', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired'].includes(app.status)
     || app.interview_session?.status === 'submitted'
+  // Approve is only allowed when the profile is complete, identity is passed, and nothing
+  // is failed (same safety gate the auto-accept used; the backend re-checks completeness).
+  const canApprove = app.completeness.complete
+    && officerVerdict.identity === 'pass'
+    && !(['academic', 'pathway', 'income'] as const).some((f) => officerVerdict[f] === 'fail')
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-10">
@@ -1097,10 +1106,7 @@ export default function AdminScholarshipDetailPage() {
             student's Action Centre (they're notified there — no separate per-item email). */}
         {canWrite && !queryingLocked && (
           <div className="border-t border-gray-200 pt-3 mt-1 space-y-3">
-            <div>
-              <p className="text-sm font-semibold text-gray-700">{t('admin.scholarship.raiseSectionTitle')}</p>
-              <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.scholarship.raiseSectionHint')}</p>
-            </div>
+            <p className="text-xs text-gray-500">{t('admin.scholarship.raiseSectionHint')}</p>
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.raiseQueryTitle')}</p>
               <textarea name="infoNote" value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
@@ -1264,19 +1270,6 @@ export default function AdminScholarshipDetailPage() {
             </ul>
           )
         })()}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {RUBRIC_DIMS.map((dim) => (
-            <div key={dim}>
-              <label className="block text-xs font-medium text-gray-600 mb-1">{t(`admin.scholarship.interview.rubric.${dim}`)}</label>
-              <select value={rubric[dim] ?? ''} disabled={!canWrite}
-                onChange={(e) => setRubric((r) => ({ ...r, [dim]: Number(e.target.value) }))}
-                className="border rounded-lg px-2 py-1.5 text-sm w-full">
-                <option value="">—</option>
-                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-          ))}
-        </div>
         <textarea value={note} disabled={!canWrite} rows={2}
           onChange={(e) => setNote(e.target.value)}
           placeholder={t('admin.scholarship.interview.notePlaceholder')}
@@ -1589,6 +1582,30 @@ export default function AdminScholarshipDetailPage() {
           ))}
         </div>
 
+        {/* AI suggestion — sits right under the four facts (you decide). */}
+        {(() => {
+          const sugg = aiSuggestionFor(app.verdict || [])
+          const facts = ['identity', 'academic', 'pathway', 'income'] as const
+          return (
+            <p className="text-[11px] text-gray-400">
+              {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
+              {facts.map((f, i) => (
+                <span key={f}>
+                  {i > 0 && ', '}
+                  {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
+                  <span className={
+                    sugg[f] === 'yes' ? 'text-green-600 font-medium'
+                    : sugg[f] === 'no' ? 'text-red-600 font-medium'
+                    : 'text-amber-600 font-medium'
+                  }>
+                    {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
+                  </span>
+                </span>
+              ))}{' — '}{t('admin.scholarship.recordVerdict.youDecide')}
+            </p>
+          )
+        })()}
+
         {/* Reason textarea */}
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -1604,76 +1621,24 @@ export default function AdminScholarshipDetailPage() {
           />
         </div>
 
-        {/* Save button */}
-        {canWrite && (
-          <button
-            onClick={() => doRecordVerdict(true)}
-            disabled={!!busy}
-            className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
-          >
-            {(() => {
-              if (busy === 'verdict') return t('common.loading')
-              const liveStates = ['shortlisted', 'profile_complete', 'interviewing', 'interviewed']
-              const willAccept = officerVerdict.identity === 'pass'
-                && !(['academic', 'pathway', 'income'] as const).some((f) => officerVerdict[f] === 'fail')
-                && app.completeness.complete && liveStates.includes(app.status)
-              return willAccept
-                ? t('admin.scholarship.recordVerdict.saveAccept')
-                : t('admin.scholarship.recordVerdict.save')
-            })()}
-          </button>
-        )}
-
-        {/* Feedback message */}
-        {verdictMsg && (
-          <p className={`text-xs rounded p-2 ${verdictMsgTone === 'ok' ? 'text-green-700 bg-green-50' : 'text-amber-800 bg-amber-50'}`}>{verdictMsg}</p>
-        )}
-
-        {/* AI suggestion footer */}
-        {(() => {
-          const sugg = aiSuggestionFor(app.verdict || [])
-          const facts = ['identity', 'academic', 'pathway', 'income'] as const
-          return (
-            <p className="text-[11px] text-gray-400 border-t pt-2">
-              {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
-              {facts.map((f, i) => (
-                <span key={f}>
-                  {i > 0 && ', '}
-                  {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
-                  <span className={
-                    sugg[f] === 'yes' ? 'text-green-600 font-medium'
-                    : sugg[f] === 'no' ? 'text-red-600 font-medium'
-                    : 'text-amber-600 font-medium'
-                  }>
-                    {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
-                  </span>
-                </span>
-              ))}{' — '}you decide.
+        {/* Decision actions */}
+        {app.status === 'accepted' ? (
+          <div className="space-y-2 border-t pt-3">
+            <p className="flex items-center gap-1.5 text-sm text-green-700">
+              <span aria-hidden>✓</span>
+              {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
+              {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
             </p>
-          )
-        })()}
-
-        {/* ── Outcome. There is NO separate verify/lock step — identity is verified at
-             the consent gate, so "Save verdict" above IS the accept (when Identity =
-             Pass, nothing failed, and the profile is complete). This area is just the
-             accepted record + the decline path. ──────────────────────────────────── */}
-        <div className="space-y-2 border-t pt-3">
-          {app.status === 'accepted' ? (
-            <>
-              <p className="flex items-center gap-1.5 text-sm text-green-700">
-                <span aria-hidden>✓</span>
-                {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
-                {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
-              </p>
-              {canWrite && (
-                <button onClick={() => doReject('contractual')} disabled={!!busy}
-                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
-                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
-                </button>
-              )}
-            </>
-          ) : ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
-            <>
+            {canWrite && (
+              <button onClick={() => doReject('contractual')} disabled={!!busy}
+                className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
+              </button>
+            )}
+          </div>
+        ) : ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
+          canWrite && (
+            <div className="space-y-2">
               {!app.completeness.complete && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
                   <p className="font-medium text-amber-900">{t('admin.scholarship.incompleteTitle')}</p>
@@ -1684,41 +1649,30 @@ export default function AdminScholarshipDetailPage() {
                   </ul>
                 </div>
               )}
-              {app.completeness.complete && officerVerdict.identity !== 'pass' && (
-                <p className="text-xs text-gray-400">{t('admin.scholarship.decision.identityToAccept')}</p>
-              )}
-              {canWrite && (
-                <button onClick={() => doReject('interview')} disabled={!!busy}
-                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
-                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineReview')}
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={doApprove} disabled={!!busy || !canApprove}
+                  className="px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                  {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.approve')}
                 </button>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
-          )}
-        </div>
+                <button onClick={() => doReject('interview')} disabled={!!busy}
+                  className="px-4 py-2.5 border border-red-300 text-red-700 rounded-lg text-sm font-medium disabled:opacity-50">
+                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.recordVerdict.decline')}
+                </button>
+              </div>
+              <button onClick={doSaveVerdict} disabled={!!busy}
+                className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
+              </button>
+            </div>
+          )
+        ) : (
+          <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
+        )}
 
-        {/* Tools group */}
-        <div className="space-y-1.5 border-t pt-3">
-          <button
-            onClick={() => {
-              document.querySelector<HTMLTextAreaElement>('[name="infoNote"]')?.focus()
-            }}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-left text-xs text-gray-600 hover:bg-gray-50"
-          >
-            {t('admin.scholarship.recordVerdict.tools.poseQuery')}
-          </button>
-          <button
-            onClick={() => {
-              // Scroll to interview section
-              document.getElementById('interview-section')?.scrollIntoView({ behavior: 'smooth' })
-            }}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-left text-xs text-gray-600 hover:bg-gray-50"
-          >
-            {t('admin.scholarship.recordVerdict.tools.addFindings')}
-          </button>
-        </div>
+        {/* Feedback message */}
+        {verdictMsg && (
+          <p className={`text-xs rounded p-2 ${verdictMsgTone === 'ok' ? 'text-green-700 bg-green-50' : 'text-amber-800 bg-amber-50'}`}>{verdictMsg}</p>
+        )}
 
         {error && <p className="text-red-600 text-xs">{error}</p>}
       </div>
