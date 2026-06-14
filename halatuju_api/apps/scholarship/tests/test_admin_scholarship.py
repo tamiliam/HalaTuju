@@ -58,6 +58,14 @@ class TestAdminScholarship(TestCase):
         r = self.client.get('/api/v1/admin/scholarship/applications/')
         self.assertEqual(r.status_code, 401)
 
+    def test_findings_accepts_deleted_verdict(self):
+        # S4 review: a 'Deleted' interview talking point persists as a finding (then filters
+        # off the agenda); validation must accept it. 'resolved' valid; bogus rejected.
+        from apps.scholarship.views_admin import _validate_findings
+        self.assertIsNone(_validate_findings({'device_in_funding': {'verdict': 'deleted', 'rationale': ''}}))
+        self.assertIsNone(_validate_findings({'x': {'verdict': 'resolved', 'rationale': 'asked, fine'}}))
+        self.assertIsNotNone(_validate_findings({'x': {'verdict': 'bogus'}}))
+
     # ── Check-2/Check-3 redesign S2: officer reviews student-answered caveats ──
     def _make_answered_caveat(self):
         from apps.scholarship.resolution import add_officer_item, resolve_item

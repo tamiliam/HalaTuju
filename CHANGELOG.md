@@ -34,6 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (default 1 for targeted/manual runs).
 
 ### Changed
+- **Cockpit Check-2/Check-3 — post-close review round 4 (FE + i18n + 1 backend line; no migration).** Live-review polish:
+  (1) the Interview-Stage agenda shows each flag as the **question the reviewer asks live** (`.question`, 2nd-person) not
+  the internal description, and the carried-over "ask these at the interview" block was **removed**; (2) each agenda item's
+  three verdict chips became **Delete + Resolved** (right-aligned) above the observation line — Delete drops the talking
+  point off the agenda (`findings[code].verdict='deleted'`, added to `_VALID_VERDICTS`); (3) the Check-2 subtitle →
+  "System assigned task(s) to student"; (4) the raise-section hint → "Task you would like to assign to student before the
+  interview"; (5) the "Request a document" control gains a **note box that dynamically prefills a standard request** from
+  the selected doc-type + person (editable; used as the ticket prompt). jest 306, `next build` clean, parity 2926×3,
+  +1 backend test.
 - **Cockpit Check-2 / Interview-Stage split (Check-2/Check-3 redesign, Sprint 1 of 4; FE + i18n, no schema change).**
   The officer cockpit's "Outstanding" box previously merged *student-facing* Check-2 tasks (resolution items) with
   *interview* content (pre-interview flags + AI-suggested gaps) and the "Suggest interview gaps (AI)" button. Split into

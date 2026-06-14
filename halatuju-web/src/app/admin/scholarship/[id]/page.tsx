@@ -52,7 +52,6 @@ import {
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
 
-const VERDICTS = ['resolved', 'still_unclear', 'new_concern'] as const
 const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
 const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done', 'family_done'] as const
 
@@ -175,6 +174,7 @@ export default function AdminScholarshipDetailPage() {
   const [infoNote, setInfoNote] = useState('')
   const [reqDocType, setReqDocType] = useState('')
   const [reqDocMember, setReqDocMember] = useState('')
+  const [reqDocNote, setReqDocNote] = useState('')
   // Sprint 5 — Officer cockpit
   const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
   const [verdictReason, setVerdictReason] = useState('')
@@ -385,15 +385,28 @@ export default function AdminScholarshipDetailPage() {
     } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
   }
 
+  // A standard request line for the selected (doc, person) — prefills the note box so the
+  // reviewer can elaborate, and is the fallback if they clear it.
+  const stdDocRequest = (dt: string, m: string) => {
+    if (!dt) return ''
+    const docTxt = t(`admin.scholarship.docsDrawer.type.${dt}`)
+    const memberTxt = m ? t(`scholarship.docs.income.wizard.member.${m}`) : ''
+    return m
+      ? t('admin.scholarship.requestDocPromptMember', { member: memberTxt, doc: docTxt })
+      : t('admin.scholarship.requestDocPrompt', { doc: docTxt })
+  }
+  const onReqDocType = (dt: string) => {
+    setReqDocType(dt)
+    setReqDocNote(stdDocRequest(dt, REQ_MEMBER_DOCS.has(dt) ? reqDocMember : ''))
+  }
+  const onReqDocMember = (m: string) => {
+    setReqDocMember(m)
+    setReqDocNote(stdDocRequest(reqDocType, m))
+  }
   const doRequestDoc = async () => {
     if (!token || !reqDocType) return
     const member = REQ_MEMBER_DOCS.has(reqDocType) ? reqDocMember : ''
-    const docTxt = t(`admin.scholarship.docsDrawer.type.${reqDocType}`)
-    const memberTxt = member ? t(`scholarship.docs.income.wizard.member.${member}`) : ''
-    const auto = member
-      ? t('admin.scholarship.requestDocPromptMember', { member: memberTxt, doc: docTxt })
-      : t('admin.scholarship.requestDocPrompt', { doc: docTxt })
-    const prompt = infoNote.trim() || auto
+    const prompt = reqDocNote.trim() || stdDocRequest(reqDocType, member)
     setBusy('reqdoc'); setError('')
     try {
       setApp(await raiseResolutionItem(
@@ -401,7 +414,7 @@ export default function AdminScholarshipDetailPage() {
         { kind: 'doc', doc_type: reqDocType, household_member: member, prompt, fact: DOC_FACT[reqDocType] || 'other' },
         { token },
       ))
-      setInfoNote(''); setReqDocType(''); setReqDocMember('')
+      setReqDocNote(''); setReqDocType(''); setReqDocMember('')
     } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
   }
 
@@ -1101,7 +1114,7 @@ export default function AdminScholarshipDetailPage() {
             <div className="space-y-1.5 border-t border-gray-100 pt-3">
               <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.requestDocTitle')}</p>
               <div className="flex flex-wrap items-center gap-2">
-                <select value={reqDocType} onChange={(e) => setReqDocType(e.target.value)}
+                <select value={reqDocType} onChange={(e) => onReqDocType(e.target.value)}
                   className="border rounded-lg px-2 py-1.5 text-sm">
                   <option value="">{t('admin.scholarship.requestDocAny')}</option>
                   {REQ_DOC_TYPES.map((dt) => (
@@ -1109,7 +1122,7 @@ export default function AdminScholarshipDetailPage() {
                   ))}
                 </select>
                 {REQ_MEMBER_DOCS.has(reqDocType) && (
-                  <select value={reqDocMember} onChange={(e) => setReqDocMember(e.target.value)}
+                  <select value={reqDocMember} onChange={(e) => onReqDocMember(e.target.value)}
                     className="border rounded-lg px-2 py-1.5 text-sm">
                     <option value="">{t('admin.scholarship.requestDocWhose')}</option>
                     {REQ_MEMBERS.map((m) => (
@@ -1117,11 +1130,18 @@ export default function AdminScholarshipDetailPage() {
                     ))}
                   </select>
                 )}
-                <button onClick={doRequestDoc} disabled={!!busy || !reqDocType}
-                  className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
-                  {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
-                </button>
               </div>
+              {reqDocType && (
+                <>
+                  <textarea value={reqDocNote} rows={2} onChange={(e) => setReqDocNote(e.target.value)}
+                    placeholder={t('admin.scholarship.requestDocNotePlaceholder')}
+                    className="w-full border rounded-lg px-3 py-2 text-sm" />
+                  <button onClick={doRequestDoc} disabled={!!busy || !reqDocType}
+                    className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
+                    {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -1193,13 +1213,15 @@ export default function AdminScholarshipDetailPage() {
         <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
         {(() => {
           const items = [
+            // Reviewer asks these LIVE — show the question form (2nd-person), not the
+            // internal flag description.
             ...app.anomalies.map((a) => ({
               code: a.code,
-              label: t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
+              label: t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
               ai: false,
             })),
             ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
-          ]
+          ].filter((it) => findings[it.code]?.verdict !== 'deleted')  // a Deleted talking point drops off the agenda
           if (items.length === 0) {
             return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
           }
@@ -1209,20 +1231,26 @@ export default function AdminScholarshipDetailPage() {
                 const f = findings[it.code] ?? { verdict: '', rationale: '' }
                 const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
                   setFindings((prev) => ({ ...prev, [it.code]: { ...f, ...patch } }))
+                const resolved = f.verdict === 'resolved'
                 return (
                   <li key={it.code} className="border rounded-lg p-3">
-                    <p className="text-sm text-gray-800">
-                      {it.ai && <span className="mr-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
-                      {it.label}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {VERDICTS.map((v) => (
-                        <label key={v} className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${f.verdict === v ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700'}`}>
-                          <input type="radio" name={`v-${it.code}`} className="sr-only" disabled={!canWrite}
-                            checked={f.verdict === v} onChange={() => setF({ verdict: v })} />
-                          {t(`admin.scholarship.interview.verdict.${v}`)}
-                        </label>
-                      ))}
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm text-gray-800 min-w-0">
+                        {it.ai && <span className="mr-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
+                        {it.label}
+                      </p>
+                      {canWrite && (
+                        <div className="flex shrink-0 gap-1.5">
+                          <button onClick={() => setF({ verdict: 'deleted' })}
+                            className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700">
+                            {t('admin.scholarship.caveats.delete')}
+                          </button>
+                          <button onClick={() => setF({ verdict: resolved ? '' : 'resolved' })}
+                            className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
+                            {t('admin.scholarship.interview.verdict.resolved')}
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <input
                       value={f.rationale} maxLength={140} disabled={!canWrite}
@@ -1234,26 +1262,6 @@ export default function AdminScholarshipDetailPage() {
                 )
               })}
             </ul>
-          )
-        })()}
-        {(() => {
-          // Carry-over: queries the student never answered flow into the interview as
-          // talking points to put to them verbally (no new async ask — querying is closing).
-          const openQ = (app.resolution_items ?? []).filter((i) => i.status === 'open')
-          if (openQ.length === 0) return null
-          return (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <p className="text-xs font-semibold text-amber-800">{t('admin.scholarship.interview.carryOver')}</p>
-              <ul className="mt-1.5 space-y-1">
-                {openQ.map((i) => {
-                  const s = titleSourceFor(i)
-                  const q = s.kind === 'raw' ? (s.text || i.code) : t(s.titleKey, localiseParams(i.params, t))
-                  return (
-                    <li key={i.id} className="text-sm text-gray-800">↳ {q}</li>
-                  )
-                })}
-              </ul>
-            </div>
           )
         })()}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
