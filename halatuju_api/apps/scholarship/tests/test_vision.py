@@ -8,7 +8,7 @@ from django.test import TestCase, override_settings
 from apps.scholarship.vision import (
     _as_image_for_gemini, _canonical_name_tokens, _canonical_nric, _extract_address,
     _extract_name, _extract_nric, _is_card_label_line, _merge_ic_reads, _should_gemini_ic,
-    address_present, extract_mykad, name_match, nric_match, relationship_name_match,
+    address_present, address_match, extract_mykad, name_match, nric_match, relationship_name_match,
 )
 
 
@@ -264,6 +264,49 @@ class TestAddressPresent(TestCase):
         # Just the bare postcode digits appearing, with no city match, isn't a match.
         self.assertFalse(address_present('random text 86000 somewhere',
                                          postcode='86000', city='Kluang', street=''))
+
+
+class TestAddressMatch(TestCase):
+    """Weighted matcher — house# + street + (postcode OR city). Real #72-class data: the home
+    matches, but the bill names the town differently or abbreviates / OCRs the address poorly."""
+
+    def test_postcode_matches_but_town_named_differently_is_found(self):
+        # #72: profile 'Port Klang', bill 'Pelabuhan Klang' — same 42000, house+street match.
+        self.assertEqual(address_match(
+            'NO 3 JLN SULTAN ABD SAMAD 11 BANDAR SULTAN SULAIMAN PELABUHAN KLANG 42000 SELANGOR',
+            postcode='42000', city='Port Klang',
+            street='No 3 Jalan Sultan Abdul Samad 11 Bandar Sultan Suleiman'), 'found')
+
+    def test_skudai_vs_johor_bahru_same_postcode_is_found(self):
+        # #8: profile city 'Skudai', bill 'Johor Bahru', postcode 81300 matches.
+        self.assertEqual(address_match(
+            '7 JLN GANGSA 9 TMN SRI PUTRI 81300 JOHOR BAHRU',
+            postcode='81300', city='Skudai', street='7, Jalan Gangsa 9, Taman Sri Putri'), 'found')
+
+    def test_no_postcode_on_bill_but_city_and_street_match_is_found(self):
+        # #37: bill omits the postcode; exact city + house+street carry it.
+        self.assertEqual(address_match(
+            'NO. 260 JALAN BPJ 3A/3A SEKSYEN 3A, BANDAR PUTERI JAYA SUNGAI PETANI, KEDAH',
+            postcode='08000', city='Sungai Petani',
+            street='No 260, Jalan BPJ 3A/3A, Bandar Puteri Jaya'), 'found')
+
+    def test_abbreviated_city_still_found_on_house_and_street(self):
+        # #11: city OCR'd as 'SG PETANI', no postcode — house 228 + street carry it.
+        self.assertEqual(address_match(
+            'NO 228, LRG PERMATA 6 PERMATA HILL PARK SG PETANI, KEDAH',
+            postcode='08000', city='Sungai Petani', street='228 Lorong Permata 6 Permata Hillpark'),
+            'found')
+
+    def test_incomplete_ocr_is_unconfirmed_not_mismatch(self):
+        # #72 electricity bill: OCR read only the city — couldn't confirm, NOT a hard miss.
+        self.assertEqual(address_match(
+            'SELANGOR KLANG', postcode='42000', city='Port Klang',
+            street='No 3 Jalan Sultan Abdul Samad 11 Bandar Sultan Suleiman'), 'unconfirmed')
+
+    def test_genuinely_different_home_is_mismatch(self):
+        self.assertEqual(address_match(
+            'NO 12, JALAN MAWAR 3, TAMAN MELATI 81100 JOHOR BAHRU JOHOR',
+            postcode='86000', city='Kluang', street='No 36, Jalan 5/8, Taman Intan'), 'mismatch')
 
 
 class TestExtractAddress(TestCase):

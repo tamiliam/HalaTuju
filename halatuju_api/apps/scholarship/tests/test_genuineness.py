@@ -149,7 +149,15 @@ class TestSupportingDocGenuineness(_Base):
 
 
 class TestVerdictCaps(_Base):
-    """Sprint 2 — a suspect/wrong-type supporting doc lowers its fact (soft), never upgrades."""
+    """Sprint 2 — a suspect/wrong-type supporting doc lowers its fact (soft), never upgrades.
+    Income caps are ROUTE-AWARE: only the docs REQUIRED to prove income on the route can cap it
+    (the STR on the STR route), so an optional EPF/salary slip never pulls the verdict down."""
+
+    def setUp(self):
+        super().setUp()
+        self.app.income_route = 'str'          # STR route, father earner → STR is the proof
+        self.app.income_earner = 'father'
+        self.app.save(update_fields=['income_route', 'income_earner'])
 
     def _doc(self, doc_type, auth):
         return ApplicantDocument.objects.create(
@@ -160,6 +168,21 @@ class TestVerdictCaps(_Base):
         self._doc('str', {'status': 'wrong_type'})
         income = next(f for f in build_verdict(self.app) if f['fact'] == 'income')
         self.assertIn('document_not_genuine', [i['code'] for i in income['unresolved']])
+
+    def test_optional_epf_does_not_cap_income(self):
+        # #72: a future-dated/typed EPF is OPTIONAL on the STR route — it must NOT pull income
+        # down (the STR is the proof). The suspicion still raises the officer flag elsewhere.
+        self._doc('str', {'status': 'likely_genuine'})
+        self._doc('epf', {'status': 'low_confidence'})
+        income = next(f for f in build_verdict(self.app) if f['fact'] == 'income')
+        self.assertNotIn('document_not_genuine', [i['code'] for i in income['unresolved']])
+
+    def test_optional_bc_does_not_cap_income_for_father_earner(self):
+        # A birth certificate isn't required when the earner is the father (patronymic proof) →
+        # its genuineness must not cap income.
+        self._doc('birth_certificate', {'status': 'low_confidence'})
+        income = next(f for f in build_verdict(self.app) if f['fact'] == 'income')
+        self.assertNotIn('document_not_genuine', [i['code'] for i in income['unresolved']])
 
     def test_cap_downgrades_verified_to_review(self):
         from apps.scholarship.verdict_engine import _apply_genuineness_caps

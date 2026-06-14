@@ -551,11 +551,36 @@ def _verdict_pathway(application):
 # Which documents feed each fact's genuineness (Sprint 2). Only the docs the fingerprint
 # engine actually checks (`vision._GENUINENESS_DOCS`) — salary slip + offer letter vary too
 # much to fingerprint reliably, so they're excluded. The IC feeds identity but is already
-# capped inside _verdict_identity (Sprint 1), so it is not repeated here.
+# capped inside _verdict_identity (Sprint 1), so it is not repeated here. INCOME is computed
+# per-route (see _income_genuineness_docs) — only the docs REQUIRED to prove income can cap it.
 _FACT_GENUINENESS_DOCS = {
     'academic': ['results_slip'],
-    'income': ['str', 'epf', 'birth_certificate'],
 }
+
+
+def _income_genuineness_docs(application):
+    """Documents whose genuineness may lower the INCOME verdict — ONLY the docs REQUIRED to prove
+    income on the application's route. Optional corroboration (EPF, salary slip) never caps the
+    verdict: a dodgy optional doc still raises the officer ``document_not_genuine`` flag / a
+    Check-2 query, but the route's own required proof decides the verdict.
+
+    - STR route → the STR (+ the birth certificate when the earner is the mother, the required
+      relationship proof). A future-dated / typed *optional* EPF does NOT cap.
+    - Salary route → the required salary slip isn't fingerprintable and EPF is optional, so no
+      fingerprint-driven income cap applies."""
+    route = (getattr(application, 'income_route', '') or '').lower()
+    if route == 'str':
+        docs = ['str']
+        if (getattr(application, 'income_earner', '') or '').lower() == 'mother':
+            docs.append('birth_certificate')
+        return docs
+    return []
+
+
+def _fact_genuineness_docs(application, fact_name):
+    if fact_name == 'income':
+        return _income_genuineness_docs(application)
+    return _FACT_GENUINENESS_DOCS.get(fact_name, [])
 
 
 def _suspect_genuineness(application, doc_types):
@@ -576,7 +601,7 @@ def _apply_genuineness_caps(application, facts):
     when the evidence may not be a genuine document. NEVER moves a fact to 'gap'/fail and
     never upgrades. Only bites when the (flag-gated) genuineness check has run."""
     for fact in facts:
-        dts = _FACT_GENUINENESS_DOCS.get(fact['fact'])
+        dts = _fact_genuineness_docs(application, fact['fact'])
         if not dts or any(i['code'] == 'document_not_genuine' for i in fact['unresolved']):
             continue
         st = _suspect_genuineness(application, dts)

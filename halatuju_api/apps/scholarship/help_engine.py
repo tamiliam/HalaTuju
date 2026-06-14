@@ -421,7 +421,7 @@ def verdict_for_document(doc):
     if doc.doc_type in ('water_bill', 'electricity_bill'):
         if doc.vision_run_at is None:
             return ''
-        return 'address_mismatch' if doc.vision_address_match == 'not_found' else ''
+        return 'address_mismatch' if doc.vision_address_match == 'mismatch' else ''
     # Relationship-proof docs (birth cert / guardianship letter) — any problem (the names
     # don't link to the family) is voiced by the earner-IC cluster coach, and the per-row
     # checklist shows the detail. So the doc itself stays quiet (no wrong generic nudge).
@@ -435,7 +435,7 @@ def verdict_for_document(doc):
         return '' if sv == 'ok' else (sv if sv in VERDICT_GUIDANCE else '')
     if doc.vision_name_match == 'not_found':
         return 'name_mismatch'
-    if doc.vision_address_match == 'not_found':
+    if doc.vision_address_match == 'mismatch':
         return 'address_mismatch'
     if 'unreadable' in (doc.vision_name_match, doc.vision_address_match):
         return 'unreadable'

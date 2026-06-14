@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Address matching over-flagged legitimate utility bills (class fix, surfaced on #72).** The home-address
+  check (`vision.address_present`) demanded the *city word* match even when the exact 5-digit postcode matched, so
+  bilingual town names (Port↔Pelabuhan Klang, Skudai↔Johor Bahru, Georgetown↔P.Pinang), abbreviations (JLN/Jalan,
+  SG/Sungai) and postcode-absent bills all read as `not_found` → a red ✗ in the cockpit. Cohort scan: **15 bills
+  flagged, none a genuinely different home.** Replaced with a **weighted matcher** (`vision.address_match` →
+  `found`/`unconfirmed`/`mismatch`): the **house number** is the anchor, the **street** confirms the road, and the
+  **postcode OR city** confirms the town — any two of three is a confident match; abbreviations normalised on both
+  sides. The cockpit shows a true `mismatch` as red and an `unconfirmed` (bilingual/abbrev/partial-OCR) as **amber**,
+  matching the officer-flag logic (which only ever fired on `mismatch`).
+- **An optional income document could wrongly downgrade the INCOME verdict (surfaced on #72).** A future-dated EPF
+  (optional on the STR route) pulled INCOME green→blue with a "may not be a genuine original" caveat, even though the
+  STR (the route's required proof) and the IC were both verified. The income genuineness cap is now **route-aware**
+  — only documents *required* to prove income on that route can cap the verdict (STR route → the STR, plus the birth
+  certificate when the earner is the mother). A suspect *optional* EPF/salary slip no longer caps; it still raises the
+  officer "document not genuine" pre-interview flag.
+
 ### Changed
 - **Cockpit restyle — brand-aligned visual pass (web-only, no behaviour change).** Matched the officer review
   cockpit to the halatuju.xyz brand: every action accent now uses the brand `primary` blue (`#137fec`) — the
