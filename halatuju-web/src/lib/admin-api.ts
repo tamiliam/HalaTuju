@@ -653,11 +653,14 @@ export async function finaliseSponsorProfile(id: number, language?: string, opti
   )
 }
 
-/** Phase B: admin-on-demand Gemini interview gap-spotter. Returns the refreshed detail. */
-export async function suggestInterviewGaps(id: number, language?: string, options?: ApiOptions) {
+/** Phase B: admin-on-demand Gemini interview gap-spotter. Returns the refreshed detail.
+ *  ``append`` generates 3 MORE (without repeating) and appends; otherwise replaces. */
+export async function suggestInterviewGaps(
+  id: number, language?: string, options?: ApiOptions, append = false
+) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/suggest-gaps/`, 'POST',
-    language ? { language } : {}, options
+    { ...(language ? { language } : {}), ...(append ? { append: true } : {}) }, options
   )
 }
 

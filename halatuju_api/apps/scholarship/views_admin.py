@@ -498,8 +498,10 @@ class AdminPublishAnonProfileView(_AdminBase):
 
 class AdminSuggestGapsView(_AdminBase):
     """Phase B: admin-on-demand Gemini interview gap-spotter. One Gemini call →
-    3-6 suggested interview questions stored on the application, shown beside the
-    deterministic pre-interview flags. Reviewer-gated (billable)."""
+    up to 3 suggested interview questions stored on the application, shown beside the
+    deterministic pre-interview flags. With ``append: true`` it generates 3 MORE
+    (not repeating the existing ones) and appends; otherwise it replaces with a
+    fresh set of 3. Reviewer-gated (billable)."""
     def post(self, request, pk):
         admin = self.get_admin(request)
         if not admin:
@@ -510,10 +512,14 @@ class AdminSuggestGapsView(_AdminBase):
         if _err:
             return _err
         from .gap_engine import generate_interview_gaps
-        result = generate_interview_gaps(app, language=request.data.get('language'))
+        append = bool(request.data.get('append'))
+        existing = app.interview_gaps or []
+        result = generate_interview_gaps(
+            app, language=request.data.get('language'),
+            existing=existing if append else None)
         if 'error' in result:
             return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        app.interview_gaps = result['gaps']
+        app.interview_gaps = (existing + result['gaps']) if append else result['gaps']
         app.interview_gaps_run_at = timezone.now()
         app.save(update_fields=['interview_gaps', 'interview_gaps_run_at'])
         return Response(AdminApplicationDetailSerializer(app).data)

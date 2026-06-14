@@ -1615,7 +1615,7 @@
           "desc": "We still need a clear photo or scan of your MyKad (front). Make sure your name and IC number are clearly visible — no glare or blur."
         },
         "ic_unreadable": {
-          "title": "Your IC was hard to read",
+          "title": "Re-upload a clearer IC",
           "desc": "The photo was blurry or cut off. Please upload a clearer one."
         },
         "nric_mismatch": {
@@ -1635,7 +1635,7 @@
           "desc": "We need your SPM (or STPM) results slip to confirm your grades. Upload the full official slip with your name and all subjects clearly visible."
         },
         "results_slip_unreadable": {
-          "title": "Your results slip was hard to read",
+          "title": "Re-upload a clearer results slip",
           "desc": "The scan was unclear. Please upload a clearer copy."
         },
         "results_slip_name_mismatch": {
@@ -1643,12 +1643,12 @@
           "desc": "The name on your results slip doesn't match your profile. Please re-check."
         },
         "academic_missing_subjects": {
-          "title": "Some subjects are missing",
-          "desc": "Your results slip is missing some subjects you listed. Please re-check your grades."
+          "title": "Add your missing subjects: {subjects}",
+          "desc": "Your results slip lists {total} subjects, but only {entered} are on your profile. Please add the missing ones — {subjects} — on your results page (halatuju.xyz/onboarding/grades), then come back and mark this done."
         },
         "academic_grade_mismatch": {
-          "title": "Check your grades",
-          "desc": "Some grades don't match your results slip. Please re-check what you entered."
+          "title": "Check your grade for {subject}",
+          "desc": "Your results slip shows {subject} as {slip}, but your profile says {typed}. Please fix it on your results page (halatuju.xyz/onboarding/grades), then come back and mark this done."
         },
         "income_proof_missing": {
           "title": "Upload your STR document",
@@ -2573,6 +2573,7 @@
       },
       "gaps": {
         "button": "Suggest interview questions",
+        "more": "Generate more",
         "running": "Generating…",
         "error": "Couldn't generate gaps. Please try again.",
         "title": "AI-suggested gaps",
@@ -2846,6 +2847,7 @@
         "reasonLabel": "Conclusion",
         "assistanceLabel": "Assistance recommended:",
         "assistanceNone": "Drag to set a recommended amount.",
+        "approveNeedsAmount": "Set a recommended assistance amount before approving.",
         "reasonPlaceholder": "State your conclusions / reasons for your decision",
         "save": "Save verdict & generate final profile",
         "approve": "Approve",

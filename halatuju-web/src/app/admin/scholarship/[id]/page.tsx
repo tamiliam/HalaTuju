@@ -238,11 +238,11 @@ export default function AdminScholarshipDetailPage() {
     } catch { setError(t('admin.scholarship.genError')) } finally { setBusy('') }
   }
 
-  const doSuggestGaps = async () => {
+  const doSuggestGaps = async (append = false) => {
     if (!token) return
-    setBusy('gaps'); setError('')
+    setBusy(append ? 'gapsMore' : 'gaps'); setError('')
     try {
-      setApp(await suggestInterviewGaps(id, undefined, { token }))
+      setApp(await suggestInterviewGaps(id, undefined, { token }, append))
     } catch { setError(t('admin.scholarship.gaps.error')) } finally { setBusy('') }
   }
 
@@ -502,6 +502,9 @@ export default function AdminScholarshipDetailPage() {
   const decisionReady = app.interview_session?.status === 'submitted'
     && (['identity', 'academic', 'pathway', 'income'] as const).every((f) => officerVerdict[f] === 'pass' || officerVerdict[f] === 'fail')
     && verdictReason.trim().length > 0
+  // Approve also requires a recommended assistance amount (the slider, or an already-saved one).
+  const hasAssistance = recAmount != null || app.award_amount != null
+  const approveReady = decisionReady && hasAssistance
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-10">
@@ -1226,10 +1229,18 @@ export default function AdminScholarshipDetailPage() {
             )}
           </div>
           {canWrite && (
-            <button onClick={doSuggestGaps} disabled={!!busy}
-              className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600 text-white disabled:opacity-50">
-              {busy === 'gaps' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.button')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => doSuggestGaps(false)} disabled={!!busy}
+                className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600 text-white disabled:opacity-50">
+                {busy === 'gaps' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.button')}
+              </button>
+              {(app.interview_gaps?.length ?? 0) > 0 && (
+                <button onClick={() => doSuggestGaps(true)} disabled={!!busy}
+                  className="px-2.5 py-1 rounded-lg text-xs border border-indigo-300 text-indigo-700 disabled:opacity-50">
+                  {busy === 'gapsMore' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.more')}
+                </button>
+              )}
+            </div>
           )}
         </div>
         <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
@@ -1694,7 +1705,7 @@ export default function AdminScholarshipDetailPage() {
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={doApprove} disabled={!!busy || !decisionReady}
+                <button onClick={doApprove} disabled={!!busy || !approveReady}
                   className="rounded-lg border border-green-600 bg-white px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-600 hover:text-white active:bg-green-600 active:text-white disabled:opacity-50">
                   {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.approve')}
                 </button>
@@ -1703,6 +1714,9 @@ export default function AdminScholarshipDetailPage() {
                   {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.recordVerdict.decline')}
                 </button>
               </div>
+              {decisionReady && !hasAssistance && (
+                <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
+              )}
               <button onClick={doSaveVerdict} disabled={!!busy}
                 className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
                 {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}

@@ -45,6 +45,35 @@ class TestGapEngine(TestCase):
         self.assertTrue(all(g['question'].strip() for g in gaps))   # no empties
 
     @patch('apps.scholarship.vision._call_gemini_json')
+    def test_caps_at_three(self, mock_call):
+        mock_call.return_value = {'gaps': [
+            {'code': f'g{i}', 'question': f'Question {i}?', 'why': 'w'} for i in range(6)]}
+        self.assertEqual(len(gap_engine.generate_interview_gaps(self.app)['gaps']), 3)
+
+    @patch('apps.scholarship.vision._call_gemini_json')
+    def test_generate_more_excludes_existing(self, mock_call):
+        mock_call.return_value = {'gaps': [
+            {'code': 'dup', 'question': 'Already asked?', 'why': 'repeat'},   # same as existing → dropped
+            {'code': 'fresh', 'question': 'Something new?', 'why': 'ok'},
+        ]}
+        existing = [{'code': 'old', 'question': 'Already asked?', 'why': 'w'}]
+        gaps = gap_engine.generate_interview_gaps(self.app, existing=existing)['gaps']
+        questions = [g['question'] for g in gaps]
+        self.assertIn('Something new?', questions)
+        self.assertNotIn('Already asked?', questions)        # not repeated
+        # the prompt told the model what to avoid
+        prompt = mock_call.call_args.args[0]
+        self.assertIn('ALREADY SUGGESTED', prompt)
+        self.assertIn('Already asked?', prompt)
+
+    def test_prompt_includes_verdict_flags_and_answered(self):
+        prompt = gap_engine._build_gap_prompt(self.app)
+        self.assertIn('VERIFICATION VERDICT', prompt)
+        self.assertIn('PRE-INTERVIEW FLAGS', prompt)
+        self.assertIn('ALREADY ANSWERED', prompt)
+        self.assertIn('ACADEMIC RECORD', prompt)
+
+    @patch('apps.scholarship.vision._call_gemini_json')
     def test_engine_error_returns_error(self, mock_call):
         mock_call.return_value = {'_error': 'All AI models failed: boom'}
         self.assertIn('boom', gap_engine.generate_interview_gaps(self.app)['error'])
@@ -95,6 +124,31 @@ class TestSuggestGapsEndpoint(TestCase):
         self.app.refresh_from_db()
         self.assertEqual(self.app.interview_gaps[0]['code'], 'g1')
         self.assertIsNotNone(self.app.interview_gaps_run_at)
+
+    @patch('apps.scholarship.gap_engine.generate_interview_gaps')
+    def test_append_extends_existing(self, mock_gen):
+        self.app.interview_gaps = [{'code': 'g1', 'question': 'Q1?', 'why': 'W'}]
+        self.app.save(update_fields=['interview_gaps'])
+        mock_gen.return_value = {'gaps': [{'code': 'g2', 'question': 'Q2?', 'why': 'W2'}]}
+        self._auth(REVIEWER)
+        r = self.client.post(self._url(), {'append': True}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        codes = [g['code'] for g in self.app.interview_gaps]
+        self.assertEqual(codes, ['g1', 'g2'])                      # appended, not replaced
+        self.assertEqual(mock_gen.call_args.kwargs.get('existing'),
+                         [{'code': 'g1', 'question': 'Q1?', 'why': 'W'}])
+
+    @patch('apps.scholarship.gap_engine.generate_interview_gaps')
+    def test_fresh_replaces_existing(self, mock_gen):
+        self.app.interview_gaps = [{'code': 'old', 'question': 'Old?', 'why': 'W'}]
+        self.app.save(update_fields=['interview_gaps'])
+        mock_gen.return_value = {'gaps': [{'code': 'new', 'question': 'New?', 'why': 'W'}]}
+        self._auth(REVIEWER)
+        r = self.client.post(self._url())   # no append → replace
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual([g['code'] for g in self.app.interview_gaps], ['new'])
 
     @patch('apps.scholarship.gap_engine.generate_interview_gaps')
     def test_viewer_forbidden(self, mock_gen):

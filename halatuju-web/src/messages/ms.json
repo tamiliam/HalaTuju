@@ -1615,7 +1615,7 @@
           "desc": "Kami masih perlukan foto atau imbasan jelas MyKad anda (depan). Pastikan nama dan nombor IC anda jelas kelihatan — tanpa silau atau kabur."
         },
         "ic_unreadable": {
-          "title": "IC anda sukar dibaca",
+          "title": "Muat naik semula IC yang lebih jelas",
           "desc": "Foto kabur atau terpotong. Sila muat naik yang lebih jelas."
         },
         "nric_mismatch": {
@@ -1635,7 +1635,7 @@
           "desc": "Kami perlukan slip keputusan SPM (atau STPM) untuk mengesahkan gred anda. Muat naik slip rasmi penuh dengan nama dan semua subjek jelas kelihatan."
         },
         "results_slip_unreadable": {
-          "title": "Slip keputusan sukar dibaca",
+          "title": "Muat naik semula slip keputusan yang lebih jelas",
           "desc": "Imbasan kurang jelas. Sila muat naik salinan yang lebih jelas."
         },
         "results_slip_name_mismatch": {
@@ -1643,12 +1643,12 @@
           "desc": "Nama pada slip keputusan tidak sepadan dengan profil anda. Sila semak semula."
         },
         "academic_missing_subjects": {
-          "title": "Beberapa mata pelajaran tiada",
-          "desc": "Slip keputusan anda kekurangan beberapa mata pelajaran yang disenaraikan. Sila semak gred anda."
+          "title": "Tambah mata pelajaran yang tiada: {subjects}",
+          "desc": "Slip keputusan anda menyenaraikan {total} mata pelajaran, tetapi hanya {entered} ada dalam profil anda. Sila tambah yang tiada — {subjects} — di halaman keputusan anda (halatuju.xyz/onboarding/grades), kemudian kembali dan tandakan ini selesai."
         },
         "academic_grade_mismatch": {
-          "title": "Semak gred anda",
-          "desc": "Sesetengah gred tidak sepadan dengan slip keputusan. Sila semak semula yang dimasukkan."
+          "title": "Semak gred anda untuk {subject}",
+          "desc": "Slip keputusan anda menunjukkan {subject} sebagai {slip}, tetapi profil anda menyatakan {typed}. Sila betulkan di halaman keputusan anda (halatuju.xyz/onboarding/grades), kemudian kembali dan tandakan ini selesai."
         },
         "income_proof_missing": {
           "title": "Muat naik dokumen STR anda",
@@ -2573,6 +2573,7 @@
       },
       "gaps": {
         "button": "Cadang soalan temu duga",
+        "more": "Jana lagi",
         "running": "Menjana…",
         "error": "Tidak dapat menjana cadangan. Sila cuba lagi.",
         "title": "Cadangan AI",
@@ -2846,6 +2847,7 @@
         "reasonLabel": "Kesimpulan",
         "assistanceLabel": "Bantuan yang disyorkan:",
         "assistanceNone": "Seret untuk menetapkan jumlah yang disyorkan.",
+        "approveNeedsAmount": "Tetapkan jumlah bantuan yang disyorkan sebelum meluluskan.",
         "reasonPlaceholder": "Nyatakan kesimpulan / sebab keputusan anda",
         "save": "Simpan keputusan & jana profil akhir",
         "approve": "Lulus",

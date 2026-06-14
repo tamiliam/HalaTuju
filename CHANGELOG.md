@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Cockpit review round 8 — decision/profile/interview-question quality (no migration).**
+  - **Final sponsor profile now runs on Gemini 2.5 Pro** (the conclusive, sponsor-facing document, generated rarely);
+    the high-volume draft + anonymous profiles stay on the Flash cascade (`profile_engine.PRO_CASCADE`).
+  - **"Save verdict & generate final profile" now feeds the AI the officer's decision** — the four-fact verdict, the
+    written conclusion, and the recommended assistance amount — so the final profile is conclusive, not just a
+    re-write of the interview findings (`_render_officer_decision`, `REFINE_PROMPT`).
+  - **Approve is now gated on a recommended assistance amount** (besides interview-submitted + 4 facts + conclusion);
+    Decline is unaffected. An amber hint explains a disabled Approve.
+  - **"Suggest interview questions" now returns 3 at a time** (was up to 6), with a **"Generate more"** button that
+    appends a fresh, non-repeating set. The generator is also fed the **academic record, the automated verification
+    verdict, the pre-interview flags, and already-answered Check-2 questions** so the questions are relevant and
+    don't re-ask what's settled.
+  - **Clearer Check-2 / Action-Centre instructions** — the academic queries now name specifics: "Add your missing
+    subjects: {subjects}" and "Check your grade for {subject}", each pointing to the results page
+    (halatuju.xyz/onboarding/grades) with a "mark this done" cue; two terse "…was hard to read" titles became
+    action-led ("Re-upload a clearer …"). en/ms/ta.
+
 ### Fixed
 - **Course-data link health — 19 genuinely-broken institution URLs corrected + checker false-positives killed.**
   *Data (live, via MCP, audited; no deploy):* all 15 matriculation-college URLs were stored as the bare subdomain
