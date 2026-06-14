@@ -1,0 +1,21 @@
+{
+  "_README": "PII-FREE expected outcomes for the document-recognition eval harness. The document FILES live in fixtures/ (gitignored), their cached Gemini reads in snapshots/ (gitignored), and the per-doc profile context in context.json (gitignored). This file holds ONLY assertions about what the pipeline should conclude, so it is safe to commit. Add one entry per document under 'docs', keyed by the fixture filename WITHOUT its extension. See README.md.",
+  "_example": {
+    "offer_letter_actually_spm": {
+      "doc_type": "offer_letter",
+      "expect_verdict": "mismatch",
+      "note": "Real case spotted in the cockpit: SPM results uploaded as an offer letter. Must be flagged, not accepted."
+    },
+    "ic_clean": {
+      "doc_type": "ic",
+      "expect_verdict": "ok",
+      "note": "A clean student IC whose name + NRIC match the profile."
+    },
+    "water_bill_other_name": {
+      "doc_type": "water_bill",
+      "expect_verdict": "ok",
+      "note": "Bill in another person's name — soft signal only, never a hard mismatch (accepted)."
+    }
+  },
+  "docs": {}
+}

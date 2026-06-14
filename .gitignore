@@ -22,6 +22,14 @@ node_modules/
 # Scraped data snapshots (UP_TVET inventory CSVs — data, not source)
 halatuju_api/data/tvet/*.csv
 
+# Document-recognition eval harness — real student documents, their cached Gemini reads,
+# and per-doc profile context are REAL PII → never commit. labels.json is PII-free + committed.
+halatuju_api/apps/scholarship/eval/fixtures/*
+halatuju_api/apps/scholarship/eval/snapshots/*
+halatuju_api/apps/scholarship/eval/context.json
+!halatuju_api/apps/scholarship/eval/fixtures/.gitkeep
+!halatuju_api/apps/scholarship/eval/snapshots/.gitkeep
+
 # Root package-lock (not a Node project at root)
 /package-lock.json
 
