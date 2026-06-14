@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Document-recognition eval harness (`eval_doc_recognition`) — a "golden master" for the Vision→matcher→verdict
+  pipeline.** Local/dev tool to replace eyeballing each upload: a small labelled set of documents is scored against
+  the SAME `resolution.doc_match_verdict` the cockpit shows, printing `N/M correct · regressions`. Two layers keep it
+  cheap — the billable Gemini read is captured once (`--rerun-vision`) and cached; the deterministic matchers/verdict
+  replay against the cache for free and identically. PII-safe by design: the document files, cached reads and profile
+  context are gitignored/local-only; only the PII-free `labels.json` (assertions) is committed. Builds throwaway rows
+  inside a rolled-back transaction (persists nothing); not wired to any endpoint or cron. +3 synthetic self-tests.
+  See `apps/scholarship/eval/README.md`.
 - **/profile enhancements (a–e).** (a) **Verified badges** — Contact Email shows green "Verified" when it IS the
   Google login identity (no more false "Not verified"); Name + IC Number show "Verified" once `nric_verified` (admin
   checked the IC). (b) **Colour Blindness + Physical Disability moved** from Family & Background to Personal Details.
