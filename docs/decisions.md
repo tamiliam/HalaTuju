@@ -2858,3 +2858,53 @@ officer surface minimal; ship-dark gating means no billable Gemini calls until t
 **Trade-offs:** auto-accept means a wrong/poor answer isn't formally re-queried after the interview (the reviewer asks
 verbally instead); Delete waives rather than hard-deletes (keeps the audit row, hidden from both sides).
 **Revisit if:** the programme needs post-interview document collection, or an explicit officer sign-off per answer for audit.
+
+## Weighted, house-anchored utility-bill address matcher — Cockpit live-review, 2026-06-14
+**Decision:** Replace the postcode-AND-city `address_present` boolean with a tiered `vision.address_match`
+(found/unconfirmed/mismatch) scored on three components — **house number (the anchor) + street name + locality
+(postcode OR city)** — with abbreviations normalised on both sides. Any 2 of 3 → found; 1 → unconfirmed (amber,
+"couldn't confirm"); 0 + a different printed postcode → mismatch (red).
+**Alternatives considered:** (a) keep postcode-authoritative (an exact postcode alone confirms) — rejected: a postcode
+covers a whole locality (thousands of homes), so a relative's bill in the same town would falsely pass; (b) require the
+city word (the old rule) — rejected: it fails on bilingual town names (Port↔Pelabuhan Klang, Skudai↔JB, Georgetown↔
+P.Pinang), abbreviations (SG/Sungai), and postcode-absent bills.
+**Rationale:** Validated against 7 real flagged bills — house# + street matched in 7/7; only the locality WORD tripped
+the old matcher. The house number is the true identity; postcode/city disambiguate the town and kill cross-town
+street-name collisions.
+**Trade-offs:** A genuinely-different home in the same town with a coincidentally-overlapping street could read
+'unconfirmed' rather than 'mismatch' — acceptable (soft, officer eyeballs; only `mismatch` is red / raises the flag).
+**Revisit if:** false "found"s appear (two distinct homes scoring ≥2) — tighten the street-overlap threshold or require
+the house number for 'found'.
+
+## Income genuineness cap is route-aware — only REQUIRED docs can cap the verdict — Cockpit live-review, 2026-06-14
+**Decision:** The income fact's genuineness cap (`verdict_engine`) considers only the documents REQUIRED to prove income
+on the application's route (STR route → the STR, + birth cert when the earner is the mother), not the static
+`[str, epf, birth_certificate]`. A suspect OPTIONAL doc (e.g. a future-dated EPF on the STR route) no longer downgrades
+the verdict; it still raises the officer `document_not_genuine` pre-interview flag.
+**Alternatives considered:** keep the static list (any of STR/EPF/BC caps income) — rejected: it let an optional doc the
+verdict doesn't rely on pull a green INCOME to blue (#72: STR ✓ + IC ✓ but a dodgy optional EPF capped it).
+**Rationale:** The verdict should reflect the route's actual proof; optional corroboration belongs in Check-2/interview,
+not the headline verdict. Nothing is lost — the officer flag still surfaces the suspicion.
+**Trade-offs:** a fabricated optional doc won't move the verdict (by design); the officer flag carries it instead.
+**Revisit if:** policy makes an optional income doc verdict-bearing on some route.
+
+## Gemini 2.5 Pro for the FINAL sponsor profile only — Cockpit live-review, 2026-06-14
+**Decision:** The conclusive, sponsor-facing final profile (the refine pass) runs on `gemini-2.5-pro` (PRO_CASCADE,
+falling back to the Flash cascade); the high-volume draft + anonymous profiles stay on Flash.
+**Alternatives considered:** all profile prose on Pro (costlier per call, no quality need for the throwaway draft); keep
+everything on Flash (slightly less polished final doc).
+**Rationale:** The final profile is generated rarely (once per accepted student) and is the document a sponsor reads —
+quality matters and volume is tiny, so the cost delta is negligible.
+**Trade-offs:** Pro is slower/costlier per call; mitigated by it being low-volume + a Flash fallback.
+**Revisit if:** Pro latency/cost becomes an issue, or a cheaper model matches its prose quality.
+
+## EPF income from the AVERAGE contribution; zero ≠ unreadable — Cockpit live-review, 2026-06-14
+**Decision:** The EPF income estimate uses the AVERAGE of all CARUMAN SEMASA months (÷0.24), not the single latest
+month, with a fallback to the latest month for older records. A confirmed-zero ("Tiada Transaksi") is a distinct
+`contribution_status` ('zero' = a real "no formal salary" signal) from an unreadable table ('unknown').
+**Alternatives considered:** keep the latest month only (noisier — a partial/arrears/bonus row skews it); treat any
+blank contribution as zero (rejected — conflates a parse miss with genuine no-income, the #72 risk).
+**Rationale:** The average is steadier; the zero-vs-unknown split prevents a parse miss being read as "no income" and
+turns a genuine zero into a useful B40 signal.
+**Trade-offs:** new fields populate only on re-parsed/new EPFs (existing ones use the latest-month fallback until re-run).
+**Revisit if:** averaging proves skewed by lump-sum arrears rows — switch to median/trimmed mean.

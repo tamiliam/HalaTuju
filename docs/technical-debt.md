@@ -754,3 +754,17 @@
   3 review rounds; `f5243a7` → `762b358`; roadmap `docs/scholarship/check2-check3-roadmap.md`).
   **Still open (deferred):** (a) DB `UniqueConstraint(application,doc_type,household_member)` — the permanent guarantee; needs
   test-fixture rework (tests pre-create same-slot docs) + migrate-first; app layer already prevents dups. (Logged 2026-06-13; b+c closed 2026-06-14.)
+- TD-116: **EPF mining benefits NEW uploads only — existing EPF statements need a re-parse to populate the new fields.**
+  The 2026-06-14 EPF work (`97a7793`) extracts `avg_monthly_contribution`/`months_counted`/`contribution_status`/
+  `statement_date`/`address`, but these need the CARUMAN rows + statement body, which aren't in the already-stored
+  extracted fields — only a re-OCR/Gemini re-run repopulates them (billable). Shipped with a graceful fallback (the
+  income estimate uses the latest-month figure for old records, so no regression). **To resolve (when wanted):** a
+  targeted per-doc "Re-run vision" on the EPFs that matter, or a small `--apply` command that re-extracts EPFs (billable
+  — owner's call). Low priority; outcomes already correct via the fallback. (Logged 2026-06-14.)
+- TD-117: **#37-class mis-slot (an STR screenshot uploaded as EPF) isn't flagged on OLD docs because the wrong-type
+  genuineness check never ran on them.** #37's EPF doc (id 411) predates the genuineness + capture layers
+  (`authenticity: null`, `capture: null`); Gemini pulled a name+NRIC but no EPF financials, and `vision.doc_genuineness`
+  → `wrong_type` (the designed detector) never ran, so no officer flag. A per-doc Re-run flags it. **Optional backstop
+  (offered, not built):** a deterministic "EPF extracted a name but NO balance/contribution/year/employer → doesn't look
+  like an EPF" soft officer signal (no billable call), to catch mis-slots even when genuineness hasn't run. (Logged
+  2026-06-14.)
