@@ -94,7 +94,7 @@ const STATUS_TONE: Record<string, string> = {
   withdrawn: 'bg-gray-100 text-gray-600',
   expired: 'bg-gray-100 text-gray-600',
 }
-const statusTone = (s: string) => STATUS_TONE[s] || 'bg-blue-100 text-blue-700'
+const statusTone = (s: string) => STATUS_TONE[s] || 'bg-primary-100 text-primary-700'
 
 // Non-parent guardian relationships — drive the dynamic "Parent" vs "Guardian" label (#5).
 const NON_PARENT_RELATIONSHIPS = new Set([
@@ -116,7 +116,7 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
 
 function Card({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${className}`}>
+    <div className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ${className}`}>
       <h2 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{title}</h2>
       {children}
     </div>
@@ -510,7 +510,7 @@ export default function AdminScholarshipDetailPage() {
     <div className="mx-auto max-w-6xl space-y-4 pb-10">
       <DocViewer doc={viewerDoc} onClose={() => setViewerDoc(null)} />
       {/* Header — applicant identity, status, and key facts at a glance */}
-      <header className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <header className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <Link href="/admin/scholarship" className="text-xs text-gray-400 hover:text-gray-600">‹ {t('admin.scholarship.back')}</Link>
           {(prevId != null || nextId != null) && (
@@ -538,7 +538,7 @@ export default function AdminScholarshipDetailPage() {
           {canWrite && ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) && (
             <button
               onClick={() => document.getElementById('record-verdict-panel')?.scrollIntoView({ behavior: 'smooth' })}
-              className="ml-auto rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
+              className="ml-auto rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-600"
             >
               {t('admin.scholarship.recordVerdict.title')}
             </button>
@@ -592,7 +592,7 @@ export default function AdminScholarshipDetailPage() {
         const courseLink = (cid: string | undefined, name: string) => {
           const href = courseHref(cid)
           return href
-            ? <a href={href} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{name}</a>
+            ? <a href={href} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">{name}</a>
             : name
         }
         const hasPlans = !!(app.chosen_pathway || app.chosen_programme?.course_name
@@ -629,7 +629,7 @@ export default function AdminScholarshipDetailPage() {
                   {/* Verified email only — shown once the student verifies it, else the
                       verified Google login email. Full-width rows. */}
                   <div className="col-span-2"><Field label={t('admin.scholarship.email')} value={app.verified_email
-                    ? <a href={`mailto:${app.verified_email}`} className="text-blue-600 hover:underline">{app.verified_email}</a>
+                    ? <a href={`mailto:${app.verified_email}`} className="text-primary-600 hover:underline">{app.verified_email}</a>
                     : null} /></div>
                   <div className="col-span-2"><Field label={t('admin.scholarship.address')} value={addr} /></div>
                 </dl>
@@ -744,10 +744,10 @@ export default function AdminScholarshipDetailPage() {
       <div className="space-y-4 min-w-0">
 
       {/* ── Verification verdict — four horizontal tiles ───────────────────────── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div>
-            <h2 className="font-semibold">{t('admin.scholarship.verdict.title')}</h2>
+            <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.verdict.title')}</h2>
             <p className="text-xs text-gray-500">{t('admin.scholarship.verdict.intro')}</p>
           </div>
         </div>
@@ -758,19 +758,19 @@ export default function AdminScholarshipDetailPage() {
             const tileColour = {
               green: 'border-green-200 bg-green-50',
               amber: 'border-amber-200 bg-amber-50',
-              blue: 'border-blue-200 bg-blue-50',
+              blue: 'border-primary-200 bg-primary-50',
               red: 'border-red-200 bg-red-50',
             }[tone]
             const dotColour = {
               green: 'bg-green-500',
               amber: 'bg-amber-500',
-              blue: 'bg-blue-500',
+              blue: 'bg-primary-500',
               red: 'bg-red-500',
             }[tone]
             const labelColour = {
               green: 'text-green-700',
               amber: 'text-amber-700',
-              blue: 'text-blue-700',
+              blue: 'text-primary-700',
               red: 'text-red-700',
             }[tone]
             // Subtitle: first evidence item text, or first unresolved item text.
@@ -816,7 +816,7 @@ export default function AdminScholarshipDetailPage() {
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-400">
             {(['green', 'blue', 'amber', 'red'] as const).map((tn) => (
               <span key={tn} className="flex items-center gap-1">
-                <span className={`h-2 w-2 rounded-full ${ {green:'bg-green-500',blue:'bg-blue-500',amber:'bg-amber-500',red:'bg-red-500'}[tn] }`} aria-hidden />
+                <span className={`h-2 w-2 rounded-full ${ {green:'bg-green-500',blue:'bg-primary-500',amber:'bg-amber-500',red:'bg-red-500'}[tn] }`} aria-hidden />
                 {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tn]}`)}
               </span>
             ))}
@@ -856,10 +856,10 @@ export default function AdminScholarshipDetailPage() {
       </div>
 
       {/* ── Draft sponsor profile ──────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 className="font-semibold">{t('admin.scholarship.profileTitle')}</h2>
+            <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.profileTitle')}</h2>
             <p className="text-xs text-gray-400">{t('admin.scholarship.anonProfile.help')}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -873,13 +873,13 @@ export default function AdminScholarshipDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-2 text-xs text-blue-800">
+        <div className="flex items-start gap-2 rounded-lg border border-primary-100 bg-primary-50 p-2 text-xs text-primary-800">
           <span aria-hidden>ⓘ</span>
           <span>{t('admin.scholarship.profileDraftHint')}</span>
         </div>
 
         {!profile ? (
-          <button onClick={doGenerate} disabled={busy === 'gen'} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+          <button onClick={doGenerate} disabled={busy === 'gen'} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm disabled:opacity-50">
             {busy === 'gen' ? t('admin.scholarship.generating') : t('admin.scholarship.generate')}
           </button>
         ) : (
@@ -893,7 +893,7 @@ export default function AdminScholarshipDetailPage() {
               <button onClick={doGenerate} disabled={!!busy} className="px-3 py-2 border rounded-lg text-sm disabled:opacity-50">
                 {busy === 'gen' ? t('admin.scholarship.generating') : t('admin.scholarship.regenerate')}
               </button>
-              <button onClick={doSave} disabled={!!busy} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+              <button onClick={doSave} disabled={!!busy} className="px-3 py-2 bg-primary-500 text-white rounded-lg text-sm disabled:opacity-50">
                 {busy === 'save' ? t('admin.scholarship.saving') : t('admin.scholarship.save')}
               </button>
               <button onClick={doPublish} disabled={!!busy} className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
@@ -901,7 +901,7 @@ export default function AdminScholarshipDetailPage() {
               </button>
               <button onClick={doFinalise} disabled={!!busy || app?.interview_session?.status !== 'submitted'}
                 title={app?.interview_session?.status !== 'submitted' ? t('admin.scholarship.finalProfile.needInterview') : undefined}
-                className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50">
+                className="px-3 py-2 bg-primary-600 text-white rounded-lg text-sm disabled:opacity-50">
                 {busy === 'final' ? t('admin.scholarship.finalProfile.running') : t('admin.scholarship.finalProfile.button')}
               </button>
             </div>
@@ -909,12 +909,12 @@ export default function AdminScholarshipDetailPage() {
               <p className="text-xs text-gray-400">{t('admin.scholarship.finalProfile.needInterview')}</p>
             )}
             {profile.final_markdown && (
-              <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3 space-y-1">
+              <div className="mt-3 rounded-lg border border-primary-200 bg-primary-50 p-3 space-y-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-indigo-900">{t('admin.scholarship.finalProfile.title')}</h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-600 text-white">{t('admin.scholarship.finalProfile.aiBadge')}</span>
+                  <h3 className="text-sm font-semibold text-primary-900">{t('admin.scholarship.finalProfile.title')}</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-600 text-white">{t('admin.scholarship.finalProfile.aiBadge')}</span>
                 </div>
-                <p className="text-[11px] text-indigo-700">
+                <p className="text-[11px] text-primary-700">
                   {t('admin.scholarship.finalProfile.finalisedAt')}: {profile.finalised_at ? new Date(profile.finalised_at).toLocaleString() : '—'} · {profile.final_model_used || '—'}
                 </p>
                 <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans">{profile.final_markdown}</pre>
@@ -974,7 +974,7 @@ export default function AdminScholarshipDetailPage() {
         <div className="space-y-4">
           <button
             onClick={() => setShowOwnWords((v) => !v)}
-            className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
+            className="flex items-center gap-1.5 text-sm text-primary-600 hover:underline"
           >
             <span aria-hidden>{showOwnWords ? '▾' : '▸'}</span>
             {t('admin.scholarship.ownWords.toggle')}
@@ -1040,10 +1040,10 @@ export default function AdminScholarshipDetailPage() {
 
       {/* ── Check 2 — Outstanding: student-facing tasks only (queries + doc requests).
            Interview flags + AI gaps now live in the Interview Stage box below. ─────── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 className="font-semibold">{t('admin.scholarship.outstanding.title')}</h2>
+            <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.outstanding.title')}</h2>
             <p className="text-xs text-gray-500">{t('admin.scholarship.outstanding.subtitle')}</p>
           </div>
           {(() => {
@@ -1095,8 +1095,8 @@ export default function AdminScholarshipDetailPage() {
                               <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 align-middle">{item.kind}</span>
                             </p>
                             {answered && item.resolution_text && (
-                              <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                              <div className="mt-2 rounded-md border border-primary-100 bg-primary-50 p-2">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-700">
                                   {t('admin.scholarship.caveats.studentAnswer')}
                                 </p>
                                 <p className="mt-0.5 text-sm text-gray-800 break-words">{item.resolution_text}</p>
@@ -1136,7 +1136,7 @@ export default function AdminScholarshipDetailPage() {
                 placeholder={t('admin.scholarship.raiseQueryPlaceholder')}
                 className="w-full border rounded-lg px-3 py-2 text-sm" />
               <button onClick={doRaiseQuery} disabled={!!busy || !infoNote.trim()}
-                className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
+                className="px-3 py-1.5 border border-primary-300 text-primary-700 rounded-lg text-sm disabled:opacity-50">
                 {busy === 'raise' ? t('common.loading') : t('admin.scholarship.raiseQuerySend')}
               </button>
             </div>
@@ -1166,7 +1166,7 @@ export default function AdminScholarshipDetailPage() {
                     placeholder={t('admin.scholarship.requestDocNotePlaceholder')}
                     className="w-full border rounded-lg px-3 py-2 text-sm" />
                   <button onClick={doRequestDoc} disabled={!!busy || !reqDocType}
-                    className="px-3 py-1.5 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
+                    className="px-3 py-1.5 border border-primary-300 text-primary-700 rounded-lg text-sm disabled:opacity-50">
                     {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
                   </button>
                 </>
@@ -1179,7 +1179,7 @@ export default function AdminScholarshipDetailPage() {
       {/* ── Referees (consent panel removed — the consent RECORD + sponsor-share gating
            stay untouched; only the cockpit status line is gone). Behind SHOW_REFEREES. ── */}
       {SHOW_REFEREES && (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <h3 className="font-semibold text-sm mb-1">{t('admin.scholarship.referees')}</h3>
         <p className="text-xs text-gray-400 mb-2">{t('admin.scholarship.refHint')}</p>
         <ul className="text-sm text-gray-600 space-y-1">
@@ -1211,19 +1211,19 @@ export default function AdminScholarshipDetailPage() {
             placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />
         </div>
         <button onClick={doAddReferee} disabled={!!busy || !refForm.name.trim()}
-          className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+          className="mt-2 px-3 py-1.5 bg-primary-500 text-white rounded-lg text-sm disabled:opacity-50">
           {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
         </button>
       </div>
       )}
 
       {/* Phase C: interview capture */}
-      <div id="interview-section" className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+      <div id="interview-section" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h2 className="font-semibold">{t('admin.scholarship.interview.title')}</h2>
+            <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.interview.title')}</h2>
             {app.interview_session?.status === 'submitted' && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-700">
                 {t('admin.scholarship.interview.submitted')}
               </span>
             )}
@@ -1231,12 +1231,12 @@ export default function AdminScholarshipDetailPage() {
           {canWrite && (
             <div className="flex items-center gap-2">
               <button onClick={() => doSuggestGaps(false)} disabled={!!busy}
-                className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600 text-white disabled:opacity-50">
+                className="px-2.5 py-1 rounded-lg text-xs bg-primary-600 text-white disabled:opacity-50">
                 {busy === 'gaps' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.button')}
               </button>
               {(app.interview_gaps?.length ?? 0) > 0 && (
                 <button onClick={() => doSuggestGaps(true)} disabled={!!busy}
-                  className="px-2.5 py-1 rounded-lg text-xs border border-indigo-300 text-indigo-700 disabled:opacity-50">
+                  className="px-2.5 py-1 rounded-lg text-xs border border-primary-300 text-primary-700 disabled:opacity-50">
                   {busy === 'gapsMore' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.more')}
                 </button>
               )}
@@ -1276,7 +1276,7 @@ export default function AdminScholarshipDetailPage() {
                   <li key={it.code} className="border rounded-lg p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm text-gray-800 min-w-0">
-                        {it.ai && <span className="mr-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
+                        {it.ai && <span className="mr-1 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
                         {it.label}
                       </p>
                       {canWrite && (
@@ -1315,7 +1315,7 @@ export default function AdminScholarshipDetailPage() {
               {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
             </button>
             <button onClick={doSubmitInterview} disabled={!!busy}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50">
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm disabled:opacity-50">
               {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
             </button>
           </div>
@@ -1324,9 +1324,9 @@ export default function AdminScholarshipDetailPage() {
 
 
       {/* ── Documents drawer — grouped by fact ────────────────────────────────── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="mb-3">
-          <h2 className="font-semibold">{t('admin.scholarship.docsDrawer.title')} ({app.documents.length})</h2>
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.docsDrawer.title')} ({app.documents.length})</h2>
           <p className="text-xs text-gray-400">{t('admin.scholarship.docsDrawer.subtitle')}</p>
         </div>
         {(() => {
@@ -1414,7 +1414,7 @@ export default function AdminScholarshipDetailPage() {
                     {d.download_url ? (
                       <button type="button" onClick={() => openViewer(d)}
                         title={t('admin.scholarship.docsDrawer.view')}
-                        className="text-left text-sm font-medium text-gray-800 hover:text-blue-600 hover:underline truncate max-w-[200px]">
+                        className="text-left text-sm font-medium text-gray-800 hover:text-primary-600 hover:underline truncate max-w-[200px]">
                         {docLabel(d)} <span aria-hidden className="text-[10px] text-gray-400">↗</span>
                       </button>
                     ) : (
@@ -1547,7 +1547,7 @@ export default function AdminScholarshipDetailPage() {
             ? `RM ${r[0].toLocaleString('en-US')}`
             : `RM ${r[0].toLocaleString('en-US')}–${r[1].toLocaleString('en-US')}`
         return (
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="font-semibold mb-2">{t('admin.scholarship.estimate.title')}</h2>
             {fe.known ? (
               <>
@@ -1580,8 +1580,8 @@ export default function AdminScholarshipDetailPage() {
       {/* ── Decision — audit the four facts (records the verdict) → verify identity →
            accept. The audit→accept gate is preserved (accept stays gated on a complete
            profile + every checklist box). ──────────────────────────────────────────── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
-        <h2 className="font-semibold">{t('admin.scholarship.decision.title')}</h2>
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+        <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.decision.title')}</h2>
 
         {/* Four fact rows — pass / fail toggle */}
         <div className="space-y-2">
@@ -1652,7 +1652,7 @@ export default function AdminScholarshipDetailPage() {
               <input type="range" min={1500} max={3000} step={500}
                 value={cur ?? 1500} disabled={!!busy}
                 onChange={(e) => doSetAwardAmount(Number(e.target.value))}
-                className="w-full accent-blue-600" />
+                className="w-full accent-primary-500" />
               <div className="flex justify-between text-[11px] text-gray-400">
                 <span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
               </div>
@@ -1718,7 +1718,7 @@ export default function AdminScholarshipDetailPage() {
                 <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
               )}
               <button onClick={doSaveVerdict} disabled={!!busy}
-                className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                className="w-full px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium disabled:opacity-50">
                 {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
               </button>
             </div>
@@ -1741,8 +1741,8 @@ export default function AdminScholarshipDetailPage() {
         const ready = app.query_sla?.ready_for_assignment ?? false
         const firstAssignBlocked = !app.assigned_to_id && !ready
         return (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
-          <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-2">
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.assignTitle')}</h2>
           {app.assigned_to_id && (
             <p className="text-xs text-gray-500">
               {t('admin.scholarship.assign.current', { name: app.assigned_to_name || '' })}
