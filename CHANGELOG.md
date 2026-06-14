@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **/profile pathway picker + carry-over backfill (e + c follow-up).** **(e)** A shortlisted student is locked out of
+  `/apply`, so the **pathway picker now lives on `/profile`** too: a new self-contained `<PathwayPicker>` reuses the
+  **exact** Apply leaf pickers (`PathwaySelect`/`ProgrammePicker`/`InstitutionPicker`) + helpers and runs its own
+  eligibility fetch (eligible-only dropdowns), covering the full pathway field set (`pathway_certainty`,
+  `chosen_pathway`, `pre_u_track`/stream, `pre_u_institution`, `chosen_programme`, `pathways_considered`,
+  `uncertainty_reasons`/`note`). The apply page is untouched. Pathway now has a **profile-level home** (migration
+  `courses/0057`, additive, migrate-first), is **two-way linked to an open application** (apply prefills the profile on
+  create; edits sync while open) and **freezes on the application at the decision**. The Application-Tracking pathway row
+  taps to edit inline; merit stays read-only → grades. **(c follow-up)** One-time **backfill** copied every existing
+  student's most-recent application family roster **and** pathway into their profile (34 family + 83 pathway rows) — so
+  `/profile` shows what they entered, and (critically) a later `/profile` save can't blank an open application's data.
+  **General rule honoured for these fields:** the application copy is the frozen snapshot from the decision onward.
+  13 new backend tests; 2368 backend pytest, 320 jest, `next build` clean, parity 2680×3.
 - **/profile enhancements (a–e).** (a) **Verified badges** — Contact Email shows green "Verified" when it IS the
   Google login identity (no more false "Not verified"); Name + IC Number show "Verified" once `nric_verified` (admin
   checked the IC). (b) **Colour Blindness + Physical Disability moved** from Family & Background to Personal Details.

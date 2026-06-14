@@ -1001,24 +1001,19 @@ class ProfileView(APIView):
             except Exception:
                 merit_score = None
 
-        # The student's latest B40 application — for the pathway display (read-only here;
-        # chosen via the apply flow) and to tell the FE whether the family link is live.
-        latest_app = None
+        # Is the student's latest B40 application still OPEN (undecided)? — tells the FE
+        # whether the family/pathway link is live (a small note). Pathway itself now lives
+        # on the profile (the durable home), so it's read from the profile columns below.
+        application_open = False
         try:
             from apps.scholarship.models import ScholarshipApplication
             from apps.scholarship.family import DECIDED_STATUSES
             latest_app = (ScholarshipApplication.objects
                           .filter(profile=profile).order_by('-id').first())
+            if latest_app is not None:
+                application_open = latest_app.status not in DECIDED_STATUSES
         except Exception:
-            latest_app = None
-            DECIDED_STATUSES = frozenset()
-        app_pathway = ''
-        app_pre_u_track = ''
-        application_open = False
-        if latest_app is not None:
-            app_pathway = (latest_app.chosen_pathway or latest_app.intended_pathway or '')
-            app_pre_u_track = (latest_app.pre_u_track or '')
-            application_open = latest_app.status not in DECIDED_STATUSES
+            application_open = False
 
         return Response({
             'grades': profile.grades,
@@ -1058,10 +1053,18 @@ class ProfileView(APIView):
             'other_family_members': profile.other_family_members,
             'siblings_in_school': profile.siblings_in_school,
             'siblings_in_tertiary': profile.siblings_in_tertiary,
-            # Application Tracking surfaces (read-only here): merit + chosen pathway
+            # Pathway / "Your Plans" (profile-level home; two-way synced with an open application)
+            'pathway_certainty': profile.pathway_certainty,
+            'chosen_pathway': profile.chosen_pathway,
+            'pre_u_track': profile.pre_u_track,
+            'pre_u_institution': profile.pre_u_institution,
+            'chosen_programme': profile.chosen_programme,
+            'pathways_considered': profile.pathways_considered,
+            'uncertainty_reasons': profile.uncertainty_reasons,
+            'uncertainty_note': profile.uncertainty_note,
+            # Application Tracking surfaces: merit (computed) + a back-compat `pathway` alias
             'merit_score': merit_score,
-            'pathway': app_pathway,
-            'pre_u_track': app_pre_u_track,
+            'pathway': profile.chosen_pathway,
             'application_open': application_open,
             'exam_type': profile.exam_type,
             'stpm_grades': profile.stpm_grades,
@@ -1107,20 +1110,30 @@ class ProfileView(APIView):
             except PartnerOrganisation.DoesNotExist:
                 pass  # Generic source (whatsapp, google) — no partner FK
 
-        # Family roster is two-way linked to an OPEN application: a /profile edit of the
-        # roster flows into the student's latest undecided application so the two stay
-        # identical. Once the application is decided its copy freezes (it's excluded
-        # here), and a /profile edit no longer touches it.
-        from apps.scholarship.family import PROFILE_FAMILY_FIELDS, DECIDED_STATUSES, copy_family_roster
-        if any(f in serializer.validated_data for f in PROFILE_FAMILY_FIELDS):
+        # The family roster + pathway are two-way linked to an OPEN application: a /profile
+        # edit flows into the student's latest undecided application so the two stay
+        # identical. Once the application is decided its copy FREEZES (excluded here), and
+        # a /profile edit no longer touches it.
+        from apps.scholarship.family import (
+            PROFILE_FAMILY_FIELDS, PROFILE_PATHWAY_FIELDS, DECIDED_STATUSES,
+            copy_family_roster, copy_pathway,
+        )
+        vd = serializer.validated_data
+        family_changed = any(f in vd for f in PROFILE_FAMILY_FIELDS)
+        pathway_changed = any(f in vd for f in PROFILE_PATHWAY_FIELDS)
+        if family_changed or pathway_changed:
             from apps.scholarship.models import ScholarshipApplication
             open_app = (ScholarshipApplication.objects
                         .filter(profile=profile)
                         .exclude(status__in=DECIDED_STATUSES)
                         .order_by('-id').first())
             if open_app is not None:
-                copy_family_roster(profile, open_app)
-                open_app.save(update_fields=list(PROFILE_FAMILY_FIELDS))
+                fields = []
+                if family_changed:
+                    copy_family_roster(profile, open_app); fields += list(PROFILE_FAMILY_FIELDS)
+                if pathway_changed:
+                    copy_pathway(profile, open_app); fields += list(PROFILE_PATHWAY_FIELDS)
+                open_app.save(update_fields=fields)
 
         return Response({'message': 'Profile updated'})
 

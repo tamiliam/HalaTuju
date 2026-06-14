@@ -308,6 +308,9 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'father_name', 'father_occupation', 'father_occupation_other',
             'mother_name', 'mother_occupation', 'mother_occupation_other',
             'other_family_members', 'siblings_in_school', 'siblings_in_tertiary',
+            # Pathway / "Your Plans" (profile-level home; two-way synced with an open app).
+            'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
+            'chosen_programme', 'pathways_considered', 'uncertainty_reasons', 'uncertainty_note',
         ]
         # NRIC only changes via the validated claim endpoint (/profile/claim-nric/),
         # never an unchecked PUT or sync — closes the soft-NRIC write gap.
