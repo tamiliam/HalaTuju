@@ -515,7 +515,31 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-13)
+## Next Sprint (as of 2026-06-14)
+
+**▶ JUST SHIPPED & LIVE 2026-06-14 — Cockpit live-review + verification-accuracy round (4 commits `245facd`→`97a7793`,
+NO migration; retro `docs/retrospective-cockpit-livereview-2026-06-14.md`).** A live-testing pass over the officer
+cockpit + the income/document engine, driven by reviewing real applicants (#72/#54/#37):
+- **Cockpit r8** (`245facd`): final sponsor profile on **Gemini 2.5 Pro** (drafts stay Flash); refine prompt folds in
+  the 4-fact verdict + conclusion + recommended assistance; **Approve** gated on an assistance amount; **interview
+  questions 3-at-a-time + "Generate more"**, fed the academic record + verdict + flags + answered Check-2 items;
+  academic Check-2 queries name the missing subjects + the grades page. **Brand restyle** (`8b307c8`, web-only).
+- **Weighted address matcher** (`51c17d3`): `vision.address_match` (found/unconfirmed/mismatch) — house# anchor + street
+  + (postcode OR city), abbreviations normalised. Killed a whole class of false "address miss" (Port↔Pelabuhan Klang,
+  abbreviations, postcode-absent bills); 15 prod bills recomputed to green via MCP (no billable calls). FE: only a true
+  `mismatch` is red; `unconfirmed`/legacy `not_found` are amber.
+- **Route-aware income genuineness cap** (`51c17d3`): only the route's REQUIRED proof can cap INCOME (STR→STR, +BC when
+  earner=mother). An optional EPF/salary slip no longer downgrades the verdict; it still raises the officer flag.
+- **EPF mining** (`97a7793`): avg monthly contribution (income estimate uses the average), zero-vs-unreadable
+  contribution status, statement date, member address. NEW uploads only — existing EPFs use a latest-month fallback
+  (TD-116; re-run to repopulate).
+- **Gotchas reaffirmed:** another agent shares this repo — VERIFY the branch + work in your own worktree before any
+  merge/push (this round a push accidentally advanced the other agent's branch; recovered via refspec). `address_match`
+  verdicts + EPF avg are CACHED (recompute via MCP / per-doc Re-run, not auto). #37-class EPF mis-slots need genuineness
+  to run (TD-117).
+
+**▶ NEXT — no roadmap sprint queued.** Standing follow-ups: TD-116 (EPF re-parse, billable, owner's call), TD-117 (#37
+deterministic EPF wrong-type backstop, offered), Tamil refine of first-draft strings, lawyer consent text.
 
 **▶ COMPLETE & LIVE 2026-06-14 — Check-2 / Interview-Stage cockpit redesign (4 sprints + 3 review rounds; roadmap
 `docs/scholarship/check2-check3-roadmap.md`, retro `docs/retrospective-check2-check3-s4.md`).** The cockpit reads
