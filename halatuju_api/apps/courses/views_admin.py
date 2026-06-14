@@ -53,9 +53,12 @@ class PartnerAdminMixin:
         if admin:
             return admin
 
-        # Fallback: lookup by email, backfill UID
-        email = getattr(request, 'supabase_user', {}).get('email')
-        if email:
+        # Fallback: lookup by email, backfill UID. Defence-in-depth (TD audit 2026-06-14):
+        # only link a provisioned admin row to a caller whose email claim is VERIFIED, so a
+        # JWT carrying an admin's unverified email can never acquire (super-)admin privilege.
+        su = getattr(request, 'supabase_user', None) or {}
+        email = su.get('email')
+        if email and su.get('email_verified'):
             admin = PartnerAdmin.objects.filter(email=email, supabase_user_id__isnull=True, is_active=True).select_related('org').first()
             if admin:
                 admin.supabase_user_id = user_id

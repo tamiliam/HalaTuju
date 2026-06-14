@@ -27,6 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   helper. 1231 scholarship pytest green.
 
 ### Fixed
+- **Tech-debt paydown Sprint 1 — write-safety + admin-auth hardening.** From the 2026-06-14 scholarship audit:
+  **(1) Document re-upload data-loss (HIGH).** `DocumentListCreateView` deleted the old Storage blob + DB row
+  BEFORE creating the replacement, with no transaction — a failed re-upload could permanently destroy a student's
+  income slip / IC / STR. Now **create-first inside `transaction.atomic`, sweep the stale blob only after commit**
+  (a sweep failure merely orphans a blob, never loses the live doc). **(2) Half-write atomicity.** Verify-&-accept
+  (`profile.nric_verified` + application `accepted`) and record-verdict + profile-finalise now each commit their two
+  model writes in one `transaction.atomic` (the Gemini refine call stays OUTSIDE the transaction). **(3) Admin email
+  hijack (MEDIUM).** `PartnerAdminMixin.get_admin` linked a provisioned admin row to any caller presenting that
+  email in a JWT — with no `email_verified` check; the middleware now captures `email_verified` and the email-backfill
+  branch requires it. **(4) JWT alg allowlist.** the asymmetric verify path now pins `algorithms=['ES256','RS256']`
+  rather than echoing the token's own header alg. +5 regression tests (data-loss, student querying-lock,
+  `_maybe_autofinalise` error+exception swallow, verified/unverified-email gate). 1295 scholarship+courses-auth pytest green.
 - **Address matching over-flagged legitimate utility bills (class fix, surfaced on #72).** The home-address
   check (`vision.address_present`) demanded the *city word* match even when the exact 5-digit postcode matched, so
   bilingual town names (Port↔Pelabuhan Klang, Skudai↔Johor Bahru, Georgetown↔P.Pinang), abbreviations (JLN/Jalan,

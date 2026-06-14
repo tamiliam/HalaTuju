@@ -74,19 +74,25 @@ class SupabaseAuthMiddleware:
                         payload = None
                     else:
                         signing_key = jwks_client.get_signing_key_from_jwt(token)
+                        # Pin a fixed asymmetric allowlist rather than echoing the token's own
+                        # alg header (TD audit 2026-06-14 — avoids any alg-confusion foot-gun).
                         payload = jwt.decode(
                             token,
                             signing_key.key,
-                            algorithms=[alg],
+                            algorithms=['ES256', 'RS256'],
                             audience='authenticated',
                         )
 
                 if payload:
-                    # Attach user info to request
+                    # Attach user info to request. email_verified gates admin email-backfill
+                    # (TD audit 2026-06-14); Supabase carries it top-level or in user_metadata.
+                    _um = payload.get('user_metadata') or {}
+                    email_verified = bool(payload.get('email_verified', _um.get('email_verified', False)))
                     request.user_id = payload.get('sub')
                     request.supabase_user = {
                         'id': payload.get('sub'),
                         'email': payload.get('email'),
+                        'email_verified': email_verified,
                         'phone': payload.get('phone'),
                         'role': payload.get('role'),
                         'is_anonymous': payload.get('is_anonymous', False),

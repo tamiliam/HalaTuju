@@ -221,6 +221,42 @@ class TestAdminScholarship(TestCase):
         submit_interview(sess)
         refine.assert_not_called()
 
+    # TD audit 2026-06-14: the bare except in _maybe_autofinalise exists so a Gemini failure
+    # NEVER breaks interview submission — but that guarantee was untested. These two cover it.
+    @override_settings(CHECK2_AUTO_GENERATE=True)
+    @patch('apps.scholarship.profile_engine.refine_sponsor_profile',
+           return_value={'error': 'engine down'})
+    def test_submit_interview_survives_autofinalise_engine_error(self, _refine):
+        from apps.scholarship.models import SponsorProfile, InterviewSession
+        from apps.scholarship.services import submit_interview
+        SponsorProfile.objects.create(
+            application=self.app, draft_markdown='Draft.', generated_at=timezone.now())
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='interviewing')
+        self.app.refresh_from_db()
+        sess = InterviewSession.objects.create(application=self.app, status='draft')
+        advanced = submit_interview(sess)            # must still complete the submit
+        self.assertTrue(advanced)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')
+        self.assertFalse(SponsorProfile.objects.get(application=self.app).final_markdown.strip())
+
+    @override_settings(CHECK2_AUTO_GENERATE=True)
+    @patch('apps.scholarship.profile_engine.refine_sponsor_profile',
+           side_effect=RuntimeError('boom'))
+    def test_submit_interview_survives_autofinalise_exception(self, _refine):
+        from apps.scholarship.models import SponsorProfile, InterviewSession
+        from apps.scholarship.services import submit_interview
+        SponsorProfile.objects.create(
+            application=self.app, draft_markdown='Draft.', generated_at=timezone.now())
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='interviewing')
+        self.app.refresh_from_db()
+        sess = InterviewSession.objects.create(application=self.app, status='draft')
+        advanced = submit_interview(sess)            # must NOT raise
+        self.assertTrue(advanced)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')
+        self.assertFalse(SponsorProfile.objects.get(application=self.app).final_markdown.strip())
+
     def test_admin_list(self):
         self._auth(ADMIN)
         r = self.client.get('/api/v1/admin/scholarship/applications/')

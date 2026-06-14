@@ -123,6 +123,32 @@ class TestDocumentApi(TestCase):
             f'{self.app_a.id}/ic/old-1', f'{self.app_a.id}/ic/old-2',
         })
 
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_failed_create_does_not_destroy_existing_document(self, mock_storage_delete):
+        """TD audit 2026-06-14 — data-loss guard. If creating the replacement row fails, the
+        student's existing document (DB row + Storage blob) must survive untouched. The fix is
+        create-first inside a transaction, sweep the stale blob only AFTER it commits — the old
+        delete-then-create order could wipe an income slip / IC / STR with no recovery."""
+        old_ic = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='ic',
+            storage_path=f'{self.app_a.id}/ic/old-keep',
+        )
+        self._auth(USER_A)
+        with patch.object(ApplicantDocument.objects, 'create', side_effect=RuntimeError('db boom')):
+            try:
+                self.client.post('/api/v1/scholarship/documents/', {
+                    'doc_type': 'ic',
+                    'storage_path': f'{self.app_a.id}/ic/new',
+                    'original_filename': 'NRICF.jpeg', 'size': 200_000,
+                }, format='json')
+            except RuntimeError:
+                pass  # the simulated DB failure may surface as a raised error or a 500
+        # The existing IC row survives, no duplicate was made, and NO storage blob was swept.
+        self.assertTrue(ApplicantDocument.objects.filter(id=old_ic.id).exists())
+        self.assertEqual(
+            ApplicantDocument.objects.filter(application=self.app_a, doc_type='ic').count(), 1)
+        mock_storage_delete.assert_not_called()
+
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_every_doctype_replaces_on_reupload(self, mock_storage_delete, _mock_vision):

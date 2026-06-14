@@ -124,6 +124,34 @@ class PartnerAdminMixinTest(TestCase):
         students = StudentProfile.objects.all()
         self.assertEqual(students.count(), 3)
 
+    def test_unverified_email_does_not_acquire_admin(self):
+        """TD audit 2026-06-14 — defence-in-depth. A caller presenting an admin's email in a JWT
+        whose email is NOT verified must NOT be linked to that admin row (no privilege grab)."""
+        from types import SimpleNamespace
+        from apps.courses.views_admin import PartnerAdminMixin
+        self.partner_admin.supabase_user_id = None
+        self.partner_admin.save()
+        req = SimpleNamespace(
+            user_id='attacker-uid',
+            supabase_user={'email': 'admin@cumig.org', 'email_verified': False})
+        self.assertIsNone(PartnerAdminMixin().get_admin(req))
+        self.partner_admin.refresh_from_db()
+        self.assertIsNone(self.partner_admin.supabase_user_id)  # not backfilled
+
+    def test_verified_email_acquires_admin(self):
+        """Positive control: a VERIFIED email claim still links + backfills the admin row."""
+        from types import SimpleNamespace
+        from apps.courses.views_admin import PartnerAdminMixin
+        self.partner_admin.supabase_user_id = None
+        self.partner_admin.save()
+        req = SimpleNamespace(
+            user_id='legit-uid',
+            supabase_user={'email': 'admin@cumig.org', 'email_verified': True})
+        admin = PartnerAdminMixin().get_admin(req)
+        self.assertIsNotNone(admin)
+        self.partner_admin.refresh_from_db()
+        self.assertEqual(self.partner_admin.supabase_user_id, 'legit-uid')  # backfilled
+
     def test_admin_role_view_exists(self):
         from apps.courses.views_admin import AdminRoleView
         self.assertTrue(hasattr(AdminRoleView, 'get'))
