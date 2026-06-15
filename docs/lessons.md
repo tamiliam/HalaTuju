@@ -2,6 +2,9 @@
 
 Cross-cutting lessons from sprint retrospectives. Only items that affect future work regardless of feature area.
 
+- Verify **feature/flag state against the running system**, not against CLAUDE.md or a summary — both rot. State a flag is on/off only after `gcloud run services describe <svc>` shows the env var; state a feature is built/read-only only after reading the code on **`main`** (the worktree), never the primary checkout (which may sit on another agent's branch). Two wrong assertions this round (`/profile` "read-only", `CHECK2_STUDENT_QUERIES_ENABLED` "off") both came from trusting docs + a primary-checkout read. (Sprint 2026-06-15)
+- When an Explore/search subagent reads the repo during multi-agent work, it reads the **primary checkout's branch** (possibly not `main`). Point it at the worktree path, or re-verify any load-bearing claim against `main` before reporting it. (Sprint 2026-06-15)
+
 - Bulk data loading via MCP tools should always be delegated to subagents to avoid context exhaustion. Each batch consumes significant context; 20+ batches will overflow the main window. (STPM Sprint 3)
 - When modifying grade scales or lookup tables, always run golden master tests immediately — parsed data may contain legacy values not visible in the UI-facing code. (STPM Sprint 5)
 - Use constants for localStorage keys instead of string literals to prevent key mismatch bugs across pages built in different sprints. (STPM Sprint 5)
