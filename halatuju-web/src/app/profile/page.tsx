@@ -258,6 +258,22 @@ export default function ProfilePage() {
       showToast(t('profile.invalidPhone'), 'error')
       return false
     }
+    // Household income + size are shared with /apply and feed the per-capita need calc, so
+    // they carry the SAME strict rules here (size integer 1–20; income required, ≥0) — a bad
+    // value must not be saveable on /profile and flow into the application. Only gated on the
+    // Family section (the only place they're editable), so it never blocks other sections.
+    if (editingSection === 'family') {
+      const size = parseInt(householdSize, 10)
+      if (!householdSize.trim() || Number.isNaN(size) || size < 1 || size > 20) {
+        showToast(t('profile.invalidHouseholdSize'), 'error')
+        return false
+      }
+      const income = parseInt(householdIncome, 10)
+      if (!householdIncome.trim() || Number.isNaN(income) || income < 0) {
+        showToast(t('profile.invalidHouseholdIncome'), 'error')
+        return false
+      }
+    }
     setSaving(true)
     try {
       await updateProfile({
@@ -872,7 +888,7 @@ export default function ProfilePage() {
                   <input
                     type="number"
                     min="1"
-                    max="30"
+                    max="20"
                     value={householdSize}
                     onChange={e => setHouseholdSize(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
@@ -882,8 +898,7 @@ export default function ProfilePage() {
                 {/* Structured family roster — the shared editor; while a B40
                     application is open these values stay linked to it. */}
                 <div className="border-t border-gray-100 pt-4">
-                  <p className="text-sm font-medium text-gray-900 mb-1">{t('profile.familyMembers')}</p>
-                  <p className="text-xs text-gray-400 mb-3">{t('profile.familyLinkNote')}</p>
+                  <p className="text-sm font-medium text-gray-900 mb-3">{t('profile.familyMembers')}</p>
                   <FamilyRosterFields
                     form={family}
                     onUpdate={updateFamily}
@@ -891,6 +906,7 @@ export default function ProfilePage() {
                     onAddMember={addFamilyMember}
                     onRemoveMember={removeFamilyMember}
                     t={t}
+                    profileStyle
                   />
                 </div>
                 <div className="flex gap-3 pt-4">
@@ -964,36 +980,9 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Pathway + Merit. Merit is read-only (computed) → tap routes to the grades
-                editor. Pathway shows here when not editing (tap to edit inline below);
-                in edit mode the full PathwayPicker is rendered in the form. */}
-            <div className="space-y-3 mb-4">
-              {editingSection !== 'application' && (
-                <button type="button" onClick={() => startEditing('application')}
-                  className="w-full flex justify-between items-center gap-3 text-left group">
-                  <span className="text-sm text-gray-500">{t('profile.pathway')}</span>
-                  <span className={`text-sm text-right ${pathwayForm.chosenPathway ? 'text-gray-900' : 'text-amber-500'} group-hover:text-primary-600`}>
-                    {pathwayForm.chosenPathway ? t(`scholarship.apply.plan.pathway.${pathwayForm.chosenPathway}`) : t('profile.pathwayTapAdd')}
-                  </span>
-                </button>
-              )}
-              <button type="button" onClick={() => router.push('/onboarding/grades')}
-                className="w-full flex justify-between items-center gap-3 text-left group">
-                <span className="text-sm text-gray-500">{t('profile.meritScore')}</span>
-                <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'} group-hover:text-primary-600`}>
-                  {meritScore != null ? meritScore : t('profile.meritTapAdd')}
-                </span>
-              </button>
-            </div>
-
             {editingSection === 'application' ? (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 mb-1">{t('profile.pathway')}</p>
-                  <p className="text-xs text-gray-400 mb-3">{t('profile.pathwayLinkNote')}</p>
-                  <PathwayPicker value={pathwayForm} onChange={updatePathway} profile={profileObj} token={token} />
-                </div>
-                <div className="border-t border-gray-100 pt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     {t('profile.school')} <span className="text-gray-400 font-normal">({t('profile.optional')})</span>
                   </label>
@@ -1017,6 +1006,17 @@ export default function ProfilePage() {
                     <p className="text-xs text-red-500 mt-1">{t('profile.angkaGiliranInvalid')}</p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">{t('profile.angkaGiliranHelper')}</p>
+                </div>
+                {/* Merit — read-only (computed); editable via the grades page from the view. */}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">{t('profile.meritScore')}</span>
+                  <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'}`}>
+                    {meritScore != null ? meritScore : t('profile.meritTapAdd')}
+                  </span>
+                </div>
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="text-sm font-medium text-gray-900 mb-3">{t('profile.pathway')}</p>
+                  <PathwayPicker value={pathwayForm} onChange={updatePathway} profile={profileObj} token={token} />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
@@ -1045,6 +1045,24 @@ export default function ProfilePage() {
                     <FieldValue value="" t={t} />
                   )}
                 </div>
+                {/* Merit — tap to the grades editor. */}
+                <button type="button" onClick={() => router.push('/onboarding/grades')}
+                  className="w-full flex justify-between items-center gap-3 text-left group">
+                  <span className="text-sm text-gray-500">{t('profile.meritScore')}</span>
+                  <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'} group-hover:text-primary-600`}>
+                    {meritScore != null ? meritScore : t('profile.meritTapAdd')}
+                  </span>
+                </button>
+                {/* Pathway — show the chosen COURSE when one exists, else the pathway type;
+                    tap to edit inline. */}
+                <button type="button" onClick={() => startEditing('application')}
+                  className="w-full flex justify-between items-center gap-3 text-left group">
+                  <span className="text-sm text-gray-500">{t('profile.pathway')}</span>
+                  <span className={`text-sm text-right ${(pathwayForm.chosenProgramme?.courseName || pathwayForm.chosenPathway) ? 'text-gray-900' : 'text-amber-500'} group-hover:text-primary-600`}>
+                    {pathwayForm.chosenProgramme?.courseName
+                      || (pathwayForm.chosenPathway ? t(`scholarship.apply.plan.pathway.${pathwayForm.chosenPathway}`) : t('profile.pathwayTapAdd'))}
+                  </span>
+                </button>
               </div>
             )}
           </div>

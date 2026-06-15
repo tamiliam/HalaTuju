@@ -2060,6 +2060,8 @@
     "contactEmail": "Contact Email",
     "contactPhone": "Contact Phone",
     "invalidPhone": "Please enter a valid phone number, e.g. 012-345 6789.",
+    "invalidHouseholdSize": "Please enter your household size (a number from 1 to 20).",
+    "invalidHouseholdIncome": "Please enter your household monthly income (RM, 0 or more).",
     "verified": "Verified",
     "notVerified": "Not verified",
     "verify": "Verify",

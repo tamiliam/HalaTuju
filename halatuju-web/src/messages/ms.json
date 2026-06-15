@@ -2060,6 +2060,8 @@
     "contactEmail": "Emel Hubungan",
     "contactPhone": "Telefon Hubungan",
     "invalidPhone": "Sila masukkan nombor telefon yang sah, cth. 012-345 6789.",
+    "invalidHouseholdSize": "Sila masukkan saiz isi rumah anda (nombor dari 1 hingga 20).",
+    "invalidHouseholdIncome": "Sila masukkan pendapatan bulanan isi rumah anda (RM, 0 atau lebih).",
     "verified": "Disahkan",
     "notVerified": "Belum disahkan",
     "verify": "Sahkan",

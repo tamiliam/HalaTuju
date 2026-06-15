@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **/profile polish round (10 live-review tweaks, FE-only).** On `/profile`: dropped the "Shared with your scholarship
+  application…" notes under Pathway + Family members; **reordered** Application Tracking to School → Angka Giliran →
+  Merit → Pathway; the Pathway row now shows the **chosen course** ("Asasi Perubatan") when one exists, falling back to
+  the pathway type. In the pathway picker (a `/profile`-only component): removed the "Anything you'd like to add?" box
+  and the deciding-route intro blurb, and dropped the red required `*` (nothing on `/profile` is compulsory). The shared
+  `<FamilyRosterFields>` gained a `profileStyle` variant (used only by `/profile`, so `/apply`'s Story is unchanged): no
+  required `*`, Father/Mother render as small uppercase grey sub-headings (matching "YOUR BROTHERS & SISTERS"), and the
+  separator above the siblings block is removed. **Household income + size now carry the same strict rules as `/apply`**
+  on the Family save (size integer 1–20, income required ≥0) so a bad value can't be saved on `/profile` and flow into
+  the application. 320 jest, `next build` clean, parity 2682×3.
 - **/profile pathway picker + carry-over backfill (e + c follow-up).** **(e)** A shortlisted student is locked out of
   `/apply`, so the **pathway picker now lives on `/profile`** too: a new self-contained `<PathwayPicker>` reuses the
   **exact** Apply leaf pickers (`PathwaySelect`/`ProgrammePicker`/`InstitutionPicker`) + helpers and runs its own
