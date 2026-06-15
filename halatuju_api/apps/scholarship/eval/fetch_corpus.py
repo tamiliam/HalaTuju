@@ -58,6 +58,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--types", required=True, help="comma-separated doc_types")
     ap.add_argument("--limit-per-type", type=int, default=0)
+    ap.add_argument("--metadata-only", action="store_true",
+                    help="Refresh context.json + applicants.json only; skip the image download "
+                         "+ snapshot writes (they already exist). Use to enrich without re-downloading.")
     ap.add_argument("--eval-dir", default=os.path.dirname(os.path.abspath(__file__)))
     args = ap.parse_args()
     types = [t.strip() for t in args.types.split(",") if t.strip()]
@@ -76,10 +79,8 @@ def main():
         "id,doc_type,storage_path,content_type,original_filename,household_member,"
         "vision_nric,vision_name,vision_address,vision_error,vision_run_at,vision_fields,application_id",
         {"doc_type": f"in.{types_in}"})
-    apps = {a["id"]: a for a in rest(sb_base, sb_key, "scholarship_applications",
-        "id,income_route,income_earner,status,profile_id")}
-    profs = {p["supabase_user_id"]: p for p in rest(sb_base, sb_key, "api_student_profiles",
-        "supabase_user_id,name,nric")}
+    apps = {a["id"]: a for a in rest(sb_base, sb_key, "scholarship_applications", "*")}
+    profs = {p["supabase_user_id"]: p for p in rest(sb_base, sb_key, "api_student_profiles", "*")}
     rows = []
     for d in docs:
         if not (d.get("storage_path") or "").strip():
@@ -99,31 +100,16 @@ def main():
         })
     rows.sort(key=lambda r: (r["doc_type"], r["app_id"], r["doc_id"]))
 
-    context = {}
+    context, applicants, manifest = {}, {}, []
     if os.path.exists(os.path.join(args.eval_dir, "context.json")):
         context = json.load(open(os.path.join(args.eval_dir, "context.json"), encoding="utf-8"))
-    manifest = []
     per_type, ok, fail = Counter(), 0, 0
     for r in rows:
         dt = r["doc_type"]
         if args.limit_per_type and per_type[dt] >= args.limit_per_type:
             continue
         key = f"{dt}__a{r['app_id']}__d{r['doc_id']}"
-        try:
-            data = download(sb_base, sb_key, r["storage_path"])
-        except (urllib.error.URLError, TimeoutError) as e:
-            fail += 1
-            print(f"  download FAILED {key}: {e}")
-            continue
-        ext = ext_for(r["content_type"], r["storage_path"], r["original_filename"])
-        type_dir = os.path.join(fix_dir, dt)
-        os.makedirs(type_dir, exist_ok=True)
-        with open(os.path.join(type_dir, f"{key}.{ext}"), "wb") as f:
-            f.write(data)
-        snap = {c: r[c] for c in SNAP_COLS}
-        snap["vision_run_at"] = r["vision_run_at"]   # already an ISO string from the API
-        with open(os.path.join(snap_dir, f"{key}.json"), "w", encoding="utf-8") as f:
-            json.dump(snap, f, ensure_ascii=False, default=str)
+        # context + manifest + the per-applicant declared record are built ALWAYS (cheap, no download).
         context[key] = {
             "profile_name": r["profile_name"] or "", "profile_nric": r["profile_nric"] or "",
             "income_route": r["income_route"] or "", "income_earner": r["income_earner"] or "",
@@ -131,16 +117,38 @@ def main():
             "_doc_type": dt, "_app_id": r["app_id"], "_prod_status": r["prod_status"],
         }
         manifest.append([key, dt, r["app_id"], (r["profile_name"] or "")[:40], r["prod_status"]])
+        aid = r["app_id"]
+        if aid not in applicants:
+            a = apps.get(aid, {})
+            applicants[aid] = {"application": a, "profile": profs.get(a.get("profile_id"), {})}
+        if not args.metadata_only:
+            try:
+                data = download(sb_base, sb_key, r["storage_path"])
+            except (urllib.error.URLError, TimeoutError) as e:
+                fail += 1
+                print(f"  download FAILED {key}: {e}")
+                continue
+            ext = ext_for(r["content_type"], r["storage_path"], r["original_filename"])
+            type_dir = os.path.join(fix_dir, dt)
+            os.makedirs(type_dir, exist_ok=True)
+            with open(os.path.join(type_dir, f"{key}.{ext}"), "wb") as f:
+                f.write(data)
+            snap = {c: r[c] for c in SNAP_COLS}
+            snap["vision_run_at"] = r["vision_run_at"]   # already an ISO string from the API
+            with open(os.path.join(snap_dir, f"{key}.json"), "w", encoding="utf-8") as f:
+                json.dump(snap, f, ensure_ascii=False, default=str)
         per_type[dt] += 1
         ok += 1
-    with open(os.path.join(args.eval_dir, "context.json"), "w", encoding="utf-8") as f:
-        json.dump(context, f, ensure_ascii=False, indent=0)
+    for fn, obj in (("context.json", context), ("applicants.json", applicants)):
+        with open(os.path.join(args.eval_dir, fn), "w", encoding="utf-8") as f:
+            json.dump(obj, f, ensure_ascii=False)
     with open(os.path.join(args.eval_dir, "_manifest.csv"), "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f); w.writerow(["key", "doc_type", "app_id", "applicant", "prod_status"]); w.writerows(manifest)
-    print(f"\nDownloaded {ok} documents ({fail} failed) into fixtures/<type>/ + snapshots/.")
+    verb = "Indexed" if args.metadata_only else "Downloaded"
+    print(f"\n{verb} {ok} documents ({fail} failed).")
     for t in types:
         print(f"  {t:22s} {per_type[t]}")
-    print(f"context.json: {len(context)} entries · _manifest.csv written.")
+    print(f"context.json: {len(context)} · applicants.json: {len(applicants)} · _manifest.csv written.")
 
 
 if __name__ == "__main__":
