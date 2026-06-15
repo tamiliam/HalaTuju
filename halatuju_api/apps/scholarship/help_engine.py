@@ -139,12 +139,12 @@ VERDICT_FIX_HINT = {
         'the letter must be their own. Ask them to re-upload their own offer letter.'
     ),
     'offer_pathway_mismatch': (
-        'This is NOT a problem and never blocks the application — reassure them firmly. '
-        'It is completely normal for plans to change. Explain gently that if THIS offer is '
-        'the path they are really taking, that is absolutely fine — they do not need to do '
-        'anything now; when they submit, we will simply ask them to confirm it and we will '
-        'update their record to match the offer. Do NOT tell them to re-upload or to edit '
-        'anything, and do NOT imply they made a mistake.'
+        'This is NOT a problem and never blocks the application — reassure them firmly, and '
+        'do NOT imply they made a mistake (plans change). Name the difference gently, then '
+        'give them TWO choices: (1) if this offer is the path they are really taking, they '
+        'can update their pathway in their Profile to match it now; OR (2) they can simply '
+        'leave it and we will ask them to confirm which one is final after they submit. Do '
+        'NOT tell them to re-upload the offer letter.'
     ),
     'income_relationship_mismatch': (
         'The document that should link this earner to the applicant does not agree. If the '

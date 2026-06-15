@@ -680,6 +680,10 @@ resolves bug**. Student queue shows **only officer + AI-clarify items, never `so
 TOTALLY off-topic**, behind **`CHECK2_ANSWER_RELEVANCE_ENABLED` (default OFF, billable)**. **The email +
 AI-clarify-query switch `CHECK2_STUDENT_QUERIES_ENABLED` stays OFF** (owner's call — both flags are one env var from on).
 Tests: 989 scholarship backend pytest + 276 jest; i18n parity 2474.
+**▶ UPDATE 2026-06-15: `CHECK2_STUDENT_QUERIES_ENABLED` is now ON in prod — the student-facing Check-2 layer
+(auto clarify queries, doc requests, the "few questions" emails, AND the `pathway_confirm` "Is this where you're going?"
+step) is LIVE; students are responding. Only `CHECK2_ANSWER_RELEVANCE_ENABLED` remains OFF. Verify the live env var with
+`gcloud run services describe halatuju-api` before asserting flag state — do not trust older log entries.**
 
 **▶ JUST SHIPPED 2026-06-11 (b) — SARA≠STR fix + cockpit doc UX + in-cockpit viewer + HEIC (NO migration; retro
 `docs/retrospective-cockpit-doc-ux-and-sara.md`; branch `fix/sara-not-str`).** **#5b SARA≠STR:** the Gemini
