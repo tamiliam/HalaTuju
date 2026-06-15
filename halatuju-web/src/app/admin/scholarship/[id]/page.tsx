@@ -1559,32 +1559,25 @@ export default function AdminScholarshipDetailPage() {
       {(() => {
         const fe = app.funding_estimate
         if (!fe) return null
-        const rmRange = (r?: [number, number]) =>
-          !r ? null : r[0] === r[1]
-            ? `RM ${r[0].toLocaleString('en-US')}`
-            : `RM ${r[0].toLocaleString('en-US')}–${r[1].toLocaleString('en-US')}`
         return (
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="font-semibold mb-2">{t('admin.scholarship.estimate.title')}</h2>
             {fe.known ? (
               <>
-                <p className="text-xs text-gray-500 mb-1.5">
-                  {t('admin.scholarship.estimate.basis')}: {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
+                <p className="text-2xl font-semibold text-gray-900">
+                  ≈ RM {fe.total.toLocaleString('en-US')}
                 </p>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.estimate.monthly')} value={rmRange(fe.monthly_total)} />
-                  <Field label={t('admin.scholarship.estimate.oneOff')} value={rmRange(fe.one_off_total)} />
-                  <div className="col-span-2"><Field
-                    label={`${t('admin.scholarship.estimate.total')} (${fe.programme_months || 12} ${t('admin.scholarship.estimate.months')})`}
-                    value={rmRange(fe.total)} /></div>
-                </dl>
-                {fe.covered.length > 0 && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    {t('admin.scholarship.estimate.covers')}: {fe.covered.join(', ')}
-                  </p>
+                <p className="text-xs text-gray-500 mb-2">
+                  ~RM {fe.monthly.toLocaleString('en-US')}/{t('admin.scholarship.estimate.month')} × {fe.months} {t('admin.scholarship.estimate.months')}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
+                </p>
+                {fe.variable && (
+                  <p className="mt-2 text-xs text-amber-700">{t('admin.scholarship.estimate.variableNote')}</p>
                 )}
-                {fe.review && (
-                  <p className="mt-1 text-xs text-amber-700">{t('admin.scholarship.estimate.reviewNote')}</p>
+                {fe.practical && (
+                  <p className="mt-1 text-xs text-gray-500">{t('admin.scholarship.estimate.practicalNote')}</p>
                 )}
               </>
             ) : (
