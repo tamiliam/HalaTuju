@@ -27,19 +27,24 @@ class _Base(TestCase):
 class TestClassify(_Base):
     def test_sure_chosen_pathway_wins(self):
         app = self._app(pathway_certainty='sure', chosen_pathway='matric')
-        self.assertEqual(classify_pathway(app), 'matrik')
+        self.assertEqual(classify_pathway(app), 'matric')
 
     def test_value_aliases_map(self):
-        self.assertEqual(classify_pathway(self._app(chosen_pathway='poly')), 'poly_diploma')
-        self.assertEqual(classify_pathway(self._app(chosen_pathway='university')), 'degree')
+        self.assertEqual(classify_pathway(self._app(chosen_pathway='poly')), 'poly')
+        # post-SPM "university" = a public-university diploma (not a degree).
+        self.assertEqual(classify_pathway(self._app(chosen_pathway='university')), 'university')
         self.assertEqual(classify_pathway(self._app(intended_pathway='asasi')), 'asasi')
+
+    def test_unestimated_pathways_are_unknown(self):
+        for pw in ('kkom', 'iljtm', 'ilkbs'):
+            self.assertEqual(classify_pathway(self._app(chosen_pathway=pw)), 'unknown', pw)
 
     def test_single_considered_used_when_undecided(self):
         app = self._app(pathway_certainty='uncertain', pathways_considered=['stpm'])
         self.assertEqual(classify_pathway(app), 'stpm')
 
     def test_multiple_considered_is_unknown(self):
-        app = self._app(pathway_certainty='uncertain', pathways_considered=['stpm', 'pismp'])
+        app = self._app(pathway_certainty='uncertain', pathways_considered=['stpm', 'asasi'])
         self.assertEqual(classify_pathway(app), 'unknown')
 
     def test_blank_is_unknown(self):
@@ -53,17 +58,23 @@ class TestClassify(_Base):
             pathways_considered=['university', 'iljtm', 'ilkbs'],
             chosen_programme={'course_id': 'POLY-DIP-016',
                               'course_name': 'Diploma Kejuruteraan Elektronik (Komunikasi)'})
-        self.assertEqual(classify_pathway(app), 'poly_diploma')
+        self.assertEqual(classify_pathway(app), 'poly')
 
     def test_chosen_programme_classifies_by_name(self):
-        deg = self._app(chosen_programme={'course_id': 'XY1234567',
-                        'course_name': 'Ijazah Sarjana Muda Kejuruteraan'})
-        self.assertEqual(classify_pathway(deg), 'degree')
+        # A non-Politeknik diploma (MOHE-coded id) = a public-university diploma.
+        uadip = self._app(chosen_programme={'course_id': 'UM0010001',
+                          'course_name': 'Diploma Pengurusan'})
+        self.assertEqual(classify_pathway(uadip), 'university')
         asasi = self._app(chosen_programme={'course_id': '', 'course_name': 'Asasi Sains'})
         self.assertEqual(classify_pathway(asasi), 'asasi')
         pismp = self._app(chosen_programme={'course_id': 'IPG-1',
-                          'course_name': 'PISMP Pendidikan Sarjana Muda'})
+                          'course_name': 'PISMP Perguruan'})
         self.assertEqual(classify_pathway(pismp), 'pismp')
+
+    def test_chosen_programme_kkom_gives_no_estimate(self):
+        app = self._app(chosen_programme={'course_id': 'KKOM-DIP-1',
+                        'course_name': 'Diploma Kolej Komuniti'})
+        self.assertEqual(classify_pathway(app), 'unknown')
 
     def test_explicit_pathway_beats_programme(self):
         app = self._app(pathway_certainty='sure', chosen_pathway='stpm',
@@ -81,34 +92,48 @@ class TestEstimate(_Base):
     def test_unknown_pathway_gives_no_estimate(self):
         est = estimate_funding(self._app())
         self.assertFalse(est['known'])
-        self.assertEqual(est['total'], (0, 0))
+        self.assertEqual(est['total'], 0)
 
-    def test_stpm_has_the_highest_monthly(self):
-        # STPM (transport + tuition + books) should exceed matrik (small top-up).
-        stpm = estimate_funding(self._app(chosen_pathway='stpm', pathway_certainty='sure'))
-        matrik = estimate_funding(self._app(chosen_pathway='matric', pathway_certainty='sure'))
-        self.assertGreater(stpm['monthly_total'][0], matrik['monthly_total'][0])
-        self.assertIn('transport', stpm['monthly'])
+    def test_known_pathway_shortfall_and_total(self):
+        # Politeknik: ~RM120/mth x 36 mth = 4,320 -> rounded to RM4,300.
+        est = estimate_funding(self._app(chosen_pathway='poly', pathway_certainty='sure'))
+        self.assertTrue(est['known'])
+        self.assertEqual(est['monthly'], 120)
+        self.assertEqual(est['months'], 36)
+        self.assertEqual(est['total'], 4300)
 
-    def test_total_uses_programme_months(self):
-        app = self._app(chosen_pathway='stpm', pathway_certainty='sure')
-        FundingNeed.objects.create(application=app, categories=['transport'], programme_months=18)
-        est = estimate_funding(app)
-        m_lo = est['monthly_total'][0]
-        o_lo = est['one_off_total'][0]
-        self.assertEqual(est['programme_months'], 18)
-        self.assertEqual(est['total'][0], m_lo * 18 + o_lo)
-
-    def test_total_annualises_when_months_unknown(self):
-        est = estimate_funding(self._app(chosen_pathway='matric', pathway_certainty='sure'))
-        self.assertIsNone(est['programme_months'])
-        self.assertEqual(est['total'][0], est['monthly_total'][0] * 12 + est['one_off_total'][0])
-
-    def test_device_is_in_every_known_pathway(self):
-        for pw in ('matric', 'asasi', 'stpm', 'poly', 'pismp', 'university'):
+    def test_each_pathway_total(self):
+        cases = {'stpm': 9000, 'matric': 2000, 'asasi': 7000,
+                 'poly': 4300, 'university': 6600, 'pismp': 10800}
+        for pw, total in cases.items():
             est = estimate_funding(self._app(chosen_pathway=pw, pathway_certainty='sure'))
-            self.assertIn('device', est['one_off'], pw)
+            self.assertEqual(est['total'], total, pw)
 
-    def test_degree_is_flagged_for_review(self):
-        est = estimate_funding(self._app(chosen_pathway='university', pathway_certainty='sure'))
-        self.assertTrue(est['review'])
+    def test_programme_months_overrides_default(self):
+        app = self._app(chosen_pathway='university', pathway_certainty='sure')
+        FundingNeed.objects.create(application=app, categories=['fees'], programme_months=24)
+        est = estimate_funding(app)
+        self.assertEqual(est['months'], 24)
+        self.assertEqual(est['total'], 5300)  # 220 x 24 = 5,280 -> rounds to 5,300
+
+    def test_variable_flags(self):
+        self.assertTrue(estimate_funding(self._app(chosen_pathway='asasi',
+                        pathway_certainty='sure'))['variable'])
+        self.assertTrue(estimate_funding(self._app(chosen_pathway='university',
+                        pathway_certainty='sure'))['variable'])
+        self.assertFalse(estimate_funding(self._app(chosen_pathway='poly',
+                         pathway_certainty='sure'))['variable'])
+
+    def test_practical_flags(self):
+        for pw in ('poly', 'university', 'pismp'):
+            self.assertTrue(estimate_funding(self._app(chosen_pathway=pw,
+                            pathway_certainty='sure'))['practical'], pw)
+        for pw in ('stpm', 'matric', 'asasi'):
+            self.assertFalse(estimate_funding(self._app(chosen_pathway=pw,
+                             pathway_certainty='sure'))['practical'], pw)
+
+    def test_no_device_in_estimate(self):
+        # Device is deliberately excluded (tranche support is unsuitable for a lump sum).
+        est = estimate_funding(self._app(chosen_pathway='stpm', pathway_certainty='sure'))
+        self.assertNotIn('one_off', est)
+        self.assertNotIn('device', str(est))

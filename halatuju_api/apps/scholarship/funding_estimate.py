@@ -2,89 +2,63 @@
 Check 2 — deterministic per-pathway funding-need ESTIMATE for a B40 student.
 
 Pre-college students can't reliably self-report what they'll need, so we estimate the
-realistic monthly + one-off **gap a scholarship would fill, AFTER the government's own
-coverage**, keyed on the student's pathway. The student's funding checkboxes stay a
-*signal*; this estimate is the baseline for award sizing + the officer cockpit.
+realistic **monthly shortfall a top-up assistance would fill, AFTER government coverage
+(allowance) and any PTPTN loan**, keyed on the student's pathway, times the typical
+programme length. The student's funding checkboxes stay a *signal*; this estimate is the
+baseline for award sizing + the officer cockpit.
 
-Figures (RM ranges) are owner-validated and live in
-``docs/scholarship/funding-estimate-basis.md`` — keep the two in sync. Pure + no LLM.
+Figures (RM) are owner-validated and live in ``docs/scholarship/funding-estimate-basis.md``
+— keep the two in sync. Pure + no LLM.
+
+Post-SPM scope: students can't enter a bachelor's degree directly (the one exception,
+PISMP, is a 5-year degree-level teacher-training programme and has its own category). So
+the pathway "university" means a **public-university (Universiti Awam) DIPLOMA**, not a
+degree. kkom / iljtm / ilkbs have a different, institution-specific cost structure and
+are deliberately left un-estimated (assess at interview).
 """
 from __future__ import annotations
 
-# pathway value (chosen_pathway / intended_pathway / pathways_considered) → category.
+# pathway value (chosen_pathway / intended_pathway / pathways_considered) → estimate
+# category. The category IS the pathway key for the six pathways we estimate; aliases
+# fold in. kkom / iljtm / ilkbs / tvet are intentionally absent → no estimate.
 _PATHWAY_MAP = {
-    'matric': 'matrik', 'matrik': 'matrik', 'matrikulasi': 'matrik',
-    'asasi': 'asasi', 'foundation': 'asasi',
+    'matric': 'matric', 'matrik': 'matric', 'matrikulasi': 'matric',
     'stpm': 'stpm',
-    'poly': 'poly_diploma', 'politeknik': 'poly_diploma', 'diploma': 'poly_diploma',
-    'kkom': 'poly_diploma', 'kolej_komuniti': 'poly_diploma',
-    'iljtm': 'poly_diploma', 'ilkbs': 'poly_diploma', 'tvet': 'poly_diploma',
+    'asasi': 'asasi', 'foundation': 'asasi',
+    'university': 'university', 'degree': 'university',  # post-SPM "university" = UA diploma
+    'poly': 'poly', 'politeknik': 'poly',
     'pismp': 'pismp', 'ipg': 'pismp',
-    'university': 'degree', 'degree': 'degree',
 }
 
-# category → estimate. Amounts are (low, high) RM. 'monthly' recurs; 'one_off' is one-time.
-# 'review' flags categories whose estimate is too variable to trust without an officer.
+# category → estimate. 'monthly' = est. RM monthly SHORTFALL a top-up would fill (living
+# costs − government allowance − PTPTN loan), rounded. 'months' = typical programme
+# length. 'variable' = cost varies a lot by institution/field → show a caveat.
+# 'practical' = has an internship/practical term that may add travel.
 PATHWAY_ESTIMATES = {
-    'matrik': {
-        'monthly': {'meals_personal': (100, 150)},
-        'one_off': {'device': (1800, 2500), 'registration': (546, 599)},
-        'covered': ['hostel', 'teaching', 'BSHP living allowance (~RM1,250/sem)'],
-        'review': False,
-    },
-    'asasi': {
-        'monthly': {'meals': (150, 250), 'transport': (0, 50)},
-        'one_off': {'device': (1800, 2500), 'registration_tuition': (0, 1000)},
-        'covered': ['hostel (usually)', 'heavy tuition subsidy', 'allowance (some programmes)'],
-        'review': False,
-    },
-    'stpm': {
-        'monthly': {'transport': (100, 300), 'tuition': (200, 400), 'books': (25, 50)},
-        'one_off': {'device': (1800, 2500)},
-        'covered': ['school fees', 'STPM exam fees'],
-        'review': False,
-    },
-    'poly_diploma': {
-        'monthly': {'meals': (150, 300), 'misc': (20, 50)},
-        'one_off': {'device': (1800, 2500), 'registration': (600, 900)},
-        'covered': ['low tuition (~RM200/sem)', 'hostel (cheap, provided)'],
-        'review': False,
-    },
-    'pismp': {
-        'monthly': {'top_up': (50, 150)},
-        'one_off': {'device': (1800, 2500)},
-        'covered': ['IPG allowance', 'hostel'],
-        'review': False,
-    },
-    'degree': {
-        'monthly': {'living': (300, 600)},
-        'one_off': {'device': (1800, 2500)},
-        'covered': ['varies (PTPTN / faculty)'],
-        'review': True,   # too variable to trust without an officer
-    },
+    'stpm':       {'monthly': 500, 'months': 18, 'variable': False, 'practical': False},
+    'matric':     {'monthly': 200, 'months': 10, 'variable': False, 'practical': False},
+    'asasi':      {'monthly': 700, 'months': 10, 'variable': True,  'practical': False},
+    'poly':       {'monthly': 120, 'months': 36, 'variable': False, 'practical': True},
+    'university': {'monthly': 220, 'months': 30, 'variable': True,  'practical': True},
+    'pismp':      {'monthly': 180, 'months': 60, 'variable': False, 'practical': True},
 }
 
-_DEFAULT_MONTHS = 12  # when programme length is unknown, annualise on 12 months
-
-# Synthetic course_id prefixes that pin the pathway category (Poly/Kolej Komuniti/TVET
-# all fund like a polytechnic diploma). MOHE-coded UA/Asasi ids don't self-describe, so
-# they fall through to the course_name scan below.
+# course_id prefixes with a different, un-estimated cost structure → no estimate.
+_NO_ESTIMATE_ID_PREFIXES = ('kkom', 'ijtm', 'iljtm', 'ikbn', 'iktbn', 'ilkbs', 'tvet')
+# course_id prefixes that pin an estimate category.
 _PROGRAMME_ID_PREFIXES = (
-    ('poly', 'poly_diploma'), ('kkom', 'poly_diploma'), ('ijtm', 'poly_diploma'),
-    ('ikbn', 'poly_diploma'), ('iktbn', 'poly_diploma'), ('tvet', 'poly_diploma'),
+    ('poly', 'poly'),
+    ('pismp', 'pismp'), ('ipg', 'pismp'),
 )
-# Ordered course_name keyword scan (first match wins). Order matters: PISMP/Asasi/
-# Matrikulasi programme names can also contain 'ijazah'/'sarjana muda', so the specific
-# pathways are checked before the generic degree keywords.
+# Ordered course_name keyword scan (first match wins). Specific pathways are checked
+# before the generic 'diploma' (a non-Politeknik diploma = a public-university diploma).
 _PROGRAMME_NAME_KEYWORDS = (
-    ('matrikulasi', 'matrik'),
+    ('matrikulasi', 'matric'),
     ('asasi', 'asasi'), ('foundation', 'asasi'),
-    ('stpm', 'stpm'), ('tingkatan enam', 'stpm'),
+    ('tingkatan enam', 'stpm'), ('stpm', 'stpm'),
     ('pismp', 'pismp'), ('perguruan', 'pismp'),
-    ('diploma', 'poly_diploma'), ('politeknik', 'poly_diploma'),
-    ('kolej komuniti', 'poly_diploma'),
-    ('ijazah sarjana muda', 'degree'), ('sarjana muda', 'degree'),
-    ('bacelor', 'degree'), ('bachelor', 'degree'), ('ijazah', 'degree'),
+    ('politeknik', 'poly'),
+    ('diploma', 'university'),
 )
 
 
@@ -93,16 +67,20 @@ def _norm(value) -> str:
 
 
 def _classify_programme(programme) -> str | None:
-    """Infer the pathway category from a chosen programme (the actual course the student
-    picked, e.g. auto-filled from their offer letter), or None if it can't be read. Uses
-    the course_id prefix first, then a keyword scan of the course_name."""
+    """Infer the estimate category from a chosen programme (the actual course the student
+    picked, e.g. auto-filled from their offer letter), or None if it can't be read or has
+    an un-estimated cost structure. course_id prefix first, then a course_name scan."""
     if not isinstance(programme, dict):
         return None
     cid = _norm(programme.get('course_id'))
+    if any(cid.startswith(p) for p in _NO_ESTIMATE_ID_PREFIXES):
+        return None
     for prefix, cat in _PROGRAMME_ID_PREFIXES:
         if cid.startswith(prefix):
             return cat
     name = _norm(programme.get('course_name'))
+    if 'kolej komuniti' in name:
+        return None
     for kw, cat in _PROGRAMME_NAME_KEYWORDS:
         if kw in name:
             return cat
@@ -142,41 +120,31 @@ def _programme_months(application) -> int | None:
     return months if months else None
 
 
-def _sum_range(d: dict) -> tuple[int, int]:
-    lo = sum(v[0] for v in d.values())
-    hi = sum(v[1] for v in d.values())
-    return lo, hi
+def _round100(n) -> int:
+    """Round to the nearest RM100 — these are ballpark estimates, not invoices."""
+    return int(round(n / 100.0)) * 100
 
 
 def estimate_funding(application) -> dict:
-    """The funding-need estimate for an application. Returns a dict with the pathway,
-    whether it's known/estimatable, the monthly + one-off breakdowns and totals (RM
-    low–high), and the programme-length total for award sizing. For an unknown pathway,
+    """The funding-need estimate for an application: the monthly shortfall, the typical
+    (or student-stated) programme length in months, and the rounded whole-programme total
+    for award sizing, plus 'variable' (cost swings by institution) and 'practical' (an
+    internship term may add travel) flags. For an un-estimated/unknown pathway,
     ``known=False`` and no figures — fall back to the student's self-report."""
     pathway = classify_pathway(application)
     spec = PATHWAY_ESTIMATES.get(pathway)
     if spec is None:
-        return {'pathway': pathway, 'known': False, 'review': False,
-                'monthly': {}, 'monthly_total': (0, 0),
-                'one_off': {}, 'one_off_total': (0, 0),
-                'programme_months': _programme_months(application),
-                'total': (0, 0), 'covered': []}
-
-    monthly, one_off = spec['monthly'], spec['one_off']
-    m_lo, m_hi = _sum_range(monthly)
-    o_lo, o_hi = _sum_range(one_off)
-    months = _programme_months(application)
-    span = months or _DEFAULT_MONTHS
-    total = (m_lo * span + o_lo, m_hi * span + o_hi)
+        return {'pathway': pathway, 'known': False, 'monthly': 0,
+                'months': _programme_months(application), 'total': 0,
+                'variable': False, 'practical': False}
+    months = _programme_months(application) or spec['months']
+    monthly = spec['monthly']
     return {
         'pathway': pathway,
         'known': True,
-        'review': spec['review'],
-        'monthly': {k: list(v) for k, v in monthly.items()},
-        'monthly_total': (m_lo, m_hi),
-        'one_off': {k: list(v) for k, v in one_off.items()},
-        'one_off_total': (o_lo, o_hi),
-        'programme_months': months,
-        'total': total,
-        'covered': spec['covered'],
+        'monthly': monthly,
+        'months': months,
+        'total': _round100(monthly * months),
+        'variable': spec['variable'],
+        'practical': spec['practical'],
     }
