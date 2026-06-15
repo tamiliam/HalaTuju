@@ -1266,12 +1266,23 @@ def _any_field_filled(fields: dict) -> bool:
     return False
 
 
+_DOC_NAME_LABEL_RE = re.compile(r'^\s*(?:NAMA(?:\s+CALON)?|NAME|CALON)\s*[:.\-]?\s+', re.IGNORECASE)
+
+
+def _strip_name_label(s: str) -> str:
+    """Drop a leaked field label ('NAMA :', 'NAME -', 'CALON ') that Gemini sometimes prepends
+    to an extracted candidate name, so it doesn't pollute the token-set name match (it turned a
+    genuine slip — 'NAMA : SANJANA A/P KALIANA KUMAR' vs the typed 'SANJANA A/P KALIANAKUMAR' —
+    into a false name_mismatch). Requires a trailing separator+space, so a real name is untouched."""
+    return _DOC_NAME_LABEL_RE.sub('', s or '').strip()
+
+
 def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street='', check_address=False) -> str:
     """Deterministic verdict from the Gemini-extracted fields (never hallucinated):
     'ok' | 'name_mismatch' | 'address_mismatch' | 'wrong_doc'."""
     if not _any_field_filled(fields):
         return 'wrong_doc'   # nothing of the expected shape was found
-    extracted_name = (fields.get(_NAME_FIELD.get(doc_type, 'name')) or '').strip()
+    extracted_name = _strip_name_label(fields.get(_NAME_FIELD.get(doc_type, 'name')) or '')
     if extracted_name:
         matched = any(name_match(extracted_name, n) in ('match', 'partial') for n in names if n)
         if not matched:

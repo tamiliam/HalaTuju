@@ -219,7 +219,14 @@ def doc_match_verdict(doc):
 
     if dt == 'results_slip':
         chk = student_slip_check(doc) or {}
-        if red(chk, 'name', 'subjects', 'results'):
+        # NOTE: 'subjects' is deliberately NOT a doc mismatch. A slip 'subjects' mismatch means
+        # the OFFICIAL slip lists a subject the student didn't enter in their /profile — the slip
+        # is genuine, the profile is just incomplete. That is a SOFT discrepancy: Gopal nudges the
+        # student to add the subject(s) at /profile (help_engine 'slip_subjects_missing'), the
+        # Academic tile shows it as 'review' (academic_missing_subjects), and Check 2 follows up —
+        # but it must NOT block submission or red the document. A NAME or GRADE (results) mismatch
+        # still does.
+        if red(chk, 'name', 'results'):
             return 'mismatch'
         # An unreadable scan keeps the task open — and it's unreadable whether the NAME
         # or the SUBJECT TABLE couldn't be read (a blurry slip whose name happens to
