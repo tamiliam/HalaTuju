@@ -1043,6 +1043,7 @@ class CronRunView(APIView):
         'query-emails': 'send_due_query_emails',
         'query-reminders': 'send_query_reminders',
         'autogenerate-profiles': 'autogenerate_profiles',
+        'backfill-assigned-profiles': 'backfill_assigned_profiles',  # one-off: drafts for already-assigned
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly
         'sponsor-digests': 'send_sponsor_digests',     # F3: weekly
         'purge-referrals': 'purge_sponsor_referrals',  # F4: daily PDPA purge (60-day)
