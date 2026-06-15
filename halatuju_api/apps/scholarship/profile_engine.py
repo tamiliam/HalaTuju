@@ -81,6 +81,14 @@ VERIFICATION — do not over-claim:
 - Report grades as the actual band mix (e.g. "ten A-grade subjects across A+/A/A−") and name the \
 subject areas they span; never round up or imply a uniform top grade. If a merit score is given, \
 you may cite it.
+- INCOME & WELFARE — be precise. "Receives STR"/"Receives JKM" mean the family is registered as \
+B40 / receives government welfare; they do NOT verify the income AMOUNT (STR confirms B40 status, \
+not a figure). If "Documented income (payslip/EPF)" below lists one or more figures, you MAY state \
+those AUTHORITATIVELY, naming the document and whose income it is (this can happen on either track). \
+For any income NOT documented there, present it as what the family REPORTS (e.g. "the family reports \
+about RM…"), never as "confirmed", and do NOT attribute a reported figure to a specific earner or \
+invent a breakdown. If who earns what is unclear, describe the situation (a single earner, a parent \
+unable to work) without inventing numbers. Do not make up a story to reconcile the figures.
 
 THE STUDENT (alias {alias})
 Pronouns (use these for the student, never "they"): {pronouns}
@@ -88,8 +96,9 @@ School / college: {school}
 Qualification: {qualification}    Merit score: {merit}
 SPM grades: {grades_summary}    STPM PNGK: {stpm_pngk}
 Home town / state: {region}
-Household income (RM/month): {household_income}    Household size: {household_size}
-Receives STR: {receives_str}    Receives JKM: {receives_jkm}
+Household income (RM/month, as reported): {household_income}    Household size: {household_size}
+Documented income (payslip/EPF — use authoritatively if present): {income_evidence}
+Receives STR (B40 status, not an income figure): {receives_str}    Receives JKM: {receives_jkm}
 First in family to university: {first_in_family}
 Parents'/guardians' occupation: {parents_occupation}
 Siblings currently studying: {siblings_studying}
@@ -228,6 +237,25 @@ def _siblings_studying_display(application):
     return str(count) if count is not None else ''
 
 
+def _income_evidence(application):
+    """Documented monthly income read from any salary slip / EPF on file — usable
+    authoritatively even on the STR track (a student may submit payslips/EPF as extra
+    proof). Covers the salary-route members AND the STR-route earner. 'none on file' when
+    no readable income document exists, so the model falls back to the reported figure."""
+    from .income_engine import working_members, earner_monthly_income
+    members = list(working_members(application))
+    earner = (getattr(application, 'income_earner', '') or '').strip()
+    if earner and earner not in members:
+        members.append(earner)
+    lines = []
+    for m in members:
+        amt, src = earner_monthly_income(application, m)
+        if amt:
+            label = {'salary': 'salary slip', 'epf_estimate': 'EPF statement'}.get(src, 'document')
+            lines.append(f"{m}'s {label} shows about RM{int(round(amt))}/month")
+    return '; '.join(lines) if lines else 'none on file'
+
+
 def _merit(application):
     """The course-guide merit score (0-100 for SPM; PNGK for STPM), or 'not provided'."""
     from .serializers_admin import _application_merit_score
@@ -328,6 +356,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         stpm_pngk=pval('stpm_cgpa', 'n/a'),
         region=_region(profile),
         household_income=pval('household_income'),
+        income_evidence=_income_evidence(application),
         household_size=pval('household_size'),
         receives_str=_yesno(getattr(profile, 'receives_str', None) if profile else None),
         receives_jkm=_yesno(getattr(profile, 'receives_jkm', None) if profile else None),
@@ -362,6 +391,9 @@ and write the profile in {target_language}.
 Pronouns (use these for the student, never "they"): {pronouns}
 
 Rules:
+- INCOME: STR/JKM indicate B40 / welfare status, NOT an income amount. State an income figure as
+confirmed ONLY if a payslip/EPF or the officer's verdict verified it; otherwise present it as what the
+family reports, and never invent who earns what.
 - Fold in what the student's answers and the interview CONFIRMED or CLARIFIED; reflect any NEW \
 CONCERN honestly and proportionately — do not hide it, do not exaggerate it.
 - The officer's decision is the considered outcome of a real review. Present each area with \
