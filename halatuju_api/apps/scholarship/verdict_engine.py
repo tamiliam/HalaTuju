@@ -585,12 +585,14 @@ def _fact_genuineness_docs(application, fact_name):
 
 def _suspect_genuineness(application, doc_types):
     """The worst genuineness status among the latest of the given doc types if it warrants a
-    soft cap ('low_confidence'/'wrong_type'/'not_an_ic'), else ''. Reads vision_fields only."""
+    soft cap ('low_confidence'/'wrong_type'/'not_an_ic'/'suspect'), else ''. Reads vision_fields
+    only. ('suspect' is the results-slip signature scorer's low-probability band — it rides the
+    same SOFT review cap; the reviewer is the authority.)"""
     for dt in doc_types:
         d = _latest_doc(application, dt)
         vf = d.vision_fields if (d and isinstance(d.vision_fields, dict)) else {}
         st = (vf.get('authenticity') or {}).get('status', '')
-        if st in ('low_confidence', 'wrong_type', 'not_an_ic'):
+        if st in ('low_confidence', 'wrong_type', 'not_an_ic', 'suspect'):
             return st
     return ''
 

@@ -668,27 +668,8 @@ _IC_GEMINI_PROMPT = (
 # handful of independent markers and call it "highly probable" or not. SOFT: never blocks; the
 # reviewer is the authority. Validated on our real ICs 2026-06-12 (genuine = all 8 markers; a
 # typed fake carried only the words someone typed and failed every physical one → 'suspect').
-_IC_GENUINENESS_MARKERS = ('has_kad_pengenalan', 'has_malaysia', 'has_identity_card',
-                           'has_mykad', 'has_warganegara', 'has_face_photo', 'has_chip',
-                           'looks_like_physical_card')
-_IC_GENUINENESS_SCHEMA = {'type': 'object', 'properties': {
-    **{m: {'type': 'boolean'} for m in _IC_GENUINENESS_MARKERS},
-    'verdict': {'type': 'string'}, 'reason': {'type': 'string'}},
-    'required': list(_IC_GENUINENESS_MARKERS) + ['verdict', 'reason']}
-
-_IC_GENUINENESS_PROMPT = (
-    'Inspect this image. It was uploaded as a Malaysian MyKad (national identity card). '
-    'Decide if it is a genuine PHOTO or SCAN of a physical MyKad, NOT a typed document, a '
-    'screenshot of text, or a printout. Report which standard MyKad features are present: the '
-    "header text 'KAD PENGENALAN', 'MALAYSIA', 'IDENTITY CARD'; the 'MyKad' wordmark; the "
-    "'WARGANEGARA' field; a portrait FACE PHOTO of a person; an embedded gold CHIP; and whether "
-    'the overall image looks like a photograph/scan of a physical plastic card (colour, layout, '
-    "design) rather than plain text on white. verdict = 'genuine' (clearly a real MyKad), "
-    "'suspect' (missing key physical features - likely typed/printed/screenshot), or 'not_an_ic' "
-    '(not an identity card at all). reason = one short sentence.')
-
-# Gemini verdict word → our stored status. 'likely_genuine' is the honest ceiling — never "verified".
-_GENUINENESS_STATUS = {'genuine': 'likely_genuine', 'suspect': 'low_confidence', 'not_an_ic': 'not_an_ic'}
+# IC genuineness (constants + ic_genuineness) now lives in genuineness/ic.py and is
+# re-exported at the end of this module (see the genuineness/ package).
 
 
 def _as_image_for_gemini(data: bytes, content_type: str):
@@ -760,88 +741,8 @@ def _merge_ic_reads(det: dict, g: dict, profile) -> dict:
     return out
 
 
-def ic_genuineness(data: bytes, content_type: str = '') -> dict:
-    """Soft genuineness fingerprint for an IC image → ``{status, markers, reason}`` or ``{}``.
-    ``status`` ∈ ``likely_genuine`` / ``low_confidence`` / ``not_an_ic`` (or '' if unclassified).
-    NEVER raises; an AI outage / unreadable image returns ``{}`` — NO signal, because we must not
-    penalise a student for OUR failure. This only informs the Identity prediction + a pre-interview
-    flag; the reviewer is the authority (verification-assurance roadmap)."""
-    img, mime = _as_image_for_gemini(data, content_type)
-    if img is None:
-        return {}
-    r = _call_gemini_json(_IC_GENUINENESS_PROMPT, _IC_GENUINENESS_SCHEMA, image=img, mime_type=mime)
-    if not isinstance(r, dict) or r.get('_error'):
-        return {}
-    return {
-        'status': _GENUINENESS_STATUS.get((r.get('verdict') or '').strip().lower(), ''),
-        'markers': {m: bool(r.get(m)) for m in _IC_GENUINENESS_MARKERS},
-        'reason': (r.get('reason') or '')[:300],
-    }
-
-
-# ── Supporting-document genuineness (verification-assurance Sprint 2) ─────────
-# The same idea as the IC, generalised to the OTHER standardised documents — but the
-# "what counts as official" rule is doc-type-specific (validated on our real files):
-#   * STR — a genuine MySTR app SCREENSHOT (Semakan Status / Dashboard) IS legitimate
-#     evidence (the owner's call; it's the preferred, harder-to-fake source). Only a typed
-#     or fabricated version is suspect. The existing STR currency/source-type logic still
-#     decides whether it's an APPROVAL — genuineness here is mainly WRONG-TYPE.
-#   * results slip / birth cert / EPF statement — a typed sheet / screenshot of text /
-#     printout is NOT official; we expect a photo or scan of the real document.
-# Wrong-type (e.g. an IC uploaded as an STR, a KWSP withdrawal form instead of a statement)
-# → status 'wrong_type'. Soft throughout; the reviewer is the authority.
-_GENUINENESS_DOCS = {
-    'str': {'screenshot_ok': True,
-            'desc': 'a Malaysian STR (Sumbangan Tunai Rahmah) cash-aid document — a MySTR app '
-                    'screenshot (Semakan Status / Dashboard) OR an official Kementerian Kewangan letter'},
-    'results_slip': {'screenshot_ok': False,
-                     'desc': 'a Malaysian SPM results slip (Sijil Pelajaran Malaysia) from Lembaga '
-                             'Peperiksaan / Kementerian Pendidikan, with the candidate name, Angka '
-                             'Giliran, a subject/grade table and a serial/seal'},
-    'birth_certificate': {'screenshot_ok': False,
-                          'desc': "a Malaysian birth certificate (Sijil Kelahiran) from Jabatan "
-                                  "Pendaftaran Negara (JPN), with a registration number, the child "
-                                  "and both parents' details and an official seal"},
-    'epf': {'screenshot_ok': False,
-            'desc': 'a Malaysian EPF/KWSP MEMBER STATEMENT (Penyata Ahli KWSP) — KWSP letterhead, a '
-                    'member number and a contribution/savings table (NOT a withdrawal/application form)'},
-}
-_DOC_GENUINENESS_SCHEMA = {'type': 'object', 'properties': {
-    'is_official': {'type': 'boolean'}, 'is_expected_type': {'type': 'boolean'},
-    'doc_seen': {'type': 'string'}, 'verdict': {'type': 'string'}, 'reason': {'type': 'string'}},
-    'required': ['is_official', 'is_expected_type', 'doc_seen', 'verdict', 'reason']}
-_DOC_GENUINENESS_STATUS = {'genuine': 'likely_genuine', 'suspect': 'low_confidence', 'wrong_type': 'wrong_type'}
-
-
-def doc_genuineness(data: bytes, content_type: str, doc_type: str) -> dict:
-    """Soft genuineness fingerprint for a standardised supporting document →
-    ``{status, doc_seen, reason}`` or ``{}``. ``status`` ∈ ``likely_genuine`` /
-    ``low_confidence`` / ``wrong_type``. NEVER raises; an AI outage / unsupported type
-    returns ``{}`` (no signal). The reviewer is the authority."""
-    cfg = _GENUINENESS_DOCS.get(doc_type)
-    if not cfg:
-        return {}
-    img, mime = _as_image_for_gemini(data, content_type)
-    if img is None:
-        return {}
-    ss = ('A genuine SCREENSHOT of the official MySTR app/portal IS acceptable as official — only a '
-          'typed or fabricated text version is not. ' if cfg['screenshot_ok'] else
-          'A typed sheet, a screenshot of typed text, or a hand-written/printed copy is NOT official. ')
-    prompt = (f"This image was uploaded as {cfg['desc']}. {ss}Decide: is_official — is it a genuine "
-              "official document of that kind (proper letterhead/format/seal/structure of the issuing "
-              "authority)? is_expected_type — is it ACTUALLY that kind of document, or a DIFFERENT "
-              "document (e.g. an identity card / MyKad, a payslip, the wrong form)? doc_seen — what the "
-              "document actually appears to be (short). verdict — 'genuine' (a real official document of "
-              "the expected type), 'suspect' (the right type but typed/printed/fabricated, not an official "
-              "copy), or 'wrong_type' (a different document than expected). reason — one sentence.")
-    r = _call_gemini_json(prompt, _DOC_GENUINENESS_SCHEMA, image=img, mime_type=mime)
-    if not isinstance(r, dict) or r.get('_error'):
-        return {}
-    return {
-        'status': _DOC_GENUINENESS_STATUS.get((r.get('verdict') or '').strip().lower(), ''),
-        'doc_seen': (r.get('doc_seen') or '')[:80],
-        'reason': (r.get('reason') or '')[:300],
-    }
+# Supporting-document genuineness (str / birth_certificate / epf) now lives in
+# genuineness/supporting_doc.py and is re-exported at the end of this module.
 
 
 def run_vision_for_document(doc) -> dict:
@@ -1468,13 +1369,34 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
     # official document?" read → vision_fields['authenticity']. One extra Gemini call per
     # supporting doc; never blocks. (The IC has its own in run_vision_for_document.) The
     # results-slip already fetched its image above; the others fetch here.
-    if getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False) and doc.doc_type in _GENUINENESS_DOCS:
-        gimg = image if doc.doc_type == 'results_slip' else _fetch_image_bytes(doc.storage_path)
-        if gimg is not None:
-            auth = doc_genuineness(gimg, doc.content_type, doc.doc_type)
-            if auth:
-                result['authenticity'] = auth
+    if getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False):
+        if doc.doc_type == 'results_slip':
+            # Probabilistic SIGNATURE genuineness (deterministic + auditable) over the OCR text —
+            # the slip/cert signature scorer. No extra Gemini call (reuses/loads the OCR text). A
+            # failed/empty OCR read yields NO signal — we never penalise a student for our failure.
+            from .genuineness.results_doc import signature_genuineness
+            rr = ocr if ocr is not None else ocr_document(doc)
+            text = (rr or {}).get('text', '') or ''
+            if text.strip() and not (rr or {}).get('error'):
+                sg = signature_genuineness(text)
+                result['authenticity'] = {
+                    'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['type'],
+                    'probability': sg['probability'], 'present': sg['present'], 'missing': sg['missing'],
+                }
+        elif doc.doc_type in _GENUINENESS_DOCS:
+            gimg = _fetch_image_bytes(doc.storage_path)
+            if gimg is not None:
+                auth = doc_genuineness(gimg, doc.content_type, doc.doc_type)
+                if auth:
+                    result['authenticity'] = auth
     doc.vision_fields = result
     doc.vision_fields_run_at = timezone.now()
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
     return result
+
+
+# ── Genuineness checks live in the genuineness/ package (one home, per the architecture) ──
+# Re-exported here so the upload path above and back-compatible imports
+# (apps.scholarship.vision.ic_genuineness / .doc_genuineness) keep resolving unchanged.
+from .genuineness.ic import ic_genuineness            # noqa: E402,F401
+from .genuineness.supporting_doc import doc_genuineness, _GENUINENESS_DOCS  # noqa: E402,F401

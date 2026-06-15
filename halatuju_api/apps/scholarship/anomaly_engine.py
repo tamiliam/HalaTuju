@@ -397,7 +397,7 @@ def _detect_document_not_genuine(application) -> Optional[Anomaly]:
     for dt, label in _GENUINENESS_DOC_LABELS.items():
         doc = application.documents.filter(doc_type=dt).order_by('-uploaded_at').first()
         status = _ic_authenticity_status(doc)   # reads vision_fields['authenticity'].status — type-agnostic
-        if status in ('low_confidence', 'wrong_type'):
+        if status in ('low_confidence', 'wrong_type', 'suspect'):   # 'suspect' = slip signature scorer
             vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
             seen = (vf.get('authenticity') or {}).get('doc_seen', '')
             return Anomaly('document_not_genuine', {'doc': label, 'status': status, 'seen': seen})
