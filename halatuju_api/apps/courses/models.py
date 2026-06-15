@@ -553,6 +553,20 @@ class StudentProfile(models.Model):
     siblings_in_school = models.PositiveSmallIntegerField(null=True, blank=True)
     siblings_in_tertiary = models.PositiveSmallIntegerField(null=True, blank=True)
 
+    # ── Pathway / "Your Plans" (profile-level home; mirrors ScholarshipApplication) ──
+    # Same field names + types as the application's pathway columns so they copy
+    # field-for-field. /profile owns the picker (so a shortlisted student, locked out
+    # of /apply, can still change pathway); two-way synced with an open application,
+    # frozen on the app at the decision.
+    pathway_certainty = models.CharField(max_length=10, blank=True, default='')
+    chosen_pathway = models.CharField(max_length=20, blank=True, default='')
+    pre_u_track = models.CharField(max_length=30, blank=True, default='')
+    pre_u_institution = models.CharField(max_length=255, blank=True, default='')
+    chosen_programme = models.JSONField(default=dict, blank=True)
+    pathways_considered = models.JSONField(default=list, blank=True)
+    uncertainty_reasons = models.JSONField(default=list, blank=True)
+    uncertainty_note = models.TextField(blank=True, default='')
+
     # Demographics (for eligibility checking)
     gender = models.CharField(max_length=20, blank=True)
     nationality = models.CharField(max_length=50, default='Warganegara')

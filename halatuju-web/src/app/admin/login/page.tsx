@@ -55,13 +55,16 @@ export default function AdminLoginPage() {
           setLoading(false)
           return
         }
+        // Reviewers/viewers have no partner-org dashboard — send them to their
+        // workspace (B40 Applications); org admins/super keep the dashboard.
+        router.push(role.role === 'reviewer' || role.role === 'viewer'
+          ? '/admin/scholarship' : '/admin')
+        return
       } catch {
         setError(t('errors.adminVerifyFailed'))
         setLoading(false)
         return
       }
-
-      router.push('/admin')
     }
 
     setLoading(false)

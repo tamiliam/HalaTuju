@@ -148,6 +148,11 @@ SPONSOR_POOL_ENABLED = os.environ.get('SPONSOR_POOL_ENABLED', '').lower() in ('1
 # per student before any applicant is asked. Flip to true (env var) to go live.
 CHECK2_STUDENT_QUERIES_ENABLED = os.environ.get('CHECK2_STUDENT_QUERIES_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# Check 2 STEP 3: auto-draft the sponsor profile at the reviewer handoff (and the
+# backfill/sweep that share this gate). Billable Gemini, so off by default; flip via the
+# env var. (Was referenced in code but never defined here, so it was permanently off.)
+CHECK2_AUTO_GENERATE = os.environ.get('CHECK2_AUTO_GENERATE', '').lower() in ('1', 'true', 'yes')
+
 # Action Centre Phase 2: a gentle Cikgu Gopal nudge when a student's TYPED answer is
 # TOTALLY off-topic (one cheap, billable Gemini call per answer). Off by default (a
 # billable-AI knob, like the doc-assist flags); AI-off/error always accepts the answer.

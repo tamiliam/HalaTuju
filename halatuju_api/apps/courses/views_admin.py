@@ -402,9 +402,16 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if not service_role_key or not supabase_url:
             return Response({'error': 'Supabase service role key not configured'}, status=500)
 
+        # Pass the invitee's name as user metadata so the Supabase "Invite user"
+        # email template can greet them by name via {{ .Data.name }}. redirect_to sends
+        # the "Accept the invite" link to the ADMIN login (not the default Site URL =
+        # homepage); it must be allow-listed in Supabase URL Configuration (the
+        # https://halatuju.xyz/** wildcard covers it).
+        frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
         invite_resp = http_requests.post(
             f'{supabase_url}/auth/v1/invite',
-            json={'email': email},
+            json={'email': email, 'data': {'name': name},
+                  'redirect_to': f'{frontend}/admin/login'},
             headers={
                 'apikey': service_role_key,
                 'Authorization': f'Bearer {service_role_key}',

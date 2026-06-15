@@ -26,9 +26,7 @@ from .models import (
     ApplicantDocument, GraduationMessage, InterviewSession, Referee,
     ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
-from .profile_engine import (
-    generate_anonymous_profile, refine_sponsor_profile,
-)
+from .profile_engine import refine_sponsor_profile
 from . import in_programme as in_programme_service
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
 from .serializers_admin import (
@@ -444,31 +442,6 @@ class AdminFinaliseProfileView(_AdminBase):
         return Response(SponsorProfileSerializer(sp).data)
 
 
-class AdminGenerateAnonProfileView(_AdminBase):
-    """Phase E2: POST .../<pk>/anon-profile/generate/ — generate the ANONYMOUS,
-    sponsor-pool-facing profile (fed only non-identifying inputs). Reviewer-gated,
-    billable. Regenerating reverts it to unpublished (an admin must re-publish)."""
-    def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
-        if err:
-            return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
-        result = generate_anonymous_profile(app, language=request.data.get('language'))
-        if 'error' in result:
-            return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        sp, _ = SponsorProfile.objects.get_or_create(application=app)
-        sp.anon_markdown = result['markdown']
-        sp.anon_model_used = result.get('model_used', '')
-        sp.anon_generated_at = timezone.now()
-        # A fresh generation must be re-reviewed before sponsors see it.
-        sp.anon_published = False
-        sp.anon_published_at = None
-        sp.save()
-        return Response(SponsorProfileSerializer(sp).data)
-
-
 class AdminPublishAnonProfileView(_AdminBase):
     """Phase E2: POST .../<pk>/anon-profile/publish/ {publish: true|false} — the
     human gate that makes the anonymous profile visible in the sponsor pool (with
@@ -483,9 +456,9 @@ class AdminPublishAnonProfileView(_AdminBase):
                             status=status.HTTP_400_BAD_REQUEST)
         publish = request.data.get('publish', True)
         if publish:
-            # TD-074b: structural backstop — refuse to publish a blurb that contains
-            # the student's own identifying tokens (name/school/city/NRIC/phone/email).
-            leaks = pool.scan_anon_for_identifiers(sp.anon_markdown, getattr(sp.application, 'profile', None))
+            # Backstop: refuse to publish a profile that leaks the student's forbidden
+            # PII (name/NRIC/phone/email — school + town are allowed by the 2026-06-15 policy).
+            leaks = pool.scan_profile_pii(sp.anon_markdown, getattr(sp.application, 'profile', None))
             if leaks:
                 return Response(
                     {'error': 'The anonymous profile may contain identifying details — regenerate before publishing.',
@@ -928,8 +901,22 @@ class AdminRecordVerdictView(_AdminBase):
                         sp.final_markdown = result['markdown']
                         sp.final_model_used = result.get('model_used', '')
                         sp.finalised_at = timezone.now()
+                        # One profile: the final IS the sponsor/pool version. Mirror it onto the
+                        # pool fields so the (already PII-redacted) final is what a sponsor reads.
+                        sp.anon_markdown = result['markdown']
+                        sp.anon_model_used = result.get('model_used', '')
+                        sp.anon_generated_at = timezone.now()
+                        # Publish to the pool only on APPROVE (overall='accept') AND when the
+                        # redaction backstop is clean — a declined/held student never appears.
+                        leaks = pool.scan_profile_pii(
+                            result['markdown'], getattr(app, 'profile', None))
+                        published = (overall == 'accept' and not leaks)
+                        if published:
+                            sp.anon_published = True
+                            sp.anon_published_at = timezone.now()
+                            sp.realtime_notified_at = None
                         sp_to_save = sp
-                        finalise_result = {'ok': True}
+                        finalise_result = {'ok': True, 'published': published, 'leaks': leaks}
 
         with transaction.atomic():
             app.save(update_fields=verdict_fields)

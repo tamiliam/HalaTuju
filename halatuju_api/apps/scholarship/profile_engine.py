@@ -1,15 +1,26 @@
 """
-AI sponsor-profile drafting for the B40 Assistance Programme.
+AI student profile for the B40 Assistance Programme.
 
-Builds a sponsor-ready narrative from an application's **profile-canonical** data
-(academic + financial live on ``StudentProfile``), the "Your story" guided
-narrative, the simplified funding need, and any referees — via the Gemini model
-cascade. The student's own words may be written in **Malay, English, or Tamil**;
-the model understands all three and writes the profile in the requested target
-language (defaults to the applicant's locale → English/Malay). Mocked in tests;
-degrades gracefully to an error dict when the AI is unavailable.
+There is ONE profile, common to the reviewer and (once the student is approved) the
+sponsor — generated twice by the system, never by a human clicking "generate":
+  • DRAFT  — at the Check 2 → reviewer handoff (Gemini Flash), so the reviewer opens a
+             ready narrative to understand the student and verify the claims.
+  • FINAL  — when the reviewer saves the verdict (Gemini Pro). It folds in the student's
+             answers to our questions, the interview findings, the verdict, the
+             recommended assistance amount and the reviewer's conclusion, and REPLACES
+             the draft. This final IS the profile a sponsor reads.
+
+It is **PII-redacted, not strictly anonymous**: the student is referred to by a stable
+alias and the only details withheld — for the student AND any parent/guardian — are
+name, NRIC, photo, phone, email and street address. Everything else (school, town/state,
+institution, occupations) may be used.
+
+The student's own words may be in Malay, English, or Tamil; the model understands all
+three and writes in the requested target language. Mocked in tests; degrades gracefully
+to an error dict when the AI is unavailable.
 """
 import logging
+import re
 import time
 
 from django.conf import settings
@@ -20,51 +31,79 @@ from .shortlisting import count_spm_a_grades
 logger = logging.getLogger(__name__)
 
 MODEL_CASCADE = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
-# The FINAL sponsor-facing profile is the conclusive document a sponsor reads, and it
-# is generated rarely (once per accepted student) — so it runs on Pro for the best
-# prose, falling back to the Flash cascade if Pro is unavailable. The high-volume
-# draft + anonymous profiles stay on the Flash cascade (MODEL_CASCADE).
+# The FINAL profile is the conclusive document a sponsor reads, generated rarely (once
+# per accepted student) — so it runs on Pro for the best prose, falling back to the
+# Flash cascade if Pro is unavailable. The high-volume DRAFT stays on the Flash cascade.
 PRO_CASCADE = ['gemini-2.5-pro'] + MODEL_CASCADE
 
 # Applicant locale code → output language name used in the prompt.
 LANGUAGE_NAMES = {'en': 'English', 'ms': 'Malay (Bahasa Melayu)'}
 DEFAULT_LANGUAGE = 'English'
 
-PROFILE_PROMPT = """You are writing a confidential, sponsor-ready profile for a B40 student \
-applying for education financial assistance in Malaysia.
+# Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
+_STYLE = (
+    "Write warm, factual, flowing prose: about three short paragraphs, roughly 220-320 "
+    "words, with NO section headings and NO bullet lists. Tell the story so a reader "
+    "understands, in turn, who the student is and the family's situation; the student's "
+    "academic standing and pathway; and what the student is worried about and how the "
+    "support would help. Refer to the student as 'he' or 'she' using the pronouns given "
+    "below; NEVER use 'they' for the student (most people write he/she). Use em-dashes very "
+    "sparingly, at most one in the whole profile; prefer commas, full stops or brackets. Let "
+    "the facts carry the case: do NOT use fundraising clichés such as 'breaking the cycle', "
+    "'ripple effect' or 'pioneering spirit', and do NOT invent specifics (an age, a "
+    "relationship, a figure) not given below. Where a fact is missing, leave it out rather "
+    "than guess."
+)
 
-LANGUAGE — read carefully:
-- The student's own words below (their aspirations, plans, family situation, daily life, \
-funding note) may be written in Malay, English, or Tamil — or a mix. Understand them \
-whichever language they are in; do not translate them literally, capture their meaning.
-- Write the FINAL profile in {target_language}, regardless of the language the student wrote in.
+_REDACTION = (
+    "PRIVACY — this single profile is read by the reviewer AND, once the student is "
+    "approved, by external sponsors, so it must never expose contact or identity details. "
+    "Refer to the student ONLY by the alias \"{alias}\"; never invent or include a name. For "
+    "the student AND any parent or guardian, NEVER include their name, NRIC/IC number, "
+    "photograph, phone number, email address, or street address — if any appears in the "
+    "inputs below, omit it. Everything else may be used: the school or college name, the "
+    "town and state, the institution, and occupations."
+)
 
-Write factual, warm, and concise prose (~300-400 words) in Markdown with these sections: \
-Background, Academic record, Pathway plan, Funding need, Why support matters. Use ONLY the \
-information given below; do not invent facts. Where information is missing, say so briefly \
-rather than guessing.
+PROFILE_PROMPT = """You are writing the profile of a B40 student applying for education \
+financial assistance in Malaysia. It is read first by the reviewer assessing the application, \
+and later by a prospective sponsor.
+
+{redaction}
+
+LANGUAGE — the student's own words below may be in Malay, English, or Tamil (or a mix); \
+understand their meaning whichever language they are in, and write the profile in {target_language}.
+
+{style}
 
 VERIFICATION — do not over-claim:
-- Some fields are marked "{do_not_claim}". Those are NOT verified. Do NOT assert them as fact; \
-omit them rather than hedge.
-- Report grades as the actual band mix given (e.g. "ten distinctions across A+/A/A−"); never \
-round up or imply a uniform top grade.
+- Some fields are marked "{do_not_claim}" — NOT verified. Do not assert them; omit them.
+- Report grades as the actual band mix (e.g. "ten A-grade subjects across A+/A/A−") and name the \
+subject areas they span; never round up or imply a uniform top grade. If a merit score is given, \
+you may cite it.
+- INCOME & WELFARE — be precise. "Receives STR"/"Receives JKM" mean the family is registered as \
+B40 / receives government welfare; they do NOT verify the income AMOUNT (STR confirms B40 status, \
+not a figure). If "Documented income (payslip/EPF)" below lists one or more figures, you MAY state \
+those AUTHORITATIVELY, naming the document and whose income it is (this can happen on either track). \
+For any income NOT documented there, present it as what the family REPORTS (e.g. "the family reports \
+about RM…"), never as "confirmed", and do NOT attribute a reported figure to a specific earner or \
+invent a breakdown. If who earns what is unclear, describe the situation (a single earner, a parent \
+unable to work) without inventing numbers. Do not make up a story to reconcile the figures.
 
-TONE — honest and dignified:
-- Factual warmth, not fundraising melodrama. Do NOT mine hardship for sympathy and do NOT use \
-clichés like "breaking the cycle" or "ripple effect". Let the facts carry the case.
-- Do not invent specifics (an age, a number of children, a relationship) that are not stated below.
-
-Student: {name}
-School: {school}
-Qualification: {qualification}    SPM A-count: {spm_a_count}    STPM PNGK: {stpm_pngk}
-Household income (RM/month): {household_income}    Household size: {household_size}
-Receives STR: {receives_str}    Receives JKM: {receives_jkm}
+THE STUDENT (alias {alias})
+Pronouns (use these for the student, never "they"): {pronouns}
+School / college: {school}
+Qualification: {qualification}    Merit score: {merit}
+SPM grades: {grades_summary}    STPM PNGK: {stpm_pngk}
+Home town / state: {region}
+Household income (RM/month, as reported): {household_income}    Household size: {household_size}
+Documented income (payslip/EPF — use authoritatively if present): {income_evidence}
+Receives STR (B40 status, not an income figure): {receives_str}    Receives JKM: {receives_jkm}
 First in family to university: {first_in_family}
 Parents'/guardians' occupation: {parents_occupation}
 Siblings currently studying: {siblings_studying}
 
-Pathway / programme: {pathway}
+Pathway / programme (use the confirmed place when present): {pathway}
 
 Aspirations (student's words): {aspirations}
 Plan to get there (student's words): {plans}
@@ -72,19 +111,18 @@ Family situation (student's words): {family_context}
 Daily life & responsibilities (student's words): {daily_life}
 
 Funding — what the support would help with: {funding_categories}
-Programme length (months): {programme_months}
 Anything else about funding (student's words): {funding_note}
 
-Referee(s): {referees}
+The student's answers to our clarifying questions:
+{qa}
 """
 
 
 def _call_gemini_text(prompt, target_language, models=None):
     """Shared seam: run ``prompt`` through a model cascade and return
     {'markdown', 'model_used', 'language', ...} or {'error': ...}. Both the draft
-    and the Phase-D refine go through this one function — tests patch it (no
-    billable call in CI), mirroring vision._call_gemini_json for the JSON engines.
-    ``models`` overrides the cascade (the final refine passes PRO_CASCADE)."""
+    and the refine go through this one function — tests patch it (no billable call
+    in CI). ``models`` overrides the cascade (the final refine passes PRO_CASCADE)."""
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
     if not api_key:
         return {'error': 'AI service not configured (missing API key)'}
@@ -125,13 +163,33 @@ def _yesno(v):
     return 'yes' if v else 'no'
 
 
+def _alias(application):
+    """The stable, non-identifying handle used everywhere this profile is read (the
+    same alias the sponsor pool uses), e.g. 'S-A3F9C1'."""
+    from .pool import pool_ref
+    return pool_ref(application.id)
+
+
+def _pronouns(application):
+    """'she/her' or 'he/him' for the student, from the recorded gender (falling back to
+    the Malaysian NRIC last digit: odd = male, even = female). 'not provided' if unknown —
+    the model is told to avoid 'they', so it picks a sensible default rather than hedge."""
+    profile = getattr(application, 'profile', None)
+    g = (getattr(profile, 'gender', '') or '').strip().lower() if profile else ''
+    if g in ('female', 'f', 'perempuan'):
+        return 'she/her'
+    if g in ('male', 'm', 'lelaki'):
+        return 'he/him'
+    nric = re.sub(r'\D', '', getattr(profile, 'nric', '') or '') if profile else ''
+    if nric:
+        return 'he/him' if int(nric[-1]) % 2 else 'she/her'
+    return 'not provided'
+
+
 # ── Check 2 §6: claim-gating ─────────────────────────────────────────────────
 # The generator must assert ONLY claims the deterministic layer verifies — the fix
 # for the live bug where the profile asserted "first-generation" while it was merely
-# an unverified flag. The STEP-1 facts ledger (submission_review) is the source of
-# truth for what's verified; this gates the one assertion the form lets a student make
-# about themselves that we can independently check (first-to-university, via the
-# sibling split). Other unverified narrative is already attributed to "the student".
+# an unverified flag. The STEP-1 facts ledger (submission_review) is the source of truth.
 _DO_NOT_CLAIM = 'not established — do not claim'
 
 
@@ -143,33 +201,123 @@ def _ledger_verification(application):
 
 def _gated_first_in_family(application, ledger):
     """'yes' only when the sibling split VERIFIES first-to-university; 'no' when the
-    student didn't claim it; otherwise the do-not-claim sentinel so the model never
-    asserts an unverified flag as fact (Check 2 §6)."""
+    student didn't claim it; otherwise the do-not-claim sentinel (Check 2 §6)."""
     if not application.first_in_family:
         return 'no'
     return 'yes' if ledger.get('first_in_family') == 'verified' else _DO_NOT_CLAIM
 
 
 def _pathway(application):
+    """Describe the pathway, preferring the CONCRETE chosen programme + institution and
+    whether it's confirmed (an offer the student holds), so the profile can name the real
+    place rather than a vague 'pre-university'."""
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     bits = []
-    if application.field_of_study:
+    programme = (cp.get('course_name') or '').strip()
+    if programme:
+        bits.append(programme)
+    elif application.field_of_study:
         bits.append(str(application.field_of_study))
+    institution = (cp.get('institution') or getattr(application, 'pre_u_institution', '') or '').strip()
+    if institution:
+        bits.append(f'at {institution}')
+    if getattr(application, 'pathway_confirmed_at', None) or cp.get('source', '').startswith('offer_letter'):
+        bits.append('(confirmed place — the student holds the offer)')
+    track = (getattr(application, 'pre_u_track', '') or '').strip()
+    if track:
+        bits.append(f'stream/track: {track}')
     pc = application.pathways_considered
-    if isinstance(pc, list) and pc:
+    if not programme and isinstance(pc, list) and pc:
         bits.append('pathways considered: ' + ', '.join(str(x) for x in pc))
-    return '; '.join(bits) or 'not specified'
+    return ' '.join(bits).strip() or 'not specified'
 
 
 def _siblings_studying_display(application):
-    """Render the siblings-studying signal for the prompt: the count (S15) of
-    how many siblings are studying — tells the AI how much education burden the
-    family carries. Blank when unknown. (TD-061 dropped the legacy boolean.)"""
     count = getattr(application, 'siblings_studying_count', None)
     return str(count) if count is not None else ''
 
 
+def _income_evidence(application):
+    """Documented monthly income read from any salary slip / EPF on file — usable
+    authoritatively even on the STR track (a student may submit payslips/EPF as extra
+    proof). Covers the salary-route members AND the STR-route earner. 'none on file' when
+    no readable income document exists, so the model falls back to the reported figure."""
+    from .income_engine import working_members, earner_monthly_income
+    members = list(working_members(application))
+    earner = (getattr(application, 'income_earner', '') or '').strip()
+    if earner and earner not in members:
+        members.append(earner)
+    lines = []
+    for m in members:
+        amt, src = earner_monthly_income(application, m)
+        if amt:
+            label = {'salary': 'salary slip', 'epf_estimate': 'EPF statement'}.get(src, 'document')
+            lines.append(f"{m}'s {label} shows about RM{int(round(amt))}/month")
+    return '; '.join(lines) if lines else 'none on file'
+
+
+def _merit(application):
+    """The course-guide merit score (0-100 for SPM; PNGK for STPM), or 'not provided'."""
+    from .serializers_admin import _application_merit_score
+    m = _application_merit_score(application)
+    return 'not provided' if m in (None, '') else str(m)
+
+
+_GRADE_LABELS = {
+    'bm': 'BM', 'eng': 'English', 'math': 'Mathematics', 'addmath': 'Add Maths',
+    'science': 'Science', 'phy': 'Physics', 'chem': 'Chemistry', 'bio': 'Biology',
+    'hist': 'History', 'history': 'History', 'geo': 'Geography', 'econ': 'Economics',
+    'acc': 'Accounting', 'moral': 'Moral', 'agama': 'Islamic Studies',
+}
+
+
+def _grades_summary(profile):
+    """A readable 'BM: A+, English: A, Mathematics: A−, …' string so the model can name
+    the subject areas the A's span. Empty when no grades."""
+    grades = getattr(profile, 'grades', None) if profile else None
+    if not isinstance(grades, dict) or not grades:
+        return 'not provided'
+    parts = []
+    for key, grade in grades.items():
+        if not grade:
+            continue
+        label = _GRADE_LABELS.get(str(key).lower(), str(key).upper())
+        parts.append(f'{label}: {grade}')
+    return ', '.join(parts) or 'not provided'
+
+
+def _region(profile):
+    """Town + state where available (both allowed under the redaction policy)."""
+    if not profile:
+        return 'not provided'
+    city = (getattr(profile, 'city', '') or '').strip()
+    state = (getattr(profile, 'preferred_state', '') or '').strip()
+    region = ', '.join(p for p in (city, state) if p)
+    return region or 'not provided'
+
+
+def _render_qa(application):
+    """The student's answers to clarifying questions — the answered Check-2 + reviewer
+    resolution items (those carrying a typed response). Question = the officer-written
+    prompt if present, else the item code; answer = the student's resolution_text.
+    Empty marker when none, so the prompt block is never blank."""
+    lines = []
+    items = (application.resolution_items
+             .exclude(resolution_text='')
+             .order_by('resolved_at', 'created_at'))
+    for it in items:
+        ans = (it.resolution_text or '').strip()
+        if not ans:
+            continue
+        q = (it.prompt or '').strip() or it.code
+        lines.append(f'- Q ({it.fact}): {q}\n  A: {ans}')
+    return '\n'.join(lines) if lines else 'none recorded'
+
+
 def _funding(application):
-    """(categories_str, programme_months, funding_note) from the simplified FundingNeed."""
+    """(categories_str, programme_months, funding_note) from the simplified FundingNeed.
+    (programme_months is unused by the profile prose but kept in the tuple — gap_engine
+    shares this helper.)"""
     try:
         fn = application.funding_need
     except FundingNeed.DoesNotExist:
@@ -183,6 +331,7 @@ def _funding(application):
 
 def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
     profile = application.profile
+    alias = _alias(application)
 
     def val(v, fallback='not provided'):
         return v if v not in (None, '') else fallback
@@ -190,19 +339,24 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
     def pval(attr, fallback='not provided'):
         return val(getattr(profile, attr, None) if profile else None, fallback)
 
-    spm_a_count = count_spm_a_grades(getattr(profile, 'grades', None)) if profile else 0
-    cats_str, months, note = _funding(application)
+    cats_str, _months, note = _funding(application)
     ledger = _ledger_verification(application)
 
     return PROFILE_PROMPT.format(
+        redaction=_REDACTION.format(alias=alias),
+        style=_STYLE,
         target_language=target_language,
         do_not_claim=_DO_NOT_CLAIM,
-        name=pval('name', 'the applicant'),
+        alias=alias,
+        pronouns=_pronouns(application),
         school=pval('school'),
         qualification=(pval('exam_type', 'n/a') or 'n/a'),
-        spm_a_count=spm_a_count,
+        merit=_merit(application),
+        grades_summary=_grades_summary(profile),
         stpm_pngk=pval('stpm_cgpa', 'n/a'),
+        region=_region(profile),
         household_income=pval('household_income'),
+        income_evidence=_income_evidence(application),
         household_size=pval('household_size'),
         receives_str=_yesno(getattr(profile, 'receives_str', None) if profile else None),
         receives_jkm=_yesno(getattr(profile, 'receives_jkm', None) if profile else None),
@@ -215,48 +369,48 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         family_context=val(application.family_context),
         daily_life=val(application.daily_life),
         funding_categories=cats_str,
-        programme_months=months,
         funding_note=note,
-        referees=', '.join(
-            f'{r.name} ({r.role})' if r.role else r.name
-            for r in application.referees.all()
-        ) or 'none provided',
+        qa=_render_qa(application),
     )
 
 
-REFINE_PROMPT = """You are refining a confidential, sponsor-ready profile for a B40 student \
-applying for education financial assistance in Malaysia.
+REFINE_PROMPT = """You are writing the FINAL profile of a B40 student applying for education \
+financial assistance in Malaysia — the conclusive version a sponsor will read.
 
-You are given (1) a DRAFT profile written from the application form, and (2) the findings of a \
-real interview an officer conducted with the student. Produce a REFINED FINAL profile that folds \
-the interview's findings into the draft.
+You are given (1) a DRAFT written from the application, (2) the student's answers to our \
+clarifying questions, (3) the officer's interview findings, and (4) the officer's decision. \
+Produce ONE coherent final profile that folds them all together.
 
-LANGUAGE — read carefully:
-- The interview findings below may be written in Malay, English, or Tamil — or a mix. Understand \
-them whichever language they are in.
-- Write the FINAL profile in {target_language}, regardless of the language the findings are in.
+{redaction}
+
+LANGUAGE — the inputs may be in Malay, English, or Tamil (or a mix); understand their meaning \
+and write the profile in {target_language}.
+
+{style}
+
+Pronouns (use these for the student, never "they"): {pronouns}
 
 Rules:
-- Keep the same sections and warm, factual, concise tone (~300-400 words) as the draft, in Markdown.
-- Where the interview CONFIRMED or CLARIFIED something, update the profile to reflect what was learned.
-- Where the interview raised a NEW CONCERN, reflect it honestly and proportionately — do not hide it, \
-do not exaggerate it.
-- The OFFICER'S DECISION below is the considered outcome of a real review. Use the four-fact verdict to \
-gauge how confidently to present each area (a verified fact can be stated plainly; an area the officer \
-marked "fail" or left unsure should be reflected honestly, not glossed over). Fold the officer's written \
-conclusion into the profile (most naturally under "Why support matters"). If a recommended assistance \
-amount is set, state it plainly. Do NOT print the verdict as a raw pass/fail list, and never contradict it.
-- Use ONLY the draft, the interview findings, and the officer's decision below. Do NOT invent facts. If \
-the interview did not touch a section, keep the draft's wording for it.
-- This is the conclusive version a sponsor will read, so it must read as one coherent, final profile — \
-not a draft with notes bolted on.
+- INCOME: STR/JKM indicate B40 / welfare status, NOT an income amount. State an income figure as
+confirmed ONLY if a payslip/EPF or the officer's verdict verified it; otherwise present it as what the
+family reports, and never invent who earns what.
+- Fold in what the student's answers and the interview CONFIRMED or CLARIFIED; reflect any NEW \
+CONCERN honestly and proportionately — do not hide it, do not exaggerate it.
+- The officer's decision is the considered outcome of a real review. Present each area with \
+confidence matching the four-fact verdict; weave the officer's written conclusion into the close. \
+If a recommended assistance amount is set, state it plainly (e.g. "a sponsorship of RM3,000 would \
+cover…"). Do NOT print a raw pass/fail list and never contradict the verdict.
+- Use ONLY the inputs below; do not invent facts. It must read as one final profile, not a draft \
+with notes bolted on.
 
 === DRAFT PROFILE ===
 {draft}
 
-=== INTERVIEW FINDINGS ===
-{findings}
+=== THE STUDENT'S ANSWERS TO OUR QUESTIONS ===
+{qa}
 
+=== OFFICER'S INTERVIEW FINDINGS ===
+{findings}
 Interviewer's rubric scores (1-5): {rubric}
 Interviewer's overall note: {overall_note}
 
@@ -272,9 +426,8 @@ _VERDICT_LABELS = {
 
 
 def _render_interview(application, session):
-    """Render a submitted InterviewSession's findings/rubric/note as plain text for
-    the refine prompt. The interviewer's free-text rationale carries the meaning, so
-    anomaly codes need no i18n resolution; gap codes get their question for context."""
+    """Render a submitted InterviewSession's findings/rubric/note as plain text for the
+    refine prompt. The interviewer's free-text rationale carries the meaning."""
     gaps_by_code = {}
     for g in (application.interview_gaps or []):
         if isinstance(g, dict) and g.get('code'):
@@ -306,9 +459,8 @@ _OFFICER_FACT_LABELS = {
 
 
 def _render_officer_decision(application):
-    """Render the officer's recorded four-fact verdict, written conclusion, and the
-    recommended assistance amount as plain text for the refine prompt — so the FINAL
-    profile reflects the actual decision, not just the interview findings."""
+    """Render the officer's four-fact verdict, written conclusion, and recommended
+    assistance amount as plain text — so the FINAL reflects the actual decision."""
     ov = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
     lines = []
     for fact in ('identity', 'academic', 'pathway', 'income'):
@@ -336,16 +488,19 @@ def _render_officer_decision(application):
 
 
 def refine_sponsor_profile(application, draft, session, language=None):
-    """Second Gemini pass: refine ``draft`` with the submitted interview ``session``,
-    the officer's four-fact verdict, written conclusion, and recommended assistance.
-    Runs on PRO_CASCADE (the final profile is the conclusive sponsor-facing document).
-    Returns {'markdown', 'model_used', 'language', ...} or {'error': ...}; same
-    graceful-error contract as generate_sponsor_profile."""
+    """Second pass: the FINAL profile, folding the student's answers, the submitted
+    interview ``session``, the officer's four-fact verdict, conclusion and recommended
+    assistance into ``draft``. Runs on PRO_CASCADE. Returns {'markdown', …} or
+    {'error': …}; same graceful-error contract as generate_sponsor_profile."""
     target_language = _resolve_language(application, language)
     findings_str, rubric_str, note = _render_interview(application, session)
     prompt = REFINE_PROMPT.format(
+        redaction=_REDACTION.format(alias=_alias(application)),
+        style=_STYLE,
+        pronouns=_pronouns(application),
         target_language=target_language,
         draft=(draft or '').strip() or 'not provided',
+        qa=_render_qa(application),
         findings=findings_str, rubric=rubric_str, overall_note=note,
         officer_decision=_render_officer_decision(application),
     )
@@ -353,118 +508,9 @@ def refine_sponsor_profile(application, draft, session, language=None):
 
 
 def generate_sponsor_profile(application, language=None):
-    """Return {'markdown', 'model_used', 'language', ...} or {'error': ...}.
-
-    ``language`` may be a locale code ('en'/'ms') or a language name; it defaults
-    to the applicant's locale. The student's narrative may be in Malay, English,
-    or Tamil — the model is told to understand all three.
-    """
+    """The DRAFT profile (Gemini Flash). Returns {'markdown', 'model_used', 'language',
+    …} or {'error': …}. ``language`` may be a locale code ('en'/'ms') or a name; it
+    defaults to the applicant's locale."""
     target_language = _resolve_language(application, language)
     prompt = _build_prompt(application, target_language=target_language)
-    return _call_gemini_text(prompt, target_language)
-
-
-# ── Phase E2: the ANONYMOUS, sponsor-pool-facing profile ──────────────────────
-# A *generated* (not scrubbed) non-identifying profile. It is fed ONLY
-# non-identifying inputs — note there is no `name`, `school`, or `referees`
-# placeholder below — and is firmly instructed never to surface any identifier.
-# A human (admin) reviews + publishes it before it ever reaches a sponsor; the
-# deterministic allowlist card is the hard boundary, this blurb is the soft one.
-ANON_PROMPT = """You are writing a CONFIDENTIAL, ANONYMOUS profile of a B40 student for a \
-prospective sponsor on a permanently-anonymous giving platform in Malaysia. The sponsor must \
-NEVER be able to identify the student.
-
-ABSOLUTE ANONYMITY RULES — follow exactly:
-- Refer to the person only as "the student". Never invent or include a name.
-- NEVER include any identifying detail: no person's name, no school/college name, no town/city/\
-street/address, no phone, no email, no IC number. If the student's own words below mention any \
-such detail, OMIT it — do not repeat it.
-- State-level region and field of study are fine; anything more specific is not.
-- Keep family/community detail GENERAL — convey the situation (low income, first in family, single-earner, \
-caregiving, etc.) WITHOUT specifics that could pinpoint one person in a small community: no employer/company \
-names, no specific village/neighbourhood, no unusual one-of-a-kind family particulars.
-
-LANGUAGE — the student's own words may be in Malay, English, or Tamil (or a mix); understand them \
-whichever language they are in, and write the FINAL profile in {target_language}.
-
-Write factual, warm, concise prose (~250-350 words) in Markdown with these sections: Background, \
-Academic record, Pathway plan, Funding need, Why support matters. Use ONLY the information below; \
-do not invent facts. Where information is missing, say so briefly.
-
-VERIFICATION — do not over-claim:
-- Some fields are marked "{do_not_claim}". Those are NOT verified. Do NOT assert them as fact; \
-omit them rather than hedge.
-- Report grades as the actual band mix given; never round up or imply a uniform top grade.
-
-TONE — honest and dignified:
-- Factual warmth, not fundraising melodrama. Do NOT mine hardship for sympathy and do NOT use \
-clichés like "breaking the cycle" or "ripple effect". Let the facts carry the case.
-- Do not invent specifics (an age, a number of children, a relationship) that are not stated below.
-
-Qualification: {qualification}    SPM A-count: {spm_a_count}    STPM PNGK: {stpm_pngk}
-Home state: {state}
-Household income (RM/month): {household_income}    Household size: {household_size}
-Receives STR: {receives_str}    Receives JKM: {receives_jkm}
-First in family to university: {first_in_family}
-Parents'/guardians' occupation: {parents_occupation}
-Siblings currently studying: {siblings_studying}
-
-Pathway / field: {pathway}
-
-Aspirations (student's words): {aspirations}
-Plan to get there (student's words): {plans}
-Family situation (student's words): {family_context}
-Daily life & responsibilities (student's words): {daily_life}
-
-Funding — what the support would help with: {funding_categories}
-Programme length (months): {programme_months}
-Anything else about funding (student's words): {funding_note}
-"""
-
-
-def _build_anon_prompt(application, target_language=DEFAULT_LANGUAGE):
-    """Build the anonymous-profile prompt. Deliberately omits name/school/referees."""
-    profile = application.profile
-
-    def val(v, fallback='not provided'):
-        return v if v not in (None, '') else fallback
-
-    def pval(attr, fallback='not provided'):
-        return val(getattr(profile, attr, None) if profile else None, fallback)
-
-    spm_a_count = count_spm_a_grades(getattr(profile, 'grades', None)) if profile else 0
-    cats_str, months, note = _funding(application)
-    ledger = _ledger_verification(application)
-
-    return ANON_PROMPT.format(
-        target_language=target_language,
-        do_not_claim=_DO_NOT_CLAIM,
-        qualification=(pval('exam_type', 'n/a') or 'n/a'),
-        spm_a_count=spm_a_count,
-        stpm_pngk=pval('stpm_cgpa', 'n/a'),
-        state=pval('preferred_state'),
-        household_income=pval('household_income'),
-        household_size=pval('household_size'),
-        receives_str=_yesno(getattr(profile, 'receives_str', None) if profile else None),
-        receives_jkm=_yesno(getattr(profile, 'receives_jkm', None) if profile else None),
-        first_in_family=_gated_first_in_family(application, ledger),
-        parents_occupation=val(application.parents_occupation),
-        siblings_studying=_siblings_studying_display(application),
-        pathway=_pathway(application),
-        aspirations=val(application.aspirations),
-        plans=val(application.plans),
-        family_context=val(application.family_context),
-        daily_life=val(application.daily_life),
-        funding_categories=cats_str,
-        programme_months=months,
-        funding_note=note,
-    )
-
-
-def generate_anonymous_profile(application, language=None):
-    """Generate the ANONYMOUS sponsor-pool profile. Same cascade + graceful-error
-    contract as generate_sponsor_profile, but fed only non-identifying inputs.
-    Returns {'markdown', 'model_used', 'language', ...} or {'error': ...}."""
-    target_language = _resolve_language(application, language)
-    prompt = _build_anon_prompt(application, target_language=target_language)
     return _call_gemini_text(prompt, target_language)

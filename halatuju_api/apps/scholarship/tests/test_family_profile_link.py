@@ -12,9 +12,17 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import StudentProfile
-from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort, ApplicantDocument
 from apps.scholarship.services import save_application_details
-from apps.scholarship.family import copy_family_roster, PROFILE_FAMILY_FIELDS
+from apps.scholarship.family import (
+    copy_family_roster, PROFILE_FAMILY_FIELDS, copy_pathway, PROFILE_PATHWAY_FIELDS,
+)
+
+_PATHWAY = {
+    'pathway_certainty': 'sure', 'chosen_pathway': 'matric', 'pre_u_track': 'sains',
+    'pre_u_institution': 'KM Melaka', 'chosen_programme': {}, 'pathways_considered': [],
+    'uncertainty_reasons': [], 'uncertainty_note': '',
+}
 
 _TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
@@ -148,3 +156,92 @@ class TestProfileGetSurfaces(TestCase):
         prof = StudentProfile.objects.create(supabase_user_id='g5', grades={})
         r = self._get(prof)
         self.assertIsNone(r.data['merit_score'])
+
+
+@override_settings(SUPABASE_JWT_SECRET=_TEST_JWT_SECRET)
+class TestPathwayProfileLink(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='pw', name='B40', year=2026)
+
+    def setUp(self):
+        self.client = APIClient()
+        self.profile = StudentProfile.objects.create(supabase_user_id='pw-1', nric='080115-05-0132')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(self.profile.supabase_user_id)}')
+
+    def test_copy_pathway_field_for_field(self):
+        prof = StudentProfile.objects.create(supabase_user_id='pw-cp', **_PATHWAY)
+        app = ScholarshipApplication.objects.create(cohort=self.cohort, profile=prof, status='submitted')
+        copy_pathway(prof, app)
+        for f in PROFILE_PATHWAY_FIELDS:
+            self.assertEqual(getattr(app, f), getattr(prof, f), f)
+
+    def test_profile_pathway_edit_flows_into_open_app(self):
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted')
+        r = self.client.put('/api/v1/profile/', _PATHWAY, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'matric')
+        self.assertEqual(app.pre_u_track, 'sains')
+        self.assertEqual(app.pre_u_institution, 'KM Melaka')
+
+    def test_profile_pathway_edit_does_not_touch_decided_app(self):
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='accepted',
+            chosen_pathway='stpm', pre_u_track='sains_sosial')
+        r = self.client.put('/api/v1/profile/', _PATHWAY, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'stpm')        # frozen
+        self.assertEqual(app.pre_u_track, 'sains_sosial')
+
+    def test_get_returns_pathway_fields_from_profile(self):
+        prof = StudentProfile.objects.create(supabase_user_id='pw-get', **_PATHWAY)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(prof.supabase_user_id)}')
+        r = self.client.get('/api/v1/profile/')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.data['chosen_pathway'], 'matric')
+        self.assertEqual(r.data['pathway'], 'matric')        # back-compat alias
+        self.assertEqual(r.data['pre_u_track'], 'sains')
+
+
+@override_settings(SUPABASE_JWT_SECRET=_TEST_JWT_SECRET)
+class TestIdentityVerified(TestCase):
+    """The Name + IC "Verified" badges on /profile reflect the IC SCAN (name + IC No match
+    the uploaded MyKad), not just the admin nric_verified lock."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='iv', name='B40', year=2026)
+
+    def _get(self, profile):
+        c = APIClient()
+        c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(profile.supabase_user_id)}')
+        return c.get('/api/v1/profile/')
+
+    def _ic(self, prof, vname, vnric):
+        app = ScholarshipApplication.objects.create(cohort=self.cohort, profile=prof, status='shortlisted')
+        ApplicantDocument.objects.create(application=app, doc_type='ic',
+                                         storage_path='ic/x', vision_name=vname, vision_nric=vnric)
+
+    def test_verified_when_ic_scan_matches(self):
+        prof = StudentProfile.objects.create(
+            supabase_user_id='iv1', name='ELANJELIAN VENUGOPAL', nric='710829-02-5709')
+        self._ic(prof, 'ELANJELIAN A/L VENUGOPAL', '710829-02-5709')   # A/L stripped → name match; NRIC match
+        self.assertTrue(self._get(prof).data['identity_verified'])
+
+    def test_not_verified_when_nric_differs(self):
+        prof = StudentProfile.objects.create(
+            supabase_user_id='iv2', name='ELANJELIAN VENUGOPAL', nric='710829-02-5709')
+        self._ic(prof, 'ELANJELIAN A/L VENUGOPAL', '999999-99-9999')
+        self.assertFalse(self._get(prof).data['identity_verified'])
+
+    def test_not_verified_without_ic_doc(self):
+        prof = StudentProfile.objects.create(
+            supabase_user_id='iv3', name='ELANJELIAN VENUGOPAL', nric='710829-02-5709')
+        self.assertFalse(self._get(prof).data['identity_verified'])
+
+    def test_admin_lock_alone_verifies(self):
+        prof = StudentProfile.objects.create(
+            supabase_user_id='iv4', name='X', nric='710829-02-5709', nric_verified=True)
+        self.assertTrue(self._get(prof).data['identity_verified'])

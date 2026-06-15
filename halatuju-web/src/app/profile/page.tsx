@@ -18,7 +18,9 @@ import type { SavedCourseWithStatus } from '@/lib/api'
 import { isValidPhone, formatPhone } from '@/lib/scholarship'
 import SchoolSelect from '@/components/SchoolSelect'
 import FamilyRosterFields, { type FamilyRosterForm } from '@/components/FamilyRosterFields'
+import PathwayPicker, { type PathwayForm } from '@/components/PathwayPicker'
 import type { OtherMember } from '@/lib/familyRoster'
+import type { StudentProfile } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import { useToast } from '@/components/Toast'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
@@ -45,6 +47,12 @@ const EMPTY_FAMILY: FamilyRosterForm = {
   fatherName: '', fatherOccupation: '', fatherOccupationOther: '',
   motherName: '', motherOccupation: '', motherOccupationOther: '',
   otherFamilyMembers: [], siblingsInSchool: 0, siblingsInTertiary: 0,
+}
+
+const EMPTY_PATHWAY: PathwayForm = {
+  pathwayCertainty: '', chosenPathway: '', chosenProgramme: null,
+  preUTrack: '', preUInstitution: '', pathwaysConsidered: [],
+  uncertaintyReasons: [], uncertaintyNote: '',
 }
 
 function countIncomplete(fields: (string | boolean | number | null | undefined)[]): number {
@@ -101,13 +109,17 @@ export default function ProfilePage() {
   const [householdSize, setHouseholdSize] = useState<string>('')
   const [colorblind, setColorblind] = useState(false)
   const [disability, setDisability] = useState(false)
-  const [nricVerified, setNricVerified] = useState(false)
+  const [identityVerified, setIdentityVerified] = useState(false)
   // Structured family roster — the durable profile-level home (two-way synced with
   // an open B40 application by the backend). Shown in Family & Background.
   const [family, setFamily] = useState<FamilyRosterForm>(EMPTY_FAMILY)
-  // Application Tracking read-only surfaces.
+  // Application Tracking surfaces. Merit is read-only (computed). Pathway is editable
+  // here via the shared PathwayPicker (so a shortlisted student locked out of /apply can
+  // still change it); two-way synced with an open application by the backend.
   const [meritScore, setMeritScore] = useState<number | null>(null)
-  const [pathway, setPathway] = useState('')
+  const [pathwayForm, setPathwayForm] = useState<PathwayForm>(EMPTY_PATHWAY)
+  // Full profile object kept for PathwayPicker's eligibility fetch (grades/exam_type/etc).
+  const [profileObj, setProfileObj] = useState<StudentProfile | null>(null)
   const [angkaGiliran, setAngkaGiliran] = useState('')
   // Guided school (optional) — shown in the Application Tracking card above Angka Giliran.
   const [school, setSchool] = useState('')
@@ -148,7 +160,7 @@ export default function ProfilePage() {
       setHouseholdSize(profileData.household_size != null ? String(profileData.household_size) : '')
       setColorblind(!!profileData.colorblind)
       setDisability(!!profileData.disability)
-      setNricVerified(!!profileData.nric_verified)
+      setIdentityVerified(!!profileData.identity_verified)
       setFamily({
         fatherName: profileData.father_name || '',
         fatherOccupation: profileData.father_occupation || '',
@@ -161,7 +173,27 @@ export default function ProfilePage() {
         siblingsInTertiary: profileData.siblings_in_tertiary ?? 0,
       })
       setMeritScore(profileData.merit_score ?? null)
-      setPathway(profileData.pathway || '')
+      setProfileObj(profileData)
+      setPathwayForm({
+        pathwayCertainty: (profileData.pathway_certainty as PathwayForm['pathwayCertainty']) || '',
+        chosenPathway: profileData.chosen_pathway || '',
+        // chosen_programme is stored SNAKE ({course_id, course_name, field_key}) — the shape
+        // /apply writes and the cockpit/verdict read. ProgrammePicker wants CAMEL, so map it.
+        chosenProgramme: (() => {
+          const cp = profileData.chosen_programme as Record<string, unknown> | null | undefined
+          const id = cp && (cp.course_id ?? (cp as Record<string, unknown>).courseId)
+          const nm = cp && (cp.course_name ?? (cp as Record<string, unknown>).courseName)
+          return (id || nm)
+            ? { courseId: String(id ?? ''), courseName: String(nm ?? ''),
+                fieldKey: String((cp!.field_key ?? (cp as Record<string, unknown>).fieldKey) ?? '') }
+            : null
+        })(),
+        preUTrack: profileData.pre_u_track || '',
+        preUInstitution: profileData.pre_u_institution || '',
+        pathwaysConsidered: Array.isArray(profileData.pathways_considered) ? profileData.pathways_considered : [],
+        uncertaintyReasons: Array.isArray(profileData.uncertainty_reasons) ? profileData.uncertainty_reasons : [],
+        uncertaintyNote: profileData.uncertainty_note || '',
+      })
       setAngkaGiliran(profileData.angka_giliran || '')
       setSchool(profileData.school || '')
       setContactEmail(profileData.contact_email || '')
@@ -193,6 +225,9 @@ export default function ProfilePage() {
   const updateFamilyMember = (i: number, patch: Partial<OtherMember>) =>
     setFamily(prev => ({ ...prev, otherFamilyMembers: prev.otherFamilyMembers.map((m, j) => (j === i ? { ...m, ...patch } : m)) }))
 
+  // Pathway picker patch handler (PathwayPicker computes the patches).
+  const updatePathway = (patch: Partial<PathwayForm>) => setPathwayForm(prev => ({ ...prev, ...patch }))
+
   // Read-only family summary (Family & Background view mode).
   const professionLabel = (code: string, other: string) =>
     !code ? '' : code === 'other'
@@ -222,6 +257,22 @@ export default function ProfilePage() {
     if (contactPhone.trim() && !isValidPhone(contactPhone)) {
       showToast(t('profile.invalidPhone'), 'error')
       return false
+    }
+    // Household income + size are shared with /apply and feed the per-capita need calc, so
+    // they carry the SAME strict rules here (size integer 1–20; income required, ≥0) — a bad
+    // value must not be saveable on /profile and flow into the application. Only gated on the
+    // Family section (the only place they're editable), so it never blocks other sections.
+    if (editingSection === 'family') {
+      const size = parseInt(householdSize, 10)
+      if (!householdSize.trim() || Number.isNaN(size) || size < 1 || size > 20) {
+        showToast(t('profile.invalidHouseholdSize'), 'error')
+        return false
+      }
+      const income = parseInt(householdIncome, 10)
+      if (!householdIncome.trim() || Number.isNaN(income) || income < 0) {
+        showToast(t('profile.invalidHouseholdIncome'), 'error')
+        return false
+      }
     }
     setSaving(true)
     try {
@@ -253,6 +304,19 @@ export default function ProfilePage() {
         other_family_members: family.otherFamilyMembers,
         siblings_in_school: family.siblingsInSchool,
         siblings_in_tertiary: family.siblingsInTertiary,
+        // Pathway / "Your Plans" (backend mirrors to an open application).
+        pathway_certainty: pathwayForm.pathwayCertainty,
+        chosen_pathway: pathwayForm.chosenPathway,
+        pre_u_track: pathwayForm.preUTrack,
+        pre_u_institution: pathwayForm.preUInstitution,
+        // Write back the SNAKE shape /apply uses + the cockpit/verdict read (course_name/
+        // institution), so a /profile edit can't drift the stored programme's keys.
+        chosen_programme: pathwayForm.chosenProgramme
+          ? { course_id: pathwayForm.chosenProgramme.courseId, course_name: pathwayForm.chosenProgramme.courseName, field_key: pathwayForm.chosenProgramme.fieldKey }
+          : {},
+        pathways_considered: pathwayForm.pathwaysConsidered,
+        uncertainty_reasons: pathwayForm.uncertaintyReasons,
+        uncertainty_note: pathwayForm.uncertaintyNote,
       }, { token })
 
       // Keep localStorage in sync so onboarding uses the same values
@@ -272,7 +336,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, family })
+    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, family, pathwayForm })
     setEditingSection(section)
   }
 
@@ -294,19 +358,22 @@ export default function ProfilePage() {
     setContactEmail(snapshot.contactEmail as string || '')
     setContactPhone(snapshot.contactPhone as string || '')
     setFamily((snapshot.family as FamilyRosterForm) || EMPTY_FAMILY)
+    setPathwayForm((snapshot.pathwayForm as PathwayForm) || EMPTY_PATHWAY)
     setEditingSection(null)
   }
 
   const saveSection = async () => {
     const ok = await handleSave()
+    // Only leave the editor on a successful save — a validation failure (e.g. a bad
+    // household size) keeps the section open so the inline error is visible and the
+    // unsaved value isn't mistaken for saved.
+    if (!ok) return
     setEditingSection(null)
-    if (ok) {
-      // Refresh the cached profile so pages that pre-fill from it (e.g. the apply
-      // form) see the new values immediately instead of a stale cache.
-      await refreshProfile()
-      // If the edit was started from the application flow, return there.
-      if (nextUrl) router.push(nextUrl)
-    }
+    // Refresh the cached profile so pages that pre-fill from it (e.g. the apply
+    // form) see the new values immediately instead of a stale cache.
+    await refreshProfile()
+    // If the edit was started from the application flow, return there.
+    if (nextUrl) router.push(nextUrl)
   }
 
   const handleStatusChange = async (courseId: string, newStatus: string) => {
@@ -342,6 +409,13 @@ export default function ProfilePage() {
   const contactIncomplete = countIncomplete([state, address, postalCode, city])
   const familyIncomplete = countIncomplete([householdIncome, householdSize])
   const appIncomplete = countIncomplete([angkaGiliran])
+
+  // Household income/size validity — same strict rules as /apply (size 1–20, income ≥0).
+  // Drives the inline red errors + the Family Save button's disabled state.
+  const hhSizeNum = parseInt(householdSize, 10)
+  const householdSizeInvalid = !householdSize.trim() || Number.isNaN(hhSizeNum) || hhSizeNum < 1 || hhSizeNum > 20
+  const hhIncomeNum = parseInt(householdIncome, 10)
+  const householdIncomeInvalid = !householdIncome.trim() || Number.isNaN(hhIncomeNum) || hhIncomeNum < 0
 
   // Redirect to onboarding if guard resolves with no grades
   useEffect(() => {
@@ -506,7 +580,7 @@ export default function ProfilePage() {
                   </span>
                   <span className="text-sm text-gray-900 font-mono flex items-center gap-1.5">
                     {nric ? maskIc(nric) : '—'}
-                    {nric && nricVerified && (
+                    {nric && identityVerified && (
                       <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                     )}
                   </span>
@@ -516,7 +590,7 @@ export default function ProfilePage() {
                   {name ? (
                     <span className="text-sm text-gray-900 flex items-center gap-1.5">
                       {name}
-                      {nricVerified && (
+                      {identityVerified && (
                         <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                       )}
                     </span>
@@ -814,27 +888,30 @@ export default function ProfilePage() {
                     placeholder="2500"
                     value={householdIncome}
                     onChange={e => setHouseholdIncome(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdIncomeInvalid ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'}`}
                   />
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.householdIncomeHelper')}</p>
+                  {householdIncomeInvalid
+                    ? <p className="text-xs text-red-500 mt-1">{t('profile.invalidHouseholdIncome')}</p>
+                    : <p className="text-xs text-gray-400 mt-1">{t('profile.householdIncomeHelper')}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.householdSize')}</label>
                   <input
                     type="number"
                     min="1"
-                    max="30"
+                    max="20"
                     value={householdSize}
                     onChange={e => setHouseholdSize(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdSizeInvalid ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'}`}
                   />
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.householdSizeHelper')}</p>
+                  {householdSizeInvalid
+                    ? <p className="text-xs text-red-500 mt-1">{t('profile.invalidHouseholdSize')}</p>
+                    : <p className="text-xs text-gray-400 mt-1">{t('profile.householdSizeHelper')}</p>}
                 </div>
                 {/* Structured family roster — the shared editor; while a B40
                     application is open these values stay linked to it. */}
                 <div className="border-t border-gray-100 pt-4">
-                  <p className="text-sm font-medium text-gray-900 mb-1">{t('profile.familyMembers')}</p>
-                  <p className="text-xs text-gray-400 mb-3">{t('profile.familyLinkNote')}</p>
+                  <p className="text-sm font-medium text-gray-900 mb-3">{t('profile.familyMembers')}</p>
                   <FamilyRosterFields
                     form={family}
                     onUpdate={updateFamily}
@@ -842,13 +919,14 @@ export default function ProfilePage() {
                     onAddMember={addFamilyMember}
                     onRemoveMember={removeFamilyMember}
                     t={t}
+                    profileStyle
                   />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                     {t('profile.cancel')}
                   </button>
-                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
+                  <button onClick={saveSection} disabled={saving || householdSizeInvalid || householdIncomeInvalid} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
                     {saving ? '...' : t('profile.save')}
                   </button>
                 </div>
@@ -864,7 +942,6 @@ export default function ProfilePage() {
                   <FieldValue value={householdSize} t={t} />
                 </div>
                 <div className="border-t border-gray-100 pt-3 space-y-2">
-                  <p className="text-sm font-medium text-gray-900">{t('profile.familyMembers')}</p>
                   <div className="flex justify-between gap-3">
                     <span className="text-sm text-gray-500 shrink-0">{t('scholarship.nextSteps.story.cardA.father')}</span>
                     <span className="text-sm text-gray-900 text-right">{familySummary('father')}</span>
@@ -874,11 +951,11 @@ export default function ProfilePage() {
                     <span className="text-sm text-gray-900 text-right">{familySummary('mother')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">{t('scholarship.nextSteps.story.cardA.siblingsSchool')}</span>
+                    <span className="text-sm text-gray-500">{t('profile.siblingsSchoolView')}</span>
                     <span className="text-sm text-gray-900">{family.siblingsInSchool}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">{t('scholarship.nextSteps.story.cardA.siblingsTertiary')}</span>
+                    <span className="text-sm text-gray-500">{t('profile.siblingsTertiaryView')}</span>
                     <span className="text-sm text-gray-900">{family.siblingsInTertiary}</span>
                   </div>
                   {family.otherFamilyMembers.length > 0 && (
@@ -915,25 +992,6 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Pathway + Merit — read-only here; tapping routes to the canonical editor
-                (the Apply pathway picker / the SPM grades editor). Shown above School. */}
-            <div className="space-y-3 mb-4">
-              <button type="button" onClick={() => router.push('/scholarship/apply')}
-                className="w-full flex justify-between items-center gap-3 text-left group">
-                <span className="text-sm text-gray-500">{t('profile.pathway')}</span>
-                <span className={`text-sm text-right ${pathway ? 'text-gray-900' : 'text-amber-500'} group-hover:text-primary-600`}>
-                  {pathway ? t(`scholarship.apply.plan.pathway.${pathway}`) : t('profile.pathwayTapAdd')}
-                </span>
-              </button>
-              <button type="button" onClick={() => router.push('/onboarding/grades')}
-                className="w-full flex justify-between items-center gap-3 text-left group">
-                <span className="text-sm text-gray-500">{t('profile.meritScore')}</span>
-                <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'} group-hover:text-primary-600`}>
-                  {meritScore != null ? meritScore : t('profile.meritTapAdd')}
-                </span>
-              </button>
-            </div>
-
             {editingSection === 'application' ? (
               <div className="space-y-4">
                 <div>
@@ -960,6 +1018,17 @@ export default function ProfilePage() {
                     <p className="text-xs text-red-500 mt-1">{t('profile.angkaGiliranInvalid')}</p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">{t('profile.angkaGiliranHelper')}</p>
+                </div>
+                {/* Merit — read-only (computed); editable via the grades page from the view. */}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">{t('profile.meritScore')}</span>
+                  <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'}`}>
+                    {meritScore != null ? meritScore : t('profile.meritTapAdd')}
+                  </span>
+                </div>
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="text-sm font-medium text-gray-900 mb-3">{t('profile.pathway')}</p>
+                  <PathwayPicker value={pathwayForm} onChange={updatePathway} profile={profileObj} token={token} />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
@@ -988,6 +1057,24 @@ export default function ProfilePage() {
                     <FieldValue value="" t={t} />
                   )}
                 </div>
+                {/* Merit — tap to the grades editor. */}
+                <button type="button" onClick={() => router.push('/onboarding/grades')}
+                  className="w-full flex justify-between items-center gap-3 text-left group">
+                  <span className="text-sm text-gray-500">{t('profile.meritScore')}</span>
+                  <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'} group-hover:text-primary-600`}>
+                    {meritScore != null ? meritScore : t('profile.meritTapAdd')}
+                  </span>
+                </button>
+                {/* Pathway — show the chosen COURSE when one exists, else the pathway type;
+                    tap to edit inline. */}
+                <button type="button" onClick={() => startEditing('application')}
+                  className="w-full flex justify-between items-center gap-3 text-left group">
+                  <span className="text-sm text-gray-500">{t('profile.pathway')}</span>
+                  <span className={`text-sm text-right ${(pathwayForm.chosenProgramme?.courseName || pathwayForm.chosenPathway) ? 'text-gray-900' : 'text-amber-500'} group-hover:text-primary-600`}>
+                    {pathwayForm.chosenProgramme?.courseName
+                      || (pathwayForm.chosenPathway ? t(`scholarship.apply.plan.pathway.${pathwayForm.chosenPathway}`) : t('profile.pathwayTapAdd'))}
+                  </span>
+                </button>
               </div>
             )}
           </div>

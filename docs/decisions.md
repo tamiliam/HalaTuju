@@ -1,5 +1,86 @@
 # Architectural Decisions — HalaTuju
 
+## One PII-redacted narrative profile (no separate anonymous version) — AI profile, 2026-06-15
+
+**Decision:** A single AI student profile serves both the reviewer and (once approved) the sponsor. It is generated
+twice by the system: a draft at the Check 2 → reviewer handoff (Flash) and a final at Save-verdict (Pro) that replaces
+it and becomes the sponsor/pool version. It is **PII-redacted, not strictly anonymous**: alias instead of name; only
+name/NRIC/photo/phone/email/street (student + guardian) are withheld — school, town, institution and occupations are
+allowed. Prose is narrative (no section headers), he/she (never "they"), few em-dashes.
+
+**Alternatives considered:** (1) The prior model — a named, headed draft for the reviewer PLUS a separately-generated,
+strictly-anonymous pool profile, with manual Generate/Save/Publish/Refine buttons. (2) Keep strict anonymity (no
+school/town) for the sponsor-facing version.
+
+**Rationale (owner):** "There is only one profile common to all." One document removes drift and the manual ceremony;
+the reviewer verifies identity via the documents/verdict panel, not the profile, so the profile needn't carry the name.
+The owner accepts sponsors seeing school/town (it aids connection) while protecting the six contact/ID items.
+
+**Trade-offs:** Looser than the original "permanently-anonymous pool". The shared leak scanner had to split into a
+strict one (graduation-message relay) and a relaxed `scan_profile_pii` (this profile). Existing pre-redesign drafts keep
+their old format until regenerated (draft at next handoff, or final at verdict).
+
+**Revisit if:** the programme needs strict sponsor anonymity again (re-tighten `scan_profile_pii` + add an anon variant),
+or PDPA guidance changes what sponsors may see.
+
+## Income honesty: STR proves B40, not an amount; payslip/EPF is authoritative — AI profile, 2026-06-15
+
+**Decision:** The profile must not present STR/JKM as confirming an income figure (they confirm B40 / welfare status
+only). An income amount is stated authoritatively only when evidenced by a payslip/EPF on file (either income route, via
+`income_engine`); otherwise it is presented as "reported" and never attributed to a specific earner the data doesn't name.
+
+**Rationale:** A reviewer flagged a generated line ("RM750 confirmed through STR") as false — STR can't confirm a figure,
+and below-minimum-wage totals shouldn't be invented into a story. **Revisit if:** the income verdict model changes what
+counts as documented income.
+
+## Funding-need estimate: single per-pathway shortfall × fixed duration (no ranges, no device, no student-duration override) — Funding estimate, 2026-06-15
+
+**Decision:** Estimate funding need as one **monthly shortfall per pathway** (living costs − government allowance −
+PTPTN), multiplied by a **fixed per-pathway duration** from an owner-validated table, rounded to RM100. No low–high
+ranges, no device one-off, and the student's stated `programme_months` is **ignored** for the duration. Diploma is split
+into Politeknik (`poly`) vs public-university (`university`); there is **no degree category** (post-SPM students can't
+enter a bachelor's directly, except PISMP); `kkom`/`iljtm`/`ilkbs` are deliberately un-estimated.
+
+**Alternatives considered:** (1) The previous range model with a device + registration one-off and a 12-month default.
+(2) Keep the device line. (3) Honour the student's `programme_months` as a duration override. (4) One lumped `poly_diploma`
+bucket for all diplomas. (5) Keep a `degree` estimate.
+
+**Rationale:** It's an **assistance top-up**, not a full ride, paid out in small tranches — so device (a lump sum) doesn't
+fit, and the realistic figure is the gap *after* the government allowance + PTPTN. Owner interviews gave standard
+shortfalls + durations per pathway; the student's `programme_months` is rounded to whole years (12/24/36) and so is *less*
+accurate than the known programme length (STPM is 18 months, not a "2-year" 24). Politeknik and university diplomas have
+genuinely different cost/duration; degree isn't reachable post-SPM.
+
+**Trade-offs:** Loses per-student duration nuance (all same-pathway students get the same estimate) — accepted, since it's
+a ballpark for award-sizing and the officer adjusts at interview. The `variable` flag (asasi, uni-diploma) signals where
+the single figure is least trustworthy.
+
+**Revisit if:** a government allowance / PTPTN policy changes; real award data shows a pathway is consistently over/under;
+or we gather figures for kkom/iljtm/ilkbs. Figures live in `docs/scholarship/funding-estimate-basis.md` (keep in sync
+with `apps/scholarship/funding_estimate.py`).
+
+## Classify a blank-pathway application from its chosen programme — Funding estimate, 2026-06-15
+
+**Decision:** When the pathway-type fields are blank, `classify_pathway` falls back to the **chosen programme** (course_id
+prefix + course_name keywords) before giving up.
+
+**Rationale:** The offer-letter auto-fill (`autofill_pathway_from_offer`) sets `chosen_programme` for tertiary offers but
+not `chosen_pathway`, so a real Politeknik-diploma student (e.g. #62) otherwise showed "Pathway not chosen yet". The
+concrete programme is the strongest signal and the cockpit already displays it — the estimate must agree with it.
+**Revisit if:** the auto-fill is changed to also set `chosen_pathway` (then this becomes belt-and-suspenders).
+
+## Reviewer-assignment email rides the app's own Brevo path; Brevo is also Supabase Auth's SMTP — Notifications, 2026-06-15
+
+**Decision:** The reviewer-assignment notification is a normal Django/Brevo `send_mail` (the app email path), separate
+from Supabase Auth emails (invites/resets). Separately, Supabase Auth's custom SMTP is pointed at the **same Brevo
+account + verified sender** the app already uses.
+
+**Rationale:** Two independent email systems already exist (app transactional vs Supabase Auth); the assignment notice is
+app-domain, so it belongs on the app path (its own copy, not a Supabase template). Supabase's built-in mailer is
+rate-limited (~a few/hour) which blocked a 4th reviewer invite; reusing the app's verified Brevo sender clears it without a
+new sender to verify. **Trade-off:** both now draw on the same Brevo free-tier quota (300/day). **Revisit if:** volume
+approaches the Brevo daily cap.
+
 ## Course-data health monitoring: READ-ONLY (no catalogue writes), concurrent in-request check, weekly cron + manual button — Course Data health, 2026-06-13
 
 **Decision:** Keep the dashboard's freshness/link-health/audit current via a **read-only** check that runs **weekly

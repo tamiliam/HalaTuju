@@ -500,6 +500,18 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     application.assigned_at = now if reviewer is not None else None
     application.save(update_fields=['assigned_to', 'assigned_at'])
 
+    # Notify the reviewer they have a new applicant to review. Only on an actual
+    # assignment (not an unassign); the no-op short-circuit above means an unchanged
+    # assignee never reaches here, so we never re-send. Best-effort.
+    if reviewer is not None and getattr(reviewer, 'email', ''):
+        from .emails import send_reviewer_assigned_email
+        applicant_name = getattr(application.profile, 'name', '') if application.profile else ''
+        send_reviewer_assigned_email(
+            to_email=reviewer.email,
+            reviewer_name=getattr(reviewer, 'name', ''),
+            applicant_name=applicant_name,
+        )
+
     # Check-2 → Reviewer handoff: auto-draft the sponsor profile so the reviewer lands on
     # a ready profile to orient from (the owner's design). Fires only on the FIRST
     # assignment, reuses the STEP-3 generator (idempotent; omits unresolved claims), and is

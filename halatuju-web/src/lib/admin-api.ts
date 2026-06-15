@@ -763,16 +763,13 @@ export interface AdminSubmissionReview {
 
 /** Check 2 — per-pathway funding-need estimate (RM [low, high]). */
 export interface AdminFundingEstimate {
-  pathway: string            // 'matrik' | 'asasi' | 'stpm' | 'poly_diploma' | 'pismp' | 'degree' | 'unknown'
-  known: boolean             // false for an unknown pathway → no estimate, fall back to self-report
-  review: boolean            // estimate too variable to trust without an officer (e.g. degree)
-  monthly: Record<string, [number, number]>
-  monthly_total: [number, number]
-  one_off: Record<string, [number, number]>
-  one_off_total: [number, number]
-  programme_months: number | null
-  total: [number, number]    // monthly_total × months (or 12) + one_off_total
-  covered: string[]          // what government already covers
+  pathway: string            // 'stpm' | 'matric' | 'asasi' | 'poly' | 'university' | 'pismp' | 'unknown'
+  known: boolean             // false for an un-estimated/unknown pathway → fall back to self-report
+  monthly: number            // est. RM monthly shortfall after govt allowance + PTPTN
+  months: number | null      // typical (or student-stated) programme length
+  total: number              // monthly × months, rounded to RM100 — the whole-programme need
+  variable: boolean          // cost varies a lot by institution/field → show a caveat
+  practical: boolean         // has an internship/practical term that may add travel
 }
 
 /** Check 2 STEP 2/3 — the query SLA clock for the cockpit. */
