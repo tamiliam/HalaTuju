@@ -57,7 +57,7 @@ function CountStepper({ value, onChange }: { value: number; onChange: (v: number
 }
 
 export default function FamilyRosterFields({
-  form, onUpdate, onUpdateMember, onAddMember, onRemoveMember, t,
+  form, onUpdate, onUpdateMember, onAddMember, onRemoveMember, t, profileStyle = false,
 }: {
   form: FamilyRosterForm
   // Non-generic so both callers' updaters (Story's wider DetailsFormState updater and
@@ -69,7 +69,16 @@ export default function FamilyRosterFields({
   onAddMember: () => void
   onRemoveMember: (i: number) => void
   t: TFn
+  // /profile variant: nothing here is compulsory (no required asterisks), Father/Mother
+  // render as small uppercase grey sub-headings (matching "YOUR BROTHERS & SISTERS"),
+  // and the top separator above the siblings block is dropped. Story (/apply) keeps the
+  // default (required + plain labels + separator).
+  profileStyle?: boolean
 }) {
+  const req = !profileStyle
+  const parentLabelClass = profileStyle
+    ? 'text-[11px] font-semibold uppercase tracking-wider text-gray-500'
+    : 'text-sm font-medium text-gray-700'
   return (
     <div className="space-y-5">
       {/* ── Parents / guardians ─────────────────────────────────────────── */}
@@ -80,15 +89,15 @@ export default function FamilyRosterFields({
           const otherKey = `${who}OccupationOther` as const
           return (
             <div key={who} className="space-y-2">
-              <p className="text-sm font-medium text-gray-700">{t(`${CA}.${who}`)}</p>
+              <p className={parentLabelClass}>{t(`${CA}.${who}`)}</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
-                  <FieldLabel required>{t(`${CA}.name`)}</FieldLabel>
+                  <FieldLabel required={req}>{t(`${CA}.name`)}</FieldLabel>
                   <input className="input" maxLength={200}
                     value={form[nameKey]} onChange={(e) => onUpdate(nameKey, e.target.value)} />
                 </div>
                 <div>
-                  <FieldLabel required>{t(`${CA}.profession`)}</FieldLabel>
+                  <FieldLabel required={req}>{t(`${CA}.profession`)}</FieldLabel>
                   <ProfessionSelect value={form[occKey]} onChange={(v) => onUpdate(occKey, v)} t={t} />
                 </div>
               </div>
@@ -136,7 +145,7 @@ export default function FamilyRosterFields({
       </div>
 
       {/* ── Brothers & sisters (compulsory steppers; derive first-in-family) ── */}
-      <div className="space-y-3 border-t border-gray-200 pt-4">
+      <div className={profileStyle ? 'space-y-3 pt-4' : 'space-y-3 border-t border-gray-200 pt-4'}>
         <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
           {t(`${CA}.siblingsHeading`)}
         </p>

@@ -44,6 +44,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   context are gitignored/local-only; only the PII-free `labels.json` (assertions) is committed. Builds throwaway rows
   inside a rolled-back transaction (persists nothing); not wired to any endpoint or cron. +3 synthetic self-tests.
   See `apps/scholarship/eval/README.md`.
+- **AI student profile redesign — one PII-redacted narrative, generated twice by the system (2026-06-15).**
+  Collapses the old sectioned, named draft + separate anonymous-pool profile into **one** document, common to the
+  reviewer and (once approved) the sponsor. The system generates it twice, never a human: a **draft** at the Check 2 →
+  reviewer handoff (Gemini Flash), and a **final** at "Save verdict & generate final profile" (Gemini Pro) that
+  **replaces** the draft and is the sponsor/pool version. Prose is now warm flowing **narrative** (~3 paragraphs, no
+  section headers, he/she never "they", sparing em-dashes, no fundraising clichés). **Redaction policy:** alias instead
+  of name; blocks ONLY name/NRIC/photo/phone/email/street (student + guardian) — school, town, institution, occupations
+  are allowed. Feeds the merit score, subject-area grades, the confirmed programme + institution, and the **student's
+  answers to Check-2/reviewer queries**; the final also folds in interview findings, the four-fact verdict, the
+  reviewer's conclusion and the **recommended assistance amount**. **Income honesty:** STR/JKM denote B40/welfare status,
+  never an income figure; a payslip/EPF on file (either route) is used authoritatively, otherwise income is "reported"
+  and never pinned to a guessed earner. Removed the manual Generate/Save/Publish/Refine controls + the anonymous-profile
+  card; the cockpit renders the profile as plain read-only text. Final is published to the pool on Approve; the leak
+  scanner is split into strict (`scan_anon_for_identifiers`, graduation relay) and relaxed (`scan_profile_pii`, profile).
+  One-off `backfill_assigned_profiles` (cron-runnable, flag-gated) drafted the 7 already-assigned students. No migration.
+- **Reviewer-assignment email + personalised invites (live-review, 2026-06-15).** Assigning an applicant to a reviewer
+  now sends them a best-effort English notification (`emails.send_reviewer_assigned_email`, hooked into
+  `services.assign_reviewer`) — names the applicant, links to `/admin/login`; fires once per (re)assignment, never on
+  unassign or a no-op. The Supabase invite POST now also passes `data:{name}` so the "Invite user" email can greet the
+  invitee by name (`{{ .Data.name }}`). Ops: connected **Brevo** as Supabase Auth custom SMTP (reusing the api's verified
+  `noreply@halatuju.xyz` sender) to clear the invite/password-reset rate limit, and rebranded the invite template. +3
+  backend tests; no migration.
+- **Funding-need estimate rebuilt to the owner's interview-based per-pathway model.** Replaces the old range model with a
+  single **monthly shortfall = living costs − government allowance − PTPTN**, × the **per-pathway typical duration**,
+  rounded to RM100: STPM ≈RM9,000, Matrik ≈RM2,000, Asasi ≈RM7,000, Politeknik ≈RM4,300, public-university diploma
+  ≈RM6,600, PISMP ≈RM10,800. Splits Politeknik (`poly`) from public-university diploma (`university`); **drops the device
+  one-off** (assistance is paid in tranches); **no degree category** (post-SPM can't enter a degree direct, bar PISMP);
+  `kkom`/`iljtm`/`ilkbs` deliberately un-estimated (different cost structure → "assess at interview"). Cockpit card shows
+  the total + `~RM/mth × months` + a `variable` caveat (asasi, uni-diploma) + a `practical`-term note (diploma, PISMP).
+  Classifies from `chosen_programme` when the pathway-type field is blank (fixes #62's "Pathway not chosen yet" on an
+  offer-letter-auto-filled Politeknik diploma); duration is the table value, not the student's year-rounded
+  `programme_months` (fixes STPM showing 24 instead of 18). Basis doc + en/ms/ta updated; no migration.
+- **Gopal guides an offer-vs-pathway clash.** When the uploaded offer letter differs from the chosen pathway, Cikgu Gopal
+  now names the difference (no blame) and offers two real options: update the pathway in **/profile** to match the offer,
+  or leave it and confirm via the (live) Check-2 `pathway_confirm` step after submitting — replacing the old "do nothing,
+  don't edit anything". Prompt + en/ms/ta fallback; no migration.
+- **/profile round 2 (verified badge + view tidy + hard validation).** **(1)** The Name + IC "Verified" badges now key
+  off a new **`identity_verified`** signal (`ProfileView.get`): true when the uploaded **MyKad scan** confirms both the
+  name and IC No against the profile (`name_match=='match'` + `nric_match`), OR an admin has locked the NRIC — so a
+  student whose IC matched (e.g. #16) gets the badge without waiting for admin verify-&-accept. **(2)** `/profile` view:
+  removed the "Family members" heading; sibling rows renamed to "Siblings in school" / "Siblings in college/univ
+  (now/bef.)" (view only — the edit form keeps the apply labels). **(3)** Household income/size validation now actually
+  **blocks the save**: `saveSection` only closes the editor on success (was closing unconditionally, so a rejected value
+  stayed on screen looking saved), plus an **inline red error under each field** + the Save button disabled while invalid
+  (size 1–20, income ≥0). +4 backend tests; 2372 backend pytest, 320 jest, parity 2684×3, next build clean. No migration.
+- **/profile polish round (10 live-review tweaks, FE-only).** On `/profile`: dropped the "Shared with your scholarship
+  application…" notes under Pathway + Family members; **reordered** Application Tracking to School → Angka Giliran →
+  Merit → Pathway; the Pathway row now shows the **chosen course** ("Asasi Perubatan") when one exists, falling back to
+  the pathway type. In the pathway picker (a `/profile`-only component): removed the "Anything you'd like to add?" box
+  and the deciding-route intro blurb, and dropped the red required `*` (nothing on `/profile` is compulsory). The shared
+  `<FamilyRosterFields>` gained a `profileStyle` variant (used only by `/profile`, so `/apply`'s Story is unchanged): no
+  required `*`, Father/Mother render as small uppercase grey sub-headings (matching "YOUR BROTHERS & SISTERS"), and the
+  separator above the siblings block is removed. **Household income + size now carry the same strict rules as `/apply`**
+  on the Family save (size integer 1–20, income required ≥0) so a bad value can't be saved on `/profile` and flow into
+  the application. 320 jest, `next build` clean, parity 2682×3.
+- **/profile pathway picker + carry-over backfill (e + c follow-up).** **(e)** A shortlisted student is locked out of
+  `/apply`, so the **pathway picker now lives on `/profile`** too: a new self-contained `<PathwayPicker>` reuses the
+  **exact** Apply leaf pickers (`PathwaySelect`/`ProgrammePicker`/`InstitutionPicker`) + helpers and runs its own
+  eligibility fetch (eligible-only dropdowns), covering the full pathway field set (`pathway_certainty`,
+  `chosen_pathway`, `pre_u_track`/stream, `pre_u_institution`, `chosen_programme`, `pathways_considered`,
+  `uncertainty_reasons`/`note`). The apply page is untouched. Pathway now has a **profile-level home** (migration
+  `courses/0057`, additive, migrate-first), is **two-way linked to an open application** (apply prefills the profile on
+  create; edits sync while open) and **freezes on the application at the decision**. The Application-Tracking pathway row
+  taps to edit inline; merit stays read-only → grades. **(c follow-up)** One-time **backfill** copied every existing
+  student's most-recent application family roster **and** pathway into their profile (34 family + 83 pathway rows) — so
+  `/profile` shows what they entered, and (critically) a later `/profile` save can't blank an open application's data.
+  **General rule honoured for these fields:** the application copy is the frozen snapshot from the decision onward.
+  13 new backend tests; 2368 backend pytest, 320 jest, `next build` clean, parity 2680×3.
 - **/profile enhancements (a–e).** (a) **Verified badges** — Contact Email shows green "Verified" when it IS the
   Google login identity (no more false "Not verified"); Name + IC Number show "Verified" once `nric_verified` (admin
   checked the IC). (b) **Colour Blindness + Physical Disability moved** from Family & Background to Personal Details.
@@ -100,6 +168,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Reviewer access — invite link + post-login landing (live-review feedback, 2026-06-16).** Two faults reported by the
+  newly-invited reviewers. **(1) Invite link landed on the homepage**, not the admin sign-in: the Supabase "Invite user"
+  email's `redirect_to` was unset, so the magic link bounced to `/`. The invite POST (`AdminInviteView`) now passes
+  `redirect_to: {FRONTEND_URL}/admin/login` (the Supabase Redirect-URL allow-list already covers `halatuju.xyz/**`, so no
+  dashboard change was needed). **(2) Reviewers saw "You are not a partner organisation admin".** After sign-in everyone
+  was routed to `/admin`, which is the **partner-org dashboard** (`getPartnerDashboard`) and 403s for a `reviewer`/`viewer`
+  (they belong to no partner org). Both entry points (`admin/login` and the `admin/auth/callback`) now branch on the role
+  from `/api/v1/admin/role/`: `reviewer`/`viewer` → **`/admin/scholarship`** (B40 Applications, their actual workspace),
+  org `admin`/`super` keep `/admin`. FE routing + one backend kwarg; no migration; web + api.
 - **Cockpit live-review round 9 (4 items from reviewing #20/#43).** (1) **Interview-Stage Delete now sticks.**
   Deleting an AI gap / flag from the agenda was local-only state (persisted only on a later "Save draft"), so it
   reappeared on refresh — Delete now persists the session immediately (`doDeleteAgendaItem`). (2) **"Other document"

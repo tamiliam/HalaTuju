@@ -144,3 +144,30 @@ class TestReviewerAssignment(TestCase):
         r = self._assign(self.reviewer.id)  # same reviewer -> no change
         self.assertEqual(r.status_code, 200)
         self.assertFalse(AssignmentEvent.objects.exists())
+
+    # --- reviewer-assigned email ---------------------------------------------
+
+    def test_assign_emails_the_reviewer(self):
+        self._auth('super-uid')
+        with patch('apps.scholarship.emails.send_reviewer_assigned_email') as m:
+            self.assertEqual(self._assign(self.reviewer.id).status_code, 200)
+        m.assert_called_once_with(
+            to_email='rev@example.com', reviewer_name='Reviewer',
+            applicant_name='Priya')
+
+    def test_unassign_sends_no_email(self):
+        self.app.assigned_to = self.reviewer
+        self.app.assigned_at = timezone.now()
+        self.app.save(update_fields=['assigned_to', 'assigned_at'])
+        self._auth('super-uid')
+        with patch('apps.scholarship.emails.send_reviewer_assigned_email') as m:
+            self.assertEqual(self._assign(None).status_code, 200)
+        m.assert_not_called()
+
+    def test_noop_assign_sends_no_email(self):
+        self.app.assigned_to = self.reviewer
+        self.app.save(update_fields=['assigned_to'])
+        self._auth('super-uid')
+        with patch('apps.scholarship.emails.send_reviewer_assigned_email') as m:
+            self.assertEqual(self._assign(self.reviewer.id).status_code, 200)
+        m.assert_not_called()

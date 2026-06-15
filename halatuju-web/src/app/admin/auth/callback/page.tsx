@@ -35,12 +35,15 @@ export default function AdminAuthCallbackPage() {
           setError(t('errors.noAdminAccess'))
           return
         }
+        // Reviewers/viewers have no partner-org dashboard — send them to their
+        // workspace (B40 Applications); org admins/super keep the dashboard.
+        router.replace(role.role === 'reviewer' || role.role === 'viewer'
+          ? '/admin/scholarship' : '/admin')
+        return
       } catch {
         setError(t('errors.adminVerifyFailed'))
         return
       }
-
-      router.replace('/admin')
     })
   }, [router])
 

@@ -1074,7 +1074,7 @@
           "slip_grade_uncertain": "We read your slip but couldn't be fully sure of one grade. Check that the grades you entered match the slip; if one differs, correct it in your profile. A clearer, straight-on photo helps too.",
           "slip_skewed_unclear": "Your slip came through at an angle, which left one part hard to read. Lay it flat, fill the frame, and photograph it straight from above, then upload again.",
           "offer_name_mismatch": "The name or IC number on this offer letter isn't yours — it looks like someone else's letter. Upload your own offer letter; the name and IC on it must match yours.",
-          "offer_pathway_mismatch": "The college or programme on this offer letter differs from the study choice you entered earlier. This doesn't block anything — if this offer is where you're going, leave it as is; when you submit, we'll ask you to confirm it and update your record to match.",
+          "offer_pathway_mismatch": "The college or programme on this offer letter differs from the study choice you entered earlier. That's fine — plans change, and it doesn't block anything. You can update your pathway in your Profile to match this offer, or leave it and we'll ask you to confirm which one is final after you submit.",
           "income_relationship_mismatch": "The name on this IC doesn't link to your family the way we expected — for a parent or sibling we look for your father's name from your own IC; for a mother, your birth certificate. So either a different person's MyKad was uploaded here, or (for a mother) the birth certificate names someone else. Please check you uploaded the right MyKad for this person and, for a mother, your own birth certificate (showing you and her). Your application isn't blocked.",
           "income_proof_person_mismatch": "This salary slip / EPF isn't for the same person as the IC for that family member — it looks like someone else's document. If you're already showing your family's income another way (your STR), you don't need a salary slip here: just remove this file, and if that family member has none, don't upload one. Otherwise, upload that family member's own salary slip with their own IC, and remove the wrong file. Nothing is blocked.",
           "income_proof_needed": "The earner's IC is in and matches. The next step is their salary slip — upload that family member's latest salary slip, which shows the household income (any relationship document, like a birth certificate, comes after). Nothing is blocked.",
@@ -2060,6 +2060,8 @@
     "contactEmail": "Contact Email",
     "contactPhone": "Contact Phone",
     "invalidPhone": "Please enter a valid phone number, e.g. 012-345 6789.",
+    "invalidHouseholdSize": "Please enter your household size (a number from 1 to 20).",
+    "invalidHouseholdIncome": "Please enter your household monthly income (RM, 0 or more).",
     "verified": "Verified",
     "notVerified": "Not verified",
     "verify": "Verify",
@@ -2070,7 +2072,10 @@
     "pathwayTapAdd": "Not set — tap to choose",
     "familyMembers": "Family members",
     "familyLinkNote": "Shared with your scholarship application while it's open.",
-    "familyOthers": "Other working members"
+    "familyOthers": "Other working members",
+    "siblingsSchoolView": "Siblings in school",
+    "siblingsTertiaryView": "Siblings in college/univ (now/bef.)",
+    "pathwayLinkNote": "Your study pathway. Shared with your scholarship application while it's open."
   },
   "quiz": {
     "pickUpTo": "Pick up to {count}",
@@ -2494,7 +2499,7 @@
       "consentNone": "No active consent yet.",
       "none": "None yet.",
       "profileTitle": "Sponsor profile (AI draft)",
-      "profileDraftHint": "Auto-drafted at the Check 2 → Reviewer handoff. The final polished profile is generated from your interview findings after Check 3 is submitted.",
+      "profileDraftHint": "Auto-drafted at the Check 2 → reviewer handoff so you can read it now and verify the claims. It is replaced by the final version when you save your verdict.",
       "generate": "Generate profile",
       "generating": "Generating…",
       "regenerate": "Regenerate",
@@ -2725,21 +2730,18 @@
       "fundingNote": "Funding note",
       "estimate": {
         "title": "Estimated need",
-        "basis": "Based on",
-        "monthly": "Monthly gap",
-        "oneOff": "One-off",
-        "total": "Programme total",
+        "month": "month",
         "months": "months",
-        "covers": "Government covers",
-        "reviewNote": "Varies widely — confirm the figures with the student.",
+        "variableNote": "Varies by institution and field — confirm at interview.",
+        "practicalNote": "A practical/internship term may add travel costs.",
         "none": "Pathway not chosen yet — no estimate. Use the student's stated needs.",
         "pathway": {
-          "matrik": "Matrikulasi",
-          "asasi": "Asasi",
-          "stpm": "STPM",
-          "poly_diploma": "Polytechnic / Diploma",
-          "pismp": "PISMP (IPG)",
-          "degree": "Degree",
+          "stpm": "STPM (Form 6) — after free schooling. Covers travel, meals, tuition classes.",
+          "matric": "Matrikulasi — after the BSHP allowance, hostel & teaching. Mostly meals + small fees.",
+          "asasi": "Asasi (foundation) — after subsidies. Covers meals & fees.",
+          "poly": "Politeknik diploma — after the PTPTN loan + cheap provided hostel. Mostly meals + misc.",
+          "university": "Public-university diploma — after the PTPTN loan. Covers meals, hostel & fees.",
+          "pismp": "PISMP — after the IPG allowance & hostel. Covers meals, hostel top-up, travel.",
           "unknown": "Not chosen"
         }
       },
@@ -2981,7 +2983,8 @@
             "hint": "Read by AI (Gemini) — please verify the captured values."
           }
         }
-      }
+      },
+      "profilePending": "The profile is generated automatically when the application is handed over for review."
     },
     "students": "Students",
     "invite": "Invite",

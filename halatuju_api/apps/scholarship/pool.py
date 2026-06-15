@@ -119,9 +119,10 @@ def _distinct_tokens(value, stop):
 
 
 def scan_anon_for_identifiers(text, profile):
-    """Return the list of identifying FIELDS that appear in the anonymous blurb
-    (e.g. ['name', 'city']). Empty when clean. Used to BLOCK publish — a non-empty
-    result means the generated profile leaked something it must not."""
+    """Return the list of identifying FIELDS that appear in the blurb (e.g. ['name',
+    'city']). Empty when clean. STRICT anonymity — used by the graduation-message relay,
+    where a student's note to sponsors must reveal nothing (name/school/city/NRIC/phone/
+    email). (The sponsor PROFILE uses the looser ``scan_profile_pii`` below.)"""
     if not text or profile is None:
         return []
     low = text.lower()
@@ -146,6 +147,33 @@ def scan_anon_for_identifiers(text, profile):
         if len(d) >= minlen and d in digits:
             found.append(field)
 
+    email = (getattr(profile, 'contact_email', '') or '').strip().lower()
+    if email and email in low:
+        found.append('email')
+    return found
+
+
+def scan_profile_pii(text, profile):
+    """Publish-time BACKSTOP for the sponsor PROFILE under the 2026-06-15 redaction policy:
+    the profile is PII-redacted, NOT strictly anonymous — school + town/state are ALLOWED.
+    So this blocks only the machine-checkable PII the policy forbids: the student's name,
+    NRIC, phone and email. (Street address + photo are left to the generator's instruction —
+    street tokens entangle with the now-allowed town/state, so flagging them here would
+    false-positive.)"""
+    if not text or profile is None:
+        return []
+    low = text.lower()
+    digits = re.sub(r'\D', '', low)
+    found = []
+
+    for tok in _distinct_tokens(getattr(profile, 'name', ''), _NAME_CONNECTORS):
+        if re.search(rf'\b{re.escape(tok)}\b', low):
+            found.append('name')
+            break
+    for field, attr, minlen in (('nric', 'nric', 6), ('phone', 'contact_phone', 7)):
+        d = re.sub(r'\D', '', getattr(profile, attr, '') or '')
+        if len(d) >= minlen and d in digits:
+            found.append(field)
     email = (getattr(profile, 'contact_email', '') or '').strip().lower()
     if email and email in low:
         found.append('email')

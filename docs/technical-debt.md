@@ -768,14 +768,14 @@
   (offered, not built):** a deterministic "EPF extracted a name but NO balance/contribution/year/employer → doesn't look
   like an EPF" soft officer signal (no billable call), to catch mis-slots even when genuineness hasn't run. (Logged
   2026-06-14.)
-- TD-121: **The eval harness scorecard doesn't run counter-examples through the genuineness cap.**
-  `eval_doc_recognition --auto-ok` scores via `resolution.doc_match_verdict` (content match), which never reads
-  `vision_fields['authenticity']` — that cap lives in `verdict_engine.build_verdict`. So the known typed fake (a16)
-  shows as a content false-negative even though the new signature scorer + cap would flag it `suspect` in production.
-  **To resolve:** capture the signature genuineness into the cached snapshots and score counter-examples through the
-  band (or through `build_verdict`), so the two-directional scorecard reflects the genuineness layer. Verified inline
-  during the sprint (a16 → suspect; 43 genuine → genuine; 4 cropped → review; zero misclassifications), just not wired
-  into the command. (Logged 2026-06-16, Genuineness signatures.)
+- **TD-118 (low): tidy dead profile UI plumbing after the narrative redesign.** The 2026-06-15 profile redesign
+  removed the manual Generate/Save/Publish/Refine controls + the anonymous-profile card from the cockpit, but left
+  behind: (a) unused api client functions in `halatuju-web/src/lib/admin-api.ts` (`generateSponsorProfile`,
+  `finaliseSponsorProfile`, `saveSponsorProfile`, `publishSponsorProfile`, `generateAnonProfile`, `publishAnonProfile`)
+  and (b) now-orphaned i18n keys under `admin.scholarship` (`generate`/`regenerate`/`save`/`publish` + `anonProfile.*` +
+  some `finalProfile.*`). All harmless (build green, i18n parity intact), so deferred from the redesign sprint. Remove
+  them in a future web-only change, grepping each key/fn for references first and keeping en/ms/ta parity. (Logged
+  2026-06-15.)
 - TD-119: **13 corpus false-positive flags still undiagnosed** — the eval run flagged 5 `parent_ic`, 5
   `birth_certificate`, 1 `epf`, 1 `str`, 1 `offer_letter` (mismatch), 1 `offer_letter` (unreadable) as genuine-docs-
   wrongly-flagged. The owner reviewed `ic`/`parent_ic` as all-genuine, so these are likely matcher false positives of
@@ -785,3 +785,11 @@
   path now routes it to the signature scorer (the `if doc_type == 'results_slip'` branch wins first). Harmless, but
   the dict membership is now only used as the flag-gate set for STR/BC/EPF. **To resolve:** drop `results_slip` from
   that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16.)
+- TD-121: **The eval harness scorecard doesn't run counter-examples through the genuineness cap.**
+  `eval_doc_recognition --auto-ok` scores via `resolution.doc_match_verdict` (content match), which never reads
+  `vision_fields['authenticity']` — that cap lives in `verdict_engine.build_verdict`. So the known typed fake (a16)
+  shows as a content false-negative even though the new signature scorer + cap would flag it `suspect` in production.
+  **To resolve:** capture the signature genuineness into the cached snapshots and score counter-examples through the
+  band (or through `build_verdict`), so the two-directional scorecard reflects the genuineness layer. Verified inline
+  during the sprint (a16 → suspect; 43 genuine → genuine; 4 cropped → review; zero misclassifications), just not wired
+  into the command. (Logged 2026-06-16, Genuineness signatures.)

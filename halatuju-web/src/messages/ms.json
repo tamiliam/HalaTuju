@@ -1074,7 +1074,7 @@
           "slip_grade_uncertain": "Kami membaca slip anda tetapi tidak pasti sepenuhnya tentang satu gred. Semak bahawa gred yang anda masukkan sepadan dengan slip; jika ada yang berbeza, betulkan dalam profil. Gambar yang lebih jelas dan lurus juga membantu.",
           "slip_skewed_unclear": "Slip anda diambil pada sudut, menyebabkan sebahagiannya sukar dibaca. Letakkan rata, penuhkan bingkai, dan ambil gambar dari atas secara lurus, kemudian muat naik semula.",
           "offer_name_mismatch": "Nama atau nombor IC pada surat tawaran ini bukan milik anda — ia kelihatan seperti surat orang lain. Muat naik surat tawaran anda sendiri; nama dan IC padanya mesti sepadan dengan anda.",
-          "offer_pathway_mismatch": "Kolej atau program pada surat tawaran ini berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Ini tidak menyekat apa-apa — jika tawaran ini hala tuju sebenar anda, biarkan sahaja; semasa anda menghantar, kami akan minta anda mengesahkannya dan mengemas kini rekod anda.",
+          "offer_pathway_mismatch": "Kolej atau program pada surat tawaran ini berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Tidak mengapa — rancangan boleh berubah, dan ia tidak menyekat apa-apa. Anda boleh kemas kini hala tuju dalam Profil anda agar sepadan dengan tawaran ini, atau biarkan dan kami akan minta anda mengesahkan yang mana muktamad selepas anda menghantar.",
           "income_relationship_mismatch": "Nama pada IC ini tidak menghubungkan dengan keluarga anda seperti yang dijangka — untuk ibu/bapa atau adik-beradik kami cari nama bapa anda daripada IC anda sendiri; untuk ibu, sijil kelahiran anda. Jadi sama ada MyKad orang lain telah dimuat naik di sini, atau (untuk ibu) sijil kelahiran menamakan orang lain. Sila semak anda memuat naik MyKad yang betul untuk orang ini dan, untuk ibu, sijil kelahiran anda sendiri (yang menunjukkan anda dan dia). Permohonan anda tidak disekat.",
           "income_proof_person_mismatch": "Slip gaji / KWSP ini bukan untuk orang yang sama dengan IC ahli keluarga itu — nampaknya dokumen orang lain. Jika anda sudah menunjukkan pendapatan keluarga dengan cara lain (STR anda), anda tidak perlukan slip gaji di sini: buang sahaja fail ini, dan jika ahli keluarga itu tiada slip gaji, jangan muat naik apa-apa. Jika tidak, muat naik slip gaji ahli keluarga itu sendiri bersama IC mereka sendiri, dan buang fail yang salah. Tiada apa-apa disekat.",
           "income_proof_needed": "IC penerima pendapatan telah dimuat naik dan sepadan. Langkah seterusnya ialah slip gaji mereka — muat naik slip gaji terkini ahli keluarga itu, yang menunjukkan pendapatan isi rumah (dokumen hubungan seperti sijil kelahiran datang kemudian). Tiada apa-apa yang disekat.",
@@ -2060,6 +2060,8 @@
     "contactEmail": "Emel Hubungan",
     "contactPhone": "Telefon Hubungan",
     "invalidPhone": "Sila masukkan nombor telefon yang sah, cth. 012-345 6789.",
+    "invalidHouseholdSize": "Sila masukkan saiz isi rumah anda (nombor dari 1 hingga 20).",
+    "invalidHouseholdIncome": "Sila masukkan pendapatan bulanan isi rumah anda (RM, 0 atau lebih).",
     "verified": "Disahkan",
     "notVerified": "Belum disahkan",
     "verify": "Sahkan",
@@ -2070,7 +2072,10 @@
     "pathwayTapAdd": "Belum ditetapkan — ketik untuk pilih",
     "familyMembers": "Ahli keluarga",
     "familyLinkNote": "Dikongsi dengan permohonan biasiswa anda selagi ia dibuka.",
-    "familyOthers": "Ahli lain yang bekerja"
+    "familyOthers": "Ahli lain yang bekerja",
+    "siblingsSchoolView": "Adik-beradik di sekolah",
+    "siblingsTertiaryView": "Adik-beradik di kolej/univ (kini/dulu)",
+    "pathwayLinkNote": "Laluan pengajian anda. Dikongsi dengan permohonan biasiswa anda selagi ia dibuka."
   },
   "quiz": {
     "pickUpTo": "Pilih sehingga {count}",
@@ -2494,7 +2499,7 @@
       "consentNone": "Tiada persetujuan aktif lagi.",
       "none": "Tiada lagi.",
       "profileTitle": "Profil penaja (draf AI)",
-      "profileDraftHint": "Dirangka secara automatik semasa penyerahan Semakan 2 → Penyemak. Profil akhir yang digilap dijana daripada penemuan temu duga anda selepas Semakan 3 dihantar.",
+      "profileDraftHint": "Dirangka secara automatik semasa serahan Check 2 → penyemak supaya anda boleh membacanya sekarang dan mengesahkan maklumatnya. Ia digantikan dengan versi akhir apabila anda menyimpan keputusan anda.",
       "generate": "Jana profil",
       "generating": "Menjana…",
       "regenerate": "Jana semula",
@@ -2725,21 +2730,18 @@
       "fundingNote": "Nota pembiayaan",
       "estimate": {
         "title": "Anggaran keperluan",
-        "basis": "Berdasarkan",
-        "monthly": "Jurang bulanan",
-        "oneOff": "Sekali sahaja",
-        "total": "Jumlah program",
+        "month": "bulan",
         "months": "bulan",
-        "covers": "Kerajaan menanggung",
-        "reviewNote": "Berbeza-beza — sahkan angka dengan pelajar.",
+        "variableNote": "Berbeza mengikut institusi dan bidang — sahkan semasa temu duga.",
+        "practicalNote": "Latihan praktikal/internship mungkin menambah kos pengangkutan.",
         "none": "Laluan belum dipilih — tiada anggaran. Guna keperluan yang dinyatakan pelajar.",
         "pathway": {
-          "matrik": "Matrikulasi",
-          "asasi": "Asasi",
-          "stpm": "STPM",
-          "poly_diploma": "Politeknik / Diploma",
-          "pismp": "PISMP (IPG)",
-          "degree": "Ijazah",
+          "stpm": "STPM (Tingkatan 6) — selepas persekolahan percuma. Meliputi pengangkutan, makan, kelas tuisyen.",
+          "matric": "Matrikulasi — selepas elaun BSHP, asrama & pengajaran. Kebanyakannya makan + yuran kecil.",
+          "asasi": "Asasi — selepas subsidi. Meliputi makan & yuran.",
+          "poly": "Diploma Politeknik — selepas pinjaman PTPTN + asrama murah disediakan. Kebanyakannya makan + lain-lain.",
+          "university": "Diploma universiti awam — selepas pinjaman PTPTN. Meliputi makan, asrama & yuran.",
+          "pismp": "PISMP — selepas elaun IPG & asrama. Meliputi makan, tambahan asrama, pengangkutan.",
           "unknown": "Belum dipilih"
         }
       },
@@ -2981,7 +2983,8 @@
             "hint": "Dibaca oleh AI (Gemini) — sila sahkan nilai yang ditangkap."
           }
         }
-      }
+      },
+      "profilePending": "Profil dijana secara automatik apabila permohonan diserahkan untuk semakan."
     },
     "students": "Pelajar",
     "invite": "Jemputan",

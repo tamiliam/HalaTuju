@@ -539,6 +539,55 @@ signature scorer + academic slip fixes.**
   1 str, 2 offer_letter — same diagnose→fix→test loop); TD-121 (wire the harness scorecard through the genuineness cap);
   TD-120 (drop `results_slip` from `supporting_doc._GENUINENESS_DOCS`). Then merge to `main` (owner-gated deploy).
 
+**▶ JUST SHIPPED & LIVE 2026-06-16 — Reviewer access fix (`4a74b9b`, NO migration; retro
+`docs/retrospective-2026-06-16-reviewer-access.md`).** Two faults the newly-invited reviewers hit:
+- **Invite link → `/admin/login`** (was bouncing to the homepage): `AdminInviteView` now sets
+  `redirect_to: {FRONTEND_URL}/admin/login` on the Supabase invite POST. Supabase Redirect-URL allow-list already
+  covers `halatuju.xyz/**` (confirmed live), so no dashboard change.
+- **Reviewers/viewers now land on `/admin/scholarship`** (B40 Applications), not `/admin` (the partner-org dashboard,
+  which 403s them → "not a partner organisation admin"). Role-branch added to both `admin/login` and
+  `admin/auth/callback`; org `admin`/`super` keep `/admin`. **Lesson:** adding an auth role means re-auditing every
+  "default landing / who's an admin" assumption — see `docs/lessons.md`.
+- **Carry (unchanged):** TD-118 (dead profile api-client fns + orphaned i18n keys, web-only); Dhurvaashrii-class
+  consent gate is too strict (exact parent-IC name match rejects shortened/Tamil-romanised names) — tolerant-match fix
+  PROPOSED, not built, awaiting owner; Tamil refine of first-draft strings; funding figures for kkom/iljtm/ilkbs.
+
+**▶ SHIPPED & LIVE 2026-06-15 — AI profile narrative redesign + 2-step lifecycle (5 commits `dc89c39`→`68fd1ac`,
+NO migration; plan `docs/scholarship/profile-narrative-redesign-plan.md`, retro
+`docs/retrospective-2026-06-15-profile-narrative-redesign.md`).**
+- **ONE profile, common to reviewer + sponsor**, generated twice by the system: DRAFT at the Check 2 → reviewer handoff
+  (Flash), FINAL at "Save verdict & generate final profile" (Pro) which REPLACES the draft and IS the sponsor/pool
+  version. No more named-draft-vs-anon split, no manual Generate/Save/Publish/Refine, no anon-profile card.
+- **Narrative prose** (no headers, he/she never "they", sparing em-dashes, no clichés). **PII-redaction:** alias not
+  name; block ONLY name/NRIC/photo/phone/email/street (student+guardian) — school/town/institution/occupations allowed.
+  Scanner split: strict `scan_anon_for_identifiers` (graduation relay) vs relaxed `scan_profile_pii` (profile).
+- Feeds merit, subject grades, confirmed programme, and the **student's Check-2/reviewer Q&A**; final adds findings +
+  verdict + conclusion + recommended amount. **Income honesty:** STR/JKM = B40/welfare status, NOT a figure; payslip/EPF
+  used authoritatively else "reported", never a guessed earner. Cockpit = plain read-only text. Final published on Approve.
+- **`CHECK2_AUTO_GENERATE` was referenced but never defined in settings** (so it was permanently off and the handoff
+  auto-draft never fired) → wired in `base.py`, env var **on** (durable; the build trigger doesn't reset env). Future
+  reviewer assignments now auto-draft. Backfilled the 7 already-assigned via the `backfill-assigned-profiles` cron job
+  (runs on the service — the sandbox can't reach the prod DB). Validated live on #72.
+- **Carry:** TD-118 (tidy dead profile api-client fns + orphaned i18n keys — harmless, web-only).
+
+**▶ JUST SHIPPED & LIVE 2026-06-15 — Reviewer-invite + funding-estimate live-review round (7 commits `0eecd1d`→`4c2053f`,
+NO migration; retro `docs/retrospective-2026-06-15-reviewer-invite-funding-estimate.md`).**
+- **Reviewer-assignment email** (`emails.send_reviewer_assigned_email` → `services.assign_reviewer`): names the applicant,
+  links to `/admin/login`, fires once per (re)assignment, best-effort. **Invite name** passed as Supabase `data:{name}` →
+  `{{ .Data.name }}`. **Ops:** Brevo is now Supabase Auth's custom SMTP (verified `noreply@halatuju.xyz` sender) — invite
+  + password-reset rate limit cleared; invite template rebranded.
+- **Funding estimate rebuilt** to the owner's per-pathway model (`funding_estimate.py` + basis doc): single shortfall =
+  costs − govt allowance − PTPTN, × fixed per-pathway months, rounded RM100 (STPM ~9k, Matrik ~2k, Asasi ~7k, Poly ~4.3k,
+  uni-diploma ~6.6k, PISMP ~10.8k). **No device**, **no degree** (post-SPM can't, bar PISMP), **poly vs university-diploma
+  split**, kkom/iljtm/ilkbs un-estimated. Classifies from `chosen_programme` when pathway-type blank (#62); duration is
+  the table, NOT student `programme_months` (fixed STPM 24→18). Cockpit card: total + `~RM/mth × months` + variable +
+  practical-term notes.
+- **Gopal offer-vs-pathway clash**: names the difference, offers "fix in /profile" OR "confirm later via Check-2".
+- **Corrected stale flag note:** `CHECK2_STUDENT_QUERIES_ENABLED` is **ON** in prod (student-facing Check-2 is live).
+- **Gotchas reaffirmed:** another agent shares this repo (primary checkout on `feature/doc-eval-harness`) — read code from
+  `main` (a worktree) + verify flags via `gcloud run …describe`, never CLAUDE.md or the primary checkout. The
+  funding estimate is computed **live** per cockpit load — no backfill needed.
+
 **▶ JUST SHIPPED & LIVE 2026-06-14 — Cockpit live-review + verification-accuracy round (4 commits `245facd`→`97a7793`,
 NO migration; retro `docs/retrospective-cockpit-livereview-2026-06-14.md`).** A live-testing pass over the officer
 cockpit + the income/document engine, driven by reviewing real applicants (#72/#54/#37):
@@ -702,6 +751,10 @@ resolves bug**. Student queue shows **only officer + AI-clarify items, never `so
 TOTALLY off-topic**, behind **`CHECK2_ANSWER_RELEVANCE_ENABLED` (default OFF, billable)**. **The email +
 AI-clarify-query switch `CHECK2_STUDENT_QUERIES_ENABLED` stays OFF** (owner's call — both flags are one env var from on).
 Tests: 989 scholarship backend pytest + 276 jest; i18n parity 2474.
+**▶ UPDATE 2026-06-15: `CHECK2_STUDENT_QUERIES_ENABLED` is now ON in prod — the student-facing Check-2 layer
+(auto clarify queries, doc requests, the "few questions" emails, AND the `pathway_confirm` "Is this where you're going?"
+step) is LIVE; students are responding. Only `CHECK2_ANSWER_RELEVANCE_ENABLED` remains OFF. Verify the live env var with
+`gcloud run services describe halatuju-api` before asserting flag state — do not trust older log entries.**
 
 **▶ JUST SHIPPED 2026-06-11 (b) — SARA≠STR fix + cockpit doc UX + in-cockpit viewer + HEIC (NO migration; retro
 `docs/retrospective-cockpit-doc-ux-and-sara.md`; branch `fix/sara-not-str`).** **#5b SARA≠STR:** the Gemini
