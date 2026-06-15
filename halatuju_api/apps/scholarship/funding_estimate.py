@@ -66,14 +66,55 @@ PATHWAY_ESTIMATES = {
 
 _DEFAULT_MONTHS = 12  # when programme length is unknown, annualise on 12 months
 
+# Synthetic course_id prefixes that pin the pathway category (Poly/Kolej Komuniti/TVET
+# all fund like a polytechnic diploma). MOHE-coded UA/Asasi ids don't self-describe, so
+# they fall through to the course_name scan below.
+_PROGRAMME_ID_PREFIXES = (
+    ('poly', 'poly_diploma'), ('kkom', 'poly_diploma'), ('ijtm', 'poly_diploma'),
+    ('ikbn', 'poly_diploma'), ('iktbn', 'poly_diploma'), ('tvet', 'poly_diploma'),
+)
+# Ordered course_name keyword scan (first match wins). Order matters: PISMP/Asasi/
+# Matrikulasi programme names can also contain 'ijazah'/'sarjana muda', so the specific
+# pathways are checked before the generic degree keywords.
+_PROGRAMME_NAME_KEYWORDS = (
+    ('matrikulasi', 'matrik'),
+    ('asasi', 'asasi'), ('foundation', 'asasi'),
+    ('stpm', 'stpm'), ('tingkatan enam', 'stpm'),
+    ('pismp', 'pismp'), ('perguruan', 'pismp'),
+    ('diploma', 'poly_diploma'), ('politeknik', 'poly_diploma'),
+    ('kolej komuniti', 'poly_diploma'),
+    ('ijazah sarjana muda', 'degree'), ('sarjana muda', 'degree'),
+    ('bacelor', 'degree'), ('bachelor', 'degree'), ('ijazah', 'degree'),
+)
+
 
 def _norm(value) -> str:
     return (value or '').strip().lower()
 
 
+def _classify_programme(programme) -> str | None:
+    """Infer the pathway category from a chosen programme (the actual course the student
+    picked, e.g. auto-filled from their offer letter), or None if it can't be read. Uses
+    the course_id prefix first, then a keyword scan of the course_name."""
+    if not isinstance(programme, dict):
+        return None
+    cid = _norm(programme.get('course_id'))
+    for prefix, cat in _PROGRAMME_ID_PREFIXES:
+        if cid.startswith(prefix):
+            return cat
+    name = _norm(programme.get('course_name'))
+    for kw, cat in _PROGRAMME_NAME_KEYWORDS:
+        if kw in name:
+            return cat
+    return None
+
+
 def classify_pathway(application) -> str:
     """The student's pathway category, or 'unknown'. Priority: a SURE chosen_pathway,
-    then intended_pathway, then a single pathways_considered entry."""
+    then chosen_pathway/intended_pathway (older rows), then the chosen PROGRAMME (the
+    concrete course — e.g. auto-filled from the offer letter — which pins the pathway
+    type even when the pathway-type fields are blank), then a single pathways_considered
+    entry."""
     if _norm(getattr(application, 'pathway_certainty', '')) == 'sure':
         cat = _PATHWAY_MAP.get(_norm(application.chosen_pathway))
         if cat:
@@ -83,6 +124,10 @@ def classify_pathway(application) -> str:
         cat = _PATHWAY_MAP.get(_norm(raw))
         if cat:
             return cat
+    # A concrete chosen programme beats a list of merely-considered pathways.
+    cat = _classify_programme(getattr(application, 'chosen_programme', None))
+    if cat:
+        return cat
     considered = application.pathways_considered
     if isinstance(considered, list) and len(considered) == 1:
         cat = _PATHWAY_MAP.get(_norm(considered[0]))

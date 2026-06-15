@@ -45,6 +45,37 @@ class TestClassify(_Base):
     def test_blank_is_unknown(self):
         self.assertEqual(classify_pathway(self._app()), 'unknown')
 
+    def test_chosen_programme_classifies_when_pathway_blank(self):
+        # #62: offer-letter auto-fill set the programme (a Poly diploma) but left
+        # chosen_pathway blank and considered 3 pathways -> classify via the programme.
+        app = self._app(
+            pathway_certainty='sure', chosen_pathway='', intended_pathway='',
+            pathways_considered=['university', 'iljtm', 'ilkbs'],
+            chosen_programme={'course_id': 'POLY-DIP-016',
+                              'course_name': 'Diploma Kejuruteraan Elektronik (Komunikasi)'})
+        self.assertEqual(classify_pathway(app), 'poly_diploma')
+
+    def test_chosen_programme_classifies_by_name(self):
+        deg = self._app(chosen_programme={'course_id': 'XY1234567',
+                        'course_name': 'Ijazah Sarjana Muda Kejuruteraan'})
+        self.assertEqual(classify_pathway(deg), 'degree')
+        asasi = self._app(chosen_programme={'course_id': '', 'course_name': 'Asasi Sains'})
+        self.assertEqual(classify_pathway(asasi), 'asasi')
+        pismp = self._app(chosen_programme={'course_id': 'IPG-1',
+                          'course_name': 'PISMP Pendidikan Sarjana Muda'})
+        self.assertEqual(classify_pathway(pismp), 'pismp')
+
+    def test_explicit_pathway_beats_programme(self):
+        app = self._app(pathway_certainty='sure', chosen_pathway='stpm',
+                        chosen_programme={'course_id': 'POLY-DIP-1',
+                                          'course_name': 'Diploma X'})
+        self.assertEqual(classify_pathway(app), 'stpm')
+
+    def test_unreadable_programme_is_unknown(self):
+        app = self._app(chosen_programme={'course_id': '', 'course_name': 'Something Unmappable'})
+        self.assertEqual(classify_pathway(app), 'unknown')
+        self.assertEqual(classify_pathway(self._app(chosen_programme={})), 'unknown')
+
 
 class TestEstimate(_Base):
     def test_unknown_pathway_gives_no_estimate(self):
