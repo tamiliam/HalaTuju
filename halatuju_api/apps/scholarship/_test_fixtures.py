@@ -68,21 +68,46 @@ def build_doc_fixture(doc_type, snap=None, ctx=None):
     return doc
 
 
-def build_application_with_docs(app_ctx, docs):
+def _set_safe(obj, fields):
+    """setattr only concrete, coercion-safe fields (text/JSON/bool/int) that exist on the model
+    — skips pk, relations, dates, decimals — so a faithful declared record loads without
+    save-time coercion errors. Lets the verdict engine see real grades/family/etc."""
+    if not fields:
+        return
+    from django.db import models as dm
+    ok = (dm.CharField, dm.TextField, dm.JSONField, dm.BooleanField, dm.IntegerField)
+    by_name = {f.name: f for f in obj._meta.get_fields() if hasattr(f, 'attname') and not f.is_relation}
+    for k, v in fields.items():
+        f = by_name.get(k)
+        if f is None or f.primary_key or not isinstance(f, ok):
+            continue
+        try:
+            setattr(obj, k, v)
+        except (ValueError, TypeError):
+            pass
+
+
+def build_application_with_docs(app_ctx, docs, profile_fields=None, app_fields=None):
     """Faithful multi-document fixture: one profile/application + ALL its documents, so the
     matchers that cross-check siblings (e.g. a payslip against the member's parent IC) see the
     real context. ``app_ctx`` = {profile_name, profile_nric, income_route, income_earner};
-    ``docs`` = list of {doc_type, household_member, snapshot}. Returns the saved docs in order."""
+    ``profile_fields``/``app_fields`` = the applicant's full DECLARED record (grades, family, …)
+    loaded so checks compare against real data; ``docs`` = list of {doc_type, household_member,
+    snapshot}. Returns the saved docs in order."""
     from apps.courses.models import StudentProfile
     from .models import ScholarshipApplication, ScholarshipCohort, ApplicantDocument
     app_ctx = app_ctx or {}
     cohort = ScholarshipCohort.objects.create(code=f'eval-{uuid.uuid4().hex[:8]}', name='eval', year=2026)
-    profile = StudentProfile.objects.create(
+    profile = StudentProfile(
         supabase_user_id=f'eval-{uuid.uuid4()}',
         nric=app_ctx.get('profile_nric', '') or '', name=app_ctx.get('profile_name', '') or '')
-    app = ScholarshipApplication.objects.create(
+    _set_safe(profile, profile_fields)            # declared grades / guardians / address / …
+    profile.save()
+    app = ScholarshipApplication(
         cohort=cohort, profile=profile, status='shortlisted',
         income_route=app_ctx.get('income_route', '') or '', income_earner=app_ctx.get('income_earner', '') or '')
+    _set_safe(app, app_fields)                    # declared family roster / income answers / …
+    app.save()
     built = []
     for d in docs:
         doc = ApplicantDocument(application=app, doc_type=d['doc_type'],

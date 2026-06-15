@@ -67,8 +67,10 @@ class Command(BaseCommand):
             'base': base,
             'labels': os.path.join(base, 'labels.json'),
             'context': os.path.join(base, 'context.json'),
+            'applicants': os.path.join(base, 'applicants.json'),
             'snapshots': os.path.join(base, 'snapshots'),
             'fixtures': os.path.join(base, 'fixtures'),
+            'counter': os.path.join(base, 'counter_examples'),
         }
 
     def handle(self, *args, **opts):
@@ -123,7 +125,7 @@ class Command(BaseCommand):
         return {'key': key, 'doc_type': label['doc_type'], 'status': outcome,
                 'expected': expected, 'actual': actual, 'note': label.get('note', ''), 'detail': detail}
 
-    # ── Corpus mode: score every surviving fixture as expected 'ok', per application ──
+    # ── Corpus mode: score fixtures (expect 'ok') + counter_examples (expect FLAGGED) ──
     def _auto_ok(self, d, as_json):
         from collections import Counter, defaultdict
         from apps.scholarship._test_fixtures import build_application_with_docs, rolled_back
@@ -131,53 +133,71 @@ class Command(BaseCommand):
         if not os.path.exists(d['context']):
             self.stderr.write('No context.json — run eval/fetch_corpus.py first.')
             return
-        with open(d['context'], encoding='utf-8') as f:
-            context = json.load(f)
-        # Surviving fixture files → key + doc_type (the parent subfolder).
-        survivors = {}
-        for root, _, files in os.walk(d['fixtures']):
-            for fn in files:
-                if fn == '.gitkeep':
-                    continue
-                survivors[os.path.splitext(fn)[0]] = os.path.basename(root)
+        context = json.load(open(d['context'], encoding='utf-8'))
+        applicants = json.load(open(d['applicants'], encoding='utf-8')) if os.path.exists(d['applicants']) else {}
+
+        # Each fixture file → (doc_type, expectation). fixtures/ = should pass; counter_examples/ = should be flagged.
+        survivors = {}   # key -> (doc_type, expect)  where expect in {'ok','flag'}
+        for base, expect in ((d['fixtures'], 'ok'), (d['counter'], 'flag')):
+            for root, _, files in os.walk(base):
+                for fn in files:
+                    if fn != '.gitkeep':
+                        survivors[os.path.splitext(fn)[0]] = (os.path.basename(root), expect)
         groups, missing = defaultdict(list), []
-        for key, dt in survivors.items():
+        for key, (dt, expect) in survivors.items():
             ctx = context.get(key)
-            (groups[ctx.get('_app_id')].append((key, dt, ctx)) if ctx else missing.append(key))
+            (groups[ctx.get('_app_id')].append((key, dt, expect, ctx)) if ctx else missing.append(key))
+
         results = []
-        for _app_id, items in groups.items():
-            app_ctx = items[0][2]
+        for app_id, items in groups.items():
+            app_ctx = items[0][3]
+            rec = applicants.get(str(app_id)) or applicants.get(app_id) or {}
             docs = []
-            for key, dt, ctx in items:
+            for key, dt, expect, ctx in items:
                 sp = os.path.join(d['snapshots'], f'{key}.json')
                 snap = json.load(open(sp, encoding='utf-8')) if os.path.exists(sp) else {}
                 docs.append({'key': key, 'doc_type': dt, 'household_member': ctx.get('household_member', ''), 'snapshot': snap})
             captured = {}
             try:
                 with rolled_back():
-                    built = build_application_with_docs(app_ctx, docs)
+                    built = build_application_with_docs(app_ctx, docs,
+                                                        profile_fields=rec.get('profile'), app_fields=rec.get('application'))
                     for obj, meta in zip(built, docs):
                         captured[meta['key']] = doc_match_verdict(obj)
             except Exception as e:  # noqa: BLE001
                 for meta in docs:
-                    results.append({'key': meta['key'], 'doc_type': meta['doc_type'], 'verdict': 'ERROR',
+                    results.append({'key': meta['key'], 'doc_type': meta['doc_type'], 'expect': '?', 'verdict': 'ERROR',
                                     'detail': f'{type(e).__name__}: {e}'})
                 continue
-            for key, dt, ctx in items:
-                results.append({'key': key, 'doc_type': dt, 'verdict': captured.get(key),
-                                'prod_status': ctx.get('_prod_status')})
-        passed = [r for r in results if r['verdict'] == 'ok']
-        flagged = [r for r in results if r['verdict'] not in ('ok', None)]
+            for key, dt, expect, ctx in items:
+                v = captured.get(key)
+                ok = (v == 'ok') if expect == 'ok' else (v not in ('ok', None))
+                results.append({'key': key, 'doc_type': dt, 'expect': expect, 'verdict': v,
+                                'correct': ok, 'prod_status': ctx.get('_prod_status')})
+
+        gen = [r for r in results if r['expect'] == 'ok']
+        ctr = [r for r in results if r['expect'] == 'flag']
+        false_pos = [r for r in gen if not r['correct']]      # genuine doc wrongly flagged
+        false_neg = [r for r in ctr if not r['correct']]      # wrong doc wrongly passed
         if as_json:
-            self.stdout.write(json.dumps({'total': len(results), 'ok': len(passed), 'flagged': len(flagged),
-                                          'missing_context': missing, 'results': results}, indent=2, ensure_ascii=False))
+            self.stdout.write(json.dumps({
+                'genuine': len(gen), 'genuine_passed': len(gen) - len(false_pos), 'false_positives': len(false_pos),
+                'counter': len(ctr), 'counter_caught': len(ctr) - len(false_neg), 'false_negatives': len(false_neg),
+                'missing_context': missing, 'results': results}, indent=2, ensure_ascii=False))
             return
-        self.stdout.write(f"\nScored {len(results)} genuine documents (each expected 'ok'):")
-        self.stdout.write(self.style.SUCCESS(f"  {len(passed)} pass") + f"  ·  {len(flagged)} flagged")
-        if flagged:
-            self.stdout.write("\n  flagged (genuine doc the engine did NOT pass — false positive or read issue):")
-            for (dt, v), n in sorted(Counter((r['doc_type'], r['verdict']) for r in flagged).items()):
-                self.stdout.write(f"    {dt:22s} {str(v):10s} {n}")
+        self.stdout.write(f"\n=== Genuine documents (expected to PASS): {len(gen)} ===")
+        self.stdout.write(self.style.SUCCESS(f"  {len(gen) - len(false_pos)} passed")
+                          + f"  ·  {len(false_pos)} FALSE POSITIVES (genuine doc flagged)")
+        for (dt, v), n in sorted(Counter((r['doc_type'], r['verdict']) for r in false_pos).items()):
+            self.stdout.write(f"     ! {dt:20s} got {str(v):10s} ×{n}")
+        if ctr:
+            self.stdout.write(f"\n=== Counter-examples (expected to be FLAGGED): {len(ctr)} ===")
+            self.stdout.write(self.style.SUCCESS(f"  {len(ctr) - len(false_neg)} caught")
+                              + f"  ·  {len(false_neg)} FALSE NEGATIVES (wrong doc accepted)")
+            for (dt,), n in sorted(Counter((r['doc_type'],) for r in false_neg).items()):
+                self.stdout.write(f"     !! {dt:20s} wrongly passed ×{n}")
+        else:
+            self.stdout.write("\n  (no counter_examples/ yet — add wrong docs there to test false-negatives)")
         if missing:
             self.stdout.write(self.style.WARNING(f"\n  {len(missing)} fixtures had no context entry (skipped)."))
 
