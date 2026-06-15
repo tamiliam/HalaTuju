@@ -21,6 +21,13 @@ GENUINE_SLIP = (
     "LAYAK MENDAPAT SIJIL\nUJIAN LISAN BAHASA MELAYU: CEMERLANG\n"
     "Slip keputusan ini bukan sijil/pernyataan.\nPENGARAH PEPERIKSAAN\n")
 TYPED_FAKE = "Sijil Pelajaran Malaysia Tahun 2025\nElanjelian A/L Venugopal\n710829-02-5709\nBahasa Melayu A\n"
+# A genuine slip whose OCR dropped the trailing lines (disclaimer + PENGARAH) — text-only it
+# sits in 'review' (~0.60); crediting the visual QR + crest it actually has lifts it to genuine.
+BORDERLINE_SLIP = (
+    "KEMENTERIAN PENDIDIKAN\nLEMBAGA PEPERIKSAAN\nSIJIL PELAJARAN MALAYSIA TAHUN 2025\n"
+    "NO. PENGENALAN DIRI : 080101-10-1234\nANGKA GILIRAN : BA013A001\nSEKOLAH : SMK CONVENT\n"
+    "JUMLAH MATA PELAJARAN : SEPULUH\nKOD NAMA MATA PELAJARAN GRED\n1103 BAHASA MELAYU A\n"
+    "LAYAK MENDAPAT SIJIL\nUJIAN LISAN BAHASA MELAYU: CEMERLANG\n")
 
 
 class _Base(TestCase):
@@ -94,6 +101,42 @@ class TestResultsSlipUsesSignatureScorer(_Base):
         # OCR failure is OUR failure → no authenticity, never a 'suspect' penalty.
         auth = self._run('').get('authenticity')
         self.assertIsNone(auth)
+
+
+class TestVisualMarkers(TestCase):
+    def test_maps_booleans(self):
+        from apps.scholarship.genuineness.results_doc import results_visual_markers
+        with patch('apps.scholarship.vision._call_gemini_json',
+                   return_value={'has_qr_code': True, 'has_jata_negara_crest': False}):
+            self.assertEqual(results_visual_markers(b'img', 'image/png'),
+                             {'has_qr': True, 'has_crest': False})
+
+    def test_ai_outage_empty(self):
+        from apps.scholarship.genuineness.results_doc import results_visual_markers
+        with patch('apps.scholarship.vision._call_gemini_json', return_value={'_error': 'down'}):
+            self.assertEqual(results_visual_markers(b'img', 'image/png'), {})
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class TestVisualCreditLiftsBorderline(_Base):
+    def _run(self, ocr_text, markers):
+        doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type='results_slip', storage_path=f'{self.app.id}/rs/v')
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'img'), \
+             patch('apps.scholarship.vision._extract_slip_deterministic', return_value=(None, {'reason': 'x'})), \
+             patch('apps.scholarship.vision.extract_document_fields',
+                   return_value={'fields': {}, 'warnings': [], 'error': ''}), \
+             patch('apps.scholarship.vision.ocr_document', return_value={'text': ocr_text, 'error': None}), \
+             patch('apps.scholarship.genuineness.results_doc.results_visual_markers', return_value=markers):
+            return vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
+
+    def test_borderline_is_review_without_visual_credit(self):
+        auth = self._run(BORDERLINE_SLIP, {})            # no QR/crest credited
+        self.assertEqual(auth['status'], 'low_confidence')
+
+    def test_qr_and_crest_lift_borderline_to_genuine(self):
+        auth = self._run(BORDERLINE_SLIP, {'has_qr': True, 'has_crest': True})
+        self.assertEqual(auth['status'], 'likely_genuine')
 
 
 class TestFlagOffNoSignal(_Base):

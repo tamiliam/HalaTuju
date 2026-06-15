@@ -1371,14 +1371,17 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
     # results-slip already fetched its image above; the others fetch here.
     if getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False):
         if doc.doc_type == 'results_slip':
-            # Probabilistic SIGNATURE genuineness (deterministic + auditable) over the OCR text —
-            # the slip/cert signature scorer. No extra Gemini call (reuses/loads the OCR text). A
-            # failed/empty OCR read yields NO signal — we never penalise a student for our failure.
-            from .genuineness.results_doc import signature_genuineness
+            # Probabilistic SIGNATURE genuineness (deterministic + auditable) over the OCR text,
+            # plus a focused multimodal read for the two VISUAL signatures (QR + crest) on the
+            # already-fetched image. A failed/empty OCR read yields NO signal — we never penalise
+            # a student for our failure.
+            from .genuineness.results_doc import signature_genuineness, results_visual_markers
             rr = ocr if ocr is not None else ocr_document(doc)
             text = (rr or {}).get('text', '') or ''
             if text.strip() and not (rr or {}).get('error'):
-                sg = signature_genuineness(text)
+                markers = results_visual_markers(image, doc.content_type) if image is not None else {}
+                sg = signature_genuineness(text, has_qr=markers.get('has_qr', False),
+                                           has_crest=markers.get('has_crest', False))
                 result['authenticity'] = {
                     'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['type'],
                     'probability': sg['probability'], 'present': sg['present'], 'missing': sg['missing'],

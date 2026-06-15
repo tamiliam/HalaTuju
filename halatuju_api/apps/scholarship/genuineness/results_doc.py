@@ -104,6 +104,33 @@ def score_signatures(ocr_text: str, has_qr: bool = False, has_crest: bool = Fals
             'present': b['present'], 'missing': b['missing'], 'scores': scores}
 
 
+# The two NON-text signatures (QR + crest) are visual, so a tiny multimodal read reports
+# them — far more robust than decoding the QR (a model sees "a QR is present" even on a blurry
+# photo where a decoder fails). Soft: an AI outage / no image → both absent, never a penalty.
+_VISUAL_SCHEMA = {'type': 'object', 'properties': {
+    'has_qr_code': {'type': 'boolean'}, 'has_jata_negara_crest': {'type': 'boolean'}},
+    'required': ['has_qr_code', 'has_jata_negara_crest']}
+_VISUAL_PROMPT = (
+    'This image was uploaded as a Malaysian SPM results slip or certificate. Ignore the text '
+    'and report two VISUAL features: has_qr_code — is a QR code / 2D barcode present anywhere on '
+    'the document? has_jata_negara_crest — is the Malaysian national crest (Jata Negara, the '
+    'tiger-and-shield coat of arms) present in the header?')
+
+
+def results_visual_markers(data: bytes, content_type: str = '') -> dict:
+    """Soft multimodal read of the two visual signatures → ``{'has_qr', 'has_crest'}``, or
+    ``{}`` on no image / AI outage (both then treated as absent — never penalising). The Gemini
+    seam is reached via ``vision._call_gemini_json`` (lazy import keeps this module's top pure)."""
+    from apps.scholarship import vision
+    img, mime = vision._as_image_for_gemini(data, content_type)
+    if img is None:
+        return {}
+    r = vision._call_gemini_json(_VISUAL_PROMPT, _VISUAL_SCHEMA, image=img, mime_type=mime)
+    if not isinstance(r, dict) or r.get('_error'):
+        return {}
+    return {'has_qr': bool(r.get('has_qr_code')), 'has_crest': bool(r.get('has_jata_negara_crest'))}
+
+
 def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool = False) -> dict:
     """The soft genuineness signal for a results document from its signatures:
     ``{status, probability, type, present, missing, reason}``. ``status`` maps onto the cap
