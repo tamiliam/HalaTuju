@@ -61,6 +61,7 @@ export interface StudentProfile {
   preferred_call_language?: string
   referral_source?: string
   nric_verified?: boolean
+  identity_verified?: boolean   // name + IC confirmed by the MyKad scan, or admin-locked
   name?: string
   school?: string
   nric?: string

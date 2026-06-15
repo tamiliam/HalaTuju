@@ -109,7 +109,7 @@ export default function ProfilePage() {
   const [householdSize, setHouseholdSize] = useState<string>('')
   const [colorblind, setColorblind] = useState(false)
   const [disability, setDisability] = useState(false)
-  const [nricVerified, setNricVerified] = useState(false)
+  const [identityVerified, setIdentityVerified] = useState(false)
   // Structured family roster — the durable profile-level home (two-way synced with
   // an open B40 application by the backend). Shown in Family & Background.
   const [family, setFamily] = useState<FamilyRosterForm>(EMPTY_FAMILY)
@@ -160,7 +160,7 @@ export default function ProfilePage() {
       setHouseholdSize(profileData.household_size != null ? String(profileData.household_size) : '')
       setColorblind(!!profileData.colorblind)
       setDisability(!!profileData.disability)
-      setNricVerified(!!profileData.nric_verified)
+      setIdentityVerified(!!profileData.identity_verified)
       setFamily({
         fatherName: profileData.father_name || '',
         fatherOccupation: profileData.father_occupation || '',
@@ -364,14 +364,16 @@ export default function ProfilePage() {
 
   const saveSection = async () => {
     const ok = await handleSave()
+    // Only leave the editor on a successful save — a validation failure (e.g. a bad
+    // household size) keeps the section open so the inline error is visible and the
+    // unsaved value isn't mistaken for saved.
+    if (!ok) return
     setEditingSection(null)
-    if (ok) {
-      // Refresh the cached profile so pages that pre-fill from it (e.g. the apply
-      // form) see the new values immediately instead of a stale cache.
-      await refreshProfile()
-      // If the edit was started from the application flow, return there.
-      if (nextUrl) router.push(nextUrl)
-    }
+    // Refresh the cached profile so pages that pre-fill from it (e.g. the apply
+    // form) see the new values immediately instead of a stale cache.
+    await refreshProfile()
+    // If the edit was started from the application flow, return there.
+    if (nextUrl) router.push(nextUrl)
   }
 
   const handleStatusChange = async (courseId: string, newStatus: string) => {
@@ -407,6 +409,13 @@ export default function ProfilePage() {
   const contactIncomplete = countIncomplete([state, address, postalCode, city])
   const familyIncomplete = countIncomplete([householdIncome, householdSize])
   const appIncomplete = countIncomplete([angkaGiliran])
+
+  // Household income/size validity — same strict rules as /apply (size 1–20, income ≥0).
+  // Drives the inline red errors + the Family Save button's disabled state.
+  const hhSizeNum = parseInt(householdSize, 10)
+  const householdSizeInvalid = !householdSize.trim() || Number.isNaN(hhSizeNum) || hhSizeNum < 1 || hhSizeNum > 20
+  const hhIncomeNum = parseInt(householdIncome, 10)
+  const householdIncomeInvalid = !householdIncome.trim() || Number.isNaN(hhIncomeNum) || hhIncomeNum < 0
 
   // Redirect to onboarding if guard resolves with no grades
   useEffect(() => {
@@ -571,7 +580,7 @@ export default function ProfilePage() {
                   </span>
                   <span className="text-sm text-gray-900 font-mono flex items-center gap-1.5">
                     {nric ? maskIc(nric) : '—'}
-                    {nric && nricVerified && (
+                    {nric && identityVerified && (
                       <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                     )}
                   </span>
@@ -581,7 +590,7 @@ export default function ProfilePage() {
                   {name ? (
                     <span className="text-sm text-gray-900 flex items-center gap-1.5">
                       {name}
-                      {nricVerified && (
+                      {identityVerified && (
                         <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                       )}
                     </span>
@@ -879,9 +888,11 @@ export default function ProfilePage() {
                     placeholder="2500"
                     value={householdIncome}
                     onChange={e => setHouseholdIncome(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdIncomeInvalid ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'}`}
                   />
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.householdIncomeHelper')}</p>
+                  {householdIncomeInvalid
+                    ? <p className="text-xs text-red-500 mt-1">{t('profile.invalidHouseholdIncome')}</p>
+                    : <p className="text-xs text-gray-400 mt-1">{t('profile.householdIncomeHelper')}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.householdSize')}</label>
@@ -891,9 +902,11 @@ export default function ProfilePage() {
                     max="20"
                     value={householdSize}
                     onChange={e => setHouseholdSize(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdSizeInvalid ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'}`}
                   />
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.householdSizeHelper')}</p>
+                  {householdSizeInvalid
+                    ? <p className="text-xs text-red-500 mt-1">{t('profile.invalidHouseholdSize')}</p>
+                    : <p className="text-xs text-gray-400 mt-1">{t('profile.householdSizeHelper')}</p>}
                 </div>
                 {/* Structured family roster — the shared editor; while a B40
                     application is open these values stay linked to it. */}
@@ -913,7 +926,7 @@ export default function ProfilePage() {
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                     {t('profile.cancel')}
                   </button>
-                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
+                  <button onClick={saveSection} disabled={saving || householdSizeInvalid || householdIncomeInvalid} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
                     {saving ? '...' : t('profile.save')}
                   </button>
                 </div>
@@ -929,7 +942,6 @@ export default function ProfilePage() {
                   <FieldValue value={householdSize} t={t} />
                 </div>
                 <div className="border-t border-gray-100 pt-3 space-y-2">
-                  <p className="text-sm font-medium text-gray-900">{t('profile.familyMembers')}</p>
                   <div className="flex justify-between gap-3">
                     <span className="text-sm text-gray-500 shrink-0">{t('scholarship.nextSteps.story.cardA.father')}</span>
                     <span className="text-sm text-gray-900 text-right">{familySummary('father')}</span>
@@ -939,11 +951,11 @@ export default function ProfilePage() {
                     <span className="text-sm text-gray-900 text-right">{familySummary('mother')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">{t('scholarship.nextSteps.story.cardA.siblingsSchool')}</span>
+                    <span className="text-sm text-gray-500">{t('profile.siblingsSchoolView')}</span>
                     <span className="text-sm text-gray-900">{family.siblingsInSchool}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">{t('scholarship.nextSteps.story.cardA.siblingsTertiary')}</span>
+                    <span className="text-sm text-gray-500">{t('profile.siblingsTertiaryView')}</span>
                     <span className="text-sm text-gray-900">{family.siblingsInTertiary}</span>
                   </div>
                   {family.otherFamilyMembers.length > 0 && (

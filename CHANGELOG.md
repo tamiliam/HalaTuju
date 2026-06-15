@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **/profile round 2 (verified badge + view tidy + hard validation).** **(1)** The Name + IC "Verified" badges now key
+  off a new **`identity_verified`** signal (`ProfileView.get`): true when the uploaded **MyKad scan** confirms both the
+  name and IC No against the profile (`name_match=='match'` + `nric_match`), OR an admin has locked the NRIC — so a
+  student whose IC matched (e.g. #16) gets the badge without waiting for admin verify-&-accept. **(2)** `/profile` view:
+  removed the "Family members" heading; sibling rows renamed to "Siblings in school" / "Siblings in college/univ
+  (now/bef.)" (view only — the edit form keeps the apply labels). **(3)** Household income/size validation now actually
+  **blocks the save**: `saveSection` only closes the editor on success (was closing unconditionally, so a rejected value
+  stayed on screen looking saved), plus an **inline red error under each field** + the Save button disabled while invalid
+  (size 1–20, income ≥0). +4 backend tests; 2372 backend pytest, 320 jest, parity 2684×3, next build clean. No migration.
 - **/profile polish round (10 live-review tweaks, FE-only).** On `/profile`: dropped the "Shared with your scholarship
   application…" notes under Pathway + Family members; **reordered** Application Tracking to School → Angka Giliran →
   Merit → Pathway; the Pathway row now shows the **chosen course** ("Asasi Perubatan") when one exists, falling back to
