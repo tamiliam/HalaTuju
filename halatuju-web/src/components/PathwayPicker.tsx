@@ -109,7 +109,7 @@ export default function PathwayPicker({
     <div className="space-y-5">
       {/* The whole step turns on one question. */}
       <div>
-        <FieldLabel required>{t('scholarship.apply.plan.question')}</FieldLabel>
+        <FieldLabel>{t('scholarship.apply.plan.question')}</FieldLabel>
         <div className="grid grid-cols-2 gap-3">
           {(['sure', 'uncertain'] as const).map((c) => (
             <button key={c} type="button" onClick={() => setCertainty(c)}
@@ -123,12 +123,12 @@ export default function PathwayPicker({
       {/* Decided → eligible pathway dropdown (SPM) or degree picker (STPM). */}
       {form.pathwayCertainty === 'sure' && (examType === 'stpm' ? (
         <div>
-          <FieldLabel required>{t('scholarship.apply.plan.degreeLabel')}</FieldLabel>
+          <FieldLabel>{t('scholarship.apply.plan.degreeLabel')}</FieldLabel>
           <ProgrammePicker courses={eligibleCourses} value={form.chosenProgramme} onChange={setProgramme} loading={loading} />
         </div>
       ) : (
         <div>
-          <FieldLabel required>{t('scholarship.apply.plan.pathwayLabel')}</FieldLabel>
+          <FieldLabel>{t('scholarship.apply.plan.pathwayLabel')}</FieldLabel>
           <PathwaySelect pathways={eligiblePathways(pathwayStats)} value={form.chosenPathway} onChange={setPathway} loading={loading} />
         </div>
       ))}
@@ -136,7 +136,6 @@ export default function PathwayPicker({
       {/* Still deciding → optional leanings (SPM) + reasons + note. */}
       {form.pathwayCertainty === 'uncertain' && (
         <div className="space-y-5">
-          <p className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.uncertainIntro')}</p>
           {examType !== 'stpm' && (
             <div>
               <FieldLabel>{t('scholarship.apply.plan.leaningLabel')}</FieldLabel>
@@ -166,7 +165,7 @@ export default function PathwayPicker({
       {form.pathwayCertainty === 'sure' && examType !== 'stpm' && form.chosenPathway && (
         isProgrammePathway(form.chosenPathway) ? (
           <div>
-            <FieldLabel required>{t('scholarship.apply.plan.programmeLabel')}</FieldLabel>
+            <FieldLabel>{t('scholarship.apply.plan.programmeLabel')}</FieldLabel>
             <ProgrammePicker key={form.chosenPathway}
               courses={programmesForPathway(eligibleCourses, form.chosenPathway)}
               value={form.chosenProgramme} onChange={setProgramme} loading={loading} />
@@ -174,7 +173,7 @@ export default function PathwayPicker({
         ) : form.chosenPathway === 'matric' ? (
           <div className="space-y-4">
             <div>
-              <FieldLabel required>{t('scholarship.apply.plan.trackLabel')}</FieldLabel>
+              <FieldLabel>{t('scholarship.apply.plan.trackLabel')}</FieldLabel>
               {loading ? <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
                 : matricTracks.length === 0 ? <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noTracks')}</p>
                 : (
@@ -189,7 +188,7 @@ export default function PathwayPicker({
             </div>
             {form.preUTrack && (
               <div>
-                <FieldLabel required>{t('scholarship.apply.plan.collegeLabel')}</FieldLabel>
+                <FieldLabel>{t('scholarship.apply.plan.collegeLabel')}</FieldLabel>
                 <InstitutionPicker key={`m-${form.preUTrack}`}
                   options={collegesForTrack(form.preUTrack).map((c) => ({ name: c.name, hint: c.state }))}
                   value={form.preUInstitution} onChange={setPreUInstitution}
@@ -200,7 +199,7 @@ export default function PathwayPicker({
         ) : (
           <div className="space-y-4">
             <div>
-              <FieldLabel required>{t('scholarship.apply.plan.streamLabel')}</FieldLabel>
+              <FieldLabel>{t('scholarship.apply.plan.streamLabel')}</FieldLabel>
               <div className="flex flex-wrap gap-2">
                 {STPM_STREAMS.map((s) => (
                   <button key={s} type="button" onClick={() => setPreUTrack(s)} className={chip(form.preUTrack === s)}>
@@ -211,7 +210,7 @@ export default function PathwayPicker({
             </div>
             {form.preUTrack && (
               <div>
-                <FieldLabel required>{t('scholarship.apply.plan.schoolLabel')}</FieldLabel>
+                <FieldLabel>{t('scholarship.apply.plan.schoolLabel')}</FieldLabel>
                 <InstitutionPicker key={`s-${form.preUTrack}`}
                   options={stpmSchoolsForStream(form.preUTrack).map((s) => ({ name: s.name, hint: s.state }))}
                   value={form.preUInstitution} onChange={setPreUInstitution}
@@ -222,15 +221,6 @@ export default function PathwayPicker({
         )
       )}
 
-      {/* Free text — shown once answered. */}
-      {form.pathwayCertainty !== '' && (
-        <div>
-          <FieldLabel>{t('scholarship.apply.plan.uncertainNoteLabel')}</FieldLabel>
-          <textarea className="input" rows={3} maxLength={5000} value={form.uncertaintyNote}
-            placeholder={t('scholarship.apply.plan.uncertainNotePlaceholder')}
-            onChange={(e) => onChange({ uncertaintyNote: e.target.value })} />
-        </div>
-      )}
     </div>
   )
 }
