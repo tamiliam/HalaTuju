@@ -68,6 +68,40 @@ def build_doc_fixture(doc_type, snap=None, ctx=None):
     return doc
 
 
+def build_application_with_docs(app_ctx, docs):
+    """Faithful multi-document fixture: one profile/application + ALL its documents, so the
+    matchers that cross-check siblings (e.g. a payslip against the member's parent IC) see the
+    real context. ``app_ctx`` = {profile_name, profile_nric, income_route, income_earner};
+    ``docs`` = list of {doc_type, household_member, snapshot}. Returns the saved docs in order."""
+    from apps.courses.models import StudentProfile
+    from .models import ScholarshipApplication, ScholarshipCohort, ApplicantDocument
+    app_ctx = app_ctx or {}
+    cohort = ScholarshipCohort.objects.create(code=f'eval-{uuid.uuid4().hex[:8]}', name='eval', year=2026)
+    profile = StudentProfile.objects.create(
+        supabase_user_id=f'eval-{uuid.uuid4()}',
+        nric=app_ctx.get('profile_nric', '') or '', name=app_ctx.get('profile_name', '') or '')
+    app = ScholarshipApplication.objects.create(
+        cohort=cohort, profile=profile, status='shortlisted',
+        income_route=app_ctx.get('income_route', '') or '', income_earner=app_ctx.get('income_earner', '') or '')
+    built = []
+    for d in docs:
+        doc = ApplicantDocument(application=app, doc_type=d['doc_type'],
+                                household_member=d.get('household_member', '') or '',
+                                storage_path=f"eval/{d['doc_type']}/{uuid.uuid4().hex[:8]}")
+        snap = d.get('snapshot') or {}
+        for fld in _SNAPSHOT_FIELDS:
+            if fld in snap and snap[fld] is not None:
+                setattr(doc, fld, snap[fld])
+        run_at = snap.get('vision_run_at')
+        if run_at:
+            doc.vision_run_at = _parse_dt(run_at)
+        elif snap.get('vision_name') or snap.get('vision_fields'):
+            doc.vision_run_at = timezone.now()
+        doc.save()
+        built.append(doc)
+    return built
+
+
 def _parse_dt(value):
     if isinstance(value, datetime):
         return value

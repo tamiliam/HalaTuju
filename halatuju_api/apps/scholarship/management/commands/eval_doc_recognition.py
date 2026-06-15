@@ -54,6 +54,9 @@ class Command(BaseCommand):
                             help='Eval set directory (default: apps/scholarship/eval).')
         parser.add_argument('--rerun-vision', action='store_true',
                             help='Re-run the (billable) Gemini read for each fixture and cache it.')
+        parser.add_argument('--auto-ok', action='store_true',
+                            help='Score every surviving fixture as expected "ok" (genuine corpus), '
+                                 'grouped per application. Uses context.json + snapshots; no labels.json.')
         parser.add_argument('--json', action='store_true', help='Emit a machine-readable scorecard.')
 
     # ── paths ────────────────────────────────────────────────────────────────
@@ -70,6 +73,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opts):
         d = self._dirs(opts['eval_dir'])
+        if opts.get('auto_ok'):
+            self._auto_ok(d, opts['json'])
+            return
         if not os.path.exists(d['labels']):
             self.stderr.write(f"No labels.json at {d['labels']} — nothing to evaluate.")
             return
@@ -116,6 +122,64 @@ class Command(BaseCommand):
             detail = f'{type(e).__name__}: {e}'
         return {'key': key, 'doc_type': label['doc_type'], 'status': outcome,
                 'expected': expected, 'actual': actual, 'note': label.get('note', ''), 'detail': detail}
+
+    # ── Corpus mode: score every surviving fixture as expected 'ok', per application ──
+    def _auto_ok(self, d, as_json):
+        from collections import Counter, defaultdict
+        from apps.scholarship._test_fixtures import build_application_with_docs, rolled_back
+        from apps.scholarship.resolution import doc_match_verdict
+        if not os.path.exists(d['context']):
+            self.stderr.write('No context.json — run eval/fetch_corpus.py first.')
+            return
+        with open(d['context'], encoding='utf-8') as f:
+            context = json.load(f)
+        # Surviving fixture files → key + doc_type (the parent subfolder).
+        survivors = {}
+        for root, _, files in os.walk(d['fixtures']):
+            for fn in files:
+                if fn == '.gitkeep':
+                    continue
+                survivors[os.path.splitext(fn)[0]] = os.path.basename(root)
+        groups, missing = defaultdict(list), []
+        for key, dt in survivors.items():
+            ctx = context.get(key)
+            (groups[ctx.get('_app_id')].append((key, dt, ctx)) if ctx else missing.append(key))
+        results = []
+        for _app_id, items in groups.items():
+            app_ctx = items[0][2]
+            docs = []
+            for key, dt, ctx in items:
+                sp = os.path.join(d['snapshots'], f'{key}.json')
+                snap = json.load(open(sp, encoding='utf-8')) if os.path.exists(sp) else {}
+                docs.append({'key': key, 'doc_type': dt, 'household_member': ctx.get('household_member', ''), 'snapshot': snap})
+            captured = {}
+            try:
+                with rolled_back():
+                    built = build_application_with_docs(app_ctx, docs)
+                    for obj, meta in zip(built, docs):
+                        captured[meta['key']] = doc_match_verdict(obj)
+            except Exception as e:  # noqa: BLE001
+                for meta in docs:
+                    results.append({'key': meta['key'], 'doc_type': meta['doc_type'], 'verdict': 'ERROR',
+                                    'detail': f'{type(e).__name__}: {e}'})
+                continue
+            for key, dt, ctx in items:
+                results.append({'key': key, 'doc_type': dt, 'verdict': captured.get(key),
+                                'prod_status': ctx.get('_prod_status')})
+        passed = [r for r in results if r['verdict'] == 'ok']
+        flagged = [r for r in results if r['verdict'] not in ('ok', None)]
+        if as_json:
+            self.stdout.write(json.dumps({'total': len(results), 'ok': len(passed), 'flagged': len(flagged),
+                                          'missing_context': missing, 'results': results}, indent=2, ensure_ascii=False))
+            return
+        self.stdout.write(f"\nScored {len(results)} genuine documents (each expected 'ok'):")
+        self.stdout.write(self.style.SUCCESS(f"  {len(passed)} pass") + f"  ·  {len(flagged)} flagged")
+        if flagged:
+            self.stdout.write("\n  flagged (genuine doc the engine did NOT pass — false positive or read issue):")
+            for (dt, v), n in sorted(Counter((r['doc_type'], r['verdict']) for r in flagged).items()):
+                self.stdout.write(f"    {dt:22s} {str(v):10s} {n}")
+        if missing:
+            self.stdout.write(self.style.WARNING(f"\n  {len(missing)} fixtures had no context entry (skipped)."))
 
     # ── Layer A re-capture (billable Gemini) ────────────────────────────────────
     def _rerun_vision(self, labels, context, d):
