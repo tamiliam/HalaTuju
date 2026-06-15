@@ -2499,7 +2499,7 @@
       "consentNone": "Tiada persetujuan aktif lagi.",
       "none": "Tiada lagi.",
       "profileTitle": "Profil penaja (draf AI)",
-      "profileDraftHint": "Dirangka secara automatik semasa penyerahan Semakan 2 → Penyemak. Profil akhir yang digilap dijana daripada penemuan temu duga anda selepas Semakan 3 dihantar.",
+      "profileDraftHint": "Dirangka secara automatik semasa serahan Check 2 → penyemak supaya anda boleh membacanya sekarang dan mengesahkan maklumatnya. Ia digantikan dengan versi akhir apabila anda menyimpan keputusan anda.",
       "generate": "Jana profil",
       "generating": "Menjana…",
       "regenerate": "Jana semula",
@@ -2983,7 +2983,8 @@
             "hint": "Dibaca oleh AI (Gemini) — sila sahkan nilai yang ditangkap."
           }
         }
-      }
+      },
+      "profilePending": "Profil dijana secara automatik apabila permohonan diserahkan untuk semakan."
     },
     "students": "Pelajar",
     "invite": "Jemputan",

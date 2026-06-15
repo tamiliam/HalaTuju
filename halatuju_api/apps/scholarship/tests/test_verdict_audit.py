@@ -162,8 +162,11 @@ class TestRecordVerdictEndpoint(TestCase):
         self._auth(REVIEWER)
         r = self.client.post(self._url(), {'officer_verdict': self._verdict(), 'finalise': True}, format='json')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()['finalise_result'], {'ok': True})
-        self.assertEqual(SponsorProfile.objects.get(application=self.app).final_markdown, '## Final v2')
+        self.assertTrue(r.json()['finalise_result']['ok'])
+        sp = SponsorProfile.objects.get(application=self.app)
+        self.assertEqual(sp.final_markdown, '## Final v2')
+        # One profile: the final is mirrored onto the sponsor/pool field too.
+        self.assertEqual(sp.anon_markdown, '## Final v2')
 
     @patch('apps.scholarship.views_admin.refine_sponsor_profile')
     def test_finalise_skipped_without_draft_but_verdict_still_recorded(self, mock_refine):

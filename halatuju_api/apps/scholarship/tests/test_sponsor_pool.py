@@ -18,7 +18,7 @@ from apps.scholarship import pool
 from apps.scholarship.models import (
     Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort, SponsorProfile, Sponsor,
 )
-from apps.scholarship.profile_engine import _build_anon_prompt, _build_prompt
+from apps.scholarship.profile_engine import _build_prompt
 from apps.scholarship.serializers import (
     SponsorPoolCardSerializer, SponsorPoolDetailSerializer,
 )
@@ -237,14 +237,13 @@ class TestAnonPrompt(TestCase):
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
 
-    def test_anon_prompt_excludes_name_and_school(self):
+    def test_profile_prompt_redacts_name_but_allows_school(self):
+        # One profile, PII-redacted (2026-06-15): the NAME is withheld, but the school
+        # name is allowed under the revised policy.
         app = _make_eligible_app(self.cohort)
-        anon = _build_anon_prompt(app)
-        self.assertNotIn(IDENTIFIERS['name'], anon)
-        self.assertNotIn(IDENTIFIERS['school'], anon)
-        # …while the NAMED prompt does include them (sanity that they differ).
-        named = _build_prompt(app)
-        self.assertIn(IDENTIFIERS['name'], named)
+        prompt = _build_prompt(app)
+        self.assertNotIn(IDENTIFIERS['name'], prompt)   # name redacted
+        self.assertIn(IDENTIFIERS['school'], prompt)    # school allowed
 
 
 # ─── TD-074b: the pre-publish identifier scan ────────────────────────────────
@@ -265,11 +264,17 @@ class TestAnonScan(TestCase):
         self.assertIn('name', pool.scan_anon_for_identifiers('The student, Zxqvbn, is bright.', self.profile))
 
     def test_catches_school_distinctive_token(self):
-        # "Secret" is the distinctive part of "SMK Secret School" (SMK/School are generic).
+        # The STRICT relay scanner still blocks school. "Secret" is the distinctive part.
         self.assertIn('school', pool.scan_anon_for_identifiers('Studied at a Secret institution.', self.profile))
 
     def test_catches_city(self):
         self.assertIn('city', pool.scan_anon_for_identifiers('Lives in Siretown these days.', self.profile))
+
+    def test_profile_pii_allows_school_and_city(self):
+        # The PROFILE scanner (2026-06-15 policy) allows school + town/state; it only
+        # blocks name/NRIC/phone/email.
+        self.assertEqual(pool.scan_profile_pii('Studied at a Secret institution in Siretown.', self.profile), [])
+        self.assertIn('name', pool.scan_profile_pii('The student, Zxqvbn, is bright.', self.profile))
 
     def test_catches_nric_phone_email(self):
         txt = 'Reach 050505-10-9999 or 012-999 8888 or leak@secret.example'
@@ -398,20 +403,13 @@ class TestAdminAnonProfile(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, "x@x.com")}')
 
-    @patch('apps.scholarship.profile_engine._call_gemini_text',
-           return_value={'markdown': 'The student is anonymous.', 'model_used': 'mock', 'language': 'English'})
-    def test_reviewer_generate_then_publish(self, _mock):
+    def test_reviewer_can_publish(self):
+        # The profile is generated at the verdict; the publish endpoint flips it live.
         self._auth('rev')
-        gen = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/generate/', {}, format='json')
-        self.assertEqual(gen.status_code, 200, gen.content)
-        sp = SponsorProfile.objects.get(application=self.app)
-        self.assertEqual(sp.anon_markdown, 'The student is anonymous.')
-        self.assertFalse(sp.anon_published)  # fresh generation is unpublished
-
         pub = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/publish/',
                                {'publish': True}, format='json')
         self.assertEqual(pub.status_code, 200, pub.content)
-        sp.refresh_from_db()
+        sp = SponsorProfile.objects.get(application=self.app)
         self.assertTrue(sp.anon_published)
         self.assertIsNotNone(sp.anon_published_at)
 
@@ -438,5 +436,6 @@ class TestAdminAnonProfile(TestCase):
 
     def test_viewer_forbidden(self):
         self._auth('vie')
-        r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/generate/', {}, format='json')
+        r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/publish/',
+                             {'publish': True}, format='json')
         self.assertEqual(r.status_code, 403)
