@@ -114,12 +114,6 @@ def classify_pathway(application) -> str:
     return 'unknown'
 
 
-def _programme_months(application) -> int | None:
-    fn = getattr(application, 'funding_need', None)
-    months = getattr(fn, 'programme_months', None) if fn else None
-    return months if months else None
-
-
 def _round100(n) -> int:
     """Round to the nearest RM100 — these are ballpark estimates, not invoices."""
     return int(round(n / 100.0)) * 100
@@ -127,17 +121,20 @@ def _round100(n) -> int:
 
 def estimate_funding(application) -> dict:
     """The funding-need estimate for an application: the monthly shortfall, the typical
-    (or student-stated) programme length in months, and the rounded whole-programme total
-    for award sizing, plus 'variable' (cost swings by institution) and 'practical' (an
-    internship term may add travel) flags. For an un-estimated/unknown pathway,
-    ``known=False`` and no figures — fall back to the student's self-report."""
+    programme length in months, and the rounded whole-programme total for award sizing,
+    plus 'variable' (cost swings by institution) and 'practical' (an internship term may
+    add travel) flags. The duration is the per-pathway figure from the basis table — NOT
+    the student's stated programme_months, which is rounded to whole years and so is less
+    accurate than the known programme length (e.g. STPM is 18 months, not a "2-year" 24).
+    For an un-estimated/unknown pathway, ``known=False`` and no figures — fall back to the
+    student's self-report."""
     pathway = classify_pathway(application)
     spec = PATHWAY_ESTIMATES.get(pathway)
     if spec is None:
         return {'pathway': pathway, 'known': False, 'monthly': 0,
-                'months': _programme_months(application), 'total': 0,
+                'months': None, 'total': 0,
                 'variable': False, 'practical': False}
-    months = _programme_months(application) or spec['months']
+    months = spec['months']
     monthly = spec['monthly']
     return {
         'pathway': pathway,
