@@ -132,6 +132,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Reviewer access — invite link + post-login landing (live-review feedback, 2026-06-16).** Two faults reported by the
+  newly-invited reviewers. **(1) Invite link landed on the homepage**, not the admin sign-in: the Supabase "Invite user"
+  email's `redirect_to` was unset, so the magic link bounced to `/`. The invite POST (`AdminInviteView`) now passes
+  `redirect_to: {FRONTEND_URL}/admin/login` (the Supabase Redirect-URL allow-list already covers `halatuju.xyz/**`, so no
+  dashboard change was needed). **(2) Reviewers saw "You are not a partner organisation admin".** After sign-in everyone
+  was routed to `/admin`, which is the **partner-org dashboard** (`getPartnerDashboard`) and 403s for a `reviewer`/`viewer`
+  (they belong to no partner org). Both entry points (`admin/login` and the `admin/auth/callback`) now branch on the role
+  from `/api/v1/admin/role/`: `reviewer`/`viewer` → **`/admin/scholarship`** (B40 Applications, their actual workspace),
+  org `admin`/`super` keep `/admin`. FE routing + one backend kwarg; no migration; web + api.
 - **Cockpit live-review round 9 (4 items from reviewing #20/#43).** (1) **Interview-Stage Delete now sticks.**
   Deleting an AI gap / flag from the agenda was local-only state (persisted only on a later "Save draft"), so it
   reappeared on refresh — Delete now persists the session immediately (`doDeleteAgendaItem`). (2) **"Other document"

@@ -515,9 +515,22 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-15)
+## Next Sprint (as of 2026-06-16)
 
-**▶ JUST SHIPPED & LIVE 2026-06-15 — AI profile narrative redesign + 2-step lifecycle (5 commits `dc89c39`→`68fd1ac`,
+**▶ JUST SHIPPED & LIVE 2026-06-16 — Reviewer access fix (`4a74b9b`, NO migration; retro
+`docs/retrospective-2026-06-16-reviewer-access.md`).** Two faults the newly-invited reviewers hit:
+- **Invite link → `/admin/login`** (was bouncing to the homepage): `AdminInviteView` now sets
+  `redirect_to: {FRONTEND_URL}/admin/login` on the Supabase invite POST. Supabase Redirect-URL allow-list already
+  covers `halatuju.xyz/**` (confirmed live), so no dashboard change.
+- **Reviewers/viewers now land on `/admin/scholarship`** (B40 Applications), not `/admin` (the partner-org dashboard,
+  which 403s them → "not a partner organisation admin"). Role-branch added to both `admin/login` and
+  `admin/auth/callback`; org `admin`/`super` keep `/admin`. **Lesson:** adding an auth role means re-auditing every
+  "default landing / who's an admin" assumption — see `docs/lessons.md`.
+- **Carry (unchanged):** TD-118 (dead profile api-client fns + orphaned i18n keys, web-only); Dhurvaashrii-class
+  consent gate is too strict (exact parent-IC name match rejects shortened/Tamil-romanised names) — tolerant-match fix
+  PROPOSED, not built, awaiting owner; Tamil refine of first-draft strings; funding figures for kkom/iljtm/ilkbs.
+
+**▶ SHIPPED & LIVE 2026-06-15 — AI profile narrative redesign + 2-step lifecycle (5 commits `dc89c39`→`68fd1ac`,
 NO migration; plan `docs/scholarship/profile-narrative-redesign-plan.md`, retro
 `docs/retrospective-2026-06-15-profile-narrative-redesign.md`).**
 - **ONE profile, common to reviewer + sponsor**, generated twice by the system: DRAFT at the Check 2 → reviewer handoff
