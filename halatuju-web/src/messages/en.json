@@ -2499,7 +2499,7 @@
       "consentNone": "No active consent yet.",
       "none": "None yet.",
       "profileTitle": "Sponsor profile (AI draft)",
-      "profileDraftHint": "Auto-drafted at the Check 2 → Reviewer handoff. The final polished profile is generated from your interview findings after Check 3 is submitted.",
+      "profileDraftHint": "Auto-drafted at the Check 2 → reviewer handoff so you can read it now and verify the claims. It is replaced by the final version when you save your verdict.",
       "generate": "Generate profile",
       "generating": "Generating…",
       "regenerate": "Regenerate",
@@ -2983,7 +2983,8 @@
             "hint": "Read by AI (Gemini) — please verify the captured values."
           }
         }
-      }
+      },
+      "profilePending": "The profile is generated automatically when the application is handed over for review."
     },
     "students": "Students",
     "invite": "Invite",

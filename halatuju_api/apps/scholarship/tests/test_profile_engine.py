@@ -48,14 +48,31 @@ class TestProfilePrompt(TestCase):
 
     def test_prompt_includes_current_fields(self):
         prompt = _build_prompt(self.app)
-        self.assertIn('Priya', prompt)
-        self.assertIn('SMK Taman', prompt)
+        self.assertIn('SMK Taman', prompt)       # school is allowed under the redaction policy
         self.assertIn('SPM', prompt)
-        self.assertIn('7', prompt)               # SPM A-count from profile.grades
+        self.assertIn('Merit score', prompt)     # merit is now fed
         self.assertIn('1800', prompt)            # household income from the profile
         self.assertIn('Accounting', prompt)      # pathway from field_of_study
         self.assertIn('living, transport', prompt)  # funding categories, not a total
-        self.assertIn('Cikgu Devi', prompt)      # referee
+
+    def test_prompt_redacts_pii_and_is_narrative(self):
+        prompt = _build_prompt(self.app)
+        # Single PII-redaction policy: refer to the student by alias, never the name.
+        self.assertNotIn('Priya', prompt)            # the name must NOT be in the prompt
+        self.assertIn('alias', prompt.lower())
+        self.assertIn('NEVER include', prompt)       # the redaction instruction
+        # Narrative style, not the old headed sections.
+        self.assertIn('three short paragraphs', prompt)
+        self.assertNotIn('## Background', prompt)
+
+    def test_prompt_includes_answered_queries(self):
+        from apps.scholarship.models import ResolutionItem
+        ResolutionItem.objects.create(
+            application=self.app, source='check2', code='utility_holder_unknown',
+            fact='income', kind='clarify', status='resolved',
+            resolution_text="The bill is in my brother's name.")
+        prompt = _build_prompt(self.app)
+        self.assertIn("The bill is in my brother's name.", prompt)
 
     def test_prompt_includes_story_narrative(self):
         prompt = _build_prompt(self.app)
@@ -89,7 +106,7 @@ class TestProfilePrompt(TestCase):
     def test_prompt_language_instructions(self):
         prompt = _build_prompt(self.app, target_language='Malay (Bahasa Melayu)')
         self.assertIn('Malay, English, or Tamil', prompt)            # multilingual input
-        self.assertIn('Write the FINAL profile in Malay', prompt)    # target-language output
+        self.assertIn('write the profile in Malay', prompt)          # target-language output
 
     def test_resolve_language(self):
         self.assertEqual(_resolve_language(self.app, 'en'), 'English')
@@ -112,8 +129,7 @@ class TestProfilePrompt(TestCase):
             profile=self.profile, status='shortlisted',
         )
         prompt = _build_prompt(app2)
-        self.assertIn('none provided', prompt)   # referees
-        self.assertIn('not provided', prompt)     # funding categories/note
+        self.assertIn('not provided', prompt)     # funding categories/note render a fallback
 
 
 class TestClaimGating(TestCase):

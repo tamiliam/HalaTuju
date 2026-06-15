@@ -8,13 +8,7 @@ import { useT } from '@/lib/i18n'
 import { formatPhone, formatAddress, isValidPhone, formatNric } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
-  generateSponsorProfile,
-  finaliseSponsorProfile,
   suggestInterviewGaps,
-  saveSponsorProfile,
-  publishSponsorProfile,
-  generateAnonProfile,
-  publishAnonProfile,
   verifyAcceptApplication,
   rejectApplication,
   addReferee,
@@ -162,7 +156,6 @@ export default function AdminScholarshipDetailPage() {
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
-  const [markdown, setMarkdown] = useState('')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const [viewerDoc, setViewerDoc] = useState<ViewerDoc | null>(null)   // in-cockpit doc viewer
@@ -224,7 +217,6 @@ export default function AdminScholarshipDetailPage() {
       .then((d) => {
         setApp(d)
         setProfile(d.sponsor_profile)
-        setMarkdown(d.sponsor_profile?.current_markdown || '')
         loadInterviewState(d)
         loadVerdictState(d)
       })
@@ -233,64 +225,12 @@ export default function AdminScholarshipDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
 
-  const doGenerate = async () => {
-    if (!token) return
-    setBusy('gen'); setError('')
-    try {
-      const p = await generateSponsorProfile(id, genLang, { token })
-      setProfile(p); setMarkdown(p.current_markdown || p.draft_markdown)
-    } catch { setError(t('admin.scholarship.genError')) } finally { setBusy('') }
-  }
-
   const doSuggestGaps = async (append = false) => {
     if (!token) return
     setBusy(append ? 'gapsMore' : 'gaps'); setError('')
     try {
       setApp(await suggestInterviewGaps(id, undefined, { token }, append))
     } catch { setError(t('admin.scholarship.gaps.error')) } finally { setBusy('') }
-  }
-
-  const doFinalise = async () => {
-    if (!token) return
-    setBusy('final'); setError('')
-    try {
-      setProfile(await finaliseSponsorProfile(id, genLang, { token }))
-    } catch { setError(t('admin.scholarship.finalProfile.error')) } finally { setBusy('') }
-  }
-
-  const doSave = async () => {
-    if (!token) return
-    setBusy('save'); setError('')
-    try {
-      const p = await saveSponsorProfile(id, { edited_markdown: markdown, status: 'approved' }, { token })
-      setProfile(p)
-    } catch { setError(t('admin.scholarship.saveError')) } finally { setBusy('') }
-  }
-
-  const doPublish = async () => {
-    if (!token) return
-    setBusy('pub'); setError('')
-    try {
-      const p = await publishSponsorProfile(id, { token })
-      setProfile(p)
-    } catch { setError(t('admin.scholarship.publishError')) } finally { setBusy('') }
-  }
-
-  // ── Phase E2: the anonymous (sponsor-pool) profile ──────────────────────────
-  const doGenerateAnon = async () => {
-    if (!token) return
-    setBusy('anonGen'); setError('')
-    try {
-      setProfile(await generateAnonProfile(id, genLang, { token }))
-    } catch { setError(t('admin.scholarship.anonProfile.genError')) } finally { setBusy('') }
-  }
-
-  const doPublishAnon = async (publish: boolean) => {
-    if (!token) return
-    setBusy('anonPub'); setError('')
-    try {
-      setProfile(await publishAnonProfile(id, publish, { token }))
-    } catch { setError(t('admin.scholarship.anonProfile.pubError')) } finally { setBusy('') }
   }
 
   const doReject = async (category: 'interview' | 'contractual') => {
@@ -382,7 +322,6 @@ export default function AdminScholarshipDetailPage() {
       }
       setApp(finalApp)
       setProfile(finalApp.sponsor_profile)
-      setMarkdown(finalApp.sponsor_profile?.current_markdown || '')
       loadVerdictState(finalApp)
       if (accepted) {
         setVerdictMsg(t('admin.scholarship.decision.savedAndAccepted')); setVerdictMsgTone('ok')
@@ -872,13 +811,10 @@ export default function AdminScholarshipDetailPage() {
         )}
       </div>
 
-      {/* ── Draft sponsor profile ──────────────────────────────────────────────── */}
+      {/* ── Student profile (system-generated: draft at handoff → final at verdict) ── */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <div>
-            <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.profileTitle')}</h2>
-            <p className="text-xs text-gray-400">{t('admin.scholarship.anonProfile.help')}</p>
-          </div>
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.profileTitle')}</h2>
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">{t('admin.scholarship.genLang')}</label>
             <select value={genLang} onChange={(e) => setGenLang(e.target.value)} disabled={!!busy}
@@ -886,7 +822,6 @@ export default function AdminScholarshipDetailPage() {
               <option value="en">English</option>
               <option value="ms">Bahasa Melayu</option>
             </select>
-            {profile && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">{profile.status}</span>}
           </div>
         </div>
 
@@ -895,77 +830,18 @@ export default function AdminScholarshipDetailPage() {
           <span>{t('admin.scholarship.profileDraftHint')}</span>
         </div>
 
-        {!profile ? (
-          <button onClick={doGenerate} disabled={busy === 'gen'} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm disabled:opacity-50">
-            {busy === 'gen' ? t('admin.scholarship.generating') : t('admin.scholarship.generate')}
-          </button>
+        {!profile || !(profile.final_markdown || profile.current_markdown) ? (
+          <p className="text-sm text-gray-400">{t('admin.scholarship.profilePending')}</p>
         ) : (
           <>
-            <textarea
-              value={markdown} onChange={(e) => setMarkdown(e.target.value)} rows={14}
-              className="w-full border rounded-lg p-3 font-mono text-sm"
-            />
-            <p className="text-xs text-gray-400">{t('admin.scholarship.model')}: {profile.model_used || '—'}</p>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={doGenerate} disabled={!!busy} className="px-3 py-2 border rounded-lg text-sm disabled:opacity-50">
-                {busy === 'gen' ? t('admin.scholarship.generating') : t('admin.scholarship.regenerate')}
-              </button>
-              <button onClick={doSave} disabled={!!busy} className="px-3 py-2 bg-primary-500 text-white rounded-lg text-sm disabled:opacity-50">
-                {busy === 'save' ? t('admin.scholarship.saving') : t('admin.scholarship.save')}
-              </button>
-              <button onClick={doPublish} disabled={!!busy} className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
-                {busy === 'pub' ? t('admin.scholarship.publishing') : t('admin.scholarship.publish')}
-              </button>
-              <button onClick={doFinalise} disabled={!!busy || app?.interview_session?.status !== 'submitted'}
-                title={app?.interview_session?.status !== 'submitted' ? t('admin.scholarship.finalProfile.needInterview') : undefined}
-                className="px-3 py-2 bg-primary-600 text-white rounded-lg text-sm disabled:opacity-50">
-                {busy === 'final' ? t('admin.scholarship.finalProfile.running') : t('admin.scholarship.finalProfile.button')}
-              </button>
+            <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
+              {profile.final_markdown || profile.current_markdown}
             </div>
-            {app?.interview_session?.status !== 'submitted' && (
-              <p className="text-xs text-gray-400">{t('admin.scholarship.finalProfile.needInterview')}</p>
-            )}
-            {profile.final_markdown && (
-              <div className="mt-3 rounded-lg border border-primary-200 bg-primary-50 p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-primary-900">{t('admin.scholarship.finalProfile.title')}</h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-600 text-white">{t('admin.scholarship.finalProfile.aiBadge')}</span>
-                </div>
-                <p className="text-[11px] text-primary-700">
-                  {t('admin.scholarship.finalProfile.finalisedAt')}: {profile.finalised_at ? new Date(profile.finalised_at).toLocaleString() : '—'} · {profile.final_model_used || '—'}
-                </p>
-                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans">{profile.final_markdown}</pre>
-              </div>
-            )}
-            {/* Phase E2: the ANONYMOUS sponsor-pool profile (generate → review → publish) */}
-            <div className="mt-3 rounded-lg border border-teal-200 bg-teal-50 p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-teal-900">{t('admin.scholarship.anonProfile.title')}</h3>
-                {profile.anon_published
-                  ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-600 text-white">{t('admin.scholarship.anonProfile.publishedBadge')}</span>
-                  : <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200 text-gray-600">{t('admin.scholarship.anonProfile.draftBadge')}</span>}
-              </div>
-              <p className="text-[11px] text-teal-700">{t('admin.scholarship.anonProfile.help')}</p>
-              <div className="flex flex-wrap gap-2">
-                <button onClick={doGenerateAnon} disabled={!!busy} className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm disabled:opacity-50">
-                  {busy === 'anonGen' ? t('admin.scholarship.anonProfile.generating')
-                    : (profile.anon_markdown ? t('admin.scholarship.anonProfile.regenerate') : t('admin.scholarship.anonProfile.generate'))}
-                </button>
-                {profile.anon_markdown && !profile.anon_published && (
-                  <button onClick={() => doPublishAnon(true)} disabled={!!busy} className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
-                    {busy === 'anonPub' ? t('admin.scholarship.publishing') : t('admin.scholarship.anonProfile.publish')}
-                  </button>
-                )}
-                {profile.anon_published && (
-                  <button onClick={() => doPublishAnon(false)} disabled={!!busy} className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm disabled:opacity-50">
-                    {busy === 'anonPub' ? t('admin.scholarship.anonProfile.unpublishing') : t('admin.scholarship.anonProfile.unpublish')}
-                  </button>
-                )}
-              </div>
-              {profile.anon_markdown && (
-                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans bg-white rounded p-2 border">{profile.anon_markdown}</pre>
-              )}
-            </div>
+            <p className="text-xs text-gray-400">
+              {profile.final_markdown
+                ? `${t('admin.scholarship.finalProfile.title')} · ${profile.final_model_used || '—'}`
+                : `${t('admin.scholarship.model')}: ${profile.model_used || '—'}`}
+            </p>
           </>
         )}
         {error && <p className="text-red-600 text-sm">{error}</p>}

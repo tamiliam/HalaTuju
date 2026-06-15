@@ -46,7 +46,6 @@ from .views_admin import (
     AdminSponsorshipListView,
     AdminApplicationRefereeView,
     AdminAssignableAdminsView,
-    AdminGenerateAnonProfileView,
     AdminGenerateProfileView,
     AdminPublishAnonProfileView,
     AdminInterviewView,
@@ -135,7 +134,6 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/suggest-gaps/', AdminSuggestGapsView.as_view()),
     path('admin/scholarship/applications/<int:pk>/profile/', AdminProfileEditView.as_view()),
     path('admin/scholarship/applications/<int:pk>/publish/', AdminPublishProfileView.as_view()),
-    path('admin/scholarship/applications/<int:pk>/anon-profile/generate/', AdminGenerateAnonProfileView.as_view()),
     path('admin/scholarship/applications/<int:pk>/anon-profile/publish/', AdminPublishAnonProfileView.as_view()),
     # Phase C: interview capture + request-more-docs
     path('admin/scholarship/applications/<int:pk>/interview/', AdminInterviewView.as_view()),
