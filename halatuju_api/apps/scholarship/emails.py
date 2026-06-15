@@ -949,3 +949,37 @@ def send_profile_complete_admin_email(application_id, applicant_name, programme_
         logger.warning('Failed to send admin-notify email for application #%s',
                        application_id, exc_info=True)
         return False
+
+
+def send_reviewer_assigned_email(to_email, reviewer_name, applicant_name):
+    """F7: notify a reviewer that an applicant has been assigned to them. English-only
+    (reviewers are internal staff). Sent on each (re)assignment — never re-sent for an
+    unchanged assignee, because assign_reviewer short-circuits a no-op before this fires.
+    Best-effort — swallows send failures so a mail hiccup never breaks the assignment."""
+    if not to_email:
+        return False
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    reviewer = reviewer_name or 'there'
+    applicant = applicant_name or 'A new applicant'
+    try:
+        send_mail(
+            subject='A new applicant has been assigned to you — HalaTuju',
+            message=(
+                f'Dear {reviewer},\n\n'
+                f'{applicant} has been assigned to you for review on HalaTuju.\n\n'
+                f'Please sign in to your reviewer dashboard to see their profile, '
+                f'supporting documents, and verification checks, and to record your '
+                f'decision:\n\n'
+                f'{frontend}/admin/login\n\n'
+                f'If you have any questions, just reply to this email.\n\n'
+                f'Thank you for supporting the HalaTuju scholarship programme.\n\n'
+                f'Warm regards,\nThe HalaTuju Team'
+            ),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send reviewer-assigned email to %s', to_email,
+                       exc_info=True)
+        return False
