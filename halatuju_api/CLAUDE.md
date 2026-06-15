@@ -515,7 +515,29 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-14)
+## Next Sprint (as of 2026-06-16)
+
+**▶ DONE — NOT MERGED/DEPLOYED (on branch `feature/doc-eval-harness`, 3 commits `f57f343`→`c788c8e`, NO migration;
+retro `docs/retrospective-genuineness-signatures.md`). Document genuineness consolidated + probabilistic slip/cert
+signature scorer + academic slip fixes.**
+- **`genuineness/` package** = one home for every genuineness check: `ic` (MyKad), `supporting_doc` (STR/BC/EPF),
+  `results_doc` (the new scorer), shared `bands`, `assess()` entry point. `ic_genuineness`/`doc_genuineness` moved out
+  of `vision.py` (re-exported for back-compat). Behaviour-preserving relocation, before/after tests.
+- **Signature scorer (slip + cert):** two per-type signature lists — fixed printed strings matched DETERMINISTICALLY in
+  the OCR text + two VISUAL signatures (QR + Jata Negara crest) from one focused multimodal read → weighted PROBABILITY
+  → soft bands **suspect <0.35 · review 0.35–0.70 · genuine ≥0.70**, calibrated on the real 48-doc corpus (46 genuine
+  0.56–0.80, 1 typed fake 0.04). **Live for results_slip only**; replaces the holistic `doc_genuineness` read there
+  (auto-detects slip vs cert; robust to prior-year / hidden-NRIC / no-watermark / cropped). `suspect` rides the same
+  SOFT cap + officer flag; OCR failure → no signal. STR/BC/EPF unchanged. Flag-gated, never blocks.
+- **Academic fix #1:** an undeclared slip subject is a SOFT discrepancy (Gopal `/profile` nudge + Academic `review` +
+  Check-2), no longer a doc mismatch/block (`resolution.doc_match_verdict` dropped `subjects` from its red check).
+  **Name fix #2:** strip a leaked `NAMA :` label before the slip name match (fixed the a27 false name_mismatch).
+- Eval tooling `eval/capture_ocr.py` (Cloud Vision OCR via gcloud ADC) + `eval/calibrate_signatures.py`. Tests +40;
+  **scholarship suite 1287 passed.** New local-only deps cv2/numpy/google-cloud-vision NOT in `requirements.txt`
+  (google-cloud-vision IS already a prod dep). The signature scorer is pure text (no new prod dep).
+- **▶ NEXT:** TD-119 (diagnose the other 13 corpus false-positive flags: 5 parent_ic, 5 birth_certificate, 1 epf,
+  1 str, 2 offer_letter — same diagnose→fix→test loop); TD-121 (wire the harness scorecard through the genuineness cap);
+  TD-120 (drop `results_slip` from `supporting_doc._GENUINENESS_DOCS`). Then merge to `main` (owner-gated deploy).
 
 **▶ JUST SHIPPED & LIVE 2026-06-14 — Cockpit live-review + verification-accuracy round (4 commits `245facd`→`97a7793`,
 NO migration; retro `docs/retrospective-cockpit-livereview-2026-06-14.md`).** A live-testing pass over the officer

@@ -182,10 +182,22 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 ├── emails.py                      # Trilingual (EN/MS/TA) acknowledgement email
 ├── views.py                       # ApplicationListCreateView, ApplicationDetailView
 ├── urls.py                        # /api/v1/scholarship/applications/ (+ <id>/)
+├── genuineness/                   # ONE home for all document-genuineness checks (2026-06-16)
+│   ├── __init__.py                #   assess(doc_type, ...) — single entry point + re-exports
+│   ├── bands.py                   #   shared probability → status bands (suspect/review/genuine)
+│   ├── ic.py                      #   ic_genuineness (MyKad markers) — moved from vision.py
+│   ├── supporting_doc.py          #   doc_genuineness (STR/BC/EPF) — moved from vision.py
+│   └── results_doc.py             #   probabilistic SIGNATURE scorer (SPM slip + certificate)
+├── doc_signatures.py              # back-compat shim → genuineness/results_doc + bands
 ├── sql/rls_policies.sql           # Deny-by-default RLS for the 2 new tables (apply before deploy)
 ├── migrations/0001_initial.py     # ScholarshipCohort + ScholarshipApplication
 └── tests/                         # test_models.py (4), test_api.py (13)
 ```
+**Genuineness (`genuineness/`):** every "is this document genuine?" check lives here behind `assess()`. IC + STR/BC/EPF
+are multimodal "looks official?" reads; the results-slip/certificate check is a deterministic SIGNATURE-probability
+scorer over the OCR text (+ a focused QR/crest visual read), soft-bands, calibrated on a labelled corpus. The result
+(`vision_fields['authenticity']`) soft-caps the verdict (`verdict_engine`) and raises an officer flag (`anomaly_engine`);
+it never blocks. `vision.py` keeps the shared OCR/Gemini plumbing and re-exports `ic_genuineness`/`doc_genuineness`.
 
 **New tables (created in migration; applied to Supabase at deploy):** `scholarship_cohorts`,
 `scholarship_applications`. PRD + roadmap live in `docs/scholarship/`. Phase 1 = 6 sprints;
