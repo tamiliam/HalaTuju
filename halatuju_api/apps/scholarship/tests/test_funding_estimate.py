@@ -109,12 +109,14 @@ class TestEstimate(_Base):
             est = estimate_funding(self._app(chosen_pathway=pw, pathway_certainty='sure'))
             self.assertEqual(est['total'], total, pw)
 
-    def test_programme_months_overrides_default(self):
-        app = self._app(chosen_pathway='university', pathway_certainty='sure')
-        FundingNeed.objects.create(application=app, categories=['fees'], programme_months=24)
+    def test_stated_programme_months_does_not_override_table(self):
+        # The student's programme_months is rounded to whole years, so it's less accurate
+        # than the known per-pathway length — the table wins. (STPM stays 18, not a "2-yr" 24.)
+        app = self._app(chosen_pathway='stpm', pathway_certainty='sure')
+        FundingNeed.objects.create(application=app, categories=['meals'], programme_months=24)
         est = estimate_funding(app)
-        self.assertEqual(est['months'], 24)
-        self.assertEqual(est['total'], 5300)  # 220 x 24 = 5,280 -> rounds to 5,300
+        self.assertEqual(est['months'], 18)
+        self.assertEqual(est['total'], 9000)
 
     def test_variable_flags(self):
         self.assertTrue(estimate_funding(self._app(chosen_pathway='asasi',
