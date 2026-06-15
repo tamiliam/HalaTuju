@@ -972,7 +972,7 @@ def send_reviewer_assigned_email(to_email, reviewer_name, applicant_name):
                 f'decision:\n\n'
                 f'{frontend}/admin/login\n\n'
                 f'If you have any questions, just reply to this email.\n\n'
-                f'Thank you for supporting the HalaTuju scholarship programme.\n\n'
+                f'Thank you for supporting the B40 Assistance Programme.\n\n'
                 f'Warm regards,\nThe HalaTuju Team'
             ),
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
