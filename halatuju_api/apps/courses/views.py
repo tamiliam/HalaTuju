@@ -1015,6 +1015,23 @@ class ProfileView(APIView):
         except Exception:
             application_open = False
 
+        # Identity verified — drives the Name + IC "Verified" badges on /profile. True when
+        # the student's uploaded MyKad SCAN confirms both name and IC No against the profile
+        # (the "verified with an IC" sense), OR an admin has locked the NRIC at verify-&-accept.
+        identity_verified = bool(profile.nric_verified)
+        if not identity_verified and profile.name and profile.nric:
+            try:
+                from apps.scholarship.models import ApplicantDocument
+                from apps.scholarship.vision import name_match, nric_match
+                ic = (ApplicantDocument.objects
+                      .filter(application__profile=profile, doc_type='ic')
+                      .exclude(vision_name='').order_by('-id').first())
+                if ic is not None:
+                    identity_verified = (name_match(ic.vision_name, profile.name) == 'match'
+                                         and nric_match(ic.vision_nric, profile.nric))
+            except Exception:
+                pass
+
         return Response({
             'grades': profile.grades,
             'gender': profile.gender,
@@ -1030,6 +1047,7 @@ class ProfileView(APIView):
             'school': profile.school,
             'nric': profile.nric,
             'nric_verified': profile.nric_verified,
+            'identity_verified': identity_verified,
             'angka_giliran': profile.angka_giliran,
             'address': profile.address,
             'postal_code': profile.postal_code,
