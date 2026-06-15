@@ -8,6 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Document genuineness consolidated into a `genuineness/` package + a probabilistic SIGNATURE scorer for SPM
+  slips/certificates.** One home for every "is this document genuine?" check — `ic` (MyKad markers),
+  `supporting_doc` (STR/BC/EPF), `results_doc` (the new scorer), shared `bands`, and an `assess()` entry point;
+  `ic_genuineness`/`doc_genuineness` moved out of `vision.py` (re-exported for back-compat, behaviour-preserving,
+  bracketed by before/after characterization tests). The scorer matches two per-type SIGNATURE lists — mostly fixed
+  printed strings (`LEMBAGA PEPERIKSAAN`, `ANGKA GILIRAN`, `LAYAK MENDAPAT SIJIL`, the `bukan sijil` disclaimer,
+  `PENGARAH PEPERIKSAAN`; bilingual cert headers) detected DETERMINISTICALLY in the OCR text, plus two VISUAL
+  signatures (QR code + Jata Negara crest) from one focused multimodal read — into a weighted PROBABILITY and soft
+  bands (**suspect <0.35 · review 0.35–0.70 · genuine ≥0.70**), calibrated on the real 48-doc corpus (46 genuine
+  0.56–0.80, 1 typed fake 0.04; zero misclassifications). **Live (results_slip only):** the upload path now scores
+  signatures instead of the holistic `doc_genuineness` read (auto-detects slip vs certificate; robust to prior-year,
+  hidden-NRIC, no-watermark and cropped photos). The new `suspect` band rides the same SOFT cap + officer flag
+  (`verdict_engine`, `anomaly_engine` taught the status); an OCR failure yields NO signal (never penalise a student
+  for our failure). STR/BC/EPF genuineness unchanged. Flag-gated (`DOC_GENUINENESS_CHECK_ENABLED`), never blocks.
+  Eval tools `eval/capture_ocr.py` (Cloud Vision OCR via gcloud ADC) + `eval/calibrate_signatures.py`. NO migration.
+
+### Fixed
+- **Undeclared slip subjects are a SOFT discrepancy, not a submission block.** A results-slip `subjects` mismatch
+  means the OFFICIAL slip lists a subject the student didn't enter in their `/profile` — the slip is genuine, the
+  profile is incomplete. `resolution.doc_match_verdict` no longer reds the document for it; it stays a soft signal
+  (Gopal's existing `slip_subjects_missing` `/profile` nudge, the Academic tile `review` + `academic_missing_subjects`,
+  and Check-2 follow-up). A NAME or GRADE (results) mismatch still blocks.
+- **Leaked `NAMA :` field-label no longer causes a false slip name_mismatch.** A genuine slip whose extracted
+  candidate name carried a `NAMA :`/`NAME -`/`CALON ` prefix (e.g. `NAMA : SANJANA A/P KALIANA KUMAR` vs the typed
+  `SANJANA A/P KALIANAKUMAR`) is now stripped before the token-set match. (Surname OCR spacing was already handled by
+  `name_match`'s glued-equal fallback.)
+
+### Added (cont.)
 - **Document-recognition eval harness (`eval_doc_recognition`) — a "golden master" for the Vision→matcher→verdict
   pipeline.** Local/dev tool to replace eyeballing each upload: a small labelled set of documents is scored against
   the SAME `resolution.doc_match_verdict` the cockpit shows, printing `N/M correct · regressions`. Two layers keep it

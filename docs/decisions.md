@@ -2908,3 +2908,43 @@ blank contribution as zero (rejected — conflates a parse miss with genuine no-
 turns a genuine zero into a useful B40 signal.
 **Trade-offs:** new fields populate only on re-parsed/new EPFs (existing ones use the latest-month fallback until re-run).
 **Revisit if:** averaging proves skewed by lump-sum arrears rows — switch to median/trimmed mean.
+
+## Results-slip genuineness = probabilistic SIGNATURE score, not a holistic AI "looks official?" read — Genuineness signatures, 2026-06-16
+**Decision:** For SPM slips/certificates, genuineness is a weighted PROBABILITY over a list of expected
+SIGNATURES (mostly fixed printed strings matched deterministically in the OCR text + two visual ones, QR + crest,
+from one multimodal read), mapped to soft bands (suspect <0.35 / review 0.35–0.70 / genuine ≥0.70), calibrated on
+a labelled 48-doc corpus. Replaces the holistic `doc_genuineness` "is it official?" Gemini read for results_slip.
+**Alternatives considered:** keep the holistic AI read (missed a top-half reproduction with the masthead, and
+false-flagged a genuine current-year slip on a "future year" misconception); a deterministic cv2 QR decode (failed
+on 85% of genuine phone photos — couldn't decode blurry QRs).
+**Rationale:** Most slip/cert features are fixed strings → deterministic, auditable, identical every run. Probability
+(not yes/no) tolerates a cropped photo: a genuine slip missing its trailing signatures still scores "review", not
+"suspect". The visual QR/crest read reports PRESENCE (robust) rather than decoding.
+**Trade-offs:** a genuinely cropped genuine slip lands in soft "review" (officer confirms); calibration thresholds
+are tuned to one corpus and may need revisiting as more documents arrive.
+**Revisit if:** the review rate on cropped photos is too high (raise visual weight / lower the genuine threshold), or
+a sophisticated forgery that copies all signatures appears (the threat model is casual/wrong-document fakes only).
+
+## All genuineness checks live in one `genuineness/` package — Genuineness signatures, 2026-06-16
+**Decision:** Move `ic_genuineness` + `doc_genuineness` out of `vision.py` into an `apps/scholarship/genuineness/`
+package alongside the new signature scorer, behind a single `assess()` entry point; `vision.py` keeps the shared
+OCR/Gemini plumbing and re-exports the two functions for back-compat.
+**Alternatives considered:** leave them scattered across `vision.py` + a separate `doc_signatures.py` (adds a third
+home, worsens the spread); a thin facade that re-exports from `vision.py` (doesn't actually relocate the logic).
+**Rationale:** Cohesion + auditability — every "is this genuine?" rule sits side by side and is diffable in one place;
+the natural home to extend the verification-assurance layer. The genuineness submodules import `vision` LAZILY inside
+functions to avoid a circular import and preserve the `vision._call_gemini_json` test patch seam.
+**Trade-offs:** import-site churn during the move (mitigated by re-export shims + a 39-test before/after net).
+**Revisit if:** the package grows enough to warrant per-type subpackages.
+
+## A results-slip 'subjects' mismatch is SOFT (incomplete profile), not a block — Academic slip fixes, 2026-06-16
+**Decision:** An undeclared extra subject on the slip no longer makes `doc_match_verdict` a mismatch / submission
+blocker; it stays a soft discrepancy (Gopal `/profile` nudge + Academic "review" + Check-2 follow-up). NAME and GRADE
+mismatches still block.
+**Alternatives considered:** keep blocking (forces profile completeness but penalises a genuine student for not typing
+every elective); silently ignore it (loses the nudge to complete the profile).
+**Rationale:** The slip is the authority; extra subjects on it are normal and harmless. The right response is to nudge
+the student to complete `/profile`, not to bounce a genuine document.
+**Trade-offs:** the Academic tile stays "review" until the student adds the subjects (intended gentle pressure).
+**Revisit if:** officers find the residual "review" noisy.
+

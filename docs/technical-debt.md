@@ -768,3 +768,20 @@
   (offered, not built):** a deterministic "EPF extracted a name but NO balance/contribution/year/employer → doesn't look
   like an EPF" soft officer signal (no billable call), to catch mis-slots even when genuineness hasn't run. (Logged
   2026-06-14.)
+- TD-121: **The eval harness scorecard doesn't run counter-examples through the genuineness cap.**
+  `eval_doc_recognition --auto-ok` scores via `resolution.doc_match_verdict` (content match), which never reads
+  `vision_fields['authenticity']` — that cap lives in `verdict_engine.build_verdict`. So the known typed fake (a16)
+  shows as a content false-negative even though the new signature scorer + cap would flag it `suspect` in production.
+  **To resolve:** capture the signature genuineness into the cached snapshots and score counter-examples through the
+  band (or through `build_verdict`), so the two-directional scorecard reflects the genuineness layer. Verified inline
+  during the sprint (a16 → suspect; 43 genuine → genuine; 4 cropped → review; zero misclassifications), just not wired
+  into the command. (Logged 2026-06-16, Genuineness signatures.)
+- TD-119: **13 corpus false-positive flags still undiagnosed** — the eval run flagged 5 `parent_ic`, 5
+  `birth_certificate`, 1 `epf`, 1 `str`, 1 `offer_letter` (mismatch), 1 `offer_letter` (unreadable) as genuine-docs-
+  wrongly-flagged. The owner reviewed `ic`/`parent_ic` as all-genuine, so these are likely matcher false positives of
+  the same class as the results-slip ones. **To resolve:** run the diagnose → fix → test loop per type (the
+  results-slip pass closed 11 of the original 24). (Logged 2026-06-16, Genuineness signatures.)
+- TD-120: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
+  path now routes it to the signature scorer (the `if doc_type == 'results_slip'` branch wins first). Harmless, but
+  the dict membership is now only used as the flag-gate set for STR/BC/EPF. **To resolve:** drop `results_slip` from
+  that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16.)
