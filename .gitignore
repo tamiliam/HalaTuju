@@ -27,6 +27,7 @@ halatuju_api/data/tvet/*.csv
 halatuju_api/apps/scholarship/eval/fixtures/*
 halatuju_api/apps/scholarship/eval/snapshots/*
 halatuju_api/apps/scholarship/eval/context.json
+halatuju_api/apps/scholarship/eval/_manifest.csv
 !halatuju_api/apps/scholarship/eval/fixtures/.gitkeep
 !halatuju_api/apps/scholarship/eval/snapshots/.gitkeep
 
