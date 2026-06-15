@@ -768,3 +768,12 @@
   (offered, not built):** a deterministic "EPF extracted a name but NO balance/contribution/year/employer → doesn't look
   like an EPF" soft officer signal (no billable call), to catch mis-slots even when genuineness hasn't run. (Logged
   2026-06-14.)
+
+- **TD-118 (low): tidy dead profile UI plumbing after the narrative redesign.** The 2026-06-15 profile redesign
+  removed the manual Generate/Save/Publish/Refine controls + the anonymous-profile card from the cockpit, but left
+  behind: (a) unused api client functions in `halatuju-web/src/lib/admin-api.ts` (`generateSponsorProfile`,
+  `finaliseSponsorProfile`, `saveSponsorProfile`, `publishSponsorProfile`, `generateAnonProfile`, `publishAnonProfile`)
+  and (b) now-orphaned i18n keys under `admin.scholarship` (`generate`/`regenerate`/`save`/`publish` + `anonProfile.*` +
+  some `finalProfile.*`). All harmless (build green, i18n parity intact), so deferred from the redesign sprint. Remove
+  them in a future web-only change, grepping each key/fn for references first and keeping en/ms/ta parity. (Logged
+  2026-06-15.)

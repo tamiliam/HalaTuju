@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **AI student profile redesign — one PII-redacted narrative, generated twice by the system (2026-06-15).**
+  Collapses the old sectioned, named draft + separate anonymous-pool profile into **one** document, common to the
+  reviewer and (once approved) the sponsor. The system generates it twice, never a human: a **draft** at the Check 2 →
+  reviewer handoff (Gemini Flash), and a **final** at "Save verdict & generate final profile" (Gemini Pro) that
+  **replaces** the draft and is the sponsor/pool version. Prose is now warm flowing **narrative** (~3 paragraphs, no
+  section headers, he/she never "they", sparing em-dashes, no fundraising clichés). **Redaction policy:** alias instead
+  of name; blocks ONLY name/NRIC/photo/phone/email/street (student + guardian) — school, town, institution, occupations
+  are allowed. Feeds the merit score, subject-area grades, the confirmed programme + institution, and the **student's
+  answers to Check-2/reviewer queries**; the final also folds in interview findings, the four-fact verdict, the
+  reviewer's conclusion and the **recommended assistance amount**. **Income honesty:** STR/JKM denote B40/welfare status,
+  never an income figure; a payslip/EPF on file (either route) is used authoritatively, otherwise income is "reported"
+  and never pinned to a guessed earner. Removed the manual Generate/Save/Publish/Refine controls + the anonymous-profile
+  card; the cockpit renders the profile as plain read-only text. Final is published to the pool on Approve; the leak
+  scanner is split into strict (`scan_anon_for_identifiers`, graduation relay) and relaxed (`scan_profile_pii`, profile).
+  One-off `backfill_assigned_profiles` (cron-runnable, flag-gated) drafted the 7 already-assigned students. No migration.
 - **Reviewer-assignment email + personalised invites (live-review, 2026-06-15).** Assigning an applicant to a reviewer
   now sends them a best-effort English notification (`emails.send_reviewer_assigned_email`, hooked into
   `services.assign_reviewer`) — names the applicant, links to `/admin/login`; fires once per (re)assignment, never on
