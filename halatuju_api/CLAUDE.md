@@ -515,7 +515,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-14)
+## Next Sprint (as of 2026-06-15)
+
+**▶ JUST SHIPPED & LIVE 2026-06-15 — Reviewer-invite + funding-estimate live-review round (7 commits `0eecd1d`→`4c2053f`,
+NO migration; retro `docs/retrospective-2026-06-15-reviewer-invite-funding-estimate.md`).**
+- **Reviewer-assignment email** (`emails.send_reviewer_assigned_email` → `services.assign_reviewer`): names the applicant,
+  links to `/admin/login`, fires once per (re)assignment, best-effort. **Invite name** passed as Supabase `data:{name}` →
+  `{{ .Data.name }}`. **Ops:** Brevo is now Supabase Auth's custom SMTP (verified `noreply@halatuju.xyz` sender) — invite
+  + password-reset rate limit cleared; invite template rebranded.
+- **Funding estimate rebuilt** to the owner's per-pathway model (`funding_estimate.py` + basis doc): single shortfall =
+  costs − govt allowance − PTPTN, × fixed per-pathway months, rounded RM100 (STPM ~9k, Matrik ~2k, Asasi ~7k, Poly ~4.3k,
+  uni-diploma ~6.6k, PISMP ~10.8k). **No device**, **no degree** (post-SPM can't, bar PISMP), **poly vs university-diploma
+  split**, kkom/iljtm/ilkbs un-estimated. Classifies from `chosen_programme` when pathway-type blank (#62); duration is
+  the table, NOT student `programme_months` (fixed STPM 24→18). Cockpit card: total + `~RM/mth × months` + variable +
+  practical-term notes.
+- **Gopal offer-vs-pathway clash**: names the difference, offers "fix in /profile" OR "confirm later via Check-2".
+- **Corrected stale flag note:** `CHECK2_STUDENT_QUERIES_ENABLED` is **ON** in prod (student-facing Check-2 is live).
+- **Gotchas reaffirmed:** another agent shares this repo (primary checkout on `feature/doc-eval-harness`) — read code from
+  `main` (a worktree) + verify flags via `gcloud run …describe`, never CLAUDE.md or the primary checkout. The
+  funding estimate is computed **live** per cockpit load — no backfill needed.
 
 **▶ JUST SHIPPED & LIVE 2026-06-14 — Cockpit live-review + verification-accuracy round (4 commits `245facd`→`97a7793`,
 NO migration; retro `docs/retrospective-cockpit-livereview-2026-06-14.md`).** A live-testing pass over the officer

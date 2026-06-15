@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reviewer-assignment email + personalised invites (live-review, 2026-06-15).** Assigning an applicant to a reviewer
+  now sends them a best-effort English notification (`emails.send_reviewer_assigned_email`, hooked into
+  `services.assign_reviewer`) — names the applicant, links to `/admin/login`; fires once per (re)assignment, never on
+  unassign or a no-op. The Supabase invite POST now also passes `data:{name}` so the "Invite user" email can greet the
+  invitee by name (`{{ .Data.name }}`). Ops: connected **Brevo** as Supabase Auth custom SMTP (reusing the api's verified
+  `noreply@halatuju.xyz` sender) to clear the invite/password-reset rate limit, and rebranded the invite template. +3
+  backend tests; no migration.
+- **Funding-need estimate rebuilt to the owner's interview-based per-pathway model.** Replaces the old range model with a
+  single **monthly shortfall = living costs − government allowance − PTPTN**, × the **per-pathway typical duration**,
+  rounded to RM100: STPM ≈RM9,000, Matrik ≈RM2,000, Asasi ≈RM7,000, Politeknik ≈RM4,300, public-university diploma
+  ≈RM6,600, PISMP ≈RM10,800. Splits Politeknik (`poly`) from public-university diploma (`university`); **drops the device
+  one-off** (assistance is paid in tranches); **no degree category** (post-SPM can't enter a degree direct, bar PISMP);
+  `kkom`/`iljtm`/`ilkbs` deliberately un-estimated (different cost structure → "assess at interview"). Cockpit card shows
+  the total + `~RM/mth × months` + a `variable` caveat (asasi, uni-diploma) + a `practical`-term note (diploma, PISMP).
+  Classifies from `chosen_programme` when the pathway-type field is blank (fixes #62's "Pathway not chosen yet" on an
+  offer-letter-auto-filled Politeknik diploma); duration is the table value, not the student's year-rounded
+  `programme_months` (fixes STPM showing 24 instead of 18). Basis doc + en/ms/ta updated; no migration.
+- **Gopal guides an offer-vs-pathway clash.** When the uploaded offer letter differs from the chosen pathway, Cikgu Gopal
+  now names the difference (no blame) and offers two real options: update the pathway in **/profile** to match the offer,
+  or leave it and confirm via the (live) Check-2 `pathway_confirm` step after submitting — replacing the old "do nothing,
+  don't edit anything". Prompt + en/ms/ta fallback; no migration.
 - **/profile round 2 (verified badge + view tidy + hard validation).** **(1)** The Name + IC "Verified" badges now key
   off a new **`identity_verified`** signal (`ProfileView.get`): true when the uploaded **MyKad scan** confirms both the
   name and IC No against the profile (`name_match=='match'` + `nric_match`), OR an admin has locked the NRIC — so a
