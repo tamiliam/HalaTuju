@@ -20,6 +20,7 @@ three and writes in the requested target language. Mocked in tests; degrades gra
 to an error dict when the AI is unavailable.
 """
 import logging
+import re
 import time
 
 from django.conf import settings
@@ -41,14 +42,17 @@ DEFAULT_LANGUAGE = 'English'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
-    "Write warm, factual, flowing prose — about three short paragraphs, roughly 220-320 "
+    "Write warm, factual, flowing prose: about three short paragraphs, roughly 220-320 "
     "words, with NO section headings and NO bullet lists. Tell the story so a reader "
-    "understands, in turn: who the student is and their family's situation; their academic "
-    "standing and the pathway they are on; and what they are worried about and how the "
-    "support would help. Let the facts carry the case — do NOT use fundraising clichés "
-    "(\"breaking the cycle\", \"ripple effect\", \"pioneering spirit\", \"an investment in\") "
-    "and do NOT invent specifics (an age, a relationship, a figure) not given below. Where a "
-    "fact is missing, simply leave it out rather than guess."
+    "understands, in turn, who the student is and the family's situation; the student's "
+    "academic standing and pathway; and what the student is worried about and how the "
+    "support would help. Refer to the student as 'he' or 'she' using the pronouns given "
+    "below; NEVER use 'they' for the student (most people write he/she). Use em-dashes very "
+    "sparingly, at most one in the whole profile; prefer commas, full stops or brackets. Let "
+    "the facts carry the case: do NOT use fundraising clichés such as 'breaking the cycle', "
+    "'ripple effect' or 'pioneering spirit', and do NOT invent specifics (an age, a "
+    "relationship, a figure) not given below. Where a fact is missing, leave it out rather "
+    "than guess."
 )
 
 _REDACTION = (
@@ -79,6 +83,7 @@ subject areas they span; never round up or imply a uniform top grade. If a merit
 you may cite it.
 
 THE STUDENT (alias {alias})
+Pronouns (use these for the student, never "they"): {pronouns}
 School / college: {school}
 Qualification: {qualification}    Merit score: {merit}
 SPM grades: {grades_summary}    STPM PNGK: {stpm_pngk}
@@ -154,6 +159,22 @@ def _alias(application):
     same alias the sponsor pool uses), e.g. 'S-A3F9C1'."""
     from .pool import pool_ref
     return pool_ref(application.id)
+
+
+def _pronouns(application):
+    """'she/her' or 'he/him' for the student, from the recorded gender (falling back to
+    the Malaysian NRIC last digit: odd = male, even = female). 'not provided' if unknown —
+    the model is told to avoid 'they', so it picks a sensible default rather than hedge."""
+    profile = getattr(application, 'profile', None)
+    g = (getattr(profile, 'gender', '') or '').strip().lower() if profile else ''
+    if g in ('female', 'f', 'perempuan'):
+        return 'she/her'
+    if g in ('male', 'm', 'lelaki'):
+        return 'he/him'
+    nric = re.sub(r'\D', '', getattr(profile, 'nric', '') or '') if profile else ''
+    if nric:
+        return 'he/him' if int(nric[-1]) % 2 else 'she/her'
+    return 'not provided'
 
 
 # ── Check 2 §6: claim-gating ─────────────────────────────────────────────────
@@ -299,6 +320,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         target_language=target_language,
         do_not_claim=_DO_NOT_CLAIM,
         alias=alias,
+        pronouns=_pronouns(application),
         school=pval('school'),
         qualification=(pval('exam_type', 'n/a') or 'n/a'),
         merit=_merit(application),
@@ -336,6 +358,8 @@ LANGUAGE — the inputs may be in Malay, English, or Tamil (or a mix); understan
 and write the profile in {target_language}.
 
 {style}
+
+Pronouns (use these for the student, never "they"): {pronouns}
 
 Rules:
 - Fold in what the student's answers and the interview CONFIRMED or CLARIFIED; reflect any NEW \
@@ -441,6 +465,7 @@ def refine_sponsor_profile(application, draft, session, language=None):
     prompt = REFINE_PROMPT.format(
         redaction=_REDACTION.format(alias=_alias(application)),
         style=_STYLE,
+        pronouns=_pronouns(application),
         target_language=target_language,
         draft=(draft or '').strip() or 'not provided',
         qa=_render_qa(application),
