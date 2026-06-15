@@ -1,5 +1,38 @@
 # Architectural Decisions — HalaTuju
 
+## One PII-redacted narrative profile (no separate anonymous version) — AI profile, 2026-06-15
+
+**Decision:** A single AI student profile serves both the reviewer and (once approved) the sponsor. It is generated
+twice by the system: a draft at the Check 2 → reviewer handoff (Flash) and a final at Save-verdict (Pro) that replaces
+it and becomes the sponsor/pool version. It is **PII-redacted, not strictly anonymous**: alias instead of name; only
+name/NRIC/photo/phone/email/street (student + guardian) are withheld — school, town, institution and occupations are
+allowed. Prose is narrative (no section headers), he/she (never "they"), few em-dashes.
+
+**Alternatives considered:** (1) The prior model — a named, headed draft for the reviewer PLUS a separately-generated,
+strictly-anonymous pool profile, with manual Generate/Save/Publish/Refine buttons. (2) Keep strict anonymity (no
+school/town) for the sponsor-facing version.
+
+**Rationale (owner):** "There is only one profile common to all." One document removes drift and the manual ceremony;
+the reviewer verifies identity via the documents/verdict panel, not the profile, so the profile needn't carry the name.
+The owner accepts sponsors seeing school/town (it aids connection) while protecting the six contact/ID items.
+
+**Trade-offs:** Looser than the original "permanently-anonymous pool". The shared leak scanner had to split into a
+strict one (graduation-message relay) and a relaxed `scan_profile_pii` (this profile). Existing pre-redesign drafts keep
+their old format until regenerated (draft at next handoff, or final at verdict).
+
+**Revisit if:** the programme needs strict sponsor anonymity again (re-tighten `scan_profile_pii` + add an anon variant),
+or PDPA guidance changes what sponsors may see.
+
+## Income honesty: STR proves B40, not an amount; payslip/EPF is authoritative — AI profile, 2026-06-15
+
+**Decision:** The profile must not present STR/JKM as confirming an income figure (they confirm B40 / welfare status
+only). An income amount is stated authoritatively only when evidenced by a payslip/EPF on file (either income route, via
+`income_engine`); otherwise it is presented as "reported" and never attributed to a specific earner the data doesn't name.
+
+**Rationale:** A reviewer flagged a generated line ("RM750 confirmed through STR") as false — STR can't confirm a figure,
+and below-minimum-wage totals shouldn't be invented into a story. **Revisit if:** the income verdict model changes what
+counts as documented income.
+
 ## Funding-need estimate: single per-pathway shortfall × fixed duration (no ranges, no device, no student-duration override) — Funding estimate, 2026-06-15
 
 **Decision:** Estimate funding need as one **monthly shortfall per pathway** (living costs − government allowance −

@@ -517,6 +517,24 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-15)
 
+**▶ JUST SHIPPED & LIVE 2026-06-15 — AI profile narrative redesign + 2-step lifecycle (5 commits `dc89c39`→`68fd1ac`,
+NO migration; plan `docs/scholarship/profile-narrative-redesign-plan.md`, retro
+`docs/retrospective-2026-06-15-profile-narrative-redesign.md`).**
+- **ONE profile, common to reviewer + sponsor**, generated twice by the system: DRAFT at the Check 2 → reviewer handoff
+  (Flash), FINAL at "Save verdict & generate final profile" (Pro) which REPLACES the draft and IS the sponsor/pool
+  version. No more named-draft-vs-anon split, no manual Generate/Save/Publish/Refine, no anon-profile card.
+- **Narrative prose** (no headers, he/she never "they", sparing em-dashes, no clichés). **PII-redaction:** alias not
+  name; block ONLY name/NRIC/photo/phone/email/street (student+guardian) — school/town/institution/occupations allowed.
+  Scanner split: strict `scan_anon_for_identifiers` (graduation relay) vs relaxed `scan_profile_pii` (profile).
+- Feeds merit, subject grades, confirmed programme, and the **student's Check-2/reviewer Q&A**; final adds findings +
+  verdict + conclusion + recommended amount. **Income honesty:** STR/JKM = B40/welfare status, NOT a figure; payslip/EPF
+  used authoritatively else "reported", never a guessed earner. Cockpit = plain read-only text. Final published on Approve.
+- **`CHECK2_AUTO_GENERATE` was referenced but never defined in settings** (so it was permanently off and the handoff
+  auto-draft never fired) → wired in `base.py`, env var **on** (durable; the build trigger doesn't reset env). Future
+  reviewer assignments now auto-draft. Backfilled the 7 already-assigned via the `backfill-assigned-profiles` cron job
+  (runs on the service — the sandbox can't reach the prod DB). Validated live on #72.
+- **Carry:** TD-118 (tidy dead profile api-client fns + orphaned i18n keys — harmless, web-only).
+
 **▶ JUST SHIPPED & LIVE 2026-06-15 — Reviewer-invite + funding-estimate live-review round (7 commits `0eecd1d`→`4c2053f`,
 NO migration; retro `docs/retrospective-2026-06-15-reviewer-invite-funding-estimate.md`).**
 - **Reviewer-assignment email** (`emails.send_reviewer_assigned_email` → `services.assign_reviewer`): names the applicant,
