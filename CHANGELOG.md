@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **The interest quiz is finally used (2026-06-16).** The RIASEC-style quiz was collected from every student and only
+  checked for completion (`quiz_done`); its result (`profile.student_signals`) was never read. Now: **(Idea 1)** the
+  student's strongest field interests + work style are distilled into the AI profile as **accretive context only** — a
+  new `profile_engine._quiz_interests` helper feeds the draft, with an explicit instruction that the quiz may add
+  supportive colour about the student's strengths but must NEVER be used to question, doubt, or weaken their chosen
+  pathway. **(Idea 2)** the same signals feed the interview-question generator (`gap_engine`): when the quiz interests
+  clearly diverge from the chosen pathway, the model may propose ONE **exploratory** question for the reviewer to
+  understand how the student arrived there (the student already holds an offer), framed as curiosity, never as doubt.
+  Shared signal→label map; +2 regression tests; backend-only, no migration. (Idea 3, interest-based mentoring guidance,
+  was dropped.)
 - **AI student profile redesign — one PII-redacted narrative, generated twice by the system (2026-06-15).**
   Collapses the old sectioned, named draft + separate anonymous-pool profile into **one** document, common to the
   reviewer and (once approved) the sponsor. The system generates it twice, never a human: a **draft** at the Check 2 →

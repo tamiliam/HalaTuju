@@ -24,6 +24,10 @@ class TestProfilePrompt(TestCase):
             supabase_user_id='pe-1', nric='030101-14-1234', name='Priya', school='SMK Taman',
             exam_type='SPM', grades={f'sub{i}': 'A' for i in range(7)},
             household_income=1800, household_size=6, receives_str=True, receives_jkm=False,
+            student_signals={
+                'field_interest': {'field_business': 3, 'field_digital': 2},
+                'work_preference_signals': {'problem_solving': 3, 'hands_on': 1},
+            },
         )
         cls.app = ScholarshipApplication.objects.create(
             cohort=cls.cohort, profile=cls.profile, status='shortlisted', locale='ms',
@@ -103,6 +107,15 @@ class TestProfilePrompt(TestCase):
         self.assertIn('university applications', prompt)               # help_university=yes
         self.assertIn('scholarship applications', prompt)              # help_scholarship=yes
         self.assertIn('financial', prompt)                             # uncertainty reason
+
+    def test_prompt_includes_quiz_interests_accretively(self):
+        """Idea 1: the interest-quiz result is fed as supportive context, with an
+        explicit accretive-only instruction (never used to weaken the pathway)."""
+        prompt = _build_prompt(self.app)
+        self.assertIn('business', prompt)            # strongest field signal -> label
+        self.assertIn('problem-solving', prompt)     # strongest work-style signal -> label
+        self.assertIn('ACCRETIVE ONLY', prompt)      # the guard instruction is present
+        self.assertIn('NEVER use the quiz', prompt)
 
     def test_prompt_siblings_uses_count_when_set(self):
         """S15: prompt prefers the integer count over the legacy boolean."""
