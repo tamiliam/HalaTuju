@@ -125,7 +125,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (sciences / mathematics / languages / social sciences / humanities / the arts / technical). **(b) Ethnicity safety:**
   vernacular-language and literature subjects (Bahasa Tamil/Cina, Kesusasteraan Tamil/Cina) fold into "languages"/
   "humanities" and are never named, and the prompt forbids naming them or implying the student's race — so the profile
-  can't hint at ethnicity via subject choice. **(c)** A subject key not in the group map falls back to "other subjects" —
+  can't hint at ethnicity via subject choice. **(2026-06-16.2)** the same now applies to the student's own NARRATIVE:
+  ethnic/cultural specifics are GENERALISED — the motivation is kept but the label dropped (e.g. "her mother tongue"
+  not "Tamil", "a teacher who inspired her" not "her Tamil teacher"). **(c)** A subject key not in the group map falls back to "other subjects" —
   a raw key (e.g. the `B_TAMIL` artifact) can never reach the prompt again (the old partial `_GRADE_LABELS` name map is
   removed). **(d) Prompt versioning:** new `profile_engine.PROMPT_VERSION`, stored on each generated profile
   (`SponsorProfile.prompt_version`, migration `scholarship/0058`), so a stale draft is detectable by **version, not by

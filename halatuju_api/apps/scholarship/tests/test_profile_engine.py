@@ -140,6 +140,14 @@ class TestProfilePrompt(TestCase):
             self.assertNotIn(forbidden, s)             # no ethnicity reveal / raw key
         self.assertNotIn(':', s)                        # no "Subject: A+" enumeration
 
+    def test_prompt_generalises_ethnicity_in_narrative(self):
+        """The privacy block instructs the model to keep the meaning but drop the ethnic label
+        even when the student's own words name it (e.g. 'her mother tongue', not 'Tamil')."""
+        prompt = _build_prompt(self.app)
+        self.assertIn('GENERALISE', prompt)
+        self.assertIn('mother tongue', prompt)
+        self.assertIn('ethnicity, race or religion', prompt)
+
     def test_generation_result_is_version_tagged(self):
         """A successful generation result carries PROMPT_VERSION (persisted for stale-draft
         detection); an error result is left untagged."""
