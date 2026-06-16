@@ -437,6 +437,7 @@ class AdminFinaliseProfileView(_AdminBase):
             return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         sp.final_markdown = result['markdown']
         sp.final_model_used = result.get('model_used', '')
+        sp.prompt_version = result.get('prompt_version', '')
         sp.finalised_at = timezone.now()
         sp.save()
         return Response(SponsorProfileSerializer(sp).data)
@@ -900,6 +901,7 @@ class AdminRecordVerdictView(_AdminBase):
                     else:
                         sp.final_markdown = result['markdown']
                         sp.final_model_used = result.get('model_used', '')
+                        sp.prompt_version = result.get('prompt_version', '')
                         sp.finalised_at = timezone.now()
                         # One profile: the final IS the sponsor/pool version. Mirror it onto the
                         # pool fields so the (already PII-redacted) final is what a sponsor reads.

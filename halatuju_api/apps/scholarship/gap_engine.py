@@ -13,7 +13,7 @@ import logging
 import re
 
 from .profile_engine import (
-    DEFAULT_LANGUAGE, _funding, _pathway, _resolve_language,
+    DEFAULT_LANGUAGE, _funding, _pathway, _quiz_interests, _resolve_language,
     _siblings_studying_display, _yesno,
 )
 
@@ -47,7 +47,11 @@ interview: vague or unexplained plans, an unclear funding need, resilience or \
 support-network signals, quiet contradictions, or anything the verification flags \
 raise that a conversation should settle. Prefer questions the verdict/flags show are \
 genuinely unresolved, and do NOT re-ask anything already answered below. Do NOT \
-invent facts. If little is left to probe, return fewer than three (even zero). For \
+invent facts. If the student's INTEREST-QUIZ signals clearly diverge from their chosen \
+pathway, you MAY include ONE exploratory question to understand how they arrived at that \
+pathway given those interests — the student has already chosen and holds an offer letter, \
+so frame it as genuine curiosity ("help me understand…"), NEVER as doubt, criticism, or a \
+suggestion they chose wrongly. If little is left to probe, return fewer than three (even zero). For \
 EACH gap return: a short snake_case "code" (a slug you invent, e.g. \
 unclear_funding_plan), a "question" (the actual interview question, written in \
 {target_language}), and a "why" (one short line of rationale for the interviewer, \
@@ -55,6 +59,7 @@ in {target_language}). Return at most 3. Return JSON only.
 
 APPLICANT CONTEXT
 Pathway: {pathway}
+Interest-quiz signals (strongest interests + work style): {quiz_interests}
 Household income (RM/month): {household_income}; household size: {household_size}
 Receives STR: {receives_str}; receives JKM: {receives_jkm}
 First in family to attend tertiary: {first_in_family}; siblings studying: {siblings_studying}
@@ -167,6 +172,7 @@ def _build_gap_prompt(application, target_language=DEFAULT_LANGUAGE, existing=No
     return GAP_PROMPT.format(
         target_language=target_language,
         pathway=_pathway(application),
+        quiz_interests=_quiz_interests(application),
         household_income=_val(getattr(profile, 'household_income', None) if profile else None),
         household_size=_val(getattr(profile, 'household_size', None) if profile else None),
         receives_str=_yesno(getattr(profile, 'receives_str', None) if profile else None),

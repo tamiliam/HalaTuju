@@ -1469,6 +1469,8 @@ export default function AdminScholarshipDetailPage() {
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
         <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.decision.title')}</h2>
 
+        <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.recordVerdict.rateTitle')}</p>
+
         {/* Four fact rows — pass / fail toggle */}
         <div className="space-y-2">
           {(['identity', 'academic', 'pathway', 'income'] as const).map((fact) => (
@@ -1502,7 +1504,7 @@ export default function AdminScholarshipDetailPage() {
           ))}
         </div>
 
-        {/* AI suggestion — sits right under the four facts (you decide). */}
+        {/* AI verdict — sits right under the four facts (the officer decides). */}
         {(() => {
           const sugg = aiSuggestionFor(app.verdict || [])
           const facts = ['identity', 'academic', 'pathway', 'income'] as const
@@ -1521,7 +1523,7 @@ export default function AdminScholarshipDetailPage() {
                     {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
                   </span>
                 </span>
-              ))}{' — '}{t('admin.scholarship.recordVerdict.youDecide')}
+              ))}{'.'}
             </p>
           )
         })()}

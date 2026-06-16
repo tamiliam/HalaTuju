@@ -40,6 +40,17 @@ PRO_CASCADE = ['gemini-2.5-pro'] + MODEL_CASCADE
 LANGUAGE_NAMES = {'en': 'English', 'ms': 'Malay (Bahasa Melayu)'}
 DEFAULT_LANGUAGE = 'English'
 
+# Prompt version — BUMP on any meaningful change to PROFILE_PROMPT / REFINE_PROMPT or the
+# inputs fed to them. Stored on each generated SponsorProfile (`prompt_version`) so a stale
+# draft is detectable by VERSION, not by date heuristics (the #18 trap). Generations made
+# before versioning existed carry '' (empty) and count as stale.
+#   2026-06-16.1 — grades summarised by GROUP (no per-subject list; no ethnicity-revealing
+#                  language/literature subjects); prompt versioning introduced.
+#   2026-06-16.2 — generalise ethnicity in the NARRATIVE too (keep the motivation, drop the
+#                  ethnic label, e.g. "her mother tongue" not "Tamil"; "a teacher" not
+#                  "her Tamil teacher").
+PROMPT_VERSION = '2026-06-16.2'
+
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
     "Write warm, factual, flowing prose: about three short paragraphs, roughly 220-320 "
@@ -62,7 +73,14 @@ _REDACTION = (
     "the student AND any parent or guardian, NEVER include their name, NRIC/IC number, "
     "photograph, phone number, email address, or street address — if any appears in the "
     "inputs below, omit it. Everything else may be used: the school or college name, the "
-    "town and state, the institution, and occupations."
+    "town and state, the institution, and occupations. "
+    "ETHNICITY — do NOT reveal or imply the student's ethnicity, race or religion, even when "
+    "the student's own words do. KEEP the meaning but GENERALISE any ethnic/cultural specific: "
+    "write \"her mother tongue\" or \"her community's language and culture\" rather than naming "
+    "a language (e.g. Tamil, Mandarin/Chinese), and \"a teacher who inspired her\" rather than "
+    "\"her Tamil teacher\". Never name a vernacular-language or literature subject. A culturally "
+    "specific aspiration (e.g. to teach her mother tongue) is kept as a motivation, just "
+    "without the ethnic label."
 )
 
 PROFILE_PROMPT = """You are writing the profile of a B40 student applying for education \
@@ -78,9 +96,13 @@ understand their meaning whichever language they are in, and write the profile i
 
 VERIFICATION — do not over-claim:
 - Some fields are marked "{do_not_claim}" — NOT verified. Do not assert them; omit them.
-- Report grades as the actual band mix (e.g. "ten A-grade subjects across A+/A/A−") and name the \
-subject areas they span; never round up or imply a uniform top grade. If a merit score is given, \
-you may cite it.
+- ACADEMICS — give a brief SUMMARY only, never a list. State the number of A-grade subjects, the \
+band mix, and the broad subject GROUPS they span exactly as provided below (e.g. "ten A-grade \
+subjects across A+/A/A−, spanning the sciences, mathematics and languages"). Do NOT enumerate \
+individual subjects or per-subject grades — a reader skips a long list. NEVER name a specific \
+language or literature subject (e.g. Bahasa Tamil, Bahasa Cina, Kesusasteraan Tamil/Cina), and do \
+NOT state or imply the student's ethnicity or race. Never round up or imply a uniform top grade. If \
+a merit score is given, you may cite it.
 - INCOME & WELFARE — be precise. "Receives STR"/"Receives JKM" mean the family is registered as \
 B40 / receives government welfare; they do NOT verify the income AMOUNT (STR confirms B40 status, \
 not a figure). If "Documented income (payslip/EPF)" below lists one or more figures, you MAY state \
@@ -104,17 +126,36 @@ Parents'/guardians' occupation: {parents_occupation}
 Siblings currently studying: {siblings_studying}
 
 Pathway / programme (use the confirmed place when present): {pathway}
+Top course choices (student's ranking): {top_choices}
+While still deciding (student's words): {deliberation}
+Other scholarships applied for / held: {other_scholarships}
+Help the student asked us for: {help_wanted}
+Interest-quiz signals (the student's strongest interests + work style): {quiz_interests}
 
 Aspirations (student's words): {aspirations}
 Plan to get there (student's words): {plans}
+Why assistance is needed (student's words): {justification}
+Worries / concerns (student's words): {fears}
 Family situation (student's words): {family_context}
 Daily life & responsibilities (student's words): {daily_life}
+Anything else the student wants us to know (student's words): {anything_else}
+Statement of Intent letter (student's uploaded letter, OCR'd — distil its substance): {statement_of_intent}
 
 Funding — what the support would help with: {funding_categories}
 Anything else about funding (student's words): {funding_note}
 
 The student's answers to our clarifying questions:
 {qa}
+
+Draw on ALL of the student's own words above and distil them into the narrative where they add \
+meaning — their aspirations, plan, reasons, worries, deliberation and anything-else. Do not ignore \
+a field the student took the trouble to fill in; equally, do not pad with a field left blank \
+("not provided"/"none"/"not applicable" means say nothing about it).
+
+The interest-quiz signals are ACCRETIVE ONLY: use them to add positive colour about the student's \
+interests and strengths (e.g. how their pathway plays to what energises them). NEVER use the quiz to \
+question, doubt, cast as a mismatch, or otherwise weaken the student's chosen pathway or case. If the \
+quiz does not obviously add something supportive, simply leave it out.
 """
 
 
@@ -263,27 +304,78 @@ def _merit(application):
     return 'not provided' if m in (None, '') else str(m)
 
 
-_GRADE_LABELS = {
-    'bm': 'BM', 'eng': 'English', 'math': 'Mathematics', 'addmath': 'Add Maths',
-    'science': 'Science', 'phy': 'Physics', 'chem': 'Chemistry', 'bio': 'Biology',
-    'hist': 'History', 'history': 'History', 'geo': 'Geography', 'econ': 'Economics',
-    'acc': 'Accounting', 'moral': 'Moral', 'agama': 'Islamic Studies',
+# Subject key → broad GROUP. We summarise results by group, never by individual subject:
+# it keeps the profile readable AND avoids revealing ethnicity via a vernacular-language or
+# literature subject (Bahasa Tamil/Cina, Kesusasteraan Tamil/Cina all fold into "languages"/
+# "humanities"). Keys mirror the canonical list in halatuju-web/src/lib/subjects.ts. Any key
+# not listed falls back to the generic "other subjects" — a raw key can never reach the prompt.
+_SUBJECT_GROUP = {
+    'math': 'mathematics', 'addmath': 'mathematics',
+    'sci': 'sciences', 'science': 'sciences', 'addsci': 'sciences', 'phy': 'sciences',
+    'chem': 'sciences', 'bio': 'sciences', 'comp_sci': 'sciences', 'sports_sci': 'sciences',
+    'srt': 'sciences',
+    'bm': 'languages', 'eng': 'languages', 'b_cina': 'languages', 'b_tamil': 'languages',
+    'bahasa_cina': 'languages', 'bahasa_tamil': 'languages', 'bahasa_arab': 'languages',
+    'bahasa_arab_tinggi': 'languages', 'bahasa_iban': 'languages',
+    'bahasa_kadazandusun': 'languages', 'bahasa_semai': 'languages',
+    'bahasa_punjabi': 'languages', 'bahasa_perancis': 'languages', 'bahasa_jepun': 'languages',
+    'bahasa_jerman': 'languages',
+    'hist': 'humanities', 'history': 'humanities', 'moral': 'humanities',
+    'lit_bm': 'humanities', 'lit_eng': 'humanities', 'lit_cina': 'humanities',
+    'lit_tamil': 'humanities', 'sejarah_seni': 'humanities', 'islam': 'humanities',
+    'agama': 'humanities', 'pqs': 'humanities', 'psi': 'humanities',
+    'tasawwur_islam': 'humanities', 'usul_aldin': 'humanities', 'al_syariah': 'humanities',
+    'manahij': 'humanities', 'bible_knowledge': 'humanities',
+    'geo': 'social sciences', 'ekonomi': 'social sciences', 'econ': 'social sciences',
+    'poa': 'social sciences', 'acc': 'social sciences', 'business': 'social sciences',
+    'keusahawanan': 'social sciences',
+    'psv': 'the arts', 'music': 'the arts', 'lukisan': 'the arts', 'multimedia': 'the arts',
+    'digital_gfx': 'the arts', 'reka_cipta': 'the arts', 'gkt': 'the arts',
+    'eng_civil': 'technical subjects', 'eng_mech': 'technical subjects',
+    'eng_elec': 'technical subjects', 'eng_draw': 'technical subjects',
+    'lukisan_kejuruteraan': 'technical subjects', 'kelestarian': 'technical subjects',
+    'pertanian': 'technical subjects',
 }
+_GROUP_ORDER = ['sciences', 'mathematics', 'languages', 'social sciences', 'humanities',
+                'the arts', 'technical subjects', 'other subjects']
+
+
+def _join_human(items):
+    """['a','b','c'] -> 'a, b and c'."""
+    items = list(items)
+    if not items:
+        return ''
+    if len(items) == 1:
+        return items[0]
+    return ', '.join(items[:-1]) + ' and ' + items[-1]
 
 
 def _grades_summary(profile):
-    """A readable 'BM: A+, English: A, Mathematics: A−, …' string so the model can name
-    the subject areas the A's span. Empty when no grades."""
+    """Summarise SPM results WITHOUT naming individual subjects: the count of A-grade
+    subjects, the band mix, and the broad subject GROUPS they span. Keeps the profile
+    readable and avoids revealing ethnicity via vernacular-language/literature subjects.
+    'not provided' when no grades."""
     grades = getattr(profile, 'grades', None) if profile else None
     if not isinstance(grades, dict) or not grades:
         return 'not provided'
-    parts = []
+    bands = {'A+': 0, 'A': 0, 'A-': 0}
+    total = 0
+    groups_seen = set()
     for key, grade in grades.items():
         if not grade:
             continue
-        label = _GRADE_LABELS.get(str(key).lower(), str(key).upper())
-        parts.append(f'{label}: {grade}')
-    return ', '.join(parts) or 'not provided'
+        total += 1
+        g = str(grade).strip().upper().replace('−', '-')   # normalise unicode minus
+        if g in bands:
+            bands[g] += 1
+            groups_seen.add(_SUBJECT_GROUP.get(str(key).lower(), 'other subjects'))
+    a_count = bands['A+'] + bands['A'] + bands['A-']
+    if a_count == 0:
+        return f'{total} subjects sat; no A-grade subjects recorded'
+    band_bits = [f'{bands[b]} {b.replace("-", "−")}' for b in ('A+', 'A', 'A-') if bands[b]]
+    groups = _join_human([g for g in _GROUP_ORDER if g in groups_seen])
+    spanning = f' spanning {groups}' if groups else ''
+    return f'{a_count} A-grade subjects out of {total} ({", ".join(band_bits)}){spanning}'
 
 
 def _region(profile):
@@ -294,6 +386,59 @@ def _region(profile):
     state = (getattr(profile, 'preferred_state', '') or '').strip()
     region = ', '.join(p for p in (city, state) if p)
     return region or 'not provided'
+
+
+# Human labels for the interest-quiz signals (profile.student_signals). Only the two most
+# communicative categories — what FIELDS interest the student, and their WORK STYLE.
+_SIGNAL_LABELS = {
+    'field_mechanical': 'building & fixing', 'field_digital': 'technology & digital',
+    'field_business': 'business', 'field_health': 'health & care',
+    'field_creative': 'creative & design', 'field_hospitality': 'hospitality & service',
+    'field_agriculture': 'agriculture', 'field_heavy_industry': 'heavy industry',
+    'field_electrical': 'electrical', 'field_civil': 'civil & construction',
+    'field_aero_marine': 'aeronautical & marine', 'field_oil_gas': 'oil & gas',
+    'hands_on': 'hands-on work', 'problem_solving': 'problem-solving',
+    'people_helping': 'helping people', 'creative': 'creative work',
+}
+_SIGNAL_CATEGORIES = ('field_interest', 'work_preference_signals')
+
+
+def _quiz_interests(application):
+    """A short, POSITIVE read of the student's interest-quiz result (profile.student_signals):
+    their strongest field interests + work-style. Accretive context only — never used to doubt
+    a pathway. '' when no quiz on file."""
+    profile = application.profile
+    signals = getattr(profile, 'student_signals', None) if profile else None
+    if not isinstance(signals, dict) or not signals:
+        return 'not provided'
+    labels = []
+    for cat in _SIGNAL_CATEGORIES:
+        bucket = signals.get(cat)
+        if not isinstance(bucket, dict):
+            continue
+        # strongest first (score desc), keep the meaningful ones (score >= 1), cap at 3/category
+        ranked = sorted(((s, sc) for s, sc in bucket.items() if isinstance(sc, (int, float)) and sc > 0),
+                        key=lambda kv: kv[1], reverse=True)
+        for sig, _score in ranked[:3]:
+            lbl = _SIGNAL_LABELS.get(sig)
+            if lbl and lbl not in labels:
+                labels.append(lbl)
+    return ', '.join(labels) if labels else 'not provided'
+
+
+def _statement_of_intent(application):
+    """The OCR'd plain text of the student's uploaded Statement of Intent letter, if any
+    (read on upload into vision_fields['text']). Capped so it informs the draft without
+    dominating the prompt; normal PII redaction still applies. 'not provided' when none."""
+    doc = (application.documents.filter(doc_type='statement_of_intent')
+           .order_by('-uploaded_at').first())
+    text = ''
+    if doc is not None and isinstance(getattr(doc, 'vision_fields', None), dict):
+        text = (doc.vision_fields.get('text') or '').strip()
+    if not text:
+        return 'not provided'
+    cap = 2000
+    return text if len(text) <= cap else text[:cap].rstrip() + ' …'
 
 
 def _render_qa(application):
@@ -327,6 +472,57 @@ def _funding(application):
     months = fn.programme_months if fn.programme_months else 'not provided'
     note = fn.funding_note.strip() if fn.funding_note else 'not provided'
     return cats_str, months, note
+
+
+def _top_choices(application):
+    """The student's ranked top course choices (apply form) — 'Course at Institution (choice 1)'."""
+    tc = application.top_choices if isinstance(application.top_choices, list) else []
+    bits = []
+    for c in tc:
+        if not isinstance(c, dict):
+            continue
+        name = (c.get('course_name') or '').strip()
+        if not name:
+            continue
+        inst = (c.get('institution') or '').strip()
+        rank = c.get('rank')
+        label = name + (f' at {inst}' if inst else '')
+        if rank:
+            label += f' (choice {rank})'
+        bits.append(label)
+    return '; '.join(bits) if bits else 'not provided'
+
+
+def _other_scholarships(application):
+    """Other scholarships the student has applied for / holds (keys + their free text)."""
+    keys = application.other_scholarships if isinstance(application.other_scholarships, list) else []
+    parts = [str(k) for k in keys if k]
+    txt = (getattr(application, 'other_scholarships_text', '') or '').strip()
+    if txt:
+        parts.append(txt)
+    return ', '.join(parts) if parts else 'none mentioned'
+
+
+def _help_wanted(application):
+    """What support the student asked us for on the apply form ('help with…')."""
+    wants = []
+    if (getattr(application, 'help_university', '') or '') == 'yes':
+        wants.append('university applications')
+    if (getattr(application, 'help_scholarship', '') or '') == 'yes':
+        wants.append('scholarship applications & interviews')
+    return ', '.join(wants) if wants else 'none indicated'
+
+
+def _deliberation(application):
+    """When the student is still deciding their pathway — their reasons + their own words."""
+    reasons = application.uncertainty_reasons if isinstance(application.uncertainty_reasons, list) else []
+    note = (getattr(application, 'uncertainty_note', '') or '').strip()
+    bits = []
+    if reasons:
+        bits.append('reasons: ' + ', '.join(str(r) for r in reasons))
+    if note:
+        bits.append(note)
+    return ' — '.join(bits) if bits else 'not applicable'
 
 
 def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
@@ -364,10 +560,19 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         parents_occupation=val(application.parents_occupation),
         siblings_studying=_siblings_studying_display(application),
         pathway=_pathway(application),
+        top_choices=_top_choices(application),
+        deliberation=_deliberation(application),
+        other_scholarships=_other_scholarships(application),
+        help_wanted=_help_wanted(application),
+        quiz_interests=_quiz_interests(application),
         aspirations=val(application.aspirations),
         plans=val(application.plans),
+        justification=val(application.justification),
+        fears=val(application.fears),
         family_context=val(application.family_context),
         daily_life=val(application.daily_life),
+        anything_else=val(application.anything_else),
+        statement_of_intent=_statement_of_intent(application),
         funding_categories=cats_str,
         funding_note=note,
         qa=_render_qa(application),
@@ -487,6 +692,14 @@ def _render_officer_decision(application):
     )
 
 
+def _with_version(result):
+    """Tag a successful generation result with the current PROMPT_VERSION so callers can
+    persist it on the SponsorProfile (stale-draft detection)."""
+    if isinstance(result, dict) and 'error' not in result:
+        result['prompt_version'] = PROMPT_VERSION
+    return result
+
+
 def refine_sponsor_profile(application, draft, session, language=None):
     """Second pass: the FINAL profile, folding the student's answers, the submitted
     interview ``session``, the officer's four-fact verdict, conclusion and recommended
@@ -504,7 +717,7 @@ def refine_sponsor_profile(application, draft, session, language=None):
         findings=findings_str, rubric=rubric_str, overall_note=note,
         officer_decision=_render_officer_decision(application),
     )
-    return _call_gemini_text(prompt, target_language, models=PRO_CASCADE)
+    return _with_version(_call_gemini_text(prompt, target_language, models=PRO_CASCADE))
 
 
 def generate_sponsor_profile(application, language=None):
@@ -513,4 +726,4 @@ def generate_sponsor_profile(application, language=None):
     defaults to the applicant's locale."""
     target_language = _resolve_language(application, language)
     prompt = _build_prompt(application, target_language=target_language)
-    return _call_gemini_text(prompt, target_language)
+    return _with_version(_call_gemini_text(prompt, target_language))

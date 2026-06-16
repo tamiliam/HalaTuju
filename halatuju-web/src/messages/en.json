@@ -2367,7 +2367,6 @@
     "scholarship": {
       "nav": "B40 Applications",
       "title": "B40 Assistance Applicants",
-      "desc": "Review applicants, draft and publish sponsor profiles.",
       "countSubtitle": "{count} applicants",
       "loadFailed": "Could not load applications.",
       "showingRange": "Showing {start}–{end} of {total} applications",
@@ -2409,13 +2408,7 @@
         }
       },
       "incompleteTitle": "Cannot accept yet — the applicant still owes:",
-      "requestInfoTitle": "Ask for more documents",
-      "requestInfoIntro": "Email the student to add something. This does not change their status — they can keep uploading.",
-      "requestInfoLast": "Last request",
-      "requestInfoPlaceholder": "e.g. Please upload your parent's latest payslip.",
-      "requestInfoSend": "Send request",
       "requestInfoError": "Could not send the request.",
-      "requestDocLabel": "Or request a specific document",
       "requestDocTitle": "Request a document",
       "requestDocNotePlaceholder": "Explain what's needed (prefilled — edit as you like)",
       "requestDocStd": {
@@ -2434,7 +2427,6 @@
         "photo": "recent photo of yourself",
         "other": "the requested document — see the note below for exactly what's needed"
       },
-      "raiseSectionTitle": "Raise work for the student",
       "raiseSectionHint": "Task you would like to assign to student before the interview",
       "raiseQueryTitle": "Raise a query",
       "raiseQueryPlaceholder": "e.g. Can you confirm who lives at the address on your utility bill?",
@@ -2459,8 +2451,6 @@
         "intro": "AI-found gaps to raise live — use them, ask your own, or generate more. Then record your findings and conclusions below.",
         "noFlags": "No automated flags. Use the rubric + note to record your judgement.",
         "submitted": "Submitted",
-        "inProgress": "In progress",
-        "carryOver": "Unanswered Check 2 queries — ask these at the interview",
         "rationalePlaceholder": "One line: what you found",
         "notePlaceholder": "Record your findings and conclusions",
         "saveDraft": "Save draft",
@@ -2468,64 +2458,28 @@
         "saveError": "Could not save the interview.",
         "submitError": "Could not submit the interview.",
         "verdict": {
-          "resolved": "Resolved",
-          "still_unclear": "Still unclear",
-          "new_concern": "New concern"
-        },
-        "rubric": {
-          "clarity_of_plan": "Clarity of plan",
-          "financial_need": "Financial need",
-          "resilience": "Resilience"
+          "resolved": "Resolved"
         }
       },
       "empty": "No applications match.",
       "name": "Name",
-      "qualification": "Qualification",
       "status": "Status",
       "bucket": "Bucket",
       "submitted": "Submitted",
       "back": "Back to applications",
-      "applicant": "Applicant",
       "school": "School",
       "income": "Household income",
-      "pathway": "Intended pathway",
       "aspirations": "Aspirations",
       "justification": "Why assistance is needed",
       "funding": "Funding need",
-      "documents": "Documents",
       "referees": "Referees",
-      "consent": "Consent",
-      "consentGiven": "Consent given (active).",
-      "consentNone": "No active consent yet.",
       "none": "None yet.",
-      "profileTitle": "Sponsor profile (AI draft)",
-      "profileDraftHint": "Auto-drafted at the Check 2 → reviewer handoff so you can read it now and verify the claims. It is replaced by the final version when you save your verdict.",
-      "generate": "Generate profile",
-      "generating": "Generating…",
-      "regenerate": "Regenerate",
-      "save": "Save",
-      "saving": "Saving…",
-      "publish": "Publish",
-      "publishing": "Publishing…",
+      "profileTitle": "Sponsor profile (draft)",
+      "profileDraftHint": "This draft will be replaced with an updated final version that incorporates your findings when you save your verdict.",
       "model": "Model",
-      "genError": "Profile generation failed.",
-      "saveError": "Could not save the profile.",
-      "publishError": "Could not publish the profile.",
-      "verifyTitle": "Verify & accept",
-      "nricLocked": "NRIC verified & locked",
       "acceptedBy": "Verified & accepted by",
-      "verifyHint": "Accepting locks the NRIC — already verified from the MyKad by OCR (number + name). Record your verdict above first.",
-      "acceptNeedsVerdict": "Record your verdict above to enable accept.",
-      "check_nric": "NRIC matches the MyKad",
-      "check_name": "Name matches",
-      "check_results": "Results match the slip",
-      "check_document": "MyKad document is clear & valid",
-      "verifyAccept": "Verify & accept",
-      "accepting": "Accepting…",
       "acceptError": "Couldn't accept. Please try again.",
       "notShortlisted": "Only a shortlisted application can be verified & accepted.",
-      "mentoring": "Flag for mentoring (lost/unfocused — not a reject)",
-      "mentorError": "Couldn't update the mentoring flag.",
       "refHint": "Record a referee — a teacher, counsellor, or referring-org contact who can vouch for the applicant.",
       "refName": "Referee name",
       "refRole": "Role (e.g. teacher)",
@@ -2537,43 +2491,8 @@
       "refRemove": "Remove",
       "refError": "Could not save the referee. Please try again.",
       "genLang": "Output language",
-      "visionTitle": "Vision OCR (soft signal)",
-      "visionRerun": "Re-run Vision",
-      "visionRunning": "Re-running…",
-      "visionExtracted": "Extracted",
-      "visionDeclaration": "Declaration name",
-      "visionAddressTitle": "Address on IC (from photo)",
-      "visionAddressVsProfile": "Student-entered address",
-      "parentIcTitle": "Parent/guardian IC (Vision OCR)",
       "visionError": "Could not re-run Vision.",
-      "extractFields": {
-        "title": "Extracted"
-      },
-      "finalProfile": {
-        "button": "Refine with interview findings (AI)",
-        "running": "Refining…",
-        "title": "Final profile (v2 — with interview)",
-        "aiBadge": "AI",
-        "finalisedAt": "Finalised",
-        "needInterview": "Submit an interview first to refine the profile.",
-        "error": "Couldn't refine the profile. Please try again."
-      },
-      "anonProfile": {
-        "title": "Anonymous profile (sponsor pool)",
-        "help": "A non-identifying profile sponsors can read. Generate it, review it for any leaked names/places, then publish it to the pool.",
-        "generate": "Generate anonymous profile (AI)",
-        "regenerate": "Regenerate (AI)",
-        "generating": "Generating…",
-        "publish": "Publish to pool",
-        "unpublish": "Unpublish",
-        "unpublishing": "Unpublishing…",
-        "publishedBadge": "Published to pool",
-        "draftBadge": "Not published",
-        "genError": "Couldn't generate the anonymous profile. Please try again.",
-        "pubError": "Couldn't update the anonymous profile. Please try again."
-      },
       "reject": {
-        "declineReview": "Decline (after review)",
         "declineContractual": "Decline (contractual)",
         "confirmReview": "Decline this applicant? They were reviewed but not selected. A decline email will be sent to them now.",
         "confirmContractual": "Decline this accepted applicant for contractual reasons? A decline email will be sent to them now.",
@@ -2592,9 +2511,7 @@
         "more": "Generate more",
         "running": "Generating…",
         "error": "Couldn't generate gaps. Please try again.",
-        "title": "AI-suggested gaps",
-        "aiBadge": "AI",
-        "whyLabel": "Why"
+        "aiBadge": "AI"
       },
       "anomaly": {
         "title": "Pre-interview flags",
@@ -2684,39 +2601,27 @@
         "story": "Your story",
         "funding": "Funding"
       },
-      "coq": "CoQ score",
       "spmGrades": "SPM grades",
       "stpmGrades": "STPM grades",
       "spmPrereq": "SPM prerequisites",
       "phone": "Phone",
       "email": "Email",
       "callLanguage": "Call language",
-      "referralSource": "Referred by",
       "address": "Address",
       "householdSize": "Household size",
-      "guardianName": "Parent/guardian",
       "parentLabel": "Parent",
       "guardianLabel": "Guardian",
       "guardianPhone": "{role} phone",
       "siblingsLegacyNote": "legacy total — split unknown, confirm at interview",
-      "intendsTertiary": "Intends tertiary 2026",
-      "pathwayCertainty": "Decided?",
       "chosenPathway": "Chosen pathway",
       "chosenProgramme": "Chosen programme",
       "preUTrack": "Pre-U track",
       "preUInstitution": "Pre-U institution",
-      "fieldOfStudy": "Field of study",
-      "upuStatus": "UPU status",
       "pathwaysConsidered": "Pathways considered",
-      "otherScholarships": "Other scholarships",
-      "otherScholarshipsText": "Other scholarships (notes)",
       "topChoices": "Top course choices",
       "uncertaintyReasons": "Still-deciding reasons",
-      "uncertaintyNote": "Still-deciding note",
       "helpUniversity": "University application",
       "helpScholarship": "Scholarship application",
-      "declarationName": "Declaration signature",
-      "anythingElse": "Anything else",
       "plans": "Plans",
       "fears": "Worries",
       "dailyLife": "Daily life",
@@ -2750,12 +2655,6 @@
         "toggle": "Show the student's own words"
       },
       "studentNote": "Student's note",
-      "upu": {
-        "applied": "Applied via UPU",
-        "public_other": "Public institution (not via UPU)",
-        "ipts": "Private (IPTS)",
-        "unknown": "Not sure"
-      },
       "reliability": {
         "title": "AI reliability",
         "subtitle": "How often the AI's suggestion matched the reviewer's decision — across {n} reviewed application(s).",
@@ -2765,8 +2664,6 @@
       "verdict": {
         "title": "Verification verdict",
         "intro": "What the checks confirm, and what still needs you. Audit it — don't rebuild it.",
-        "evidenceLabel": "Confirmed",
-        "unresolvedLabel": "Needs attention",
         "fact": {
           "identity": "Identity",
           "academic": "Academic",
@@ -2850,24 +2747,21 @@
       },
       "decision": {
         "title": "Decision",
-        "savedAndAccepted": "Verdict saved — applicant accepted.",
-        "identityToAccept": "Mark Identity = Pass, then Save to accept this applicant."
+        "savedAndAccepted": "Verdict saved — applicant accepted."
       },
       "recordVerdict": {
         "title": "Record your verdict",
         "factPass": "Pass",
         "factFail": "Fail",
         "reasonLabel": "Conclusion",
-        "assistanceLabel": "Assistance recommended:",
+        "assistanceLabel": "Assistance recommended",
         "assistanceNone": "Drag to set a recommended amount.",
         "approveNeedsAmount": "Set a recommended assistance amount before approving.",
         "reasonPlaceholder": "State your conclusions / reasons for your decision",
         "save": "Save verdict & generate final profile",
         "approve": "Approve",
         "decline": "Decline",
-        "youDecide": "you decide.",
-        "saveAccept": "Save verdict & accept",
-        "aiSuggested": "AI suggested:",
+        "aiSuggested": "AI verdict:",
         "suggest": {
           "yes": "yes",
           "no": "no",
@@ -2876,20 +2770,10 @@
         "finaliseOk": "Verdict saved and final profile generated.",
         "finaliseNoDraft": "Verdict saved. Generate a draft profile first before finalising.",
         "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
-        "tools": {
-          "poseQuery": "Pose written query",
-          "addFindings": "Add interview findings"
-        }
+        "rateTitle": "Rate AI verification"
       },
       "caveats": {
-        "title": "Caveats to resolve",
-        "empty": "No open caveats — all clear.",
-        "ask": "Ask",
-        "resolve": "Resolve",
-        "waitingStudent": "Waiting for student",
         "studentAnswer": "Student's answer",
-        "accept": "Accept",
-        "askAgain": "Ask again",
         "delete": "Delete"
       },
       "outstanding": {
@@ -2899,9 +2783,7 @@
         "locked": "Querying closed — the interview is concluded. This is now a read-only record.",
         "itemOne": "item",
         "itemMany": "items",
-        "empty": "Nothing outstanding — all student tasks are clear.",
-        "studentTodo": "Student to-do",
-        "askInterview": "Ask at interview"
+        "empty": "Nothing outstanding — all student tasks are clear."
       },
       "docsDrawer": {
         "title": "Documents",
@@ -2984,7 +2866,10 @@
           }
         }
       },
-      "profilePending": "The profile is generated automatically when the application is handed over for review."
+      "profilePending": "The profile is generated automatically when the application is handed over for review.",
+      "finalProfile": {
+        "title": "Final profile (v2 — with interview)"
+      }
     },
     "students": "Students",
     "invite": "Invite",
@@ -3241,6 +3126,16 @@
       "accessBlocked": "Access-blocked",
       "gatedHeader": "Access-blocked (401/403)",
       "gatedHint": "The server answered but refused this page — usually a login wall (fine), occasionally a wrong/old path (like Port Dickson). Worth a manual look."
-    }
+    },
+    "setPasswordTitle": "Set your password",
+    "setPasswordSubtitle": "Choose a password to finish setting up your account",
+    "newPassword": "New password",
+    "newPasswordHint": "At least 8 characters",
+    "confirmPassword": "Confirm password",
+    "setPasswordCta": "Set password & sign in",
+    "settingPassword": "Setting…",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "passwordMismatch": "The two passwords don’t match.",
+    "setPasswordNoLink": "This page must be opened from the link in your invite or password-reset email. The link may have expired — request a new one from the login page."
   }
 }

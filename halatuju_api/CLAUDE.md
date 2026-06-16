@@ -540,9 +540,31 @@ probabilistic SIGNATURE scorer (slip/cert/BC/EPF) + canonical outcome enum (BE+F
   prod dep; the scorer is pure text).
 - **▶ NEXT:** STR signatures (MySTR-screenshot vs MOF-letter split); **TD-122** (wire BC/EPF onto the live signature
   path); **TD-123** (Issue-2 extraction build pass); then Layer-2 matching fixes (parent-IC **TD-119**, the deferred
-  cross-doc thread) + **TD-121** (harness genuineness cap) + **TD-120**. Re-merge `main` (drift) before merging to `main`.
+  cross-doc thread) + **TD-121** (harness genuineness cap) + **TD-124**. (`main` re-merged 2026-06-16 — drift cleared;
+  reconciled the TD-120 collision: `main`'s shipped i18n cleanup keeps TD-120, this branch's `_GENUINENESS_DOCS` tidy → TD-124.)
 
-**▶ JUST SHIPPED & LIVE 2026-06-16 — Reviewer access fix (`4a74b9b`, NO migration; retro
+**▶ JUST SHIPPED & LIVE 2026-06-16 — Live-review round (10 commits `c6bc963`→`611e6b1`; migration `scholarship/0058`
+migrate-first via MCP; retro `docs/retrospective-2026-06-16-livereview-round.md`).**
+- **AI profile — completeness & safety.** Now distils ALL student inputs (justification, fears, anything-else, top
+  choices, other scholarships, help-wanted, deliberation); uses the **interest quiz** (accretive profile colour + an
+  exploratory interview question on quiz-vs-pathway divergence); feeds the OCR'd **Statement of Intent** letter.
+  **Grades summarised by GROUP** (no per-subject list) and **ethnicity-safe** — vernacular subjects fold into generic
+  groups AND ethnic/cultural specifics in the narrative are generalised ("her mother tongue", not "Tamil").
+- **Prompt versioning (`PROMPT_VERSION`, currently `2026-06-16.2`)** stamped on every `SponsorProfile.prompt_version`
+  (migration `0058`); the `backfill-assigned-profiles` cron is **version-aware** (skips current, refreshes stale). To
+  apply a future prompt change to existing drafts: bump `PROMPT_VERSION`, deploy, then run the cron job. All 8 current
+  drafts regenerated onto `.2`.
+- **Reviewer access:** new **`/admin/set-password`** page (invite + reset links → choose a password) unblocks non-Google
+  invitees; assignee filter hidden for reviewers (their list is self-scoped). **Kalai** fixed in prod (reviewer record
+  repointed from a never-activated yahoo email to her working gmail; dead yahoo auth user deleted; assignment preserved).
+- **i18n:** TD-118 + TD-120 resolved (106 orphaned `admin.scholarship` keys removed) + a **dynamic-aware orphan/parity
+  guardrail test** so the class can't regrow.
+- **Carry / open:** the set-password **invite-link** path needs one **live test invite** to confirm (recovery path is
+  solid); Dhurvaashrii-class consent gate too strict (tolerant parent-IC name match — PROPOSED, not built); Tamil refine
+  of first-draft strings; funding figures for kkom/iljtm/ilkbs; candidate — schedule the version-aware backfill so drafts
+  self-heal on a prompt bump.
+
+**▶ SHIPPED & LIVE 2026-06-16 — Reviewer access fix (`4a74b9b`, NO migration; retro
 `docs/retrospective-2026-06-16-reviewer-access.md`).** Two faults the newly-invited reviewers hit:
 - **Invite link → `/admin/login`** (was bouncing to the homepage): `AdminInviteView` now sets
   `redirect_to: {FRONTEND_URL}/admin/login` on the Supabase invite POST. Supabase Redirect-URL allow-list already

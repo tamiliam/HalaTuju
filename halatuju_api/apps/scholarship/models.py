@@ -799,6 +799,9 @@ class SponsorProfile(models.Model):
     finalised_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default='draft')
     model_used = models.CharField(max_length=50, blank=True, default='')
+    # profile_engine.PROMPT_VERSION that produced the current draft/final. Lets us detect a
+    # stale draft by version (not by date) and target regeneration. '' = pre-versioning.
+    prompt_version = models.CharField(max_length=30, blank=True, default='')
     generated_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
     # ── Phase E2: the ANONYMOUS, sponsor-pool-facing profile ──────────────────
