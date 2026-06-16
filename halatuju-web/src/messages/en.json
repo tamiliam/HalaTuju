@@ -2500,17 +2500,7 @@
       "none": "None yet.",
       "profileTitle": "Sponsor profile (AI draft)",
       "profileDraftHint": "Auto-drafted at the Check 2 → reviewer handoff so you can read it now and verify the claims. It is replaced by the final version when you save your verdict.",
-      "generate": "Generate profile",
-      "generating": "Generating…",
-      "regenerate": "Regenerate",
-      "save": "Save",
-      "saving": "Saving…",
-      "publish": "Publish",
-      "publishing": "Publishing…",
       "model": "Model",
-      "genError": "Profile generation failed.",
-      "saveError": "Could not save the profile.",
-      "publishError": "Could not publish the profile.",
       "verifyTitle": "Verify & accept",
       "nricLocked": "NRIC verified & locked",
       "acceptedBy": "Verified & accepted by",
@@ -2548,29 +2538,6 @@
       "visionError": "Could not re-run Vision.",
       "extractFields": {
         "title": "Extracted"
-      },
-      "finalProfile": {
-        "button": "Refine with interview findings (AI)",
-        "running": "Refining…",
-        "title": "Final profile (v2 — with interview)",
-        "aiBadge": "AI",
-        "finalisedAt": "Finalised",
-        "needInterview": "Submit an interview first to refine the profile.",
-        "error": "Couldn't refine the profile. Please try again."
-      },
-      "anonProfile": {
-        "title": "Anonymous profile (sponsor pool)",
-        "help": "A non-identifying profile sponsors can read. Generate it, review it for any leaked names/places, then publish it to the pool.",
-        "generate": "Generate anonymous profile (AI)",
-        "regenerate": "Regenerate (AI)",
-        "generating": "Generating…",
-        "publish": "Publish to pool",
-        "unpublish": "Unpublish",
-        "unpublishing": "Unpublishing…",
-        "publishedBadge": "Published to pool",
-        "draftBadge": "Not published",
-        "genError": "Couldn't generate the anonymous profile. Please try again.",
-        "pubError": "Couldn't update the anonymous profile. Please try again."
       },
       "reject": {
         "declineReview": "Decline (after review)",

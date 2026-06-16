@@ -1153,6 +1153,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   state/org/language dropdowns can't overflow.) +3 tests; i18n parity 2090. No migration.
 
 ### Removed
+- **Dead profile UI plumbing after the narrative redesign (TD-118, 2026-06-16).** Removed six unused api-client
+  functions from `admin-api.ts` (`generateSponsorProfile`, `finaliseSponsorProfile`, `saveSponsorProfile`,
+  `publishSponsorProfile`, `generateAnonProfile`, `publishAnonProfile`) and 29 orphaned i18n leaves under
+  `admin.scholarship` (`generate`/`generating`/`regenerate`/`save`/`saving`/`publish`/`publishing` + the three profile
+  error strings + the whole `finalProfile.*` and `anonProfile.*` objects) across en/ms/ta — left behind when the manual
+  Generate/Save/Publish/Refine controls and the anonymous-profile card were dropped. Each grep-verified unreferenced;
+  the still-rendered profile keys and the `AdminSponsorProfile` type are retained. i18n parity 2653×3; web-only, no
+  migration. (A wider orphan set found in passing is logged as TD-120 for a dedicated pass.)
 - **Orphaned `str_claimed_no_doc` anomaly rule.** The pre‑interview flag "student says the family receives STR but
   hasn't uploaded the letter" is superseded by the income wizard, which now *requires* the STR document on the STR route
   (consent gate v2). Removed the detector + its `_DETECTORS` registration, the `resolution.py` ticket mapping, the

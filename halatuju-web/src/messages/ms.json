@@ -2500,17 +2500,7 @@
       "none": "Tiada lagi.",
       "profileTitle": "Profil penaja (draf AI)",
       "profileDraftHint": "Dirangka secara automatik semasa serahan Check 2 → penyemak supaya anda boleh membacanya sekarang dan mengesahkan maklumatnya. Ia digantikan dengan versi akhir apabila anda menyimpan keputusan anda.",
-      "generate": "Jana profil",
-      "generating": "Menjana…",
-      "regenerate": "Jana semula",
-      "save": "Simpan",
-      "saving": "Menyimpan…",
-      "publish": "Terbitkan",
-      "publishing": "Menerbitkan…",
       "model": "Model",
-      "genError": "Penjanaan profil gagal.",
-      "saveError": "Tidak dapat menyimpan profil.",
-      "publishError": "Tidak dapat menerbitkan profil.",
       "verifyTitle": "Sahkan & terima",
       "nricLocked": "IC disahkan & dikunci",
       "acceptedBy": "Disahkan & diterima oleh",
@@ -2548,29 +2538,6 @@
       "visionError": "Tidak dapat menjalankan semula Vision.",
       "extractFields": {
         "title": "Diekstrak"
-      },
-      "finalProfile": {
-        "button": "Perhalusi dengan dapatan temu duga (AI)",
-        "running": "Memperhalusi…",
-        "title": "Profil akhir (v2 — dengan temu duga)",
-        "aiBadge": "AI",
-        "finalisedAt": "Dimuktamadkan",
-        "needInterview": "Hantar temu duga dahulu untuk memperhalusi profil.",
-        "error": "Tidak dapat memperhalusi profil. Sila cuba lagi."
-      },
-      "anonProfile": {
-        "title": "Profil tanpa nama (kumpulan penaja)",
-        "help": "Profil tanpa pengenalan yang boleh dibaca penaja. Jana, semak jika ada nama/tempat terbocor, kemudian terbitkan ke kumpulan.",
-        "generate": "Jana profil tanpa nama (AI)",
-        "regenerate": "Jana semula (AI)",
-        "generating": "Menjana…",
-        "publish": "Terbitkan ke kumpulan",
-        "unpublish": "Nyahterbit",
-        "unpublishing": "Menyahterbit…",
-        "publishedBadge": "Diterbitkan ke kumpulan",
-        "draftBadge": "Belum diterbitkan",
-        "genError": "Tidak dapat menjana profil tanpa nama. Sila cuba lagi.",
-        "pubError": "Tidak dapat mengemas kini profil tanpa nama. Sila cuba lagi."
       },
       "reject": {
         "declineReview": "Tolak (selepas semakan)",
