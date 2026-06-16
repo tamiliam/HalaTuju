@@ -64,7 +64,35 @@ CERT_SIGNATURES = [
     ('Director of Examinations',     ['DIRECTOR OF EXAMINATIONS'],           2, 'text'),
 ]
 
-_LISTS = {'results_slip': SLIP_SIGNATURES, 'certificate': CERT_SIGNATURES}
+# Birth certificate (JPN Sijil Kelahiran) — standard document, so same signature approach.
+# Mostly fixed printed strings; the JATA NEGARA crest + the barcode (which encodes the child's
+# IC) are the two visual markers (the barcode is the BC's machine token, ~ the slip's QR).
+BC_SIGNATURES = [
+    ('JATA NEGARA',                   ['__crest__'],                                    2, 'visual'),
+    ('KERAJAAN MALAYSIA',             ['KERAJAAN MALAYSIA'],                            1, 'text'),
+    ('SIJIL KELAHIRAN',               ['SIJIL KELAHIRAN'],                              2, 'text'),
+    ('Akta Pendaftaran 1957',         ['PENDAFTARAN KELAHIRAN DAN KEMATIAN'],           3, 'text'),
+    ('KANAK-KANAK',                   ['KANAK KANAK'],                                  2, 'text'),
+    ('BAPA',                          ['BAPA'],                                         1, 'text'),
+    ('IBU',                           ['IBU'],                                          1, 'text'),
+    ('No. Kad Pengenalan',            ['KAD PENGENALAN'],                               1, 'text'),
+    ('Taraf Kewarganegaraan',         ['KEWARGANEGARAAN', 'WARGANEGARA'],               1, 'text'),
+    ('Kawasan Pendaftaran',           ['KAWASAN PENDAFTARAN'],                          2, 'text'),
+    ('Tempat Kelahiran',              ['TEMPAT KELAHIRAN'],                             1, 'text'),
+    ('No. Daftar',                    ['NO DAFTAR'],                                    2, 'text'),
+    ('certification line',            ['DISAHKAN BAHAWA MAKLUMAT'],                     2, 'text'),
+    ('PENDAFTAR BESAR',               ['PENDAFTAR BESAR'],                              2, 'text'),
+    ('Kelahiran & Kematian Malaysia', ['KELAHIRAN DAN KEMATIAN MALAYSIA',
+                                       'KELAHIRAN KEMATIAN MALAYSIA'],                  1, 'text'),
+    ('barcode',                       ['__barcode__'],                                  3, 'visual'),
+]
+
+# A doc_type is scored against its FAMILY of candidate lists (best fit wins + names the type).
+# results_slip + certificate are scored together (auto-detect); birth_certificate is its own.
+_RESULTS_LISTS = {'results_slip': SLIP_SIGNATURES, 'certificate': CERT_SIGNATURES}
+_FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
+             'birth_certificate': {'birth_certificate': BC_SIGNATURES}}
+_LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
 
 
 def _norm(s: str) -> str:
@@ -79,7 +107,8 @@ def _score_list(signatures, text_norm, has_qr, has_crest):
     for label, patterns, weight, kind in signatures:
         total += weight
         if kind == 'visual':
-            hit = has_qr if patterns == ['__qr__'] else has_crest
+            # __crest__ → the crest flag; __qr__/__barcode__ → the machine-token flag (has_qr).
+            hit = has_crest if patterns == ['__crest__'] else has_qr
         else:
             hit = any(_norm(p) in text_norm for p in patterns)
         (present if hit else missing).append(label)
@@ -96,7 +125,8 @@ def score_signatures(ocr_text: str, has_qr: bool = False, has_crest: bool = Fals
     ``{type, probability, weight_got, weight_total, present, missing, scores}`` for the
     better-fitting list. Pure + deterministic for the text signatures."""
     tn = _norm(ocr_text)
-    scores = {name: _score_list(sig, tn, has_qr, has_crest) for name, sig in _LISTS.items()}
+    lists = _FAMILIES.get(doc_type, _LISTS)
+    scores = {name: _score_list(sig, tn, has_qr, has_crest) for name, sig in lists.items()}
     best = max(scores, key=lambda k: scores[k]['probability'])
     b = scores[best]
     return {'type': best, 'probability': b['probability'],
@@ -131,11 +161,13 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
     return {'has_qr': bool(r.get('has_qr_code')), 'has_crest': bool(r.get('has_jata_negara_crest'))}
 
 
-def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool = False) -> dict:
-    """The soft genuineness signal for a results document from its signatures:
+def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool = False,
+                          doc_type: str = None) -> dict:
+    """The soft genuineness signal for a standard document from its signatures:
     ``{status, probability, type, present, missing, reason}``. ``status`` maps onto the cap
-    vocabulary via ``band_for``. Pure + deterministic given the inputs; never raises."""
-    r = score_signatures(ocr_text, has_qr=has_qr, has_crest=has_crest)
+    vocabulary via ``band_for``. ``doc_type`` selects the signature family (slip/cert by default,
+    'birth_certificate' for the BC). Pure + deterministic given the inputs; never raises."""
+    r = score_signatures(ocr_text, has_qr=has_qr, has_crest=has_crest, doc_type=doc_type)
     status = band_for(r['probability'])
     n_have, n_all = len(r['present']), len(r['present']) + len(r['missing'])
     reason = (f"{n_have}/{n_all} {r['type'].replace('_', ' ')} signatures present "
