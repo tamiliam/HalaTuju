@@ -8,7 +8,7 @@ from django.test import TestCase
 
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import (
-    FundingNeed, Referee, ScholarshipApplication, ScholarshipCohort,
+    ApplicantDocument, FundingNeed, Referee, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.profile_engine import (
     DEFAULT_LANGUAGE, _DO_NOT_CLAIM, _build_prompt, _resolve_language,
@@ -107,6 +107,21 @@ class TestProfilePrompt(TestCase):
         self.assertIn('university applications', prompt)               # help_university=yes
         self.assertIn('scholarship applications', prompt)              # help_scholarship=yes
         self.assertIn('financial', prompt)                             # uncertainty reason
+
+    def test_prompt_includes_statement_of_intent_text(self):
+        """The OCR'd Statement of Intent letter (vision_fields['text']) feeds the draft."""
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='statement_of_intent', storage_path='soi.pdf',
+            vision_fields={'text': 'I want to become a nurse to serve my rural community.'})
+        prompt = _build_prompt(self.app)
+        self.assertIn('serve my rural community', prompt)
+        self.assertIn('Statement of Intent letter', prompt)
+
+    def test_statement_of_intent_blank_when_not_uploaded(self):
+        prompt = _build_prompt(self.app)   # fixture app has no SoI document
+        self.assertIn('Statement of Intent letter (student\'s uploaded letter, OCR\'d', prompt)
+        # the value renders as the not-provided marker, not a stray letter
+        self.assertNotIn('serve my rural community', prompt)
 
     def test_prompt_includes_quiz_interests_accretively(self):
         """Idea 1: the interest-quiz result is fed as supportive context, with an

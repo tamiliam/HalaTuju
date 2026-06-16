@@ -117,6 +117,7 @@ Worries / concerns (student's words): {fears}
 Family situation (student's words): {family_context}
 Daily life & responsibilities (student's words): {daily_life}
 Anything else the student wants us to know (student's words): {anything_else}
+Statement of Intent letter (student's uploaded letter, OCR'd — distil its substance): {statement_of_intent}
 
 Funding — what the support would help with: {funding_categories}
 Anything else about funding (student's words): {funding_note}
@@ -352,6 +353,21 @@ def _quiz_interests(application):
     return ', '.join(labels) if labels else 'not provided'
 
 
+def _statement_of_intent(application):
+    """The OCR'd plain text of the student's uploaded Statement of Intent letter, if any
+    (read on upload into vision_fields['text']). Capped so it informs the draft without
+    dominating the prompt; normal PII redaction still applies. 'not provided' when none."""
+    doc = (application.documents.filter(doc_type='statement_of_intent')
+           .order_by('-uploaded_at').first())
+    text = ''
+    if doc is not None and isinstance(getattr(doc, 'vision_fields', None), dict):
+        text = (doc.vision_fields.get('text') or '').strip()
+    if not text:
+        return 'not provided'
+    cap = 2000
+    return text if len(text) <= cap else text[:cap].rstrip() + ' …'
+
+
 def _render_qa(application):
     """The student's answers to clarifying questions — the answered Check-2 + reviewer
     resolution items (those carrying a typed response). Question = the officer-written
@@ -483,6 +499,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         family_context=val(application.family_context),
         daily_life=val(application.daily_life),
         anything_else=val(application.anything_else),
+        statement_of_intent=_statement_of_intent(application),
         funding_categories=cats_str,
         funding_note=note,
         qa=_render_qa(application),

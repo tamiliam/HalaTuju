@@ -10,5 +10,6 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 - 2026-06-16 chore(web): TD-120 — remove 77 orphaned admin.scholarship i18n keys (en/ms/ta) + add dynamic-aware orphan/parity guardrail test (halatuju-web: messages/{en,ms,ta}.json, messages/__tests__/admin-scholarship-i18n.test.ts)
 - 2026-06-16 feat(api): AI profile distils ALL student inputs (justification, fears, anything_else, top_choices, other_scholarships, help_wanted, uncertainty) — were collected but ignored (halatuju_api: scholarship/profile_engine.py + tests)
 - 2026-06-16 feat(api): use the interest quiz — accretive interest context in the profile (Idea 1) + quiz-vs-pathway exploratory interview question (Idea 2) (halatuju_api: scholarship/profile_engine.py, gap_engine.py + tests)
+- 2026-06-16 feat(api): feed the OCR'd Statement of Intent letter text into the profile draft (was extracted but only used by Check-2) (halatuju_api: scholarship/profile_engine.py + tests)
 
 ## Reviews
