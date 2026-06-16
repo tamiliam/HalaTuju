@@ -2,6 +2,12 @@
 
 Cross-cutting lessons from sprint retrospectives. Only items that affect future work regardless of feature area.
 
+- **Never pass a secret as a `gcloud` flag value that can echo on error.** A wrong flag name (`--update-headers` on
+  `jobs create` instead of `--headers`) made gcloud print the unrecognised-argument *with its value* — leaking
+  `CRON_SECRET` into the transcript. Verify the exact flag first (`gcloud ... --help`), keep the secret in a shell var
+  (never a literal), and prefer commands/paths that can't echo it. If one leaks: rotate it — update the env var
+  (`--update-env-vars`, new revision) AND every consumer (all 11 Cloud Scheduler `X-Cron-Secret` headers), then confirm
+  the OLD value now returns 403. (CRON_SECRET rotation, 2026-06-16)
 - **Version any AI prompt and stamp the version on every artifact it generates.** Without it, a prompt redesign
   silently leaves old outputs in place and they're only caught by chance (the #18 stale-draft: an old-format profile sat
   in prod until the owner compared two side by side). Add a `PROMPT_VERSION`, store it on each generated row, and make
