@@ -517,27 +517,30 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-16)
 
-**▶ DONE — NOT MERGED/DEPLOYED (on branch `feature/doc-eval-harness`, 3 commits `f57f343`→`c788c8e`, NO migration;
-retro `docs/retrospective-genuineness-signatures.md`). Document genuineness consolidated + probabilistic slip/cert
-signature scorer + academic slip fixes.**
-- **`genuineness/` package** = one home for every genuineness check: `ic` (MyKad), `supporting_doc` (STR/BC/EPF),
-  `results_doc` (the new scorer), shared `bands`, `assess()` entry point. `ic_genuineness`/`doc_genuineness` moved out
-  of `vision.py` (re-exported for back-compat). Behaviour-preserving relocation, before/after tests.
-- **Signature scorer (slip + cert):** two per-type signature lists — fixed printed strings matched DETERMINISTICALLY in
-  the OCR text + two VISUAL signatures (QR + Jata Negara crest) from one focused multimodal read → weighted PROBABILITY
-  → soft bands **suspect <0.35 · review 0.35–0.70 · genuine ≥0.70**, calibrated on the real 48-doc corpus (46 genuine
-  0.56–0.80, 1 typed fake 0.04). **Live for results_slip only**; replaces the holistic `doc_genuineness` read there
-  (auto-detects slip vs cert; robust to prior-year / hidden-NRIC / no-watermark / cropped). `suspect` rides the same
-  SOFT cap + officer flag; OCR failure → no signal. STR/BC/EPF unchanged. Flag-gated, never blocks.
-- **Academic fix #1:** an undeclared slip subject is a SOFT discrepancy (Gopal `/profile` nudge + Academic `review` +
-  Check-2), no longer a doc mismatch/block (`resolution.doc_match_verdict` dropped `subjects` from its red check).
-  **Name fix #2:** strip a leaked `NAMA :` label before the slip name match (fixed the a27 false name_mismatch).
-- Eval tooling `eval/capture_ocr.py` (Cloud Vision OCR via gcloud ADC) + `eval/calibrate_signatures.py`. Tests +40;
-  **scholarship suite 1287 passed.** New local-only deps cv2/numpy/google-cloud-vision NOT in `requirements.txt`
-  (google-cloud-vision IS already a prod dep). The signature scorer is pure text (no new prod dep).
-- **▶ NEXT:** TD-119 (diagnose the other 13 corpus false-positive flags: 5 parent_ic, 5 birth_certificate, 1 epf,
-  1 str, 2 offer_letter — same diagnose→fix→test loop); TD-121 (wire the harness scorecard through the genuineness cap);
-  TD-120 (drop `results_slip` from `supporting_doc._GENUINENESS_DOCS`). Then merge to `main` (owner-gated deploy).
+**▶ DONE — NOT MERGED/DEPLOYED (branch `feature/doc-eval-harness`, 2 sprint-closes this session: `f57f343`→`c788c8e`
+then `45d23e0`→`cf1d905`, NO migration; retros `docs/retrospective-genuineness-signatures.md` +
+`docs/retrospective-2026-06-16-genuineness-canonical-enum-bc-epf.md`). Document genuineness: package +
+probabilistic SIGNATURE scorer (slip/cert/BC/EPF) + canonical outcome enum (BE+FE) + academic/name fixes.**
+- **`genuineness/` package** = one home for every check (`ic`, `supporting_doc`, `results_doc`, shared `bands`,
+  `assess()`); `ic_genuineness`/`doc_genuineness` moved out of `vision.py` (re-exported).
+- **Signature scorer** (slip/cert/BC/EPF) — per-type signature lists (mostly fixed printed strings matched
+  DETERMINISTICALLY in OCR text + a visual crest/QR/logo flag) → probability → **band suspect<0.35 / review
+  0.35–0.70 / genuine≥0.70**, calibrated per type (48 slips, 28 BCs, 13 EPFs; zero false positives). EPF doubles
+  as the **wrong-type backstop** (tax form / withdrawal form / mis-filed STR → not_epf; closes TD-117).
+- **Canonical outcome enum `genuine` / `suspect` / `not_<type>`** across ALL doc types (BE + FE). Signature docs map
+  the bands 1:1; IC/STR/EPF map their holistic verdict. `bands.canonical_status()` folds every legacy value (no
+  backfill); uniform treatment (genuine → pass; else soft cap + officer flag). **Live for results_slip only** — BC/EPF
+  signatures built+calibrated but still holistic in prod (TD-122 wires them).
+- **Academic fix #1** (undeclared slip subject = soft `/profile` nudge, not a block) + **name fix #2** (strip `NAMA :`).
+- **Issue-2 extraction contracts FINALISED** (slip/BC/EPF) in `docs/scholarship/genuineness-verification-architecture.md`
+  — incl. the EPF reverse-engineered salary `max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))` + `No. Majikan==000000000 ⇒
+  unemployed`. Extraction-code change is TD-123 (Issue-2 build pass).
+- Eval tooling: `eval/capture_ocr.py` (Cloud Vision OCR via gcloud ADC, any doc-type) + `eval/calibrate_signatures.py`.
+  Backend suite **2477 passed**. Local-only deps cv2/numpy/google-cloud-vision NOT in `requirements.txt` (gcv already a
+  prod dep; the scorer is pure text).
+- **▶ NEXT:** STR signatures (MySTR-screenshot vs MOF-letter split); **TD-122** (wire BC/EPF onto the live signature
+  path); **TD-123** (Issue-2 extraction build pass); then Layer-2 matching fixes (parent-IC **TD-119**, the deferred
+  cross-doc thread) + **TD-121** (harness genuineness cap) + **TD-120**. Re-merge `main` (drift) before merging to `main`.
 
 **▶ JUST SHIPPED & LIVE 2026-06-16 — Reviewer access fix (`4a74b9b`, NO migration; retro
 `docs/retrospective-2026-06-16-reviewer-access.md`).** Two faults the newly-invited reviewers hit:
