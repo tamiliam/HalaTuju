@@ -87,15 +87,16 @@ class TestResultsSlipUsesSignatureScorer(_Base):
                    return_value={'fields': {}, 'warnings': [], 'error': ''}):
             return vision.run_field_extraction_for_document(doc, names=[])
 
-    def test_genuine_text_scores_likely_genuine(self):
+    def test_genuine_text_scores_genuine(self):
         auth = self._run(GENUINE_SLIP).get('authenticity')
         self.assertIsNotNone(auth)
-        self.assertEqual(auth['status'], 'likely_genuine')
+        self.assertEqual(auth['status'], 'genuine')
         self.assertIn('probability', auth)
 
-    def test_typed_fake_scores_suspect(self):
+    def test_typed_fake_scores_not_type(self):
+        # A typed reproduction scores <0.35 → not recognisably that document → not_<type>.
         auth = self._run(TYPED_FAKE).get('authenticity')
-        self.assertEqual(auth['status'], 'suspect')
+        self.assertTrue(auth['status'].startswith('not_'))
 
     def test_empty_ocr_gives_no_signal(self):
         # OCR failure is OUR failure → no authenticity, never a 'suspect' penalty.
@@ -130,13 +131,13 @@ class TestVisualCreditLiftsBorderline(_Base):
              patch('apps.scholarship.genuineness.results_doc.results_visual_markers', return_value=markers):
             return vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
 
-    def test_borderline_is_review_without_visual_credit(self):
+    def test_borderline_is_suspect_without_visual_credit(self):
         auth = self._run(BORDERLINE_SLIP, {})            # no QR/crest credited
-        self.assertEqual(auth['status'], 'low_confidence')
+        self.assertEqual(auth['status'], 'suspect')
 
     def test_qr_and_crest_lift_borderline_to_genuine(self):
         auth = self._run(BORDERLINE_SLIP, {'has_qr': True, 'has_crest': True})
-        self.assertEqual(auth['status'], 'likely_genuine')
+        self.assertEqual(auth['status'], 'genuine')
 
 
 class TestFlagOffNoSignal(_Base):

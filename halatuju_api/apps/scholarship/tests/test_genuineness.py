@@ -43,19 +43,19 @@ class TestEngine(_Base):
                    return_value={'verdict': 'suspect', 'has_face_photo': False,
                                  'has_chip': False, 'reason': 'typed text'}):
             r = vision.ic_genuineness(b'img', 'image/png')
-        self.assertEqual(r['status'], 'low_confidence')
+        self.assertEqual(r['status'], 'suspect')
         self.assertFalse(r['markers']['has_face_photo'])
         self.assertEqual(r['reason'], 'typed text')
 
     def test_genuine_maps_to_likely_genuine(self):
         with patch('apps.scholarship.vision._call_gemini_json',
                    return_value={'verdict': 'genuine', 'has_face_photo': True}):
-            self.assertEqual(vision.ic_genuineness(b'img', 'image/png')['status'], 'likely_genuine')
+            self.assertEqual(vision.ic_genuineness(b'img', 'image/png')['status'], 'genuine')
 
     def test_not_an_ic(self):
         with patch('apps.scholarship.vision._call_gemini_json',
                    return_value={'verdict': 'not_an_ic', 'reason': 'a shopping list'}):
-            self.assertEqual(vision.ic_genuineness(b'img', 'image/png')['status'], 'not_an_ic')
+            self.assertEqual(vision.ic_genuineness(b'img', 'image/png')['status'], 'not_ic')
 
     def test_ai_outage_returns_empty_no_signal(self):
         # We never penalise a student for OUR failure.
@@ -96,9 +96,9 @@ class TestSurfaces(_Base):
         self.assertNotIn('ic_low_confidence', [a['code'] for a in detect_anomalies(self.app)])
 
     def test_serializer_exposes_authenticity(self):
-        doc = self._ic(auth={'status': 'low_confidence', 'reason': 'typed'})
+        doc = self._ic(auth={'status': 'low_confidence', 'reason': 'typed'})   # legacy stored value
         self.assertEqual(ApplicantDocumentSerializer().get_authenticity(doc),
-                         {'status': 'low_confidence', 'reason': 'typed', 'doc_seen': ''})
+                         {'status': 'suspect', 'reason': 'typed', 'doc_seen': ''})   # → canonical
 
     def test_serializer_null_when_absent(self):
         self.assertIsNone(ApplicantDocumentSerializer().get_authenticity(self._ic()))
@@ -113,8 +113,8 @@ class TestSupportingDocGenuineness(_Base):
             vision_fields={'authenticity': auth} if auth else {})
 
     def test_engine_maps_verdicts(self):
-        for verdict, status in {'genuine': 'likely_genuine', 'suspect': 'low_confidence',
-                                'wrong_type': 'wrong_type'}.items():
+        for verdict, status in {'genuine': 'genuine', 'suspect': 'suspect',
+                                'wrong_type': 'not_str'}.items():
             with patch('apps.scholarship.vision._call_gemini_json',
                        return_value={'verdict': verdict, 'is_official': verdict == 'genuine',
                                      'is_expected_type': verdict != 'wrong_type', 'doc_seen': 'X', 'reason': 'r'}):
@@ -145,7 +145,7 @@ class TestSupportingDocGenuineness(_Base):
         doc = self._doc('birth_certificate',
                         auth={'status': 'low_confidence', 'reason': 'typed', 'doc_seen': 'typed text'})
         self.assertEqual(ApplicantDocumentSerializer().get_authenticity(doc),
-                         {'status': 'low_confidence', 'reason': 'typed', 'doc_seen': 'typed text'})
+                         {'status': 'suspect', 'reason': 'typed', 'doc_seen': 'typed text'})
 
 
 class TestVerdictCaps(_Base):

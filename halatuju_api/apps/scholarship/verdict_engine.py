@@ -41,6 +41,7 @@ from dataclasses import asdict, dataclass, field
 
 from .services import ic_identity_blockers
 from .vision import name_match
+from .genuineness.bands import canonical_status
 
 
 @dataclass(frozen=True)
@@ -156,8 +157,9 @@ def _verdict_identity(application):
     # the physical card at interview). It NEVER auto-fails on genuineness alone — we don't
     # accuse; we lower confidence (see the verification-assurance roadmap's threat model).
     auth = ic.vision_fields.get('authenticity') if isinstance(ic.vision_fields, dict) else None
-    if isinstance(auth, dict) and auth.get('status') in ('low_confidence', 'not_an_ic'):
-        unresolved.append(_item('ic_low_confidence', status=auth['status'],
+    auth_status = canonical_status((auth or {}).get('status'), 'ic') if isinstance(auth, dict) else ''
+    if auth_status and auth_status != 'genuine':     # canonical 'suspect' / 'not_ic' (folds legacy)
+        unresolved.append(_item('ic_low_confidence', status=auth_status,
                                 reason=auth.get('reason', '')))
     return _fact('identity', 'verified' if not unresolved else 'review',
                  evidence, unresolved)
@@ -584,15 +586,16 @@ def _fact_genuineness_docs(application, fact_name):
 
 
 def _suspect_genuineness(application, doc_types):
-    """The worst genuineness status among the latest of the given doc types if it warrants a
-    soft cap ('low_confidence'/'wrong_type'/'not_an_ic'/'suspect'), else ''. Reads vision_fields
-    only. ('suspect' is the results-slip signature scorer's low-probability band — it rides the
-    same SOFT review cap; the reviewer is the authority.)"""
+    """The CANONICAL genuineness status among the latest of the given doc types if it warrants a
+    soft cap ('suspect' / 'not_<type>'), else ''. Reads vision_fields only and folds any value —
+    current or legacy — via ``canonical_status``, so old stored authenticity still caps. SOFT: the
+    reviewer is the authority."""
     for dt in doc_types:
         d = _latest_doc(application, dt)
         vf = d.vision_fields if (d and isinstance(d.vision_fields, dict)) else {}
-        st = (vf.get('authenticity') or {}).get('status', '')
-        if st in ('low_confidence', 'wrong_type', 'not_an_ic', 'suspect'):
+        raw = (vf.get('authenticity') or {}).get('status', '')
+        st = canonical_status(raw, getattr(d, 'doc_type', None) or dt)
+        if st and st != 'genuine':
             return st
     return ''
 

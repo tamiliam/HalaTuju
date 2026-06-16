@@ -447,8 +447,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     # S13: server-computed match verdicts (so client doesn't reimplement matchers).
     vision_nric_verdict = serializers.SerializerMethodField()
     vision_name_verdict = serializers.SerializerMethodField()
-    # Genuineness fingerprint (verification-assurance): {status, reason} for an IC — soft,
-    # flag-gated. status ∈ likely_genuine / low_confidence / not_an_ic. Null if it didn't run.
+    # Genuineness fingerprint (verification-assurance): {status, reason, doc_seen} — soft,
+    # flag-gated. status ∈ canonical genuine / suspect / not_<type>. Null if it didn't run.
     authenticity = serializers.SerializerMethodField()
     # Check-1 Academic: the three clinical checks for a results slip (name/subjects/
     # results), server-computed against the student's own profile — null for other types.
@@ -536,8 +536,11 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         auth = vf.get('authenticity')
         if not isinstance(auth, dict) or not auth.get('status'):
             return None
-        return {'status': auth.get('status'), 'reason': auth.get('reason', ''),
-                'doc_seen': auth.get('doc_seen', '')}
+        from .genuineness.bands import canonical_status
+        # Expose the CANONICAL outcome (genuine / suspect / not_<type>), folding any legacy
+        # stored value, so the FE renders one consistent vocabulary across all document types.
+        return {'status': canonical_status(auth.get('status'), obj.doc_type),
+                'reason': auth.get('reason', ''), 'doc_seen': auth.get('doc_seen', '')}
 
     def get_academic_check(self, obj):
         """{name, subjects, results, candidate_name, missing, mismatched, slip_count}
