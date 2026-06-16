@@ -785,7 +785,17 @@
   some `finalProfile.*`). All harmless (build green, i18n parity intact), so deferred from the redesign sprint. Remove
   them in a future web-only change, grepping each key/fn for references first and keeping en/ms/ta parity. (Logged
   2026-06-15.)
-- **TD-120 (low): a wider set of orphaned `admin.scholarship` i18n keys, beyond the profile redesign.** While doing
+- **TD-120 (low) ✅ RESOLVED (small-change lane, 2026-06-16):** removed **77** orphaned `admin.scholarship` i18n leaves
+  across en/ms/ta (parity 2654→2577×3), pruned four now-empty objects (`extractFields`, `interview.rubric`,
+  `recordVerdict.tools`, `upu`). Used a **dynamic-aware scan** (full-path literals + concatenation/template prefixes) so
+  the dynamically-addressed subtrees (`anomaly.*`, `verdict.item.*`, `docsDrawer.*`, `statuses.*`, etc.) were correctly
+  kept; cross-verified every candidate by grep, and confirmed the translator has no scoped/prefixed variant (every key is
+  a full path). Chief removals: the retired **Verify & accept** card, the old **Vision OCR** card labels, and assorted
+  dead field labels (`coq`, `referralSource`, `guardianName`, `pathway`, `upu.*`, `caveats.*` leftovers, …). Added a
+  **guardrail** — `halatuju-web/src/messages/__tests__/admin-scholarship-i18n.test.ts` (jest) — that fails on any future
+  orphan or en/ms/ta drift in this namespace, so the set can't silently regrow. jest 322 green; tsc clean; web-only, no
+  migration. **Original entry (for context):**
+- **TD-120 (original): a wider set of orphaned `admin.scholarship` i18n keys, beyond the profile redesign.** While doing
   TD-118 I scanned every leaf under `admin.scholarship` and found ~80 more keys with no code reference — chiefly the
   retired **Verify & accept** card (`verifyTitle`, `verifyHint`, `verifyAccept`, `nricLocked`, `acceptNeedsVerdict`,
   `check_nric`/`check_name`/`check_results`/`check_document`), and assorted field labels (`coq`, `referralSource`,

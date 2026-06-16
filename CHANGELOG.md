@@ -1166,6 +1166,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   state/org/language dropdowns can't overflow.) +3 tests; i18n parity 2090. No migration.
 
 ### Removed
+- **Wider orphaned `admin.scholarship` i18n cleanup (TD-120, 2026-06-16).** Removed **77** unreferenced translation
+  leaves across en/ms/ta (2654→2577×3) — left over from earlier cockpit redesigns, chiefly the retired **Verify & accept**
+  card, the old **Vision OCR** card labels, and dead field labels (`coq`, `referralSource`, `guardianName`, `pathway`,
+  `upu.*`, stale `caveats.*`, …); four emptied objects pruned (`extractFields`, `interview.rubric`, `recordVerdict.tools`,
+  `upu`). A **dynamic-aware** scan kept every key addressed by concatenation/template (`anomaly.*`, `verdict.item.*`,
+  `docsDrawer.*`, `statuses.*`, …); each removal was grep-verified. Added a jest **guardrail**
+  (`messages/__tests__/admin-scholarship-i18n.test.ts`) that fails on any future orphan or en/ms/ta drift in this
+  namespace. jest 322 green; web-only, no migration.
 - **Dead profile UI plumbing after the narrative redesign (TD-118, 2026-06-16).** Removed six unused api-client
   functions from `admin-api.ts` (`generateSponsorProfile`, `finaliseSponsorProfile`, `saveSponsorProfile`,
   `publishSponsorProfile`, `generateAnonProfile`, `publishAnonProfile`) and 29 orphaned i18n leaves under

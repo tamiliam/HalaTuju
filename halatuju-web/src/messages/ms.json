@@ -2367,7 +2367,6 @@
     "scholarship": {
       "nav": "Permohonan B40",
       "title": "Pemohon Bantuan B40",
-      "desc": "Semak pemohon, draf dan terbitkan profil penaja.",
       "countSubtitle": "{count} pemohon",
       "loadFailed": "Tidak dapat memuatkan permohonan.",
       "showingRange": "Papar {start}–{end} daripada {total} permohonan",
@@ -2409,13 +2408,7 @@
         }
       },
       "incompleteTitle": "Belum boleh diterima — pemohon masih perlu:",
-      "requestInfoTitle": "Minta lebih banyak dokumen",
-      "requestInfoIntro": "E-mel pelajar untuk menambah sesuatu. Ini tidak menukar status mereka — mereka boleh terus memuat naik.",
-      "requestInfoLast": "Permintaan terakhir",
-      "requestInfoPlaceholder": "cth. Sila muat naik slip gaji terkini ibu bapa anda.",
-      "requestInfoSend": "Hantar permintaan",
       "requestInfoError": "Tidak dapat menghantar permintaan.",
-      "requestDocLabel": "Atau minta dokumen tertentu",
       "requestDocTitle": "Minta dokumen",
       "requestDocNotePlaceholder": "Terangkan apa yang diperlukan (telah diisi — sunting ikut keperluan)",
       "requestDocStd": {
@@ -2434,7 +2427,6 @@
         "photo": "gambar terkini anda",
         "other": "dokumen yang diminta — lihat nota di bawah untuk butiran yang diperlukan"
       },
-      "raiseSectionTitle": "Kemukakan tugasan untuk pelajar",
       "raiseSectionHint": "Tugasan yang anda ingin berikan kepada pelajar sebelum temu duga",
       "raiseQueryTitle": "Kemukakan pertanyaan",
       "raiseQueryPlaceholder": "cth. Boleh sahkan siapa yang tinggal di alamat pada bil utiliti anda?",
@@ -2459,8 +2451,6 @@
         "intro": "Jurang yang ditemui AI untuk ditanya secara langsung — gunakannya, tanya soalan anda sendiri, atau jana lagi. Kemudian rekod penemuan dan kesimpulan anda di bawah.",
         "noFlags": "Tiada bendera automatik. Gunakan rubrik + nota untuk merekod penilaian anda.",
         "submitted": "Dihantar",
-        "inProgress": "Sedang berjalan",
-        "carryOver": "Pertanyaan Semakan 2 yang belum dijawab — tanya semasa temu duga",
         "rationalePlaceholder": "Satu baris: apa yang anda temui",
         "notePlaceholder": "Rekod penemuan dan kesimpulan anda",
         "saveDraft": "Simpan draf",
@@ -2468,54 +2458,28 @@
         "saveError": "Tidak dapat menyimpan temu duga.",
         "submitError": "Tidak dapat menghantar temu duga.",
         "verdict": {
-          "resolved": "Selesai",
-          "still_unclear": "Masih tidak jelas",
-          "new_concern": "Kebimbangan baharu"
-        },
-        "rubric": {
-          "clarity_of_plan": "Kejelasan rancangan",
-          "financial_need": "Keperluan kewangan",
-          "resilience": "Daya tahan"
+          "resolved": "Selesai"
         }
       },
       "empty": "Tiada permohonan sepadan.",
       "name": "Nama",
-      "qualification": "Kelayakan",
       "status": "Status",
       "bucket": "Kategori",
       "submitted": "Dihantar",
       "back": "Kembali ke permohonan",
-      "applicant": "Pemohon",
       "school": "Sekolah",
       "income": "Pendapatan isi rumah",
-      "pathway": "Laluan yang dihasratkan",
       "aspirations": "Cita-cita",
       "justification": "Mengapa bantuan diperlukan",
       "funding": "Keperluan kewangan",
-      "documents": "Dokumen",
       "referees": "Perujuk",
-      "consent": "Persetujuan",
-      "consentGiven": "Persetujuan diberikan (aktif).",
-      "consentNone": "Tiada persetujuan aktif lagi.",
       "none": "Tiada lagi.",
       "profileTitle": "Profil penaja (draf)",
       "profileDraftHint": "Draf ini akan digantikan dengan versi akhir yang dikemas kini dan menggabungkan penemuan anda apabila anda menyimpan keputusan anda.",
       "model": "Model",
-      "verifyTitle": "Sahkan & terima",
-      "nricLocked": "IC disahkan & dikunci",
       "acceptedBy": "Disahkan & diterima oleh",
-      "verifyHint": "Penerimaan mengunci IC — sudah disahkan daripada MyKad melalui OCR (nombor + nama). Rekod keputusan anda di atas dahulu.",
-      "acceptNeedsVerdict": "Rekod keputusan anda di atas untuk membolehkan penerimaan.",
-      "check_nric": "IC sepadan dengan MyKad",
-      "check_name": "Nama sepadan",
-      "check_results": "Keputusan sepadan dengan slip",
-      "check_document": "Dokumen MyKad jelas & sah",
-      "verifyAccept": "Sahkan & terima",
-      "accepting": "Menerima…",
       "acceptError": "Tidak dapat menerima. Sila cuba lagi.",
       "notShortlisted": "Hanya permohonan yang disenarai pendek boleh disahkan & diterima.",
-      "mentoring": "Tandakan untuk mentor (hilang arah — bukan penolakan)",
-      "mentorError": "Tidak dapat mengemas kini tanda mentor.",
       "refHint": "Rekod perujuk — seorang guru, kaunselor, atau wakil organisasi perujuk yang boleh menjamin pemohon.",
       "refName": "Nama perujuk",
       "refRole": "Peranan (cth. guru)",
@@ -2527,20 +2491,8 @@
       "refRemove": "Buang",
       "refError": "Tidak dapat menyimpan perujuk. Sila cuba lagi.",
       "genLang": "Bahasa output",
-      "visionTitle": "OCR Vision (petunjuk lembut)",
-      "visionRerun": "Jalankan semula Vision",
-      "visionRunning": "Menjalankan semula…",
-      "visionExtracted": "Diekstrak",
-      "visionDeclaration": "Nama pengakuan",
-      "visionAddressTitle": "Alamat pada IC (dari foto)",
-      "visionAddressVsProfile": "Alamat yang dimasukkan pelajar",
-      "parentIcTitle": "IC ibu bapa/penjaga (Vision OCR)",
       "visionError": "Tidak dapat menjalankan semula Vision.",
-      "extractFields": {
-        "title": "Diekstrak"
-      },
       "reject": {
-        "declineReview": "Tolak (selepas semakan)",
         "declineContractual": "Tolak (kontrak)",
         "confirmReview": "Tolak pemohon ini? Mereka telah disemak tetapi tidak terpilih. E-mel penolakan akan dihantar kepada mereka sekarang.",
         "confirmContractual": "Tolak pemohon yang telah diterima ini atas sebab kontrak? E-mel penolakan akan dihantar kepada mereka sekarang.",
@@ -2559,9 +2511,7 @@
         "more": "Jana lagi",
         "running": "Menjana…",
         "error": "Tidak dapat menjana cadangan. Sila cuba lagi.",
-        "title": "Cadangan AI",
-        "aiBadge": "AI",
-        "whyLabel": "Mengapa"
+        "aiBadge": "AI"
       },
       "anomaly": {
         "title": "Penanda pra-temubual",
@@ -2651,39 +2601,27 @@
         "story": "Kisah Anda",
         "funding": "Pembiayaan"
       },
-      "coq": "Skor CoQ",
       "spmGrades": "Keputusan SPM",
       "stpmGrades": "Keputusan STPM",
       "spmPrereq": "Prasyarat SPM",
       "phone": "Telefon",
       "email": "E-mel",
       "callLanguage": "Bahasa panggilan",
-      "referralSource": "Dirujuk oleh",
       "address": "Alamat",
       "householdSize": "Saiz isi rumah",
-      "guardianName": "Ibu bapa/penjaga",
       "parentLabel": "Ibu bapa",
       "guardianLabel": "Penjaga",
       "guardianPhone": "Telefon {role}",
       "siblingsLegacyNote": "jumlah lama — pecahan tidak diketahui, sahkan semasa temu duga",
-      "intendsTertiary": "Niat pengajian tinggi 2026",
-      "pathwayCertainty": "Sudah putus?",
       "chosenPathway": "Laluan dipilih",
       "chosenProgramme": "Program dipilih",
       "preUTrack": "Trek Pra-U",
       "preUInstitution": "Institusi Pra-U",
-      "fieldOfStudy": "Bidang pengajian",
-      "upuStatus": "Status UPU",
       "pathwaysConsidered": "Laluan dipertimbang",
-      "otherScholarships": "Biasiswa lain",
-      "otherScholarshipsText": "Biasiswa lain (nota)",
       "topChoices": "Pilihan kursus teratas",
       "uncertaintyReasons": "Sebab masih memutuskan",
-      "uncertaintyNote": "Nota masih memutuskan",
       "helpUniversity": "Permohonan universiti",
       "helpScholarship": "Permohonan biasiswa",
-      "declarationName": "Tandatangan perakuan",
-      "anythingElse": "Apa-apa lagi",
       "plans": "Rancangan",
       "fears": "Kebimbangan",
       "dailyLife": "Kehidupan harian",
@@ -2717,12 +2655,6 @@
         "toggle": "Tunjukkan kata-kata pelajar sendiri"
       },
       "studentNote": "Nota pelajar",
-      "upu": {
-        "applied": "Memohon melalui UPU",
-        "public_other": "Institusi awam (bukan UPU)",
-        "ipts": "Swasta (IPTS)",
-        "unknown": "Tidak pasti"
-      },
       "reliability": {
         "title": "Kebolehharapan AI",
         "subtitle": "Berapa kerap cadangan AI sepadan dengan keputusan penyemak — merentas {n} permohonan yang telah disemak.",
@@ -2732,8 +2664,6 @@
       "verdict": {
         "title": "Keputusan pengesahan",
         "intro": "Apa yang disahkan oleh semakan, dan apa yang masih memerlukan anda. Audit sahaja — jangan bina semula.",
-        "evidenceLabel": "Disahkan",
-        "unresolvedLabel": "Perlu perhatian",
         "fact": {
           "identity": "Identiti",
           "academic": "Akademik",
@@ -2817,8 +2747,7 @@
       },
       "decision": {
         "title": "Keputusan",
-        "savedAndAccepted": "Keputusan disimpan — pemohon diterima.",
-        "identityToAccept": "Tandakan Identiti = Lulus, kemudian Simpan untuk menerima pemohon ini."
+        "savedAndAccepted": "Keputusan disimpan — pemohon diterima."
       },
       "recordVerdict": {
         "title": "Rekod keputusan anda",
@@ -2832,7 +2761,6 @@
         "save": "Simpan keputusan & jana profil akhir",
         "approve": "Lulus",
         "decline": "Tolak",
-        "saveAccept": "Simpan keputusan & terima",
         "aiSuggested": "Keputusan AI:",
         "suggest": {
           "yes": "ya",
@@ -2842,21 +2770,10 @@
         "finaliseOk": "Keputusan disimpan dan profil akhir dijana.",
         "finaliseNoDraft": "Keputusan disimpan. Jana draf profil dahulu sebelum memuktamadkan.",
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
-        "tools": {
-          "poseQuery": "Ajukan pertanyaan bertulis",
-          "addFindings": "Tambah penemuan temu duga"
-        },
         "rateTitle": "Nilai pengesahan AI"
       },
       "caveats": {
-        "title": "Caveats untuk diselesaikan",
-        "empty": "Tiada caveat terbuka — semuanya baik.",
-        "ask": "Tanya",
-        "resolve": "Selesaikan",
-        "waitingStudent": "Menunggu pelajar",
         "studentAnswer": "Jawapan pelajar",
-        "accept": "Terima",
-        "askAgain": "Tanya semula",
         "delete": "Padam"
       },
       "outstanding": {
@@ -2866,9 +2783,7 @@
         "locked": "Pertanyaan ditutup — temu duga telah selesai. Ini kini rekod baca-sahaja.",
         "itemOne": "perkara",
         "itemMany": "perkara",
-        "empty": "Tiada yang belum selesai — semua tugasan pelajar telah jelas.",
-        "studentTodo": "Tindakan pelajar",
-        "askInterview": "Tanya semasa temu duga"
+        "empty": "Tiada yang belum selesai — semua tugasan pelajar telah jelas."
       },
       "docsDrawer": {
         "title": "Dokumen",
