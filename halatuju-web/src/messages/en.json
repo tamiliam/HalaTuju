@@ -3069,7 +3069,8 @@
       "langTamil": "Tamil",
       "fluencyNone": "Not really",
       "fluencyConversational": "Conversational",
-      "fluencyFluent": "Fluent"
+      "fluencyFluent": "Fluent",
+      "sharePhone": "Share my phone number with students assigned to me, so they know to expect my call."
     },
     "inviteAs": "Invite as",
     "inviteHeading": {

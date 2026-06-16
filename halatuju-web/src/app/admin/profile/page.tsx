@@ -233,6 +233,12 @@ export default function AdminProfilePage() {
                   <PhoneField value={reviewer?.phone ?? ''} onChange={(v) => setRev({ phone: v })} />
                 </div>
               </div>
+              <label className="flex items-start gap-2 text-sm text-gray-700">
+                <input type="checkbox" className="mt-0.5"
+                  checked={reviewer?.share_phone_with_students ?? true}
+                  onChange={(e) => setRev({ share_phone_with_students: e.target.checked })} />
+                <span>{t('admin.reviewer.sharePhone')}</span>
+              </label>
               <div>
                 <label className={labelCls}>{t('admin.reviewer.street')}</label>
                 <input type="text" value={reviewer?.street_address ?? ''} onChange={(e) => setRev({ street_address: e.target.value })} className={inputCls} />
@@ -290,5 +296,6 @@ function blankReviewer(): ReviewerProfile {
     field_of_study: '', phone: '', address: '',
     street_address: '', postcode: '', city: '', state: '',
     english_fluency: '', bm_fluency: '', tamil_fluency: '',
+    share_phone_with_students: true,
   }
 }

@@ -1131,6 +1131,9 @@ class ReviewerProfile(models.Model):
     english_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
     bm_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
     tamil_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
+    # Whether the reviewer's phone may be shared with students assigned to them (in the advance
+    # "your interviewer will contact you" email). Opt-in by DEFAULT (True); a reviewer can opt out.
+    share_phone_with_students = models.BooleanField(default=True)
     # Sensitive staff PII — reviewer + super only, never exposed to students/sponsors.
     phone = models.CharField(max_length=30, blank=True, default='')
     address = models.TextField(blank=True, default='')   # legacy single-line; kept for back-compat

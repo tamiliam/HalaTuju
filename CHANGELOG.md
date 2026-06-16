@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Advance-notice email to the student on reviewer assignment (2026-06-17).** When a reviewer is assigned, the student
+  receives a **bilingual (English + Bahasa Melayu)** email naming the interviewer and their contact (phone/WhatsApp +
+  email), so they expect the call and pick up. It says the interviewer will reach out **within a few days**, that
+  parents/guardian are welcome to join, and carries an **anti-scam** line (we never ask for money/OTP/bank password);
+  no document checklist (documents are already in the system). **OFF by default** behind
+  `STUDENT_ASSIGNMENT_EMAIL_ENABLED` — to be switched on after reviewers give non-objection. Reviewers can **opt out of
+  sharing their phone** on their Profile (`ReviewerProfile.share_phone_with_students`, **default shared**); the copy +
+  call-to-action adapt when no number is shared. Migration `scholarship/0060` (migrate-first). +4 backend tests;
+  best-effort send (never blocks the assignment).
 - **Reviewer language fluency + assignment matching (2026-06-17).** Reviewers can now record their fluency
   (None / Conversational / Fluent) in **English, Bahasa Melayu and Tamil** on their Profile (new `ReviewerProfile`
   fields, migration `scholarship/0059`, migrate-first). This drives **reviewer↔student matching**: when a super-admin
