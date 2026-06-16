@@ -131,9 +131,12 @@ Standard document → **same approach and same band as the slip.** Calibrated on
 - Anchors on the **Malay** strings, so the **bilingual** BC variant (Malay+English labels) also scores
   fully (it prints the Malay text too).
 
-**Issue 2 — extraction contract:** **required** = child / mother / father (each name + NRIC);
-**optional** = `bc_number` (No. Daftar), home address (Tempat Tinggal). Printed-but-unused: DOB, time/
-place of birth, sex, age, race, religion, residency, registration date/area/centre.
+**Issue 2 — extraction contract (FINALISED 2026-06-16):** **required** = `child_name`, `mother_name` +
+`mother_nric`, `father_name` + `father_nric`; **optional** = `child_nric` (barcode-bound, so optional).
+**Dropped:** `bc_number` and everything else (DOB, time/place of birth, sex, age, race, religion,
+residency, registration date/area/centre, home address). The parent name+NRIC pairs are the
+mother→student / father→student relationship anchors (Layer-2); the child NRIC = the student-identity
+anchor when readable.
 
 **Band — same as results (`suspect <0.35 · review 0.35–0.70 · genuine ≥0.70`).** Calibration: 24
 full BCs at 0.81 text-only (→ ~1.0 with crest+barcode), the bilingual ones included; the typed fake
@@ -154,8 +157,23 @@ Standard statement → **same approach + band.** Calibrated on all 13 corpus EPF
 KWSP`/`Jalan Sultan`. *Visual:* the **KWSP logo** (no Jata Negara crest, no QR — the computer-print
 line + URL are the machine anchors). Covers both the 2-account and 3-account (2024+) formats.
 
-**Issue 2 — extraction:** already complete (the EPF-mining sprint) — name, nric, avg/monthly
-contribution, contribution_status, statement_date, address, balance, year.
+**Issue 2 — extraction contract (FINALISED 2026-06-16):** **required** = `name`, `nric`,
+`statement_date` (Tarikh Penyata), `employer_number` (No. Majikan) — with the rule **`No. Majikan ==
+000000000` ⇒ unemployed** (a B40 "no formal employer" signal; this is the only employment check —
+do NOT also infer it from absent contributions). **Optional** = `monthly_salary` (derived, below) +
+`jumlah_simpanan` (total savings). This **redefines** the old EPF-mining fields: instead of a single
+combined `avg_monthly_contribution`, extract the **employer- and employee-share contribution totals
+separately** + the month count `n`, to drive the formula.
+
+**Derived `monthly_salary`** — reverse-engineered from the statutory EPF rates (employee **11%**,
+employer **13%**; hardcode both):
+```
+monthly_salary = max( Σ(Caruman Majikan) / (n × 0.13),   Σ(Caruman Ahli) / (n × 0.11) )
+```
+`max()` is double-confirmation and **self-corrects across the salary tiers without detecting them**:
+at ≤RM5,000 both terms agree (a10: RM1,105/(5×0.13)=RM1,700 = RM935/(5×0.11)=RM1,700); above RM5,000
+the employer share drops to 12%, so the employer-via-13% term under-states while the **employee-via-11%
+term stays exact** — and `max()` selects it. So 13%/11% are safe to hardcode.
 
 **Band — same as results.** Calibration: 9 full statements 0.74–0.93 → genuine; a top-only screenshot
 (a72, 0.41) → suspect ("upload the full statement"); and **three wrong-type mis-slots correctly →
@@ -170,15 +188,15 @@ signature scorer thus doubles as the **deterministic wrong-type backstop** TD-11
 ### Draft Issue-2 contracts for the other doc types (PENDING per-doc review, 2026-06-16)
 Proposed; **not locked** — to be confirmed when we focus on each document.
 
+FINALISED so far: **results_slip, birth_certificate, epf** (see their LOCKED sections above). Still pending:
+
 | Doc | proposed required | proposed optional | open |
 |---|---|---|---|
 | ic / parent_ic | name, IC number | address | — |
 | str | recipient_name, recipient_nric, status, year | amount | drop `source_type` as a data field (genuineness/type, like `exam`)? |
 | salary_slip | name, nric, gross_income, period | net_income, employer | — |
-| epf | name, nric, avg_monthly_contribution, contribution_status | balance, statement_date, address, employer, year, months_counted | **LOCKED — see the epf section above** |
 | water_bill / electricity_bill | name, address, amount, billing_period | unpaid_balance | — |
 | offer_letter | candidate_name, candidate_nric, programme, institution, issuer | offer_date, intake, address | corpus has 1 *unreadable* offer_letter → an Issue-2 case to investigate |
-| birth_certificate | child + mother + father (name + NRIC each) | bc_number, home address | **LOCKED — see the birth_certificate section above** |
 | guardianship_letter | guardian_name, guardian_nric, ward_name | doc_kind | — |
 
 Most optionals are Layer-2 corroboration (address, employer, …) → *capture-now / use-later*.
