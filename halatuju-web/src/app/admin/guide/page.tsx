@@ -136,13 +136,17 @@ export default function ReviewerGuidePage() {
               </span>
               {s.title}
             </h2>
-            <div className="mt-2 text-sm leading-relaxed text-gray-700">{s.body}</div>
-            <img
-              src={s.img}
-              alt={s.alt}
-              className="mt-3 block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm"
-              loading="lazy"
-            />
+            {/* On wider screens the screenshot floats right and the text wraps around it;
+                on mobile it stacks below. overflow-hidden contains the float. */}
+            <div className="mt-2 overflow-hidden">
+              <img
+                src={s.img}
+                alt={s.alt}
+                className="mb-3 block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm sm:float-right sm:ml-6 sm:mb-2 sm:max-w-[340px]"
+                loading="lazy"
+              />
+              <div className="text-sm leading-relaxed text-gray-700">{s.body}</div>
+            </div>
           </section>
         ))}
       </div>
