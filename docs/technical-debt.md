@@ -793,3 +793,15 @@
   band (or through `build_verdict`), so the two-directional scorecard reflects the genuineness layer. Verified inline
   during the sprint (a16 → suspect; 43 genuine → genuine; 4 cropped → review; zero misclassifications), just not wired
   into the command. (Logged 2026-06-16, Genuineness signatures.)
+- TD-122: **BC + EPF genuineness is not yet wired onto the live signature path** (only `results_slip` is).
+  The signature scorer + bands for `birth_certificate` and `epf` are built, calibrated and tested, but the
+  upload path (`vision.run_field_extraction_for_document`) still runs the holistic `doc_genuineness` for
+  them in production. **To resolve:** route BC + EPF through `signature_genuineness` in the upload flow
+  (mirror the `results_slip` branch, sourcing the OCR text + the visual crest/QR/logo flag), so prod uses
+  the signature outcome. Behind tests, no migration. (Logged 2026-06-16, Genuineness signatures.)
+- TD-123: **Issue-2 extraction build pass for the finalised BC + EPF contracts.** The contracts are
+  finalised (`docs/scholarship/genuineness-verification-architecture.md`) but the extraction schemas
+  aren't updated yet. BC: drop `bc_number`; make `child_nric` optional (barcode-bound). EPF: extract the
+  **employer- and employee-share contribution TOTALS separately** + the month count, derive
+  `monthly_salary = max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))`, capture `employer_number` (`000000000 ⇒
+  unemployed`), and retire the combined `avg_monthly_contribution`. (Logged 2026-06-16.)

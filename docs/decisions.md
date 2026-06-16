@@ -2979,6 +2979,32 @@ quality matters and volume is tiny, so the cost delta is negligible.
 **Trade-offs:** Pro is slower/costlier per call; mitigated by it being low-volume + a Flash fallback.
 **Revisit if:** Pro latency/cost becomes an issue, or a cheaper model matches its prose quality.
 
+## One canonical genuineness outcome enum across all document types — Genuineness signatures, 2026-06-16
+**Decision:** Every genuineness check emits one of `genuine` / `suspect` / `not_<type>`, with identical
+downstream treatment (genuine → pass; suspect/not_<type> → soft cap + officer flag; only the message
+differs). Derivation differs per doc: signature docs (slip/cert/BC/EPF) map the probability bands 1:1
+(≥0.70 genuine · 0.35–0.70 suspect · <0.35 not_<type>); IC/STR/EPF map their holistic model verdict.
+`bands.canonical_status()` folds every legacy value to the enum so consumers + FE are uniform.
+**Alternatives considered:** keep the three divergent vocabularies (likely_genuine/low_confidence/
+not_an_ic vs …/wrong_type vs …/suspect) — inconsistent + FE branching; a 4th "review" band — rejected,
+the owner chose cropped=suspect so the bands ARE exactly the three outcomes.
+**Rationale:** one vocabulary = one treatment, no per-type branching; folding legacy values = no
+backfill of live IC/supporting data.
+**Trade-offs:** a one-time cross-cutting rename (cap/flag/serializer/FE + tests).
+**Revisit if:** a doc type ever needs different treatment for one outcome (none so far).
+
+## EPF salary reverse-engineered from statutory rates, max() self-corrects tiers — Genuineness signatures, 2026-06-16
+**Decision:** `monthly_salary = max(Σ(Caruman Majikan)/(n·0.13), Σ(Caruman Ahli)/(n·0.11))`, hardcoding
+employer 13% + employee 11%; `No. Majikan == 000000000` ⇒ unemployed (the only employment check).
+**Alternatives considered:** the old "÷0.24 of the combined contribution" heuristic (less precise, can't
+tier-correct); detecting the salary tier to choose 12% vs 13% employer rate (unnecessary).
+**Rationale:** statutory rates make EPF contributions a salary proxy; `max()` self-corrects across tiers
+WITHOUT detecting them — at ≤RM5,000 both terms agree; above RM5,000 the employer share drops to 12% so
+the employer-via-13% term under-states while the employee-via-11% term stays exact, and `max()` picks it.
+**Trade-offs:** needs the employer- and employee-share contribution TOTALS extracted separately (+ n) —
+redefines the EPF-mining extraction.
+**Revisit if:** the statutory EPF rates change (update the two constants).
+
 ## EPF income from the AVERAGE contribution; zero ≠ unreadable — Cockpit live-review, 2026-06-14
 **Decision:** The EPF income estimate uses the AVERAGE of all CARUMAN SEMASA months (÷0.24), not the single latest
 month, with a fallback to the latest month for older records. A confirmed-zero ("Tiada Transaksi") is a distinct

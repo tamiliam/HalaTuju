@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Genuineness extended to birth certificates + EPF, and the outcome unified to one canonical enum.**
+  The probabilistic SIGNATURE scorer now also covers the **birth certificate** (JPN Sijil Kelahiran;
+  calibrated on 28 corpus docs, bilingual variant handled) and the **EPF statement** (KWSP Penyata Ahli;
+  13 docs) — same band as the slip (`genuine` ≥0.70 · `suspect` 0.35–0.70 · `not_<type>` <0.35), zero
+  false positives on full genuine documents. The EPF scorer doubles as a **deterministic wrong-type
+  backstop** (catches a tax form / withdrawal form / mis-filed STR as `not_epf` — closes TD-117's gap).
+  **Every genuineness check now emits one canonical outcome** `genuine` / `suspect` / `not_<type>`
+  (signature docs via the bands; IC/STR/EPF map their holistic verdict), with identical downstream
+  treatment (genuine → pass; otherwise → soft cap + officer flag). `genuineness.bands.canonical_status()`
+  folds any legacy stored value (likely_genuine/low_confidence/wrong_type/not_an_ic) → canonical, so live
+  data needs no backfill; the verdict cap, anomaly flags, serializer **and the frontend** all render the
+  one vocabulary. Verification architecture written up in `docs/scholarship/genuineness-verification-
+  architecture.md` (two layers: per-doc genuineness+extraction gates cross-doc matching), with the
+  results_slip / birth_certificate / EPF **Issue-2 extraction contracts finalised**. NO migration; not
+  yet wired into the live verdict for BC/EPF (still holistic in prod — a pending build step).
 - **Document genuineness consolidated into a `genuineness/` package + a probabilistic SIGNATURE scorer for SPM
   slips/certificates.** One home for every "is this document genuine?" check — `ic` (MyKad markers),
   `supporting_doc` (STR/BC/EPF), `results_doc` (the new scorer), shared `bands`, and an `assess()` entry point;
