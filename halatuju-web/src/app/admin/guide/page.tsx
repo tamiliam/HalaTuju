@@ -140,7 +140,7 @@ export default function ReviewerGuidePage() {
             <img
               src={s.img}
               alt={s.alt}
-              className="mt-3 w-full rounded-lg border border-gray-200 shadow-sm"
+              className="mt-3 block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm"
               loading="lazy"
             />
           </section>
