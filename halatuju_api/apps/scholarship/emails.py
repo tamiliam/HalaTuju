@@ -983,3 +983,84 @@ def send_reviewer_assigned_email(to_email, reviewer_name, applicant_name):
         logger.warning('Failed to send reviewer-assigned email to %s', to_email,
                        exc_info=True)
         return False
+
+
+def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_name,
+                                         reviewer_email='', reviewer_phone=''):
+    """F7 advance notice to the STUDENT: who will interview them + how, so they expect the
+    call and pick up. Bilingual (English then Bahasa Melayu) in one email. No document
+    checklist (the interviewer asks for anything still needed). The phone + call-to-action
+    adapt to whether the reviewer shares their number (ReviewerProfile.share_phone_with_students).
+    Best-effort; never breaks the assignment. Gated by STUDENT_ASSIGNMENT_EMAIL_ENABLED at the
+    call site."""
+    if not to_email:
+        return False
+    student = student_name or 'there'
+    student_bm = student_name or 'di sana'
+    reviewer = reviewer_name or 'our reviewer'
+    reviewer_bm = reviewer_name or 'penilai kami'
+    phone_disp = f'+60 {reviewer_phone}' if reviewer_phone else ''
+
+    en_contact = (
+        f'• Reviewer: {reviewer}\n'
+        + (f'• Contact: phone / WhatsApp {phone_disp} · email {reviewer_email}\n'
+           if phone_disp else f'• Contact: email {reviewer_email}\n')
+    )
+    bm_contact = (
+        f'• Penilai: {reviewer}\n'
+        + (f'• Hubungi: telefon / WhatsApp {phone_disp} · e-mel {reviewer_email}\n'
+           if phone_disp else f'• Hubungi: e-mel {reviewer_email}\n')
+    )
+    # The call-to-action depends on whether a phone was shared (the reviewer may opt out).
+    en_action = ('Please save the above number and pick up when they call. If you miss it, just '
+                 'reply to arrange another time.' if phone_disp
+                 else 'Please look out for their email and reply to arrange a time.')
+    bm_action = ('Sila simpan nombor di atas dan jawab apabila mereka menelefon. Jika terlepas, '
+                 'balas sahaja untuk menetapkan masa lain.' if phone_disp
+                 else 'Sila perhatikan e-mel mereka dan balas untuk menetapkan masa.')
+
+    en = (
+        f'Hi {student},\n\n'
+        f'Good news — your application has reached the interview stage of the B40 Assistance '
+        f'Programme, and a reviewer has been assigned to you:\n\n'
+        f'{en_contact}\n'
+        f'{reviewer} will contact you within the next few days to arrange a short interview '
+        f'(by phone or video call). {en_action}\n\n'
+        f'For a video call, please be on camera. If your parents or guardian are around, our '
+        f'interviewer would be glad to speak with them too.\n\n'
+        f'This is simply to understand your family’s situation fairly. The support is for families '
+        f'with genuine financial need, and we value your honesty.\n\n'
+        f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN. If '
+        f'anyone does, it is not from us — please email tamiliam@gmail.com.\n\n'
+        f'Thank you, and we look forward to speaking with you.\n'
+        f'— The B40 Assistance Programme team'
+    )
+    bm = (
+        f'Salam {student_bm},\n\n'
+        f'Berita baik — permohonan anda telah sampai ke peringkat temu duga Program Bantuan B40, '
+        f'dan seorang penilai telah ditugaskan kepada anda:\n\n'
+        f'{bm_contact}\n'
+        f'{reviewer_bm} akan menghubungi anda dalam masa beberapa hari untuk menetapkan temu duga '
+        f'ringkas (melalui telefon atau panggilan video). {bm_action}\n\n'
+        f'Untuk panggilan video, sila buka kamera. Jika ibu bapa atau penjaga anda ada bersama, '
+        f'penemu duga kami amat berbesar hati untuk bercakap dengan mereka juga.\n\n'
+        f'Ini hanyalah untuk memahami keadaan keluarga anda secara adil. Bantuan ini untuk keluarga '
+        f'yang benar-benar memerlukan, dan kami menghargai kejujuran anda.\n\n'
+        f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
+        f'OTP/PIN. Jika sesiapa berbuat demikian, ia bukan daripada kami — sila e-mel '
+        f'tamiliam@gmail.com.\n\n'
+        f'Terima kasih, dan kami menantikan untuk bercakap dengan anda.\n'
+        f'— Pasukan Program Bantuan B40'
+    )
+    try:
+        send_mail(
+            subject='Your B40 Assistance Programme interview — who will contact you',
+            message=en + '\n\n———\n\n' + bm,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send student-assigned-reviewer email to %s', to_email,
+                       exc_info=True)
+        return False

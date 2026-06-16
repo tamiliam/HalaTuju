@@ -373,6 +373,7 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
             'field_of_study', 'phone', 'address',
             'street_address', 'postcode', 'city', 'state',
             'english_fluency', 'bm_fluency', 'tamil_fluency',
+            'share_phone_with_students',
         ]
 
     def validate_graduation_year(self, value):

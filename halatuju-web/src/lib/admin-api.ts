@@ -247,6 +247,7 @@ export interface ReviewerProfile {
   english_fluency: LangFluency
   bm_fluency: LangFluency
   tamil_fluency: LangFluency
+  share_phone_with_students: boolean
 }
 
 export type LangFluency = '' | 'conversational' | 'fluent'

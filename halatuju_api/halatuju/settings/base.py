@@ -153,6 +153,12 @@ CHECK2_STUDENT_QUERIES_ENABLED = os.environ.get('CHECK2_STUDENT_QUERIES_ENABLED'
 # env var. (Was referenced in code but never defined here, so it was permanently off.)
 CHECK2_AUTO_GENERATE = os.environ.get('CHECK2_AUTO_GENERATE', '').lower() in ('1', 'true', 'yes')
 
+# F7: when a reviewer is assigned, also email the STUDENT an advance notice (who will
+# contact them + the interviewer's name/phone/email). OFF by default — switch on only after
+# reviewers have given non-objection to sharing their contact. Per-reviewer opt-out lives on
+# ReviewerProfile.share_phone_with_students (default shared).
+STUDENT_ASSIGNMENT_EMAIL_ENABLED = os.environ.get('STUDENT_ASSIGNMENT_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
+
 # Action Centre Phase 2: a gentle Cikgu Gopal nudge when a student's TYPED answer is
 # TOTALLY off-topic (one cheap, billable Gemini call per answer). Off by default (a
 # billable-AI knob, like the doc-assist flags); AI-off/error always accepts the answer.
