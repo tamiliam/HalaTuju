@@ -2498,8 +2498,8 @@
       "consentGiven": "Consent given (active).",
       "consentNone": "No active consent yet.",
       "none": "None yet.",
-      "profileTitle": "Sponsor profile (AI draft)",
-      "profileDraftHint": "Auto-drafted at the Check 2 → reviewer handoff so you can read it now and verify the claims. It is replaced by the final version when you save your verdict.",
+      "profileTitle": "Sponsor profile (draft)",
+      "profileDraftHint": "This draft will be replaced with an updated final version that incorporates your findings when you save your verdict.",
       "model": "Model",
       "verifyTitle": "Verify & accept",
       "nricLocked": "NRIC verified & locked",
@@ -2825,16 +2825,15 @@
         "factPass": "Pass",
         "factFail": "Fail",
         "reasonLabel": "Conclusion",
-        "assistanceLabel": "Assistance recommended:",
+        "assistanceLabel": "Assistance recommended",
         "assistanceNone": "Drag to set a recommended amount.",
         "approveNeedsAmount": "Set a recommended assistance amount before approving.",
         "reasonPlaceholder": "State your conclusions / reasons for your decision",
         "save": "Save verdict & generate final profile",
         "approve": "Approve",
         "decline": "Decline",
-        "youDecide": "you decide.",
         "saveAccept": "Save verdict & accept",
-        "aiSuggested": "AI suggested:",
+        "aiSuggested": "AI verdict:",
         "suggest": {
           "yes": "yes",
           "no": "no",
@@ -2846,7 +2845,8 @@
         "tools": {
           "poseQuery": "Pose written query",
           "addFindings": "Add interview findings"
-        }
+        },
+        "rateTitle": "Rate AI verification"
       },
       "caveats": {
         "title": "Caveats to resolve",
@@ -2951,7 +2951,10 @@
           }
         }
       },
-      "profilePending": "The profile is generated automatically when the application is handed over for review."
+      "profilePending": "The profile is generated automatically when the application is handed over for review.",
+      "finalProfile": {
+        "title": "Final profile (v2 — with interview)"
+      }
     },
     "students": "Students",
     "invite": "Invite",

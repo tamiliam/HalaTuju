@@ -2498,8 +2498,8 @@
       "consentGiven": "Persetujuan diberikan (aktif).",
       "consentNone": "Tiada persetujuan aktif lagi.",
       "none": "Tiada lagi.",
-      "profileTitle": "Profil penaja (draf AI)",
-      "profileDraftHint": "Dirangka secara automatik semasa serahan Check 2 → penyemak supaya anda boleh membacanya sekarang dan mengesahkan maklumatnya. Ia digantikan dengan versi akhir apabila anda menyimpan keputusan anda.",
+      "profileTitle": "Profil penaja (draf)",
+      "profileDraftHint": "Draf ini akan digantikan dengan versi akhir yang dikemas kini dan menggabungkan penemuan anda apabila anda menyimpan keputusan anda.",
       "model": "Model",
       "verifyTitle": "Sahkan & terima",
       "nricLocked": "IC disahkan & dikunci",
@@ -2825,16 +2825,15 @@
         "factPass": "Lulus",
         "factFail": "Gagal",
         "reasonLabel": "Kesimpulan",
-        "assistanceLabel": "Bantuan yang disyorkan:",
+        "assistanceLabel": "Bantuan yang disyorkan",
         "assistanceNone": "Seret untuk menetapkan jumlah yang disyorkan.",
         "approveNeedsAmount": "Tetapkan jumlah bantuan yang disyorkan sebelum meluluskan.",
         "reasonPlaceholder": "Nyatakan kesimpulan / sebab keputusan anda",
         "save": "Simpan keputusan & jana profil akhir",
         "approve": "Lulus",
         "decline": "Tolak",
-        "youDecide": "anda yang putuskan.",
         "saveAccept": "Simpan keputusan & terima",
-        "aiSuggested": "AI cadangkan:",
+        "aiSuggested": "Keputusan AI:",
         "suggest": {
           "yes": "ya",
           "no": "tidak",
@@ -2846,7 +2845,8 @@
         "tools": {
           "poseQuery": "Ajukan pertanyaan bertulis",
           "addFindings": "Tambah penemuan temu duga"
-        }
+        },
+        "rateTitle": "Nilai pengesahan AI"
       },
       "caveats": {
         "title": "Caveats untuk diselesaikan",
@@ -2951,7 +2951,10 @@
           }
         }
       },
-      "profilePending": "Profil dijana secara automatik apabila permohonan diserahkan untuk semakan."
+      "profilePending": "Profil dijana secara automatik apabila permohonan diserahkan untuk semakan.",
+      "finalProfile": {
+        "title": "Profil akhir (v2 — dengan temu duga)"
+      }
     },
     "students": "Pelajar",
     "invite": "Jemputan",

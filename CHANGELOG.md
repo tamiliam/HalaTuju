@@ -101,6 +101,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
 
 ### Changed
+- **Cockpit Decision + profile copy/layout tweaks (live-review, 2026-06-16).** Profile card heading
+  "Sponsor profile (AI draft)" → "Sponsor profile (draft)"; the draft hint now reads "This draft will be replaced with
+  an updated final version that incorporates your findings when you save your verdict." In the Decision card: a
+  "Rate AI verification" sub-heading sits above the four fact rows (same weight as the Assistance/Conclusion labels);
+  "Assistance recommended:" drops its trailing colon; and the AI line is relabelled "AI suggested:" → "AI verdict:" with
+  the "— you decide." tail removed (the orphaned `youDecide` key deleted). i18n en/ms/ta; FE-only, no migration.
 - **Tech-debt paydown Sprint 0 — internal cleanup (no behaviour change).** From the 2026-06-14 scholarship audit
   (`docs/scholarship-tech-debt-audit-2026-06-14.md`): removed dead `emails.send_fail_email` (superseded by
   `send_decline_email`); trimmed unused imports (`Consent`/`Donation`/`CONSENT_VERSION` in `sponsorship.py`,
@@ -132,6 +138,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Restored `admin.scholarship.finalProfile.title`** — the TD-118 cleanup deleted the whole `finalProfile` object, but
+  its `title` ("Final profile (v2 — with interview)") is still rendered on the profile card once a final exists. Re-added
+  in en/ms/ta (the other `finalProfile.*` leaves stay removed). Caught before deploy.
 - **Reviewer access — invite link + post-login landing (live-review feedback, 2026-06-16).** Two faults reported by the
   newly-invited reviewers. **(1) Invite link landed on the homepage**, not the admin sign-in: the Supabase "Invite user"
   email's `redirect_to` was unset, so the magic link bounced to `/`. The invite POST (`AdminInviteView`) now passes
