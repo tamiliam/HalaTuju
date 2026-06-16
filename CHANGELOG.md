@@ -111,6 +111,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
 
 ### Changed
+- **Statement of Intent letter now feeds the AI profile (2026-06-16).** The uploaded Statement of Intent is already
+  OCR'd on upload into `vision_fields['text']`, but that text only reached Check-2 — never the profile. The draft prompt
+  now feeds the letter's text (capped, normal PII redaction still applies) so the profile distils the student's stated
+  motivation in their own words. New `profile_engine._statement_of_intent` helper + 2 tests; backend-only, no migration.
 - **AI profile now distils EVERYTHING the student told us (2026-06-16).** The draft prompt previously fed only some of
   the student's input; it now also feeds the fields that were being collected but ignored: **"Why assistance is needed"**
   (`justification`), **"Worries"** (`fears`), **"Anything else you'd like us to know"** (`anything_else`), the ranked
