@@ -107,6 +107,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "Rate AI verification" sub-heading sits above the four fact rows (same weight as the Assistance/Conclusion labels);
   "Assistance recommended:" drops its trailing colon; and the AI line is relabelled "AI suggested:" → "AI verdict:" with
   the "— you decide." tail removed (the orphaned `youDecide` key deleted). i18n en/ms/ta; FE-only, no migration.
+- **Hide the assignee filter for reviewers on the B40 Applications list (2026-06-16).** A reviewer's list is already
+  hard-scoped server-side to their own assigned applicants, so the Anyone/Assigned-to-me/Unassigned dropdown was
+  redundant for them (and its "Unassigned" option always returned an empty list). The dropdown now renders only for the
+  roles that see every application (super + admin). FE-only, no migration.
 - **Tech-debt paydown Sprint 0 — internal cleanup (no behaviour change).** From the 2026-06-14 scholarship audit
   (`docs/scholarship-tech-debt-audit-2026-06-14.md`): removed dead `emails.send_fail_email` (superseded by
   `send_decline_email`); trimmed unused imports (`Consent`/`Donation`/`CONSENT_VERSION` in `sponsorship.py`,
