@@ -225,11 +225,14 @@ export default function AdminScholarshipDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
 
-  const doSuggestGaps = async (append = false) => {
+  // One button: always APPENDS (generates 3 more, excluding any already suggested) so it never
+  // wipes questions the reviewer is still considering. On an empty list it just generates the
+  // first 3. To start over, the reviewer deletes the ones they don't want, then clicks again.
+  const doSuggestGaps = async () => {
     if (!token) return
-    setBusy(append ? 'gapsMore' : 'gaps'); setError('')
+    setBusy('gaps'); setError('')
     try {
-      setApp(await suggestInterviewGaps(id, undefined, { token }, append))
+      setApp(await suggestInterviewGaps(id, undefined, { token }, true))
     } catch { setError(t('admin.scholarship.gaps.error')) } finally { setBusy('') }
   }
 
@@ -1122,18 +1125,12 @@ export default function AdminScholarshipDetailPage() {
             )}
           </div>
           {canWrite && (
-            <div className="flex items-center gap-2">
-              <button onClick={() => doSuggestGaps(false)} disabled={!!busy}
-                className="px-2.5 py-1 rounded-lg text-xs bg-primary-600 text-white disabled:opacity-50">
-                {busy === 'gaps' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.button')}
-              </button>
-              {(app.interview_gaps?.length ?? 0) > 0 && (
-                <button onClick={() => doSuggestGaps(true)} disabled={!!busy}
-                  className="px-2.5 py-1 rounded-lg text-xs border border-primary-300 text-primary-700 disabled:opacity-50">
-                  {busy === 'gapsMore' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.more')}
-                </button>
-              )}
-            </div>
+            <button onClick={doSuggestGaps} disabled={!!busy}
+              className="px-2.5 py-1 rounded-lg text-xs bg-primary-600 text-white disabled:opacity-50">
+              {busy === 'gaps' ? t('admin.scholarship.gaps.running')
+                : (app.interview_gaps?.length ?? 0) > 0 ? t('admin.scholarship.gaps.more')
+                : t('admin.scholarship.gaps.button')}
+            </button>
           )}
         </div>
         <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>

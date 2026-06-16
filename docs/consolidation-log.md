@@ -4,7 +4,9 @@ Tracks one-off small-lane changes between full sprints. Every ~10 pending entrie
 Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
-_(cleared at the 2026-06-16 review below)_
+- 2026-06-16 fix(web): fold the two interview-question buttons into one (append-only, adaptive label; drops the destructive replace) (halatuju-web: admin/scholarship/[id]/page.tsx)
+
+_(previous batch cleared at the 2026-06-16 review below)_
 
 ## Reviews
 

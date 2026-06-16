@@ -119,6 +119,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
 
 ### Changed
+- **One interview-questions button instead of two (2026-06-16).** The cockpit Interview Stage had both "Suggest
+  interview questions" (which REPLACED/wiped existing questions) and "Generate more" (which appended) — confusing, and
+  the first was mildly destructive. Folded into a **single button** that always **appends** (3 more, excluding ones
+  already suggested) and never wipes; its label adapts ("Suggest interview questions" when empty → "Generate more" once
+  some exist). To start over, the reviewer deletes the unwanted ones (per-item Delete) and clicks again. FE-only, no migration.
 - **Academic results summarised by GROUP + ethnicity-safe + prompt versioning (2026-06-16).**
   **(a)** The profile no longer lists every subject and grade (readers skip a long list). `_grades_summary` now
   reports the **count of A-grade subjects, the band mix, and the broad subject GROUPS** they span
