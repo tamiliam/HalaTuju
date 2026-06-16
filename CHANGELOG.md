@@ -119,6 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
 
 ### Changed
+- **Profile card heading "Sponsor profile (draft)" → "Student profile (draft)" (2026-06-16).** It's the student's
+  profile; the sponsor is a reader, not the subject. i18n en/ms/ta; FE-only.
 - **One interview-questions button instead of two (2026-06-16).** The cockpit Interview Stage had both "Suggest
   interview questions" (which REPLACED/wiped existing questions) and "Generate more" (which appended) — confusing, and
   the first was mildly destructive. Folded into a **single button** that always **appends** (3 more, excluding ones
