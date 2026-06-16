@@ -38,6 +38,10 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50]
 export default function AdminScholarshipList() {
   const { token, role } = useAdminAuth()
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
+  // Only super + admin see every application, so only they benefit from the assignee filter.
+  // A reviewer's list is already hard-scoped to their own assigned applicants server-side, so
+  // the filter is redundant for them (and "Unassigned" would always return nothing).
+  const canFilterByAssignee = isSuper || role?.role === 'admin'
   const { t } = useT()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
   // Super-only inline reviewer assignment (the "Assigned" column dropdown).
@@ -171,11 +175,13 @@ export default function AdminScholarshipList() {
           <option value="">{t('admin.scholarship.allStatuses')}</option>
           {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select value={assignedF} onChange={(e) => changeFilter(setAssignedF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
-          <option value="">{t('admin.scholarship.allAssignees')}</option>
-          <option value="me">{t('admin.scholarship.assignedToMe')}</option>
-          <option value="none">{t('admin.scholarship.unassigned')}</option>
-        </select>
+        {canFilterByAssignee && (
+          <select value={assignedF} onChange={(e) => changeFilter(setAssignedF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+            <option value="">{t('admin.scholarship.allAssignees')}</option>
+            <option value="me">{t('admin.scholarship.assignedToMe')}</option>
+            <option value="none">{t('admin.scholarship.unassigned')}</option>
+          </select>
+        )}
       </div>
 
       {error && <div className="text-red-600">{error}</div>}
