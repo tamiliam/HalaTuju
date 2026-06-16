@@ -3136,6 +3136,8 @@
     "settingPassword": "Setting…",
     "passwordTooShort": "Password must be at least 8 characters.",
     "passwordMismatch": "The two passwords don’t match.",
-    "setPasswordNoLink": "This page must be opened from the link in your invite or password-reset email. The link may have expired — request a new one from the login page."
+    "setPasswordNoLink": "This page must be opened from the link in your invite or password-reset email. The link may have expired — request a new one from the login page.",
+    "guideNav": "Guide",
+    "faqNav": "FAQ"
   }
 }

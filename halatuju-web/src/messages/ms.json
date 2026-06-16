@@ -3136,6 +3136,8 @@
     "settingPassword": "Menetapkan…",
     "passwordTooShort": "Kata laluan mesti sekurang-kurangnya 8 aksara.",
     "passwordMismatch": "Kedua-dua kata laluan tidak sepadan.",
-    "setPasswordNoLink": "Halaman ini perlu dibuka daripada pautan dalam e-mel jemputan atau set semula kata laluan anda. Pautan mungkin telah tamat tempoh — minta yang baharu dari halaman log masuk."
+    "setPasswordNoLink": "Halaman ini perlu dibuka daripada pautan dalam e-mel jemputan atau set semula kata laluan anda. Pautan mungkin telah tamat tempoh — minta yang baharu dari halaman log masuk.",
+    "guideNav": "Panduan",
+    "faqNav": "Soalan Lazim"
   }
 }

@@ -6,6 +6,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 ## Pending
 - 2026-06-16 fix(web): fold the two interview-question buttons into one (append-only, adaptive label; drops the destructive replace) (halatuju-web: admin/scholarship/[id]/page.tsx)
 - 2026-06-16 copy(web): profile card heading "Sponsor profile (draft)" → "Student profile (draft)" (halatuju-web: messages/{en,ms,ta}.json)
+- 2026-06-16 feat(web): reviewer Guide + FAQ pages + nav items (English content, redacted screenshots; BM/Tamil content to follow) (halatuju-web: app/admin/guide, app/admin/faq, layout.tsx, messages/* nav labels, public/reviewer-guide/*; docs/reviewer-guide-content.md)
 
 _(previous batch cleared at the 2026-06-16 review below)_
 

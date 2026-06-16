@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reviewer Guide + FAQ pages (2026-06-16).** Two new reviewer-visible menu items to help invited reviewers do their
+  role: **Guide** (`/admin/guide`) — a friendly 8-step walkthrough of the review lifecycle (your applicants → the four
+  checks → documents → the student profile → asking the student → interview → decision), with redacted screenshots; and
+  **FAQ** (`/admin/faq`) — administrative (is it paid? = no; sign-in, password reset, confidentiality, contact) +
+  reviewing questions. The Guide opens with a welcome + a short picture of the programme (reviewers reach these only
+  after sign-in, so they don't cover signing in). Content is **English for now** (nav labels en/ms/ta; BM/Tamil content
+  to follow). Screenshots are PII-redacted. New nav items shown to all admin roles. FE-only, no migration.
 - **Set-password page for admins/reviewers (2026-06-16).** Non-Google invitees previously could never set a password —
   the app had no "set/reset password" screen, so the invite and "Forgot password" links led nowhere useful and only
   Google sign-in worked (this is what blocked the first Yahoo-invited reviewer). New `/admin/set-password` page handles
