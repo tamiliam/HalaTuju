@@ -368,18 +368,20 @@ def _detect_ic_low_confidence(application) -> Optional[Anomaly]:
     """The IC genuineness fingerprint says the uploaded image doesn't look like a real photo
     of a physical MyKad (likely typed / printed / a screenshot). Soft — confirm the physical
     card at interview; never gates. Flag-gated: only fires when the check actually ran."""
-    status = _ic_authenticity_status(_latest_ic_doc(application))
-    if status not in ('low_confidence', 'not_an_ic'):
+    from .genuineness.bands import canonical_status, needs_attention
+    raw = _ic_authenticity_status(_latest_ic_doc(application))
+    if not needs_attention(raw, 'ic'):
         return None
-    return Anomaly('ic_low_confidence', {'status': status})
+    return Anomaly('ic_low_confidence', {'status': canonical_status(raw, 'ic')})
 
 
 def _detect_parent_ic_low_confidence(application) -> Optional[Anomaly]:
     """Same genuineness check for the parent / guardian IC."""
-    status = _ic_authenticity_status(_latest_parent_ic_doc(application))
-    if status not in ('low_confidence', 'not_an_ic'):
+    from .genuineness.bands import canonical_status, needs_attention
+    raw = _ic_authenticity_status(_latest_parent_ic_doc(application))
+    if not needs_attention(raw, 'parent_ic'):
         return None
-    return Anomaly('parent_ic_low_confidence', {'status': status})
+    return Anomaly('parent_ic_low_confidence', {'status': canonical_status(raw, 'parent_ic')})
 
 
 # Sprint 2 — genuineness for the standardised supporting documents.
@@ -394,13 +396,15 @@ def _detect_document_not_genuine(application) -> Optional[Anomaly]:
     genuine official document, or is the WRONG document type. Soft — confirm at interview;
     never gates. Flag-gated (only fires when the check ran). Returns the first hit; params carry
     a human doc label, the status, and what the AI thought the document actually was."""
+    from .genuineness.bands import canonical_status, needs_attention
     for dt, label in _GENUINENESS_DOC_LABELS.items():
         doc = application.documents.filter(doc_type=dt).order_by('-uploaded_at').first()
-        status = _ic_authenticity_status(doc)   # reads vision_fields['authenticity'].status — type-agnostic
-        if status in ('low_confidence', 'wrong_type', 'suspect'):   # 'suspect' = slip signature scorer
+        raw = _ic_authenticity_status(doc)   # reads vision_fields['authenticity'].status
+        if needs_attention(raw, dt):         # canonical 'suspect' / 'not_<type>' (folds legacy)
             vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
             seen = (vf.get('authenticity') or {}).get('doc_seen', '')
-            return Anomaly('document_not_genuine', {'doc': label, 'status': status, 'seen': seen})
+            return Anomaly('document_not_genuine',
+                           {'doc': label, 'status': canonical_status(raw, dt), 'seen': seen})
     return None
 
 

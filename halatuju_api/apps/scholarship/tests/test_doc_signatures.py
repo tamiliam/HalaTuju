@@ -65,7 +65,7 @@ def test_genuine_slip_scores_high_and_types_as_slip():
     r = score_signatures(GENUINE_SLIP)
     assert r['type'] == 'results_slip'
     assert r['probability'] >= GENUINE_MIN
-    assert band_for(r['probability']) == 'likely_genuine'
+    assert band_for(r['probability']) == 'genuine'
 
 
 def test_genuine_cert_types_as_certificate():
@@ -74,15 +74,16 @@ def test_genuine_cert_types_as_certificate():
     assert r['probability'] >= GENUINE_MIN
 
 
-def test_typed_fake_is_suspect():
+def test_typed_fake_is_not_type():
+    # A typed reproduction scores <0.35 → not recognisably that document → not_<type>.
     g = signature_genuineness(TYPED_FAKE)
-    assert g['status'] == 'suspect'
+    assert g['status'].startswith('not_')
     assert g['probability'] < SUSPECT_MAX
 
 
-def test_cropped_genuine_lands_in_review_not_suspect():
+def test_cropped_genuine_is_suspect_not_genuine():
     g = signature_genuineness(CROPPED_SLIP)
-    assert g['status'] == 'low_confidence'      # review, never suspect
+    assert g['status'] == 'suspect'             # incomplete → suspect (re-upload), never genuine
     assert SUSPECT_MAX <= g['probability'] < GENUINE_MIN
 
 
@@ -91,12 +92,12 @@ def test_visual_signals_lift_a_cropped_doc_to_genuine():
     low = signature_genuineness(CROPPED_SLIP)
     high = signature_genuineness(CROPPED_SLIP, has_qr=True, has_crest=True)
     assert high['probability'] > low['probability']
-    assert high['status'] in ('likely_genuine', 'low_confidence')
+    assert high['status'] in ('genuine', 'suspect')
 
 
 def test_never_raises_on_empty():
     g = signature_genuineness('')
-    assert g['status'] == 'suspect' and g['probability'] == 0.0
+    assert g['status'].startswith('not_') and g['probability'] == 0.0
 
 
 def test_signature_genuineness_reports_evidence():
@@ -136,17 +137,17 @@ def test_genuine_bc_scores_genuine_and_types_as_bc():
     r = score_signatures(GENUINE_BC, doc_type='birth_certificate')
     assert r['type'] == 'birth_certificate'
     assert r['probability'] >= GENUINE_MIN
-    assert band_for(r['probability']) == 'likely_genuine'
+    assert band_for(r['probability']) == 'genuine'
 
 
-def test_typed_fake_bc_is_suspect():
+def test_typed_fake_bc_is_not_type():
     g = signature_genuineness(TYPED_FAKE_BC, doc_type='birth_certificate')
-    assert g['status'] == 'suspect'
+    assert g['status'] == 'not_birth_certificate'   # <0.35 → not recognisably a BC
     assert g['probability'] < SUSPECT_MAX
 
 
 def test_cropped_bc_is_flagged_not_genuine():
     # A zoomed-in / partial BC missing its top (title, crest, child/father) must NOT pass.
     g = signature_genuineness(CROPPED_BC, doc_type='birth_certificate')
-    assert g['status'] in ('suspect', 'low_confidence')
+    assert g['status'] != 'genuine'        # suspect or not_birth_certificate (by how much is in frame)
     assert g['probability'] < GENUINE_MIN

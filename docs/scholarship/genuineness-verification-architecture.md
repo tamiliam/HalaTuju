@@ -187,11 +187,18 @@ Runs only on Layer-1-cleared documents (per §1). Policy:
 - It is **wired live for `results_slip`** (replaces the holistic read there) and its `suspect` rides
   the soft cap + officer flag.
 - All genuineness checks consolidated in the `genuineness/` package (`assess()` entry point).
+- **Unified outcome enum — BACKEND DONE 2026-06-16.** Every check now emits the canonical
+  `genuine` / `suspect` / `not_<type>` (signature docs via the bands: ≥0.70 genuine · 0.35–0.70
+  suspect · <0.35 not_<type>; IC/STR/BC/EPF map their holistic verdict). `bands.canonical_status()`
+  folds any **legacy** stored value (likely_genuine / low_confidence / wrong_type / not_an_ic), so
+  live data needs no backfill; all consumers (verdict cap incl. the identity-IC cap, anomaly flags,
+  serializer) call it. Treatment is uniform: `genuine` → pass; `suspect`/`not_<type>` → soft cap +
+  officer flag (only the Gopal message differs). Full scholarship suite green.
 
 **Target (not yet built):**
-- **Unified outcome enum** `genuine`/`suspect`/`not_<type>` across *all* doc types (today: IC →
-  `…/not_an_ic`; STR/BC/EPF → `…/wrong_type`; slip → `…/suspect`). Touches the cap trigger set,
-  the officer-flag check, the serializer, and FE i18n — mechanical, cross-cutting, test-guarded.
+- **FE i18n labels** for the canonical statuses — the serializer now returns `genuine`/`suspect`/
+  `not_<type>`; the frontend status→label keys + the components that render them must follow (the
+  one remaining piece of the enum normalisation).
 - **Layer-1 gating of Layer-2** (the dependency rule in §1) — make every cross-doc match return
   *indeterminate* when a related doc hasn't cleared Layer 1.
 - **Parent-IC matching fix** (TD-119, the first Layer-2 piece): issue-3 link gaps → soft;

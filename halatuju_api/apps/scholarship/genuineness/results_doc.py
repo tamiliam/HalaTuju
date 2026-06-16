@@ -169,6 +169,8 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
     'birth_certificate' for the BC). Pure + deterministic given the inputs; never raises."""
     r = score_signatures(ocr_text, has_qr=has_qr, has_crest=has_crest, doc_type=doc_type)
     status = band_for(r['probability'])
+    if status == 'not_type':                       # <0.35 → not recognisably that document
+        status = 'not_' + (doc_type or r['type'])
     n_have, n_all = len(r['present']), len(r['present']) + len(r['missing'])
     reason = (f"{n_have}/{n_all} {r['type'].replace('_', ' ')} signatures present "
               f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")

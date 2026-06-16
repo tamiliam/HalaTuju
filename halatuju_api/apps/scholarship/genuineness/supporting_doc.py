@@ -38,13 +38,14 @@ _DOC_GENUINENESS_SCHEMA = {'type': 'object', 'properties': {
     'is_official': {'type': 'boolean'}, 'is_expected_type': {'type': 'boolean'},
     'doc_seen': {'type': 'string'}, 'verdict': {'type': 'string'}, 'reason': {'type': 'string'}},
     'required': ['is_official', 'is_expected_type', 'doc_seen', 'verdict', 'reason']}
-_DOC_GENUINENESS_STATUS = {'genuine': 'likely_genuine', 'suspect': 'low_confidence', 'wrong_type': 'wrong_type'}
+# Gemini verdict word → the CANONICAL outcome. 'wrong_type' becomes 'not_<doc_type>' (filled below).
+_DOC_GENUINENESS_STATUS = {'genuine': 'genuine', 'suspect': 'suspect', 'wrong_type': 'not_type'}
 
 
 def doc_genuineness(data: bytes, content_type: str, doc_type: str) -> dict:
     """Soft genuineness fingerprint for a standardised supporting document →
-    ``{status, doc_seen, reason}`` or ``{}``. ``status`` ∈ ``likely_genuine`` /
-    ``low_confidence`` / ``wrong_type``. NEVER raises; an AI outage / unsupported type
+    ``{status, doc_seen, reason}`` or ``{}``. ``status`` ∈ canonical ``genuine`` /
+    ``suspect`` / ``not_<doc_type>``. NEVER raises; an AI outage / unsupported type
     returns ``{}`` (no signal). The reviewer is the authority."""
     from apps.scholarship import vision   # lazy: avoids a circular import; keeps the patch seam
     cfg = _GENUINENESS_DOCS.get(doc_type)
@@ -66,8 +67,11 @@ def doc_genuineness(data: bytes, content_type: str, doc_type: str) -> dict:
     r = vision._call_gemini_json(prompt, _DOC_GENUINENESS_SCHEMA, image=img, mime_type=mime)
     if not isinstance(r, dict) or r.get('_error'):
         return {}
+    status = _DOC_GENUINENESS_STATUS.get((r.get('verdict') or '').strip().lower(), '')
+    if status == 'not_type':                       # wrong document → not_<type> (e.g. not_str)
+        status = 'not_' + doc_type
     return {
-        'status': _DOC_GENUINENESS_STATUS.get((r.get('verdict') or '').strip().lower(), ''),
+        'status': status,
         'doc_seen': (r.get('doc_seen') or '')[:80],
         'reason': (r.get('reason') or '')[:300],
     }

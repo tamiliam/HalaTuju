@@ -27,13 +27,13 @@ _IC_GENUINENESS_PROMPT = (
     "'suspect' (missing key physical features - likely typed/printed/screenshot), or 'not_an_ic' "
     '(not an identity card at all). reason = one short sentence.')
 
-# Gemini verdict word → our stored status. 'likely_genuine' is the honest ceiling — never "verified".
-_GENUINENESS_STATUS = {'genuine': 'likely_genuine', 'suspect': 'low_confidence', 'not_an_ic': 'not_an_ic'}
+# Gemini verdict word → the CANONICAL genuineness outcome (genuine / suspect / not_<type>).
+_GENUINENESS_STATUS = {'genuine': 'genuine', 'suspect': 'suspect', 'not_an_ic': 'not_ic'}
 
 
 def ic_genuineness(data: bytes, content_type: str = '') -> dict:
     """Soft genuineness fingerprint for an IC image → ``{status, markers, reason}`` or ``{}``.
-    ``status`` ∈ ``likely_genuine`` / ``low_confidence`` / ``not_an_ic`` (or '' if unclassified).
+    ``status`` ∈ canonical ``genuine`` / ``suspect`` / ``not_ic`` (or '' if unclassified).
     NEVER raises; an AI outage / unreadable image returns ``{}`` — NO signal, because we must not
     penalise a student for OUR failure. This only informs the Identity prediction + a pre-interview
     flag; the reviewer is the authority (verification-assurance roadmap)."""

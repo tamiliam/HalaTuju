@@ -50,14 +50,14 @@ class TestPatchSeamPreserved(SimpleTestCase):
         from apps.scholarship import vision
         with patch('apps.scholarship.vision._call_gemini_json',
                    return_value={'verdict': 'genuine', 'has_face_photo': True}):
-            self.assertEqual(vision.ic_genuineness(b'x', 'image/png')['status'], 'likely_genuine')
+            self.assertEqual(vision.ic_genuineness(b'x', 'image/png')['status'], 'genuine')
 
     def test_patching_vision_seam_controls_doc_genuineness(self):
         from apps.scholarship import vision
         with patch('apps.scholarship.vision._call_gemini_json',
                    return_value={'verdict': 'suspect', 'is_official': False,
                                  'is_expected_type': True, 'doc_seen': 'typed', 'reason': 'r'}):
-            self.assertEqual(vision.doc_genuineness(b'x', 'image/png', 'str')['status'], 'low_confidence')
+            self.assertEqual(vision.doc_genuineness(b'x', 'image/png', 'str')['status'], 'suspect')
 
 
 class TestStoredDictContract(SimpleTestCase):
