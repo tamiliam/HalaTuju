@@ -144,6 +144,27 @@ on full genuine BCs.
 **Status:** signatures + band done; **not yet wired** into the live verdict (same pending step as the
 slip — comes with the outcome-enum normalisation + tests).
 
+### epf (KWSP Penyata Ahli) — LOCKED 2026-06-16
+Standard statement → **same approach + band.** Calibrated on all 13 corpus EPFs.
+
+**Issue 1 — genuineness signatures** (`genuineness/results_doc.EPF_SIGNATURES`): *Text:* `KWSP`/`EPF`,
+`SULIT DAN PERSENDIRIAN`, `PENYATA AHLI`, `No. Ahli KWSP`, `No. Kad Pengenalan`, `No. Majikan`,
+`RINGKASAN AKAUN`, `Jenis Akaun`/`Akaun Persaraan`, `CARUMAN`, `JUMLAH SIMPANAN`, `CARUMAN SEMASA`, the
+"*cetakan komputer… tidak memerlukan tandatangan*" line, `www.kwsp.gov.my`, `Cetakan myEPF`, `Menara
+KWSP`/`Jalan Sultan`. *Visual:* the **KWSP logo** (no Jata Negara crest, no QR — the computer-print
+line + URL are the machine anchors). Covers both the 2-account and 3-account (2024+) formats.
+
+**Issue 2 — extraction:** already complete (the EPF-mining sprint) — name, nric, avg/monthly
+contribution, contribution_status, statement_date, address, balance, year.
+
+**Band — same as results.** Calibration: 9 full statements 0.74–0.93 → genuine; a top-only screenshot
+(a72, 0.41) → suspect ("upload the full statement"); and **three wrong-type mis-slots correctly →
+not_epf**: a Borang EC tax form (a11, 0.18), a KWSP *withdrawal* form (a53, 0.18), and an STR
+screenshot (a37, 0.00 — **the TD-117 case**). Zero false positives on full EPF statements. The
+signature scorer thus doubles as the **deterministic wrong-type backstop** TD-117 asked for.
+
+**Status:** signatures + band done; not yet wired into the live verdict (pending step, with the slip/BC).
+
 ---
 
 ### Draft Issue-2 contracts for the other doc types (PENDING per-doc review, 2026-06-16)
@@ -154,7 +175,7 @@ Proposed; **not locked** — to be confirmed when we focus on each document.
 | ic / parent_ic | name, IC number | address | — |
 | str | recipient_name, recipient_nric, status, year | amount | drop `source_type` as a data field (genuineness/type, like `exam`)? |
 | salary_slip | name, nric, gross_income, period | net_income, employer | — |
-| epf | name, nric, avg_monthly_contribution, contribution_status | balance, statement_date, address, employer, year, months_counted | — |
+| epf | name, nric, avg_monthly_contribution, contribution_status | balance, statement_date, address, employer, year, months_counted | **LOCKED — see the epf section above** |
 | water_bill / electricity_bill | name, address, amount, billing_period | unpaid_balance | — |
 | offer_letter | candidate_name, candidate_nric, programme, institution, issuer | offer_date, intake, address | corpus has 1 *unreadable* offer_letter → an Issue-2 case to investigate |
 | birth_certificate | child + mother + father (name + NRIC each) | bc_number, home address | **LOCKED — see the birth_certificate section above** |

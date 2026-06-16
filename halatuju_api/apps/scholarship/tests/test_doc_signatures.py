@@ -151,3 +151,37 @@ def test_cropped_bc_is_flagged_not_genuine():
     g = signature_genuineness(CROPPED_BC, doc_type='birth_certificate')
     assert g['status'] != 'genuine'        # suspect or not_birth_certificate (by how much is in frame)
     assert g['probability'] < GENUINE_MIN
+
+
+# ── EPF (KWSP Penyata Ahli) — same approach + band; catches wrong-type mis-slots ──
+GENUINE_EPF = """KWSP EPF
+SULIT DAN PERSENDIRIAN
+NADARAJ A/L MUTHU
+NO 3 SOLOK 11, 42000 PELABUHAN KLANG, Selangor
+PENYATA AHLI TAHUN 2026
+No. Ahli KWSP : 5174701   Tarikh Penyata : 13/06/2026
+No. Kad Pengenalan : 620601105949
+No. Majikan : 000000000
+JUMLAH SIMPANAN: RM47,522.80
+RINGKASAN AKAUN
+Jenis Akaun  Baki Pembuka  Masuk  Caruman
+Akaun Persaraan (Akaun 1) 43198.37
+CARUMAN SEMASA
+Penyata ini adalah cetakan komputer dan tidak memerlukan tandatangan.
+Menara KWSP No 1, Jalan Sultan. www.kwsp.gov.my  Cetakan myEPF  Muka Surat 1
+"""
+# A KWSP WITHDRAWAL form (the a53 pattern) — genuine KWSP doc, WRONG kind for income proof.
+WRONG_TYPE_EPF = "KWSP EPF\nPENGESAHAN PERMOHONAN PENGELUARAN\nMAKLUMAT AHLI\nUMUR 55 TAHUN\nwww.kwsp.gov.my\n"
+
+
+def test_genuine_epf_scores_genuine_and_types_as_epf():
+    r = score_signatures(GENUINE_EPF, doc_type='epf')
+    assert r['type'] == 'epf'
+    assert r['probability'] >= GENUINE_MIN
+
+
+def test_wrong_type_kwsp_doc_is_not_epf():
+    # A withdrawal form / tax form / STR mis-filed as an EPF statement → not_epf (TD-117 backstop).
+    g = signature_genuineness(WRONG_TYPE_EPF, doc_type='epf')
+    assert g['status'] == 'not_epf'
+    assert g['probability'] < SUSPECT_MAX

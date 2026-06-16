@@ -87,11 +87,34 @@ BC_SIGNATURES = [
     ('barcode',                       ['__barcode__'],                                  3, 'visual'),
 ]
 
+# EPF (KWSP Penyata Ahli) — standard statement. No Jata Negara crest / no QR; the visual anchor
+# is the KWSP logo, and the distinctive "computer print, no signature" line + kwsp.gov.my play the
+# machine-token role. Covers both the 2-account (older) and 3-account (2024+) formats.
+EPF_SIGNATURES = [
+    ('KWSP logo',                  ['__crest__'],                                         2, 'visual'),
+    ('KWSP / EPF',                 ['KWSP', 'KUMPULAN WANG SIMPANAN PEKERJA'],            2, 'text'),
+    ('SULIT DAN PERSENDIRIAN',     ['SULIT DAN PERSENDIRIAN'],                            2, 'text'),
+    ('PENYATA AHLI',               ['PENYATA AHLI'],                                      3, 'text'),
+    ('No. Ahli KWSP',              ['NO AHLI KWSP', 'AHLI KWSP'],                         2, 'text'),
+    ('No. Kad Pengenalan',         ['KAD PENGENALAN'],                                    1, 'text'),
+    ('No. Majikan',                ['NO MAJIKAN', 'MAJIKAN'],                             1, 'text'),
+    ('RINGKASAN AKAUN',            ['RINGKASAN AKAUN'],                                   2, 'text'),
+    ('Akaun',                      ['JENIS AKAUN', 'AKAUN PERSARAAN', 'AKAUN 1'],         1, 'text'),
+    ('CARUMAN',                    ['CARUMAN'],                                           1, 'text'),
+    ('JUMLAH SIMPANAN',            ['JUMLAH SIMPANAN'],                                   2, 'text'),
+    ('CARUMAN SEMASA',             ['CARUMAN SEMASA'],                                    1, 'text'),
+    ('computer-print disclaimer',  ['CETAKAN KOMPUTER DAN TIDAK MEMERLUKAN TANDATANGAN'], 3, 'text'),
+    ('kwsp.gov.my',                ['KWSP GOV MY'],                                       2, 'text'),
+    ('Cetakan myEPF',              ['CETAKAN MYEPF', 'MYEPF'],                            1, 'text'),
+    ('KWSP address',               ['MENARA KWSP', 'JALAN SULTAN'],                       1, 'text'),
+]
+
 # A doc_type is scored against its FAMILY of candidate lists (best fit wins + names the type).
 # results_slip + certificate are scored together (auto-detect); birth_certificate is its own.
 _RESULTS_LISTS = {'results_slip': SLIP_SIGNATURES, 'certificate': CERT_SIGNATURES}
 _FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
-             'birth_certificate': {'birth_certificate': BC_SIGNATURES}}
+             'birth_certificate': {'birth_certificate': BC_SIGNATURES},
+             'epf': {'epf': EPF_SIGNATURES}}
 _LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
 
 
