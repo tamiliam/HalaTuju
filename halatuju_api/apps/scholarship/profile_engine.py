@@ -104,17 +104,29 @@ Parents'/guardians' occupation: {parents_occupation}
 Siblings currently studying: {siblings_studying}
 
 Pathway / programme (use the confirmed place when present): {pathway}
+Top course choices (student's ranking): {top_choices}
+While still deciding (student's words): {deliberation}
+Other scholarships applied for / held: {other_scholarships}
+Help the student asked us for: {help_wanted}
 
 Aspirations (student's words): {aspirations}
 Plan to get there (student's words): {plans}
+Why assistance is needed (student's words): {justification}
+Worries / concerns (student's words): {fears}
 Family situation (student's words): {family_context}
 Daily life & responsibilities (student's words): {daily_life}
+Anything else the student wants us to know (student's words): {anything_else}
 
 Funding — what the support would help with: {funding_categories}
 Anything else about funding (student's words): {funding_note}
 
 The student's answers to our clarifying questions:
 {qa}
+
+Draw on ALL of the student's own words above and distil them into the narrative where they add \
+meaning — their aspirations, plan, reasons, worries, deliberation and anything-else. Do not ignore \
+a field the student took the trouble to fill in; equally, do not pad with a field left blank \
+("not provided"/"none"/"not applicable" means say nothing about it).
 """
 
 
@@ -329,6 +341,57 @@ def _funding(application):
     return cats_str, months, note
 
 
+def _top_choices(application):
+    """The student's ranked top course choices (apply form) — 'Course at Institution (choice 1)'."""
+    tc = application.top_choices if isinstance(application.top_choices, list) else []
+    bits = []
+    for c in tc:
+        if not isinstance(c, dict):
+            continue
+        name = (c.get('course_name') or '').strip()
+        if not name:
+            continue
+        inst = (c.get('institution') or '').strip()
+        rank = c.get('rank')
+        label = name + (f' at {inst}' if inst else '')
+        if rank:
+            label += f' (choice {rank})'
+        bits.append(label)
+    return '; '.join(bits) if bits else 'not provided'
+
+
+def _other_scholarships(application):
+    """Other scholarships the student has applied for / holds (keys + their free text)."""
+    keys = application.other_scholarships if isinstance(application.other_scholarships, list) else []
+    parts = [str(k) for k in keys if k]
+    txt = (getattr(application, 'other_scholarships_text', '') or '').strip()
+    if txt:
+        parts.append(txt)
+    return ', '.join(parts) if parts else 'none mentioned'
+
+
+def _help_wanted(application):
+    """What support the student asked us for on the apply form ('help with…')."""
+    wants = []
+    if (getattr(application, 'help_university', '') or '') == 'yes':
+        wants.append('university applications')
+    if (getattr(application, 'help_scholarship', '') or '') == 'yes':
+        wants.append('scholarship applications & interviews')
+    return ', '.join(wants) if wants else 'none indicated'
+
+
+def _deliberation(application):
+    """When the student is still deciding their pathway — their reasons + their own words."""
+    reasons = application.uncertainty_reasons if isinstance(application.uncertainty_reasons, list) else []
+    note = (getattr(application, 'uncertainty_note', '') or '').strip()
+    bits = []
+    if reasons:
+        bits.append('reasons: ' + ', '.join(str(r) for r in reasons))
+    if note:
+        bits.append(note)
+    return ' — '.join(bits) if bits else 'not applicable'
+
+
 def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
     profile = application.profile
     alias = _alias(application)
@@ -364,10 +427,17 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         parents_occupation=val(application.parents_occupation),
         siblings_studying=_siblings_studying_display(application),
         pathway=_pathway(application),
+        top_choices=_top_choices(application),
+        deliberation=_deliberation(application),
+        other_scholarships=_other_scholarships(application),
+        help_wanted=_help_wanted(application),
         aspirations=val(application.aspirations),
         plans=val(application.plans),
+        justification=val(application.justification),
+        fears=val(application.fears),
         family_context=val(application.family_context),
         daily_life=val(application.daily_life),
+        anything_else=val(application.anything_else),
         funding_categories=cats_str,
         funding_note=note,
         qa=_render_qa(application),
