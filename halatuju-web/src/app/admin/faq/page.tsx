@@ -1,5 +1,6 @@
 // Reviewer FAQ — administrative + reviewing questions. Static English for now (BM/Tamil to follow).
-// Reached only after sign-in (gated by the admin layout).
+// Reached only after sign-in (gated by the admin layout). Collapsible accordion via native
+// <details> (no client JS needed).
 
 type QA = { q: React.ReactNode; a: React.ReactNode }
 
@@ -83,29 +84,75 @@ const REVIEWING: QA[] = [
   },
 ]
 
-function Section({ title, items }: { title: string; items: QA[] }) {
+function Item({ item }: { item: QA }) {
+  return (
+    <details className="group rounded-xl border border-gray-200 bg-white transition-colors open:border-blue-200 open:bg-blue-50/30 hover:border-gray-300">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 font-medium text-gray-900 [&::-webkit-details-marker]:hidden">
+        <span>{item.q}</span>
+        <svg
+          className="h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 group-open:rotate-180 group-open:text-blue-500"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+        </svg>
+      </summary>
+      <div className="px-4 pb-4 text-sm leading-relaxed text-gray-600">{item.a}</div>
+    </details>
+  )
+}
+
+function Section({
+  title, items, icon, tint,
+}: { title: string; items: QA[]; icon: React.ReactNode; tint: string }) {
   return (
     <section className="mt-8">
-      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-      <dl className="mt-3 space-y-5">
-        {items.map((item, i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-4">
-            <dt className="font-semibold text-gray-900">{item.q}</dt>
-            <dd className="mt-1 text-sm leading-relaxed text-gray-700">{item.a}</dd>
-          </div>
-        ))}
-      </dl>
+      <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+        <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${tint}`}>{icon}</span>
+        {title}
+        <span className="text-sm font-normal text-gray-400">· {items.length}</span>
+      </h2>
+      <div className="mt-3 space-y-2.5">
+        {items.map((item, i) => <Item key={i} item={item} />)}
+      </div>
     </section>
   )
 }
 
 export default function ReviewerFaqPage() {
   return (
-    <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900">Frequently asked questions</h1>
-      <p className="mt-1 text-sm text-gray-500">Quick answers for reviewers. See the Guide for a step-by-step walkthrough.</p>
-      <Section title="Administrative" items={ADMIN} />
-      <Section title="Reviewing" items={REVIEWING} />
+    <div className="max-w-2xl">
+      {/* Friendly header */}
+      <div className="flex items-start gap-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-5">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+        </span>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Frequently asked questions</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Quick answers for reviewers. Tap a question to expand it — and see the <strong>Guide</strong> for a
+            step-by-step walkthrough.
+          </p>
+        </div>
+      </div>
+
+      <Section
+        title="Administrative" items={ADMIN} tint="bg-amber-100 text-amber-700"
+        icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round"
+            d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+        </svg>}
+      />
+      <Section
+        title="Reviewing" items={REVIEWING} tint="bg-blue-100 text-blue-700"
+        icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round"
+            d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>}
+      />
     </div>
   )
 }
