@@ -108,6 +108,7 @@ Top course choices (student's ranking): {top_choices}
 While still deciding (student's words): {deliberation}
 Other scholarships applied for / held: {other_scholarships}
 Help the student asked us for: {help_wanted}
+Interest-quiz signals (the student's strongest interests + work style): {quiz_interests}
 
 Aspirations (student's words): {aspirations}
 Plan to get there (student's words): {plans}
@@ -127,6 +128,11 @@ Draw on ALL of the student's own words above and distil them into the narrative 
 meaning — their aspirations, plan, reasons, worries, deliberation and anything-else. Do not ignore \
 a field the student took the trouble to fill in; equally, do not pad with a field left blank \
 ("not provided"/"none"/"not applicable" means say nothing about it).
+
+The interest-quiz signals are ACCRETIVE ONLY: use them to add positive colour about the student's \
+interests and strengths (e.g. how their pathway plays to what energises them). NEVER use the quiz to \
+question, doubt, cast as a mismatch, or otherwise weaken the student's chosen pathway or case. If the \
+quiz does not obviously add something supportive, simply leave it out.
 """
 
 
@@ -308,6 +314,44 @@ def _region(profile):
     return region or 'not provided'
 
 
+# Human labels for the interest-quiz signals (profile.student_signals). Only the two most
+# communicative categories — what FIELDS interest the student, and their WORK STYLE.
+_SIGNAL_LABELS = {
+    'field_mechanical': 'building & fixing', 'field_digital': 'technology & digital',
+    'field_business': 'business', 'field_health': 'health & care',
+    'field_creative': 'creative & design', 'field_hospitality': 'hospitality & service',
+    'field_agriculture': 'agriculture', 'field_heavy_industry': 'heavy industry',
+    'field_electrical': 'electrical', 'field_civil': 'civil & construction',
+    'field_aero_marine': 'aeronautical & marine', 'field_oil_gas': 'oil & gas',
+    'hands_on': 'hands-on work', 'problem_solving': 'problem-solving',
+    'people_helping': 'helping people', 'creative': 'creative work',
+}
+_SIGNAL_CATEGORIES = ('field_interest', 'work_preference_signals')
+
+
+def _quiz_interests(application):
+    """A short, POSITIVE read of the student's interest-quiz result (profile.student_signals):
+    their strongest field interests + work-style. Accretive context only — never used to doubt
+    a pathway. '' when no quiz on file."""
+    profile = application.profile
+    signals = getattr(profile, 'student_signals', None) if profile else None
+    if not isinstance(signals, dict) or not signals:
+        return 'not provided'
+    labels = []
+    for cat in _SIGNAL_CATEGORIES:
+        bucket = signals.get(cat)
+        if not isinstance(bucket, dict):
+            continue
+        # strongest first (score desc), keep the meaningful ones (score >= 1), cap at 3/category
+        ranked = sorted(((s, sc) for s, sc in bucket.items() if isinstance(sc, (int, float)) and sc > 0),
+                        key=lambda kv: kv[1], reverse=True)
+        for sig, _score in ranked[:3]:
+            lbl = _SIGNAL_LABELS.get(sig)
+            if lbl and lbl not in labels:
+                labels.append(lbl)
+    return ', '.join(labels) if labels else 'not provided'
+
+
 def _render_qa(application):
     """The student's answers to clarifying questions — the answered Check-2 + reviewer
     resolution items (those carrying a typed response). Question = the officer-written
@@ -431,6 +475,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         deliberation=_deliberation(application),
         other_scholarships=_other_scholarships(application),
         help_wanted=_help_wanted(application),
+        quiz_interests=_quiz_interests(application),
         aspirations=val(application.aspirations),
         plans=val(application.plans),
         justification=val(application.justification),
