@@ -112,6 +112,8 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     # Source (the referring org, chosen at apply) + the course-guide merit, for the list table.
     referral_source = serializers.CharField(source='profile.referral_source', read_only=True, allow_null=True)
     merit_score = serializers.SerializerMethodField()
+    # The student's preferred call language (en/ms/ta/mixed) — drives reviewer language matching.
+    call_language = serializers.CharField(source='profile.preferred_call_language', read_only=True, allow_blank=True)
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
 
@@ -119,7 +121,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
         model = ScholarshipApplication
         fields = [
             'id', 'name', 'profile_id', 'cohort_code', 'qualification',
-            'spm_a_count', 'stpm_pngk', 'referral_source', 'merit_score',
+            'spm_a_count', 'stpm_pngk', 'referral_source', 'merit_score', 'call_language',
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
             'assigned_to_id', 'assigned_to_name',
@@ -370,6 +372,7 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
             'highest_qualification', 'university', 'graduation_year',
             'field_of_study', 'phone', 'address',
             'street_address', 'postcode', 'city', 'state',
+            'english_fluency', 'bm_fluency', 'tamil_fluency',
         ]
 
     def validate_graduation_year(self, value):

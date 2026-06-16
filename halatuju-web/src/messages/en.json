@@ -2869,7 +2869,8 @@
       "profilePending": "The profile is generated automatically when the application is handed over for review.",
       "finalProfile": {
         "title": "Final profile (v2 — with interview)"
-      }
+      },
+      "prefersLang": "Prefers {lang}"
     },
     "students": "Students",
     "invite": "Invite",
@@ -3060,7 +3061,15 @@
       "postcode": "Postcode",
       "city": "City",
       "state": "State",
-      "selectState": "Select state"
+      "selectState": "Select state",
+      "langTitle": "Languages",
+      "langSubtitle": "So we can match you with students you can speak with comfortably.",
+      "langEnglish": "English",
+      "langBm": "Bahasa Melayu",
+      "langTamil": "Tamil",
+      "fluencyNone": "Not really",
+      "fluencyConversational": "Conversational",
+      "fluencyFluent": "Fluent"
     },
     "inviteAs": "Invite as",
     "inviteHeading": {

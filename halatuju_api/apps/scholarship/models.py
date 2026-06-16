@@ -1125,6 +1125,12 @@ class ReviewerProfile(models.Model):
     university = models.CharField(max_length=200, blank=True, default='')
     graduation_year = models.PositiveSmallIntegerField(null=True, blank=True)
     field_of_study = models.CharField(max_length=200, blank=True, default='')
+    # Language fluency — used to match a reviewer to a student's preferred call language
+    # (StudentProfile.preferred_call_language). 'conversational' or 'fluent' = can review in it.
+    LANG_FLUENCY = [('', 'None'), ('conversational', 'Conversational'), ('fluent', 'Fluent')]
+    english_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
+    bm_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
+    tamil_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
     # Sensitive staff PII — reviewer + super only, never exposed to students/sponsors.
     phone = models.CharField(max_length=30, blank=True, default='')
     address = models.TextField(blank=True, default='')   # legacy single-line; kept for back-compat

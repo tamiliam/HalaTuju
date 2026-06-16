@@ -2869,7 +2869,8 @@
       "profilePending": "Profil dijana secara automatik apabila permohonan diserahkan untuk semakan.",
       "finalProfile": {
         "title": "Profil akhir (v2 — dengan temu duga)"
-      }
+      },
+      "prefersLang": "Suka {lang}"
     },
     "students": "Pelajar",
     "invite": "Jemputan",
@@ -3060,7 +3061,15 @@
       "postcode": "Poskod",
       "city": "Bandar",
       "state": "Negeri",
-      "selectState": "Pilih negeri"
+      "selectState": "Pilih negeri",
+      "langTitle": "Bahasa",
+      "langSubtitle": "Supaya kami boleh memadankan anda dengan pelajar yang anda boleh berbual dengan selesa.",
+      "langEnglish": "Bahasa Inggeris",
+      "langBm": "Bahasa Melayu",
+      "langTamil": "Bahasa Tamil",
+      "fluencyNone": "Tidak",
+      "fluencyConversational": "Boleh berbual",
+      "fluencyFluent": "Fasih"
     },
     "inviteAs": "Jemput sebagai",
     "inviteHeading": {

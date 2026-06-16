@@ -733,10 +733,23 @@ class AdminAssignableAdminsView(_AdminBase):
     def get(self, request):
         if not self.get_admin(request):
             return self._deny()
-        admins = PartnerAdmin.objects.filter(is_active=True).order_by('name')
+        admins = (PartnerAdmin.objects.filter(is_active=True)
+                  .select_related('reviewer_profile').order_by('name'))
+
+        def langs(a):
+            # Languages the reviewer can conduct a review in (conversational or better),
+            # for matching against the student's preferred call language. Codes: en/ms/ta.
+            rp = getattr(a, 'reviewer_profile', None)
+            if rp is None:
+                return []
+            ok = ('conversational', 'fluent')
+            return [code for code, lvl in (('en', rp.english_fluency),
+                                           ('ms', rp.bm_fluency),
+                                           ('ta', rp.tamil_fluency)) if lvl in ok]
+
         return Response({'admins': [
             {'id': a.id, 'name': a.name, 'email': a.email,
-             'role': 'super' if a.is_super else a.role}
+             'role': 'super' if a.is_super else a.role, 'languages': langs(a)}
             for a in admins
         ]})
 

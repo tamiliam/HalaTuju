@@ -29,6 +29,20 @@ const statusBadge = (s: string) =>
             : s === 'rejected' ? 'bg-red-100 text-red-600'
               : 'bg-gray-100 text-gray-600'
 
+// ── Reviewer language matching (assignment dropdown) ───────────────────────────
+const LANG_LABEL: Record<string, string> = { en: 'EN', ms: 'BM', ta: 'TA' }
+type Reviewer = { id: number; name: string; languages: string[] }
+const langCodesLabel = (codes: string[]) => codes.map((c) => LANG_LABEL[c] ?? c.toUpperCase()).join(', ')
+/** Order reviewers for a student's preferred call language: when it's a specific language
+ *  (en/ms/ta), reviewers who speak it come first and each carries a match flag; otherwise
+ *  ('mixed'/unset) the list is unchanged and nothing is flagged. */
+function orderReviewersFor(reviewers: Reviewer[], lang: string): Array<{ rv: Reviewer; match: boolean; specific: boolean }> {
+  const specific = lang === 'en' || lang === 'ms' || lang === 'ta'
+  const out = reviewers.map((rv) => ({ rv, match: specific ? rv.languages.includes(lang) : true, specific }))
+  if (specific) out.sort((a, b) => Number(b.match) - Number(a.match) || a.rv.name.localeCompare(b.rv.name))
+  return out
+}
+
 const STATUS_OPTIONS = [
   'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'accepted', 'rejected',
 ]
@@ -45,7 +59,7 @@ export default function AdminScholarshipList() {
   const { t } = useT()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
   // Super-only inline reviewer assignment (the "Assigned" column dropdown).
-  const [reviewers, setReviewers] = useState<Array<{ id: number; name: string }>>([])
+  const [reviewers, setReviewers] = useState<Array<{ id: number; name: string; languages: string[] }>>([])
   const [assignNote, setAssignNote] = useState<Record<number, string>>({})
   const [bucket, setBucket] = useState('')
   const [statusF, setStatusF] = useState('')
@@ -95,7 +109,7 @@ export default function AdminScholarshipList() {
   useEffect(() => {
     if (!token || !isSuper) return
     getAssignableAdmins({ token })
-      .then((r) => setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name }))))
+      .then((r) => setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, languages: a.languages || [] }))))
       .catch(() => {})
   }, [token, isSuper])
 
@@ -225,18 +239,26 @@ export default function AdminScholarshipList() {
                   <td className="px-4 py-3 text-gray-500">{new Date(a.submitted_at).toLocaleDateString('ms-MY')}</td>
                   {isSuper && (
                     <td className="px-4 py-3">
+                      {LANG_LABEL[a.call_language] && (
+                        <p className="mb-1 text-[11px] text-gray-500">
+                          {t('admin.scholarship.prefersLang', { lang: LANG_LABEL[a.call_language] })}
+                        </p>
+                      )}
                       <select
                         value={a.assigned_to_id ?? ''}
                         onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
-                        className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[160px]"
+                        className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[220px]"
                       >
                         <option value="">{t('admin.scholarship.unassigned')}</option>
                         {/* keep the current assignee selectable even if not in the reviewer list */}
                         {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
                           <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
                         )}
-                        {reviewers.map((rv) => (
-                          <option key={rv.id} value={rv.id}>{rv.name}</option>
+                        {orderReviewersFor(reviewers, a.call_language).map(({ rv, match, specific }) => (
+                          <option key={rv.id} value={rv.id}>
+                            {specific ? (match ? '✓ ' : '⚠ ') : ''}{rv.name}
+                            {rv.languages.length ? ` — ${langCodesLabel(rv.languages)}` : ' — —'}
+                          </option>
                         ))}
                       </select>
                       {assignNote[a.id] && <p className="text-xs text-red-500 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}

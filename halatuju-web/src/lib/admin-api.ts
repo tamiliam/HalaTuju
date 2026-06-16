@@ -244,7 +244,12 @@ export interface ReviewerProfile {
   postcode: string
   city: string
   state: string
+  english_fluency: LangFluency
+  bm_fluency: LangFluency
+  tamil_fluency: LangFluency
 }
+
+export type LangFluency = '' | 'conversational' | 'fluent'
 
 export async function getReviewerProfile(options?: ApiOptions) {
   return adminFetch<ReviewerProfile>('/api/v1/admin/reviewer-profile/', options)
@@ -328,6 +333,7 @@ export interface AdminScholarshipListItem {
   stpm_pngk: number | null
   referral_source: string | null   // the referring org chosen at apply (Source column)
   merit_score: number | null       // course-guide merit (SPM 0-100 / STPM PNGK), computed live
+  call_language: string            // student's preferred call language: en/ms/ta/mixed/'' — for reviewer matching
   status: string
   bucket: string
   shortlist_reason: string
@@ -627,9 +633,10 @@ export async function requestMoreInfo(id: number, note: string, options?: ApiOpt
     `/api/v1/admin/scholarship/applications/${id}/request-info/`, 'POST', { note }, options)
 }
 
-/** Active admins (for the assignment dropdown). Super admin only on the backend. */
+/** Active admins (for the assignment dropdown). Super admin only on the backend.
+ *  `languages` = the codes (en/ms/ta) the reviewer is conversational+ in, for matching. */
 export async function getAssignableAdmins(options?: ApiOptions) {
-  return adminFetch<{ admins: Array<{ id: number; name: string; email: string; role: string }> }>(
+  return adminFetch<{ admins: Array<{ id: number; name: string; email: string; role: string; languages: string[] }> }>(
     `/api/v1/admin/scholarship/assignable-admins/`, options)
 }
 
