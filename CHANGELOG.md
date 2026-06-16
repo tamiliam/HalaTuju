@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reviewer language fluency + assignment matching (2026-06-17).** Reviewers can now record their fluency
+  (None / Conversational / Fluent) in **English, Bahasa Melayu and Tamil** on their Profile (new `ReviewerProfile`
+  fields, migration `scholarship/0059`, migrate-first). This drives **reviewer↔student matching**: when a super-admin
+  assigns a reviewer, the dropdown labels each reviewer with the languages they speak (EN/BM/TA), shows the **student's
+  preferred call language** on the row, and lists reviewers who cover it **first (✓)** with the rest flagged (⚠) —
+  matching is decision-support, the assigner still chooses. The `assignable-admins` endpoint returns each reviewer's
+  conversational-or-better languages; the applications list API now returns the student's `call_language` (already
+  collected). +3 backend tests; en/ms/ta. Backend + frontend.
 - **Reviewer Guide + FAQ pages (2026-06-16).** Two new reviewer-visible menu items to help invited reviewers do their
   role: **Guide** (`/admin/guide`) — a friendly 8-step walkthrough of the review lifecycle (your applicants → the four
   checks → documents → the student profile → asking the student → interview → decision), with redacted screenshots; and

@@ -99,6 +99,31 @@ class TestReviewerProfile(TestCase):
         self.assertEqual(prof.phone, '012-345 6789')
         self.assertEqual(prof.graduation_year, 2015)
 
+    def test_patch_language_fluency(self):
+        self._auth('reviewer-uid')
+        r = self.client.patch(self.URL, {
+            'english_fluency': 'fluent', 'bm_fluency': 'conversational', 'tamil_fluency': '',
+        }, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['english_fluency'], 'fluent')
+        self.assertEqual(r.json()['bm_fluency'], 'conversational')
+        prof = ReviewerProfile.objects.get(partner_admin=self.reviewer)
+        self.assertEqual(prof.english_fluency, 'fluent')
+        self.assertEqual(prof.tamil_fluency, '')
+
+    def test_assignable_admins_includes_languages(self):
+        # A reviewer's conversational+ languages surface on the assignment endpoint for matching.
+        ReviewerProfile.objects.create(
+            partner_admin=self.reviewer, english_fluency='fluent',
+            tamil_fluency='conversational', bm_fluency='')
+        self._auth('super-uid')
+        r = self.client.get('/api/v1/admin/scholarship/assignable-admins/')
+        self.assertEqual(r.status_code, 200)
+        me = next(a for a in r.json()['admins'] if a['id'] == self.reviewer.id)
+        self.assertEqual(sorted(me['languages']), ['en', 'ta'])   # bm omitted (None)
+        other = next(a for a in r.json()['admins'] if a['id'] == self.other.id)
+        self.assertEqual(other['languages'], [])                  # no profile → none
+
     def test_patch_structured_address(self):
         self._auth('reviewer-uid')
         r = self.client.patch(self.URL, {
