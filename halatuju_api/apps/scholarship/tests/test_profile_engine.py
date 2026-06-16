@@ -33,6 +33,14 @@ class TestProfilePrompt(TestCase):
             daily_life='I help at my family stall after school',  # English narrative
             first_in_family=True, parents_occupation='Lorry driver', siblings_studying_count=2,
             field_of_study='Accounting', pathways_considered=['matriculation', 'stpm'],
+            # Every other thing the student told us — must all reach the draft prompt.
+            justification='Pendapatan keluarga tidak mencukupi untuk yuran',  # why assistance is needed
+            fears='Saya takut tidak mampu membayar pengangkutan',  # worries
+            anything_else='I volunteer teaching younger kids on weekends',  # anything else
+            top_choices=[{'rank': 1, 'course_name': 'Ijazah Perakaunan', 'institution': 'UiTM'}],
+            other_scholarships=['jpa'], other_scholarships_text='Yayasan Khazanah',
+            help_university='yes', help_scholarship='yes',
+            uncertainty_reasons=['financial'], uncertainty_note='Masih menunggu keputusan rayuan UPU',
         )
         FundingNeed.objects.create(
             application=cls.app, categories=['living', 'transport'],
@@ -79,6 +87,22 @@ class TestProfilePrompt(TestCase):
         self.assertIn('Saya mahu menjadi akauntan', prompt)   # Malay aspirations
         self.assertIn('என் தந்தை ஒரு லாரி ஓட்டுநர்', prompt)  # Tamil family context
         self.assertIn('Lorry driver', prompt)
+
+    def test_prompt_distils_all_student_inputs(self):
+        """Nothing the student filled in should be silently dropped from the draft prompt."""
+        prompt = _build_prompt(self.app)
+        # Free-text the student wrote (verbatim, any language)
+        self.assertIn('Pendapatan keluarga tidak mencukupi', prompt)   # justification
+        self.assertIn('Saya takut tidak mampu', prompt)                # fears
+        self.assertIn('I volunteer teaching younger kids', prompt)     # anything_else
+        self.assertIn('Masih menunggu keputusan rayuan', prompt)       # uncertainty_note
+        # Structured plans/support the student gave us
+        self.assertIn('Ijazah Perakaunan', prompt)                     # top choice course
+        self.assertIn('UiTM', prompt)                                  # top choice institution
+        self.assertIn('Yayasan Khazanah', prompt)                      # other scholarships text
+        self.assertIn('university applications', prompt)               # help_university=yes
+        self.assertIn('scholarship applications', prompt)              # help_scholarship=yes
+        self.assertIn('financial', prompt)                             # uncertainty reason
 
     def test_prompt_siblings_uses_count_when_set(self):
         """S15: prompt prefers the integer count over the legacy boolean."""

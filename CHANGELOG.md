@@ -101,6 +101,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
 
 ### Changed
+- **AI profile now distils EVERYTHING the student told us (2026-06-16).** The draft prompt previously fed only some of
+  the student's input; it now also feeds the fields that were being collected but ignored: **"Why assistance is needed"**
+  (`justification`), **"Worries"** (`fears`), **"Anything else you'd like us to know"** (`anything_else`), the ranked
+  **top course choices** (`top_choices`), **other scholarships** applied for/held (`other_scholarships` + free text), the
+  **help the student asked us for** (`help_university`/`help_scholarship`), and — for undecided students — their
+  **"still deciding" reasons + note** (`uncertainty_reasons`/`uncertainty_note`). Added a prompt instruction to draw on
+  and distil all of the student's own words (and to stay silent on blank fields). The final (refine) profile inherits
+  these via the draft. New `profile_engine` helpers + tests; backend-only, no migration.
 - **Cockpit Decision + profile copy/layout tweaks (live-review, 2026-06-16).** Profile card heading
   "Sponsor profile (AI draft)" → "Sponsor profile (draft)"; the draft hint now reads "This draft will be replaced with
   an updated final version that incorporates your findings when you save your verdict." In the Decision card: a
