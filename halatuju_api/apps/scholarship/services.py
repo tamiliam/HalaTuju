@@ -664,6 +664,7 @@ def generate_ready_profile(application, language=None):
     sp, _ = SponsorProfile.objects.get_or_create(application=application)
     sp.draft_markdown = result['markdown']
     sp.model_used = result.get('model_used', '')
+    sp.prompt_version = result.get('prompt_version', '')
     sp.generated_at = timezone.now()
     if sp.status == 'published':
         sp.status = 'draft'  # regenerating a published profile reverts it to draft
@@ -938,6 +939,7 @@ def _maybe_autofinalise(application, session):
             return
         sp.final_markdown = result['markdown']
         sp.final_model_used = result.get('model_used', '')
+        sp.prompt_version = result.get('prompt_version', '')
         sp.finalised_at = timezone.now()
         sp.save()
     except Exception:
