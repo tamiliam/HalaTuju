@@ -119,6 +119,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
 
 ### Changed
+- **Academic results summarised by GROUP + ethnicity-safe + prompt versioning (2026-06-16).**
+  **(a)** The profile no longer lists every subject and grade (readers skip a long list). `_grades_summary` now
+  reports the **count of A-grade subjects, the band mix, and the broad subject GROUPS** they span
+  (sciences / mathematics / languages / social sciences / humanities / the arts / technical). **(b) Ethnicity safety:**
+  vernacular-language and literature subjects (Bahasa Tamil/Cina, Kesusasteraan Tamil/Cina) fold into "languages"/
+  "humanities" and are never named, and the prompt forbids naming them or implying the student's race — so the profile
+  can't hint at ethnicity via subject choice. **(c)** A subject key not in the group map falls back to "other subjects" —
+  a raw key (e.g. the `B_TAMIL` artifact) can never reach the prompt again (the old partial `_GRADE_LABELS` name map is
+  removed). **(d) Prompt versioning:** new `profile_engine.PROMPT_VERSION`, stored on each generated profile
+  (`SponsorProfile.prompt_version`, migration `scholarship/0058`), so a stale draft is detectable by **version, not by
+  date** (the #18 trap). The backfill is now version-aware — it skips drafts already on the current prompt and only
+  refreshes stale/empty-version ones. Migrate-first; +5 tests; scholarship suite 1277 green.
 - **Statement of Intent letter now feeds the AI profile (2026-06-16).** The uploaded Statement of Intent is already
   OCR'd on upload into `vision_fields['text']`, but that text only reached Check-2 — never the profile. The draft prompt
   now feeds the letter's text (capped, normal PII redaction still applies) so the profile distils the student's stated

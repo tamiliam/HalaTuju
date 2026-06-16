@@ -11,7 +11,7 @@ from apps.scholarship.models import (
     ApplicantDocument, FundingNeed, Referee, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.profile_engine import (
-    DEFAULT_LANGUAGE, _DO_NOT_CLAIM, _build_prompt, _resolve_language,
+    DEFAULT_LANGUAGE, _DO_NOT_CLAIM, _build_prompt, _grades_summary, _resolve_language,
     generate_sponsor_profile,
 )
 
@@ -22,7 +22,11 @@ class TestProfilePrompt(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         cls.profile = StudentProfile.objects.create(
             supabase_user_id='pe-1', nric='030101-14-1234', name='Priya', school='SMK Taman',
-            exam_type='SPM', grades={f'sub{i}': 'A' for i in range(7)},
+            exam_type='SPM',
+            # Realistic keys across groups, incl. a vernacular-language subject (b_tamil)
+            # that must NOT surface by name (ethnicity) and must never leak as a raw key.
+            grades={'bm': 'A+', 'eng': 'A', 'math': 'A+', 'addmath': 'A', 'phy': 'A',
+                    'chem': 'A-', 'bio': 'A', 'hist': 'A', 'moral': 'A', 'b_tamil': 'A+'},
             household_income=1800, household_size=6, receives_str=True, receives_jkm=False,
             student_signals={
                 'field_interest': {'field_business': 3, 'field_digital': 2},
@@ -122,6 +126,35 @@ class TestProfilePrompt(TestCase):
         self.assertIn('Statement of Intent letter (student\'s uploaded letter, OCR\'d', prompt)
         # the value renders as the not-provided marker, not a stray letter
         self.assertNotIn('serve my rural community', prompt)
+
+    def test_grades_summarised_by_group_and_ethnicity_safe(self):
+        """Grades are summarised by GROUP — never per-subject, never a vernacular-language
+        subject by name, never a raw subject key."""
+        s = _grades_summary(self.profile)
+        self.assertIn('A-grade subjects', s)          # count summary
+        self.assertIn('sciences', s)                   # phy/chem/bio
+        self.assertIn('mathematics', s)                # math/addmath
+        self.assertIn('languages', s)                  # bm/eng/b_tamil folded in
+        self.assertIn('humanities', s)                 # hist/moral
+        for forbidden in ('Tamil', 'Chinese', 'Cina', 'B_TAMIL', 'b_tamil'):
+            self.assertNotIn(forbidden, s)             # no ethnicity reveal / raw key
+        self.assertNotIn(':', s)                        # no "Subject: A+" enumeration
+
+    def test_generation_result_is_version_tagged(self):
+        """A successful generation result carries PROMPT_VERSION (persisted for stale-draft
+        detection); an error result is left untagged."""
+        from apps.scholarship.profile_engine import PROMPT_VERSION, _with_version
+        ok = _with_version({'markdown': 'x', 'model_used': 'gemini-2.5-flash'})
+        self.assertEqual(ok['prompt_version'], PROMPT_VERSION)
+        self.assertNotIn('prompt_version', _with_version({'error': 'boom'}))
+
+    def test_grades_summary_unknown_key_never_leaks(self):
+        """A subject key not in the group map falls back to 'other subjects', never the key."""
+        self.profile.grades = {'some_new_subject': 'A+', 'math': 'A'}
+        s = _grades_summary(self.profile)
+        self.assertIn('other subjects', s)
+        self.assertNotIn('some_new_subject', s)
+        self.assertNotIn('SOME_NEW_SUBJECT', s)
 
     def test_prompt_includes_quiz_interests_accretively(self):
         """Idea 1: the interest-quiz result is fed as supportive context, with an

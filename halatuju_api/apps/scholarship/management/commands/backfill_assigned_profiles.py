@@ -13,11 +13,12 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.scholarship.models import ScholarshipApplication
+from apps.scholarship.profile_engine import PROMPT_VERSION
 from apps.scholarship.services import generate_ready_profile
 
 
 class Command(BaseCommand):
-    help = 'Draft profiles for reviewer-assigned applications (flag-gated, skips edited).'
+    help = 'Draft profiles for reviewer-assigned applications (flag-gated; skips edited + up-to-date).'
 
     def handle(self, *args, **options):
         if not getattr(settings, 'CHECK2_AUTO_GENERATE', False):
@@ -26,11 +27,16 @@ class Command(BaseCommand):
         qs = (ScholarshipApplication.objects
               .filter(assigned_to__isnull=False)
               .select_related('sponsor_profile', 'profile').order_by('id'))
-        done, skipped, failed = [], [], []
+        done, skipped_edited, skipped_current, failed = [], [], [], []
         for app in qs:
             sp = getattr(app, 'sponsor_profile', None)
             if sp is not None and sp.edited_markdown:
-                skipped.append(app.id)          # never overwrite an officer's edits
+                skipped_edited.append(app.id)        # never overwrite an officer's edits
+                continue
+            # Idempotent by version: leave drafts already on the current prompt alone, so a
+            # re-run only refreshes stale (old/empty-version) ones — cheap to run any time.
+            if sp is not None and sp.draft_markdown and sp.prompt_version == PROMPT_VERSION:
+                skipped_current.append(app.id)
                 continue
             _, err = generate_ready_profile(app)
             if err:
@@ -38,4 +44,5 @@ class Command(BaseCommand):
             else:
                 done.append(app.id)
         self.stdout.write(
-            f'Backfill complete. generated={done} skipped_edited={skipped} failed={failed}')
+            f'Backfill complete (prompt {PROMPT_VERSION}). generated={done} '
+            f'skipped_current={skipped_current} skipped_edited={skipped_edited} failed={failed}')

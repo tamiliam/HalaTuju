@@ -40,6 +40,14 @@ PRO_CASCADE = ['gemini-2.5-pro'] + MODEL_CASCADE
 LANGUAGE_NAMES = {'en': 'English', 'ms': 'Malay (Bahasa Melayu)'}
 DEFAULT_LANGUAGE = 'English'
 
+# Prompt version — BUMP on any meaningful change to PROFILE_PROMPT / REFINE_PROMPT or the
+# inputs fed to them. Stored on each generated SponsorProfile (`prompt_version`) so a stale
+# draft is detectable by VERSION, not by date heuristics (the #18 trap). Generations made
+# before versioning existed carry '' (empty) and count as stale.
+#   2026-06-16.1 — grades summarised by GROUP (no per-subject list; no ethnicity-revealing
+#                  language/literature subjects); prompt versioning introduced.
+PROMPT_VERSION = '2026-06-16.1'
+
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
     "Write warm, factual, flowing prose: about three short paragraphs, roughly 220-320 "
@@ -78,9 +86,13 @@ understand their meaning whichever language they are in, and write the profile i
 
 VERIFICATION — do not over-claim:
 - Some fields are marked "{do_not_claim}" — NOT verified. Do not assert them; omit them.
-- Report grades as the actual band mix (e.g. "ten A-grade subjects across A+/A/A−") and name the \
-subject areas they span; never round up or imply a uniform top grade. If a merit score is given, \
-you may cite it.
+- ACADEMICS — give a brief SUMMARY only, never a list. State the number of A-grade subjects, the \
+band mix, and the broad subject GROUPS they span exactly as provided below (e.g. "ten A-grade \
+subjects across A+/A/A−, spanning the sciences, mathematics and languages"). Do NOT enumerate \
+individual subjects or per-subject grades — a reader skips a long list. NEVER name a specific \
+language or literature subject (e.g. Bahasa Tamil, Bahasa Cina, Kesusasteraan Tamil/Cina), and do \
+NOT state or imply the student's ethnicity or race. Never round up or imply a uniform top grade. If \
+a merit score is given, you may cite it.
 - INCOME & WELFARE — be precise. "Receives STR"/"Receives JKM" mean the family is registered as \
 B40 / receives government welfare; they do NOT verify the income AMOUNT (STR confirms B40 status, \
 not a figure). If "Documented income (payslip/EPF)" below lists one or more figures, you MAY state \
@@ -282,27 +294,78 @@ def _merit(application):
     return 'not provided' if m in (None, '') else str(m)
 
 
-_GRADE_LABELS = {
-    'bm': 'BM', 'eng': 'English', 'math': 'Mathematics', 'addmath': 'Add Maths',
-    'science': 'Science', 'phy': 'Physics', 'chem': 'Chemistry', 'bio': 'Biology',
-    'hist': 'History', 'history': 'History', 'geo': 'Geography', 'econ': 'Economics',
-    'acc': 'Accounting', 'moral': 'Moral', 'agama': 'Islamic Studies',
+# Subject key → broad GROUP. We summarise results by group, never by individual subject:
+# it keeps the profile readable AND avoids revealing ethnicity via a vernacular-language or
+# literature subject (Bahasa Tamil/Cina, Kesusasteraan Tamil/Cina all fold into "languages"/
+# "humanities"). Keys mirror the canonical list in halatuju-web/src/lib/subjects.ts. Any key
+# not listed falls back to the generic "other subjects" — a raw key can never reach the prompt.
+_SUBJECT_GROUP = {
+    'math': 'mathematics', 'addmath': 'mathematics',
+    'sci': 'sciences', 'science': 'sciences', 'addsci': 'sciences', 'phy': 'sciences',
+    'chem': 'sciences', 'bio': 'sciences', 'comp_sci': 'sciences', 'sports_sci': 'sciences',
+    'srt': 'sciences',
+    'bm': 'languages', 'eng': 'languages', 'b_cina': 'languages', 'b_tamil': 'languages',
+    'bahasa_cina': 'languages', 'bahasa_tamil': 'languages', 'bahasa_arab': 'languages',
+    'bahasa_arab_tinggi': 'languages', 'bahasa_iban': 'languages',
+    'bahasa_kadazandusun': 'languages', 'bahasa_semai': 'languages',
+    'bahasa_punjabi': 'languages', 'bahasa_perancis': 'languages', 'bahasa_jepun': 'languages',
+    'bahasa_jerman': 'languages',
+    'hist': 'humanities', 'history': 'humanities', 'moral': 'humanities',
+    'lit_bm': 'humanities', 'lit_eng': 'humanities', 'lit_cina': 'humanities',
+    'lit_tamil': 'humanities', 'sejarah_seni': 'humanities', 'islam': 'humanities',
+    'agama': 'humanities', 'pqs': 'humanities', 'psi': 'humanities',
+    'tasawwur_islam': 'humanities', 'usul_aldin': 'humanities', 'al_syariah': 'humanities',
+    'manahij': 'humanities', 'bible_knowledge': 'humanities',
+    'geo': 'social sciences', 'ekonomi': 'social sciences', 'econ': 'social sciences',
+    'poa': 'social sciences', 'acc': 'social sciences', 'business': 'social sciences',
+    'keusahawanan': 'social sciences',
+    'psv': 'the arts', 'music': 'the arts', 'lukisan': 'the arts', 'multimedia': 'the arts',
+    'digital_gfx': 'the arts', 'reka_cipta': 'the arts', 'gkt': 'the arts',
+    'eng_civil': 'technical subjects', 'eng_mech': 'technical subjects',
+    'eng_elec': 'technical subjects', 'eng_draw': 'technical subjects',
+    'lukisan_kejuruteraan': 'technical subjects', 'kelestarian': 'technical subjects',
+    'pertanian': 'technical subjects',
 }
+_GROUP_ORDER = ['sciences', 'mathematics', 'languages', 'social sciences', 'humanities',
+                'the arts', 'technical subjects', 'other subjects']
+
+
+def _join_human(items):
+    """['a','b','c'] -> 'a, b and c'."""
+    items = list(items)
+    if not items:
+        return ''
+    if len(items) == 1:
+        return items[0]
+    return ', '.join(items[:-1]) + ' and ' + items[-1]
 
 
 def _grades_summary(profile):
-    """A readable 'BM: A+, English: A, Mathematics: A−, …' string so the model can name
-    the subject areas the A's span. Empty when no grades."""
+    """Summarise SPM results WITHOUT naming individual subjects: the count of A-grade
+    subjects, the band mix, and the broad subject GROUPS they span. Keeps the profile
+    readable and avoids revealing ethnicity via vernacular-language/literature subjects.
+    'not provided' when no grades."""
     grades = getattr(profile, 'grades', None) if profile else None
     if not isinstance(grades, dict) or not grades:
         return 'not provided'
-    parts = []
+    bands = {'A+': 0, 'A': 0, 'A-': 0}
+    total = 0
+    groups_seen = set()
     for key, grade in grades.items():
         if not grade:
             continue
-        label = _GRADE_LABELS.get(str(key).lower(), str(key).upper())
-        parts.append(f'{label}: {grade}')
-    return ', '.join(parts) or 'not provided'
+        total += 1
+        g = str(grade).strip().upper().replace('−', '-')   # normalise unicode minus
+        if g in bands:
+            bands[g] += 1
+            groups_seen.add(_SUBJECT_GROUP.get(str(key).lower(), 'other subjects'))
+    a_count = bands['A+'] + bands['A'] + bands['A-']
+    if a_count == 0:
+        return f'{total} subjects sat; no A-grade subjects recorded'
+    band_bits = [f'{bands[b]} {b.replace("-", "−")}' for b in ('A+', 'A', 'A-') if bands[b]]
+    groups = _join_human([g for g in _GROUP_ORDER if g in groups_seen])
+    spanning = f' spanning {groups}' if groups else ''
+    return f'{a_count} A-grade subjects out of {total} ({", ".join(band_bits)}){spanning}'
 
 
 def _region(profile):
@@ -619,6 +682,14 @@ def _render_officer_decision(application):
     )
 
 
+def _with_version(result):
+    """Tag a successful generation result with the current PROMPT_VERSION so callers can
+    persist it on the SponsorProfile (stale-draft detection)."""
+    if isinstance(result, dict) and 'error' not in result:
+        result['prompt_version'] = PROMPT_VERSION
+    return result
+
+
 def refine_sponsor_profile(application, draft, session, language=None):
     """Second pass: the FINAL profile, folding the student's answers, the submitted
     interview ``session``, the officer's four-fact verdict, conclusion and recommended
@@ -636,7 +707,7 @@ def refine_sponsor_profile(application, draft, session, language=None):
         findings=findings_str, rubric=rubric_str, overall_note=note,
         officer_decision=_render_officer_decision(application),
     )
-    return _call_gemini_text(prompt, target_language, models=PRO_CASCADE)
+    return _with_version(_call_gemini_text(prompt, target_language, models=PRO_CASCADE))
 
 
 def generate_sponsor_profile(application, language=None):
@@ -645,4 +716,4 @@ def generate_sponsor_profile(application, language=None):
     defaults to the applicant's locale."""
     target_language = _resolve_language(application, language)
     prompt = _build_prompt(application, target_language=target_language)
-    return _call_gemini_text(prompt, target_language)
+    return _with_version(_call_gemini_text(prompt, target_language))
