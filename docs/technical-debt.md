@@ -769,7 +769,15 @@
   like an EPF" soft officer signal (no billable call), to catch mis-slots even when genuineness hasn't run. (Logged
   2026-06-14.)
 
-- **TD-118 (low): tidy dead profile UI plumbing after the narrative redesign.** The 2026-06-15 profile redesign
+- **TD-118 (low) ✅ RESOLVED (small-change lane, 2026-06-16):** removed the six dead api-client functions
+  (`generateSponsorProfile`, `finaliseSponsorProfile`, `saveSponsorProfile`, `publishSponsorProfile`,
+  `generateAnonProfile`, `publishAnonProfile`) from `admin-api.ts` (the `AdminSponsorProfile` type is retained — still
+  used by `sponsor_profile` + the cockpit), and the 29 orphaned i18n leaves under `admin.scholarship`
+  (`generate`/`generating`/`regenerate`/`save`/`saving`/`publish`/`publishing`/`genError`/`saveError`/`publishError`
+  + the whole `finalProfile.*` and `anonProfile.*` objects) across en/ms/ta — parity held at 2653×3. Each was grep-verified
+  to have zero references (no dynamic key-building). `tsc` introduced no new error. Kept the still-rendered profile keys
+  (`profileTitle`/`profileDraftHint`/`profilePending`/`genLang`/`model`). See TD-120 for a wider orphan set found in passing.
+- **TD-118 (original): tidy dead profile UI plumbing after the narrative redesign.** The 2026-06-15 profile redesign
   removed the manual Generate/Save/Publish/Refine controls + the anonymous-profile card from the cockpit, but left
   behind: (a) unused api client functions in `halatuju-web/src/lib/admin-api.ts` (`generateSponsorProfile`,
   `finaliseSponsorProfile`, `saveSponsorProfile`, `publishSponsorProfile`, `generateAnonProfile`, `publishAnonProfile`)
@@ -777,3 +785,15 @@
   some `finalProfile.*`). All harmless (build green, i18n parity intact), so deferred from the redesign sprint. Remove
   them in a future web-only change, grepping each key/fn for references first and keeping en/ms/ta parity. (Logged
   2026-06-15.)
+- **TD-120 (low): a wider set of orphaned `admin.scholarship` i18n keys, beyond the profile redesign.** While doing
+  TD-118 I scanned every leaf under `admin.scholarship` and found ~80 more keys with no code reference — chiefly the
+  retired **Verify & accept** card (`verifyTitle`, `verifyHint`, `verifyAccept`, `nricLocked`, `acceptNeedsVerdict`,
+  `check_nric`/`check_name`/`check_results`/`check_document`), and assorted field labels (`coq`, `referralSource`,
+  `guardianName`, `intendsTertiary`, `declarationName`, `anythingElse`, several `interview.*`/`caveats.*`/`upu.*`/
+  `docsDrawer.capture.*` leaves, etc.). These accumulated across earlier cockpit redesigns (the verify step folded into
+  "Save verdict IS the decision"), NOT this round, so they were out of TD-118's scope and deliberately left to avoid
+  scope-creeping a small change. **To resolve:** a dedicated web-only pass that re-runs the leaf scan, hand-verifies each
+  candidate against dynamic key-building (many siblings ARE built dynamically — `statuses.*`, `anomaly.*`, `verdict.item.*`,
+  `docsDrawer.*` — so a naive bulk delete would break the UI), removes only the confirmed-dead, and keeps en/ms/ta parity.
+  Worth pairing with a guardrail (an i18n orphan-key check) so the set stops regrowing. (Logged 2026-06-16. NB: the
+  unmerged `feature/doc-eval-harness` branch reserves TD-119 for its own corpus-flag debt — hence this is TD-120.)
