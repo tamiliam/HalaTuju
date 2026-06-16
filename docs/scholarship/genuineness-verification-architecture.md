@@ -88,7 +88,7 @@ extracted** — a known gap.)
 | Doc type | Required | Optional |
 |---|---|---|
 | **ic / parent_ic** | name, IC number | address |
-| **results_slip** | candidate_name, subjects+grades (`results[]:{subject,grade,band}`) | **IC number ✱**, **Angka Giliran ✱**, exam/year, school ✱ |
+| **results_slip** *(LOCKED — see below)* | candidate_name, results[]:{subject,grade,band} | ic_number, year, angka_giliran, school |
 | **str** | recipient_name, recipient_nric, status, year | amount, source_type |
 | **salary_slip** | name, nric, gross/net income, period | employer |
 | **epf** | name, nric, avg/monthly contribution, contribution_status | employer, balance, statement_date, address, year |
@@ -97,13 +97,70 @@ extracted** — a known gap.)
 | **birth_certificate** | child + mother + father (name + NRIC each) | bc_number |
 | **guardianship_letter** | guardian_name, guardian_nric, ward_name | doc_kind |
 
-**Highest-value extraction gap:** the results slip prints **No. Pengenalan Diri (IC number)** and
-**Angka Giliran**, but we extract neither — so the slip is matched on **name only**. Capturing the
-slip's IC number gives a hard identity anchor (*slip NRIC == student IC NRIC*) independent of name
-OCR/spelling; the Angka Giliran is a second unique anchor. Both are already in the genuineness
-signature list (we confirm they're *present*) but their *values* are unread.
+### results_slip extraction contract — LOCKED 2026-06-16
+- **Required:** `candidate_name`, `results[]:{subject, grade, band}`.
+- **Optional:** `ic_number`, `year`, `angka_giliran`, `school`.
+- **Dropped:** `exam`. It isn't student-specific data; its two jobs are covered without storing it —
+  **type detection** (SPM vs STPM) and **genuineness** both read the title text (`SIJIL PELAJARAN
+  MALAYSIA`) from the **raw OCR / signature list**, not from a stored field. (Downstream: `exam_year`
+  now reads the `year` field directly — a 1-line change in `student_slip_check`, behaviour-neutral.)
+- **`year` derivation differs by type, same field:** the slip prints it in the **title**
+  (`SIJIL PELAJARAN MALAYSIA TAHUN <year>`); the certificate prints it at the **foot**
+  (`PEPERIKSAAN TAHUN <year>`). Extract by **anchoring on `TAHUN <4-digit year>`** — this finds it in
+  either location and avoids false grabs (the NRIC birth-year, a printed date) that a naive 4-digit
+  scan would make.
+- **`ic_number` is optional on purpose:** students sometimes redact it on the slip — capture it only
+  when present.
+- **Capture-now / use-later:** `ic_number`, `angka_giliran`, `school` are *read and stored* under
+  Issue 2 in this phase, but what they're *for* (identity/school corroboration against the student's
+  IC / declared school) is **Layer-2 matching — deferred**. They change no verdict in this phase.
+
+(They are already in the genuineness signature list — we confirm they're *present*; this contract now
+also reads their *values*.)
+
+### birth_certificate (JPN Sijil Kelahiran) — LOCKED 2026-06-16
+Standard document → **same approach and same band as the slip.** Calibrated on all 28 corpus BCs.
+
+**Issue 1 — genuineness signatures** (`genuineness/results_doc.BC_SIGNATURES`):
+- *Text:* `KERAJAAN MALAYSIA`, `SIJIL KELAHIRAN`, the statutory citation `…Pendaftaran Kelahiran dan
+  Kematian, 1957`, the section headers `KANAK-KANAK` / `BAPA` / `IBU`, field labels (`No. Kad
+  Pengenalan`, `Taraf Kewarganegaraan`, `Kawasan Pendaftaran`, `Tempat Kelahiran`), `No. Daftar`, the
+  certification line `Disahkan bahawa maklumat…`, and `PENDAFTAR BESAR · Kelahiran & Kematian Malaysia`.
+- *Visual:* the **JATA NEGARA** crest + the **barcode** (encodes the child's IC — the BC's machine
+  token, ~ the slip's QR).
+- Anchors on the **Malay** strings, so the **bilingual** BC variant (Malay+English labels) also scores
+  fully (it prints the Malay text too).
+
+**Issue 2 — extraction contract:** **required** = child / mother / father (each name + NRIC);
+**optional** = `bc_number` (No. Daftar), home address (Tempat Tinggal). Printed-but-unused: DOB, time/
+place of birth, sex, age, race, religion, residency, registration date/area/centre.
+
+**Band — same as results (`suspect <0.35 · review 0.35–0.70 · genuine ≥0.70`).** Calibration: 24
+full BCs at 0.81 text-only (→ ~1.0 with crest+barcode), the bilingual ones included; the typed fake
+(a16) at 0.04 → suspect; a **cropped/rotated** BC showing only its lower third (a27) at 0.18 →
+suspect (correctly — incomplete document → Gopal "upload the full certificate"). Zero false positives
+on full genuine BCs.
+
+**Status:** signatures + band done; **not yet wired** into the live verdict (same pending step as the
+slip — comes with the outcome-enum normalisation + tests).
 
 ---
+
+### Draft Issue-2 contracts for the other doc types (PENDING per-doc review, 2026-06-16)
+Proposed; **not locked** — to be confirmed when we focus on each document.
+
+| Doc | proposed required | proposed optional | open |
+|---|---|---|---|
+| ic / parent_ic | name, IC number | address | — |
+| str | recipient_name, recipient_nric, status, year | amount | drop `source_type` as a data field (genuineness/type, like `exam`)? |
+| salary_slip | name, nric, gross_income, period | net_income, employer | — |
+| epf | name, nric, avg_monthly_contribution, contribution_status | balance, statement_date, address, employer, year, months_counted | — |
+| water_bill / electricity_bill | name, address, amount, billing_period | unpaid_balance | — |
+| offer_letter | candidate_name, candidate_nric, programme, institution, issuer | offer_date, intake, address | corpus has 1 *unreadable* offer_letter → an Issue-2 case to investigate |
+| birth_certificate | child + mother + father (name + NRIC each) | bc_number, home address | **LOCKED — see the birth_certificate section above** |
+| guardianship_letter | guardian_name, guardian_nric, ward_name | doc_kind | — |
+
+Most optionals are Layer-2 corroboration (address, employer, …) → *capture-now / use-later*.
 
 ## 4. Layer 2 — relationship & matching (issues 3–6)
 

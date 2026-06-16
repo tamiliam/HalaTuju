@@ -13,10 +13,12 @@ Usage:  python apps/scholarship/eval/capture_ocr.py
 import glob
 import os
 
+import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))   # halatuju_api/
-FOLDERS = [os.path.join(HERE, 'fixtures', 'results_slip'),
-           os.path.join(HERE, 'counter_examples', 'results_slip')]
+DOC_TYPE = sys.argv[1] if len(sys.argv) > 1 else 'results_slip'   # any doc_type folder
+FOLDERS = [os.path.join(HERE, 'fixtures', DOC_TYPE),
+           os.path.join(HERE, 'counter_examples', DOC_TYPE)]
 SNAP = os.path.join(HERE, 'snapshots')
 
 
@@ -67,8 +69,8 @@ def main():
                 docs.append(p)
     done = skipped = failed = 0
     for p in docs:
-        key_name = os.path.basename(p).replace('results_slip__', '').rsplit('.', 1)[0]
-        out = os.path.join(SNAP, f'results_slip__{key_name}.ocr.txt')
+        key = os.path.basename(p).rsplit('.', 1)[0]   # full key incl. doc-type prefix
+        out = os.path.join(SNAP, f'{key}.ocr.txt')
         if os.path.exists(out):
             skipped += 1
             continue
@@ -77,16 +79,16 @@ def main():
             resp = client.document_text_detection(image=vision.Image(content=img))
             if resp.error and resp.error.message:
                 failed += 1
-                print(f'  FAIL {key_name}: {resp.error.message[:80]}')
+                print(f'  FAIL {key}: {resp.error.message[:80]}')
                 continue
             text = resp.full_text_annotation.text if resp.full_text_annotation else ''
             with open(out, 'w', encoding='utf-8') as f:
                 f.write(text)
             done += 1
-            print(f'  ocr {key_name} ({len(text)} chars)')
+            print(f'  ocr {key} ({len(text)} chars)')
         except Exception as e:  # noqa: BLE001
             failed += 1
-            print(f'  FAIL {key_name}: {type(e).__name__}: {e}')
+            print(f'  FAIL {key}: {type(e).__name__}: {e}')
     print(f'\nOCR capture: {done} new, {skipped} cached, {failed} failed (of {len(docs)} docs).')
 
 

@@ -104,3 +104,49 @@ def test_signature_genuineness_reports_evidence():
     assert 'LAYAK MENDAPAT SIJIL' in g['present']
     assert isinstance(g['missing'], list)
     assert 'signatures present' in g['reason']
+
+
+# ── Birth certificate (same approach + band as the slip) ──────────────────────
+GENUINE_BC = """KERAJAAN MALAYSIA
+SIJIL KELAHIRAN
+Akta Pendaftaran Kelahiran dan Kematian, 1957
+Kawasan Pendaftaran : SELANGOR DAN WILAYAH PERSEKUTUAN
+KANAK-KANAK
+Nama : TAANUSIYA
+Tarikh Kelahiran : 14 MEI 2008
+Tempat Kelahiran : HOSPITAL BERSALIN KUALA LUMPUR
+Taraf Kewarganegaraan : WARGANEGARA
+BAPA
+Nama : MUGINDRAN A/L ATHIAH
+No. Kad Pengenalan : 800419-14-5221
+IBU
+Nama : THAVAMALAR A/P VIJAYAN
+No. Kad Pengenalan : 821001-14-6094
+No. Daftar : BZ 46718
+Disahkan bahawa maklumat di atas adalah seperti yang dicatat dalam Daftar Kelahiran
+PENDAFTAR BESAR KELAHIRAN DAN KEMATIAN MALAYSIA
+"""
+# A typed fake BC — names + NRICs + Ibu/Bapa labels only, no official furniture (the a16 pattern).
+TYPED_FAKE_BC = "Elanjelian A/L Venugopal\nGUNAMANI A/P P. Ganeson\n480805-02-0505\nIbu\nVenugopal A/L Sankaranaidu\n440216-02-0909\nBapa\n"
+# Only the lower third in frame (cropped/zoomed — the a27 pattern): IBU section + certification.
+CROPPED_BC = "IBU\nNama : THAMARAI A/P VEERASINGAM\nNo. Kad Pengenalan : 860419-43-5610\nTaraf Kewarganegaraan : WARGANEGARA\nDisahkan bahawa maklumat\n"
+
+
+def test_genuine_bc_scores_genuine_and_types_as_bc():
+    r = score_signatures(GENUINE_BC, doc_type='birth_certificate')
+    assert r['type'] == 'birth_certificate'
+    assert r['probability'] >= GENUINE_MIN
+    assert band_for(r['probability']) == 'likely_genuine'
+
+
+def test_typed_fake_bc_is_suspect():
+    g = signature_genuineness(TYPED_FAKE_BC, doc_type='birth_certificate')
+    assert g['status'] == 'suspect'
+    assert g['probability'] < SUSPECT_MAX
+
+
+def test_cropped_bc_is_flagged_not_genuine():
+    # A zoomed-in / partial BC missing its top (title, crest, child/father) must NOT pass.
+    g = signature_genuineness(CROPPED_BC, doc_type='birth_certificate')
+    assert g['status'] in ('suspect', 'low_confidence')
+    assert g['probability'] < GENUINE_MIN
