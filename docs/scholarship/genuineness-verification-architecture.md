@@ -158,12 +158,14 @@ KWSP`/`Jalan Sultan`. *Visual:* the **KWSP logo** (no Jata Negara crest, no QR �
 line + URL are the machine anchors). Covers both the 2-account and 3-account (2024+) formats.
 
 **Issue 2 — extraction contract (FINALISED 2026-06-16):** **required** = `name`, `nric`,
-`statement_date` (Tarikh Penyata), `employer_number` (No. Majikan) — with the rule **`No. Majikan ==
-000000000` ⇒ unemployed** (a B40 "no formal employer" signal; this is the only employment check —
-do NOT also infer it from absent contributions). **Optional** = `monthly_salary` (derived, below) +
-`jumlah_simpanan` (total savings). This **redefines** the old EPF-mining fields: instead of a single
-combined `avg_monthly_contribution`, extract the **employer- and employee-share contribution totals
-separately** + the month count `n`, to drive the formula.
+`statement_date` (Tarikh Penyata), and an **income signal = (`employer_number` OR `monthly_salary`)**.
+**Optional** = `jumlah_simpanan` (total savings). The income disjunction = "did this EPF yield an income
+signal at all?": **employed** → `employer_number` ≠ 0 + `monthly_salary` derivable; **unemployed** →
+**`No. Majikan == 000000000`** (the only employment check — do NOT also infer it from absent
+contributions); **neither extractable** (e.g. a badly-cropped statement, no employer number *and* no
+contributions table) → fails to prove income → incomplete. This **redefines** the old EPF-mining
+fields: instead of a single combined `avg_monthly_contribution`, extract the **employer- and
+employee-share contribution totals separately** + the month count `n`, to drive the formula.
 
 **Derived `monthly_salary`** — reverse-engineered from the statutory EPF rates (employee **11%**,
 employer **13%**; hardcode both):
