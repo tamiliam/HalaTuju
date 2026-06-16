@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Set-password page for admins/reviewers (2026-06-16).** Non-Google invitees previously could never set a password —
+  the app had no "set/reset password" screen, so the invite and "Forgot password" links led nowhere useful and only
+  Google sign-in worked (this is what blocked the first Yahoo-invited reviewer). New `/admin/set-password` page handles
+  the session from an invite or password-reset email link, lets the user choose a password (`auth.updateUser`), and
+  routes them in by role (reviewers → B40 Applications). The invite `redirect_to` and the "Forgot password" reset link
+  now point there (the existing `halatuju.xyz/**` Supabase allow-list already covers it). New `adminUpdatePassword`
+  helper + en/ms/ta strings. Web + one backend kwarg; no migration. Recovery flow (client-initiated PKCE) is the robust
+  path; the invite-link path should be confirmed with one live test invite.
 - **The interest quiz is finally used (2026-06-16).** The RIASEC-style quiz was collected from every student and only
   checked for completion (`quiz_done`); its result (`profile.student_signals`) was never read. Now: **(Idea 1)** the
   student's strongest field interests + work style are distilled into the AI profile as **accretive context only** — a

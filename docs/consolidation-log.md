@@ -11,5 +11,6 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 - 2026-06-16 feat(api): AI profile distils ALL student inputs (justification, fears, anything_else, top_choices, other_scholarships, help_wanted, uncertainty) — were collected but ignored (halatuju_api: scholarship/profile_engine.py + tests)
 - 2026-06-16 feat(api): use the interest quiz — accretive interest context in the profile (Idea 1) + quiz-vs-pathway exploratory interview question (Idea 2) (halatuju_api: scholarship/profile_engine.py, gap_engine.py + tests)
 - 2026-06-16 feat(api): feed the OCR'd Statement of Intent letter text into the profile draft (was extracted but only used by Check-2) (halatuju_api: scholarship/profile_engine.py + tests)
+- 2026-06-16 feat(web): set-password page for admins/reviewers (invite + reset links → /admin/set-password → choose password) — unblocks non-Google invitees (halatuju-web: app/admin/set-password, admin-supabase.ts, messages/*; halatuju_api: courses/views_admin.py invite redirect)
 
 ## Reviews
