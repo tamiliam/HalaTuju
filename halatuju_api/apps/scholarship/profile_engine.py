@@ -46,7 +46,10 @@ DEFAULT_LANGUAGE = 'English'
 # before versioning existed carry '' (empty) and count as stale.
 #   2026-06-16.1 — grades summarised by GROUP (no per-subject list; no ethnicity-revealing
 #                  language/literature subjects); prompt versioning introduced.
-PROMPT_VERSION = '2026-06-16.1'
+#   2026-06-16.2 — generalise ethnicity in the NARRATIVE too (keep the motivation, drop the
+#                  ethnic label, e.g. "her mother tongue" not "Tamil"; "a teacher" not
+#                  "her Tamil teacher").
+PROMPT_VERSION = '2026-06-16.2'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
@@ -70,7 +73,14 @@ _REDACTION = (
     "the student AND any parent or guardian, NEVER include their name, NRIC/IC number, "
     "photograph, phone number, email address, or street address — if any appears in the "
     "inputs below, omit it. Everything else may be used: the school or college name, the "
-    "town and state, the institution, and occupations."
+    "town and state, the institution, and occupations. "
+    "ETHNICITY — do NOT reveal or imply the student's ethnicity, race or religion, even when "
+    "the student's own words do. KEEP the meaning but GENERALISE any ethnic/cultural specific: "
+    "write \"her mother tongue\" or \"her community's language and culture\" rather than naming "
+    "a language (e.g. Tamil, Mandarin/Chinese), and \"a teacher who inspired her\" rather than "
+    "\"her Tamil teacher\". Never name a vernacular-language or literature subject. A culturally "
+    "specific aspiration (e.g. to teach her mother tongue) is kept as a motivation, just "
+    "without the ethnic label."
 )
 
 PROFILE_PROMPT = """You are writing the profile of a B40 student applying for education \
