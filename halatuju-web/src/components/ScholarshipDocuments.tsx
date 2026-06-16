@@ -171,7 +171,7 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
   // real MyKad photo, an honest amber note — the matched name/IC stay green (they DID
   // match what was typed), but we don't pretend the document is verified. Never blocks;
   // the existing "Replace" link is the re-upload path.
-  const suspect = doc.authenticity?.status === 'low_confidence' || doc.authenticity?.status === 'not_an_ic'
+  const suspect = !!doc.authenticity?.status && doc.authenticity.status !== 'genuine'  // canonical: suspect / not_<type>
 
   return (
     <>
@@ -371,7 +371,7 @@ function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string)
  *  re-upload via the card's existing controls. (The IC has its own note in ICChecklist.) */
 function GenuinenessNote({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
   const s = doc.authenticity?.status
-  if (s !== 'low_confidence' && s !== 'wrong_type') return null
+  if (!s || s === 'genuine') return null   // show for any non-genuine canonical status (suspect / not_<type>)
   return (
     <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
       <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>

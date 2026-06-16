@@ -1351,9 +1351,10 @@ export interface ApplicantDocument {
   // Server-computed match verdicts (empty when Vision hasn't run)
   vision_nric_verdict: '' | 'match' | 'mismatch' | 'unreadable'
   vision_name_verdict: '' | 'match' | 'partial' | 'mismatch' | 'unreadable'
-  // Genuineness fingerprint (verification-assurance): null unless the check ran. 'not_an_ic'
-  // is the IC's wrong-type; 'wrong_type' is the supporting docs' (Sprint 2).
-  authenticity?: { status: 'likely_genuine' | 'low_confidence' | 'not_an_ic' | 'wrong_type'; reason: string; doc_seen?: string } | null
+  // Genuineness fingerprint (verification-assurance): null unless the check ran. Canonical outcome
+  // (the backend serializer folds any legacy value): 'genuine' (pass) / 'suspect' (incomplete/cropped/
+  // fabricated) / 'not_<type>' (not recognisably that document — e.g. not_ic, not_str, not_results).
+  authenticity?: { status: 'genuine' | 'suspect' | `not_${string}`; reason: string; doc_seen?: string } | null
   // Supporting-doc soft checks: does the student's/parent's name appear, and
   // (utility bills only) the home address? '' = not run / N/A. Soft, never blocks.
   vision_name_match: '' | 'found' | 'not_found' | 'unreadable'
