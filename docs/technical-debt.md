@@ -768,7 +768,15 @@
   (offered, not built):** a deterministic "EPF extracted a name but NO balance/contribution/year/employer → doesn't look
   like an EPF" soft officer signal (no billable call), to catch mis-slots even when genuineness hasn't run. (Logged
   2026-06-14.)
-- **TD-118 (low): tidy dead profile UI plumbing after the narrative redesign.** The 2026-06-15 profile redesign
+- **TD-118 (low) ✅ RESOLVED (small-change lane, 2026-06-16):** removed the six dead api-client functions
+  (`generateSponsorProfile`, `finaliseSponsorProfile`, `saveSponsorProfile`, `publishSponsorProfile`,
+  `generateAnonProfile`, `publishAnonProfile`) from `admin-api.ts` (the `AdminSponsorProfile` type is retained — still
+  used by `sponsor_profile` + the cockpit), and the 29 orphaned i18n leaves under `admin.scholarship`
+  (`generate`/`generating`/`regenerate`/`save`/`saving`/`publish`/`publishing`/`genError`/`saveError`/`publishError`
+  + the whole `finalProfile.*` and `anonProfile.*` objects) across en/ms/ta — parity held at 2653×3. Each was grep-verified
+  to have zero references (no dynamic key-building). `tsc` introduced no new error. Kept the still-rendered profile keys
+  (`profileTitle`/`profileDraftHint`/`profilePending`/`genLang`/`model`). See TD-120 for a wider orphan set found in passing.
+- **TD-118 (original): tidy dead profile UI plumbing after the narrative redesign.** The 2026-06-15 profile redesign
   removed the manual Generate/Save/Publish/Refine controls + the anonymous-profile card from the cockpit, but left
   behind: (a) unused api client functions in `halatuju-web/src/lib/admin-api.ts` (`generateSponsorProfile`,
   `finaliseSponsorProfile`, `saveSponsorProfile`, `publishSponsorProfile`, `generateAnonProfile`, `publishAnonProfile`)
@@ -781,10 +789,28 @@
   wrongly-flagged. The owner reviewed `ic`/`parent_ic` as all-genuine, so these are likely matcher false positives of
   the same class as the results-slip ones. **To resolve:** run the diagnose → fix → test loop per type (the
   results-slip pass closed 11 of the original 24). (Logged 2026-06-16, Genuineness signatures.)
-- TD-120: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
-  path now routes it to the signature scorer (the `if doc_type == 'results_slip'` branch wins first). Harmless, but
-  the dict membership is now only used as the flag-gate set for STR/BC/EPF. **To resolve:** drop `results_slip` from
-  that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16.)
+- **TD-120 (low) ✅ RESOLVED (small-change lane, 2026-06-16):** removed **77** orphaned `admin.scholarship` i18n leaves
+  across en/ms/ta (parity 2654→2577×3), pruned four now-empty objects (`extractFields`, `interview.rubric`,
+  `recordVerdict.tools`, `upu`). Used a **dynamic-aware scan** (full-path literals + concatenation/template prefixes) so
+  the dynamically-addressed subtrees (`anomaly.*`, `verdict.item.*`, `docsDrawer.*`, `statuses.*`, etc.) were correctly
+  kept; cross-verified every candidate by grep, and confirmed the translator has no scoped/prefixed variant (every key is
+  a full path). Chief removals: the retired **Verify & accept** card, the old **Vision OCR** card labels, and assorted
+  dead field labels (`coq`, `referralSource`, `guardianName`, `pathway`, `upu.*`, `caveats.*` leftovers, …). Added a
+  **guardrail** — `halatuju-web/src/messages/__tests__/admin-scholarship-i18n.test.ts` (jest) — that fails on any future
+  orphan or en/ms/ta drift in this namespace, so the set can't silently regrow. jest 322 green; tsc clean; web-only, no
+  migration. **Original entry (for context):**
+- **TD-120 (original): a wider set of orphaned `admin.scholarship` i18n keys, beyond the profile redesign.** While doing
+  TD-118 I scanned every leaf under `admin.scholarship` and found ~80 more keys with no code reference — chiefly the
+  retired **Verify & accept** card (`verifyTitle`, `verifyHint`, `verifyAccept`, `nricLocked`, `acceptNeedsVerdict`,
+  `check_nric`/`check_name`/`check_results`/`check_document`), and assorted field labels (`coq`, `referralSource`,
+  `guardianName`, `intendsTertiary`, `declarationName`, `anythingElse`, several `interview.*`/`caveats.*`/`upu.*`/
+  `docsDrawer.capture.*` leaves, etc.). These accumulated across earlier cockpit redesigns (the verify step folded into
+  "Save verdict IS the decision"), NOT this round, so they were out of TD-118's scope and deliberately left to avoid
+  scope-creeping a small change. **To resolve:** a dedicated web-only pass that re-runs the leaf scan, hand-verifies each
+  candidate against dynamic key-building (many siblings ARE built dynamically — `statuses.*`, `anomaly.*`, `verdict.item.*`,
+  `docsDrawer.*` — so a naive bulk delete would break the UI), removes only the confirmed-dead, and keeps en/ms/ta parity.
+  Worth pairing with a guardrail (an i18n orphan-key check) so the set stops regrowing. (Logged 2026-06-16. NB: the
+  unmerged `feature/doc-eval-harness` branch reserves TD-119 for its own corpus-flag debt — hence this is TD-120.)
 - TD-121: **The eval harness scorecard doesn't run counter-examples through the genuineness cap.**
   `eval_doc_recognition --auto-ok` scores via `resolution.doc_match_verdict` (content match), which never reads
   `vision_fields['authenticity']` — that cap lives in `verdict_engine.build_verdict`. So the known typed fake (a16)
@@ -805,3 +831,8 @@
   **employer- and employee-share contribution TOTALS separately** + the month count, derive
   `monthly_salary = max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))`, capture `employer_number` (`000000000 ⇒
   unemployed`), and retire the combined `avg_monthly_contribution`. (Logged 2026-06-16.)
+- TD-124: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
+  path now routes it to the signature scorer (the `if doc_type == 'results_slip'` branch wins first). Harmless, but
+  the dict membership is now only used as the flag-gate set for STR/BC/EPF. **To resolve:** drop `results_slip` from
+  that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16. Renumbered from
+  TD-120 on the 2026-06-16 main merge — `main` had independently shipped TD-120 for the admin i18n orphan cleanup.)

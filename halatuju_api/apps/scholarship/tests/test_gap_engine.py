@@ -22,7 +22,10 @@ class TestGapEngine(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(supabase_user_id=STUDENT, nric='030101-14-1234', name='Priya')
+        cls.profile = StudentProfile.objects.create(
+            supabase_user_id=STUDENT, nric='030101-14-1234', name='Priya',
+            student_signals={'field_interest': {'field_health': 3},
+                             'work_preference_signals': {'people_helping': 3}})
         cls.app = ScholarshipApplication.objects.create(
             cohort=cls.cohort, profile=cls.profile, status='shortlisted',
             aspirations='Become a doctor', plans='Study hard', fears='Money',
@@ -72,6 +75,16 @@ class TestGapEngine(TestCase):
         self.assertIn('PRE-INTERVIEW FLAGS', prompt)
         self.assertIn('ALREADY ANSWERED', prompt)
         self.assertIn('ACADEMIC RECORD', prompt)
+
+    def test_prompt_feeds_quiz_for_exploratory_question(self):
+        """Idea 2: the quiz signals are in the gap prompt, with an instruction to ask ONE
+        exploratory (non-judgmental) question when quiz interests diverge from the pathway."""
+        prompt = gap_engine._build_gap_prompt(self.app)
+        self.assertIn('Interest-quiz signals', prompt)
+        self.assertIn('health & care', prompt)        # field_health -> label
+        self.assertIn('helping people', prompt)        # people_helping -> label
+        self.assertIn('exploratory question', prompt)
+        self.assertIn('NEVER as doubt', prompt)
 
     @patch('apps.scholarship.vision._call_gemini_json')
     def test_engine_error_returns_error(self, mock_call):

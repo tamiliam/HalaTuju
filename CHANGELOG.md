@@ -59,6 +59,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   context are gitignored/local-only; only the PII-free `labels.json` (assertions) is committed. Builds throwaway rows
   inside a rolled-back transaction (persists nothing); not wired to any endpoint or cron. +3 synthetic self-tests.
   See `apps/scholarship/eval/README.md`.
+- **Set-password page for admins/reviewers (2026-06-16).** Non-Google invitees previously could never set a password —
+  the app had no "set/reset password" screen, so the invite and "Forgot password" links led nowhere useful and only
+  Google sign-in worked (this is what blocked the first Yahoo-invited reviewer). New `/admin/set-password` page handles
+  the session from an invite or password-reset email link, lets the user choose a password (`auth.updateUser`), and
+  routes them in by role (reviewers → B40 Applications). The invite `redirect_to` and the "Forgot password" reset link
+  now point there (the existing `halatuju.xyz/**` Supabase allow-list already covers it). New `adminUpdatePassword`
+  helper + en/ms/ta strings. Web + one backend kwarg; no migration. Recovery flow (client-initiated PKCE) is the robust
+  path; the invite-link path should be confirmed with one live test invite.
+- **The interest quiz is finally used (2026-06-16).** The RIASEC-style quiz was collected from every student and only
+  checked for completion (`quiz_done`); its result (`profile.student_signals`) was never read. Now: **(Idea 1)** the
+  student's strongest field interests + work style are distilled into the AI profile as **accretive context only** — a
+  new `profile_engine._quiz_interests` helper feeds the draft, with an explicit instruction that the quiz may add
+  supportive colour about the student's strengths but must NEVER be used to question, doubt, or weaken their chosen
+  pathway. **(Idea 2)** the same signals feed the interview-question generator (`gap_engine`): when the quiz interests
+  clearly diverge from the chosen pathway, the model may propose ONE **exploratory** question for the reviewer to
+  understand how the student arrived there (the student already holds an offer), framed as curiosity, never as doubt.
+  Shared signal→label map; +2 regression tests; backend-only, no migration. (Idea 3, interest-based mentoring guidance,
+  was dropped.)
 - **AI student profile redesign — one PII-redacted narrative, generated twice by the system (2026-06-15).**
   Collapses the old sectioned, named draft + separate anonymous-pool profile into **one** document, common to the
   reviewer and (once approved) the sponsor. The system generates it twice, never a human: a **draft** at the Check 2 →
@@ -152,6 +170,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
 
 ### Changed
+- **Academic results summarised by GROUP + ethnicity-safe + prompt versioning (2026-06-16).**
+  **(a)** The profile no longer lists every subject and grade (readers skip a long list). `_grades_summary` now
+  reports the **count of A-grade subjects, the band mix, and the broad subject GROUPS** they span
+  (sciences / mathematics / languages / social sciences / humanities / the arts / technical). **(b) Ethnicity safety:**
+  vernacular-language and literature subjects (Bahasa Tamil/Cina, Kesusasteraan Tamil/Cina) fold into "languages"/
+  "humanities" and are never named, and the prompt forbids naming them or implying the student's race — so the profile
+  can't hint at ethnicity via subject choice. **(2026-06-16.2)** the same now applies to the student's own NARRATIVE:
+  ethnic/cultural specifics are GENERALISED — the motivation is kept but the label dropped (e.g. "her mother tongue"
+  not "Tamil", "a teacher who inspired her" not "her Tamil teacher"). **(c)** A subject key not in the group map falls back to "other subjects" —
+  a raw key (e.g. the `B_TAMIL` artifact) can never reach the prompt again (the old partial `_GRADE_LABELS` name map is
+  removed). **(d) Prompt versioning:** new `profile_engine.PROMPT_VERSION`, stored on each generated profile
+  (`SponsorProfile.prompt_version`, migration `scholarship/0058`), so a stale draft is detectable by **version, not by
+  date** (the #18 trap). The backfill is now version-aware — it skips drafts already on the current prompt and only
+  refreshes stale/empty-version ones. Migrate-first; +5 tests; scholarship suite 1277 green.
+- **Statement of Intent letter now feeds the AI profile (2026-06-16).** The uploaded Statement of Intent is already
+  OCR'd on upload into `vision_fields['text']`, but that text only reached Check-2 — never the profile. The draft prompt
+  now feeds the letter's text (capped, normal PII redaction still applies) so the profile distils the student's stated
+  motivation in their own words. New `profile_engine._statement_of_intent` helper + 2 tests; backend-only, no migration.
+- **AI profile now distils EVERYTHING the student told us (2026-06-16).** The draft prompt previously fed only some of
+  the student's input; it now also feeds the fields that were being collected but ignored: **"Why assistance is needed"**
+  (`justification`), **"Worries"** (`fears`), **"Anything else you'd like us to know"** (`anything_else`), the ranked
+  **top course choices** (`top_choices`), **other scholarships** applied for/held (`other_scholarships` + free text), the
+  **help the student asked us for** (`help_university`/`help_scholarship`), and — for undecided students — their
+  **"still deciding" reasons + note** (`uncertainty_reasons`/`uncertainty_note`). Added a prompt instruction to draw on
+  and distil all of the student's own words (and to stay silent on blank fields). The final (refine) profile inherits
+  these via the draft. New `profile_engine` helpers + tests; backend-only, no migration.
+- **Cockpit Decision + profile copy/layout tweaks (live-review, 2026-06-16).** Profile card heading
+  "Sponsor profile (AI draft)" → "Sponsor profile (draft)"; the draft hint now reads "This draft will be replaced with
+  an updated final version that incorporates your findings when you save your verdict." In the Decision card: a
+  "Rate AI verification" sub-heading sits above the four fact rows (same weight as the Assistance/Conclusion labels);
+  "Assistance recommended:" drops its trailing colon; and the AI line is relabelled "AI suggested:" → "AI verdict:" with
+  the "— you decide." tail removed (the orphaned `youDecide` key deleted). i18n en/ms/ta; FE-only, no migration.
+- **Hide the assignee filter for reviewers on the B40 Applications list (2026-06-16).** A reviewer's list is already
+  hard-scoped server-side to their own assigned applicants, so the Anyone/Assigned-to-me/Unassigned dropdown was
+  redundant for them (and its "Unassigned" option always returned an empty list). The dropdown now renders only for the
+  roles that see every application (super + admin). FE-only, no migration.
 - **Tech-debt paydown Sprint 0 — internal cleanup (no behaviour change).** From the 2026-06-14 scholarship audit
   (`docs/scholarship-tech-debt-audit-2026-06-14.md`): removed dead `emails.send_fail_email` (superseded by
   `send_decline_email`); trimmed unused imports (`Consent`/`Donation`/`CONSENT_VERSION` in `sponsorship.py`,
@@ -183,6 +237,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Restored `admin.scholarship.finalProfile.title`** — the TD-118 cleanup deleted the whole `finalProfile` object, but
+  its `title` ("Final profile (v2 — with interview)") is still rendered on the profile card once a final exists. Re-added
+  in en/ms/ta (the other `finalProfile.*` leaves stay removed). Caught before deploy.
 - **Reviewer access — invite link + post-login landing (live-review feedback, 2026-06-16).** Two faults reported by the
   newly-invited reviewers. **(1) Invite link landed on the homepage**, not the admin sign-in: the Supabase "Invite user"
   email's `redirect_to` was unset, so the magic link bounced to `/`. The invite POST (`AdminInviteView`) now passes
@@ -1204,6 +1261,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   state/org/language dropdowns can't overflow.) +3 tests; i18n parity 2090. No migration.
 
 ### Removed
+- **Wider orphaned `admin.scholarship` i18n cleanup (TD-120, 2026-06-16).** Removed **77** unreferenced translation
+  leaves across en/ms/ta (2654→2577×3) — left over from earlier cockpit redesigns, chiefly the retired **Verify & accept**
+  card, the old **Vision OCR** card labels, and dead field labels (`coq`, `referralSource`, `guardianName`, `pathway`,
+  `upu.*`, stale `caveats.*`, …); four emptied objects pruned (`extractFields`, `interview.rubric`, `recordVerdict.tools`,
+  `upu`). A **dynamic-aware** scan kept every key addressed by concatenation/template (`anomaly.*`, `verdict.item.*`,
+  `docsDrawer.*`, `statuses.*`, …); each removal was grep-verified. Added a jest **guardrail**
+  (`messages/__tests__/admin-scholarship-i18n.test.ts`) that fails on any future orphan or en/ms/ta drift in this
+  namespace. jest 322 green; web-only, no migration.
+- **Dead profile UI plumbing after the narrative redesign (TD-118, 2026-06-16).** Removed six unused api-client
+  functions from `admin-api.ts` (`generateSponsorProfile`, `finaliseSponsorProfile`, `saveSponsorProfile`,
+  `publishSponsorProfile`, `generateAnonProfile`, `publishAnonProfile`) and 29 orphaned i18n leaves under
+  `admin.scholarship` (`generate`/`generating`/`regenerate`/`save`/`saving`/`publish`/`publishing` + the three profile
+  error strings + the whole `finalProfile.*` and `anonProfile.*` objects) across en/ms/ta — left behind when the manual
+  Generate/Save/Publish/Refine controls and the anonymous-profile card were dropped. Each grep-verified unreferenced;
+  the still-rendered profile keys and the `AdminSponsorProfile` type are retained. i18n parity 2653×3; web-only, no
+  migration. (A wider orphan set found in passing is logged as TD-120 for a dedicated pass.)
 - **Orphaned `str_claimed_no_doc` anomaly rule.** The pre‑interview flag "student says the family receives STR but
   hasn't uploaded the letter" is superseded by the income wizard, which now *requires* the STR document on the STR route
   (consent gate v2). Removed the detector + its `_DETECTORS` registration, the `resolution.py` ticket mapping, the

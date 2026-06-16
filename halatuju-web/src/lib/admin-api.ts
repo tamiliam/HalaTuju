@@ -637,22 +637,6 @@ export async function getScholarshipApplication(id: number, options?: ApiOptions
   return adminFetch<AdminScholarshipDetail>(`/api/v1/admin/scholarship/applications/${id}/`, options)
 }
 
-/** Generate the AI draft. `language` ('en'/'ms') sets the output language; defaults to the applicant's locale. */
-export async function generateSponsorProfile(id: number, language?: string, options?: ApiOptions) {
-  return adminMutate<AdminSponsorProfile>(
-    `/api/v1/admin/scholarship/applications/${id}/generate-profile/`, 'POST',
-    language ? { language } : {}, options
-  )
-}
-
-/** Phase D: refine the draft profile with the submitted interview's findings (second Gemini pass). */
-export async function finaliseSponsorProfile(id: number, language?: string, options?: ApiOptions) {
-  return adminMutate<AdminSponsorProfile>(
-    `/api/v1/admin/scholarship/applications/${id}/finalise-profile/`, 'POST',
-    language ? { language } : {}, options
-  )
-}
-
 /** Phase B: admin-on-demand Gemini interview gap-spotter. Returns the refreshed detail.
  *  ``append`` generates 3 MORE (without repeating) and appends; otherwise replaces. */
 export async function suggestInterviewGaps(
@@ -661,35 +645,6 @@ export async function suggestInterviewGaps(
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/suggest-gaps/`, 'POST',
     { ...(language ? { language } : {}), ...(append ? { append: true } : {}) }, options
-  )
-}
-
-export async function saveSponsorProfile(
-  id: number, payload: { edited_markdown: string; status?: string }, options?: ApiOptions
-) {
-  return adminMutate<AdminSponsorProfile>(
-    `/api/v1/admin/scholarship/applications/${id}/profile/`, 'PUT', payload, options
-  )
-}
-
-export async function publishSponsorProfile(id: number, options?: ApiOptions) {
-  return adminMutate<AdminSponsorProfile>(
-    `/api/v1/admin/scholarship/applications/${id}/publish/`, 'POST', {}, options
-  )
-}
-
-/** Phase E2: generate the ANONYMOUS sponsor-pool profile (non-identifying inputs only). */
-export async function generateAnonProfile(id: number, language?: string, options?: ApiOptions) {
-  return adminMutate<AdminSponsorProfile>(
-    `/api/v1/admin/scholarship/applications/${id}/anon-profile/generate/`, 'POST',
-    language ? { language } : {}, options
-  )
-}
-
-/** Phase E2: publish (or unpublish) the anonymous profile to the sponsor pool. */
-export async function publishAnonProfile(id: number, publish: boolean, options?: ApiOptions) {
-  return adminMutate<AdminSponsorProfile>(
-    `/api/v1/admin/scholarship/applications/${id}/anon-profile/publish/`, 'POST', { publish }, options
   )
 }
 
