@@ -1,5 +1,60 @@
 # Architectural Decisions — HalaTuju
 
+## Prompt versioning for AI-generated profiles — 2026-06-16
+
+**Decision:** `profile_engine.PROMPT_VERSION` (a bumped string), stamped onto every generated `SponsorProfile`
+(`prompt_version` column, migration `0058`). The backfill is version-aware: it skips drafts already on the current
+version and regenerates only stale/empty-version ones. Bump the version on any meaningful prompt/input change.
+
+**Alternatives considered:** (1) Detect stale drafts by date (generated_at < redesign date). (2) Always regenerate all
+assigned drafts on every backfill run. (3) Do nothing — regenerate manually when noticed.
+
+**Rationale:** A prompt redesign silently left a stale draft (#18) that was only caught by a side-by-side comparison.
+Date heuristics are fragile (a draft made after the redesign by old code, or an app assigned later, both fool them).
+A version stamped at generation is the ground truth.
+
+**Trade-offs:** One additive column + the discipline to remember to bump the constant. The auto-generate sweep is still
+idempotent (skips existing drafts), so refreshing after a bump needs the version-aware backfill to be run.
+
+**Revisit if:** we want drafts to self-heal — schedule the version-aware backfill or trigger it on a version change.
+
+## Academic results summarised by GROUP + ethnicity generalised — 2026-06-16
+
+**Decision:** The profile never lists individual subjects/grades. `_grades_summary` reports the A-grade count, band mix,
+and broad subject GROUPS (sciences/mathematics/languages/social sciences/humanities/the arts/technical), with unmapped
+keys → "other subjects". Ethnicity is not revealed or implied: vernacular-language/literature subjects fold into generic
+groups, and ethnic/cultural specifics in the student's own narrative are GENERALISED in the prompt (motivation kept,
+label dropped — "her mother tongue", not "Tamil").
+
+**Alternatives considered:** (1) Complete the per-subject label map so every subject renders by name. (2) List subjects
+but strip only Tamil/Chinese. (3) Strip culturally-specific aspirations entirely from the narrative.
+
+**Rationale (owner):** A long subject list is skipped by readers; naming a vernacular subject (or a "Tamil teacher")
+signals ethnicity, which should not influence a sponsor. Grouping summarises AND hides ethnicity in one move, and makes
+a raw-key leak structurally impossible. Generalising (not stripping) keeps the student's authentic motivation.
+
+**Trade-offs:** The profile no longer names a standout single subject. The group map needs occasional extension as new
+subjects appear (graceful fallback covers the gap meanwhile).
+
+**Revisit if:** reviewers ask to see a specific standout subject, or the owner wants named subjects for non-language ones.
+
+## Set-password page via the recovery flow — admin auth, 2026-06-16
+
+**Decision:** A dedicated `/admin/set-password` page handles the session from an invite or password-reset email link and
+calls `auth.updateUser({password})`. Both the invite `redirect_to` and the "Forgot password" reset link point there.
+
+**Alternatives considered:** (1) Leave non-Google invitees on Google-only sign-in. (2) Set passwords manually in the
+Supabase dashboard per user.
+
+**Rationale:** Invited non-Google reviewers (e.g. a Yahoo address) had no way to set a password — the app had no
+set/reset-password screen at all, so invites and resets led nowhere. The recovery flow (client-initiated PKCE) is the
+robust, same-browser path; the page reuses it for both invite and reset.
+
+**Trade-offs:** The invite-link token path is less predictable than recovery and needs a live test to confirm; the
+recovery path is the dependable fallback.
+
+**Revisit if:** the invite-link token handling proves unreliable in practice — standardise on recovery-only onboarding.
+
 ## One PII-redacted narrative profile (no separate anonymous version) — AI profile, 2026-06-15
 
 **Decision:** A single AI student profile serves both the reviewer and (once approved) the sponsor. It is generated

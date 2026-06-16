@@ -2,6 +2,22 @@
 
 Cross-cutting lessons from sprint retrospectives. Only items that affect future work regardless of feature area.
 
+- **Version any AI prompt and stamp the version on every artifact it generates.** Without it, a prompt redesign
+  silently leaves old outputs in place and they're only caught by chance (the #18 stale-draft: an old-format profile sat
+  in prod until the owner compared two side by side). Add a `PROMPT_VERSION`, store it on each generated row, and make
+  regeneration version-aware (skip rows already on the current version, refresh the rest). Detect staleness by VERSION,
+  never by date — and remember an idempotent "has output → skip" sweep will NOT refresh stale rows after a prompt change.
+  (Sprint 2026-06-16)
+- **Sensitive-attribute redaction must reach the NARRATIVE, not just structured fields.** Hiding ethnicity in the grades
+  (group subjects, don't name "Bahasa Tamil") isn't enough — the student's own words ("inspired by her Tamil teacher,
+  preserving her mother tongue") leak it too. The fix that preserved meaning was to GENERALISE in the prompt (keep the
+  motivation, drop the label: "her mother tongue", "a teacher who inspired her"), applied in the shared redaction block
+  so both the draft and the final inherit it. (Sprint 2026-06-16)
+- **Don't hand-maintain a PARTIAL lookup map parallel to a canonical one — it drifts and leaks the raw key.** A 15-entry
+  `_GRADE_LABELS` missed `b_tamil`, so the raw key `B_TAMIL` was fed to the prompt and surfaced non-deterministically.
+  Prefer mapping inputs to a small FIXED safe vocabulary (subject GROUPS) with a generic fallback ("other subjects"), so
+  an unmapped input degrades gracefully instead of leaking. And when deleting an i18n PARENT object, verify each LEAF is
+  unused — TD-118 deleted `finalProfile` whole when only 6 of 7 leaves were dead. (Sprint 2026-06-16)
 - Verify **feature/flag state against the running system**, not against CLAUDE.md or a summary — both rot. State a flag is on/off only after `gcloud run services describe <svc>` shows the env var; state a feature is built/read-only only after reading the code on **`main`** (the worktree), never the primary checkout (which may sit on another agent's branch). Two wrong assertions this round (`/profile` "read-only", `CHECK2_STUDENT_QUERIES_ENABLED` "off") both came from trusting docs + a primary-checkout read. (Sprint 2026-06-15)
 - When an Explore/search subagent reads the repo during multi-agent work, it reads the **primary checkout's branch** (possibly not `main`). Point it at the worktree path, or re-verify any load-bearing claim against `main` before reporting it. (Sprint 2026-06-15)
 - A feature flag is NOT live just because the Cloud Run env var is set — it must be **read into Django settings** (`settings.X = os.environ.get('X', '')...`). `CHECK2_AUTO_GENERATE` was used via `getattr(settings, 'CHECK2_AUTO_GENERATE', False)` but never defined in any settings file, so it was permanently False and the handoff auto-draft silently never fired. When adding/toggling a flag: grep the settings package for its name; if absent, wire it before touching the env var. (Sprint 2026-06-15)
