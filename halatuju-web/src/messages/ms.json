@@ -3126,6 +3126,16 @@
       "accessBlocked": "Akses disekat",
       "gatedHeader": "Akses disekat (401/403)",
       "gatedHint": "Pelayan menjawab tetapi menolak halaman ini — biasanya dinding log masuk (tidak mengapa), kadangkala laluan salah/lama (seperti Port Dickson). Wajar disemak secara manual."
-    }
+    },
+    "setPasswordTitle": "Tetapkan kata laluan anda",
+    "setPasswordSubtitle": "Pilih kata laluan untuk melengkapkan penyediaan akaun anda",
+    "newPassword": "Kata laluan baharu",
+    "newPasswordHint": "Sekurang-kurangnya 8 aksara",
+    "confirmPassword": "Sahkan kata laluan",
+    "setPasswordCta": "Tetapkan kata laluan & log masuk",
+    "settingPassword": "Menetapkan…",
+    "passwordTooShort": "Kata laluan mesti sekurang-kurangnya 8 aksara.",
+    "passwordMismatch": "Kedua-dua kata laluan tidak sepadan.",
+    "setPasswordNoLink": "Halaman ini perlu dibuka daripada pautan dalam e-mel jemputan atau set semula kata laluan anda. Pautan mungkin telah tamat tempoh — minta yang baharu dari halaman log masuk."
   }
 }

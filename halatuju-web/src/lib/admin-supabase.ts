@@ -49,10 +49,18 @@ export async function adminSignInWithGoogle() {
 export async function adminResetPassword(email: string) {
   const captchaToken = await getTurnstileToken('admin_reset')
   const { error } = await getAdminSupabase().auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/admin/login`,
+    // Land on the set-password page where the recovery session lets them choose a password.
+    redirectTo: `${window.location.origin}/admin/set-password`,
     ...(captchaToken ? { captchaToken } : {}),
   })
   return { error }
+}
+
+/** Set a new password on the CURRENT session (used by the set-password page after the user
+ *  arrives via an invite or password-reset email link). */
+export async function adminUpdatePassword(password: string) {
+  const { data, error } = await getAdminSupabase().auth.updateUser({ password })
+  return { data, error }
 }
 
 export async function adminSignOut() {

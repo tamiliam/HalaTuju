@@ -3126,6 +3126,16 @@
       "accessBlocked": "Access-blocked",
       "gatedHeader": "Access-blocked (401/403)",
       "gatedHint": "The server answered but refused this page — usually a login wall (fine), occasionally a wrong/old path (like Port Dickson). Worth a manual look."
-    }
+    },
+    "setPasswordTitle": "Set your password",
+    "setPasswordSubtitle": "Choose a password to finish setting up your account",
+    "newPassword": "New password",
+    "newPasswordHint": "At least 8 characters",
+    "confirmPassword": "Confirm password",
+    "setPasswordCta": "Set password & sign in",
+    "settingPassword": "Setting…",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "passwordMismatch": "The two passwords don’t match.",
+    "setPasswordNoLink": "This page must be opened from the link in your invite or password-reset email. The link may have expired — request a new one from the login page."
   }
 }
