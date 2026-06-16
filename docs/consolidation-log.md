@@ -4,14 +4,31 @@ Tracks one-off small-lane changes between full sprints. Every ~10 pending entrie
 Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
-- 2026-06-16 chore(web): remove dead profile api-client fns + 29 orphaned i18n keys (TD-118) (halatuju-web: admin-api.ts, messages/{en,ms,ta}.json)
-- 2026-06-16 chore(web): cockpit Decision+profile copy tweaks, "Rate AI verification" heading, restore finalProfile.title (halatuju-web: admin/scholarship/[id]/page.tsx, messages/{en,ms,ta}.json)
-- 2026-06-16 fix(web): hide redundant assignee filter for reviewers on B40 Applications list (halatuju-web: admin/scholarship/page.tsx)
-- 2026-06-16 chore(web): TD-120 — remove 77 orphaned admin.scholarship i18n keys (en/ms/ta) + add dynamic-aware orphan/parity guardrail test (halatuju-web: messages/{en,ms,ta}.json, messages/__tests__/admin-scholarship-i18n.test.ts)
-- 2026-06-16 feat(api): AI profile distils ALL student inputs (justification, fears, anything_else, top_choices, other_scholarships, help_wanted, uncertainty) — were collected but ignored (halatuju_api: scholarship/profile_engine.py + tests)
-- 2026-06-16 feat(api): use the interest quiz — accretive interest context in the profile (Idea 1) + quiz-vs-pathway exploratory interview question (Idea 2) (halatuju_api: scholarship/profile_engine.py, gap_engine.py + tests)
-- 2026-06-16 feat(api): feed the OCR'd Statement of Intent letter text into the profile draft (was extracted but only used by Check-2) (halatuju_api: scholarship/profile_engine.py + tests)
-- 2026-06-16 feat(web): set-password page for admins/reviewers (invite + reset links → /admin/set-password → choose password) — unblocks non-Google invitees (halatuju-web: app/admin/set-password, admin-supabase.ts, messages/*; halatuju_api: courses/views_admin.py invite redirect)
-- 2026-06-16 feat(api): profile academics summarised by group + ethnicity-safe (no vernacular subject names) + PROMPT_VERSION tagging (migration 0058) + version-aware backfill (halatuju_api: scholarship/profile_engine.py, services.py, views_admin.py, models.py+migration, backfill cmd + tests)
+_(cleared at the 2026-06-16 review below)_
 
 ## Reviews
+
+### 2026-06-16 — Live-review round (9 small changes)
+**Reflect.** The 9 changes touched three surfaces: the **AI profile generator** (5: distil-all-inputs,
+interest-quiz, statement-of-intent, grades-grouping/ethnicity, prompt-versioning), **web i18n hygiene**
+(3: TD-118, TD-120, cockpit copy tweaks), and **reviewer access** (2: hide assignee filter, set-password page).
+Most were genuine fixes; the profile ones were additive improvements, not symptom-patching.
+
+**Cohere — clusters promoted:**
+- **Profile completeness & safety (5).** Not five fixes — one coherent body of work: "make the AI profile use ALL
+  the data the student gave us (typed fields, quiz, statement-of-intent), summarised well, and without leaking PII or
+  ethnicity." Recognised as a mini-feature; the prompt is now **versioned** so it can evolve safely. Captured in
+  `decisions.md` (prompt versioning; grades-by-group; generalise-ethnicity).
+- **i18n drift after redesigns (3).** Recurring class: cockpit redesigns leave orphaned `admin.scholarship` keys.
+- **Reviewer onboarding (2).** Non-Google invitees couldn't onboard; the set-password page closes the systemic gap.
+
+**Anticipate — guardrails (recurring fix → prevention):**
+- i18n orphans → **guardrail test added** (`messages/__tests__/admin-scholarship-i18n.test.ts`, dynamic-aware) — the
+  class can no longer silently regrow. ✅
+- Stale AI drafts after a prompt change (the #18 trap) → **PROMPT_VERSION + version-aware backfill added** — staleness
+  is now detectable by version, and re-running the backfill only refreshes stale drafts. ✅
+- **Candidate (not built):** schedule the version-aware backfill (or trigger it on a `PROMPT_VERSION` bump) so drafts
+  self-heal without a manual cron call. Logged for a future pass.
+
+**Close out.** Pending cleared (counter reset). Guardrails landed in the same round. Folded into the 2026-06-16
+sprint-close (retrospective `docs/retrospective-2026-06-16-livereview-round.md`).
