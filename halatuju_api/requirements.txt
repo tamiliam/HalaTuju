@@ -29,6 +29,12 @@ google-cloud-vision>=3.0,<4.0
 # Off-platform backup of the private document bucket → GCS (security item A). Shares the
 # google-auth / google-api-core deps already pulled in by google-cloud-vision (low marginal cost).
 google-cloud-storage>=2.10,<4.0
+# Google Calendar API client — auto-generates a Google Meet link + calendar event for a booked
+# interview (apps/scholarship/meeting.py), via a Workspace service account with domain-wide
+# delegation. google-auth is already present (pulled by google-cloud-*); this adds the API client.
+# Optional at runtime: if absent or INTERVIEW_MEET_ENABLED is off, booking proceeds with no link.
+google-api-python-client>=2.100,<3.0
+google-auth-httplib2>=0.2,<1.0
 # PDF document intake (scan-to-PDF + digital PDFs): read the text layer (pypdf)
 # and rasterise page 1 for Vision (pypdfium2 + Pillow). Permissive licences;
 # optional at runtime (a PDF degrades to "unreadable" if absent).

@@ -23,9 +23,10 @@ from . import pool
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
-    ApplicantDocument, GraduationMessage, InterviewSession, Referee,
+    ApplicantDocument, GraduationMessage, InterviewSession, InterviewSlot, Referee,
     ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
+from . import scheduling
 from .profile_engine import refine_sponsor_profile
 from . import in_programme as in_programme_service
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
@@ -34,6 +35,7 @@ from .serializers_admin import (
     AdminApplicationListSerializer,
     AdminGraduationMessageSerializer,
     InterviewSessionSerializer,
+    interview_schedule_payload,
     ReviewerProfileSerializer,
     SponsorProfileSerializer,
 )
@@ -991,6 +993,81 @@ class AdminAssignReviewerView(_AdminBase):
         except AssignmentError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
+
+
+def _parse_slot_starts(raw):
+    """Parse the proposed-slot times from the request body into tz-aware datetimes.
+    Accepts a list of ISO strings, or of objects with a 'start' key. A naive value
+    (e.g. a browser datetime-local '2026-06-20T20:00') is read as Malaysia time."""
+    from zoneinfo import ZoneInfo
+    from django.utils.dateparse import parse_datetime
+    from django.utils import timezone as _tz
+    out = []
+    for item in (raw or []):
+        s = item.get('start') if isinstance(item, dict) else item
+        if not s:
+            continue
+        dt = parse_datetime(s)
+        if dt is None:
+            continue
+        if _tz.is_naive(dt):
+            dt = dt.replace(tzinfo=ZoneInfo('Asia/Kuala_Lumpur'))
+        out.append(dt)
+    return out
+
+
+class AdminInterviewSlotsView(_AdminBase):
+    """GET  .../applications/<pk>/interview-slots/ — booking state + proposed slots.
+    POST .../applications/<pk>/interview-slots/ — the assigned reviewer (or super)
+         proposes interview times. Body {slots: [<iso>, ...]} (or [{start}]). Dark
+         behind INTERVIEW_SCHEDULING_ENABLED (404 when off)."""
+
+    def get(self, request, pk):
+        if not scheduling.scheduling_enabled():
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
+        return Response(interview_schedule_payload(app))
+
+    def post(self, request, pk):
+        if not scheduling.scheduling_enabled():
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
+        starts = _parse_slot_starts(request.data.get('slots'))
+        try:
+            scheduling.propose_slots(app, reviewer=admin, starts=starts)
+        except scheduling.SchedulingError as e:
+            return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(interview_schedule_payload(app))
+
+
+class AdminInterviewSlotDetailView(_AdminBase):
+    """DELETE .../applications/<pk>/interview-slots/<slot_id>/ — withdraw a proposed
+    (unbooked) slot. Reviewer/super, assignment-scoped."""
+
+    def delete(self, request, pk, slot_id):
+        if not scheduling.scheduling_enabled():
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
+        slot = InterviewSlot.objects.filter(application=app, pk=slot_id).first()
+        if slot is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            scheduling.withdraw_slot(slot)
+        except scheduling.SchedulingError as e:
+            return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(interview_schedule_payload(app))
 
 
 class ReviewerProfileView(_AdminBase):

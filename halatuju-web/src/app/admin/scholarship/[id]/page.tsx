@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import { formatPhone, formatAddress, isValidPhone, formatNric } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
@@ -1111,6 +1112,14 @@ export default function AdminScholarshipDetailPage() {
           {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
         </button>
       </div>
+      )}
+
+      {/* Interview scheduling — the assigned reviewer proposes times (dark behind the flag) */}
+      {app.interview_schedule?.enabled && app.assigned_to_id != null && (
+        <InterviewScheduleCard
+          appId={id} token={token || ''} schedule={app.interview_schedule}
+          onChange={(s) => setApp((prev) => (prev ? { ...prev, interview_schedule: s } : prev))}
+        />
       )}
 
       {/* Phase C: interview capture */}

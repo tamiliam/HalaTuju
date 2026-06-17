@@ -520,6 +520,28 @@ export interface AdminScholarshipDetail {
   resolution_items: AdminResolutionItem[]
   /** Recommended assistance amount (RM, Decimal serialised as string) or null. */
   award_amount: string | null
+  /** Interview scheduling: booking state + proposed slots (dark behind the flag). */
+  interview_schedule: InterviewSchedule
+}
+
+/** One proposed interview time. `start` is ISO (UTC); render in MYT on the client. */
+export interface InterviewSlot {
+  id: number
+  start: string
+  duration_min: number
+  is_active: boolean
+}
+
+/** Interview booking state + the active proposed slots (shared admin/student shape). */
+export interface InterviewSchedule {
+  enabled: boolean
+  status: '' | 'booked' | 'cancelled'
+  start: string | null
+  meeting_url: string
+  meeting_provider: string
+  booked_slot_id: number | null
+  slots: InterviewSlot[]
+  reschedule_cutoff_hours: number
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in
@@ -643,6 +665,25 @@ export async function getAssignableAdmins(options?: ApiOptions) {
 
 export async function getScholarshipApplication(id: number, options?: ApiOptions) {
   return adminFetch<AdminScholarshipDetail>(`/api/v1/admin/scholarship/applications/${id}/`, options)
+}
+
+// ── Interview scheduling (reviewer proposes times) ────────────────────────────
+/** The assigned reviewer (or super) proposes interview times. `starts` are ISO
+ *  strings. Returns the refreshed schedule (booking state + active slots). */
+export async function proposeInterviewSlots(id: number, starts: string[], options?: ApiOptions) {
+  return adminMutate<InterviewSchedule>(
+    `/api/v1/admin/scholarship/applications/${id}/interview-slots/`, 'POST', { slots: starts }, options)
+}
+
+export async function getInterviewSlots(id: number, options?: ApiOptions) {
+  return adminFetch<InterviewSchedule>(
+    `/api/v1/admin/scholarship/applications/${id}/interview-slots/`, options)
+}
+
+/** Withdraw a single proposed (unbooked) slot. */
+export async function withdrawInterviewSlot(id: number, slotId: number, options?: ApiOptions) {
+  return adminMutate<InterviewSchedule>(
+    `/api/v1/admin/scholarship/applications/${id}/interview-slots/${slotId}/`, 'DELETE', null, options)
 }
 
 /** Phase B: admin-on-demand Gemini interview gap-spotter. Returns the refreshed detail.
