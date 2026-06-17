@@ -77,6 +77,23 @@ class TestAdminScholarship(TestCase):
         self.assertIn('PRIYA', names('?sort=merit&dir=desc')[0])   # all-A → highest merit
         self.assertIn('AARON', names('?sort=merit&dir=asc')[0])    # weakest → lowest merit
 
+    def test_contact_submission_email(self):
+        from django.core import mail
+        from apps.scholarship.emails import send_contact_submission_admin_email
+        self.assertTrue(send_contact_submission_admin_email(
+            to_email='contact@halatuju.xyz', name='Asha', contact='asha@example.com',
+            category='general', message='A question about B40.', created_at='2026-06-17 10:00'))
+        m = mail.outbox[-1]
+        self.assertEqual(m.to, ['contact@halatuju.xyz'])
+        self.assertEqual(m.reply_to, ['asha@example.com'])     # email contact → reply-to
+        self.assertIn('A question about B40.', m.body)
+        self.assertIn('general', m.subject)
+        # a phone (non-email) contact → no reply-to
+        send_contact_submission_admin_email(
+            to_email='contact@halatuju.xyz', name='Ben', contact='012-345 6789',
+            category='bug', message='broken', created_at='2026-06-17')
+        self.assertEqual(mail.outbox[-1].reply_to, [])
+
     def test_findings_accepts_deleted_verdict(self):
         # S4 review: a 'Deleted' interview talking point persists as a finding (then filters
         # off the agenda); validation must accept it. 'resolved' valid; bogus rejected.

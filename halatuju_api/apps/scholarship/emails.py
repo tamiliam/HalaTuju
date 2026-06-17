@@ -1074,6 +1074,34 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
         return False
 
 
+def send_contact_submission_admin_email(*, to_email, name, contact, category, message, created_at):
+    """Internal: email a public contact-form submission to the team (contact@ via
+    ADMIN_NOTIFY_EMAIL). Reply-To is set to the submitter's contact when it looks like
+    an email, so a reply goes straight back to them. Plain English. Best-effort → bool."""
+    if not to_email:
+        return False
+    body = (
+        f'New contact-form message — {category}\n\n'
+        f'From:     {name}\n'
+        f'Contact:  {contact}\n'
+        f'Received: {created_at}\n\n'
+        f'{message}\n'
+    )
+    reply_to = [contact] if (contact and '@' in contact) else None
+    try:
+        EmailMessage(
+            subject=f'[HalaTuju contact] {category} — {name}'[:120],
+            body=body,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            to=[to_email],
+            reply_to=reply_to,
+        ).send()
+        return True
+    except Exception:
+        logger.warning('Failed to send contact-submission email to %s', to_email, exc_info=True)
+        return False
+
+
 # ── Interview scheduling (booking confirmation + reminders + cancellation) ────
 # Student-facing emails are bilingual (English then Bahasa Melayu) and use the
 # student-facing term "interviewer" / "Penemu duga". Reviewer-facing emails are
