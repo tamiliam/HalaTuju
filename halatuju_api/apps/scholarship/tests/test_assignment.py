@@ -106,9 +106,13 @@ class TestReviewerAssignment(TestCase):
         self.assertTrue(send_student_assigned_reviewer_email(
             's@example.com', student_name='Priya', reviewer_name='Rohini',
             reviewer_email='r@example.com', reviewer_phone='12-200 0365'))
+        self.assertEqual(mail.outbox[-1].subject, 'Your B40 Assistance Programme interview')
         body = mail.outbox[-1].body
         self.assertIn('B40 Assistance Programme', body)
         self.assertIn('Program Bantuan B40', body)            # BM block present
+        self.assertIn('Interviewer: Rohini', body)            # student-facing term is "interviewer"
+        self.assertIn('Penemu duga: Rohini', body)            # BM term
+        self.assertNotIn('Reviewer: Rohini', body)
         self.assertIn('+60 12-200 0365', body)                # phone formatted with +60
         self.assertIn('save the above number', body)
         self.assertIn('few days', body)

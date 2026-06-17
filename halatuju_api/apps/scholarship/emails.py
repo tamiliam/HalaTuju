@@ -997,17 +997,17 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
         return False
     student = student_name or 'there'
     student_bm = student_name or 'di sana'
-    reviewer = reviewer_name or 'our reviewer'
-    reviewer_bm = reviewer_name or 'penilai kami'
+    reviewer = reviewer_name or 'our interviewer'
+    reviewer_bm = reviewer_name or 'penemu duga kami'
     phone_disp = f'+60 {reviewer_phone}' if reviewer_phone else ''
 
     en_contact = (
-        f'• Reviewer: {reviewer}\n'
+        f'• Interviewer: {reviewer}\n'
         + (f'• Contact: phone / WhatsApp {phone_disp} · email {reviewer_email}\n'
            if phone_disp else f'• Contact: email {reviewer_email}\n')
     )
     bm_contact = (
-        f'• Penilai: {reviewer}\n'
+        f'• Penemu duga: {reviewer}\n'
         + (f'• Hubungi: telefon / WhatsApp {phone_disp} · e-mel {reviewer_email}\n'
            if phone_disp else f'• Hubungi: e-mel {reviewer_email}\n')
     )
@@ -1022,7 +1022,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
     en = (
         f'Hi {student},\n\n'
         f'Good news — your application has reached the interview stage of the B40 Assistance '
-        f'Programme, and a reviewer has been assigned to you:\n\n'
+        f'Programme, and an interviewer has been assigned to you:\n\n'
         f'{en_contact}\n'
         f'{reviewer} will contact you within the next few days to arrange a short interview '
         f'(by phone or video call). {en_action}\n\n'
@@ -1038,7 +1038,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
     bm = (
         f'Salam {student_bm},\n\n'
         f'Berita baik — permohonan anda telah sampai ke peringkat temu duga Program Bantuan B40, '
-        f'dan seorang penilai telah ditugaskan kepada anda:\n\n'
+        f'dan seorang penemu duga telah ditugaskan kepada anda:\n\n'
         f'{bm_contact}\n'
         f'{reviewer_bm} akan menghubungi anda dalam masa beberapa hari untuk menetapkan temu duga '
         f'ringkas (melalui telefon atau panggilan video). {bm_action}\n\n'
@@ -1054,7 +1054,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
     )
     try:
         send_mail(
-            subject='Your B40 Assistance Programme interview — who will contact you',
+            subject='Your B40 Assistance Programme interview',
             message=en + '\n\n———\n\n' + bm,
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
             recipient_list=[to_email],
