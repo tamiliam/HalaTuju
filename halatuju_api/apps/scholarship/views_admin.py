@@ -145,11 +145,22 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.filter(assigned_to__isnull=True)
         elif assigned_f and assigned_f.isdigit():
             qs = qs.filter(assigned_to_id=int(assigned_f))
-        # Server-side pagination (?page / ?page_size). Filters above are applied
-        # to the queryset first, so paging reflects the filtered set. total_count
-        # is kept as a backward-compatible alias for the total filtered count.
+        # Sorting (?sort=name|merit, ?dir=asc|desc). Default (no sort) = newest
+        # submitted first, as before. Name sorts in the DB; merit is COMPUTED (no
+        # column), so we materialise the filtered set, sort in Python, then paginate
+        # the list (DRF paginates lists fine) — fine at this scale (≈100s of rows).
+        sort_f = (request.GET.get('sort') or '').strip()
+        desc = (request.GET.get('dir') or '').lower() == 'desc'
         paginator = FlexiblePageNumberPagination()
-        page = paginator.paginate_queryset(qs, request, view=self)
+        if sort_f == 'name':
+            qs = qs.order_by('-profile__name' if desc else 'profile__name')
+            page = paginator.paginate_queryset(qs, request, view=self)
+        elif sort_f == 'merit':
+            from .serializers_admin import _application_merit_score
+            rows = sorted(qs, key=lambda a: _application_merit_score(a) or 0, reverse=desc)
+            page = paginator.paginate_queryset(rows, request, view=self)
+        else:
+            page = paginator.paginate_queryset(qs, request, view=self)
         data = AdminApplicationListSerializer(page, many=True).data
         return paginator.envelope(
             data,

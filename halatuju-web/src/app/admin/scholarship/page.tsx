@@ -49,7 +49,7 @@ const STATUS_OPTIONS = [
 
 // Human, Sentence-case status labels (the raw keys like 'profile_complete' aren't for display).
 const STATUS_LABELS: Record<string, string> = {
-  submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Profile complete',
+  submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Completed',
   interviewing: 'Interviewing', interviewed: 'Interviewed', accepted: 'Accepted',
   sponsored: 'Sponsored', rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
 }
@@ -80,6 +80,22 @@ export default function AdminScholarshipList() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
+  // Column sorting (server-side). '' = default (newest submitted first).
+  const [sort, setSort] = useState<'' | 'name' | 'merit'>('')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+
+  // Click a sortable header: same column flips direction; a new column starts at a
+  // sensible default (name A→Z, merit high→low). Resets to page 1.
+  const toggleSort = (key: 'name' | 'merit') => {
+    if (sort === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSort(key)
+      setSortDir(key === 'merit' ? 'desc' : 'asc')
+    }
+    setPage(1)
+  }
+  const sortArrow = (key: 'name' | 'merit') => (sort === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '')
 
   // Debounce the search box so a request doesn't fire on every keystroke.
   useEffect(() => {
@@ -102,6 +118,8 @@ export default function AdminScholarshipList() {
         q: q || undefined,
         page,
         pageSize,
+        sort: sort || undefined,
+        dir: sort ? sortDir : undefined,
       },
       { token },
     )
@@ -109,7 +127,7 @@ export default function AdminScholarshipList() {
       .catch(() => setError(t('admin.scholarship.loadFailed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, bucket, statusF, source, assignedF, q, page, pageSize])
+  }, [token, bucket, statusF, source, assignedF, q, page, pageSize, sort, sortDir])
 
   const apps = data?.applications ?? []
 
@@ -185,7 +203,8 @@ export default function AdminScholarshipList() {
             className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
-        <select value={source} onChange={(e) => changeFilter(setSource)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <select value={source} onChange={(e) => changeFilter(setSource)(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm w-40 truncate" title={t('admin.scholarship.allSources')}>
           <option value="">{t('admin.scholarship.allSources')}</option>
           {REFERRING_ORG_OPTIONS.map((code) => <option key={code} value={code}>{t(`scholarship.apply.org.${code}`)}</option>)}
         </select>
@@ -225,11 +244,21 @@ export default function AdminScholarshipList() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50/80 border-b">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.name')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                  <button type="button" onClick={() => toggleSort('name')}
+                    className="uppercase tracking-wider hover:text-gray-900">
+                    {t('admin.scholarship.name')}{sortArrow('name')}
+                  </button>
+                </th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.source')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.bucket')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.qualShort')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.merit')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                  <button type="button" onClick={() => toggleSort('merit')}
+                    className="uppercase tracking-wider hover:text-gray-900">
+                    {t('admin.scholarship.merit')}{sortArrow('merit')}
+                  </button>
+                </th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.status')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.submitted')}</th>
                 {isSuper && <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
