@@ -30,6 +30,18 @@ const ADMIN: QA[] = [
       HalaTuju team. Please don&rsquo;t download, share or keep applicant details.</>,
   },
   {
+    q: <>Why does my profile ask for my languages?</>,
+    a: <>So we can assign you students you can speak with comfortably. Set your fluency in English,
+      Bahasa Melayu and Tamil on your <strong>Profile</strong> — we use it to match you to applicants
+      whose preferred language you share.</>,
+  },
+  {
+    q: <>Will my phone number be shared with students?</>,
+    a: <>Your number may be shared with the students assigned to you, so they know to expect your
+      call. It&rsquo;s on by default — you can <strong>opt out anytime</strong> on your Profile
+      (untick &ldquo;Share my phone number…&rdquo;) and we&rsquo;ll leave it out.</>,
+  },
+  {
     q: <>I&rsquo;m stuck, or something looks wrong with my account — whom do I contact?</>,
     a: <>Email the HalaTuju team at <strong>tamiliam@gmail.com</strong> and we&rsquo;ll help.</>,
   },

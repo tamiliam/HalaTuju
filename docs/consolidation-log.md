@@ -38,3 +38,4 @@ Most were genuine fixes; the profile ones were additive improvements, not sympto
 
 **Close out.** Pending cleared (counter reset). Guardrails landed in the same round. Folded into the 2026-06-16
 sprint-close (retrospective `docs/retrospective-2026-06-16-livereview-round.md`).
+- 2026-06-17 docs(web): add FAQ entries for reviewer languages + phone-sharing toggle (keep reviewer FAQ current with recent features) (halatuju-web: app/admin/faq/page.tsx)
