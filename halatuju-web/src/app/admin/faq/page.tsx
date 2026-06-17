@@ -43,7 +43,7 @@ const ADMIN: QA[] = [
   },
   {
     q: <>I&rsquo;m stuck, or something looks wrong with my account — whom do I contact?</>,
-    a: <>Email the HalaTuju team at <strong>tamiliam@gmail.com</strong> and we&rsquo;ll help.</>,
+    a: <>Email the HalaTuju team at <strong>help@halatuju.xyz</strong> and we&rsquo;ll help.</>,
   },
 ]
 

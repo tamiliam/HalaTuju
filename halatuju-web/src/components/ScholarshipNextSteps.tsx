@@ -90,7 +90,7 @@ function StepIcon({ step, active }: { step: NextStepKey; active: boolean }) {
 
 /** Render the tech-support text with the email address as a mailto: link. */
 function renderTechSupport(text: string): React.ReactNode {
-  const email = 'tamiliam@gmail.com'
+  const email = 'help@halatuju.xyz'
   const i = text.indexOf(email)
   if (i === -1) return text
   return (

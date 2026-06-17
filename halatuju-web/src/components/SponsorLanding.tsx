@@ -132,7 +132,7 @@ export default function SponsorLanding({ count }: { count: number }) {
             </Link>
             <p className="text-xs text-gray-500 mt-4">
               {t('sponsorLanding.cta.questions')}{' '}
-              <a href="mailto:info@halatuju.xyz" className="text-blue-600 underline">info@halatuju.xyz</a>
+              <a href="mailto:sponsor@halatuju.xyz" className="text-blue-600 underline">sponsor@halatuju.xyz</a>
             </p>
           </div>
         </section>

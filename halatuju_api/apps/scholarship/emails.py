@@ -7,7 +7,13 @@ WhatsApp is a Phase 2 enhancement.
 import logging
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, send_mail
+
+# Topical reply-to aliases (all land in the same Workspace inbox; they just route
+# replies to a sensible address and keep things filterable). From-address is the
+# global DEFAULT_FROM_EMAIL (info@halatuju.xyz) so every reply is deliverable.
+INTERVIEW_REPLY_TO = 'interview@halatuju.xyz'
+SPONSOR_REPLY_TO = 'sponsor@halatuju.xyz'
 
 logger = logging.getLogger(__name__)
 
@@ -347,7 +353,7 @@ def _send(to_email, subjects, bodies, applicant_name, programme_name, lang, extr
         send_mail(
             subject=subjects[lang].format(programme=programme_name),
             message=bodies[lang].format(**fmt),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -479,15 +485,16 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map):
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     freq_word = _SPONSOR_FREQ_WORD.get(freq, {}).get(lang, freq)
     try:
-        send_mail(
+        EmailMessage(
             subject=subjects[lang].format(n=len(cards)),
-            message=SPONSOR_NOTIFY_BODIES[lang].format(
+            body=SPONSOR_NOTIFY_BODIES[lang].format(
                 intro=intro_map[lang], list=_format_sponsor_cards(cards, lang),
                 link=f'{frontend}/sponsor', freq=freq_word,
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
-            recipient_list=[to_email],
-        )
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            to=[to_email],
+            reply_to=[SPONSOR_REPLY_TO],
+        ).send()
         return True
     except Exception:
         logger.warning('Failed to send sponsor notification to %s', to_email, exc_info=True)
@@ -519,7 +526,7 @@ def send_decline_email(to_email, applicant_name, programme_name, category='', la
 # to the application page (the {link} kwarg is filled by _send). Keyed by stage 1–4.
 # Shared help line — built-in AI helper (Cikgu Gopal) + a human fallback. Filled into
 # the {help} placeholder of each reminder; the closure email uses CLOSURE_HELP.
-SUPPORT_EMAIL = 'tamiliam@gmail.com'
+SUPPORT_EMAIL = 'help@halatuju.xyz'
 HELP_LINE = {
     'en': ("As you go, our friendly AI helper, Cikgu Gopal, will guide you through anything "
            f"on your documents that needs attention. If you're still unsure, email us at "
@@ -716,7 +723,7 @@ def send_request_info_email(to_email, applicant_name, programme_name, note, lang
             subject=REQUEST_INFO_SUBJECTS[lang].format(programme=programme_name),
             message=REQUEST_INFO_BODIES[lang].format(
                 name=name, programme=programme_name, note=note, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -764,7 +771,7 @@ def send_query_reminder_email(to_email, applicant_name, programme_name, n_querie
             subject=QUERY_REMINDER_SUBJECTS[lang].format(programme=programme_name),
             message=QUERY_REMINDER_BODIES[lang].format(
                 name=name, programme=programme_name, n=n_queries, days=days_left, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -811,7 +818,7 @@ def send_query_raised_email(to_email, applicant_name, programme_name, n_queries,
             subject=QUERY_RAISED_SUBJECTS[lang].format(programme=programme_name),
             message=QUERY_RAISED_BODIES[lang].format(
                 name=name, programme=programme_name, n=n_queries, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -834,7 +841,7 @@ def send_sponsor_interest_admin_email(name, email, organisation, message):
                 f'Organisation: {organisation or "—"}\n\n'
                 f'Message:\n{message or "—"}'
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -882,12 +889,13 @@ def send_sponsor_referral_invite(to_email, inviter_name, note, code, lang='en'):
     link = f"{frontend}/sponsor?ref={code}"
     note_block = _REFERRAL_NOTE_PREFIX[lang].format(note=note) if (note or '').strip() else ''
     try:
-        send_mail(
+        EmailMessage(
             subject=REFERRAL_INVITE_SUBJECTS[lang].format(inviter=inviter),
-            message=REFERRAL_INVITE_BODIES[lang].format(inviter=inviter, note=note_block, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
-            recipient_list=[to_email],
-        )
+            body=REFERRAL_INVITE_BODIES[lang].format(inviter=inviter, note=note_block, link=link),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            to=[to_email],
+            reply_to=[SPONSOR_REPLY_TO],
+        ).send()
         return True
     except Exception:
         logger.warning('Failed to send sponsor-referral invite to %s', to_email, exc_info=True)
@@ -897,7 +905,7 @@ def send_sponsor_referral_invite(to_email, inviter_name, note, code, lang='en'):
 def send_vision_outage_alert_email(stats):
     """Alert the admin that Google Vision OCR appears to be down — every recent
     IC/parent-IC OCR attempt errored and none succeeded. Sent to
-    ``settings.ADMIN_NOTIFY_EMAIL`` (tamiliam@gmail.com); skipped silently if unset.
+    ``settings.ADMIN_NOTIFY_EMAIL`` (contact@halatuju.xyz); skipped silently if unset.
     English-only (internal). Best-effort — swallows send failures."""
     to_email = getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or ''
     if not to_email:
@@ -914,7 +922,7 @@ def send_vision_outage_alert_email(stats):
                 'Google Vision API status, quota and billing for the HalaTuju project.\n\n'
                 'This is an automated alert and will repeat daily until OCR recovers.'
             ).format(**stats),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -941,7 +949,7 @@ def send_profile_complete_admin_email(application_id, applicant_name, programme_
                 f'(application #{application_id}) and is ready for review.\n\n'
                 f'Review it: {frontend}/admin/scholarship/{application_id}'
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -975,7 +983,7 @@ def send_reviewer_assigned_email(to_email, reviewer_name, applicant_name):
                 f'Thank you for supporting the B40 Assistance Programme.\n\n'
                 f'Warm regards,\nThe HalaTuju Team'
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -1031,7 +1039,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
         f'This is simply to understand your family’s situation fairly. The support is for families '
         f'with genuine financial need, and we value your honesty.\n\n'
         f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN. If '
-        f'anyone does, it is not from us — please email tamiliam@gmail.com.\n\n'
+        f'anyone does, it is not from us — please email {SUPPORT_EMAIL}.\n\n'
         f'Thank you, and we look forward to speaking with you.\n'
         f'— The B40 Assistance Programme team'
     )
@@ -1048,7 +1056,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
         f'yang benar-benar memerlukan, dan kami menghargai kejujuran anda.\n\n'
         f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
         f'OTP/PIN. Jika sesiapa berbuat demikian, ia bukan daripada kami — sila e-mel '
-        f'tamiliam@gmail.com.\n\n'
+        f'{SUPPORT_EMAIL}.\n\n'
         f'Terima kasih, dan kami menantikan untuk bercakap dengan anda.\n'
         f'— Pasukan Program Bantuan B40'
     )
@@ -1056,7 +1064,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
         send_mail(
             subject='Your B40 Assistance Programme interview',
             message=en + '\n\n———\n\n' + bm,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -1087,16 +1095,18 @@ def _fmt_myt(dt):
 
 
 def _send_bilingual(to_email, subject, en, bm):
-    """Send one EN+BM email (the booking-flow pattern). Best-effort → bool."""
+    """Send one EN+BM email (the booking-flow pattern), with Reply-To = the interview
+    alias so replies route there. Best-effort → bool."""
     if not to_email:
         return False
     try:
-        send_mail(
+        EmailMessage(
             subject=subject,
-            message=en + '\n\n———\n\n' + bm,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
-            recipient_list=[to_email],
-        )
+            body=en + '\n\n———\n\n' + bm,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            to=[to_email],
+            reply_to=[INTERVIEW_REPLY_TO],
+        ).send()
         return True
     except Exception:
         logger.warning('Failed to send interview email to %s', to_email, exc_info=True)
@@ -1209,9 +1219,9 @@ def _send_plain(to_email, subject, body):
     if not to_email:
         return False
     try:
-        send_mail(subject=subject, message=body,
-                  from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
-                  recipient_list=[to_email])
+        EmailMessage(subject=subject, body=body,
+                     from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+                     to=[to_email], reply_to=[INTERVIEW_REPLY_TO]).send()
         return True
     except Exception:
         logger.warning('Failed to send reviewer interview email to %s', to_email, exc_info=True)

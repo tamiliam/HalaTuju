@@ -7,7 +7,7 @@ The check is read-only and makes NO Vision API calls (it reads the cached OCR
 outcome stored on each document at upload), so running it costs nothing.
 
 Schedule this DAILY (e.g. Cloud Scheduler → Cloud Run Job) once deployed; it will
-email settings.ADMIN_NOTIFY_EMAIL (tamiliam@gmail.com) once a day while an outage
+email settings.ADMIN_NOTIFY_EMAIL (contact@halatuju.xyz) once a day while an outage
 persists. Pairs with the pending decision-emails scheduler.
 
     python manage.py alert_vision_outage [--window-hours 24] [--dry-run]
