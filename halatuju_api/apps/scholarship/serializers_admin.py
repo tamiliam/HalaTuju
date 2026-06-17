@@ -2,7 +2,7 @@
 from rest_framework import serializers
 
 from .models import (
-    FundingNeed, GraduationMessage, InterviewSession, ReviewerProfile,
+    FundingNeed, GraduationMessage, InterviewSession, InterviewSlot, ReviewerProfile,
     ScholarshipApplication, SponsorProfile,
 )
 from . import pool
@@ -60,6 +60,37 @@ class InterviewSessionSerializer(serializers.ModelSerializer):
             'id', 'status', 'findings', 'rubric', 'overall_note',
             'interviewer_name', 'started_at', 'submitted_at', 'updated_at',
         ]
+
+
+class InterviewSlotSerializer(serializers.ModelSerializer):
+    """One proposed interview time. Times are ISO (UTC); the FE renders them in MYT."""
+    class Meta:
+        model = InterviewSlot
+        fields = ['id', 'start', 'duration_min', 'is_active']
+
+
+def interview_schedule_payload(application):
+    """The interview-scheduling block shared by the admin + student responses:
+    the booking state + the active proposed slots. Used by both serializers so the
+    cockpit and the student portal read identical data."""
+    from django.conf import settings
+    active = [s for s in application.interview_slots.all() if s.is_active]
+    active.sort(key=lambda s: s.start)
+    return {
+        'enabled': bool(getattr(settings, 'INTERVIEW_SCHEDULING_ENABLED', False)),
+        'status': application.interview_status or '',
+        'start': application.interview_start,
+        'meeting_url': application.interview_meeting_url or '',
+        'meeting_provider': application.interview_meeting_provider or '',
+        'booked_slot_id': application.interview_slot_id,
+        'slots': InterviewSlotSerializer(active, many=True).data,
+        'reschedule_cutoff_hours': _reschedule_cutoff_hours(),
+    }
+
+
+def _reschedule_cutoff_hours():
+    from django.conf import settings
+    return getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
 
 
 class SponsorProfileSerializer(serializers.ModelSerializer):
@@ -189,6 +220,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Gemini; gaps are produced + stored by the admin-on-demand suggest-gaps endpoint).
     interview_gaps = serializers.JSONField(read_only=True)
     interview_gaps_run_at = serializers.DateTimeField(read_only=True)
+    # Interview scheduling: booking state + proposed slots (dark behind the flag).
+    interview_schedule = serializers.SerializerMethodField()
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
@@ -224,7 +257,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'rejection_category', 'rejected_at', 'rejected_by',
             # Phase C handoff + interview funnel
             'profile_completed_at', 'completeness', 'interview_session',
-            'interview_gaps', 'interview_gaps_run_at',
+            'interview_gaps', 'interview_gaps_run_at', 'interview_schedule',
             'assigned_to_id', 'assigned_to_name', 'assigned_at',
             'info_request_note', 'info_requested_at',
             # S11a verify-&-accept + mentoring
@@ -358,6 +391,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         """Phase C: the latest interview session (draft or submitted), or None."""
         session = obj.interview_sessions.first()  # ordering = -created_at
         return InterviewSessionSerializer(session).data if session else None
+
+    def get_interview_schedule(self, obj):
+        """Interview booking state + proposed slots (shared with the student view)."""
+        return interview_schedule_payload(obj)
 
 
 class ReviewerProfileSerializer(serializers.ModelSerializer):

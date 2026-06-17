@@ -1064,3 +1064,197 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
         logger.warning('Failed to send student-assigned-reviewer email to %s', to_email,
                        exc_info=True)
         return False
+
+
+# ── Interview scheduling (booking confirmation + reminders + cancellation) ────
+# Student-facing emails are bilingual (English then Bahasa Melayu) and use the
+# student-facing term "interviewer" / "Penemu duga". Reviewer-facing emails are
+# plain English (internal staff). All best-effort; the booking never depends on them.
+
+def _fmt_myt(dt):
+    """Format a tz-aware datetime in Malaysia time, e.g. 'Mon, 23 Jun 2026, 8:00 PM (MYT)'."""
+    if dt is None:
+        return ''
+    try:
+        from zoneinfo import ZoneInfo
+        local = dt.astimezone(ZoneInfo('Asia/Kuala_Lumpur'))
+    except Exception:
+        local = dt
+    # %-I isn't portable (Windows); derive a no-leading-zero 12-hour clock manually.
+    hour12 = local.hour % 12 or 12
+    ampm = 'AM' if local.hour < 12 else 'PM'
+    return f'{local:%a, %d %b %Y}, {hour12}:{local:%M} {ampm} (MYT)'
+
+
+def _send_bilingual(to_email, subject, en, bm):
+    """Send one EN+BM email (the booking-flow pattern). Best-effort → bool."""
+    if not to_email:
+        return False
+    try:
+        send_mail(
+            subject=subject,
+            message=en + '\n\n———\n\n' + bm,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send interview email to %s', to_email, exc_info=True)
+        return False
+
+
+def _join_line(meeting_url, lang='en'):
+    if meeting_url:
+        return (f'• Join here: {meeting_url}\n' if lang == 'en'
+                else f'• Sertai di sini: {meeting_url}\n')
+    return ('• Your interviewer will share the video-call link before the interview.\n'
+            if lang == 'en'
+            else '• Penemu duga anda akan berkongsi pautan panggilan video sebelum temu duga.\n')
+
+
+def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
+                                meeting_url='', reviewer_phone=''):
+    """Student confirmation that an interview slot is booked. Bilingual; best-effort."""
+    student = student_name or 'there'
+    student_bm = student_name or 'di sana'
+    reviewer = reviewer_name or 'our interviewer'
+    reviewer_bm = reviewer_name or 'penemu duga kami'
+    when = _fmt_myt(start)
+    phone_en = f'• Interviewer’s phone / WhatsApp: +60 {reviewer_phone}\n' if reviewer_phone else ''
+    phone_bm = f'• Telefon / WhatsApp penemu duga: +60 {reviewer_phone}\n' if reviewer_phone else ''
+    en = (
+        f'Hi {student},\n\n'
+        f'Your B40 Assistance Programme interview is booked. Here are the details:\n\n'
+        f'• Date & time: {when}\n'
+        f'• Interviewer: {reviewer}\n'
+        f'{phone_en}'
+        f'{_join_line(meeting_url, "en")}\n'
+        f'It will take about 30–45 minutes, by video call. Please be on camera. If your '
+        f'parents or guardian are around, our interviewer would be glad to speak with them too '
+        f'— they can join from home while you join from college.\n\n'
+        f'Need a different time? You can reschedule or cancel from your application page in '
+        f'HalaTuju, up until a few hours before the interview.\n\n'
+        f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN.\n\n'
+        f'— The B40 Assistance Programme team'
+    )
+    bm = (
+        f'Salam {student_bm},\n\n'
+        f'Temu duga Program Bantuan B40 anda telah ditetapkan. Berikut butirannya:\n\n'
+        f'• Tarikh & masa: {when}\n'
+        f'• Penemu duga: {reviewer}\n'
+        f'{phone_bm}'
+        f'{_join_line(meeting_url, "bm")}\n'
+        f'Ia mengambil masa kira-kira 30–45 minit, melalui panggilan video. Sila buka kamera. '
+        f'Jika ibu bapa atau penjaga anda ada, penemu duga kami berbesar hati bercakap dengan '
+        f'mereka juga — mereka boleh menyertai dari rumah.\n\n'
+        f'Perlu masa lain? Anda boleh menjadual semula atau membatalkan melalui halaman '
+        f'permohonan anda di HalaTuju, sehingga beberapa jam sebelum temu duga.\n\n'
+        f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, '
+        f'atau OTP/PIN.\n\n'
+        f'— Pasukan Program Bantuan B40'
+    )
+    return _send_bilingual(to_email, 'Your B40 Assistance Programme interview is booked', en, bm)
+
+
+def send_interview_reminder_email(to_email, *, student_name, start, meeting_url='', when='1day'):
+    """Student reminder (1 day / 1 hour before). Bilingual; best-effort."""
+    student = student_name or 'there'
+    student_bm = student_name or 'di sana'
+    whenfmt = _fmt_myt(start)
+    soon_en = 'tomorrow' if when == '1day' else 'in about an hour'
+    soon_bm = 'esok' if when == '1day' else 'dalam kira-kira sejam'
+    en = (
+        f'Hi {student},\n\n'
+        f'A reminder that your B40 Assistance Programme interview is {soon_en}:\n\n'
+        f'• {whenfmt}\n'
+        f'{_join_line(meeting_url, "en")}\n'
+        f'Please be on camera and ready a few minutes early. See you soon.\n\n'
+        f'— The B40 Assistance Programme team'
+    )
+    bm = (
+        f'Salam {student_bm},\n\n'
+        f'Peringatan bahawa temu duga Program Bantuan B40 anda adalah {soon_bm}:\n\n'
+        f'• {whenfmt}\n'
+        f'{_join_line(meeting_url, "bm")}\n'
+        f'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.\n\n'
+        f'— Pasukan Program Bantuan B40'
+    )
+    subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
+            else 'Reminder: your B40 interview is in 1 hour')
+    return _send_bilingual(to_email, subj, en, bm)
+
+
+def send_interview_cancelled_email(to_email, *, student_name):
+    """Student notice that their interview booking was cancelled. Bilingual; best-effort."""
+    student = student_name or 'there'
+    student_bm = student_name or 'di sana'
+    en = (
+        f'Hi {student},\n\n'
+        f'Your B40 Assistance Programme interview booking has been cancelled. You can book a '
+        f'new time from your application page in HalaTuju whenever you are ready. If you did not '
+        f'expect this, please reply to this email.\n\n'
+        f'— The B40 Assistance Programme team'
+    )
+    bm = (
+        f'Salam {student_bm},\n\n'
+        f'Tempahan temu duga Program Bantuan B40 anda telah dibatalkan. Anda boleh menempah masa '
+        f'baharu melalui halaman permohonan anda di HalaTuju bila-bila masa. Jika anda tidak '
+        f'menjangkakan ini, sila balas e-mel ini.\n\n'
+        f'— Pasukan Program Bantuan B40'
+    )
+    return _send_bilingual(to_email, 'Your B40 Assistance Programme interview was cancelled', en, bm)
+
+
+def _send_plain(to_email, subject, body):
+    if not to_email:
+        return False
+    try:
+        send_mail(subject=subject, message=body,
+                  from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+                  recipient_list=[to_email])
+        return True
+    except Exception:
+        logger.warning('Failed to send reviewer interview email to %s', to_email, exc_info=True)
+        return False
+
+
+def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_name, start,
+                                         meeting_url=''):
+    """Reviewer notice that a student booked one of their proposed times. Plain EN."""
+    link = f'\nMeet link: {meeting_url}' if meeting_url else ''
+    body = (
+        f'Hi {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} has booked their B40 interview with you:\n\n'
+        f'  {_fmt_myt(start)}{link}\n\n'
+        f'It will appear on your calendar. You can see the booking in the applicant\'s record '
+        f'in the admin console.\n\n'
+        f'— HalaTuju'
+    )
+    return _send_plain(to_email, 'A B40 applicant booked their interview with you', body)
+
+
+def send_reviewer_interview_reminder_email(to_email, *, reviewer_name, applicant_name, start,
+                                           meeting_url='', when='1day'):
+    """Reviewer reminder (1 day / 1 hour before). Plain EN."""
+    link = f'\nMeet link: {meeting_url}' if meeting_url else ''
+    soon = 'tomorrow' if when == '1day' else 'in about an hour'
+    body = (
+        f'Hi {reviewer_name or "there"},\n\n'
+        f'Reminder — your B40 interview with {applicant_name or "an applicant"} is {soon}:\n\n'
+        f'  {_fmt_myt(start)}{link}\n\n'
+        f'— HalaTuju'
+    )
+    subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
+            else 'Reminder: your B40 interview is in 1 hour')
+    return _send_plain(to_email, subj, body)
+
+
+def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name):
+    """Reviewer notice that a student cancelled. Plain EN."""
+    body = (
+        f'Hi {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} has cancelled their booked B40 interview. You may '
+        f'want to propose fresh times from the applicant\'s record in the admin console.\n\n'
+        f'— HalaTuju'
+    )
+    return _send_plain(to_email, 'A B40 applicant cancelled their interview', body)

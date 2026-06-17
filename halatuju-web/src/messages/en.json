@@ -1550,6 +1550,21 @@
       "homeCta": "Back to home",
       "acceptedTitle": "You've been accepted",
       "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award.",
+      "interview": {
+        "title": "Your interview",
+        "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about 30–45 minutes).",
+        "book": "Book this time",
+        "selectFirst": "Please choose a time first.",
+        "booked": "Your interview is booked for",
+        "joinMeet": "Join the video call",
+        "noLinkYet": "The video-call link will appear here before your interview.",
+        "parentsNote": "It's a video call — please be on camera. Your parents are welcome to join from home.",
+        "reschedule": "Choose a different time",
+        "cancel": "Cancel",
+        "cancelledNote": "Your interview was cancelled. Your interviewer will propose new times soon.",
+        "tooLateNote": "It's close to your interview time — please contact us if you need to change it.",
+        "error": "Something went wrong. Please try again."
+      },
       "awardPanel": {
         "title": "One more step",
         "acceptBody": "A supporter has chosen to fund your studies. Accept your award to continue.",
@@ -2459,6 +2474,21 @@
         "submitError": "Could not submit the interview.",
         "verdict": {
           "resolved": "Resolved"
+        },
+        "schedule": {
+          "title": "Interview scheduling",
+          "intro": "Propose 2–3 times. The student picks one, and we send a Google Meet link and reminders automatically.",
+          "booked": "Booked",
+          "meetLink": "Google Meet link",
+          "noLink": "No link yet — it is created when the student books.",
+          "cancelledNote": "The student cancelled — propose fresh times.",
+          "proposed": "Proposed times",
+          "noneProposed": "No times proposed yet.",
+          "withdraw": "Withdraw",
+          "addTime": "Add a time",
+          "propose": "Propose times",
+          "needFuture": "Please add at least one future time.",
+          "error": "Could not save. Please try again."
         }
       },
       "empty": "No applications match.",

@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **In-app interview scheduling + Google Meet (2026-06-17, dark behind flags).** Replaces off-platform phone/email
+  arrangements: the assigned reviewer **proposes 2–3 times** in the cockpit; the student **picks one** on their
+  application page; the system auto-creates a **Google Meet link + calendar event** and sends a bilingual (EN+BM)
+  confirmation, plus **1-day + 1-hour reminders** (to student and reviewer). The student can **self-reschedule or
+  cancel** up to a 12-hour cutoff. New `InterviewSlot` model + booking columns on `ScholarshipApplication`
+  (migration `scholarship/0061`, migrate-first). Google Meet via a Workspace service account with domain-wide
+  delegation (`apps/scholarship/meeting.py`) — best-effort, so a booking never fails if Google is down or
+  unconfigured. Two flags, both **OFF by default**: `INTERVIEW_SCHEDULING_ENABLED` (the whole surface) and
+  `INTERVIEW_MEET_ENABLED` (auto-Meet, so scheduling can go live before the `info@halatuju.xyz` Workspace account is
+  wired). Reminder cron `interview-reminders` (run ~every 15 min). +27 backend tests (Meet mocked, no live calls);
+  +5 web tests; i18n en/ms/ta (`admin.scholarship.interview.schedule.*`, `scholarship.application.interview.*`).
 - **Advance-notice email to the student on reviewer assignment (2026-06-17).** When a reviewer is assigned, the student
   receives a **bilingual (English + Bahasa Melayu)** email naming the interviewer and their contact (phone/WhatsApp +
   email), so they expect the call and pick up. It says the interviewer will reach out **within a few days**, that

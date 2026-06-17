@@ -28,7 +28,9 @@ from .serializers import (
     StudentAwardSerializer,
 )
 from . import in_programme as in_programme_service
+from . import scheduling
 from . import sponsorship as sponsorship_service
+from .serializers_admin import interview_schedule_payload
 from .services import (
     CONSENT_VERSION,
     IncompleteProfileError,
@@ -204,6 +206,65 @@ class IncomeRouteSwitchView(APIView):
         from .income_engine import income_requirements
         return Response({'income_route': application.income_route,
                          'requirements': income_requirements(application)})
+
+
+class _StudentInterviewBase(APIView):
+    """Own-application interview endpoints, dark behind INTERVIEW_SCHEDULING_ENABLED."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def _own_app(self, request, pk):
+        if not scheduling.scheduling_enabled():
+            return None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app = (ScholarshipApplication.objects
+               .filter(pk=pk, profile_id=request.user_id)
+               .select_related('profile', 'assigned_to').first())
+        if app is None:
+            return None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return app, None
+
+    def _error(self, e):
+        return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StudentInterviewView(_StudentInterviewBase):
+    """GET /api/v1/scholarship/applications/<id>/interview/ — the student's proposed
+    interview slots + their current booking state (MYT rendered on the client)."""
+
+    def get(self, request, pk):
+        app, err = self._own_app(request, pk)
+        if err:
+            return err
+        return Response(interview_schedule_payload(app))
+
+
+class StudentInterviewBookView(_StudentInterviewBase):
+    """POST /api/v1/scholarship/applications/<id>/interview/book/ {slot_id} — book
+    (or reschedule to) a proposed slot. Generates the Meet link + sends confirmations."""
+
+    def post(self, request, pk):
+        app, err = self._own_app(request, pk)
+        if err:
+            return err
+        try:
+            scheduling.book_slot(app, slot_id=request.data.get('slot_id'))
+        except scheduling.SchedulingError as e:
+            return self._error(e)
+        return Response(interview_schedule_payload(app))
+
+
+class StudentInterviewCancelView(_StudentInterviewBase):
+    """POST /api/v1/scholarship/applications/<id>/interview/cancel/ — cancel the
+    booked interview (subject to the reschedule cutoff)."""
+
+    def post(self, request, pk):
+        app, err = self._own_app(request, pk)
+        if err:
+            return err
+        try:
+            scheduling.cancel(app, by='student')
+        except scheduling.SchedulingError as e:
+            return self._error(e)
+        return Response(interview_schedule_payload(app))
 
 
 class ApplicationConfirmView(APIView):
@@ -1051,6 +1112,7 @@ class CronRunView(APIView):
         'backup-documents': 'backup_documents',  # weekly: mirror the private doc bucket to GCS
         'refresh-reminder': 'send_refresh_reminder',  # annual: nudge the admin to refresh the course catalogue
         'course-data-check': 'course_data_check',  # weekly: READ-ONLY audit + link reachability for the dashboard
+        'interview-reminders': 'send_interview_reminders',  # frequent (~15 min): 1-day + 1-hour interview reminders
     }
 
     def post(self, request, job):

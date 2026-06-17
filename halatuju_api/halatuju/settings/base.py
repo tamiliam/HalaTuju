@@ -159,6 +159,27 @@ CHECK2_AUTO_GENERATE = os.environ.get('CHECK2_AUTO_GENERATE', '').lower() in ('1
 # ReviewerProfile.share_phone_with_students (default shared).
 STUDENT_ASSIGNMENT_EMAIL_ENABLED = os.environ.get('STUDENT_ASSIGNMENT_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# Interview scheduling: the assigned reviewer proposes a few times, the student books
+# one in-app, and we send confirmations + reminders. OFF by default — the whole surface
+# (admin propose-card + student booking panel + endpoints) is dark until flipped on.
+INTERVIEW_SCHEDULING_ENABLED = os.environ.get('INTERVIEW_SCHEDULING_ENABLED', '').lower() in ('1', 'true', 'yes')
+# Auto-generate a Google Meet link (+ calendar event) on booking. Separate flag so the
+# scheduling surface can go live BEFORE the Google Workspace organiser account is wired.
+# When off (or creds missing / API error), booking still succeeds — the email simply has
+# no link (or uses a manually-pasted one). Needs a Workspace service account w/ domain-wide
+# delegation; see GOOGLE_MEET_SA_JSON + MEET_ORGANISER_EMAIL.
+INTERVIEW_MEET_ENABLED = os.environ.get('INTERVIEW_MEET_ENABLED', '').lower() in ('1', 'true', 'yes')
+# The Workspace mailbox that organises the interview calendar events (Meet links are
+# created on its calendar). The service account impersonates it via domain-wide delegation.
+MEET_ORGANISER_EMAIL = os.environ.get('MEET_ORGANISER_EMAIL', 'info@halatuju.xyz')
+# Service-account credentials JSON (the whole key, as a string) for Calendar/Meet.
+# Secret — set via Cloud Run env var, NEVER committed. Empty → Meet generation no-ops.
+GOOGLE_MEET_SA_JSON = os.environ.get('GOOGLE_MEET_SA_JSON', '')
+# Interview defaults.
+INTERVIEW_DURATION_MIN = int(os.environ.get('INTERVIEW_DURATION_MIN', '45'))
+# How close to the start a student may still self-reschedule / cancel (hours before).
+INTERVIEW_RESCHEDULE_CUTOFF_HOURS = int(os.environ.get('INTERVIEW_RESCHEDULE_CUTOFF_HOURS', '12'))
+
 # Action Centre Phase 2: a gentle Cikgu Gopal nudge when a student's TYPED answer is
 # TOTALLY off-topic (one cheap, billable Gemini call per answer). Off by default (a
 # billable-AI knob, like the doc-assist flags); AI-off/error always accepts the answer.
