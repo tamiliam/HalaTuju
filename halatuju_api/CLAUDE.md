@@ -524,8 +524,9 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `/scholarship/application`, system auto-creates a Meet link + calendar event (best-effort) + bilingual confirmation +
   1-day/1-hour reminders; self-reschedule/cancel to a 12h cutoff. `scheduling.py` + `meeting.py` (Workspace SA +
   domain-wide delegation), booking columns + `interview_slots` table (mig `0061`), `send_interview_reminders` cron,
-  cockpit propose-card + student booking panel, Guide+FAQ. **`INTERVIEW_MEET_ENABLED=1` LIVE; Meet proven end-to-end.**
-  **The surface flag `INTERVIEW_SCHEDULING_ENABLED` stays OFF** — flip it to expose (owner briefs reviewers first).
+  cockpit propose-card + student booking panel, Guide+FAQ. **`INTERVIEW_MEET_ENABLED=1` + `INTERVIEW_SCHEDULING_ENABLED=1`
+  BOTH LIVE (scheduling flipped on 2026-06-18, api rev …00432); Meet proven end-to-end. The surface is exposed to
+  reviewers + students.** (Re-dark with `--update-env-vars INTERVIEW_SCHEDULING_ENABLED=0` if needed.)
 - **Google Workspace `halatuju.xyz` live; email mapped to aliases.** From=`info@`, support=`help@`, interview
   reply-to=`interview@`, sponsor=`sponsor@`, internal notify=`contact@`, Meet organiser=`admin@` (the PRIMARY account —
   DWD can't impersonate an alias). Brevo domain authenticated (any `@halatuju.xyz` sends). Fixed lost replies
@@ -540,9 +541,11 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   + `halatuju-notify-contact-submissions` (both */15). Env on `halatuju-api`: `INTERVIEW_MEET_ENABLED=1`,
   `MEET_ORGANISER_EMAIL`, `GOOGLE_MEET_SA_JSON` (secret), `DEFAULT_FROM_EMAIL=info@`, `ADMIN_NOTIFY_EMAIL`/
   `COURSE_REFRESH_REMINDER_EMAIL=contact@`. Prod at scholarship migration **`0061`**.
-- **▶ NEXT / owner-parked:** flip `INTERVIEW_SCHEDULING_ENABLED=1` (after reviewer briefing) → then add the matching
-  FAQ/Guide screenshot (TD-126) per the reviewer-FAQ-currency rule; add a merged **SPF** TXT
-  (`v=spf1 include:_spf.google.com include:spf.brevo.com ~all`); TD-124 (contact inbox), TD-125 (Meet key → Secret Mgr).
+- **▶ NEXT:** scheduling is now LIVE — **monitor the first real bookings** (a Meet link should generate + the
+  confirmation/reminders fire). Owner follow-ups: add the Guide scheduling screenshot (TD-126); add a merged **SPF**
+  TXT (`v=spf1 include:_spf.google.com include:spf.brevo.com ~all`); refine the assignment email copy to point students
+  to "book your interview" (note: that email is itself gated by the separate OFF `STUDENT_ASSIGNMENT_EMAIL_ENABLED`).
+  TD-124 (contact inbox UI), TD-125 (Meet key → Secret Manager). Other thread: genuineness branch (unmerged).
 
 **▶ JUST SHIPPED & LIVE 2026-06-16 — Live-review round (10 commits `c6bc963`→`611e6b1`; migration `scholarship/0058`
 migrate-first via MCP; retro `docs/retrospective-2026-06-16-livereview-round.md`).**
