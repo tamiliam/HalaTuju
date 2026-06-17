@@ -228,6 +228,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Assignment dropdown listed non-reviewers (2026-06-17).** `AdminAssignableAdminsView` returned every active admin, so
+  read-only `admin`s and `partner`s appeared in the "assign a reviewer" dropdown even though the assign action rejects
+  them. Now filtered to **reviewers + supers** (mirrors `services._can_review`). +1 test.
 - **Restored `admin.scholarship.finalProfile.title`** — the TD-118 cleanup deleted the whole `finalProfile` object, but
   its `title` ("Final profile (v2 — with interview)") is still rendered on the profile card once a final exists. Re-added
   in en/ms/ta (the other `finalProfile.*` leaves stay removed). Caught before deploy.
