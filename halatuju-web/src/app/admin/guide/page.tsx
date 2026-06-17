@@ -4,7 +4,7 @@
 // Reviewers reach this only after signing in (gated by the admin layout), so it does not cover
 // signing in — it opens with a welcome + a picture of the programme.
 
-const STEPS: { n: number; title: string; body: React.ReactNode; img: string; alt: string }[] = [
+const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; alt?: string }[] = [
   {
     n: 1,
     title: 'Your applicants',
@@ -71,6 +71,17 @@ const STEPS: { n: number; title: string; body: React.ReactNode; img: string; alt
     alt: 'The Outstanding box and the raise-a-query controls',
   },
   {
+    title: 'Scheduling the interview',
+    body: (
+      <>On the applicant&rsquo;s page, use <strong>Interview scheduling</strong> to <strong>propose two or three
+      times</strong> that suit you. The student picks one from their side, and HalaTuju automatically creates a
+      <strong> Google Meet</strong> link and sends both of you a confirmation, plus reminders the day before and
+      an hour before. You&rsquo;ll see the booked time and the Meet link once they&rsquo;ve chosen. If the student
+      reschedules or cancels, you&rsquo;ll see the change — just propose fresh times if needed. It&rsquo;s a short
+      video call (about 30&ndash;45 minutes); parents are welcome to join from home.</>
+    ),
+  },
+  {
     n: 7,
     title: 'The interview stage',
     body: (
@@ -128,23 +139,25 @@ export default function ReviewerGuidePage() {
       </div>
 
       <div className="mt-8 space-y-10">
-        {STEPS.map((s) => (
-          <section key={s.n}>
+        {STEPS.map((s, i) => (
+          <section key={s.title}>
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-                {s.n}
+                {i + 1}
               </span>
               {s.title}
             </h2>
             {/* On wider screens the screenshot floats right and the text wraps around it;
                 on mobile it stacks below. overflow-hidden contains the float. */}
             <div className="mt-2 overflow-hidden">
-              <img
-                src={s.img}
-                alt={s.alt}
-                className="mb-3 block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm sm:float-right sm:ml-6 sm:mb-2 sm:max-w-[340px]"
-                loading="lazy"
-              />
+              {s.img && (
+                <img
+                  src={s.img}
+                  alt={s.alt}
+                  className="mb-3 block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm sm:float-right sm:ml-6 sm:mb-2 sm:max-w-[340px]"
+                  loading="lazy"
+                />
+              )}
               <div className="text-sm leading-relaxed text-gray-700">{s.body}</div>
             </div>
           </section>

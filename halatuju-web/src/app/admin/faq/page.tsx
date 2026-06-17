@@ -94,6 +94,24 @@ const REVIEWING: QA[] = [
     a: <>If they have completed one or more semesters and have their results (CGPA), you may ask them to upload
       their latest result. If it is satisfactory (above 3.0), you may consider recommending them for support.</>,
   },
+  {
+    q: <>How do I schedule the interview?</>,
+    a: <>On the applicant&rsquo;s page, use <strong>Interview scheduling</strong> to propose two or three times.
+      The student picks one, and a <strong>Google Meet</strong> link is created automatically — you and the
+      student both get a confirmation, plus reminders the day before and an hour before. The booked time and
+      Meet link appear on the applicant&rsquo;s page once they&rsquo;ve chosen.</>,
+  },
+  {
+    q: <>What if the student needs a different time, or doesn&rsquo;t book?</>,
+    a: <>They can <strong>reschedule or cancel themselves</strong> up to a few hours before, and you&rsquo;ll see
+      the updated time. If they cancel, just propose fresh times. If they haven&rsquo;t booked yet, the times you
+      proposed are simply waiting for them to choose.</>,
+  },
+  {
+    q: <>Do I need to create the Google Meet link myself?</>,
+    a: <>No — it&rsquo;s generated automatically when the student books, and shared with both of you. Parents are
+      welcome to join the video call from home; it usually takes about 30&ndash;45 minutes.</>,
+  },
 ]
 
 function Item({ item }: { item: QA }) {
