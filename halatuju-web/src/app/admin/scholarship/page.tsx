@@ -47,6 +47,15 @@ const STATUS_OPTIONS = [
   'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'accepted', 'rejected',
 ]
 
+// Human, Sentence-case status labels (the raw keys like 'profile_complete' aren't for display).
+const STATUS_LABELS: Record<string, string> = {
+  submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Profile complete',
+  interviewing: 'Interviewing', interviewed: 'Interviewed', accepted: 'Accepted',
+  sponsored: 'Sponsored', rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
+}
+const statusLabel = (s: string) =>
+  STATUS_LABELS[s] || (s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : s)
+
 const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
 export default function AdminScholarshipList() {
@@ -187,13 +196,20 @@ export default function AdminScholarshipList() {
         </select>
         <select value={statusF} onChange={(e) => changeFilter(setStatusF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allStatuses')}</option>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
         </select>
         {canFilterByAssignee && (
+          // Admin/super view this filter (it's hidden for reviewers, whose list is self-scoped).
+          // "Assigned to me" is dropped — applicants are assigned to reviewers, not to admins —
+          // and replaced with each active reviewer, so an admin can filter by who's reviewing.
           <select value={assignedF} onChange={(e) => changeFilter(setAssignedF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
             <option value="">{t('admin.scholarship.allAssignees')}</option>
-            <option value="me">{t('admin.scholarship.assignedToMe')}</option>
             <option value="none">{t('admin.scholarship.unassigned')}</option>
+            {reviewers.length > 0 && (
+              <optgroup label={t('admin.scholarship.byReviewer')}>
+                {reviewers.map((rv) => <option key={rv.id} value={rv.id}>{rv.name}</option>)}
+              </optgroup>
+            )}
           </select>
         )}
       </div>
@@ -234,7 +250,7 @@ export default function AdminScholarshipList() {
                   <td className="px-4 py-3 text-gray-600">{a.qualification?.toUpperCase()}</td>
                   <td className="px-4 py-3 text-gray-700 tabular-nums">{a.merit_score ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(a.status)}`}>{a.status}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(a.status)}`}>{statusLabel(a.status)}</span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{new Date(a.submitted_at).toLocaleDateString('ms-MY')}</td>
                   {isSuper && (

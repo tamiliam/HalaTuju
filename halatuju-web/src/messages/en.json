@@ -2389,7 +2389,7 @@
       "allBuckets": "All buckets",
       "allSources": "All sources",
       "allAssignees": "Anyone",
-      "assignedToMe": "Assigned to me",
+      "byReviewer": "By reviewer",
       "unassigned": "Unassigned",
       "assigned": "Assigned",
       "source": "Source",
