@@ -517,6 +517,10 @@ export interface AdminScholarshipDetail {
   verdict_reason: string
   verdict_decided_by: string
   verdict_decided_at: string | null
+  /** Full names resolved from the stored reviewer emails (fall back to email in the UI). */
+  verified_by_name: string
+  verdict_decided_by_name: string
+  rejected_by_name: string
   resolution_items: AdminResolutionItem[]
   /** Recommended assistance amount (RM, Decimal serialised as string) or null. */
   award_amount: string | null

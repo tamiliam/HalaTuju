@@ -232,6 +232,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Cockpit live-review fixes (2026-06-18).** (1) From `/profile`, tapping the merit score opens the grades editor
+  and now **returns to `/profile`** ("Save & return to profile") instead of the course-guide recommendations
+  (onboarding-return marker). (2) The **Decision panel freezes once recorded** — read-only summary (fact badges,
+  amount, conclusion) with "recorded by … on …"; a **superadmin** can reopen to edit; the post-accept contractual
+  decline stays. (3) Audit lines show the reviewer's **full name** (resolved from the stored email) rather than the
+  raw email. (4) **Interview Stage**: an explicit **"Saved ✓"** confirmation; once **Submitted** the input boxes are
+  **replaced by a read-only record** (Check-2-style blue boxes — answered questions only, plus the open-ended
+  findings), Save/Submit removed (superadmin can reopen) — which also closes a latent bug where a post-submit "Save"
+  spawned a **duplicate draft** session. Backend: `verified_by_name`/`verdict_decided_by_name`/`rejected_by_name` on
+  the detail serializer.
 - **Email addresses mapped to the new `halatuju.xyz` Workspace aliases (2026-06-17).** Replies were previously lost
   (emails invited "reply to arrange" but were sent from `noreply@`); now the **From** of all programme mail is
   `HalaTuju <info@halatuju.xyz>` (a real mailbox), so replies land in the inbox. Topical routing: student support /
