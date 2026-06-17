@@ -4,7 +4,10 @@
 // Reviewers reach this only after signing in (gated by the admin layout), so it does not cover
 // signing in — it opens with a welcome + a picture of the programme.
 
-const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; alt?: string }[] = [
+// `float`: only for an oddly tall (portrait) screenshot — it floats right and the
+// text wraps so it doesn't dominate. Every other (landscape) image shows at natural
+// size, stacked above its text.
+const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; alt?: string; float?: boolean }[] = [
   {
     n: 1,
     title: 'Your applicants',
@@ -112,6 +115,7 @@ const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; a
     ),
     img: '/reviewer-guide/step8-decision.png',
     alt: 'The Decision card with the four facts, amount slider and buttons',
+    float: true,   // portrait screenshot — float right + wrap so it doesn't dominate
   },
 ]
 
@@ -147,14 +151,18 @@ export default function ReviewerGuidePage() {
               </span>
               {s.title}
             </h2>
-            {/* On wider screens the screenshot floats right and the text wraps around it;
-                on mobile it stacks below. overflow-hidden contains the float. */}
+            {/* Default: image at natural size, stacked above the text. Only a `float`
+                step (a tall portrait screenshot) floats right + wraps so it doesn't
+                dominate. overflow-hidden contains the float. */}
             <div className="mt-2 overflow-hidden">
               {s.img && (
                 <img
                   src={s.img}
                   alt={s.alt}
-                  className="mb-3 block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm sm:float-right sm:ml-6 sm:mb-2 sm:max-w-[340px]"
+                  className={
+                    'mb-3 block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm'
+                    + (s.float ? ' sm:float-right sm:ml-6 sm:mb-2 sm:max-w-[340px]' : '')
+                  }
                   loading="lazy"
                 />
               )}
