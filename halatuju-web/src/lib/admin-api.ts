@@ -603,6 +603,8 @@ export async function getScholarshipApplications(
     q?: string
     page?: number
     pageSize?: number
+    sort?: string
+    dir?: string
   } = {},
   options?: ApiOptions
 ) {
@@ -612,6 +614,7 @@ export async function getScholarshipApplications(
   if (filters.source) q.set('source', filters.source)
   if (filters.assigned) q.set('assigned', filters.assigned)
   if (filters.q) q.set('q', filters.q)
+  if (filters.sort) { q.set('sort', filters.sort); q.set('dir', filters.dir || 'asc') }
   if (filters.page && filters.page > 1) q.set('page', String(filters.page))
   if (filters.pageSize && filters.pageSize !== DEFAULT_ADMIN_PAGE_SIZE) {
     q.set('page_size', String(filters.pageSize))
