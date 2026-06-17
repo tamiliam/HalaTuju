@@ -807,3 +807,14 @@
   `docsDrawer.*` — so a naive bulk delete would break the UI), removes only the confirmed-dead, and keeps en/ms/ta parity.
   Worth pairing with a guardrail (an i18n orphan-key check) so the set stops regrowing. (Logged 2026-06-16. NB: the
   unmerged `feature/doc-eval-harness` branch reserves TD-119 for its own corpus-flag debt — hence this is TD-120.)
+- TD-124: **Contact-form messages are email-only — no in-app inbox.** `/contact` → `contact_submissions`; the
+  `notify-contact-submissions` cron (2026-06-18) emails each unread row to `contact@halatuju.xyz` and marks it read.
+  There is no `/admin/messages` UI to browse/triage them. **To resolve:** a small admin inbox reading
+  `contact_submissions` with the `read` toggle. Low priority (email covers the need at current volume). (Logged 2026-06-18.)
+- TD-125: **The Meet service-account JSON key lives in a Cloud Run env var (`GOOGLE_MEET_SA_JSON`), not Secret
+  Manager.** Matches the project's existing env-var secret pattern (CRON_SECRET, GEMINI_API_KEY) but a long-lived SA
+  key is higher-value. **To resolve:** move to Secret Manager (mounted) or switch `meeting.py` to keyless DWD via the
+  Cloud Run runtime SA (workload identity), removing the key entirely. (Logged 2026-06-18.)
+- TD-126: **Interview-scheduling Guide step has no screenshot.** The Guide "Scheduling the interview" step renders
+  text-only (images were made optional). **To resolve:** once `INTERVIEW_SCHEDULING_ENABLED` is on, capture the
+  cockpit "Propose interview times" card + student booking panel and add them like the other steps. (Logged 2026-06-18.)
