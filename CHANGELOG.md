@@ -228,6 +228,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Email addresses mapped to the new `halatuju.xyz` Workspace aliases (2026-06-17).** Replies were previously lost
+  (emails invited "reply to arrange" but were sent from `noreply@`); now the **From** of all programme mail is
+  `HalaTuju <info@halatuju.xyz>` (a real mailbox), so replies land in the inbox. Topical routing: student support /
+  FAQ / tech-support copy → **`help@`** (central `SUPPORT_EMAIL`); interview emails carry **Reply-To `interview@`**;
+  sponsor notifications + referral invites + the sponsor landing → **`sponsor@`**; internal admin notifications
+  (`ADMIN_NOTIFY_EMAIL`, `COURSE_REFRESH_REMINDER_EMAIL`) → **`contact@`**; Meet organiser stays `admin@`. Replaced the
+  personal `tamiliam@gmail.com` in all user-facing copy (emails, FAQ, /application tech-support, i18n en/ms/ta) and
+  killed the dead `noreply@halatuju.com` fallback (→ `.xyz`). Env-driven (From/notify) + one deploy (copy/reply-to).
 - **Assignment dropdown listed non-reviewers (2026-06-17).** `AdminAssignableAdminsView` returned every active admin, so
   read-only `admin`s and `partner`s appeared in the "assign a reviewer" dropdown even though the assign action rejects
   them. Now filtered to **reviewers + supers** (mirrors `services._can_review`). +1 test.

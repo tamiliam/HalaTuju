@@ -75,7 +75,7 @@ class TestReminderCadence(_Base):
         body = mail.outbox[0].body
         self.assertIn('/scholarship/application', body)
         self.assertIn('Cikgu Gopal', body)
-        self.assertIn('tamiliam@gmail.com', body)
+        self.assertIn('help@halatuju.xyz', body)
 
     def test_nothing_before_day_2(self):
         app = self._app(anchor_days_ago=1, stage=0)
@@ -163,7 +163,7 @@ class TestAutoClose(_Base):
         self.assertIsNotNone(app.expired_at)
         self.assertEqual(len(mail.outbox), 1)         # the closure email
         self.assertIn('/scholarship/application', mail.outbox[0].body)
-        self.assertIn('tamiliam@gmail.com', mail.outbox[0].body)
+        self.assertIn('help@halatuju.xyz', mail.outbox[0].body)
 
     def test_no_close_before_grace_elapses(self):
         app = self._app(anchor_days_ago=56, stage=4, last_reminder_days_ago=3)

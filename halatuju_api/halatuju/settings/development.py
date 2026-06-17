@@ -36,4 +36,4 @@ LOGGING['handlers']['console']['formatter'] = 'simple'
 # Email — use console backend in development (no real emails sent)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 FRONTEND_URL = 'http://localhost:3000'
-DEFAULT_FROM_EMAIL = 'HalaTuju <noreply@halatuju.com>'
+DEFAULT_FROM_EMAIL = 'HalaTuju <noreply@halatuju.xyz>'

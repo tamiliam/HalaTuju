@@ -1401,7 +1401,7 @@ class SendVerificationView(APIView):
             send_mail(
                 subject=VERIFICATION_EMAIL_SUBJECTS[lang],
                 message=VERIFICATION_EMAIL_BODIES[lang].format(url=verify_url),
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
                 recipient_list=[email],
             )
         except Exception:
