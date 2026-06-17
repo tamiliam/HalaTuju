@@ -1113,6 +1113,7 @@ class CronRunView(APIView):
         'refresh-reminder': 'send_refresh_reminder',  # annual: nudge the admin to refresh the course catalogue
         'course-data-check': 'course_data_check',  # weekly: READ-ONLY audit + link reachability for the dashboard
         'interview-reminders': 'send_interview_reminders',  # frequent (~15 min): 1-day + 1-hour interview reminders
+        'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
     }
 
     def post(self, request, job):

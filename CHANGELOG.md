@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Contact-form submissions are now emailed to the team (2026-06-17).** The public `/contact` form saved rows to
+  `contact_submissions` but nothing alerted anyone (messages sat unseen). New cron job `notify-contact-submissions`
+  emails each unread submission to `contact@halatuju.xyz` (`ADMIN_NOTIFY_EMAIL`), with Reply-To set to the submitter's
+  email so a reply goes straight back, then marks it read (idempotent). A future `/admin/messages` inbox is deferred.
 - **In-app interview scheduling + Google Meet (2026-06-17, dark behind flags).** Replaces off-platform phone/email
   arrangements: the assigned reviewer **proposes 2–3 times** in the cockpit; the student **picks one** on their
   application page; the system auto-creates a **Google Meet link + calendar event** and sends a bilingual (EN+BM)
