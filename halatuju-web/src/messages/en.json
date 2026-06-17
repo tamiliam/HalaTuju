@@ -258,7 +258,10 @@
     "tagline": "Guiding Malaysian students to the right course.",
     "quickLinks": "Quick Links",
     "legal": "Legal",
-    "startHere": "Start Here"
+    "startHere": "Start Here",
+    "b40Heading": "B40 Aid",
+    "applyAssistance": "Apply for assistance",
+    "becomeSponsor": "Become a sponsor"
   },
   "landing": {
     "heroTitle": "Find Your Perfect Course",
@@ -524,7 +527,7 @@
     "aboutTitle": "About HalaTuju",
     "version": "Version",
     "currentLanguage": "Current Language",
-    "builtBy": "Built by the Tamil Foundation for Malaysian students."
+    "builtBy": "Built by tamiliam for Malaysian students."
   },
   "courseDetail": {
     "aboutTitle": "About This Course",

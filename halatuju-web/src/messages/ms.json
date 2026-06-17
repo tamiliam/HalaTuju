@@ -258,7 +258,10 @@
     "tagline": "Membimbing pelajar Malaysia ke kursus yang tepat.",
     "quickLinks": "Pautan Pantas",
     "legal": "Undang-undang",
-    "startHere": "Mula Di Sini"
+    "startHere": "Mula Di Sini",
+    "b40Heading": "Bantuan B40",
+    "applyAssistance": "Mohon bantuan",
+    "becomeSponsor": "Jadi penaja"
   },
   "landing": {
     "heroTitle": "Cari Kursus Anda",
@@ -524,7 +527,7 @@
     "aboutTitle": "Tentang HalaTuju",
     "version": "Versi",
     "currentLanguage": "Bahasa Semasa",
-    "builtBy": "Dibina oleh Tamil Foundation untuk pelajar Malaysia."
+    "builtBy": "Dibina oleh tamiliam untuk pelajar Malaysia."
   },
   "courseDetail": {
     "aboutTitle": "Tentang Kursus Ini",
