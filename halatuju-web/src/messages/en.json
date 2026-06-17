@@ -381,7 +381,8 @@
     "spmSastera": "Arts",
     "spmTeknikal": "Technical",
     "spmVokasional": "Vocational",
-    "saveReturnToApplication": "Save & return to application"
+    "saveReturnToApplication": "Save & return to application",
+    "saveAndReturn": "Save & return to profile"
   },
   "verifyEmail": {
     "loading": "Verifying your email...",
@@ -2475,6 +2476,12 @@
         "submit": "Submit interview findings",
         "saveError": "Could not save the interview.",
         "submitError": "Could not submit the interview.",
+        "saved": "Saved ✓",
+        "reopen": "Reopen",
+        "noneRecorded": "No interview findings were recorded.",
+        "findingsLabel": "Findings",
+        "submittedOn": "Submitted on",
+        "editingReopened": "Reopened for editing",
         "verdict": {
           "resolved": "Resolved"
         },
@@ -2794,6 +2801,9 @@
         "save": "Save verdict & generate final profile",
         "approve": "Approve",
         "decline": "Decline",
+        "edit": "Edit",
+        "recordedBy": "Decision recorded by",
+        "declinedBy": "Declined by",
         "aiSuggested": "AI verdict:",
         "suggest": {
           "yes": "yes",

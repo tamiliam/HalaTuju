@@ -14,6 +14,16 @@ from .serializers import (
 )
 
 
+def _admin_name_by_email(email):
+    """Resolve a stored reviewer email → their full name (for the audit lines).
+    Returns '' if no match (the cockpit then falls back to showing the email)."""
+    email = (email or '').strip()
+    if not email:
+        return ''
+    from apps.courses.models import PartnerAdmin
+    return PartnerAdmin.objects.filter(email__iexact=email).values_list('name', flat=True).first() or ''
+
+
 def _full_name(application):
     """The applicant's full legal name, UPPER-CASED for the admin views (students
     type their signature inconsistently — some lowercase). Prefer the declaration
@@ -222,6 +232,11 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     interview_gaps_run_at = serializers.DateTimeField(read_only=True)
     # Interview scheduling: booking state + proposed slots (dark behind the flag).
     interview_schedule = serializers.SerializerMethodField()
+    # The reviewer's full NAME for the audit lines (verified_by / verdict_decided_by /
+    # rejected_by store an email; the cockpit shows the name, falling back to email).
+    verified_by_name = serializers.SerializerMethodField()
+    verdict_decided_by_name = serializers.SerializerMethodField()
+    rejected_by_name = serializers.SerializerMethodField()
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
@@ -254,14 +269,14 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # Phase E3: admin-set award amount (gates fundability; shown on the pool card)
             'award_amount',
             # Rejection bucket (merit/need/ineligible/interview/contractual) + stamps
-            'rejection_category', 'rejected_at', 'rejected_by',
+            'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
             # Phase C handoff + interview funnel
             'profile_completed_at', 'completeness', 'interview_session',
             'interview_gaps', 'interview_gaps_run_at', 'interview_schedule',
             'assigned_to_id', 'assigned_to_name', 'assigned_at',
             'info_request_note', 'info_requested_at',
             # S11a verify-&-accept + mentoring
-            'mentoring_candidate', 'verified_at', 'verified_by', 'verify_checklist',
+            'mentoring_candidate', 'verified_at', 'verified_by', 'verified_by_name', 'verify_checklist',
             # S10 plans/support intake (surface for the admin review)
             'pathways_considered', 'top_choices', 'upu_status', 'field_of_study',
             'other_scholarships', 'other_scholarships_text', 'help_university',
@@ -281,11 +296,20 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'intake_snapshot',
             # S5 verdict audit / override capture (read-only; written via record-verdict).
             'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
-            'verdict_decided_by', 'verdict_decided_at',
+            'verdict_decided_by', 'verdict_decided_at', 'verdict_decided_by_name',
         ]
 
     def get_name(self, obj):
         return _full_name(obj)
+
+    def get_verified_by_name(self, obj):
+        return _admin_name_by_email(obj.verified_by)
+
+    def get_verdict_decided_by_name(self, obj):
+        return _admin_name_by_email(obj.verdict_decided_by)
+
+    def get_rejected_by_name(self, obj):
+        return _admin_name_by_email(obj.rejected_by)
 
     def get_school(self, obj):
         return getattr(obj.profile, 'school', '') if obj.profile else ''

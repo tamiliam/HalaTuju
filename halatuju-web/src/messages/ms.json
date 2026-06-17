@@ -381,7 +381,8 @@
     "spmSastera": "Sastera",
     "spmTeknikal": "Teknikal",
     "spmVokasional": "Vokasional",
-    "saveReturnToApplication": "Simpan & kembali ke permohonan"
+    "saveReturnToApplication": "Simpan & kembali ke permohonan",
+    "saveAndReturn": "Simpan & kembali ke profil"
   },
   "verifyEmail": {
     "loading": "Mengesahkan e-mel anda...",
@@ -2475,6 +2476,12 @@
         "submit": "Hantar penemuan temu duga",
         "saveError": "Tidak dapat menyimpan temu duga.",
         "submitError": "Tidak dapat menghantar temu duga.",
+        "saved": "Disimpan ✓",
+        "reopen": "Buka semula",
+        "noneRecorded": "Tiada penemuan temu duga direkodkan.",
+        "findingsLabel": "Penemuan",
+        "submittedOn": "Dihantar pada",
+        "editingReopened": "Dibuka semula untuk suntingan",
         "verdict": {
           "resolved": "Selesai"
         },
@@ -2794,6 +2801,9 @@
         "save": "Simpan keputusan & jana profil akhir",
         "approve": "Lulus",
         "decline": "Tolak",
+        "edit": "Sunting",
+        "recordedBy": "Keputusan direkodkan oleh",
+        "declinedBy": "Ditolak oleh",
         "aiSuggested": "Keputusan AI:",
         "suggest": {
           "yes": "ya",

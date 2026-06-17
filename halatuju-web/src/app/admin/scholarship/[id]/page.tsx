@@ -189,6 +189,9 @@ export default function AdminScholarshipDetailPage() {
   const [recAmount, setRecAmount] = useState<number | null>(null)  // recommended assistance (optimistic)
   const [verdictMsg, setVerdictMsg] = useState('')
   const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
+  const [interviewMsg, setInterviewMsg] = useState('')   // transient "Saved ✓" confirmation
+  const [editIv, setEditIv] = useState(false)            // superadmin reopened a submitted interview
+  const [editDec, setEditDec] = useState(false)          // superadmin reopened a recorded decision
   // Consolidation: the student's own words (note/story/funding) are collapsed by
   // default under the Sponsor profile — the reviewer checks the AI draft first.
   const [showOwnWords, setShowOwnWords] = useState(false)
@@ -265,20 +268,24 @@ export default function AdminScholarshipDetailPage() {
 
   const doSaveInterview = async () => {
     if (!token) return
-    setBusy('iv'); setError('')
+    setBusy('iv'); setError(''); setInterviewMsg('')
     try {
       await saveInterview(id, { findings, rubric, overall_note: note }, { token })
       await refreshApp()
+      // Save confidence: an explicit "Saved ✓" so the reviewer knows it persisted
+      // (the draft is still editable; re-saving overwrites it, until Submit).
+      setInterviewMsg(t('admin.scholarship.interview.saved'))
+      setTimeout(() => setInterviewMsg(''), 4000)
     } catch { setError(t('admin.scholarship.interview.saveError')) } finally { setBusy('') }
   }
 
   const doSubmitInterview = async () => {
     if (!token) return
-    setBusy('ivs'); setError('')
+    setBusy('ivs'); setError(''); setInterviewMsg('')
     try {
       await saveInterview(id, { findings, rubric, overall_note: note }, { token })
       const d = await submitInterview(id, { token })
-      setApp(d); loadInterviewState(d)
+      setApp(d); loadInterviewState(d); setEditIv(false)   // freeze to the read-only view
     } catch { setError(t('admin.scholarship.interview.submitError')) } finally { setBusy('') }
   }
 
@@ -465,6 +472,30 @@ export default function AdminScholarshipDetailPage() {
   // Approve also requires a recommended assistance amount (the slider, or an already-saved one).
   const hasAssistance = recAmount != null || app.award_amount != null
   const approveReady = isApproveReady(decisionReady, hasAssistance)
+
+  // Freeze model (the owner's): Save persists a draft and stays editable (re-saving
+  // overwrites the same draft); Submit / recording the decision disables editing →
+  // read-only. A superadmin can reopen to correct (editIv / editDec).
+  const interviewSubmitted = app.interview_session?.status === 'submitted'
+  const interviewLocked = interviewSubmitted && !editIv
+  const decisionRecorded = !!app.verdict_decided_at
+  const decisionLocked = decisionRecorded && !editDec
+
+  // The interview agenda (questions): deterministic flags not already a Check-2 query +
+  // AI gaps. Computed once; the editable view drops 'deleted' items, the read-only view
+  // shows only the answered ones.
+  const check2Owned = new Set((app.resolution_items ?? []).map((i) => i.code))
+  const agendaItems = [
+    ...app.anomalies
+      .filter((a) => { const o = ANOMALY_CHECK2_OWNER[a.code]; return !(o && check2Owned.has(o)) })
+      .map((a) => ({
+        code: a.code, ai: false,
+        label: t(`admin.scholarship.anomaly.${a.code}.question`,
+          Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
+      })),
+    ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
+  ]
+  const editableAgenda = agendaItems.filter((it) => findings[it.code]?.verdict !== 'deleted')
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 pb-10">
@@ -1127,97 +1158,130 @@ export default function AdminScholarshipDetailPage() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.interview.title')}</h2>
-            {app.interview_session?.status === 'submitted' && (
+            {interviewSubmitted && (
               <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-700">
                 {t('admin.scholarship.interview.submitted')}
               </span>
             )}
           </div>
-          {canWrite && (
-            <button onClick={doSuggestGaps} disabled={!!busy}
-              className="px-2.5 py-1 rounded-lg text-xs bg-primary-600 text-white disabled:opacity-50">
-              {busy === 'gaps' ? t('admin.scholarship.gaps.running')
-                : (app.interview_gaps?.length ?? 0) > 0 ? t('admin.scholarship.gaps.more')
-                : t('admin.scholarship.gaps.button')}
-            </button>
-          )}
+          {interviewLocked
+            ? (isSuper && (
+                <button onClick={() => setEditIv(true)}
+                  className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-100">
+                  {t('admin.scholarship.interview.reopen')}
+                </button>
+              ))
+            : (canWrite && (
+                <button onClick={doSuggestGaps} disabled={!!busy}
+                  className="px-2.5 py-1 rounded-lg text-xs bg-primary-600 text-white disabled:opacity-50">
+                  {busy === 'gaps' ? t('admin.scholarship.gaps.running')
+                    : (app.interview_gaps?.length ?? 0) > 0 ? t('admin.scholarship.gaps.more')
+                    : t('admin.scholarship.gaps.button')}
+                </button>
+              ))}
         </div>
-        <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
-        {(() => {
-          // #9: drop anomalies whose concern is already a Check-2 query (no repeat).
-          const check2Codes = new Set((app.resolution_items ?? []).map((i) => i.code))
-          const items = [
-            // Reviewer asks these LIVE — show the question form (2nd-person), not the
-            // internal flag description.
-            ...app.anomalies
-              .filter((a) => {
-                const owner = ANOMALY_CHECK2_OWNER[a.code]
-                return !(owner && check2Codes.has(owner))
-              })
-              .map((a) => ({
-                code: a.code,
-                label: t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
-                ai: false,
-              })),
-            ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
-          ].filter((it) => findings[it.code]?.verdict !== 'deleted')  // a Deleted talking point drops off the agenda
-          if (items.length === 0) {
-            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
-          }
-          return (
-            <ul className="space-y-3">
-              {items.map((it) => {
-                const f = findings[it.code] ?? { verdict: '', rationale: '' }
-                const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
-                  setFindings((prev) => ({ ...prev, [it.code]: { ...f, ...patch } }))
-                const resolved = f.verdict === 'resolved'
-                return (
-                  <li key={it.code} className="border rounded-lg p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm text-gray-800 min-w-0">
-                        {it.ai && <span className="mr-1 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
-                        {it.label}
+
+        {interviewLocked ? (
+          /* Submitted → read-only record (Check-2 style blue boxes). Questions with no
+             answer are dropped; the open-ended findings show in their own box. */
+          (() => {
+            const answered = agendaItems.filter((it) => {
+              const f = findings[it.code]
+              return f && f.verdict !== 'deleted' && ((f.rationale || '').trim() || f.verdict === 'resolved')
+            })
+            const hasNote = (note || '').trim().length > 0
+            if (answered.length === 0 && !hasNote) {
+              return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noneRecorded')}</p>
+            }
+            return (
+              <div className="space-y-2">
+                {answered.map((it) => {
+                  const f = findings[it.code]
+                  return (
+                    <div key={it.code} className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                      <p className="text-xs font-medium text-gray-500">{it.label}</p>
+                      <p className="mt-1 text-sm text-gray-800">
+                        {(f.rationale || '').trim() || `${t('admin.scholarship.interview.verdict.resolved')} ✓`}
                       </p>
-                      {canWrite && (
-                        <div className="flex shrink-0 gap-1.5">
-                          <button onClick={() => doDeleteAgendaItem(it.code)} disabled={!!busy}
-                            className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50">
-                            {t('admin.scholarship.caveats.delete')}
-                          </button>
-                          <button onClick={() => setF({ verdict: resolved ? '' : 'resolved' })}
-                            className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
-                            {t('admin.scholarship.interview.verdict.resolved')}
-                          </button>
-                        </div>
-                      )}
                     </div>
-                    <input
-                      value={f.rationale} maxLength={140} disabled={!canWrite}
-                      onChange={(e) => setF({ rationale: e.target.value })}
-                      placeholder={t('admin.scholarship.interview.rationalePlaceholder')}
-                      className="mt-2 w-full border rounded-lg px-3 py-1.5 text-sm"
-                    />
-                  </li>
-                )
-              })}
-            </ul>
-          )
-        })()}
-        <textarea value={note} disabled={!canWrite} rows={2}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder={t('admin.scholarship.interview.notePlaceholder')}
-          className="w-full border rounded-lg px-3 py-2 text-sm" />
-        {canWrite && (
-          <div className="flex gap-2">
-            <button onClick={doSaveInterview} disabled={!!busy}
-              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
-              {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
-            </button>
-            <button onClick={doSubmitInterview} disabled={!!busy}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm disabled:opacity-50">
-              {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
-            </button>
-          </div>
+                  )
+                })}
+                {hasNote && (
+                  <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                    <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.interview.findingsLabel')}</p>
+                    <p className="mt-1 whitespace-pre-line text-sm text-gray-800">{note}</p>
+                  </div>
+                )}
+                {app.interview_session?.submitted_at && (
+                  <p className="text-[11px] text-gray-400">
+                    {t('admin.scholarship.interview.submittedOn')} {new Date(app.interview_session.submitted_at).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            )
+          })()
+        ) : (
+          <>
+            <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
+            {editableAgenda.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
+            ) : (
+              <ul className="space-y-3">
+                {editableAgenda.map((it) => {
+                  const f = findings[it.code] ?? { verdict: '', rationale: '' }
+                  const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
+                    setFindings((prev) => ({ ...prev, [it.code]: { ...f, ...patch } }))
+                  const resolved = f.verdict === 'resolved'
+                  return (
+                    <li key={it.code} className="border rounded-lg p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm text-gray-800 min-w-0">
+                          {it.ai && <span className="mr-1 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
+                          {it.label}
+                        </p>
+                        {canWrite && (
+                          <div className="flex shrink-0 gap-1.5">
+                            <button onClick={() => doDeleteAgendaItem(it.code)} disabled={!!busy}
+                              className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50">
+                              {t('admin.scholarship.caveats.delete')}
+                            </button>
+                            <button onClick={() => setF({ verdict: resolved ? '' : 'resolved' })}
+                              className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
+                              {t('admin.scholarship.interview.verdict.resolved')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        value={f.rationale} maxLength={140} disabled={!canWrite}
+                        onChange={(e) => setF({ rationale: e.target.value })}
+                        placeholder={t('admin.scholarship.interview.rationalePlaceholder')}
+                        className="mt-2 w-full border rounded-lg px-3 py-1.5 text-sm"
+                      />
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+            <textarea value={note} disabled={!canWrite} rows={2}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={t('admin.scholarship.interview.notePlaceholder')}
+              className="w-full border rounded-lg px-3 py-2 text-sm" />
+            {canWrite && (
+              <div className="flex items-center gap-2">
+                <button onClick={doSaveInterview} disabled={!!busy}
+                  className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
+                  {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
+                </button>
+                <button onClick={doSubmitInterview} disabled={!!busy}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm disabled:opacity-50">
+                  {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
+                </button>
+                {interviewMsg && <span className="text-sm font-medium text-green-600">{interviewMsg}</span>}
+                {editIv && <span className="text-[11px] text-amber-600">{t('admin.scholarship.interview.editingReopened')}</span>}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -1473,8 +1537,75 @@ export default function AdminScholarshipDetailPage() {
            accept. The audit→accept gate is preserved (accept stays gated on a complete
            profile + every checklist box). ──────────────────────────────────────────── */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
-        <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.decision.title')}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.decision.title')}</h2>
+          {decisionLocked && isSuper && (
+            <button onClick={() => setEditDec(true)}
+              className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-100">
+              {t('admin.scholarship.recordVerdict.edit')}
+            </button>
+          )}
+        </div>
 
+        {decisionLocked ? (
+          /* Decision recorded → read-only. Inputs/buttons are gone so it can't look
+             editable; a superadmin can reopen via Edit. The post-accept contractual
+             decline stays (a deliberate later action, not part of the frozen verdict). */
+          <div className="space-y-3">
+            <div className="space-y-2">
+              {(['identity', 'academic', 'pathway', 'income'] as const).map((fact) => {
+                const v = officerVerdict[fact]
+                return (
+                  <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
+                    <span className="text-sm font-medium text-gray-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      v === 'pass' ? 'bg-green-100 text-green-700'
+                      : v === 'fail' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {v === 'pass' ? t('admin.scholarship.recordVerdict.factPass')
+                        : v === 'fail' ? t('admin.scholarship.recordVerdict.factFail') : '—'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            {app.award_amount != null && (
+              <p className="text-sm text-gray-700">
+                {t('admin.scholarship.recordVerdict.assistanceLabel')}{' '}
+                <span className="font-semibold text-gray-900">RM{Math.round(Number(app.award_amount)).toLocaleString()}</span>
+              </p>
+            )}
+            {(verdictReason || '').trim() && (
+              <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.recordVerdict.reasonLabel')}</p>
+                <p className="mt-1 whitespace-pre-line text-sm text-gray-800">{verdictReason}</p>
+              </div>
+            )}
+            {app.status === 'accepted' ? (
+              <p className="flex items-center gap-1.5 text-sm text-green-700">
+                <span aria-hidden>✓</span>
+                {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
+                {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
+              </p>
+            ) : app.status === 'rejected' ? (
+              <p className="text-sm text-red-700">
+                {t('admin.scholarship.recordVerdict.declinedBy')} {app.rejected_by_name || app.rejected_by || '—'}
+                {app.rejected_at ? ` · ${new Date(app.rejected_at).toLocaleDateString()}` : ''}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">
+                {t('admin.scholarship.recordVerdict.recordedBy')} {app.verdict_decided_by_name || app.verdict_decided_by || '—'}
+                {app.verdict_decided_at ? ` · ${new Date(app.verdict_decided_at).toLocaleDateString()}` : ''}
+              </p>
+            )}
+            {app.status === 'accepted' && canWrite && (
+              <button onClick={() => doReject('contractual')} disabled={!!busy}
+                className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
+              </button>
+            )}
+          </div>
+        ) : (
+        <>
         <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.recordVerdict.rateTitle')}</p>
 
         {/* Four fact rows — pass / fail toggle */}
@@ -1575,7 +1706,7 @@ export default function AdminScholarshipDetailPage() {
           <div className="space-y-2 border-t pt-3">
             <p className="flex items-center gap-1.5 text-sm text-green-700">
               <span aria-hidden>✓</span>
-              {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
+              {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
               {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
             </p>
             {canWrite && (
@@ -1619,6 +1750,8 @@ export default function AdminScholarshipDetailPage() {
           )
         ) : (
           <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
+        )}
+        </>
         )}
 
         {/* Feedback message */}
