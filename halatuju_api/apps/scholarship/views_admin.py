@@ -731,11 +731,16 @@ class AdminSponsorshipListView(_AdminBase):
 
 
 class AdminAssignableAdminsView(_AdminBase):
-    """GET .../assignable-admins/ — active admins for the assignment dropdown."""
+    """GET .../assignable-admins/ — active REVIEWERS (+ supers) for the assignment
+    dropdown. Only roles that can actually be assigned an applicant appear (mirrors
+    services._can_review): a plain 'admin' is read-only, and 'partner'/'viewer' have
+    no review role, so none of them are listed."""
     def get(self, request):
         if not self.get_admin(request):
             return self._deny()
+        from django.db.models import Q
         admins = (PartnerAdmin.objects.filter(is_active=True)
+                  .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super']))
                   .select_related('reviewer_profile').order_by('name'))
 
         def langs(a):

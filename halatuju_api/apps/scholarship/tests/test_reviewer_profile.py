@@ -124,6 +124,21 @@ class TestReviewerProfile(TestCase):
         other = next(a for a in r.json()['admins'] if a['id'] == self.other.id)
         self.assertEqual(other['languages'], [])                  # no profile → none
 
+    def test_assignable_admins_only_reviewers_and_supers(self):
+        # The dropdown must list only assignable roles (reviewer + super), never a
+        # read-only 'admin', a 'partner', or a 'viewer' — mirrors services._can_review.
+        partner = PartnerAdmin.objects.create(
+            supabase_user_id='partner-uid', role='partner', is_active=True,
+            name='Partner', email='partner@example.com')
+        self._auth('super-uid')
+        r = self.client.get('/api/v1/admin/scholarship/assignable-admins/')
+        self.assertEqual(r.status_code, 200)
+        ids = {a['id'] for a in r.json()['admins']}
+        self.assertIn(self.reviewer.id, ids)        # reviewer ✓
+        self.assertIn(self.superadmin.id, ids)      # super ✓
+        self.assertNotIn(self.viewer.id, ids)       # role 'admin' (read-only) ✗
+        self.assertNotIn(partner.id, ids)           # partner ✗
+
     def test_patch_structured_address(self):
         self._auth('reviewer-uid')
         r = self.client.patch(self.URL, {
