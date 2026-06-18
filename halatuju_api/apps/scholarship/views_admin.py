@@ -1116,7 +1116,7 @@ class AdminInterviewSlotsView(_AdminBase):
         app, err = self._scoped_application(request, pk)
         if err:
             return err
-        return Response(interview_schedule_payload(app))
+        return Response(interview_schedule_payload(app, include_reviewer_busy=True))
 
     def post(self, request, pk):
         if not scheduling.scheduling_enabled():
@@ -1137,7 +1137,7 @@ class AdminInterviewSlotsView(_AdminBase):
             scheduling.propose_slots(app, reviewer=admin, starts=starts)
         except scheduling.SchedulingError as e:
             return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(interview_schedule_payload(app))
+        return Response(interview_schedule_payload(app, include_reviewer_busy=True))
 
 
 class AdminInterviewSlotDetailView(_AdminBase):
@@ -1160,7 +1160,7 @@ class AdminInterviewSlotDetailView(_AdminBase):
             scheduling.withdraw_slot(slot)
         except scheduling.SchedulingError as e:
             return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(interview_schedule_payload(app))
+        return Response(interview_schedule_payload(app, include_reviewer_busy=True))
 
 
 class ReviewerProfileView(_AdminBase):

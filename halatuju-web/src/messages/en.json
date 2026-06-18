@@ -2505,20 +2505,17 @@
         },
         "schedule": {
           "title": "Interview scheduling",
-          "intro": "Propose 2–3 times. The student picks one, and we send a Google Meet link and reminders automatically.",
+          "intro": "Propose 3 times. The student picks one, and we send a Google Meet link and reminders automatically.",
           "booked": "Booked",
           "meetLink": "Google Meet link",
           "noLink": "No link yet — it is created when the student books.",
           "cancelledNote": "The student cancelled — propose fresh times.",
-          "proposed": "Proposed times",
-          "noneProposed": "No times proposed yet.",
-          "withdraw": "Withdraw",
           "availableTimes": "Available times (8:00am–9:30pm, 30-min)",
           "noneToday": "No more times available today — pick another date.",
           "selectedCount": "Selected ({n} of {max})",
-          "slotTaken": "Already proposed",
+          "busyOther": "You have another student's interview at this time",
+          "pickThree": "Select 3 times — the student picks one.",
           "propose": "Propose times",
-          "needFuture": "Please pick at least one time.",
           "error": "Could not save. Please try again."
         }
       },

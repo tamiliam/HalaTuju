@@ -105,6 +105,57 @@ class SchedulingServiceTests(TestCase):
         self.assertFalse(scheduling.slot_in_window(at(7, 30)))
         self.assertFalse(scheduling.slot_in_window(at(22, 0)))
 
+    def _other_app(self, uid='stud2'):
+        p = StudentProfile.objects.create(
+            supabase_user_id=uid, nric='800101-14-5678', name='Bala Jr')
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='interviewing',
+            notify_email=f'{uid}@example.com', assigned_to=self.reviewer)
+
+    # ── email-skip (re-propose the same menu) ──────────────────────────────────
+    def test_propose_skips_email_when_menu_unchanged(self):
+        t = [self._future(days=3), self._future(days=4), self._future(days=5)]
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=t)
+        mail.outbox.clear()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=t)  # same 3
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_propose_emails_when_menu_changes(self):
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        mail.outbox.clear()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=6)])
+        self.assertEqual(len(mail.outbox), 1)
+
+    # ── reviewer-wide conflict ─────────────────────────────────────────────────
+    def test_propose_rejects_reviewer_conflict_across_students(self):
+        other = self._other_app()
+        t = self._future(days=3)
+        scheduling.propose_slots(other, reviewer=self.reviewer, starts=[t])
+        with self.assertRaises(scheduling.SchedulingError) as cm:
+            scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[t])
+        self.assertEqual(str(cm.exception), 'reviewer_conflict')
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_book_rejects_reviewer_conflict(self, _mock):
+        other = self._other_app()
+        t = self._future(days=3)
+        s1 = InterviewSlot.objects.create(application=self.app, reviewer=self.reviewer, start=t)
+        s2 = InterviewSlot.objects.create(application=other, reviewer=self.reviewer, start=t)
+        scheduling.book_slot(self.app, slot_id=s1.id)  # books t for app1
+        with self.assertRaises(scheduling.SchedulingError) as cm:
+            scheduling.book_slot(other, slot_id=s2.id)
+        self.assertEqual(str(cm.exception), 'reviewer_conflict')
+
+    def test_payload_reviewer_busy_admin_only(self):
+        from apps.scholarship.serializers_admin import interview_schedule_payload
+        other = self._other_app()
+        InterviewSlot.objects.create(
+            application=other, reviewer=self.reviewer, start=self._future(days=3))
+        admin_p = interview_schedule_payload(self.app, include_reviewer_busy=True)
+        self.assertEqual(len(admin_p['reviewer_busy']), 1)        # the other student's slot
+        student_p = interview_schedule_payload(self.app)
+        self.assertNotIn('reviewer_busy', student_p)              # never leaked to students
+
     def test_reproposing_withdraws_old_unbooked_slots(self):
         scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
         scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=5)])

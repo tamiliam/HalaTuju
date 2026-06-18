@@ -554,6 +554,9 @@ export interface InterviewSchedule {
   booked_slot_id: number | null
   slots: InterviewSlot[]
   reschedule_cutoff_hours: number
+  /** Reviewer-facing only: start times (ISO) this reviewer already holds for OTHER
+   *  students, so the propose grid can grey them out. Absent on the student payload. */
+  reviewer_busy?: string[]
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in
