@@ -136,6 +136,7 @@ export interface EligibleCourse {
   institution_count?: number
   institution_state?: string
   pismp_languages?: string[]
+  aliran?: string // PISMP only — school type (sk/sjkc/sjkt/khas) for the Aliran→Bidang picker
 }
 
 export interface Course {

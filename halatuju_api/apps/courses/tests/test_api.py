@@ -281,6 +281,30 @@ class TestEligibilityEndpoint(TestCase):
         pismp = [c for c in courses if c['source_type'] == 'pismp']
         self.assertGreater(len(pismp), 0, "Perfect student should qualify for PISMP courses")
 
+    def test_pismp_courses_carry_aliran(self):
+        """Eligible PISMP courses expose an 'aliran' (sk/sjkc/sjkt/khas) so the apply-form
+        picker can group them by school type; non-PISMP courses carry an empty aliran."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+', 'bio': 'A+',
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        pismp = [c for c in courses if c['source_type'] == 'pismp']
+        self.assertGreater(len(pismp), 0)
+        for c in pismp:
+            self.assertIn('aliran', c)
+            self.assertIn(c['aliran'], ('sk', 'sjkc', 'sjkt', 'khas'),
+                          f"{c['course_id']} has an unexpected aliran {c['aliran']!r}")
+        # Non-PISMP courses get an empty aliran (the key is always present).
+        for c in courses:
+            if c['source_type'] != 'pismp':
+                self.assertEqual(c.get('aliran', ''), '')
+
     def test_pismp_weak_student_excluded(self):
         """Student with no A grades should NOT qualify for any PISMP courses."""
         response = self.client.post(self.url, {

@@ -11,6 +11,8 @@ import FieldLabel from '@/components/FieldLabel'
 import Toggle from '@/components/Toggle'
 import PathwaySelect from '@/components/PathwaySelect'
 import ProgrammePicker from '@/components/ProgrammePicker'
+import AliranPicker from '@/components/AliranPicker'
+import BidangPicker from '@/components/BidangPicker'
 import InstitutionPicker from '@/components/InstitutionPicker'
 import {
   submitScholarshipApplication,
@@ -36,6 +38,11 @@ import {
   STPM_STREAMS,
   stpmDegreesToCourses,
   UNCERTAINTY_REASONS,
+  pismpAlirans,
+  bidangForAliran,
+  aliranForChosen,
+  bidangLabel,
+  type PismpAliran,
   formatNric,
   formatPhone,
   formatMoney2dp,
@@ -109,6 +116,8 @@ export default function ScholarshipApplyPage() {
   const [eligibleCourses, setEligibleCourses] = useState<EligibleCourse[]>([])
   const [matricTracks, setMatricTracks] = useState<string[]>([])   // eligible matric track ids (P4)
   const [pathwayLoading, setPathwayLoading] = useState(false)
+  // PISMP teacher-training: the chosen school type (Aliran), local to the picker.
+  const [pismpAliran, setPismpAliran] = useState<string>('')
   // Once the form is populated (from a stash on return, or from the profile),
   // don't let the profile effect overwrite the student's in-progress edits.
   const populatedRef = useRef(false)
@@ -263,6 +272,18 @@ export default function ScholarshipApplyPage() {
   const setProgramme = (c: ChosenProgramme | null) => setForm((p) => ({
     ...p, chosenProgramme: c, fieldOfStudy: c?.fieldKey ?? '',
   }))
+  // PISMP Aliran → Bidang: the eligible teacher-training courses, the school types present
+  // among them, and keeping the selected school type in sync with the chosen course (or
+  // auto-selecting when there's only one). Switching school type clears the bidang.
+  const pismpCourses = programmesForPathway(eligibleCourses, 'pismp')
+  const availableAlirans = pismpAlirans(pismpCourses)
+  useEffect(() => {
+    if (form.chosenPathway !== 'pismp') return
+    const fromChosen = aliranForChosen(pismpCourses, form.chosenProgramme?.courseId)
+    if (fromChosen) { if (fromChosen !== pismpAliran) setPismpAliran(fromChosen); return }
+    if (!pismpAliran && availableAlirans.length === 1) setPismpAliran(availableAlirans[0])
+  }, [form.chosenPathway, form.chosenProgramme, eligibleCourses]) // eslint-disable-line react-hooks/exhaustive-deps
+  const chooseAliran = (a: PismpAliran) => { setPismpAliran(a); setProgramme(null) }
   // Institution pathways (P4): track/stream → college/school. Changing the track or
   // stream clears the institution, since the college/school list then changes.
   const setPreUTrack = (key: string) => setForm((p) => ({ ...p, preUTrack: key, preUInstitution: '' }))
@@ -691,7 +712,39 @@ export default function ScholarshipApplyPage() {
             kkom/pismp/iljtm/ilkbs) reveal an eligible-only course combobox; matric/stpm
             take the stream/track → institution flow (P4 stub for now). */}
         {form.pathwayCertainty === 'sure' && examType !== 'stpm' && form.chosenPathway && (
-          isProgrammePathway(form.chosenPathway) ? (
+          form.chosenPathway === 'pismp' ? (
+            // Teacher-training: navigate Aliran (school type) → Bidang (subject), instead
+            // of type-searching a course name the student may not know.
+            <div className="space-y-4">
+              <div>
+                <FieldLabel required tip={t('scholarship.apply.plan.aliranTip')}>{t('scholarship.apply.plan.aliranLabel')}</FieldLabel>
+                {pathwayLoading ? (
+                  <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
+                ) : availableAlirans.length === 0 ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noProgrammes')}</p>
+                ) : (
+                  <AliranPicker alirans={availableAlirans} value={pismpAliran} onChange={chooseAliran} />
+                )}
+              </div>
+              {pismpAliran && (
+                <div>
+                  <FieldLabel required>{t('scholarship.apply.plan.bidangLabel')}</FieldLabel>
+                  <BidangPicker
+                    key={pismpAliran}
+                    courses={bidangForAliran(pismpCourses, pismpAliran)}
+                    value={form.chosenProgramme}
+                    onChange={setProgramme}
+                    loading={pathwayLoading}
+                  />
+                </div>
+              )}
+              {form.chosenProgramme && (
+                <p className="rounded-xl border border-primary-100 bg-primary-50 p-3 text-sm text-primary-800">
+                  {t('scholarship.apply.plan.pismpChosen', { course: bidangLabel(form.chosenProgramme.courseName) })}
+                </p>
+              )}
+            </div>
+          ) : isProgrammePathway(form.chosenPathway) ? (
             <div>
               <FieldLabel required tip={t('scholarship.apply.plan.programmeTip')}>{t('scholarship.apply.plan.programmeLabel')}</FieldLabel>
               <ProgrammePicker

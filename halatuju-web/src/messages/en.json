@@ -619,6 +619,23 @@
         "programmeNoMatch": "No match — try a different word.",
         "programmeAtN": "{n} institutions",
         "noProgrammes": "We couldn't find eligible courses for this pathway. Try another pathway, or tell us more in the next step.",
+        "aliranLabel": "School type",
+        "aliranTip": "Pick the type of school you want to teach in — it sets which teaching subjects you can choose from.",
+        "aliran": {
+          "sk": "National School (SK)",
+          "sjkc": "Chinese School (SJKC)",
+          "sjkt": "Tamil School (SJKT)",
+          "khas": "Special-Needs School (SKPK)"
+        },
+        "aliranSub": {
+          "sk": "Sekolah Kebangsaan",
+          "sjkc": "Sekolah Jenis Kebangsaan Cina",
+          "sjkt": "Sekolah Jenis Kebangsaan Tamil",
+          "khas": "Pendidikan Khas"
+        },
+        "bidangLabel": "Subject you want to teach",
+        "bidangCount": "{n} subjects available for this school type",
+        "pismpChosen": "Your course: {course} — PISMP",
         "topProgrammesLabel": "Your top 3 programmes",
         "topProgrammesTip": "Pick up to three degrees you're weighing up — from the ones your STPM results qualify you for. We'll keep them in mind even if you haven't decided.",
         "trackLabel": "Which matriculation track?",
