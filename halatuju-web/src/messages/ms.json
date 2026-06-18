@@ -2420,8 +2420,6 @@
       "assignError": "Tidak dapat menukar tugasan.",
       "assign": {
         "assignedTitle": "Penyemak ditugaskan",
-        "reviewerLine": "Penyemak: {name}.",
-        "corrections": "pembetulan: {n}",
         "lockedHint": "Dikunci — keputusan telah direkodkan. Buka semula keputusan untuk menukar penyemak.",
         "notReadyHint": "Tugasan dibuka apabila pertanyaan pemohon dijawab, atau tempoh 5 hari tamat.",
         "error": {

@@ -2420,8 +2420,6 @@
       "assignError": "Could not change the assignment.",
       "assign": {
         "assignedTitle": "Reviewer assigned",
-        "reviewerLine": "Reviewer: {name}.",
-        "corrections": "corrections: {n}",
         "lockedHint": "Locked — a decision has been recorded. Reopen the decision to change the reviewer.",
         "notReadyHint": "Assignment opens once the applicant's queries are answered, or the 5-day window passes.",
         "error": {
