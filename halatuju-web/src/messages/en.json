@@ -217,8 +217,8 @@
       "title": "Why sponsor through HalaTuju",
       "card1Title": "Complete anonymity",
       "card1Desc": "You never see names or contact details, only an anonymous student profile. Identities are protected both ways.",
-      "card2Title": "Every ringgit tracked",
-      "card2Desc": "Funds are held by Yayasan myNADI and released against verified study milestones, never handed over directly.",
+      "card2Title": "Every ringgit accountable",
+      "card2Desc": "Funds will be administered by Yayasan myNADI and released against verified study milestones — never handed directly to a student. (Partnership being finalised.)",
       "card3Title": "Real, verified impact",
       "card3Desc": "Each student is income-verified and interviewed, so your support reaches a genuine B40 family."
     },
@@ -231,14 +231,14 @@
       "step3Title": "Choose a student",
       "step3Desc": "Browse anonymised profiles and pick someone to support.",
       "step4Title": "Fund and follow",
-      "step4Desc": "Fund their studies and follow their progress along the way."
+      "step4Desc": "Commit your support and follow their progress along the way."
     },
     "faq": {
       "title": "Questions sponsors ask",
       "q1": "Will I see the student's identity?",
       "a1": "No. To protect everyone, you see an anonymous profile only — never a name, IC, address, phone, email or photo. The student never sees your details either.",
       "q2": "Where does my money go?",
-      "a2": "Funds are held by Yayasan myNADI and released against verified study milestones. Money is never handed directly to a student.",
+      "a2": "Funds will be administered by Yayasan myNADI (a registered non-profit) and released against verified study milestones — never handed directly to a student. We're finalising this partnership.",
       "q3": "Can I choose who I support?",
       "a3": "Yes. Once approved, you can browse the anonymised profiles and choose the student you'd like to support.",
       "q4": "What happens if a student withdraws?",
@@ -246,7 +246,7 @@
       "q5": "How much does it cost to sponsor someone?",
       "a5": "It depends on the student's programme and needs. Each profile shows the support required so you can decide what works for you.",
       "q6": "Who runs this programme?",
-      "a6": "HalaTuju runs the B40 Assistance Programme together with Yayasan myNADI, which holds and disburses the funds."
+      "a6": "HalaTuju runs the B40 Assistance Programme; Yayasan myNADI will hold and disburse the funds (partnership being finalised)."
     },
     "cta": {
       "heading": "Ready to change a life?",
@@ -279,7 +279,7 @@
     "languages": "Languages",
     "free": "Free",
     "readyTitle": "Ready to Find Your Path?",
-    "readySubtitle": "Join thousands of students who have found their ideal course using HalaTuju.",
+    "readySubtitle": "Join the students who have found their course with HalaTuju.",
     "getStartedFree": "Get Started — It's Free"
   },
   "onboarding": {
@@ -2211,7 +2211,7 @@
     "whatTagline": "No fees. No catch.",
     "whoTitle": "Who's Behind This",
     "whoP1": "HalaTuju is built under Project Lentera, a community-driven initiative focused on improving access to public tertiary education for Malaysian students.",
-    "whoP2": "This is a volunteer effort — no single person owns it. Teachers, counsellors, parents, alumni, and community organisations like Yayasan myNADI and Concerned UM Indian Graduates (CUMIG) all play a part. We believe every student deserves to make an informed choice, not a default one driven by lack of information.",
+    "whoP2": "This is a volunteer effort — no single person owns it. Teachers, counsellors, parents, alumni, and community organisations all play a part. Yayasan myNADI, our non-profit partner, administers assistance funds; groups like Sri Murugan Centre (SMC) and CUMIG refer and support students. We believe every student deserves to make an informed choice, not a default one driven by lack of information.",
     "helpTitle": "How You Can Help",
     "helpParents": "Parents:",
     "helpParentsDesc": "Use HalaTuju with your child after SPM or STPM results. The options may surprise you.",

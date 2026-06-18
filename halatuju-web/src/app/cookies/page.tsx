@@ -14,7 +14,7 @@ export default function CookiesPage() {
       <div className="container mx-auto px-6 py-8 max-w-2xl">
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('common.cookies')}</h1>
-          <p className="text-sm text-gray-500">Last updated: March 2026</p>
+          <p className="text-sm text-gray-500">Last updated: June 2026</p>
 
           <h2 className="text-lg font-semibold text-gray-900">What Are Cookies?</h2>
           <p className="text-gray-600">
@@ -29,7 +29,7 @@ export default function CookiesPage() {
           <ul className="list-disc pl-6 text-gray-600 space-y-1">
             <li><strong>Authentication cookies</strong> &mdash; to keep you signed in securely (managed by Supabase).</li>
             <li><strong>Language preference</strong> &mdash; to remember your chosen language (stored in localStorage).</li>
-            <li><strong>Profile data</strong> &mdash; your SPM or STPM grades and quiz answers are stored locally on your device so you do not need to re-enter them.</li>
+            <li><strong>Profile data</strong> &mdash; your SPM or STPM grades and quiz answers are stored locally on your device so you do not need to re-enter them. Note: documents you upload for an assistance application (e.g. your IC or results slip) are stored securely on our server, not in your browser.</li>
           </ul>
 
           <h2 className="text-lg font-semibold text-gray-900">Third-Party Cookies</h2>
