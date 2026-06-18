@@ -109,13 +109,115 @@ EPF_SIGNATURES = [
     ('KWSP address',               ['MENARA KWSP', 'JALAN SULTAN'],                       1, 'text'),
 ]
 
+# Offer letters — unlike the slip/cert (single issuer), the post-SPM offer comes from THREE
+# standard government issuers, each with a fixed machine-generated letterhead. We score against
+# all three and take the best fit (which also names the pathway). TEXT-ONLY: the issuer
+# fingerprints are conclusive on their own, and the Jata Negara crest is generic boilerplate
+# across every government letter (a weak, easily-forged discriminator) — so no visual signature,
+# which also keeps the scorer fully deterministic + free. The heterogeneous tail (universities,
+# IPG, private foundations) matches NO family and is deferred to the holistic check (see the
+# identity gate in ``signature_genuineness``), so a legitimate university offer is never flagged.
+
+# STPM / Tingkatan Enam — MOE, Sektor Operasi Sekolah (the school varies, the issuer is constant).
+# Owner-specified set (2026-06-17): the Jata Negara crest + the issuer line + the letter's standard
+# body sections (Bidang / Pusat Tingkatan Enam / Tarikh Lapor Diri / Dokumen) + two near-unique
+# boilerplate sentences. Deliberately NOT the signatory name or HQ address — those change with
+# personnel / relocation, whereas these structural signatures are durable. The text signatures
+# alone clear 0.70 on every genuine corpus letter, so the crest (a generic government marker, not
+# STPM-specific) is bonus-only — its absence never sinks a real letter.
+STPM_OFFER_SIGNATURES = [
+    ('Jata Negara crest',          ['__crest__'],                              2, 'visual'),
+    ('Sektor Operasi Sekolah',     ['SEKTOR OPERASI SEKOLAH'],                  3, 'text'),
+    ('Tawaran ke Tingkatan Enam',  ['TAWARAN KEMASUKAN KE TINGKATAN ENAM',
+                                     'TINGKATAN ENAM'],                          2, 'text'),
+    ('Pusat Tingkatan Enam',       ['PUSAT TINGKATAN ENAM'],                    2, 'text'),
+    ('Tarikh Lapor Diri',          ['TARIKH LAPOR DIRI'],                       1, 'text'),
+    ('Dokumen diperlukan',         ['DOKUMEN DIPERLUKAN', 'DOKUMEN YANG DIPERLUKAN'], 1, 'text'),
+    ('Keputusan muktamad (T.Enam)', ['KEPUTUSAN INI ADALAH MUKTAMAD BERDASARKAN '
+                                      'SYARAT KEMASUKAN KE TINGKATAN ENAM'],     2, 'text'),
+    ('Tawaran terbatal (murid)',   ['TERBATAL SERTA MERTA JIKA MURID'],         1, 'text'),
+    ('Bidang',                     ['BIDANG'],                                  1, 'text'),
+]
+
+# Matriculation — Bahagian Matrikulasi KPM (the most uniform of the three; online-generated).
+# Owner-specified set (2026-06-17): crest + issuer + body sections (Jurusan / Kolej / Tarikh
+# Kemasukan) + two near-unique boilerplate sentences. Every text signature is matric-exclusive
+# except the generic 'KOLEJ' (also in "Kolej Komuniti" / college names) → weight 1.
+MATRIC_OFFER_SIGNATURES = [
+    ('Jata Negara crest',          ['__crest__'],                              2, 'visual'),
+    ('Bahagian Matrikulasi',       ['BAHAGIAN MATRIKULASI'],                    3, 'text'),
+    ('Tawaran Program Matrikulasi KPM', ['TAWARAN KEMASUKAN PROGRAM MATRIKULASI '
+                                         'KEMENTERIAN PENDIDIKAN'],             2, 'text'),
+    ('Jurusan',                    ['JURUSAN'],                                 2, 'text'),
+    ('Tarikh Kemasukan ke kolej',  ['TARIKH KEMASUKAN KE KOLEJ'],               1, 'text'),
+    ('Mendaftar pada tarikh kolej', ['PERLU MENDAFTAR PADA TARIKH YANG DITETAPKAN '
+                                      'OLEH PIHAK KOLEJ'],                       2, 'text'),
+    ('Tawaran terbatal (saudara)', ['TERBATAL SERTA MERTA JIKA SAUDARA'],       1, 'text'),
+    ('Kolej',                      ['KOLEJ'],                                   1, 'text'),
+]
+
+# Polytechnic — JPPKK, Kementerian Pendidikan Tinggi (from ambilan.mypolycc.edu.my).
+# Owner-specified set (2026-06-17): TWO visual marks (Jata Negara crest + the round blue JPPKK
+# seal by the signatory) + issuer + ministry + title + body sections (Program / Institusi /
+# Tarikh dan Masa Daftar) + two near-unique boilerplate clauses. 'PROGRAM'/'INSTITUSI' are
+# generic → weight 1. Text signatures alone clear 0.70, so the two visuals are bonus.
+POLY_OFFER_SIGNATURES = [
+    ('Jata Negara crest',          ['__crest__'],                              2, 'visual'),
+    ('JPPKK round seal',           ['__seal__'],                               2, 'visual'),
+    ('Jabatan Pend. Politeknik & KK', ['JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI'], 3, 'text'),
+    ('Kementerian Pendidikan Tinggi', ['KEMENTERIAN PENDIDIKAN TINGGI'],        2, 'text'),
+    ('Surat Tawaran Pengajian',     ['SURAT TAWARAN PENGAJIAN'],                2, 'text'),
+    ('Tarikh dan Masa Daftar',      ['TARIKH DAN MASA DAFTAR'],                 1, 'text'),
+    ('Tawaran muktamad/terbatal',   ['MUKTAMAD DAN TERBATAL SEKIRANYA ANDA TIDAK '
+                                     'MENDAFTAR DI INSTITUSI'],                  2, 'text'),
+    ('Tertakluk kesahihan maklumat', ['TERTAKLUK KEPADA KESAHIHAN MAKLUMAT DALAM '
+                                      'BORANG PERMOHONAN'],                      2, 'text'),
+    ('Program',                     ['PROGRAM'],                                1, 'text'),
+    ('Institusi',                   ['INSTITUSI'],                              1, 'text'),
+]
+
+# PISMP — Institut Pendidikan Guru (IPG), KPM. Single central issuer. Owner-specified set
+# (2026-06-17): issuer + the PISMP offer title + the registration/placement body fields + the
+# three offer-defining clauses (Perjanjian Pendidikan Guru / cancellation / finality). Those
+# clauses are what separate a genuine OFFER from a PISMP *announcement* (a43, which carries the
+# identity strings but none of the offer-specific signatures → scores suspect). Calibrated on
+# n=1 genuine offer (a80) — weights conservative, flagged for re-tuning when more arrive.
+PISMP_OFFER_SIGNATURES = [
+    ('Institut Pendidikan Guru',    ['INSTITUT PENDIDIKAN GURU'],               3, 'text'),
+    ('Tawaran IJSM Perguruan (PISMP)', ['TAWARAN MENGIKUTI PROGRAM IJAZAH SARJANA MUDA PERGURUAN',
+                                        'IJAZAH SARJANA MUDA PERGURUAN'],        3, 'text'),
+    ('Kementerian Pendidikan Malaysia', ['KEMENTERIAN PENDIDIKAN MALAYSIA'],     1, 'text'),
+    ('Bidang Pengkhususan',         ['BIDANG PENGKHUSUSAN'],                     1, 'text'),
+    ('Aliran Sekolah',              ['ALIRAN SEKOLAH'],                          1, 'text'),
+    ('Tarikh Pendaftaran',          ['TARIKH PENDAFTARAN'],                      1, 'text'),
+    ('Tempat Pengajian',            ['TEMPAT PENGAJIAN'],                        1, 'text'),
+    ('Perjanjian Pendidikan Guru',  ['PERJANJIAN PENDIDIKAN GURU'],             2, 'text'),
+    ('Tawaran terbatal sendirinya', ['TERBATAL DENGAN SENDIRINYA JIKA'],         2, 'text'),
+    ('Penetapan bidang muktamad',   ['PENETAPAN BIDANG DAN TEMPAT PENGAJIAN ADALAH MUKTAMAD'], 2, 'text'),
+]
+
 # A doc_type is scored against its FAMILY of candidate lists (best fit wins + names the type).
 # results_slip + certificate are scored together (auto-detect); birth_certificate is its own.
 _RESULTS_LISTS = {'results_slip': SLIP_SIGNATURES, 'certificate': CERT_SIGNATURES}
+_OFFER_LISTS = {'stpm': STPM_OFFER_SIGNATURES, 'matriculation': MATRIC_OFFER_SIGNATURES,
+                'polytechnic': POLY_OFFER_SIGNATURES, 'pismp': PISMP_OFFER_SIGNATURES}
 _FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
              'birth_certificate': {'birth_certificate': BC_SIGNATURES},
-             'epf': {'epf': EPF_SIGNATURES}}
+             'epf': {'epf': EPF_SIGNATURES},
+             'offer_letter': _OFFER_LISTS}
 _LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
+
+# Issuer "identity" anchors per offer-letter family: presence of ANY means the document IS that
+# pathway's offer (so a low overall score = cropped/incomplete → suspect, NOT "not an offer
+# letter"). If NO family's anchor matches, the document is not one of the three standard issuers
+# (a university / IPG / private offer) and ``signature_genuineness`` defers to the holistic check.
+_IDENTITY = {'offer_letter': {
+    'stpm':          ['SEKTOR OPERASI SEKOLAH', 'TINGKATAN ENAM', 'PUSAT TINGKATAN ENAM'],
+    'matriculation': ['BAHAGIAN MATRIKULASI', 'PROGRAM MATRIKULASI', 'JURUSAN'],
+    'polytechnic':   ['JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI',
+                      'SURAT TAWARAN PENGAJIAN', 'GALERIA PJH'],
+    'pismp':         ['INSTITUT PENDIDIKAN GURU', 'IJAZAH SARJANA MUDA PERGURUAN'],
+}}
 
 
 def _norm(s: str) -> str:
@@ -125,13 +227,19 @@ def _norm(s: str) -> str:
     return re.sub(r'[^A-Z0-9]+', ' ', s.upper()).strip()
 
 
-def _score_list(signatures, text_norm, has_qr, has_crest):
+def _score_list(signatures, text_norm, has_qr, has_crest, has_seal=False):
     present, missing, got, total = [], [], 0, 0
     for label, patterns, weight, kind in signatures:
         total += weight
         if kind == 'visual':
-            # __crest__ → the crest flag; __qr__/__barcode__ → the machine-token flag (has_qr).
-            hit = has_crest if patterns == ['__crest__'] else has_qr
+            # __crest__ → the crest flag; __seal__ → an official round stamp/seal (e.g. the
+            # JPPKK seal on a polytechnic offer); __qr__/__barcode__ → the machine-token flag.
+            if patterns == ['__crest__']:
+                hit = has_crest
+            elif patterns == ['__seal__']:
+                hit = has_seal
+            else:
+                hit = has_qr
         else:
             hit = any(_norm(p) in text_norm for p in patterns)
         (present if hit else missing).append(label)
@@ -143,13 +251,13 @@ def _score_list(signatures, text_norm, has_qr, has_crest):
 
 
 def score_signatures(ocr_text: str, has_qr: bool = False, has_crest: bool = False,
-                     doc_type: str = None) -> dict:
+                     doc_type: str = None, has_seal: bool = False) -> dict:
     """Score OCR text against the slip + certificate signature lists. Returns
     ``{type, probability, weight_got, weight_total, present, missing, scores}`` for the
     better-fitting list. Pure + deterministic for the text signatures."""
     tn = _norm(ocr_text)
     lists = _FAMILIES.get(doc_type, _LISTS)
-    scores = {name: _score_list(sig, tn, has_qr, has_crest) for name, sig in lists.items()}
+    scores = {name: _score_list(sig, tn, has_qr, has_crest, has_seal) for name, sig in lists.items()}
     best = max(scores, key=lambda k: scores[k]['probability'])
     b = scores[best]
     return {'type': best, 'probability': b['probability'],
@@ -185,16 +293,37 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
 
 
 def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool = False,
-                          doc_type: str = None) -> dict:
+                          doc_type: str = None, has_seal: bool = False) -> dict:
     """The soft genuineness signal for a standard document from its signatures:
     ``{status, probability, type, present, missing, reason}``. ``status`` maps onto the cap
     vocabulary via ``band_for``. ``doc_type`` selects the signature family (slip/cert by default,
     'birth_certificate' for the BC). Pure + deterministic given the inputs; never raises."""
-    r = score_signatures(ocr_text, has_qr=has_qr, has_crest=has_crest, doc_type=doc_type)
+    r = score_signatures(ocr_text, has_qr=has_qr, has_crest=has_crest, doc_type=doc_type,
+                         has_seal=has_seal)
+    n_have, n_all = len(r['present']), len(r['present']) + len(r['missing'])
+
+    identity = _IDENTITY.get(doc_type)
+    if identity:
+        # Multi-issuer type (offer letter): only score if we recognise one of the standard
+        # issuers; otherwise defer to the holistic check (a legit university/IPG offer is NOT
+        # one of these three, and must never be flagged). Recognised-but-incomplete → suspect,
+        # never not_<type> (we KNOW it's that pathway's offer — it's just cropped).
+        tn = _norm(ocr_text)
+        recognised = any(_norm(p) in tn for p in identity.get(r['type'], []))
+        if not recognised:
+            return {'status': 'unrecognised', 'probability': r['probability'], 'type': r['type'],
+                    'present': r['present'], 'missing': r['missing'],
+                    'reason': (f"not one of the standard {doc_type.replace('_', ' ')} issuers "
+                               f"(p={r['probability']:.2f}) — defer to holistic check")[:300]}
+        status = 'genuine' if r['probability'] >= GENUINE_MIN else 'suspect'
+        reason = (f"{n_have}/{n_all} {r['type']} offer signatures present "
+                  f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
+        return {'status': status, 'probability': r['probability'], 'type': r['type'],
+                'present': r['present'], 'missing': r['missing'], 'reason': reason[:300]}
+
     status = band_for(r['probability'])
     if status == 'not_type':                       # <0.35 → not recognisably that document
         status = 'not_' + (doc_type or r['type'])
-    n_have, n_all = len(r['present']), len(r['present']) + len(r['missing'])
     reason = (f"{n_have}/{n_all} {r['type'].replace('_', ' ')} signatures present "
               f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
     return {'status': status, 'probability': r['probability'], 'type': r['type'],

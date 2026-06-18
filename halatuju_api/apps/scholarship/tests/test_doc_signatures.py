@@ -185,3 +185,145 @@ def test_wrong_type_kwsp_doc_is_not_epf():
     g = signature_genuineness(WRONG_TYPE_EPF, doc_type='epf')
     assert g['status'] == 'not_epf'
     assert g['probability'] < SUSPECT_MAX
+
+
+# ── Offer letters — THREE standard issuers, scored by best fit; the heterogeneous tail
+#    (universities / IPG / private) is unrecognised → deferred to the holistic check. ──
+GENUINE_STPM_OFFER = """SURAT TAWARAN CETAKAN KOMPUTER
+PEJABAT TIMBALAN KETUA PENGARAH PENDIDIKAN MALAYSIA
+SEKTOR OPERASI SEKOLAH
+KEMENTERIAN PENDIDIKAN
+TAWARAN KEMASUKAN KE TINGKATAN ENAM SEMESTER 1 TAHUN 2026
+2.1. BIDANG : SAINS
+2.2. PUSAT TINGKATAN ENAM : SMK CONTOH
+2.3. TARIKH LAPOR DIRI : 08 JUN 2026
+2.5. DOKUMEN DIPERLUKAN
+Keputusan ini adalah muktamad berdasarkan syarat kemasukan ke tingkatan enam.
+Tawaran ini terbatal serta-merta jika murid berstatus bukan warganegara Malaysia.
+Surat ini adalah cetakan komputer dan tidak ditandatangani.
+"""
+
+GENUINE_MATRIC_OFFER = """KEMENTERIAN PENDIDIKAN
+BAHAGIAN MATRIKULASI
+TAWARAN KEMASUKAN PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN SESI 2026/2027
+JURUSAN : SAINS
+KOLEJ : KOLEJ MATRIKULASI CONTOH
+TARIKH KEMASUKAN KE KOLEJ : 8 JUN 2026
+Saudara/ Saudari perlu mendaftar pada tarikh yang ditetapkan oleh pihak kolej.
+Tawaran ini terbatal serta-merta jika saudara/ saudari berstatus bukan warganegara Malaysia atau maklumat permohonan tidak benar.
+PENGARAH BAHAGIAN MATRIKULASI KPM
+"""
+
+GENUINE_POLY_OFFER = """JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI
+KEMENTERIAN PENDIDIKAN TINGGI
+SURAT TAWARAN PENGAJIAN SESI I : 2026/2027
+Program : DIPLOMA PERAKAUNAN
+Institusi : POLITEKNIK CONTOH
+Tarikh dan Masa Daftar : 21 JUN 2026
+Tawaran ini adalah MUKTAMAD dan TERBATAL sekiranya anda tidak mendaftar di institusi berkenaan pada tarikh dan masa yang ditetapkan.
+Tawaran ini adalah tertakluk kepada kesahihan maklumat dalam borang permohonan dengan dokumen asal yang dikemukakan.
+PENGARAH BAHAGIAN AMBILAN DAN PEMBANGUNAN PELAJAR
+"""
+
+# A cropped STPM offer — issuer anchor (Tingkatan Enam) survives, the rest is cut off.
+CROPPED_STPM_OFFER = """TAWARAN KEMASUKAN KE TINGKATAN ENAM SEMESTER 1 TAHUN 2026
+Saudara/Saudari,
+2.1. BIDANG : SAINS
+2.2. PUSAT TINGKATAN ENAM
+"""
+
+# A genuine UNIVERSITY offer — a legitimate offer letter, but NOT one of the three standard
+# issuers, so the signature scorer must NOT flag it; it defers to the holistic check.
+UNIVERSITY_OFFER = """UNIVERSITI MALAYA
+TAWARAN KEMASUKAN PROGRAM ASASI SAINS SOSIAL
+Dengan sukacitanya dimaklumkan bahawa anda ditawarkan tempat.
+Pendaftaran akan dibuat secara dalam talian.
+"""
+
+
+def test_genuine_stpm_offer_scores_genuine_and_types_as_stpm():
+    g = signature_genuineness(GENUINE_STPM_OFFER, doc_type='offer_letter')
+    assert g['type'] == 'stpm'
+    assert g['status'] == 'genuine'
+    assert g['probability'] >= GENUINE_MIN
+
+
+def test_genuine_matric_offer_types_as_matriculation():
+    g = signature_genuineness(GENUINE_MATRIC_OFFER, doc_type='offer_letter')
+    assert g['type'] == 'matriculation'
+    assert g['status'] == 'genuine'
+
+
+def test_genuine_poly_offer_types_as_polytechnic():
+    g = signature_genuineness(GENUINE_POLY_OFFER, doc_type='offer_letter')
+    assert g['type'] == 'polytechnic'
+    assert g['status'] == 'genuine'
+
+
+def test_cropped_offer_is_suspect_never_not_offer_letter():
+    # Recognised as STPM (anchor present) but incomplete → suspect (re-upload), NOT not_offer_letter.
+    g = signature_genuineness(CROPPED_STPM_OFFER, doc_type='offer_letter')
+    assert g['type'] == 'stpm'
+    assert g['status'] == 'suspect'
+
+
+def test_university_offer_is_unrecognised_and_defers_to_holistic():
+    # A legitimate non-standard issuer must never be flagged by the signature scorer.
+    g = signature_genuineness(UNIVERSITY_OFFER, doc_type='offer_letter')
+    assert g['status'] == 'unrecognised'
+
+
+def test_assess_routes_offer_letter_to_signatures_when_recognised():
+    from apps.scholarship.genuineness import assess
+    g = assess('offer_letter', ocr_text=GENUINE_POLY_OFFER)
+    assert g['type'] == 'polytechnic' and g['status'] == 'genuine'
+
+
+def test_poly_text_alone_is_genuine_and_visuals_are_bonus():
+    # Text signatures clear 0.70 with NO visuals; the crest + JPPKK seal only lift confidence.
+    text_only = signature_genuineness(GENUINE_POLY_OFFER, doc_type='offer_letter')
+    with_visuals = signature_genuineness(GENUINE_POLY_OFFER, doc_type='offer_letter',
+                                         has_crest=True, has_seal=True)
+    assert text_only['status'] == 'genuine'
+    assert with_visuals['probability'] > text_only['probability']
+
+
+# PISMP — Institut Pendidikan Guru (IPG), KPM. The offer-specific clauses separate a genuine
+# offer from a mere ANNOUNCEMENT (which carries only the identity strings).
+GENUINE_PISMP_OFFER = """INSTITUT PENDIDIKAN GURU MALAYSIA
+KEMENTERIAN PENDIDIKAN MALAYSIA
+NAMA: TAVANISAH A/P CONTOH
+NO. KAD PENGENALAN: 060328100916
+Tarikh : 13 Ogos 2024
+TAWARAN MENGIKUTI PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP) KEMENTERIAN PENDIDIKAN MALAYSIA
+BIDANG PENGKHUSUSAN : BAHASA TAMIL PENDIDIKAN RENDAH
+ELEKTIF : PENDIDIKAN JASMANI
+ALIRAN SEKOLAH : SEKOLAH JENIS KEBANGSAAN TAMIL (SJKT)
+TARIKH PENDAFTARAN : 26 OGOS 2024
+TEMPAT PENGAJIAN : INSTITUT PENDIDIKAN GURU KAMPUS IPOH
+Surat tawaran ini hendaklah dibaca bersama-sama Perjanjian Pendidikan Guru.
+Tawaran ini akan TERBATAL dengan sendirinya jika gagal memenuhi syarat.
+Penetapan bidang dan tempat pengajian adalah muktamad.
+"""
+
+# A PISMP ANNOUNCEMENT (a43 pattern): identity strings present, but NONE of the offer-specific
+# clauses → recognised as PISMP but scores below genuine → suspect (not a real offer letter).
+PISMP_ANNOUNCEMENT = """INSTITUT PENDIDIKAN GURU MALAYSIA
+TAWARAN MENGIKUTI PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP)
+BIDANG PENGKHUSUSAN : BAHASA TAMIL PENDIDIKAN RENDAH
+ALIRAN SEKOLAH : SJKT
+Sila semak status permohonan anda di portal.
+"""
+
+
+def test_genuine_pismp_offer_types_as_pismp_and_genuine():
+    g = signature_genuineness(GENUINE_PISMP_OFFER, doc_type='offer_letter')
+    assert g['type'] == 'pismp'
+    assert g['status'] == 'genuine'
+
+
+def test_pismp_announcement_is_suspect_not_genuine():
+    # Recognised as PISMP (identity present) but missing every offer-specific clause → suspect.
+    g = signature_genuineness(PISMP_ANNOUNCEMENT, doc_type='offer_letter')
+    assert g['type'] == 'pismp'
+    assert g['status'] == 'suspect'

@@ -26,4 +26,11 @@ def assess(doc_type, *, image=None, content_type='', ocr_text='', has_qr=False, 
         return ic_genuineness(image, content_type)
     if doc_type in ('results_slip', 'certificate'):
         return signature_genuineness(ocr_text, has_qr=has_qr, has_crest=has_crest)
+    if doc_type == 'offer_letter':
+        # Three standard issuers (STPM / matriculation / polytechnic) are signature-scored;
+        # anything else (university / IPG / private) is unrecognised → holistic fallback.
+        sig = signature_genuineness(ocr_text, doc_type='offer_letter')
+        if sig.get('status') != 'unrecognised':
+            return sig
+        return doc_genuineness(image, content_type, doc_type)
     return doc_genuineness(image, content_type, doc_type)
