@@ -19,6 +19,9 @@ import {
   STPM_STREAMS,
   stpmDegreesToCourses,
   UNCERTAINTY_REASONS,
+  pismpAlirans,
+  bidangForAliran,
+  aliranForChosen,
   nricChanged,
   emptyDetailsForm,
   applicationToDetailsForm,
@@ -491,6 +494,51 @@ describe('programmesForPathway', () => {
     expect(programmesForPathway(courses, 'pismp')).toEqual([])
     expect(programmesForPathway(null, 'poly')).toEqual([])
     expect(programmesForPathway(courses, '')).toEqual([])
+  })
+})
+
+describe('PISMP Aliran → Bidang picker helpers', () => {
+  const pismp = [
+    { course_id: '50PD041S00P', course_name: 'Sains (SJKT)', source_type: 'pismp', pathway_type: 'pismp', aliran: 'sjkt' },
+    { course_id: '50PD040M00P', course_name: 'Matematik (SJKT)', source_type: 'pismp', pathway_type: 'pismp', aliran: 'sjkt' },
+    { course_id: '50BK047M00P', course_name: 'Muzik (SJKT-MBPK)', source_type: 'pismp', pathway_type: 'pismp', aliran: 'sjkt' },
+    { course_id: '50PD010B00P', course_name: 'Bahasa Inggeris (SK)', source_type: 'pismp', pathway_type: 'pismp', aliran: 'sk' },
+    { course_id: 'DKA', course_name: 'Diploma Kejuruteraan Awam', source_type: 'poly', pathway_type: 'poly' },
+  ] as unknown as EligibleCourse[]
+
+  describe('pismpAlirans', () => {
+    it('returns the distinct school types present among PISMP courses, in display order', () => {
+      expect(pismpAlirans(pismp)).toEqual(['sk', 'sjkt'])
+    })
+    it('ignores non-PISMP courses and handles null', () => {
+      expect(pismpAlirans([{ course_id: 'x', course_name: 'X', source_type: 'poly' }] as unknown as EligibleCourse[])).toEqual([])
+      expect(pismpAlirans(null)).toEqual([])
+    })
+  })
+
+  describe('bidangForAliran', () => {
+    it('filters to one school type and sorts A–Z by bidang label', () => {
+      expect(bidangForAliran(pismp, 'sjkt').map((c) => c.course_id))
+        .toEqual(['50PD040M00P', '50BK047M00P', '50PD041S00P']) // Matematik, Muzik (MBPK), Sains
+    })
+    it('returns [] for an absent aliran or null/empty input', () => {
+      expect(bidangForAliran(pismp, 'sjkc')).toEqual([])
+      expect(bidangForAliran(null, 'sjkt')).toEqual([])
+      expect(bidangForAliran(pismp, '')).toEqual([])
+    })
+  })
+
+  describe('aliranForChosen', () => {
+    it('looks up the aliran of an already-chosen PISMP course by id', () => {
+      expect(aliranForChosen(pismp, '50PD010B00P')).toBe('sk')
+      expect(aliranForChosen(pismp, '50PD040M00P')).toBe('sjkt')
+    })
+    it('returns "" for a non-PISMP course, an unknown id, or null input', () => {
+      expect(aliranForChosen(pismp, 'DKA')).toBe('')
+      expect(aliranForChosen(pismp, 'nope')).toBe('')
+      expect(aliranForChosen(null, '50PD010B00P')).toBe('')
+      expect(aliranForChosen(pismp, null)).toBe('')
+    })
   })
 })
 

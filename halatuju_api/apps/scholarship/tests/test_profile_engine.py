@@ -266,3 +266,96 @@ class TestClaimGating(TestCase):
         prompt = _build_prompt(app)
         self.assertIn('VERIFICATION', prompt)
         self.assertIn('breaking the cycle', prompt)  # the banned-cliché instruction
+
+
+class TestWelfareClaimGating(TestCase):
+    """STR/JKM must be asserted ONLY when a welfare DOCUMENT is on file — documented =
+    certain, self-reported = a claim. Regression for #21: the profile asserted STR
+    "affirming B40 status" off a self-declared tick while the student was on the salary
+    route with NO STR document uploaded."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='wg', name='B40', year=2026)
+
+    _seq = 0
+
+    def _app(self, *, receives_str=False, receives_jkm=False, income_route='salary',
+             household_income=1500, working_members=None):
+        type(self)._seq += 1
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'wg-{self._seq}', nric='030101-14-1234', name='Priya',
+            school='SMK', exam_type='SPM', household_income=household_income, household_size=5,
+            receives_str=receives_str, receives_jkm=receives_jkm)
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=profile, status='shortlisted',
+            income_route=income_route, income_working_members=working_members or [])
+
+    def _add_str_doc(self, app, *, status='Lulus', source_type='semakan_status', year=''):
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='str', storage_path=f'str/{app.id}.jpg',
+            vision_fields={'fields': {'status': status, 'source_type': source_type,
+                                      'year': year}})
+
+    def test_str_declared_but_no_document_is_not_claimed(self):
+        # The #21 case: salary route, STR self-ticked, no STR doc on file.
+        app = self._app(receives_str=True, income_route='salary')
+        prompt = _build_prompt(app)
+        self.assertIn(f'do not claim): {_DO_NOT_CLAIM}', prompt)
+
+    def test_str_with_current_document_is_claimed(self):
+        app = self._app(receives_str=True, income_route='str')
+        self._add_str_doc(app, status='Lulus')
+        prompt = _build_prompt(app)
+        self.assertIn('do not claim): yes', prompt)
+
+    def test_str_with_stale_document_is_not_claimed(self):
+        # Approved but a prior-year STR → stale → not current proof → don't claim.
+        app = self._app(receives_str=True, income_route='str')
+        self._add_str_doc(app, status='Lulus', year='2023')
+        prompt = _build_prompt(app)
+        self.assertIn(f'do not claim): {_DO_NOT_CLAIM}', prompt)
+
+    def test_str_with_unapproved_document_is_not_claimed(self):
+        # A SALINAN / application printout with no approval word → not proof.
+        app = self._app(receives_str=True, income_route='str')
+        self._add_str_doc(app, status='Permohonan Diterima')
+        prompt = _build_prompt(app)
+        self.assertIn(f'do not claim): {_DO_NOT_CLAIM}', prompt)
+
+    def test_str_not_declared_says_no(self):
+        app = self._app(receives_str=False)
+        prompt = _build_prompt(app)
+        self.assertIn('do not claim): no', prompt)
+
+    def test_jkm_declared_is_not_claimed(self):
+        # No JKM document is collected anywhere → a self-tick can never be documented.
+        app = self._app(receives_jkm=True)
+        prompt = _build_prompt(app)
+        self.assertIn(f'Receives JKM (same rule): {_DO_NOT_CLAIM}', prompt)
+
+    def test_jkm_not_declared_says_no(self):
+        app = self._app(receives_jkm=False)
+        prompt = _build_prompt(app)
+        self.assertIn('Receives JKM (same rule): no', prompt)
+
+    def test_documented_salary_reaches_prompt_authoritatively(self):
+        # #10: a payslip gross must surface as documented income, not be buried behind
+        # the softer reported household figure.
+        app = self._app(income_route='salary', household_income=1700,
+                        working_members=['mother'])
+        ApplicantDocument.objects.create(
+            application=app, doc_type='salary_slip', household_member='mother',
+            storage_path=f'slip/{app.id}.jpg',
+            vision_fields={'fields': {'name': 'Mother', 'gross_income': 'RM3048.58'}})
+        prompt = _build_prompt(app)
+        # The documented figure is presented to the model on the Documented-income line…
+        self.assertIn("mother's salary slip shows about RM3049/month", prompt)
+        # …and the rule now MANDATES stating it as documented (not "MAY").
+        self.assertIn('you MUST state them AUTHORITATIVELY as the documented income', prompt)
+
+    def test_no_income_document_falls_back_to_reported(self):
+        app = self._app(income_route='salary', household_income=1700,
+                        working_members=['mother'])
+        prompt = _build_prompt(app)
+        self.assertIn('Documented income', prompt)
+        self.assertIn('none on file', prompt)

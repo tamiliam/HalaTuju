@@ -40,6 +40,7 @@ from .engine import (
     calculate_merit_score,
 )
 from .pathways import check_all_pathways, get_pathway_fit_score
+from .pismp_taxonomy import classify_pismp, aliran_of, ALIRAN_VALUES, ALIRAN_LABELS
 from .serializers import (
     CourseSerializer,
     FieldTaxonomySerializer,
@@ -122,6 +123,8 @@ class CourseSearchView(APIView):
         source_type = request.query_params.get('source_type', '').strip()
         state = request.query_params.get('state', '').strip()
         qualification = request.query_params.get('qualification', '').strip().upper()
+        # PISMP-only facet: Aliran (school type). Applies to source_type='pismp' rows.
+        aliran = request.query_params.get('aliran', '').strip().lower()
 
         # Pagination
         try:
@@ -138,8 +141,11 @@ class CourseSearchView(APIView):
         spm_results = []
         spm_count = 0
 
-        # Skip SPM if level/source_type filter is STPM-only
-        if include_spm and level and level.lower() == 'ijazah sarjana muda':
+        # A level=="Ijazah Sarjana Muda" filter used to be treated as STPM-only,
+        # which wrongly hid the SPM-entry PISMP degrees (also "Ijazah Sarjana Muda").
+        # Only skip the SPM branch when the source_type filter is the STPM-university
+        # one ('ua'); otherwise keep it so PISMP (source_type='pismp') still appears.
+        if include_spm and level and level.lower() == 'ijazah sarjana muda' and source_type == 'ua':
             include_spm = False
 
         # Get pathway map for TVET → iljtm/ilkbs resolution
@@ -194,6 +200,11 @@ class CourseSearchView(APIView):
                 # If filtering by iljtm/ilkbs, skip courses that don't match
                 if source_type in ('iljtm', 'ilkbs') and pt != source_type:
                     continue
+                # PISMP facets (Aliran / Elektif) derived at read-time.
+                pismp = classify_pismp(c.course_id, c.course) if st == 'pismp' else None
+                # Aliran filter narrows PISMP rows only (no-op for other source types).
+                if aliran and (pismp is None or pismp['aliran'] != aliran):
+                    continue
                 spm_results.append({
                     'course_id': c.course_id,
                     'course_name': c.course,
@@ -207,10 +218,12 @@ class CourseSearchView(APIView):
                     'institution_name': c.primary_institution_name or '',
                     'institution_state': c.primary_institution_state or '',
                     'qualification': 'SPM',
+                    'aliran': pismp['aliran'] if pismp else None,
+                    'is_elektif': pismp['is_elektif'] if pismp else False,
                 })
 
-            # Adjust count if iljtm/ilkbs filter removed some courses
-            if source_type in ('iljtm', 'ilkbs'):
+            # Adjust count if a post-query filter (iljtm/ilkbs or aliran) removed rows
+            if source_type in ('iljtm', 'ilkbs') or aliran:
                 spm_count = len(spm_results)
 
         # ── STPM courses ─────────────────────────────────────────────
@@ -218,6 +231,9 @@ class CourseSearchView(APIView):
         stpm_results = []
         stpm_count = 0
 
+        # Aliran is a PISMP-only facet — an aliran filter excludes STPM degrees.
+        if include_stpm and aliran:
+            include_stpm = False
         # Skip STPM if level filter doesn't match
         if include_stpm and level and level.lower() != 'ijazah sarjana muda':
             include_stpm = False
@@ -315,11 +331,22 @@ class CourseSearchView(APIView):
         stpm_source_types = []
         all_source_types = sorted(set(spm_source_types + stpm_source_types))
 
+        # PISMP Aliran options (derived) — only the school types actually present.
+        pismp_names = Course.objects.filter(
+            requirement__source_type='pismp'
+        ).values_list('course_id', 'course')
+        present_alirans = {aliran_of(name, cid) for cid, name in pismp_names}
+        alirans = [
+            {'value': a, 'label': ALIRAN_LABELS[a]}
+            for a in ALIRAN_VALUES if a in present_alirans
+        ]
+
         filters = {
             'levels': all_levels,
             'fields': all_fields,
             'field_keys': all_field_keys,
             'source_types': all_source_types,
+            'alirans': alirans,
             'states': sorted(
                 Institution.objects.exclude(state='')
                 .values_list('state', flat=True)
@@ -478,6 +505,9 @@ class EligibilityCheckView(APIView):
                 'institution_name': inst.get('inst_name') or '',
                 'institution_count': inst.get('inst_count') or 0,
                 'institution_state': inst.get('inst_state') or '',
+                # Aliran (school type) — only for PISMP, so the apply-form picker can
+                # group teacher-training courses by SK/SJKC/SJKT before the bidang.
+                'aliran': aliran_of(course_name, course_id) if source_type == 'pismp' else '',
             })
 
         eligible_courses = deduplicate_pismp(eligible_courses, pismp_req_hashes)

@@ -53,12 +53,15 @@ from .views_admin import (
     AdminPublishAnonProfileView,
     AdminInterviewView,
     AdminInterviewSubmitView,
+    AdminInterviewReopenView,
     AdminFinaliseProfileView,
     AdminProfileEditView,
     AdminPublishProfileView,
     AdminRejectView,
     AdminRefereeDetailView,
     AdminRecordVerdictView,
+    AdminReopenDecisionView,
+    AdminCancelReopenView,
     AdminRequestInfoView,
     AdminResolutionItemView,
     AdminAssignReviewerView,
@@ -150,12 +153,17 @@ urlpatterns = [
     # Phase C: interview capture + request-more-docs
     path('admin/scholarship/applications/<int:pk>/interview/', AdminInterviewView.as_view()),
     path('admin/scholarship/applications/<int:pk>/interview/submit/', AdminInterviewSubmitView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/interview/reopen/', AdminInterviewReopenView.as_view()),
     path('admin/scholarship/applications/<int:pk>/request-info/', AdminRequestInfoView.as_view()),
     # S3: officer-raised resolution tickets + waive/resolve
     path('admin/scholarship/applications/<int:pk>/resolution-items/', AdminResolutionItemView.as_view()),
     path('admin/scholarship/resolution-items/<int:item_id>/<str:action>/', AdminResolutionItemActionView.as_view()),
     # S5: officer records the verification verdict (+ optional finalise) + override metrics
     path('admin/scholarship/applications/<int:pk>/record-verdict/', AdminRecordVerdictView.as_view()),
+    # Reverse a recorded decision (super-only): reopen holds the profile from the pool,
+    # cancel-reopen restores it with no change.
+    path('admin/scholarship/applications/<int:pk>/reopen-decision/', AdminReopenDecisionView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/cancel-reopen/', AdminCancelReopenView.as_view()),
     path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
     # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
     path('admin/reviewer-profile/', ReviewerProfileView.as_view()),

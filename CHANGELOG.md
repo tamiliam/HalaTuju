@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Interview slot proposing is now a Calendly-style date + time picker.** The reviewer's "propose times" box replaces the
+  bare 24-hour `datetime-local` with a two-pane picker: a month **calendar** (past days and months disabled) plus a vertical
+  list of **12-hour time pills** (9:30am…), restricted to **08:00–21:30 MYT on 30-minute steps**. The reviewer taps up to 3
+  times (across days); already-proposed times show struck-through, past times today drop off. The same rule is enforced
+  server-side at the propose endpoint (`invalid_slot_time` → 400) and lives in one shared module
+  (`halatuju-web/src/lib/interviewSlots.ts` + mirror in `scheduling.py`) so the student booking side can reuse it. +8 tests.
+- **PISMP SPM (Perdana) catalogue reconciled to the official 2026 guide (2026-06-18).** Every Perdana course in the DB
+  now matches a course in the PDF catalogue by **code, name, and entry requirements** — SJKT (10), SK (14), SJKC (15).
+  Names carry the aliran suffix `(SK)/(SJKC)/(SJKT)`; three Pendidikan Khas bidang were corrected to the guide's
+  Pendidikan Khas Pendidikan Rendah `…H00P` + Prasekolah `…H7P` rows (the B/D/L→H swap), replacing legacy rows whose
+  requirements were un-satisfiable. This is the data foundation for the upcoming Aliran→Bidang pathway picker.
+- **Decision flow redesigned: pick a reversible outcome, then Save (2026-06-18).** The four Pass/Fail toggles are framed
+  as *rating the AI's check* per fact. **Approve** and **Decline** are now a **reversible selection** (not instant-commit
+  buttons) that records the decision's `overall` outcome — previously always blank. Gates: **Approve** needs interview
+  submitted + all four facts rated + a recommended amount + a conclusion; **Decline** needs the same minus the amount, and
+  **pressing Decline clears the amount**. The assistance slider now has **no default value** (reads "not set" until
+  chosen). **Save** is the single commit step (accept → record + finalise + accept/publish; decline → record the verdict
+  then reject — so declines are now captured in the verdict record + AI-reliability metric too).
+- **Reviewer can reopen a submitted interview to add a forgotten finding (2026-06-18).** The Interview Stage "Reopen" is
+  now available to the **assigned reviewer** (was super-only) and genuinely **un-submits** the interview — reopening both
+  the Interview Stage **and** Check 2, and switching Approve/Decline off until it's re-submitted. New
+  `interview/reopen/` endpoint (blocked once a decision is recorded — use the Decision panel's Reopen then). Replaces the
+  old screen-only `editIv` toggle.
+
 ### Added
 - **Offer letter — signature genuineness (4 standard issuers) + per-pathway extraction, wired live.**
   The probabilistic SIGNATURE scorer now covers the post-SPM offer across four single-issuer families —
@@ -76,6 +101,129 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   context are gitignored/local-only; only the PII-free `labels.json` (assertions) is committed. Builds throwaway rows
   inside a rolled-back transaction (persists nothing); not wired to any endpoint or cron. +3 synthetic self-tests.
   See `apps/scholarship/eval/README.md`.
+- **PISMP Aliran → Bidang pathway picker (2026-06-19).** Students on the PISMP (teacher-training) pathway now choose a
+  course in two taps — **school type** (Aliran: SK / SJKC / SJKT / SKPK) then **subject** (Bidang) — instead of a
+  type-a-course-name box that assumed they already knew the course. The eligible-courses payload now carries an `aliran`
+  for PISMP courses (derived via `pismp_taxonomy.aliran_of`; no migration); the frontend adds an `AliranPicker`
+  (school-type chips, eligible-only) feeding the existing compact course combobox (the same `ProgrammePicker` the UA
+  pathway uses), wired into both the shared `PathwayPicker` (/profile) and the inline /apply flow via the same
+  components + helpers (`pismpAlirans` / `bidangForAliran` / `aliranForChosen`). Trilingual en/ms/ta. Elektif (the
+  minor) is out of scope. The picker correctly shows only the bidang a student qualifies for (verified against the
+  official 2026 IPGM syarat — e.g. Matematik needs A− in both Mathematics *and* Additional Mathematics).
+- **Bulk document re-extraction, in observable batches (2026-06-18).** Audit found ~212 supporting docs were read by
+  Gemini *before* the deterministic capture layer shipped (2026-06-11) and never re-run — so they carry weaker reads
+  (e.g. app #10's offer letter whose IC `080514-14-0354` was never captured, and a BC whose child name was the
+  letterhead). New `reextract_document()` shared helper (the per-doc "Re-run" + the batch command now share one code
+  path) and a `reextract_documents` management command that re-reads supporting docs in batches (default 20) with the
+  current parsers, self-batching via a pass-marker so each run advances and can be observed. Wired as the
+  `reextract-documents` cron job. (ICs/parent-ICs were already all read — they store into dedicated columns, not
+  `vision_fields`; photos aren't OCR'd — so the "never extracted" count was largely a measurement artefact.)
+- **Students are now emailed when interview times are proposed (2026-06-18).** The in-app scheduler was invisible to
+  students — `propose_slots()` created slots but sent no notification, so a student only found times to book if they
+  happened to log in. New bilingual (EN+BM) email `send_interview_slots_proposed_email` fires when the reviewer
+  proposes times, linking to the application page (the booking panel) and noting a Google Meet link is created on
+  booking. This lets the scheduler run in parallel with the on-assignment email. The assignment email copy was also
+  reconciled — it now tells the student they may be offered times to pick in HalaTuju (with an automatic Meet link),
+  rather than only "the interviewer will contact you." Backend only, no migration.
+
+### Fixed
+- **PISMP course names no longer show a redundant "(Aliran Bahasa Tamil/Cina)" descriptor (2026-06-19).** Since the 2026
+  catalogue reconciliation, every PISMP course name already carries its Aliran suffix ("… (SJKT)"), but
+  `deduplicate_pismp` still appended the old "(Aliran …)" language descriptor on top — so the picker *and* the
+  recommendation card read "… (SJKT) (Aliran Bahasa Tamil)". Dropped the append (the `pismp_languages` facet stays). The
+  name now reads cleanly "… (SJKT)".
+- **Sponsor profile — income honesty, both directions (`PROMPT_VERSION` 2026-06-16.2 → 2026-06-18.1).** One principle:
+  *documented = certain; self-reported = a claim.* (a) **STR/JKM are asserted only when a welfare document is on file**
+  (`profile_engine._gated_str`/`_gated_jkm`, gated on `income_engine.student_str_check` currency). A self-declared STR
+  tick with no STR doc — or a stale/rejected one — is no longer claimed (#21: a salary-route applicant's profile had
+  asserted "receives government assistance through STR, affirming their B40 status" off the bare checkbox). (b) **A
+  documented salary (payslip/EPF) MUST now be stated as documented**, not buried behind the softer reported figure
+  (#10: a mother's documented RM3,049 payslip gross was dropped in favour of the reported ~RM1,700). The reported figure
+  may still appear as context. +9 backend tests. **Existing drafts regenerate only after the `backfill-assigned-profiles`
+  cron is run (billable).**
+- **Cockpit profile panel mislabelled a final profile as a draft.** The "Student profile (draft)" title and the
+  "this draft will be replaced when you save your verdict" hint rendered unconditionally — so an already-generated final
+  (v2 with interview) showed as a pending draft. Both now key off `profile.final_markdown` → "Student profile (final)"
+  + a final hint (`profileFinalTitle`/`profileFinalHint`, en/ms/ta).
+- **Explore Courses showed "0 of 0" for IPGM + Ijazah Sarjana Muda (2026-06-18).** `CourseSearchView` treated
+  level=`Ijazah Sarjana Muda` as STPM-entry-only, so it skipped the SPM branch and returned nothing for PISMP — the
+  IPG teacher-training degrees were invisible to the very students they target. The SPM branch is now skipped only for
+  `source_type='ua'` (genuine STPM-entry degrees), not for `pismp`. Regression tests added
+  (`TestUnifiedSearchPismpLevelFilter`).
+- **All 35 PISMP Perdana courses were silently over-restrictive (2026-06-18).** A systematic data error stored the
+  bidang subject requirement as grade `A` where the official 2026 guide says `A−`, so genuinely-qualified students were
+  filtered out of every Perdana course. Corrected across SJKT/SK/SJKC to match the PDF.
+- **Three Pendidikan Khas bidang (B/D/L) carried an un-satisfiable requirement (2026-06-18).** The legacy Braille/BIM/
+  autism rows required grade `A` in *all four* sciences simultaneously — a rule no real transcript can meet, so the
+  courses could never be recommended. Retired and replaced by the correct Pendidikan Khas / Prasekolah Perdana rows
+  (see Changed). 
+- **Birth-certificate parser mistook the letterhead for the child's name (2026-06-18).** On app #10 the deterministic
+  BC parser captured `"KERAJAAN MALAYSIA"` (the government header) as the child, so the child↔student match failed. The
+  all-caps "looks like a name" rule now rejects institutional tokens (KERAJAAN/JABATAN/PENDAFTARAN/NEGARA/MALAYSIA/
+  SIJIL/KELAHIRAN/…), and if no real child name remains the parser defers to Gemini instead of returning a header.
+- **A decision could be recorded with incomplete facts (2026-06-18).** The cockpit's "Save verdict & generate final
+  profile" button was gated only on `busy` — unlike Approve/Decline — yet it still stamped `verdict_decided_at` (which
+  locks the panel + reviewer dropdown and gates accept). So a verdict could be "recorded" with blank Academic/Pathway/
+  Income, no interview, and no reason (app #4, recorded during early owner testing; never accepted/published). Two
+  guards added: **backend** — `record-verdict` now rejects (`400 verdict_incomplete`) unless all four facts are
+  Pass/Fail (single enforcement point, UI-independent); **frontend** — Save is gated like Approve/Decline (interview
+  submitted + all four facts + reason) with a hint. The one affected record (#4) was cleared back to a clean
+  `interviewing` state.
+- **Turnstile interaction challenge no longer strands or obscures flagged users (2026-06-18).** Cloudflare Turnstile
+  (captcha for Supabase logins, enforcement ON) silently passes most users, but escalates to a visible "Verify you are
+  human" challenge for flagged traffic. Two defects surfaced when a reviewer hit one: (1) an **8-second timeout** —
+  fine for a silent pass but far too short for a human to notice + click a real challenge, so we abandoned the token and
+  Supabase then blocked the login; (2) the widget box was **never hidden after it resolved**, so a finished/failed
+  challenge lingered centred over the cockpit. Fix: keep the short budget only for the silent path; on
+  `before-interactive-callback` reveal the box and switch to a generous human budget (120s) so a flagged-but-real user
+  can actually solve it; hide the box on every resolution (pass/fail/timeout) so it never lingers. `lib/turnstile.ts` +
+  test. Not a config bug — the site key, Managed mode, and hostnames are all correct.
+
+### Removed
+- **Retired spurious / legacy PISMP rows during the catalogue reconciliation (2026-06-18).** Removed PISMP courses
+  that had no match in the official guide or were superseded: 8 SJKT, 10 combined SK+SJKC, the legacy SKPK `50PD06…`
+  Perdana rows (SKPK is STPM-level only), the B/D/L Pendidikan Khas rows (swapped to `…H` — see Changed), and a
+  duplicate Sains row (`…041S004`, kept `…041S00P`). Every retirement was backed up to `Downloads/*_retire_backup_2026-06-18.json`
+  before deletion (fully restorable).
+
+### Added
+- **Aliran (school-type) facet in Explore Courses for PISMP (2026-06-18).** PISMP results can now be filtered by aliran
+  (SK / SJKC / SJKT / SKPK), derived read-time from the course name suffix or `course_id` 6th char via a new
+  `pismp_taxonomy.py` parser (`aliran_of`, `is_elektif`, `classify_pismp`). The search response gains `aliran`/
+  `is_elektif` per course and an `alirans` filter block; the web search page shows an Aliran dropdown when
+  source-type=PISMP, trilingual ("School Type" / "Aliran Sekolah" / "பள்ளி வகை"). Unit + API regression tests added.
+- **MBPK (special-needs) PISMP intake — disability-gated eligibility (2026-06-18).** Added a `req_disability`
+  must-HAVE flag to `course_requirements` (migration `0058`) and an engine gate so MBPK courses are recommended **only**
+  to students who declared a disability at onboarding (the existing "Physical disability" Special-Needs signal) — the
+  inverse of the existing `no_disability` exclusion. Ingested the 10 Laluan Khas track-A (MBPK) bidang across SK/SJKC/
+  SJKT (`50BK…`, names suffixed `(…-MBPK)`), cloned from their Perdana siblings with `req_disability=true`. 3 gate
+  tests added; verified live (disability=true → MBPK eligible; false → excluded).
+- **Reverse a recorded decision — "Reopen" with real consequences (2026-06-18).** The cockpit's Decision panel
+  "Edit" became **Reopen** (super-only): reopening a finalised decision **holds the student's profile from the sponsor
+  pool** (unpublishes), unlocks the panel + the reviewer dropdown, and shows a "held from sponsors" banner. **Cancel
+  reopen** restores the prior published state exactly (no change). Saving the decision again (Approve/Decline)
+  **republishes** per the new decision and **regenerates** the profile. A reopen requires a **reason** (it asserts a
+  reviewer error) and is logged in a new `DecisionReopen` audit table; a reopen that leads to a real change increments
+  an **internal corrections tally** for the assigned reviewer (shown in the assign panel, never to sponsors/students).
+  New `decision_reopened_at` column + `decision_reopens` table (migration `scholarship/0062`, migrate-first). Endpoints
+  `reopen-decision/` + `cancel-reopen/`. +10 backend tests.
+- **Assign-reviewer panel: "Reviewer assigned" + locked once decided (2026-06-18).** Once a decision is recorded the
+  reviewer dropdown **locks** (the case is finished); it reads "Reviewer assigned" / "Reviewer: {name}" and only unlocks
+  if the decision is Reopened.
+
+### Changed
+- **Reopen now reopens the WHOLE case, for the reviewer too (2026-06-18).** Reopening a decision previously unlocked
+  only the Decision panel (and the interview's own reopen was super-only), so an assigned reviewer couldn't revise
+  their work. Now `decision_reopened_at` unlocks **Check 2** (querying) and the **Interview Stage** as well, for the
+  assigned reviewer (not just the super): frontend `queryingLocked`/`interviewLocked` and backend
+  `services.querying_locked` all honour the reopened flag, the interview-save edits the submitted session **in place**
+  (no duplicate draft), and a reopened *accepted* decision shows a Save button so the revised verdict can be
+  re-recorded (regenerates + republishes the profile). All gated on the reopened flag → non-reopened apps unchanged.
+- **Interview Stage record reads like Check 2 (2026-06-18).** A submitted interview now renders each answered question
+  as a tidy card — green ✓ tick · bold **Question:** · the finding under a **"Reviewer's finding"** header (the label
+  sits above the box, not inside it). The redundant "Submitted" pill at the top was removed (the "Submitted on …" line
+  stays at the foot). The Decision **"Conclusion"** label likewise moved to a header above its box. Presentation only.
+
 - **Contact-form submissions are now emailed to the team (2026-06-17).** The public `/contact` form saved rows to
   `contact_submissions` but nothing alerted anyone (messages sat unseen). New cron job `notify-contact-submissions`
   emails each unread submission to `contact@halatuju.xyz` (`ADMIN_NOTIFY_EMAIL`), with Reply-To set to the submitter's
