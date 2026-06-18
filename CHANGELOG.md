@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Interview slot proposing is now a Calendly-style date + time picker.** The reviewer's "propose times" box replaces the
+  bare 24-hour `datetime-local` with a two-pane picker: a month **calendar** (past days and months disabled) plus a vertical
+  list of **12-hour time pills** (9:30am…), restricted to **08:00–21:30 MYT on 30-minute steps**. The reviewer taps up to 3
+  times (across days); already-proposed times show struck-through, past times today drop off. The same rule is enforced
+  server-side at the propose endpoint (`invalid_slot_time` → 400) and lives in one shared module
+  (`halatuju-web/src/lib/interviewSlots.ts` + mirror in `scheduling.py`) so the student booking side can reuse it. +8 tests.
 - **PISMP SPM (Perdana) catalogue reconciled to the official 2026 guide (2026-06-18).** Every Perdana course in the DB
   now matches a course in the PDF catalogue by **code, name, and entry requirements** — SJKT (10), SK (14), SJKC (15).
   Names carry the aliran suffix `(SK)/(SJKC)/(SJKT)`; three Pendidikan Khas bidang were corrected to the guide's
