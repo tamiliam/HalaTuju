@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.utils import timezone
@@ -22,6 +23,24 @@ from . import emails, meeting
 from .models import InterviewSlot
 
 logger = logging.getLogger(__name__)
+
+# Interview slot rule (mirrored in halatuju-web/src/lib/interviewSlots.ts — keep in
+# lock-step): a proposed time must be MYT, on a 30-minute boundary, between 08:00 and
+# 21:30 (latest start). Times are stored UTC; we compare in MYT.
+_MYT = ZoneInfo('Asia/Kuala_Lumpur')
+SLOT_WINDOW_START_MIN = 8 * 60        # 08:00
+SLOT_WINDOW_END_MIN = 21 * 60 + 30    # 21:30 (latest start)
+SLOT_STEP_MIN = 30
+
+
+def slot_in_window(dt) -> bool:
+    """True if a tz-aware datetime falls on an allowed interview slot (MYT, 30-min
+    boundary, inside the 08:00–21:30 window). Enforced at the propose endpoint."""
+    local = dt.astimezone(_MYT)
+    if local.second or local.microsecond or local.minute % SLOT_STEP_MIN:
+        return False
+    mins = local.hour * 60 + local.minute
+    return SLOT_WINDOW_START_MIN <= mins <= SLOT_WINDOW_END_MIN
 
 
 class SchedulingError(Exception):

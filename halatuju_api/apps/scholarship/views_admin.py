@@ -1128,6 +1128,11 @@ class AdminInterviewSlotsView(_AdminBase):
         if err:
             return err
         starts = _parse_slot_starts(request.data.get('slots'))
+        # Enforce the interview-slot rule (MYT, 30-min, 08:00–21:30) at the input
+        # boundary — the UI only offers valid chips, but reject anything else too.
+        if any(s and not scheduling.slot_in_window(s) for s in starts):
+            return Response({'error': 'invalid_slot_time', 'code': 'invalid_slot_time'},
+                            status=status.HTTP_400_BAD_REQUEST)
         try:
             scheduling.propose_slots(app, reviewer=admin, starts=starts)
         except scheduling.SchedulingError as e:

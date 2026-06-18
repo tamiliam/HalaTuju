@@ -2513,9 +2513,12 @@
           "proposed": "Masa yang dicadangkan",
           "noneProposed": "Belum ada masa dicadangkan.",
           "withdraw": "Tarik balik",
-          "addTime": "Tambah masa",
+          "availableTimes": "Masa tersedia (8:00 pagi–9:30 malam, 30 minit)",
+          "noneToday": "Tiada lagi masa tersedia hari ini — pilih tarikh lain.",
+          "selectedCount": "Dipilih ({n} daripada {max})",
+          "slotTaken": "Sudah dicadangkan",
           "propose": "Cadangkan masa",
-          "needFuture": "Sila tambah sekurang-kurangnya satu masa akan datang.",
+          "needFuture": "Sila pilih sekurang-kurangnya satu masa.",
           "error": "Tidak dapat menyimpan. Sila cuba lagi."
         }
       },
