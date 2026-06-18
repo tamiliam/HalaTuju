@@ -13,7 +13,6 @@ import PathwaySelect from '@/components/PathwaySelect'
 import ProgrammePicker from '@/components/ProgrammePicker'
 import InstitutionPicker from '@/components/InstitutionPicker'
 import AliranPicker from '@/components/AliranPicker'
-import BidangPicker from '@/components/BidangPicker'
 import {
   checkEligibility, calculatePathways, checkStpmEligibility,
   type EligibleCourse, type StudentProfile,
@@ -21,7 +20,7 @@ import {
 import {
   eligiblePathways, PATHWAY_ORDER, programmesForPathway, isProgrammePathway,
   eligibleMatricTracks, STPM_STREAMS, stpmDegreesToCourses, UNCERTAINTY_REASONS,
-  pismpAlirans, bidangForAliran, aliranForChosen, bidangLabel,
+  pismpAlirans, bidangForAliran, aliranForChosen,
   type ChosenProgramme, type PismpAliran,
 } from '@/lib/scholarship'
 import { collegesForTrack } from '@/data/matric-colleges'
@@ -203,15 +202,10 @@ export default function PathwayPicker({
             {pismpAliran && (
               <div>
                 <FieldLabel>{t('scholarship.apply.plan.bidangLabel')}</FieldLabel>
-                <BidangPicker key={pismpAliran}
+                <ProgrammePicker key={pismpAliran}
                   courses={bidangForAliran(pismpCourses, pismpAliran)}
                   value={form.chosenProgramme} onChange={setProgramme} loading={loading} />
               </div>
-            )}
-            {form.chosenProgramme && (
-              <p className="rounded-xl border border-primary-100 bg-primary-50 p-3 text-sm text-primary-800">
-                {t('scholarship.apply.plan.pismpChosen', { course: bidangLabel(form.chosenProgramme.courseName) })}
-              </p>
             )}
           </div>
         ) : isProgrammePathway(form.chosenPathway) ? (

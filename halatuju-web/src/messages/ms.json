@@ -634,8 +634,6 @@
           "khas": "Pendidikan Khas"
         },
         "bidangLabel": "Mata pelajaran yang anda mahu ajar",
-        "bidangCount": "{n} mata pelajaran tersedia untuk jenis sekolah ini",
-        "pismpChosen": "Kursus anda: {course} — PISMP",
         "topProgrammesLabel": "3 program pilihan utama anda",
         "topProgrammesTip": "Pilih sehingga tiga ijazah yang anda sedang pertimbangkan — daripada yang layak dengan keputusan STPM anda. Kami akan ambil kira walaupun anda belum putuskan.",
         "trackLabel": "Trek matrikulasi yang mana?",

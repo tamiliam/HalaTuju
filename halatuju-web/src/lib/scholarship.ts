@@ -214,7 +214,11 @@ export function pismpAlirans(courses: EligibleCourse[] | null | undefined): Pism
   return PISMP_ALIRAN_ORDER.filter((a) => present.has(a))
 }
 
-/** Eligible PISMP courses for one aliran (school type), sorted A–Z by bidang label. */
+/**
+ * Eligible PISMP courses for one aliran (school type), sorted A–Z by course name —
+ * feeds the course combobox (the same compact picker the UA pathway uses) once a
+ * school type is chosen. The name already carries its "(SJKT)" suffix as the identifier.
+ */
 export function bidangForAliran(
   courses: EligibleCourse[] | null | undefined,
   aliran: string,
@@ -222,21 +226,7 @@ export function bidangForAliran(
   if (!courses || !aliran) return []
   return courses
     .filter((c) => c.source_type === 'pismp' && c.aliran === aliran)
-    .sort((a, b) => bidangLabel(a.course_name).localeCompare(bidangLabel(b.course_name)))
-}
-
-/**
- * The bidang (subject) display name = the course name minus its school-type suffix.
- * "Matematik (SJKT)" → "Matematik". A special-needs (MBPK) variant keeps a "(MBPK)"
- * marker so it stays distinct from its mainstream sibling: "Muzik (SJKT-MBPK)" →
- * "Muzik (MBPK)".
- */
-export function bidangLabel(courseName: string): string {
-  if (!courseName) return ''
-  return courseName
-    .replace(/\s*\((?:SK|SJKC|SJKT|SKPK)-MBPK\)\s*$/i, ' (MBPK)')
-    .replace(/\s*\((?:SK|SJKC|SJKT|SKPK|Khas)\)\s*$/i, '')
-    .trim()
+    .sort((a, b) => a.course_name.localeCompare(b.course_name))
 }
 
 /**

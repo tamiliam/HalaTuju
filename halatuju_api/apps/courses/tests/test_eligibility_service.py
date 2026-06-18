@@ -276,6 +276,10 @@ class TestDeduplicatePismp(TestCase):
         lang_card = [c for c in result if 'pismp_languages' in c]
         self.assertEqual(len(lang_card), 1)
         self.assertIn('Bahasa Cina', lang_card[0]['pismp_languages'])
+        # The name is NOT suffixed with the redundant "(Aliran …)" — the course name
+        # already carries its Aliran suffix from the catalogue. pismp_languages is the facet.
+        self.assertEqual(lang_card[0]['course_name'], 'PISMP Course')
+        self.assertNotIn('(Aliran', lang_card[0]['course_name'])
 
 
 class TestSortEligibleCourses(TestCase):
