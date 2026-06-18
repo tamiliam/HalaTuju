@@ -166,6 +166,8 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
             'assigned_to_id', 'assigned_to_name',
+            # When set, the list pill shows "Reopened" (overriding accepted/rejected).
+            'decision_reopened_at',
         ]
 
     def get_name(self, obj):

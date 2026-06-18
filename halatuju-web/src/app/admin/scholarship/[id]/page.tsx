@@ -95,6 +95,7 @@ const STATUS_TONE: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
   withdrawn: 'bg-gray-100 text-gray-600',
   expired: 'bg-gray-100 text-gray-600',
+  reopened: 'bg-amber-100 text-amber-700',
 }
 const statusTone = (s: string) => STATUS_TONE[s] || 'bg-primary-100 text-primary-700'
 
@@ -588,10 +589,15 @@ export default function AdminScholarshipDetailPage() {
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">{app.name || '—'}</h1>
-          {/* The actual application status (Shortlisted, Rejected, …), colour-banded. */}
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(app.status)}`}>
-            {t(`admin.scholarship.statuses.${app.status}`)}
-          </span>
+          {/* Status pill — a super-reopened decision shows "Reopened" (overrides accepted/rejected). */}
+          {(() => {
+            const s = decisionReopened ? 'reopened' : app.status
+            return (
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(s)}`}>
+                {t(`admin.scholarship.statuses.${s}`)}
+              </span>
+            )
+          })()}
           {/* Primary action button — scrolls to the Record Verdict panel */}
           {canWrite && ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) && (
             <button

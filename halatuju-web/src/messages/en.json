@@ -2413,7 +2413,8 @@
         "sponsored": "Sponsored",
         "rejected": "Rejected",
         "withdrawn": "Withdrawn",
-        "expired": "Expired"
+        "expired": "Expired",
+        "reopened": "Reopened"
       },
       "reviewActions": "Review & actions",
       "assignTitle": "Assign a reviewer",

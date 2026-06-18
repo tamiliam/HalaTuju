@@ -21,13 +21,14 @@ const bucketBadge = (b: string) =>
       : 'bg-gray-100 text-gray-500'
 
 const statusBadge = (s: string) =>
-  s === 'shortlisted' ? 'bg-blue-100 text-blue-700'
-    : s === 'profile_complete' ? 'bg-emerald-100 text-emerald-700'
-      : s === 'interviewing' ? 'bg-violet-100 text-violet-700'
-        : s === 'interviewed' ? 'bg-indigo-100 text-indigo-700'
-          : s === 'accepted' ? 'bg-green-100 text-green-700'
-            : s === 'rejected' ? 'bg-red-100 text-red-600'
-              : 'bg-gray-100 text-gray-600'
+  s === 'reopened' ? 'bg-amber-100 text-amber-700'
+    : s === 'shortlisted' ? 'bg-blue-100 text-blue-700'
+      : s === 'profile_complete' ? 'bg-emerald-100 text-emerald-700'
+        : s === 'interviewing' ? 'bg-violet-100 text-violet-700'
+          : s === 'interviewed' ? 'bg-indigo-100 text-indigo-700'
+            : s === 'accepted' ? 'bg-green-100 text-green-700'
+              : s === 'rejected' ? 'bg-red-100 text-red-600'
+                : 'bg-gray-100 text-gray-600'
 
 // ── Reviewer language matching (assignment dropdown) ───────────────────────────
 const LANG_LABEL: Record<string, string> = { en: 'EN', ms: 'BM', ta: 'TA' }
@@ -52,6 +53,7 @@ const STATUS_LABELS: Record<string, string> = {
   submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Completed',
   interviewing: 'Interviewing', interviewed: 'Interviewed', accepted: 'Accepted',
   sponsored: 'Sponsored', rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
+  reopened: 'Reopened',
 }
 const statusLabel = (s: string) =>
   STATUS_LABELS[s] || (s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : s)
@@ -279,7 +281,11 @@ export default function AdminScholarshipList() {
                   <td className="px-4 py-3 text-gray-600">{a.qualification?.toUpperCase()}</td>
                   <td className="px-4 py-3 text-gray-700 tabular-nums">{a.merit_score ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(a.status)}`}>{statusLabel(a.status)}</span>
+                    {(() => {
+                      // A super-reopened decision shows "Reopened", overriding the stored accepted/rejected.
+                      const s = a.decision_reopened_at ? 'reopened' : a.status
+                      return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(s)}`}>{statusLabel(s)}</span>
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{new Date(a.submitted_at).toLocaleDateString('ms-MY')}</td>
                   {isSuper && (

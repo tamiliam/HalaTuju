@@ -2413,7 +2413,8 @@
         "sponsored": "Ditaja",
         "rejected": "Ditolak",
         "withdrawn": "Ditarik balik",
-        "expired": "Tamat tempoh"
+        "expired": "Tamat tempoh",
+        "reopened": "Dibuka semula"
       },
       "reviewActions": "Semakan & tindakan",
       "assignTitle": "Tugaskan penyemak",
