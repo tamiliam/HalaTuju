@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **PISMP SPM (Perdana) catalogue reconciled to the official 2026 guide (2026-06-18).** Every Perdana course in the DB
+  now matches a course in the PDF catalogue by **code, name, and entry requirements** — SJKT (10), SK (14), SJKC (15).
+  Names carry the aliran suffix `(SK)/(SJKC)/(SJKT)`; three Pendidikan Khas bidang were corrected to the guide's
+  Pendidikan Khas Pendidikan Rendah `…H00P` + Prasekolah `…H7P` rows (the B/D/L→H swap), replacing legacy rows whose
+  requirements were un-satisfiable. This is the data foundation for the upcoming Aliran→Bidang pathway picker.
 - **Decision flow redesigned: pick a reversible outcome, then Save (2026-06-18).** The four Pass/Fail toggles are framed
   as *rating the AI's check* per fact. **Approve** and **Decline** are now a **reversible selection** (not instant-commit
   buttons) that records the decision's `overall` outcome — previously always blank. Gates: **Approve** needs interview
@@ -39,6 +44,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than only "the interviewer will contact you." Backend only, no migration.
 
 ### Fixed
+- **Explore Courses showed "0 of 0" for IPGM + Ijazah Sarjana Muda (2026-06-18).** `CourseSearchView` treated
+  level=`Ijazah Sarjana Muda` as STPM-entry-only, so it skipped the SPM branch and returned nothing for PISMP — the
+  IPG teacher-training degrees were invisible to the very students they target. The SPM branch is now skipped only for
+  `source_type='ua'` (genuine STPM-entry degrees), not for `pismp`. Regression tests added
+  (`TestUnifiedSearchPismpLevelFilter`).
+- **All 35 PISMP Perdana courses were silently over-restrictive (2026-06-18).** A systematic data error stored the
+  bidang subject requirement as grade `A` where the official 2026 guide says `A−`, so genuinely-qualified students were
+  filtered out of every Perdana course. Corrected across SJKT/SK/SJKC to match the PDF.
+- **Three Pendidikan Khas bidang (B/D/L) carried an un-satisfiable requirement (2026-06-18).** The legacy Braille/BIM/
+  autism rows required grade `A` in *all four* sciences simultaneously — a rule no real transcript can meet, so the
+  courses could never be recommended. Retired and replaced by the correct Pendidikan Khas / Prasekolah Perdana rows
+  (see Changed). 
 - **Birth-certificate parser mistook the letterhead for the child's name (2026-06-18).** On app #10 the deterministic
   BC parser captured `"KERAJAAN MALAYSIA"` (the government header) as the child, so the child↔student match failed. The
   all-caps "looks like a name" rule now rejects institutional tokens (KERAJAAN/JABATAN/PENDAFTARAN/NEGARA/MALAYSIA/
@@ -61,7 +78,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   can actually solve it; hide the box on every resolution (pass/fail/timeout) so it never lingers. `lib/turnstile.ts` +
   test. Not a config bug — the site key, Managed mode, and hostnames are all correct.
 
+### Removed
+- **Retired spurious / legacy PISMP rows during the catalogue reconciliation (2026-06-18).** Removed PISMP courses
+  that had no match in the official guide or were superseded: 8 SJKT, 10 combined SK+SJKC, the legacy SKPK `50PD06…`
+  Perdana rows (SKPK is STPM-level only), the B/D/L Pendidikan Khas rows (swapped to `…H` — see Changed), and a
+  duplicate Sains row (`…041S004`, kept `…041S00P`). Every retirement was backed up to `Downloads/*_retire_backup_2026-06-18.json`
+  before deletion (fully restorable).
+
 ### Added
+- **Aliran (school-type) facet in Explore Courses for PISMP (2026-06-18).** PISMP results can now be filtered by aliran
+  (SK / SJKC / SJKT / SKPK), derived read-time from the course name suffix or `course_id` 6th char via a new
+  `pismp_taxonomy.py` parser (`aliran_of`, `is_elektif`, `classify_pismp`). The search response gains `aliran`/
+  `is_elektif` per course and an `alirans` filter block; the web search page shows an Aliran dropdown when
+  source-type=PISMP, trilingual ("School Type" / "Aliran Sekolah" / "பள்ளி வகை"). Unit + API regression tests added.
+- **MBPK (special-needs) PISMP intake — disability-gated eligibility (2026-06-18).** Added a `req_disability`
+  must-HAVE flag to `course_requirements` (migration `0058`) and an engine gate so MBPK courses are recommended **only**
+  to students who declared a disability at onboarding (the existing "Physical disability" Special-Needs signal) — the
+  inverse of the existing `no_disability` exclusion. Ingested the 10 Laluan Khas track-A (MBPK) bidang across SK/SJKC/
+  SJKT (`50BK…`, names suffixed `(…-MBPK)`), cloned from their Perdana siblings with `req_disability=true`. 3 gate
+  tests added; verified live (disability=true → MBPK eligible; false → excluded).
 - **Reverse a recorded decision — "Reopen" with real consequences (2026-06-18).** The cockpit's Decision panel
   "Edit" became **Reopen** (super-only): reopening a finalised decision **holds the student's profile from the sponsor
   pool** (unpublishes), unlocks the panel + the reviewer dropdown, and shows a "held from sponsors" banner. **Cancel
