@@ -2833,6 +2833,7 @@
         "title": "Check 2 — Outstanding",
         "subtitle": "System assigned task(s) to student",
         "questionLabel": "Question",
+        "uploadLabel": "Upload",
         "locked": "Querying closed — the interview is concluded. This is now a read-only record.",
         "itemOne": "item",
         "itemMany": "items",

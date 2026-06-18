@@ -1053,7 +1053,8 @@ export default function AdminScholarshipDetailPage() {
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-gray-800 break-words">
-                              <span className="font-semibold">{t('admin.scholarship.outstanding.questionLabel')}:</span> {question}
+                              {/* A document request is a task ("Upload"), not a "Question" — label by kind. */}
+                              <span className="font-semibold">{item.kind === 'doc' ? t('admin.scholarship.outstanding.uploadLabel') : t('admin.scholarship.outstanding.questionLabel')}:</span> {question}
                               {' '}
                               <span className="ml-0.5 rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 align-middle">{item.fact}</span>
                               {' '}
