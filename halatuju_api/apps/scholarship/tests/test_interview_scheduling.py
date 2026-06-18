@@ -89,6 +89,22 @@ class SchedulingServiceTests(TestCase):
                                      starts=[self._future(days=-1)])
         self.assertEqual(str(cm.exception), 'no_future_slots')
 
+    def test_slot_in_window_rule(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        myt = ZoneInfo('Asia/Kuala_Lumpur')
+        def at(h, m):
+            return datetime(2026, 6, 22, h, m, tzinfo=myt)
+        # in-window, on 30-min boundary
+        self.assertTrue(scheduling.slot_in_window(at(8, 0)))
+        self.assertTrue(scheduling.slot_in_window(at(9, 30)))
+        self.assertTrue(scheduling.slot_in_window(at(21, 30)))
+        # off-boundary minutes
+        self.assertFalse(scheduling.slot_in_window(at(9, 15)))
+        # outside the 08:00–21:30 window
+        self.assertFalse(scheduling.slot_in_window(at(7, 30)))
+        self.assertFalse(scheduling.slot_in_window(at(22, 0)))
+
     def test_reproposing_withdraws_old_unbooked_slots(self):
         scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
         scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=5)])
@@ -298,7 +314,10 @@ class SchedulingEndpointTests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
 
     def _iso(self, **kw):
-        return (timezone.now() + timedelta(**kw)).isoformat()
+        # A valid interview slot: 10:00 MYT on a future day (on-boundary, in-window).
+        from zoneinfo import ZoneInfo
+        base = (timezone.now() + timedelta(**kw)).astimezone(ZoneInfo('Asia/Kuala_Lumpur'))
+        return base.replace(hour=10, minute=0, second=0, microsecond=0).isoformat()
 
     def _propose_url(self):
         return f'/api/v1/admin/scholarship/applications/{self.app.id}/interview-slots/'
@@ -308,6 +327,26 @@ class SchedulingEndpointTests(TestCase):
         r = self.client.post(self._propose_url(), {'slots': [self._iso(days=3)]}, format='json')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.json()['slots']), 1)
+
+    def test_propose_rejects_out_of_window_time(self):
+        # 03:00 MYT — outside 08:00–21:30 → 400, no slots created.
+        from zoneinfo import ZoneInfo
+        self._auth('rev-uid')
+        bad = ((timezone.now() + timedelta(days=3)).astimezone(ZoneInfo('Asia/Kuala_Lumpur'))
+               .replace(hour=3, minute=0, second=0, microsecond=0).isoformat())
+        r = self.client.post(self._propose_url(), {'slots': [bad]}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'invalid_slot_time')
+
+    def test_propose_rejects_off_boundary_time(self):
+        # 10:15 MYT — not on a 30-minute boundary → 400.
+        from zoneinfo import ZoneInfo
+        self._auth('rev-uid')
+        bad = ((timezone.now() + timedelta(days=3)).astimezone(ZoneInfo('Asia/Kuala_Lumpur'))
+               .replace(hour=10, minute=15, second=0, microsecond=0).isoformat())
+        r = self.client.post(self._propose_url(), {'slots': [bad]}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'invalid_slot_time')
 
     def test_unassigned_reviewer_cannot_propose(self):
         self._auth('rev2-uid')

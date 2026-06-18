@@ -2513,9 +2513,12 @@
           "proposed": "Proposed times",
           "noneProposed": "No times proposed yet.",
           "withdraw": "Withdraw",
-          "addTime": "Add a time",
+          "availableTimes": "Available times (8:00am–9:30pm, 30-min)",
+          "noneToday": "No more times available today — pick another date.",
+          "selectedCount": "Selected ({n} of {max})",
+          "slotTaken": "Already proposed",
           "propose": "Propose times",
-          "needFuture": "Please add at least one future time.",
+          "needFuture": "Please pick at least one time.",
           "error": "Could not save. Please try again."
         }
       },
