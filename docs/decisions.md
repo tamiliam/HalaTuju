@@ -3133,3 +3133,10 @@ From fixes that globally, and topical reply-to/landing addresses keep things fil
 **Trade-offs:** all aliases share one inbox (filtering, not separate mailboxes); reply-to refinement is cosmetic while
 single-inbox.
 **Revisit if:** the programme grows enough to want separate staffed inboxes per alias.
+
+## Sponsor profile income honesty: documented = certain, self-reported = a claim — 2026-06-18
+**Decision:** STR/JKM are asserted in the generated profile ONLY when a (current) welfare document is on file; a documented payslip/EPF income MUST be stated as documented while any other figure (incl. reported household income) is presented as what the family reports. Implemented via `profile_engine._gated_str`/`_gated_jkm` (mirroring `_gated_first_in_family`) + the rewritten INCOME & WELFARE prompt rule; `PROMPT_VERSION` → 2026-06-18.1.
+**Alternatives considered:** keep feeding the raw self-declared `receives_str`/`receives_jkm` booleans (status quo — caused #21); or present STR as "reported" rather than omitting it (rejected — the owner's rule is "no proof → assume they don't have it").
+**Rationale:** a self-tick is an unverified claim; only an on-file, current document makes a welfare/income fact certain. Consistent with the standing need-signal principle (auditable evidence only). Symmetric: the same standard that suppresses an undocumented STR also forbids hiding a documented salary behind a soft reported figure.
+**Trade-offs:** a genuine STR recipient who never uploaded the doc loses the STR mention in their profile; JKM (no document collected anywhere) is effectively never assertable. Existing drafts need the billable `backfill-assigned-profiles` cron to pick up the change.
+**Revisit if:** a JKM document type is added to the upload flow, or the owner wants self-declared welfare surfaced as an explicit "reported" line.
