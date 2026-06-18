@@ -1183,7 +1183,8 @@ export default function AdminScholarshipDetailPage() {
       )}
 
       {/* Interview scheduling — the assigned reviewer proposes times (dark behind the flag) */}
-      {app.interview_schedule?.enabled && app.assigned_to_id != null && (
+      {app.interview_schedule?.enabled && app.assigned_to_id != null &&
+        ['profile_complete', 'interviewing'].includes(app.status) && (
         <InterviewScheduleCard
           appId={id} token={token || ''} schedule={app.interview_schedule}
           onChange={(s) => setApp((prev) => (prev ? { ...prev, interview_schedule: s } : prev))}
@@ -1868,16 +1869,6 @@ export default function AdminScholarshipDetailPage() {
           <h2 className="text-base font-semibold tracking-tight text-gray-900">
             {assigned ? t('admin.scholarship.assign.assignedTitle') : t('admin.scholarship.assignTitle')}
           </h2>
-          {assigned && (
-            <p className="text-xs text-gray-500">
-              {t('admin.scholarship.assign.reviewerLine', { name: app.assigned_to_name || '' })}
-              {app.assigned_to_corrections > 0 && (
-                <span className="ml-1 text-gray-400">
-                  · {t('admin.scholarship.assign.corrections', { n: String(app.assigned_to_corrections) })}
-                </span>
-              )}
-            </p>
-          )}
           <select
             value={app.assigned_to_id ?? ''}
             disabled={!!busy || firstAssignBlocked || assignLocked}
