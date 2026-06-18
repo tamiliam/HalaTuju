@@ -25,7 +25,12 @@
 
 const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
-const TOKEN_TIMEOUT_MS = 8000 // never hang an auth flow on the captcha
+// Silent-path budget: a non-interactive (Managed) pass resolves in ~1s, so we never
+// hang an auth flow waiting on a SILENT captcha.
+const TOKEN_TIMEOUT_MS = 8000
+// Once Cloudflare shows a VISIBLE challenge a human must solve, 8s is far too short to
+// notice + click (this stranded a real reviewer). Give a generous human budget instead.
+const INTERACTIVE_TIMEOUT_MS = 120000
 
 interface TurnstileAPI {
   render: (el: HTMLElement, opts: Record<string, unknown>) => string
@@ -61,15 +66,30 @@ function loadScript(): Promise<void> {
   return scriptPromise
 }
 
-// One singleton widget, reused across every token fetch. The container is fixed
-// and centred (NOT off-screen) so that, on the rare occasion Turnstile must show
-// an interaction challenge, the visitor can actually see and solve it.
+// One singleton widget, reused across every token fetch. The container is fixed,
+// centred and top-most, but kept HIDDEN until Cloudflare actually needs to show an
+// interaction challenge — so a silent pass shows nothing, and a finished challenge
+// (passed OR failed) never lingers on screen over the app.
 let container: HTMLDivElement | null = null
 let widgetId: string | null = null
 let currentResolve: ((token: string | undefined) => void) | null = null
+let timer: ReturnType<typeof setTimeout> | null = null
 // Serialise: Turnstile reuses one widget, so concurrent fetches would clobber
 // each other's token. Chain them instead.
 let queue: Promise<string | undefined> = Promise.resolve(undefined)
+
+function show(): void { if (container) container.style.display = '' }
+function hide(): void { if (container) container.style.display = 'none' }
+
+// Resolve the in-flight fetch exactly once: clear any timer, HIDE the widget (so no
+// box is ever left on screen), then hand the token (or undefined) back to the caller.
+function settle(token: string | undefined): void {
+  if (timer) { clearTimeout(timer); timer = null }
+  hide()
+  const r = currentResolve
+  currentResolve = null
+  r?.(token)
+}
 
 function ensureWidget(api: TurnstileAPI): void {
   if (widgetId && container) return
@@ -79,26 +99,24 @@ function ensureWidget(api: TurnstileAPI): void {
   container.style.left = '50%'
   container.style.transform = 'translate(-50%, -50%)'
   container.style.zIndex = '2147483647'
+  container.style.display = 'none' // revealed only while an interaction challenge is actually up
   document.body.appendChild(container)
   widgetId = api.render(container, {
     sitekey: SITE_KEY,
     execution: 'execute', // run only when execute() is called
     appearance: 'interaction-only', // show nothing on a silent pass; only appear if interaction is required
     retry: 'never', // we handle failure by resolving undefined, no auto-retry loop
-    callback: (token: string) => {
-      const r = currentResolve
-      currentResolve = null
-      r?.(token)
-    },
-    'error-callback': () => {
-      const r = currentResolve
-      currentResolve = null
-      r?.(undefined)
-    },
-    'timeout-callback': () => {
-      const r = currentResolve
-      currentResolve = null
-      r?.(undefined)
+    callback: (token: string) => settle(token),
+    'error-callback': () => settle(undefined),
+    'timeout-callback': () => settle(undefined),
+    // Cloudflare is about to show a VISIBLE challenge that needs a human. Reveal the
+    // widget and swap the short silent-path budget for a generous human one, so a
+    // flagged-but-real visitor can actually notice and solve it (the 8s budget was
+    // stranding genuine users mid-challenge — captcha enforcement then blocked them).
+    'before-interactive-callback': () => {
+      show()
+      if (timer) { clearTimeout(timer); timer = null }
+      timer = setTimeout(() => settle(undefined), INTERACTIVE_TIMEOUT_MS)
     },
   })
 }
@@ -113,26 +131,14 @@ async function fetchToken(action?: string): Promise<string | undefined> {
     if (!widgetId || !container) return undefined
     return await new Promise<string | undefined>((resolve) => {
       currentResolve = resolve
-      const timer = setTimeout(() => {
-        if (currentResolve === resolve) {
-          currentResolve = null
-          resolve(undefined)
-        }
-      }, TOKEN_TIMEOUT_MS)
-      const done = (t: string | undefined) => {
-        clearTimeout(timer)
-        resolve(t)
-      }
-      // Wrap resolve so the timer is always cleared.
-      currentResolve = done
+      // Silent-path budget. If an interaction challenge appears,
+      // before-interactive-callback REPLACES this with the longer human budget.
+      timer = setTimeout(() => settle(undefined), TOKEN_TIMEOUT_MS)
       try {
         api.reset(widgetId!) // clear any prior single-use token
         api.execute(container!, action ? { action } : undefined)
       } catch {
-        if (currentResolve === done) {
-          currentResolve = null
-          done(undefined)
-        }
+        settle(undefined)
       }
     })
   } catch {

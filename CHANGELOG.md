@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Turnstile interaction challenge no longer strands or obscures flagged users (2026-06-18).** Cloudflare Turnstile
+  (captcha for Supabase logins, enforcement ON) silently passes most users, but escalates to a visible "Verify you are
+  human" challenge for flagged traffic. Two defects surfaced when a reviewer hit one: (1) an **8-second timeout** —
+  fine for a silent pass but far too short for a human to notice + click a real challenge, so we abandoned the token and
+  Supabase then blocked the login; (2) the widget box was **never hidden after it resolved**, so a finished/failed
+  challenge lingered centred over the cockpit. Fix: keep the short budget only for the silent path; on
+  `before-interactive-callback` reveal the box and switch to a generous human budget (120s) so a flagged-but-real user
+  can actually solve it; hide the box on every resolution (pass/fail/timeout) so it never lingers. `lib/turnstile.ts` +
+  test. Not a config bug — the site key, Managed mode, and hostnames are all correct.
+
 ### Added
 - **Reverse a recorded decision — "Reopen" with real consequences (2026-06-18).** The cockpit's Decision panel
   "Edit" became **Reopen** (super-only): reopening a finalised decision **holds the student's profile from the sponsor
