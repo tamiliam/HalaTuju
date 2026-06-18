@@ -166,6 +166,28 @@ class TestDecisionReopen(TestCase):
         self.assertTrue(row.resulted_in_change)
         self.assertEqual(self._corrections_for(self.reviewer.id), 1)
 
+    # ── reopen unlocks the whole case (Check 2 + Interview), not just the panel ──
+    def test_reopen_unlocks_querying(self):
+        from apps.scholarship import services
+        self.assertTrue(services.querying_locked(self.app))    # accepted → Check 2 locked
+        self.app.decision_reopened_at = timezone.now()
+        self.app.save(update_fields=['decision_reopened_at'])
+        self.assertFalse(services.querying_locked(self.app))   # reopened → unlocked
+
+    def test_reopened_interview_edits_submitted_session_in_place(self):
+        InterviewSession.objects.create(
+            application=self.app, status='submitted', submitted_at=timezone.now(),
+            findings={'a': {'verdict': 'resolved', 'rationale': 'ok'}})
+        self.app.decision_reopened_at = timezone.now()
+        self.app.save(update_fields=['decision_reopened_at'])
+        self._auth(SUPER)
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/interview/',
+            {'findings': {'a': {'verdict': 'resolved', 'rationale': 'edited'}}}, format='json')
+        self.assertEqual(r.status_code, 200)
+        # Edited in place — no duplicate session spawned (the app #15 trap).
+        self.assertEqual(InterviewSession.objects.filter(application=self.app).count(), 1)
+
     # ── corrections count surfaces internally ────────────────────────────────
     def _corrections_for(self, reviewer_id):
         """Read the reviewer's corrections tally from the assignable-admins endpoint."""

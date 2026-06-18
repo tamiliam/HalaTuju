@@ -603,6 +603,12 @@ class AdminInterviewView(_AdminBase):
             return Response({'error': err, 'code': 'bad_findings'},
                             status=status.HTTP_400_BAD_REQUEST)
         session = app.interview_sessions.filter(status='draft').first()
+        if session is None and app.decision_reopened_at is not None:
+            # Decision reopened → edit the SUBMITTED session IN PLACE (reopen it as a draft)
+            # instead of spawning a second session (the duplicate-draft trap, app #15).
+            session = app.interview_sessions.filter(status='submitted').order_by('-submitted_at').first()
+            if session is not None:
+                session.status = 'draft'
         if session is None:
             session = InterviewSession(application=app, interviewer=admin,
                                        started_at=timezone.now())

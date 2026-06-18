@@ -497,9 +497,15 @@ export default function AdminScholarshipDetailPage() {
   if (error && !app) return <div className="text-red-600 mt-8">{error}</div>
   if (!app) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
 
+  // A superadmin has REOPENED the recorded decision (server-driven; held from sponsors).
+  // A reopen reopens the WHOLE case for revision — Check 2 + Interview Stage + Decision all
+  // unlock for the assigned reviewer (and super), not just the decision panel.
+  const decisionReopened = !!app.decision_reopened_at
+
   // S4: once the interview is concluded it's decision time — querying (raise / Resolve /
   // Ask again / request a document) closes and Outstanding becomes a read-only record.
-  const queryingLocked = isQueryingLocked(app.status, app.interview_session?.status)
+  // A reopen re-opens it (the backend querying_locked mirrors this).
+  const queryingLocked = isQueryingLocked(app.status, app.interview_session?.status) && !decisionReopened
   // #7: Approve/Decline activate only once the reviewer has (1) submitted interview
   // findings, (2) pressed Pass/Fail on all four facts, and (3) written a conclusion.
   // (Approve's actual accept is still backend-gated on a complete profile + identity.)
@@ -510,12 +516,10 @@ export default function AdminScholarshipDetailPage() {
 
   // Freeze model (the owner's): Save persists a draft and stays editable (re-saving
   // overwrites the same draft); Submit / recording the decision disables editing →
-  // read-only. A superadmin can reopen to correct (editIv / editDec).
+  // read-only. A reopen unlocks the interview again (for the assigned reviewer too).
   const interviewSubmitted = app.interview_session?.status === 'submitted'
-  const interviewLocked = interviewSubmitted && !editIv
+  const interviewLocked = interviewSubmitted && !editIv && !decisionReopened
   const decisionRecorded = !!app.verdict_decided_at
-  // A superadmin has REOPENED the recorded decision (server-driven; held from sponsors).
-  const decisionReopened = !!app.decision_reopened_at
   const decisionLocked = decisionRecorded && !decisionReopened
 
   // The interview agenda (questions): deterministic flags not already a Check-2 query +
@@ -1803,6 +1807,19 @@ export default function AdminScholarshipDetailPage() {
               {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
               {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
             </p>
+            {/* Reopened: let the reviewer's revised interview + facts be re-saved, which
+                regenerates + republishes the profile (counts as a correction). */}
+            {decisionReopened && canWrite && (
+              <>
+                {!decisionReady && (
+                  <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
+                )}
+                <button onClick={doSaveVerdict} disabled={!!busy || !decisionReady}
+                  className="w-full px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                  {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
+                </button>
+              </>
+            )}
             {canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
                 className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
