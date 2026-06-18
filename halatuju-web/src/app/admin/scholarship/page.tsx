@@ -29,9 +29,32 @@ const statusBadge = (s: string) =>
             : s === 'rejected' ? 'bg-red-100 text-red-600'
               : 'bg-gray-100 text-gray-600'
 
+// ── Reviewer language matching (assignment dropdown) ───────────────────────────
+const LANG_LABEL: Record<string, string> = { en: 'EN', ms: 'BM', ta: 'TA' }
+type Reviewer = { id: number; name: string; languages: string[] }
+const langCodesLabel = (codes: string[]) => codes.map((c) => LANG_LABEL[c] ?? c.toUpperCase()).join(', ')
+/** Order reviewers for a student's preferred call language: when it's a specific language
+ *  (en/ms/ta), reviewers who speak it come first and each carries a match flag; otherwise
+ *  ('mixed'/unset) the list is unchanged and nothing is flagged. */
+function orderReviewersFor(reviewers: Reviewer[], lang: string): Array<{ rv: Reviewer; match: boolean; specific: boolean }> {
+  const specific = lang === 'en' || lang === 'ms' || lang === 'ta'
+  const out = reviewers.map((rv) => ({ rv, match: specific ? rv.languages.includes(lang) : true, specific }))
+  if (specific) out.sort((a, b) => Number(b.match) - Number(a.match) || a.rv.name.localeCompare(b.rv.name))
+  return out
+}
+
 const STATUS_OPTIONS = [
   'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'accepted', 'rejected',
 ]
+
+// Human, Sentence-case status labels (the raw keys like 'profile_complete' aren't for display).
+const STATUS_LABELS: Record<string, string> = {
+  submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Completed',
+  interviewing: 'Interviewing', interviewed: 'Interviewed', accepted: 'Accepted',
+  sponsored: 'Sponsored', rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
+}
+const statusLabel = (s: string) =>
+  STATUS_LABELS[s] || (s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : s)
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
@@ -45,7 +68,7 @@ export default function AdminScholarshipList() {
   const { t } = useT()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
   // Super-only inline reviewer assignment (the "Assigned" column dropdown).
-  const [reviewers, setReviewers] = useState<Array<{ id: number; name: string }>>([])
+  const [reviewers, setReviewers] = useState<Array<{ id: number; name: string; languages: string[] }>>([])
   const [assignNote, setAssignNote] = useState<Record<number, string>>({})
   const [bucket, setBucket] = useState('')
   const [statusF, setStatusF] = useState('')
@@ -57,6 +80,22 @@ export default function AdminScholarshipList() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
+  // Column sorting (server-side). '' = default (newest submitted first).
+  const [sort, setSort] = useState<'' | 'name' | 'merit'>('')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+
+  // Click a sortable header: same column flips direction; a new column starts at a
+  // sensible default (name A→Z, merit high→low). Resets to page 1.
+  const toggleSort = (key: 'name' | 'merit') => {
+    if (sort === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSort(key)
+      setSortDir(key === 'merit' ? 'desc' : 'asc')
+    }
+    setPage(1)
+  }
+  const sortArrow = (key: 'name' | 'merit') => (sort === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '')
 
   // Debounce the search box so a request doesn't fire on every keystroke.
   useEffect(() => {
@@ -79,6 +118,8 @@ export default function AdminScholarshipList() {
         q: q || undefined,
         page,
         pageSize,
+        sort: sort || undefined,
+        dir: sort ? sortDir : undefined,
       },
       { token },
     )
@@ -86,7 +127,7 @@ export default function AdminScholarshipList() {
       .catch(() => setError(t('admin.scholarship.loadFailed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, bucket, statusF, source, assignedF, q, page, pageSize])
+  }, [token, bucket, statusF, source, assignedF, q, page, pageSize, sort, sortDir])
 
   const apps = data?.applications ?? []
 
@@ -95,7 +136,7 @@ export default function AdminScholarshipList() {
   useEffect(() => {
     if (!token || !isSuper) return
     getAssignableAdmins({ token })
-      .then((r) => setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name }))))
+      .then((r) => setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, languages: a.languages || [] }))))
       .catch(() => {})
   }, [token, isSuper])
 
@@ -162,7 +203,8 @@ export default function AdminScholarshipList() {
             className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
-        <select value={source} onChange={(e) => changeFilter(setSource)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <select value={source} onChange={(e) => changeFilter(setSource)(e.target.value)}
+          className="border rounded-lg px-3 py-2 text-sm w-40 truncate" title={t('admin.scholarship.allSources')}>
           <option value="">{t('admin.scholarship.allSources')}</option>
           {REFERRING_ORG_OPTIONS.map((code) => <option key={code} value={code}>{t(`scholarship.apply.org.${code}`)}</option>)}
         </select>
@@ -173,13 +215,20 @@ export default function AdminScholarshipList() {
         </select>
         <select value={statusF} onChange={(e) => changeFilter(setStatusF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allStatuses')}</option>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
         </select>
         {canFilterByAssignee && (
+          // Admin/super view this filter (it's hidden for reviewers, whose list is self-scoped).
+          // "Assigned to me" is dropped — applicants are assigned to reviewers, not to admins —
+          // and replaced with each active reviewer, so an admin can filter by who's reviewing.
           <select value={assignedF} onChange={(e) => changeFilter(setAssignedF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
             <option value="">{t('admin.scholarship.allAssignees')}</option>
-            <option value="me">{t('admin.scholarship.assignedToMe')}</option>
             <option value="none">{t('admin.scholarship.unassigned')}</option>
+            {reviewers.length > 0 && (
+              <optgroup label={t('admin.scholarship.byReviewer')}>
+                {reviewers.map((rv) => <option key={rv.id} value={rv.id}>{rv.name}</option>)}
+              </optgroup>
+            )}
           </select>
         )}
       </div>
@@ -195,11 +244,21 @@ export default function AdminScholarshipList() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50/80 border-b">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.name')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                  <button type="button" onClick={() => toggleSort('name')}
+                    className="uppercase tracking-wider hover:text-gray-900">
+                    {t('admin.scholarship.name')}{sortArrow('name')}
+                  </button>
+                </th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.source')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.bucket')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.qualShort')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.merit')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                  <button type="button" onClick={() => toggleSort('merit')}
+                    className="uppercase tracking-wider hover:text-gray-900">
+                    {t('admin.scholarship.merit')}{sortArrow('merit')}
+                  </button>
+                </th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.status')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.submitted')}</th>
                 {isSuper && <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
@@ -220,23 +279,31 @@ export default function AdminScholarshipList() {
                   <td className="px-4 py-3 text-gray-600">{a.qualification?.toUpperCase()}</td>
                   <td className="px-4 py-3 text-gray-700 tabular-nums">{a.merit_score ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(a.status)}`}>{a.status}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(a.status)}`}>{statusLabel(a.status)}</span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{new Date(a.submitted_at).toLocaleDateString('ms-MY')}</td>
                   {isSuper && (
                     <td className="px-4 py-3">
+                      {LANG_LABEL[a.call_language] && (
+                        <p className="mb-1 text-[11px] text-gray-500">
+                          {t('admin.scholarship.prefersLang', { lang: LANG_LABEL[a.call_language] })}
+                        </p>
+                      )}
                       <select
                         value={a.assigned_to_id ?? ''}
                         onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
-                        className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[160px]"
+                        className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[220px]"
                       >
                         <option value="">{t('admin.scholarship.unassigned')}</option>
                         {/* keep the current assignee selectable even if not in the reviewer list */}
                         {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
                           <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
                         )}
-                        {reviewers.map((rv) => (
-                          <option key={rv.id} value={rv.id}>{rv.name}</option>
+                        {orderReviewersFor(reviewers, a.call_language).map(({ rv, match, specific }) => (
+                          <option key={rv.id} value={rv.id}>
+                            {specific ? (match ? '✓ ' : '⚠ ') : ''}{rv.name}
+                            {rv.languages.length ? ` — ${langCodesLabel(rv.languages)}` : ' — —'}
+                          </option>
                         ))}
                       </select>
                       {assignNote[a.id] && <p className="text-xs text-red-500 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}

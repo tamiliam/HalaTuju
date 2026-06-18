@@ -258,7 +258,10 @@
     "tagline": "Membimbing pelajar Malaysia ke kursus yang tepat.",
     "quickLinks": "Pautan Pantas",
     "legal": "Undang-undang",
-    "startHere": "Mula Di Sini"
+    "startHere": "Mula Di Sini",
+    "b40Heading": "Bantuan B40",
+    "applyAssistance": "Mohon bantuan",
+    "becomeSponsor": "Jadi penaja"
   },
   "landing": {
     "heroTitle": "Cari Kursus Anda",
@@ -378,7 +381,8 @@
     "spmSastera": "Sastera",
     "spmTeknikal": "Teknikal",
     "spmVokasional": "Vokasional",
-    "saveReturnToApplication": "Simpan & kembali ke permohonan"
+    "saveReturnToApplication": "Simpan & kembali ke permohonan",
+    "saveAndReturn": "Simpan & kembali ke profil"
   },
   "verifyEmail": {
     "loading": "Mengesahkan e-mel anda...",
@@ -524,7 +528,7 @@
     "aboutTitle": "Tentang HalaTuju",
     "version": "Versi",
     "currentLanguage": "Bahasa Semasa",
-    "builtBy": "Dibina oleh Tamil Foundation untuk pelajar Malaysia."
+    "builtBy": "Dibina oleh tamiliam untuk pelajar Malaysia."
   },
   "courseDetail": {
     "aboutTitle": "Tentang Kursus Ini",
@@ -845,7 +849,7 @@
       "tooLong": "Jawapan anda untuk “{field}” terlalu panjang. Sila pendekkan dan cuba lagi.",
       "step4Title": "4. Muat naik dokumen anda",
       "step4Body": "Sila muat naik dokumen wajib di bawah — IC anda, slip keputusan terkini anda, dan IC ibu bapa atau penjaga anda. Dokumen pilihan di bawah membantu menguatkan permohonan anda.",
-      "techSupport": "Menghadapi masalah teknikal dengan permohonan ini? E-mel tamiliam@gmail.com atau hubungi 012-337 5709 dan terangkan masalah anda — kami sedia membantu.",
+      "techSupport": "Menghadapi masalah teknikal dengan permohonan ini? E-mel help@halatuju.xyz atau hubungi 012-337 5709 dan terangkan masalah anda — kami sedia membantu.",
       "step5Title": "5. Tambah perujuk",
       "step5Body": "Seseorang yang boleh menjamin anda — guru, kaunselor, atau kenalan komuniti.",
       "step6Title": "6. Berikan persetujuan anda",
@@ -1550,6 +1554,21 @@
       "homeCta": "Kembali ke utama",
       "acceptedTitle": "Anda telah diterima",
       "acceptedBody": "Tahniah — permohonan anda telah disahkan. Pasukan kami akan menghubungi anda tentang langkah seterusnya untuk anugerah anda.",
+      "interview": {
+        "title": "Temu duga anda",
+        "pickIntro": "Penemu duga anda telah mencadangkan masa berikut. Pilih yang sesuai untuk anda — ia panggilan video ringkas (kira-kira 30–45 minit).",
+        "book": "Tempah masa ini",
+        "selectFirst": "Sila pilih masa dahulu.",
+        "booked": "Temu duga anda ditempah pada",
+        "joinMeet": "Sertai panggilan video",
+        "noLinkYet": "Pautan panggilan video akan muncul di sini sebelum temu duga anda.",
+        "parentsNote": "Ia panggilan video — sila buka kamera. Ibu bapa anda dialu-alukan menyertai dari rumah.",
+        "reschedule": "Pilih masa lain",
+        "cancel": "Batal",
+        "cancelledNote": "Temu duga anda telah dibatalkan. Penemu duga anda akan mencadangkan masa baharu tidak lama lagi.",
+        "tooLateNote": "Sudah hampir dengan masa temu duga anda — sila hubungi kami jika anda perlu menukarnya.",
+        "error": "Sesuatu tidak kena. Sila cuba lagi."
+      },
       "awardPanel": {
         "title": "Satu langkah lagi",
         "acceptBody": "Seorang penyokong telah memilih untuk membiayai pengajian anda. Terima anugerah anda untuk meneruskan.",
@@ -2374,7 +2393,7 @@
       "allBuckets": "Semua kategori",
       "allSources": "Semua sumber",
       "allAssignees": "Sesiapa sahaja",
-      "assignedToMe": "Ditugaskan kepada saya",
+      "byReviewer": "Mengikut penemu duga",
       "unassigned": "Belum ditugaskan",
       "assigned": "Ditugaskan",
       "source": "Sumber",
@@ -2457,8 +2476,29 @@
         "submit": "Hantar penemuan temu duga",
         "saveError": "Tidak dapat menyimpan temu duga.",
         "submitError": "Tidak dapat menghantar temu duga.",
+        "saved": "Disimpan ✓",
+        "reopen": "Buka semula",
+        "noneRecorded": "Tiada penemuan temu duga direkodkan.",
+        "findingsLabel": "Penemuan",
+        "submittedOn": "Dihantar pada",
+        "editingReopened": "Dibuka semula untuk suntingan",
         "verdict": {
           "resolved": "Selesai"
+        },
+        "schedule": {
+          "title": "Penjadualan temu duga",
+          "intro": "Cadangkan 2–3 masa. Pelajar memilih satu, dan kami menghantar pautan Google Meet serta peringatan secara automatik.",
+          "booked": "Ditempah",
+          "meetLink": "Pautan Google Meet",
+          "noLink": "Tiada pautan lagi — ia dijana apabila pelajar menempah.",
+          "cancelledNote": "Pelajar telah membatalkan — cadangkan masa baharu.",
+          "proposed": "Masa yang dicadangkan",
+          "noneProposed": "Belum ada masa dicadangkan.",
+          "withdraw": "Tarik balik",
+          "addTime": "Tambah masa",
+          "propose": "Cadangkan masa",
+          "needFuture": "Sila tambah sekurang-kurangnya satu masa akan datang.",
+          "error": "Tidak dapat menyimpan. Sila cuba lagi."
         }
       },
       "empty": "Tiada permohonan sepadan.",
@@ -2474,7 +2514,7 @@
       "funding": "Keperluan kewangan",
       "referees": "Perujuk",
       "none": "Tiada lagi.",
-      "profileTitle": "Profil penaja (draf)",
+      "profileTitle": "Profil pelajar (draf)",
       "profileDraftHint": "Draf ini akan digantikan dengan versi akhir yang dikemas kini dan menggabungkan penemuan anda apabila anda menyimpan keputusan anda.",
       "model": "Model",
       "acceptedBy": "Disahkan & diterima oleh",
@@ -2761,6 +2801,9 @@
         "save": "Simpan keputusan & jana profil akhir",
         "approve": "Lulus",
         "decline": "Tolak",
+        "edit": "Sunting",
+        "recordedBy": "Keputusan direkodkan oleh",
+        "declinedBy": "Ditolak oleh",
         "aiSuggested": "Keputusan AI:",
         "suggest": {
           "yes": "ya",
@@ -2869,7 +2912,8 @@
       "profilePending": "Profil dijana secara automatik apabila permohonan diserahkan untuk semakan.",
       "finalProfile": {
         "title": "Profil akhir (v2 — dengan temu duga)"
-      }
+      },
+      "prefersLang": "Suka {lang}"
     },
     "students": "Pelajar",
     "invite": "Jemputan",
@@ -3060,7 +3104,16 @@
       "postcode": "Poskod",
       "city": "Bandar",
       "state": "Negeri",
-      "selectState": "Pilih negeri"
+      "selectState": "Pilih negeri",
+      "langTitle": "Bahasa",
+      "langSubtitle": "Supaya kami boleh memadankan anda dengan pelajar yang anda boleh berbual dengan selesa.",
+      "langEnglish": "Bahasa Inggeris",
+      "langBm": "Bahasa Melayu",
+      "langTamil": "Bahasa Tamil",
+      "fluencyNone": "Tidak",
+      "fluencyConversational": "Boleh berbual",
+      "fluencyFluent": "Fasih",
+      "sharePhone": "Kongsi nombor telefon saya dengan pelajar yang ditugaskan kepada saya, supaya mereka tahu untuk menjangka panggilan saya."
     },
     "inviteAs": "Jemput sebagai",
     "inviteHeading": {
@@ -3136,6 +3189,8 @@
     "settingPassword": "Menetapkan…",
     "passwordTooShort": "Kata laluan mesti sekurang-kurangnya 8 aksara.",
     "passwordMismatch": "Kedua-dua kata laluan tidak sepadan.",
-    "setPasswordNoLink": "Halaman ini perlu dibuka daripada pautan dalam e-mel jemputan atau set semula kata laluan anda. Pautan mungkin telah tamat tempoh — minta yang baharu dari halaman log masuk."
+    "setPasswordNoLink": "Halaman ini perlu dibuka daripada pautan dalam e-mel jemputan atau set semula kata laluan anda. Pautan mungkin telah tamat tempoh — minta yang baharu dari halaman log masuk.",
+    "guideNav": "Panduan",
+    "faqNav": "Soalan Lazim"
   }
 }

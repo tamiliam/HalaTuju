@@ -831,8 +831,19 @@
   **employer- and employee-share contribution TOTALS separately** + the month count, derive
   `monthly_salary = max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))`, capture `employer_number` (`000000000 ⇒
   unemployed`), and retire the combined `avg_monthly_contribution`. (Logged 2026-06-16.)
-- TD-124: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
+- TD-124: **Contact-form messages are email-only — no in-app inbox.** `/contact` → `contact_submissions`; the
+  `notify-contact-submissions` cron (2026-06-18) emails each unread row to `contact@halatuju.xyz` and marks it read.
+  There is no `/admin/messages` UI to browse/triage them. **To resolve:** a small admin inbox reading
+  `contact_submissions` with the `read` toggle. Low priority (email covers the need at current volume). (Logged 2026-06-18.)
+- TD-125: **The Meet service-account JSON key lives in a Cloud Run env var (`GOOGLE_MEET_SA_JSON`), not Secret
+  Manager.** Matches the project's existing env-var secret pattern (CRON_SECRET, GEMINI_API_KEY) but a long-lived SA
+  key is higher-value. **To resolve:** move to Secret Manager (mounted) or switch `meeting.py` to keyless DWD via the
+  Cloud Run runtime SA (workload identity), removing the key entirely. (Logged 2026-06-18.)
+- TD-126: **Interview-scheduling Guide step has no screenshot.** The Guide "Scheduling the interview" step renders
+  text-only (images were made optional). **To resolve:** once `INTERVIEW_SCHEDULING_ENABLED` is on, capture the
+  cockpit "Propose interview times" card + student booking panel and add them like the other steps. (Logged 2026-06-18.)
+- TD-127: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
   path now routes it to the signature scorer (the `if doc_type == 'results_slip'` branch wins first). Harmless, but
   the dict membership is now only used as the flag-gate set for STR/BC/EPF. **To resolve:** drop `results_slip` from
-  that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16. Renumbered from
-  TD-120 on the 2026-06-16 main merge — `main` had independently shipped TD-120 for the admin i18n orphan cleanup.)
+  that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16. Renumbered
+  TD-120→TD-124→TD-127 across the 2026-06-16 & 2026-06-18 main merges — main reused both numbers.)

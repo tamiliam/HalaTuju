@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship.models import (
-    AssignmentEvent, ScholarshipApplication, ScholarshipCohort,
+    AssignmentEvent, ReviewerProfile, ScholarshipApplication, ScholarshipCohort,
 )
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -61,6 +61,70 @@ class TestReviewerAssignment(TestCase):
         return self.client.post(
             f'/api/v1/admin/scholarship/applications/{self.app.id}/assign/',
             {'reviewer_id': reviewer_id}, format='json')
+
+    # --- F7 advance-notice email to the student (flag-gated) ------------------
+
+    def _set_student_email(self):
+        self.app.notify_email = 'priya@example.com'
+        self.app.save(update_fields=['notify_email'])
+
+    @override_settings(STUDENT_ASSIGNMENT_EMAIL_ENABLED=True)
+    @patch('apps.scholarship.emails.send_student_assigned_reviewer_email')
+    def test_student_email_sent_with_phone_when_shared(self, mock_send):
+        self._set_student_email()
+        ReviewerProfile.objects.create(partner_admin=self.reviewer, phone='12-200 0365',
+                                       share_phone_with_students=True)
+        self._auth('super-uid')
+        self.assertEqual(self._assign(self.reviewer.id).status_code, 200)
+        self.assertTrue(mock_send.called)
+        kw = mock_send.call_args.kwargs
+        self.assertEqual(kw['reviewer_phone'], '12-200 0365')
+        self.assertEqual(kw['reviewer_name'], 'Reviewer')
+
+    @override_settings(STUDENT_ASSIGNMENT_EMAIL_ENABLED=True)
+    @patch('apps.scholarship.emails.send_student_assigned_reviewer_email')
+    def test_student_email_omits_phone_when_opted_out(self, mock_send):
+        self._set_student_email()
+        ReviewerProfile.objects.create(partner_admin=self.reviewer, phone='12-200 0365',
+                                       share_phone_with_students=False)
+        self._auth('super-uid')
+        self._assign(self.reviewer.id)
+        self.assertEqual(mock_send.call_args.kwargs['reviewer_phone'], '')
+
+    @patch('apps.scholarship.emails.send_student_assigned_reviewer_email')
+    def test_student_email_not_sent_when_flag_off(self, mock_send):
+        # default: STUDENT_ASSIGNMENT_EMAIL_ENABLED is off
+        self._set_student_email()
+        self._auth('super-uid')
+        self._assign(self.reviewer.id)
+        self.assertFalse(mock_send.called)
+
+    def test_student_email_body_copy(self):
+        from django.core import mail
+        from apps.scholarship.emails import send_student_assigned_reviewer_email
+        # With a shared phone
+        self.assertTrue(send_student_assigned_reviewer_email(
+            's@example.com', student_name='Priya', reviewer_name='Rohini',
+            reviewer_email='r@example.com', reviewer_phone='12-200 0365'))
+        self.assertEqual(mail.outbox[-1].subject, 'Your B40 Assistance Programme interview')
+        body = mail.outbox[-1].body
+        self.assertIn('B40 Assistance Programme', body)
+        self.assertIn('Program Bantuan B40', body)            # BM block present
+        self.assertIn('Interviewer: Rohini', body)            # student-facing term is "interviewer"
+        self.assertIn('Penemu duga: Rohini', body)            # BM term
+        self.assertNotIn('Reviewer: Rohini', body)
+        self.assertIn('+60 12-200 0365', body)                # phone formatted with +60
+        self.assertIn('save the above number', body)
+        self.assertIn('few days', body)
+        self.assertNotIn('prepare any documents', body)       # docs line removed
+        self.assertNotIn('1–2 weeks', body)
+        # Without a shared phone, the call-to-action adapts
+        send_student_assigned_reviewer_email(
+            's@example.com', student_name='Priya', reviewer_name='Rohini',
+            reviewer_email='r@example.com', reviewer_phone='')
+        body2 = mail.outbox[-1].body
+        self.assertNotIn('save the above number', body2)
+        self.assertIn('look out for their email', body2)
 
     # --- happy path -----------------------------------------------------------
 

@@ -8,6 +8,7 @@ import { useT } from '@/lib/i18n'
 import { getMyScholarshipApplications, getStudentAward, type ScholarshipApplication, type StudentAward } from '@/lib/api'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import ActionCentre from '@/components/ActionCentre'
+import InterviewBookingPanel from '@/components/scholarship/InterviewBookingPanel'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 
@@ -148,13 +149,16 @@ export default function ScholarshipApplicationPage() {
   // is pending it shows a calm "all set — we'll be in touch" message.
   if (app.status === 'profile_complete' || app.status === 'interviewing' || app.status === 'interviewed') {
     return wrap(
-      <ActionCentre
-        token={token}
-        studentName={profile?.name}
-        email={commsEmail || app.notify_email || ''}
-        applicationId={app.id}
-        formLocked
-      />,
+      <>
+        <InterviewBookingPanel applicationId={app.id} token={token} />
+        <ActionCentre
+          token={token}
+          studentName={profile?.name}
+          email={commsEmail || app.notify_email || ''}
+          applicationId={app.id}
+          formLocked
+        />
+      </>,
     )
   }
 

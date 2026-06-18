@@ -1280,6 +1280,45 @@ export async function getMyScholarshipApplications(
   return apiRequest('/api/v1/scholarship/applications/', options)
 }
 
+// ── Interview scheduling (student books a proposed slot) ──────────────────────
+/** One interview time proposed by the reviewer. `start` is ISO (UTC). */
+export interface InterviewSlot {
+  id: number
+  start: string
+  duration_min: number
+  is_active: boolean
+}
+
+/** The student's interview booking state + proposed slots. */
+export interface InterviewSchedule {
+  enabled: boolean
+  status: '' | 'booked' | 'cancelled'
+  start: string | null
+  meeting_url: string
+  meeting_provider: string
+  booked_slot_id: number | null
+  slots: InterviewSlot[]
+  reschedule_cutoff_hours: number
+}
+
+export async function getInterview(id: number, options?: ApiOptions): Promise<InterviewSchedule> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/interview/`, { ...options })
+}
+
+/** Book (or reschedule to) a proposed slot. */
+export async function bookInterviewSlot(id: number, slotId: number, options?: ApiOptions): Promise<InterviewSchedule> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/interview/book/`, {
+    method: 'POST', body: JSON.stringify({ slot_id: slotId }), ...options,
+  })
+}
+
+/** Cancel the booked interview (subject to the reschedule cutoff). */
+export async function cancelInterview(id: number, options?: ApiOptions): Promise<InterviewSchedule> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/interview/cancel/`, {
+    method: 'POST', body: JSON.stringify({}), ...options,
+  })
+}
+
 /** Fetch a single application (status + completeness + fields). Used to refresh
  *  page state after a document/consent change without losing in-progress edits. */
 export async function getScholarshipApplication(

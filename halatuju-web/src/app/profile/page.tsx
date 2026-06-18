@@ -15,7 +15,7 @@ import {
   sendVerificationEmail,
 } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
-import { isValidPhone, formatPhone } from '@/lib/scholarship'
+import { isValidPhone, formatPhone, setOnboardingReturn } from '@/lib/scholarship'
 import SchoolSelect from '@/components/SchoolSelect'
 import FamilyRosterFields, { type FamilyRosterForm } from '@/components/FamilyRosterFields'
 import PathwayPicker, { type PathwayForm } from '@/components/PathwayPicker'
@@ -1057,8 +1057,9 @@ export default function ProfilePage() {
                     <FieldValue value="" t={t} />
                   )}
                 </div>
-                {/* Merit — tap to the grades editor. */}
-                <button type="button" onClick={() => router.push('/onboarding/grades')}
+                {/* Merit — tap to the grades editor, then return here (not the
+                    course-guide recommendations). */}
+                <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push('/onboarding/grades') }}
                   className="w-full flex justify-between items-center gap-3 text-left group">
                   <span className="text-sm text-gray-500">{t('profile.meritScore')}</span>
                   <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'} group-hover:text-primary-600`}>

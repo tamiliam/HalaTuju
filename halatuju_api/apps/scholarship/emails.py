@@ -7,7 +7,13 @@ WhatsApp is a Phase 2 enhancement.
 import logging
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, send_mail
+
+# Topical reply-to aliases (all land in the same Workspace inbox; they just route
+# replies to a sensible address and keep things filterable). From-address is the
+# global DEFAULT_FROM_EMAIL (info@halatuju.xyz) so every reply is deliverable.
+INTERVIEW_REPLY_TO = 'interview@halatuju.xyz'
+SPONSOR_REPLY_TO = 'sponsor@halatuju.xyz'
 
 logger = logging.getLogger(__name__)
 
@@ -347,7 +353,7 @@ def _send(to_email, subjects, bodies, applicant_name, programme_name, lang, extr
         send_mail(
             subject=subjects[lang].format(programme=programme_name),
             message=bodies[lang].format(**fmt),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -479,15 +485,16 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map):
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     freq_word = _SPONSOR_FREQ_WORD.get(freq, {}).get(lang, freq)
     try:
-        send_mail(
+        EmailMessage(
             subject=subjects[lang].format(n=len(cards)),
-            message=SPONSOR_NOTIFY_BODIES[lang].format(
+            body=SPONSOR_NOTIFY_BODIES[lang].format(
                 intro=intro_map[lang], list=_format_sponsor_cards(cards, lang),
                 link=f'{frontend}/sponsor', freq=freq_word,
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
-            recipient_list=[to_email],
-        )
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            to=[to_email],
+            reply_to=[SPONSOR_REPLY_TO],
+        ).send()
         return True
     except Exception:
         logger.warning('Failed to send sponsor notification to %s', to_email, exc_info=True)
@@ -519,7 +526,7 @@ def send_decline_email(to_email, applicant_name, programme_name, category='', la
 # to the application page (the {link} kwarg is filled by _send). Keyed by stage 1–4.
 # Shared help line — built-in AI helper (Cikgu Gopal) + a human fallback. Filled into
 # the {help} placeholder of each reminder; the closure email uses CLOSURE_HELP.
-SUPPORT_EMAIL = 'tamiliam@gmail.com'
+SUPPORT_EMAIL = 'help@halatuju.xyz'
 HELP_LINE = {
     'en': ("As you go, our friendly AI helper, Cikgu Gopal, will guide you through anything "
            f"on your documents that needs attention. If you're still unsure, email us at "
@@ -716,7 +723,7 @@ def send_request_info_email(to_email, applicant_name, programme_name, note, lang
             subject=REQUEST_INFO_SUBJECTS[lang].format(programme=programme_name),
             message=REQUEST_INFO_BODIES[lang].format(
                 name=name, programme=programme_name, note=note, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -764,7 +771,7 @@ def send_query_reminder_email(to_email, applicant_name, programme_name, n_querie
             subject=QUERY_REMINDER_SUBJECTS[lang].format(programme=programme_name),
             message=QUERY_REMINDER_BODIES[lang].format(
                 name=name, programme=programme_name, n=n_queries, days=days_left, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -811,7 +818,7 @@ def send_query_raised_email(to_email, applicant_name, programme_name, n_queries,
             subject=QUERY_RAISED_SUBJECTS[lang].format(programme=programme_name),
             message=QUERY_RAISED_BODIES[lang].format(
                 name=name, programme=programme_name, n=n_queries, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -834,7 +841,7 @@ def send_sponsor_interest_admin_email(name, email, organisation, message):
                 f'Organisation: {organisation or "—"}\n\n'
                 f'Message:\n{message or "—"}'
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -882,12 +889,13 @@ def send_sponsor_referral_invite(to_email, inviter_name, note, code, lang='en'):
     link = f"{frontend}/sponsor?ref={code}"
     note_block = _REFERRAL_NOTE_PREFIX[lang].format(note=note) if (note or '').strip() else ''
     try:
-        send_mail(
+        EmailMessage(
             subject=REFERRAL_INVITE_SUBJECTS[lang].format(inviter=inviter),
-            message=REFERRAL_INVITE_BODIES[lang].format(inviter=inviter, note=note_block, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
-            recipient_list=[to_email],
-        )
+            body=REFERRAL_INVITE_BODIES[lang].format(inviter=inviter, note=note_block, link=link),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            to=[to_email],
+            reply_to=[SPONSOR_REPLY_TO],
+        ).send()
         return True
     except Exception:
         logger.warning('Failed to send sponsor-referral invite to %s', to_email, exc_info=True)
@@ -897,7 +905,7 @@ def send_sponsor_referral_invite(to_email, inviter_name, note, code, lang='en'):
 def send_vision_outage_alert_email(stats):
     """Alert the admin that Google Vision OCR appears to be down — every recent
     IC/parent-IC OCR attempt errored and none succeeded. Sent to
-    ``settings.ADMIN_NOTIFY_EMAIL`` (tamiliam@gmail.com); skipped silently if unset.
+    ``settings.ADMIN_NOTIFY_EMAIL`` (contact@halatuju.xyz); skipped silently if unset.
     English-only (internal). Best-effort — swallows send failures."""
     to_email = getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or ''
     if not to_email:
@@ -914,7 +922,7 @@ def send_vision_outage_alert_email(stats):
                 'Google Vision API status, quota and billing for the HalaTuju project.\n\n'
                 'This is an automated alert and will repeat daily until OCR recovers.'
             ).format(**stats),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -941,7 +949,7 @@ def send_profile_complete_admin_email(application_id, applicant_name, programme_
                 f'(application #{application_id}) and is ready for review.\n\n'
                 f'Review it: {frontend}/admin/scholarship/{application_id}'
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -975,7 +983,7 @@ def send_reviewer_assigned_email(to_email, reviewer_name, applicant_name):
                 f'Thank you for supporting the B40 Assistance Programme.\n\n'
                 f'Warm regards,\nThe HalaTuju Team'
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
             recipient_list=[to_email],
         )
         return True
@@ -983,3 +991,308 @@ def send_reviewer_assigned_email(to_email, reviewer_name, applicant_name):
         logger.warning('Failed to send reviewer-assigned email to %s', to_email,
                        exc_info=True)
         return False
+
+
+def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_name,
+                                         reviewer_email='', reviewer_phone=''):
+    """F7 advance notice to the STUDENT: who will interview them + how, so they expect the
+    call and pick up. Bilingual (English then Bahasa Melayu) in one email. No document
+    checklist (the interviewer asks for anything still needed). The phone + call-to-action
+    adapt to whether the reviewer shares their number (ReviewerProfile.share_phone_with_students).
+    Best-effort; never breaks the assignment. Gated by STUDENT_ASSIGNMENT_EMAIL_ENABLED at the
+    call site."""
+    if not to_email:
+        return False
+    student = student_name or 'there'
+    student_bm = student_name or 'di sana'
+    reviewer = reviewer_name or 'our interviewer'
+    reviewer_bm = reviewer_name or 'penemu duga kami'
+    phone_disp = f'+60 {reviewer_phone}' if reviewer_phone else ''
+
+    en_contact = (
+        f'• Interviewer: {reviewer}\n'
+        + (f'• Contact: phone / WhatsApp {phone_disp} · email {reviewer_email}\n'
+           if phone_disp else f'• Contact: email {reviewer_email}\n')
+    )
+    bm_contact = (
+        f'• Penemu duga: {reviewer}\n'
+        + (f'• Hubungi: telefon / WhatsApp {phone_disp} · e-mel {reviewer_email}\n'
+           if phone_disp else f'• Hubungi: e-mel {reviewer_email}\n')
+    )
+    # The call-to-action depends on whether a phone was shared (the reviewer may opt out).
+    en_action = ('Please save the above number and pick up when they call. If you miss it, just '
+                 'reply to arrange another time.' if phone_disp
+                 else 'Please look out for their email and reply to arrange a time.')
+    bm_action = ('Sila simpan nombor di atas dan jawab apabila mereka menelefon. Jika terlepas, '
+                 'balas sahaja untuk menetapkan masa lain.' if phone_disp
+                 else 'Sila perhatikan e-mel mereka dan balas untuk menetapkan masa.')
+
+    en = (
+        f'Hi {student},\n\n'
+        f'Good news — your application has reached the interview stage of the B40 Assistance '
+        f'Programme, and an interviewer has been assigned to you:\n\n'
+        f'{en_contact}\n'
+        f'{reviewer} will contact you within the next few days to arrange a short interview '
+        f'(by phone or video call). {en_action}\n\n'
+        f'For a video call, please be on camera. If your parents or guardian are around, our '
+        f'interviewer would be glad to speak with them too.\n\n'
+        f'This is simply to understand your family’s situation fairly. The support is for families '
+        f'with genuine financial need, and we value your honesty.\n\n'
+        f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN. If '
+        f'anyone does, it is not from us — please email {SUPPORT_EMAIL}.\n\n'
+        f'Thank you, and we look forward to speaking with you.\n'
+        f'— The B40 Assistance Programme team'
+    )
+    bm = (
+        f'Salam {student_bm},\n\n'
+        f'Berita baik — permohonan anda telah sampai ke peringkat temu duga Program Bantuan B40, '
+        f'dan seorang penemu duga telah ditugaskan kepada anda:\n\n'
+        f'{bm_contact}\n'
+        f'{reviewer_bm} akan menghubungi anda dalam masa beberapa hari untuk menetapkan temu duga '
+        f'ringkas (melalui telefon atau panggilan video). {bm_action}\n\n'
+        f'Untuk panggilan video, sila buka kamera. Jika ibu bapa atau penjaga anda ada bersama, '
+        f'penemu duga kami amat berbesar hati untuk bercakap dengan mereka juga.\n\n'
+        f'Ini hanyalah untuk memahami keadaan keluarga anda secara adil. Bantuan ini untuk keluarga '
+        f'yang benar-benar memerlukan, dan kami menghargai kejujuran anda.\n\n'
+        f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
+        f'OTP/PIN. Jika sesiapa berbuat demikian, ia bukan daripada kami — sila e-mel '
+        f'{SUPPORT_EMAIL}.\n\n'
+        f'Terima kasih, dan kami menantikan untuk bercakap dengan anda.\n'
+        f'— Pasukan Program Bantuan B40'
+    )
+    try:
+        send_mail(
+            subject='Your B40 Assistance Programme interview',
+            message=en + '\n\n———\n\n' + bm,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send student-assigned-reviewer email to %s', to_email,
+                       exc_info=True)
+        return False
+
+
+def send_contact_submission_admin_email(*, to_email, name, contact, category, message, created_at):
+    """Internal: email a public contact-form submission to the team (contact@ via
+    ADMIN_NOTIFY_EMAIL). Reply-To is set to the submitter's contact when it looks like
+    an email, so a reply goes straight back to them. Plain English. Best-effort → bool."""
+    if not to_email:
+        return False
+    body = (
+        f'New contact-form message — {category}\n\n'
+        f'From:     {name}\n'
+        f'Contact:  {contact}\n'
+        f'Received: {created_at}\n\n'
+        f'{message}\n'
+    )
+    reply_to = [contact] if (contact and '@' in contact) else None
+    try:
+        EmailMessage(
+            subject=f'[HalaTuju contact] {category} — {name}'[:120],
+            body=body,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            to=[to_email],
+            reply_to=reply_to,
+        ).send()
+        return True
+    except Exception:
+        logger.warning('Failed to send contact-submission email to %s', to_email, exc_info=True)
+        return False
+
+
+# ── Interview scheduling (booking confirmation + reminders + cancellation) ────
+# Student-facing emails are bilingual (English then Bahasa Melayu) and use the
+# student-facing term "interviewer" / "Penemu duga". Reviewer-facing emails are
+# plain English (internal staff). All best-effort; the booking never depends on them.
+
+def _fmt_myt(dt):
+    """Format a tz-aware datetime in Malaysia time, e.g. 'Mon, 23 Jun 2026, 8:00 PM (MYT)'."""
+    if dt is None:
+        return ''
+    try:
+        from zoneinfo import ZoneInfo
+        local = dt.astimezone(ZoneInfo('Asia/Kuala_Lumpur'))
+    except Exception:
+        local = dt
+    # %-I isn't portable (Windows); derive a no-leading-zero 12-hour clock manually.
+    hour12 = local.hour % 12 or 12
+    ampm = 'AM' if local.hour < 12 else 'PM'
+    return f'{local:%a, %d %b %Y}, {hour12}:{local:%M} {ampm} (MYT)'
+
+
+def _send_bilingual(to_email, subject, en, bm):
+    """Send one EN+BM email (the booking-flow pattern), with Reply-To = the interview
+    alias so replies route there. Best-effort → bool."""
+    if not to_email:
+        return False
+    try:
+        EmailMessage(
+            subject=subject,
+            body=en + '\n\n———\n\n' + bm,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            to=[to_email],
+            reply_to=[INTERVIEW_REPLY_TO],
+        ).send()
+        return True
+    except Exception:
+        logger.warning('Failed to send interview email to %s', to_email, exc_info=True)
+        return False
+
+
+def _join_line(meeting_url, lang='en'):
+    if meeting_url:
+        return (f'• Join here: {meeting_url}\n' if lang == 'en'
+                else f'• Sertai di sini: {meeting_url}\n')
+    return ('• Your interviewer will share the video-call link before the interview.\n'
+            if lang == 'en'
+            else '• Penemu duga anda akan berkongsi pautan panggilan video sebelum temu duga.\n')
+
+
+def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
+                                meeting_url='', reviewer_phone=''):
+    """Student confirmation that an interview slot is booked. Bilingual; best-effort."""
+    student = student_name or 'there'
+    student_bm = student_name or 'di sana'
+    reviewer = reviewer_name or 'our interviewer'
+    reviewer_bm = reviewer_name or 'penemu duga kami'
+    when = _fmt_myt(start)
+    phone_en = f'• Interviewer’s phone / WhatsApp: +60 {reviewer_phone}\n' if reviewer_phone else ''
+    phone_bm = f'• Telefon / WhatsApp penemu duga: +60 {reviewer_phone}\n' if reviewer_phone else ''
+    en = (
+        f'Hi {student},\n\n'
+        f'Your B40 Assistance Programme interview is booked. Here are the details:\n\n'
+        f'• Date & time: {when}\n'
+        f'• Interviewer: {reviewer}\n'
+        f'{phone_en}'
+        f'{_join_line(meeting_url, "en")}\n'
+        f'It will take about 30–45 minutes, by video call. Please be on camera. If your '
+        f'parents or guardian are around, our interviewer would be glad to speak with them too '
+        f'— they can join from home while you join from college.\n\n'
+        f'Need a different time? You can reschedule or cancel from your application page in '
+        f'HalaTuju, up until a few hours before the interview.\n\n'
+        f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN.\n\n'
+        f'— The B40 Assistance Programme team'
+    )
+    bm = (
+        f'Salam {student_bm},\n\n'
+        f'Temu duga Program Bantuan B40 anda telah ditetapkan. Berikut butirannya:\n\n'
+        f'• Tarikh & masa: {when}\n'
+        f'• Penemu duga: {reviewer}\n'
+        f'{phone_bm}'
+        f'{_join_line(meeting_url, "bm")}\n'
+        f'Ia mengambil masa kira-kira 30–45 minit, melalui panggilan video. Sila buka kamera. '
+        f'Jika ibu bapa atau penjaga anda ada, penemu duga kami berbesar hati bercakap dengan '
+        f'mereka juga — mereka boleh menyertai dari rumah.\n\n'
+        f'Perlu masa lain? Anda boleh menjadual semula atau membatalkan melalui halaman '
+        f'permohonan anda di HalaTuju, sehingga beberapa jam sebelum temu duga.\n\n'
+        f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, '
+        f'atau OTP/PIN.\n\n'
+        f'— Pasukan Program Bantuan B40'
+    )
+    return _send_bilingual(to_email, 'Your B40 Assistance Programme interview is booked', en, bm)
+
+
+def send_interview_reminder_email(to_email, *, student_name, start, meeting_url='', when='1day'):
+    """Student reminder (1 day / 1 hour before). Bilingual; best-effort."""
+    student = student_name or 'there'
+    student_bm = student_name or 'di sana'
+    whenfmt = _fmt_myt(start)
+    soon_en = 'tomorrow' if when == '1day' else 'in about an hour'
+    soon_bm = 'esok' if when == '1day' else 'dalam kira-kira sejam'
+    en = (
+        f'Hi {student},\n\n'
+        f'A reminder that your B40 Assistance Programme interview is {soon_en}:\n\n'
+        f'• {whenfmt}\n'
+        f'{_join_line(meeting_url, "en")}\n'
+        f'Please be on camera and ready a few minutes early. See you soon.\n\n'
+        f'— The B40 Assistance Programme team'
+    )
+    bm = (
+        f'Salam {student_bm},\n\n'
+        f'Peringatan bahawa temu duga Program Bantuan B40 anda adalah {soon_bm}:\n\n'
+        f'• {whenfmt}\n'
+        f'{_join_line(meeting_url, "bm")}\n'
+        f'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.\n\n'
+        f'— Pasukan Program Bantuan B40'
+    )
+    subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
+            else 'Reminder: your B40 interview is in 1 hour')
+    return _send_bilingual(to_email, subj, en, bm)
+
+
+def send_interview_cancelled_email(to_email, *, student_name):
+    """Student notice that their interview booking was cancelled. Bilingual; best-effort."""
+    student = student_name or 'there'
+    student_bm = student_name or 'di sana'
+    en = (
+        f'Hi {student},\n\n'
+        f'Your B40 Assistance Programme interview booking has been cancelled. You can book a '
+        f'new time from your application page in HalaTuju whenever you are ready. If you did not '
+        f'expect this, please reply to this email.\n\n'
+        f'— The B40 Assistance Programme team'
+    )
+    bm = (
+        f'Salam {student_bm},\n\n'
+        f'Tempahan temu duga Program Bantuan B40 anda telah dibatalkan. Anda boleh menempah masa '
+        f'baharu melalui halaman permohonan anda di HalaTuju bila-bila masa. Jika anda tidak '
+        f'menjangkakan ini, sila balas e-mel ini.\n\n'
+        f'— Pasukan Program Bantuan B40'
+    )
+    return _send_bilingual(to_email, 'Your B40 Assistance Programme interview was cancelled', en, bm)
+
+
+def _send_plain(to_email, subject, body):
+    if not to_email:
+        return False
+    try:
+        EmailMessage(subject=subject, body=body,
+                     from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+                     to=[to_email], reply_to=[INTERVIEW_REPLY_TO]).send()
+        return True
+    except Exception:
+        logger.warning('Failed to send reviewer interview email to %s', to_email, exc_info=True)
+        return False
+
+
+def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_name, start,
+                                         meeting_url=''):
+    """Reviewer notice that a student booked one of their proposed times. Plain EN."""
+    link = f'\nMeet link: {meeting_url}' if meeting_url else ''
+    body = (
+        f'Hi {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} has booked their B40 interview with you:\n\n'
+        f'  {_fmt_myt(start)}{link}\n\n'
+        f'It will appear on your calendar. You can see the booking in the applicant\'s record '
+        f'in the admin console.\n\n'
+        f'— HalaTuju'
+    )
+    return _send_plain(to_email, 'A B40 applicant booked their interview with you', body)
+
+
+def send_reviewer_interview_reminder_email(to_email, *, reviewer_name, applicant_name, start,
+                                           meeting_url='', when='1day'):
+    """Reviewer reminder (1 day / 1 hour before). Plain EN."""
+    link = f'\nMeet link: {meeting_url}' if meeting_url else ''
+    soon = 'tomorrow' if when == '1day' else 'in about an hour'
+    body = (
+        f'Hi {reviewer_name or "there"},\n\n'
+        f'Reminder — your B40 interview with {applicant_name or "an applicant"} is {soon}:\n\n'
+        f'  {_fmt_myt(start)}{link}\n\n'
+        f'— HalaTuju'
+    )
+    subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
+            else 'Reminder: your B40 interview is in 1 hour')
+    return _send_plain(to_email, subj, body)
+
+
+def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name):
+    """Reviewer notice that a student cancelled. Plain EN."""
+    body = (
+        f'Hi {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} has cancelled their booked B40 interview. You may '
+        f'want to propose fresh times from the applicant\'s record in the admin console.\n\n'
+        f'— HalaTuju'
+    )
+    return _send_plain(to_email, 'A B40 applicant cancelled their interview', body)

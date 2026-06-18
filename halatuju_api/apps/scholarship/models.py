@@ -389,6 +389,38 @@ class ScholarshipApplication(models.Model):
         null=True, blank=True,
         help_text="F7: when the current reviewer was assigned (null = unassigned)",
     )
+
+    # ── Interview scheduling (in-app booking + Google Meet) ────────────────────
+    # The assigned reviewer proposes a few InterviewSlot options; the student books
+    # one. The booking state lives here (one interview per application); the proposed
+    # options are InterviewSlot rows. All additive/optional; the whole surface is dark
+    # behind INTERVIEW_SCHEDULING_ENABLED. Times are tz-aware (stored UTC, shown MYT).
+    INTERVIEW_STATUS_CHOICES = [
+        ('', 'Not booked'), ('booked', 'Booked'), ('cancelled', 'Cancelled')]
+    interview_slot = models.ForeignKey(
+        'InterviewSlot', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+', help_text="The proposed slot the student booked.")
+    interview_start = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Denormalised start of the booked interview (the chosen slot's time).")
+    interview_status = models.CharField(
+        max_length=10, blank=True, default='', choices=INTERVIEW_STATUS_CHOICES)
+    interview_meeting_url = models.URLField(
+        blank=True, default='',
+        help_text="Google Meet (or manually-pasted) join link for the booked interview.")
+    interview_meeting_provider = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="'google_meet' (auto-generated) or 'manual' (pasted by an admin).")
+    interview_calendar_event_id = models.CharField(
+        max_length=255, blank=True, default='',
+        help_text="Google Calendar event id, so the booking can be updated/cancelled.")
+    interview_booked_at = models.DateTimeField(null=True, blank=True)
+    interview_cancelled_at = models.DateTimeField(null=True, blank=True)
+    # Idempotency stamps for the confirmation + the reminder cron (reset on reschedule).
+    interview_confirmation_sent_at = models.DateTimeField(null=True, blank=True)
+    interview_reminded_1d_at = models.DateTimeField(null=True, blank=True)
+    interview_reminded_1h_at = models.DateTimeField(null=True, blank=True)
+
     locale = models.CharField(
         max_length=2, default='en',
         help_text="Applicant's language at apply time (en/ms/ta) for deferred emails",
@@ -873,6 +905,37 @@ class InterviewSession(models.Model):
         return f'InterviewSession #{self.application_id} ({self.status})'
 
 
+class InterviewSlot(models.Model):
+    """A single interview time the assigned reviewer PROPOSES to a student.
+
+    Model: the reviewer offers 2-3 slots per applicant; the student picks one
+    (which sets the booking state on ScholarshipApplication). Withdrawing an
+    unbooked option flips is_active to False rather than deleting (keeps a record).
+    Times are tz-aware (stored UTC, rendered in Asia/Kuala_Lumpur). The whole
+    surface is dark behind INTERVIEW_SCHEDULING_ENABLED.
+    """
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='interview_slots',
+    )
+    reviewer = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.CASCADE, related_name='proposed_interview_slots',
+        help_text="The reviewer who proposed this slot (= the assigned reviewer).",
+    )
+    start = models.DateTimeField(help_text="Proposed interview start (tz-aware).")
+    duration_min = models.PositiveSmallIntegerField(default=45)
+    # False once withdrawn by the reviewer or superseded by a fresh proposal round.
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'interview_slots'
+        ordering = ['start']
+
+    def __str__(self):
+        return f'InterviewSlot #{self.application_id} @ {self.start:%Y-%m-%d %H:%M}'
+
+
 class Sponsor(models.Model):
     """Phase E: a self-registered sponsor ACCOUNT. A sponsor signs in via Supabase Auth — like a
     student — then registers here; an admin VETS them before they get any access
@@ -1125,6 +1188,15 @@ class ReviewerProfile(models.Model):
     university = models.CharField(max_length=200, blank=True, default='')
     graduation_year = models.PositiveSmallIntegerField(null=True, blank=True)
     field_of_study = models.CharField(max_length=200, blank=True, default='')
+    # Language fluency — used to match a reviewer to a student's preferred call language
+    # (StudentProfile.preferred_call_language). 'conversational' or 'fluent' = can review in it.
+    LANG_FLUENCY = [('', 'None'), ('conversational', 'Conversational'), ('fluent', 'Fluent')]
+    english_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
+    bm_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
+    tamil_fluency = models.CharField(max_length=20, blank=True, default='', choices=LANG_FLUENCY)
+    # Whether the reviewer's phone may be shared with students assigned to them (in the advance
+    # "your interviewer will contact you" email). Opt-in by DEFAULT (True); a reviewer can opt out.
+    share_phone_with_students = models.BooleanField(default=True)
     # Sensitive staff PII — reviewer + super only, never exposed to students/sponsors.
     phone = models.CharField(max_length=30, blank=True, default='')
     address = models.TextField(blank=True, default='')   # legacy single-line; kept for back-compat

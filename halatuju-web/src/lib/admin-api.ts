@@ -244,7 +244,13 @@ export interface ReviewerProfile {
   postcode: string
   city: string
   state: string
+  english_fluency: LangFluency
+  bm_fluency: LangFluency
+  tamil_fluency: LangFluency
+  share_phone_with_students: boolean
 }
+
+export type LangFluency = '' | 'conversational' | 'fluent'
 
 export async function getReviewerProfile(options?: ApiOptions) {
   return adminFetch<ReviewerProfile>('/api/v1/admin/reviewer-profile/', options)
@@ -328,6 +334,7 @@ export interface AdminScholarshipListItem {
   stpm_pngk: number | null
   referral_source: string | null   // the referring org chosen at apply (Source column)
   merit_score: number | null       // course-guide merit (SPM 0-100 / STPM PNGK), computed live
+  call_language: string            // student's preferred call language: en/ms/ta/mixed/'' — for reviewer matching
   status: string
   bucket: string
   shortlist_reason: string
@@ -510,9 +517,35 @@ export interface AdminScholarshipDetail {
   verdict_reason: string
   verdict_decided_by: string
   verdict_decided_at: string | null
+  /** Full names resolved from the stored reviewer emails (fall back to email in the UI). */
+  verified_by_name: string
+  verdict_decided_by_name: string
+  rejected_by_name: string
   resolution_items: AdminResolutionItem[]
   /** Recommended assistance amount (RM, Decimal serialised as string) or null. */
   award_amount: string | null
+  /** Interview scheduling: booking state + proposed slots (dark behind the flag). */
+  interview_schedule: InterviewSchedule
+}
+
+/** One proposed interview time. `start` is ISO (UTC); render in MYT on the client. */
+export interface InterviewSlot {
+  id: number
+  start: string
+  duration_min: number
+  is_active: boolean
+}
+
+/** Interview booking state + the active proposed slots (shared admin/student shape). */
+export interface InterviewSchedule {
+  enabled: boolean
+  status: '' | 'booked' | 'cancelled'
+  start: string | null
+  meeting_url: string
+  meeting_provider: string
+  booked_slot_id: number | null
+  slots: InterviewSlot[]
+  reschedule_cutoff_hours: number
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in
@@ -574,6 +607,8 @@ export async function getScholarshipApplications(
     q?: string
     page?: number
     pageSize?: number
+    sort?: string
+    dir?: string
   } = {},
   options?: ApiOptions
 ) {
@@ -583,6 +618,7 @@ export async function getScholarshipApplications(
   if (filters.source) q.set('source', filters.source)
   if (filters.assigned) q.set('assigned', filters.assigned)
   if (filters.q) q.set('q', filters.q)
+  if (filters.sort) { q.set('sort', filters.sort); q.set('dir', filters.dir || 'asc') }
   if (filters.page && filters.page > 1) q.set('page', String(filters.page))
   if (filters.pageSize && filters.pageSize !== DEFAULT_ADMIN_PAGE_SIZE) {
     q.set('page_size', String(filters.pageSize))
@@ -627,14 +663,34 @@ export async function requestMoreInfo(id: number, note: string, options?: ApiOpt
     `/api/v1/admin/scholarship/applications/${id}/request-info/`, 'POST', { note }, options)
 }
 
-/** Active admins (for the assignment dropdown). Super admin only on the backend. */
+/** Active admins (for the assignment dropdown). Super admin only on the backend.
+ *  `languages` = the codes (en/ms/ta) the reviewer is conversational+ in, for matching. */
 export async function getAssignableAdmins(options?: ApiOptions) {
-  return adminFetch<{ admins: Array<{ id: number; name: string; email: string; role: string }> }>(
+  return adminFetch<{ admins: Array<{ id: number; name: string; email: string; role: string; languages: string[] }> }>(
     `/api/v1/admin/scholarship/assignable-admins/`, options)
 }
 
 export async function getScholarshipApplication(id: number, options?: ApiOptions) {
   return adminFetch<AdminScholarshipDetail>(`/api/v1/admin/scholarship/applications/${id}/`, options)
+}
+
+// ── Interview scheduling (reviewer proposes times) ────────────────────────────
+/** The assigned reviewer (or super) proposes interview times. `starts` are ISO
+ *  strings. Returns the refreshed schedule (booking state + active slots). */
+export async function proposeInterviewSlots(id: number, starts: string[], options?: ApiOptions) {
+  return adminMutate<InterviewSchedule>(
+    `/api/v1/admin/scholarship/applications/${id}/interview-slots/`, 'POST', { slots: starts }, options)
+}
+
+export async function getInterviewSlots(id: number, options?: ApiOptions) {
+  return adminFetch<InterviewSchedule>(
+    `/api/v1/admin/scholarship/applications/${id}/interview-slots/`, options)
+}
+
+/** Withdraw a single proposed (unbooked) slot. */
+export async function withdrawInterviewSlot(id: number, slotId: number, options?: ApiOptions) {
+  return adminMutate<InterviewSchedule>(
+    `/api/v1/admin/scholarship/applications/${id}/interview-slots/${slotId}/`, 'DELETE', null, options)
 }
 
 /** Phase B: admin-on-demand Gemini interview gap-spotter. Returns the refreshed detail.
