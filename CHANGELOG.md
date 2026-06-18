@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Bulk document re-extraction, in observable batches (2026-06-18).** Audit found ~212 supporting docs were read by
+  Gemini *before* the deterministic capture layer shipped (2026-06-11) and never re-run — so they carry weaker reads
+  (e.g. app #10's offer letter whose IC `080514-14-0354` was never captured, and a BC whose child name was the
+  letterhead). New `reextract_document()` shared helper (the per-doc "Re-run" + the batch command now share one code
+  path) and a `reextract_documents` management command that re-reads supporting docs in batches (default 20) with the
+  current parsers, self-batching via a pass-marker so each run advances and can be observed. Wired as the
+  `reextract-documents` cron job. (ICs/parent-ICs were already all read — they store into dedicated columns, not
+  `vision_fields`; photos aren't OCR'd — so the "never extracted" count was largely a measurement artefact.)
 - **Students are now emailed when interview times are proposed (2026-06-18).** The in-app scheduler was invisible to
   students — `propose_slots()` created slots but sent no notification, so a student only found times to book if they
   happened to log in. New bilingual (EN+BM) email `send_interview_slots_proposed_email` fires when the reviewer
@@ -17,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than only "the interviewer will contact you." Backend only, no migration.
 
 ### Fixed
+- **Birth-certificate parser mistook the letterhead for the child's name (2026-06-18).** On app #10 the deterministic
+  BC parser captured `"KERAJAAN MALAYSIA"` (the government header) as the child, so the child↔student match failed. The
+  all-caps "looks like a name" rule now rejects institutional tokens (KERAJAAN/JABATAN/PENDAFTARAN/NEGARA/MALAYSIA/
+  SIJIL/KELAHIRAN/…), and if no real child name remains the parser defers to Gemini instead of returning a header.
 - **A decision could be recorded with incomplete facts (2026-06-18).** The cockpit's "Save verdict & generate final
   profile" button was gated only on `busy` — unlike Approve/Decline — yet it still stamped `verdict_decided_at` (which
   locks the panel + reviewer dropdown and gates accept). So a verdict could be "recorded" with blank Academic/Pathway/
