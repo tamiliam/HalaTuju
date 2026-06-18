@@ -50,6 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   if the decision is Reopened.
 
 ### Changed
+- **Reopen now reopens the WHOLE case, for the reviewer too (2026-06-18).** Reopening a decision previously unlocked
+  only the Decision panel (and the interview's own reopen was super-only), so an assigned reviewer couldn't revise
+  their work. Now `decision_reopened_at` unlocks **Check 2** (querying) and the **Interview Stage** as well, for the
+  assigned reviewer (not just the super): frontend `queryingLocked`/`interviewLocked` and backend
+  `services.querying_locked` all honour the reopened flag, the interview-save edits the submitted session **in place**
+  (no duplicate draft), and a reopened *accepted* decision shows a Save button so the revised verdict can be
+  re-recorded (regenerates + republishes the profile). All gated on the reopened flag → non-reopened apps unchanged.
 - **Interview Stage record reads like Check 2 (2026-06-18).** A submitted interview now renders each answered question
   as a tidy card — green ✓ tick · bold **Question:** · the finding under a **"Reviewer's finding"** header (the label
   sits above the box, not inside it). The redundant "Submitted" pill at the top was removed (the "Submitted on …" line
