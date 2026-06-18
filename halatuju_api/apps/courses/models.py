@@ -168,6 +168,11 @@ class CourseRequirement(models.Model):
     req_female = models.BooleanField(default=False, help_text="Females only")
     no_colorblind = models.BooleanField(default=False, help_text="Must NOT be colourblind")
     no_disability = models.BooleanField(default=False, help_text="Must NOT have disability")
+    req_disability = models.BooleanField(
+        default=False,
+        help_text="Student MUST have a declared disability — special-needs (MBPK) intake. "
+                  "Gated on the onboarding 'Physical disability' signal."
+    )
 
     # ===== CORE PASS REQUIREMENTS =====
     pass_bm = models.BooleanField(default=False, help_text="Pass Bahasa Malaysia")

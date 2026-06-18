@@ -585,6 +585,10 @@ def check_eligibility(student, req):
     if to_int(req.get('no_disability')) == 1:
         if not check("chk_disability", not student.disability, "fail_disability"):
             return False, audit
+    # MBPK (special-needs) intake — only students who declared a disability qualify.
+    if to_int(req.get('req_disability')) == 1:
+        if not check("chk_req_disability", student.disability, "fail_req_disability"):
+            return False, audit
 
     # Age limit (placeholder)
     age_limit = to_int(req.get('age_limit', 0))
