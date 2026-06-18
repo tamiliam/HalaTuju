@@ -2483,7 +2483,7 @@
         "findingsLabel": "Penemuan",
         "answerLabel": "Penemuan penyemak",
         "submittedOn": "Dihantar pada",
-        "editingReopened": "Dibuka semula untuk suntingan",
+        "reopenError": "Tidak dapat membuka semula temu duga.",
         "verdict": {
           "resolved": "Selesai"
         },
@@ -2798,8 +2798,10 @@
         "reasonLabel": "Kesimpulan",
         "assistanceLabel": "Bantuan yang disyorkan",
         "assistanceNone": "Seret untuk menetapkan jumlah yang disyorkan.",
+        "assistanceUnset": "belum ditetapkan",
         "approveNeedsAmount": "Tetapkan jumlah bantuan yang disyorkan sebelum meluluskan.",
-        "saveNeedsReady": "Hantar temu duga, kemudian tandakan keempat-empat semakan Lulus/Gagal dan tambah kesimpulan untuk merekod keputusan.",
+        "chooseOutcome": "Pilih Lulus atau Tolak.",
+        "saveNeedsReady": "Hantar temu duga, kemudian nilai semakan AI bagi keempat-empat fakta (Lulus/Gagal) dan tambah kesimpulan.",
         "reasonPlaceholder": "Nyatakan kesimpulan / sebab keputusan anda",
         "save": "Simpan keputusan & jana profil akhir",
         "approve": "Lulus",

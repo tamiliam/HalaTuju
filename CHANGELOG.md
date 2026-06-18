@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Decision flow redesigned: pick a reversible outcome, then Save (2026-06-18).** The four Pass/Fail toggles are framed
+  as *rating the AI's check* per fact. **Approve** and **Decline** are now a **reversible selection** (not instant-commit
+  buttons) that records the decision's `overall` outcome — previously always blank. Gates: **Approve** needs interview
+  submitted + all four facts rated + a recommended amount + a conclusion; **Decline** needs the same minus the amount, and
+  **pressing Decline clears the amount**. The assistance slider now has **no default value** (reads "not set" until
+  chosen). **Save** is the single commit step (accept → record + finalise + accept/publish; decline → record the verdict
+  then reject — so declines are now captured in the verdict record + AI-reliability metric too).
+- **Reviewer can reopen a submitted interview to add a forgotten finding (2026-06-18).** The Interview Stage "Reopen" is
+  now available to the **assigned reviewer** (was super-only) and genuinely **un-submits** the interview — reopening both
+  the Interview Stage **and** Check 2, and switching Approve/Decline off until it's re-submitted. New
+  `interview/reopen/` endpoint (blocked once a decision is recorded — use the Decision panel's Reopen then). Replaces the
+  old screen-only `editIv` toggle.
+
 ### Added
 - **Bulk document re-extraction, in observable batches (2026-06-18).** Audit found ~212 supporting docs were read by
   Gemini *before* the deterministic capture layer shipped (2026-06-11) and never re-run — so they carry weaker reads
