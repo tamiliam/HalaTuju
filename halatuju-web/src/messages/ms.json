@@ -217,8 +217,8 @@
       "title": "Mengapa menaja melalui HalaTuju",
       "card1Title": "Tanpa nama sepenuhnya",
       "card1Desc": "Anda tidak pernah melihat nama atau butiran hubungan, hanya profil pelajar tanpa nama. Identiti dilindungi kedua-dua belah pihak.",
-      "card2Title": "Setiap ringgit dijejaki",
-      "card2Desc": "Dana dipegang oleh Yayasan myNADI dan dikeluarkan mengikut pencapaian pengajian yang disahkan, tidak pernah diserahkan terus.",
+      "card2Title": "Setiap ringgit bertanggungjawab",
+      "card2Desc": "Dana akan ditadbir oleh Yayasan myNADI dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. (Perkongsian sedang dimuktamadkan.)",
       "card3Title": "Impak sebenar yang disahkan",
       "card3Desc": "Setiap pelajar disahkan pendapatan dan ditemu duga, supaya bantuan anda sampai kepada keluarga B40 yang sebenar."
     },
@@ -231,14 +231,14 @@
       "step3Title": "Pilih pelajar",
       "step3Desc": "Lihat profil tanpa nama dan pilih seseorang untuk ditaja.",
       "step4Title": "Taja dan ikuti",
-      "step4Desc": "Tajalah pengajian mereka dan ikuti perkembangan mereka."
+      "step4Desc": "Komitkan sokongan anda dan ikuti perkembangan mereka."
     },
     "faq": {
       "title": "Soalan lazim penaja",
       "q1": "Adakah saya akan melihat identiti pelajar?",
       "a1": "Tidak. Untuk melindungi semua pihak, anda hanya melihat profil tanpa nama — tidak pernah nama, IC, alamat, telefon, e-mel atau foto. Pelajar juga tidak melihat butiran anda.",
       "q2": "Ke mana wang saya pergi?",
-      "a2": "Dana dipegang oleh Yayasan myNADI dan dikeluarkan mengikut pencapaian pengajian yang disahkan. Wang tidak pernah diserahkan terus kepada pelajar.",
+      "a2": "Dana akan ditadbir oleh Yayasan myNADI (sebuah badan bukan untung yang berdaftar) dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. Kami sedang memuktamadkan perkongsian ini.",
       "q3": "Bolehkah saya memilih siapa yang saya taja?",
       "a3": "Boleh. Setelah diluluskan, anda boleh melihat profil tanpa nama dan memilih pelajar yang ingin anda taja.",
       "q4": "Apa berlaku jika pelajar berhenti?",
@@ -246,7 +246,7 @@
       "q5": "Berapa kos untuk menaja seseorang?",
       "a5": "Ia bergantung pada program dan keperluan pelajar. Setiap profil menunjukkan bantuan yang diperlukan supaya anda boleh menentukan apa yang sesuai.",
       "q6": "Siapa yang mengendalikan program ini?",
-      "a6": "HalaTuju mengendalikan Program Bantuan B40 bersama Yayasan myNADI, yang memegang dan menyalurkan dana."
+      "a6": "HalaTuju mengendalikan Program Bantuan B40; Yayasan myNADI akan memegang dan menyalurkan dana (perkongsian sedang dimuktamadkan)."
     },
     "cta": {
       "heading": "Bersedia untuk mengubah hidup?",
@@ -279,7 +279,7 @@
     "languages": "Bahasa",
     "free": "Percuma",
     "readyTitle": "Bersedia Mencari Laluan Anda?",
-    "readySubtitle": "Sertai ribuan pelajar yang telah menemui kursus ideal mereka menggunakan HalaTuju.",
+    "readySubtitle": "Sertai para pelajar yang telah menemui kursus mereka dengan HalaTuju.",
     "getStartedFree": "Mulakan — Percuma"
   },
   "onboarding": {
@@ -2211,7 +2211,7 @@
     "whatTagline": "Tiada bayaran. Tiada syarat tersembunyi.",
     "whoTitle": "Siapa Di Sebalik Ini",
     "whoP1": "HalaTuju dibina di bawah Projek Lentera, sebuah inisiatif komuniti yang berfokus pada peningkatan akses kepada pendidikan tinggi awam untuk pelajar Malaysia.",
-    "whoP2": "Ini adalah usaha sukarelawan — tiada seorang pun yang memilikinya. Guru, kaunselor, ibu bapa, alumni, dan organisasi masyarakat seperti Yayasan myNADI dan Concerned UM Indian Graduates (CUMIG) semuanya memainkan peranan. Kami percaya setiap pelajar layak membuat pilihan yang bermaklumat, bukan pilihan lalai yang didorong oleh kekurangan maklumat.",
+    "whoP2": "Ini adalah usaha sukarelawan — tiada seorang pun yang memilikinya. Guru, kaunselor, ibu bapa, alumni, dan organisasi masyarakat semuanya memainkan peranan. Yayasan myNADI, rakan kongsi bukan untung kami, mentadbir dana bantuan; kumpulan seperti Sri Murugan Centre (SMC) dan CUMIG merujuk dan menyokong pelajar. Kami percaya setiap pelajar layak membuat pilihan yang bermaklumat, bukan pilihan lalai yang didorong oleh kekurangan maklumat.",
     "helpTitle": "Bagaimana Anda Boleh Membantu",
     "helpParents": "Ibu bapa:",
     "helpParentsDesc": "Gunakan HalaTuju bersama anak anda selepas keputusan SPM atau STPM. Pilihannya mungkin mengejutkan anda.",

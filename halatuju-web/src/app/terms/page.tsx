@@ -14,7 +14,7 @@ export default function TermsPage() {
       <div className="container mx-auto px-6 py-8 max-w-2xl">
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('common.terms')}</h1>
-          <p className="text-sm text-gray-500">Last updated: March 2026</p>
+          <p className="text-sm text-gray-500">Last updated: June 2026</p>
 
           <h2 className="text-lg font-semibold text-gray-900">Acceptance of Terms</h2>
           <p className="text-gray-600">
@@ -44,6 +44,42 @@ export default function TermsPage() {
             HalaTuju is provided &ldquo;as is&rdquo; without warranty of any kind.
             We are not liable for any decisions made based on the recommendations
             provided by this tool.
+          </p>
+
+          <h2 className="text-lg font-semibold text-gray-900">Scope</h2>
+          <p className="text-gray-600">
+            HalaTuju provides a free course-matching tool and operates the B40
+            Assistance Programme. Using either means you accept these terms.
+          </p>
+
+          <h2 className="text-lg font-semibold text-gray-900">The Assistance Programme</h2>
+          <p className="text-gray-600">
+            Applying does <strong>not</strong> guarantee assistance &mdash; places are
+            limited and subject to eligibility checks and a human review. Assistance is a
+            gift, not a loan; there is nothing to repay. Funds (where a sponsor supports a
+            student) are administered by the programme&rsquo;s non-profit partner and are
+            never paid directly to a student. <em>(Partnership being finalised.)</em>
+          </p>
+
+          <h2 className="text-lg font-semibold text-gray-900">Sponsors</h2>
+          <p className="text-gray-600">
+            Sponsor contributions support students through the programme&rsquo;s
+            administering non-profit; they are not a direct transfer to a student and are
+            not a commercial transaction. <em>(More detailed sponsor terms to follow.)</em>
+          </p>
+
+          <h2 className="text-lg font-semibold text-gray-900">Minors</h2>
+          <p className="text-gray-600">
+            If you are under 18, you may use the course tool, but a parent or guardian
+            must give consent before you apply for assistance or before your profile is
+            shared with any sponsor.
+          </p>
+
+          <h2 className="text-lg font-semibold text-gray-900">Accuracy &amp; honesty</h2>
+          <p className="text-gray-600">
+            You are responsible for the accuracy of what you submit; misrepresenting your
+            identity, grades, or income may result in disqualification or account
+            suspension.
           </p>
 
           <h2 className="text-lg font-semibold text-gray-900">Changes to Terms</h2>
