@@ -829,3 +829,9 @@
   (the old B/D/L categories) which that single signal doesn't capture — a deliberate partial proxy chosen for
   simplicity (see decisions.md). **To resolve, if matching proves too narrow:** broaden the Special-Needs onboarding
   field into typed categories and gate MBPK on the union. (Logged 2026-06-18.)
+- TD-129: **SJKT PISMP bidang carry an over-specified language requirement (BT in the C-group).** The official 2026 IPGM
+  Perdana syarat lists C in **3** subjects (Bahasa Melayu, Bahasa Inggeris, Sejarah), but several SJKT bidang
+  requirements store a 4-subject C-group `[BM, BT, HISTORY, BI]` (Bahasa Tamil added). Harmless in practice — an SJKT
+  applicant trivially has BT ≥ C — so it never changes an outcome, but it's a minor deviation from the PDF surfaced
+  while investigating the picker. **To resolve:** drop BT from the C-group (or confirm it's intentional) at the next
+  PISMP courses refresh, alongside TD-127. (Logged 2026-06-19.)
