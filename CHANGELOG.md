@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reverse a recorded decision — "Reopen" with real consequences (2026-06-18).** The cockpit's Decision panel
+  "Edit" became **Reopen** (super-only): reopening a finalised decision **holds the student's profile from the sponsor
+  pool** (unpublishes), unlocks the panel + the reviewer dropdown, and shows a "held from sponsors" banner. **Cancel
+  reopen** restores the prior published state exactly (no change). Saving the decision again (Approve/Decline)
+  **republishes** per the new decision and **regenerates** the profile. A reopen requires a **reason** (it asserts a
+  reviewer error) and is logged in a new `DecisionReopen` audit table; a reopen that leads to a real change increments
+  an **internal corrections tally** for the assigned reviewer (shown in the assign panel, never to sponsors/students).
+  New `decision_reopened_at` column + `decision_reopens` table (migration `scholarship/0062`, migrate-first). Endpoints
+  `reopen-decision/` + `cancel-reopen/`. +10 backend tests.
+- **Assign-reviewer panel: "Reviewer assigned" + locked once decided (2026-06-18).** Once a decision is recorded the
+  reviewer dropdown **locks** (the case is finished); it reads "Reviewer assigned" / "Reviewer: {name}" and only unlocks
+  if the decision is Reopened.
+
+### Changed
+- **Interview Stage record reads like Check 2 (2026-06-18).** A submitted interview now renders each answered question
+  as a tidy card — green ✓ tick · bold **Question:** · the finding under a **"Reviewer's finding"** header (the label
+  sits above the box, not inside it). The redundant "Submitted" pill at the top was removed (the "Submitted on …" line
+  stays at the foot). The Decision **"Conclusion"** label likewise moved to a header above its box. Presentation only.
+
 - **Contact-form submissions are now emailed to the team (2026-06-17).** The public `/contact` form saved rows to
   `contact_submissions` but nothing alerted anyone (messages sat unseen). New cron job `notify-contact-submissions`
   emails each unread submission to `contact@halatuju.xyz` (`ADMIN_NOTIFY_EMAIL`), with Reply-To set to the submitter's

@@ -1,5 +1,31 @@
 # Architectural Decisions — HalaTuju
 
+## Reversing a recorded decision ("Reopen") — 2026-06-18
+
+**Decision:** A super-only **Reopen** reverses a finalised decision by (a) **holding the profile from the sponsor pool**
+(flip `SponsorProfile.anon_published` off) and (b) opening a `DecisionReopen` audit row, with `decision_reopened_at`
+persisted on the application so the reopened state survives a reload. **Cancel** restores the prior published state
+exactly; **re-saving** the decision (record-verdict / reject) regenerates + republishes per the new decision. A reopen
+that leads to a saved change increments a per-reviewer **corrections** count, **derived from the audit log**
+(`COUNT(resulted_in_change=True)`), shown only internally.
+
+**Alternatives considered:** (1) Keep "Edit" frontend-only (no pool effect) — leaves a published profile live while a
+reviewer corrects the decision behind it. (2) Auto-detect "did anything change?" on close instead of explicit
+Cancel/Save buttons. (3) A bare `reopen_count` integer on the reviewer instead of an audit table. (4) Count every
+reopen (model A) rather than only saved-change reopens (model B).
+
+**Rationale:** The profile in the sponsor pool is the consequential artefact — reversing the decision must hold it, not
+just unlock a form. Explicit Cancel-vs-Save is unambiguous and auditable (no guessing whether a field changed). An audit
+row (not a counter) keeps the corrections metric reconstructable + carries the reason/who/when. The owner chose model B
+so an exploratory reopen that's cancelled never penalises a reviewer.
+
+**Trade-offs:** Re-saving on a real correction re-runs the Gemini refine (a billable call) — accepted, since a changed
+conclusion *should* regenerate the profile. The reviewer attribution is the assigned reviewer at reopen time (not
+whoever recorded the verdict) — deliberate: the reviewer owns the interview + recommendation.
+
+**Revisit if:** corrections need to distinguish error severity, or the metric is ever surfaced outside the admin team,
+or partial re-publish (without regeneration) is wanted on a trivial correction.
+
 ## Prompt versioning for AI-generated profiles — 2026-06-16
 
 **Decision:** `profile_engine.PROMPT_VERSION` (a bumped string), stamped onto every generated `SponsorProfile`

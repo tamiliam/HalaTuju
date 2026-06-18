@@ -563,6 +563,11 @@ class ScholarshipApplication(models.Model):
         null=True, blank=True,
         help_text="When the officer recorded their verification verdict (the audit anchor).",
     )
+    # Set when a superadmin REOPENS a recorded decision (to correct a reviewer error).
+    # While non-null the decision panel is editable again, the reviewer dropdown unlocks,
+    # and the sponsor profile is held from the pool (unpublished). Cleared on re-save or
+    # cancel. The audit trail + the per-reviewer corrections count live in DecisionReopen.
+    decision_reopened_at = models.DateTimeField(null=True, blank=True)
 
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -934,6 +939,52 @@ class InterviewSlot(models.Model):
 
     def __str__(self):
         return f'InterviewSlot #{self.application_id} @ {self.start:%Y-%m-%d %H:%M}'
+
+
+class DecisionReopen(models.Model):
+    """Audit row for each time a superadmin REOPENS a recorded decision.
+
+    Reopening a finalised decision asserts the assigned REVIEWER made an error;
+    while a row is OPEN (``closed_at`` is null) the application's decision panel is
+    editable again and the sponsor profile is held from the pool. On close:
+      - ``resulted_in_change=True``  → the reopen led to a re-saved decision (a real
+        correction); this is what COUNTS against the reviewer.
+      - ``resulted_in_change=False`` → it was cancelled/restored with no change.
+
+    The per-reviewer "corrections" count = COUNT(resulted_in_change=True) over this
+    log (counting model B, the owner's call 2026-06-18) — derived from the audit
+    trail, never a bare counter that could drift.
+    """
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='decision_reopens',
+    )
+    # Attributed to the ASSIGNED reviewer at the moment of reopen (they own the
+    # interview + recommendation). SET_NULL so deactivating an admin never destroys
+    # the audit trail.
+    reviewer = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='decision_reopens_attributed',
+        help_text="The reviewer the correction is attributed to (assigned reviewer at reopen).",
+    )
+    reopened_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the superadmin who reopened the decision.",
+    )
+    reason = models.TextField(help_text="Why the decision was reopened (the asserted reviewer error).")
+    # Pool-publish state captured at reopen, so a cancel restores it exactly.
+    was_published = models.BooleanField(default=False)
+    # True once the reopen led to a re-saved decision (a real correction → counts).
+    resulted_in_change = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'decision_reopens'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        state = 'open' if self.closed_at is None else 'closed'
+        return f'DecisionReopen #{self.application_id} ({state})'
 
 
 class Sponsor(models.Model):

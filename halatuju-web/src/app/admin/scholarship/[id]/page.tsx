@@ -21,6 +21,8 @@ import {
   submitInterview,
   getAssignableAdmins,
   recordVerdict,
+  reopenDecision,
+  cancelReopen,
   setAwardAmount,
   raiseResolutionItem,
   actionResolutionItem,
@@ -191,7 +193,10 @@ export default function AdminScholarshipDetailPage() {
   const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
   const [interviewMsg, setInterviewMsg] = useState('')   // transient "Saved ✓" confirmation
   const [editIv, setEditIv] = useState(false)            // superadmin reopened a submitted interview
-  const [editDec, setEditDec] = useState(false)          // superadmin reopened a recorded decision
+  // Decision reopen (reverse a recorded decision). The reopened STATE is server-driven
+  // (app.decision_reopened_at) so it survives a reload; these only drive the reason input.
+  const [reopenOpen, setReopenOpen] = useState(false)    // the "why are you reopening?" box is showing
+  const [reopenReason, setReopenReason] = useState('')
   // Consolidation: the student's own words (note/story/funding) are collapsed by
   // default under the Sponsor profile — the reviewer checks the AI draft first.
   const [showOwnWords, setShowOwnWords] = useState(false)
@@ -359,6 +364,36 @@ export default function AdminScholarshipDetailPage() {
   const doApprove = () => doRecordVerdict(true, true)
   const doSaveVerdict = () => doRecordVerdict(true, false)
 
+  // Reverse a recorded decision (super-only). Reopening HOLDS the sponsor profile from
+  // the pool and unlocks the panel; a reason is required (it asserts a reviewer error).
+  const doReopenDecision = async () => {
+    if (!token || !reopenReason.trim()) return
+    setBusy('reopen'); setError(''); setVerdictMsg('')
+    try {
+      const result = await reopenDecision(id, reopenReason.trim(), { token })
+      setApp(result)
+      setProfile(result.sponsor_profile)
+      loadVerdictState(result)
+      setReopenOpen(false); setReopenReason('')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('admin.scholarship.recordVerdict.reopenError'))
+    } finally { setBusy('') }
+  }
+
+  // Close a reopen with NO change — restore the profile to its prior published state.
+  const doCancelReopen = async () => {
+    if (!token) return
+    setBusy('reopen'); setError(''); setVerdictMsg('')
+    try {
+      const result = await cancelReopen(id, { token })
+      setApp(result)
+      setProfile(result.sponsor_profile)
+      loadVerdictState(result)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('admin.scholarship.recordVerdict.reopenError'))
+    } finally { setBusy('') }
+  }
+
   const doSetAwardAmount = async (amount: number) => {
     if (!token) return
     setRecAmount(amount)  // optimistic
@@ -479,7 +514,9 @@ export default function AdminScholarshipDetailPage() {
   const interviewSubmitted = app.interview_session?.status === 'submitted'
   const interviewLocked = interviewSubmitted && !editIv
   const decisionRecorded = !!app.verdict_decided_at
-  const decisionLocked = decisionRecorded && !editDec
+  // A superadmin has REOPENED the recorded decision (server-driven; held from sponsors).
+  const decisionReopened = !!app.decision_reopened_at
+  const decisionLocked = decisionRecorded && !decisionReopened
 
   // The interview agenda (questions): deterministic flags not already a Check-2 query +
   // AI gaps. Computed once; the editable view drops 'deleted' items, the read-only view
@@ -1158,11 +1195,6 @@ export default function AdminScholarshipDetailPage() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.interview.title')}</h2>
-            {interviewSubmitted && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-700">
-                {t('admin.scholarship.interview.submitted')}
-              </span>
-            )}
           </div>
           {interviewLocked
             ? (isSuper && (
@@ -1194,22 +1226,37 @@ export default function AdminScholarshipDetailPage() {
               return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noneRecorded')}</p>
             }
             return (
-              <div className="space-y-2">
+              <div className="space-y-3">
+                {/* Q&A organised like Check 2: ✓ tick · bold "Question:" · the finding under
+                    a "Reviewer's finding" header (the label sits ABOVE the box, not inside). */}
                 {answered.map((it) => {
                   const f = findings[it.code]
                   return (
-                    <div key={it.code} className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                      <p className="text-xs font-medium text-gray-500">{it.label}</p>
-                      <p className="mt-1 text-sm text-gray-800">
-                        {(f.rationale || '').trim() || `${t('admin.scholarship.interview.verdict.resolved')} ✓`}
-                      </p>
+                    <div key={it.code} className="flex items-start gap-2.5 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                      </svg>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-800 break-words">
+                          <span className="font-semibold">{t('admin.scholarship.outstanding.questionLabel')}:</span> {it.label}
+                          {it.ai && <span className="ml-1 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
+                        </p>
+                        <p className="mt-1.5 text-xs font-medium text-gray-600">{t('admin.scholarship.interview.answerLabel')}</p>
+                        <div className="mt-0.5 rounded-md border border-blue-100 bg-blue-50/50 p-2">
+                          <p className="text-sm text-gray-800 break-words">
+                            {(f.rationale || '').trim() || `${t('admin.scholarship.interview.verdict.resolved')} ✓`}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )
                 })}
                 {hasNote && (
-                  <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                    <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.interview.findingsLabel')}</p>
-                    <p className="mt-1 whitespace-pre-line text-sm text-gray-800">{note}</p>
+                  <div>
+                    <p className="text-xs font-medium text-gray-600 mb-1">{t('admin.scholarship.interview.findingsLabel')}</p>
+                    <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                      <p className="whitespace-pre-line text-sm text-gray-800">{note}</p>
+                    </div>
                   </div>
                 )}
                 {app.interview_session?.submitted_at && (
@@ -1539,13 +1586,56 @@ export default function AdminScholarshipDetailPage() {
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.decision.title')}</h2>
-          {decisionLocked && isSuper && (
-            <button onClick={() => setEditDec(true)}
+          {/* Reopen = REVERSE a recorded decision (super-only). Asks for a reason first;
+              reopening holds the profile from the pool and unlocks the panel. */}
+          {decisionLocked && isSuper && !reopenOpen && (
+            <button onClick={() => { setReopenOpen(true); setReopenReason('') }}
               className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-100">
-              {t('admin.scholarship.recordVerdict.edit')}
+              {t('admin.scholarship.recordVerdict.reopen')}
             </button>
           )}
         </div>
+
+        {/* The "why are you reopening?" prompt — a reopen asserts a reviewer error, so a
+            reason is required (logged + counted against the reviewer once a change is saved). */}
+        {decisionLocked && isSuper && reopenOpen && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+            <p className="text-xs font-medium text-amber-900">{t('admin.scholarship.recordVerdict.reopenTitle')}</p>
+            <p className="text-[11px] text-amber-800">{t('admin.scholarship.recordVerdict.reopenHint')}</p>
+            <textarea value={reopenReason} rows={2} onChange={(e) => setReopenReason(e.target.value)}
+              placeholder={t('admin.scholarship.recordVerdict.reopenPlaceholder')}
+              className="w-full border rounded-lg px-3 py-2 text-sm" />
+            <div className="flex items-center gap-2">
+              <button onClick={doReopenDecision} disabled={!!busy || !reopenReason.trim()}
+                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm disabled:opacity-50">
+                {busy === 'reopen' ? t('common.loading') : t('admin.scholarship.recordVerdict.reopenConfirm')}
+              </button>
+              <button onClick={() => { setReopenOpen(false); setReopenReason('') }} disabled={!!busy}
+                className="px-3 py-1.5 border rounded-lg text-sm text-gray-600 disabled:opacity-50">
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Reopened banner — the decision is editable again and the profile is held from
+            the pool. "Cancel reopen" restores it unchanged; saving the decision republishes. */}
+        {decisionReopened && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 space-y-2">
+            <p className="text-sm font-medium text-amber-900">{t('admin.scholarship.recordVerdict.reopenedBanner')}</p>
+            {app.decision_reopen_reason && (
+              <p className="text-xs text-amber-800">
+                <span className="font-medium">{t('admin.scholarship.recordVerdict.reopenReasonLabel')}:</span> {app.decision_reopen_reason}
+              </p>
+            )}
+            {isSuper && (
+              <button onClick={doCancelReopen} disabled={!!busy}
+                className="px-3 py-1.5 border border-amber-400 text-amber-900 rounded-lg text-xs hover:bg-amber-100 disabled:opacity-50">
+                {busy === 'reopen' ? t('common.loading') : t('admin.scholarship.recordVerdict.cancelReopen')}
+              </button>
+            )}
+          </div>
+        )}
 
         {decisionLocked ? (
           /* Decision recorded → read-only. Inputs/buttons are gone so it can't look
@@ -1575,9 +1665,11 @@ export default function AdminScholarshipDetailPage() {
               </p>
             )}
             {(verdictReason || '').trim() && (
-              <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.recordVerdict.reasonLabel')}</p>
-                <p className="mt-1 whitespace-pre-line text-sm text-gray-800">{verdictReason}</p>
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-1">{t('admin.scholarship.recordVerdict.reasonLabel')}</p>
+                <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                  <p className="whitespace-pre-line text-sm text-gray-800">{verdictReason}</p>
+                </div>
               </div>
             )}
             {app.status === 'accepted' ? (
@@ -1767,18 +1859,30 @@ export default function AdminScholarshipDetailPage() {
       {isSuper && (() => {
         const ready = app.query_sla?.ready_for_assignment ?? false
         const firstAssignBlocked = !app.assigned_to_id && !ready
+        // Once a decision is recorded the reviewer is fixed (it's a finished case) — the
+        // dropdown locks. It unlocks again only if a superadmin REOPENS the decision.
+        const assignLocked = decisionLocked
+        const assigned = !!app.assigned_to_id
         return (
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-2">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.assignTitle')}</h2>
-          {app.assigned_to_id && (
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+            {assigned ? t('admin.scholarship.assign.assignedTitle') : t('admin.scholarship.assignTitle')}
+          </h2>
+          {assigned && (
             <p className="text-xs text-gray-500">
-              {t('admin.scholarship.assign.current', { name: app.assigned_to_name || '' })}
+              {t('admin.scholarship.assign.reviewerLine', { name: app.assigned_to_name || '' })}
+              {app.assigned_to_corrections > 0 && (
+                <span className="ml-1 text-gray-400">
+                  · {t('admin.scholarship.assign.corrections', { n: String(app.assigned_to_corrections) })}
+                </span>
+              )}
             </p>
           )}
           <select
             value={app.assigned_to_id ?? ''}
-            disabled={!!busy || firstAssignBlocked}
-            title={firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
+            disabled={!!busy || firstAssignBlocked || assignLocked}
+            title={assignLocked ? t('admin.scholarship.assign.lockedHint')
+              : firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
             onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
             className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-gray-100 disabled:text-gray-400"
           >
@@ -1786,7 +1890,9 @@ export default function AdminScholarshipDetailPage() {
             {admins.filter((a) => a.role === 'reviewer' || a.role === 'super')
               .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
-          {firstAssignBlocked && (
+          {assignLocked ? (
+            <p className="text-xs text-gray-400">{t('admin.scholarship.assign.lockedHint')}</p>
+          ) : firstAssignBlocked && (
             <p className="text-xs text-amber-600">{t('admin.scholarship.assign.notReadyHint')}</p>
           )}
         </div>
