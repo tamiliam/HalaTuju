@@ -49,7 +49,13 @@ DEFAULT_LANGUAGE = 'English'
 #   2026-06-16.2 — generalise ethnicity in the NARRATIVE too (keep the motivation, drop the
 #                  ethnic label, e.g. "her mother tongue" not "Tamil"; "a teacher" not
 #                  "her Tamil teacher").
-PROMPT_VERSION = '2026-06-16.2'
+#   2026-06-18.1 — Income honesty, both directions (documented = certain; self-reported = a claim).
+#                  (a) STR/JKM asserted ONLY when a welfare DOCUMENT is on file — fixes #21 (profile
+#                  asserted STR "affirming B40 status" off a self-declared tick, salary route, no STR
+#                  doc; see _gated_str / _gated_jkm). (b) A DOCUMENTED salary (payslip/EPF) MUST be
+#                  stated as documented, not buried behind the softer reported figure — fixes #10
+#                  (payslip gross RM3,049 ignored in favour of the reported RM1,700).
+PROMPT_VERSION = '2026-06-18.1'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
@@ -103,14 +109,19 @@ individual subjects or per-subject grades — a reader skips a long list. NEVER 
 language or literature subject (e.g. Bahasa Tamil, Bahasa Cina, Kesusasteraan Tamil/Cina), and do \
 NOT state or imply the student's ethnicity or race. Never round up or imply a uniform top grade. If \
 a merit score is given, you may cite it.
-- INCOME & WELFARE — be precise. "Receives STR"/"Receives JKM" mean the family is registered as \
-B40 / receives government welfare; they do NOT verify the income AMOUNT (STR confirms B40 status, \
-not a figure). If "Documented income (payslip/EPF)" below lists one or more figures, you MAY state \
-those AUTHORITATIVELY, naming the document and whose income it is (this can happen on either track). \
-For any income NOT documented there, present it as what the family REPORTS (e.g. "the family reports \
-about RM…"), never as "confirmed", and do NOT attribute a reported figure to a specific earner or \
-invent a breakdown. If who earns what is unclear, describe the situation (a single earner, a parent \
-unable to work) without inventing numbers. Do not make up a story to reconcile the figures.
+- INCOME & WELFARE — DOCUMENTED is certain; everything self-reported is a CLAIM. If "Documented \
+income (payslip/EPF)" below lists one or more figures, you MUST state them AUTHORITATIVELY as the \
+documented income, naming the document and whose income it is — do NOT omit a documented figure or \
+bury it behind the softer reported household figure. EVERY other income figure — including the \
+household income below — is only what the family REPORTS: present it as such (e.g. "the family \
+reports about RM…") and you MAY give it as context alongside the documented figure (e.g. base pay \
+vs a month with overtime), but never as "confirmed", and do NOT attribute a reported figure to a \
+specific earner or invent a breakdown. STR/JKM are gated the SAME way: a value of "yes" means a welfare DOCUMENT is on file, so \
+you MAY state the family receives it (this confirms B40 status, NOT an income figure). Any other \
+value ("no" or "not established — do not claim") means there is NO proof on file — do NOT mention \
+STR/JKM at all and do NOT use it to affirm B40 status. If who earns what is unclear, describe the \
+situation (a single earner, a parent unable to work) without inventing numbers. Do not make up a \
+story to reconcile the figures.
 
 THE STUDENT (alias {alias})
 Pronouns (use these for the student, never "they"): {pronouns}
@@ -120,7 +131,7 @@ SPM grades: {grades_summary}    STPM PNGK: {stpm_pngk}
 Home town / state: {region}
 Household income (RM/month, as reported): {household_income}    Household size: {household_size}
 Documented income (payslip/EPF — use authoritatively if present): {income_evidence}
-Receives STR (B40 status, not an income figure): {receives_str}    Receives JKM: {receives_jkm}
+Receives STR ('yes' only when a current STR document is on file; else do not claim): {receives_str}    Receives JKM (same rule): {receives_jkm}
 First in family to university: {first_in_family}
 Parents'/guardians' occupation: {parents_occupation}
 Siblings currently studying: {siblings_studying}
@@ -246,6 +257,33 @@ def _gated_first_in_family(application, ledger):
     if not application.first_in_family:
         return 'no'
     return 'yes' if ledger.get('first_in_family') == 'verified' else _DO_NOT_CLAIM
+
+
+def _gated_str(application):
+    """STR receipt is asserted as fact ONLY when a CURRENT STR document is on file —
+    documented = certain. A self-declared STR tick with no document (e.g. a salary-route
+    applicant who never uploaded an STR), or a stale/rejected one, is NOT established:
+    the writer must not claim it (the live #21 bug — the profile asserted STR while the
+    student was on the salary route with no STR doc on file)."""
+    profile = getattr(application, 'profile', None)
+    if not (profile and getattr(profile, 'receives_str', None)):
+        return 'no'
+    from .income_engine import student_str_check
+    doc = application.documents.filter(doc_type='str').order_by('-uploaded_at').first()
+    if not doc:
+        return _DO_NOT_CLAIM
+    chk = student_str_check(doc)
+    return 'yes' if chk and chk.get('current_status') == 'current' else _DO_NOT_CLAIM
+
+
+def _gated_jkm(application):
+    """JKM receipt: no JKM document is collected anywhere in the flow, so a self-declared
+    JKM tick can never be independently documented. By the documented = certain rule it is
+    NOT established — the writer must not assert it as fact."""
+    profile = getattr(application, 'profile', None)
+    if not (profile and getattr(profile, 'receives_jkm', None)):
+        return 'no'
+    return _DO_NOT_CLAIM
 
 
 def _pathway(application):
@@ -554,8 +592,8 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         household_income=pval('household_income'),
         income_evidence=_income_evidence(application),
         household_size=pval('household_size'),
-        receives_str=_yesno(getattr(profile, 'receives_str', None) if profile else None),
-        receives_jkm=_yesno(getattr(profile, 'receives_jkm', None) if profile else None),
+        receives_str=_gated_str(application),
+        receives_jkm=_gated_jkm(application),
         first_in_family=_gated_first_in_family(application, ledger),
         parents_occupation=val(application.parents_occupation),
         siblings_studying=_siblings_studying_display(application),
@@ -596,9 +634,12 @@ and write the profile in {target_language}.
 Pronouns (use these for the student, never "they"): {pronouns}
 
 Rules:
-- INCOME: STR/JKM indicate B40 / welfare status, NOT an income amount. State an income figure as
-confirmed ONLY if a payslip/EPF or the officer's verdict verified it; otherwise present it as what the
-family reports, and never invent who earns what.
+- INCOME: documented = certain, self-reported = a claim. When the draft or the officer's findings
+state a DOCUMENTED income (payslip/EPF), keep it and state it as documented — do not soften it into a
+mere report. State any OTHER income figure as confirmed ONLY if the officer's verdict verified it;
+otherwise present it as what the family reports, and never invent who earns what. Do NOT assert the
+family receives STR/JKM unless the DRAFT or the officer's findings establish it from a document —
+never re-introduce a welfare claim the draft omitted.
 - Fold in what the student's answers and the interview CONFIRMED or CLARIFIED; reflect any NEW \
 CONCERN honestly and proportionately — do not hide it, do not exaggerate it.
 - The officer's decision is the considered outcome of a real review. Present each area with \
