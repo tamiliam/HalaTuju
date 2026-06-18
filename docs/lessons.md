@@ -2,6 +2,8 @@
 
 Cross-cutting lessons from sprint retrospectives. Only items that affect future work regardless of feature area.
 
+- **A button that "reverses" or "edits" a finalised thing must touch the same state the original action published — check what the existing control actually does before extending it.** The cockpit "Edit" on a recorded decision was frontend-only (`setEditDec`); it unlocked the form but left the student's profile LIVE in the sponsor pool. Renaming it to "Reopen" without wiring it to `SponsorProfile.anon_published` would have let a reviewer correct a decision while the old profile stayed visible to sponsors. Before building a reverse/edit flow, trace where the original action's effect LIVES (here: the pool-publish gate) and undo/redo that, not just the editor lock. (Decision reopen, 2026-06-18)
+- **When a feature writes a per-PERSON quality metric, confirm the increment trigger with the owner before coding — the trigger point assigns blame.** "Reopen counts as a reviewer error" is ambiguous: count every reopen (A) penalises an exploratory reopen the super then cancels; count only saved-change reopens (B) doesn't. Surfaced the A/B fork with a recommendation rather than guessing; the owner chose B. Also: derive such a count from an audit LOG (`COUNT(resulted_in_change=True)`), never a bare counter — it stays reconstructable and carries the reason/who/when. (Decision reopen, 2026-06-18)
 - **Never pass a secret as a `gcloud` flag value that can echo on error.** A wrong flag name (`--update-headers` on
   `jobs create` instead of `--headers`) made gcloud print the unrecognised-argument *with its value* — leaking
   `CRON_SECRET` into the transcript. Verify the exact flag first (`gcloud ... --help`), keep the secret in a shell var

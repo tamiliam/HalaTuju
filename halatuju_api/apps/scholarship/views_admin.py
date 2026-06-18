@@ -20,6 +20,7 @@ from apps.courses.search import apply_people_search
 from apps.courses.views_admin import PartnerAdminMixin
 
 from . import pool
+from . import reopen as reopen_service
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
@@ -303,6 +304,8 @@ class AdminRejectView(_AdminBase):
                    else 'This applicant cannot be declined from their current status.'
                    if code == 'bad_status' else 'Unknown rejection category.')
             return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
+        # Declining a REOPENED decision is a real correction (counting model B).
+        reopen_service.close_reopen_with_change(app)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
@@ -753,6 +756,10 @@ class AdminAssignableAdminsView(_AdminBase):
         admins = (PartnerAdmin.objects.filter(is_active=True)
                   .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super']))
                   .select_related('reviewer_profile').order_by('name'))
+        # Internal-only "corrections" tally per reviewer (reopened decisions that led
+        # to a real change). Never shown to sponsors/students — an internal quality
+        # signal for whoever assigns reviewers.
+        corrections = reopen_service.reviewer_correction_counts()
 
         def langs(a):
             # Languages the reviewer can conduct a review in (conversational or better),
@@ -767,7 +774,8 @@ class AdminAssignableAdminsView(_AdminBase):
 
         return Response({'admins': [
             {'id': a.id, 'name': a.name, 'email': a.email,
-             'role': 'super' if a.is_super else a.role, 'languages': langs(a)}
+             'role': 'super' if a.is_super else a.role, 'languages': langs(a),
+             'corrections': corrections.get(a.id, 0)}
             for a in admins
         ]})
 
@@ -955,10 +963,57 @@ class AdminRecordVerdictView(_AdminBase):
             app.save(update_fields=verdict_fields)
             if sp_to_save is not None:
                 sp_to_save.save()
+            # If this re-records a REOPENED decision, that's a real correction
+            # (counting model B) — close the audit row + clear the reopened flag.
+            # The (re)publish on accept already happened via the finalise path above.
+            reopen_service.close_reopen_with_change(app)
 
         data = AdminApplicationDetailSerializer(app).data
         data['finalise_result'] = finalise_result
         return Response(data)
+
+
+class AdminReopenDecisionView(_AdminBase):
+    """POST .../<pk>/reopen-decision/ {reason} — SUPER-ONLY. Reverse a recorded
+    decision to correct a reviewer error: holds the sponsor profile from the pool
+    (unpublishes), opens a DecisionReopen audit row attributed to the assigned
+    reviewer, and unlocks the decision panel + reviewer dropdown. A reason is
+    required (a reopen asserts a reviewer error)."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        try:
+            reopen_service.reopen_decision(
+                app, by_admin=admin, reason=request.data.get('reason'))
+        except reopen_service.ReopenError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminCancelReopenView(_AdminBase):
+    """POST .../<pk>/cancel-reopen/ — SUPER-ONLY. Close a reopen with NO change:
+    restore the profile to its prior published state and re-lock the panel. Does
+    NOT count as a reviewer correction (counting model B)."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        try:
+            reopen_service.cancel_reopen(app)
+        except reopen_service.ReopenError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(app).data)
 
 
 class AdminVerdictMetricsView(_AdminBase):

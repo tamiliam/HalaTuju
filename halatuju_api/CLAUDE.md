@@ -517,6 +517,23 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-18)
 
+**▶ SHIPPED 2026-06-18 — Reverse a recorded decision ("Reopen") + cockpit Q&A presentation (migration
+`scholarship/0062` migrate-first; retro `docs/retrospective-2026-06-18-decision-reopen.md`). Worktree `.worktrees/sched`.**
+- **Reopen (super-only) reverses a finalised decision.** The Decision panel's cosmetic "Edit" (frontend-only) became
+  **Reopen**: it **holds the student's profile from the sponsor pool** (`anon_published=False`), opens a `DecisionReopen`
+  audit row (attributed to the assigned reviewer, with a required reason), stamps `decision_reopened_at`, unlocks the
+  panel + reviewer dropdown, and banners "held from sponsors". **Cancel reopen** restores the prior published state;
+  **re-saving** (Approve/Decline) regenerates + republishes per the new decision. `reopen.py` service +
+  `reopen-decision/`/`cancel-reopen/` endpoints. NO flag (super-only cockpit action; ships LIVE).
+- **Corrections metric (model B):** a reopen counts against the reviewer ONLY when it leads to a saved change (a
+  cancelled reopen doesn't). Count = `COUNT(DecisionReopen.resulted_in_change=True)` per reviewer — internal only
+  (assign panel), never on a sponsor/student surface.
+- **Assign panel:** "Reviewer assigned" / "Reviewer: {name}"; dropdown **locks** once a decision is recorded, unlocks on
+  Reopen. **Interview Stage submitted record** now reads like Check 2 (✓ tick · bold Question · "Reviewer's finding"
+  header above the box); top "Submitted" pill removed; "Conclusion"/"Findings" labels are headers above their boxes.
+- **Tests:** 2488 backend pytest (+10 `test_decision_reopen.py`) + 327 jest + i18n parity/orphan guardrail + next build
+  clean. **Prod at scholarship migration `0062`.**
+
 **▶ SHIPPED 2026-06-18 — Interview scheduling + Google Meet, email aliases, contact-form notify, cockpit live-review
 (10 commits `d13b949`→`a51517a`; migration `scholarship/0061` migrate-first; retro
 `docs/retrospective-2026-06-18-scheduling-meet-aliases-cockpit.md`). Worked in worktree `.worktrees/sched`.**
