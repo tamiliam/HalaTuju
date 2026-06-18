@@ -2799,6 +2799,7 @@
         "assistanceLabel": "Assistance recommended",
         "assistanceNone": "Drag to set a recommended amount.",
         "approveNeedsAmount": "Set a recommended assistance amount before approving.",
+        "saveNeedsReady": "Submit the interview, then mark all four checks Pass/Fail and add a conclusion to record a decision.",
         "reasonPlaceholder": "State your conclusions / reasons for your decision",
         "save": "Save verdict & generate final profile",
         "approve": "Approve",

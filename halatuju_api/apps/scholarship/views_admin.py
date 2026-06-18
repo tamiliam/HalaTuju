@@ -906,6 +906,17 @@ class AdminRecordVerdictView(_AdminBase):
                             status=status.HTTP_400_BAD_REQUEST)
         officer_verdict['overall'] = overall
 
+        # Guard: a RECORDED verdict must assess all four facts (Pass/Fail). The cockpit's
+        # "Save verdict & generate final profile" path used to stamp verdict_decided_at with
+        # blank facts, locking the panel on an incomplete decision (app #4, 2026-06-02). This
+        # single backend gate can't be bypassed by any UI.
+        incomplete = [f for f in FACTS if officer_verdict[f] not in ('pass', 'fail')]
+        if incomplete:
+            return Response(
+                {'error': 'Assess all four checks (Pass/Fail) before recording the decision.',
+                 'code': 'verdict_incomplete', 'facts': incomplete},
+                status=status.HTTP_400_BAD_REQUEST)
+
         from .verdict_engine import build_verdict
         app.ai_verdict_snapshot = build_verdict(app)
         app.officer_verdict = officer_verdict

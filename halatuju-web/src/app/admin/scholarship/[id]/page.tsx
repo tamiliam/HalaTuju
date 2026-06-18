@@ -1836,7 +1836,12 @@ export default function AdminScholarshipDetailPage() {
               {decisionReady && !hasAssistance && (
                 <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
               )}
-              <button onClick={doSaveVerdict} disabled={!!busy}
+              {!decisionReady && (
+                <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
+              )}
+              {/* Save records the decision (stamps verdict_decided_at + locks the panel), so it
+                  needs the same readiness as Approve/Decline — never record an incomplete verdict. */}
+              <button onClick={doSaveVerdict} disabled={!!busy || !decisionReady}
                 className="w-full px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium disabled:opacity-50">
                 {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
               </button>

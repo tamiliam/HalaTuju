@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than only "the interviewer will contact you." Backend only, no migration.
 
 ### Fixed
+- **A decision could be recorded with incomplete facts (2026-06-18).** The cockpit's "Save verdict & generate final
+  profile" button was gated only on `busy` — unlike Approve/Decline — yet it still stamped `verdict_decided_at` (which
+  locks the panel + reviewer dropdown and gates accept). So a verdict could be "recorded" with blank Academic/Pathway/
+  Income, no interview, and no reason (app #4, recorded during early owner testing; never accepted/published). Two
+  guards added: **backend** — `record-verdict` now rejects (`400 verdict_incomplete`) unless all four facts are
+  Pass/Fail (single enforcement point, UI-independent); **frontend** — Save is gated like Approve/Decline (interview
+  submitted + all four facts + reason) with a hint. The one affected record (#4) was cleared back to a clean
+  `interviewing` state.
 - **Turnstile interaction challenge no longer strands or obscures flagged users (2026-06-18).** Cloudflare Turnstile
   (captcha for Supabase logins, enforcement ON) silently passes most users, but escalates to a visible "Verify you are
   human" challenge for flagged traffic. Two defects surfaced when a reviewer hit one: (1) an **8-second timeout** —
