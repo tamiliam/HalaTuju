@@ -342,6 +342,7 @@ export interface AdminScholarshipListItem {
   profile_completed_at: string | null
   assigned_to_id: number | null
   assigned_to_name: string | null
+  decision_reopened_at: string | null   // when set, the pill shows "Reopened" (overrides accepted/rejected)
 }
 
 export interface AdminCompleteness {
