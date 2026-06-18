@@ -922,7 +922,9 @@ export default function AdminScholarshipDetailPage() {
       {/* ── Student profile (system-generated: draft at handoff → final at verdict) ── */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.profileTitle')}</h2>
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+            {t(profile?.final_markdown ? 'admin.scholarship.profileFinalTitle' : 'admin.scholarship.profileTitle')}
+          </h2>
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">{t('admin.scholarship.genLang')}</label>
             <select value={genLang} onChange={(e) => setGenLang(e.target.value)} disabled={!!busy}
@@ -935,7 +937,7 @@ export default function AdminScholarshipDetailPage() {
 
         <div className="flex items-start gap-2 rounded-lg border border-primary-100 bg-primary-50 p-2 text-xs text-primary-800">
           <span aria-hidden>ⓘ</span>
-          <span>{t('admin.scholarship.profileDraftHint')}</span>
+          <span>{t(profile?.final_markdown ? 'admin.scholarship.profileFinalHint' : 'admin.scholarship.profileDraftHint')}</span>
         </div>
 
         {!profile || !(profile.final_markdown || profile.current_markdown) ? (
