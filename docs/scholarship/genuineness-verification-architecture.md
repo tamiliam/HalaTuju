@@ -93,7 +93,7 @@ extracted** — a known gap.)
 | **salary_slip** | name, nric, gross/net income, period | employer |
 | **epf** | name, nric, avg/monthly contribution, contribution_status | employer, balance, statement_date, address, year |
 | **water_bill / electricity_bill** | name, address, amount | unpaid_balance, billing_period |
-| **offer_letter** | candidate_name, candidate_nric, programme, institution, issuer | offer_date, intake, address |
+| **offer_letter** *(LOCKED — see below)* | candidate_name, candidate_nric, letter_date + per-pathway: college+stream (STPM/Matric) / programme (Poly) / bidang_pengkhususan (PISMP) | institusi, elektif, aliran, reporting_date |
 | **birth_certificate** | child + mother + father (name + NRIC each) | bc_number |
 | **guardianship_letter** | guardian_name, guardian_nric, ward_name | doc_kind |
 
@@ -187,10 +187,70 @@ signature scorer thus doubles as the **deterministic wrong-type backstop** TD-11
 
 ---
 
+### offer_letter — LOCKED 2026-06-18
+Unlike the slip/cert (one national issuer), the post-SPM offer comes from **four standard
+single-issuer families**, each with a fixed machine-generated letterhead — plus a heterogeneous
+tail (universities, IPG-other, IPTS, Asasi, public-university Diploma) with no common letterhead.
+
+**Issue 1 — genuineness signatures** (`genuineness/results_doc`, owner-specified 2026-06-17, scored
+by best fit across the families, `_OFFER_LISTS`):
+- **STPM** (`STPM_OFFER_SIGNATURES`) — Sektor Operasi Sekolah · *Tawaran ke Tingkatan Enam* · Pusat
+  Tingkatan Enam · Tarikh Lapor Diri · Dokumen diperlukan · the *muktamad…ke tingkatan enam* +
+  *terbatal…jika murid* clauses · Bidang · Jata Negara crest (bonus).
+- **Matriculation** (`MATRIC_OFFER_SIGNATURES`) — Bahagian Matrikulasi · *Tawaran…Program Matrikulasi
+  KPM* · Jurusan · Tarikh Kemasukan ke Kolej · the *mendaftar…pihak kolej* + *terbatal…saudara*
+  clauses · Kolej (generic, wt 1) · crest (bonus).
+- **Polytechnic** (`POLY_OFFER_SIGNATURES`) — JPPKK · Kementerian Pendidikan Tinggi · Surat Tawaran
+  Pengajian · Tarikh dan Masa Daftar · the *muktamad/terbatal…mendaftar di institusi* + *tertakluk…
+  kesahihan maklumat* clauses · Program/Institusi (generic, wt 1) · **Jata Negara crest + round JPPKK
+  seal** (both bonus, via `has_crest`/`has_seal`).
+- **PISMP** (`PISMP_OFFER_SIGNATURES`) — Institut Pendidikan Guru · *Tawaran…IJSM Perguruan (PISMP)* ·
+  Bidang Pengkhususan · Aliran Sekolah · Tarikh Pendaftaran · Tempat Pengajian · the *Perjanjian
+  Pendidikan Guru* + *terbatal dengan sendirinya* + *penetapan bidang…muktamad* clauses. The
+  offer-specific clauses separate a real offer from a PISMP **announcement** (→ suspect).
+
+**Identity-anchor gate** (`_IDENTITY`): a doc is *recognised* as a family iff one of that family's
+issuer anchors is present. **recognised + complete → genuine; recognised + incomplete → `suspect`
+(never `not_offer_letter` — we know it's that pathway's offer, just cropped); unrecognised → defer to
+the holistic `doc_genuineness`** (so a legit university/IPG/IPTS offer is never flagged; a wrong-type
+upload still gets caught as `not_offer_letter` by holistic). Text-dominant — visuals are bonus, so an
+absent/unreadable crest/seal never sinks a real letter.
+
+**Band — same as results.** Calibration on the 46-doc corpus: **32 genuine** (all STPM/Matric/Poly/
+PISMP full letters) · **1 suspect** (a56, a cropped STPM partial) · **13 defer→holistic** (the
+university/IPG/IPTS tail). Counter-examples: a16 (typed fake), a12 (not an offer letter), a43 (a PISMP
+*announcement* → suspect). Zero misclassifications.
+
+**Issue 2 — extraction contract (FINALISED 2026-06-18).** Common to all four: `candidate_name`,
+`candidate_nric`, **`letter_date` = the issue date (`Tarikh` in the reference block) — NEVER
+`Tarikh Cetakan` (the print date); used to check the offer's currency against the intake.** Then
+per-pathway:
+
+| Pathway | Required (+ the 3 common) | Optional |
+|---|---|---|
+| **STPM** | `college` (Pusat Tingkatan Enam), `stream` (Bidang: Sains/Sains Sosial) | `reporting_date` (Tarikh Lapor Diri) |
+| **Matriculation** | `college` (Kolej Matrikulasi), `stream` (Jurusan) | `reporting_date` (Tarikh Kemasukan ke Kolej) |
+| **Polytechnic** | `programme` (the Diploma) | `institusi`, `reporting_date` (Tarikh dan Masa Daftar) |
+| **PISMP** | `bidang_pengkhususan` | `elektif`, `aliran` (SK/SJKC/SJKT), `reporting_date` (Tarikh Pendaftaran) |
+
+The **pathway comes free** from the genuineness scorer's `type` (so extraction picks `stream` vs
+`programme` vs `bidang_pengkhususan` by family, not by re-detecting). **Read via image-Gemini, NOT
+flattened OCR** — the `2.x` label/value two-column layout splits into separate OCR blocks (the a14
+case: labels then values), so a label-adjacency parser can't pair them; the model reads the 2-D layout
+(mirrors the results-slip image path). IC + issue-date may still be cross-checked deterministically
+from the OCR text. *(Layer-2 prep, captured-now/used-later: PISMP `aliran` selects the SK/SJKC/SJKT
+code variant of the same subject — e.g. Pendidikan Jasmani is `50PD016J00P`/`036`/`046` — so the
+chosen-course match needs it; poly/PISMP map via `{programme|bidang|elektif} + aliran` token overlap.)*
+
+**Status:** Issue-1 signatures + band **done & committed** (`e9cc7d6`); extraction-schema update + live
+wiring pending (the next offer-letter step).
+
+---
+
 ### Draft Issue-2 contracts for the other doc types (PENDING per-doc review, 2026-06-16)
 Proposed; **not locked** — to be confirmed when we focus on each document.
 
-FINALISED so far: **results_slip, birth_certificate, epf** (see their LOCKED sections above). Still pending:
+FINALISED so far: **results_slip, birth_certificate, epf, offer_letter** (see their LOCKED sections above). Still pending:
 
 | Doc | proposed required | proposed optional | open |
 |---|---|---|---|
@@ -198,7 +258,6 @@ FINALISED so far: **results_slip, birth_certificate, epf** (see their LOCKED sec
 | str | recipient_name, recipient_nric, status, year | amount | drop `source_type` as a data field (genuineness/type, like `exam`)? |
 | salary_slip | name, nric, gross_income, period | net_income, employer | — |
 | water_bill / electricity_bill | name, address, amount, billing_period | unpaid_balance | — |
-| offer_letter | candidate_name, candidate_nric, programme, institution, issuer | offer_date, intake, address | corpus has 1 *unreadable* offer_letter → an Issue-2 case to investigate |
 | guardianship_letter | guardian_name, guardian_nric, ward_name | doc_kind | — |
 
 Most optionals are Layer-2 corroboration (address, employer, …) → *capture-now / use-later*.

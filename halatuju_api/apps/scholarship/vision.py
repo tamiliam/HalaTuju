@@ -1024,11 +1024,17 @@ _FIELD_SCHEMAS = {
                                              'properties': {'subject': _STR, 'grade': _STR,
                                                             'band': _STR}}}}),
     # Pathway Check-1: the offer letter's facts, differentiated. candidate_nric is the
-    # strong identity check (matched against the profile NRIC); issuer tells the pathway
-    # type (university / matriculation / polytechnic / Form Six); offer_date is for currency.
+    # strong identity check (matched against the profile NRIC); offer_date is the ISSUE date
+    # (for currency). Pathway type now comes free from the genuineness scorer, so the
+    # per-pathway academic fields are captured explicitly (LOCKED contract 2026-06-18):
+    # STPM/Matric → college (institution) + stream (Bidang/Jurusan); Poly → programme
+    # (+ institusi); PISMP → bidang_pengkhususan (+ elektif + aliran). reporting_date is the
+    # report/registration date. institution/programme/issuer kept for the live Layer-2 matcher.
     'offer_letter': _doc_schema({'candidate_name': _STR, 'candidate_nric': _STR,
                                  'programme': _STR, 'institution': _STR, 'issuer': _STR,
-                                 'offer_date': _STR, 'intake': _STR, 'candidate_address': _STR}),
+                                 'offer_date': _STR, 'intake': _STR, 'candidate_address': _STR,
+                                 'stream': _STR, 'reporting_date': _STR,
+                                 'bidang_pengkhususan': _STR, 'elektif': _STR, 'aliran': _STR}),
     # Income Check-1: the Birth Certificate links the income earner (mother) to the
     # student. Read the child + both parents' names AND their NRICs (the strong match).
     'birth_certificate': _doc_schema({'bc_child_name': _STR, 'bc_child_nric': _STR,
@@ -1067,20 +1073,29 @@ _DOC_HINTS = {
                      'belong to the subject printed on the SAME line; NEVER carry a grade or '
                      'band up or down to a different subject, even if the slip is faint or '
                      'watermarked. Ignore the "Ujian Lisan" line and any watermark text.'),
-    'offer_letter': (' This is a Malaysian post-SPM offer letter — it may be a university '
-                     'degree/diploma, a polytechnic ("Politeknik"), a matriculation '
-                     '("Program Matrikulasi") or a Form Six ("Tingkatan Enam") offer. '
-                     '"candidate_name" = the offered student\'s full name; "candidate_nric" '
-                     '= their IC number, printed as "No. Kad Pengenalan" / "No. Pengenalan '
-                     'Diri" / "K/P" (keep the 12 digits); "programme" = the course or '
-                     'programme offered (a diploma/degree name, or "Program Matrikulasi", '
-                     'or "Tingkatan Enam Semester 1"); "institution" = the college / campus '
-                     '/ school the student must report to; "issuer" = the body that ISSUED '
-                     'the letter (the university, or "Bahagian Matrikulasi", or "Jabatan '
-                     'Pendidikan Politeknik dan Kolej Komuniti", or "Sektor Operasi '
-                     'Sekolah"); "offer_date" = the letter\'s print/issue date; "intake" = '
-                     'the session/intake (e.g. "Sesi 2026/2027"); "candidate_address" = the '
-                     'student\'s mailing address if shown. Leave a field empty if absent.'),
+    'offer_letter': (' This is a Malaysian post-SPM offer letter — a Form Six ("Tingkatan Enam"), '
+                     'matriculation ("Program Matrikulasi"), polytechnic ("Politeknik"), PISMP '
+                     '(teacher-training, "Ijazah Sarjana Muda Perguruan"), or a university '
+                     'degree/diploma/foundation offer. The fields are arranged as a two-column '
+                     'label/value list (e.g. "2.1 Bidang … 2.2 Pusat Tingkatan Enam …") — read it '
+                     'VISUALLY and pair each value with its own label. '
+                     '"candidate_name" = the offered student\'s full name; "candidate_nric" = their IC, '
+                     'printed as "No. Kad Pengenalan" / "No. Pengenalan Diri" / "K/P" (keep the 12 '
+                     'digits). "offer_date" = the date the letter was ISSUED ("Tarikh" in the reference '
+                     'block) — NOT "Tarikh Cetakan" (the print date); used to judge currency. '
+                     '"institution" = the college/campus/school the student reports to (Pusat Tingkatan '
+                     'Enam, Kolej Matrikulasi, the Politeknik, or the IPG campus); "issuer" = the body '
+                     'that issued the letter (Sektor Operasi Sekolah / Bahagian Matrikulasi / Jabatan '
+                     'Pendidikan Politeknik dan Kolej Komuniti / Institut Pendidikan Guru / a university). '
+                     'Per-pathway academic field: "programme" = the diploma/degree name (polytechnic or '
+                     'university); "stream" = the Form-Six "Bidang" (Sains / Sains Sosial) OR the '
+                     'matriculation "Jurusan"; "bidang_pengkhususan" = the PISMP specialisation (e.g. '
+                     '"Bahasa Tamil Pendidikan Rendah"); "elektif" = the PISMP elective subject; "aliran" '
+                     '= the PISMP school stream ("SK" / "SJKC" / "SJKT"). "reporting_date" = the report/'
+                     'registration date (Tarikh Lapor Diri / Tarikh Kemasukan ke Kolej / Tarikh dan Masa '
+                     'Daftar / Tarikh Pendaftaran). "intake" = the session (e.g. "Sesi 2026/2027"); '
+                     '"candidate_address" = the student\'s mailing address if shown. Leave any field empty '
+                     'if absent — only fill the academic fields that this pathway\'s letter actually has.'),
     'str': (' This is meant to be a Malaysian STR (Sumbangan Tunai Rahmah) proof. It should be ONE '
             'of three recognised kinds — set "source_type" to: "letter" (an official Kementerian '
             'Kewangan STR APPROVAL letter — KEMENTERIAN KEWANGAN letterhead, a "No. Rujukan" + '
@@ -1353,6 +1368,17 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                 ex['fields']['_slip_ocr_diag'] = diag
         else:
             ex['capture'] = 'deterministic'
+    elif doc.doc_type == 'offer_letter':
+        # The offer's 2-D label/value layout doesn't survive flattened OCR (labels and values
+        # land in separate blocks), so read the IMAGE with Gemini for the per-pathway fields;
+        # fall back to OCR text only if the image can't be fetched.
+        image = _fetch_image_bytes(doc.storage_path)
+        if image is not None:
+            ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
+        else:
+            r = ocr if ocr is not None else ocr_document(doc)
+            ex = extract_document_fields(r.get('text', ''), doc.doc_type)
+        ex['capture'] = 'ai'
     else:
         r = ocr if ocr is not None else ocr_document(doc)
         if r['error'] or not (r['text'] or '').strip():
@@ -1396,6 +1422,24 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                 result['authenticity'] = {
                     'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['type'],
                     'probability': sg['probability'], 'present': sg['present'], 'missing': sg['missing'],
+                }
+        elif doc.doc_type == 'offer_letter':
+            # SIGNATURE genuineness over the OCR text for the four standard issuers
+            # (STPM/Matric/Poly/PISMP); an unrecognised issuer (university/IPG/IPTS) defers to
+            # the holistic read on the image. Text-only — the crest/JPPKK seal are bonus and the
+            # text signatures already clear the band. No text + no image → no signal.
+            from .genuineness import assess
+            rr = ocr if ocr is not None else ocr_document(doc)
+            text = (rr or {}).get('text', '') or ''
+            gimg = image if image is not None else _fetch_image_bytes(doc.storage_path)
+            auth = assess('offer_letter', image=gimg, content_type=doc.content_type, ocr_text=text)
+            if auth and auth.get('status'):
+                result['authenticity'] = {
+                    'status': auth['status'],
+                    'reason': auth.get('reason', ''),
+                    'doc_seen': auth.get('type') or auth.get('doc_seen', ''),
+                    **({'probability': auth['probability'], 'present': auth['present'],
+                        'missing': auth['missing']} if 'probability' in auth else {}),
                 }
         elif doc.doc_type in _GENUINENESS_DOCS:
             gimg = _fetch_image_bytes(doc.storage_path)

@@ -140,6 +140,53 @@ class TestVisualCreditLiftsBorderline(_Base):
         self.assertEqual(auth['status'], 'genuine')
 
 
+GENUINE_STPM_OFFER = (
+    "SEKTOR OPERASI SEKOLAH\nTAWARAN KEMASUKAN KE TINGKATAN ENAM SEMESTER 1 TAHUN 2026\n"
+    "2.1 BIDANG : SAINS\n2.2 PUSAT TINGKATAN ENAM : SMK CONTOH\n2.3 TARIKH LAPOR DIRI : 08 JUN 2026\n"
+    "2.5 DOKUMEN DIPERLUKAN\nKeputusan ini adalah muktamad berdasarkan syarat kemasukan ke tingkatan enam.\n"
+    "Tawaran ini terbatal serta-merta jika murid berstatus bukan warganegara Malaysia.\n")
+UNIVERSITY_OFFER = "UNIVERSITI MALAYA\nTAWARAN KEMASUKAN PROGRAM ASASI SAINS SOSIAL\nAnda ditawarkan tempat.\n"
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class TestOfferLetterUsesSignatureScorer(_Base):
+    """run_field_extraction_for_document scores the four standard offer issuers by signatures;
+    an unrecognised issuer defers to the holistic read."""
+
+    def _run(self, ocr_text):
+        doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type='offer_letter', storage_path=f'{self.app.id}/of/x')
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=None), \
+             patch('apps.scholarship.vision.ocr_document', return_value={'text': ocr_text, 'error': None}), \
+             patch('apps.scholarship.vision.extract_document_fields',
+                   return_value={'fields': {}, 'warnings': [], 'error': ''}):
+            return vision.run_field_extraction_for_document(doc, names=[])
+
+    def test_standard_issuer_scores_genuine_via_signatures(self):
+        auth = self._run(GENUINE_STPM_OFFER).get('authenticity')
+        self.assertIsNotNone(auth)
+        self.assertEqual(auth['status'], 'genuine')
+        self.assertEqual(auth['doc_seen'], 'stpm')
+
+    def test_unrecognised_issuer_defers_to_holistic(self):
+        # No standard fingerprint → assess() falls back to the holistic read (here mocked).
+        doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type='offer_letter', storage_path=f'{self.app.id}/of/u')
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'img'), \
+             patch('apps.scholarship.vision.ocr_document', return_value={'text': UNIVERSITY_OFFER, 'error': None}), \
+             patch('apps.scholarship.vision.extract_document_fields',
+                   return_value={'fields': {}, 'warnings': [], 'error': ''}), \
+             patch('apps.scholarship.genuineness.doc_genuineness',
+                   return_value={'status': 'genuine', 'doc_seen': 'university offer', 'reason': 'looks real'}):
+            auth = vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
+        self.assertEqual(auth['status'], 'genuine')
+        self.assertEqual(auth['doc_seen'], 'university offer')
+
+    def test_empty_ocr_no_image_gives_no_signal(self):
+        auth = self._run('').get('authenticity')
+        self.assertIsNone(auth)
+
+
 class TestFlagOffNoSignal(_Base):
     @override_settings(DOC_GENUINENESS_CHECK_ENABLED=False)
     def test_no_authenticity_when_flag_off(self):

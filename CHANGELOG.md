@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Offer letter — signature genuineness (4 standard issuers) + per-pathway extraction, wired live.**
+  The probabilistic SIGNATURE scorer now covers the post-SPM offer across four single-issuer families —
+  **STPM** (Sektor Operasi Sekolah), **Matriculation** (Bahagian Matrikulasi KPM), **Polytechnic**
+  (JPPKK; + Jata Negara crest & round JPPKK seal visuals), **PISMP** (Institut Pendidikan Guru) — scored
+  by best fit, owner-specified signature lists, calibrated on the 46-doc corpus (33 genuine / 1 suspect
+  cropped / 9 defer + 3 counter-examples; zero misclassifications). An **identity-anchor gate** makes a
+  recognised-but-incomplete offer `suspect` (never `not_offer_letter`), and an **unrecognised** issuer
+  (university/IPG/IPTS/Asasi/UA-Diploma) **defers to the holistic check** so a legit non-standard offer is
+  never flagged (a wrong-type upload is still caught as `not_offer_letter`). A PISMP *announcement* (vs a
+  real offer) is caught as `suspect` via the offer-only clauses. **Wired into the live upload path** behind
+  `DOC_GENUINENESS_CHECK_ENABLED` (via `genuineness.assess`, signature → holistic fallback). **Issue-2
+  extraction** updated to the LOCKED 4-pathway contract — `candidate_name`/`candidate_nric`/`letter_date`
+  (the ISSUE date, **never Tarikh Cetakan**, for currency) + per-pathway `college`/`stream` (STPM/Matric),
+  `programme` (Poly), `bidang_pengkhususan`/`elektif`/`aliran` (PISMP), `reporting_date` — read by
+  **image-Gemini** (the two-column label/value layout doesn't survive flattened OCR). Retired the narrow
+  deterministic `doc_parse._parse_offer` (superseded). `eval/calibrate_signatures.py` generalised to any
+  doc-type with a canonical-status breakdown. No migration; +offer-letter genuineness/wiring tests.
 - **Genuineness extended to birth certificates + EPF, and the outcome unified to one canonical enum.**
   The probabilistic SIGNATURE scorer now also covers the **birth certificate** (JPN Sijil Kelahiran;
   calibrated on 28 corpus docs, bilingual variant handled) and the **EPF statement** (KWSP Penyata Ahli;

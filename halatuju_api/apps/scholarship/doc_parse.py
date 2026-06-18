@@ -437,77 +437,9 @@ def _parse_bc(text: str) -> Optional[dict]:
             'bc_number': reg.group(1) if reg else ''}
 
 
-# ── P5: offer letter — GOVERNMENT templates only ──────────────────────────────
-# Offers span ~10 issuers with divergent programme/institution labels, so this parser is
-# deliberately NARROW: it reads only the three standardised GOVERNMENT templates (where
-# identity + issuer + programme are all label-anchored), and returns None for universities
-# and anything else → Gemini (the unstructured tail it handles well, audit rec 2). The
-# strong win is the deterministic identity (candidate name + 12-digit IC = the gate matched
-# against the profile NRIC); programme/institution come along for free on these templates.
-
-_OFFER_MARKERS = (r'surat\s+tawaran', r'tawaran\s+kemasukan', r'pemakluman\s+kemasukan',
-                  r'ditawarkan')
-_IC12_RE = re.compile(r'(?<!\d)(\d{12})(?!\d)')   # 12-digit IC; tolerates a mashed "…2306NO"
-
-
-def _offer_name(text: str) -> str:
-    """The candidate's name across the government addressee formats: 'NAME (12-digit)' /
-    'NAME K/P : …' (often OCR-mashed, "ELANGOVANK/P") / 'Nama: NAME No. Kad Pengenalan: …'.
-    Validated as a patronymic name (a mononym candidate defers to Gemini). '' if none."""
-    for pat in (r'([A-Z][A-Z .@/]{4,}?)\s*\(\d{12}\)',                       # NAME (IC)
-                r'[Nn]ama\s*[:.]?\s*([A-Z][A-Z .@/]{4,}?)\s*(?:[Nn]o\.?\s*[Kk]ad|[Kk]\s*/\s*[Pp])',
-                r'([A-Z][A-Z .@/]{4,}?)\s*[Kk]\s*/\s*[Pp]\s*[:.]'):         # NAME K/P :
-        m = re.search(pat, text or '')
-        if m and _NAME_LINE.match(m.group(1).strip()):
-            return m.group(1).strip()
-    return _patronymic_name(text)
-
-
-def _clean_short(v: str) -> str:
-    """A field value only if it's a clean short token — guards against a value that swallowed
-    the rest of a mashed single-line PDF ("PERAKAUNANTempoh Pengajian: …Kolej: …")."""
-    v = (v or '').strip()
-    if not v or len(v) > 55 or re.search(
-            r'tempoh|kolej|yuran|pendaftaran|tarikh|institusi|no\.?\s|:', v, re.IGNORECASE):
-        return ''
-    return v
-
-
-def _offer_template(text: str):
-    """(issuer, programme) for a recognised GOVERNMENT template, or (None, None). The
-    programme is constructed from the issuer type (always clean) + a clean specific token
-    when one parses; a mashed/unsplittable value degrades to just the issuer-type programme."""
-    if has(text, r'politeknik\s+dan\s+kolej\s+komuniti', r'\bpoliteknik\b'):
-        return 'Jabatan Pendidikan Politeknik dan Kolej Komuniti', _clean_short(find_value(text, r'program\s*:'))
-    if has(text, r'matrikulasi'):
-        jur = _clean_short(find_value(text, r'jurusan\s*:'))
-        return 'Bahagian Matrikulasi KPM', (f'Program Matrikulasi ({jur})' if jur else 'Program Matrikulasi')
-    if has(text, r'sektor\s+operasi\s+sekolah', r'tingkatan\s+enam', r'pengurusan\s+sekolah\s+harian'):
-        bid = _clean_short(find_value(text, r'bidang\s*:?'))
-        return 'Sektor Operasi Sekolah', (f'Tingkatan Enam Semester 1 ({bid})' if bid else 'Tingkatan Enam Semester 1')
-    if has(text, r'institut\s+pendidikan\s+guru', r'\bPISMP\b'):
-        return 'Institut Pendidikan Guru Malaysia', 'PISMP'
-    return None, None
-
-
-@register('offer_letter')
-def _parse_offer(text: str) -> Optional[dict]:
-    if not has(text, *_OFFER_MARKERS):
-        return None
-    issuer, programme = _offer_template(text)
-    if issuer is None:                       # university / unrecognised → Gemini
-        return None
-    m = _IC12_RE.search(text or '')
-    nric = m.group(1) if m else ''
-    name = _offer_name(text)
-    # Emit only with the full identity AND a programme — for JPPKK that means a clean
-    # "Program :" was read (a messy image with no clean label → None → Gemini, no degrade);
-    # Form6/Matrik/IPG carry a programme constructed from the issuer type, robust on images.
-    if not (name and nric and programme):
-        return None
-    return {'candidate_name': name, 'candidate_nric': nric, 'programme': programme or '',
-            'institution': '', 'issuer': issuer,
-            'offer_date': find_value(text, r'tarikh\s*:'), 'intake': '', 'candidate_address': ''}
+# ── P5: offer letter ── retired 2026-06-18. The offer's 2-D label/value layout doesn't
+# survive flattened OCR (labels and values land in separate blocks), so offer letters are
+# read by image-Gemini in vision.run_field_extraction_for_document, not a label parser.
 
 
 # ── P6: water bill (SOFT signal, per-company) ─────────────────────────────────
