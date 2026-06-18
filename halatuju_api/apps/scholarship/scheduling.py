@@ -103,8 +103,26 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None)
     if not future:
         raise SchedulingError('no_future_slots')
 
-    # Withdraw the previous unbooked menu (keep the booked slot, if any).
+    # Reviewer-wide conflict: never offer a time this reviewer already holds (proposed or
+    # booked) for ANOTHER applicant — keeps one reviewer from being double-booked. The UI
+    # greys these out; this is the server guard / race backstop.
+    held = set(
+        InterviewSlot.objects
+        .filter(reviewer=reviewer, is_active=True)
+        .exclude(application=application)
+        .values_list('start', flat=True))
+    if any(s in held for s in future):
+        raise SchedulingError('reviewer_conflict')
+
     booked_id = application.interview_slot_id if application.interview_status == 'booked' else None
+    # The menu the student was last shown — to decide whether to re-notify.
+    prev_menu = set(
+        InterviewSlot.objects
+        .filter(application=application, is_active=True)
+        .exclude(id=booked_id)
+        .values_list('start', flat=True))
+
+    # Withdraw the previous unbooked menu (keep the booked slot, if any).
     (InterviewSlot.objects
         .filter(application=application, is_active=True)
         .exclude(id=booked_id)
@@ -115,13 +133,14 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None)
             application=application, reviewer=reviewer, start=s, duration_min=duration_min)
         for s in sorted(future)
     ]
-    # Tell the student their times are ready to pick — otherwise the in-app scheduler is
-    # invisible to them (they'd have to chance upon the booking panel). Best-effort.
-    student_email, student_name = _student_identity(application)
-    if student_email:
-        emails.send_interview_slots_proposed_email(
-            student_email, student_name=student_name,
-            reviewer_name=getattr(reviewer, 'name', ''))
+    # Tell the student their times are ready to pick — but ONLY when the menu actually
+    # changed. Re-proposing the same set (or a no-op revise) must not re-spam them.
+    if set(future) != prev_menu:
+        student_email, student_name = _student_identity(application)
+        if student_email:
+            emails.send_interview_slots_proposed_email(
+                student_email, student_name=student_name,
+                reviewer_name=getattr(reviewer, 'name', ''))
     return created
 
 
@@ -160,6 +179,18 @@ def book_slot(application, *, slot_id, now=None):
         raise SchedulingError('too_late')
 
     reviewer = slot.reviewer or application.assigned_to
+
+    # Race backstop: don't let two students land the same reviewer at the same time. (The
+    # propose grid already greys a reviewer's held times, but a concurrent book could slip
+    # through.) Self-reschedule is exempt via the exclude.
+    if reviewer is not None:
+        from .models import ScholarshipApplication
+        clash = (ScholarshipApplication.objects
+                 .filter(assigned_to=reviewer, interview_status='booked', interview_start=slot.start)
+                 .exclude(id=application.id).exists())
+        if clash:
+            raise SchedulingError('reviewer_conflict')
+
     student_email, student_name = _student_identity(application)
     reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
     reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''

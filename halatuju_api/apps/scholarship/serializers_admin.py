@@ -79,14 +79,18 @@ class InterviewSlotSerializer(serializers.ModelSerializer):
         fields = ['id', 'start', 'duration_min', 'is_active']
 
 
-def interview_schedule_payload(application):
+def interview_schedule_payload(application, *, include_reviewer_busy=False):
     """The interview-scheduling block shared by the admin + student responses:
     the booking state + the active proposed slots. Used by both serializers so the
-    cockpit and the student portal read identical data."""
+    cockpit and the student portal read identical data.
+
+    ``include_reviewer_busy`` (reviewer/admin context ONLY) adds the start times this
+    reviewer already holds for OTHER applicants, so the propose grid can grey them out
+    to avoid double-booking. Never sent to students (it would leak other interviews)."""
     from django.conf import settings
     active = [s for s in application.interview_slots.all() if s.is_active]
     active.sort(key=lambda s: s.start)
-    return {
+    payload = {
         'enabled': bool(getattr(settings, 'INTERVIEW_SCHEDULING_ENABLED', False)),
         'status': application.interview_status or '',
         'start': application.interview_start,
@@ -96,6 +100,18 @@ def interview_schedule_payload(application):
         'slots': InterviewSlotSerializer(active, many=True).data,
         'reschedule_cutoff_hours': _reschedule_cutoff_hours(),
     }
+    if include_reviewer_busy:
+        reviewer = application.assigned_to
+        busy = []
+        if reviewer is not None:
+            from .models import InterviewSlot
+            busy = list(
+                InterviewSlot.objects
+                .filter(reviewer=reviewer, is_active=True)
+                .exclude(application=application)
+                .values_list('start', flat=True))
+        payload['reviewer_busy'] = busy
+    return payload
 
 
 def _reschedule_cutoff_hours():
@@ -439,8 +455,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         return InterviewSessionSerializer(session).data if session else None
 
     def get_interview_schedule(self, obj):
-        """Interview booking state + proposed slots (shared with the student view)."""
-        return interview_schedule_payload(obj)
+        """Interview booking state + proposed slots (reviewer view → includes the
+        reviewer's other-student busy times so the propose grid greys them out)."""
+        return interview_schedule_payload(obj, include_reviewer_busy=True)
 
 
 class ReviewerProfileSerializer(serializers.ModelSerializer):
