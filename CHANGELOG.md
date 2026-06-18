@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   old screen-only `editIv` toggle.
 
 ### Added
+- **PISMP Aliran → Bidang pathway picker (2026-06-19).** Students on the PISMP (teacher-training) pathway now choose a
+  course in two taps — **school type** (Aliran: SK / SJKC / SJKT / SKPK) then **subject** (Bidang) — instead of a
+  type-a-course-name box that assumed they already knew the course. The eligible-courses payload now carries an `aliran`
+  for PISMP courses (derived via `pismp_taxonomy.aliran_of`; no migration); the frontend adds an `AliranPicker`
+  (school-type chips, eligible-only) feeding the existing compact course combobox (the same `ProgrammePicker` the UA
+  pathway uses), wired into both the shared `PathwayPicker` (/profile) and the inline /apply flow via the same
+  components + helpers (`pismpAlirans` / `bidangForAliran` / `aliranForChosen`). Trilingual en/ms/ta. Elektif (the
+  minor) is out of scope. The picker correctly shows only the bidang a student qualifies for (verified against the
+  official 2026 IPGM syarat — e.g. Matematik needs A− in both Mathematics *and* Additional Mathematics).
 - **Bulk document re-extraction, in observable batches (2026-06-18).** Audit found ~212 supporting docs were read by
   Gemini *before* the deterministic capture layer shipped (2026-06-11) and never re-run — so they carry weaker reads
   (e.g. app #10's offer letter whose IC `080514-14-0354` was never captured, and a BC whose child name was the
@@ -50,6 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than only "the interviewer will contact you." Backend only, no migration.
 
 ### Fixed
+- **PISMP course names no longer show a redundant "(Aliran Bahasa Tamil/Cina)" descriptor (2026-06-19).** Since the 2026
+  catalogue reconciliation, every PISMP course name already carries its Aliran suffix ("… (SJKT)"), but
+  `deduplicate_pismp` still appended the old "(Aliran …)" language descriptor on top — so the picker *and* the
+  recommendation card read "… (SJKT) (Aliran Bahasa Tamil)". Dropped the append (the `pismp_languages` facet stays). The
+  name now reads cleanly "… (SJKT)".
 - **Sponsor profile — income honesty, both directions (`PROMPT_VERSION` 2026-06-16.2 → 2026-06-18.1).** One principle:
   *documented = certain; self-reported = a claim.* (a) **STR/JKM are asserted only when a welfare document is on file**
   (`profile_engine._gated_str`/`_gated_jkm`, gated on `income_engine.student_str_check` currency). A self-declared STR

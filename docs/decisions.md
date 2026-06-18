@@ -1,5 +1,21 @@
 # Architectural Decisions — HalaTuju
 
+## PISMP picker: aliran on the eligibility payload, browse replaces type-search — Sprint 2 (PISMP), 2026-06-19
+**Decision:** The PISMP Aliran→Bidang picker consumes an `aliran` field added to the eligible-courses payload
+(backend-derived via `pismp_taxonomy.aliran_of`), and the school-type→subject browse **replaces** the type-a-course-name
+box for PISMP (other programme pathways keep the plain `ProgrammePicker`). The subject step reuses that same compact
+`ProgrammePicker` combobox; the only new component is `AliranPicker` (school-type chips, eligible-only).
+**Alternatives considered:** (a) re-derive aliran in TypeScript from `course_id`/name suffix (no backend change); (b)
+show the browse alongside the type-search box; (c) a bespoke vertical bidang list (the first cut).
+**Rationale:** (a) would duplicate the suffix + id-digit + MBPK-edge-case logic that already lives authoritatively in
+`pismp_taxonomy` — drift risk; exposing one field keeps the frontend a pure consumer. Replacing (not augmenting) the box
+is strictly easier for the student and avoids two code paths. Reusing `ProgrammePicker` matches every other pathway's
+UX and deletes the custom list.
+**Trade-offs:** a serializer field means a backend deploy alongside the web deploy (a small full-stack sprint). Aliran
+chips are eligible-only, so a student never sees a school type they can't enter (no "browse-all" discovery of SKPK etc.).
+**Revisit if:** we want students to *explore* aliran they're not yet eligible for (then show all + a "not eligible"
+state), or if eligibility ever needs the aliran server-side (then it earns more than a display field).
+
 ## PISMP aliran derived read-time; laluan to earn a column — Sprint 1 (PISMP), 2026-06-18
 **Decision:** PISMP **aliran** (SK/SJKC/SJKT/SKPK) is derived at read-time by `apps/courses/pismp_taxonomy.py` from the
 course-name suffix / `course_id` 6th char — **no DB column**. **Laluan** (admission route: Perdana/MBPK/STPM), which

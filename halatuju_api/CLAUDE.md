@@ -515,7 +515,33 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-18)
+## Next Sprint (as of 2026-06-19)
+
+**▶ SHIPPED 2026-06-19 — PISMP Aliran → Bidang pathway picker (Sprint 2 of the PISMP work; commits `d86cf11` picker +
+`c321f7d` live-review; NO migration; retro `docs/retrospective-2026-06-19-pismp-aliran-picker.md`). Worktree off
+origin/main.**
+- **Two-tap PISMP course selection.** A student on the PISMP pathway picks **school type** (Aliran: SK/SJKC/SJKT/SKPK,
+  eligible-only chips via `AliranPicker`) then **subject** (Bidang) in the **same compact course combobox the UA pathway
+  uses** (`ProgrammePicker`) — replacing the type-a-course-name box. Wired into BOTH `/profile` (shared `PathwayPicker`)
+  and the inline `/apply` flow via the same components + helpers (`pismpAlirans`/`bidangForAliran`/`aliranForChosen` in
+  `lib/scholarship.ts`).
+- **Backend:** the eligible-courses payload (`EligibilityCheckView`) now carries `aliran` for PISMP courses (derived via
+  `pismp_taxonomy.aliran_of`; **no migration** — serializer-only). Non-PISMP courses get an empty aliran.
+- **Live-review fixes (same sprint):** dropped the redundant "(Aliran Bahasa Tamil/Cina)" descriptor that
+  `deduplicate_pismp` appended on top of the name's own "(SJKT)" suffix (the name is now clean; `pismp_languages` facet
+  kept); swapped the first-cut vertical bidang list for the compact combobox per owner feedback.
+- **Eligibility is correct, verified vs the PDF:** the picker shows only the bidang a student qualifies for. A
+  science-stream student missing some SJKT specialisms is correct — e.g. Matematik needs A− in **both** Mathematics
+  *and* Additional Mathematics, Jasmani's science pool is Sains Sukan/Biologi/Sains/Sains Tambahan only (not Physics/
+  Chem) — both confirmed against the official 2026 IPGM syarat (Perdana PDF pp. 7, 11).
+- **Tests:** +1 backend (aliran on eligible PISMP) + a no-`(Aliran)` assertion; jest helper tests for the picker.
+  `next build` clean. **Deployed (api `…00451`→, web `…00444`→); 2 deploys (initial + live-review).** Elektif (the
+  minor) deferred.
+- **▶ NEXT:** no PISMP sprint queued. Deferred PISMP follow-ups: STPM + SKPK → `StpmCourse` track (spec
+  `memory/halatuju-pismp-refresh-spec.md` Sprint R3); polish cloned generic descriptions on the new Khas/Prasekolah/MBPK
+  rows (TD-127); broaden the MBPK gate beyond "Physical disability" (TD-128). Minor: the SJKT C-group requirement
+  includes BT (4 subjects) where the PDF lists 3 (BM/BI/Sejarah) — harmless over-spec for SJKT students, tidy at the
+  next courses refresh.
 
 **▶ SHIPPED 2026-06-18 — Sponsor-profile income honesty + cockpit final-label fix (2 commits `73b9586` backend +
 `289853a` frontend; NO migration; retro `docs/retrospective-2026-06-18-profile-income-honesty.md`). Worktree
