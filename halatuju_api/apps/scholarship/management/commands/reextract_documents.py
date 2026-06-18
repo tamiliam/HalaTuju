@@ -66,13 +66,14 @@ class Command(BaseCommand):
 
         done = errors = 0
         for doc in batch:
+            before = _summary(doc)   # snapshot the prior read BEFORE we overwrite it
             try:
                 reextract_document(doc)
                 doc.refresh_from_db()
-                line = _summary(doc)
+                after = _summary(doc)
             except Exception as e:  # noqa: BLE001 — mark + report so a broken doc never wedges the pass
                 errors += 1
-                line = f'ERROR {str(e)[:70]}'
+                after = f'ERROR {str(e)[:55]}'
                 doc.refresh_from_db()
             # Mark processed (on the freshly-written vision_fields) so the next run advances.
             vf = doc.vision_fields or {}
@@ -80,7 +81,7 @@ class Command(BaseCommand):
             doc.vision_fields = vf
             doc.save(update_fields=['vision_fields'])
             done += 1
-            self.stdout.write(f'app#{doc.application_id} doc{doc.id} {doc.doc_type}: {line}')
+            self.stdout.write(f'app#{doc.application_id} doc{doc.id} {doc.doc_type}: [{before}] -> [{after}]')
 
         remaining = sum(
             1 for d in ApplicantDocument.objects.filter(doc_type__in=types).only('vision_fields', 'doc_type')

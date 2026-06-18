@@ -1137,7 +1137,7 @@ class CronRunView(APIView):
         except Exception as e:  # noqa: BLE001 — report, never 500 into scheduler retries
             logging.getLogger(__name__).warning('Cron job %s failed: %s', job, e, exc_info=True)
             return Response({'job': job, 'error': str(e)[:300]}, status=status.HTTP_200_OK)
-        return Response({'job': job, 'output': out.getvalue()[:2000]})
+        return Response({'job': job, 'output': out.getvalue()[:12000]})
 
 
 def _award_application(user_id):
