@@ -44,6 +44,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than only "the interviewer will contact you." Backend only, no migration.
 
 ### Fixed
+- **Sponsor profile — income honesty, both directions (`PROMPT_VERSION` 2026-06-16.2 → 2026-06-18.1).** One principle:
+  *documented = certain; self-reported = a claim.* (a) **STR/JKM are asserted only when a welfare document is on file**
+  (`profile_engine._gated_str`/`_gated_jkm`, gated on `income_engine.student_str_check` currency). A self-declared STR
+  tick with no STR doc — or a stale/rejected one — is no longer claimed (#21: a salary-route applicant's profile had
+  asserted "receives government assistance through STR, affirming their B40 status" off the bare checkbox). (b) **A
+  documented salary (payslip/EPF) MUST now be stated as documented**, not buried behind the softer reported figure
+  (#10: a mother's documented RM3,049 payslip gross was dropped in favour of the reported ~RM1,700). The reported figure
+  may still appear as context. +9 backend tests. **Existing drafts regenerate only after the `backfill-assigned-profiles`
+  cron is run (billable).**
+- **Cockpit profile panel mislabelled a final profile as a draft.** The "Student profile (draft)" title and the
+  "this draft will be replaced when you save your verdict" hint rendered unconditionally — so an already-generated final
+  (v2 with interview) showed as a pending draft. Both now key off `profile.final_markdown` → "Student profile (final)"
+  + a final hint (`profileFinalTitle`/`profileFinalHint`, en/ms/ta).
 - **Explore Courses showed "0 of 0" for IPGM + Ijazah Sarjana Muda (2026-06-18).** `CourseSearchView` treated
   level=`Ijazah Sarjana Muda` as STPM-entry-only, so it skipped the SPM branch and returned nothing for PISMP — the
   IPG teacher-training degrees were invisible to the very students they target. The SPM branch is now skipped only for

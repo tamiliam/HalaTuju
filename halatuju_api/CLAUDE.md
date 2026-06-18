@@ -517,6 +517,22 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-18)
 
+**▶ SHIPPED 2026-06-18 — Sponsor-profile income honesty + cockpit final-label fix (2 commits `73b9586` backend +
+`289853a` frontend; NO migration; retro `docs/retrospective-2026-06-18-profile-income-honesty.md`). Worktree
+`.worktrees/sched`.**
+- **Income honesty in the generated profile — `PROMPT_VERSION` 2026-06-16.2 → 2026-06-18.1.** One principle:
+  *documented = certain; self-reported = a claim.* (a) STR/JKM asserted ONLY when a current welfare DOCUMENT is on file
+  (`profile_engine._gated_str`/`_gated_jkm`, gated on `income_engine.student_str_check` currency; mirrors
+  `_gated_first_in_family`) — fixes #21 (salary-route applicant's profile asserted STR "affirming B40 status" off the bare
+  self-tick). (b) A DOCUMENTED salary (payslip/EPF) MUST be stated as documented, not buried behind the reported figure —
+  fixes #10 (mother's RM3,049 payslip gross dropped for the reported ~RM1,700). Same clause added to `REFINE_PROMPT`. +9
+  tests (1343 scholarship pytest).
+- **Cockpit profile panel labels "final" once a final exists.** Header + hint were static, so an already-generated final
+  (v2 with interview) read as a pending draft; now key off `profile.final_markdown` (`profileFinalTitle`/`profileFinalHint`,
+  en/ms/ta).
+- **▶ PENDING (billable, owner's call):** run the `backfill-assigned-profiles` cron to regenerate existing drafts onto
+  `2026-06-18.1`. New generations after this deploy already use the new prompt. Verify both Cloud Builds went SUCCESS.
+
 **▶ SHIPPED 2026-06-18 — PISMP catalogue reconciliation + Aliran facet + MBPK disability gate (Sprint 1 of the PISMP
 pathway work; commits `4446c2e` bug+aliran, `4589a6a` req_disability; courses migration `0058`; retro
 `docs/retrospective-2026-06-18-pismp-catalogue.md`). Worked in worktree off origin/main.**
