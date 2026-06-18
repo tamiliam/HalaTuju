@@ -634,8 +634,6 @@
           "khas": "Pendidikan Khas"
         },
         "bidangLabel": "Subject you want to teach",
-        "bidangCount": "{n} subjects available for this school type",
-        "pismpChosen": "Your course: {course} — PISMP",
         "topProgrammesLabel": "Your top 3 programmes",
         "topProgrammesTip": "Pick up to three degrees you're weighing up — from the ones your STPM results qualify you for. We'll keep them in mind even if you haven't decided.",
         "trackLabel": "Which matriculation track?",

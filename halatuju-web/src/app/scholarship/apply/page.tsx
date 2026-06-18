@@ -12,7 +12,6 @@ import Toggle from '@/components/Toggle'
 import PathwaySelect from '@/components/PathwaySelect'
 import ProgrammePicker from '@/components/ProgrammePicker'
 import AliranPicker from '@/components/AliranPicker'
-import BidangPicker from '@/components/BidangPicker'
 import InstitutionPicker from '@/components/InstitutionPicker'
 import {
   submitScholarshipApplication,
@@ -41,7 +40,6 @@ import {
   pismpAlirans,
   bidangForAliran,
   aliranForChosen,
-  bidangLabel,
   type PismpAliran,
   formatNric,
   formatPhone,
@@ -728,8 +726,8 @@ export default function ScholarshipApplyPage() {
               </div>
               {pismpAliran && (
                 <div>
-                  <FieldLabel required>{t('scholarship.apply.plan.bidangLabel')}</FieldLabel>
-                  <BidangPicker
+                  <FieldLabel required tip={t('scholarship.apply.plan.programmeTip')}>{t('scholarship.apply.plan.bidangLabel')}</FieldLabel>
+                  <ProgrammePicker
                     key={pismpAliran}
                     courses={bidangForAliran(pismpCourses, pismpAliran)}
                     value={form.chosenProgramme}
@@ -737,11 +735,6 @@ export default function ScholarshipApplyPage() {
                     loading={pathwayLoading}
                   />
                 </div>
-              )}
-              {form.chosenProgramme && (
-                <p className="rounded-xl border border-primary-100 bg-primary-50 p-3 text-sm text-primary-800">
-                  {t('scholarship.apply.plan.pismpChosen', { course: bidangLabel(form.chosenProgramme.courseName) })}
-                </p>
               )}
             </div>
           ) : isProgrammePathway(form.chosenPathway) ? (

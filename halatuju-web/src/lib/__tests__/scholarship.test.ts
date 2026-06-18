@@ -21,7 +21,6 @@ import {
   UNCERTAINTY_REASONS,
   pismpAlirans,
   bidangForAliran,
-  bidangLabel,
   aliranForChosen,
   nricChanged,
   emptyDetailsForm,
@@ -506,23 +505,6 @@ describe('PISMP Aliran → Bidang picker helpers', () => {
     { course_id: '50PD010B00P', course_name: 'Bahasa Inggeris (SK)', source_type: 'pismp', pathway_type: 'pismp', aliran: 'sk' },
     { course_id: 'DKA', course_name: 'Diploma Kejuruteraan Awam', source_type: 'poly', pathway_type: 'poly' },
   ] as unknown as EligibleCourse[]
-
-  describe('bidangLabel', () => {
-    it('strips the school-type suffix to give the subject name', () => {
-      expect(bidangLabel('Matematik (SJKT)')).toBe('Matematik')
-      expect(bidangLabel('Bahasa Inggeris (SK)')).toBe('Bahasa Inggeris')
-      expect(bidangLabel('Pendidikan Khas Pendidikan Rendah (SKPK)')).toBe('Pendidikan Khas Pendidikan Rendah')
-      expect(bidangLabel('Sains (Khas)')).toBe('Sains')
-    })
-    it('keeps a (MBPK) marker so special-needs variants stay distinct from their sibling', () => {
-      expect(bidangLabel('Muzik (SJKT-MBPK)')).toBe('Muzik (MBPK)')
-      expect(bidangLabel('Pendidikan Seni Visual (SK-MBPK)')).toBe('Pendidikan Seni Visual (MBPK)')
-    })
-    it('leaves a name with no suffix untouched and handles empty input', () => {
-      expect(bidangLabel('Matematik')).toBe('Matematik')
-      expect(bidangLabel('')).toBe('')
-    })
-  })
 
   describe('pismpAlirans', () => {
     it('returns the distinct school types present among PISMP courses, in display order', () => {
