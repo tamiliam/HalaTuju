@@ -2483,7 +2483,7 @@
         "findingsLabel": "Findings",
         "answerLabel": "Reviewer's finding",
         "submittedOn": "Submitted on",
-        "editingReopened": "Reopened for editing",
+        "reopenError": "Could not reopen the interview.",
         "verdict": {
           "resolved": "Resolved"
         },
@@ -2798,8 +2798,10 @@
         "reasonLabel": "Conclusion",
         "assistanceLabel": "Assistance recommended",
         "assistanceNone": "Drag to set a recommended amount.",
+        "assistanceUnset": "not set",
         "approveNeedsAmount": "Set a recommended assistance amount before approving.",
-        "saveNeedsReady": "Submit the interview, then mark all four checks Pass/Fail and add a conclusion to record a decision.",
+        "chooseOutcome": "Choose Approve or Decline.",
+        "saveNeedsReady": "Submit the interview, then rate the AI's check on all four facts (Pass/Fail) and add a conclusion.",
         "reasonPlaceholder": "State your conclusions / reasons for your decision",
         "save": "Save verdict & generate final profile",
         "approve": "Approve",

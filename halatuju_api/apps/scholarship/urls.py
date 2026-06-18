@@ -53,6 +53,7 @@ from .views_admin import (
     AdminPublishAnonProfileView,
     AdminInterviewView,
     AdminInterviewSubmitView,
+    AdminInterviewReopenView,
     AdminFinaliseProfileView,
     AdminProfileEditView,
     AdminPublishProfileView,
@@ -152,6 +153,7 @@ urlpatterns = [
     # Phase C: interview capture + request-more-docs
     path('admin/scholarship/applications/<int:pk>/interview/', AdminInterviewView.as_view()),
     path('admin/scholarship/applications/<int:pk>/interview/submit/', AdminInterviewSubmitView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/interview/reopen/', AdminInterviewReopenView.as_view()),
     path('admin/scholarship/applications/<int:pk>/request-info/', AdminRequestInfoView.as_view()),
     # S3: officer-raised resolution tickets + waive/resolve
     path('admin/scholarship/applications/<int:pk>/resolution-items/', AdminResolutionItemView.as_view()),

@@ -665,6 +665,13 @@ export async function submitInterview(id: number, options?: ApiOptions) {
     `/api/v1/admin/scholarship/applications/${id}/interview/submit/`, 'POST', {}, options)
 }
 
+/** Reopen a SUBMITTED interview (un-submits → draft) so the reviewer can add a forgotten
+ *  finding; reopens both the Interview Stage and Check 2. Only valid before a decision. */
+export async function reopenInterview(id: number, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/interview/reopen/`, 'POST', {}, options)
+}
+
 export async function requestMoreInfo(id: number, note: string, options?: ApiOptions) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/request-info/`, 'POST', { note }, options)

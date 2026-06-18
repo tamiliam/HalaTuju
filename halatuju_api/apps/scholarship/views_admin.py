@@ -620,6 +620,36 @@ class AdminInterviewSubmitView(_AdminBase):
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
+class AdminInterviewReopenView(_AdminBase):
+    """POST .../<pk>/interview/reopen/ — the assigned reviewer reopens a SUBMITTED
+    interview to add/edit a forgotten finding. Un-submits the latest session (→ draft)
+    and reverts status interviewed→interviewing, which reopens BOTH the Interview Stage
+    AND Check 2, and switches Approve/Decline off until it's re-submitted. Reviewer/super.
+    Only valid BEFORE a decision is recorded — once decided, use the Decision panel's
+    Reopen (super-only, holds the profile from the pool)."""
+    def post(self, request, pk):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        if app.verdict_decided_at is not None:
+            return Response(
+                {'error': 'A decision is recorded — reopen the decision instead.',
+                 'code': 'decision_recorded'}, status=status.HTTP_400_BAD_REQUEST)
+        session = app.interview_sessions.filter(status='submitted').order_by('-submitted_at').first()
+        if session is None:
+            return Response({'error': 'No submitted interview to reopen.', 'code': 'no_submitted'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        session.status = 'draft'
+        session.save(update_fields=['status', 'updated_at'])
+        if app.status == 'interviewed':   # back a step so Check 2 + the decision gate reopen
+            app.status = 'interviewing'
+            app.save(update_fields=['status'])
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
 def _sponsor_dict(s):
     return {
         'id': s.id, 'name': s.name, 'email': s.email, 'phone': s.phone,

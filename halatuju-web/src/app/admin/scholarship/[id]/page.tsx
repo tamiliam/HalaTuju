@@ -19,6 +19,7 @@ import {
   getInterview,
   saveInterview,
   submitInterview,
+  reopenInterview,
   getAssignableAdmins,
   recordVerdict,
   reopenDecision,
@@ -192,7 +193,6 @@ export default function AdminScholarshipDetailPage() {
   const [verdictMsg, setVerdictMsg] = useState('')
   const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
   const [interviewMsg, setInterviewMsg] = useState('')   // transient "Saved ✓" confirmation
-  const [editIv, setEditIv] = useState(false)            // superadmin reopened a submitted interview
   // Decision reopen (reverse a recorded decision). The reopened STATE is server-driven
   // (app.decision_reopened_at) so it survives a reload; these only drive the reason input.
   const [reopenOpen, setReopenOpen] = useState(false)    // the "why are you reopening?" box is showing
@@ -290,8 +290,18 @@ export default function AdminScholarshipDetailPage() {
     try {
       await saveInterview(id, { findings, rubric, overall_note: note }, { token })
       const d = await submitInterview(id, { token })
-      setApp(d); loadInterviewState(d); setEditIv(false)   // freeze to the read-only view
+      setApp(d); loadInterviewState(d)   // freeze to the read-only view
     } catch { setError(t('admin.scholarship.interview.submitError')) } finally { setBusy('') }
+  }
+
+  // Reviewer reopens a submitted interview (un-submits → both boxes editable again).
+  const doReopenInterview = async () => {
+    if (!token) return
+    setBusy('ivreopen'); setError(''); setInterviewMsg('')
+    try {
+      const d = await reopenInterview(id, { token })
+      setApp(d); loadInterviewState(d)
+    } catch { setError(t('admin.scholarship.interview.reopenError')) } finally { setBusy('') }
   }
 
   // Deleting an agenda talking point (an AI gap or a flag) must STICK across a refresh —
@@ -359,10 +369,22 @@ export default function AdminScholarshipDetailPage() {
     } finally { setBusy('') }
   }
 
-  // Approve = record the verdict + accept (the existing completeness/identity gate, now
-  // explicit). Save = record the verdict + generate the final profile, WITHOUT accepting.
-  const doApprove = () => doRecordVerdict(true, true)
-  const doSaveVerdict = () => doRecordVerdict(true, false)
+  // Decision = pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. The
+  // chosen outcome lives in officerVerdict.overall ('' | 'accept' | 'decline').
+  const selectApprove = () => setOfficerVerdict((v) => ({ ...v, overall: 'accept' }))
+  const selectDecline = () => {
+    setOfficerVerdict((v) => ({ ...v, overall: 'decline' }))
+    if (recAmount != null || app?.award_amount != null) doSetAwardAmount(null)  // Decline clears the amount
+  }
+  const doSave = async () => {
+    const outcome = officerVerdict.overall
+    if (outcome === 'accept') {
+      await doRecordVerdict(true, true)                 // record (overall=accept) + finalise + accept + publish
+    } else if (outcome === 'decline') {
+      await doRecordVerdict(false, false)               // record the verdict (overall=decline), no profile gen
+      await doReject(app?.status === 'accepted' ? 'contractual' : 'interview')
+    }
+  }
 
   // Reverse a recorded decision (super-only). Reopening HOLDS the sponsor profile from
   // the pool and unlocks the panel; a reason is required (it asserts a reviewer error).
@@ -394,9 +416,9 @@ export default function AdminScholarshipDetailPage() {
     } finally { setBusy('') }
   }
 
-  const doSetAwardAmount = async (amount: number) => {
+  const doSetAwardAmount = async (amount: number | null) => {
     if (!token) return
-    setRecAmount(amount)  // optimistic
+    setRecAmount(amount)  // optimistic; null clears it (e.g. on Decline)
     setBusy('award'); setError('')
     try { setApp(await setAwardAmount(id, amount, { token })) }
     catch (e) { setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError')) }
@@ -513,12 +535,16 @@ export default function AdminScholarshipDetailPage() {
   // Approve also requires a recommended assistance amount (the slider, or an already-saved one).
   const hasAssistance = recAmount != null || app.award_amount != null
   const approveReady = isApproveReady(decisionReady, hasAssistance)
+  // Save (the commit) is enabled once a reversible outcome is chosen AND its preconditions hold:
+  // Approve → all of approveReady (incl. amount); Decline → decisionReady (no amount needed).
+  const canSave = (officerVerdict.overall === 'accept' && approveReady)
+    || (officerVerdict.overall === 'decline' && decisionReady)
 
   // Freeze model (the owner's): Save persists a draft and stays editable (re-saving
   // overwrites the same draft); Submit / recording the decision disables editing →
   // read-only. A reopen unlocks the interview again (for the assigned reviewer too).
   const interviewSubmitted = app.interview_session?.status === 'submitted'
-  const interviewLocked = interviewSubmitted && !editIv && !decisionReopened
+  const interviewLocked = interviewSubmitted && !decisionReopened
   const decisionRecorded = !!app.verdict_decided_at
   const decisionLocked = decisionRecorded && !decisionReopened
 
@@ -1203,10 +1229,13 @@ export default function AdminScholarshipDetailPage() {
             <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.interview.title')}</h2>
           </div>
           {interviewLocked
-            ? (isSuper && (
-                <button onClick={() => setEditIv(true)}
-                  className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-100">
-                  {t('admin.scholarship.interview.reopen')}
+            ? (canWrite && !decisionRecorded && (
+                /* Reviewer reopens a submitted interview to add a forgotten finding — un-submits
+                   (reopens this box AND Check 2; Approve/Decline switch off until re-submitted).
+                   Post-decision, the Decision panel's Reopen is used instead. */
+                <button onClick={doReopenInterview} disabled={!!busy}
+                  className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50">
+                  {busy === 'ivreopen' ? t('common.loading') : t('admin.scholarship.interview.reopen')}
                 </button>
               ))
             : (canWrite && (
@@ -1331,7 +1360,6 @@ export default function AdminScholarshipDetailPage() {
                   {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
                 </button>
                 {interviewMsg && <span className="text-sm font-medium text-green-600">{interviewMsg}</span>}
-                {editIv && <span className="text-[11px] text-amber-600">{t('admin.scholarship.interview.editingReopened')}</span>}
               </div>
             )}
           </>
@@ -1770,12 +1798,16 @@ export default function AdminScholarshipDetailPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 {t('admin.scholarship.recordVerdict.assistanceLabel')}
-                {cur != null && <span className="ml-1 font-semibold text-gray-800">RM{cur.toLocaleString()}</span>}
+                {cur != null
+                  ? <span className="ml-1 font-semibold text-gray-800">RM{cur.toLocaleString()}</span>
+                  : <span className="ml-1 text-gray-400">{t('admin.scholarship.recordVerdict.assistanceUnset')}</span>}
               </label>
+              {/* No default value: the slider reads "not set" (dimmed) until the reviewer chooses;
+                  Decline clears it back to this state. */}
               <input type="range" min={1500} max={3000} step={500}
                 value={cur ?? 1500} disabled={!!busy}
                 onChange={(e) => doSetAwardAmount(Number(e.target.value))}
-                className="w-full accent-primary-500" />
+                className={`w-full accent-primary-500 ${cur == null ? 'opacity-40' : ''}`} />
               <div className="flex justify-between text-[11px] text-gray-400">
                 <span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
               </div>
@@ -1799,27 +1831,15 @@ export default function AdminScholarshipDetailPage() {
           />
         </div>
 
-        {/* Decision actions */}
-        {app.status === 'accepted' ? (
+        {/* Decision actions — pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. */}
+        {app.status === 'accepted' && !decisionReopened ? (
+          /* Committed acceptance → read-only summary + the post-accept contractual decline. */
           <div className="space-y-2 border-t pt-3">
             <p className="flex items-center gap-1.5 text-sm text-green-700">
               <span aria-hidden>✓</span>
               {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
               {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
             </p>
-            {/* Reopened: let the reviewer's revised interview + facts be re-saved, which
-                regenerates + republishes the profile (counts as a correction). */}
-            {decisionReopened && canWrite && (
-              <>
-                {!decisionReady && (
-                  <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
-                )}
-                <button onClick={doSaveVerdict} disabled={!!busy || !decisionReady}
-                  className="w-full px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                  {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
-                </button>
-              </>
-            )}
             {canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
                 className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
@@ -1827,7 +1847,7 @@ export default function AdminScholarshipDetailPage() {
               </button>
             )}
           </div>
-        ) : ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
+        ) : (decisionReopened || ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status)) ? (
           canWrite && (
             <div className="space-y-2">
               {!app.completeness.complete && (
@@ -1840,27 +1860,35 @@ export default function AdminScholarshipDetailPage() {
                   </ul>
                 </div>
               )}
+              {/* Reversible outcome selection. Approve needs an amount; Decline doesn't (and clears it). */}
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={doApprove} disabled={!!busy || !approveReady}
-                  className="rounded-lg border border-green-600 bg-white px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-600 hover:text-white active:bg-green-600 active:text-white disabled:opacity-50">
-                  {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.approve')}
+                <button onClick={selectApprove} disabled={!!busy || !approveReady}
+                  className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
+                    officerVerdict.overall === 'accept'
+                      ? 'border-green-600 bg-green-600 text-white'
+                      : 'border-green-600 bg-white text-green-700 hover:bg-green-50'}`}>
+                  {t('admin.scholarship.recordVerdict.approve')}
                 </button>
-                <button onClick={() => doReject('interview')} disabled={!!busy || !decisionReady}
-                  className="rounded-lg border border-red-500 bg-white px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-600 hover:text-white active:bg-red-600 active:text-white disabled:opacity-50">
-                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.recordVerdict.decline')}
+                <button onClick={selectDecline} disabled={!!busy || !decisionReady}
+                  className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
+                    officerVerdict.overall === 'decline'
+                      ? 'border-red-600 bg-red-600 text-white'
+                      : 'border-red-500 bg-white text-red-700 hover:bg-red-50'}`}>
+                  {t('admin.scholarship.recordVerdict.decline')}
                 </button>
               </div>
-              {decisionReady && !hasAssistance && (
-                <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
-              )}
-              {!decisionReady && (
+              {/* One contextual hint: what's still missing before Save. */}
+              {!decisionReady ? (
                 <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
-              )}
-              {/* Save records the decision (stamps verdict_decided_at + locks the panel), so it
-                  needs the same readiness as Approve/Decline — never record an incomplete verdict. */}
-              <button onClick={doSaveVerdict} disabled={!!busy || !decisionReady}
+              ) : !officerVerdict.overall ? (
+                <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
+              ) : officerVerdict.overall === 'accept' && !hasAssistance ? (
+                <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
+              ) : null}
+              {/* Save is the final commit of the chosen outcome. */}
+              <button onClick={doSave} disabled={!!busy || !canSave}
                 className="w-full px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
+                {(busy === 'verdict' || busy === 'reject') ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
               </button>
             </div>
           )
