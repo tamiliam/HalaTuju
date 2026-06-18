@@ -49,6 +49,7 @@ function SearchPageInner() {
   const [sourceType, setSourceType] = useState(searchParams.get('type') || '')
   const [state, setState] = useState(searchParams.get('state') || '')
   const [qualification, setQualification] = useState(searchParams.get('qualification') || '')
+  const [aliran, setAliran] = useState(searchParams.get('aliran') || '')
   const [displayCount, setDisplayCount] = useState(COURSE_PAGE_SIZE)
 
   // Eligible toggle
@@ -187,9 +188,10 @@ function SearchPageInner() {
     if (sourceType) params.set('type', sourceType)
     if (state) params.set('state', state)
     if (qualification) params.set('qualification', qualification)
+    if (aliran) params.set('aliran', aliran)
     const qs = params.toString()
     router.replace(qs ? `/search?${qs}` : '/search', { scroll: false })
-  }, [query, level, field, sourceType, state, qualification, router])
+  }, [query, level, field, sourceType, state, qualification, aliran, router])
 
   // Debounced search query
   const [debouncedQuery, setDebouncedQuery] = useState(query)
@@ -209,6 +211,7 @@ function SearchPageInner() {
         source_type: sourceType || undefined,
         state: state || undefined,
         qualification: qualification || undefined,
+        aliran: aliran || undefined,
         limit: 10000,
       })
       setCourses(data.courses)
@@ -222,7 +225,7 @@ function SearchPageInner() {
     } finally {
       setIsLoading(false)
     }
-  }, [debouncedQuery, level, field, sourceType, state, qualification, filters])
+  }, [debouncedQuery, level, field, sourceType, state, qualification, aliran, filters])
 
   useEffect(() => {
     fetchCourses()
@@ -231,7 +234,7 @@ function SearchPageInner() {
   // Reset display count when filters change
   useEffect(() => {
     setDisplayCount(COURSE_PAGE_SIZE)
-  }, [debouncedQuery, level, field, sourceType, state, qualification, eligibleOnly])
+  }, [debouncedQuery, level, field, sourceType, state, qualification, aliran, eligibleOnly])
 
   // Apply eligible filter client-side
   const displayedCourses = useMemo(() => {
@@ -264,7 +267,7 @@ function SearchPageInner() {
     }
   }
 
-  const hasActiveFilters = !!(query || level || field || sourceType || state || qualification)
+  const hasActiveFilters = !!(query || level || field || sourceType || state || qualification || aliran)
 
   const clearAllFilters = () => {
     setQuery('')
@@ -273,7 +276,14 @@ function SearchPageInner() {
     setSourceType('')
     setState('')
     setQualification('')
+    setAliran('')
     setEligibleOnly(false)
+  }
+
+  // Aliran is a PISMP-only facet — selecting a non-IPGM source clears it.
+  const handleSourceTypeChange = (value: string) => {
+    setSourceType(value)
+    if (value !== 'pismp') setAliran('')
   }
 
   // Source type labels for filter dropdown
@@ -362,8 +372,19 @@ function SearchPageInner() {
               (SOURCE_LABELS[a] ?? a).localeCompare(SOURCE_LABELS[b] ?? b, 'ms')
             )}
             optionLabels={SOURCE_LABELS}
-            onChange={setSourceType}
+            onChange={handleSourceTypeChange}
           />
+
+          {/* Aliran (school type) — PISMP/IPGM only */}
+          {sourceType === 'pismp' && (filters?.alirans?.length ?? 0) > 0 && (
+            <FilterPill
+              label={t('search.allAlirans')}
+              value={aliran}
+              options={(filters?.alirans ?? []).map(a => a.value)}
+              optionLabels={Object.fromEntries((filters?.alirans ?? []).map(a => [a.value, a.label]))}
+              onChange={setAliran}
+            />
+          )}
 
           <FilterPill
             label={t('search.allLevels')}

@@ -228,6 +228,13 @@ export interface SearchCourse {
   institution_name: string
   institution_state: string
   qualification: 'SPM' | 'STPM'
+  aliran?: string | null // PISMP school type (sk|sjkc|sjkt|khas); null for non-PISMP
+  is_elektif?: boolean // PISMP elektif (minor) variant rather than a bidang (major)
+}
+
+export interface AliranOption {
+  value: string
+  label: string
 }
 
 export interface SearchFilters {
@@ -236,6 +243,7 @@ export interface SearchFilters {
   source_types: string[]
   states: string[]
   qualifications: string[]
+  alirans?: AliranOption[]
 }
 
 export interface SearchParams {
@@ -245,6 +253,7 @@ export interface SearchParams {
   source_type?: string
   state?: string
   qualification?: string
+  aliran?: string
   limit?: number
   offset?: number
 }
@@ -260,6 +269,7 @@ export async function searchCourses(
   if (params.source_type) query.set('source_type', params.source_type)
   if (params.state) query.set('state', params.state)
   if (params.qualification) query.set('qualification', params.qualification)
+  if (params.aliran) query.set('aliran', params.aliran)
   if (params.limit) query.set('limit', String(params.limit))
   if (params.offset) query.set('offset', String(params.offset))
   const qs = query.toString()
