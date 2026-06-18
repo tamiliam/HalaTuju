@@ -372,39 +372,9 @@ class AdminRunVisionView(_AdminBase):
         doc = ApplicantDocument.objects.filter(pk=doc_id, application_id=pk).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        from . import vision as _vision
-        from .views import BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
-        if doc.doc_type in ('ic', 'parent_ic'):
-            _vision.run_vision_for_document(doc)
-        elif doc.doc_type in TEXT_READ_DOC_TYPES:
-            # P1 (Check 2): re-read the letter of intent's plain text.
-            _vision.read_text_document(doc)
-        elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
-            # Replicate the upload-time supporting-doc processing (forced, not throttled).
-            profile = getattr(app, 'profile', None)
-            names = [getattr(profile, 'name', '') or '']
-            names += [g.get('name', '') for g in (getattr(profile, 'guardians', None) or [])
-                      if isinstance(g, dict)]
-            names = [n for n in names if n]
-            postcode = getattr(profile, 'postal_code', '') or ''
-            city = getattr(profile, 'city', '') or ''
-            check_address = doc.doc_type in BILL_DOC_TYPES
-            ocr = _vision.ocr_document(doc)   # OCR once, shared by both checks
-            _vision.run_vision_match_for_document(
-                doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
-            if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
-                _vision.run_field_extraction_for_document(
-                    doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
-            # Re-reading an offer letter may now settle an undecided pathway (same silent
-            # auto-fill as upload; a genuine clash is left for the pathway_confirm query).
-            if doc.doc_type == 'offer_letter':
-                try:
-                    from .services import autofill_pathway_from_offer
-                    autofill_pathway_from_offer(app)
-                except Exception:
-                    logging.getLogger(__name__).warning(
-                        'autofill_pathway_from_offer failed for app %s', app.id, exc_info=True)
-        else:
+        # Shared with the bulk reextract command so the per-doc + batch reads can't drift.
+        from .reextract import reextract_document
+        if not reextract_document(doc):
             return Response({'error': 'This document type has no automatic check to re-run.'},
                             status=status.HTTP_400_BAD_REQUEST)
         return Response(ApplicantDocumentSerializer(doc).data)
