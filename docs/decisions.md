@@ -3110,3 +3110,39 @@ the student to complete `/profile`, not to bounce a genuine document.
 **Trade-offs:** the Academic tile stays "review" until the student adds the subjects (intended gentle pressure).
 **Revisit if:** officers find the residual "review" noisy.
 
+## Google Meet via Workspace service account + domain-wide delegation — Scheduling, 2026-06-18
+**Decision:** Auto-generate interview Meet links by creating Google Calendar events through a **service account with
+domain-wide delegation**, impersonating a single Workspace organiser (`admin@halatuju.xyz`); calls are best-effort
+(never block a booking) and gated by `INTERVIEW_MEET_ENABLED`.
+**Alternatives considered:** per-user OAuth (each reviewer authorises); embedded Jitsi/JaaS; manual paste links.
+**Rationale:** every applicant has Gmail (event lands in their calendar with native reminders, one-tap join); 30–45-min
+calls sit under the consumer 60-min cap and Workspace removes it; a service account is unattended + needs no per-user
+consent screens; DWD impersonates the primary account (aliases can't be impersonated, so the organiser stays `admin@`).
+**Trade-offs:** a Workspace seat (~RM15/mo); the SA JSON key is a Cloud Run secret to manage; calendar events live on
+the organiser's calendar.
+**Revisit if:** volume needs multiple organisers, or keyless DWD (workload identity) becomes simpler than a JSON key.
+
+## Cockpit panel-freeze model (Interview + Decision) — 2026-06-18
+**Decision:** Save = persist an editable draft (re-saving overwrites the same record in place); Submit / recording the
+verdict = the panel becomes **read-only** (a Check-2-style record); a **superadmin** can reopen to correct. Read-only
+interview view shows answered questions only + the open-ended findings; the decision view shows fact badges + amount +
+conclusion + "recorded by {name}".
+**Alternatives considered:** keep everything editable; fully lock with no reopen (DB-only corrections); per-reviewer reopen.
+**Rationale:** an editable-looking committed panel invites accidental change and (with the save-after-submit path)
+spawned duplicate sessions; freezing communicates "this is done" and removes the write controls that caused the bug.
+Superadmin reopen keeps a correction path without a DB edit.
+**Trade-offs:** a small amount of duplicated render (editable vs read-only); reopen is superadmin-only (reviewers can't
+self-correct after submit).
+**Revisit if:** reviewers frequently need to amend their own submissions — then allow assigned-reviewer reopen.
+
+## Email addresses mapped to halatuju.xyz aliases — 2026-06-18
+**Decision:** Global From = `info@halatuju.xyz` (a real mailbox, so replies are deliverable); topical aliases by role —
+support/FAQ = `help@`, interview reply-to = `interview@`, sponsor = `sponsor@`, internal notifications = `contact@`,
+Meet organiser = `admin@`. All aliases deliver to the one Workspace inbox.
+**Alternatives considered:** keep sending from `noreply@`; one address for everything; per-message custom From.
+**Rationale:** emails invite replies but `noreply@halatuju.xyz` wasn't a real mailbox, so replies were lost; a real
+From fixes that globally, and topical reply-to/landing addresses keep things filterable. Brevo domain auth lets any
+`@halatuju.xyz` address send without per-sender registration.
+**Trade-offs:** all aliases share one inbox (filtering, not separate mailboxes); reply-to refinement is cosmetic while
+single-inbox.
+**Revisit if:** the programme grows enough to want separate staffed inboxes per alias.

@@ -515,7 +515,37 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-16)
+## Next Sprint (as of 2026-06-18)
+
+**▶ SHIPPED 2026-06-18 — Interview scheduling + Google Meet, email aliases, contact-form notify, cockpit live-review
+(10 commits `d13b949`→`a51517a`; migration `scholarship/0061` migrate-first; retro
+`docs/retrospective-2026-06-18-scheduling-meet-aliases-cockpit.md`). Worked in worktree `.worktrees/sched`.**
+- **In-app interview scheduling + Google Meet** — reviewer proposes 2–3 times (`InterviewSlot`), student books one on
+  `/scholarship/application`, system auto-creates a Meet link + calendar event (best-effort) + bilingual confirmation +
+  1-day/1-hour reminders; self-reschedule/cancel to a 12h cutoff. `scheduling.py` + `meeting.py` (Workspace SA +
+  domain-wide delegation), booking columns + `interview_slots` table (mig `0061`), `send_interview_reminders` cron,
+  cockpit propose-card + student booking panel, Guide+FAQ. **`INTERVIEW_MEET_ENABLED=1` + `INTERVIEW_SCHEDULING_ENABLED=1`
+  BOTH LIVE (scheduling flipped on 2026-06-18, api rev …00432); Meet proven end-to-end. The surface is exposed to
+  reviewers + students.** (Re-dark with `--update-env-vars INTERVIEW_SCHEDULING_ENABLED=0` if needed.)
+- **Google Workspace `halatuju.xyz` live; email mapped to aliases.** From=`info@`, support=`help@`, interview
+  reply-to=`interview@`, sponsor=`sponsor@`, internal notify=`contact@`, Meet organiser=`admin@` (the PRIMARY account —
+  DWD can't impersonate an alias). Brevo domain authenticated (any `@halatuju.xyz` sends). Fixed lost replies
+  (`noreply@` wasn't a real mailbox); removed personal `tamiliam@gmail.com` from user-facing copy.
+- **Contact form now alerts** — `notify-contact-submissions` cron emails each unread `contact_submissions` row to
+  `contact@` (was stored-but-unseen). No admin inbox UI yet (TD-124).
+- **Cockpit fixes** — Decision panel + Interview Stage **freeze read-only once committed** (superadmin reopen); Interview
+  Stage **"Saved ✓"** + read-only blue-box record after submit (closed a duplicate-draft bug); audit lines show **full
+  name** (`verified_by_name` etc.); assignee filter lists reviewers by name; sortable Name/Merit (server-side, `?sort`);
+  status labels Sentence-cased + "Completed"; profile merit→grades returns to `/profile`; footer "B40 Aid" links.
+- **OPS:** SA `halatuju-meet@` + DWD authorised (scope `calendar.events`); Cloud Scheduler `halatuju-interview-reminders`
+  + `halatuju-notify-contact-submissions` (both */15). Env on `halatuju-api`: `INTERVIEW_MEET_ENABLED=1`,
+  `MEET_ORGANISER_EMAIL`, `GOOGLE_MEET_SA_JSON` (secret), `DEFAULT_FROM_EMAIL=info@`, `ADMIN_NOTIFY_EMAIL`/
+  `COURSE_REFRESH_REMINDER_EMAIL=contact@`. Prod at scholarship migration **`0061`**.
+- **▶ NEXT:** scheduling is now LIVE — **monitor the first real bookings** (a Meet link should generate + the
+  confirmation/reminders fire). Owner follow-ups: add the Guide scheduling screenshot (TD-126); add a merged **SPF**
+  TXT (`v=spf1 include:_spf.google.com include:spf.brevo.com ~all`); refine the assignment email copy to point students
+  to "book your interview" (note: that email is itself gated by the separate OFF `STUDENT_ASSIGNMENT_EMAIL_ENABLED`).
+  TD-124 (contact inbox UI), TD-125 (Meet key → Secret Manager). Other thread: genuineness branch (unmerged).
 
 **▶ DONE — NOT MERGED/DEPLOYED (branch `feature/doc-eval-harness`, 2 sprint-closes this session: `f57f343`→`c788c8e`
 then `45d23e0`→`cf1d905`, NO migration; retros `docs/retrospective-genuineness-signatures.md` +

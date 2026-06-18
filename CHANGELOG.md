@@ -59,6 +59,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   context are gitignored/local-only; only the PII-free `labels.json` (assertions) is committed. Builds throwaway rows
   inside a rolled-back transaction (persists nothing); not wired to any endpoint or cron. +3 synthetic self-tests.
   See `apps/scholarship/eval/README.md`.
+- **Contact-form submissions are now emailed to the team (2026-06-17).** The public `/contact` form saved rows to
+  `contact_submissions` but nothing alerted anyone (messages sat unseen). New cron job `notify-contact-submissions`
+  emails each unread submission to `contact@halatuju.xyz` (`ADMIN_NOTIFY_EMAIL`), with Reply-To set to the submitter's
+  email so a reply goes straight back, then marks it read (idempotent). A future `/admin/messages` inbox is deferred.
+- **In-app interview scheduling + Google Meet (2026-06-17, dark behind flags).** Replaces off-platform phone/email
+  arrangements: the assigned reviewer **proposes 2–3 times** in the cockpit; the student **picks one** on their
+  application page; the system auto-creates a **Google Meet link + calendar event** and sends a bilingual (EN+BM)
+  confirmation, plus **1-day + 1-hour reminders** (to student and reviewer). The student can **self-reschedule or
+  cancel** up to a 12-hour cutoff. New `InterviewSlot` model + booking columns on `ScholarshipApplication`
+  (migration `scholarship/0061`, migrate-first). Google Meet via a Workspace service account with domain-wide
+  delegation (`apps/scholarship/meeting.py`) — best-effort, so a booking never fails if Google is down or
+  unconfigured. Two flags, both **OFF by default**: `INTERVIEW_SCHEDULING_ENABLED` (the whole surface) and
+  `INTERVIEW_MEET_ENABLED` (auto-Meet, so scheduling can go live before the `info@halatuju.xyz` Workspace account is
+  wired). Reminder cron `interview-reminders` (run ~every 15 min). +27 backend tests (Meet mocked, no live calls);
+  +5 web tests; i18n en/ms/ta (`admin.scholarship.interview.schedule.*`, `scholarship.application.interview.*`).
+- **Advance-notice email to the student on reviewer assignment (2026-06-17).** When a reviewer is assigned, the student
+  receives a **bilingual (English + Bahasa Melayu)** email naming the interviewer and their contact (phone/WhatsApp +
+  email), so they expect the call and pick up. It says the interviewer will reach out **within a few days**, that
+  parents/guardian are welcome to join, and carries an **anti-scam** line (we never ask for money/OTP/bank password);
+  no document checklist (documents are already in the system). **OFF by default** behind
+  `STUDENT_ASSIGNMENT_EMAIL_ENABLED` — to be switched on after reviewers give non-objection. Reviewers can **opt out of
+  sharing their phone** on their Profile (`ReviewerProfile.share_phone_with_students`, **default shared**); the copy +
+  call-to-action adapt when no number is shared. Migration `scholarship/0060` (migrate-first). +4 backend tests;
+  best-effort send (never blocks the assignment).
+- **Reviewer language fluency + assignment matching (2026-06-17).** Reviewers can now record their fluency
+  (None / Conversational / Fluent) in **English, Bahasa Melayu and Tamil** on their Profile (new `ReviewerProfile`
+  fields, migration `scholarship/0059`, migrate-first). This drives **reviewer↔student matching**: when a super-admin
+  assigns a reviewer, the dropdown labels each reviewer with the languages they speak (EN/BM/TA), shows the **student's
+  preferred call language** on the row, and lists reviewers who cover it **first (✓)** with the rest flagged (⚠) —
+  matching is decision-support, the assigner still chooses. The `assignable-admins` endpoint returns each reviewer's
+  conversational-or-better languages; the applications list API now returns the student's `call_language` (already
+  collected). +3 backend tests; en/ms/ta. Backend + frontend.
+- **Reviewer Guide + FAQ pages (2026-06-16).** Two new reviewer-visible menu items to help invited reviewers do their
+  role: **Guide** (`/admin/guide`) — a friendly 8-step walkthrough of the review lifecycle (your applicants → the four
+  checks → documents → the student profile → asking the student → interview → decision), with redacted screenshots; and
+  **FAQ** (`/admin/faq`) — administrative (is it paid? = no; sign-in, password reset, confidentiality, contact) +
+  reviewing questions. The Guide opens with a welcome + a short picture of the programme (reviewers reach these only
+  after sign-in, so they don't cover signing in). Content is **English for now** (nav labels en/ms/ta; BM/Tamil content
+  to follow). Screenshots are PII-redacted. New nav items shown to all admin roles. FE-only, no migration.
 - **Set-password page for admins/reviewers (2026-06-16).** Non-Google invitees previously could never set a password —
   the app had no "set/reset password" screen, so the invite and "Forgot password" links led nowhere useful and only
   Google sign-in worked (this is what blocked the first Yahoo-invited reviewer). New `/admin/set-password` page handles
@@ -170,6 +209,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   months · total saved · statement date · address (en/ms/ta). No migration; soft/officer-facing, never a gate.
 
 ### Changed
+- **Profile card heading "Sponsor profile (draft)" → "Student profile (draft)" (2026-06-16).** It's the student's
+  profile; the sponsor is a reader, not the subject. i18n en/ms/ta; FE-only.
+- **One interview-questions button instead of two (2026-06-16).** The cockpit Interview Stage had both "Suggest
+  interview questions" (which REPLACED/wiped existing questions) and "Generate more" (which appended) — confusing, and
+  the first was mildly destructive. Folded into a **single button** that always **appends** (3 more, excluding ones
+  already suggested) and never wipes; its label adapts ("Suggest interview questions" when empty → "Generate more" once
+  some exist). To start over, the reviewer deletes the unwanted ones (per-item Delete) and clicks again. FE-only, no migration.
 - **Academic results summarised by GROUP + ethnicity-safe + prompt versioning (2026-06-16).**
   **(a)** The profile no longer lists every subject and grade (readers skip a long list). `_grades_summary` now
   reports the **count of A-grade subjects, the band mix, and the broad subject GROUPS** they span
@@ -237,6 +283,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   focused follow-ups (each a sizeable mechanical diff best reviewed on its own).
 
 ### Fixed
+- **Cockpit live-review fixes (2026-06-18).** (1) From `/profile`, tapping the merit score opens the grades editor
+  and now **returns to `/profile`** ("Save & return to profile") instead of the course-guide recommendations
+  (onboarding-return marker). (2) The **Decision panel freezes once recorded** — read-only summary (fact badges,
+  amount, conclusion) with "recorded by … on …"; a **superadmin** can reopen to edit; the post-accept contractual
+  decline stays. (3) Audit lines show the reviewer's **full name** (resolved from the stored email) rather than the
+  raw email. (4) **Interview Stage**: an explicit **"Saved ✓"** confirmation; once **Submitted** the input boxes are
+  **replaced by a read-only record** (Check-2-style blue boxes — answered questions only, plus the open-ended
+  findings), Save/Submit removed (superadmin can reopen) — which also closes a latent bug where a post-submit "Save"
+  spawned a **duplicate draft** session. Backend: `verified_by_name`/`verdict_decided_by_name`/`rejected_by_name` on
+  the detail serializer.
+- **Email addresses mapped to the new `halatuju.xyz` Workspace aliases (2026-06-17).** Replies were previously lost
+  (emails invited "reply to arrange" but were sent from `noreply@`); now the **From** of all programme mail is
+  `HalaTuju <info@halatuju.xyz>` (a real mailbox), so replies land in the inbox. Topical routing: student support /
+  FAQ / tech-support copy → **`help@`** (central `SUPPORT_EMAIL`); interview emails carry **Reply-To `interview@`**;
+  sponsor notifications + referral invites + the sponsor landing → **`sponsor@`**; internal admin notifications
+  (`ADMIN_NOTIFY_EMAIL`, `COURSE_REFRESH_REMINDER_EMAIL`) → **`contact@`**; Meet organiser stays `admin@`. Replaced the
+  personal `tamiliam@gmail.com` in all user-facing copy (emails, FAQ, /application tech-support, i18n en/ms/ta) and
+  killed the dead `noreply@halatuju.com` fallback (→ `.xyz`). Env-driven (From/notify) + one deploy (copy/reply-to).
+- **Assignment dropdown listed non-reviewers (2026-06-17).** `AdminAssignableAdminsView` returned every active admin, so
+  read-only `admin`s and `partner`s appeared in the "assign a reviewer" dropdown even though the assign action rejects
+  them. Now filtered to **reviewers + supers** (mirrors `services._can_review`). +1 test.
 - **Restored `admin.scholarship.finalProfile.title`** — the TD-118 cleanup deleted the whole `finalProfile` object, but
   its `title` ("Final profile (v2 — with interview)") is still rendered on the profile card once a final exists. Re-added
   in en/ms/ta (the other `finalProfile.*` leaves stay removed). Caught before deploy.

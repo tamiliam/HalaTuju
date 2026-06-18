@@ -2,7 +2,7 @@
 from rest_framework import serializers
 
 from .models import (
-    FundingNeed, GraduationMessage, InterviewSession, ReviewerProfile,
+    FundingNeed, GraduationMessage, InterviewSession, InterviewSlot, ReviewerProfile,
     ScholarshipApplication, SponsorProfile,
 )
 from . import pool
@@ -12,6 +12,16 @@ from .serializers import (
     FundingNeedSerializer,
     RefereeSerializer,
 )
+
+
+def _admin_name_by_email(email):
+    """Resolve a stored reviewer email → their full name (for the audit lines).
+    Returns '' if no match (the cockpit then falls back to showing the email)."""
+    email = (email or '').strip()
+    if not email:
+        return ''
+    from apps.courses.models import PartnerAdmin
+    return PartnerAdmin.objects.filter(email__iexact=email).values_list('name', flat=True).first() or ''
 
 
 def _full_name(application):
@@ -60,6 +70,37 @@ class InterviewSessionSerializer(serializers.ModelSerializer):
             'id', 'status', 'findings', 'rubric', 'overall_note',
             'interviewer_name', 'started_at', 'submitted_at', 'updated_at',
         ]
+
+
+class InterviewSlotSerializer(serializers.ModelSerializer):
+    """One proposed interview time. Times are ISO (UTC); the FE renders them in MYT."""
+    class Meta:
+        model = InterviewSlot
+        fields = ['id', 'start', 'duration_min', 'is_active']
+
+
+def interview_schedule_payload(application):
+    """The interview-scheduling block shared by the admin + student responses:
+    the booking state + the active proposed slots. Used by both serializers so the
+    cockpit and the student portal read identical data."""
+    from django.conf import settings
+    active = [s for s in application.interview_slots.all() if s.is_active]
+    active.sort(key=lambda s: s.start)
+    return {
+        'enabled': bool(getattr(settings, 'INTERVIEW_SCHEDULING_ENABLED', False)),
+        'status': application.interview_status or '',
+        'start': application.interview_start,
+        'meeting_url': application.interview_meeting_url or '',
+        'meeting_provider': application.interview_meeting_provider or '',
+        'booked_slot_id': application.interview_slot_id,
+        'slots': InterviewSlotSerializer(active, many=True).data,
+        'reschedule_cutoff_hours': _reschedule_cutoff_hours(),
+    }
+
+
+def _reschedule_cutoff_hours():
+    from django.conf import settings
+    return getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
 
 
 class SponsorProfileSerializer(serializers.ModelSerializer):
@@ -112,6 +153,8 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     # Source (the referring org, chosen at apply) + the course-guide merit, for the list table.
     referral_source = serializers.CharField(source='profile.referral_source', read_only=True, allow_null=True)
     merit_score = serializers.SerializerMethodField()
+    # The student's preferred call language (en/ms/ta/mixed) — drives reviewer language matching.
+    call_language = serializers.CharField(source='profile.preferred_call_language', read_only=True, allow_blank=True)
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
 
@@ -119,7 +162,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
         model = ScholarshipApplication
         fields = [
             'id', 'name', 'profile_id', 'cohort_code', 'qualification',
-            'spm_a_count', 'stpm_pngk', 'referral_source', 'merit_score',
+            'spm_a_count', 'stpm_pngk', 'referral_source', 'merit_score', 'call_language',
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
             'assigned_to_id', 'assigned_to_name',
@@ -187,6 +230,13 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Gemini; gaps are produced + stored by the admin-on-demand suggest-gaps endpoint).
     interview_gaps = serializers.JSONField(read_only=True)
     interview_gaps_run_at = serializers.DateTimeField(read_only=True)
+    # Interview scheduling: booking state + proposed slots (dark behind the flag).
+    interview_schedule = serializers.SerializerMethodField()
+    # The reviewer's full NAME for the audit lines (verified_by / verdict_decided_by /
+    # rejected_by store an email; the cockpit shows the name, falling back to email).
+    verified_by_name = serializers.SerializerMethodField()
+    verdict_decided_by_name = serializers.SerializerMethodField()
+    rejected_by_name = serializers.SerializerMethodField()
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
@@ -219,14 +269,14 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # Phase E3: admin-set award amount (gates fundability; shown on the pool card)
             'award_amount',
             # Rejection bucket (merit/need/ineligible/interview/contractual) + stamps
-            'rejection_category', 'rejected_at', 'rejected_by',
+            'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
             # Phase C handoff + interview funnel
             'profile_completed_at', 'completeness', 'interview_session',
-            'interview_gaps', 'interview_gaps_run_at',
+            'interview_gaps', 'interview_gaps_run_at', 'interview_schedule',
             'assigned_to_id', 'assigned_to_name', 'assigned_at',
             'info_request_note', 'info_requested_at',
             # S11a verify-&-accept + mentoring
-            'mentoring_candidate', 'verified_at', 'verified_by', 'verify_checklist',
+            'mentoring_candidate', 'verified_at', 'verified_by', 'verified_by_name', 'verify_checklist',
             # S10 plans/support intake (surface for the admin review)
             'pathways_considered', 'top_choices', 'upu_status', 'field_of_study',
             'other_scholarships', 'other_scholarships_text', 'help_university',
@@ -246,11 +296,20 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'intake_snapshot',
             # S5 verdict audit / override capture (read-only; written via record-verdict).
             'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
-            'verdict_decided_by', 'verdict_decided_at',
+            'verdict_decided_by', 'verdict_decided_at', 'verdict_decided_by_name',
         ]
 
     def get_name(self, obj):
         return _full_name(obj)
+
+    def get_verified_by_name(self, obj):
+        return _admin_name_by_email(obj.verified_by)
+
+    def get_verdict_decided_by_name(self, obj):
+        return _admin_name_by_email(obj.verdict_decided_by)
+
+    def get_rejected_by_name(self, obj):
+        return _admin_name_by_email(obj.rejected_by)
 
     def get_school(self, obj):
         return getattr(obj.profile, 'school', '') if obj.profile else ''
@@ -357,6 +416,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         session = obj.interview_sessions.first()  # ordering = -created_at
         return InterviewSessionSerializer(session).data if session else None
 
+    def get_interview_schedule(self, obj):
+        """Interview booking state + proposed slots (shared with the student view)."""
+        return interview_schedule_payload(obj)
+
 
 class ReviewerProfileSerializer(serializers.ModelSerializer):
     """A reviewer's own credentials + contact details (F6). Narrow + self-scoped:
@@ -370,6 +433,8 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
             'highest_qualification', 'university', 'graduation_year',
             'field_of_study', 'phone', 'address',
             'street_address', 'postcode', 'city', 'state',
+            'english_fluency', 'bm_fluency', 'tamil_fluency',
+            'share_phone_with_students',
         ]
 
     def validate_graduation_year(self, value):

@@ -23,9 +23,10 @@ from . import pool
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
-    ApplicantDocument, GraduationMessage, InterviewSession, Referee,
+    ApplicantDocument, GraduationMessage, InterviewSession, InterviewSlot, Referee,
     ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
+from . import scheduling
 from .profile_engine import refine_sponsor_profile
 from . import in_programme as in_programme_service
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
@@ -34,6 +35,7 @@ from .serializers_admin import (
     AdminApplicationListSerializer,
     AdminGraduationMessageSerializer,
     InterviewSessionSerializer,
+    interview_schedule_payload,
     ReviewerProfileSerializer,
     SponsorProfileSerializer,
 )
@@ -143,11 +145,22 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.filter(assigned_to__isnull=True)
         elif assigned_f and assigned_f.isdigit():
             qs = qs.filter(assigned_to_id=int(assigned_f))
-        # Server-side pagination (?page / ?page_size). Filters above are applied
-        # to the queryset first, so paging reflects the filtered set. total_count
-        # is kept as a backward-compatible alias for the total filtered count.
+        # Sorting (?sort=name|merit, ?dir=asc|desc). Default (no sort) = newest
+        # submitted first, as before. Name sorts in the DB; merit is COMPUTED (no
+        # column), so we materialise the filtered set, sort in Python, then paginate
+        # the list (DRF paginates lists fine) — fine at this scale (≈100s of rows).
+        sort_f = (request.GET.get('sort') or '').strip()
+        desc = (request.GET.get('dir') or '').lower() == 'desc'
         paginator = FlexiblePageNumberPagination()
-        page = paginator.paginate_queryset(qs, request, view=self)
+        if sort_f == 'name':
+            qs = qs.order_by('-profile__name' if desc else 'profile__name')
+            page = paginator.paginate_queryset(qs, request, view=self)
+        elif sort_f == 'merit':
+            from .serializers_admin import _application_merit_score
+            rows = sorted(qs, key=lambda a: _application_merit_score(a) or 0, reverse=desc)
+            page = paginator.paginate_queryset(rows, request, view=self)
+        else:
+            page = paginator.paginate_queryset(qs, request, view=self)
         data = AdminApplicationListSerializer(page, many=True).data
         return paginator.envelope(
             data,
@@ -729,14 +742,32 @@ class AdminSponsorshipListView(_AdminBase):
 
 
 class AdminAssignableAdminsView(_AdminBase):
-    """GET .../assignable-admins/ — active admins for the assignment dropdown."""
+    """GET .../assignable-admins/ — active REVIEWERS (+ supers) for the assignment
+    dropdown. Only roles that can actually be assigned an applicant appear (mirrors
+    services._can_review): a plain 'admin' is read-only, and 'partner'/'viewer' have
+    no review role, so none of them are listed."""
     def get(self, request):
         if not self.get_admin(request):
             return self._deny()
-        admins = PartnerAdmin.objects.filter(is_active=True).order_by('name')
+        from django.db.models import Q
+        admins = (PartnerAdmin.objects.filter(is_active=True)
+                  .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super']))
+                  .select_related('reviewer_profile').order_by('name'))
+
+        def langs(a):
+            # Languages the reviewer can conduct a review in (conversational or better),
+            # for matching against the student's preferred call language. Codes: en/ms/ta.
+            rp = getattr(a, 'reviewer_profile', None)
+            if rp is None:
+                return []
+            ok = ('conversational', 'fluent')
+            return [code for code, lvl in (('en', rp.english_fluency),
+                                           ('ms', rp.bm_fluency),
+                                           ('ta', rp.tamil_fluency)) if lvl in ok]
+
         return Response({'admins': [
             {'id': a.id, 'name': a.name, 'email': a.email,
-             'role': 'super' if a.is_super else a.role}
+             'role': 'super' if a.is_super else a.role, 'languages': langs(a)}
             for a in admins
         ]})
 
@@ -978,6 +1009,81 @@ class AdminAssignReviewerView(_AdminBase):
         except AssignmentError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
+
+
+def _parse_slot_starts(raw):
+    """Parse the proposed-slot times from the request body into tz-aware datetimes.
+    Accepts a list of ISO strings, or of objects with a 'start' key. A naive value
+    (e.g. a browser datetime-local '2026-06-20T20:00') is read as Malaysia time."""
+    from zoneinfo import ZoneInfo
+    from django.utils.dateparse import parse_datetime
+    from django.utils import timezone as _tz
+    out = []
+    for item in (raw or []):
+        s = item.get('start') if isinstance(item, dict) else item
+        if not s:
+            continue
+        dt = parse_datetime(s)
+        if dt is None:
+            continue
+        if _tz.is_naive(dt):
+            dt = dt.replace(tzinfo=ZoneInfo('Asia/Kuala_Lumpur'))
+        out.append(dt)
+    return out
+
+
+class AdminInterviewSlotsView(_AdminBase):
+    """GET  .../applications/<pk>/interview-slots/ — booking state + proposed slots.
+    POST .../applications/<pk>/interview-slots/ — the assigned reviewer (or super)
+         proposes interview times. Body {slots: [<iso>, ...]} (or [{start}]). Dark
+         behind INTERVIEW_SCHEDULING_ENABLED (404 when off)."""
+
+    def get(self, request, pk):
+        if not scheduling.scheduling_enabled():
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
+        return Response(interview_schedule_payload(app))
+
+    def post(self, request, pk):
+        if not scheduling.scheduling_enabled():
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
+        starts = _parse_slot_starts(request.data.get('slots'))
+        try:
+            scheduling.propose_slots(app, reviewer=admin, starts=starts)
+        except scheduling.SchedulingError as e:
+            return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(interview_schedule_payload(app))
+
+
+class AdminInterviewSlotDetailView(_AdminBase):
+    """DELETE .../applications/<pk>/interview-slots/<slot_id>/ — withdraw a proposed
+    (unbooked) slot. Reviewer/super, assignment-scoped."""
+
+    def delete(self, request, pk, slot_id):
+        if not scheduling.scheduling_enabled():
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
+        slot = InterviewSlot.objects.filter(application=app, pk=slot_id).first()
+        if slot is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            scheduling.withdraw_slot(slot)
+        except scheduling.SchedulingError as e:
+            return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(interview_schedule_payload(app))
 
 
 class ReviewerProfileView(_AdminBase):

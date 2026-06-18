@@ -15,7 +15,7 @@ export default function AppFooter() {
   return (
     <footer className="bg-gray-50 border-t border-gray-200">
       <div className="container mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="sm:col-span-2">
             <Image src="/logo-icon.png" alt="HalaTuju" width={120} height={40} />
@@ -53,6 +53,25 @@ export default function AppFooter() {
                     {t('common.saved')}
                   </button>
                 )}
+              </li>
+            </ul>
+          </div>
+
+          {/* B40 Aid — the assistance programme entry points */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
+              {t('footer.b40Heading')}
+            </h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/scholarship" className="text-sm text-gray-600 hover:text-gray-900">
+                  {t('footer.applyAssistance')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/sponsor" className="text-sm text-gray-600 hover:text-gray-900">
+                  {t('footer.becomeSponsor')}
+                </Link>
               </li>
             </ul>
           </div>

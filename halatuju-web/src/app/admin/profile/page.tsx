@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
   getAdminProfile, updateAdminProfile, type AdminProfile,
-  getReviewerProfile, updateReviewerProfile, type ReviewerProfile,
+  getReviewerProfile, updateReviewerProfile, type ReviewerProfile, type LangFluency,
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 import { MALAYSIAN_STATES } from '@/lib/scholarship'
@@ -189,6 +189,40 @@ export default function AdminProfilePage() {
             </div>
 
             <div className={card}>
+              <h2 className="font-semibold">{t('admin.reviewer.langTitle')}</h2>
+              <p className="text-sm text-gray-500 -mt-2">{t('admin.reviewer.langSubtitle')}</p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label className={labelCls}>{t('admin.reviewer.langEnglish')}</label>
+                  <select value={reviewer?.english_fluency ?? ''}
+                    onChange={(e) => setRev({ english_fluency: e.target.value as LangFluency })} className={inputCls}>
+                    <option value="">{t('admin.reviewer.fluencyNone')}</option>
+                    <option value="conversational">{t('admin.reviewer.fluencyConversational')}</option>
+                    <option value="fluent">{t('admin.reviewer.fluencyFluent')}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>{t('admin.reviewer.langBm')}</label>
+                  <select value={reviewer?.bm_fluency ?? ''}
+                    onChange={(e) => setRev({ bm_fluency: e.target.value as LangFluency })} className={inputCls}>
+                    <option value="">{t('admin.reviewer.fluencyNone')}</option>
+                    <option value="conversational">{t('admin.reviewer.fluencyConversational')}</option>
+                    <option value="fluent">{t('admin.reviewer.fluencyFluent')}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>{t('admin.reviewer.langTamil')}</label>
+                  <select value={reviewer?.tamil_fluency ?? ''}
+                    onChange={(e) => setRev({ tamil_fluency: e.target.value as LangFluency })} className={inputCls}>
+                    <option value="">{t('admin.reviewer.fluencyNone')}</option>
+                    <option value="conversational">{t('admin.reviewer.fluencyConversational')}</option>
+                    <option value="fluent">{t('admin.reviewer.fluencyFluent')}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className={card}>
               <h2 className="font-semibold flex items-center gap-2">
                 <span aria-hidden>🔒</span>{t('admin.reviewer.contactTitle')}
               </h2>
@@ -199,6 +233,12 @@ export default function AdminProfilePage() {
                   <PhoneField value={reviewer?.phone ?? ''} onChange={(v) => setRev({ phone: v })} />
                 </div>
               </div>
+              <label className="flex items-start gap-2 text-sm text-gray-700">
+                <input type="checkbox" className="mt-0.5"
+                  checked={reviewer?.share_phone_with_students ?? true}
+                  onChange={(e) => setRev({ share_phone_with_students: e.target.checked })} />
+                <span>{t('admin.reviewer.sharePhone')}</span>
+              </label>
               <div>
                 <label className={labelCls}>{t('admin.reviewer.street')}</label>
                 <input type="text" value={reviewer?.street_address ?? ''} onChange={(e) => setRev({ street_address: e.target.value })} className={inputCls} />
@@ -255,5 +295,7 @@ function blankReviewer(): ReviewerProfile {
     highest_qualification: '', university: '', graduation_year: null,
     field_of_study: '', phone: '', address: '',
     street_address: '', postcode: '', city: '', state: '',
+    english_fluency: '', bm_fluency: '', tamil_fluency: '',
+    share_phone_with_students: true,
   }
 }

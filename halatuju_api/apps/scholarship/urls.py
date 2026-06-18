@@ -21,6 +21,9 @@ from .views import (
     ResolutionItemResolveView,
     SemesterResultView,
     StudentAwardView,
+    StudentInterviewView,
+    StudentInterviewBookView,
+    StudentInterviewCancelView,
 )
 from .views_sponsor import (
     SponsorCancelOfferView,
@@ -59,6 +62,8 @@ from .views_admin import (
     AdminRequestInfoView,
     AdminResolutionItemView,
     AdminAssignReviewerView,
+    AdminInterviewSlotsView,
+    AdminInterviewSlotDetailView,
     AdminResolutionItemActionView,
     AdminRunVisionView,
     AdminVerdictMetricsView,
@@ -79,6 +84,10 @@ urlpatterns = [
     path('scholarship/applications/<int:pk>/semester-results/', SemesterResultView.as_view()),
     path('scholarship/applications/<int:pk>/promotional-consent/', PromotionalConsentView.as_view()),
     path('scholarship/applications/<int:pk>/graduation-message/', GraduationMessageView.as_view()),
+    # Interview scheduling (student side; dark behind INTERVIEW_SCHEDULING_ENABLED)
+    path('scholarship/applications/<int:pk>/interview/', StudentInterviewView.as_view()),
+    path('scholarship/applications/<int:pk>/interview/book/', StudentInterviewBookView.as_view()),
+    path('scholarship/applications/<int:pk>/interview/cancel/', StudentInterviewCancelView.as_view()),
     path('scholarship/documents/sign-upload/', DocumentSignUploadView.as_view()),
     path('scholarship/documents/', DocumentListCreateView.as_view()),
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
@@ -126,6 +135,9 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/reject/', AdminRejectView.as_view()),
     # F7: super-only audited reviewer (re)assignment.
     path('admin/scholarship/applications/<int:pk>/assign/', AdminAssignReviewerView.as_view()),
+    # Interview scheduling (reviewer proposes times; dark behind INTERVIEW_SCHEDULING_ENABLED)
+    path('admin/scholarship/applications/<int:pk>/interview-slots/', AdminInterviewSlotsView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/interview-slots/<int:slot_id>/', AdminInterviewSlotDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/referees/', AdminApplicationRefereeView.as_view()),
     path('admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/', AdminRefereeDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/documents/<int:doc_id>/re-run-vision/', AdminRunVisionView.as_view()),

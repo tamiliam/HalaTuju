@@ -667,6 +667,12 @@ export function popOnboardingReturn(storage?: StorageLike): string | null {
   return v
 }
 
+/** Read the onboarding return path WITHOUT consuming it (for the CTA label). */
+export function peekOnboardingReturn(storage?: StorageLike): string | null {
+  const s = storage ?? safeSession()
+  return s?.getItem(ONBOARDING_RETURN_KEY) ?? null
+}
+
 // ── STEP 2: deeper-info + funding-need form (Sprint 4b) ──────────────────
 
 export interface DetailsFormState {

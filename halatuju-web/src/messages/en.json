@@ -258,7 +258,10 @@
     "tagline": "Guiding Malaysian students to the right course.",
     "quickLinks": "Quick Links",
     "legal": "Legal",
-    "startHere": "Start Here"
+    "startHere": "Start Here",
+    "b40Heading": "B40 Aid",
+    "applyAssistance": "Apply for assistance",
+    "becomeSponsor": "Become a sponsor"
   },
   "landing": {
     "heroTitle": "Find Your Perfect Course",
@@ -378,7 +381,8 @@
     "spmSastera": "Arts",
     "spmTeknikal": "Technical",
     "spmVokasional": "Vocational",
-    "saveReturnToApplication": "Save & return to application"
+    "saveReturnToApplication": "Save & return to application",
+    "saveAndReturn": "Save & return to profile"
   },
   "verifyEmail": {
     "loading": "Verifying your email...",
@@ -524,7 +528,7 @@
     "aboutTitle": "About HalaTuju",
     "version": "Version",
     "currentLanguage": "Current Language",
-    "builtBy": "Built by the Tamil Foundation for Malaysian students."
+    "builtBy": "Built by tamiliam for Malaysian students."
   },
   "courseDetail": {
     "aboutTitle": "About This Course",
@@ -845,7 +849,7 @@
       "tooLong": "Your answer to “{field}” is too long. Please shorten it and try again.",
       "step4Title": "4. Upload your documents",
       "step4Body": "Please upload the required documents below — your IC, your latest results slip, and your parent or guardian's IC. The optional documents help strengthen your application.",
-      "techSupport": "Having technical trouble with this application? Email tamiliam@gmail.com or call 012-337 5709 and describe the problem — we'll be glad to help.",
+      "techSupport": "Having technical trouble with this application? Email help@halatuju.xyz or call 012-337 5709 and describe the problem — we'll be glad to help.",
       "step5Title": "5. Add a referee",
       "step5Body": "Someone who can vouch for you — a teacher, counsellor, or community contact.",
       "step6Title": "6. Give your consent",
@@ -1550,6 +1554,21 @@
       "homeCta": "Back to home",
       "acceptedTitle": "You've been accepted",
       "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award.",
+      "interview": {
+        "title": "Your interview",
+        "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about 30–45 minutes).",
+        "book": "Book this time",
+        "selectFirst": "Please choose a time first.",
+        "booked": "Your interview is booked for",
+        "joinMeet": "Join the video call",
+        "noLinkYet": "The video-call link will appear here before your interview.",
+        "parentsNote": "It's a video call — please be on camera. Your parents are welcome to join from home.",
+        "reschedule": "Choose a different time",
+        "cancel": "Cancel",
+        "cancelledNote": "Your interview was cancelled. Your interviewer will propose new times soon.",
+        "tooLateNote": "It's close to your interview time — please contact us if you need to change it.",
+        "error": "Something went wrong. Please try again."
+      },
       "awardPanel": {
         "title": "One more step",
         "acceptBody": "A supporter has chosen to fund your studies. Accept your award to continue.",
@@ -2374,7 +2393,7 @@
       "allBuckets": "All buckets",
       "allSources": "All sources",
       "allAssignees": "Anyone",
-      "assignedToMe": "Assigned to me",
+      "byReviewer": "By reviewer",
       "unassigned": "Unassigned",
       "assigned": "Assigned",
       "source": "Source",
@@ -2457,8 +2476,29 @@
         "submit": "Submit interview findings",
         "saveError": "Could not save the interview.",
         "submitError": "Could not submit the interview.",
+        "saved": "Saved ✓",
+        "reopen": "Reopen",
+        "noneRecorded": "No interview findings were recorded.",
+        "findingsLabel": "Findings",
+        "submittedOn": "Submitted on",
+        "editingReopened": "Reopened for editing",
         "verdict": {
           "resolved": "Resolved"
+        },
+        "schedule": {
+          "title": "Interview scheduling",
+          "intro": "Propose 2–3 times. The student picks one, and we send a Google Meet link and reminders automatically.",
+          "booked": "Booked",
+          "meetLink": "Google Meet link",
+          "noLink": "No link yet — it is created when the student books.",
+          "cancelledNote": "The student cancelled — propose fresh times.",
+          "proposed": "Proposed times",
+          "noneProposed": "No times proposed yet.",
+          "withdraw": "Withdraw",
+          "addTime": "Add a time",
+          "propose": "Propose times",
+          "needFuture": "Please add at least one future time.",
+          "error": "Could not save. Please try again."
         }
       },
       "empty": "No applications match.",
@@ -2474,7 +2514,7 @@
       "funding": "Funding need",
       "referees": "Referees",
       "none": "None yet.",
-      "profileTitle": "Sponsor profile (draft)",
+      "profileTitle": "Student profile (draft)",
       "profileDraftHint": "This draft will be replaced with an updated final version that incorporates your findings when you save your verdict.",
       "model": "Model",
       "acceptedBy": "Verified & accepted by",
@@ -2761,6 +2801,9 @@
         "save": "Save verdict & generate final profile",
         "approve": "Approve",
         "decline": "Decline",
+        "edit": "Edit",
+        "recordedBy": "Decision recorded by",
+        "declinedBy": "Declined by",
         "aiSuggested": "AI verdict:",
         "suggest": {
           "yes": "yes",
@@ -2869,7 +2912,8 @@
       "profilePending": "The profile is generated automatically when the application is handed over for review.",
       "finalProfile": {
         "title": "Final profile (v2 — with interview)"
-      }
+      },
+      "prefersLang": "Prefers {lang}"
     },
     "students": "Students",
     "invite": "Invite",
@@ -3060,7 +3104,16 @@
       "postcode": "Postcode",
       "city": "City",
       "state": "State",
-      "selectState": "Select state"
+      "selectState": "Select state",
+      "langTitle": "Languages",
+      "langSubtitle": "So we can match you with students you can speak with comfortably.",
+      "langEnglish": "English",
+      "langBm": "Bahasa Melayu",
+      "langTamil": "Tamil",
+      "fluencyNone": "Not really",
+      "fluencyConversational": "Conversational",
+      "fluencyFluent": "Fluent",
+      "sharePhone": "Share my phone number with students assigned to me, so they know to expect my call."
     },
     "inviteAs": "Invite as",
     "inviteHeading": {
@@ -3136,6 +3189,8 @@
     "settingPassword": "Setting…",
     "passwordTooShort": "Password must be at least 8 characters.",
     "passwordMismatch": "The two passwords don’t match.",
-    "setPasswordNoLink": "This page must be opened from the link in your invite or password-reset email. The link may have expired — request a new one from the login page."
+    "setPasswordNoLink": "This page must be opened from the link in your invite or password-reset email. The link may have expired — request a new one from the login page.",
+    "guideNav": "Guide",
+    "faqNav": "FAQ"
   }
 }

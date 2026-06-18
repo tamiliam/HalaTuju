@@ -58,6 +58,42 @@ class TestAdminScholarship(TestCase):
         r = self.client.get('/api/v1/admin/scholarship/applications/')
         self.assertEqual(r.status_code, 401)
 
+    def test_list_sort_by_name_and_merit(self):
+        # A second applicant with a weaker record (lower merit) + an earlier name.
+        prof2 = StudentProfile.objects.create(
+            supabase_user_id='stud2', nric='040202-14-2222', name='Aaron',
+            grades={'sub0': 'C', 'sub1': 'C'}, household_income=3000)
+        ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=prof2, status='shortlisted')
+        self._auth(ADMIN)
+
+        def names(params):
+            r = self.client.get('/api/v1/admin/scholarship/applications/' + params)
+            self.assertEqual(r.status_code, 200)
+            return [a['name'] for a in r.json()['applications']]
+
+        self.assertIn('AARON', names('?sort=name&dir=asc')[0])     # A before P
+        self.assertIn('PRIYA', names('?sort=name&dir=desc')[0])    # reversed
+        self.assertIn('PRIYA', names('?sort=merit&dir=desc')[0])   # all-A → highest merit
+        self.assertIn('AARON', names('?sort=merit&dir=asc')[0])    # weakest → lowest merit
+
+    def test_contact_submission_email(self):
+        from django.core import mail
+        from apps.scholarship.emails import send_contact_submission_admin_email
+        self.assertTrue(send_contact_submission_admin_email(
+            to_email='contact@halatuju.xyz', name='Asha', contact='asha@example.com',
+            category='general', message='A question about B40.', created_at='2026-06-17 10:00'))
+        m = mail.outbox[-1]
+        self.assertEqual(m.to, ['contact@halatuju.xyz'])
+        self.assertEqual(m.reply_to, ['asha@example.com'])     # email contact → reply-to
+        self.assertIn('A question about B40.', m.body)
+        self.assertIn('general', m.subject)
+        # a phone (non-email) contact → no reply-to
+        send_contact_submission_admin_email(
+            to_email='contact@halatuju.xyz', name='Ben', contact='012-345 6789',
+            category='bug', message='broken', created_at='2026-06-17')
+        self.assertEqual(mail.outbox[-1].reply_to, [])
+
     def test_findings_accepts_deleted_verdict(self):
         # S4 review: a 'Deleted' interview talking point persists as a finding (then filters
         # off the agenda); validation must accept it. 'resolved' valid; bogus rejected.

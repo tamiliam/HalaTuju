@@ -10,7 +10,7 @@ import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
 import SchoolSelect from '@/components/SchoolSelect'
 import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
-import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn } from '@/lib/scholarship'
+import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn, peekOnboardingReturn } from '@/lib/scholarship'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -34,8 +34,11 @@ export default function ProfileInputPage() {
   // Entered from the scholarship apply form's "edit results"? Then this final
   // step returns to the apply page instead of the dashboard.
   const [returning, setReturning] = useState<boolean>(false)
+  // A non-apply caller (e.g. /profile editing grades) set a return path — the final
+  // step then says "Save & return" and goes back there, not to recommendations.
+  const [returnPath, setReturnPath] = useState<string | null>(null)
 
-  useEffect(() => { setReturning(hasApplyReturn()) }, [])
+  useEffect(() => { setReturning(hasApplyReturn()); setReturnPath(peekOnboardingReturn()) }, [])
 
   useEffect(() => {
     const savedProfile = localStorage.getItem(KEY_PROFILE)
@@ -363,7 +366,7 @@ export default function ProfileInputPage() {
             disabled={!isComplete}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {returning ? t('onboarding.saveReturnToApplication') : t('onboarding.seeRecommendations')}
+            {returnPath ? t('onboarding.saveAndReturn') : returning ? t('onboarding.saveReturnToApplication') : t('onboarding.seeRecommendations')}
           </button>
         </div>
       </div>
