@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Students are now emailed when interview times are proposed (2026-06-18).** The in-app scheduler was invisible to
+  students — `propose_slots()` created slots but sent no notification, so a student only found times to book if they
+  happened to log in. New bilingual (EN+BM) email `send_interview_slots_proposed_email` fires when the reviewer
+  proposes times, linking to the application page (the booking panel) and noting a Google Meet link is created on
+  booking. This lets the scheduler run in parallel with the on-assignment email. The assignment email copy was also
+  reconciled — it now tells the student they may be offered times to pick in HalaTuju (with an automatic Meet link),
+  rather than only "the interviewer will contact you." Backend only, no migration.
+
 ### Fixed
 - **Turnstile interaction challenge no longer strands or obscures flagged users (2026-06-18).** Cloudflare Turnstile
   (captcha for Supabase logins, enforcement ON) silently passes most users, but escalates to a visible "Verify you are

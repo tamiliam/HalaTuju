@@ -96,6 +96,13 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None)
             application=application, reviewer=reviewer, start=s, duration_min=duration_min)
         for s in sorted(future)
     ]
+    # Tell the student their times are ready to pick — otherwise the in-app scheduler is
+    # invisible to them (they'd have to chance upon the booking panel). Best-effort.
+    student_email, student_name = _student_identity(application)
+    if student_email:
+        emails.send_interview_slots_proposed_email(
+            student_email, student_name=student_name,
+            reviewer_name=getattr(reviewer, 'name', ''))
     return created
 
 
