@@ -818,3 +818,14 @@
 - TD-126: **Interview-scheduling Guide step has no screenshot.** The Guide "Scheduling the interview" step renders
   text-only (images were made optional). **To resolve:** once `INTERVIEW_SCHEDULING_ENABLED` is on, capture the
   cockpit "Propose interview times" card + student booking panel and add them like the other steps. (Logged 2026-06-18.)
+- TD-127: **New PISMP rows (Pendidikan Khas `…H`, Prasekolah `…H7P`, MBPK `50BK…`) carry cloned generic descriptions.**
+  During the 2026-06-18 catalogue reconciliation, the B/D/L→H swap and the MBPK ingest created rows whose `description`
+  was cloned from a Perdana sibling rather than written for the specific bidang. They're correct on code/name/
+  requirements but the prose is generic. **To resolve:** write proper bidang-specific descriptions (the retired B/D/L
+  rows' bespoke Braille/BIM/autism copy is in `Downloads/sk_sjkc_retire_backup_2026-06-18.json` and can seed them).
+  Low priority — cosmetic, doesn't affect eligibility or selection. (Logged 2026-06-18.)
+- TD-128: **MBPK eligibility gate under-captures non-physical special-needs.** MBPK courses are gated on the existing
+  onboarding "Physical disability" checkbox (`req_disability`), but MBPK also covers learning / hearing / visual needs
+  (the old B/D/L categories) which that single signal doesn't capture — a deliberate partial proxy chosen for
+  simplicity (see decisions.md). **To resolve, if matching proves too narrow:** broaden the Special-Needs onboarding
+  field into typed categories and gate MBPK on the union. (Logged 2026-06-18.)

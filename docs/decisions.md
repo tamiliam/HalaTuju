@@ -1,5 +1,31 @@
 # Architectural Decisions — HalaTuju
 
+## PISMP aliran derived read-time; laluan to earn a column — Sprint 1 (PISMP), 2026-06-18
+**Decision:** PISMP **aliran** (SK/SJKC/SJKT/SKPK) is derived at read-time by `apps/courses/pismp_taxonomy.py` from the
+course-name suffix / `course_id` 6th char — **no DB column**. **Laluan** (admission route: Perdana/MBPK/STPM), which
+*gates eligibility*, is specced to earn a real `pismp_laluan` column in the deferred STPM sprint.
+**Alternatives considered:** a column for aliran too; parsing `course_id` inside the eligibility hot path for laluan.
+**Rationale:** aliran only drives display + an Explore filter, so a pure derivation keeps the schema clean and needs no
+migration; laluan changes *who is eligible*, so it must be auditable + queryable in the `requirements_df` rather than
+re-parsed on every eligibility check.
+**Trade-offs:** the derivation parser must stay in sync with naming conventions; two different mechanisms (derived
+aliran vs column laluan) for two facets of the same hierarchy.
+**Revisit if:** aliran ever starts gating eligibility (then it earns a column too), or naming conventions drift enough
+that read-time derivation becomes unreliable.
+
+## MBPK eligibility gated on the existing "Physical disability" signal — Sprint 1 (PISMP), 2026-06-18
+**Decision:** MBPK (special-needs) PISMP courses are recommended only to students who ticked **"Physical disability"** at
+onboarding, via a new `req_disability` must-HAVE flag (the inverse of the existing `no_disability` exclusion) — rather
+than a browse-only badge or a new typed special-needs field.
+**Alternatives considered:** (a) browse-only MBPK with a "you must be a registered MBPK student" note (no eligibility
+gate); (b) add a typed Special-Needs field (learning/hearing/visual/physical) and gate on the union.
+**Rationale:** reuses data the student already provides; gives MBPK a real eligibility match (the owner's insight) with
+zero new onboarding friction; ships now.
+**Trade-offs:** a known **partial proxy** — "Physical disability" misses non-physical MBPK (learning/hearing/visual, the
+old B/D/L categories), so some eligible students won't be matched. Logged as TD-128.
+**Revisit if:** MBPK matching proves too narrow in practice — then broaden the Special-Needs field into typed categories
+(TD-128) and gate on the union.
+
 ## Reversing a recorded decision ("Reopen") — 2026-06-18
 
 **Decision:** A super-only **Reopen** reverses a finalised decision by (a) **holding the profile from the sponsor pool**

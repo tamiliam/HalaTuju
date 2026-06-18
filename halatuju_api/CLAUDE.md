@@ -517,6 +517,28 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-18)
 
+**▶ SHIPPED 2026-06-18 — PISMP catalogue reconciliation + Aliran facet + MBPK disability gate (Sprint 1 of the PISMP
+pathway work; commits `4446c2e` bug+aliran, `4589a6a` req_disability; courses migration `0058`; retro
+`docs/retrospective-2026-06-18-pismp-catalogue.md`). Worked in worktree off origin/main.**
+- **Fixed "0 of 0" in Explore.** `CourseSearchView` skipped the SPM branch for level=`Ijazah Sarjana Muda` (treated it
+  as STPM-only), hiding all PISMP. Now only skipped for `source_type='ua'`. PISMP degrees are visible again.
+- **Aliran facet** (SK/SJKC/SJKT/SKPK) in Explore, derived read-time by `pismp_taxonomy.py` (no schema change); web
+  shows an Aliran dropdown when source-type=PISMP, trilingual.
+- **SPM Perdana catalogue now matches the official 2026 PDF** by code + name + requirements (SJKT 10 / SK 14 / SJKC 15).
+  Fixed a systematic `A→A−` over-restriction across all 35 Perdana, the B/D/L→`…H` Pendidikan Khas/Prasekolah swap, and
+  retired spurious rows (all backed up to `Downloads/*_retire_backup_2026-06-18.json`).
+- **MBPK intake disability-gated.** New `req_disability` must-HAVE flag (courses migration `0058`) + engine gate; 10
+  Laluan Khas track-A `50BK…` bidang ingested, recommended only to students who declared a disability. Verified live
+  (rev …00447).
+- **Gotchas:** PISMP is **PDF-sourced** (not web-scrapeable). Eligibility reads a pandas `requirements_df` cached at app
+  boot (`apps.py:61`) — **DB requirement/catalogue edits don't reach live eligibility until the api restarts** (force a
+  no-rebuild revision via `--update-env-vars=PISMP_DATA_RELOAD=<v>`). Search/Explore read the ORM live.
+- **▶ NEXT (Sprint 2): the Aliran → Bidang pathway picker** in `/apply` + `/profile` — the UI that lets a student
+  navigate Aliran → Bidang Pengkhususan to the right PISMP course (`PathwayPicker.tsx` / `lib/scholarship.ts`).
+  Stitch-prototype first, trilingual en/ms/ta, tests. The catalogue is now correct enough to drive it. **Deferred:**
+  STPM + SKPK → `StpmCourse` track (spec in `memory/halatuju-pismp-refresh-spec.md` Sprint R3); polish the cloned
+  generic descriptions on the new Khas/Prasekolah/MBPK rows; broadening the MBPK gate beyond "Physical disability".
+
 **▶ SHIPPED 2026-06-18 — Reverse a recorded decision ("Reopen") + cockpit Q&A presentation (migration
 `scholarship/0062` migrate-first; retro `docs/retrospective-2026-06-18-decision-reopen.md`). Worktree `.worktrees/sched`.**
 - **Reopen (super-only) reverses a finalised decision.** The Decision panel's cosmetic "Edit" (frontend-only) became
