@@ -59,6 +59,18 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(len(slots), 2)
         self.assertEqual(InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 2)
 
+    def test_propose_emails_student_to_pick_a_time(self):
+        # Proposing times must notify the student to come book — otherwise the in-app
+        # scheduler is invisible to them (runs parallel to the assignment email).
+        mail.outbox.clear()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ['priya@example.com'])
+        self.assertIn('ready to pick', msg.subject)
+        self.assertIn('/scholarship/application', msg.body)
+        self.assertIn('Rohini', msg.body)   # the reviewer's name
+
     def test_propose_rejects_unassigned_reviewer(self):
         with self.assertRaises(scheduling.SchedulingError) as cm:
             scheduling.propose_slots(self.app, reviewer=self.other_reviewer,

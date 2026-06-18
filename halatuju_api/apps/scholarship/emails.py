@@ -1032,8 +1032,10 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
         f'Good news — your application has reached the interview stage of the B40 Assistance '
         f'Programme, and an interviewer has been assigned to you:\n\n'
         f'{en_contact}\n'
-        f'{reviewer} will contact you within the next few days to arrange a short interview '
-        f'(by phone or video call). {en_action}\n\n'
+        f'{reviewer} will arrange a short interview with you in the next few days (about 30–45 '
+        f'minutes, by video call). You may be offered a few times to choose from in HalaTuju — '
+        f'sign in to your application page to pick one, and we’ll email you a Google Meet link '
+        f'automatically. {en_action}\n\n'
         f'For a video call, please be on camera. If your parents or guardian are around, our '
         f'interviewer would be glad to speak with them too.\n\n'
         f'This is simply to understand your family’s situation fairly. The support is for families '
@@ -1048,8 +1050,10 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_nam
         f'Berita baik — permohonan anda telah sampai ke peringkat temu duga Program Bantuan B40, '
         f'dan seorang penemu duga telah ditugaskan kepada anda:\n\n'
         f'{bm_contact}\n'
-        f'{reviewer_bm} akan menghubungi anda dalam masa beberapa hari untuk menetapkan temu duga '
-        f'ringkas (melalui telefon atau panggilan video). {bm_action}\n\n'
+        f'{reviewer_bm} akan mengaturkan temu duga ringkas dengan anda dalam masa beberapa hari '
+        f'(kira-kira 30–45 minit, melalui panggilan video). Anda mungkin ditawarkan beberapa masa '
+        f'untuk dipilih dalam HalaTuju — log masuk ke halaman permohonan anda untuk memilih satu, '
+        f'dan kami akan menghantar pautan Google Meet secara automatik. {bm_action}\n\n'
         f'Untuk panggilan video, sila buka kamera. Jika ibu bapa atau penjaga anda ada bersama, '
         f'penemu duga kami amat berbesar hati untuk bercakap dengan mereka juga.\n\n'
         f'Ini hanyalah untuk memahami keadaan keluarga anda secara adil. Bantuan ini untuk keluarga '
@@ -1192,6 +1196,44 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'— Pasukan Program Bantuan B40'
     )
     return _send_bilingual(to_email, 'Your B40 Assistance Programme interview is booked', en, bm)
+
+
+def send_interview_slots_proposed_email(to_email, *, student_name, reviewer_name):
+    """Student notice that interview times are ready to pick — fired when the reviewer
+    PROPOSES slots, so the in-app scheduler isn't invisible to students. Links to the
+    application page (the booking panel lives there); a Google Meet link is created
+    automatically on booking. Bilingual; best-effort → bool."""
+    student = student_name or 'there'
+    student_bm = student_name or 'di sana'
+    reviewer = reviewer_name or 'your interviewer'
+    reviewer_bm = reviewer_name or 'penemu duga anda'
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/scholarship/application'
+    en = (
+        f'Hi {student},\n\n'
+        f'Good news — {reviewer} has proposed a few times for your B40 Assistance Programme '
+        f'interview, and you can pick the one that suits you best.\n\n'
+        f'• Choose your time here: {link}\n\n'
+        f'Once you pick a slot, we’ll email you a confirmation with a Google Meet link and send '
+        f'reminders before the interview. It takes about 30–45 minutes, by video call.\n\n'
+        f'If none of the times work, just reply to this email and we’ll arrange another.\n\n'
+        f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN.\n\n'
+        f'— The B40 Assistance Programme team'
+    )
+    bm = (
+        f'Salam {student_bm},\n\n'
+        f'Berita baik — {reviewer_bm} telah mencadangkan beberapa masa untuk temu duga Program '
+        f'Bantuan B40 anda, dan anda boleh memilih masa yang paling sesuai.\n\n'
+        f'• Pilih masa anda di sini: {link}\n\n'
+        f'Setelah anda memilih slot, kami akan menghantar e-mel pengesahan dengan pautan Google '
+        f'Meet dan peringatan sebelum temu duga. Ia mengambil masa kira-kira 30–45 minit, melalui '
+        f'panggilan video.\n\n'
+        f'Jika tiada masa yang sesuai, balas sahaja e-mel ini dan kami akan aturkan masa lain.\n\n'
+        f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
+        f'OTP/PIN.\n\n'
+        f'— Pasukan Program Bantuan B40'
+    )
+    return _send_bilingual(to_email, 'Your B40 interview times are ready to pick', en, bm)
 
 
 def send_interview_reminder_email(to_email, *, student_name, start, meeting_url='', when='1day'):
