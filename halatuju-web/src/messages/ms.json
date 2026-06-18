@@ -619,6 +619,23 @@
         "programmeNoMatch": "Tiada padanan — cuba perkataan lain.",
         "programmeAtN": "{n} institusi",
         "noProgrammes": "Kami tidak menemui kursus yang anda layak untuk laluan ini. Cuba laluan lain, atau beritahu kami lebih lanjut pada langkah seterusnya.",
+        "aliranLabel": "Jenis sekolah",
+        "aliranTip": "Pilih jenis sekolah tempat anda mahu mengajar — ia menentukan mata pelajaran pengajaran yang boleh anda pilih.",
+        "aliran": {
+          "sk": "Sekolah Kebangsaan (SK)",
+          "sjkc": "Sekolah Cina (SJKC)",
+          "sjkt": "Sekolah Tamil (SJKT)",
+          "khas": "Sekolah Pendidikan Khas (SKPK)"
+        },
+        "aliranSub": {
+          "sk": "Sekolah Kebangsaan",
+          "sjkc": "Sekolah Jenis Kebangsaan Cina",
+          "sjkt": "Sekolah Jenis Kebangsaan Tamil",
+          "khas": "Pendidikan Khas"
+        },
+        "bidangLabel": "Mata pelajaran yang anda mahu ajar",
+        "bidangCount": "{n} mata pelajaran tersedia untuk jenis sekolah ini",
+        "pismpChosen": "Kursus anda: {course} — PISMP",
         "topProgrammesLabel": "3 program pilihan utama anda",
         "topProgrammesTip": "Pilih sehingga tiga ijazah yang anda sedang pertimbangkan — daripada yang layak dengan keputusan STPM anda. Kami akan ambil kira walaupun anda belum putuskan.",
         "trackLabel": "Trek matrikulasi yang mana?",

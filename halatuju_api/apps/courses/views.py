@@ -505,6 +505,9 @@ class EligibilityCheckView(APIView):
                 'institution_name': inst.get('inst_name') or '',
                 'institution_count': inst.get('inst_count') or 0,
                 'institution_state': inst.get('inst_state') or '',
+                # Aliran (school type) — only for PISMP, so the apply-form picker can
+                # group teacher-training courses by SK/SJKC/SJKT before the bidang.
+                'aliran': aliran_of(course_name, course_id) if source_type == 'pismp' else '',
             })
 
         eligible_courses = deduplicate_pismp(eligible_courses, pismp_req_hashes)

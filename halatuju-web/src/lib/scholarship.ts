@@ -196,6 +196,63 @@ export function programmesForPathway(
     .sort((a, b) => a.course_name.localeCompare(b.course_name))
 }
 
+// ── PISMP Aliran → Bidang picker (the teacher-training pathway) ──
+// PISMP courses form a tree: Aliran (school type) → Bidang (subject). A student picks
+// the school type they want to teach in, then the subject — instead of type-searching a
+// course name they may not know. The backend tags each eligible PISMP course with an
+// `aliran` (derived read-time by pismp_taxonomy.aliran_of); the bidang label is the
+// course name minus its school-type suffix. Elektif (the minor) is out of scope here.
+export const PISMP_ALIRAN_ORDER = ['sk', 'sjkc', 'sjkt', 'khas'] as const
+export type PismpAliran = typeof PISMP_ALIRAN_ORDER[number]
+
+/** The distinct alirans present among the eligible PISMP courses, in display order. */
+export function pismpAlirans(courses: EligibleCourse[] | null | undefined): PismpAliran[] {
+  if (!courses) return []
+  const present = new Set(
+    courses.filter((c) => c.source_type === 'pismp' && c.aliran).map((c) => c.aliran as string),
+  )
+  return PISMP_ALIRAN_ORDER.filter((a) => present.has(a))
+}
+
+/** Eligible PISMP courses for one aliran (school type), sorted A–Z by bidang label. */
+export function bidangForAliran(
+  courses: EligibleCourse[] | null | undefined,
+  aliran: string,
+): EligibleCourse[] {
+  if (!courses || !aliran) return []
+  return courses
+    .filter((c) => c.source_type === 'pismp' && c.aliran === aliran)
+    .sort((a, b) => bidangLabel(a.course_name).localeCompare(bidangLabel(b.course_name)))
+}
+
+/**
+ * The bidang (subject) display name = the course name minus its school-type suffix.
+ * "Matematik (SJKT)" → "Matematik". A special-needs (MBPK) variant keeps a "(MBPK)"
+ * marker so it stays distinct from its mainstream sibling: "Muzik (SJKT-MBPK)" →
+ * "Muzik (MBPK)".
+ */
+export function bidangLabel(courseName: string): string {
+  if (!courseName) return ''
+  return courseName
+    .replace(/\s*\((?:SK|SJKC|SJKT|SKPK)-MBPK\)\s*$/i, ' (MBPK)')
+    .replace(/\s*\((?:SK|SJKC|SJKT|SKPK|Khas)\)\s*$/i, '')
+    .trim()
+}
+
+/**
+ * The aliran of an already-chosen PISMP course, looked up from the eligible list by id —
+ * used to re-open the picker on the right school type when a student edits their pathway
+ * on /profile. Returns '' if the course isn't a PISMP course in the list.
+ */
+export function aliranForChosen(
+  courses: EligibleCourse[] | null | undefined,
+  courseId: string | null | undefined,
+): string {
+  if (!courses || !courseId) return ''
+  const c = courses.find((x) => x.course_id === courseId)
+  return (c && c.source_type === 'pismp' && c.aliran) || ''
+}
+
 // ── Plans redesign P4: institution pathways (Matriculation + STPM Form 6) ──
 // The two pathways whose decided branch is an institution (track/stream → college/school),
 // not a course list. They store onto pre_u_track + pre_u_institution.
