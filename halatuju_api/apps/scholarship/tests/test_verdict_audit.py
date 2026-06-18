@@ -154,6 +154,17 @@ class TestRecordVerdictEndpoint(TestCase):
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'bad_verdict')
 
+    def test_incomplete_verdict_rejected_and_not_recorded(self):
+        # A blank fact must NOT record a decision (the app #4 'Save with blanks' bug).
+        self._auth(REVIEWER)
+        r = self.client.post(self._url(),
+                             {'officer_verdict': self._verdict(academic=''), 'finalise': True},
+                             format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'verdict_incomplete')
+        self.assertIn('academic', r.json()['facts'])
+        self.assertIsNone(ScholarshipApplication.objects.get(pk=self.app.id).verdict_decided_at)
+
     @patch('apps.scholarship.views_admin.refine_sponsor_profile')
     def test_finalise_runs_when_draft_and_interview_exist(self, mock_refine):
         mock_refine.return_value = {'markdown': '## Final v2', 'model_used': 'gemini-2.5-flash'}

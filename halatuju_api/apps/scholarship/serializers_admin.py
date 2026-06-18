@@ -166,6 +166,8 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
             'assigned_to_id', 'assigned_to_name',
+            # When set, the list pill shows "Reopened" (overriding accepted/rejected).
+            'decision_reopened_at',
         ]
 
     def get_name(self, obj):
@@ -239,6 +241,12 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     rejected_by_name = serializers.SerializerMethodField()
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
+    # Internal-only correction tally for the assigned reviewer (reopened decisions that
+    # led to a real change). Shown in the assign panel; never on a sponsor/student surface.
+    assigned_to_corrections = serializers.SerializerMethodField()
+    # Decision-reopen state: when set, the decision panel is editable + the reviewer
+    # dropdown unlocks + a "held from sponsors" banner shows. The open reason drives the banner.
+    decision_reopen_reason = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -297,7 +305,21 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # S5 verdict audit / override capture (read-only; written via record-verdict).
             'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
             'verdict_decided_by', 'verdict_decided_at', 'verdict_decided_by_name',
+            # Decision-reopen (reverse a recorded decision) state + assigned-reviewer corrections.
+            'decision_reopened_at', 'decision_reopen_reason',
+            'assigned_to_corrections',
         ]
+
+    def get_assigned_to_corrections(self, obj):
+        from .reopen import reviewer_correction_count
+        return reviewer_correction_count(obj.assigned_to)
+
+    def get_decision_reopen_reason(self, obj):
+        if obj.decision_reopened_at is None:
+            return ''
+        from .reopen import open_reopen
+        row = open_reopen(obj)
+        return row.reason if row else ''
 
     def get_name(self, obj):
         return _full_name(obj)

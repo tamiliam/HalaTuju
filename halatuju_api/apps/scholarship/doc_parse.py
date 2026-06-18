@@ -381,14 +381,22 @@ def _bc_name(line: str) -> str:
 # "Full Name" labels, the section headers, "Maklumat…" placeholders).
 _BC_STOP = {'name', 'full name', 'nama', 'nama penuh', 'kanak-kanak', 'bapa', 'ibu',
             'child', 'father', 'mother', 'kanak-kanak / child', 'bapa/father', 'ibu/mother'}
+# Institutional / letterhead tokens an all-caps scan must never mistake for a person's
+# name — a real Malaysian name contains none of these. Fixes the BC header "KERAJAAN
+# MALAYSIA" / "JABATAN PENDAFTARAN NEGARA" leaking in as the child (app #10).
+_BC_INSTITUTIONAL = ('KERAJAAN', 'JABATAN', 'PENDAFTARAN', 'NEGARA', 'MALAYSIA',
+                     'SIJIL', 'KELAHIRAN', 'REGISTRATION', 'REGISTRAR', 'GOVERNMENT',
+                     'BIRTH', 'CERTIFICATE', 'PERAKUAN')
 
 
 def _is_bc_person(s: str) -> bool:
-    """An all-caps personal name (mononym OK), not a form label/section header."""
+    """An all-caps personal name (mononym OK), not a form label/section/letterhead."""
     s = (s or '').strip()
     if not (3 <= len(s) <= 50) or any(c.isdigit() for c in s):
         return False
     if s.lower() in _BC_STOP or not re.match(r'^[A-Z][A-Z .@/]*$', s):
+        return False
+    if any(w in s.upper() for w in _BC_INSTITUTIONAL):
         return False
     return sum(c.isalpha() for c in s) >= 3
 
@@ -415,7 +423,9 @@ def _parse_bc(text: str) -> Optional[dict]:
     if not has(text, r'kad\s+pengenalan'):
         return None
     lines = _lines(text)
-    child = _bc_child(lines)    # mononym-tolerant, skips the 'Name'/'Full Name' labels
+    child = _bc_child(lines)    # mononym-tolerant, skips the 'Name'/'Full Name' labels + letterhead
+    if not child:              # couldn't isolate a real child name → defer to Gemini (don't
+        return None            # confidently return a header/blank, the app #10 failure)
     # parents: each "No. Kad Pengenalan" NRIC + the nearest preceding name (≠ child).
     parents = []
     for i, ln in enumerate(lines):

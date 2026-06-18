@@ -281,6 +281,30 @@ class TestEligibilityEndpoint(TestCase):
         pismp = [c for c in courses if c['source_type'] == 'pismp']
         self.assertGreater(len(pismp), 0, "Perfect student should qualify for PISMP courses")
 
+    def test_pismp_courses_carry_aliran(self):
+        """Eligible PISMP courses expose an 'aliran' (sk/sjkc/sjkt/khas) so the apply-form
+        picker can group them by school type; non-PISMP courses carry an empty aliran."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+', 'bio': 'A+',
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        pismp = [c for c in courses if c['source_type'] == 'pismp']
+        self.assertGreater(len(pismp), 0)
+        for c in pismp:
+            self.assertIn('aliran', c)
+            self.assertIn(c['aliran'], ('sk', 'sjkc', 'sjkt', 'khas'),
+                          f"{c['course_id']} has an unexpected aliran {c['aliran']!r}")
+        # Non-PISMP courses get an empty aliran (the key is always present).
+        for c in courses:
+            if c['source_type'] != 'pismp':
+                self.assertEqual(c.get('aliran', ''), '')
+
     def test_pismp_weak_student_excluded(self):
         """Student with no A grades should NOT qualify for any PISMP courses."""
         response = self.client.post(self.url, {
@@ -1214,3 +1238,86 @@ class TestCalculateEndpoints(TestCase):
             content_type='application/json',
         )
         self.assertEqual(response.status_code, 400)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls')
+class TestUnifiedSearchPismpLevelFilter(TestCase):
+    """Regression: PISMP degrees are SPM-entry but level 'Ijazah Sarjana Muda'.
+
+    The unified search used to treat that level as STPM-university-only and switch
+    off the SPM branch, so 'IPGM + Ijazah Sarjana Muda' returned 0 results. The SPM
+    branch must stay on unless the source_type filter is the STPM-university one.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        from apps.courses.models import Course, CourseRequirement
+        self.course = Course.objects.create(
+            course_id='TEST-PISMP-001',
+            course='Bahasa Tamil Pendidikan Rendah (SJKT)',
+            level='Ijazah Sarjana Muda',
+            department='Pendidikan',
+            field='Pendidikan',
+            field_key_id='mekanikal',
+        )
+        CourseRequirement.objects.create(course=self.course, source_type='pismp')
+
+    def _ids(self, qs):
+        resp = self.client.get(f'/api/v1/courses/search/?{qs}')
+        self.assertEqual(resp.status_code, 200)
+        return {c['course_id'] for c in resp.data['courses']}
+
+    def test_pismp_visible_with_ipgm_and_ijazah_filter(self):
+        """IPGM (source_type=pismp) + Ijazah Sarjana Muda must return the PISMP degree."""
+        self.assertIn('TEST-PISMP-001', self._ids('source_type=pismp&level=Ijazah Sarjana Muda'))
+
+    def test_pismp_visible_with_ijazah_level_alone(self):
+        """The bare Ijazah Sarjana Muda level must include SPM-entry PISMP degrees."""
+        self.assertIn('TEST-PISMP-001', self._ids('level=Ijazah Sarjana Muda'))
+
+    def test_pismp_excluded_when_filtering_ua_degrees(self):
+        """source_type=ua + Ijazah must NOT include PISMP (the STPM-only skip is kept)."""
+        self.assertNotIn('TEST-PISMP-001', self._ids('source_type=ua&level=Ijazah Sarjana Muda'))
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls')
+class TestUnifiedSearchPismpAliranFilter(TestCase):
+    """The PISMP-only Aliran facet narrows results to one school type."""
+
+    def setUp(self):
+        self.client = APIClient()
+        from apps.courses.models import Course, CourseRequirement
+        # One SJKT major, one SJKC major, one SJKT elektif.
+        self.rows = [
+            ('50PD040T00P', 'Bahasa Tamil Pendidikan Rendah (SJKT)'),
+            ('50PD030C00P', 'Bahasa Cina Pendidikan Rendah (SJKC)'),
+            ('50PD040M9MP', 'Bahasa Melayu Pendidikan Rendah Elektif (SJKT)'),
+        ]
+        for cid, name in self.rows:
+            c = Course.objects.create(
+                course_id=cid, course=name, level='Ijazah Sarjana Muda',
+                department='Pendidikan', field='Pendidikan', field_key_id='mekanikal',
+            )
+            CourseRequirement.objects.create(course=c, source_type='pismp')
+
+    def _courses(self, qs):
+        resp = self.client.get(f'/api/v1/courses/search/?{qs}')
+        self.assertEqual(resp.status_code, 200)
+        return resp.data['courses']
+
+    def test_aliran_filter_returns_only_that_school_type(self):
+        ids = {c['course_id'] for c in self._courses('source_type=pismp&aliran=sjkt')}
+        self.assertIn('50PD040T00P', ids)
+        self.assertIn('50PD040M9MP', ids)
+        self.assertNotIn('50PD030C00P', ids)  # SJKC excluded
+
+    def test_results_carry_aliran_and_elektif_facets(self):
+        by_id = {c['course_id']: c for c in self._courses('source_type=pismp')}
+        self.assertEqual(by_id['50PD040T00P']['aliran'], 'sjkt')
+        self.assertFalse(by_id['50PD040T00P']['is_elektif'])
+        self.assertTrue(by_id['50PD040M9MP']['is_elektif'])
+
+    def test_filters_block_exposes_present_alirans(self):
+        resp = self.client.get('/api/v1/courses/search/?source_type=pismp')
+        values = {a['value'] for a in resp.data['filters']['alirans']}
+        self.assertEqual(values, {'sjkt', 'sjkc'})

@@ -67,6 +67,33 @@ describe('turnstile', () => {
     await expect(mod.getTurnstileToken()).resolves.toBeUndefined()
   })
 
+  it('reveals the box for an interaction challenge then hides it once solved (no lingering box)', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
+    const el = { style: {} as Record<string, string> }
+    let opts: Record<string, unknown> = {}
+    ;(global as unknown as { window: unknown }).window = {
+      turnstile: {
+        render: (_e: unknown, o: Record<string, unknown>) => { opts = o; return 'wid-1' },
+        execute: () => {
+          // Cloudflare decides a human must solve it: the box is revealed...
+          ;(opts['before-interactive-callback'] as () => void)()
+          expect(el.style.display).toBe('') // visible WHILE the challenge is up
+          // ...and the human solves it (well past the 8s silent budget in real life).
+          ;(opts.callback as (t: string) => void)('tok-int')
+        },
+        reset: () => {}, remove: () => {},
+      },
+    }
+    ;(global as unknown as { document: unknown }).document = {
+      createElement: () => el,
+      head: { appendChild: () => {} },
+      body: { appendChild: () => {}, removeChild: () => {} },
+    }
+    const mod = loadFresh()
+    await expect(mod.getTurnstileToken('admin_signin')).resolves.toBe('tok-int')
+    expect(el.style.display).toBe('none') // cleared after — never lingers over the app
+  })
+
   it('serialises concurrent calls so each gets its own fresh token', async () => {
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '0xTESTKEY'
     let n = 0

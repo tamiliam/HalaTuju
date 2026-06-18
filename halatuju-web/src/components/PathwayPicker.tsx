@@ -12,6 +12,7 @@ import FieldLabel from '@/components/FieldLabel'
 import PathwaySelect from '@/components/PathwaySelect'
 import ProgrammePicker from '@/components/ProgrammePicker'
 import InstitutionPicker from '@/components/InstitutionPicker'
+import AliranPicker from '@/components/AliranPicker'
 import {
   checkEligibility, calculatePathways, checkStpmEligibility,
   type EligibleCourse, type StudentProfile,
@@ -19,7 +20,8 @@ import {
 import {
   eligiblePathways, PATHWAY_ORDER, programmesForPathway, isProgrammePathway,
   eligibleMatricTracks, STPM_STREAMS, stpmDegreesToCourses, UNCERTAINTY_REASONS,
-  type ChosenProgramme,
+  pismpAlirans, bidangForAliran, aliranForChosen,
+  type ChosenProgramme, type PismpAliran,
 } from '@/lib/scholarship'
 import { collegesForTrack } from '@/data/matric-colleges'
 import { stpmSchoolsForStream } from '@/data/stpm-schools'
@@ -51,6 +53,26 @@ export default function PathwayPicker({
   const [eligibleCourses, setEligibleCourses] = useState<EligibleCourse[]>([])
   const [matricTracks, setMatricTracks] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+
+  // PISMP: the chosen school type (Aliran) is local to this picker — the bidang list and
+  // the committed course both derive from it. The eligible PISMP courses already carry an
+  // `aliran` from the backend.
+  const pismpCourses = programmesForPathway(eligibleCourses, 'pismp')
+  const availableAlirans = pismpAlirans(pismpCourses)
+  const [pismpAliran, setPismpAliran] = useState<string>('')
+
+  // Keep the selected school type in sync: derive it from an already-chosen course (so
+  // editing on /profile re-opens on the right Aliran), else auto-select when there's only
+  // one school type to choose from.
+  useEffect(() => {
+    if (form.chosenPathway !== 'pismp') return
+    const fromChosen = aliranForChosen(pismpCourses, form.chosenProgramme?.courseId)
+    if (fromChosen) { if (fromChosen !== pismpAliran) setPismpAliran(fromChosen); return }
+    if (!pismpAliran && availableAlirans.length === 1) setPismpAliran(availableAlirans[0])
+  }, [form.chosenPathway, form.chosenProgramme, eligibleCourses]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Switching school type clears the bidang (it belonged to the old Aliran).
+  const chooseAliran = (a: PismpAliran) => { setPismpAliran(a); setProgramme(null) }
 
   useEffect(() => {
     if (!token || !profile) return
@@ -163,7 +185,30 @@ export default function PathwayPicker({
 
       {/* Decided SPM pathway → programme combobox, or matric track / STPM stream → institution. */}
       {form.pathwayCertainty === 'sure' && examType !== 'stpm' && form.chosenPathway && (
-        isProgrammePathway(form.chosenPathway) ? (
+        form.chosenPathway === 'pismp' ? (
+          // Teacher-training: navigate Aliran (school type) → Bidang (subject), instead
+          // of type-searching a course name the student may not know.
+          <div className="space-y-4">
+            <div>
+              <FieldLabel>{t('scholarship.apply.plan.aliranLabel')}</FieldLabel>
+              {loading ? (
+                <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
+              ) : availableAlirans.length === 0 ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noProgrammes')}</p>
+              ) : (
+                <AliranPicker alirans={availableAlirans} value={pismpAliran} onChange={chooseAliran} />
+              )}
+            </div>
+            {pismpAliran && (
+              <div>
+                <FieldLabel>{t('scholarship.apply.plan.bidangLabel')}</FieldLabel>
+                <ProgrammePicker key={pismpAliran}
+                  courses={bidangForAliran(pismpCourses, pismpAliran)}
+                  value={form.chosenProgramme} onChange={setProgramme} loading={loading} />
+              </div>
+            )}
+          </div>
+        ) : isProgrammePathway(form.chosenPathway) ? (
           <div>
             <FieldLabel>{t('scholarship.apply.plan.programmeLabel')}</FieldLabel>
             <ProgrammePicker key={form.chosenPathway}

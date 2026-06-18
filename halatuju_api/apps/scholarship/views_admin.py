@@ -20,6 +20,7 @@ from apps.courses.search import apply_people_search
 from apps.courses.views_admin import PartnerAdminMixin
 
 from . import pool
+from . import reopen as reopen_service
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
@@ -303,6 +304,8 @@ class AdminRejectView(_AdminBase):
                    else 'This applicant cannot be declined from their current status.'
                    if code == 'bad_status' else 'Unknown rejection category.')
             return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
+        # Declining a REOPENED decision is a real correction (counting model B).
+        reopen_service.close_reopen_with_change(app)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
@@ -369,39 +372,9 @@ class AdminRunVisionView(_AdminBase):
         doc = ApplicantDocument.objects.filter(pk=doc_id, application_id=pk).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        from . import vision as _vision
-        from .views import BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
-        if doc.doc_type in ('ic', 'parent_ic'):
-            _vision.run_vision_for_document(doc)
-        elif doc.doc_type in TEXT_READ_DOC_TYPES:
-            # P1 (Check 2): re-read the letter of intent's plain text.
-            _vision.read_text_document(doc)
-        elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
-            # Replicate the upload-time supporting-doc processing (forced, not throttled).
-            profile = getattr(app, 'profile', None)
-            names = [getattr(profile, 'name', '') or '']
-            names += [g.get('name', '') for g in (getattr(profile, 'guardians', None) or [])
-                      if isinstance(g, dict)]
-            names = [n for n in names if n]
-            postcode = getattr(profile, 'postal_code', '') or ''
-            city = getattr(profile, 'city', '') or ''
-            check_address = doc.doc_type in BILL_DOC_TYPES
-            ocr = _vision.ocr_document(doc)   # OCR once, shared by both checks
-            _vision.run_vision_match_for_document(
-                doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
-            if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
-                _vision.run_field_extraction_for_document(
-                    doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
-            # Re-reading an offer letter may now settle an undecided pathway (same silent
-            # auto-fill as upload; a genuine clash is left for the pathway_confirm query).
-            if doc.doc_type == 'offer_letter':
-                try:
-                    from .services import autofill_pathway_from_offer
-                    autofill_pathway_from_offer(app)
-                except Exception:
-                    logging.getLogger(__name__).warning(
-                        'autofill_pathway_from_offer failed for app %s', app.id, exc_info=True)
-        else:
+        # Shared with the bulk reextract command so the per-doc + batch reads can't drift.
+        from .reextract import reextract_document
+        if not reextract_document(doc):
             return Response({'error': 'This document type has no automatic check to re-run.'},
                             status=status.HTTP_400_BAD_REQUEST)
         return Response(ApplicantDocumentSerializer(doc).data)
@@ -600,6 +573,12 @@ class AdminInterviewView(_AdminBase):
             return Response({'error': err, 'code': 'bad_findings'},
                             status=status.HTTP_400_BAD_REQUEST)
         session = app.interview_sessions.filter(status='draft').first()
+        if session is None and app.decision_reopened_at is not None:
+            # Decision reopened → edit the SUBMITTED session IN PLACE (reopen it as a draft)
+            # instead of spawning a second session (the duplicate-draft trap, app #15).
+            session = app.interview_sessions.filter(status='submitted').order_by('-submitted_at').first()
+            if session is not None:
+                session.status = 'draft'
         if session is None:
             session = InterviewSession(application=app, interviewer=admin,
                                        started_at=timezone.now())
@@ -638,6 +617,36 @@ class AdminInterviewSubmitView(_AdminBase):
             session.interviewer = admin
             session.save(update_fields=['interviewer'])
         submit_interview(session)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminInterviewReopenView(_AdminBase):
+    """POST .../<pk>/interview/reopen/ — the assigned reviewer reopens a SUBMITTED
+    interview to add/edit a forgotten finding. Un-submits the latest session (→ draft)
+    and reverts status interviewed→interviewing, which reopens BOTH the Interview Stage
+    AND Check 2, and switches Approve/Decline off until it's re-submitted. Reviewer/super.
+    Only valid BEFORE a decision is recorded — once decided, use the Decision panel's
+    Reopen (super-only, holds the profile from the pool)."""
+    def post(self, request, pk):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        if app.verdict_decided_at is not None:
+            return Response(
+                {'error': 'A decision is recorded — reopen the decision instead.',
+                 'code': 'decision_recorded'}, status=status.HTTP_400_BAD_REQUEST)
+        session = app.interview_sessions.filter(status='submitted').order_by('-submitted_at').first()
+        if session is None:
+            return Response({'error': 'No submitted interview to reopen.', 'code': 'no_submitted'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        session.status = 'draft'
+        session.save(update_fields=['status', 'updated_at'])
+        if app.status == 'interviewed':   # back a step so Check 2 + the decision gate reopen
+            app.status = 'interviewing'
+            app.save(update_fields=['status'])
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
@@ -753,6 +762,10 @@ class AdminAssignableAdminsView(_AdminBase):
         admins = (PartnerAdmin.objects.filter(is_active=True)
                   .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super']))
                   .select_related('reviewer_profile').order_by('name'))
+        # Internal-only "corrections" tally per reviewer (reopened decisions that led
+        # to a real change). Never shown to sponsors/students — an internal quality
+        # signal for whoever assigns reviewers.
+        corrections = reopen_service.reviewer_correction_counts()
 
         def langs(a):
             # Languages the reviewer can conduct a review in (conversational or better),
@@ -767,7 +780,8 @@ class AdminAssignableAdminsView(_AdminBase):
 
         return Response({'admins': [
             {'id': a.id, 'name': a.name, 'email': a.email,
-             'role': 'super' if a.is_super else a.role, 'languages': langs(a)}
+             'role': 'super' if a.is_super else a.role, 'languages': langs(a),
+             'corrections': corrections.get(a.id, 0)}
             for a in admins
         ]})
 
@@ -898,6 +912,17 @@ class AdminRecordVerdictView(_AdminBase):
                             status=status.HTTP_400_BAD_REQUEST)
         officer_verdict['overall'] = overall
 
+        # Guard: a RECORDED verdict must assess all four facts (Pass/Fail). The cockpit's
+        # "Save verdict & generate final profile" path used to stamp verdict_decided_at with
+        # blank facts, locking the panel on an incomplete decision (app #4, 2026-06-02). This
+        # single backend gate can't be bypassed by any UI.
+        incomplete = [f for f in FACTS if officer_verdict[f] not in ('pass', 'fail')]
+        if incomplete:
+            return Response(
+                {'error': 'Assess all four checks (Pass/Fail) before recording the decision.',
+                 'code': 'verdict_incomplete', 'facts': incomplete},
+                status=status.HTTP_400_BAD_REQUEST)
+
         from .verdict_engine import build_verdict
         app.ai_verdict_snapshot = build_verdict(app)
         app.officer_verdict = officer_verdict
@@ -955,10 +980,57 @@ class AdminRecordVerdictView(_AdminBase):
             app.save(update_fields=verdict_fields)
             if sp_to_save is not None:
                 sp_to_save.save()
+            # If this re-records a REOPENED decision, that's a real correction
+            # (counting model B) — close the audit row + clear the reopened flag.
+            # The (re)publish on accept already happened via the finalise path above.
+            reopen_service.close_reopen_with_change(app)
 
         data = AdminApplicationDetailSerializer(app).data
         data['finalise_result'] = finalise_result
         return Response(data)
+
+
+class AdminReopenDecisionView(_AdminBase):
+    """POST .../<pk>/reopen-decision/ {reason} — SUPER-ONLY. Reverse a recorded
+    decision to correct a reviewer error: holds the sponsor profile from the pool
+    (unpublishes), opens a DecisionReopen audit row attributed to the assigned
+    reviewer, and unlocks the decision panel + reviewer dropdown. A reason is
+    required (a reopen asserts a reviewer error)."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        try:
+            reopen_service.reopen_decision(
+                app, by_admin=admin, reason=request.data.get('reason'))
+        except reopen_service.ReopenError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminCancelReopenView(_AdminBase):
+    """POST .../<pk>/cancel-reopen/ — SUPER-ONLY. Close a reopen with NO change:
+    restore the profile to its prior published state and re-lock the panel. Does
+    NOT count as a reviewer correction (counting model B)."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        try:
+            reopen_service.cancel_reopen(app)
+        except reopen_service.ReopenError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(app).data)
 
 
 class AdminVerdictMetricsView(_AdminBase):
@@ -1056,6 +1128,11 @@ class AdminInterviewSlotsView(_AdminBase):
         if err:
             return err
         starts = _parse_slot_starts(request.data.get('slots'))
+        # Enforce the interview-slot rule (MYT, 30-min, 08:00–21:30) at the input
+        # boundary — the UI only offers valid chips, but reject anything else too.
+        if any(s and not scheduling.slot_in_window(s) for s in starts):
+            return Response({'error': 'invalid_slot_time', 'code': 'invalid_slot_time'},
+                            status=status.HTTP_400_BAD_REQUEST)
         try:
             scheduling.propose_slots(app, reviewer=admin, starts=starts)
         except scheduling.SchedulingError as e:

@@ -842,8 +842,25 @@
 - TD-126: **Interview-scheduling Guide step has no screenshot.** The Guide "Scheduling the interview" step renders
   text-only (images were made optional). **To resolve:** once `INTERVIEW_SCHEDULING_ENABLED` is on, capture the
   cockpit "Propose interview times" card + student booking panel and add them like the other steps. (Logged 2026-06-18.)
-- TD-127: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
+- TD-127: **New PISMP rows (Pendidikan Khas `…H`, Prasekolah `…H7P`, MBPK `50BK…`) carry cloned generic descriptions.**
+  During the 2026-06-18 catalogue reconciliation, the B/D/L→H swap and the MBPK ingest created rows whose `description`
+  was cloned from a Perdana sibling rather than written for the specific bidang. They're correct on code/name/
+  requirements but the prose is generic. **To resolve:** write proper bidang-specific descriptions (the retired B/D/L
+  rows' bespoke Braille/BIM/autism copy is in `Downloads/sk_sjkc_retire_backup_2026-06-18.json` and can seed them).
+  Low priority — cosmetic, doesn't affect eligibility or selection. (Logged 2026-06-18.)
+- TD-128: **MBPK eligibility gate under-captures non-physical special-needs.** MBPK courses are gated on the existing
+  onboarding "Physical disability" checkbox (`req_disability`), but MBPK also covers learning / hearing / visual needs
+  (the old B/D/L categories) which that single signal doesn't capture — a deliberate partial proxy chosen for
+  simplicity (see decisions.md). **To resolve, if matching proves too narrow:** broaden the Special-Needs onboarding
+  field into typed categories and gate MBPK on the union. (Logged 2026-06-18.)
+- TD-129: **SJKT PISMP bidang carry an over-specified language requirement (BT in the C-group).** The official 2026 IPGM
+  Perdana syarat lists C in **3** subjects (Bahasa Melayu, Bahasa Inggeris, Sejarah), but several SJKT bidang
+  requirements store a 4-subject C-group `[BM, BT, HISTORY, BI]` (Bahasa Tamil added). Harmless in practice — an SJKT
+  applicant trivially has BT ≥ C — so it never changes an outcome, but it's a minor deviation from the PDF surfaced
+  while investigating the picker. **To resolve:** drop BT from the C-group (or confirm it's intentional) at the next
+  PISMP courses refresh, alongside TD-127. (Logged 2026-06-19.)
+- TD-130: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
   path now routes it to the signature scorer (the `if doc_type == 'results_slip'` branch wins first). Harmless, but
   the dict membership is now only used as the flag-gate set for STR/BC/EPF. **To resolve:** drop `results_slip` from
-  that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16. Renumbered
-  TD-120→TD-124→TD-127 across the 2026-06-16 & 2026-06-18 main merges — main reused both numbers.)
+  that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16; this branch's
+  _GENUINENESS_DOCS tidy, renumbered TD-120→124→127→130 across three main merges as main reused each number.)

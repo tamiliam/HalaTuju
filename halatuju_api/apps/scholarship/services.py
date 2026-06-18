@@ -939,7 +939,11 @@ QUERYING_LOCKED_STATUSES = ('interviewed', 'accepted', 'sponsored', 'rejected', 
 def querying_locked(application):
     """True once the interview is concluded — decision time, no more queries/documents.
     Fires when the application has advanced past the interview OR a submitted interview
-    session exists (covers the moment of submit before any further status change)."""
+    session exists (covers the moment of submit before any further status change).
+    EXCEPTION: a REOPENED decision reopens the whole case for revision, so querying is
+    unlocked again (mirrors the cockpit's decisionReopened)."""
+    if application.decision_reopened_at is not None:
+        return False
     if application.status in QUERYING_LOCKED_STATUSES:
         return True
     return application.interview_sessions.filter(status='submitted').exists()

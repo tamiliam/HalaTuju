@@ -393,6 +393,35 @@ class TestBcParser(SimpleTestCase):
         self.assertEqual(r['bc_father_nric'], '750101-10-1111')
         self.assertEqual(r['bc_mother_name'], 'TESTMUM A/P GRANDMA')
 
+    def test_letterhead_not_taken_as_child(self):
+        # app #10: OCR put "KERAJAAN MALAYSIA" right where the child name is scanned (after a
+        # bare 'Nama' label) — the parser must skip the letterhead and find the real child.
+        bc = """SIJIL KELAHIRAN
+BIRTH CERTIFICATE
+Nama
+KERAJAAN MALAYSIA
+TAANUSIYA A/P TESTFATHER
+KANAK-KANAK
+Nama
+TESTDAD A/L GRANDPA
+No. Kad Pengenalan 750101-10-1111
+Nama
+TESTMUM A/P GRANDMA
+No. Kad Pengenalan 800202-14-2222
+"""
+        r = parse_by_labels('birth_certificate', bc)
+        self.assertEqual(r['bc_child_name'], 'TAANUSIYA A/P TESTFATHER')   # not "KERAJAAN MALAYSIA"
+
+    def test_only_letterhead_no_real_child_falls_to_gemini(self):
+        # If the only "name-like" line is a letterhead, defer to Gemini rather than return it.
+        bc = """SIJIL KELAHIRAN
+Nama
+KERAJAAN MALAYSIA
+No. Kad Pengenalan 750101-10-1111
+No. Kad Pengenalan 800202-14-2222
+"""
+        self.assertIsNone(parse_by_labels('birth_certificate', bc))
+
     def test_misslotted_ic_in_bc_slot_returns_none(self):
         # A MyKad uploaded into the BC slot (the "mother ic.png" case) → not a BC → Gemini.
         self.assertIsNone(parse_by_labels('birth_certificate',

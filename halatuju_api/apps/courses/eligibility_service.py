@@ -196,8 +196,9 @@ def deduplicate_pismp(eligible_courses, req_hashes):
         if diff_langs:
             base = diff_langs[0][1].copy()
             langs = [_lang_labels[lz] for lz, _ in diff_langs]
-            suffix = '/'.join(langs)
-            base['course_name'] = f"{name} (Aliran {suffix})"
+            # The course name already carries its Aliran suffix ("… (SJKT)") from the
+            # 2026 catalogue reconciliation, so the old "(Aliran Bahasa Tamil)" descriptor
+            # is now redundant — keep the name as-is. pismp_languages stays for the facet.
             base['pismp_languages'] = langs
             deduped_pismp.append(base)
 

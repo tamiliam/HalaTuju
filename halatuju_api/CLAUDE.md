@@ -515,7 +515,88 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-18)
+## Next Sprint (as of 2026-06-19)
+
+**▶ SHIPPED 2026-06-19 — PISMP Aliran → Bidang pathway picker (Sprint 2 of the PISMP work; commits `d86cf11` picker +
+`c321f7d` live-review; NO migration; retro `docs/retrospective-2026-06-19-pismp-aliran-picker.md`). Worktree off
+origin/main.**
+- **Two-tap PISMP course selection.** A student on the PISMP pathway picks **school type** (Aliran: SK/SJKC/SJKT/SKPK,
+  eligible-only chips via `AliranPicker`) then **subject** (Bidang) in the **same compact course combobox the UA pathway
+  uses** (`ProgrammePicker`) — replacing the type-a-course-name box. Wired into BOTH `/profile` (shared `PathwayPicker`)
+  and the inline `/apply` flow via the same components + helpers (`pismpAlirans`/`bidangForAliran`/`aliranForChosen` in
+  `lib/scholarship.ts`).
+- **Backend:** the eligible-courses payload (`EligibilityCheckView`) now carries `aliran` for PISMP courses (derived via
+  `pismp_taxonomy.aliran_of`; **no migration** — serializer-only). Non-PISMP courses get an empty aliran.
+- **Live-review fixes (same sprint):** dropped the redundant "(Aliran Bahasa Tamil/Cina)" descriptor that
+  `deduplicate_pismp` appended on top of the name's own "(SJKT)" suffix (the name is now clean; `pismp_languages` facet
+  kept); swapped the first-cut vertical bidang list for the compact combobox per owner feedback.
+- **Eligibility is correct, verified vs the PDF:** the picker shows only the bidang a student qualifies for. A
+  science-stream student missing some SJKT specialisms is correct — e.g. Matematik needs A− in **both** Mathematics
+  *and* Additional Mathematics, Jasmani's science pool is Sains Sukan/Biologi/Sains/Sains Tambahan only (not Physics/
+  Chem) — both confirmed against the official 2026 IPGM syarat (Perdana PDF pp. 7, 11).
+- **Tests:** +1 backend (aliran on eligible PISMP) + a no-`(Aliran)` assertion; jest helper tests for the picker.
+  `next build` clean. **Deployed (api `…00451`→, web `…00444`→); 2 deploys (initial + live-review).** Elektif (the
+  minor) deferred.
+- **▶ NEXT:** no PISMP sprint queued. Deferred PISMP follow-ups: STPM + SKPK → `StpmCourse` track (spec
+  `memory/halatuju-pismp-refresh-spec.md` Sprint R3); polish cloned generic descriptions on the new Khas/Prasekolah/MBPK
+  rows (TD-127); broaden the MBPK gate beyond "Physical disability" (TD-128). Minor: the SJKT C-group requirement
+  includes BT (4 subjects) where the PDF lists 3 (BM/BI/Sejarah) — harmless over-spec for SJKT students, tidy at the
+  next courses refresh.
+
+**▶ SHIPPED 2026-06-18 — Sponsor-profile income honesty + cockpit final-label fix (2 commits `73b9586` backend +
+`289853a` frontend; NO migration; retro `docs/retrospective-2026-06-18-profile-income-honesty.md`). Worktree
+`.worktrees/sched`.**
+- **Income honesty in the generated profile — `PROMPT_VERSION` 2026-06-16.2 → 2026-06-18.1.** One principle:
+  *documented = certain; self-reported = a claim.* (a) STR/JKM asserted ONLY when a current welfare DOCUMENT is on file
+  (`profile_engine._gated_str`/`_gated_jkm`, gated on `income_engine.student_str_check` currency; mirrors
+  `_gated_first_in_family`) — fixes #21 (salary-route applicant's profile asserted STR "affirming B40 status" off the bare
+  self-tick). (b) A DOCUMENTED salary (payslip/EPF) MUST be stated as documented, not buried behind the reported figure —
+  fixes #10 (mother's RM3,049 payslip gross dropped for the reported ~RM1,700). Same clause added to `REFINE_PROMPT`. +9
+  tests (1343 scholarship pytest).
+- **Cockpit profile panel labels "final" once a final exists.** Header + hint were static, so an already-generated final
+  (v2 with interview) read as a pending draft; now key off `profile.final_markdown` (`profileFinalTitle`/`profileFinalHint`,
+  en/ms/ta).
+- **▶ PENDING (billable, owner's call):** run the `backfill-assigned-profiles` cron to regenerate existing drafts onto
+  `2026-06-18.1`. New generations after this deploy already use the new prompt. Verify both Cloud Builds went SUCCESS.
+
+**▶ SHIPPED 2026-06-18 — PISMP catalogue reconciliation + Aliran facet + MBPK disability gate (Sprint 1 of the PISMP
+pathway work; commits `4446c2e` bug+aliran, `4589a6a` req_disability; courses migration `0058`; retro
+`docs/retrospective-2026-06-18-pismp-catalogue.md`). Worked in worktree off origin/main.**
+- **Fixed "0 of 0" in Explore.** `CourseSearchView` skipped the SPM branch for level=`Ijazah Sarjana Muda` (treated it
+  as STPM-only), hiding all PISMP. Now only skipped for `source_type='ua'`. PISMP degrees are visible again.
+- **Aliran facet** (SK/SJKC/SJKT/SKPK) in Explore, derived read-time by `pismp_taxonomy.py` (no schema change); web
+  shows an Aliran dropdown when source-type=PISMP, trilingual.
+- **SPM Perdana catalogue now matches the official 2026 PDF** by code + name + requirements (SJKT 10 / SK 14 / SJKC 15).
+  Fixed a systematic `A→A−` over-restriction across all 35 Perdana, the B/D/L→`…H` Pendidikan Khas/Prasekolah swap, and
+  retired spurious rows (all backed up to `Downloads/*_retire_backup_2026-06-18.json`).
+- **MBPK intake disability-gated.** New `req_disability` must-HAVE flag (courses migration `0058`) + engine gate; 10
+  Laluan Khas track-A `50BK…` bidang ingested, recommended only to students who declared a disability. Verified live
+  (rev …00447).
+- **Gotchas:** PISMP is **PDF-sourced** (not web-scrapeable). Eligibility reads a pandas `requirements_df` cached at app
+  boot (`apps.py:61`) — **DB requirement/catalogue edits don't reach live eligibility until the api restarts** (force a
+  no-rebuild revision via `--update-env-vars=PISMP_DATA_RELOAD=<v>`). Search/Explore read the ORM live.
+- **▶ NEXT (Sprint 2): the Aliran → Bidang pathway picker** in `/apply` + `/profile` — the UI that lets a student
+  navigate Aliran → Bidang Pengkhususan to the right PISMP course (`PathwayPicker.tsx` / `lib/scholarship.ts`).
+  Stitch-prototype first, trilingual en/ms/ta, tests. The catalogue is now correct enough to drive it. **Deferred:**
+  STPM + SKPK → `StpmCourse` track (spec in `memory/halatuju-pismp-refresh-spec.md` Sprint R3); polish the cloned
+  generic descriptions on the new Khas/Prasekolah/MBPK rows; broadening the MBPK gate beyond "Physical disability".
+
+**▶ SHIPPED 2026-06-18 — Reverse a recorded decision ("Reopen") + cockpit Q&A presentation (migration
+`scholarship/0062` migrate-first; retro `docs/retrospective-2026-06-18-decision-reopen.md`). Worktree `.worktrees/sched`.**
+- **Reopen (super-only) reverses a finalised decision.** The Decision panel's cosmetic "Edit" (frontend-only) became
+  **Reopen**: it **holds the student's profile from the sponsor pool** (`anon_published=False`), opens a `DecisionReopen`
+  audit row (attributed to the assigned reviewer, with a required reason), stamps `decision_reopened_at`, unlocks the
+  panel + reviewer dropdown, and banners "held from sponsors". **Cancel reopen** restores the prior published state;
+  **re-saving** (Approve/Decline) regenerates + republishes per the new decision. `reopen.py` service +
+  `reopen-decision/`/`cancel-reopen/` endpoints. NO flag (super-only cockpit action; ships LIVE).
+- **Corrections metric (model B):** a reopen counts against the reviewer ONLY when it leads to a saved change (a
+  cancelled reopen doesn't). Count = `COUNT(DecisionReopen.resulted_in_change=True)` per reviewer — internal only
+  (assign panel), never on a sponsor/student surface.
+- **Assign panel:** "Reviewer assigned" / "Reviewer: {name}"; dropdown **locks** once a decision is recorded, unlocks on
+  Reopen. **Interview Stage submitted record** now reads like Check 2 (✓ tick · bold Question · "Reviewer's finding"
+  header above the box); top "Submitted" pill removed; "Conclusion"/"Findings" labels are headers above their boxes.
+- **Tests:** 2488 backend pytest (+10 `test_decision_reopen.py`) + 327 jest + i18n parity/orphan guardrail + next build
+  clean. **Prod at scholarship migration `0062`.**
 
 **▶ SHIPPED 2026-06-18 — Interview scheduling + Google Meet, email aliases, contact-form notify, cockpit live-review
 (10 commits `d13b949`→`a51517a`; migration `scholarship/0061` migrate-first; retro

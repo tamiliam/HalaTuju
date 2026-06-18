@@ -1,5 +1,73 @@
 # Architectural Decisions — HalaTuju
 
+## PISMP picker: aliran on the eligibility payload, browse replaces type-search — Sprint 2 (PISMP), 2026-06-19
+**Decision:** The PISMP Aliran→Bidang picker consumes an `aliran` field added to the eligible-courses payload
+(backend-derived via `pismp_taxonomy.aliran_of`), and the school-type→subject browse **replaces** the type-a-course-name
+box for PISMP (other programme pathways keep the plain `ProgrammePicker`). The subject step reuses that same compact
+`ProgrammePicker` combobox; the only new component is `AliranPicker` (school-type chips, eligible-only).
+**Alternatives considered:** (a) re-derive aliran in TypeScript from `course_id`/name suffix (no backend change); (b)
+show the browse alongside the type-search box; (c) a bespoke vertical bidang list (the first cut).
+**Rationale:** (a) would duplicate the suffix + id-digit + MBPK-edge-case logic that already lives authoritatively in
+`pismp_taxonomy` — drift risk; exposing one field keeps the frontend a pure consumer. Replacing (not augmenting) the box
+is strictly easier for the student and avoids two code paths. Reusing `ProgrammePicker` matches every other pathway's
+UX and deletes the custom list.
+**Trade-offs:** a serializer field means a backend deploy alongside the web deploy (a small full-stack sprint). Aliran
+chips are eligible-only, so a student never sees a school type they can't enter (no "browse-all" discovery of SKPK etc.).
+**Revisit if:** we want students to *explore* aliran they're not yet eligible for (then show all + a "not eligible"
+state), or if eligibility ever needs the aliran server-side (then it earns more than a display field).
+
+## PISMP aliran derived read-time; laluan to earn a column — Sprint 1 (PISMP), 2026-06-18
+**Decision:** PISMP **aliran** (SK/SJKC/SJKT/SKPK) is derived at read-time by `apps/courses/pismp_taxonomy.py` from the
+course-name suffix / `course_id` 6th char — **no DB column**. **Laluan** (admission route: Perdana/MBPK/STPM), which
+*gates eligibility*, is specced to earn a real `pismp_laluan` column in the deferred STPM sprint.
+**Alternatives considered:** a column for aliran too; parsing `course_id` inside the eligibility hot path for laluan.
+**Rationale:** aliran only drives display + an Explore filter, so a pure derivation keeps the schema clean and needs no
+migration; laluan changes *who is eligible*, so it must be auditable + queryable in the `requirements_df` rather than
+re-parsed on every eligibility check.
+**Trade-offs:** the derivation parser must stay in sync with naming conventions; two different mechanisms (derived
+aliran vs column laluan) for two facets of the same hierarchy.
+**Revisit if:** aliran ever starts gating eligibility (then it earns a column too), or naming conventions drift enough
+that read-time derivation becomes unreliable.
+
+## MBPK eligibility gated on the existing "Physical disability" signal — Sprint 1 (PISMP), 2026-06-18
+**Decision:** MBPK (special-needs) PISMP courses are recommended only to students who ticked **"Physical disability"** at
+onboarding, via a new `req_disability` must-HAVE flag (the inverse of the existing `no_disability` exclusion) — rather
+than a browse-only badge or a new typed special-needs field.
+**Alternatives considered:** (a) browse-only MBPK with a "you must be a registered MBPK student" note (no eligibility
+gate); (b) add a typed Special-Needs field (learning/hearing/visual/physical) and gate on the union.
+**Rationale:** reuses data the student already provides; gives MBPK a real eligibility match (the owner's insight) with
+zero new onboarding friction; ships now.
+**Trade-offs:** a known **partial proxy** — "Physical disability" misses non-physical MBPK (learning/hearing/visual, the
+old B/D/L categories), so some eligible students won't be matched. Logged as TD-128.
+**Revisit if:** MBPK matching proves too narrow in practice — then broaden the Special-Needs field into typed categories
+(TD-128) and gate on the union.
+
+## Reversing a recorded decision ("Reopen") — 2026-06-18
+
+**Decision:** A super-only **Reopen** reverses a finalised decision by (a) **holding the profile from the sponsor pool**
+(flip `SponsorProfile.anon_published` off) and (b) opening a `DecisionReopen` audit row, with `decision_reopened_at`
+persisted on the application so the reopened state survives a reload. **Cancel** restores the prior published state
+exactly; **re-saving** the decision (record-verdict / reject) regenerates + republishes per the new decision. A reopen
+that leads to a saved change increments a per-reviewer **corrections** count, **derived from the audit log**
+(`COUNT(resulted_in_change=True)`), shown only internally.
+
+**Alternatives considered:** (1) Keep "Edit" frontend-only (no pool effect) — leaves a published profile live while a
+reviewer corrects the decision behind it. (2) Auto-detect "did anything change?" on close instead of explicit
+Cancel/Save buttons. (3) A bare `reopen_count` integer on the reviewer instead of an audit table. (4) Count every
+reopen (model A) rather than only saved-change reopens (model B).
+
+**Rationale:** The profile in the sponsor pool is the consequential artefact — reversing the decision must hold it, not
+just unlock a form. Explicit Cancel-vs-Save is unambiguous and auditable (no guessing whether a field changed). An audit
+row (not a counter) keeps the corrections metric reconstructable + carries the reason/who/when. The owner chose model B
+so an exploratory reopen that's cancelled never penalises a reviewer.
+
+**Trade-offs:** Re-saving on a real correction re-runs the Gemini refine (a billable call) — accepted, since a changed
+conclusion *should* regenerate the profile. The reviewer attribution is the assigned reviewer at reopen time (not
+whoever recorded the verdict) — deliberate: the reviewer owns the interview + recommendation.
+
+**Revisit if:** corrections need to distinguish error severity, or the metric is ever surfaced outside the admin team,
+or partial re-publish (without regeneration) is wanted on a trivial correction.
+
 ## Prompt versioning for AI-generated profiles — 2026-06-16
 
 **Decision:** `profile_engine.PROMPT_VERSION` (a bumped string), stamped onto every generated `SponsorProfile`
@@ -3146,3 +3214,10 @@ From fixes that globally, and topical reply-to/landing addresses keep things fil
 **Trade-offs:** all aliases share one inbox (filtering, not separate mailboxes); reply-to refinement is cosmetic while
 single-inbox.
 **Revisit if:** the programme grows enough to want separate staffed inboxes per alias.
+
+## Sponsor profile income honesty: documented = certain, self-reported = a claim — 2026-06-18
+**Decision:** STR/JKM are asserted in the generated profile ONLY when a (current) welfare document is on file; a documented payslip/EPF income MUST be stated as documented while any other figure (incl. reported household income) is presented as what the family reports. Implemented via `profile_engine._gated_str`/`_gated_jkm` (mirroring `_gated_first_in_family`) + the rewritten INCOME & WELFARE prompt rule; `PROMPT_VERSION` → 2026-06-18.1.
+**Alternatives considered:** keep feeding the raw self-declared `receives_str`/`receives_jkm` booleans (status quo — caused #21); or present STR as "reported" rather than omitting it (rejected — the owner's rule is "no proof → assume they don't have it").
+**Rationale:** a self-tick is an unverified claim; only an on-file, current document makes a welfare/income fact certain. Consistent with the standing need-signal principle (auditable evidence only). Symmetric: the same standard that suppresses an undocumented STR also forbids hiding a documented salary behind a soft reported figure.
+**Trade-offs:** a genuine STR recipient who never uploaded the doc loses the STR mention in their profile; JKM (no document collected anywhere) is effectively never assertable. Existing drafts need the billable `backfill-assigned-profiles` cron to pick up the change.
+**Revisit if:** a JKM document type is added to the upload flow, or the owner wants self-declared welfare surfaced as an explicit "reported" line.

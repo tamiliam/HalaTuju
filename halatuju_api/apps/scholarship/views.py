@@ -1114,6 +1114,7 @@ class CronRunView(APIView):
         'course-data-check': 'course_data_check',  # weekly: READ-ONLY audit + link reachability for the dashboard
         'interview-reminders': 'send_interview_reminders',  # frequent (~15 min): 1-day + 1-hour interview reminders
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
+        'reextract-documents': 'reextract_documents',  # one-off batches (20/run): re-read stale docs with current parsers
     }
 
     def post(self, request, job):
@@ -1136,7 +1137,7 @@ class CronRunView(APIView):
         except Exception as e:  # noqa: BLE001 — report, never 500 into scheduler retries
             logging.getLogger(__name__).warning('Cron job %s failed: %s', job, e, exc_info=True)
             return Response({'job': job, 'error': str(e)[:300]}, status=status.HTTP_200_OK)
-        return Response({'job': job, 'output': out.getvalue()[:2000]})
+        return Response({'job': job, 'output': out.getvalue()[:12000]})
 
 
 def _award_application(user_id):

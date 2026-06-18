@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import jwt
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
@@ -305,6 +306,32 @@ class TestInterview(PhaseCBase):
         app.refresh_from_db()
         self.assertEqual(app.status, 'interviewed')
         self.assertEqual(InterviewSession.objects.filter(application=app, status='submitted').count(), 1)
+
+    def test_reviewer_reopens_submitted_interview(self):
+        # Submit, then the reviewer reopens to add a forgotten finding → un-submits +
+        # reverts interviewed → interviewing (so Check 2 + the decision gate reopen too).
+        app = self._complete(self._assigned_app(status='profile_complete'))
+        self._auth(REVIEWER)
+        self.client.post(
+            f'/api/v1/admin/scholarship/applications/{app.id}/interview/',
+            {'findings': {'household_size_one': {'verdict': 'resolved', 'rationale': 'ok'}}}, format='json')
+        self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/interview/submit/')
+        r = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/interview/reopen/')
+        self.assertEqual(r.status_code, 200)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewing')
+        self.assertEqual(InterviewSession.objects.filter(application=app, status='submitted').count(), 0)
+        self.assertEqual(InterviewSession.objects.filter(application=app, status='draft').count(), 1)
+
+    def test_interview_reopen_blocked_after_decision(self):
+        app = self._complete(self._assigned_app(status='interviewed'))
+        app.verdict_decided_at = timezone.now()
+        app.save(update_fields=['verdict_decided_at'])
+        InterviewSession.objects.create(application=app, status='submitted', submitted_at=timezone.now())
+        self._auth(REVIEWER)
+        r = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/interview/reopen/')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'decision_recorded')
 
     def test_bad_verdict_rejected(self):
         app = self._complete(self._assigned_app(status='profile_complete'))

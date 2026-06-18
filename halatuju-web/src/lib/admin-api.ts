@@ -342,6 +342,7 @@ export interface AdminScholarshipListItem {
   profile_completed_at: string | null
   assigned_to_id: number | null
   assigned_to_name: string | null
+  decision_reopened_at: string | null   // when set, the pill shows "Reopened" (overrides accepted/rejected)
 }
 
 export interface AdminCompleteness {
@@ -526,6 +527,13 @@ export interface AdminScholarshipDetail {
   award_amount: string | null
   /** Interview scheduling: booking state + proposed slots (dark behind the flag). */
   interview_schedule: InterviewSchedule
+  /** Decision-reopen state: when set, the decision panel is editable + the reviewer
+   *  dropdown unlocks + a "held from sponsors" banner shows; the reason drives the banner. */
+  decision_reopened_at: string | null
+  decision_reopen_reason: string
+  /** Internal-only corrections tally for the assigned reviewer (reopened decisions
+   *  that led to a real change). Never shown on a sponsor/student surface. */
+  assigned_to_corrections: number
 }
 
 /** One proposed interview time. `start` is ISO (UTC); render in MYT on the client. */
@@ -658,6 +666,13 @@ export async function submitInterview(id: number, options?: ApiOptions) {
     `/api/v1/admin/scholarship/applications/${id}/interview/submit/`, 'POST', {}, options)
 }
 
+/** Reopen a SUBMITTED interview (un-submits → draft) so the reviewer can add a forgotten
+ *  finding; reopens both the Interview Stage and Check 2. Only valid before a decision. */
+export async function reopenInterview(id: number, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/interview/reopen/`, 'POST', {}, options)
+}
+
 export async function requestMoreInfo(id: number, note: string, options?: ApiOptions) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/request-info/`, 'POST', { note }, options)
@@ -666,8 +681,21 @@ export async function requestMoreInfo(id: number, note: string, options?: ApiOpt
 /** Active admins (for the assignment dropdown). Super admin only on the backend.
  *  `languages` = the codes (en/ms/ta) the reviewer is conversational+ in, for matching. */
 export async function getAssignableAdmins(options?: ApiOptions) {
-  return adminFetch<{ admins: Array<{ id: number; name: string; email: string; role: string; languages: string[] }> }>(
+  return adminFetch<{ admins: Array<{ id: number; name: string; email: string; role: string; languages: string[]; corrections: number }> }>(
     `/api/v1/admin/scholarship/assignable-admins/`, options)
+}
+
+/** Reverse a recorded decision (super-only): holds the sponsor profile from the pool
+ *  and unlocks the decision panel. `reason` is required (a reopen asserts a reviewer error). */
+export async function reopenDecision(id: number, reason: string, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/reopen-decision/`, 'POST', { reason }, options)
+}
+
+/** Close a reopen with NO change — restore the profile to its prior published state. */
+export async function cancelReopen(id: number, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/cancel-reopen/`, 'POST', {}, options)
 }
 
 export async function getScholarshipApplication(id: number, options?: ApiOptions) {
