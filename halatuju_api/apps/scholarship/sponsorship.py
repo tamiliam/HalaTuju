@@ -40,6 +40,41 @@ def sponsor_balance(sponsor):
     return donated - held
 
 
+def sponsor_impact(sponsor):
+    """R2 — aggregate giving impact for the My Giving dashboard. Counts + money only,
+    **allowlist-safe by construction** (no student identity ever crosses): derived
+    from the ledger (`sponsor_balance`) + the sponsor's ACTIVE allocations and their
+    SemesterResults. A graduated student's allocation stays 'active' (graduation is a
+    result flag, not a sponsorship status), so we split active giving into
+    `completed` (graduated) vs `committed` (ongoing) via `pool.derive_progress_state`.
+    """
+    active = list(sponsor.sponsorships.filter(status='active').select_related('application'))
+    committed = Decimal('0')
+    completed = Decimal('0')
+    graduated_count = 0
+    semesters_completed = 0
+    for sp in active:
+        app = sp.application
+        if pool.derive_progress_state(app) == 'graduated':
+            completed += sp.amount
+            graduated_count += 1
+        else:
+            committed += sp.amount
+        semesters_completed += app.semester_results.count()
+    return {
+        'total_given': str(committed + completed),
+        'students_supported': len(active),
+        'students_active': len(active) - graduated_count,
+        'students_graduated': graduated_count,
+        'semesters_completed': semesters_completed,
+        'balance': {
+            'committed': str(committed),
+            'completed': str(completed),
+            'available': str(sponsor_balance(sponsor)),
+        },
+    }
+
+
 def is_fundable(application):
     """A student can be funded iff they're in the pool (anon profile published +
     active share consent), an admin has set an award amount, they're not already

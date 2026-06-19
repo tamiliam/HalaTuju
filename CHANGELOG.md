@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Sponsor portal redesign (R2) — My Giving dashboard.** The My Giving tab now leads with impact: an impact-number
+  strip (total given · students supported · semesters completed · graduated), a giving **donut** (committed / completed
+  / available), and a per-student **journey tracker** (Matched → Onboarded → Studying → Graduated, with a semesters-done
+  sub-label). New `GET /api/v1/sponsor/impact/` aggregate — counts + money only, allowlist-safe, flag-gated — derived
+  from the existing ledger (`sponsor_balance`) + active sponsorships + their SemesterResults; the sponsorship serializer
+  gains non-identifying `onboarded`/`semesters` signals the FE derives the tracker from (pure `sponsorJourney` helper).
+  Fetched once via the shared portal context. **No migration** (all fields existed). +6 pytest (89 sponsor green) + 4
+  jest (353); `next build` clean. Ships dark behind `SPONSOR_POOL_ENABLED`.
 - **Sponsor portal redesign (R1) — three-tab shell + Students marketplace.** The flat `/sponsor` page is
   restructured into a `(portal)` route group with a gating + tab-nav layout and three tabs: **My Giving** (`/sponsor`),
   **Students** (`/sponsor/students` + `/sponsor/students/[id]` detail) and **My Account** (`/sponsor/account`). Every

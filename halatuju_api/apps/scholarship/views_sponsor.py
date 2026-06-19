@@ -261,6 +261,19 @@ class SponsorWalletView(_PoolBase):
         })
 
 
+class SponsorImpactView(_PoolBase):
+    """GET /api/v1/sponsor/impact/ — aggregate giving impact for the My Giving
+    dashboard (R2): total given, students supported/active/graduated, semesters
+    completed, and the donut breakdown (committed/completed/available). Counts +
+    money ONLY — allowlist-safe, no student identity. Behind SPONSOR_POOL_ENABLED +
+    approved-sponsor (via _gate)."""
+    def get(self, request):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        return Response(sponsorship_service.sponsor_impact(sponsor))
+
+
 class SponsorGraduationMessagesView(_PoolBase):
     """GET /api/v1/sponsor/graduation-messages/ — the staff-approved graduation
     thank-yous from the students this sponsor actively funds (F9a). Each is *"a

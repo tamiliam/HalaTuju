@@ -5,10 +5,12 @@ import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import {
   getSponsorPool,
   getSponsorWallet,
+  getSponsorImpact,
   getSponsorGraduationMessages,
   getSponsorReferrals,
   type SponsorPoolCard,
   type SponsorWallet,
+  type SponsorImpact,
   type GraduationRelayMessage,
   type SponsorReferral,
 } from '@/lib/api'
@@ -18,6 +20,7 @@ interface SponsorPortalValue {
   poolUnavailable: boolean             // SPONSOR_POOL_ENABLED off → the dark "coming soon" state
   pool: SponsorPoolCard[] | null
   wallet: SponsorWallet | null
+  impact: SponsorImpact | null         // R2: My Giving dashboard aggregate
   gradMessages: GraduationRelayMessage[]
   referrals: SponsorReferral[]
   refreshReferrals: () => Promise<void>
@@ -36,6 +39,7 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
   const [poolUnavailable, setPoolUnavailable] = useState(false)
   const [pool, setPool] = useState<SponsorPoolCard[] | null>(null)
   const [wallet, setWallet] = useState<SponsorWallet | null>(null)
+  const [impact, setImpact] = useState<SponsorImpact | null>(null)
   const [gradMessages, setGradMessages] = useState<GraduationRelayMessage[]>([])
   const [referrals, setReferrals] = useState<SponsorReferral[]>([])
 
@@ -59,6 +63,9 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
     getSponsorWallet({ token })
       .then((w) => { if (!cancelled) setWallet(w) })
       .catch(() => { /* 404s while the flag is off — leave null */ })
+    getSponsorImpact({ token })
+      .then((i) => { if (!cancelled) setImpact(i) })
+      .catch(() => { /* leave null */ })
     getSponsorGraduationMessages({ token })
       .then((r) => { if (!cancelled) setGradMessages(r.messages) })
       .catch(() => { /* leave empty */ })
@@ -70,7 +77,7 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
 
   return (
     <SponsorPortalContext.Provider
-      value={{ ready, poolUnavailable, pool, wallet, gradMessages, referrals, refreshReferrals }}
+      value={{ ready, poolUnavailable, pool, wallet, impact, gradMessages, referrals, refreshReferrals }}
     >
       {children}
     </SponsorPortalContext.Provider>
