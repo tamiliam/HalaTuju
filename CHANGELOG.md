@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Cockpit interview-card polish + Guide accuracy.** The booked card's Meet link is now a prominent **"Join the video
+  call" button** (matching the student card) and the **"Reschedule (move the time)"** link is de-emphasised + right-aligned.
+  The reviewer Guide's scheduling step now says **"three"** (was "two or three" / "up to three" — the picker requires
+  exactly three) with a refreshed booked screenshot + caption for the new button.
+- **Verdict-SLA escalation moved to day 14** (grace 3→4) and the SLA **cron switched on** in production
+  (`REVIEW_NUDGES_ENABLED=1` + daily Cloud Scheduler `halatuju-review-nudges` at 9am MYT; end-to-end smoke 200).
+- **Email auth: SPF record added + verified** for `halatuju.xyz` — `v=spf1 include:_spf.google.com include:spf.brevo.com ~all`
+  (Google Workspace + Brevo), completing SPF/DKIM/DMARC. Interview scheduling is now fully live (flags on, reviewers briefed).
+
 ### Added
 - **Verdict-completion SLA with reviewer nudges + super-admin escalation (TD-131).** A verdict is due
   `assigned_at + REVIEW_SLA_DAYS` (10). A new daily cron (`send_review_nudges`, dark behind
