@@ -381,20 +381,39 @@ class ReminderCronTests(TestCase):
 
 
 class BookingEmailTests(TestCase):
-    def test_booked_email_bilingual_interviewer_term(self):
+    def test_booked_email_html_ics_and_interviewer_name(self):
         start = timezone.now() + timedelta(days=2)
         from apps.scholarship.emails import send_interview_booked_email
         self.assertTrue(send_interview_booked_email(
+            's@example.com', student_name='Priya Devi', reviewer_name='Rohini',
+            start=start, meeting_url='https://meet.google.com/abc', duration_min=45))
+        msg = mail.outbox[-1]
+        self.assertEqual(msg.subject, 'Your B40 Assistance Programme interview is booked')
+        self.assertEqual(msg.reply_to, ['interview@halatuju.xyz'])
+        self.assertEqual(msg.from_email, 'interview@halatuju.xyz')   # #2: sends FROM interview@
+        body = msg.body
+        self.assertIn('Hi Priya,', body)                    # first name
+        self.assertIn('Interviewer: Rohini', body)          # interviewer NAME (no phone)
+        self.assertIn('Penemu duga: Rohini', body)          # BM mirror
+        self.assertIn('https://meet.google.com/abc', body)
+        self.assertNotIn('+60', body)                       # phone no longer included
+        # HTML alternative + .ics calendar attachment
+        html, mime = msg.alternatives[0]
+        self.assertEqual(mime, 'text/html')
+        self.assertIn('Add to calendar', html)
+        self.assertIn('calendar.google.com/calendar/render', html)
+        ics = [a for a in msg.attachments if a[0] == 'interview.ics']
+        self.assertEqual(len(ics), 1)
+        self.assertIn('BEGIN:VEVENT', ics[0][1])
+
+    def test_booked_email_english_only_drops_bm(self):
+        from apps.scholarship.emails import send_interview_booked_email
+        send_interview_booked_email(
             's@example.com', student_name='Priya', reviewer_name='Rohini',
-            start=start, meeting_url='https://meet.google.com/abc', reviewer_phone='12-200 0365'))
+            start=timezone.now() + timedelta(days=2), meeting_url='', english_only=True)
         body = mail.outbox[-1].body
         self.assertIn('B40 Assistance Programme', body)
-        self.assertIn('Program Bantuan B40', body)         # BM block present
-        self.assertIn('Interviewer: Rohini', body)         # student-facing term
-        self.assertIn('Penemu duga: Rohini', body)         # BM term
-        self.assertIn('https://meet.google.com/abc', body)
-        self.assertIn('+60 12-200 0365', body)
-        self.assertNotIn('Reviewer: Rohini', body)
+        self.assertNotIn('Program Bantuan B40', body)
 
     def test_reminder_email_when_labels(self):
         from apps.scholarship.emails import send_interview_reminder_email
