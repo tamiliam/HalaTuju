@@ -525,15 +525,17 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 - **Reviewer reschedule (move the time)** on the cockpit booked card: `propose_slots(..., release_booking=True)` releases
   the booking (slot + Meet event + fields) → student re-picks via the "pick a time" email with a moved-the-time preface.
   **No reviewer self-cancel** (a hand-off is an admin reassignment); propose endpoint takes a `reschedule` flag.
-- **Verdict-completion SLA (TD-131):** `send_review_nudges` cron (job `review-nudges`, **dark behind
-  `REVIEW_NUDGES_ENABLED`**) — verdict due `assigned_at + REVIEW_SLA_DAYS`; nudge reviewer 2 days before + once overdue;
-  escalate to all super-admins 4 days after. Idempotent stamps (migration `0064`) reset on (re)assignment; recorded
-  `verdict_decided_at` cancels. Reviewer interview reminder also shows the verdict-due date. Reviewer emails:
+- **Verdict-completion SLA (TD-131) — NOW LIVE.** `send_review_nudges` cron (job `review-nudges`) — verdict due
+  `assigned_at + REVIEW_SLA_DAYS` (10); nudge reviewer 2 days before + once overdue; escalate to all super-admins at
+  **day 14** (grace 4). Idempotent stamps (migration `0064`) reset on (re)assignment; recorded `verdict_decided_at`
+  cancels. Reviewer interview reminder also shows the verdict-due date. **Switched on 2026-06-19**:
+  `REVIEW_NUDGES_ENABLED=1` on the api (rev `halatuju-api-00471`) + Cloud Scheduler `halatuju-review-nudges` daily
+  9am MYT; end-to-end smoke test returned 200; first-run blast = 0 (no case due yet). Emails:
   `send_reviewer_verdict_due_email`, `send_super_verdict_escalation_email`.
 - **Reviewer email tree is consistent** (Dear / one dashboard CTA / `{ref}` subject / "The B40 Assistance Team" / all
   from `interview@`). Accept/decline-in-email idea was evaluated and **dropped** (unsafe one-click + redundant).
-- **▶ Carry (owner):** turn the SLA cron ON (`REVIEW_NUDGES_ENABLED=1` + a daily Cloud Scheduler `review-nudges` job);
-  plus the still-parked items below (interview surface flag, SPF, TD-126 Guide shot, TD-130 Brevo List-Help).
+- **▶ Carry (owner):** SLA cron is now LIVE ✅. Still parked: flip `INTERVIEW_SCHEDULING_ENABLED=1` after the reviewer
+  briefing; merged SPF record; Guide scheduling screenshot (TD-126); Brevo List-Help on transactional (TD-130).
 
 **▶ SHIPPED 2026-06-19 — Interview-scheduling arc: Calendly picker + bilingual HTML emails + request-alternatives loop +
 cancellation fix (12 commits `a68b442`→`7fcb82d`; migration `scholarship/0063` additive, migrate-first; retro
