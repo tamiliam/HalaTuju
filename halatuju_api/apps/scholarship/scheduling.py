@@ -91,12 +91,20 @@ def _cutoff_ok(start, now):
 
 # ── Reviewer side: propose / withdraw ─────────────────────────────────────────
 
-def propose_slots(application, *, reviewer, starts, duration_min=None, now=None):
+def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
+                  release_booking=False):
     """The assigned reviewer (or a super) proposes interview times.
 
     ``starts`` is a list of tz-aware datetimes. Existing *unbooked* active slots are
     withdrawn (a fresh proposal replaces the old menu); the booked slot, if any, is
     untouched. Returns the list of created InterviewSlot rows.
+
+    ``release_booking=True`` is the reviewer-RESCHEDULE path: when the interview is already
+    booked, the reviewer is MOVING it — so we release the held booking (drop the slot + the
+    Meet/calendar event, clear the booking fields) before offering the fresh menu, and the
+    student's "pick a time" email carries a moved-the-time preface. There is deliberately no
+    reviewer self-cancel; an emergency reschedules (keeps the candidate) and a true hand-off
+    goes through admin reassignment.
     """
     now = now or timezone.now()
     duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
@@ -121,6 +129,30 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None)
         .values_list('start', flat=True))
     if any(s in held for s in future):
         raise SchedulingError('reviewer_conflict')
+
+    # Reviewer reschedule: release the held booking (slot + Meet event + fields) so the new
+    # menu fully replaces it and the student must re-pick.
+    rescheduling = bool(release_booking and application.interview_status == 'booked')
+    if rescheduling:
+        if application.interview_calendar_event_id:
+            meeting.cancel_event(application.interview_calendar_event_id)
+        if application.interview_slot_id:
+            (InterviewSlot.objects
+                .filter(id=application.interview_slot_id)
+                .update(is_active=False, updated_at=now))
+        application.interview_status = ''
+        application.interview_slot = None
+        application.interview_start = None
+        application.interview_meeting_url = ''
+        application.interview_calendar_event_id = ''
+        application.interview_meeting_provider = ''
+        application.interview_reminded_1d_at = None
+        application.interview_reminded_1h_at = None
+        application.save(update_fields=[
+            'interview_status', 'interview_slot', 'interview_start', 'interview_meeting_url',
+            'interview_calendar_event_id', 'interview_meeting_provider',
+            'interview_reminded_1d_at', 'interview_reminded_1h_at',
+        ])
 
     booked_id = application.interview_slot_id if application.interview_status == 'booked' else None
     # The menu the student was last shown — to decide whether to re-notify.
@@ -159,13 +191,15 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None)
     if reset_fields:
         application.save(update_fields=reset_fields)
     # Tell the student their times are ready to pick — but ONLY when the menu actually
-    # changed. Re-proposing the same set (or a no-op revise) must not re-spam them.
-    if set(future) != prev_menu:
+    # changed (re-proposing the same set must not re-spam them), or when we just released a
+    # booking to reschedule (they MUST re-pick, so always notify).
+    if set(future) != prev_menu or rescheduling:
         student_email, student_name = _student_identity(application)
         if student_email:
             emails.send_interview_slots_proposed_email(
                 student_email, student_name=student_name,
-                english_only=emails.english_only_email(application))
+                english_only=emails.english_only_email(application),
+                rescheduled=rescheduling)
     return created
 
 

@@ -1139,8 +1139,11 @@ class AdminInterviewSlotsView(_AdminBase):
         if any(s and not scheduling.slot_in_window(s) for s in starts):
             return Response({'error': 'invalid_slot_time', 'code': 'invalid_slot_time'},
                             status=status.HTTP_400_BAD_REQUEST)
+        # reschedule=True: the reviewer is MOVING an already-booked interview — release the
+        # held booking, then offer the fresh menu (student is asked to re-pick).
+        reschedule = bool(request.data.get('reschedule'))
         try:
-            scheduling.propose_slots(app, reviewer=admin, starts=starts)
+            scheduling.propose_slots(app, reviewer=admin, starts=starts, release_booking=reschedule)
         except scheduling.SchedulingError as e:
             return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(interview_schedule_payload(app, include_reviewer_busy=True))

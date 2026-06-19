@@ -50,6 +50,9 @@ export default function InterviewScheduleCard({
       .slice(0, REQUIRED_PROPOSALS))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // Reviewer RESCHEDULE: move an already-booked interview (release booking → student re-picks).
+  const [rescheduling, setRescheduling] = useState(false)
+  const [confirmingReschedule, setConfirmingReschedule] = useState(false)
 
   // The current (unbooked) proposed menu — shown read-only until the reviewer chooses to revise.
   const proposedSlots = useMemo(
@@ -97,12 +100,22 @@ export default function InterviewScheduleCard({
     if (!ready) return
     setBusy(true); setError('')
     try {
-      const next = await proposeInterviewSlots(appId, [...selected].sort(), { token })
+      const next = await proposeInterviewSlots(appId, [...selected].sort(), { token, reschedule: rescheduling })
       onChange(next)
-      setEditing(false)   // back to the locked "Proposed times" view
+      setEditing(false)        // back to the locked "Proposed times" view
+      setRescheduling(false)
     } catch {
       setError(t('admin.scholarship.interview.schedule.error'))
     } finally { setBusy(false) }
+  }
+
+  // Reviewer moves a booked interview: open the picker fresh (new times) in reschedule mode.
+  const startReschedule = () => {
+    setSelected([])
+    setError('')
+    setConfirmingReschedule(false)
+    setRescheduling(true)
+    setEditing(true)
   }
 
   const startEdit = () => {
@@ -115,6 +128,7 @@ export default function InterviewScheduleCard({
     setSelected(proposedSlots.map((s) => isoToSlotValue(s.start)).slice(0, REQUIRED_PROPOSALS))
     setError('')
     setEditing(false)
+    setRescheduling(false)   // back to the booked view if we were mid-reschedule
   }
 
   return (
@@ -124,15 +138,17 @@ export default function InterviewScheduleCard({
       </h2>
       {/* The subheader is shown only while proposing, and adapts to first-time vs revising.
           In the locked/booked/cancelled states the in-card copy carries the message. */}
-      {schedule.status !== 'booked' && schedule.status !== 'cancelled' && editing && (
+      {((schedule.status !== 'booked' && schedule.status !== 'cancelled') || rescheduling) && editing && (
         <p className="mt-1 text-xs text-gray-500">
-          {t(proposedSlots.length > 0
-            ? 'admin.scholarship.interview.schedule.introAlternatives'
-            : 'admin.scholarship.interview.schedule.intro')}
+          {t(rescheduling
+            ? 'admin.scholarship.interview.schedule.rescheduleIntro'
+            : proposedSlots.length > 0
+              ? 'admin.scholarship.interview.schedule.introAlternatives'
+              : 'admin.scholarship.interview.schedule.intro')}
         </p>
       )}
 
-      {schedule.status === 'booked' && schedule.start && (
+      {schedule.status === 'booked' && schedule.start && !rescheduling && (
         <div className="mt-3 rounded-xl border border-green-200 bg-green-50/50 p-3 text-sm">
           <div className="font-medium text-gray-900">
             {t('admin.scholarship.interview.schedule.booked')}: {formatMyt(schedule.start)}
@@ -145,6 +161,30 @@ export default function InterviewScheduleCard({
             : <span className="mt-1 block text-xs text-gray-500">
                 {t('admin.scholarship.interview.schedule.noLink')}
               </span>}
+          {/* Emergency reschedule: move the time (releases the booking, student re-picks). No
+              reviewer self-cancel — an emergency reschedules; a true hand-off is an admin reassign. */}
+          <div className="mt-3 border-t border-green-200/70 pt-2">
+            {confirmingReschedule ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+                <p className="text-gray-800">{t('admin.scholarship.interview.schedule.rescheduleConfirm')}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <button type="button" onClick={startReschedule}
+                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700">
+                    {t('admin.scholarship.interview.schedule.rescheduleYes')}
+                  </button>
+                  <button type="button" onClick={() => setConfirmingReschedule(false)}
+                    className="text-sm text-gray-600 hover:text-gray-800">
+                    {t('admin.scholarship.interview.schedule.rescheduleKeep')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setConfirmingReschedule(true)}
+                className="text-sm font-medium text-blue-600 hover:underline">
+                {t('admin.scholarship.interview.schedule.reschedule')}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -191,8 +231,8 @@ export default function InterviewScheduleCard({
         </div>
       )}
 
-      {/* Picker (edit mode) — hidden once booked. */}
-      {schedule.status !== 'booked' && editing && (
+      {/* Picker (edit mode) — hidden once booked, except while rescheduling (moving the time). */}
+      {(schedule.status !== 'booked' || rescheduling) && editing && (
         <>
           {/* Calendly-style: month calendar (left) + 12-hour time pills (right). */}
           <div className="mt-4 grid gap-5 md:grid-cols-2">
@@ -306,7 +346,7 @@ export default function InterviewScheduleCard({
                 className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
                 {t('admin.scholarship.interview.schedule.propose')}
               </button>
-              {proposedSlots.length > 0 && (
+              {(proposedSlots.length > 0 || rescheduling) && (
                 <button type="button" onClick={cancelEdit} disabled={busy}
                   className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
                   {t('admin.scholarship.interview.schedule.cancelEdit')}

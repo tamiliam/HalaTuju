@@ -2531,6 +2531,11 @@
           "altRequestedTitle": "Pelajar meminta masa lain",
           "altRequestedHint": "Tiada masa yang dicadangkan sesuai untuk mereka — gunakan “Cadangkan masa alternatif” di bawah untuk menawarkan set baharu.",
           "proposeAlternative": "Cadangkan masa alternatif",
+          "reschedule": "Jadual semula (alih masa)",
+          "rescheduleConfirm": "Alih temu duga ini? Ini melepaskan masa yang ditempah dan meminta pelajar memilih slot baharu. Pautan Meet dan acara kalendar akan dibatalkan.",
+          "rescheduleYes": "Ya, alih masa",
+          "rescheduleKeep": "Kekalkan tempahan",
+          "rescheduleIntro": "Pilih masa baharu — tempahan semasa pelajar akan dilepaskan dan mereka diminta memilih semula.",
           "cancelEdit": "Batal",
           "removeSlot": "Buang masa",
           "error": "Tidak dapat menyimpan. Sila cuba lagi."

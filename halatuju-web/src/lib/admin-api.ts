@@ -711,9 +711,12 @@ export async function getScholarshipApplication(id: number, options?: ApiOptions
 // ── Interview scheduling (reviewer proposes times) ────────────────────────────
 /** The assigned reviewer (or super) proposes interview times. `starts` are ISO
  *  strings. Returns the refreshed schedule (booking state + active slots). */
-export async function proposeInterviewSlots(id: number, starts: string[], options?: ApiOptions) {
+export async function proposeInterviewSlots(
+  id: number, starts: string[], options?: ApiOptions & { reschedule?: boolean }) {
+  const { reschedule, ...rest } = options || {}
   return adminMutate<InterviewSchedule>(
-    `/api/v1/admin/scholarship/applications/${id}/interview-slots/`, 'POST', { slots: starts }, options)
+    `/api/v1/admin/scholarship/applications/${id}/interview-slots/`, 'POST',
+    { slots: starts, ...(reschedule ? { reschedule: true } : {}) }, rest)
 }
 
 export async function getInterviewSlots(id: number, options?: ApiOptions) {

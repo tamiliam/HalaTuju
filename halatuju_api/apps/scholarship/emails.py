@@ -1410,25 +1410,41 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
                       text_body, html_body, ics=ics)
 
 
-def send_interview_slots_proposed_email(to_email, *, student_name, english_only=False, reviewer_name=''):
+def send_interview_slots_proposed_email(to_email, *, student_name, english_only=False,
+                                        reviewer_name='', rescheduled=False):
     """Student notice that interview times are ready to pick — fired when the reviewer
     PROPOSES slots, so the in-app scheduler isn't invisible to students. HTML primary +
     plain-text fallback. Bilingual (EN + BM) by default; ``english_only=True`` drops the
     BM mirror (used for confidently English-preferring students). Links to the application
     page (the booking panel lives there); a Google Meet link is created automatically on
-    booking. Best-effort → bool. (``reviewer_name`` kept for call compatibility; unused.)"""
+    booking. ``rescheduled=True`` is sent when the REVIEWER moved an already-booked
+    interview — the intro/subject then explain the original time was released and ask the
+    student to pick again. Best-effort → bool. (``reviewer_name`` kept for call compat.)"""
     first = (student_name or '').strip().split(' ')[0]
     en_name = first or 'there'
     bm_name = first or 'di sana'
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     link = f'{frontend}/scholarship/application'
-    subject = 'Pick a time slot for your B40 Assistance Programme interview'
+    subject = ('Your B40 Assistance Programme interview time has changed — pick a new slot'
+               if rescheduled
+               else 'Pick a time slot for your B40 Assistance Programme interview')
+    intro_en = (
+        'Your interviewer has had to move your interview, so the time you had booked has been '
+        'released. Please choose a new date and time that suits you best.'
+        if rescheduled else
+        'The next step in your B40 Assistance Programme application is a short interview, and '
+        'you can choose the date and time that suits you best.')
+    intro_bm = (
+        'Penemu duga anda terpaksa menukar temu duga anda, jadi masa yang anda tempah sebelum ini '
+        'telah dilepaskan. Sila pilih tarikh dan masa baharu yang paling sesuai untuk anda.'
+        if rescheduled else
+        'Langkah seterusnya dalam permohonan Program Bantuan B40 anda ialah temu duga ringkas, '
+        'dan anda boleh memilih tarikh dan masa yang paling sesuai.')
 
     # ── Plain-text fallback ───────────────────────────────────────────────────
     en_text = (
         f'Hi {en_name},\n\n'
-        f'The next step in your B40 Assistance Programme application is a short interview, and '
-        f'you can choose the date and time that suits you best.\n\n'
+        f'{intro_en}\n\n'
         f'Choose your interview time: {link}\n\n'
         f'The interview is a video call and takes about 30 minutes. Once you pick a slot, we’ll '
         f'email you a confirmation with a Google Meet link, and send reminders one day and one '
@@ -1442,8 +1458,7 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
-        f'Langkah seterusnya dalam permohonan Program Bantuan B40 anda ialah temu duga ringkas, '
-        f'dan anda boleh memilih tarikh dan masa yang paling sesuai.\n\n'
+        f'{intro_bm}\n\n'
         f'Pilih masa temu duga anda: {link}\n\n'
         f'Temu duga dijalankan melalui panggilan video dan mengambil masa kira-kira 30 minit. '
         f'Setelah anda memilih slot, kami akan menghantar e-mel pengesahan dengan pautan Google '
@@ -1470,8 +1485,7 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         )
     en_html = section(
         f'Hi {en_name},',
-        'The next step in your B40 Assistance Programme application is a short interview, and you '
-        'can choose the date and time that suits you best.',
+        intro_en,
         'Choose your interview time',
         'The interview is a video call and takes about 30 minutes. Once you pick a slot, we’ll '
         'email you a confirmation with a Google Meet link, and send reminders one day and one '
@@ -1484,8 +1498,7 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         'Warm regards,<br>The B40 Assistance Programme Team')
     bm_html = section(
         f'Salam {bm_name},',
-        'Langkah seterusnya dalam permohonan Program Bantuan B40 anda ialah temu duga ringkas, dan '
-        'anda boleh memilih tarikh dan masa yang paling sesuai.',
+        intro_bm,
         'Pilih masa temu duga anda',
         'Temu duga dijalankan melalui panggilan video dan mengambil masa kira-kira 30 minit. '
         'Setelah anda memilih slot, kami akan menghantar e-mel pengesahan dengan pautan Google '
