@@ -11,6 +11,9 @@
 export const SLOT_WINDOW_START_MIN = 8 * 60        // 08:00
 export const SLOT_WINDOW_END_MIN = 21 * 60 + 30    // 21:30 (latest start)
 export const SLOT_STEP_MIN = 30
+// Minimum scheduling notice: the earliest proposable slot is this far ahead, so the student
+// has time to see the email, pick, and prepare. Mirrored in scheduling.py. (owner: 24h)
+export const MIN_LEAD_HOURS = 24
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -23,23 +26,34 @@ export function allSlotTimes(): string[] {
   return out
 }
 
-/** Today's date as `YYYY-MM-DD` in the reviewer's local clock (assumed MYT). */
+/** A `YYYY-MM-DD` date in the reviewer's local clock (assumed MYT). */
 export function todayStr(now: Date = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-export interface DaySlot {
-  value: string   // "YYYY-MM-DDThh:mm" — sent to the backend verbatim
-  label: string   // "HH:MM"
-  past: boolean    // already elapsed (only possible when the date is today)
+/** The earliest selectable moment (now + the minimum-lead window). */
+export function earliestStart(now: Date = new Date()): Date {
+  return new Date(now.getTime() + MIN_LEAD_HOURS * 3600_000)
 }
 
-/** The selectable slots for a given date. Past times (today only) are flagged so the
- *  UI can disable them. `value` is the naive-MYT string the backend expects. */
+/** The earliest selectable DATE (`YYYY-MM-DD`) — days before this are fully disabled. */
+export function earliestDateStr(now: Date = new Date()): string {
+  return todayStr(earliestStart(now))
+}
+
+export interface DaySlot {
+  value: string      // "YYYY-MM-DDThh:mm" — sent to the backend verbatim
+  label: string      // "HH:MM"
+  tooEarly: boolean  // before the minimum-lead cutoff → not selectable
+}
+
+/** The slots for a given date. Times before the minimum-lead cutoff are flagged so the
+ *  UI can drop them. `value` is the naive-MYT string the backend expects. */
 export function daySlots(dateStr: string, now: Date = new Date()): DaySlot[] {
+  const earliest = earliestStart(now).getTime()
   return allSlotTimes().map((label) => {
     const value = `${dateStr}T${label}`
-    return { value, label, past: new Date(value).getTime() <= now.getTime() }
+    return { value, label, tooEarly: new Date(value).getTime() < earliest }
   })
 }
 

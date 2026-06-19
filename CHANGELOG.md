@@ -8,12 +8,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Sponsor portal redesign (R1) — three-tab shell + Students marketplace.** The flat `/sponsor` page is
+  restructured into a `(portal)` route group with a gating + tab-nav layout and three tabs: **My Giving** (`/sponsor`),
+  **Students** (`/sponsor/students` + `/sponsor/students/[id]` detail) and **My Account** (`/sponsor/account`). Every
+  existing piece (balance, students-you-support, thank-you messages, notification cadence, invite-a-friend) is preserved
+  and reorganised into the right tab; the Students tab adds client-side field / state / level filters over the anonymised
+  pool. A shared `SponsorPortalProvider` fetches the approved-sponsor data once (no refetch on tab switch). Old
+  `/sponsor/pool/[id]` now redirects to `/sponsor/students/[id]`. **Ships dark** behind `SPONSOR_POOL_ENABLED` — flag-off
+  still degrades to the existing "coming soon" + notification prefs. Funding (the money action) is deferred to a
+  confirmed fast-follow (TD-101). New trilingual `sponsorPortal.nav/students/account` i18n + pure `sponsorFilter`
+  helpers (+7 jest, 349 total). Front-end only, no migration. First of the 7-sprint redesign roadmap
+  (`docs/scholarship/b40-sponsor-portal-redesign-sprint-plan.md`).
+- **Cockpit interview-card polish + Guide accuracy.** The booked card's Meet link is now a prominent **"Join the video
+  call" button** (matching the student card) and the **"Reschedule (move the time)"** link is de-emphasised + right-aligned.
+  The reviewer Guide's scheduling step now says **"three"** (was "two or three" / "up to three" — the picker requires
+  exactly three) with a refreshed booked screenshot + caption for the new button.
+- **Verdict-SLA escalation moved to day 14** (grace 3→4) and the SLA **cron switched on** in production
+  (`REVIEW_NUDGES_ENABLED=1` + daily Cloud Scheduler `halatuju-review-nudges` at 9am MYT; end-to-end smoke 200).
+- **Email auth: SPF record added + verified** for `halatuju.xyz` — `v=spf1 include:_spf.google.com include:spf.brevo.com ~all`
+  (Google Workspace + Brevo), completing SPF/DKIM/DMARC. Interview scheduling is now fully live (flags on, reviewers briefed).
+
+### Added
+- **Verdict-completion SLA with reviewer nudges + super-admin escalation (TD-131).** A verdict is due
+  `assigned_at + REVIEW_SLA_DAYS` (10). A new daily cron (`send_review_nudges`, dark behind
+  `REVIEW_NUDGES_ENABLED`) nudges the assigned reviewer **2 days before** the due date (approaching) and again
+  **once overdue**, then **escalates to all super-admins 4 days after** the due date. Each fires at most once
+  (idempotency stamps reset on every (re)assignment); a recorded verdict (`verdict_decided_at`) drops the case from
+  the population. The reviewer interview reminder now also carries the verdict-due date (the interview and verdict are
+  different clocks). New consistent reviewer emails (verdict-due/overdue nudge; super escalation alert). Migration
+  `scholarship/0064` (3 nullable stamps; migrate-first). +7 tests.
+- **Reviewer can reschedule a booked interview (move the time).** On the cockpit's booked card a reviewer now has a
+  **"Reschedule (move the time)"** action (with a confirm): it releases the held booking — drops the slot, cancels the
+  Meet/calendar event, clears the booking — then opens the picker to offer fresh times, and the student gets the standard
+  "pick a time" email with a *moved-the-original-time* preface (HTML bilingual). There is deliberately **no reviewer
+  self-cancel**: an emergency reschedules (keeps the candidate); a true hand-off is an admin reassignment. Backend:
+  `propose_slots(..., release_booking=True)` + `reschedule` flag on the propose endpoint. +3 tests.
+
+### Changed
+- **Interview email set completed (HTML bilingual) + verdict SLA set to 10 days.** The last two plain-text student
+  interview emails — the **1-day/1-hour reminder** and the **cancellation confirmation** — are now HTML primary +
+  plain-text fallback, bilingual (EN+BM with the `english_only` gate), from `interview@`, matching their booked /
+  slots-proposed siblings (reused `_html_email_shell`/`_email_button`; reminder gains a "Join the video call" button when
+  a Meet link exists; cancellation keeps the owner-approved copy + anti-scam note). The whole interview set is now
+  format-consistent. `REVIEW_SLA_DAYS` default 7 → **10** (display-only soft target until TD-131 gives it teeth).
+- **Reviewer email tree made consistent + actionable.** All five reviewer-facing emails (new applicant assigned,
+  interview booked, interview reminder, applicant-needs-different-times, applicant cancelled) now share one voice:
+  "Dear {name}" greeting, one **"Open in your reviewer dashboard"** CTA (was three names — "reviewer dashboard" /
+  "admin console" / "the applicant's record"), the **Scholar-code `{ref}` in every subject** for triage, and a single
+  **"Thanks, The B40 Assistance Team"** sign-off. All five now send from the **monitored `interview@` alias** with a
+  working reply-to — fixing the assignment email, which previously invited "just reply and we'll reassign" but went out
+  from the unmonitored default sender. The **assigned** email gains a **Reference / Programme / "Please review by {date}"**
+  block (new soft `REVIEW_SLA_DAYS`, default 7; display-only — see TD-131). The **booked** email gains a conditional
+  **"Add to your calendar"** Google link — shown only when no auto Google-Calendar invite was created (Meet off), so the
+  reviewer always ends up with the time held and never gets a duplicate. The **cancelled** email now states the case
+  state ("their application is still open — only the interview slot was released"), mirroring the student's reassurance.
+- **Interview-cancellation email rewritten + clearer reschedule toggle.** The cancellation notice now reads as a
+  confirmation of the student's *own* action (the common case): first-name greeting, "your application is still active",
+  the reviewer will propose alternatives, a reply-to-fix path, and the anti-scam note — fixing the prior copy that wrongly
+  told students to "book a new time" when every slot is withdrawn on cancel (EN+BM). On the booking panel, the
+  "Choose a different time" link is now state-aware: while the reschedule list is open it reads **"Keep my booked time"**
+  (new `interview.rescheduleKeep`, en/ms/ta) so dismissing it no longer looks like re-opening.
+- **Booking-confirmation email redesigned — HTML + .ics "Add to calendar".** The "interview is booked" email is now styled
+  HTML + plain-text fallback, bilingual (EN+BM, `english_only` gate), From `interview@`. New copy: details table (date/time ·
+  interviewer name — no contact · Meet link), an **Add-to-calendar button** (Google Calendar template URL) plus an attached
+  **`interview.ics`** so any client offers it, camera-on/under-18-guardian guidance, the reschedule cutoff stated in hours
+  with **"your application page" linked** to the booking page, and the anti-scam note. New `emails._interview_ics`/`_gcal_url`; `send_interview_booked_email` gains `english_only` +
+  `duration_min`. +2 tests.
+- **Interview: student can request alternative times in-app (closes a dead-end loop) + all interview emails send from `interview@`.**
+  Previously the "pick a time" email said "reply if none work" → replies went to the shared `interview@` inbox and the
+  assigned reviewer never learned of it, while the student waited indefinitely. Now the student's booking panel has an
+  **"Ask for other times"** action (with an optional note) → records the request, **emails the assigned reviewer directly**,
+  and shows an **amber banner with the note in the cockpit** above "Propose alternative times"; proposing a fresh menu
+  clears the request and re-notifies the student. New `interview_alternatives_requested_at`/`_note` (migration
+  `scholarship/0063`, additive, migrate-first), `scheduling.request_alternatives`, `StudentInterviewRequestAlternativesView`,
+  `send_reviewer_alternatives_requested_email`. The "pick a time" email now points to that in-app action instead of an
+  email reply. Separately, **all interview comms (assigned, pick-a-time, booked, reminders, cancelled — student & reviewer)
+  now send From `interview@halatuju.xyz`** (was the global `info@`), so the whole thread is self-contained. +6 tests.
+- **Interview slots: 24-hour minimum lead + locked "Proposed times" view + state-aware copy.** The earliest
+  proposable slot is now **24 hours ahead** (`MIN_LEAD_HOURS` / `SLOT_MIN_LEAD_HOURS`, mirrored FE+BE) — too-soon days/
+  times are disabled in the picker and rejected server-side (`too_soon`), so the student always has time to see, pick,
+  and prepare. Once proposed, the picker is replaced by a read-only **Proposed times** card with a **Propose alternative
+  times** button (reopens the picker pre-loaded; also serves "none of these work"); the selected-list remove control is a
+  **dustbin icon** and the ‹ › month-nav arrows are larger. The subheader is now **state-aware** — shown only while
+  proposing, with first-time vs "propose alternatives" variants (the locked/booked/cancelled states carry their own copy).
+- **Interview emails redesigned — HTML primary + plain-text fallback, bilingual.** The two student-facing interview
+  emails (reviewer-assigned "what happens next" + "pick a time slot") are now styled HTML (card layout, button,
+  `<meta charset>`) with a plain-text fallback, via a new `_send_html` helper (`EmailMultiAlternatives`),
+  Reply-To = `interview@halatuju.xyz`. Warmer copy with a prep list (camera on · under-18 guardian · honest about need)
+  and an explicit anti-scam note (we never ask for money/password/OTP/PIN → `help@halatuju.xyz`). The assigned email
+  names the interviewer ("your interview will be with {name}…") but shares no contact details. Each is **bilingual
+  (EN + BM)** by default; `english_only` drops the BM mirror only when the student is confidently English-comfortable —
+  used the app in English, didn't ask to be contacted in Malay/Tamil, AND scored A/A+ in SPM English
+  (`emails.english_only_email`). +tests.
 - **Interview slot proposing is now a Calendly-style date + time picker.** The reviewer's "propose times" box replaces the
   bare 24-hour `datetime-local` with a two-pane picker: a month **calendar** (past days and months disabled) plus a vertical
-  list of **12-hour time pills** (9:30am…), restricted to **08:00–21:30 MYT on 30-minute steps**. The reviewer taps up to 3
-  times (across days); already-proposed times show struck-through, past times today drop off. The same rule is enforced
+  list of **12-hour time pills** (9:30am…), restricted to **08:00–21:30 MYT on 30-minute steps**. The same rule is enforced
   server-side at the propose endpoint (`invalid_slot_time` → 400) and lives in one shared module
-  (`halatuju-web/src/lib/interviewSlots.ts` + mirror in `scheduling.py`) so the student booking side can reuse it. +8 tests.
+  (`halatuju-web/src/lib/interviewSlots.ts` + mirror in `scheduling.py`) so the student booking side can reuse it.
+  **Exactly 3 times are required** (Propose disabled until 3 are picked) — this kills the "propose one at a time" trap that
+  silently replaced the menu and re-emailed the student on each click. Existing proposals **pre-load** as selected (revise,
+  don't rebuild); re-proposing the **same** set sends **no** email (dedupe). Times the reviewer already holds for **another
+  student** (proposed or booked) are **greyed out** and rejected server-side (`reviewer_conflict`), with a booking race-check
+  — self-reschedule preserved. +21 tests.
 - **PISMP SPM (Perdana) catalogue reconciled to the official 2026 guide (2026-06-18).** Every Perdana course in the DB
   now matches a course in the PDF catalogue by **code, name, and entry requirements** — SJKT (10), SK (14), SJKC (15).
   Names carry the aliran suffix `(SK)/(SJKC)/(SJKT)`; three Pendidikan Khas bidang were corrected to the guide's
@@ -127,6 +223,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than only "the interviewer will contact you." Backend only, no migration.
 
 ### Fixed
+- **Student booking panel: clearer cancel + corrected guardian copy.** The bare "Cancel" on a booked interview was
+  ambiguous (it cancels the whole interview, with no confirmation) — it's now **"Cancel interview"** with an explicit
+  **confirm step** ("Cancel your whole interview? …" → "Yes, cancel" / "Keep my interview"), so it can't be hit by
+  accident. The guardian line also now matches the emails: *"If you're under 18, a parent or guardian should be with you;
+  whatever your age, they're welcome to join too"* (was the optional, inconsistent "parents are welcome to join from
+  home", which both under-stated the minor-must-be-present policy and implied a separate remote join we don't facilitate).
+- **Interview cancellation was a sticky dead-end.** When a student cancelled a booked interview, `interview_status` stayed
+  `cancelled` and the old proposed slots stayed active — the cockpit showed a contradictory "cancelled" banner + "waiting
+  for the student to pick" with stale slots, and when the reviewer proposed fresh times the status never reset, so the
+  **student kept seeing "your interview was cancelled" and never saw the new slots**. Now `cancel()` withdraws the whole
+  menu and clears the booking pointers, and `propose_slots()` lifts a prior cancellation back to the awaiting-a-pick state;
+  the cockpit also drops the generic subheader while cancelled. +2 tests.
 - **PISMP course names no longer show a redundant "(Aliran Bahasa Tamil/Cina)" descriptor (2026-06-19).** Since the 2026
   catalogue reconciliation, every PISMP course name already carries its Aliran suffix ("… (SJKT)"), but
   `deduplicate_pismp` still appended the old "(Aliran …)" language descriptor on top — so the picker *and* the

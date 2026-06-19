@@ -7,13 +7,16 @@ WhatsApp is a Phase 2 enhancement.
 import logging
 
 from django.conf import settings
-from django.core.mail import EmailMessage, send_mail
+from django.core.mail import EmailMessage, EmailMultiAlternatives, send_mail
 
 # Topical reply-to aliases (all land in the same Workspace inbox; they just route
 # replies to a sensible address and keep things filterable). From-address is the
 # global DEFAULT_FROM_EMAIL (info@halatuju.xyz) so every reply is deliverable.
 INTERVIEW_REPLY_TO = 'interview@halatuju.xyz'
 SPONSOR_REPLY_TO = 'sponsor@halatuju.xyz'
+# All interview comms send FROM (and reply to) the interview alias, so the whole thread is
+# self-contained on interview@ rather than the global info@ sender.
+INTERVIEW_FROM_EMAIL = 'interview@halatuju.xyz'
 
 logger = logging.getLogger(__name__)
 
@@ -959,123 +962,146 @@ def send_profile_complete_admin_email(application_id, applicant_name, programme_
         return False
 
 
-def send_reviewer_assigned_email(to_email, reviewer_name, applicant_name):
+# ── Reviewer emails — shared bits (one greeting, one CTA, one sign-off) ────────
+# All reviewer mail goes out via _send_plain → from the monitored interview@ alias with a
+# working reply-to, so "reply to reassign" / replies actually reach a person. The subject
+# carries the Scholar-code so a reviewer juggling several applicants can triage at a glance.
+_REVIEWER_SIGNOFF = 'Thanks,\nThe B40 Assistance Team'
+
+
+def _reviewer_dashboard_cta():
+    """The single CTA every reviewer email shares — one name ('reviewer dashboard'), one link."""
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    return f'Open in your reviewer dashboard:\n{frontend}/admin/login'
+
+
+def _reviewer_subject(base, ref):
+    """Append the Scholar-code (ref) so reviewers can triage from the subject line."""
+    return f'{base} — {ref}' if ref else base
+
+
+def send_reviewer_assigned_email(to_email, reviewer_name, *, ref='', programme='', review_by=''):
     """F7: notify a reviewer that an applicant has been assigned to them. English-only
     (reviewers are internal staff). Sent on each (re)assignment — never re-sent for an
     unchanged assignee, because assign_reviewer short-circuits a no-op before this fires.
+    From the monitored interview@ alias so 'reply to reassign' actually reaches a person.
     Best-effort — swallows send failures so a mail hiccup never breaks the assignment."""
     if not to_email:
         return False
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     reviewer = reviewer_name or 'there'
-    applicant = applicant_name or 'A new applicant'
-    try:
-        send_mail(
-            subject='A new applicant has been assigned to you — HalaTuju',
-            message=(
-                f'Dear {reviewer},\n\n'
-                f'{applicant} has been assigned to you for review on HalaTuju.\n\n'
-                f'Please sign in to your reviewer dashboard to see their profile, '
-                f'supporting documents, and verification checks, and to record your '
-                f'decision:\n\n'
-                f'{frontend}/admin/login\n\n'
-                f'If you have any questions, just reply to this email.\n\n'
-                f'Thank you for supporting the B40 Assistance Programme.\n\n'
-                f'Warm regards,\nThe HalaTuju Team'
-            ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-            recipient_list=[to_email],
-        )
-        return True
-    except Exception:
-        logger.warning('Failed to send reviewer-assigned email to %s', to_email,
-                       exc_info=True)
-        return False
+    details = [f'Reference: {ref or "—"}', f'Programme: {programme or "—"}']
+    if review_by:
+        details.append(f'Please review by: {review_by}')
+    body = (
+        f'Dear {reviewer},\n\n'
+        f'A new applicant has been assigned to you for review.\n\n'
+        + '\n'.join(details) + '\n\n'
+        f'Everything you need — profile, documents, and the verification checks — is in your '
+        f'reviewer dashboard:\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f"Can't take this one? Just reply and we'll reassign it.\n\n"
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject('New applicant assigned to you', ref), body)
 
 
-def send_student_assigned_reviewer_email(to_email, *, student_name, reviewer_name,
-                                         reviewer_email='', reviewer_phone=''):
-    """F7 advance notice to the STUDENT: who will interview them + how, so they expect the
-    call and pick up. Bilingual (English then Bahasa Melayu) in one email. No document
-    checklist (the interviewer asks for anything still needed). The phone + call-to-action
-    adapt to whether the reviewer shares their number (ReviewerProfile.share_phone_with_students).
+def send_student_assigned_reviewer_email(to_email, *, student_name, english_only=False,
+                                         reviewer_name='', reviewer_email='', reviewer_phone=''):
+    """Advance notice to the STUDENT once a reviewer is assigned: what happens next (an
+    interview is coming, times to follow), with a short prep list. HTML primary + plain-text
+    fallback; bilingual (EN + BM) by default, ``english_only=True`` drops the BM mirror. The
+    interviewer's NAME is woven in when known, but never their contact details (owner's design).
     Best-effort; never breaks the assignment. Gated by STUDENT_ASSIGNMENT_EMAIL_ENABLED at the
-    call site."""
+    call site. (reviewer_email/reviewer_phone kept for call compatibility; unused.)"""
     if not to_email:
         return False
-    student = student_name or 'there'
-    student_bm = student_name or 'di sana'
-    reviewer = reviewer_name or 'our interviewer'
-    reviewer_bm = reviewer_name or 'penemu duga kami'
-    phone_disp = f'+60 {reviewer_phone}' if reviewer_phone else ''
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
+    reviewer = (reviewer_name or '').strip()
+    subject = 'Your B40 Assistance Programme interview — what happens next'
 
-    en_contact = (
-        f'• Interviewer: {reviewer}\n'
-        + (f'• Contact: phone / WhatsApp {phone_disp} · email {reviewer_email}\n'
-           if phone_disp else f'• Contact: email {reviewer_email}\n')
-    )
-    bm_contact = (
-        f'• Penemu duga: {reviewer}\n'
-        + (f'• Hubungi: telefon / WhatsApp {phone_disp} · e-mel {reviewer_email}\n'
-           if phone_disp else f'• Hubungi: e-mel {reviewer_email}\n')
-    )
-    # The call-to-action depends on whether a phone was shared (the reviewer may opt out).
-    en_action = ('Please save the above number and pick up when they call. If you miss it, just '
-                 'reply to arrange another time.' if phone_disp
-                 else 'Please look out for their email and reply to arrange a time.')
-    bm_action = ('Sila simpan nombor di atas dan jawab apabila mereka menelefon. Jika terlepas, '
-                 'balas sahaja untuk menetapkan masa lain.' if phone_disp
-                 else 'Sila perhatikan e-mel mereka dan balas untuk menetapkan masa.')
+    en_intro = ('Your application has reached the interview stage of the B40 Assistance Programme, '
+                + (f'and your interview will be with {reviewer}, one of our programme’s interviewers.'
+                   if reviewer else 'and an interviewer from our team has now been assigned to you.'))
+    en_what = ('The interview is a short video call, about 30–45 minutes, to understand your '
+               'family’s situation fairly. We’ll email you shortly with a few times to choose '
+               'from, so you can pick the one that suits you best. Once you choose, we’ll send a '
+               'Google Meet link and a reminder before the call — there’s nothing you need to '
+               'arrange yourself in the meantime.')
+    en_points = [
+        'Please join by video, with your camera on, as this helps us verify your application.',
+        'If you are under 18, please have a parent or guardian with you for the call. If they’re '
+        'available, our interviewer would be glad to speak with them whatever your age.',
+        'The support is for families with genuine financial need, so we’ll ask honestly about your '
+        'circumstances — and we value your honesty in return.',
+    ]
+    en_safety = (f'One note for your peace of mind: we’ll only ever ask about you and your studies. '
+                 f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
+                 f'does, it’s not us — please tell us at {SUPPORT_EMAIL}.')
 
-    en = (
-        f'Hi {student},\n\n'
-        f'Good news — your application has reached the interview stage of the B40 Assistance '
-        f'Programme, and an interviewer has been assigned to you:\n\n'
-        f'{en_contact}\n'
-        f'{reviewer} will arrange a short interview with you in the next few days (about 30–45 '
-        f'minutes, by video call). You may be offered a few times to choose from in HalaTuju — '
-        f'sign in to your application page to pick one, and we’ll email you a Google Meet link '
-        f'automatically. {en_action}\n\n'
-        f'For a video call, please be on camera. If your parents or guardian are around, our '
-        f'interviewer would be glad to speak with them too.\n\n'
-        f'This is simply to understand your family’s situation fairly. The support is for families '
-        f'with genuine financial need, and we value your honesty.\n\n'
-        f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN. If '
-        f'anyone does, it is not from us — please email {SUPPORT_EMAIL}.\n\n'
-        f'Thank you, and we look forward to speaking with you.\n'
-        f'— The B40 Assistance Programme team'
-    )
-    bm = (
-        f'Salam {student_bm},\n\n'
-        f'Berita baik — permohonan anda telah sampai ke peringkat temu duga Program Bantuan B40, '
-        f'dan seorang penemu duga telah ditugaskan kepada anda:\n\n'
-        f'{bm_contact}\n'
-        f'{reviewer_bm} akan mengaturkan temu duga ringkas dengan anda dalam masa beberapa hari '
-        f'(kira-kira 30–45 minit, melalui panggilan video). Anda mungkin ditawarkan beberapa masa '
-        f'untuk dipilih dalam HalaTuju — log masuk ke halaman permohonan anda untuk memilih satu, '
-        f'dan kami akan menghantar pautan Google Meet secara automatik. {bm_action}\n\n'
-        f'Untuk panggilan video, sila buka kamera. Jika ibu bapa atau penjaga anda ada bersama, '
-        f'penemu duga kami amat berbesar hati untuk bercakap dengan mereka juga.\n\n'
-        f'Ini hanyalah untuk memahami keadaan keluarga anda secara adil. Bantuan ini untuk keluarga '
-        f'yang benar-benar memerlukan, dan kami menghargai kejujuran anda.\n\n'
-        f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
-        f'OTP/PIN. Jika sesiapa berbuat demikian, ia bukan daripada kami — sila e-mel '
-        f'{SUPPORT_EMAIL}.\n\n'
-        f'Terima kasih, dan kami menantikan untuk bercakap dengan anda.\n'
-        f'— Pasukan Program Bantuan B40'
-    )
-    try:
-        send_mail(
-            subject='Your B40 Assistance Programme interview',
-            message=en + '\n\n———\n\n' + bm,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-            recipient_list=[to_email],
+    bm_intro = ('Permohonan anda telah sampai ke peringkat temu duga Program Bantuan B40, '
+                + (f'dan temu duga anda akan bersama {reviewer}, salah seorang penemu duga program kami.'
+                   if reviewer else 'dan seorang penemu duga daripada pasukan kami kini telah ditugaskan kepada anda.'))
+    bm_what = ('Temu duga ialah panggilan video ringkas, kira-kira 30–45 minit, untuk memahami '
+               'keadaan keluarga anda secara adil. Kami akan menghantar e-mel kepada anda tidak '
+               'lama lagi dengan beberapa masa untuk dipilih, supaya anda boleh memilih yang '
+               'paling sesuai. Setelah anda memilih, kami akan menghantar pautan Google Meet dan '
+               'peringatan sebelum panggilan — tiada apa-apa yang perlu anda uruskan sendiri buat '
+               'masa ini.')
+    bm_points = [
+        'Sila sertai melalui video, dengan kamera dibuka, kerana ini membantu kami mengesahkan '
+        'permohonan anda.',
+        'Jika anda di bawah 18 tahun, sila pastikan ibu bapa atau penjaga bersama anda semasa '
+        'panggilan. Jika mereka ada, penemu duga kami amat berbesar hati untuk bercakap dengan '
+        'mereka tidak kira umur anda.',
+        'Bantuan ini untuk keluarga yang benar-benar memerlukan, jadi kami akan bertanya secara '
+        'jujur tentang keadaan anda — dan kami menghargai kejujuran anda sebagai balasan.',
+    ]
+    bm_safety = (f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan '
+                 f'pengajian anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, '
+                 f'atau OTP atau PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila '
+                 f'beritahu kami di {SUPPORT_EMAIL}.')
+
+    # ── Plain text ────────────────────────────────────────────────────────────
+    def text_block(greeting, intro, what, points_label, points, safety, closing, signoff):
+        bullets = '\n'.join(f'• {p}' for p in points)
+        return (f'{greeting}\n\n{intro}\n\n{what}\n\n{points_label}\n{bullets}\n\n'
+                f'{safety}\n\n{closing}\n\n{signoff}')
+    en_text = text_block(
+        f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
+        en_safety, 'We look forward to speaking with you.',
+        'Warm regards,\nThe B40 Assistance Programme team')
+    bm_text = text_block(
+        f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
+        bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
+        'Salam hormat,\nPasukan Program Bantuan B40')
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    # ── HTML ──────────────────────────────────────────────────────────────────
+    def html_block(greeting, intro, what, points_label, points, safety, closing, signoff):
+        lis = ''.join(f'<li style="margin:0 0 8px;">{p}</li>' for p in points)
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 14px;">{intro}</p>'
+            f'<p style="margin:0 0 14px;">{what}</p>'
+            f'<p style="margin:0 0 6px;">{points_label}</p>'
+            f'<ul style="margin:0 0 16px;padding-left:20px;">{lis}</ul>'
+            f'<p style="margin:0 0 16px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0 0 14px;">{closing}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
         )
-        return True
-    except Exception:
-        logger.warning('Failed to send student-assigned-reviewer email to %s', to_email,
-                       exc_info=True)
-        return False
+    en_html = html_block(
+        f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
+        en_safety, 'We look forward to speaking with you.',
+        'Warm regards,<br>The B40 Assistance Programme team')
+    bm_html = html_block(
+        f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
+        bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
+        'Salam hormat,<br>Pasukan Program Bantuan B40')
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
+    return _send_html(to_email, subject, text_body, html_body)
 
 
 def send_contact_submission_admin_email(*, to_email, name, contact, category, message, created_at):
@@ -1126,6 +1152,15 @@ def _fmt_myt(dt):
     return f'{local:%a, %d %b %Y}, {hour12}:{local:%M} {ampm} (MYT)'
 
 
+def _interview_unsub_headers():
+    """A harmless List-Unsubscribe on interview/service emails: a mailto to support, so a
+    mistaken 'unsubscribe' click just lands a note in the support inbox for a human — instead
+    of triggering the ESP's auto-suppression that would silently stop us reaching the student
+    about reminders or their decision. No one-click POST header, so nothing auto-fires. (The
+    definitive fix is a Brevo-side List-Help on transactional mail.)"""
+    return {'List-Unsubscribe': f'<mailto:{SUPPORT_EMAIL}?subject=Unsubscribe%20from%20B40%20emails>'}
+
+
 def _send_bilingual(to_email, subject, en, bm):
     """Send one EN+BM email (the booking-flow pattern), with Reply-To = the interview
     alias so replies route there. Best-effort → bool."""
@@ -1135,14 +1170,113 @@ def _send_bilingual(to_email, subject, en, bm):
         EmailMessage(
             subject=subject,
             body=en + '\n\n———\n\n' + bm,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=INTERVIEW_FROM_EMAIL,
             to=[to_email],
             reply_to=[INTERVIEW_REPLY_TO],
+            headers=_interview_unsub_headers(),
         ).send()
         return True
     except Exception:
         logger.warning('Failed to send interview email to %s', to_email, exc_info=True)
         return False
+
+
+def english_only_email(application) -> bool:
+    """True when we can confidently send a student email in English only: they used the app
+    in English, did NOT ask to be contacted in Malay/Tamil, AND scored A/A+ in SPM English.
+    Otherwise bilingual (EN+BM) — conservative: any Malay/Tamil signal keeps the Malay mirror."""
+    profile = getattr(application, 'profile', None)
+    locale = (getattr(application, 'locale', '') or '').lower()
+    call_lang = (getattr(profile, 'preferred_call_language', '') or '').lower() if profile else ''
+    if locale != 'en' or call_lang in ('ms', 'ta'):
+        return False
+    grades = getattr(profile, 'grades', None) if profile else None
+    eng = ''
+    if isinstance(grades, dict):
+        eng = str(grades.get('eng', '') or '').strip().upper().replace('−', '-')
+    return eng in ('A+', 'A')
+
+
+def _send_html(to_email, subject, text_body, html_body, reply_to=None, ics=None):
+    """Send a multipart email — HTML primary + plain-text fallback. Reply-To defaults to
+    the interview alias. ``ics`` (a calendar string) is attached as interview.ics so the
+    client offers "add to calendar". Best-effort → bool."""
+    if not to_email:
+        return False
+    try:
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=text_body,
+            from_email=INTERVIEW_FROM_EMAIL,
+            to=[to_email],
+            reply_to=reply_to or [INTERVIEW_REPLY_TO],
+            headers=_interview_unsub_headers(),
+        )
+        msg.attach_alternative(html_body, 'text/html')
+        if ics:
+            msg.attach('interview.ics', ics, 'text/calendar')
+        msg.send()
+        return True
+    except Exception:
+        logger.warning('Failed to send HTML email to %s', to_email, exc_info=True)
+        return False
+
+
+def _interview_ics(*, start, duration_min, summary, description='', location=''):
+    """A minimal VCALENDAR/VEVENT for the booked interview (attached so mail clients show
+    an 'add to calendar' affordance)."""
+    from datetime import datetime, timedelta, timezone as dtz
+    def z(dt):
+        return dt.astimezone(dtz.utc).strftime('%Y%m%dT%H%M%SZ')
+    def esc(s):
+        return (str(s or '').replace('\\', '\\\\').replace(';', '\\;')
+                .replace(',', '\\,').replace('\n', '\\n'))
+    end = start + timedelta(minutes=duration_min)
+    lines = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//HalaTuju//B40//EN', 'METHOD:PUBLISH',
+        'BEGIN:VEVENT', f'UID:b40-interview-{int(start.timestamp())}@halatuju.xyz',
+        f'DTSTAMP:{datetime.now(dtz.utc).strftime("%Y%m%dT%H%M%SZ")}', f'DTSTART:{z(start)}', f'DTEND:{z(end)}',
+        f'SUMMARY:{esc(summary)}', f'DESCRIPTION:{esc(description)}', f'LOCATION:{esc(location)}',
+        'END:VEVENT', 'END:VCALENDAR',
+    ]
+    return '\r\n'.join(lines) + '\r\n'
+
+
+def _gcal_url(*, start, duration_min, text, details='', location=''):
+    """A Google Calendar 'create event' template URL for the 'Add to calendar' button."""
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+    from urllib.parse import urlencode
+    def z(dt):
+        return dt.astimezone(ZoneInfo('UTC')).strftime('%Y%m%dT%H%M%SZ')
+    end = start + timedelta(minutes=duration_min)
+    q = urlencode({'action': 'TEMPLATE', 'text': text, 'dates': f'{z(start)}/{z(end)}',
+                   'details': details, 'location': location})
+    return f'https://calendar.google.com/calendar/render?{q}'
+
+
+def _html_email_shell(*sections):
+    """Wrap one or more HTML strings in a simple, email-client-safe card layout."""
+    divider = '<hr style="border:none;border-top:1px solid #e5e7eb;margin:22px 0;">'
+    inner = divider.join(sections)
+    return (
+        '<!doctype html><html><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1"></head>'
+        '<body style="margin:0;background:#f3f4f6;">'
+        '<div style="max-width:560px;margin:0 auto;padding:24px;'
+        'font-family:Arial,Helvetica,sans-serif;color:#111827;font-size:15px;line-height:1.55;">'
+        '<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:24px;">'
+        + inner +
+        '</div></div></body></html>'
+    )
+
+
+def _email_button(href, label):
+    return (
+        f'<a href="{href}" style="display:inline-block;background:#2563eb;color:#ffffff;'
+        f'text-decoration:none;font-weight:600;padding:12px 22px;border-radius:8px;'
+        f'font-size:15px;">{label}</a>'
+    )
 
 
 def _join_line(meeting_url, lang='en'):
@@ -1155,134 +1289,377 @@ def _join_line(meeting_url, lang='en'):
 
 
 def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
-                                meeting_url='', reviewer_phone=''):
-    """Student confirmation that an interview slot is booked. Bilingual; best-effort."""
-    student = student_name or 'there'
-    student_bm = student_name or 'di sana'
-    reviewer = reviewer_name or 'our interviewer'
-    reviewer_bm = reviewer_name or 'penemu duga kami'
+                                meeting_url='', english_only=False, duration_min=None,
+                                reviewer_phone=''):
+    """Student confirmation that an interview slot is booked. HTML primary + plain-text
+    fallback; bilingual (EN + BM) by default, ``english_only=True`` drops the BM mirror.
+    Names the interviewer (no contact details); attaches an .ics + an Add-to-calendar
+    button. Best-effort. (``reviewer_phone`` kept for call compatibility; unused.)"""
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
+    reviewer = (reviewer_name or '').strip()
+    rev_en = reviewer or 'one of our interviewers'
+    rev_bm = reviewer or 'salah seorang penemu duga kami'
     when = _fmt_myt(start)
-    phone_en = f'• Interviewer’s phone / WhatsApp: +60 {reviewer_phone}\n' if reviewer_phone else ''
-    phone_bm = f'• Telefon / WhatsApp penemu duga: +60 {reviewer_phone}\n' if reviewer_phone else ''
-    en = (
-        f'Hi {student},\n\n'
-        f'Your B40 Assistance Programme interview is booked. Here are the details:\n\n'
-        f'• Date & time: {when}\n'
-        f'• Interviewer: {reviewer}\n'
-        f'{phone_en}'
-        f'{_join_line(meeting_url, "en")}\n'
-        f'It will take about 30–45 minutes, by video call. Please be on camera. If your '
-        f'parents or guardian are around, our interviewer would be glad to speak with them too '
-        f'— they can join from home while you join from college.\n\n'
+    cutoff = getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
+    duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
+    app_link = f"{getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')}/scholarship/application"
+    summary = 'B40 Assistance Programme interview'
+    details = f'Join: {meeting_url}' if meeting_url else 'Your interviewer will share the video-call link.'
+    gcal = _gcal_url(start=start, duration_min=duration_min, text=summary,
+                     details=details, location=meeting_url or 'Video call')
+    ics = _interview_ics(start=start, duration_min=duration_min, summary=summary,
+                         description=details, location=meeting_url or 'Video call')
+    join_en = (f'Join here: {meeting_url}' if meeting_url
+               else 'Your interviewer will share the video-call link before the interview.')
+    join_bm = (f'Sertai di sini: {meeting_url}' if meeting_url
+               else 'Penemu duga anda akan berkongsi pautan panggilan video sebelum temu duga.')
+
+    en_text = (
+        f'Hi {en_name},\n\n'
+        f'Your B40 Assistance Programme interview is confirmed. Here are the details:\n\n'
+        f'Date & time: {when}\n'
+        f'Interviewer: {rev_en}\n'
+        f'{join_en}\n\n'
+        f'Add to calendar: {gcal}\n\n'
+        f'The interview is a video call and takes about 30 minutes. Please join with your camera '
+        f'on. If you are under 18, please have a parent or guardian with you; whatever your age, '
+        f'they’re welcome to join too.\n\n'
         f'Need a different time? You can reschedule or cancel from your application page in '
-        f'HalaTuju, up until a few hours before the interview.\n\n'
-        f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN.\n\n'
-        f'— The B40 Assistance Programme team'
+        f'HalaTuju ({app_link}) up to {cutoff} hours before the interview.\n\n'
+        f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
+        f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
+        f'please tell us at {SUPPORT_EMAIL}.\n\n'
+        f'We look forward to speaking with you.\n\n'
+        f'Warm regards,\nThe B40 Assistance Programme team'
     )
-    bm = (
-        f'Salam {student_bm},\n\n'
-        f'Temu duga Program Bantuan B40 anda telah ditetapkan. Berikut butirannya:\n\n'
-        f'• Tarikh & masa: {when}\n'
-        f'• Penemu duga: {reviewer}\n'
-        f'{phone_bm}'
-        f'{_join_line(meeting_url, "bm")}\n'
-        f'Ia mengambil masa kira-kira 30–45 minit, melalui panggilan video. Sila buka kamera. '
-        f'Jika ibu bapa atau penjaga anda ada, penemu duga kami berbesar hati bercakap dengan '
-        f'mereka juga — mereka boleh menyertai dari rumah.\n\n'
-        f'Perlu masa lain? Anda boleh menjadual semula atau membatalkan melalui halaman '
-        f'permohonan anda di HalaTuju, sehingga beberapa jam sebelum temu duga.\n\n'
-        f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, '
-        f'atau OTP/PIN.\n\n'
-        f'— Pasukan Program Bantuan B40'
+    bm_text = (
+        f'Salam {bm_name},\n\n'
+        f'Temu duga Program Bantuan B40 anda telah disahkan. Berikut butirannya:\n\n'
+        f'Tarikh & masa: {when}\n'
+        f'Penemu duga: {rev_bm}\n'
+        f'{join_bm}\n\n'
+        f'Tambah ke kalendar: {gcal}\n\n'
+        f'Temu duga ialah panggilan video dan mengambil masa kira-kira 30 minit. Sila sertai '
+        f'dengan kamera dibuka. Jika anda di bawah 18 tahun, sila pastikan ibu bapa atau penjaga '
+        f'bersama anda; tidak kira umur anda, mereka juga dialu-alukan untuk menyertai.\n\n'
+        f'Perlu masa lain? Anda boleh menjadual semula atau membatalkan melalui halaman permohonan '
+        f'anda di HalaTuju ({app_link}) sehingga {cutoff} jam sebelum temu duga.\n\n'
+        f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian '
+        f'anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
+        f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
+        f'Kami menantikan untuk bercakap dengan anda.\n\n'
+        f'Salam hormat,\nPasukan Program Bantuan B40'
     )
-    return _send_bilingual(to_email, 'Your B40 Assistance Programme interview is booked', en, bm)
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    def section(greeting, lead, rows, join, btn_label, body, safety, closing, signoff):
+        detail_rows = ''.join(
+            f'<tr><td style="padding:2px 10px 2px 0;color:#6b7280;white-space:nowrap;">{k}</td>'
+            f'<td style="padding:2px 0;">{v}</td></tr>' for k, v in rows)
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 12px;">{lead}</p>'
+            f'<table style="margin:0 0 16px;border-collapse:collapse;font-size:15px;"><tbody>'
+            f'{detail_rows}<tr><td style="padding:2px 10px 2px 0;color:#6b7280;">{join[0]}</td>'
+            f'<td style="padding:2px 0;">{join[1]}</td></tr></tbody></table>'
+            f'<p style="margin:0 0 18px;">{_email_button(gcal, btn_label)}</p>'
+            f'<p style="margin:0 0 14px;">{body}</p>'
+            f'<p style="margin:0 0 16px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0 0 14px;">{closing}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    join_cell_en = (f'<a href="{meeting_url}">{meeting_url}</a>' if meeting_url
+                    else 'Your interviewer will share the link before the interview.')
+    join_cell_bm = (f'<a href="{meeting_url}">{meeting_url}</a>' if meeting_url
+                    else 'Penemu duga anda akan berkongsi pautan sebelum temu duga.')
+    en_html = section(
+        f'Hi {en_name},',
+        'Your B40 Assistance Programme interview is confirmed. Here are the details:',
+        [('Date &amp; time', when), ('Interviewer', rev_en)], ('Join here', join_cell_en),
+        'Add to calendar',
+        'The interview is a video call and takes about 30 minutes. Please join with your camera on. '
+        'If you are under 18, please have a parent or guardian with you; whatever your age, they’re '
+        'welcome to join too. Need a different time? You can reschedule or cancel from '
+        f'<a href="{app_link}">your application page</a> in HalaTuju up to {cutoff} hours before the '
+        'interview.',
+        'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
+        f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
+        f'please tell us at {SUPPORT_EMAIL}.',
+        'We look forward to speaking with you.',
+        'Warm regards,<br>The B40 Assistance Programme team')
+    bm_html = section(
+        f'Salam {bm_name},',
+        'Temu duga Program Bantuan B40 anda telah disahkan. Berikut butirannya:',
+        [('Tarikh &amp; masa', when), ('Penemu duga', rev_bm)], ('Sertai di sini', join_cell_bm),
+        'Tambah ke kalendar',
+        'Temu duga ialah panggilan video dan mengambil masa kira-kira 30 minit. Sila sertai dengan '
+        'kamera dibuka. Jika anda di bawah 18 tahun, sila pastikan ibu bapa atau penjaga bersama '
+        'anda; tidak kira umur anda, mereka juga dialu-alukan untuk menyertai. Perlu masa lain? Anda '
+        f'boleh menjadual semula atau membatalkan melalui <a href="{app_link}">halaman permohonan '
+        f'anda</a> sehingga {cutoff} jam sebelum temu duga.',
+        'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. '
+        f'Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika sesiapa '
+        f'berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
+        'Kami menantikan untuk bercakap dengan anda.',
+        'Salam hormat,<br>Pasukan Program Bantuan B40')
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
+    return _send_html(to_email, 'Your B40 Assistance Programme interview is booked',
+                      text_body, html_body, ics=ics)
 
 
-def send_interview_slots_proposed_email(to_email, *, student_name, reviewer_name):
+def send_interview_slots_proposed_email(to_email, *, student_name, english_only=False,
+                                        reviewer_name='', rescheduled=False):
     """Student notice that interview times are ready to pick — fired when the reviewer
-    PROPOSES slots, so the in-app scheduler isn't invisible to students. Links to the
-    application page (the booking panel lives there); a Google Meet link is created
-    automatically on booking. Bilingual; best-effort → bool."""
-    student = student_name or 'there'
-    student_bm = student_name or 'di sana'
-    reviewer = reviewer_name or 'your interviewer'
-    reviewer_bm = reviewer_name or 'penemu duga anda'
+    PROPOSES slots, so the in-app scheduler isn't invisible to students. HTML primary +
+    plain-text fallback. Bilingual (EN + BM) by default; ``english_only=True`` drops the
+    BM mirror (used for confidently English-preferring students). Links to the application
+    page (the booking panel lives there); a Google Meet link is created automatically on
+    booking. ``rescheduled=True`` is sent when the REVIEWER moved an already-booked
+    interview — the intro/subject then explain the original time was released and ask the
+    student to pick again. Best-effort → bool. (``reviewer_name`` kept for call compat.)"""
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     link = f'{frontend}/scholarship/application'
-    en = (
-        f'Hi {student},\n\n'
-        f'Good news — {reviewer} has proposed a few times for your B40 Assistance Programme '
-        f'interview, and you can pick the one that suits you best.\n\n'
-        f'• Choose your time here: {link}\n\n'
-        f'Once you pick a slot, we’ll email you a confirmation with a Google Meet link and send '
-        f'reminders before the interview. It takes about 30–45 minutes, by video call.\n\n'
-        f'If none of the times work, just reply to this email and we’ll arrange another.\n\n'
-        f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN.\n\n'
-        f'— The B40 Assistance Programme team'
+    subject = ('Your B40 Assistance Programme interview time has changed — pick a new slot'
+               if rescheduled
+               else 'Pick a time slot for your B40 Assistance Programme interview')
+    intro_en = (
+        'Your interviewer has had to move your interview, so the time you had booked has been '
+        'released. Please choose a new date and time that suits you best.'
+        if rescheduled else
+        'The next step in your B40 Assistance Programme application is a short interview, and '
+        'you can choose the date and time that suits you best.')
+    intro_bm = (
+        'Penemu duga anda terpaksa menukar temu duga anda, jadi masa yang anda tempah sebelum ini '
+        'telah dilepaskan. Sila pilih tarikh dan masa baharu yang paling sesuai untuk anda.'
+        if rescheduled else
+        'Langkah seterusnya dalam permohonan Program Bantuan B40 anda ialah temu duga ringkas, '
+        'dan anda boleh memilih tarikh dan masa yang paling sesuai.')
+
+    # ── Plain-text fallback ───────────────────────────────────────────────────
+    en_text = (
+        f'Hi {en_name},\n\n'
+        f'{intro_en}\n\n'
+        f'Choose your interview time: {link}\n\n'
+        f'The interview is a video call and takes about 30 minutes. Once you pick a slot, we’ll '
+        f'email you a confirmation with a Google Meet link, and send reminders one day and one '
+        f'hour before.\n\n'
+        f'If none of them suit you, you can ask for other times on that same page — your '
+        f'interviewer will then suggest new ones.\n\n'
+        f'For your peace of mind: we’ll only ever ask about you and your studies. We will never '
+        f'ask you for money, your password, or an OTP or PIN. If anyone claiming to represent the '
+        f'B40 Assistance Programme does, it isn’t us.\n\n'
+        f'Warm regards,\nThe B40 Assistance Programme Team'
     )
-    bm = (
-        f'Salam {student_bm},\n\n'
-        f'Berita baik — {reviewer_bm} telah mencadangkan beberapa masa untuk temu duga Program '
-        f'Bantuan B40 anda, dan anda boleh memilih masa yang paling sesuai.\n\n'
-        f'• Pilih masa anda di sini: {link}\n\n'
+    bm_text = (
+        f'Salam {bm_name},\n\n'
+        f'{intro_bm}\n\n'
+        f'Pilih masa temu duga anda: {link}\n\n'
+        f'Temu duga dijalankan melalui panggilan video dan mengambil masa kira-kira 30 minit. '
         f'Setelah anda memilih slot, kami akan menghantar e-mel pengesahan dengan pautan Google '
-        f'Meet dan peringatan sebelum temu duga. Ia mengambil masa kira-kira 30–45 minit, melalui '
-        f'panggilan video.\n\n'
-        f'Jika tiada masa yang sesuai, balas sahaja e-mel ini dan kami akan aturkan masa lain.\n\n'
-        f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
-        f'OTP/PIN.\n\n'
-        f'— Pasukan Program Bantuan B40'
+        f'Meet, serta peringatan satu hari dan satu jam sebelumnya.\n\n'
+        f'Jika tiada yang sesuai, anda boleh meminta masa lain pada halaman yang sama — penemu '
+        f'duga anda kemudian akan mencadangkan masa baharu.\n\n'
+        f'Untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. Kami '
+        f'tidak sekali-kali akan meminta wang, kata laluan, atau OTP atau PIN. Jika sesiapa yang '
+        f'mendakwa mewakili Program Bantuan B40 berbuat demikian, itu bukan kami.\n\n'
+        f'Salam hormat,\nPasukan Program Bantuan B40'
     )
-    return _send_bilingual(to_email, 'Your B40 interview times are ready to pick', en, bm)
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    # ── HTML primary (EN then BM) ─────────────────────────────────────────────
+    def section(greeting, intro, btn_label, detail, alt, safety, signoff):
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 18px;">{intro}</p>'
+            f'<p style="margin:0 0 18px;">{_email_button(link, btn_label)}</p>'
+            f'<p style="margin:0 0 14px;">{detail}</p>'
+            f'<p style="margin:0 0 18px;">{alt}</p>'
+            f'<p style="margin:0 0 18px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    en_html = section(
+        f'Hi {en_name},',
+        intro_en,
+        'Choose your interview time',
+        'The interview is a video call and takes about 30 minutes. Once you pick a slot, we’ll '
+        'email you a confirmation with a Google Meet link, and send reminders one day and one '
+        'hour before.',
+        'If none of them suit you, you can ask for other times on that same page — your '
+        'interviewer will then suggest new ones.',
+        'For your peace of mind: we’ll only ever ask about you and your studies. We will never ask '
+        'you for money, your password, or an OTP or PIN. If anyone claiming to represent the B40 '
+        'Assistance Programme does, it isn’t us.',
+        'Warm regards,<br>The B40 Assistance Programme Team')
+    bm_html = section(
+        f'Salam {bm_name},',
+        intro_bm,
+        'Pilih masa temu duga anda',
+        'Temu duga dijalankan melalui panggilan video dan mengambil masa kira-kira 30 minit. '
+        'Setelah anda memilih slot, kami akan menghantar e-mel pengesahan dengan pautan Google '
+        'Meet, serta peringatan satu hari dan satu jam sebelumnya.',
+        'Jika tiada yang sesuai, anda boleh meminta masa lain pada halaman yang sama — penemu duga '
+        'anda kemudian akan mencadangkan masa baharu.',
+        'Untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. Kami '
+        'tidak sekali-kali akan meminta wang, kata laluan, atau OTP atau PIN. Jika sesiapa yang '
+        'mendakwa mewakili Program Bantuan B40 berbuat demikian, itu bukan kami.',
+        'Salam hormat,<br>Pasukan Program Bantuan B40')
+
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+    return _send_html(to_email, subject, text_body, html_body)
 
 
-def send_interview_reminder_email(to_email, *, student_name, start, meeting_url='', when='1day'):
-    """Student reminder (1 day / 1 hour before). Bilingual; best-effort."""
-    student = student_name or 'there'
-    student_bm = student_name or 'di sana'
+def send_interview_reminder_email(to_email, *, student_name, start, meeting_url='', when='1day',
+                                  english_only=False):
+    """Student reminder (1 day / 1 hour before). HTML primary + plain-text fallback. Bilingual
+    (EN+BM) by default; ``english_only=True`` drops the BM mirror. Best-effort."""
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
     whenfmt = _fmt_myt(start)
     soon_en = 'tomorrow' if when == '1day' else 'in about an hour'
     soon_bm = 'esok' if when == '1day' else 'dalam kira-kira sejam'
-    en = (
-        f'Hi {student},\n\n'
+
+    # ── Plain-text fallback ───────────────────────────────────────────────────
+    en_text = (
+        f'Hi {en_name},\n\n'
         f'A reminder that your B40 Assistance Programme interview is {soon_en}:\n\n'
         f'• {whenfmt}\n'
         f'{_join_line(meeting_url, "en")}\n'
         f'Please be on camera and ready a few minutes early. See you soon.\n\n'
-        f'— The B40 Assistance Programme team'
+        f'Warm regards,\nThe B40 Assistance Programme Team'
     )
-    bm = (
-        f'Salam {student_bm},\n\n'
+    bm_text = (
+        f'Salam {bm_name},\n\n'
         f'Peringatan bahawa temu duga Program Bantuan B40 anda adalah {soon_bm}:\n\n'
         f'• {whenfmt}\n'
         f'{_join_line(meeting_url, "bm")}\n'
         f'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.\n\n'
-        f'— Pasukan Program Bantuan B40'
+        f'Salam hormat,\nPasukan Program Bantuan B40'
     )
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    # ── HTML primary ──────────────────────────────────────────────────────────
+    if meeting_url:
+        join_en_html = _email_button(meeting_url, 'Join the video call')
+        join_bm_html = _email_button(meeting_url, 'Sertai panggilan video')
+    else:
+        join_en_html = 'Your interviewer will share the video-call link before the interview.'
+        join_bm_html = 'Penemu duga anda akan berkongsi pautan panggilan video sebelum temu duga.'
+
+    def section(greeting, lead, join_html, footer, signoff):
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 10px;">{lead}</p>'
+            f'<p style="margin:0 0 6px;font-weight:600;">{whenfmt}</p>'
+            f'<p style="margin:0 0 18px;">{join_html}</p>'
+            f'<p style="margin:0 0 18px;">{footer}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    en_html = section(
+        f'Hi {en_name},',
+        f'A reminder that your B40 Assistance Programme interview is {soon_en}:',
+        join_en_html,
+        'Please be on camera and ready a few minutes early. See you soon.',
+        'Warm regards,<br>The B40 Assistance Programme Team')
+    bm_html = section(
+        f'Salam {bm_name},',
+        f'Peringatan bahawa temu duga Program Bantuan B40 anda adalah {soon_bm}:',
+        join_bm_html,
+        'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.',
+        'Salam hormat,<br>Pasukan Program Bantuan B40')
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
     subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
             else 'Reminder: your B40 interview is in 1 hour')
-    return _send_bilingual(to_email, subj, en, bm)
+    return _send_html(to_email, subj, text_body, html_body)
 
 
-def send_interview_cancelled_email(to_email, *, student_name):
-    """Student notice that their interview booking was cancelled. Bilingual; best-effort."""
-    student = student_name or 'there'
-    student_bm = student_name or 'di sana'
-    en = (
-        f'Hi {student},\n\n'
-        f'Your B40 Assistance Programme interview booking has been cancelled. You can book a '
-        f'new time from your application page in HalaTuju whenever you are ready. If you did not '
-        f'expect this, please reply to this email.\n\n'
-        f'— The B40 Assistance Programme team'
+def send_interview_cancelled_email(to_email, *, student_name, english_only=False):
+    """Confirmation to the student that *they* cancelled their interview (this notice is sent
+    on every cancel, and a student-initiated cancel is the common case). HTML primary +
+    plain-text fallback. Bilingual (EN+BM) by default; ``english_only=True`` drops the BM
+    mirror. Best-effort."""
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
+
+    # ── Plain-text fallback (the owner-approved copy) ─────────────────────────
+    en_text = (
+        f'Hi {en_name},\n\n'
+        f"This confirms that you've cancelled your interview for the B40 Assistance Programme, so "
+        f'the time you had booked is now released.\n\n'
+        f'Your application is still active — cancelling the interview doesn\'t affect it. Your '
+        f"interviewer will propose some alternative times, and you're welcome to choose one "
+        f"whenever you're ready, if you'd like to take this forward.\n\n"
+        f"If you didn't mean to cancel, or you have any questions, just reply to this email and "
+        f"we'll help you sort it out.\n\n"
+        f'One note for your peace of mind: we\'ll only ever ask about you and your studies. We '
+        f'will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it\'s '
+        f'not us — please tell us at {SUPPORT_EMAIL}.\n\n'
+        f'Warm regards,\nThe B40 Assistance Programme Team'
     )
-    bm = (
-        f'Salam {student_bm},\n\n'
-        f'Tempahan temu duga Program Bantuan B40 anda telah dibatalkan. Anda boleh menempah masa '
-        f'baharu melalui halaman permohonan anda di HalaTuju bila-bila masa. Jika anda tidak '
-        f'menjangkakan ini, sila balas e-mel ini.\n\n'
-        f'— Pasukan Program Bantuan B40'
+    bm_text = (
+        f'Salam {bm_name},\n\n'
+        f'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bantuan B40 anda, '
+        f'jadi masa yang anda tempah sebelum ini kini dilepaskan.\n\n'
+        f'Permohonan anda masih aktif — membatalkan temu duga tidak menjejaskannya. Penemu duga '
+        f'anda akan mencadangkan beberapa masa alternatif, dan anda dialu-alukan untuk memilih satu '
+        f'bila-bila masa anda bersedia, jika anda ingin meneruskannya.\n\n'
+        f'Jika anda tidak berniat untuk membatalkannya, atau anda mempunyai sebarang pertanyaan, '
+        f'balas sahaja e-mel ini dan kami akan membantu anda.\n\n'
+        f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
+        f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
+        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
+        f'Salam hormat,\nPasukan Program Bantuan B40'
     )
-    return _send_bilingual(to_email, 'Your B40 Assistance Programme interview was cancelled', en, bm)
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    # ── HTML primary ──────────────────────────────────────────────────────────
+    def section(greeting, p_confirm, p_active, p_reply, safety, signoff):
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 14px;">{p_confirm}</p>'
+            f'<p style="margin:0 0 14px;">{p_active}</p>'
+            f'<p style="margin:0 0 18px;">{p_reply}</p>'
+            f'<p style="margin:0 0 18px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    en_html = section(
+        f'Hi {en_name},',
+        "This confirms that you've cancelled your interview for the B40 Assistance Programme, so the "
+        'time you had booked is now released.',
+        "Your application is still active — cancelling the interview doesn’t affect it. Your interviewer "
+        "will propose some alternative times, and you’re welcome to choose one whenever you’re ready, if "
+        "you’d like to take this forward.",
+        "If you didn’t mean to cancel, or you have any questions, just reply to this email and we’ll help "
+        "you sort it out.",
+        f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will never '
+        f'ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — please tell '
+        f'us at {SUPPORT_EMAIL}.',
+        'Warm regards,<br>The B40 Assistance Programme Team')
+    bm_html = section(
+        f'Salam {bm_name},',
+        'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bantuan B40 anda, jadi '
+        'masa yang anda tempah sebelum ini kini dilepaskan.',
+        'Permohonan anda masih aktif — membatalkan temu duga tidak menjejaskannya. Penemu duga anda akan '
+        'mencadangkan beberapa masa alternatif, dan anda dialu-alukan untuk memilih satu bila-bila masa '
+        'anda bersedia, jika anda ingin meneruskannya.',
+        'Jika anda tidak berniat untuk membatalkannya, atau anda mempunyai sebarang pertanyaan, balas '
+        'sahaja e-mel ini dan kami akan membantu anda.',
+        f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan pengajian '
+        f'anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
+        f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
+        'Salam hormat,<br>Pasukan Program Bantuan B40')
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
+    return _send_html(to_email, "You've cancelled your B40 Assistance Programme interview",
+                      text_body, html_body)
 
 
 def _send_plain(to_email, subject, body):
@@ -1290,8 +1667,9 @@ def _send_plain(to_email, subject, body):
         return False
     try:
         EmailMessage(subject=subject, body=body,
-                     from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-                     to=[to_email], reply_to=[INTERVIEW_REPLY_TO]).send()
+                     from_email=INTERVIEW_FROM_EMAIL,
+                     to=[to_email], reply_to=[INTERVIEW_REPLY_TO],
+                     headers=_interview_unsub_headers()).send()
         return True
     except Exception:
         logger.warning('Failed to send reviewer interview email to %s', to_email, exc_info=True)
@@ -1299,42 +1677,132 @@ def _send_plain(to_email, subject, body):
 
 
 def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_name, start,
-                                         meeting_url=''):
-    """Reviewer notice that a student booked one of their proposed times. Plain EN."""
-    link = f'\nMeet link: {meeting_url}' if meeting_url else ''
+                                         meeting_url='', ref='', duration_min=None,
+                                         calendar_invite_sent=False):
+    """Reviewer notice that a student booked one of their proposed times. Plain EN.
+
+    Calendar: when the Google Meet/Calendar integration is on, both parties are added to one
+    auto-created event (calendar_invite_sent=True) — so we DON'T offer a manual 'add to
+    calendar' link (it would double-book). When it's off, no event exists, so we include an
+    'Add to your calendar' Google link so the reviewer always ends up with the time held."""
+    applicant = applicant_name or 'An applicant'
+    details = [f'When: {_fmt_myt(start)}']
+    if meeting_url:
+        details.append(f'Meet link: {meeting_url}')
+    if calendar_invite_sent:
+        calendar_line = "It's on your calendar (a Google invite has been sent) and in their record."
+    else:
+        gcal = _gcal_url(start=start, duration_min=duration_min or 30,
+                         text=f'B40 interview — {applicant}',
+                         details='B40 Assistance Programme interview.', location=meeting_url or '')
+        calendar_line = (
+            "The booking is in their record. Add it to your calendar so you don't lose the time:\n"
+            f'Add to your calendar:\n{gcal}')
     body = (
-        f'Hi {reviewer_name or "there"},\n\n'
-        f'{applicant_name or "An applicant"} has booked their B40 interview with you:\n\n'
-        f'  {_fmt_myt(start)}{link}\n\n'
-        f'It will appear on your calendar. You can see the booking in the applicant\'s record '
-        f'in the admin console.\n\n'
-        f'— HalaTuju'
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'{applicant} has booked their B40 interview with you.\n\n'
+        + '\n'.join(details) + '\n\n'
+        f'{calendar_line}\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, 'A B40 applicant booked their interview with you', body)
+    return _send_plain(to_email, _reviewer_subject('Interview booked', ref), body)
 
 
 def send_reviewer_interview_reminder_email(to_email, *, reviewer_name, applicant_name, start,
-                                           meeting_url='', when='1day'):
-    """Reviewer reminder (1 day / 1 hour before). Plain EN."""
-    link = f'\nMeet link: {meeting_url}' if meeting_url else ''
+                                           meeting_url='', when='1day', ref='', verdict_due=''):
+    """Reviewer reminder (1 day / 1 hour before). Plain EN. A nudge only — no calendar link,
+    since the time was added when it was booked. ``verdict_due`` (a date string) adds a heads-up
+    that the verdict for this applicant is due by then — the interview and verdict are different
+    clocks, so a reviewer juggling cases sees both (TD-131)."""
     soon = 'tomorrow' if when == '1day' else 'in about an hour'
+    details = [f'When: {_fmt_myt(start)}']
+    if meeting_url:
+        details.append(f'Meet link: {meeting_url}')
+    verdict_line = (f'After the interview, please record your verdict — it is due by {verdict_due}.\n\n'
+                    if verdict_due else '')
     body = (
-        f'Hi {reviewer_name or "there"},\n\n'
-        f'Reminder — your B40 interview with {applicant_name or "an applicant"} is {soon}:\n\n'
-        f'  {_fmt_myt(start)}{link}\n\n'
-        f'— HalaTuju'
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'Your B40 interview with {applicant_name or "an applicant"} is {soon}.\n\n'
+        + '\n'.join(details) + '\n\n'
+        f'{verdict_line}'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
     )
-    subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
-            else 'Reminder: your B40 interview is in 1 hour')
-    return _send_plain(to_email, subj, body)
+    base = ('Reminder: your interview is tomorrow' if when == '1day'
+            else 'Reminder: your interview is in 1 hour')
+    return _send_plain(to_email, _reviewer_subject(base, ref), body)
 
 
-def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name):
+def send_reviewer_alternatives_requested_email(to_email, *, reviewer_name, applicant_name,
+                                               note='', ref=''):
+    """Reviewer notice that the student said none of the proposed times work and wants other
+    options. Routes the request to the right person (vs a reply lost in a shared inbox). Plain EN."""
+    note_block = f'\nWhat they said:\n  "{note}"\n' if note else ''
+    body = (
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} says none of the interview times you proposed will '
+        f'work, and has asked for other options.\n'
+        f'{note_block}\n'
+        f'Open their record and use "Propose alternative times" to offer a fresh set — '
+        f"they'll be emailed automatically.\n\n"
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject('Applicant needs different interview times', ref), body)
+
+
+def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name, ref=''):
     """Reviewer notice that a student cancelled. Plain EN."""
     body = (
-        f'Hi {reviewer_name or "there"},\n\n'
-        f'{applicant_name or "An applicant"} has cancelled their booked B40 interview. You may '
-        f'want to propose fresh times from the applicant\'s record in the admin console.\n\n'
-        f'— HalaTuju'
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} has cancelled their booked B40 interview.\n\n'
+        f'Their application is still open — only the interview slot was released. When you\'re '
+        f'ready, open their record and use "Propose alternative times" to offer new ones.\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, 'A B40 applicant cancelled their interview', body)
+    return _send_plain(to_email, _reviewer_subject('Applicant cancelled their interview', ref), body)
+
+
+def send_reviewer_verdict_due_email(to_email, *, reviewer_name, applicant_name, ref='',
+                                    due_by='', overdue=False):
+    """TD-131: nudge the assigned reviewer that a verdict is due soon / now overdue. Plain EN,
+    consistent reviewer style (Dear / dashboard CTA / {ref} subject / B40 Assistance Team)."""
+    applicant = applicant_name or 'an applicant'
+    if overdue:
+        lead = (f'Your verdict for {applicant} is overdue'
+                + (f' — it was due {due_by}' if due_by else '') + '.')
+        base = 'Verdict overdue'
+    else:
+        lead = (f'Your verdict for {applicant} is due soon'
+                + (f' — by {due_by}' if due_by else '') + '.')
+        base = 'Verdict due soon'
+    body = (
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'{lead}\n\n'
+        f'Please open their record, complete your review, and record your verdict.\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject(base, ref), body)
+
+
+def send_super_verdict_escalation_email(to_email, *, applicant_name, ref='', reviewer_name='',
+                                        due_by=''):
+    """TD-131: escalate an overdue verdict to a super-admin — the assigned reviewer hasn't recorded
+    a verdict well past the SLA. Plain EN."""
+    who = reviewer_name or 'the assigned reviewer'
+    body = (
+        f'Hi,\n\n'
+        f'A B40 verdict is overdue and needs attention.\n\n'
+        f'Reference: {ref or "—"}\n'
+        f'Applicant: {applicant_name or "—"}\n'
+        f'Assigned reviewer: {who}\n'
+        + (f'Was due: {due_by}\n' if due_by else '')
+        + f'\n{who} has not recorded a verdict past the review deadline. You may want to follow up, '
+        f'or reassign the case from the admin console.\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject('Overdue verdict needs attention', ref), body)

@@ -267,6 +267,21 @@ class StudentInterviewCancelView(_StudentInterviewBase):
         return Response(interview_schedule_payload(app))
 
 
+class StudentInterviewRequestAlternativesView(_StudentInterviewBase):
+    """POST /api/v1/scholarship/applications/<id>/interview/request-alternatives/ {note} —
+    the student says none of the proposed times work; notifies the assigned reviewer."""
+
+    def post(self, request, pk):
+        app, err = self._own_app(request, pk)
+        if err:
+            return err
+        try:
+            scheduling.request_alternatives(app, note=request.data.get('note', ''))
+        except scheduling.SchedulingError as e:
+            return self._error(e)
+        return Response(interview_schedule_payload(app))
+
+
 class ApplicationConfirmView(APIView):
     """POST /api/v1/scholarship/applications/<id>/confirm/ — the student's explicit
     "I'm done" action. Flips shortlisted → profile_complete (Phase C) if the
@@ -1113,6 +1128,7 @@ class CronRunView(APIView):
         'refresh-reminder': 'send_refresh_reminder',  # annual: nudge the admin to refresh the course catalogue
         'course-data-check': 'course_data_check',  # weekly: READ-ONLY audit + link reachability for the dashboard
         'interview-reminders': 'send_interview_reminders',  # frequent (~15 min): 1-day + 1-hour interview reminders
+        'review-nudges': 'send_review_nudges',  # daily (TD-131): verdict due/overdue reviewer nudges + super escalation
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
         'reextract-documents': 'reextract_documents',  # one-off batches (20/run): re-read stale docs with current parsers
     }

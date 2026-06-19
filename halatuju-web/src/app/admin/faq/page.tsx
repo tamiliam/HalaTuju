@@ -54,6 +54,15 @@ const REVIEWING: QA[] = [
       normal.</>,
   },
   {
+    q: <>What do the application statuses mean?</>,
+    a: <>In order: <strong>Shortlisted</strong> — passed the first checks and invited to complete their
+      application; <strong>Completed</strong> — they&rsquo;ve confirmed their details and documents, ready for
+      you; <strong>Interviewing</strong> — interview times proposed or booked; <strong>Interviewed</strong> —
+      the interview is done and you&rsquo;ve submitted your findings; <strong>Accepted</strong> /
+      <strong> Declined</strong> — your decision is recorded. Most of your work is on the <em>Completed</em> and
+      <em> Interviewing</em> ones.</>,
+  },
+  {
     q: <>What is the &ldquo;Student profile (draft)&rdquo;?</>,
     a: <>A short summary written automatically from the student&rsquo;s own application. It&rsquo;s a helpful
       starting point — always check it against the uploaded documents before relying on it.</>,
@@ -70,6 +79,15 @@ const REVIEWING: QA[] = [
       plan or offer in order), and Income (are they genuinely B40 / in need).</>,
   },
   {
+    q: <>How do I judge the Income (B40) check? It&rsquo;s the hardest one.</>,
+    a: <>There are two routes. <strong>STR route:</strong> the family receives Sumbangan Tunai Rahmah — the proof
+      is an <em>approved</em> MySTR record. A <strong>SALINAN application-record is not proof of approval</strong>;
+      if the status isn&rsquo;t clearly &ldquo;Lulus&rdquo;, ask for the MySTR Semakan Status / Dashboard showing
+      approval, or the approval letter. <strong>Salary route:</strong> payslips / EPF show household income, judged
+      per head against the B40 line. When it&rsquo;s genuinely borderline or you can&rsquo;t tell, that&rsquo;s
+      what the interview is for — don&rsquo;t force a verdict on weak evidence.</>,
+  },
+  {
     q: <>How do I ask the student a question?</>,
     a: <>Use <strong>Raise a query</strong> or <strong>Request a document</strong>. They get an email; their
       reply shows in the <strong>Outstanding</strong> box.</>,
@@ -77,6 +95,20 @@ const REVIEWING: QA[] = [
   {
     q: <>What does &ldquo;Save verdict &amp; generate final profile&rdquo; do?</>,
     a: <>It records your decision and creates the final, polished profile a sponsor will see.</>,
+  },
+  {
+    q: <>What&rsquo;s the difference between rating Pass/Fail and approving?</>,
+    a: <>The <strong>Pass/Fail</strong> on each fact says whether the <em>AI read that fact correctly</em> — it
+      helps us measure and improve the AI. <strong>Approve / Decline</strong> is your actual recommendation on the
+      student. They&rsquo;re separate: you can Pass all four facts and still <strong>Decline</strong> — for
+      instance, the income is verified but sits above the B40 line.</>,
+  },
+  {
+    q: <>Can I undo a decision after I Save?</>,
+    a: <>Not as a reviewer — <strong>Save is final from your side</strong> (it emails the student and sends the
+      profile to sponsors). If something genuinely needs changing, contact the HalaTuju team
+      (<strong>help@halatuju.xyz</strong>); a super-admin can reopen the case. So check the facts before you
+      save.</>,
   },
   {
     q: <>What&rsquo;s the recommended amount for?</>,
@@ -93,6 +125,13 @@ const REVIEWING: QA[] = [
     q: <>The student is already in college and has completed a semester or two — should I ask for more?</>,
     a: <>If they have completed one or more semesters and have their results (CGPA), you may ask them to upload
       their latest result. If it is satisfactory (above 3.0), you may consider recommending them for support.</>,
+  },
+  {
+    q: <>How do the suggested interview questions work?</>,
+    a: <>In the <strong>Interview Stage</strong>, tap <strong>Suggest interview questions</strong> and the system
+      proposes a few, drawn from this student&rsquo;s record and anything still unverified — tap
+      <strong> Generate more</strong> for additional ones. They&rsquo;re a prompt, not a script: ask your own
+      questions too, and after each point jot <strong>one line</strong> on what you found before you submit.</>,
   },
   {
     q: <>How do I schedule the interview?</>,

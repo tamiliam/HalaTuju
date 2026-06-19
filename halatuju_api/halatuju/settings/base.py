@@ -163,6 +163,15 @@ STUDENT_ASSIGNMENT_EMAIL_ENABLED = os.environ.get('STUDENT_ASSIGNMENT_EMAIL_ENAB
 # one in-app, and we send confirmations + reminders. OFF by default — the whole surface
 # (admin propose-card + student booking panel + endpoints) is dark until flipped on.
 INTERVIEW_SCHEDULING_ENABLED = os.environ.get('INTERVIEW_SCHEDULING_ENABLED', '').lower() in ('1', 'true', 'yes')
+# How many days a reviewer has to complete a review once an applicant is assigned. Shown as
+# the "Please review by" date in the reviewer-assigned email. Soft target (no enforcement yet).
+REVIEW_SLA_DAYS = int(os.environ.get('REVIEW_SLA_DAYS', '10'))
+# Verdict-completion nudges (TD-131): the send_review_nudges cron nudges a reviewer whose
+# verdict is approaching/overdue (assigned_at + REVIEW_SLA_DAYS) and escalates to super-admins
+# REVIEW_ESCALATE_GRACE_DAYS after the due date. Dark by default — the cron is inert until on.
+REVIEW_NUDGES_ENABLED = os.environ.get('REVIEW_NUDGES_ENABLED', '').lower() in ('1', 'true', 'yes')
+REVIEW_NUDGE_SOON_DAYS = int(os.environ.get('REVIEW_NUDGE_SOON_DAYS', '2'))   # nudge this many days BEFORE due
+REVIEW_ESCALATE_GRACE_DAYS = int(os.environ.get('REVIEW_ESCALATE_GRACE_DAYS', '4'))  # escalate this many days AFTER due (→ day 14)
 # Auto-generate a Google Meet link (+ calendar event) on booking. Separate flag so the
 # scheduling surface can go live BEFORE the Google Workspace organiser account is wired.
 # When off (or creds missing / API error), booking still succeeds — the email simply has
