@@ -1128,6 +1128,7 @@ class CronRunView(APIView):
         'refresh-reminder': 'send_refresh_reminder',  # annual: nudge the admin to refresh the course catalogue
         'course-data-check': 'course_data_check',  # weekly: READ-ONLY audit + link reachability for the dashboard
         'interview-reminders': 'send_interview_reminders',  # frequent (~15 min): 1-day + 1-hour interview reminders
+        'review-nudges': 'send_review_nudges',  # daily (TD-131): verdict due/overdue reviewer nudges + super escalation
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
         'reextract-documents': 'reextract_documents',  # one-off batches (20/run): re-read stale docs with current parsers
     }
