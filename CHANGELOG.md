@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Booking-confirmation email redesigned — HTML + .ics "Add to calendar".** The "interview is booked" email is now styled
   HTML + plain-text fallback, bilingual (EN+BM, `english_only` gate), From `interview@`. New copy: details table (date/time ·
   interviewer name — no contact · Meet link), an **Add-to-calendar button** (Google Calendar template URL) plus an attached
-  **`interview.ics`** so any client offers it, camera-on/under-18-guardian guidance, the reschedule cutoff stated in hours,
-  and the anti-scam note. New `emails._interview_ics`/`_gcal_url`; `send_interview_booked_email` gains `english_only` +
+  **`interview.ics`** so any client offers it, camera-on/under-18-guardian guidance, the reschedule cutoff stated in hours
+  with **"your application page" linked** to the booking page, and the anti-scam note. New `emails._interview_ics`/`_gcal_url`; `send_interview_booked_email` gains `english_only` +
   `duration_min`. +2 tests.
 - **Interview: student can request alternative times in-app (closes a dead-end loop) + all interview emails send from `interview@`.**
   Previously the "pick a time" email said "reply if none work" → replies went to the shared `interview@` inbox and the

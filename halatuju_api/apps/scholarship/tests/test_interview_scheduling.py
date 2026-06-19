@@ -428,6 +428,7 @@ class BookingEmailTests(TestCase):
         self.assertEqual(mime, 'text/html')
         self.assertIn('Add to calendar', html)
         self.assertIn('calendar.google.com/calendar/render', html)
+        self.assertIn('/scholarship/application"', html)      # "application page" is linked
         ics = [a for a in msg.attachments if a[0] == 'interview.ics']
         self.assertEqual(len(ics), 1)
         self.assertIn('BEGIN:VEVENT', ics[0][1])
