@@ -99,6 +99,9 @@ def interview_schedule_payload(application, *, include_reviewer_busy=False):
         'booked_slot_id': application.interview_slot_id,
         'slots': InterviewSlotSerializer(active, many=True).data,
         'reschedule_cutoff_hours': _reschedule_cutoff_hours(),
+        # Student asked for different times (none of the proposed slots worked).
+        'alternatives_requested': application.interview_alternatives_requested_at is not None,
+        'alternatives_note': application.interview_alternatives_note or '',
     }
     if include_reviewer_busy:
         reviewer = application.assigned_to

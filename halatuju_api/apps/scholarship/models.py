@@ -416,6 +416,10 @@ class ScholarshipApplication(models.Model):
         help_text="Google Calendar event id, so the booking can be updated/cancelled.")
     interview_booked_at = models.DateTimeField(null=True, blank=True)
     interview_cancelled_at = models.DateTimeField(null=True, blank=True)
+    # Student asked for different times (none of the proposed slots work). Set when they
+    # request alternatives in-app; cleared when the reviewer proposes a fresh menu.
+    interview_alternatives_requested_at = models.DateTimeField(null=True, blank=True)
+    interview_alternatives_note = models.TextField(blank=True, default='')
     # Idempotency stamps for the confirmation + the reminder cron (reset on reschedule).
     interview_confirmation_sent_at = models.DateTimeField(null=True, blank=True)
     interview_reminded_1d_at = models.DateTimeField(null=True, blank=True)

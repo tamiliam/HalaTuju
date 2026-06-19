@@ -267,6 +267,21 @@ class StudentInterviewCancelView(_StudentInterviewBase):
         return Response(interview_schedule_payload(app))
 
 
+class StudentInterviewRequestAlternativesView(_StudentInterviewBase):
+    """POST /api/v1/scholarship/applications/<id>/interview/request-alternatives/ {note} —
+    the student says none of the proposed times work; notifies the assigned reviewer."""
+
+    def post(self, request, pk):
+        app, err = self._own_app(request, pk)
+        if err:
+            return err
+        try:
+            scheduling.request_alternatives(app, note=request.data.get('note', ''))
+        except scheduling.SchedulingError as e:
+            return self._error(e)
+        return Response(interview_schedule_payload(app))
+
+
 class ApplicationConfirmView(APIView):
     """POST /api/v1/scholarship/applications/<id>/confirm/ — the student's explicit
     "I'm done" action. Flips shortlisted → profile_complete (Phase C) if the
