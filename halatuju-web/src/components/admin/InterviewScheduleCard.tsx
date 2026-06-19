@@ -155,7 +155,7 @@ export default function InterviewScheduleCard({
           </div>
           {schedule.meeting_url
             ? <a href={schedule.meeting_url} target="_blank" rel="noreferrer"
-                 className="mt-1 inline-block text-base font-semibold text-blue-600 underline">
+                 className="mt-2 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
                 {t('admin.scholarship.interview.schedule.meetLink')}
               </a>
             : <span className="mt-1 block text-xs text-gray-500">
