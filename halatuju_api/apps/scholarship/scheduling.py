@@ -141,12 +141,23 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None)
             application=application, reviewer=reviewer, start=s, duration_min=duration_min)
         for s in sorted(future)
     ]
-    # A fresh menu answers any outstanding "these don't work" request — clear it.
+    # A fresh menu resets the application back to "awaiting a pick": clear any outstanding
+    # "these don't work" request, and lift a prior cancellation (otherwise the 'cancelled'
+    # state sticks and the student never sees the new times).
+    reset_fields = []
+    if application.interview_status == 'cancelled':
+        application.interview_status = ''
+        application.interview_cancelled_at = None
+        application.interview_slot = None
+        application.interview_start = None
+        reset_fields += ['interview_status', 'interview_cancelled_at',
+                         'interview_slot', 'interview_start']
     if application.interview_alternatives_requested_at:
         application.interview_alternatives_requested_at = None
         application.interview_alternatives_note = ''
-        application.save(update_fields=[
-            'interview_alternatives_requested_at', 'interview_alternatives_note'])
+        reset_fields += ['interview_alternatives_requested_at', 'interview_alternatives_note']
+    if reset_fields:
+        application.save(update_fields=reset_fields)
     # Tell the student their times are ready to pick — but ONLY when the menu actually
     # changed. Re-proposing the same set (or a no-op revise) must not re-spam them.
     if set(future) != prev_menu:
@@ -272,16 +283,22 @@ def cancel(application, *, by='student', now=None):
     if application.interview_calendar_event_id:
         meeting.cancel_event(application.interview_calendar_event_id)
 
+    # The proposed menu is void once cancelled — withdraw every active slot so the cockpit
+    # shows a clean "propose fresh times" state and no stale slots are offered.
+    InterviewSlot.objects.filter(application=application, is_active=True).update(
+        is_active=False, updated_at=now)
     application.interview_status = 'cancelled'
     application.interview_cancelled_at = now
+    application.interview_slot = None
+    application.interview_start = None
     application.interview_meeting_url = ''
     application.interview_calendar_event_id = ''
     application.interview_meeting_provider = ''
     application.interview_reminded_1d_at = None
     application.interview_reminded_1h_at = None
     application.save(update_fields=[
-        'interview_status', 'interview_cancelled_at', 'interview_meeting_url',
-        'interview_calendar_event_id', 'interview_meeting_provider',
+        'interview_status', 'interview_cancelled_at', 'interview_slot', 'interview_start',
+        'interview_meeting_url', 'interview_calendar_event_id', 'interview_meeting_provider',
         'interview_reminded_1d_at', 'interview_reminded_1h_at',
     ])
 
