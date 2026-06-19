@@ -117,7 +117,27 @@ const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; a
       <strong> Google Meet</strong> link and sends both of you a confirmation, plus reminders the day before and
       an hour before. You&rsquo;ll see the booked time and the Meet link once they&rsquo;ve chosen. If the student
       reschedules or cancels, you&rsquo;ll see the change — just propose fresh times if needed. It&rsquo;s a short
-      video call (about 30&ndash;45 minutes); parents are welcome to join from home.</>
+      video call (about 30&ndash;45 minutes); parents are welcome to join from home.
+        <div className="mt-4 space-y-4">
+          <figure className="m-0">
+            <img src="/reviewer-guide/scheduling-1-propose.png" alt="Choosing interview times to propose on the calendar"
+              className="block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm" loading="lazy" />
+            <figcaption className="mt-1 text-xs text-gray-500"><strong>1. Propose</strong> — pick a day, tick the
+            times that suit you (up to three), then <em>Propose times</em>.</figcaption>
+          </figure>
+          <figure className="m-0">
+            <img src="/reviewer-guide/scheduling-2-proposed.png" alt="The proposed times, waiting for the student to pick one"
+              className="block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm" loading="lazy" />
+            <figcaption className="mt-1 text-xs text-gray-500"><strong>2. Waiting</strong> — your times sit here until
+            the student picks one. Use <em>Propose alternative times</em> if you need to change them.</figcaption>
+          </figure>
+          <figure className="m-0">
+            <img src="/reviewer-guide/scheduling-3-booked.png" alt="The booked interview time with the Google Meet link"
+              className="block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm" loading="lazy" />
+            <figcaption className="mt-1 text-xs text-gray-500"><strong>3. Booked</strong> — once they choose, you see
+            the time and the <em>Google Meet</em> link. <em>Reschedule</em> moves it to a new time.</figcaption>
+          </figure>
+        </div></>
     ),
   },
   {
