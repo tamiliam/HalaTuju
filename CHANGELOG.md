@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Interview emails redesigned — HTML primary + plain-text fallback, bilingual.** The two student-facing interview
+  emails (reviewer-assigned "what happens next" + "pick a time slot") are now styled HTML (card layout, button,
+  `<meta charset>`) with a plain-text fallback, via a new `_send_html` helper (`EmailMultiAlternatives`),
+  Reply-To = `interview@halatuju.xyz`. Warmer copy with a prep list (camera on · under-18 guardian · honest about need)
+  and an explicit anti-scam note (we never ask for money/password/OTP/PIN → `help@halatuju.xyz`). The assigned email
+  names the interviewer ("your interview will be with {name}…") but shares no contact details. Each is **bilingual
+  (EN + BM)** by default; `english_only` drops the BM mirror only when the student is confidently English-comfortable —
+  used the app in English, didn't ask to be contacted in Malay/Tamil, AND scored A/A+ in SPM English
+  (`emails.english_only_email`). +tests.
 - **Interview slot proposing is now a Calendly-style date + time picker.** The reviewer's "propose times" box replaces the
   bare 24-hour `datetime-local` with a two-pane picker: a month **calendar** (past days and months disabled) plus a vertical
   list of **12-hour time pills** (9:30am…), restricted to **08:00–21:30 MYT on 30-minute steps**. The same rule is enforced
