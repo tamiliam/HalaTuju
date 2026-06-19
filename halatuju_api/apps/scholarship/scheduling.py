@@ -31,6 +31,14 @@ _MYT = ZoneInfo('Asia/Kuala_Lumpur')
 SLOT_WINDOW_START_MIN = 8 * 60        # 08:00
 SLOT_WINDOW_END_MIN = 21 * 60 + 30    # 21:30 (latest start)
 SLOT_STEP_MIN = 30
+# Minimum scheduling notice (mirrored in halatuju-web/src/lib/interviewSlots.ts): the earliest
+# proposable slot is this far ahead, so the student has time to see + pick + prepare.
+SLOT_MIN_LEAD_HOURS = 24
+
+
+def meets_min_lead(dt, now) -> bool:
+    """True if a proposed start is at least SLOT_MIN_LEAD_HOURS ahead of ``now``."""
+    return dt >= now + timedelta(hours=SLOT_MIN_LEAD_HOURS)
 
 
 def slot_in_window(dt) -> bool:

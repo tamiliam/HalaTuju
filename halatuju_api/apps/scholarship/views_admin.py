@@ -1128,6 +1128,12 @@ class AdminInterviewSlotsView(_AdminBase):
         if err:
             return err
         starts = _parse_slot_starts(request.data.get('slots'))
+        # Minimum scheduling notice — reject any slot sooner than the lead window (checked
+        # first so a too-soon time reads as 'too_soon', not 'invalid_slot_time').
+        from django.utils import timezone as _tz
+        if any(s and not scheduling.meets_min_lead(s, _tz.now()) for s in starts):
+            return Response({'error': 'too_soon', 'code': 'too_soon'},
+                            status=status.HTTP_400_BAD_REQUEST)
         # Enforce the interview-slot rule (MYT, 30-min, 08:00–21:30) at the input
         # boundary — the UI only offers valid chips, but reject anything else too.
         if any(s and not scheduling.slot_in_window(s) for s in starts):

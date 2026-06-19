@@ -424,6 +424,16 @@ class SchedulingEndpointTests(TestCase):
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'invalid_slot_time')
 
+    def test_propose_rejects_too_soon_time(self):
+        # A valid 10:00 MYT slot but only ~3 hours out — inside the 24h lead → 400.
+        from zoneinfo import ZoneInfo
+        self._auth('rev-uid')
+        soon = ((timezone.now() + timedelta(hours=3)).astimezone(ZoneInfo('Asia/Kuala_Lumpur'))
+                .replace(minute=0, second=0, microsecond=0).isoformat())
+        r = self.client.post(self._propose_url(), {'slots': [soon]}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'too_soon')
+
     def test_propose_rejects_off_boundary_time(self):
         # 10:15 MYT — not on a 30-minute boundary → 400.
         from zoneinfo import ZoneInfo

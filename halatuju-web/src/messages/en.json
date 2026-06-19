@@ -2505,7 +2505,8 @@
         },
         "schedule": {
           "title": "Interview scheduling",
-          "intro": "Propose 3 times. The student picks one, and we send a Google Meet link and reminders automatically.",
+          "intro": "Propose 3 times for the interview — the student picks one, and we send a Google Meet link and reminders automatically.",
+          "introAlternatives": "Propose 3 new times — these replace the ones the student saw before.",
           "booked": "Booked",
           "meetLink": "Google Meet link",
           "noLink": "No link yet — it is created when the student books.",

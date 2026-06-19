@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatMyt } from '@/lib/interviewTime'
 import {
-  cellDateStr, daySlots, intlLocale, isoToSlotValue, monthCells, slotLabel12h, todayStr,
+  cellDateStr, daySlots, earliestDateStr, intlLocale, isoToSlotValue, monthCells, slotLabel12h,
 } from '@/lib/interviewSlots'
 import { proposeInterviewSlots, type InterviewSchedule } from '@/lib/admin-api'
 
@@ -36,10 +36,12 @@ export default function InterviewScheduleCard({
 }) {
   const { t, locale } = useT()
   const il = intlLocale(locale)
-  const today = todayStr()
   const todayNow = new Date()
-  const [view, setView] = useState({ y: todayNow.getFullYear(), m: todayNow.getMonth() })
-  const [date, setDate] = useState(today)
+  // The earliest selectable day (now + 24h lead) — days before this are disabled.
+  const earliest = earliestDateStr(todayNow)
+  const earliestMonth = new Date(`${earliest}T00:00`)
+  const [view, setView] = useState({ y: earliestMonth.getFullYear(), m: earliestMonth.getMonth() })
+  const [date, setDate] = useState(earliest)
   // Pre-load the current (unbooked) proposed times so the reviewer revises, not rebuilds.
   const [selected, setSelected] = useState<string[]>(() =>
     (schedule?.slots || [])
@@ -65,13 +67,13 @@ export default function InterviewScheduleCard({
     [schedule],
   )
   // Future slots for the selected day (past times dropped, like Calendly).
-  const slots = useMemo(() => daySlots(date).filter((s) => !s.past), [date])
+  const slots = useMemo(() => daySlots(date).filter((s) => !s.tooEarly), [date])
   // Days the reviewer has picked a time on → a dot on the calendar.
   const pickedDays = useMemo(() => new Set(selected.map((v) => v.slice(0, 10))), [selected])
 
   if (!schedule?.enabled) return null
 
-  const atCurrentMonth = view.y === todayNow.getFullYear() && view.m === todayNow.getMonth()
+  const atCurrentMonth = view.y === earliestMonth.getFullYear() && view.m === earliestMonth.getMonth()
   const shiftMonth = (delta: number) =>
     setView((v) => {
       const d = new Date(v.y, v.m + delta, 1)
@@ -120,7 +122,15 @@ export default function InterviewScheduleCard({
       <h2 className="text-base font-semibold tracking-tight text-gray-900">
         {t('admin.scholarship.interview.schedule.title')}
       </h2>
-      <p className="mt-1 text-xs text-gray-500">{t('admin.scholarship.interview.schedule.intro')}</p>
+      {/* The subheader is shown only while proposing, and adapts to first-time vs revising.
+          In the locked/booked/cancelled states the in-card copy carries the message. */}
+      {schedule.status !== 'booked' && editing && (
+        <p className="mt-1 text-xs text-gray-500">
+          {t(proposedSlots.length > 0
+            ? 'admin.scholarship.interview.schedule.introAlternatives'
+            : 'admin.scholarship.interview.schedule.intro')}
+        </p>
+      )}
 
       {schedule.status === 'booked' && schedule.start && (
         <div className="mt-3 rounded-xl border border-green-200 bg-green-50/50 p-3 text-sm">
@@ -197,17 +207,17 @@ export default function InterviewScheduleCard({
                 {monthCells(view.y, view.m).map((day, i) => {
                   if (day == null) return <div key={i} />
                   const ds = cellDateStr(view.y, view.m, day)
-                  const isPast = ds < today
+                  const tooEarly = ds < earliest
                   const isSel = ds === date
                   const hasPick = pickedDays.has(ds)
                   return (
-                    <button key={i} type="button" disabled={isPast}
+                    <button key={i} type="button" disabled={tooEarly}
                       onClick={() => setDate(ds)}
                       className={
                         'relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm transition ' +
                         (isSel
                           ? 'bg-blue-600 font-semibold text-white'
-                          : isPast
+                          : tooEarly
                             ? 'text-gray-300'
                             : 'text-gray-800 hover:bg-blue-50')
                       }>
