@@ -517,6 +517,28 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-19)
 
+**▶ SHIPPED 2026-06-19 — Interview-scheduling arc: Calendly picker + bilingual HTML emails + request-alternatives loop +
+cancellation fix (12 commits `a68b442`→`7fcb82d`; migration `scholarship/0063` additive, migrate-first; retro
+`docs/retrospective-2026-06-19-interview-scheduling.md`). Worktree `.worktrees/sched`.**
+- **Reviewer propose UI = Calendly-style** month calendar + 12-hour time pills (`lib/interviewSlots.ts` mirrored in
+  `scheduling.py`): **08:00–21:30 MYT, 30-min, 24h minimum lead, exactly 3** required; existing proposals pre-load;
+  re-proposing the same set sends no email. **Reviewer conflict-blocking** across students (`reviewer_busy` admin-payload
+  only; server guards `reviewer_conflict`/`too_soon`/`invalid_slot_time`); self-reschedule kept. Locked "Proposed times"
+  view + **Propose alternative times**, dustbin icon, bigger arrows, state-aware subheader.
+- **All interview emails → HTML+text, bilingual EN+BM** (`english_only` gate = app-English + no Malay/Tamil call pref +
+  A/A+ SPM English), **From `interview@`**, anti-scam note. Booked email has **Add-to-calendar (.ics + Google URL)** +
+  linked "application page". Helpers: `_send_html`/`_send_bilingual`/`_send_plain`, `_interview_ics`/`_gcal_url`,
+  `emails.english_only_email`.
+- **In-app "Ask for other times"** loop (closes the email-reply dead-end): migration `0063`
+  (`interview_alternatives_requested_at`/`_note`), `scheduling.request_alternatives`,
+  `StudentInterviewRequestAlternativesView`, reviewer email, cockpit banner; cleared on next propose.
+- **Cancellation fix:** `cancel()` voids the menu + clears pointers; `propose_slots()` lifts a prior cancellation. Booked
+  panel: **"Cancel interview" + confirm step**; guardian copy aligned to emails. **Scoped harmless `List-Unsubscribe`**
+  (mailto:help@) on interview emails only.
+- **▶ Carry (owner / next):** TD-130 = Brevo **List-Help on transactional** (account-wide unsubscribe fix; then drop the
+  mailto shim); reminders + cancelled student emails not yet on the HTML/bilingual standard; the student booking side
+  could reuse the slot-chip UI. Verify the live #16 flow end-to-end.
+
 **▶ SHIPPED 2026-06-19 — PISMP Aliran → Bidang pathway picker (Sprint 2 of the PISMP work; commits `d86cf11` picker +
 `c321f7d` live-review; NO migration; retro `docs/retrospective-2026-06-19-pismp-aliran-picker.md`). Worktree off
 origin/main.**
