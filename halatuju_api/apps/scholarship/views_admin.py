@@ -156,6 +156,13 @@ class AdminApplicationListView(_AdminBase):
         if sort_f == 'name':
             qs = qs.order_by('-profile__name' if desc else 'profile__name')
             page = paginator.paginate_queryset(qs, request, view=self)
+        elif sort_f == 'source':
+            # The referring organisation (Source column) lives on the profile.
+            qs = qs.order_by('-profile__referral_source' if desc else 'profile__referral_source')
+            page = paginator.paginate_queryset(qs, request, view=self)
+        elif sort_f == 'status':
+            qs = qs.order_by('-status' if desc else 'status')
+            page = paginator.paginate_queryset(qs, request, view=self)
         elif sort_f == 'merit':
             from .serializers_admin import _application_merit_score
             rows = sorted(qs, key=lambda a: _application_merit_score(a) or 0, reverse=desc)
