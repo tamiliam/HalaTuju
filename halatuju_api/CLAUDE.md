@@ -517,6 +517,24 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-19)
 
+**▶ SHIPPED 2026-06-19 — Reviewer comms consistency + reschedule + verdict SLA (3-sprint roadmap, commits
+`a3c5d31`→`1d89393`; migration `scholarship/0064` additive migrate-first; retro
+`docs/retrospective-2026-06-19-reviewer-comms-and-verdict-sla.md`). Worktree `.worktrees/sched`.**
+- **Interview email set now fully HTML+bilingual:** the student **reminder** + **cancellation** emails joined their
+  siblings (reused `_html_email_shell`/`_email_button`; `english_only` gate; From `interview@`). `REVIEW_SLA_DAYS` = 10.
+- **Reviewer reschedule (move the time)** on the cockpit booked card: `propose_slots(..., release_booking=True)` releases
+  the booking (slot + Meet event + fields) → student re-picks via the "pick a time" email with a moved-the-time preface.
+  **No reviewer self-cancel** (a hand-off is an admin reassignment); propose endpoint takes a `reschedule` flag.
+- **Verdict-completion SLA (TD-131):** `send_review_nudges` cron (job `review-nudges`, **dark behind
+  `REVIEW_NUDGES_ENABLED`**) — verdict due `assigned_at + REVIEW_SLA_DAYS`; nudge reviewer 2 days before + once overdue;
+  escalate to all super-admins 3 days after. Idempotent stamps (migration `0064`) reset on (re)assignment; recorded
+  `verdict_decided_at` cancels. Reviewer interview reminder also shows the verdict-due date. Reviewer emails:
+  `send_reviewer_verdict_due_email`, `send_super_verdict_escalation_email`.
+- **Reviewer email tree is consistent** (Dear / one dashboard CTA / `{ref}` subject / "The B40 Assistance Team" / all
+  from `interview@`). Accept/decline-in-email idea was evaluated and **dropped** (unsafe one-click + redundant).
+- **▶ Carry (owner):** turn the SLA cron ON (`REVIEW_NUDGES_ENABLED=1` + a daily Cloud Scheduler `review-nudges` job);
+  plus the still-parked items below (interview surface flag, SPF, TD-126 Guide shot, TD-130 Brevo List-Help).
+
 **▶ SHIPPED 2026-06-19 — Interview-scheduling arc: Calendly picker + bilingual HTML emails + request-alternatives loop +
 cancellation fix (12 commits `a68b442`→`7fcb82d`; migration `scholarship/0063` additive, migrate-first; retro
 `docs/retrospective-2026-06-19-interview-scheduling.md`). Worktree `.worktrees/sched`.**
