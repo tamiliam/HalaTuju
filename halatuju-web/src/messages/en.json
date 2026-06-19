@@ -2516,6 +2516,11 @@
           "busyOther": "You have another student's interview at this time",
           "pickThree": "Select 3 times — the student picks one.",
           "propose": "Propose times",
+          "proposedHeading": "Proposed times",
+          "awaitingChoice": "Waiting for the student to pick one of these.",
+          "proposeAlternative": "Propose alternative times",
+          "cancelEdit": "Cancel",
+          "removeSlot": "Remove time",
           "error": "Could not save. Please try again."
         }
       },

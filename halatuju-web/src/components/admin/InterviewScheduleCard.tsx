@@ -12,6 +12,15 @@ const REQUIRED_PROPOSALS = 3
 // Short weekday headers (Sun–Sat) localised via Intl; 2023-01-01 was a Sunday.
 const WEEKDAY_SEEDS = Array.from({ length: 7 }, (_, i) => new Date(2023, 0, 1 + i))
 
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+      <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6m4 5v6m6-6v6" />
+    </svg>
+  )
+}
+
 /** Reviewer-facing "Propose interview times" card on the cockpit. The assigned reviewer
  *  offers EXACTLY 3 times (the student picks one + books, which generates the Meet link).
  *  Calendly-style month calendar + 12-hour time pills, 08:00–21:30 MYT on 30-min steps.
@@ -39,6 +48,16 @@ export default function InterviewScheduleCard({
       .slice(0, REQUIRED_PROPOSALS))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  // The current (unbooked) proposed menu — shown read-only until the reviewer chooses to revise.
+  const proposedSlots = useMemo(
+    () => (schedule?.slots || [])
+      .filter((s) => s.id !== schedule.booked_slot_id)
+      .slice().sort((a, b) => a.start.localeCompare(b.start)),
+    [schedule],
+  )
+  // Start in the picker only when nothing's proposed yet; otherwise show the locked view.
+  const [editing, setEditing] = useState(proposedSlots.length === 0)
 
   // Times this reviewer already holds for OTHER students (proposed or booked) — blocked here.
   const reviewerBusy = useMemo(
@@ -78,9 +97,22 @@ export default function InterviewScheduleCard({
     try {
       const next = await proposeInterviewSlots(appId, [...selected].sort(), { token })
       onChange(next)
+      setEditing(false)   // back to the locked "Proposed times" view
     } catch {
       setError(t('admin.scholarship.interview.schedule.error'))
     } finally { setBusy(false) }
+  }
+
+  const startEdit = () => {
+    // Re-open the picker pre-loaded with the current menu, so it's a revise, not a rebuild.
+    setSelected(proposedSlots.map((s) => isoToSlotValue(s.start)).slice(0, REQUIRED_PROPOSALS))
+    setError('')
+    setEditing(true)
+  }
+  const cancelEdit = () => {
+    setSelected(proposedSlots.map((s) => isoToSlotValue(s.start)).slice(0, REQUIRED_PROPOSALS))
+    setError('')
+    setEditing(false)
   }
 
   return (
@@ -112,8 +144,35 @@ export default function InterviewScheduleCard({
         </p>
       )}
 
-      {/* The propose editor is hidden once a slot is booked (the interview is settled). */}
-      {schedule.status !== 'booked' && (
+      {/* Once proposed, the menu is LOCKED to a read-only view until the reviewer chooses to
+          revise — "Propose alternative times" reopens the picker (also for a student who says
+          none of the times work). Hidden once booked. */}
+      {schedule.status !== 'booked' && !editing && (
+        <div className="mt-4">
+          <div className="text-sm font-semibold text-gray-900">
+            {t('admin.scholarship.interview.schedule.proposedHeading')}
+          </div>
+          <p className="mt-0.5 text-xs text-gray-500">
+            {t('admin.scholarship.interview.schedule.awaitingChoice')}
+          </p>
+          <ul className="mt-3 space-y-2">
+            {proposedSlots.map((s) => (
+              <li key={s.id}
+                className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                {formatMyt(s.start)}
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={startEdit}
+            className="mt-4 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            {t('admin.scholarship.interview.schedule.proposeAlternative')}
+          </button>
+        </div>
+      )}
+
+      {/* Picker (edit mode) — hidden once booked. */}
+      {schedule.status !== 'booked' && editing && (
         <>
           {/* Calendly-style: month calendar (left) + 12-hour time pills (right). */}
           <div className="mt-4 grid gap-5 md:grid-cols-2">
@@ -121,12 +180,12 @@ export default function InterviewScheduleCard({
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-900">{monthTitle}</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <button type="button" onClick={() => shiftMonth(-1)} disabled={atCurrentMonth}
                     aria-label="previous month"
-                    className="rounded-md px-2 py-0.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30">‹</button>
+                    className="rounded-md px-2.5 py-1 text-2xl leading-none text-gray-600 hover:bg-gray-100 disabled:opacity-30">‹</button>
                   <button type="button" onClick={() => shiftMonth(1)} aria-label="next month"
-                    className="rounded-md px-2 py-0.5 text-gray-500 hover:bg-gray-100">›</button>
+                    className="rounded-md px-2.5 py-1 text-2xl leading-none text-gray-600 hover:bg-gray-100">›</button>
                 </div>
               </div>
               <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase text-gray-400">
@@ -214,7 +273,10 @@ export default function InterviewScheduleCard({
                   <li key={v} className="flex items-center justify-between gap-3 text-sm text-gray-800">
                     <span>{formatMyt(v)}</span>
                     <button type="button" onClick={() => toggle(v)}
-                      className="text-xs text-gray-400 hover:text-red-600">×</button>
+                      aria-label={t('admin.scholarship.interview.schedule.removeSlot')}
+                      className="text-gray-400 hover:text-red-600">
+                      <TrashIcon />
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -224,6 +286,12 @@ export default function InterviewScheduleCard({
                 className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
                 {t('admin.scholarship.interview.schedule.propose')}
               </button>
+              {proposedSlots.length > 0 && (
+                <button type="button" onClick={cancelEdit} disabled={busy}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+                  {t('admin.scholarship.interview.schedule.cancelEdit')}
+                </button>
+              )}
               {!ready && (
                 <span className="text-xs text-gray-500">
                   {t('admin.scholarship.interview.schedule.pickThree')}
