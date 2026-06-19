@@ -124,7 +124,7 @@ export default function InterviewScheduleCard({
       </h2>
       {/* The subheader is shown only while proposing, and adapts to first-time vs revising.
           In the locked/booked/cancelled states the in-card copy carries the message. */}
-      {schedule.status !== 'booked' && editing && (
+      {schedule.status !== 'booked' && schedule.status !== 'cancelled' && editing && (
         <p className="mt-1 text-xs text-gray-500">
           {t(proposedSlots.length > 0
             ? 'admin.scholarship.interview.schedule.introAlternatives'

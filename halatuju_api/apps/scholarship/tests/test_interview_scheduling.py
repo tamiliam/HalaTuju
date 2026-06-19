@@ -329,6 +329,32 @@ class SchedulingServiceTests(TestCase):
             scheduling.cancel(self.app, by='student')
         self.assertEqual(str(cm.exception), 'not_booked')
 
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_cancel_voids_the_menu(self, _mock):
+        slots = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                         starts=[self._future(days=3), self._future(days=4)])
+        scheduling.book_slot(self.app, slot_id=slots[0].id)
+        scheduling.cancel(self.app, by='student')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, 'cancelled')
+        self.assertIsNone(self.app.interview_slot_id)         # booking pointers cleared
+        self.assertIsNone(self.app.interview_start)
+        self.assertEqual(                                     # the whole menu withdrawn
+            InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 0)
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_proposing_after_cancel_clears_cancelled_state(self, _mock):
+        slots = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                         starts=[self._future(days=3)])
+        scheduling.book_slot(self.app, slot_id=slots[0].id)
+        scheduling.cancel(self.app, by='student')
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=5)])
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, '')       # back to awaiting-a-pick
+        self.assertIsNone(self.app.interview_cancelled_at)
+        self.assertEqual(                                     # the fresh menu is live
+            InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 1)
+
 
 @override_settings(INTERVIEW_SCHEDULING_ENABLED=True)
 class ReminderCronTests(TestCase):

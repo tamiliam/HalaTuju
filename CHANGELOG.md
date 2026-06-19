@@ -95,6 +95,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than only "the interviewer will contact you." Backend only, no migration.
 
 ### Fixed
+- **Interview cancellation was a sticky dead-end.** When a student cancelled a booked interview, `interview_status` stayed
+  `cancelled` and the old proposed slots stayed active — the cockpit showed a contradictory "cancelled" banner + "waiting
+  for the student to pick" with stale slots, and when the reviewer proposed fresh times the status never reset, so the
+  **student kept seeing "your interview was cancelled" and never saw the new slots**. Now `cancel()` withdraws the whole
+  menu and clears the booking pointers, and `propose_slots()` lifts a prior cancellation back to the awaiting-a-pick state;
+  the cockpit also drops the generic subheader while cancelled. +2 tests.
 - **PISMP course names no longer show a redundant "(Aliran Bahasa Tamil/Cina)" descriptor (2026-06-19).** Since the 2026
   catalogue reconciliation, every PISMP course name already carries its Aliran suffix ("… (SJKT)"), but
   `deduplicate_pismp` still appended the old "(Aliran …)" language descriptor on top — so the picker *and* the
