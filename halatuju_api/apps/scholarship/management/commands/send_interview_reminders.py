@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from apps.scholarship import emails
 from apps.scholarship.models import ScholarshipApplication
+from apps.scholarship.pool import pool_ref
 from apps.scholarship.scheduling import _student_identity
 
 
@@ -44,7 +45,8 @@ class Command(BaseCommand):
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
-                        start=start, meeting_url=app.interview_meeting_url, when='1day')
+                        start=start, meeting_url=app.interview_meeting_url, when='1day',
+                        ref=pool_ref(app.id))
                 app.interview_reminded_1d_at = now
                 app.save(update_fields=['interview_reminded_1d_at'])
                 sent_1d.append(app.id)
@@ -57,7 +59,8 @@ class Command(BaseCommand):
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
-                        start=start, meeting_url=app.interview_meeting_url, when='1hour')
+                        start=start, meeting_url=app.interview_meeting_url, when='1hour',
+                        ref=pool_ref(app.id))
                 app.interview_reminded_1h_at = now
                 app.save(update_fields=['interview_reminded_1h_at'])
                 sent_1h.append(app.id)

@@ -843,3 +843,11 @@
   its own header alongside ours. **To resolve:** ask Brevo support to enable **List-Help instead of List-Unsubscribe on
   transactional** (account-wide, certain fix); then drop the mailto shim. Owner action (free-tier support latency unknown).
   Interim option: extend the same `mailto:` shim to the decision/reminder send paths. (Logged 2026-06-19.)
+- TD-131: **No verdict-completion clock or overdue-verdict nudge for reviewers.** The reviewer-assigned email now shows a
+  soft "Please review by {date}" (`REVIEW_SLA_DAYS`, default 7), but it is **display-only** — nothing tracks whether a
+  reviewer actually records a verdict, and there is no reminder or escalation if they don't. (`decision_due_at` is the
+  *student-facing* delayed-reveal timer, not a reviewer deadline.) The missing email in the reviewer lifecycle is the one
+  that prevents a stuck case: *"you interviewed {ref} N days ago but haven't recorded a verdict."* **To resolve (own
+  change):** add a verdict-due field/SLA, a detection job (interviewed/assigned + no verdict past the SLA), and an
+  overdue-verdict nudge email; only then surface the due date in the **interview reminder** too (the deferred external-review
+  point — a date with teeth, not a soft target that can already be in the past by interview time). (Logged 2026-06-19.)

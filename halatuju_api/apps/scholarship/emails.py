@@ -962,38 +962,47 @@ def send_profile_complete_admin_email(application_id, applicant_name, programme_
         return False
 
 
-def send_reviewer_assigned_email(to_email, reviewer_name, applicant_name):
+# ── Reviewer emails — shared bits (one greeting, one CTA, one sign-off) ────────
+# All reviewer mail goes out via _send_plain → from the monitored interview@ alias with a
+# working reply-to, so "reply to reassign" / replies actually reach a person. The subject
+# carries the Scholar-code so a reviewer juggling several applicants can triage at a glance.
+_REVIEWER_SIGNOFF = 'Thanks,\nThe B40 Assistance Team'
+
+
+def _reviewer_dashboard_cta():
+    """The single CTA every reviewer email shares — one name ('reviewer dashboard'), one link."""
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    return f'Open in your reviewer dashboard:\n{frontend}/admin/login'
+
+
+def _reviewer_subject(base, ref):
+    """Append the Scholar-code (ref) so reviewers can triage from the subject line."""
+    return f'{base} — {ref}' if ref else base
+
+
+def send_reviewer_assigned_email(to_email, reviewer_name, *, ref='', programme='', review_by=''):
     """F7: notify a reviewer that an applicant has been assigned to them. English-only
     (reviewers are internal staff). Sent on each (re)assignment — never re-sent for an
     unchanged assignee, because assign_reviewer short-circuits a no-op before this fires.
+    From the monitored interview@ alias so 'reply to reassign' actually reaches a person.
     Best-effort — swallows send failures so a mail hiccup never breaks the assignment."""
     if not to_email:
         return False
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     reviewer = reviewer_name or 'there'
-    applicant = applicant_name or 'A new applicant'
-    try:
-        send_mail(
-            subject='A new applicant has been assigned to you — HalaTuju',
-            message=(
-                f'Dear {reviewer},\n\n'
-                f'{applicant} has been assigned to you for review on HalaTuju.\n\n'
-                f'Please sign in to your reviewer dashboard to see their profile, '
-                f'supporting documents, and verification checks, and to record your '
-                f'decision:\n\n'
-                f'{frontend}/admin/login\n\n'
-                f'If you have any questions, just reply to this email.\n\n'
-                f'Thank you for supporting the B40 Assistance Programme.\n\n'
-                f'Warm regards,\nThe HalaTuju Team'
-            ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-            recipient_list=[to_email],
-        )
-        return True
-    except Exception:
-        logger.warning('Failed to send reviewer-assigned email to %s', to_email,
-                       exc_info=True)
-        return False
+    details = [f'Reference: {ref or "—"}', f'Programme: {programme or "—"}']
+    if review_by:
+        details.append(f'Please review by: {review_by}')
+    body = (
+        f'Dear {reviewer},\n\n'
+        f'A new applicant has been assigned to you for review.\n\n'
+        + '\n'.join(details) + '\n\n'
+        f'Everything you need — profile, documents, and the verification checks — is in your '
+        f'reviewer dashboard:\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f"Can't take this one? Just reply and we'll reassign it.\n\n"
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject('New applicant assigned to you', ref), body)
 
 
 def send_student_assigned_reviewer_email(to_email, *, student_name, english_only=False,
@@ -1574,58 +1583,84 @@ def _send_plain(to_email, subject, body):
 
 
 def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_name, start,
-                                         meeting_url=''):
-    """Reviewer notice that a student booked one of their proposed times. Plain EN."""
-    link = f'\nMeet link: {meeting_url}' if meeting_url else ''
+                                         meeting_url='', ref='', duration_min=None,
+                                         calendar_invite_sent=False):
+    """Reviewer notice that a student booked one of their proposed times. Plain EN.
+
+    Calendar: when the Google Meet/Calendar integration is on, both parties are added to one
+    auto-created event (calendar_invite_sent=True) — so we DON'T offer a manual 'add to
+    calendar' link (it would double-book). When it's off, no event exists, so we include an
+    'Add to your calendar' Google link so the reviewer always ends up with the time held."""
+    applicant = applicant_name or 'An applicant'
+    details = [f'When: {_fmt_myt(start)}']
+    if meeting_url:
+        details.append(f'Meet link: {meeting_url}')
+    if calendar_invite_sent:
+        calendar_line = "It's on your calendar (a Google invite has been sent) and in their record."
+    else:
+        gcal = _gcal_url(start=start, duration_min=duration_min or 30,
+                         text=f'B40 interview — {applicant}',
+                         details='B40 Assistance Programme interview.', location=meeting_url or '')
+        calendar_line = (
+            "The booking is in their record. Add it to your calendar so you don't lose the time:\n"
+            f'Add to your calendar:\n{gcal}')
     body = (
-        f'Hi {reviewer_name or "there"},\n\n'
-        f'{applicant_name or "An applicant"} has booked their B40 interview with you:\n\n'
-        f'  {_fmt_myt(start)}{link}\n\n'
-        f'It will appear on your calendar. You can see the booking in the applicant\'s record '
-        f'in the admin console.\n\n'
-        f'— HalaTuju'
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'{applicant} has booked their B40 interview with you.\n\n'
+        + '\n'.join(details) + '\n\n'
+        f'{calendar_line}\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, 'A B40 applicant booked their interview with you', body)
+    return _send_plain(to_email, _reviewer_subject('Interview booked', ref), body)
 
 
 def send_reviewer_interview_reminder_email(to_email, *, reviewer_name, applicant_name, start,
-                                           meeting_url='', when='1day'):
-    """Reviewer reminder (1 day / 1 hour before). Plain EN."""
-    link = f'\nMeet link: {meeting_url}' if meeting_url else ''
+                                           meeting_url='', when='1day', ref=''):
+    """Reviewer reminder (1 day / 1 hour before). Plain EN. A nudge only — no calendar link,
+    since the time was added when it was booked."""
     soon = 'tomorrow' if when == '1day' else 'in about an hour'
+    details = [f'When: {_fmt_myt(start)}']
+    if meeting_url:
+        details.append(f'Meet link: {meeting_url}')
     body = (
-        f'Hi {reviewer_name or "there"},\n\n'
-        f'Reminder — your B40 interview with {applicant_name or "an applicant"} is {soon}:\n\n'
-        f'  {_fmt_myt(start)}{link}\n\n'
-        f'— HalaTuju'
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'Your B40 interview with {applicant_name or "an applicant"} is {soon}.\n\n'
+        + '\n'.join(details) + '\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
     )
-    subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
-            else 'Reminder: your B40 interview is in 1 hour')
-    return _send_plain(to_email, subj, body)
+    base = ('Reminder: your interview is tomorrow' if when == '1day'
+            else 'Reminder: your interview is in 1 hour')
+    return _send_plain(to_email, _reviewer_subject(base, ref), body)
 
 
-def send_reviewer_alternatives_requested_email(to_email, *, reviewer_name, applicant_name, note=''):
+def send_reviewer_alternatives_requested_email(to_email, *, reviewer_name, applicant_name,
+                                               note='', ref=''):
     """Reviewer notice that the student said none of the proposed times work and wants other
     options. Routes the request to the right person (vs a reply lost in a shared inbox). Plain EN."""
     note_block = f'\nWhat they said:\n  "{note}"\n' if note else ''
     body = (
-        f'Hi {reviewer_name or "there"},\n\n'
-        f'{applicant_name or "An applicant"} has let us know that none of the interview times you '
-        f'proposed will work for them, and has asked for other times.\n'
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} says none of the interview times you proposed will '
+        f'work, and has asked for other options.\n'
         f'{note_block}\n'
-        f'Please open their record in the admin console and use "Propose alternative times" to '
-        f'offer a fresh set — they\'ll be emailed automatically.\n\n'
-        f'— HalaTuju'
+        f'Open their record and use "Propose alternative times" to offer a fresh set — '
+        f"they'll be emailed automatically.\n\n"
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, 'A B40 applicant needs different interview times', body)
+    return _send_plain(to_email, _reviewer_subject('Applicant needs different interview times', ref), body)
 
 
-def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name):
+def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name, ref=''):
     """Reviewer notice that a student cancelled. Plain EN."""
     body = (
-        f'Hi {reviewer_name or "there"},\n\n'
-        f'{applicant_name or "An applicant"} has cancelled their booked B40 interview. You may '
-        f'want to propose fresh times from the applicant\'s record in the admin console.\n\n'
-        f'— HalaTuju'
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} has cancelled their booked B40 interview.\n\n'
+        f'Their application is still open — only the interview slot was released. When you\'re '
+        f'ready, open their record and use "Propose alternative times" to offer new ones.\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, 'A B40 applicant cancelled their interview', body)
+    return _send_plain(to_email, _reviewer_subject('Applicant cancelled their interview', ref), body)

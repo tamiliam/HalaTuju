@@ -163,6 +163,9 @@ STUDENT_ASSIGNMENT_EMAIL_ENABLED = os.environ.get('STUDENT_ASSIGNMENT_EMAIL_ENAB
 # one in-app, and we send confirmations + reminders. OFF by default — the whole surface
 # (admin propose-card + student booking panel + endpoints) is dark until flipped on.
 INTERVIEW_SCHEDULING_ENABLED = os.environ.get('INTERVIEW_SCHEDULING_ENABLED', '').lower() in ('1', 'true', 'yes')
+# How many days a reviewer has to complete a review once an applicant is assigned. Shown as
+# the "Please review by" date in the reviewer-assigned email. Soft target (no enforcement yet).
+REVIEW_SLA_DAYS = int(os.environ.get('REVIEW_SLA_DAYS', '7'))
 # Auto-generate a Google Meet link (+ calendar event) on booking. Separate flag so the
 # scheduling surface can go live BEFORE the Google Workspace organiser account is wired.
 # When off (or creds missing / API error), booking still succeeds — the email simply has

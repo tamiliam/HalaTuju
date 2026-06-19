@@ -504,12 +504,17 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     # assignment (not an unassign); the no-op short-circuit above means an unchanged
     # assignee never reaches here, so we never re-send. Best-effort.
     if reviewer is not None and getattr(reviewer, 'email', ''):
+        from django.conf import settings as _settings
         from .emails import send_reviewer_assigned_email
-        applicant_name = getattr(application.profile, 'name', '') if application.profile else ''
+        from .pool import pool_ref
+        review_days = getattr(_settings, 'REVIEW_SLA_DAYS', 7)
+        review_by = ((application.assigned_at or now) + timedelta(days=review_days)).date()
         send_reviewer_assigned_email(
             to_email=reviewer.email,
             reviewer_name=getattr(reviewer, 'name', ''),
-            applicant_name=applicant_name,
+            ref=pool_ref(application.id),
+            programme=getattr(application.cohort, 'name', '') if application.cohort else '',
+            review_by=review_by.strftime('%d %b %Y'),
         )
 
     # F7: advance notice to the STUDENT — who will interview them + how, so they expect the
