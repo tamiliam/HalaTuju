@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Interview email set completed (HTML bilingual) + verdict SLA set to 10 days.** The last two plain-text student
+  interview emails — the **1-day/1-hour reminder** and the **cancellation confirmation** — are now HTML primary +
+  plain-text fallback, bilingual (EN+BM with the `english_only` gate), from `interview@`, matching their booked /
+  slots-proposed siblings (reused `_html_email_shell`/`_email_button`; reminder gains a "Join the video call" button when
+  a Meet link exists; cancellation keeps the owner-approved copy + anti-scam note). The whole interview set is now
+  format-consistent. `REVIEW_SLA_DAYS` default 7 → **10** (display-only soft target until TD-131 gives it teeth).
 - **Reviewer email tree made consistent + actionable.** All five reviewer-facing emails (new applicant assigned,
   interview booked, interview reminder, applicant-needs-different-times, applicant cancelled) now share one voice:
   "Dear {name}" greeting, one **"Open in your reviewer dashboard"** CTA (was three names — "reviewer dashboard" /

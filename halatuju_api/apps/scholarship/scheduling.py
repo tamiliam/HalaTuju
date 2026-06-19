@@ -304,7 +304,8 @@ def cancel(application, *, by='student', now=None):
         'interview_reminded_1d_at', 'interview_reminded_1h_at',
     ])
 
-    emails.send_interview_cancelled_email(student_email, student_name=student_name)
+    emails.send_interview_cancelled_email(student_email, student_name=student_name,
+                                          english_only=emails.english_only_email(application))
     if reviewer is not None and getattr(reviewer, 'email', ''):
         emails.send_reviewer_interview_cancelled_email(
             reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),

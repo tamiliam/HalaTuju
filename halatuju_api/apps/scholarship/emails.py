@@ -1501,42 +1501,84 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
     return _send_html(to_email, subject, text_body, html_body)
 
 
-def send_interview_reminder_email(to_email, *, student_name, start, meeting_url='', when='1day'):
-    """Student reminder (1 day / 1 hour before). Bilingual; best-effort."""
-    student = student_name or 'there'
-    student_bm = student_name or 'di sana'
+def send_interview_reminder_email(to_email, *, student_name, start, meeting_url='', when='1day',
+                                  english_only=False):
+    """Student reminder (1 day / 1 hour before). HTML primary + plain-text fallback. Bilingual
+    (EN+BM) by default; ``english_only=True`` drops the BM mirror. Best-effort."""
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
     whenfmt = _fmt_myt(start)
     soon_en = 'tomorrow' if when == '1day' else 'in about an hour'
     soon_bm = 'esok' if when == '1day' else 'dalam kira-kira sejam'
-    en = (
-        f'Hi {student},\n\n'
+
+    # ── Plain-text fallback ───────────────────────────────────────────────────
+    en_text = (
+        f'Hi {en_name},\n\n'
         f'A reminder that your B40 Assistance Programme interview is {soon_en}:\n\n'
         f'• {whenfmt}\n'
         f'{_join_line(meeting_url, "en")}\n'
         f'Please be on camera and ready a few minutes early. See you soon.\n\n'
-        f'— The B40 Assistance Programme team'
+        f'Warm regards,\nThe B40 Assistance Programme Team'
     )
-    bm = (
-        f'Salam {student_bm},\n\n'
+    bm_text = (
+        f'Salam {bm_name},\n\n'
         f'Peringatan bahawa temu duga Program Bantuan B40 anda adalah {soon_bm}:\n\n'
         f'• {whenfmt}\n'
         f'{_join_line(meeting_url, "bm")}\n'
         f'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.\n\n'
-        f'— Pasukan Program Bantuan B40'
+        f'Salam hormat,\nPasukan Program Bantuan B40'
     )
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    # ── HTML primary ──────────────────────────────────────────────────────────
+    if meeting_url:
+        join_en_html = _email_button(meeting_url, 'Join the video call')
+        join_bm_html = _email_button(meeting_url, 'Sertai panggilan video')
+    else:
+        join_en_html = 'Your interviewer will share the video-call link before the interview.'
+        join_bm_html = 'Penemu duga anda akan berkongsi pautan panggilan video sebelum temu duga.'
+
+    def section(greeting, lead, join_html, footer, signoff):
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 10px;">{lead}</p>'
+            f'<p style="margin:0 0 6px;font-weight:600;">{whenfmt}</p>'
+            f'<p style="margin:0 0 18px;">{join_html}</p>'
+            f'<p style="margin:0 0 18px;">{footer}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    en_html = section(
+        f'Hi {en_name},',
+        f'A reminder that your B40 Assistance Programme interview is {soon_en}:',
+        join_en_html,
+        'Please be on camera and ready a few minutes early. See you soon.',
+        'Warm regards,<br>The B40 Assistance Programme Team')
+    bm_html = section(
+        f'Salam {bm_name},',
+        f'Peringatan bahawa temu duga Program Bantuan B40 anda adalah {soon_bm}:',
+        join_bm_html,
+        'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.',
+        'Salam hormat,<br>Pasukan Program Bantuan B40')
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
     subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
             else 'Reminder: your B40 interview is in 1 hour')
-    return _send_bilingual(to_email, subj, en, bm)
+    return _send_html(to_email, subj, text_body, html_body)
 
 
-def send_interview_cancelled_email(to_email, *, student_name):
+def send_interview_cancelled_email(to_email, *, student_name, english_only=False):
     """Confirmation to the student that *they* cancelled their interview (this notice is sent
-    on every cancel, and a student-initiated cancel is the common case). Bilingual; best-effort."""
-    first = (student_name or '').split()[0] if student_name else ''
-    student = first or 'there'
-    student_bm = first or 'di sana'
-    en = (
-        f'Hi {student},\n\n'
+    on every cancel, and a student-initiated cancel is the common case). HTML primary +
+    plain-text fallback. Bilingual (EN+BM) by default; ``english_only=True`` drops the BM
+    mirror. Best-effort."""
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
+
+    # ── Plain-text fallback (the owner-approved copy) ─────────────────────────
+    en_text = (
+        f'Hi {en_name},\n\n'
         f"This confirms that you've cancelled your interview for the B40 Assistance Programme, so "
         f'the time you had booked is now released.\n\n'
         f'Your application is still active — cancelling the interview doesn\'t affect it. Your '
@@ -1547,11 +1589,10 @@ def send_interview_cancelled_email(to_email, *, student_name):
         f'One note for your peace of mind: we\'ll only ever ask about you and your studies. We '
         f'will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it\'s '
         f'not us — please tell us at {SUPPORT_EMAIL}.\n\n'
-        f'Warm regards,\n\n'
-        f'The B40 Assistance Programme team'
+        f'Warm regards,\nThe B40 Assistance Programme Team'
     )
-    bm = (
-        f'Salam {student_bm},\n\n'
+    bm_text = (
+        f'Salam {bm_name},\n\n'
         f'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bantuan B40 anda, '
         f'jadi masa yang anda tempah sebelum ini kini dilepaskan.\n\n'
         f'Permohonan anda masih aktif — membatalkan temu duga tidak menjejaskannya. Penemu duga '
@@ -1562,10 +1603,50 @@ def send_interview_cancelled_email(to_email, *, student_name):
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
         f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
         f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
-        f'Salam hormat,\n\n'
-        f'Pasukan Program Bantuan B40'
+        f'Salam hormat,\nPasukan Program Bantuan B40'
     )
-    return _send_bilingual(to_email, "You've cancelled your B40 Assistance Programme interview", en, bm)
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    # ── HTML primary ──────────────────────────────────────────────────────────
+    def section(greeting, p_confirm, p_active, p_reply, safety, signoff):
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 14px;">{p_confirm}</p>'
+            f'<p style="margin:0 0 14px;">{p_active}</p>'
+            f'<p style="margin:0 0 18px;">{p_reply}</p>'
+            f'<p style="margin:0 0 18px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    en_html = section(
+        f'Hi {en_name},',
+        "This confirms that you've cancelled your interview for the B40 Assistance Programme, so the "
+        'time you had booked is now released.',
+        "Your application is still active — cancelling the interview doesn’t affect it. Your interviewer "
+        "will propose some alternative times, and you’re welcome to choose one whenever you’re ready, if "
+        "you’d like to take this forward.",
+        "If you didn’t mean to cancel, or you have any questions, just reply to this email and we’ll help "
+        "you sort it out.",
+        f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will never '
+        f'ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — please tell '
+        f'us at {SUPPORT_EMAIL}.',
+        'Warm regards,<br>The B40 Assistance Programme Team')
+    bm_html = section(
+        f'Salam {bm_name},',
+        'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bantuan B40 anda, jadi '
+        'masa yang anda tempah sebelum ini kini dilepaskan.',
+        'Permohonan anda masih aktif — membatalkan temu duga tidak menjejaskannya. Penemu duga anda akan '
+        'mencadangkan beberapa masa alternatif, dan anda dialu-alukan untuk memilih satu bila-bila masa '
+        'anda bersedia, jika anda ingin meneruskannya.',
+        'Jika anda tidak berniat untuk membatalkannya, atau anda mempunyai sebarang pertanyaan, balas '
+        'sahaja e-mel ini dan kami akan membantu anda.',
+        f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan pengajian '
+        f'anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
+        f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
+        'Salam hormat,<br>Pasukan Program Bantuan B40')
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
+    return _send_html(to_email, "You've cancelled your B40 Assistance Programme interview",
+                      text_body, html_body)
 
 
 def _send_plain(to_email, subject, body):
