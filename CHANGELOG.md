@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Sponsor portal redesign (R1) — three-tab shell + Students marketplace.** The flat `/sponsor` page is
+  restructured into a `(portal)` route group with a gating + tab-nav layout and three tabs: **My Giving** (`/sponsor`),
+  **Students** (`/sponsor/students` + `/sponsor/students/[id]` detail) and **My Account** (`/sponsor/account`). Every
+  existing piece (balance, students-you-support, thank-you messages, notification cadence, invite-a-friend) is preserved
+  and reorganised into the right tab; the Students tab adds client-side field / state / level filters over the anonymised
+  pool. A shared `SponsorPortalProvider` fetches the approved-sponsor data once (no refetch on tab switch). Old
+  `/sponsor/pool/[id]` now redirects to `/sponsor/students/[id]`. **Ships dark** behind `SPONSOR_POOL_ENABLED` — flag-off
+  still degrades to the existing "coming soon" + notification prefs. Funding (the money action) is deferred to a
+  confirmed fast-follow (TD-101). New trilingual `sponsorPortal.nav/students/account` i18n + pure `sponsorFilter`
+  helpers (+7 jest, 349 total). Front-end only, no migration. First of the 7-sprint redesign roadmap
+  (`docs/scholarship/b40-sponsor-portal-redesign-sprint-plan.md`).
 - **Cockpit interview-card polish + Guide accuracy.** The booked card's Meet link is now a prominent **"Join the video
   call" button** (matching the student card) and the **"Reschedule (move the time)"** link is de-emphasised + right-aligned.
   The reviewer Guide's scheduling step now says **"three"** (was "two or three" / "up to three" — the picker requires

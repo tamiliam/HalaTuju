@@ -132,6 +132,12 @@
     "approvedTitle": "Anda telah diluluskan",
     "approvedBody": "Selamat menyertai. Tidak lama lagi anda boleh menyemak pelajar yang memerlukan bantuan — sentiasa tanpa nama.",
     "comingSoon": "Penyemakan pelajar akan datang tidak lama lagi. Kami akan e-mel anda sebaik sahaja ia sedia.",
+    "nav": {
+      "giving": "Pemberian Saya",
+      "students": "Pelajar",
+      "account": "Akaun Saya",
+      "support": "Bantu seorang pelajar"
+    },
     "myStudents": {
       "welcome": "Selamat kembali",
       "approvedPill": "Penaja diluluskan",
@@ -140,6 +146,7 @@
       "subtitle": "Pelajar yang disokong oleh sumbangan anda. Identiti mereka dirahsiakan.",
       "months": "bulan",
       "awaiting": "Menunggu penerimaan",
+      "none": "Anda belum membantu mana-mana pelajar lagi.",
       "progress": {
         "on_track": "Atas landasan",
         "semester_completed": "Semester selesai",
