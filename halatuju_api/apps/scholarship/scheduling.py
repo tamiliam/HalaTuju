@@ -250,7 +250,7 @@ def book_slot(application, *, slot_id, now=None):
     emails.send_interview_booked_email(
         student_email, student_name=student_name, reviewer_name=reviewer_name,
         start=slot.start, meeting_url=application.interview_meeting_url,
-        reviewer_phone=_reviewer_phone(reviewer) if reviewer else '')
+        duration_min=slot.duration_min, english_only=emails.english_only_email(application))
     if reviewer_email:
         emails.send_reviewer_interview_booked_email(
             reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,

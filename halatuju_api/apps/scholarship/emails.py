@@ -1178,9 +1178,10 @@ def english_only_email(application) -> bool:
     return eng in ('A+', 'A')
 
 
-def _send_html(to_email, subject, text_body, html_body, reply_to=None):
+def _send_html(to_email, subject, text_body, html_body, reply_to=None, ics=None):
     """Send a multipart email — HTML primary + plain-text fallback. Reply-To defaults to
-    the interview alias. Best-effort → bool."""
+    the interview alias. ``ics`` (a calendar string) is attached as interview.ics so the
+    client offers "add to calendar". Best-effort → bool."""
     if not to_email:
         return False
     try:
@@ -1192,11 +1193,46 @@ def _send_html(to_email, subject, text_body, html_body, reply_to=None):
             reply_to=reply_to or [INTERVIEW_REPLY_TO],
         )
         msg.attach_alternative(html_body, 'text/html')
+        if ics:
+            msg.attach('interview.ics', ics, 'text/calendar')
         msg.send()
         return True
     except Exception:
         logger.warning('Failed to send HTML email to %s', to_email, exc_info=True)
         return False
+
+
+def _interview_ics(*, start, duration_min, summary, description='', location=''):
+    """A minimal VCALENDAR/VEVENT for the booked interview (attached so mail clients show
+    an 'add to calendar' affordance)."""
+    from datetime import datetime, timedelta, timezone as dtz
+    def z(dt):
+        return dt.astimezone(dtz.utc).strftime('%Y%m%dT%H%M%SZ')
+    def esc(s):
+        return (str(s or '').replace('\\', '\\\\').replace(';', '\\;')
+                .replace(',', '\\,').replace('\n', '\\n'))
+    end = start + timedelta(minutes=duration_min)
+    lines = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//HalaTuju//B40//EN', 'METHOD:PUBLISH',
+        'BEGIN:VEVENT', f'UID:b40-interview-{int(start.timestamp())}@halatuju.xyz',
+        f'DTSTAMP:{datetime.now(dtz.utc).strftime("%Y%m%dT%H%M%SZ")}', f'DTSTART:{z(start)}', f'DTEND:{z(end)}',
+        f'SUMMARY:{esc(summary)}', f'DESCRIPTION:{esc(description)}', f'LOCATION:{esc(location)}',
+        'END:VEVENT', 'END:VCALENDAR',
+    ]
+    return '\r\n'.join(lines) + '\r\n'
+
+
+def _gcal_url(*, start, duration_min, text, details='', location=''):
+    """A Google Calendar 'create event' template URL for the 'Add to calendar' button."""
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+    from urllib.parse import urlencode
+    def z(dt):
+        return dt.astimezone(ZoneInfo('UTC')).strftime('%Y%m%dT%H%M%SZ')
+    end = start + timedelta(minutes=duration_min)
+    q = urlencode({'action': 'TEMPLATE', 'text': text, 'dates': f'{z(start)}/{z(end)}',
+                   'details': details, 'location': location})
+    return f'https://calendar.google.com/calendar/render?{q}'
 
 
 def _html_email_shell(*sections):
@@ -1233,47 +1269,123 @@ def _join_line(meeting_url, lang='en'):
 
 
 def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
-                                meeting_url='', reviewer_phone=''):
-    """Student confirmation that an interview slot is booked. Bilingual; best-effort."""
-    student = student_name or 'there'
-    student_bm = student_name or 'di sana'
-    reviewer = reviewer_name or 'our interviewer'
-    reviewer_bm = reviewer_name or 'penemu duga kami'
+                                meeting_url='', english_only=False, duration_min=None,
+                                reviewer_phone=''):
+    """Student confirmation that an interview slot is booked. HTML primary + plain-text
+    fallback; bilingual (EN + BM) by default, ``english_only=True`` drops the BM mirror.
+    Names the interviewer (no contact details); attaches an .ics + an Add-to-calendar
+    button. Best-effort. (``reviewer_phone`` kept for call compatibility; unused.)"""
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
+    reviewer = (reviewer_name or '').strip()
+    rev_en = reviewer or 'one of our interviewers'
+    rev_bm = reviewer or 'salah seorang penemu duga kami'
     when = _fmt_myt(start)
-    phone_en = f'• Interviewer’s phone / WhatsApp: +60 {reviewer_phone}\n' if reviewer_phone else ''
-    phone_bm = f'• Telefon / WhatsApp penemu duga: +60 {reviewer_phone}\n' if reviewer_phone else ''
-    en = (
-        f'Hi {student},\n\n'
-        f'Your B40 Assistance Programme interview is booked. Here are the details:\n\n'
-        f'• Date & time: {when}\n'
-        f'• Interviewer: {reviewer}\n'
-        f'{phone_en}'
-        f'{_join_line(meeting_url, "en")}\n'
-        f'It will take about 30–45 minutes, by video call. Please be on camera. If your '
-        f'parents or guardian are around, our interviewer would be glad to speak with them too '
-        f'— they can join from home while you join from college.\n\n'
+    cutoff = getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
+    duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
+    summary = 'B40 Assistance Programme interview'
+    details = f'Join: {meeting_url}' if meeting_url else 'Your interviewer will share the video-call link.'
+    gcal = _gcal_url(start=start, duration_min=duration_min, text=summary,
+                     details=details, location=meeting_url or 'Video call')
+    ics = _interview_ics(start=start, duration_min=duration_min, summary=summary,
+                         description=details, location=meeting_url or 'Video call')
+    join_en = (f'Join here: {meeting_url}' if meeting_url
+               else 'Your interviewer will share the video-call link before the interview.')
+    join_bm = (f'Sertai di sini: {meeting_url}' if meeting_url
+               else 'Penemu duga anda akan berkongsi pautan panggilan video sebelum temu duga.')
+
+    en_text = (
+        f'Hi {en_name},\n\n'
+        f'Your B40 Assistance Programme interview is confirmed. Here are the details:\n\n'
+        f'Date & time: {when}\n'
+        f'Interviewer: {rev_en}\n'
+        f'{join_en}\n\n'
+        f'Add to calendar: {gcal}\n\n'
+        f'The interview is a video call and takes about 30 minutes. Please join with your camera '
+        f'on. If you are under 18, please have a parent or guardian with you; whatever your age, '
+        f'they’re welcome to join too.\n\n'
         f'Need a different time? You can reschedule or cancel from your application page in '
-        f'HalaTuju, up until a few hours before the interview.\n\n'
-        f'For your safety: we will never ask you for money, your bank password, or an OTP/PIN.\n\n'
-        f'— The B40 Assistance Programme team'
+        f'HalaTuju up to {cutoff} hours before the interview.\n\n'
+        f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
+        f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
+        f'please tell us at {SUPPORT_EMAIL}.\n\n'
+        f'We look forward to speaking with you.\n\n'
+        f'Warm regards,\nThe B40 Assistance Programme team'
     )
-    bm = (
-        f'Salam {student_bm},\n\n'
-        f'Temu duga Program Bantuan B40 anda telah ditetapkan. Berikut butirannya:\n\n'
-        f'• Tarikh & masa: {when}\n'
-        f'• Penemu duga: {reviewer}\n'
-        f'{phone_bm}'
-        f'{_join_line(meeting_url, "bm")}\n'
-        f'Ia mengambil masa kira-kira 30–45 minit, melalui panggilan video. Sila buka kamera. '
-        f'Jika ibu bapa atau penjaga anda ada, penemu duga kami berbesar hati bercakap dengan '
-        f'mereka juga — mereka boleh menyertai dari rumah.\n\n'
-        f'Perlu masa lain? Anda boleh menjadual semula atau membatalkan melalui halaman '
-        f'permohonan anda di HalaTuju, sehingga beberapa jam sebelum temu duga.\n\n'
-        f'Untuk keselamatan anda: kami tidak sekali-kali akan meminta wang, kata laluan bank, '
-        f'atau OTP/PIN.\n\n'
-        f'— Pasukan Program Bantuan B40'
+    bm_text = (
+        f'Salam {bm_name},\n\n'
+        f'Temu duga Program Bantuan B40 anda telah disahkan. Berikut butirannya:\n\n'
+        f'Tarikh & masa: {when}\n'
+        f'Penemu duga: {rev_bm}\n'
+        f'{join_bm}\n\n'
+        f'Tambah ke kalendar: {gcal}\n\n'
+        f'Temu duga ialah panggilan video dan mengambil masa kira-kira 30 minit. Sila sertai '
+        f'dengan kamera dibuka. Jika anda di bawah 18 tahun, sila pastikan ibu bapa atau penjaga '
+        f'bersama anda; tidak kira umur anda, mereka juga dialu-alukan untuk menyertai.\n\n'
+        f'Perlu masa lain? Anda boleh menjadual semula atau membatalkan melalui halaman permohonan '
+        f'anda di HalaTuju sehingga {cutoff} jam sebelum temu duga.\n\n'
+        f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian '
+        f'anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
+        f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
+        f'Kami menantikan untuk bercakap dengan anda.\n\n'
+        f'Salam hormat,\nPasukan Program Bantuan B40'
     )
-    return _send_bilingual(to_email, 'Your B40 Assistance Programme interview is booked', en, bm)
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    def section(greeting, lead, rows, join, btn_label, body, safety, closing, signoff):
+        detail_rows = ''.join(
+            f'<tr><td style="padding:2px 10px 2px 0;color:#6b7280;white-space:nowrap;">{k}</td>'
+            f'<td style="padding:2px 0;">{v}</td></tr>' for k, v in rows)
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 12px;">{lead}</p>'
+            f'<table style="margin:0 0 16px;border-collapse:collapse;font-size:15px;"><tbody>'
+            f'{detail_rows}<tr><td style="padding:2px 10px 2px 0;color:#6b7280;">{join[0]}</td>'
+            f'<td style="padding:2px 0;">{join[1]}</td></tr></tbody></table>'
+            f'<p style="margin:0 0 18px;">{_email_button(gcal, btn_label)}</p>'
+            f'<p style="margin:0 0 14px;">{body}</p>'
+            f'<p style="margin:0 0 16px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0 0 14px;">{closing}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    join_cell_en = (f'<a href="{meeting_url}">{meeting_url}</a>' if meeting_url
+                    else 'Your interviewer will share the link before the interview.')
+    join_cell_bm = (f'<a href="{meeting_url}">{meeting_url}</a>' if meeting_url
+                    else 'Penemu duga anda akan berkongsi pautan sebelum temu duga.')
+    en_html = section(
+        f'Hi {en_name},',
+        'Your B40 Assistance Programme interview is confirmed. Here are the details:',
+        [('Date &amp; time', when), ('Interviewer', rev_en)], ('Join here', join_cell_en),
+        'Add to calendar',
+        'The interview is a video call and takes about 30 minutes. Please join with your camera on. '
+        'If you are under 18, please have a parent or guardian with you; whatever your age, they’re '
+        'welcome to join too. Need a different time? You can reschedule or cancel from your '
+        f'application page in HalaTuju up to {cutoff} hours before the interview.',
+        'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
+        f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
+        f'please tell us at {SUPPORT_EMAIL}.',
+        'We look forward to speaking with you.',
+        'Warm regards,<br>The B40 Assistance Programme team')
+    bm_html = section(
+        f'Salam {bm_name},',
+        'Temu duga Program Bantuan B40 anda telah disahkan. Berikut butirannya:',
+        [('Tarikh &amp; masa', when), ('Penemu duga', rev_bm)], ('Sertai di sini', join_cell_bm),
+        'Tambah ke kalendar',
+        'Temu duga ialah panggilan video dan mengambil masa kira-kira 30 minit. Sila sertai dengan '
+        'kamera dibuka. Jika anda di bawah 18 tahun, sila pastikan ibu bapa atau penjaga bersama '
+        'anda; tidak kira umur anda, mereka juga dialu-alukan untuk menyertai. Perlu masa lain? Anda '
+        f'boleh menjadual semula atau membatalkan melalui halaman permohonan anda sehingga {cutoff} '
+        'jam sebelum temu duga.',
+        'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. '
+        f'Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika sesiapa '
+        f'berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
+        'Kami menantikan untuk bercakap dengan anda.',
+        'Salam hormat,<br>Pasukan Program Bantuan B40')
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
+    return _send_html(to_email, 'Your B40 Assistance Programme interview is booked',
+                      text_body, html_body, ics=ics)
 
 
 def send_interview_slots_proposed_email(to_email, *, student_name, english_only=False, reviewer_name=''):
