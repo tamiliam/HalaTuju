@@ -554,6 +554,12 @@ export interface InterviewSchedule {
   booked_slot_id: number | null
   slots: InterviewSlot[]
   reschedule_cutoff_hours: number
+  /** Reviewer-facing only: start times (ISO) this reviewer already holds for OTHER
+   *  students, so the propose grid can grey them out. Absent on the student payload. */
+  reviewer_busy?: string[]
+  /** The student said none of the proposed times work and asked for others. */
+  alternatives_requested?: boolean
+  alternatives_note?: string
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in
@@ -705,9 +711,12 @@ export async function getScholarshipApplication(id: number, options?: ApiOptions
 // ── Interview scheduling (reviewer proposes times) ────────────────────────────
 /** The assigned reviewer (or super) proposes interview times. `starts` are ISO
  *  strings. Returns the refreshed schedule (booking state + active slots). */
-export async function proposeInterviewSlots(id: number, starts: string[], options?: ApiOptions) {
+export async function proposeInterviewSlots(
+  id: number, starts: string[], options?: ApiOptions & { reschedule?: boolean }) {
+  const { reschedule, ...rest } = options || {}
   return adminMutate<InterviewSchedule>(
-    `/api/v1/admin/scholarship/applications/${id}/interview-slots/`, 'POST', { slots: starts }, options)
+    `/api/v1/admin/scholarship/applications/${id}/interview-slots/`, 'POST',
+    { slots: starts, ...(reschedule ? { reschedule: true } : {}) }, rest)
 }
 
 export async function getInterviewSlots(id: number, options?: ApiOptions) {

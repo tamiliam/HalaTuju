@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.utils import timezone
 
-from . import emails, meeting
+from . import emails, meeting, pool
 from .models import InterviewSlot
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,14 @@ _MYT = ZoneInfo('Asia/Kuala_Lumpur')
 SLOT_WINDOW_START_MIN = 8 * 60        # 08:00
 SLOT_WINDOW_END_MIN = 21 * 60 + 30    # 21:30 (latest start)
 SLOT_STEP_MIN = 30
+# Minimum scheduling notice (mirrored in halatuju-web/src/lib/interviewSlots.ts): the earliest
+# proposable slot is this far ahead, so the student has time to see + pick + prepare.
+SLOT_MIN_LEAD_HOURS = 24
+
+
+def meets_min_lead(dt, now) -> bool:
+    """True if a proposed start is at least SLOT_MIN_LEAD_HOURS ahead of ``now``."""
+    return dt >= now + timedelta(hours=SLOT_MIN_LEAD_HOURS)
 
 
 def slot_in_window(dt) -> bool:
@@ -83,12 +91,20 @@ def _cutoff_ok(start, now):
 
 # ── Reviewer side: propose / withdraw ─────────────────────────────────────────
 
-def propose_slots(application, *, reviewer, starts, duration_min=None, now=None):
+def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
+                  release_booking=False):
     """The assigned reviewer (or a super) proposes interview times.
 
     ``starts`` is a list of tz-aware datetimes. Existing *unbooked* active slots are
     withdrawn (a fresh proposal replaces the old menu); the booked slot, if any, is
     untouched. Returns the list of created InterviewSlot rows.
+
+    ``release_booking=True`` is the reviewer-RESCHEDULE path: when the interview is already
+    booked, the reviewer is MOVING it — so we release the held booking (drop the slot + the
+    Meet/calendar event, clear the booking fields) before offering the fresh menu, and the
+    student's "pick a time" email carries a moved-the-time preface. There is deliberately no
+    reviewer self-cancel; an emergency reschedules (keeps the candidate) and a true hand-off
+    goes through admin reassignment.
     """
     now = now or timezone.now()
     duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
@@ -103,8 +119,50 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None)
     if not future:
         raise SchedulingError('no_future_slots')
 
-    # Withdraw the previous unbooked menu (keep the booked slot, if any).
+    # Reviewer-wide conflict: never offer a time this reviewer already holds (proposed or
+    # booked) for ANOTHER applicant — keeps one reviewer from being double-booked. The UI
+    # greys these out; this is the server guard / race backstop.
+    held = set(
+        InterviewSlot.objects
+        .filter(reviewer=reviewer, is_active=True)
+        .exclude(application=application)
+        .values_list('start', flat=True))
+    if any(s in held for s in future):
+        raise SchedulingError('reviewer_conflict')
+
+    # Reviewer reschedule: release the held booking (slot + Meet event + fields) so the new
+    # menu fully replaces it and the student must re-pick.
+    rescheduling = bool(release_booking and application.interview_status == 'booked')
+    if rescheduling:
+        if application.interview_calendar_event_id:
+            meeting.cancel_event(application.interview_calendar_event_id)
+        if application.interview_slot_id:
+            (InterviewSlot.objects
+                .filter(id=application.interview_slot_id)
+                .update(is_active=False, updated_at=now))
+        application.interview_status = ''
+        application.interview_slot = None
+        application.interview_start = None
+        application.interview_meeting_url = ''
+        application.interview_calendar_event_id = ''
+        application.interview_meeting_provider = ''
+        application.interview_reminded_1d_at = None
+        application.interview_reminded_1h_at = None
+        application.save(update_fields=[
+            'interview_status', 'interview_slot', 'interview_start', 'interview_meeting_url',
+            'interview_calendar_event_id', 'interview_meeting_provider',
+            'interview_reminded_1d_at', 'interview_reminded_1h_at',
+        ])
+
     booked_id = application.interview_slot_id if application.interview_status == 'booked' else None
+    # The menu the student was last shown — to decide whether to re-notify.
+    prev_menu = set(
+        InterviewSlot.objects
+        .filter(application=application, is_active=True)
+        .exclude(id=booked_id)
+        .values_list('start', flat=True))
+
+    # Withdraw the previous unbooked menu (keep the booked slot, if any).
     (InterviewSlot.objects
         .filter(application=application, is_active=True)
         .exclude(id=booked_id)
@@ -115,13 +173,33 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None)
             application=application, reviewer=reviewer, start=s, duration_min=duration_min)
         for s in sorted(future)
     ]
-    # Tell the student their times are ready to pick — otherwise the in-app scheduler is
-    # invisible to them (they'd have to chance upon the booking panel). Best-effort.
-    student_email, student_name = _student_identity(application)
-    if student_email:
-        emails.send_interview_slots_proposed_email(
-            student_email, student_name=student_name,
-            reviewer_name=getattr(reviewer, 'name', ''))
+    # A fresh menu resets the application back to "awaiting a pick": clear any outstanding
+    # "these don't work" request, and lift a prior cancellation (otherwise the 'cancelled'
+    # state sticks and the student never sees the new times).
+    reset_fields = []
+    if application.interview_status == 'cancelled':
+        application.interview_status = ''
+        application.interview_cancelled_at = None
+        application.interview_slot = None
+        application.interview_start = None
+        reset_fields += ['interview_status', 'interview_cancelled_at',
+                         'interview_slot', 'interview_start']
+    if application.interview_alternatives_requested_at:
+        application.interview_alternatives_requested_at = None
+        application.interview_alternatives_note = ''
+        reset_fields += ['interview_alternatives_requested_at', 'interview_alternatives_note']
+    if reset_fields:
+        application.save(update_fields=reset_fields)
+    # Tell the student their times are ready to pick — but ONLY when the menu actually
+    # changed (re-proposing the same set must not re-spam them), or when we just released a
+    # booking to reschedule (they MUST re-pick, so always notify).
+    if set(future) != prev_menu or rescheduling:
+        student_email, student_name = _student_identity(application)
+        if student_email:
+            emails.send_interview_slots_proposed_email(
+                student_email, student_name=student_name,
+                english_only=emails.english_only_email(application),
+                rescheduled=rescheduling)
     return created
 
 
@@ -160,6 +238,18 @@ def book_slot(application, *, slot_id, now=None):
         raise SchedulingError('too_late')
 
     reviewer = slot.reviewer or application.assigned_to
+
+    # Race backstop: don't let two students land the same reviewer at the same time. (The
+    # propose grid already greys a reviewer's held times, but a concurrent book could slip
+    # through.) Self-reschedule is exempt via the exclude.
+    if reviewer is not None:
+        from .models import ScholarshipApplication
+        clash = (ScholarshipApplication.objects
+                 .filter(assigned_to=reviewer, interview_status='booked', interview_start=slot.start)
+                 .exclude(id=application.id).exists())
+        if clash:
+            raise SchedulingError('reviewer_conflict')
+
     student_email, student_name = _student_identity(application)
     reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
     reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''
@@ -205,11 +295,13 @@ def book_slot(application, *, slot_id, now=None):
     emails.send_interview_booked_email(
         student_email, student_name=student_name, reviewer_name=reviewer_name,
         start=slot.start, meeting_url=application.interview_meeting_url,
-        reviewer_phone=_reviewer_phone(reviewer) if reviewer else '')
+        duration_min=slot.duration_min, english_only=emails.english_only_email(application))
     if reviewer_email:
         emails.send_reviewer_interview_booked_email(
             reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
-            start=slot.start, meeting_url=application.interview_meeting_url)
+            start=slot.start, meeting_url=application.interview_meeting_url,
+            ref=pool.pool_ref(application.id), duration_min=slot.duration_min,
+            calendar_invite_sent=bool(application.interview_calendar_event_id))
     return application
 
 
@@ -227,22 +319,52 @@ def cancel(application, *, by='student', now=None):
     if application.interview_calendar_event_id:
         meeting.cancel_event(application.interview_calendar_event_id)
 
+    # The proposed menu is void once cancelled — withdraw every active slot so the cockpit
+    # shows a clean "propose fresh times" state and no stale slots are offered.
+    InterviewSlot.objects.filter(application=application, is_active=True).update(
+        is_active=False, updated_at=now)
     application.interview_status = 'cancelled'
     application.interview_cancelled_at = now
+    application.interview_slot = None
+    application.interview_start = None
     application.interview_meeting_url = ''
     application.interview_calendar_event_id = ''
     application.interview_meeting_provider = ''
     application.interview_reminded_1d_at = None
     application.interview_reminded_1h_at = None
     application.save(update_fields=[
-        'interview_status', 'interview_cancelled_at', 'interview_meeting_url',
-        'interview_calendar_event_id', 'interview_meeting_provider',
+        'interview_status', 'interview_cancelled_at', 'interview_slot', 'interview_start',
+        'interview_meeting_url', 'interview_calendar_event_id', 'interview_meeting_provider',
         'interview_reminded_1d_at', 'interview_reminded_1h_at',
     ])
 
-    emails.send_interview_cancelled_email(student_email, student_name=student_name)
+    emails.send_interview_cancelled_email(student_email, student_name=student_name,
+                                          english_only=emails.english_only_email(application))
     if reviewer is not None and getattr(reviewer, 'email', ''):
         emails.send_reviewer_interview_cancelled_email(
             reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
-            applicant_name=student_name)
+            applicant_name=student_name, ref=pool.pool_ref(application.id))
+    return application
+
+
+def request_alternatives(application, *, note='', now=None):
+    """The student says none of the proposed times work and asks for different ones. Records
+    the request + an optional note and notifies the ASSIGNED reviewer directly (the proposed
+    menu stays put until they propose a fresh one). Refused once an interview is booked
+    (the student should reschedule/cancel instead). Best-effort email. Returns the application."""
+    now = now or timezone.now()
+    if application.interview_status == 'booked':
+        raise SchedulingError('already_booked')
+    application.interview_alternatives_requested_at = now
+    application.interview_alternatives_note = (note or '').strip()[:1000]
+    application.save(update_fields=[
+        'interview_alternatives_requested_at', 'interview_alternatives_note'])
+
+    reviewer = application.assigned_to
+    _student_email, student_name = _student_identity(application)
+    if reviewer is not None and getattr(reviewer, 'email', ''):
+        emails.send_reviewer_alternatives_requested_email(
+            reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
+            applicant_name=student_name, note=application.interview_alternatives_note,
+            ref=pool.pool_ref(application.id))
     return application

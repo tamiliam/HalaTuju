@@ -517,6 +517,51 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-19)
 
+**▶ SHIPPED 2026-06-19 — Reviewer comms consistency + reschedule + verdict SLA (3-sprint roadmap, commits
+`a3c5d31`→`1d89393`; migration `scholarship/0064` additive migrate-first; retro
+`docs/retrospective-2026-06-19-reviewer-comms-and-verdict-sla.md`). Worktree `.worktrees/sched`.**
+- **Interview email set now fully HTML+bilingual:** the student **reminder** + **cancellation** emails joined their
+  siblings (reused `_html_email_shell`/`_email_button`; `english_only` gate; From `interview@`). `REVIEW_SLA_DAYS` = 10.
+- **Reviewer reschedule (move the time)** on the cockpit booked card: `propose_slots(..., release_booking=True)` releases
+  the booking (slot + Meet event + fields) → student re-picks via the "pick a time" email with a moved-the-time preface.
+  **No reviewer self-cancel** (a hand-off is an admin reassignment); propose endpoint takes a `reschedule` flag.
+- **Verdict-completion SLA (TD-131) — NOW LIVE.** `send_review_nudges` cron (job `review-nudges`) — verdict due
+  `assigned_at + REVIEW_SLA_DAYS` (10); nudge reviewer 2 days before + once overdue; escalate to all super-admins at
+  **day 14** (grace 4). Idempotent stamps (migration `0064`) reset on (re)assignment; recorded `verdict_decided_at`
+  cancels. Reviewer interview reminder also shows the verdict-due date. **Switched on 2026-06-19**:
+  `REVIEW_NUDGES_ENABLED=1` on the api (rev `halatuju-api-00471`) + Cloud Scheduler `halatuju-review-nudges` daily
+  9am MYT; end-to-end smoke test returned 200; first-run blast = 0 (no case due yet). Emails:
+  `send_reviewer_verdict_due_email`, `send_super_verdict_escalation_email`.
+- **Reviewer email tree is consistent** (Dear / one dashboard CTA / `{ref}` subject / "The B40 Assistance Team" / all
+  from `interview@`). Accept/decline-in-email idea was evaluated and **dropped** (unsafe one-click + redundant).
+- **▶ Status:** Interview scheduling is **fully LIVE** — `INTERVIEW_SCHEDULING_ENABLED=1`, `INTERVIEW_MEET_ENABLED=1`,
+  `REVIEW_NUDGES_ENABLED=1` (all on); reviewers briefed 2026-06-19; Guide scheduling step + screenshots done (TD-126);
+  SPF record added + verified 2026-06-19 (`v=spf1 include:_spf.google.com include:spf.brevo.com ~all`).
+  **Remaining (owner):** Brevo List-Help on transactional (TD-130). **Optional eng:** extend the `mailto:` unsubscribe
+  shim to decision/reminder emails; later tighten SPF `~all`→`-all` + DMARC `p=none`→`p=quarantine`.
+
+**▶ SHIPPED 2026-06-19 — Interview-scheduling arc: Calendly picker + bilingual HTML emails + request-alternatives loop +
+cancellation fix (12 commits `a68b442`→`7fcb82d`; migration `scholarship/0063` additive, migrate-first; retro
+`docs/retrospective-2026-06-19-interview-scheduling.md`). Worktree `.worktrees/sched`.**
+- **Reviewer propose UI = Calendly-style** month calendar + 12-hour time pills (`lib/interviewSlots.ts` mirrored in
+  `scheduling.py`): **08:00–21:30 MYT, 30-min, 24h minimum lead, exactly 3** required; existing proposals pre-load;
+  re-proposing the same set sends no email. **Reviewer conflict-blocking** across students (`reviewer_busy` admin-payload
+  only; server guards `reviewer_conflict`/`too_soon`/`invalid_slot_time`); self-reschedule kept. Locked "Proposed times"
+  view + **Propose alternative times**, dustbin icon, bigger arrows, state-aware subheader.
+- **All interview emails → HTML+text, bilingual EN+BM** (`english_only` gate = app-English + no Malay/Tamil call pref +
+  A/A+ SPM English), **From `interview@`**, anti-scam note. Booked email has **Add-to-calendar (.ics + Google URL)** +
+  linked "application page". Helpers: `_send_html`/`_send_bilingual`/`_send_plain`, `_interview_ics`/`_gcal_url`,
+  `emails.english_only_email`.
+- **In-app "Ask for other times"** loop (closes the email-reply dead-end): migration `0063`
+  (`interview_alternatives_requested_at`/`_note`), `scheduling.request_alternatives`,
+  `StudentInterviewRequestAlternativesView`, reviewer email, cockpit banner; cleared on next propose.
+- **Cancellation fix:** `cancel()` voids the menu + clears pointers; `propose_slots()` lifts a prior cancellation. Booked
+  panel: **"Cancel interview" + confirm step**; guardian copy aligned to emails. **Scoped harmless `List-Unsubscribe`**
+  (mailto:help@) on interview emails only.
+- **▶ Carry (owner / next):** TD-130 = Brevo **List-Help on transactional** (account-wide unsubscribe fix; then drop the
+  mailto shim); reminders + cancelled student emails not yet on the HTML/bilingual standard; the student booking side
+  could reuse the slot-chip UI. Verify the live #16 flow end-to-end.
+
 **▶ SHIPPED 2026-06-19 — PISMP Aliran → Bidang pathway picker (Sprint 2 of the PISMP work; commits `d86cf11` picker +
 `c321f7d` live-review; NO migration; retro `docs/retrospective-2026-06-19-pismp-aliran-picker.md`). Worktree off
 origin/main.**

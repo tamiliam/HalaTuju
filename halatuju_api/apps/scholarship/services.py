@@ -498,18 +498,30 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     )
     application.assigned_to = reviewer
     application.assigned_at = now if reviewer is not None else None
-    application.save(update_fields=['assigned_to', 'assigned_at'])
+    # Reset the verdict-SLA nudge stamps (TD-131) so the new reviewer's clock starts clean —
+    # otherwise a prior owner's stamps would suppress nudges for the new assignee.
+    application.review_nudged_soon_at = None
+    application.review_nudged_overdue_at = None
+    application.review_escalated_at = None
+    application.save(update_fields=[
+        'assigned_to', 'assigned_at',
+        'review_nudged_soon_at', 'review_nudged_overdue_at', 'review_escalated_at'])
 
     # Notify the reviewer they have a new applicant to review. Only on an actual
     # assignment (not an unassign); the no-op short-circuit above means an unchanged
     # assignee never reaches here, so we never re-send. Best-effort.
     if reviewer is not None and getattr(reviewer, 'email', ''):
+        from django.conf import settings as _settings
         from .emails import send_reviewer_assigned_email
-        applicant_name = getattr(application.profile, 'name', '') if application.profile else ''
+        from .pool import pool_ref
+        review_days = getattr(_settings, 'REVIEW_SLA_DAYS', 7)
+        review_by = ((application.assigned_at or now) + timedelta(days=review_days)).date()
         send_reviewer_assigned_email(
             to_email=reviewer.email,
             reviewer_name=getattr(reviewer, 'name', ''),
-            applicant_name=applicant_name,
+            ref=pool_ref(application.id),
+            programme=getattr(application.cohort, 'name', '') if application.cohort else '',
+            review_by=review_by.strftime('%d %b %Y'),
         )
 
     # F7: advance notice to the STUDENT — who will interview them + how, so they expect the
@@ -519,21 +531,15 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     if reviewer is not None:
         from django.conf import settings as _settings
         if getattr(_settings, 'STUDENT_ASSIGNMENT_EMAIL_ENABLED', False):
-            from .emails import send_student_assigned_reviewer_email
+            from .emails import english_only_email, send_student_assigned_reviewer_email
             profile = application.profile
             student_email = (application.notify_email
                              or getattr(profile, 'contact_email', '') or '')
-            try:
-                rp = reviewer.reviewer_profile
-            except Exception:
-                rp = None
-            phone = rp.phone if (rp and rp.share_phone_with_students) else ''
             send_student_assigned_reviewer_email(
                 student_email,
                 student_name=getattr(profile, 'name', '') if profile else '',
                 reviewer_name=getattr(reviewer, 'name', ''),
-                reviewer_email=getattr(reviewer, 'email', ''),
-                reviewer_phone=phone,
+                english_only=english_only_email(application),
             )
 
     # Check-2 → Reviewer handoff: auto-draft the sponsor profile so the reviewer lands on

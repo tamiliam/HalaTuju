@@ -1310,6 +1310,8 @@ export interface InterviewSchedule {
   booked_slot_id: number | null
   slots: InterviewSlot[]
   reschedule_cutoff_hours: number
+  alternatives_requested?: boolean
+  alternatives_note?: string
 }
 
 export async function getInterview(id: number, options?: ApiOptions): Promise<InterviewSchedule> {
@@ -1327,6 +1329,15 @@ export async function bookInterviewSlot(id: number, slotId: number, options?: Ap
 export async function cancelInterview(id: number, options?: ApiOptions): Promise<InterviewSchedule> {
   return apiRequest(`/api/v1/scholarship/applications/${id}/interview/cancel/`, {
     method: 'POST', body: JSON.stringify({}), ...options,
+  })
+}
+
+/** Tell us none of the proposed times work (notifies the assigned reviewer). */
+export async function requestInterviewAlternatives(
+  id: number, note: string, options?: ApiOptions,
+): Promise<InterviewSchedule> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/interview/request-alternatives/`, {
+    method: 'POST', body: JSON.stringify({ note }), ...options,
   })
 }
 

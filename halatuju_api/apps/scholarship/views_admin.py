@@ -156,6 +156,13 @@ class AdminApplicationListView(_AdminBase):
         if sort_f == 'name':
             qs = qs.order_by('-profile__name' if desc else 'profile__name')
             page = paginator.paginate_queryset(qs, request, view=self)
+        elif sort_f == 'source':
+            # The referring organisation (Source column) lives on the profile.
+            qs = qs.order_by('-profile__referral_source' if desc else 'profile__referral_source')
+            page = paginator.paginate_queryset(qs, request, view=self)
+        elif sort_f == 'status':
+            qs = qs.order_by('-status' if desc else 'status')
+            page = paginator.paginate_queryset(qs, request, view=self)
         elif sort_f == 'merit':
             from .serializers_admin import _application_merit_score
             rows = sorted(qs, key=lambda a: _application_merit_score(a) or 0, reverse=desc)
@@ -1116,7 +1123,7 @@ class AdminInterviewSlotsView(_AdminBase):
         app, err = self._scoped_application(request, pk)
         if err:
             return err
-        return Response(interview_schedule_payload(app))
+        return Response(interview_schedule_payload(app, include_reviewer_busy=True))
 
     def post(self, request, pk):
         if not scheduling.scheduling_enabled():
@@ -1128,16 +1135,25 @@ class AdminInterviewSlotsView(_AdminBase):
         if err:
             return err
         starts = _parse_slot_starts(request.data.get('slots'))
+        # Minimum scheduling notice — reject any slot sooner than the lead window (checked
+        # first so a too-soon time reads as 'too_soon', not 'invalid_slot_time').
+        from django.utils import timezone as _tz
+        if any(s and not scheduling.meets_min_lead(s, _tz.now()) for s in starts):
+            return Response({'error': 'too_soon', 'code': 'too_soon'},
+                            status=status.HTTP_400_BAD_REQUEST)
         # Enforce the interview-slot rule (MYT, 30-min, 08:00–21:30) at the input
         # boundary — the UI only offers valid chips, but reject anything else too.
         if any(s and not scheduling.slot_in_window(s) for s in starts):
             return Response({'error': 'invalid_slot_time', 'code': 'invalid_slot_time'},
                             status=status.HTTP_400_BAD_REQUEST)
+        # reschedule=True: the reviewer is MOVING an already-booked interview — release the
+        # held booking, then offer the fresh menu (student is asked to re-pick).
+        reschedule = bool(request.data.get('reschedule'))
         try:
-            scheduling.propose_slots(app, reviewer=admin, starts=starts)
+            scheduling.propose_slots(app, reviewer=admin, starts=starts, release_booking=reschedule)
         except scheduling.SchedulingError as e:
             return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(interview_schedule_payload(app))
+        return Response(interview_schedule_payload(app, include_reviewer_busy=True))
 
 
 class AdminInterviewSlotDetailView(_AdminBase):
@@ -1160,7 +1176,7 @@ class AdminInterviewSlotDetailView(_AdminBase):
             scheduling.withdraw_slot(slot)
         except scheduling.SchedulingError as e:
             return Response({'error': str(e), 'code': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(interview_schedule_payload(app))
+        return Response(interview_schedule_payload(app, include_reviewer_busy=True))
 
 
 class ReviewerProfileView(_AdminBase):

@@ -67,9 +67,15 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]
         self.assertEqual(msg.to, ['priya@example.com'])
-        self.assertIn('ready to pick', msg.subject)
-        self.assertIn('/scholarship/application', msg.body)
-        self.assertIn('Rohini', msg.body)   # the reviewer's name
+        self.assertIn('Pick a time slot', msg.subject)
+        self.assertIn('/scholarship/application', msg.body)            # link in the text fallback
+        self.assertEqual(msg.reply_to, ['interview@halatuju.xyz'])     # replies route to interview@
+        # HTML primary + plain-text fallback.
+        self.assertEqual(len(msg.alternatives), 1)
+        html, mime = msg.alternatives[0]
+        self.assertEqual(mime, 'text/html')
+        self.assertIn('Choose your interview time', html)             # the button label
+        self.assertIn('/scholarship/application"', html)              # button href
 
     def test_propose_rejects_unassigned_reviewer(self):
         with self.assertRaises(scheduling.SchedulingError) as cm:
@@ -104,6 +110,119 @@ class SchedulingServiceTests(TestCase):
         # outside the 08:00–21:30 window
         self.assertFalse(scheduling.slot_in_window(at(7, 30)))
         self.assertFalse(scheduling.slot_in_window(at(22, 0)))
+
+    def _other_app(self, uid='stud2'):
+        p = StudentProfile.objects.create(
+            supabase_user_id=uid, nric='800101-14-5678', name='Bala Jr')
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='interviewing',
+            notify_email=f'{uid}@example.com', assigned_to=self.reviewer)
+
+    # ── email-skip (re-propose the same menu) ──────────────────────────────────
+    def test_propose_skips_email_when_menu_unchanged(self):
+        t = [self._future(days=3), self._future(days=4), self._future(days=5)]
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=t)
+        mail.outbox.clear()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=t)  # same 3
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_propose_emails_when_menu_changes(self):
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        mail.outbox.clear()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=6)])
+        self.assertEqual(len(mail.outbox), 1)
+
+    # ── reviewer-wide conflict ─────────────────────────────────────────────────
+    def test_propose_rejects_reviewer_conflict_across_students(self):
+        other = self._other_app()
+        t = self._future(days=3)
+        scheduling.propose_slots(other, reviewer=self.reviewer, starts=[t])
+        with self.assertRaises(scheduling.SchedulingError) as cm:
+            scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[t])
+        self.assertEqual(str(cm.exception), 'reviewer_conflict')
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_book_rejects_reviewer_conflict(self, _mock):
+        other = self._other_app()
+        t = self._future(days=3)
+        s1 = InterviewSlot.objects.create(application=self.app, reviewer=self.reviewer, start=t)
+        s2 = InterviewSlot.objects.create(application=other, reviewer=self.reviewer, start=t)
+        scheduling.book_slot(self.app, slot_id=s1.id)  # books t for app1
+        with self.assertRaises(scheduling.SchedulingError) as cm:
+            scheduling.book_slot(other, slot_id=s2.id)
+        self.assertEqual(str(cm.exception), 'reviewer_conflict')
+
+    def test_payload_reviewer_busy_admin_only(self):
+        from apps.scholarship.serializers_admin import interview_schedule_payload
+        other = self._other_app()
+        InterviewSlot.objects.create(
+            application=other, reviewer=self.reviewer, start=self._future(days=3))
+        admin_p = interview_schedule_payload(self.app, include_reviewer_busy=True)
+        self.assertEqual(len(admin_p['reviewer_busy']), 1)        # the other student's slot
+        student_p = interview_schedule_payload(self.app)
+        self.assertNotIn('reviewer_busy', student_p)              # never leaked to students
+
+    # ── request alternatives ("none of these work") ────────────────────────────
+    def test_request_alternatives_records_and_notifies_reviewer(self):
+        mail.outbox.clear()
+        scheduling.request_alternatives(self.app, note='only back after 22 June')
+        self.app.refresh_from_db()
+        self.assertIsNotNone(self.app.interview_alternatives_requested_at)
+        self.assertEqual(self.app.interview_alternatives_note, 'only back after 22 June')
+        self.assertEqual(len(mail.outbox), 1)                      # the assigned reviewer
+        self.assertEqual(mail.outbox[0].to, ['rohini@example.com'])
+        self.assertIn('different interview times', mail.outbox[0].subject)
+        self.assertIn('only back after 22 June', mail.outbox[0].body)
+
+    def test_request_alternatives_rejected_once_booked(self):
+        self.app.interview_status = 'booked'
+        self.app.save(update_fields=['interview_status'])
+        with self.assertRaises(scheduling.SchedulingError) as cm:
+            scheduling.request_alternatives(self.app)
+        self.assertEqual(str(cm.exception), 'already_booked')
+
+    def test_proposing_clears_the_alternatives_request(self):
+        scheduling.request_alternatives(self.app, note='x')
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=4)])
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.interview_alternatives_requested_at)
+        self.assertEqual(self.app.interview_alternatives_note, '')
+
+    def test_payload_surfaces_alternatives_request(self):
+        from apps.scholarship.serializers_admin import interview_schedule_payload
+        scheduling.request_alternatives(self.app, note='after exams')
+        p = interview_schedule_payload(self.app)
+        self.assertTrue(p['alternatives_requested'])
+        self.assertEqual(p['alternatives_note'], 'after exams')
+
+    # ── email language gate (English-only ⇔ chose English AND A/A+ in English) ──
+    def test_english_only_email_rule(self):
+        from apps.scholarship.emails import english_only_email
+        def mk(locale, call, eng):
+            p = StudentProfile.objects.create(
+                supabase_user_id=f'eo-{locale}-{call}-{eng}', nric='030101-14-1234',
+                name='X', grades=({'eng': eng} if eng else {}), preferred_call_language=call)
+            return ScholarshipApplication.objects.create(
+                cohort=self.cohort, profile=p, status='interviewing', locale=locale)
+        self.assertTrue(english_only_email(mk('en', 'en', 'A+')))
+        self.assertTrue(english_only_email(mk('en', '', 'A')))
+        self.assertFalse(english_only_email(mk('en', 'en', 'B')))   # English grade too low
+        self.assertFalse(english_only_email(mk('ms', 'en', 'A+')))  # used the app in Malay
+        self.assertFalse(english_only_email(mk('en', 'ms', 'A+')))  # wants Malay calls
+        self.assertFalse(english_only_email(mk('en', 'ta', 'A+')))  # wants Tamil calls
+
+    def test_propose_email_drops_bm_for_english_only_student(self):
+        p = StudentProfile.objects.create(
+            supabase_user_id='eo-prop', nric='030101-14-9999', name='Anya Rao',
+            grades={'eng': 'A+'}, preferred_call_language='en')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='interviewing', notify_email='anya@example.com',
+            assigned_to=self.reviewer, locale='en')
+        mail.outbox.clear()
+        scheduling.propose_slots(app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        body = mail.outbox[-1].body
+        self.assertIn('Hi Anya,', body)
+        self.assertNotIn('Salam', body)   # BM mirror dropped for a confident English reader
 
     def test_reproposing_withdraws_old_unbooked_slots(self):
         scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
@@ -210,6 +329,67 @@ class SchedulingServiceTests(TestCase):
             scheduling.cancel(self.app, by='student')
         self.assertEqual(str(cm.exception), 'not_booked')
 
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_cancel_voids_the_menu(self, _mock):
+        slots = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                         starts=[self._future(days=3), self._future(days=4)])
+        scheduling.book_slot(self.app, slot_id=slots[0].id)
+        scheduling.cancel(self.app, by='student')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, 'cancelled')
+        self.assertIsNone(self.app.interview_slot_id)         # booking pointers cleared
+        self.assertIsNone(self.app.interview_start)
+        self.assertEqual(                                     # the whole menu withdrawn
+            InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 0)
+
+    # ── reviewer reschedule (release the booking + re-offer) ───────────────────
+    @patch('apps.scholarship.meeting.cancel_event', return_value=True)
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_reviewer_reschedule_releases_booking_and_reoffers(self, _create, _cancel):
+        slots = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                         starts=[self._future(days=5), self._future(days=6)])
+        scheduling.book_slot(self.app, slot_id=slots[0].id)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, 'booked')
+        mail.outbox.clear()
+        # Reviewer MOVES it: release the booking + offer a fresh menu.
+        scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                 starts=[self._future(days=8)], release_booking=True)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, '')          # back to awaiting-a-pick
+        self.assertIsNone(self.app.interview_slot_id)            # old booking released
+        self.assertIsNone(self.app.interview_start)
+        self.assertEqual(self.app.interview_meeting_url, '')
+        self.assertEqual(                                        # only the new slot is live
+            InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 1)
+        # Student is told to re-pick, with the moved-the-time copy.
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[-1]
+        self.assertIn('time has changed', msg.subject)
+        self.assertIn('had to move', msg.body)
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_reschedule_noop_when_not_booked_just_proposes(self, _create):
+        # release_booking on a not-yet-booked interview is a normal proposal (no error).
+        scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                 starts=[self._future(days=4)], release_booking=True)
+        self.app.refresh_from_db()
+        self.assertEqual(
+            InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 1)
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_proposing_after_cancel_clears_cancelled_state(self, _mock):
+        slots = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                         starts=[self._future(days=3)])
+        scheduling.book_slot(self.app, slot_id=slots[0].id)
+        scheduling.cancel(self.app, by='student')
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=5)])
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, '')       # back to awaiting-a-pick
+        self.assertIsNone(self.app.interview_cancelled_at)
+        self.assertEqual(                                     # the fresh menu is live
+            InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 1)
+
 
 @override_settings(INTERVIEW_SCHEDULING_ENABLED=True)
 class ReminderCronTests(TestCase):
@@ -262,20 +442,44 @@ class ReminderCronTests(TestCase):
 
 
 class BookingEmailTests(TestCase):
-    def test_booked_email_bilingual_interviewer_term(self):
+    def test_booked_email_html_ics_and_interviewer_name(self):
         start = timezone.now() + timedelta(days=2)
         from apps.scholarship.emails import send_interview_booked_email
         self.assertTrue(send_interview_booked_email(
+            's@example.com', student_name='Priya Devi', reviewer_name='Rohini',
+            start=start, meeting_url='https://meet.google.com/abc', duration_min=45))
+        msg = mail.outbox[-1]
+        self.assertEqual(msg.subject, 'Your B40 Assistance Programme interview is booked')
+        self.assertEqual(msg.reply_to, ['interview@halatuju.xyz'])
+        self.assertEqual(msg.from_email, 'interview@halatuju.xyz')   # #2: sends FROM interview@
+        # Harmless List-Unsubscribe (mailto to support, no one-click) so a mistaken click
+        # can't trigger the ESP's auto-suppression of service mail.
+        self.assertIn('mailto:help@halatuju.xyz', msg.extra_headers.get('List-Unsubscribe', ''))
+        self.assertNotIn('List-Unsubscribe-Post', msg.extra_headers)
+        body = msg.body
+        self.assertIn('Hi Priya,', body)                    # first name
+        self.assertIn('Interviewer: Rohini', body)          # interviewer NAME (no phone)
+        self.assertIn('Penemu duga: Rohini', body)          # BM mirror
+        self.assertIn('https://meet.google.com/abc', body)
+        self.assertNotIn('+60', body)                       # phone no longer included
+        # HTML alternative + .ics calendar attachment
+        html, mime = msg.alternatives[0]
+        self.assertEqual(mime, 'text/html')
+        self.assertIn('Add to calendar', html)
+        self.assertIn('calendar.google.com/calendar/render', html)
+        self.assertIn('/scholarship/application"', html)      # "application page" is linked
+        ics = [a for a in msg.attachments if a[0] == 'interview.ics']
+        self.assertEqual(len(ics), 1)
+        self.assertIn('BEGIN:VEVENT', ics[0][1])
+
+    def test_booked_email_english_only_drops_bm(self):
+        from apps.scholarship.emails import send_interview_booked_email
+        send_interview_booked_email(
             's@example.com', student_name='Priya', reviewer_name='Rohini',
-            start=start, meeting_url='https://meet.google.com/abc', reviewer_phone='12-200 0365'))
+            start=timezone.now() + timedelta(days=2), meeting_url='', english_only=True)
         body = mail.outbox[-1].body
         self.assertIn('B40 Assistance Programme', body)
-        self.assertIn('Program Bantuan B40', body)         # BM block present
-        self.assertIn('Interviewer: Rohini', body)         # student-facing term
-        self.assertIn('Penemu duga: Rohini', body)         # BM term
-        self.assertIn('https://meet.google.com/abc', body)
-        self.assertIn('+60 12-200 0365', body)
-        self.assertNotIn('Reviewer: Rohini', body)
+        self.assertNotIn('Program Bantuan B40', body)
 
     def test_reminder_email_when_labels(self):
         from apps.scholarship.emails import send_interview_reminder_email
@@ -284,6 +488,34 @@ class BookingEmailTests(TestCase):
         self.assertIn('tomorrow', mail.outbox[-1].body)
         send_interview_reminder_email('s@example.com', student_name='Priya', start=start, when='1hour')
         self.assertIn('about an hour', mail.outbox[-1].body)
+
+    def test_reminder_email_is_html_bilingual(self):
+        from apps.scholarship.emails import send_interview_reminder_email
+        start = timezone.now() + timedelta(days=1)
+        send_interview_reminder_email('s@example.com', student_name='Priya', start=start, when='1day')
+        msg = mail.outbox[-1]
+        self.assertEqual(len(msg.alternatives), 1)
+        html, mime = msg.alternatives[0]
+        self.assertEqual(mime, 'text/html')
+        self.assertIn('<', html)
+        self.assertIn('Peringatan', msg.body)  # BM mirror present in the text part
+
+    def test_reminder_email_english_only_drops_bm(self):
+        from apps.scholarship.emails import send_interview_reminder_email
+        start = timezone.now() + timedelta(days=1)
+        send_interview_reminder_email('s@example.com', student_name='Priya', start=start,
+                                      when='1day', english_only=True)
+        self.assertNotIn('Peringatan', mail.outbox[-1].body)
+
+    def test_cancelled_email_is_html_bilingual(self):
+        from apps.scholarship.emails import send_interview_cancelled_email
+        send_interview_cancelled_email('s@example.com', student_name='Priya Devi')
+        msg = mail.outbox[-1]
+        self.assertEqual(len(msg.alternatives), 1)
+        self.assertEqual(msg.alternatives[0][1], 'text/html')
+        self.assertIn('Hi Priya,', msg.body)            # first-name greeting
+        self.assertIn('still active', msg.body)          # application-still-active reassurance
+        self.assertIn('Permohonan anda masih aktif', msg.body)  # BM mirror
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
@@ -338,6 +570,16 @@ class SchedulingEndpointTests(TestCase):
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'invalid_slot_time')
 
+    def test_propose_rejects_too_soon_time(self):
+        # A valid 10:00 MYT slot but only ~3 hours out — inside the 24h lead → 400.
+        from zoneinfo import ZoneInfo
+        self._auth('rev-uid')
+        soon = ((timezone.now() + timedelta(hours=3)).astimezone(ZoneInfo('Asia/Kuala_Lumpur'))
+                .replace(minute=0, second=0, microsecond=0).isoformat())
+        r = self.client.post(self._propose_url(), {'slots': [soon]}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'too_soon')
+
     def test_propose_rejects_off_boundary_time(self):
         # 10:15 MYT — not on a 30-minute boundary → 400.
         from zoneinfo import ZoneInfo
@@ -353,11 +595,42 @@ class SchedulingEndpointTests(TestCase):
         r = self.client.post(self._propose_url(), {'slots': [self._iso(days=3)]}, format='json')
         self.assertEqual(r.status_code, 403)
 
+    @patch('apps.scholarship.meeting.cancel_event', return_value=True)
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_reviewer_reschedule_via_endpoint(self, _create, _cancel):
+        # Reviewer proposes + the student books, then the reviewer MOVES it with reschedule=true.
+        self._auth('rev-uid')
+        r = self.client.post(self._propose_url(), {'slots': [self._iso(days=4)]}, format='json')
+        slot_id = r.json()['slots'][0]['id']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("stud")}')
+        self.client.post(
+            f'/api/v1/scholarship/applications/{self.app.id}/interview/book/',
+            {'slot_id': slot_id}, format='json')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, 'booked')
+        # Reviewer moves the time.
+        self._auth('rev-uid')
+        r = self.client.post(self._propose_url(),
+                             {'slots': [self._iso(days=6)], 'reschedule': True}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, '')        # booking released
+        self.assertIsNone(self.app.interview_slot_id)
+
     @override_settings(INTERVIEW_SCHEDULING_ENABLED=False)
     def test_propose_404_when_flag_off(self):
         self._auth('rev-uid')
         r = self.client.post(self._propose_url(), {'slots': [self._iso(days=3)]}, format='json')
         self.assertEqual(r.status_code, 404)
+
+    def test_student_requests_alternatives_endpoint(self):
+        self._auth('stud')
+        r = self.client.post(
+            f'/api/v1/scholarship/applications/{self.app.id}/interview/request-alternatives/',
+            {'note': 'none of these work for me'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()['alternatives_requested'])
+        self.assertEqual(r.json()['alternatives_note'], 'none of these work for me')
 
     @patch('apps.scholarship.meeting.create_event', return_value=None)
     def test_student_books_and_cancels_own(self, _mock):

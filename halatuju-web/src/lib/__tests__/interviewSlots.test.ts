@@ -1,5 +1,6 @@
 import {
-  allSlotTimes, cellDateStr, daySlots, isoToSlotValue, monthCells, slotLabel12h, todayStr,
+  allSlotTimes, cellDateStr, daySlots, earliestDateStr, isoToSlotValue, monthCells, slotLabel12h,
+  todayStr,
 } from '../interviewSlots'
 
 describe('interview slot rule', () => {
@@ -15,19 +16,24 @@ describe('interview slot rule', () => {
     expect(times.length).toBe(28)
   })
 
-  test('daySlots flags past times for today and builds backend-shaped values', () => {
-    const now = new Date('2026-06-22T10:00:00')
-    const slots = daySlots('2026-06-22', now)
-    const at = (label: string) => slots.find((s) => s.label === label)!
-    expect(at('08:00').value).toBe('2026-06-22T08:00')
-    expect(at('08:00').past).toBe(true)    // before 10:00
-    expect(at('10:00').past).toBe(true)    // == now counts as past
-    expect(at('10:30').past).toBe(false)   // after now
+  test('daySlots flags slots before the 24h lead and builds backend-shaped values', () => {
+    const now = new Date('2026-06-22T10:00:00')        // earliest = 2026-06-23T10:00
+    expect(daySlots('2026-06-22', now).every((s) => s.tooEarly)).toBe(true)  // whole day within lead
+    const next = daySlots('2026-06-23', now)
+    const at = (label: string) => next.find((s) => s.label === label)!
+    expect(at('08:00').value).toBe('2026-06-23T08:00')
+    expect(at('09:00').tooEarly).toBe(true)    // before 10:00
+    expect(at('10:00').tooEarly).toBe(false)   // == earliest, allowed
+    expect(at('10:30').tooEarly).toBe(false)
   })
 
-  test('a future date has no past slots', () => {
+  test('a far-future date has no too-early slots', () => {
     const now = new Date('2026-06-22T10:00:00')
-    expect(daySlots('2026-06-23', now).every((s) => !s.past)).toBe(true)
+    expect(daySlots('2026-06-25', now).every((s) => !s.tooEarly)).toBe(true)
+  })
+
+  test('earliestDateStr is 24h ahead', () => {
+    expect(earliestDateStr(new Date('2026-06-22T10:00:00'))).toBe('2026-06-23')
   })
 
   test('isoToSlotValue converts a UTC timestamp to the MYT slot key', () => {

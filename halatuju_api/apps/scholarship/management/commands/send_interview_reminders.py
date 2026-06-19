@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from apps.scholarship import emails
 from apps.scholarship.models import ScholarshipApplication
+from apps.scholarship.pool import pool_ref
 from apps.scholarship.scheduling import _student_identity
 
 
@@ -35,16 +36,24 @@ class Command(BaseCommand):
             reviewer = app.assigned_to
             reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
             reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''
+            # Heads-up: the verdict is a different clock from the interview (TD-131). Surface the
+            # due date in the reviewer reminder iff a verdict isn't recorded yet.
+            verdict_due = ''
+            if app.assigned_at and app.verdict_decided_at is None:
+                _sla = getattr(settings, 'REVIEW_SLA_DAYS', 10)
+                verdict_due = (app.assigned_at + timedelta(days=_sla)).date().strftime('%d %b %Y')
 
             # 1-day reminder: inside 24h of the start, once.
             if app.interview_reminded_1d_at is None and start <= now + timedelta(hours=24):
                 emails.send_interview_reminder_email(
                     student_email, student_name=student_name, start=start,
-                    meeting_url=app.interview_meeting_url, when='1day')
+                    meeting_url=app.interview_meeting_url, when='1day',
+                    english_only=emails.english_only_email(app))
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
-                        start=start, meeting_url=app.interview_meeting_url, when='1day')
+                        start=start, meeting_url=app.interview_meeting_url, when='1day',
+                        ref=pool_ref(app.id), verdict_due=verdict_due)
                 app.interview_reminded_1d_at = now
                 app.save(update_fields=['interview_reminded_1d_at'])
                 sent_1d.append(app.id)
@@ -53,11 +62,13 @@ class Command(BaseCommand):
             if app.interview_reminded_1h_at is None and start <= now + timedelta(hours=1):
                 emails.send_interview_reminder_email(
                     student_email, student_name=student_name, start=start,
-                    meeting_url=app.interview_meeting_url, when='1hour')
+                    meeting_url=app.interview_meeting_url, when='1hour',
+                    english_only=emails.english_only_email(app))
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
-                        start=start, meeting_url=app.interview_meeting_url, when='1hour')
+                        start=start, meeting_url=app.interview_meeting_url, when='1hour',
+                        ref=pool_ref(app.id), verdict_due=verdict_due)
                 app.interview_reminded_1h_at = now
                 app.save(update_fields=['interview_reminded_1h_at'])
                 sent_1h.append(app.id)

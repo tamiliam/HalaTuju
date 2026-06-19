@@ -9,6 +9,15 @@
 // size, stacked above its text.
 const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; alt?: string; float?: boolean }[] = [
   {
+    title: 'Before you start: set up your profile',
+    body: (
+      <>Open your <strong>Profile</strong> and set your <strong>language fluency</strong> (English, Bahasa Melayu,
+      Tamil) — we use it to assign you students you can speak with comfortably. While you&rsquo;re there, decide
+      whether to <strong>share your phone number</strong> with your students (on by default, so they know to expect
+      your call; untick it to opt out). It takes a minute and only needs doing once.</>
+    ),
+  },
+  {
     n: 1,
     title: 'Your applicants',
     body: (
@@ -35,10 +44,37 @@ const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; a
       <>Your review comes down to <strong>four facts</strong>: <strong>Identity</strong>,
       <strong> Academic record</strong>, <strong>Pathway</strong> (their study plan or offer), and
       <strong> Income (B40 need)</strong>. The &ldquo;Verification verdict&rdquo; shows what the system is
-      confident about and what still needs your eye.</>
+      confident about and what still needs your eye. Each tile is colour-coded:
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li><strong className="text-green-700">Green — Certain.</strong> The documents back it up.</li>
+          <li><strong className="text-blue-700">Blue — Probable.</strong> Likely fine, but worth a glance.</li>
+          <li><strong className="text-amber-700">Amber — Unsure.</strong> Needs your judgement.</li>
+          <li><strong className="text-red-700">Red — Can&rsquo;t verify.</strong> The evidence is missing or
+          unreadable — act on it (see the next step).</li>
+        </ul></>
     ),
     img: '/reviewer-guide/step3-checks.png',
     alt: 'The Verification verdict showing the four checks',
+  },
+  {
+    title: 'When a check isn’t green',
+    body: (
+      <>Green tiles you can move past quickly — your real work is the <strong>amber</strong> and <strong>red</strong>
+      ones. You have three tools, in order of effort:
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li><strong>Read the document yourself</strong> (next step) — the system&rsquo;s reading is a starting
+          point, not the last word.</li>
+          <li><strong>Raise a query or request a document</strong> if something is missing or doesn&rsquo;t add
+          up — the student replies by email.</li>
+          <li><strong>Ask in the interview</strong> — best for anything that needs a conversation.</li>
+        </ul>
+        <span className="mt-2 block">A few common ones: a <strong>red Pathway</strong> usually means no offer
+        letter yet — request it. An <strong>amber Income</strong> often means the STR proof isn&rsquo;t clearly
+        approved (a SALINAN application-record is <em>not</em> proof) — ask for the MySTR &ldquo;Lulus&rdquo;
+        status, or accept the salary route. An <strong>amber Academic</strong> means re-read the results slip
+        against the grades. <strong>Don&rsquo;t pass weak evidence through</strong> — it&rsquo;s fairer to ask for
+        a clean upload.</span></>
+    ),
   },
   {
     n: 4,
@@ -76,12 +112,32 @@ const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; a
   {
     title: 'Scheduling the interview',
     body: (
-      <>On the applicant&rsquo;s page, use <strong>Interview scheduling</strong> to <strong>propose two or three
+      <>On the applicant&rsquo;s page, use <strong>Interview scheduling</strong> to <strong>propose three
       times</strong> that suit you. The student picks one from their side, and HalaTuju automatically creates a
       <strong> Google Meet</strong> link and sends both of you a confirmation, plus reminders the day before and
       an hour before. You&rsquo;ll see the booked time and the Meet link once they&rsquo;ve chosen. If the student
       reschedules or cancels, you&rsquo;ll see the change — just propose fresh times if needed. It&rsquo;s a short
-      video call (about 30&ndash;45 minutes); parents are welcome to join from home.</>
+      video call (about 30&ndash;45 minutes); parents are welcome to join from home.
+        <div className="mt-4 space-y-4">
+          <figure className="m-0">
+            <img src="/reviewer-guide/scheduling-1-propose.png" alt="Choosing interview times to propose on the calendar"
+              className="block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm" loading="lazy" />
+            <figcaption className="mt-1 text-xs text-gray-500"><strong>1. Propose</strong> — pick a day, tick
+            three times that suit you, then <em>Propose times</em>.</figcaption>
+          </figure>
+          <figure className="m-0">
+            <img src="/reviewer-guide/scheduling-2-proposed.png" alt="The proposed times, waiting for the student to pick one"
+              className="block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm" loading="lazy" />
+            <figcaption className="mt-1 text-xs text-gray-500"><strong>2. Waiting</strong> — your times sit here until
+            the student picks one. Use <em>Propose alternative times</em> if you need to change them.</figcaption>
+          </figure>
+          <figure className="m-0">
+            <img src="/reviewer-guide/scheduling-3-booked.png" alt="The booked interview time with a Join the video call button"
+              className="block h-auto max-w-full rounded-lg border border-gray-200 shadow-sm" loading="lazy" />
+            <figcaption className="mt-1 text-xs text-gray-500"><strong>3. Booked</strong> — once they choose, you see
+            the time and a <em>Join the video call</em> button. <em>Reschedule</em> moves it to a new time.</figcaption>
+          </figure>
+        </div></>
     ),
   },
   {
@@ -110,8 +166,13 @@ const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; a
           <li>select <strong>Approve</strong> or <strong>Decline</strong>; and finally</li>
           <li>click <strong>Save verdict &amp; generate final profile</strong>.</li>
         </ul>
-        <span className="mt-2 block">That records your decision and produces the final profile a sponsor will
-        read.</span></>
+        <span className="mt-2 block"><strong>Pass/Fail is not your decision.</strong> It only says whether the AI
+        <em> read each fact correctly</em> — it&rsquo;s separate from Approve/Decline. You can Pass all four facts
+        and still <strong>Decline</strong> (for example, the income is verified but sits above the B40 line).</span>
+        <span className="mt-2 block rounded-lg border border-amber-200 bg-amber-50 p-3"><strong>Save is a one-way
+        step.</strong> It records the decision, emails the student, and sends the final profile to sponsors — and a
+        reviewer can&rsquo;t undo it afterwards (only a super-admin can reopen a case). Check the facts before you
+        save.</span></>
     ),
     img: '/reviewer-guide/step8-decision.png',
     alt: 'The Decision card with the four facts, amount slider and buttons',

@@ -389,6 +389,17 @@ class ScholarshipApplication(models.Model):
         null=True, blank=True,
         help_text="F7: when the current reviewer was assigned (null = unassigned)",
     )
+    # ── Review-completion SLA nudges (TD-131) ──────────────────────────────────
+    # Verdict-due = assigned_at + REVIEW_SLA_DAYS. The send_review_nudges cron fires each
+    # of these at most once (idempotency stamps, like interview_reminded_*); they are reset
+    # whenever the application is (re)assigned so the new reviewer's clock starts clean. A
+    # recorded verdict (verdict_decided_at) cancels all of them.
+    review_nudged_soon_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the 'verdict due soon' reviewer nudge was sent")
+    review_nudged_overdue_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the 'verdict overdue' reviewer nudge was sent")
+    review_escalated_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the overdue verdict was escalated to super-admins")
 
     # ── Interview scheduling (in-app booking + Google Meet) ────────────────────
     # The assigned reviewer proposes a few InterviewSlot options; the student books
@@ -416,6 +427,10 @@ class ScholarshipApplication(models.Model):
         help_text="Google Calendar event id, so the booking can be updated/cancelled.")
     interview_booked_at = models.DateTimeField(null=True, blank=True)
     interview_cancelled_at = models.DateTimeField(null=True, blank=True)
+    # Student asked for different times (none of the proposed slots work). Set when they
+    # request alternatives in-app; cleared when the reviewer proposes a fresh menu.
+    interview_alternatives_requested_at = models.DateTimeField(null=True, blank=True)
+    interview_alternatives_note = models.TextField(blank=True, default='')
     # Idempotency stamps for the confirmation + the reminder cron (reset on reschedule).
     interview_confirmation_sent_at = models.DateTimeField(null=True, blank=True)
     interview_reminded_1d_at = models.DateTimeField(null=True, blank=True)

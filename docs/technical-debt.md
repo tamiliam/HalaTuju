@@ -859,8 +859,29 @@
   applicant trivially has BT ≥ C — so it never changes an outcome, but it's a minor deviation from the PDF surfaced
   while investigating the picker. **To resolve:** drop BT from the C-group (or confirm it's intentional) at the next
   PISMP courses refresh, alongside TD-127. (Logged 2026-06-19.)
-- TD-130: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
+- TD-130: **Unsubscribe risk on transactional emails (definitive fix is Brevo-side).** Brevo auto-injects a
+  `List-Unsubscribe` header on ALL mail it relays, including transactional — so Gmail shows an "Unsubscribe" button, and a
+  mistaken click may add the contact to Brevo's suppression list and silently stop future service mail. We shipped a
+  code-side shim on **interview** emails (our own harmless `mailto:help@` `List-Unsubscribe`, no one-click POST), but the
+  **decision + application-completion reminder emails still carry Brevo's default unsubscribe**, and Brevo may still inject
+  its own header alongside ours. **To resolve:** ask Brevo support to enable **List-Help instead of List-Unsubscribe on
+  transactional** (account-wide, certain fix); then drop the mailto shim. Owner action (free-tier support latency unknown).
+  Interim option: extend the same `mailto:` shim to the decision/reminder send paths. (Logged 2026-06-19.)
+- TD-131 **✅ RESOLVED (2026-06-19):** built the verdict-completion SLA enforcement — `send_review_nudges` cron
+  (dark behind `REVIEW_NUDGES_ENABLED`) nudges the assigned reviewer 2 days before + once overdue, escalates to all
+  super-admins 4 days after the due date (`assigned_at + REVIEW_SLA_DAYS`), idempotent via stamps reset on
+  (re)assignment, cancelled by a recorded `verdict_decided_at`; the verdict-due date is also surfaced in the reviewer
+  interview reminder. Migration `0064` (migrate-first). The original debt:
+- TD-131 (original): **No verdict-completion clock or overdue-verdict nudge for reviewers.** The reviewer-assigned email now shows a
+  soft "Please review by {date}" (`REVIEW_SLA_DAYS`, default 7), but it is **display-only** — nothing tracks whether a
+  reviewer actually records a verdict, and there is no reminder or escalation if they don't. (`decision_due_at` is the
+  *student-facing* delayed-reveal timer, not a reviewer deadline.) The missing email in the reviewer lifecycle is the one
+  that prevents a stuck case: *"you interviewed {ref} N days ago but haven't recorded a verdict."* **To resolve (own
+  change):** add a verdict-due field/SLA, a detection job (interviewed/assigned + no verdict past the SLA), and an
+  overdue-verdict nudge email; only then surface the due date in the **interview reminder** too (the deferred external-review
+  point — a date with teeth, not a soft target that can already be in the past by interview time). (Logged 2026-06-19.)
+- TD-132: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
   path now routes it to the signature scorer (the `if doc_type == 'results_slip'` branch wins first). Harmless, but
   the dict membership is now only used as the flag-gate set for STR/BC/EPF. **To resolve:** drop `results_slip` from
   that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16; this branch's
-  _GENUINENESS_DOCS tidy, renumbered TD-120→124→127→130 across three main merges as main reused each number.)
+  _GENUINENESS_DOCS tidy — renumbered repeatedly (120→124→127→130→132) as parallel main merges reused each number.)
