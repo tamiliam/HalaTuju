@@ -2531,6 +2531,11 @@
           "altRequestedTitle": "The student asked for other times",
           "altRequestedHint": "None of the proposed times worked for them — use “Propose alternative times” below to offer a fresh set.",
           "proposeAlternative": "Propose alternative times",
+          "reschedule": "Reschedule (move the time)",
+          "rescheduleConfirm": "Move this interview? This releases the booked time and asks the student to choose a new slot. The Meet link and calendar event are cancelled.",
+          "rescheduleYes": "Yes, move the time",
+          "rescheduleKeep": "Keep the booking",
+          "rescheduleIntro": "Choose new times — the student's current booking will be released and they'll be asked to pick again.",
           "cancelEdit": "Cancel",
           "removeSlot": "Remove time",
           "error": "Could not save. Please try again."

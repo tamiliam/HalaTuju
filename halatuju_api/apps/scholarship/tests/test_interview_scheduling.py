@@ -342,6 +342,41 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(                                     # the whole menu withdrawn
             InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 0)
 
+    # ── reviewer reschedule (release the booking + re-offer) ───────────────────
+    @patch('apps.scholarship.meeting.cancel_event', return_value=True)
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_reviewer_reschedule_releases_booking_and_reoffers(self, _create, _cancel):
+        slots = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                         starts=[self._future(days=5), self._future(days=6)])
+        scheduling.book_slot(self.app, slot_id=slots[0].id)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, 'booked')
+        mail.outbox.clear()
+        # Reviewer MOVES it: release the booking + offer a fresh menu.
+        scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                 starts=[self._future(days=8)], release_booking=True)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, '')          # back to awaiting-a-pick
+        self.assertIsNone(self.app.interview_slot_id)            # old booking released
+        self.assertIsNone(self.app.interview_start)
+        self.assertEqual(self.app.interview_meeting_url, '')
+        self.assertEqual(                                        # only the new slot is live
+            InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 1)
+        # Student is told to re-pick, with the moved-the-time copy.
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[-1]
+        self.assertIn('time has changed', msg.subject)
+        self.assertIn('had to move', msg.body)
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_reschedule_noop_when_not_booked_just_proposes(self, _create):
+        # release_booking on a not-yet-booked interview is a normal proposal (no error).
+        scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                 starts=[self._future(days=4)], release_booking=True)
+        self.app.refresh_from_db()
+        self.assertEqual(
+            InterviewSlot.objects.filter(application=self.app, is_active=True).count(), 1)
+
     @patch('apps.scholarship.meeting.create_event', return_value=None)
     def test_proposing_after_cancel_clears_cancelled_state(self, _mock):
         slots = scheduling.propose_slots(self.app, reviewer=self.reviewer,
@@ -559,6 +594,28 @@ class SchedulingEndpointTests(TestCase):
         self._auth('rev2-uid')
         r = self.client.post(self._propose_url(), {'slots': [self._iso(days=3)]}, format='json')
         self.assertEqual(r.status_code, 403)
+
+    @patch('apps.scholarship.meeting.cancel_event', return_value=True)
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_reviewer_reschedule_via_endpoint(self, _create, _cancel):
+        # Reviewer proposes + the student books, then the reviewer MOVES it with reschedule=true.
+        self._auth('rev-uid')
+        r = self.client.post(self._propose_url(), {'slots': [self._iso(days=4)]}, format='json')
+        slot_id = r.json()['slots'][0]['id']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("stud")}')
+        self.client.post(
+            f'/api/v1/scholarship/applications/{self.app.id}/interview/book/',
+            {'slot_id': slot_id}, format='json')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, 'booked')
+        # Reviewer moves the time.
+        self._auth('rev-uid')
+        r = self.client.post(self._propose_url(),
+                             {'slots': [self._iso(days=6)], 'reschedule': True}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_status, '')        # booking released
+        self.assertIsNone(self.app.interview_slot_id)
 
     @override_settings(INTERVIEW_SCHEDULING_ENABLED=False)
     def test_propose_404_when_flag_off(self):

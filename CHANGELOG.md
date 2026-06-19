@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Reviewer can reschedule a booked interview (move the time).** On the cockpit's booked card a reviewer now has a
+  **"Reschedule (move the time)"** action (with a confirm): it releases the held booking — drops the slot, cancels the
+  Meet/calendar event, clears the booking — then opens the picker to offer fresh times, and the student gets the standard
+  "pick a time" email with a *moved-the-original-time* preface (HTML bilingual). There is deliberately **no reviewer
+  self-cancel**: an emergency reschedules (keeps the candidate); a true hand-off is an admin reassignment. Backend:
+  `propose_slots(..., release_booking=True)` + `reschedule` flag on the propose endpoint. +3 tests.
+
 ### Changed
 - **Interview email set completed (HTML bilingual) + verdict SLA set to 10 days.** The last two plain-text student
   interview emails — the **1-day/1-hour reminder** and the **cancellation confirmation** — are now HTML primary +
