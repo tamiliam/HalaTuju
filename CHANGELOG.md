@@ -95,6 +95,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than only "the interviewer will contact you." Backend only, no migration.
 
 ### Fixed
+- **Student booking panel: clearer cancel + corrected guardian copy.** The bare "Cancel" on a booked interview was
+  ambiguous (it cancels the whole interview, with no confirmation) — it's now **"Cancel interview"** with an explicit
+  **confirm step** ("Cancel your whole interview? …" → "Yes, cancel" / "Keep my interview"), so it can't be hit by
+  accident. The guardian line also now matches the emails: *"If you're under 18, a parent or guardian should be with you;
+  whatever your age, they're welcome to join too"* (was the optional, inconsistent "parents are welcome to join from
+  home", which both under-stated the minor-must-be-present policy and implied a separate remote join we don't facilitate).
 - **Interview cancellation was a sticky dead-end.** When a student cancelled a booked interview, `interview_status` stayed
   `cancelled` and the old proposed slots stayed active — the cockpit showed a contradictory "cancelled" banner + "waiting
   for the student to pick" with stale slots, and when the reviewer proposed fresh times the status never reset, so the
