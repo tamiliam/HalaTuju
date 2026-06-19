@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HalaTuju · Sponsor Portal (redesign prototype)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: { colors: {
+    brand: { 50:'#eef4ff',100:'#dbe6ff',200:'#bcd0ff',300:'#9cb8f5',400:'#7aa0f5',500:'#4f7df0',600:'#3a63d8',700:'#2f50b0' }
+  }, fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } }
+</script>
+<style>
+  body{font-family:Inter,system-ui,sans-serif;background:#f7f8fb}
+  .donut{border-radius:9999px;background:conic-gradient(#3a63d8 0 64%,#22c55e 64% 87%,#e5e7eb 87% 100%)}
+  .fade{animation:f .25s ease}@keyframes f{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .pill{font-size:11px;font-weight:600;letter-spacing:.02em}
+  .nav-on{color:#3a63d8;background:#eef4ff}
+</style>
+</head>
+<body class="text-gray-800">
+
+<!-- ============ TOP BAR ============ -->
+<header class="sticky top-0 z-30 bg-white border-b border-gray-200">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+    <div class="flex items-center gap-2">
+      <span class="text-xl">🎓</span><span class="font-bold text-brand-600">HalaTuju</span>
+      <span class="text-gray-300">·</span><span class="text-gray-500 text-sm">Sponsor</span>
+    </div>
+    <nav class="hidden sm:flex items-center gap-1">
+      <button onclick="go('giving')"  data-nav="giving"  class="nav px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50">My Giving</button>
+      <button onclick="go('students')" data-nav="students" class="nav px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50">Students <span class="ml-1 inline-flex items-center justify-center text-[10px] font-bold text-white bg-brand-500 rounded-full w-4 h-4 align-middle">5</span></button>
+      <button onclick="go('account')" data-nav="account" class="nav px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50">My Account</button>
+      <button class="ml-2 px-3 py-2 text-sm text-gray-400 hover:text-gray-600">Log out</button>
+    </nav>
+  </div>
+  <div class="sm:hidden border-t border-gray-100 flex">
+    <button onclick="go('giving')"  data-nav="giving"  class="nav flex-1 py-2 text-xs font-medium text-gray-600">My Giving</button>
+    <button onclick="go('students')" data-nav="students" class="nav flex-1 py-2 text-xs font-medium text-gray-600">Students</button>
+    <button onclick="go('account')" data-nav="account" class="nav flex-1 py-2 text-xs font-medium text-gray-600">Account</button>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+<!-- ============================ MY GIVING ============================ -->
+<section id="view-giving" class="view fade">
+  <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+    <div>
+      <p class="text-xs uppercase tracking-wide text-gray-400">Welcome back</p>
+      <h1 class="text-2xl font-bold text-gray-900">Ve. Elanjelian</h1>
+      <p class="text-sm text-gray-500 mt-1">
+        <span class="pill inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded-full">✓ Approved sponsor</span>
+        <span class="pill inline-flex items-center gap-1 text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full ml-1">★ Trusted</span>
+      </p>
+    </div>
+    <button onclick="go('students')" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm">Support a student →</button>
+  </div>
+
+  <!-- impact numbers -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <div class="bg-white rounded-2xl border border-gray-100 p-4"><p class="text-xs text-gray-500">Total given</p><p class="text-2xl font-bold text-gray-900">RM 7,500</p><p class="text-[11px] text-gray-400 mt-1">across 3 students</p></div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-4"><p class="text-xs text-gray-500">Students supported</p><p class="text-2xl font-bold text-gray-900">3</p><p class="text-[11px] text-gray-400 mt-1">2 active · 1 graduated</p></div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-4"><p class="text-xs text-gray-500">Semesters completed</p><p class="text-2xl font-bold text-gray-900">5</p><p class="text-[11px] text-gray-400 mt-1">by students you support</p></div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-4"><p class="text-xs text-gray-500">Students graduated</p><p class="text-2xl font-bold text-green-600">1 🎉</p><p class="text-[11px] text-gray-400 mt-1">first in their family</p></div>
+  </div>
+
+  <!-- assurance strip -->
+  <div class="mb-6 bg-white rounded-2xl border border-green-100 p-5">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div class="flex items-start gap-3">
+        <span class="text-2xl">🛡️</span>
+        <div>
+          <p class="font-semibold text-gray-900">Independently assured</p>
+          <p class="text-sm text-gray-500 max-w-2xl">You never see the student — so an independent party who <i>can</i> confirms they’re real. Each student’s enrolment is verified with their institution, the money is checked by an independent auditor every year, and a board of trustees stands behind it.</p>
+          <p class="text-xs text-gray-400 mt-2">Latest annual assurance · <b>FY2025</b> — 112 students verified · RM 284,000 disbursed · audited by <span class="italic">[independent auditor]</span></p>
+        </div>
+      </div>
+      <button onclick="go('trust')" class="px-3 py-2 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 rounded-xl shrink-0">Trust &amp; transparency →</button>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-4">
+    <!-- giving balance + donut -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 lg:col-span-1">
+      <div class="flex items-center justify-between"><h2 class="font-semibold text-gray-900">Your giving</h2><span class="text-xs text-gray-400">RM 8,700 total</span></div>
+      <div class="flex items-center gap-5 mt-4">
+        <div class="donut w-28 h-28 shrink-0 grid place-items-center"><div class="bg-white w-16 h-16 rounded-full grid place-items-center text-center"><span class="text-[11px] leading-tight text-gray-500">balance<br><b class="text-gray-900 text-sm">RM 1,200</b></span></div></div>
+        <ul class="text-sm space-y-2 flex-1">
+          <li class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-brand-600"></span>Committed</span><b>RM 5,500</b></li>
+          <li class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>Completed</span><b>RM 2,000</b></li>
+          <li class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-gray-200"></span>Available</span><b>RM 1,200</b></li>
+        </ul>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button onclick="toast('Mock: top-up flow (toyyibPay — pending lawyer sign-off)')" class="flex-1 px-3 py-2 text-sm font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-xl">Add to balance</button>
+        <button onclick="go('students')" class="flex-1 px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl">Give RM 1,200</button>
+      </div>
+      <p class="text-[11px] text-gray-400 mt-3 leading-relaxed">Your giving balance is a donation held by the charity — not a bank balance. You can <b>redirect</b> it to another student, but it can’t be withdrawn.</p>
+    </div>
+
+    <!-- recent activity -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-5 lg:col-span-2">
+      <div class="flex items-center justify-between mb-1"><h2 class="font-semibold text-gray-900">Recent activity</h2><span class="text-xs text-gray-400">live · updated throughout the term</span></div>
+      <ul class="divide-y divide-gray-100">
+        <li class="py-3 flex items-start gap-3"><span class="mt-0.5 text-lg">🎓</span><div class="flex-1"><p class="text-sm"><b>A student you support graduated.</b> First in their family to finish a diploma.</p><p class="text-xs text-gray-400">S-B58F82 · Accountancy · 6 days ago</p></div><button onclick="go('account')" class="text-xs text-brand-600 font-medium shrink-0">Read message</button></li>
+        <li class="py-3 flex items-start gap-3"><span class="mt-0.5 text-lg">📘</span><div class="flex-1"><p class="text-sm"><b>Semester completed</b> — a student you support is on track.</p><p class="text-xs text-gray-400">S-7K2D08 · Mechanical Engineering · 12 days ago</p></div></li>
+        <li class="py-3 flex items-start gap-3"><span class="mt-0.5 text-lg">🤝</span><div class="flex-1"><p class="text-sm"><b>Your offer was accepted.</b> Support is now confirmed.</p><p class="text-xs text-gray-400">S-A3F9C1 · Software Engineering · 3 weeks ago</p></div></li>
+        <li class="py-3 flex items-start gap-3"><span class="mt-0.5 text-lg">✨</span><div class="flex-1"><p class="text-sm"><b>3 new students</b> are seeking support this week.</p><p class="text-xs text-gray-400">Pool update · 4 weeks ago</p></div><button onclick="go('students')" class="text-xs text-brand-600 font-medium shrink-0">Browse</button></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- students you support -->
+  <div class="flex items-center justify-between mt-8 mb-3">
+    <h2 class="font-semibold text-gray-900">Students you support</h2>
+    <span class="text-xs text-gray-400">identities are protected — you’ll never see a name, IC, school, address or photo</span>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4">
+    <!-- mine 1 -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <div class="flex items-center justify-between"><span class="font-mono text-sm font-semibold text-gray-900">S-A3F9C1</span><span class="pill px-2 py-0.5 rounded-full bg-green-50 text-green-700">On track</span></div>
+      <p class="text-sm text-gray-700 mt-1">Software Engineering</p><p class="text-xs text-gray-400">Selangor · SPM 7A 1B · RM 2,500 / 24 mo</p>
+      <div class="flex items-start mt-4 text-center">
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Matched</span></div><div class="flex-1 h-px bg-gray-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Onboard</span></div><div class="flex-1 h-px bg-gray-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Sem 1</span></div><div class="flex-1 h-px bg-gray-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-brand-500 ring-4 ring-brand-100"></span><span class="text-[9px] text-gray-400">Sem 2</span></div><div class="flex-1 h-px bg-gray-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-gray-200"></span><span class="text-[9px] text-gray-400">Grad</span></div>
+      </div>
+    </div>
+    <!-- mine 2 -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <div class="flex items-center justify-between"><span class="font-mono text-sm font-semibold text-gray-900">S-7K2D08</span><span class="pill px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">Semester completed</span></div>
+      <p class="text-sm text-gray-700 mt-1">Mechanical Engineering</p><p class="text-xs text-gray-400">Johor · STPM PNGK 3.2 · RM 3,000 / 18 mo</p>
+      <div class="flex items-start mt-4 text-center">
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Matched</span></div><div class="flex-1 h-px bg-gray-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Onboard</span></div><div class="flex-1 h-px bg-gray-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Sem 1</span></div><div class="flex-1 h-px bg-gray-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Sem 2</span></div><div class="flex-1 h-px bg-gray-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-brand-500 ring-4 ring-brand-100"></span><span class="text-[9px] text-gray-400">Final</span></div>
+      </div>
+    </div>
+    <!-- mine 3 -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-4">
+      <div class="flex items-center justify-between"><span class="font-mono text-sm font-semibold text-gray-900">S-B58F82</span><span class="pill px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">Graduated 🎉</span></div>
+      <p class="text-sm text-gray-700 mt-1">Accountancy</p><p class="text-xs text-gray-400">Negeri Sembilan · SPM 9A · RM 2,000 / 36 mo</p>
+      <div class="flex items-start mt-4 text-center">
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Matched</span></div><div class="flex-1 h-px bg-green-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Onboard</span></div><div class="flex-1 h-px bg-green-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Year 1</span></div><div class="flex-1 h-px bg-green-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Year 2</span></div><div class="flex-1 h-px bg-green-200 mt-1"></div>
+        <div class="flex-1"><span class="block mx-auto w-2.5 h-2.5 rounded-full bg-green-500"></span><span class="text-[9px] text-gray-400">Grad</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- community strip -->
+  <div class="mt-8 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-2xl p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+    <div><p class="text-sm opacity-90">You’re one of <b>48 sponsors</b> this term.</p><p class="text-lg font-semibold">Together you’re supporting <b>112 students</b> through their studies.</p></div>
+    <button onclick="go('account')" class="px-4 py-2 bg-white/15 hover:bg-white/25 rounded-xl text-sm font-semibold backdrop-blur">Invite someone to help →</button>
+  </div>
+</section>
+
+<!-- ============================ STUDENTS (marketplace) ============================ -->
+<section id="view-students" class="view hidden">
+  <div class="mb-5">
+    <h1 class="text-2xl font-bold text-gray-900">Students seeking support</h1>
+    <p class="text-sm text-gray-500 mt-1">Each card is a real student who has earned a place but lacks the means. You fund a <b>need</b>, not a person — and you’ll never learn who they are.</p>
+  </div>
+  <div class="flex flex-wrap gap-2 mb-5">
+    <select id="fField" onchange="filterPool()" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white"><option value="">All fields</option><option>Engineering</option><option>Computer</option><option>Accountancy</option><option>Health</option><option>Education</option></select>
+    <select id="fState" onchange="filterPool()" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white"><option value="">All states</option><option>Selangor</option><option>Johor</option><option>Negeri Sembilan</option><option>Kedah</option><option>Sabah</option><option>W.P. Kuala Lumpur</option></select>
+    <select id="fLevel" onchange="filterPool()" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white"><option value="">All levels</option><option>SPM</option><option>STPM</option></select>
+    <span class="ml-auto self-center text-xs text-gray-400" id="poolCount">5 students shown</span>
+  </div>
+
+  <div id="poolGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <button onclick="go('detail-S-2461D4')" data-field="Engineering" data-state="Negeri Sembilan" data-level="SPM" class="poolcard text-left bg-white rounded-2xl border border-gray-100 p-4 hover:border-brand-300 hover:shadow-sm transition">
+      <div class="flex items-center justify-between"><span class="font-mono text-sm font-semibold text-gray-900">S-2461D4</span><span class="text-xs text-gray-400">Negeri Sembilan</span></div>
+      <p class="text-[15px] font-medium text-gray-800 mt-1">Civil Engineering</p><p class="text-xs text-gray-500">SPM 5A 3B · A public university</p>
+      <div class="flex flex-wrap gap-1 mt-3"><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Living</span><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Transport</span><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Books</span></div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-50"><span class="text-sm font-semibold text-gray-900">RM 2,400</span><span class="text-xs text-brand-600 font-medium">View &amp; support →</span></div>
+    </button>
+    <button onclick="go('detail-S-3F962C')" data-field="Computer" data-state="W.P. Kuala Lumpur" data-level="SPM" class="poolcard text-left bg-white rounded-2xl border border-gray-100 p-4 hover:border-brand-300 hover:shadow-sm transition">
+      <div class="flex items-center justify-between"><span class="font-mono text-sm font-semibold text-gray-900">S-3F962C</span><span class="text-xs text-gray-400">W.P. Kuala Lumpur</span></div>
+      <p class="text-[15px] font-medium text-gray-800 mt-1">Computer Science</p><p class="text-xs text-gray-500">SPM 6A 2B · A public university</p>
+      <div class="flex flex-wrap gap-1 mt-3"><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Tuition top-up</span><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Device</span><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Living</span></div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-50"><span class="text-sm font-semibold text-gray-900">RM 2,800</span><span class="text-xs text-brand-600 font-medium">View &amp; support →</span></div>
+    </button>
+    <button onclick="go('detail-S-58AF82')" data-field="Health" data-state="Negeri Sembilan" data-level="SPM" class="poolcard text-left bg-white rounded-2xl border border-gray-100 p-4 hover:border-brand-300 hover:shadow-sm transition">
+      <div class="flex items-center justify-between"><span class="font-mono text-sm font-semibold text-gray-900">S-58AF82</span><span class="text-xs text-gray-400">Negeri Sembilan</span></div>
+      <p class="text-[15px] font-medium text-gray-800 mt-1">Health Sciences (Nursing)</p><p class="text-xs text-gray-500">SPM 10A · A public college</p>
+      <div class="flex flex-wrap gap-1 mt-3"><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Living</span><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Transport</span><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Books</span></div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-50"><span class="text-sm font-semibold text-gray-900">RM 2,200</span><span class="text-xs text-brand-600 font-medium">View &amp; support →</span></div>
+    </button>
+    <button onclick="go('detail-S-9C107E')" data-field="Education" data-state="Kedah" data-level="STPM" class="poolcard text-left bg-white rounded-2xl border border-gray-100 p-4 hover:border-brand-300 hover:shadow-sm transition">
+      <div class="flex items-center justify-between"><span class="font-mono text-sm font-semibold text-gray-900">S-9C107E</span><span class="text-xs text-gray-400">Kedah</span></div>
+      <p class="text-[15px] font-medium text-gray-800 mt-1">Education (Teaching)</p><p class="text-xs text-gray-500">STPM PNGK 3.0 · A public university</p>
+      <div class="flex flex-wrap gap-1 mt-3"><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Living</span><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Books</span></div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-50"><span class="text-sm font-semibold text-gray-900">RM 2,600</span><span class="text-xs text-brand-600 font-medium">View &amp; support →</span></div>
+    </button>
+    <button onclick="go('detail-S-1D4B33')" data-field="Accountancy" data-state="Sabah" data-level="SPM" class="poolcard text-left bg-white rounded-2xl border border-gray-100 p-4 hover:border-brand-300 hover:shadow-sm transition">
+      <div class="flex items-center justify-between"><span class="font-mono text-sm font-semibold text-gray-900">S-1D4B33</span><span class="text-xs text-gray-400">Sabah</span></div>
+      <p class="text-[15px] font-medium text-gray-800 mt-1">Accountancy</p><p class="text-xs text-gray-500">SPM 7A 1B · A public university</p>
+      <div class="flex flex-wrap gap-1 mt-3"><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Living</span><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Transport</span><span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Device</span></div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-50"><span class="text-sm font-semibold text-gray-900">RM 3,100</span><span class="text-xs text-brand-600 font-medium">View &amp; support →</span></div>
+    </button>
+  </div>
+  <div id="poolEmpty" class="hidden text-center bg-white border border-dashed border-gray-200 rounded-2xl py-12 px-6">
+    <p class="text-3xl mb-2">🌱</p><p class="font-semibold text-gray-800">No students match those filters right now.</p>
+    <p class="text-sm text-gray-500 mt-1">We post new students throughout the term — turn on alerts in <button onclick="go('account')" class="text-brand-600 underline">My Account</button>.</p>
+  </div>
+</section>
+
+<!-- ============================ STUDENT DETAILS (one per student) ============================ -->
+<section id="view-detail-S-2461D4" class="view hidden">
+  <button onclick="go('students')" class="text-sm text-brand-600 mb-4">← Back to all students</button>
+  <div class="grid lg:grid-cols-3 gap-5">
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-2"><span class="font-mono font-semibold text-gray-900">S-2461D4</span><span class="text-xs text-gray-400">Negeri Sembilan</span></div>
+      <h1 class="text-xl font-bold text-gray-900">Civil Engineering</h1><p class="text-sm text-gray-500">SPM 5A 3B · A public university · 24 months</p>
+      <p class="text-gray-700 mt-4 leading-relaxed text-[15px]">A quietly determined student from a single-income household. Earned a place in civil engineering after strong results, and hopes to one day rebuild the kampung roads that flood every monsoon. The family cannot cover living costs away from home; a small monthly amount would let them focus on studying rather than working night shifts.</p>
+      <div class="mt-4 flex flex-wrap gap-1"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Living</span><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Transport</span><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Books</span></div>
+      <div class="mt-5 flex items-start gap-2 bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-800">🛡️ <span><b>Enrolment independently verified.</b> This student’s place has been confirmed with their institution by an independent party.</span></div>
+      <div class="mt-2 bg-brand-50/60 border border-brand-100 rounded-xl p-3 text-xs text-brand-800">🔒 You’ll never see this student’s name, IC, address, photo or contact details — and they’ll never see yours.</div>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 h-fit">
+      <p class="text-xs text-gray-500">Amount needed</p><p class="text-3xl font-bold text-gray-900">RM 2,400</p><p class="text-xs text-gray-400 mb-4">over 24 months</p>
+      <button onclick="toast('Mock: funds S-2461D4 → student is invited to accept')" class="w-full px-3 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl">Support this student</button>
+      <button onclick="toast('Mock: saved to shortlist')" class="w-full mt-2 px-3 py-2.5 text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl">Save for later</button>
+      <p class="text-[11px] text-gray-400 mt-3 leading-relaxed">The student must accept before any funds move. If they don’t, the amount returns to your giving balance.</p>
+    </div>
+  </div>
+</section>
+<section id="view-detail-S-3F962C" class="view hidden">
+  <button onclick="go('students')" class="text-sm text-brand-600 mb-4">← Back to all students</button>
+  <div class="grid lg:grid-cols-3 gap-5">
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-2"><span class="font-mono font-semibold text-gray-900">S-3F962C</span><span class="text-xs text-gray-400">W.P. Kuala Lumpur</span></div>
+      <h1 class="text-xl font-bold text-gray-900">Computer Science</h1><p class="text-sm text-gray-500">SPM 6A 2B · A public university · 24 months</p>
+      <p class="text-gray-700 mt-4 leading-relaxed text-[15px]">First in the family to reach university. Taught themselves to code on a borrowed phone. Needs a basic laptop and help with living costs to take up a computer science place. Dreams of building software for small Malaysian businesses.</p>
+      <div class="mt-4 flex flex-wrap gap-1"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Tuition top-up</span><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Device</span><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Living</span></div>
+      <div class="mt-5 flex items-start gap-2 bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-800">🛡️ <span><b>Enrolment independently verified.</b> This student’s place has been confirmed with their institution by an independent party.</span></div>
+      <div class="mt-2 bg-brand-50/60 border border-brand-100 rounded-xl p-3 text-xs text-brand-800">🔒 You’ll never see this student’s name, IC, address, photo or contact details — and they’ll never see yours.</div>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 h-fit">
+      <p class="text-xs text-gray-500">Amount needed</p><p class="text-3xl font-bold text-gray-900">RM 2,800</p><p class="text-xs text-gray-400 mb-4">over 24 months</p>
+      <button onclick="toast('Mock: funds S-3F962C → student is invited to accept')" class="w-full px-3 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl">Support this student</button>
+      <button onclick="toast('Mock: saved to shortlist')" class="w-full mt-2 px-3 py-2.5 text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl">Save for later</button>
+      <p class="text-[11px] text-gray-400 mt-3 leading-relaxed">The student must accept before any funds move. If they don’t, the amount returns to your giving balance.</p>
+    </div>
+  </div>
+</section>
+<section id="view-detail-S-58AF82" class="view hidden">
+  <button onclick="go('students')" class="text-sm text-brand-600 mb-4">← Back to all students</button>
+  <div class="grid lg:grid-cols-3 gap-5">
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-2"><span class="font-mono font-semibold text-gray-900">S-58AF82</span><span class="text-xs text-gray-400">Negeri Sembilan</span></div>
+      <h1 class="text-xl font-bold text-gray-900">Health Sciences (Nursing)</h1><p class="text-sm text-gray-500">SPM 10A · A public college · 30 months</p>
+      <p class="text-gray-700 mt-4 leading-relaxed text-[15px]">An exceptional all-rounder whose parent works as a cleaner. Placed into a nursing programme and wants to serve in a rural clinic. The daily commute and uniform costs are beyond the household budget.</p>
+      <div class="mt-4 flex flex-wrap gap-1"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Living</span><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Transport</span><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Books</span></div>
+      <div class="mt-5 flex items-start gap-2 bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-800">🛡️ <span><b>Enrolment independently verified.</b> This student’s place has been confirmed with their institution by an independent party.</span></div>
+      <div class="mt-2 bg-brand-50/60 border border-brand-100 rounded-xl p-3 text-xs text-brand-800">🔒 You’ll never see this student’s name, IC, address, photo or contact details — and they’ll never see yours.</div>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 h-fit">
+      <p class="text-xs text-gray-500">Amount needed</p><p class="text-3xl font-bold text-gray-900">RM 2,200</p><p class="text-xs text-gray-400 mb-4">over 30 months</p>
+      <button onclick="toast('Mock: funds S-58AF82 → student is invited to accept')" class="w-full px-3 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl">Support this student</button>
+      <button onclick="toast('Mock: saved to shortlist')" class="w-full mt-2 px-3 py-2.5 text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl">Save for later</button>
+      <p class="text-[11px] text-gray-400 mt-3 leading-relaxed">The student must accept before any funds move. If they don’t, the amount returns to your giving balance.</p>
+    </div>
+  </div>
+</section>
+<section id="view-detail-S-9C107E" class="view hidden">
+  <button onclick="go('students')" class="text-sm text-brand-600 mb-4">← Back to all students</button>
+  <div class="grid lg:grid-cols-3 gap-5">
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-2"><span class="font-mono font-semibold text-gray-900">S-9C107E</span><span class="text-xs text-gray-400">Kedah</span></div>
+      <h1 class="text-xl font-bold text-gray-900">Education (Teaching)</h1><p class="text-sm text-gray-500">STPM PNGK 3.0 · A public university · 24 months</p>
+      <p class="text-gray-700 mt-4 leading-relaxed text-[15px]">Wants to become the kind of teacher they never had. From a padi-farming family in the north; the harvest is unpredictable and cannot be relied on for fees. Calm, patient, and devoted to younger siblings.</p>
+      <div class="mt-4 flex flex-wrap gap-1"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Living</span><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Books</span></div>
+      <div class="mt-5 flex items-start gap-2 bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-800">🛡️ <span><b>Enrolment independently verified.</b> This student’s place has been confirmed with their institution by an independent party.</span></div>
+      <div class="mt-2 bg-brand-50/60 border border-brand-100 rounded-xl p-3 text-xs text-brand-800">🔒 You’ll never see this student’s name, IC, address, photo or contact details — and they’ll never see yours.</div>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 h-fit">
+      <p class="text-xs text-gray-500">Amount needed</p><p class="text-3xl font-bold text-gray-900">RM 2,600</p><p class="text-xs text-gray-400 mb-4">over 24 months</p>
+      <button onclick="toast('Mock: funds S-9C107E → student is invited to accept')" class="w-full px-3 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl">Support this student</button>
+      <button onclick="toast('Mock: saved to shortlist')" class="w-full mt-2 px-3 py-2.5 text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl">Save for later</button>
+      <p class="text-[11px] text-gray-400 mt-3 leading-relaxed">The student must accept before any funds move. If they don’t, the amount returns to your giving balance.</p>
+    </div>
+  </div>
+</section>
+<section id="view-detail-S-1D4B33" class="view hidden">
+  <button onclick="go('students')" class="text-sm text-brand-600 mb-4">← Back to all students</button>
+  <div class="grid lg:grid-cols-3 gap-5">
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-2"><span class="font-mono font-semibold text-gray-900">S-1D4B33</span><span class="text-xs text-gray-400">Sabah</span></div>
+      <h1 class="text-xl font-bold text-gray-900">Accountancy</h1><p class="text-sm text-gray-500">SPM 7A 1B · A public university · 36 months</p>
+      <p class="text-gray-700 mt-4 leading-relaxed text-[15px]">Travels two hours each way to the nearest town. Strong in mathematics and hopes to qualify as a chartered accountant and bring the skill back home. Needs help with the cost of relocating to study.</p>
+      <div class="mt-4 flex flex-wrap gap-1"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Living</span><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Transport</span><span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Device</span></div>
+      <div class="mt-5 flex items-start gap-2 bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-800">🛡️ <span><b>Enrolment independently verified.</b> This student’s place has been confirmed with their institution by an independent party.</span></div>
+      <div class="mt-2 bg-brand-50/60 border border-brand-100 rounded-xl p-3 text-xs text-brand-800">🔒 You’ll never see this student’s name, IC, address, photo or contact details — and they’ll never see yours.</div>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-6 h-fit">
+      <p class="text-xs text-gray-500">Amount needed</p><p class="text-3xl font-bold text-gray-900">RM 3,100</p><p class="text-xs text-gray-400 mb-4">over 36 months</p>
+      <button onclick="toast('Mock: funds S-1D4B33 → student is invited to accept')" class="w-full px-3 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl">Support this student</button>
+      <button onclick="toast('Mock: saved to shortlist')" class="w-full mt-2 px-3 py-2.5 text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl">Save for later</button>
+      <p class="text-[11px] text-gray-400 mt-3 leading-relaxed">The student must accept before any funds move. If they don’t, the amount returns to your giving balance.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ MY ACCOUNT ============================ -->
+<section id="view-account" class="view hidden">
+  <h1 class="text-2xl font-bold text-gray-900 mb-5">My Account</h1>
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="bg-white rounded-2xl border border-gray-100 p-5">
+      <h2 class="font-semibold text-gray-900 mb-3">Your details</h2>
+      <dl class="text-sm space-y-2">
+        <div class="flex justify-between"><dt class="text-gray-500">Name</dt><dd class="font-medium">Ve. Elanjelian</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Email</dt><dd class="font-medium">tamiliam@gmail.com</dd></div>
+        <div class="flex justify-between"><dt class="text-gray-500">Phone</dt><dd class="font-medium">+60 12-345 6789</dd></div>
+      </dl>
+      <div class="flex gap-2 mt-4"><span class="pill text-green-700 bg-green-50 px-2 py-1 rounded-full">✓ Approved</span><span class="pill text-brand-700 bg-brand-50 px-2 py-1 rounded-full">★ Trusted sponsor</span></div>
+      <p class="text-[11px] text-gray-400 mt-3">Trusted sponsors can see a student’s institution. It’s never shown to the public pool — that protects students from being identified.</p>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 p-5">
+      <h2 class="font-semibold text-gray-900 mb-1">When a student is ready</h2>
+      <p class="text-xs text-gray-500 mb-3">How often should we email you about new students?</p>
+      <div class="space-y-2">
+        <label class="flex gap-3 items-start p-2 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-50"><input type="radio" name="nf" class="mt-1"><span><b class="text-sm">As they’re ready</b><br><span class="text-xs text-gray-500">A short note when a new student is published (batched hourly).</span></span></label>
+        <label class="flex gap-3 items-start p-2 rounded-xl border border-brand-200 bg-brand-50 cursor-pointer"><input type="radio" name="nf" checked class="mt-1"><span><b class="text-sm">Weekly digest</b><br><span class="text-xs text-gray-500">One Monday email with everyone published that week.</span></span></label>
+        <label class="flex gap-3 items-start p-2 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-50"><input type="radio" name="nf" class="mt-1"><span><b class="text-sm">Off</b><br><span class="text-xs text-gray-500">No emails — I’ll check the portal myself.</span></span></label>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border-2 border-dashed border-brand-200 p-5">
+      <div class="flex items-center justify-between mb-1"><h2 class="font-semibold text-gray-900">Standing gift</h2><span class="pill text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">NEW idea</span></div>
+      <p class="text-xs text-gray-500 mb-3">Let your giving balance work on its own. When a student matching your wishes is ready, we allocate from your balance and tell you — pause or change anytime.</p>
+      <div class="text-sm space-y-2">
+        <label class="flex items-center justify-between"><span>Support a new student each</span><select class="border border-gray-200 rounded-lg px-2 py-1 text-sm"><option>term</option><option>semester</option><option>year</option></select></label>
+        <label class="flex items-center justify-between"><span>Prefer field</span><select class="border border-gray-200 rounded-lg px-2 py-1 text-sm"><option>Any</option><option>Engineering</option><option>Education</option></select></label>
+        <label class="flex items-center justify-between"><span>Up to</span><select class="border border-gray-200 rounded-lg px-2 py-1 text-sm"><option>RM 3,000</option><option>RM 5,000</option></select></label>
+      </div>
+      <button onclick="toast('Mock: standing gift saved (proposed feature — needs a small backend)')" class="mt-3 w-full px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl">Turn on standing gift</button>
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <h2 class="font-semibold text-gray-900 mb-3">Messages from students you supported</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <figure class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-5">
+        <blockquote class="text-[15px] text-gray-800 leading-relaxed">“I never thought I would be the first in my family to finish a diploma. Some months I wanted to give up. Knowing a stranger believed in me kept me going. Thank you.”</blockquote>
+        <figcaption class="text-xs text-gray-500 mt-3">A student you supported · <b>S-B58F82</b> · checked &amp; approved by our team</figcaption>
+      </figure>
+      <div class="border border-dashed border-gray-200 rounded-2xl p-5 grid place-items-center text-center text-sm text-gray-400">Messages from students you currently support will appear here when they reach a milestone.<br><span class="text-[11px]">Every message is scanned and human-checked so it can never reveal who they are.</span></div>
+    </div>
+  </div>
+
+  <div class="mt-6 grid lg:grid-cols-2 gap-4">
+    <div class="bg-white rounded-2xl border border-gray-100 p-5">
+      <h2 class="font-semibold text-gray-900">Invite someone to sponsor</h2>
+      <p class="text-xs text-gray-500 mb-3">Know someone who’d want to help a student? Send a warm invitation.</p>
+      <input class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-2" placeholder="Their email">
+      <input class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-2" placeholder="Their name (optional)">
+      <textarea class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-2" rows="2" placeholder="A short personal note (optional)"></textarea>
+      <button onclick="toast('Mock: invitation sent. Their email is purged in 60 days if they don’t join.')" class="w-full px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl">Send invitation</button>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 p-5">
+      <div class="flex items-center justify-between mb-3"><h2 class="font-semibold text-gray-900">Your invitations</h2><span class="text-xs text-gray-400">1 joined · 1 invited</span></div>
+      <ul class="text-sm divide-y divide-gray-100">
+        <li class="py-2 flex justify-between"><span>a••••@gmail.com</span><span class="pill text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Joined</span></li>
+        <li class="py-2 flex justify-between"><span>r••••@yahoo.com</span><span class="pill text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Invited</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-semibold text-gray-900">Your giving statement</h2>
+      <button onclick="toast('Mock: downloads a PDF statement')" class="px-3 py-1.5 text-sm font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-xl">Download 2026 statement</button>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">Two separate records: what you put <b>into the trust</b>, and what you <b>gifted to students</b>. <span class="text-gray-400">(Tax-deductible receipts once Section 44(6) is confirmed.)</span></p>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-2xl border border-gray-100 p-5">
+        <div class="flex items-center justify-between mb-2"><h3 class="text-sm font-semibold text-gray-900">⬇ Donations to the trust</h3><span class="text-xs text-gray-400">RM 8,700 in</span></div>
+        <ul class="text-sm divide-y divide-gray-100">
+          <li class="py-2 flex justify-between"><span>12 Jan 2026 <span class="text-gray-400">· ref DN-1042</span></span><b>RM 5,000</b></li>
+          <li class="py-2 flex justify-between"><span>03 Sep 2025 <span class="text-gray-400">· ref DN-0911</span></span><b>RM 3,700</b></li>
+        </ul>
+        <p class="text-[11px] text-gray-400 mt-2">Money you’ve donated into the trust. It becomes the charity’s — it can’t be withdrawn, only redirected.</p>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-100 p-5">
+        <div class="flex items-center justify-between mb-2"><h3 class="text-sm font-semibold text-gray-900">⬆ Gifts to students</h3><span class="text-xs text-gray-400">RM 7,500 out</span></div>
+        <ul class="text-sm divide-y divide-gray-100">
+          <li class="py-2 flex justify-between"><span>05 Feb 2026 <span class="text-gray-400">· S-A3F9C1</span></span><b>RM 2,500</b></li>
+          <li class="py-2 flex justify-between"><span>20 Jan 2026 <span class="text-gray-400">· S-7K2D08</span></span><b>RM 3,000</b></li>
+          <li class="py-2 flex justify-between"><span>14 Oct 2025 <span class="text-gray-400">· S-B58F82</span></span><b>RM 2,000</b></li>
+        </ul>
+        <p class="text-[11px] text-gray-400 mt-2">Gifts allocated from your balance to a student — each independently verified as enrolled.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TRUST & TRANSPARENCY (hub — placeholders) ============================ -->
+<section id="view-trust" class="view hidden">
+  <button onclick="go('giving')" class="text-sm text-brand-600 mb-4">← Back to My Giving</button>
+  <h1 class="text-2xl font-bold text-gray-900">Trust &amp; Transparency</h1>
+  <p class="text-sm text-gray-500 mt-1 max-w-2xl">Because you support students you’ll never meet, everything about how we work — and how the money flows — is open. Some sections below are placeholders while the organisation is being formalised; they’ll be filled in as we go.</p>
+
+  <div class="grid lg:grid-cols-2 gap-4 mt-6">
+    <!-- who we are -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-5">
+      <div class="flex items-center justify-between"><h2 class="font-semibold text-gray-900">Who we are</h2><span class="pill text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Coming soon</span></div>
+      <p class="text-sm text-gray-500 mt-2">The B40 Assistance Programme is run by the team behind HalaTuju. Our full background, legal entity and registration details will be published here as the organisation is formalised.</p>
+      <ul class="text-sm text-gray-400 mt-3 space-y-1">
+        <li>• Legal entity &amp; registration — <i>to be published</i></li>
+        <li>• Our story &amp; mission — <i>to be published</i></li>
+        <li>• Contact &amp; complaints — help@halatuju.xyz</li>
+      </ul>
+    </div>
+
+    <!-- governance -->
+    <div class="bg-white rounded-2xl border border-gray-100 p-5">
+      <div class="flex items-center justify-between"><h2 class="font-semibold text-gray-900">Governance</h2><span class="pill text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Coming soon</span></div>
+      <p class="text-sm text-gray-500 mt-2">An independent board of trustees will oversee the programme and sign the annual assurance statement.</p>
+      <div class="grid grid-cols-3 gap-2 mt-3">
+        <div class="bg-gray-50 rounded-xl p-3 text-center"><div class="w-10 h-10 rounded-full bg-gray-200 mx-auto"></div><p class="text-[11px] text-gray-400 mt-2">Trustee</p></div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center"><div class="w-10 h-10 rounded-full bg-gray-200 mx-auto"></div><p class="text-[11px] text-gray-400 mt-2">Trustee</p></div>
+        <div class="bg-gray-50 rounded-xl p-3 text-center"><div class="w-10 h-10 rounded-full bg-gray-200 mx-auto"></div><p class="text-[11px] text-gray-400 mt-2">Trustee</p></div>
+      </div>
+      <p class="text-[11px] text-gray-400 mt-2">Names &amp; backgrounds to be listed once appointed.</p>
+    </div>
+  </div>
+
+  <!-- sources & uses of funds (IR-style, programme-wide) -->
+  <div class="bg-white rounded-2xl border border-gray-100 p-5 mt-4">
+    <div class="flex items-center justify-between"><h2 class="font-semibold text-gray-900">Sources &amp; uses of funds</h2><span class="pill text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">illustrative</span></div>
+    <p class="text-sm text-gray-500 mt-1">The whole programme’s money at a glance — published annually. Figures below are illustrative placeholders.</p>
+    <div class="grid md:grid-cols-2 gap-6 mt-4">
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Sources (money in)</p>
+        <div class="space-y-2 text-sm">
+          <div><div class="flex justify-between"><span>Sponsor donations</span><b>RM 312,000</b></div><div class="h-2 bg-brand-100 rounded-full mt-1"><div class="h-2 bg-brand-600 rounded-full" style="width:88%"></div></div></div>
+          <div><div class="flex justify-between"><span>Grants</span><b>RM 40,000</b></div><div class="h-2 bg-brand-100 rounded-full mt-1"><div class="h-2 bg-brand-400 rounded-full" style="width:12%"></div></div></div>
+        </div>
+        <p class="text-sm font-semibold text-gray-900 mt-3 flex justify-between"><span>Total in</span><span>RM 352,000</span></p>
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Uses (money out)</p>
+        <div class="space-y-2 text-sm">
+          <div><div class="flex justify-between"><span>Gifts to students</span><b>RM 284,000</b></div><div class="h-2 bg-green-100 rounded-full mt-1"><div class="h-2 bg-green-500 rounded-full" style="width:81%"></div></div></div>
+          <div><div class="flex justify-between"><span>Held for committed students</span><b>RM 52,000</b></div><div class="h-2 bg-green-100 rounded-full mt-1"><div class="h-2 bg-green-400 rounded-full" style="width:15%"></div></div></div>
+          <div><div class="flex justify-between"><span>Running costs</span><b>RM 16,000</b></div><div class="h-2 bg-green-100 rounded-full mt-1"><div class="h-2 bg-gray-400 rounded-full" style="width:4%"></div></div></div>
+        </div>
+        <p class="text-sm font-semibold text-gray-900 mt-3 flex justify-between"><span>Total out &amp; held</span><span>RM 352,000</span></p>
+        <p class="text-[11px] text-gray-400 mt-1">Running costs kept low — <b>96%</b> of every ringgit reaches or is held for students.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- independent assurance -->
+  <div class="bg-white rounded-2xl border border-green-100 p-5 mt-4">
+    <div class="flex items-start gap-3">
+      <span class="text-2xl">🛡️</span>
+      <div class="flex-1">
+        <h2 class="font-semibold text-gray-900">Independent assurance</h2>
+        <p class="text-sm text-gray-500 mt-1 max-w-2xl">Layered, and published annually: each student’s enrolment is confirmed with their institution; an independent auditor checks the money; the board of trustees signs the statement.</p>
+        <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+          <div class="bg-green-50 rounded-xl p-3"><p class="text-lg font-bold text-green-700">112</p><p class="text-[11px] text-gray-500">students verified</p></div>
+          <div class="bg-green-50 rounded-xl p-3"><p class="text-lg font-bold text-green-700">RM 284k</p><p class="text-[11px] text-gray-500">disbursed</p></div>
+          <div class="bg-green-50 rounded-xl p-3"><p class="text-lg font-bold text-green-700">FY2025</p><p class="text-[11px] text-gray-500">latest report</p></div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">Audited by <span class="italic">[independent auditor — to be appointed]</span> · <button onclick="toast('Mock: downloads the annual assurance report (PDF)')" class="text-green-700 underline">download FY2025 report</button></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="max-w-6xl mx-auto px-4 sm:px-6 py-8 text-center text-xs text-gray-400">
+  <button onclick="go('trust')" class="text-gray-500 hover:text-brand-600 underline">Trust &amp; Transparency</button>
+  <span class="mx-2 text-gray-300">·</span>Prototype · HalaTuju B40 Assistance Programme · all data shown is fictional &amp; illustrative · <span class="text-gray-300">not connected to live data</span>
+</footer>
+
+<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-4 py-2 rounded-xl shadow-lg opacity-0 pointer-events-none transition"></div>
+
+<script>
+function go(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.add('hidden'));
+  var el=document.getElementById('view-'+v);
+  if(el){el.classList.remove('hidden');el.classList.add('fade');}
+  var navKey = v.indexOf('detail')===0 ? 'students' : v;
+  document.querySelectorAll('.nav').forEach(function(n){
+    n.classList.remove('nav-on');
+    if(n.getAttribute('data-nav')===navKey) n.classList.add('nav-on');
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function filterPool(){
+  var f=document.getElementById('fField').value,
+      st=document.getElementById('fState').value,
+      lv=document.getElementById('fLevel').value, shown=0;
+  document.querySelectorAll('.poolcard').forEach(function(c){
+    var ok = (!f|| c.getAttribute('data-field')===f) &&
+             (!st|| c.getAttribute('data-state')===st) &&
+             (!lv|| c.getAttribute('data-level')===lv);
+    c.classList.toggle('hidden',!ok); if(ok) shown++;
+  });
+  document.getElementById('poolCount').textContent = shown+' student'+(shown!==1?'s':'')+' shown';
+  document.getElementById('poolEmpty').classList.toggle('hidden', shown!==0);
+}
+var tT;
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.opacity=1;clearTimeout(tT);tT=setTimeout(function(){t.style.opacity=0;},2600);}
+go('giving');
+</script>
+</body>
+</html>

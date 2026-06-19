@@ -132,6 +132,12 @@
     "approvedTitle": "You're approved",
     "approvedBody": "Welcome aboard. You can soon browse students who need support — always anonymously.",
     "comingSoon": "Browsing students is coming soon. We'll email you the moment it's ready.",
+    "nav": {
+      "giving": "My Giving",
+      "students": "Students",
+      "account": "My Account",
+      "support": "Support a student"
+    },
     "myStudents": {
       "welcome": "Welcome back",
       "approvedPill": "Approved sponsor",
@@ -140,6 +146,7 @@
       "subtitle": "The students your giving supports. Identities are kept private.",
       "months": "months",
       "awaiting": "Awaiting acceptance",
+      "none": "You're not supporting any students yet.",
       "progress": {
         "on_track": "On track",
         "semester_completed": "Semester completed",
