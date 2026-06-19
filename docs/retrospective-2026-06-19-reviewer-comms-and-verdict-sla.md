@@ -22,7 +22,7 @@ preface. No reviewer self-cancel by design; a true hand-off is an admin reassign
 
 **Sprint 3 — verdict-completion SLA (TD-131).** `send_review_nudges` cron (dark behind
 `REVIEW_NUDGES_ENABLED`): verdict due = `assigned_at + REVIEW_SLA_DAYS`; nudge the reviewer 2 days
-before + once overdue; escalate to all super-admins 3 days after due. Idempotent via 3 stamps
+before + once overdue; escalate to all super-admins 4 days after due. Idempotent via 3 stamps
 (migration `0064`) reset on every (re)assignment; a recorded `verdict_decided_at` drops the case.
 Verdict-due date also rides on the reviewer interview reminder (different clocks).
 

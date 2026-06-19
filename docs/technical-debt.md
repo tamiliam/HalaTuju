@@ -845,7 +845,7 @@
   Interim option: extend the same `mailto:` shim to the decision/reminder send paths. (Logged 2026-06-19.)
 - TD-131 **✅ RESOLVED (2026-06-19):** built the verdict-completion SLA enforcement — `send_review_nudges` cron
   (dark behind `REVIEW_NUDGES_ENABLED`) nudges the assigned reviewer 2 days before + once overdue, escalates to all
-  super-admins 3 days after the due date (`assigned_at + REVIEW_SLA_DAYS`), idempotent via stamps reset on
+  super-admins 4 days after the due date (`assigned_at + REVIEW_SLA_DAYS`), idempotent via stamps reset on
   (re)assignment, cancelled by a recorded `verdict_decided_at`; the verdict-due date is also surfaced in the reviewer
   interview reminder. Migration `0064` (migrate-first). The original debt:
 - TD-131 (original): **No verdict-completion clock or overdue-verdict nudge for reviewers.** The reviewer-assigned email now shows a
