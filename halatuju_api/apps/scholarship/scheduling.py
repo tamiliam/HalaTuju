@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.utils import timezone
 
-from . import emails, meeting
+from . import emails, meeting, pool
 from .models import InterviewSlot
 
 logger = logging.getLogger(__name__)
@@ -265,7 +265,9 @@ def book_slot(application, *, slot_id, now=None):
     if reviewer_email:
         emails.send_reviewer_interview_booked_email(
             reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
-            start=slot.start, meeting_url=application.interview_meeting_url)
+            start=slot.start, meeting_url=application.interview_meeting_url,
+            ref=pool.pool_ref(application.id), duration_min=slot.duration_min,
+            calendar_invite_sent=bool(application.interview_calendar_event_id))
     return application
 
 
@@ -306,7 +308,7 @@ def cancel(application, *, by='student', now=None):
     if reviewer is not None and getattr(reviewer, 'email', ''):
         emails.send_reviewer_interview_cancelled_email(
             reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
-            applicant_name=student_name)
+            applicant_name=student_name, ref=pool.pool_ref(application.id))
     return application
 
 
@@ -328,5 +330,6 @@ def request_alternatives(application, *, note='', now=None):
     if reviewer is not None and getattr(reviewer, 'email', ''):
         emails.send_reviewer_alternatives_requested_email(
             reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
-            applicant_name=student_name, note=application.interview_alternatives_note)
+            applicant_name=student_name, note=application.interview_alternatives_note,
+            ref=pool.pool_ref(application.id))
     return application

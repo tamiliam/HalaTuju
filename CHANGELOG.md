@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Reviewer email tree made consistent + actionable.** All five reviewer-facing emails (new applicant assigned,
+  interview booked, interview reminder, applicant-needs-different-times, applicant cancelled) now share one voice:
+  "Dear {name}" greeting, one **"Open in your reviewer dashboard"** CTA (was three names — "reviewer dashboard" /
+  "admin console" / "the applicant's record"), the **Scholar-code `{ref}` in every subject** for triage, and a single
+  **"Thanks, The B40 Assistance Team"** sign-off. All five now send from the **monitored `interview@` alias** with a
+  working reply-to — fixing the assignment email, which previously invited "just reply and we'll reassign" but went out
+  from the unmonitored default sender. The **assigned** email gains a **Reference / Programme / "Please review by {date}"**
+  block (new soft `REVIEW_SLA_DAYS`, default 7; display-only — see TD-131). The **booked** email gains a conditional
+  **"Add to your calendar"** Google link — shown only when no auto Google-Calendar invite was created (Meet off), so the
+  reviewer always ends up with the time held and never gets a duplicate. The **cancelled** email now states the case
+  state ("their application is still open — only the interview slot was released"), mirroring the student's reassurance.
 - **Interview-cancellation email rewritten + clearer reschedule toggle.** The cancellation notice now reads as a
   confirmation of the student's *own* action (the common case): first-name greeting, "your application is still active",
   the reviewer will propose alternatives, a reply-to-fix path, and the anti-scam note — fixing the prior copy that wrongly

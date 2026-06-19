@@ -1,5 +1,5 @@
 """Tests for F7 reviewer assignment / reassignment (super-only, gated, audited)."""
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import jwt
 from django.test import TestCase, override_settings
@@ -205,11 +205,12 @@ class TestReviewerAssignment(TestCase):
 
     def test_assign_emails_the_reviewer(self):
         self._auth('super-uid')
+        from apps.scholarship.pool import pool_ref
         with patch('apps.scholarship.emails.send_reviewer_assigned_email') as m:
             self.assertEqual(self._assign(self.reviewer.id).status_code, 200)
         m.assert_called_once_with(
             to_email='rev@example.com', reviewer_name='Reviewer',
-            applicant_name='Priya')
+            ref=pool_ref(self.app.id), programme='B40', review_by=ANY)
 
     def test_unassign_sends_no_email(self):
         self.app.assigned_to = self.reviewer
