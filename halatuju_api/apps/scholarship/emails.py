@@ -1521,24 +1521,42 @@ def send_interview_reminder_email(to_email, *, student_name, start, meeting_url=
 
 
 def send_interview_cancelled_email(to_email, *, student_name):
-    """Student notice that their interview booking was cancelled. Bilingual; best-effort."""
-    student = student_name or 'there'
-    student_bm = student_name or 'di sana'
+    """Confirmation to the student that *they* cancelled their interview (this notice is sent
+    on every cancel, and a student-initiated cancel is the common case). Bilingual; best-effort."""
+    first = (student_name or '').split()[0] if student_name else ''
+    student = first or 'there'
+    student_bm = first or 'di sana'
     en = (
         f'Hi {student},\n\n'
-        f'Your B40 Assistance Programme interview booking has been cancelled. You can book a '
-        f'new time from your application page in HalaTuju whenever you are ready. If you did not '
-        f'expect this, please reply to this email.\n\n'
-        f'— The B40 Assistance Programme team'
+        f"This confirms that you've cancelled your interview for the B40 Assistance Programme, so "
+        f'the time you had booked is now released.\n\n'
+        f'Your application is still active — cancelling the interview doesn\'t affect it. Your '
+        f"interviewer will propose some alternative times, and you're welcome to choose one "
+        f"whenever you're ready, if you'd like to take this forward.\n\n"
+        f"If you didn't mean to cancel, or you have any questions, just reply to this email and "
+        f"we'll help you sort it out.\n\n"
+        f'One note for your peace of mind: we\'ll only ever ask about you and your studies. We '
+        f'will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it\'s '
+        f'not us — please tell us at {SUPPORT_EMAIL}.\n\n'
+        f'Warm regards,\n\n'
+        f'The B40 Assistance Programme team'
     )
     bm = (
         f'Salam {student_bm},\n\n'
-        f'Tempahan temu duga Program Bantuan B40 anda telah dibatalkan. Anda boleh menempah masa '
-        f'baharu melalui halaman permohonan anda di HalaTuju bila-bila masa. Jika anda tidak '
-        f'menjangkakan ini, sila balas e-mel ini.\n\n'
-        f'— Pasukan Program Bantuan B40'
+        f'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bantuan B40 anda, '
+        f'jadi masa yang anda tempah sebelum ini kini dilepaskan.\n\n'
+        f'Permohonan anda masih aktif — membatalkan temu duga tidak menjejaskannya. Penemu duga '
+        f'anda akan mencadangkan beberapa masa alternatif, dan anda dialu-alukan untuk memilih satu '
+        f'bila-bila masa anda bersedia, jika anda ingin meneruskannya.\n\n'
+        f'Jika anda tidak berniat untuk membatalkannya, atau anda mempunyai sebarang pertanyaan, '
+        f'balas sahaja e-mel ini dan kami akan membantu anda.\n\n'
+        f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
+        f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
+        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
+        f'Salam hormat,\n\n'
+        f'Pasukan Program Bantuan B40'
     )
-    return _send_bilingual(to_email, 'Your B40 Assistance Programme interview was cancelled', en, bm)
+    return _send_bilingual(to_email, "You've cancelled your B40 Assistance Programme interview", en, bm)
 
 
 def _send_plain(to_email, subject, body):

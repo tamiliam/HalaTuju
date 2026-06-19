@@ -1585,6 +1585,7 @@
         "altCancel": "Cancel",
         "altRequested": "We've asked your interviewer to suggest new times — we'll email you when they're ready.",
         "reschedule": "Choose a different time",
+        "rescheduleKeep": "Keep my booked time",
         "cancelInterview": "Cancel interview",
         "cancelConfirm": "Cancel your whole interview? Your interviewer will need to propose new times before you can book again.",
         "cancelYes": "Yes, cancel the interview",

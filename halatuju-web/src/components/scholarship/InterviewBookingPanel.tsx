@@ -109,7 +109,9 @@ export default function InterviewBookingPanel({
               {sched.slots.filter((s) => s.id !== sched.booked_slot_id).length > 0 && (
                 <button type="button" onClick={() => setRescheduling((v) => !v)}
                   className="text-sm text-blue-600 hover:underline">
-                  {t('scholarship.application.interview.reschedule')}
+                  {t(rescheduling
+                    ? 'scholarship.application.interview.rescheduleKeep'
+                    : 'scholarship.application.interview.reschedule')}
                 </button>
               )}
               <button type="button" onClick={() => setConfirmingCancel(true)} disabled={busy}
