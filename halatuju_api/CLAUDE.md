@@ -535,9 +535,10 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 - **Reviewer email tree is consistent** (Dear / one dashboard CTA / `{ref}` subject / "The B40 Assistance Team" / all
   from `interview@`). Accept/decline-in-email idea was evaluated and **dropped** (unsafe one-click + redundant).
 - **▶ Status:** Interview scheduling is **fully LIVE** — `INTERVIEW_SCHEDULING_ENABLED=1`, `INTERVIEW_MEET_ENABLED=1`,
-  `REVIEW_NUDGES_ENABLED=1` (all on); reviewers briefed 2026-06-19; Guide scheduling step + screenshots done (TD-126).
-  **Remaining (owner):** merged SPF DNS record; Brevo List-Help on transactional (TD-130). **Optional eng:** extend the
-  `mailto:` unsubscribe shim to decision/reminder emails.
+  `REVIEW_NUDGES_ENABLED=1` (all on); reviewers briefed 2026-06-19; Guide scheduling step + screenshots done (TD-126);
+  SPF record added + verified 2026-06-19 (`v=spf1 include:_spf.google.com include:spf.brevo.com ~all`).
+  **Remaining (owner):** Brevo List-Help on transactional (TD-130). **Optional eng:** extend the `mailto:` unsubscribe
+  shim to decision/reminder emails; later tighten SPF `~all`→`-all` + DMARC `p=none`→`p=quarantine`.
 
 **▶ SHIPPED 2026-06-19 — Interview-scheduling arc: Calendly picker + bilingual HTML emails + request-alternatives loop +
 cancellation fix (12 commits `a68b442`→`7fcb82d`; migration `scholarship/0063` additive, migrate-first; retro
