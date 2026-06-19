@@ -155,7 +155,7 @@ export default function InterviewScheduleCard({
           </div>
           {schedule.meeting_url
             ? <a href={schedule.meeting_url} target="_blank" rel="noreferrer"
-                 className="mt-1 inline-block text-blue-600 underline">
+                 className="mt-1 inline-block text-base font-semibold text-blue-600 underline">
                 {t('admin.scholarship.interview.schedule.meetLink')}
               </a>
             : <span className="mt-1 block text-xs text-gray-500">
@@ -179,10 +179,12 @@ export default function InterviewScheduleCard({
                 </div>
               </div>
             ) : (
-              <button type="button" onClick={() => setConfirmingReschedule(true)}
-                className="text-sm font-medium text-blue-600 hover:underline">
-                {t('admin.scholarship.interview.schedule.reschedule')}
-              </button>
+              <div className="text-right">
+                <button type="button" onClick={() => setConfirmingReschedule(true)}
+                  className="text-xs text-blue-600 hover:underline">
+                  {t('admin.scholarship.interview.schedule.reschedule')}
+                </button>
+              </div>
             )}
           </div>
         </div>
