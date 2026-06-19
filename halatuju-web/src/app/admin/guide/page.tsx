@@ -9,6 +9,15 @@
 // size, stacked above its text.
 const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; alt?: string; float?: boolean }[] = [
   {
+    title: 'Before you start: set up your profile',
+    body: (
+      <>Open your <strong>Profile</strong> and set your <strong>language fluency</strong> (English, Bahasa Melayu,
+      Tamil) — we use it to assign you students you can speak with comfortably. While you&rsquo;re there, decide
+      whether to <strong>share your phone number</strong> with your students (on by default, so they know to expect
+      your call; untick it to opt out). It takes a minute and only needs doing once.</>
+    ),
+  },
+  {
     n: 1,
     title: 'Your applicants',
     body: (
@@ -35,10 +44,37 @@ const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; a
       <>Your review comes down to <strong>four facts</strong>: <strong>Identity</strong>,
       <strong> Academic record</strong>, <strong>Pathway</strong> (their study plan or offer), and
       <strong> Income (B40 need)</strong>. The &ldquo;Verification verdict&rdquo; shows what the system is
-      confident about and what still needs your eye.</>
+      confident about and what still needs your eye. Each tile is colour-coded:
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li><strong className="text-green-700">Green — Certain.</strong> The documents back it up.</li>
+          <li><strong className="text-blue-700">Blue — Probable.</strong> Likely fine, but worth a glance.</li>
+          <li><strong className="text-amber-700">Amber — Unsure.</strong> Needs your judgement.</li>
+          <li><strong className="text-red-700">Red — Can&rsquo;t verify.</strong> The evidence is missing or
+          unreadable — act on it (see the next step).</li>
+        </ul></>
     ),
     img: '/reviewer-guide/step3-checks.png',
     alt: 'The Verification verdict showing the four checks',
+  },
+  {
+    title: 'When a check isn’t green',
+    body: (
+      <>Green tiles you can move past quickly — your real work is the <strong>amber</strong> and <strong>red</strong>
+      ones. You have three tools, in order of effort:
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li><strong>Read the document yourself</strong> (next step) — the system&rsquo;s reading is a starting
+          point, not the last word.</li>
+          <li><strong>Raise a query or request a document</strong> if something is missing or doesn&rsquo;t add
+          up — the student replies by email.</li>
+          <li><strong>Ask in the interview</strong> — best for anything that needs a conversation.</li>
+        </ul>
+        <span className="mt-2 block">A few common ones: a <strong>red Pathway</strong> usually means no offer
+        letter yet — request it. An <strong>amber Income</strong> often means the STR proof isn&rsquo;t clearly
+        approved (a SALINAN application-record is <em>not</em> proof) — ask for the MySTR &ldquo;Lulus&rdquo;
+        status, or accept the salary route. An <strong>amber Academic</strong> means re-read the results slip
+        against the grades. <strong>Don&rsquo;t pass weak evidence through</strong> — it&rsquo;s fairer to ask for
+        a clean upload.</span></>
+    ),
   },
   {
     n: 4,
@@ -110,8 +146,13 @@ const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; a
           <li>select <strong>Approve</strong> or <strong>Decline</strong>; and finally</li>
           <li>click <strong>Save verdict &amp; generate final profile</strong>.</li>
         </ul>
-        <span className="mt-2 block">That records your decision and produces the final profile a sponsor will
-        read.</span></>
+        <span className="mt-2 block"><strong>Pass/Fail is not your decision.</strong> It only says whether the AI
+        <em> read each fact correctly</em> — it&rsquo;s separate from Approve/Decline. You can Pass all four facts
+        and still <strong>Decline</strong> (for example, the income is verified but sits above the B40 line).</span>
+        <span className="mt-2 block rounded-lg border border-amber-200 bg-amber-50 p-3"><strong>Save is a one-way
+        step.</strong> It records the decision, emails the student, and sends the final profile to sponsors — and a
+        reviewer can&rsquo;t undo it afterwards (only a super-admin can reopen a case). Check the facts before you
+        save.</span></>
     ),
     img: '/reviewer-guide/step8-decision.png',
     alt: 'The Decision card with the four facts, amount slider and buttons',
