@@ -19,6 +19,7 @@ export default function InterviewBookingPanel({
   const [sched, setSched] = useState<InterviewSchedule | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
   const [rescheduling, setRescheduling] = useState(false)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [requesting, setRequesting] = useState(false)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -89,6 +90,20 @@ export default function InterviewBookingPanel({
 
           {locked ? (
             <p className="mt-3 text-xs text-amber-700">{t('scholarship.application.interview.tooLateNote')}</p>
+          ) : confirmingCancel ? (
+            <div className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-3">
+              <p className="text-sm text-gray-800">{t('scholarship.application.interview.cancelConfirm')}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <button type="button" onClick={cancel} disabled={busy}
+                  className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                  {t('scholarship.application.interview.cancelYes')}
+                </button>
+                <button type="button" onClick={() => setConfirmingCancel(false)} disabled={busy}
+                  className="text-sm text-gray-600 hover:text-gray-800">
+                  {t('scholarship.application.interview.cancelKeep')}
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="mt-3 flex flex-wrap items-center gap-3">
               {sched.slots.filter((s) => s.id !== sched.booked_slot_id).length > 0 && (
@@ -97,9 +112,9 @@ export default function InterviewBookingPanel({
                   {t('scholarship.application.interview.reschedule')}
                 </button>
               )}
-              <button type="button" onClick={cancel} disabled={busy}
+              <button type="button" onClick={() => setConfirmingCancel(true)} disabled={busy}
                 className="text-sm text-gray-500 hover:text-red-600 disabled:opacity-50">
-                {t('scholarship.application.interview.cancel')}
+                {t('scholarship.application.interview.cancelInterview')}
               </button>
             </div>
           )}
