@@ -856,3 +856,8 @@
   change):** add a verdict-due field/SLA, a detection job (interviewed/assigned + no verdict past the SLA), and an
   overdue-verdict nudge email; only then surface the due date in the **interview reminder** too (the deferred external-review
   point — a date with teeth, not a soft target that can already be in the past by interview time). (Logged 2026-06-19.)
+- TD-132: **R1 sponsor-portal Tamil strings are first-drafts.** The new `sponsorPortal.nav` / `students` / `account`
+  keys (+ `myStudents.none`) were added EN/MS/TA in lockstep, but the Tamil is a first-draft for owner refinement per
+  `tamil-style-guide.md`. **To resolve (owner):** refine the Tamil copy on the three new sponsor-portal blocks.
+  (Logged 2026-06-19, Sponsor redesign R1.) Related: **TD-101** (the Students "Support" button is a stub — funding not
+  wired pending the owner's fund-UX sign-off).

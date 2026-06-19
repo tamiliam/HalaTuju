@@ -24,7 +24,7 @@
 
 | # | Sprint | New backend | Complexity |
 |---|--------|-------------|------------|
-| R1 | Portal shell + nav + **Students** marketplace tab | none | Medium |
+| R1 | Portal shell + nav + **Students** marketplace tab — ✅ **DONE** (`4fab9b0`, dark) | none | Medium |
 | R2 | **My Giving** dashboard — impact numbers, donut, student journeys | small | Medium |
 | R3 | Activity feed + community strip | small | Medium |
 | R4 | **My Account** tab + **giving statement** (two ledgers) | tiny | Low–Med |
@@ -34,7 +34,7 @@
 
 ---
 
-### R1 — Portal shell + Students tab · FE (no new backend)
+### R1 — Portal shell + Students tab · FE (no new backend) — ✅ DONE 2026-06-19 (`4fab9b0`; dark; +7 jest = 349; retro `docs/retrospective-sponsor-redesign-r1.md`)
 **Goal:** replace the flat `/sponsor` scroll with the three-tab shell (My Giving · Students · My Account) and ship the Students marketplace.
 **Scope:** tabbed nav + routing — `/sponsor` → My Giving when signed in; `/sponsor/students`, `/sponsor/students/[id]`, `/sponsor/account`; keep the public `SponsorLanding` (signed-out) untouched; 301 old `/sponsor/pool/[id]` → `/sponsor/students/[id]`. Students tab = filterable pool grid (`getSponsorPool`) + detail + "Support this student" (`fund`).
 **Acceptance:** browse → filter → view → fund works in the new design; leak test green; ships dark; jest green.
