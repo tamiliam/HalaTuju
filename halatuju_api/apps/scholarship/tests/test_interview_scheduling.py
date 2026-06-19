@@ -417,6 +417,10 @@ class BookingEmailTests(TestCase):
         self.assertEqual(msg.subject, 'Your B40 Assistance Programme interview is booked')
         self.assertEqual(msg.reply_to, ['interview@halatuju.xyz'])
         self.assertEqual(msg.from_email, 'interview@halatuju.xyz')   # #2: sends FROM interview@
+        # Harmless List-Unsubscribe (mailto to support, no one-click) so a mistaken click
+        # can't trigger the ESP's auto-suppression of service mail.
+        self.assertIn('mailto:help@halatuju.xyz', msg.extra_headers.get('List-Unsubscribe', ''))
+        self.assertNotIn('List-Unsubscribe-Post', msg.extra_headers)
         body = msg.body
         self.assertIn('Hi Priya,', body)                    # first name
         self.assertIn('Interviewer: Rohini', body)          # interviewer NAME (no phone)
