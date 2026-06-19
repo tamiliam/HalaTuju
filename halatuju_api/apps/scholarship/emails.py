@@ -1143,6 +1143,15 @@ def _fmt_myt(dt):
     return f'{local:%a, %d %b %Y}, {hour12}:{local:%M} {ampm} (MYT)'
 
 
+def _interview_unsub_headers():
+    """A harmless List-Unsubscribe on interview/service emails: a mailto to support, so a
+    mistaken 'unsubscribe' click just lands a note in the support inbox for a human — instead
+    of triggering the ESP's auto-suppression that would silently stop us reaching the student
+    about reminders or their decision. No one-click POST header, so nothing auto-fires. (The
+    definitive fix is a Brevo-side List-Help on transactional mail.)"""
+    return {'List-Unsubscribe': f'<mailto:{SUPPORT_EMAIL}?subject=Unsubscribe%20from%20B40%20emails>'}
+
+
 def _send_bilingual(to_email, subject, en, bm):
     """Send one EN+BM email (the booking-flow pattern), with Reply-To = the interview
     alias so replies route there. Best-effort → bool."""
@@ -1155,6 +1164,7 @@ def _send_bilingual(to_email, subject, en, bm):
             from_email=INTERVIEW_FROM_EMAIL,
             to=[to_email],
             reply_to=[INTERVIEW_REPLY_TO],
+            headers=_interview_unsub_headers(),
         ).send()
         return True
     except Exception:
@@ -1191,6 +1201,7 @@ def _send_html(to_email, subject, text_body, html_body, reply_to=None, ics=None)
             from_email=INTERVIEW_FROM_EMAIL,
             to=[to_email],
             reply_to=reply_to or [INTERVIEW_REPLY_TO],
+            headers=_interview_unsub_headers(),
         )
         msg.attach_alternative(html_body, 'text/html')
         if ics:
@@ -1536,7 +1547,8 @@ def _send_plain(to_email, subject, body):
     try:
         EmailMessage(subject=subject, body=body,
                      from_email=INTERVIEW_FROM_EMAIL,
-                     to=[to_email], reply_to=[INTERVIEW_REPLY_TO]).send()
+                     to=[to_email], reply_to=[INTERVIEW_REPLY_TO],
+                     headers=_interview_unsub_headers()).send()
         return True
     except Exception:
         logger.warning('Failed to send reviewer interview email to %s', to_email, exc_info=True)
