@@ -1284,6 +1284,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
     when = _fmt_myt(start)
     cutoff = getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
     duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
+    app_link = f"{getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')}/scholarship/application"
     summary = 'B40 Assistance Programme interview'
     details = f'Join: {meeting_url}' if meeting_url else 'Your interviewer will share the video-call link.'
     gcal = _gcal_url(start=start, duration_min=duration_min, text=summary,
@@ -1306,7 +1307,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'on. If you are under 18, please have a parent or guardian with you; whatever your age, '
         f'they’re welcome to join too.\n\n'
         f'Need a different time? You can reschedule or cancel from your application page in '
-        f'HalaTuju up to {cutoff} hours before the interview.\n\n'
+        f'HalaTuju ({app_link}) up to {cutoff} hours before the interview.\n\n'
         f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {SUPPORT_EMAIL}.\n\n'
@@ -1324,7 +1325,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'dengan kamera dibuka. Jika anda di bawah 18 tahun, sila pastikan ibu bapa atau penjaga '
         f'bersama anda; tidak kira umur anda, mereka juga dialu-alukan untuk menyertai.\n\n'
         f'Perlu masa lain? Anda boleh menjadual semula atau membatalkan melalui halaman permohonan '
-        f'anda di HalaTuju sehingga {cutoff} jam sebelum temu duga.\n\n'
+        f'anda di HalaTuju ({app_link}) sehingga {cutoff} jam sebelum temu duga.\n\n'
         f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian '
         f'anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
         f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
@@ -1360,8 +1361,9 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         'Add to calendar',
         'The interview is a video call and takes about 30 minutes. Please join with your camera on. '
         'If you are under 18, please have a parent or guardian with you; whatever your age, they’re '
-        'welcome to join too. Need a different time? You can reschedule or cancel from your '
-        f'application page in HalaTuju up to {cutoff} hours before the interview.',
+        'welcome to join too. Need a different time? You can reschedule or cancel from '
+        f'<a href="{app_link}">your application page</a> in HalaTuju up to {cutoff} hours before the '
+        'interview.',
         'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {SUPPORT_EMAIL}.',
@@ -1375,8 +1377,8 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         'Temu duga ialah panggilan video dan mengambil masa kira-kira 30 minit. Sila sertai dengan '
         'kamera dibuka. Jika anda di bawah 18 tahun, sila pastikan ibu bapa atau penjaga bersama '
         'anda; tidak kira umur anda, mereka juga dialu-alukan untuk menyertai. Perlu masa lain? Anda '
-        f'boleh menjadual semula atau membatalkan melalui halaman permohonan anda sehingga {cutoff} '
-        'jam sebelum temu duga.',
+        f'boleh menjadual semula atau membatalkan melalui <a href="{app_link}">halaman permohonan '
+        f'anda</a> sehingga {cutoff} jam sebelum temu duga.',
         'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. '
         f'Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika sesiapa '
         f'berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
