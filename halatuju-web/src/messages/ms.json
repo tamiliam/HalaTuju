@@ -2516,6 +2516,11 @@
           "busyOther": "Anda ada temu duga pelajar lain pada masa ini",
           "pickThree": "Pilih 3 masa — pelajar akan pilih satu.",
           "propose": "Cadangkan masa",
+          "proposedHeading": "Masa yang dicadangkan",
+          "awaitingChoice": "Menunggu pelajar memilih salah satu daripada ini.",
+          "proposeAlternative": "Cadangkan masa alternatif",
+          "cancelEdit": "Batal",
+          "removeSlot": "Buang masa",
           "error": "Tidak dapat menyimpan. Sila cuba lagi."
         }
       },
