@@ -557,6 +557,9 @@ export interface InterviewSchedule {
   /** Reviewer-facing only: start times (ISO) this reviewer already holds for OTHER
    *  students, so the propose grid can grey them out. Absent on the student payload. */
   reviewer_busy?: string[]
+  /** The student said none of the proposed times work and asked for others. */
+  alternatives_requested?: boolean
+  alternatives_note?: string
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in

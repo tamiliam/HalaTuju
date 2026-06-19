@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Interview: student can request alternative times in-app (closes a dead-end loop) + all interview emails send from `interview@`.**
+  Previously the "pick a time" email said "reply if none work" → replies went to the shared `interview@` inbox and the
+  assigned reviewer never learned of it, while the student waited indefinitely. Now the student's booking panel has an
+  **"Ask for other times"** action (with an optional note) → records the request, **emails the assigned reviewer directly**,
+  and shows an **amber banner with the note in the cockpit** above "Propose alternative times"; proposing a fresh menu
+  clears the request and re-notifies the student. New `interview_alternatives_requested_at`/`_note` (migration
+  `scholarship/0063`, additive, migrate-first), `scheduling.request_alternatives`, `StudentInterviewRequestAlternativesView`,
+  `send_reviewer_alternatives_requested_email`. The "pick a time" email now points to that in-app action instead of an
+  email reply. Separately, **all interview comms (assigned, pick-a-time, booked, reminders, cancelled — student & reviewer)
+  now send From `interview@halatuju.xyz`** (was the global `info@`), so the whole thread is self-contained. +6 tests.
 - **Interview slots: 24-hour minimum lead + locked "Proposed times" view + state-aware copy.** The earliest
   proposable slot is now **24 hours ahead** (`MIN_LEAD_HOURS` / `SLOT_MIN_LEAD_HOURS`, mirrored FE+BE) — too-soon days/
   times are disabled in the picker and rejected server-side (`too_soon`), so the student always has time to see, pick,

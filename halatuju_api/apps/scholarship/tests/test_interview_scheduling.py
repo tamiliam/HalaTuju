@@ -162,6 +162,39 @@ class SchedulingServiceTests(TestCase):
         student_p = interview_schedule_payload(self.app)
         self.assertNotIn('reviewer_busy', student_p)              # never leaked to students
 
+    # ── request alternatives ("none of these work") ────────────────────────────
+    def test_request_alternatives_records_and_notifies_reviewer(self):
+        mail.outbox.clear()
+        scheduling.request_alternatives(self.app, note='only back after 22 June')
+        self.app.refresh_from_db()
+        self.assertIsNotNone(self.app.interview_alternatives_requested_at)
+        self.assertEqual(self.app.interview_alternatives_note, 'only back after 22 June')
+        self.assertEqual(len(mail.outbox), 1)                      # the assigned reviewer
+        self.assertEqual(mail.outbox[0].to, ['rohini@example.com'])
+        self.assertIn('different interview times', mail.outbox[0].subject)
+        self.assertIn('only back after 22 June', mail.outbox[0].body)
+
+    def test_request_alternatives_rejected_once_booked(self):
+        self.app.interview_status = 'booked'
+        self.app.save(update_fields=['interview_status'])
+        with self.assertRaises(scheduling.SchedulingError) as cm:
+            scheduling.request_alternatives(self.app)
+        self.assertEqual(str(cm.exception), 'already_booked')
+
+    def test_proposing_clears_the_alternatives_request(self):
+        scheduling.request_alternatives(self.app, note='x')
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=4)])
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.interview_alternatives_requested_at)
+        self.assertEqual(self.app.interview_alternatives_note, '')
+
+    def test_payload_surfaces_alternatives_request(self):
+        from apps.scholarship.serializers_admin import interview_schedule_payload
+        scheduling.request_alternatives(self.app, note='after exams')
+        p = interview_schedule_payload(self.app)
+        self.assertTrue(p['alternatives_requested'])
+        self.assertEqual(p['alternatives_note'], 'after exams')
+
     # ── email language gate (English-only ⇔ chose English AND A/A+ in English) ──
     def test_english_only_email_rule(self):
         from apps.scholarship.emails import english_only_email
@@ -454,6 +487,15 @@ class SchedulingEndpointTests(TestCase):
         self._auth('rev-uid')
         r = self.client.post(self._propose_url(), {'slots': [self._iso(days=3)]}, format='json')
         self.assertEqual(r.status_code, 404)
+
+    def test_student_requests_alternatives_endpoint(self):
+        self._auth('stud')
+        r = self.client.post(
+            f'/api/v1/scholarship/applications/{self.app.id}/interview/request-alternatives/',
+            {'note': 'none of these work for me'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()['alternatives_requested'])
+        self.assertEqual(r.json()['alternatives_note'], 'none of these work for me')
 
     @patch('apps.scholarship.meeting.create_event', return_value=None)
     def test_student_books_and_cancels_own(self, _mock):

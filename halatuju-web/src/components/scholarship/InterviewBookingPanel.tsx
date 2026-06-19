@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatMyt, withinCutoff } from '@/lib/interviewTime'
 import {
-  getInterview, bookInterviewSlot, cancelInterview, type InterviewSchedule,
+  getInterview, bookInterviewSlot, cancelInterview, requestInterviewAlternatives,
+  type InterviewSchedule,
 } from '@/lib/api'
 
 /** Student-facing "Your interview" panel: pick one of the reviewer's proposed
@@ -18,6 +19,8 @@ export default function InterviewBookingPanel({
   const [sched, setSched] = useState<InterviewSchedule | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
   const [rescheduling, setRescheduling] = useState(false)
+  const [requesting, setRequesting] = useState(false)
+  const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -54,6 +57,15 @@ export default function InterviewBookingPanel({
         ? t('scholarship.application.interview.tooLateNote')
         : t('scholarship.application.interview.error'))
     } finally { setBusy(false) }
+  }
+
+  const requestAlt = async () => {
+    setBusy(true); setError('')
+    try {
+      setSched(await requestInterviewAlternatives(applicationId, note, { token }))
+      setRequesting(false); setNote('')
+    } catch { setError(t('scholarship.application.interview.error')) }
+    finally { setBusy(false) }
   }
 
   const cutoffH = sched.reschedule_cutoff_hours
@@ -127,6 +139,34 @@ export default function InterviewBookingPanel({
             className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
             {t('scholarship.application.interview.book')}
           </button>
+
+          {/* "None of these work" — request other times (notifies the interviewer). */}
+          {sched.alternatives_requested ? (
+            <p className="mt-4 rounded-lg bg-white/70 px-3 py-2 text-xs text-gray-600">
+              {t('scholarship.application.interview.altRequested')}
+            </p>
+          ) : requesting ? (
+            <div className="mt-4 space-y-2">
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={1000}
+                placeholder={t('scholarship.application.interview.altNotePlaceholder')}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={requestAlt} disabled={busy}
+                  className="rounded-lg bg-gray-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-900 disabled:opacity-50">
+                  {t('scholarship.application.interview.altSubmit')}
+                </button>
+                <button type="button" onClick={() => { setRequesting(false); setNote('') }}
+                  className="text-sm text-gray-500 hover:text-gray-700">
+                  {t('scholarship.application.interview.altCancel')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setRequesting(true)}
+              className="mt-4 block text-sm text-blue-600 hover:underline">
+              {t('scholarship.application.interview.altAsk')}
+            </button>
+          )}
         </div>
       )}
 

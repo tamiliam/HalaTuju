@@ -14,6 +14,9 @@ from django.core.mail import EmailMessage, EmailMultiAlternatives, send_mail
 # global DEFAULT_FROM_EMAIL (info@halatuju.xyz) so every reply is deliverable.
 INTERVIEW_REPLY_TO = 'interview@halatuju.xyz'
 SPONSOR_REPLY_TO = 'sponsor@halatuju.xyz'
+# All interview comms send FROM (and reply to) the interview alias, so the whole thread is
+# self-contained on interview@ rather than the global info@ sender.
+INTERVIEW_FROM_EMAIL = 'interview@halatuju.xyz'
 
 logger = logging.getLogger(__name__)
 
@@ -1149,7 +1152,7 @@ def _send_bilingual(to_email, subject, en, bm):
         EmailMessage(
             subject=subject,
             body=en + '\n\n———\n\n' + bm,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=INTERVIEW_FROM_EMAIL,
             to=[to_email],
             reply_to=[INTERVIEW_REPLY_TO],
         ).send()
@@ -1184,7 +1187,7 @@ def _send_html(to_email, subject, text_body, html_body, reply_to=None):
         msg = EmailMultiAlternatives(
             subject=subject,
             body=text_body,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=INTERVIEW_FROM_EMAIL,
             to=[to_email],
             reply_to=reply_to or [INTERVIEW_REPLY_TO],
         )
@@ -1296,8 +1299,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         f'The interview is a video call and takes about 30 minutes. Once you pick a slot, we’ll '
         f'email you a confirmation with a Google Meet link, and send reminders one day and one '
         f'hour before.\n\n'
-        f'If none of the available times suit you, simply reply to this email and we’ll do our '
-        f'best to arrange an alternative.\n\n'
+        f'If none of them suit you, you can ask for other times on that same page — your '
+        f'interviewer will then suggest new ones.\n\n'
         f'For your peace of mind: we’ll only ever ask about you and your studies. We will never '
         f'ask you for money, your password, or an OTP or PIN. If anyone claiming to represent the '
         f'B40 Assistance Programme does, it isn’t us.\n\n'
@@ -1311,8 +1314,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         f'Temu duga dijalankan melalui panggilan video dan mengambil masa kira-kira 30 minit. '
         f'Setelah anda memilih slot, kami akan menghantar e-mel pengesahan dengan pautan Google '
         f'Meet, serta peringatan satu hari dan satu jam sebelumnya.\n\n'
-        f'Jika tiada masa yang sesuai, balas sahaja e-mel ini dan kami akan cuba sedaya upaya '
-        f'untuk mengaturkan masa lain.\n\n'
+        f'Jika tiada yang sesuai, anda boleh meminta masa lain pada halaman yang sama — penemu '
+        f'duga anda kemudian akan mencadangkan masa baharu.\n\n'
         f'Untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. Kami '
         f'tidak sekali-kali akan meminta wang, kata laluan, atau OTP atau PIN. Jika sesiapa yang '
         f'mendakwa mewakili Program Bantuan B40 berbuat demikian, itu bukan kami.\n\n'
@@ -1339,8 +1342,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         'The interview is a video call and takes about 30 minutes. Once you pick a slot, we’ll '
         'email you a confirmation with a Google Meet link, and send reminders one day and one '
         'hour before.',
-        'If none of the available times suit you, simply reply to this email and we’ll do our '
-        'best to arrange an alternative.',
+        'If none of them suit you, you can ask for other times on that same page — your '
+        'interviewer will then suggest new ones.',
         'For your peace of mind: we’ll only ever ask about you and your studies. We will never ask '
         'you for money, your password, or an OTP or PIN. If anyone claiming to represent the B40 '
         'Assistance Programme does, it isn’t us.',
@@ -1353,8 +1356,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         'Temu duga dijalankan melalui panggilan video dan mengambil masa kira-kira 30 minit. '
         'Setelah anda memilih slot, kami akan menghantar e-mel pengesahan dengan pautan Google '
         'Meet, serta peringatan satu hari dan satu jam sebelumnya.',
-        'Jika tiada masa yang sesuai, balas sahaja e-mel ini dan kami akan cuba sedaya upaya untuk '
-        'mengaturkan masa lain.',
+        'Jika tiada yang sesuai, anda boleh meminta masa lain pada halaman yang sama — penemu duga '
+        'anda kemudian akan mencadangkan masa baharu.',
         'Untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. Kami '
         'tidak sekali-kali akan meminta wang, kata laluan, atau OTP atau PIN. Jika sesiapa yang '
         'mendakwa mewakili Program Bantuan B40 berbuat demikian, itu bukan kami.',
@@ -1418,7 +1421,7 @@ def _send_plain(to_email, subject, body):
         return False
     try:
         EmailMessage(subject=subject, body=body,
-                     from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+                     from_email=INTERVIEW_FROM_EMAIL,
                      to=[to_email], reply_to=[INTERVIEW_REPLY_TO]).send()
         return True
     except Exception:
@@ -1455,6 +1458,22 @@ def send_reviewer_interview_reminder_email(to_email, *, reviewer_name, applicant
     subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
             else 'Reminder: your B40 interview is in 1 hour')
     return _send_plain(to_email, subj, body)
+
+
+def send_reviewer_alternatives_requested_email(to_email, *, reviewer_name, applicant_name, note=''):
+    """Reviewer notice that the student said none of the proposed times work and wants other
+    options. Routes the request to the right person (vs a reply lost in a shared inbox). Plain EN."""
+    note_block = f'\nWhat they said:\n  "{note}"\n' if note else ''
+    body = (
+        f'Hi {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} has let us know that none of the interview times you '
+        f'proposed will work for them, and has asked for other times.\n'
+        f'{note_block}\n'
+        f'Please open their record in the admin console and use "Propose alternative times" to '
+        f'offer a fresh set — they\'ll be emailed automatically.\n\n'
+        f'— HalaTuju'
+    )
+    return _send_plain(to_email, 'A B40 applicant needs different interview times', body)
 
 
 def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name):

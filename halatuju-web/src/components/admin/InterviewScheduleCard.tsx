@@ -159,6 +159,16 @@ export default function InterviewScheduleCard({
           none of the times work). Hidden once booked. */}
       {schedule.status !== 'booked' && !editing && (
         <div className="mt-4">
+          {/* The student said none of these work — prompt the reviewer to propose alternatives. */}
+          {schedule.alternatives_requested && (
+            <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              <div className="font-medium">{t('admin.scholarship.interview.schedule.altRequestedTitle')}</div>
+              {schedule.alternatives_note && (
+                <p className="mt-1 italic">“{schedule.alternatives_note}”</p>
+              )}
+              <p className="mt-1 text-xs">{t('admin.scholarship.interview.schedule.altRequestedHint')}</p>
+            </div>
+          )}
           <div className="text-sm font-semibold text-gray-900">
             {t('admin.scholarship.interview.schedule.proposedHeading')}
           </div>

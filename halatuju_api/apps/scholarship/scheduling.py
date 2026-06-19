@@ -141,6 +141,12 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None)
             application=application, reviewer=reviewer, start=s, duration_min=duration_min)
         for s in sorted(future)
     ]
+    # A fresh menu answers any outstanding "these don't work" request — clear it.
+    if application.interview_alternatives_requested_at:
+        application.interview_alternatives_requested_at = None
+        application.interview_alternatives_note = ''
+        application.save(update_fields=[
+            'interview_alternatives_requested_at', 'interview_alternatives_note'])
     # Tell the student their times are ready to pick — but ONLY when the menu actually
     # changed. Re-proposing the same set (or a no-op revise) must not re-spam them.
     if set(future) != prev_menu:
@@ -284,4 +290,26 @@ def cancel(application, *, by='student', now=None):
         emails.send_reviewer_interview_cancelled_email(
             reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
             applicant_name=student_name)
+    return application
+
+
+def request_alternatives(application, *, note='', now=None):
+    """The student says none of the proposed times work and asks for different ones. Records
+    the request + an optional note and notifies the ASSIGNED reviewer directly (the proposed
+    menu stays put until they propose a fresh one). Refused once an interview is booked
+    (the student should reschedule/cancel instead). Best-effort email. Returns the application."""
+    now = now or timezone.now()
+    if application.interview_status == 'booked':
+        raise SchedulingError('already_booked')
+    application.interview_alternatives_requested_at = now
+    application.interview_alternatives_note = (note or '').strip()[:1000]
+    application.save(update_fields=[
+        'interview_alternatives_requested_at', 'interview_alternatives_note'])
+
+    reviewer = application.assigned_to
+    _student_email, student_name = _student_identity(application)
+    if reviewer is not None and getattr(reviewer, 'email', ''):
+        emails.send_reviewer_alternatives_requested_email(
+            reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
+            applicant_name=student_name, note=application.interview_alternatives_note)
     return application
