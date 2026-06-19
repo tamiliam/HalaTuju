@@ -41,7 +41,8 @@ class Command(BaseCommand):
             if app.interview_reminded_1d_at is None and start <= now + timedelta(hours=24):
                 emails.send_interview_reminder_email(
                     student_email, student_name=student_name, start=start,
-                    meeting_url=app.interview_meeting_url, when='1day')
+                    meeting_url=app.interview_meeting_url, when='1day',
+                    english_only=emails.english_only_email(app))
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
@@ -55,7 +56,8 @@ class Command(BaseCommand):
             if app.interview_reminded_1h_at is None and start <= now + timedelta(hours=1):
                 emails.send_interview_reminder_email(
                     student_email, student_name=student_name, start=start,
-                    meeting_url=app.interview_meeting_url, when='1hour')
+                    meeting_url=app.interview_meeting_url, when='1hour',
+                    english_only=emails.english_only_email(app))
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,

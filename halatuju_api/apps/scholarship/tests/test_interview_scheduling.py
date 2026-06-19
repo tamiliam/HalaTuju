@@ -454,6 +454,34 @@ class BookingEmailTests(TestCase):
         send_interview_reminder_email('s@example.com', student_name='Priya', start=start, when='1hour')
         self.assertIn('about an hour', mail.outbox[-1].body)
 
+    def test_reminder_email_is_html_bilingual(self):
+        from apps.scholarship.emails import send_interview_reminder_email
+        start = timezone.now() + timedelta(days=1)
+        send_interview_reminder_email('s@example.com', student_name='Priya', start=start, when='1day')
+        msg = mail.outbox[-1]
+        self.assertEqual(len(msg.alternatives), 1)
+        html, mime = msg.alternatives[0]
+        self.assertEqual(mime, 'text/html')
+        self.assertIn('<', html)
+        self.assertIn('Peringatan', msg.body)  # BM mirror present in the text part
+
+    def test_reminder_email_english_only_drops_bm(self):
+        from apps.scholarship.emails import send_interview_reminder_email
+        start = timezone.now() + timedelta(days=1)
+        send_interview_reminder_email('s@example.com', student_name='Priya', start=start,
+                                      when='1day', english_only=True)
+        self.assertNotIn('Peringatan', mail.outbox[-1].body)
+
+    def test_cancelled_email_is_html_bilingual(self):
+        from apps.scholarship.emails import send_interview_cancelled_email
+        send_interview_cancelled_email('s@example.com', student_name='Priya Devi')
+        msg = mail.outbox[-1]
+        self.assertEqual(len(msg.alternatives), 1)
+        self.assertEqual(msg.alternatives[0][1], 'text/html')
+        self.assertIn('Hi Priya,', msg.body)            # first-name greeting
+        self.assertIn('still active', msg.body)          # application-still-active reassurance
+        self.assertIn('Permohonan anda masih aktif', msg.body)  # BM mirror
+
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
                    INTERVIEW_SCHEDULING_ENABLED=True)
