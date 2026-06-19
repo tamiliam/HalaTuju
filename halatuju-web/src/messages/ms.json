@@ -2505,7 +2505,8 @@
         },
         "schedule": {
           "title": "Penjadualan temu duga",
-          "intro": "Cadangkan 3 masa. Pelajar memilih satu, dan kami menghantar pautan Google Meet serta peringatan secara automatik.",
+          "intro": "Cadangkan 3 masa untuk temu duga — pelajar memilih satu, dan kami menghantar pautan Google Meet serta peringatan secara automatik.",
+          "introAlternatives": "Cadangkan 3 masa baharu — ini menggantikan masa yang dilihat pelajar sebelum ini.",
           "booked": "Ditempah",
           "meetLink": "Pautan Google Meet",
           "noLink": "Tiada pautan lagi — ia dijana apabila pelajar menempah.",

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Interview slots: 24-hour minimum lead + locked "Proposed times" view + state-aware copy.** The earliest
+  proposable slot is now **24 hours ahead** (`MIN_LEAD_HOURS` / `SLOT_MIN_LEAD_HOURS`, mirrored FE+BE) — too-soon days/
+  times are disabled in the picker and rejected server-side (`too_soon`), so the student always has time to see, pick,
+  and prepare. Once proposed, the picker is replaced by a read-only **Proposed times** card with a **Propose alternative
+  times** button (reopens the picker pre-loaded; also serves "none of these work"); the selected-list remove control is a
+  **dustbin icon** and the ‹ › month-nav arrows are larger. The subheader is now **state-aware** — shown only while
+  proposing, with first-time vs "propose alternatives" variants (the locked/booked/cancelled states carry their own copy).
 - **Interview emails redesigned — HTML primary + plain-text fallback, bilingual.** The two student-facing interview
   emails (reviewer-assigned "what happens next" + "pick a time slot") are now styled HTML (card layout, button,
   `<meta charset>`) with a plain-text fallback, via a new `_send_html` helper (`EmailMultiAlternatives`),
