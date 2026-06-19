@@ -67,9 +67,15 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]
         self.assertEqual(msg.to, ['priya@example.com'])
-        self.assertIn('ready to pick', msg.subject)
-        self.assertIn('/scholarship/application', msg.body)
-        self.assertIn('Rohini', msg.body)   # the reviewer's name
+        self.assertIn('Pick a time slot', msg.subject)
+        self.assertIn('/scholarship/application', msg.body)            # link in the text fallback
+        self.assertEqual(msg.reply_to, ['interview@halatuju.xyz'])     # replies route to interview@
+        # HTML primary + plain-text fallback.
+        self.assertEqual(len(msg.alternatives), 1)
+        html, mime = msg.alternatives[0]
+        self.assertEqual(mime, 'text/html')
+        self.assertIn('Choose your interview time', html)             # the button label
+        self.assertIn('/scholarship/application"', html)              # button href
 
     def test_propose_rejects_unassigned_reviewer(self):
         with self.assertRaises(scheduling.SchedulingError) as cm:
@@ -155,6 +161,35 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(len(admin_p['reviewer_busy']), 1)        # the other student's slot
         student_p = interview_schedule_payload(self.app)
         self.assertNotIn('reviewer_busy', student_p)              # never leaked to students
+
+    # ── email language gate (English-only ⇔ chose English AND A/A+ in English) ──
+    def test_english_only_email_rule(self):
+        from apps.scholarship.emails import english_only_email
+        def mk(locale, call, eng):
+            p = StudentProfile.objects.create(
+                supabase_user_id=f'eo-{locale}-{call}-{eng}', nric='030101-14-1234',
+                name='X', grades=({'eng': eng} if eng else {}), preferred_call_language=call)
+            return ScholarshipApplication.objects.create(
+                cohort=self.cohort, profile=p, status='interviewing', locale=locale)
+        self.assertTrue(english_only_email(mk('en', 'en', 'A+')))
+        self.assertTrue(english_only_email(mk('en', '', 'A')))
+        self.assertFalse(english_only_email(mk('en', 'en', 'B')))   # English grade too low
+        self.assertFalse(english_only_email(mk('ms', 'en', 'A+')))  # used the app in Malay
+        self.assertFalse(english_only_email(mk('en', 'ms', 'A+')))  # wants Malay calls
+        self.assertFalse(english_only_email(mk('en', 'ta', 'A+')))  # wants Tamil calls
+
+    def test_propose_email_drops_bm_for_english_only_student(self):
+        p = StudentProfile.objects.create(
+            supabase_user_id='eo-prop', nric='030101-14-9999', name='Anya Rao',
+            grades={'eng': 'A+'}, preferred_call_language='en')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='interviewing', notify_email='anya@example.com',
+            assigned_to=self.reviewer, locale='en')
+        mail.outbox.clear()
+        scheduling.propose_slots(app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        body = mail.outbox[-1].body
+        self.assertIn('Hi Anya,', body)
+        self.assertNotIn('Salam', body)   # BM mirror dropped for a confident English reader
 
     def test_reproposing_withdraws_old_unbooked_slots(self):
         scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])

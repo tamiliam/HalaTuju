@@ -519,21 +519,15 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     if reviewer is not None:
         from django.conf import settings as _settings
         if getattr(_settings, 'STUDENT_ASSIGNMENT_EMAIL_ENABLED', False):
-            from .emails import send_student_assigned_reviewer_email
+            from .emails import english_only_email, send_student_assigned_reviewer_email
             profile = application.profile
             student_email = (application.notify_email
                              or getattr(profile, 'contact_email', '') or '')
-            try:
-                rp = reviewer.reviewer_profile
-            except Exception:
-                rp = None
-            phone = rp.phone if (rp and rp.share_phone_with_students) else ''
             send_student_assigned_reviewer_email(
                 student_email,
                 student_name=getattr(profile, 'name', '') if profile else '',
                 reviewer_name=getattr(reviewer, 'name', ''),
-                reviewer_email=getattr(reviewer, 'email', ''),
-                reviewer_phone=phone,
+                english_only=english_only_email(application),
             )
 
     # Check-2 → Reviewer handoff: auto-draft the sponsor profile so the reviewer lands on
