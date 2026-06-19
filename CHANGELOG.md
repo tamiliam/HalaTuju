@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Interview-cancellation email rewritten + clearer reschedule toggle.** The cancellation notice now reads as a
+  confirmation of the student's *own* action (the common case): first-name greeting, "your application is still active",
+  the reviewer will propose alternatives, a reply-to-fix path, and the anti-scam note — fixing the prior copy that wrongly
+  told students to "book a new time" when every slot is withdrawn on cancel (EN+BM). On the booking panel, the
+  "Choose a different time" link is now state-aware: while the reschedule list is open it reads **"Keep my booked time"**
+  (new `interview.rescheduleKeep`, en/ms/ta) so dismissing it no longer looks like re-opening.
 - **Booking-confirmation email redesigned — HTML + .ics "Add to calendar".** The "interview is booked" email is now styled
   HTML + plain-text fallback, bilingual (EN+BM, `english_only` gate), From `interview@`. New copy: details table (date/time ·
   interviewer name — no contact · Meet link), an **Add-to-calendar button** (Google Calendar template URL) plus an attached
