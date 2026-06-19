@@ -527,7 +527,7 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   **No reviewer self-cancel** (a hand-off is an admin reassignment); propose endpoint takes a `reschedule` flag.
 - **Verdict-completion SLA (TD-131):** `send_review_nudges` cron (job `review-nudges`, **dark behind
   `REVIEW_NUDGES_ENABLED`**) — verdict due `assigned_at + REVIEW_SLA_DAYS`; nudge reviewer 2 days before + once overdue;
-  escalate to all super-admins 3 days after. Idempotent stamps (migration `0064`) reset on (re)assignment; recorded
+  escalate to all super-admins 4 days after. Idempotent stamps (migration `0064`) reset on (re)assignment; recorded
   `verdict_decided_at` cancels. Reviewer interview reminder also shows the verdict-due date. Reviewer emails:
   `send_reviewer_verdict_due_email`, `send_super_verdict_escalation_email`.
 - **Reviewer email tree is consistent** (Dear / one dashboard CTA / `{ref}` subject / "The B40 Assistance Team" / all

@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Verdict-completion SLA with reviewer nudges + super-admin escalation (TD-131).** A verdict is due
   `assigned_at + REVIEW_SLA_DAYS` (10). A new daily cron (`send_review_nudges`, dark behind
   `REVIEW_NUDGES_ENABLED`) nudges the assigned reviewer **2 days before** the due date (approaching) and again
-  **once overdue**, then **escalates to all super-admins 3 days after** the due date. Each fires at most once
+  **once overdue**, then **escalates to all super-admins 4 days after** the due date. Each fires at most once
   (idempotency stamps reset on every (re)assignment); a recorded verdict (`verdict_decided_at`) drops the case from
   the population. The reviewer interview reminder now also carries the verdict-due date (the interview and verdict are
   different clocks). New consistent reviewer emails (verdict-due/overdue nudge; super escalation alert). Migration

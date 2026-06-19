@@ -171,7 +171,7 @@ REVIEW_SLA_DAYS = int(os.environ.get('REVIEW_SLA_DAYS', '10'))
 # REVIEW_ESCALATE_GRACE_DAYS after the due date. Dark by default — the cron is inert until on.
 REVIEW_NUDGES_ENABLED = os.environ.get('REVIEW_NUDGES_ENABLED', '').lower() in ('1', 'true', 'yes')
 REVIEW_NUDGE_SOON_DAYS = int(os.environ.get('REVIEW_NUDGE_SOON_DAYS', '2'))   # nudge this many days BEFORE due
-REVIEW_ESCALATE_GRACE_DAYS = int(os.environ.get('REVIEW_ESCALATE_GRACE_DAYS', '3'))  # escalate this many days AFTER due
+REVIEW_ESCALATE_GRACE_DAYS = int(os.environ.get('REVIEW_ESCALATE_GRACE_DAYS', '4'))  # escalate this many days AFTER due (→ day 14)
 # Auto-generate a Google Meet link (+ calendar event) on booking. Separate flag so the
 # scheduling surface can go live BEFORE the Google Workspace organiser account is wired.
 # When off (or creds missing / API error), booking still succeeds — the email simply has
