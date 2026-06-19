@@ -1710,17 +1710,22 @@ def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_n
 
 
 def send_reviewer_interview_reminder_email(to_email, *, reviewer_name, applicant_name, start,
-                                           meeting_url='', when='1day', ref=''):
+                                           meeting_url='', when='1day', ref='', verdict_due=''):
     """Reviewer reminder (1 day / 1 hour before). Plain EN. A nudge only — no calendar link,
-    since the time was added when it was booked."""
+    since the time was added when it was booked. ``verdict_due`` (a date string) adds a heads-up
+    that the verdict for this applicant is due by then — the interview and verdict are different
+    clocks, so a reviewer juggling cases sees both (TD-131)."""
     soon = 'tomorrow' if when == '1day' else 'in about an hour'
     details = [f'When: {_fmt_myt(start)}']
     if meeting_url:
         details.append(f'Meet link: {meeting_url}')
+    verdict_line = (f'After the interview, please record your verdict — it is due by {verdict_due}.\n\n'
+                    if verdict_due else '')
     body = (
         f'Dear {reviewer_name or "there"},\n\n'
         f'Your B40 interview with {applicant_name or "an applicant"} is {soon}.\n\n'
         + '\n'.join(details) + '\n\n'
+        f'{verdict_line}'
         f'{_reviewer_dashboard_cta()}\n\n'
         f'{_REVIEWER_SIGNOFF}'
     )
@@ -1758,3 +1763,46 @@ def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applican
         f'{_REVIEWER_SIGNOFF}'
     )
     return _send_plain(to_email, _reviewer_subject('Applicant cancelled their interview', ref), body)
+
+
+def send_reviewer_verdict_due_email(to_email, *, reviewer_name, applicant_name, ref='',
+                                    due_by='', overdue=False):
+    """TD-131: nudge the assigned reviewer that a verdict is due soon / now overdue. Plain EN,
+    consistent reviewer style (Dear / dashboard CTA / {ref} subject / B40 Assistance Team)."""
+    applicant = applicant_name or 'an applicant'
+    if overdue:
+        lead = (f'Your verdict for {applicant} is overdue'
+                + (f' — it was due {due_by}' if due_by else '') + '.')
+        base = 'Verdict overdue'
+    else:
+        lead = (f'Your verdict for {applicant} is due soon'
+                + (f' — by {due_by}' if due_by else '') + '.')
+        base = 'Verdict due soon'
+    body = (
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'{lead}\n\n'
+        f'Please open their record, complete your review, and record your verdict.\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject(base, ref), body)
+
+
+def send_super_verdict_escalation_email(to_email, *, applicant_name, ref='', reviewer_name='',
+                                        due_by=''):
+    """TD-131: escalate an overdue verdict to a super-admin — the assigned reviewer hasn't recorded
+    a verdict well past the SLA. Plain EN."""
+    who = reviewer_name or 'the assigned reviewer'
+    body = (
+        f'Hi,\n\n'
+        f'A B40 verdict is overdue and needs attention.\n\n'
+        f'Reference: {ref or "—"}\n'
+        f'Applicant: {applicant_name or "—"}\n'
+        f'Assigned reviewer: {who}\n'
+        + (f'Was due: {due_by}\n' if due_by else '')
+        + f'\n{who} has not recorded a verdict past the review deadline. You may want to follow up, '
+        f'or reassign the case from the admin console.\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject('Overdue verdict needs attention', ref), body)

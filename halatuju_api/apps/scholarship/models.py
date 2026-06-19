@@ -389,6 +389,17 @@ class ScholarshipApplication(models.Model):
         null=True, blank=True,
         help_text="F7: when the current reviewer was assigned (null = unassigned)",
     )
+    # ── Review-completion SLA nudges (TD-131) ──────────────────────────────────
+    # Verdict-due = assigned_at + REVIEW_SLA_DAYS. The send_review_nudges cron fires each
+    # of these at most once (idempotency stamps, like interview_reminded_*); they are reset
+    # whenever the application is (re)assigned so the new reviewer's clock starts clean. A
+    # recorded verdict (verdict_decided_at) cancels all of them.
+    review_nudged_soon_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the 'verdict due soon' reviewer nudge was sent")
+    review_nudged_overdue_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the 'verdict overdue' reviewer nudge was sent")
+    review_escalated_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the overdue verdict was escalated to super-admins")
 
     # ── Interview scheduling (in-app booking + Google Meet) ────────────────────
     # The assigned reviewer proposes a few InterviewSlot options; the student books

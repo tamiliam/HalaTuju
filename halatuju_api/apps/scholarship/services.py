@@ -498,7 +498,14 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     )
     application.assigned_to = reviewer
     application.assigned_at = now if reviewer is not None else None
-    application.save(update_fields=['assigned_to', 'assigned_at'])
+    # Reset the verdict-SLA nudge stamps (TD-131) so the new reviewer's clock starts clean —
+    # otherwise a prior owner's stamps would suppress nudges for the new assignee.
+    application.review_nudged_soon_at = None
+    application.review_nudged_overdue_at = None
+    application.review_escalated_at = None
+    application.save(update_fields=[
+        'assigned_to', 'assigned_at',
+        'review_nudged_soon_at', 'review_nudged_overdue_at', 'review_escalated_at'])
 
     # Notify the reviewer they have a new applicant to review. Only on an actual
     # assignment (not an unassign); the no-op short-circuit above means an unchanged
