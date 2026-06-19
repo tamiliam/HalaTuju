@@ -83,12 +83,13 @@ export default function AdminScholarshipList() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
   // Column sorting (server-side). '' = default (newest submitted first).
-  const [sort, setSort] = useState<'' | 'name' | 'merit'>('')
+  const [sort, setSort] = useState<'' | 'name' | 'merit' | 'source' | 'status'>('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   // Click a sortable header: same column flips direction; a new column starts at a
-  // sensible default (name A→Z, merit high→low). Resets to page 1.
-  const toggleSort = (key: 'name' | 'merit') => {
+  // sensible default (merit high→low; name/source/status A→Z). Resets to page 1.
+  type SortKey = 'name' | 'merit' | 'source' | 'status'
+  const toggleSort = (key: SortKey) => {
     if (sort === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     } else {
@@ -97,7 +98,7 @@ export default function AdminScholarshipList() {
     }
     setPage(1)
   }
-  const sortArrow = (key: 'name' | 'merit') => (sort === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '')
+  const sortArrow = (key: SortKey) => (sort === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '')
 
   // Debounce the search box so a request doesn't fire on every keystroke.
   useEffect(() => {
@@ -252,7 +253,12 @@ export default function AdminScholarshipList() {
                     {t('admin.scholarship.name')}{sortArrow('name')}
                   </button>
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.source')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                  <button type="button" onClick={() => toggleSort('source')}
+                    className="uppercase tracking-wider hover:text-gray-900">
+                    {t('admin.scholarship.source')}{sortArrow('source')}
+                  </button>
+                </th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.bucket')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.qualShort')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
@@ -261,7 +267,12 @@ export default function AdminScholarshipList() {
                     {t('admin.scholarship.merit')}{sortArrow('merit')}
                   </button>
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.status')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                  <button type="button" onClick={() => toggleSort('status')}
+                    className="uppercase tracking-wider hover:text-gray-900">
+                    {t('admin.scholarship.status')}{sortArrow('status')}
+                  </button>
+                </th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.submitted')}</th>
                 {isSuper && <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
               </tr>
