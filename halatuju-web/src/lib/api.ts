@@ -746,6 +746,29 @@ export async function getSponsorImpact(options?: ApiOptions): Promise<SponsorImp
   return apiRequest('/api/v1/sponsor/impact/', options)
 }
 
+/** R3 — the My Giving activity feed: this sponsor's own students' lifecycle events,
+ *  anonymous ref only. 404s while the pool flag is off. */
+export interface SponsorActivityEvent {
+  type: 'funded' | 'accepted' | 'semester' | 'graduated' | 'thank_you'
+  ref: string
+  at: string
+}
+
+export async function getSponsorActivity(options?: ApiOptions): Promise<{ events: SponsorActivityEvent[] }> {
+  return apiRequest('/api/v1/sponsor/activity/', options)
+}
+
+/** R3 — programme-wide belonging counts for the My Giving community strip. */
+export interface SponsorCommunity {
+  sponsors: number
+  students_supported: number
+  students_waiting: number
+}
+
+export async function getSponsorCommunity(options?: ApiOptions): Promise<SponsorCommunity> {
+  return apiRequest('/api/v1/sponsor/community/', options)
+}
+
 /** F1 — public live counter for the sponsor landing. No auth (a public marketing
  *  page calls it). While SPONSOR_POOL_ENABLED is off it returns {count:0,
  *  enabled:false} so the landing stays dark until go-live. */

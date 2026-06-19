@@ -45,7 +45,7 @@
 **New backend:** `GET /sponsor/impact/` aggregate (total given, supported, active, graduated, semesters completed, balance breakdown committed/completed/available) + a coarse `journey`/`stage` field on `SponsorSponsorshipSerializer` — all derived from existing models, allowlist-safe.
 **Acceptance:** figures reconcile with wallet; journey leaks nothing; aggregate tested.
 
-### R3 — Activity feed + community strip · BE(small) + FE
+### R3 — Activity feed + community strip · BE(small) + FE — ✅ DONE 2026-06-20 (no migration; synthesised `GET /sponsor/activity/` + `GET /sponsor/community/` via new `sponsor_feed`; +6 pytest = 95 sponsor; retro `docs/retrospective-sponsor-redesign-r3.md`)
 **Scope:** "Recent activity" feed + "you're 1 of N sponsors, together supporting M students" strip.
 **New backend:** `GET /sponsor/activity/` synthesised from existing events for *this sponsor's* students (offer accepted = `Sponsorship.decided_at`; semester completed = `SemesterResult.created_at`; graduated; new-students-published count), refs only; small community-count endpoint.
 **Decision at sprint start:** synthesise on the fly (no migration — preferred) vs a lightweight event-log table.
