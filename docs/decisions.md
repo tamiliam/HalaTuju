@@ -3156,3 +3156,17 @@ single-inbox.
 **Rationale:** a self-tick is an unverified claim; only an on-file, current document makes a welfare/income fact certain. Consistent with the standing need-signal principle (auditable evidence only). Symmetric: the same standard that suppresses an undocumented STR also forbids hiding a documented salary behind a soft reported figure.
 **Trade-offs:** a genuine STR recipient who never uploaded the doc loses the STR mention in their profile; JKM (no document collected anywhere) is effectively never assertable. Existing drafts need the billable `backfill-assigned-profiles` cron to pick up the change.
 **Revisit if:** a JKM document type is added to the upload flow, or the owner wants self-declared welfare surfaced as an explicit "reported" line.
+
+## Interview scheduling rules: 24h lead, exactly-3, in-app alternatives — 2026-06-19
+**Decision:** Reviewers propose EXACTLY 3 times from a Calendly-style picker constrained to 08:00–21:30 MYT on 30-min steps with a 24-hour minimum lead; the rule lives once in `halatuju-web/src/lib/interviewSlots.ts` and is mirrored + enforced server-side (`scheduling.slot_in_window`/`meets_min_lead`, view returns `invalid_slot_time`/`too_soon`). A student who finds none suitable uses an **in-app "Ask for other times"** action (records a note, emails the assigned reviewer, shows a cockpit banner), NOT an email reply.
+**Alternatives considered:** free 24h datetime picker (unprofessional, allowed too-soon slots); min-2 instead of exactly-3; "reply to this email if none work" (replies hit a shared inbox the reviewer never saw — the dead-end we removed).
+**Rationale:** matches professional schedulers (discrete slots, minimum notice); a single shared rule prevents FE/BE drift; the in-app loop is reliable + auditable and routes to the right person.
+**Trade-offs:** exactly-3 is rigid (fine given the wide window); the conflict-blocking holds 3 of a reviewer's slots per pending student (self-reschedule preserved).
+**Revisit if:** interview volume needs host-availability rules (Calendly-style) instead of hand-picked times, or the student booking side wants the same chip UI.
+
+## Interview emails: From interview@, bilingual HTML, scoped unsubscribe — 2026-06-19
+**Decision:** All interview comms (student + reviewer) send HTML+text, bilingual EN+BM (with an `english_only` gate = used the app in English AND no Malay/Tamil call preference AND A/A+ SPM English), From `interview@halatuju.xyz`, Reply-To `interview@`. They carry our OWN harmless `List-Unsubscribe` (a `mailto:help@`, no one-click POST); all other email classes keep Brevo's default unsubscribe.
+**Alternatives considered:** leave From as the global `info@`; rely on Brevo's auto unsubscribe everywhere (risk: a mistaken click suppresses critical service mail); a Brevo-side List-Help (the definitive fix, but free-tier support latency is unknown).
+**Rationale:** keeps the whole interview thread self-contained on one alias; the `mailto:` safeguard makes a mistaken unsubscribe land in a human inbox instead of auto-blocking; scoping it to interview mail honours "unsubscribe stays the default elsewhere".
+**Trade-offs:** Brevo MAY still inject its own List-Unsubscribe alongside ours (uncertain) — the certain fix is the account-side List-Help. Decision + application-reminder emails still carry the default unsubscribe.
+**Revisit if:** Brevo enables List-Help on transactional (then drop the mailto shim), or the owner wants the safeguard extended to decision/reminder emails.

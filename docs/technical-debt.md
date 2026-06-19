@@ -835,3 +835,11 @@
   applicant trivially has BT ≥ C — so it never changes an outcome, but it's a minor deviation from the PDF surfaced
   while investigating the picker. **To resolve:** drop BT from the C-group (or confirm it's intentional) at the next
   PISMP courses refresh, alongside TD-127. (Logged 2026-06-19.)
+- TD-130: **Unsubscribe risk on transactional emails (definitive fix is Brevo-side).** Brevo auto-injects a
+  `List-Unsubscribe` header on ALL mail it relays, including transactional — so Gmail shows an "Unsubscribe" button, and a
+  mistaken click may add the contact to Brevo's suppression list and silently stop future service mail. We shipped a
+  code-side shim on **interview** emails (our own harmless `mailto:help@` `List-Unsubscribe`, no one-click POST), but the
+  **decision + application-completion reminder emails still carry Brevo's default unsubscribe**, and Brevo may still inject
+  its own header alongside ours. **To resolve:** ask Brevo support to enable **List-Help instead of List-Unsubscribe on
+  transactional** (account-wide, certain fix); then drop the mailto shim. Owner action (free-tier support latency unknown).
+  Interim option: extend the same `mailto:` shim to the decision/reminder send paths. (Logged 2026-06-19.)
