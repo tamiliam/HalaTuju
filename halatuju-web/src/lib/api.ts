@@ -713,6 +713,8 @@ export interface SponsorSponsorship {
   accept_deadline: string | null
   decided_at: string | null
   student: SponsorPoolCard
+  onboarded: boolean   // R2: journey signal — student completed onboarding
+  semesters: number    // R2: count of recorded semester results
 }
 
 export interface SponsorWallet {
@@ -726,6 +728,22 @@ export interface SponsorWallet {
  *  while the pool flag is off (callers treat that as "not available yet"). */
 export async function getSponsorWallet(options?: ApiOptions): Promise<SponsorWallet> {
   return apiRequest('/api/v1/sponsor/wallet/', options)
+}
+
+/** R2 — the My Giving dashboard aggregate: impact numbers + the giving-donut
+ *  breakdown. Counts + money only (allowlist-safe, no student identity). 404s
+ *  while the pool flag is off (callers treat that as "not available yet"). */
+export interface SponsorImpact {
+  total_given: string
+  students_supported: number
+  students_active: number
+  students_graduated: number
+  semesters_completed: number
+  balance: { committed: string; completed: string; available: string }
+}
+
+export async function getSponsorImpact(options?: ApiOptions): Promise<SponsorImpact> {
+  return apiRequest('/api/v1/sponsor/impact/', options)
 }
 
 /** F1 — public live counter for the sponsor landing. No auth (a public marketing

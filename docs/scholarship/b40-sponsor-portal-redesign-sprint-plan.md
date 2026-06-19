@@ -39,7 +39,7 @@
 **Scope:** tabbed nav + routing — `/sponsor` → My Giving when signed in; `/sponsor/students`, `/sponsor/students/[id]`, `/sponsor/account`; keep the public `SponsorLanding` (signed-out) untouched; 301 old `/sponsor/pool/[id]` → `/sponsor/students/[id]`. Students tab = filterable pool grid (`getSponsorPool`) + detail + "Support this student" (`fund`).
 **Acceptance:** browse → filter → view → fund works in the new design; leak test green; ships dark; jest green.
 
-### R2 — My Giving dashboard · BE(small) + FE
+### R2 — My Giving dashboard · BE(small) + FE — ✅ DONE 2026-06-20 (no migration; `GET /sponsor/impact/` + `onboarded`/`semesters` serializer signals + pure `sponsorJourney`; +6 pytest, +4 jest = 353; retro `docs/retrospective-sponsor-redesign-r2.md`)
 **Goal:** lead with impact, not chores.
 **Scope:** impact-number strip + giving donut + "students you support" cards with the Matched→Onboarded→Sem→Graduated journey tracker.
 **New backend:** `GET /sponsor/impact/` aggregate (total given, supported, active, graduated, semesters completed, balance breakdown committed/completed/available) + a coarse `journey`/`stage` field on `SponsorSponsorshipSerializer` — all derived from existing models, allowlist-safe.
