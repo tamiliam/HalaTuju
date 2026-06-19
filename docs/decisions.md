@@ -3185,3 +3185,10 @@ single-inbox.
 **Rationale:** real routes give deep-linking + a proper `/students/[id]`; the route group centralises gating without touching the auth screens; one shared fetch avoids refetch-on-tab-switch and prop drilling; reusing the pool-404 as the dark probe keeps the flag-off fallback byte-identical to before.
 **Trade-offs:** more files than a single page; the layout carries the gate logic (kept all hooks before the early returns). First sprint of the 7-sprint redesign; ships dark.
 **Revisit if:** a tab needs independently-refreshing data (move that fetch into the tab), or SSR/streaming the pool becomes worthwhile.
+
+## Sponsor activity feed = synthesised on the fly, no event-log table (R3) — 2026-06-20
+**Decision:** The My Giving "Recent activity" feed (`GET /sponsor/activity/`) is SYNTHESISED per request from existing models — `Sponsorship.offered_at`/`decided_at`, `SemesterResult.created_at`/`graduated`, approved `GraduationMessage.reviewed_at` — merged + sorted newest-first in `sponsor_feed.sponsor_activity`. No event-log table, no migration. Each event carries only `{type, ref, at}` (anonymous ref).
+**Alternatives considered:** a dedicated append-only `SponsorActivity`/event-log table written on each lifecycle transition (offer, accept, result, graduation, message-approve).
+**Rationale:** the source events already exist and are few per sponsor, so synthesis is a handful of indexed queries with zero schema/write-path churn and nothing to backfill; it can never drift from the underlying state because it IS the underlying state. Allowlist-safe by construction (refs + counts only).
+**Trade-offs:** an N+1-ish read (per-student result/message lookups) and no durable record of events the models don't already retain (e.g. a lapsed offer's history). Both are immaterial at the expected per-sponsor volume.
+**Revisit if:** a sponsor funds enough students that the per-request synthesis is slow, or the feed needs event types not derivable from current models — then add a lightweight event-log table written at each transition.

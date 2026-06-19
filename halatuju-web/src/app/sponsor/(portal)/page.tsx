@@ -16,7 +16,7 @@ import type { SponsorPoolCard } from '@/lib/api'
 export default function MyGivingPage() {
   const { t } = useT()
   const { account } = useSponsorAuth()
-  const { wallet, impact, gradMessages } = useSponsorPortal()
+  const { wallet, impact, activity, community, gradMessages } = useSponsorPortal()
 
   const b = impact?.balance
   const committed = b ? parseFloat(b.committed) || 0 : 0
@@ -84,6 +84,27 @@ export default function MyGivingPage() {
         </div>
       )}
 
+      {/* Recent activity */}
+      {activity.length > 0 && (
+        <section className="rounded-2xl border bg-white p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900">{t('sponsorPortal.activity.title')}</h2>
+            <span className="text-xs text-gray-400">{t('sponsorPortal.activity.live')}</span>
+          </div>
+          <ul className="divide-y divide-gray-100 mt-1">
+            {activity.slice(0, 8).map((e, i) => (
+              <li key={i} className="py-3 flex items-start gap-3">
+                <span className="mt-0.5 text-lg">{ACTIVITY_ICON[e.type] || '•'}</span>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-800">{t(`sponsorPortal.activity.${e.type}`).replace('{ref}', e.ref)}</p>
+                  <p className="text-xs text-gray-400">{new Date(e.at).toLocaleDateString()}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Students you support */}
       {wallet && wallet.sponsorships.length > 0 ? (
         <section>
@@ -137,8 +158,27 @@ export default function MyGivingPage() {
           </div>
         </section>
       )}
+
+      {/* Community belonging strip */}
+      {community && community.students_supported > 0 && (
+        <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm opacity-90">{t('sponsorPortal.community.line1').replace('{n}', String(community.sponsors))}</p>
+            <p className="text-lg font-semibold">{t('sponsorPortal.community.line2').replace('{n}', String(community.students_supported))}</p>
+          </div>
+          {community.students_waiting > 0 && (
+            <Link href="/sponsor/students" className="px-4 py-2 bg-white/15 hover:bg-white/25 rounded-xl text-sm font-semibold whitespace-nowrap">
+              {t('sponsorPortal.community.waiting').replace('{n}', String(community.students_waiting))} →
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   )
+}
+
+const ACTIVITY_ICON: Record<string, string> = {
+  funded: '🤝', accepted: '✅', semester: '📘', graduated: '🎓', thank_you: '💬',
 }
 
 function Stat({ label, value, sub, valueClass = 'text-gray-900' }: { label: string; value: string; sub?: string; valueClass?: string }) {

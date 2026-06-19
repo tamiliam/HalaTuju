@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Sponsor portal redesign (R3) — activity feed + community strip.** My Giving gains a **Recent activity** feed (your
+  students' funded → accepted → semester → graduated → thank-you events, newest first) and a **community belonging**
+  strip ("you're one of N sponsors, together supporting M students"). Two new flag-gated, allowlist-safe endpoints —
+  `GET /api/v1/sponsor/activity/` + `GET /api/v1/sponsor/community/` — **synthesised on the fly** from existing models
+  (no event-log table, no migration); each activity event carries the anonymous `ref` only. New `sponsor_feed` module +
+  `getSponsorActivity`/`getSponsorCommunity` clients wired through the shared portal context. +6 pytest (95 sponsor
+  green); jest 353; `next build` compiled clean. Ships dark behind `SPONSOR_POOL_ENABLED`.
 - **Sponsor portal redesign (R2) — My Giving dashboard.** The My Giving tab now leads with impact: an impact-number
   strip (total given · students supported · semesters completed · graduated), a giving **donut** (committed / completed
   / available), and a per-student **journey tracker** (Matched → Onboarded → Studying → Graduated, with a semesters-done

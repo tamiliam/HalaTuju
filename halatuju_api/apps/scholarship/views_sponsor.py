@@ -21,6 +21,7 @@ from halatuju.throttling import PublicCountRateThrottle
 from . import pool
 from . import in_programme as in_programme_service
 from . import referrals as referral_service
+from . import sponsor_feed
 from . import sponsorship as sponsorship_service
 from .emails import send_sponsor_interest_admin_email
 from .models import Donation, ScholarshipApplication, Sponsor, Sponsorship
@@ -272,6 +273,28 @@ class SponsorImpactView(_PoolBase):
         if err:
             return err
         return Response(sponsorship_service.sponsor_impact(sponsor))
+
+
+class SponsorActivityView(_PoolBase):
+    """GET /api/v1/sponsor/activity/ — R3: a time-ordered feed of THIS sponsor's
+    own students' lifecycle events (funded/accepted/semester/graduated/thank-you),
+    each carrying the anonymous ``ref`` only. Allowlist-safe, flag + approval gated."""
+    def get(self, request):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        return Response({'events': sponsor_feed.sponsor_activity(sponsor)})
+
+
+class SponsorCommunityView(_PoolBase):
+    """GET /api/v1/sponsor/community/ — R3: programme-wide belonging counts for the
+    My Giving community strip (approved sponsors · students supported · still waiting).
+    Counts only, nothing identifying. Flag + approval gated."""
+    def get(self, request):
+        _, err = self._gate(request)
+        if err:
+            return err
+        return Response(sponsor_feed.community_stats())
 
 
 class SponsorGraduationMessagesView(_PoolBase):
