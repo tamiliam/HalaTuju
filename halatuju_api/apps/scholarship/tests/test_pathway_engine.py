@@ -71,6 +71,22 @@ class TestStudentOfferCheck(SimpleTestCase):
             YESWINDRAN_OFFER, pname='Yeswindran A/L Murali', pnric='081227020661'))
         self.assertEqual(chk['ic'], 'match')
 
+    def test_ocr_flaky_offer_nric_still_matches(self):
+        # The offer NRIC is OCR-flaky (image-Gemini drops/garbles a digit — observed on #36).
+        # A near-match (dropped pair) is OCR noise, not a different person → 'match' (identity is
+        # anchored on the IC + profile NRIC, read reliably). No false wrong-person flag.
+        fields = dict(YESWINDRAN_OFFER, candidate_nric='0812270661')   # '02' pair dropped
+        chk = student_offer_check(_offer_doc(fields, pname='Yeswindran Muraly',
+                                             pnric='081227-02-0661'))
+        self.assertEqual(chk['ic'], 'match')
+
+    def test_grossly_different_nric_still_mismatches(self):
+        # A genuinely different person's NRIC (many digits differ) is still a real mismatch.
+        fields = dict(YESWINDRAN_OFFER, candidate_nric='990101050101')
+        chk = student_offer_check(_offer_doc(fields, pname='Yeswindran Muraly',
+                                             pnric='081227-02-0661'))
+        self.assertEqual(chk['ic'], 'mismatch')
+
     def test_ic_unreadable_when_absent_but_extracted(self):
         fields = dict(YESWINDRAN_OFFER, candidate_nric='')
         chk = student_offer_check(_offer_doc(fields))

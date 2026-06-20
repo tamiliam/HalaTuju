@@ -115,13 +115,43 @@ def _name_status(candidate: str, profile_name: str, extracted: bool) -> str:
     return name_match(candidate, profile_name)
 
 
+def _nric_digits(s: str) -> str:
+    return ''.join(c for c in str(s or '') if c.isdigit())
+
+
+def _nric_close(a: str, b: str, max_edits: int = 2) -> bool:
+    """True if two NRICs differ only by a few digit edits — i.e. OCR noise, not a different
+    person. The offer-letter NRIC is read by image-Gemini, which non-deterministically drops or
+    garbles a digit (observed: 0806201578 vs 080620101578 — a dropped pair). Two DIFFERENT people's
+    NRICs differ in many digits (birthdate + state + serial), so a small bounded edit distance
+    distinguishes an OCR slip from a real mismatch. Pure; bounded 12×12 DP."""
+    a, b = _nric_digits(a), _nric_digits(b)
+    if not a or not b or abs(len(a) - len(b)) > max_edits:
+        return False
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i] + [0] * len(b)
+        for j, cb in enumerate(b, 1):
+            cur[j] = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb))
+        prev = cur
+    return prev[-1] <= max_edits
+
+
 def _ic_status(candidate_nric: str, profile_nric: str, extracted: bool) -> str:
-    """'match' / 'mismatch' / 'unreadable' / 'pending'."""
+    """'match' / 'mismatch' / 'unreadable' / 'pending'.
+
+    Identity is ANCHORED on the IC (read reliably + matched to the profile in the IC path); the
+    offer-letter NRIC is only soft corroboration. So an exact match OR an OCR-close near-match
+    (``_nric_close`` — a dropped/garbled digit) is 'match'; only a GROSS difference is 'mismatch'
+    (a genuinely different person). This prevents a flaky offer-NRIC OCR from raising a false
+    wrong-person flag while still catching a real one."""
     if not candidate_nric:
         return 'unreadable' if extracted else 'pending'
     if not profile_nric:
         return 'pending'
-    return 'match' if nric_match(candidate_nric, profile_nric) else 'mismatch'
+    if nric_match(candidate_nric, profile_nric) or _nric_close(candidate_nric, profile_nric):
+        return 'match'
+    return 'mismatch'
 
 
 def student_offer_check(doc) -> dict:

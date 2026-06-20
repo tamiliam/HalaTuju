@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Offer-letter identity check is now OCR-tolerant on the NRIC (anchored on the IC).** The
+  offer-letter NRIC is read by image-Gemini, which non-deterministically drops/garbles a digit
+  (observed: `0806201578` vs `080620101578`) — which previously raised a **false wrong-person flag**.
+  `pathway_engine._ic_status` now treats a near-match (bounded edit-distance ≤2 on the digits) as a
+  `match` (OCR noise, not a different person); only a GROSS difference is a real `mismatch`. Identity
+  stays anchored on the IC + profile NRIC (read reliably); the offer NRIC is soft corroboration, the
+  name is the robust offer-side check. +2 tests.
+
 ### Changed
 - **Sponsor portal redesign (R1) — three-tab shell + Students marketplace.** The flat `/sponsor` page is
   restructured into a `(portal)` route group with a gating + tab-nav layout and three tabs: **My Giving** (`/sponsor`),
