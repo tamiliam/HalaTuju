@@ -192,6 +192,54 @@
         "joined": "Joined",
         "expired": "Expired"
       }
+    },
+    "trust": {
+      "back": "Back to My Giving",
+      "footerLink": "Trust & Transparency",
+      "title": "Trust & Transparency",
+      "intro": "Because you support students you'll never meet, everything about how we work — and how the money flows — is open. Some sections below are placeholders while the organisation is being formalised; they'll be filled in as we go.",
+      "comingSoon": "Coming soon",
+      "illustrative": "Illustrative",
+      "toBePublished": "to be published",
+      "auditorTbd": "independent auditor — to be appointed",
+      "verifiedBadge": "Enrolment independently verified",
+      "verifiedDetail": "This student's place has been confirmed with their institution by an independent party.",
+      "assured": {
+        "title": "Independently assured",
+        "desc": "You never see the student — so an independent party who can confirms they're real. Each student's enrolment is verified with their institution, the money is checked by an independent auditor every year, and a board of trustees stands behind it.",
+        "latest": "Latest annual assurance · {fy} — {verified} students verified · {disbursed} disbursed · audited by {auditor}",
+        "cta": "Trust & transparency"
+      },
+      "whoWeAre": {
+        "title": "Who we are",
+        "body": "The B40 Assistance Programme is run by the team behind HalaTuju. Our full background, legal entity and registration details will be published here as the organisation is formalised.",
+        "legalLabel": "Legal entity & registration",
+        "storyLabel": "Our story & mission",
+        "contactLabel": "Contact & complaints"
+      },
+      "governance": {
+        "title": "Governance",
+        "body": "An independent board of trustees will oversee the programme and sign the annual assurance statement.",
+        "trusteeLabel": "Trustee",
+        "tbd": "Names & backgrounds to be listed once appointed."
+      },
+      "sourcesUses": {
+        "title": "Sources & uses of funds",
+        "body": "The whole programme's money at a glance — published annually.",
+        "sourcesHead": "Sources (money in)",
+        "usesHead": "Uses (money out)",
+        "totalIn": "Total in",
+        "totalOut": "Total out & held"
+      },
+      "assurance": {
+        "title": "Independent assurance",
+        "body": "Layered, and published annually: each student's enrolment is confirmed with their institution; an independent auditor checks the money; the board of trustees signs the statement.",
+        "verified": "students verified",
+        "disbursed": "disbursed",
+        "latestReport": "latest report",
+        "auditedBy": "Audited by {auditor}",
+        "downloadReport": "download the annual assurance report"
+      }
     }
   },
   "sponsorPool": {
@@ -219,6 +267,13 @@
       "becomeSponsor": "Become a sponsor",
       "howItWorks": "How it works",
       "counter": "{count} students are waiting for a sponsor right now"
+    },
+    "trustBar": {
+      "title": "Designed around independent assurance",
+      "enrolment": "Enrolment confirmed with each institution",
+      "audit": "Independent annual audit of the funds",
+      "trustees": "Independent trustee oversight",
+      "note": "We're putting this assurance framework in place as the programme formalises."
     },
     "promises": {
       "title": "Why sponsor through HalaTuju",

@@ -9,6 +9,7 @@ import {
   getSponsorActivity,
   getSponsorCommunity,
   getSponsorStatement,
+  getSponsorTrust,
   getSponsorGraduationMessages,
   getSponsorReferrals,
   type SponsorPoolCard,
@@ -17,6 +18,7 @@ import {
   type SponsorActivityEvent,
   type SponsorCommunity,
   type SponsorStatement,
+  type SponsorTrust,
   type GraduationRelayMessage,
   type SponsorReferral,
 } from '@/lib/api'
@@ -30,6 +32,7 @@ interface SponsorPortalValue {
   activity: SponsorActivityEvent[]     // R3: recent activity feed
   community: SponsorCommunity | null   // R3: community strip counts
   statement: SponsorStatement | null   // R4: giving statement (two ledgers)
+  trust: SponsorTrust | null           // R5: Trust & Transparency hub content
   gradMessages: GraduationRelayMessage[]
   referrals: SponsorReferral[]
   refreshReferrals: () => Promise<void>
@@ -52,6 +55,7 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
   const [activity, setActivity] = useState<SponsorActivityEvent[]>([])
   const [community, setCommunity] = useState<SponsorCommunity | null>(null)
   const [statement, setStatement] = useState<SponsorStatement | null>(null)
+  const [trust, setTrust] = useState<SponsorTrust | null>(null)
   const [gradMessages, setGradMessages] = useState<GraduationRelayMessage[]>([])
   const [referrals, setReferrals] = useState<SponsorReferral[]>([])
 
@@ -87,6 +91,9 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
     getSponsorStatement({ token })
       .then((s) => { if (!cancelled) setStatement(s) })
       .catch(() => { /* leave null */ })
+    getSponsorTrust({ token })
+      .then((t) => { if (!cancelled) setTrust(t) })
+      .catch(() => { /* leave null */ })
     getSponsorGraduationMessages({ token })
       .then((r) => { if (!cancelled) setGradMessages(r.messages) })
       .catch(() => { /* leave empty */ })
@@ -98,7 +105,7 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
 
   return (
     <SponsorPortalContext.Provider
-      value={{ ready, poolUnavailable, pool, wallet, impact, activity, community, statement, gradMessages, referrals, refreshReferrals }}
+      value={{ ready, poolUnavailable, pool, wallet, impact, activity, community, statement, trust, gradMessages, referrals, refreshReferrals }}
     >
       {children}
     </SponsorPortalContext.Provider>

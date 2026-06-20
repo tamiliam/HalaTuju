@@ -28,7 +28,7 @@
 | R2 | **My Giving** dashboard — impact numbers, donut, student journeys | small | Medium |
 | R3 | Activity feed + community strip | small | Medium |
 | R4 | **My Account** tab + **giving statement** (two ledgers) | tiny | Low–Med |
-| R5 | **🆕 Trust & Assurance** | small | Medium |
+| R5 | **🆕 Trust & Assurance** — ✅ **DONE** (`scholarship/0065`, dark) | small | Medium |
 | R6 | Standing gift / AutoSponsor | yes (new model + cron) | High |
 | R7 | Polish + i18n parity + fold into go-live | none | Low–Med |
 
@@ -54,7 +54,7 @@
 **Scope:** relocate + restyle existing pieces (profile + approved/trusted badges, notification cadence, thank-you wall, invite-a-friend) into the Account tab. Add the **giving statement as two ledgers**: *Donations to the trust* (in, `Donation`) and *Gifts to students* (out, `Sponsorship`), each amount + date, with a downloadable record. Framed as a *record*, not a tax receipt (Section 44(6) pending).
 **New backend:** `GET /sponsor/statement/` assembling both ledgers (data already exists). Mostly relocation → light.
 
-### R5 — Trust & Transparency hub · BE(small) + FE  🆕 (the load-bearing trust layer)
+### R5 — Trust & Transparency hub · BE(small) + FE  🆕 (the load-bearing trust layer) — ✅ DONE 2026-06-20 (migration `scholarship/0065`; new `TrustContent` model + `enrolment_verified` col + `GET /sponsor/trust/`; Trust page + assurance strip + verified badges + public trust bar; +8 pytest = 108 sponsor, +8 jest = 361; retro `docs/retrospective-sponsor-redesign-r5.md`)
 **Goal:** because the model runs on trust, surface the full trust story — who we are, where the money flows, and who independently checks it. **Build the scaffold now with honest placeholders; content drops in over time as the organisation formalises (via small changes, not sprints).**
 
 **The four-layer trust stack:**
