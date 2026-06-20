@@ -1510,3 +1510,38 @@ class StandingGift(models.Model):
 
     def __str__(self):
         return f'StandingGift sponsor={self.sponsor_id} active={self.active}'
+
+
+class WhatsAppMessage(models.Model):
+    """Audit log of every outbound WhatsApp send attempt (Twilio).
+
+    Comms are best-effort, so one row is written per attempt: delivery stays
+    auditable and failures are visible. ``status`` mirrors Twilio's message status
+    where known (queued→sent→delivered, or failed/undelivered)."""
+    STATUS_CHOICES = [
+        ('queued', 'Queued'),
+        ('sent', 'Sent'),
+        ('delivered', 'Delivered'),
+        ('failed', 'Failed'),
+        ('undelivered', 'Undelivered'),
+    ]
+    # SET_NULL (not CASCADE): the message log outlives a deleted application.
+    application = models.ForeignKey(
+        'ScholarshipApplication', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='whatsapp_messages',
+    )
+    kind = models.CharField(max_length=50, blank=True, default='')  # e.g. 'interview_reminder_1day'
+    to_number = models.CharField(max_length=32, blank=True, default='')  # E.164, or the raw value on a bad number
+    body = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='queued')
+    provider_sid = models.CharField(max_length=64, blank=True, default='')  # Twilio message SID
+    error = models.CharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'whatsapp_messages'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'WA {self.kind} → {self.to_number} [{self.status}]'

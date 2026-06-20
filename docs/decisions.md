@@ -1,5 +1,17 @@
 # Architectural Decisions — HalaTuju
 
+## WhatsApp channel calls Twilio's REST API via stdlib `urllib`, not the Twilio SDK — WhatsApp comms Sprint 1, 2026-06-20
+**Decision:** The `send_whatsapp` helper POSTs to Twilio's `Messages.json` endpoint using stdlib `urllib`
+(basic-auth + form-encoded body), rather than adding the `twilio` Python SDK.
+**Why:** The call is a single trivial HTTP POST; the SDK would be a new runtime dependency for no real gain, and the
+project lesson is "a new external-SDK import is a requirements bump in the same diff" — avoiding the SDK avoids the
+bump entirely. `requests` isn't pinned either, so `urllib` (always present) is the zero-dependency choice.
+**Posture:** comms are **best-effort** — `send_whatsapp` never raises into the caller (email is the system of record);
+**DARK by default** (no-op unless `WHATSAPP_ENABLED` + the three Twilio creds are set), mirroring the billable-API
+"ship disabled first" rule. Every attempt is logged to `WhatsAppMessage` for an audit trail.
+**Deferred to Sprint 2:** a per-recipient `whatsapp_opt_in` consent gate (PDPA) before any real applicant is messaged;
+and a Meta-approved utility **template** for production business-initiated sends (the sandbox accepts free text).
+
 ## AutoSponsor allocates via an hourly cron over fundable students, not the publish request — Sponsor Redesign R6, 2026-06-20
 **Decision:** Standing-gift allocation runs in a dedicated **hourly `auto-sponsor` cron** that processes EVERY currently-
 fundable pool student (`pool.eligible_pool_queryset` ∩ `is_fundable`) and funds each with the first matching gift via

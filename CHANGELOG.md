@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **WhatsApp comms channel — Sprint 1: foundation + interview reminder (DARK).** First slice of the outbound WhatsApp
+  channel (plan `docs/plans/2026-06-20-whatsapp-comms-channel.md`). New `apps/scholarship/whatsapp.py`:
+  `normalise_msisdn` (Malaysian phone → E.164 `+60…`, deterministic + unit-tested — 98/99 prod applicants are `0XX…`)
+  and `send_whatsapp` (best-effort POST to the **Twilio** REST API via stdlib `urllib` — **no new dependency, no Twilio
+  SDK**; never raises into the caller). New `WhatsAppMessage` model (`whatsapp_messages` table, **migration `0067`**) logs
+  every attempt with delivery status + Twilio SID for audit. The **interview reminder** (`send_interview_reminders`) now
+  fires a bilingual WhatsApp **alongside** the existing email. **DARK by default**: every send is a no-op unless
+  `WHATSAPP_ENABLED` is true AND the three Twilio creds (`TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_WHATSAPP_FROM`)
+  are set — so the code/migration land safely with zero `WhatsAppMessage` access while off. **No consent gate yet** (Sprint
+  2). Migration **not** applied to prod (deferred to go-live; needs the new-table RLS + contenttypes step). +16 pytest;
+  existing 53 interview-scheduling tests green. Worktree `.worktrees/wa-comms`, branch `feat/whatsapp-comms`.
+
 ### Changed
 - **Sponsor portal redesign (R6) — Standing gift / AutoSponsor (the AutoInvest-style innovation).** A sponsor can set a
   **standing gift** on My Account: field/state preferences + an optional per-student cap + an on/off toggle. When a
