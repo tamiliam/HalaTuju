@@ -22,6 +22,7 @@ import PathwayPicker, { type PathwayForm } from '@/components/PathwayPicker'
 import type { OtherMember } from '@/lib/familyRoster'
 import type { StudentProfile } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
+import Toggle from '@/components/Toggle'
 import { useToast } from '@/components/Toast'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { KEY_PROFILE } from '@/lib/storage'
@@ -127,6 +128,7 @@ export default function ProfilePage() {
   const [contactEmailVerified, setContactEmailVerified] = useState(false)
   const [contactPhone, setContactPhone] = useState('')
   const [contactPhoneVerified, setContactPhoneVerified] = useState(false)
+  const [whatsappOptIn, setWhatsappOptIn] = useState(true)
   const [loginMethod, setLoginMethod] = useState('')
   const [sendingVerification, setSendingVerification] = useState(false)
 
@@ -200,6 +202,7 @@ export default function ProfilePage() {
       setContactEmailVerified(profileData.contact_email_verified || false)
       setContactPhone(profileData.contact_phone || '')
       setContactPhoneVerified(profileData.contact_phone_verified || false)
+      setWhatsappOptIn(profileData.whatsapp_opt_in ?? true)
       // Determine login method from session
       if (session?.user?.email) {
         setLoginMethod(`Google (${session.user.email})`)
@@ -288,6 +291,7 @@ export default function ProfilePage() {
         email,
         contact_email: contactEmail,
         contact_phone: contactPhone,
+        whatsapp_opt_in: whatsappOptIn,
         household_income: householdIncome ? parseInt(householdIncome, 10) : null,
         household_size: householdSize ? parseInt(householdSize, 10) : null,
         colorblind,
@@ -336,7 +340,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, family, pathwayForm })
+    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, whatsappOptIn, family, pathwayForm })
     setEditingSection(section)
   }
 
@@ -357,6 +361,7 @@ export default function ProfilePage() {
     setSchool(snapshot.school as string || '')
     setContactEmail(snapshot.contactEmail as string || '')
     setContactPhone(snapshot.contactPhone as string || '')
+    setWhatsappOptIn(snapshot.whatsappOptIn as boolean ?? true)
     setFamily((snapshot.family as FamilyRosterForm) || EMPTY_FAMILY)
     setPathwayForm((snapshot.pathwayForm as PathwayForm) || EMPTY_PATHWAY)
     setEditingSection(null)
@@ -700,6 +705,13 @@ export default function ProfilePage() {
                   />
                   <p className="text-xs text-gray-400 mt-1">{t('profile.phoneVerifyNote')}</p>
                 </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">{t('profile.whatsappUpdates')}</span>
+                    <p className="text-xs text-gray-400 mt-0.5">{t('profile.whatsappUpdatesNote')}</p>
+                  </div>
+                  <Toggle on={whatsappOptIn} onChange={setWhatsappOptIn} label={t('profile.whatsappUpdates')} />
+                </div>
                 <div className="flex gap-3 pt-4">
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                     {t('profile.cancel')}
@@ -744,6 +756,10 @@ export default function ProfilePage() {
                   ) : (
                     <FieldValue value="" t={t} />
                   )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.whatsappUpdates')}</span>
+                  <span className="text-sm text-gray-900">{whatsappOptIn ? t('profile.whatsappOn') : t('profile.whatsappOff')}</span>
                 </div>
               </div>
             )}

@@ -1,5 +1,18 @@
 # Architectural Decisions — HalaTuju
 
+## WhatsApp consent is implied (opt-OUT, default on), not explicit opt-in — WhatsApp comms Sprint 2, 2026-06-20
+**Decision:** `StudentProfile.whatsapp_opt_in` defaults **True**; the profile shows an **opt-out** toggle. Existing
+applicants are backfilled to on (the ADD COLUMN default). Every outbound WhatsApp is gated on this flag.
+**Why (owner call):** a phone number given for contact is consent to be contacted on it — the same basis on which we
+already email applicants and phone them for details; WhatsApp is the same channel, not a new purpose. The engineer
+flagged the PDPA-safer alternative (explicit opt-in, default off) and recommended it; the owner, as data controller,
+chose implied consent with these mitigations: a **visible opt-out toggle** + a **clear notice** ("we may message this
+number on WhatsApp") on the toggle.
+**Follow-up:** mention WhatsApp use in the privacy/consent copy (not done — the legal text wasn't edited this sprint);
+honour an inbound "STOP" via Twilio's native opt-out now, recording it back into the flag is a later webhook.
+**Gate placement:** consent is checked at the **call site** (the reminder command reads `profile.whatsapp_opt_in`),
+keeping `send_whatsapp` a pure transport — each future caller (sponsor comms, etc.) asserts its own consent.
+
 ## WhatsApp channel calls Twilio's REST API via stdlib `urllib`, not the Twilio SDK — WhatsApp comms Sprint 1, 2026-06-20
 **Decision:** The `send_whatsapp` helper POSTs to Twilio's `Messages.json` endpoint using stdlib `urllib`
 (basic-auth + form-encoded body), rather than adding the `twilio` Python SDK.

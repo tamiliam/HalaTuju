@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **WhatsApp comms channel — Sprint 2: consent + opt-out (DARK).** Adds the PDPA control so it's lawful to message
+  real applicants. New `StudentProfile.whatsapp_opt_in` (boolean, **default True** = implied consent: a phone number
+  given for contact is consent to be contacted on it, like email — owner decision 2026-06-20; the ADD COLUMN backfills
+  the existing 99 applicants to on). **Courses migration `0059`** (additive). Surfaced as an **opt-out toggle** in the
+  profile Contact Details ("Updates on WhatsApp", trilingual en/ms/ta), read/written via the profile serializer + GET +
+  `/profile/sync`. The interview reminder now **only fires WhatsApp when `whatsapp_opt_in` is true** (email is
+  channel-independent and always sends). +2 reminder-gate tests + i18n parity (2751×3); `next build` clean; 361 jest.
+  Migration **not** applied to prod (go-live step). Branch `feat/whatsapp-comms`.
 - **WhatsApp comms channel — Sprint 1: foundation + interview reminder (DARK).** First slice of the outbound WhatsApp
   channel (plan `docs/plans/2026-06-20-whatsapp-comms-channel.md`). New `apps/scholarship/whatsapp.py`:
   `normalise_msisdn` (Malaysian phone → E.164 `+60…`, deterministic + unit-tested — 98/99 prod applicants are `0XX…`)

@@ -69,11 +69,13 @@ class Command(BaseCommand):
                     student_email, student_name=student_name, start=start,
                     meeting_url=app.interview_meeting_url, when='1day',
                     english_only=_eo)
-                # Best-effort WhatsApp alongside the email (no-op unless WHATSAPP_ENABLED).
-                whatsapp.send_whatsapp(
-                    getattr(app.profile, 'contact_phone', ''),
-                    _wa_reminder_body(student_name, start, app.interview_meeting_url, '1day', _eo),
-                    application=app, kind='interview_reminder_1day')
+                # Best-effort WhatsApp alongside the email — only if the student hasn't
+                # opted out (and no-op anyway unless WHATSAPP_ENABLED).
+                if getattr(app.profile, 'whatsapp_opt_in', True):
+                    whatsapp.send_whatsapp(
+                        getattr(app.profile, 'contact_phone', ''),
+                        _wa_reminder_body(student_name, start, app.interview_meeting_url, '1day', _eo),
+                        application=app, kind='interview_reminder_1day')
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
@@ -90,10 +92,11 @@ class Command(BaseCommand):
                     student_email, student_name=student_name, start=start,
                     meeting_url=app.interview_meeting_url, when='1hour',
                     english_only=_eo)
-                whatsapp.send_whatsapp(
-                    getattr(app.profile, 'contact_phone', ''),
-                    _wa_reminder_body(student_name, start, app.interview_meeting_url, '1hour', _eo),
-                    application=app, kind='interview_reminder_1hour')
+                if getattr(app.profile, 'whatsapp_opt_in', True):
+                    whatsapp.send_whatsapp(
+                        getattr(app.profile, 'contact_phone', ''),
+                        _wa_reminder_body(student_name, start, app.interview_meeting_url, '1hour', _eo),
+                        application=app, kind='interview_reminder_1hour')
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,

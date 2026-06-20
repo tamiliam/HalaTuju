@@ -16,7 +16,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship import scheduling
-from apps.scholarship.models import InterviewSlot, ReviewerProfile, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import InterviewSlot, ReviewerProfile, ScholarshipApplication, ScholarshipCohort, WhatsAppMessage
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
@@ -407,6 +407,32 @@ class ReminderCronTests(TestCase):
             cohort=self.cohort, profile=self.profile, status='interviewing',
             notify_email='priya@example.com', assigned_to=self.reviewer,
             interview_status='booked', interview_start=start)
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC',
+                       TWILIO_AUTH_TOKEN='t', TWILIO_WHATSAPP_FROM='whatsapp:+14155238886')
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_whatsapp_reminder_sent_when_opted_in(self, _post):
+        self.profile.contact_phone = '012-345 6789'
+        self.profile.whatsapp_opt_in = True
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        app = self._booked_app(timezone.now() + timedelta(hours=20))
+        call_command('send_interview_reminders')
+        self.assertEqual(
+            WhatsAppMessage.objects.filter(application=app, kind='interview_reminder_1day').count(), 1)
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC',
+                       TWILIO_AUTH_TOKEN='t', TWILIO_WHATSAPP_FROM='whatsapp:+14155238886')
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_whatsapp_reminder_skipped_when_opted_out(self, _post):
+        self.profile.contact_phone = '012-345 6789'
+        self.profile.whatsapp_opt_in = False
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        app = self._booked_app(timezone.now() + timedelta(hours=20))
+        mail.outbox.clear()
+        call_command('send_interview_reminders')
+        self.assertEqual(WhatsAppMessage.objects.filter(application=app).count(), 0)
+        # email is channel-independent — it still goes out to the opted-out student
+        self.assertTrue(any('priya@example.com' in m.to for m in mail.outbox))
 
     def test_one_day_reminder_fires_once(self):
         app = self._booked_app(timezone.now() + timedelta(hours=20))
