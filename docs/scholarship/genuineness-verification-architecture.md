@@ -242,16 +242,19 @@ from the OCR text. *(Layer-2 prep, captured-now/used-later: PISMP `aliran` selec
 code variant of the same subject — e.g. Pendidikan Jasmani is `50PD016J00P`/`036`/`046` — so the
 chosen-course match needs it; poly/PISMP map via `{programme|bidang|elektif} + aliran` token overlap.)*
 
-**Per-institution Asasi / UA-Diploma families (added 2026-06-20).** Beyond the 4 central-issuer
-pathways, each *enumerated university* that appears in the corpus is its own family anchored on the
-university NAME (text-only — institution logos aren't reliably detectable): **UPNM** (Asasi),
-**UKM** (ASASIpintar), **UTHM / UPSI / UTeM / UMP** (Diploma). A university **not** enumerated stays
-`unrecognised` → holistic (a legit UM / IPTS offer is never flagged). **Scalable target:** since the
-public-university set is **fixed at 20**, fold these into ONE generic `ua_offer` family anchored on
-the canonical 20-UA name list (sourced from `course_institutions`) + the common offer structure
-(union-matched office/clause), keeping the per-institution clauses as bonus — covers all 20 without
-per-university code. (Asasi vs Diploma vs Degree all collapse to "a genuine offer from a real UA";
-the programme is an extraction matter.)
+**Asasi / UA-Diploma / Degree — one generic `ua_offer` family (2026-06-20).** Beyond the 4
+central-issuer pathways, all public-university offers fold into ONE family, since the UA set is
+**fixed at 20** (`halatuju-web/src/data/publicUniversities.ts` == courses `UNIV-001..020`). The
+**university NAME (any of the 20) + the offer/admission line** are the dominant anchors (weight 3
+each); the office / finality-clause / programme / date wordings vary by institution and are
+**union-matched** (weight 1) so a specific letter still scores on its own variant. This **covers all
+20 with no per-university code** (incl. ones not yet in the corpus). Text-only (institution logos
+aren't reliably detectable). A university **not** in the 20 (private / IPTS, e.g. Swinburne) matches
+no anchor → `unrecognised` → holistic. Asasi vs Diploma vs Degree all collapse to "a genuine offer
+from a real UA"; the programme is an extraction matter. **Safety property:** a doc that merely
+*mentions* a UA without an admission offer (or a cropped letter) can't reach `genuine` — it lacks the
+full structure, so it lands `suspect` at most (verified: a UTM-mentioning non-offer → 0.30; a cropped
+UA → 0.40; only real UA offers clear 0.70).
 
 **Held-out validation (2026-06-20).** Tested on 10 production offer letters uploaded AFTER the corpus
 (true out-of-sample). Issue 1: detected type matched the student's **declared pathway** in every
