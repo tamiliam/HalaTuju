@@ -11,6 +11,9 @@ Gemini seam (so both engines share one mockable call path). Soft, never blocks.
 """
 import logging
 import re
+from datetime import timedelta
+
+from django.utils import timezone
 
 from .profile_engine import (
     DEFAULT_LANGUAGE, _funding, _pathway, _quiz_interests, _resolve_language,
@@ -39,7 +42,9 @@ GAP_SCHEMA = {
 }
 
 GAP_PROMPT = """You are helping an interviewer prepare to interview a shortlisted \
-B40 scholarship applicant. Read EVERYTHING below — the applicant's own words (which \
+B40 scholarship applicant. Today's date is {today} (Asia/Kuala Lumpur) — use it to judge \
+whether any date the applicant mentions is in the past or the future; NEVER describe a date \
+earlier than today as being "in the future". Read EVERYTHING below — the applicant's own words (which \
 may be in Malay, English, or Tamil), their academic record, the automated \
 verification verdict, the pre-interview flags, and any questions they have already \
 answered — and identify the THREE most important things still worth probing in the \
@@ -170,6 +175,7 @@ def _build_gap_prompt(application, target_language=DEFAULT_LANGUAGE, existing=No
         avoid = ('\n\nALREADY SUGGESTED (return DIFFERENT, NEW questions; do not repeat these):\n'
                  + '\n'.join(f'- {q}' for q in existing_qs))
     return GAP_PROMPT.format(
+        today=(timezone.now() + timedelta(hours=8)).strftime('%d %B %Y'),  # MYT (UTC+8)
         target_language=target_language,
         pathway=_pathway(application),
         quiz_interests=_quiz_interests(application),
