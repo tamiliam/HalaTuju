@@ -496,27 +496,52 @@ def _doc_fields(doc):
     return f if isinstance(f, dict) else {}
 
 
-def _epf_contribution(f):
-    """The EPF monthly contribution to use for the income estimate: the AVERAGE over the
-    months shown (steadier than one row), falling back to the latest month for older records
-    that only captured one. Returns a float or None."""
-    return _parse_rm(f.get('avg_monthly_contribution')) or _parse_rm(f.get('monthly_contribution'))
+def _epf_monthly_salary(f):
+    """Estimate MONTHLY salary from an EPF statement (TD-123 contract). Returns a float
+    (0.0 = unemployed), or None when nothing usable.
+
+    - **Unemployed** iff ``No. Majikan == 000000000`` (the only employment check) → 0.0.
+    - Otherwise reverse the statutory rates (hardcode employee **11%**, employer **13%**) from
+      the contribution TOTALS over the statement + the month count ``n``:
+      ``monthly_salary = max(Σ Caruman Majikan /(n·0.13),  Σ Caruman Ahli /(n·0.11))``.
+      ``max()`` self-corrects across salary tiers without detecting them: above RM5,000 the
+      employer share drops to 12% so the employer-via-13% term under-states, while the
+      employee-via-11% term stays exact — ``max()`` selects it.
+    - **Legacy fallback** (records extracted before the split totals existed): the old combined
+      ``avg_monthly_contribution`` / ``monthly_contribution`` ÷ 0.24."""
+    if re.sub(r'\D', '', str(f.get('employer_number') or '')) == '000000000':
+        return 0.0
+    try:
+        n = int(re.sub(r'\D', '', str(f.get('months_counted') or '')) or 0) or 1
+    except ValueError:
+        n = 1
+    cands = []
+    er = _parse_rm(f.get('employer_contribution_total'))
+    ee = _parse_rm(f.get('employee_contribution_total'))
+    if er:
+        cands.append(er / (n * 0.13))
+    if ee:
+        cands.append(ee / (n * 0.11))
+    if cands:
+        return round(max(cands), 2)
+    contrib = _parse_rm(f.get('avg_monthly_contribution')) or _parse_rm(f.get('monthly_contribution'))
+    return round(contrib / _EPF_CONTRIB_RATE, 2) if contrib else None
 
 
 def earner_monthly_income(application, member):
     """A working member's estimated MONTHLY income from their documents + the source.
-    The salary slip's gross is primary; failing that, estimate from the EPF monthly
-    contribution (≈24% of salary, AVERAGED over the months shown). Returns
-    ``(amount: float | None, source)`` where source is 'salary' | 'epf_estimate' | 'unknown'."""
+    The salary slip's gross is primary; failing that, the EPF statement (the statutory-rate
+    salary reverse, or 0 when unemployed). Returns ``(amount: float | None, source)`` where
+    source is 'salary' | 'epf_estimate' | 'unknown'."""
     for slip in _cluster_docs(application, member, 'salary_slip'):
         f = _doc_fields(slip)
         amt = _parse_rm(f.get('gross_income') or f.get('net_income'))
         if amt:
             return amt, 'salary'
     for epf in _cluster_docs(application, member, 'epf'):
-        contrib = _epf_contribution(_doc_fields(epf))
-        if contrib:
-            return round(contrib / _EPF_CONTRIB_RATE, 2), 'epf_estimate'
+        sal = _epf_monthly_salary(_doc_fields(epf))
+        if sal is not None:
+            return sal, 'epf_estimate'
     return None, 'unknown'
 
 
@@ -535,9 +560,9 @@ def slip_epf_divergence(application, member):
             break
     epf_implied = None
     for e in _cluster_docs(application, member, 'epf'):
-        contrib = _epf_contribution(_doc_fields(e))
-        if contrib:
-            epf_implied = round(contrib / _EPF_CONTRIB_RATE, 2)
+        sal = _epf_monthly_salary(_doc_fields(e))
+        if sal:                              # >0 (an unemployed EPF, 0.0, has no salary to compare)
+            epf_implied = sal
             break
     if not slip or not epf_implied:
         return None

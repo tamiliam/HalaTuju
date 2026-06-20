@@ -1002,11 +1002,12 @@ _FIELD_SCHEMAS = {
                         'year': _STR, 'amount': _STR, 'source_type': _STR_SOURCE}),
     'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
                                 'gross_income': _STR, 'net_income': _STR, 'period': _STR}),
-    'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
+    'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR, 'employer_number': _STR,
                         'latest_balance': _STR, 'last_contribution': _STR,
-                        'monthly_contribution': _STR, 'avg_monthly_contribution': _STR,
-                        'months_counted': _STR, 'contribution_status': _STR,
-                        'statement_date': _STR, 'address': _STR, 'year': _STR}),
+                        'monthly_contribution': _STR, 'months_counted': _STR,
+                        'employer_contribution_total': _STR, 'employee_contribution_total': _STR,
+                        'contribution_status': _STR, 'statement_date': _STR, 'address': _STR,
+                        'year': _STR}),
     # Income Check-1: utility bills carry the home address + the MONTHLY charge + any
     # UNPAID balance (a high outstanding amount is a soft hardship signal).
     'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR,
@@ -1039,8 +1040,7 @@ _FIELD_SCHEMAS = {
     # student. Read the child + both parents' names AND their NRICs (the strong match).
     'birth_certificate': _doc_schema({'bc_child_name': _STR, 'bc_child_nric': _STR,
                                       'bc_mother_name': _STR, 'bc_mother_nric': _STR,
-                                      'bc_father_name': _STR, 'bc_father_nric': _STR,
-                                      'bc_number': _STR}),
+                                      'bc_father_name': _STR, 'bc_father_nric': _STR}),
     # Income Check-1: a guardianship order / authorisation letter ties the legal guardian
     # to the student (the ward). Read the guardian + ward names + the guardian's NRIC.
     'guardianship_letter': _doc_schema({'guardian_name': _STR, 'guardian_nric': _STR,
@@ -1127,27 +1127,23 @@ _DOC_HINTS = {
                     '= the gross/basic monthly pay (with the RM figure); "net_income" = the '
                     'net/take-home pay; "period" = the pay month/year (e.g. "March 2026"). '
                     'Leave a field empty if it is not present.'),
-    'epf': (' This is a Malaysian EPF/KWSP statement ("PENYATA AHLI"). "name" = the '
-            'member\'s full name; "nric" = "No. Kad Pengenalan" (keep the 12 digits); '
-            '"employer" = "No. Majikan" — but if it is all zeros (e.g. "000000000") leave '
-            'it EMPTY (no active employer); "latest_balance" = the TOTAL savings "JUMLAH '
-            'SIMPANAN" (RM); "year" = the statement year ("PENYATA AHLI TAHUN <year>" or the '
-            'year of "Tarikh Penyata"); "monthly_contribution" = ONLY the most recent '
-            'monthly CONTRIBUTION amount from the "CARUMAN SEMASA" (current contributions) '
-            'section — this is the money credited that month, NOT the total balance. CRITICAL: '
-            'if the CARUMAN SEMASA section says "Tiada Transaksi" (no transactions) or shows '
-            'no contribution, leave "monthly_contribution" EMPTY — do NOT put the JUMLAH '
-            'SIMPANAN total there. "last_contribution" = the month/year of that contribution '
-            'if shown. "avg_monthly_contribution" = the AVERAGE of ALL the monthly contribution '
-            'amounts in the CARUMAN SEMASA section (sum of the months ÷ the number of months '
-            'with a contribution), as an RM figure; "months_counted" = how many monthly '
-            'contributions you averaged. "contribution_status" = "has" if there is at least one '
-            'real monthly contribution; "zero" ONLY if it clearly shows NO contributions ("Tiada '
-            'Transaksi" / all zero) — a real signal of no formal salary; "unknown" if the '
-            'contributions section is unreadable or absent (do NOT guess "zero" when you simply '
-            'cannot read it). "statement_date" = the "Tarikh Penyata" (statement date) if shown, '
-            'else the statement year. "address" = the member\'s correspondence address if printed. '
-            'Leave any field empty if it is not present.'),
+    'epf': (' This is a Malaysian EPF/KWSP statement ("PENYATA AHLI"). "name" = the member\'s '
+            'full name; "nric" = "No. Kad Pengenalan" (keep the 12 digits). "employer_number" = '
+            '"No. Majikan" EXACTLY as printed, INCLUDING when it is all zeros ("000000000" — that '
+            'means no active employer / unemployed, so KEEP it, do NOT blank it); "employer" = the '
+            'employer NAME if one is shown (often absent). "latest_balance" = the TOTAL savings '
+            '"JUMLAH SIMPANAN" (RM); "year" = the statement year; "statement_date" = "Tarikh '
+            'Penyata". The contribution table ("Caruman") shows, per month, an EMPLOYER share '
+            '("Caruman Majikan") and a MEMBER share ("Caruman Ahli" / "Caruman Pekerja"). SUM each '
+            'column over the months shown: "employer_contribution_total" = Σ Caruman Majikan (RM), '
+            '"employee_contribution_total" = Σ Caruman Ahli (RM), and "months_counted" = how many '
+            'months you summed. "monthly_contribution" = the most recent single month\'s total '
+            'contribution from "CARUMAN SEMASA" (NOT the balance) — leave EMPTY if "Tiada Transaksi". '
+            '"contribution_status" = "has" if there is at least one real monthly contribution; '
+            '"zero" ONLY if it clearly shows NONE ("Tiada Transaksi" / all zero) — a real signal of '
+            'no formal salary; "unknown" if the contributions section is unreadable/absent (do NOT '
+            'guess "zero" when you simply cannot read it). "address" = the member\'s correspondence '
+            'address if printed. Leave any field empty if it is not present.'),
     'water_bill': (' This is a Malaysian water utility bill (e.g. PAIP, SAJ, Air Selangor, '
                    'PBAPP, SADA). "name" = the account holder\'s name ("Nama"); "address" = '
                    'the supply/billing address; "amount" = ONLY the CURRENT month\'s charge '
@@ -1170,9 +1166,8 @@ _DOC_HINTS = {
                           'child\'s IC number if shown; "bc_father_name" + "bc_father_nric" = '
                           'the "Nama" and "No. Kad Pengenalan" in the FATHER section; '
                           '"bc_mother_name" + "bc_mother_nric" = the "Nama" and "No. Kad '
-                          'Pengenalan" in the MOTHER section (keep all 12 NRIC digits); '
-                          '"bc_number" = the certificate serial number. Use names EXACTLY as '
-                          'printed (keep bin/binti/a/l/a/p). Leave a field empty if absent. '
+                          'Pengenalan" in the MOTHER section (keep all 12 NRIC digits). '
+                          'Use names EXACTLY as printed (keep bin/binti/a/l/a/p). Leave a field empty if absent. '
                           'NOTE: a birth certificate normally shows NO IC number for the child '
                           '(only the parents have "No. Kad Pengenalan") — leave "bc_child_nric" '
                           'empty and do NOT add any warning about a missing/unlabelled child IC.'),
@@ -1441,7 +1436,22 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                     **({'probability': auth['probability'], 'present': auth['present'],
                         'missing': auth['missing']} if 'probability' in auth else {}),
                 }
-        elif doc.doc_type in _GENUINENESS_DOCS:
+        elif doc.doc_type in ('birth_certificate', 'epf'):
+            # Probabilistic SIGNATURE genuineness over the OCR text (deterministic + auditable;
+            # TD-122). Text-dominant — the visual markers (BC barcode/crest, KWSP logo) are bonus
+            # and the text signatures already clear the band; the EPF scorer also doubles as the
+            # wrong-type backstop (tax form / withdrawal / STR-as-EPF → not_epf). A failed/empty
+            # OCR read yields NO signal (never penalise a student for our failure).
+            from .genuineness.results_doc import signature_genuineness
+            rr = ocr if ocr is not None else ocr_document(doc)
+            text = (rr or {}).get('text', '') or ''
+            if text.strip() and not (rr or {}).get('error'):
+                sg = signature_genuineness(text, doc_type=doc.doc_type)
+                result['authenticity'] = {
+                    'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['type'],
+                    'probability': sg['probability'], 'present': sg['present'], 'missing': sg['missing'],
+                }
+        elif doc.doc_type in _GENUINENESS_DOCS:   # str (+ any other) → holistic multimodal read
             gimg = _fetch_image_bytes(doc.storage_path)
             if gimg is not None:
                 auth = doc_genuineness(gimg, doc.content_type, doc.doc_type)
