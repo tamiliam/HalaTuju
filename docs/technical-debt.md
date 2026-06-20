@@ -881,7 +881,12 @@
   change):** add a verdict-due field/SLA, a detection job (interviewed/assigned + no verdict past the SLA), and an
   overdue-verdict nudge email; only then surface the due date in the **interview reminder** too (the deferred external-review
   point — a date with teeth, not a soft target that can already be in the past by interview time). (Logged 2026-06-19.)
-- TD-132: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
+- TD-132: **R1 sponsor-portal Tamil strings are first-drafts.** The new `sponsorPortal.nav` / `students` / `account`
+  keys (+ `myStudents.none`) were added EN/MS/TA in lockstep, but the Tamil is a first-draft for owner refinement per
+  `tamil-style-guide.md`. **To resolve (owner):** refine the Tamil copy on the three new sponsor-portal blocks.
+  (Logged 2026-06-19, Sponsor redesign R1.) Related: **TD-101** (the Students "Support" button is a stub — funding not
+  wired pending the owner's fund-UX sign-off).
+- TD-133: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
   path now routes it to the signature scorer (the `if doc_type == 'results_slip'` branch wins first). Harmless, but
   the dict membership is now only used as the flag-gate set for STR/BC/EPF. **To resolve:** drop `results_slip` from
   that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16; this branch's

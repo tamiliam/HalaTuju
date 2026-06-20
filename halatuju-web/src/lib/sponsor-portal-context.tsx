@@ -5,10 +5,18 @@ import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import {
   getSponsorPool,
   getSponsorWallet,
+  getSponsorImpact,
+  getSponsorActivity,
+  getSponsorCommunity,
+  getSponsorStatement,
   getSponsorGraduationMessages,
   getSponsorReferrals,
   type SponsorPoolCard,
   type SponsorWallet,
+  type SponsorImpact,
+  type SponsorActivityEvent,
+  type SponsorCommunity,
+  type SponsorStatement,
   type GraduationRelayMessage,
   type SponsorReferral,
 } from '@/lib/api'
@@ -18,6 +26,10 @@ interface SponsorPortalValue {
   poolUnavailable: boolean             // SPONSOR_POOL_ENABLED off → the dark "coming soon" state
   pool: SponsorPoolCard[] | null
   wallet: SponsorWallet | null
+  impact: SponsorImpact | null         // R2: My Giving dashboard aggregate
+  activity: SponsorActivityEvent[]     // R3: recent activity feed
+  community: SponsorCommunity | null   // R3: community strip counts
+  statement: SponsorStatement | null   // R4: giving statement (two ledgers)
   gradMessages: GraduationRelayMessage[]
   referrals: SponsorReferral[]
   refreshReferrals: () => Promise<void>
@@ -36,6 +48,10 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
   const [poolUnavailable, setPoolUnavailable] = useState(false)
   const [pool, setPool] = useState<SponsorPoolCard[] | null>(null)
   const [wallet, setWallet] = useState<SponsorWallet | null>(null)
+  const [impact, setImpact] = useState<SponsorImpact | null>(null)
+  const [activity, setActivity] = useState<SponsorActivityEvent[]>([])
+  const [community, setCommunity] = useState<SponsorCommunity | null>(null)
+  const [statement, setStatement] = useState<SponsorStatement | null>(null)
   const [gradMessages, setGradMessages] = useState<GraduationRelayMessage[]>([])
   const [referrals, setReferrals] = useState<SponsorReferral[]>([])
 
@@ -59,6 +75,18 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
     getSponsorWallet({ token })
       .then((w) => { if (!cancelled) setWallet(w) })
       .catch(() => { /* 404s while the flag is off — leave null */ })
+    getSponsorImpact({ token })
+      .then((i) => { if (!cancelled) setImpact(i) })
+      .catch(() => { /* leave null */ })
+    getSponsorActivity({ token })
+      .then((r) => { if (!cancelled) setActivity(r.events) })
+      .catch(() => { /* leave empty */ })
+    getSponsorCommunity({ token })
+      .then((c) => { if (!cancelled) setCommunity(c) })
+      .catch(() => { /* leave null */ })
+    getSponsorStatement({ token })
+      .then((s) => { if (!cancelled) setStatement(s) })
+      .catch(() => { /* leave null */ })
     getSponsorGraduationMessages({ token })
       .then((r) => { if (!cancelled) setGradMessages(r.messages) })
       .catch(() => { /* leave empty */ })
@@ -70,7 +98,7 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
 
   return (
     <SponsorPortalContext.Provider
-      value={{ ready, poolUnavailable, pool, wallet, gradMessages, referrals, refreshReferrals }}
+      value={{ ready, poolUnavailable, pool, wallet, impact, activity, community, statement, gradMessages, referrals, refreshReferrals }}
     >
       {children}
     </SponsorPortalContext.Provider>

@@ -713,6 +713,8 @@ export interface SponsorSponsorship {
   accept_deadline: string | null
   decided_at: string | null
   student: SponsorPoolCard
+  onboarded: boolean   // R2: journey signal — student completed onboarding
+  semesters: number    // R2: count of recorded semester results
 }
 
 export interface SponsorWallet {
@@ -726,6 +728,58 @@ export interface SponsorWallet {
  *  while the pool flag is off (callers treat that as "not available yet"). */
 export async function getSponsorWallet(options?: ApiOptions): Promise<SponsorWallet> {
   return apiRequest('/api/v1/sponsor/wallet/', options)
+}
+
+/** R2 — the My Giving dashboard aggregate: impact numbers + the giving-donut
+ *  breakdown. Counts + money only (allowlist-safe, no student identity). 404s
+ *  while the pool flag is off (callers treat that as "not available yet"). */
+export interface SponsorImpact {
+  total_given: string
+  students_supported: number
+  students_active: number
+  students_graduated: number
+  semesters_completed: number
+  balance: { committed: string; completed: string; available: string }
+}
+
+export async function getSponsorImpact(options?: ApiOptions): Promise<SponsorImpact> {
+  return apiRequest('/api/v1/sponsor/impact/', options)
+}
+
+/** R3 — the My Giving activity feed: this sponsor's own students' lifecycle events,
+ *  anonymous ref only. 404s while the pool flag is off. */
+export interface SponsorActivityEvent {
+  type: 'funded' | 'accepted' | 'semester' | 'graduated' | 'thank_you'
+  ref: string
+  at: string
+}
+
+export async function getSponsorActivity(options?: ApiOptions): Promise<{ events: SponsorActivityEvent[] }> {
+  return apiRequest('/api/v1/sponsor/activity/', options)
+}
+
+/** R3 — programme-wide belonging counts for the My Giving community strip. */
+export interface SponsorCommunity {
+  sponsors: number
+  students_supported: number
+  students_waiting: number
+}
+
+export async function getSponsorCommunity(options?: ApiOptions): Promise<SponsorCommunity> {
+  return apiRequest('/api/v1/sponsor/community/', options)
+}
+
+/** R4 — the giving statement's two ledgers: donations INTO the trust + gifts OUT to
+ *  students (anonymous ref only). 404s while the pool flag is off. */
+export interface SponsorStatement {
+  donations: Array<{ amount: string; reference: string; at: string }>
+  gifts: Array<{ ref: string; amount: string; at: string }>
+  total_in: string
+  total_out: string
+}
+
+export async function getSponsorStatement(options?: ApiOptions): Promise<SponsorStatement> {
+  return apiRequest('/api/v1/sponsor/statement/', options)
 }
 
 /** F1 — public live counter for the sponsor landing. No auth (a public marketing

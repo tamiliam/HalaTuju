@@ -40,6 +40,65 @@ def sponsor_balance(sponsor):
     return donated - held
 
 
+def sponsor_impact(sponsor):
+    """R2 — aggregate giving impact for the My Giving dashboard. Counts + money only,
+    **allowlist-safe by construction** (no student identity ever crosses): derived
+    from the ledger (`sponsor_balance`) + the sponsor's ACTIVE allocations and their
+    SemesterResults. A graduated student's allocation stays 'active' (graduation is a
+    result flag, not a sponsorship status), so we split active giving into
+    `completed` (graduated) vs `committed` (ongoing) via `pool.derive_progress_state`.
+    """
+    active = list(sponsor.sponsorships.filter(status='active').select_related('application'))
+    committed = Decimal('0')
+    completed = Decimal('0')
+    graduated_count = 0
+    semesters_completed = 0
+    for sp in active:
+        app = sp.application
+        if pool.derive_progress_state(app) == 'graduated':
+            completed += sp.amount
+            graduated_count += 1
+        else:
+            committed += sp.amount
+        semesters_completed += app.semester_results.count()
+    return {
+        'total_given': str(committed + completed),
+        'students_supported': len(active),
+        'students_active': len(active) - graduated_count,
+        'students_graduated': graduated_count,
+        'semesters_completed': semesters_completed,
+        'balance': {
+            'committed': str(committed),
+            'completed': str(completed),
+            'available': str(sponsor_balance(sponsor)),
+        },
+    }
+
+
+def sponsor_statement(sponsor):
+    """R4 — the giving statement's two ledgers. **Donations INTO the trust** (the
+    sponsor's own deposit records — fine to show back to them) and **gifts OUT to
+    students** (active allocations carrying the anonymous ``ref`` only — never the
+    student's identity). Allowlist-safe; counts + money + refs only."""
+    donations = [
+        {'amount': str(d.amount), 'reference': d.reference, 'at': d.created_at}
+        for d in sponsor.donations.order_by('-created_at')
+    ]
+    gifts = []
+    out_total = Decimal('0')
+    for sp in (sponsor.sponsorships.filter(status='active')
+               .select_related('application').order_by('-decided_at')):
+        gifts.append({'ref': pool.pool_ref(sp.application_id), 'amount': str(sp.amount), 'at': sp.decided_at})
+        out_total += sp.amount
+    in_total = sum((Decimal(d['amount']) for d in donations), Decimal('0'))
+    return {
+        'donations': donations,
+        'gifts': gifts,
+        'total_in': str(in_total),
+        'total_out': str(out_total),
+    }
+
+
 def is_fundable(application):
     """A student can be funded iff they're in the pool (anon profile published +
     active share consent), an admin has set an award amount, they're not already
