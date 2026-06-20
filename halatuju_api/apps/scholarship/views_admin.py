@@ -47,7 +47,11 @@ from .services import (
 
 logger = logging.getLogger(__name__)
 
-_VALID_VERDICTS = {'resolved', 'still_unclear', 'new_concern', 'deleted'}
+# '' = an in-progress finding: the reviewer typed a one-line "what you found" but
+# hasn't classified it (resolved/still_unclear/new_concern). The cockpit produces this
+# for any gap whose verdict button wasn't clicked — rejecting it 400'd the whole
+# Save-draft and lost the reviewer's notes. A draft finding may carry just a rationale.
+_VALID_VERDICTS = {'', 'resolved', 'still_unclear', 'new_concern', 'deleted'}
 _RATIONALE_MAX = 140
 
 
