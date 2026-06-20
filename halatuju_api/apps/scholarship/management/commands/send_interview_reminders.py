@@ -37,6 +37,28 @@ def _wa_reminder_body(student_name, start, meeting_url, when, english_only):
     return f'{en}\n\n{bm}'
 
 
+def _send_wa_reminder(app, student_name, start, when):
+    """Best-effort WhatsApp interview reminder, gated on the student's opt-in.
+
+    Uses the approved Meta template (``TWILIO_WHATSAPP_REMINDER_CONTENT_SID``) when
+    configured — required for production business-initiated sends — and falls back to
+    free text in the sandbox/dev (no template set)."""
+    if not getattr(app.profile, 'whatsapp_opt_in', True):
+        return
+    phone = getattr(app.profile, 'contact_phone', '')
+    kind = f'interview_reminder_{when}'
+    content_sid = getattr(settings, 'TWILIO_WHATSAPP_REMINDER_CONTENT_SID', '')
+    if content_sid:
+        link = app.interview_meeting_url or 'https://halatuju.xyz/scholarship/application'
+        whatsapp.send_whatsapp(
+            phone, application=app, kind=kind, content_sid=content_sid,
+            content_variables={'1': student_name, '2': emails._fmt_myt(start), '3': link})
+    else:
+        body = _wa_reminder_body(student_name, start, app.interview_meeting_url, when,
+                                 emails.english_only_email(app))
+        whatsapp.send_whatsapp(phone, body, application=app, kind=kind)
+
+
 class Command(BaseCommand):
     help = 'Send 1-day and 1-hour reminders for booked B40 interviews (idempotent).'
 
@@ -69,13 +91,9 @@ class Command(BaseCommand):
                     student_email, student_name=student_name, start=start,
                     meeting_url=app.interview_meeting_url, when='1day',
                     english_only=_eo)
-                # Best-effort WhatsApp alongside the email — only if the student hasn't
-                # opted out (and no-op anyway unless WHATSAPP_ENABLED).
-                if getattr(app.profile, 'whatsapp_opt_in', True):
-                    whatsapp.send_whatsapp(
-                        getattr(app.profile, 'contact_phone', ''),
-                        _wa_reminder_body(student_name, start, app.interview_meeting_url, '1day', _eo),
-                        application=app, kind='interview_reminder_1day')
+                # Best-effort WhatsApp alongside the email (gated on opt-in; approved
+                # template in prod, free text in the sandbox; no-op unless WHATSAPP_ENABLED).
+                _send_wa_reminder(app, student_name, start, '1day')
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
@@ -92,11 +110,7 @@ class Command(BaseCommand):
                     student_email, student_name=student_name, start=start,
                     meeting_url=app.interview_meeting_url, when='1hour',
                     english_only=_eo)
-                if getattr(app.profile, 'whatsapp_opt_in', True):
-                    whatsapp.send_whatsapp(
-                        getattr(app.profile, 'contact_phone', ''),
-                        _wa_reminder_body(student_name, start, app.interview_meeting_url, '1hour', _eo),
-                        application=app, kind='interview_reminder_1hour')
+                _send_wa_reminder(app, student_name, start, '1hour')
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,

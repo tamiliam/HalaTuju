@@ -149,6 +149,9 @@ WHATSAPP_ENABLED = os.environ.get('WHATSAPP_ENABLED', '').lower() in ('1', 'true
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
 TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', '')
+# Approved Meta template (Twilio Content SID, HX…) for the interview reminder. Required
+# for PRODUCTION business-initiated sends; blank in the sandbox (free-text is allowed there).
+TWILIO_WHATSAPP_REMINDER_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID', '')
 
 # Check 2 STEP 2: the AI clarify queries asked of the STUDENT. While OFF (default), no
 # clarify query is shown in the student Action Centre and no query email/reminder is
