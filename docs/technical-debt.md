@@ -861,3 +861,19 @@
   `tamil-style-guide.md`. **To resolve (owner):** refine the Tamil copy on the three new sponsor-portal blocks.
   (Logged 2026-06-19, Sponsor redesign R1.) Related: **TD-101** (the Students "Support" button is a stub — funding not
   wired pending the owner's fund-UX sign-off).
+  **Extended R7 (2026-06-20):** now covers the **whole redesign (R1–R7)** sponsor copy, not just R1. R7 also revealed
+  that ~47 keys (`sponsorPortal.{impact,journey,activity,community,statement,students,account}.*`) were referenced by
+  R1–R4 pages but **never authored in any language** — they were added EN/MS/TA in R7, so the **English is freshly
+  authored (not just the Tamil)** and the **Tamil is a second-draft per the style guide**. A `sponsor-i18n.test.ts`
+  guardrail now prevents missing keys recurring. **To resolve (owner):** a copy pass — **English AND Tamil** — over the
+  full sponsor portal (My Giving / Students / Account / Trust / AutoSponsor) on the live site. (Mechanically the strings
+  render correctly; this is a quality/voice pass.)
+- TD-133: **R5 Trust & Transparency hub ships with honest PLACEHOLDERS — real content is owner-gated.** The hub's
+  *Who we are* (legal entity), *Governance* (trustee board), *Sources & uses* (annual figures) and *Independent
+  assurance* (auditor + FY report) render "to be published" / illustrative placeholders because the organisation is not
+  yet formalised. The My Giving assurance strip likewise shows illustrative figures ("112 verified · RM 284,000 · FY2025
+  · auditor to be appointed"), flagged illustrative. **To resolve (owner long-lead):** appoint the **independent
+  auditor + trustee board**, define the attestation scope, and register the legal entity; then the real content drops in
+  by editing the `trust_content` DB row — **no deploy** (language-neutral data in the DB, trilingual chrome in i18n). A
+  per-student `enrolment_verified` flag (the "Enrolment independently verified" badge) likewise stays False until that
+  institution-confirmation process exists. (Logged 2026-06-20, Sponsor redesign R5/R7.)
