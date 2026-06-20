@@ -13,8 +13,14 @@ Companion to `docs/plans/2026-06-20-whatsapp-comms-channel.md` + `docs/whatsapp-
 
 ## Stage 1 — Owner: production WhatsApp sender (~1–2 days, mostly waiting on Meta)
 
-- [ ] **Pick a dedicated sender phone number** — must **NOT** be on the normal WhatsApp app. Buy a Twilio number,
-      or use a spare SIM not registered on WhatsApp. (Don't use your personal WhatsApp number.)
+- [ ] **Buy a dedicated Twilio number** (the chosen approach). Twilio Console → **Phone Numbers → Manage → Buy a
+      number** → pick one with the **SMS** capability → Buy (~US$1–2/month). This becomes the WhatsApp sender; it's
+      never used on a phone's WhatsApp app, so nothing of yours gets taken over.
+      - *Needs the account upgraded from Trial → Pay as you go first (adds a card) — see the spending-cap step below.*
+      - *A US number is fine — applicants see the approved "HalaTuju" display name, not the raw number. (Malaysian
+        numbers can need extra regulatory documents, so don't block on one.)*
+      - *Alternative if you'd rather: a spare SIM / business line not on WhatsApp (must receive the verification OTP).*
+      - *Do NOT use your personal WhatsApp number.*
 - [ ] Twilio Console → **Messaging → Senders → WhatsApp senders → Create new sender.**
 - [ ] Connect/create a **Meta Business (Facebook Business Manager)** account when prompted; complete **business
       verification** (Meta reviews — 1–2 business days).
