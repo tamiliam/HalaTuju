@@ -886,8 +886,8 @@
   `tamil-style-guide.md`. **To resolve (owner):** refine the Tamil copy on the three new sponsor-portal blocks.
   (Logged 2026-06-19, Sponsor redesign R1.) Related: **TD-101** (the Students "Support" button is a stub — funding not
   wired pending the owner's fund-UX sign-off).
-- TD-133: **`results_slip` still listed in `genuineness.supporting_doc._GENUINENESS_DOCS`** even though the upload
-  path now routes it to the signature scorer (the `if doc_type == 'results_slip'` branch wins first). Harmless, but
-  the dict membership is now only used as the flag-gate set for STR/BC/EPF. **To resolve:** drop `results_slip` from
-  that dict and gate the slip branch independently, for clarity. Low priority. (Logged 2026-06-16; this branch's
-  _GENUINENESS_DOCS tidy — renumbered repeatedly (120→124→127→130→132) as parallel main merges reused each number.)
+- TD-133 **✅ RESOLVED (2026-06-20):** dropped `results_slip` from `genuineness.supporting_doc._GENUINENESS_DOCS`
+  (it was scored by the SIGNATURE scorer — its upload branch wins first — so the holistic membership was dead);
+  the slip branch is independent and the holistic set is now just STR. Test updated. (Logged 2026-06-16; this
+  branch's _GENUINENESS_DOCS tidy — had been renumbered 120→124→127→130→132→133 as parallel main merges kept
+  reusing the number, hence resolved outright to end the churn.)
