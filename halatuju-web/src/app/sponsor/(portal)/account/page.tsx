@@ -14,7 +14,7 @@ import SponsorNotifyPrefs from '@/components/SponsorNotifyPrefs'
 export default function AccountPage() {
   const { t } = useT()
   const { account } = useSponsorAuth()
-  const { referrals, refreshReferrals } = useSponsorPortal()
+  const { referrals, refreshReferrals, statement, gradMessages } = useSponsorPortal()
 
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
@@ -69,6 +69,22 @@ export default function AccountPage() {
         </div>
       </div>
 
+      {/* Messages from students you supported — anonymous, linked to ref only */}
+      {gradMessages.length > 0 && (
+        <section>
+          <h2 className="text-lg font-bold text-gray-900">{t('sponsorPortal.graduationMessages.title')}</h2>
+          <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.graduationMessages.subtitle')}</p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            {gradMessages.map((m, i) => (
+              <div key={i} className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+                <p className="text-sm text-gray-800">💬 “{m.text}”</p>
+                <p className="text-xs text-gray-500 mt-3">{t('sponsorPortal.graduationMessages.attribution')} · {m.ref}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Invite a friend + your invitations */}
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="rounded-2xl border bg-white p-5">
@@ -111,6 +127,55 @@ export default function AccountPage() {
           )}
         </div>
       </div>
+
+      {/* Giving statement — two ledgers (donations in vs gifts out) */}
+      {statement && (statement.donations.length > 0 || statement.gifts.length > 0) && (
+        <section>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">{t('sponsorPortal.statement.title')}</h2>
+            <button onClick={() => window.print()} className="px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl">
+              {t('sponsorPortal.statement.print')}
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.statement.intro')} <span className="text-gray-400">{t('sponsorPortal.statement.taxNote')}</span></p>
+          <div className="mt-3 grid md:grid-cols-2 gap-4">
+            <div className="rounded-2xl border bg-white p-5">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-gray-900">⬇ {t('sponsorPortal.statement.donations')}</h3>
+                <span className="text-xs text-gray-400">RM {statement.total_in}</span>
+              </div>
+              {statement.donations.length > 0 ? (
+                <ul className="text-sm divide-y divide-gray-100">
+                  {statement.donations.map((d, i) => (
+                    <li key={i} className="py-2 flex justify-between gap-2">
+                      <span>{new Date(d.at).toLocaleDateString()}{d.reference ? <span className="text-gray-400"> · {d.reference}</span> : null}</span>
+                      <b>RM {d.amount}</b>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-gray-400">—</p>}
+              <p className="text-[11px] text-gray-400 mt-2">{t('sponsorPortal.statement.donationsNote')}</p>
+            </div>
+            <div className="rounded-2xl border bg-white p-5">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-gray-900">⬆ {t('sponsorPortal.statement.gifts')}</h3>
+                <span className="text-xs text-gray-400">RM {statement.total_out}</span>
+              </div>
+              {statement.gifts.length > 0 ? (
+                <ul className="text-sm divide-y divide-gray-100">
+                  {statement.gifts.map((g, i) => (
+                    <li key={i} className="py-2 flex justify-between gap-2">
+                      <span>{new Date(g.at).toLocaleDateString()} <span className="text-gray-400">· {g.ref}</span></span>
+                      <b>RM {g.amount}</b>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-gray-400">—</p>}
+              <p className="text-[11px] text-gray-400 mt-2">{t('sponsorPortal.statement.giftsNote')}</p>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

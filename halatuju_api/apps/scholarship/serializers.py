@@ -131,9 +131,19 @@ class SponsorSponsorshipSerializer(serializers.Serializer):
     accept_deadline = serializers.DateTimeField(read_only=True)
     decided_at = serializers.DateTimeField(read_only=True)
     student = serializers.SerializerMethodField()
+    # R2: non-identifying journey signals (a bool + an int) — the FE derives the
+    # Matched → Onboarded → Studying → Graduated tracker from these + progress_state.
+    onboarded = serializers.SerializerMethodField()
+    semesters = serializers.SerializerMethodField()
 
     def get_student(self, sponsorship):
         return SponsorPoolCardSerializer(sponsorship.application).data
+
+    def get_onboarded(self, sponsorship):
+        return sponsorship.application.onboarded_at is not None
+
+    def get_semesters(self, sponsorship):
+        return sponsorship.application.semester_results.count()
 
 
 class StudentAwardSerializer(serializers.Serializer):

@@ -24,7 +24,7 @@
 
 | # | Sprint | New backend | Complexity |
 |---|--------|-------------|------------|
-| R1 | Portal shell + nav + **Students** marketplace tab | none | Medium |
+| R1 | Portal shell + nav + **Students** marketplace tab — ✅ **DONE** (`4fab9b0`, dark) | none | Medium |
 | R2 | **My Giving** dashboard — impact numbers, donut, student journeys | small | Medium |
 | R3 | Activity feed + community strip | small | Medium |
 | R4 | **My Account** tab + **giving statement** (two ledgers) | tiny | Low–Med |
@@ -34,23 +34,23 @@
 
 ---
 
-### R1 — Portal shell + Students tab · FE (no new backend)
+### R1 — Portal shell + Students tab · FE (no new backend) — ✅ DONE 2026-06-19 (`4fab9b0`; dark; +7 jest = 349; retro `docs/retrospective-sponsor-redesign-r1.md`)
 **Goal:** replace the flat `/sponsor` scroll with the three-tab shell (My Giving · Students · My Account) and ship the Students marketplace.
 **Scope:** tabbed nav + routing — `/sponsor` → My Giving when signed in; `/sponsor/students`, `/sponsor/students/[id]`, `/sponsor/account`; keep the public `SponsorLanding` (signed-out) untouched; 301 old `/sponsor/pool/[id]` → `/sponsor/students/[id]`. Students tab = filterable pool grid (`getSponsorPool`) + detail + "Support this student" (`fund`).
 **Acceptance:** browse → filter → view → fund works in the new design; leak test green; ships dark; jest green.
 
-### R2 — My Giving dashboard · BE(small) + FE
+### R2 — My Giving dashboard · BE(small) + FE — ✅ DONE 2026-06-20 (no migration; `GET /sponsor/impact/` + `onboarded`/`semesters` serializer signals + pure `sponsorJourney`; +6 pytest, +4 jest = 353; retro `docs/retrospective-sponsor-redesign-r2.md`)
 **Goal:** lead with impact, not chores.
 **Scope:** impact-number strip + giving donut + "students you support" cards with the Matched→Onboarded→Sem→Graduated journey tracker.
 **New backend:** `GET /sponsor/impact/` aggregate (total given, supported, active, graduated, semesters completed, balance breakdown committed/completed/available) + a coarse `journey`/`stage` field on `SponsorSponsorshipSerializer` — all derived from existing models, allowlist-safe.
 **Acceptance:** figures reconcile with wallet; journey leaks nothing; aggregate tested.
 
-### R3 — Activity feed + community strip · BE(small) + FE
+### R3 — Activity feed + community strip · BE(small) + FE — ✅ DONE 2026-06-20 (no migration; synthesised `GET /sponsor/activity/` + `GET /sponsor/community/` via new `sponsor_feed`; +6 pytest = 95 sponsor; retro `docs/retrospective-sponsor-redesign-r3.md`)
 **Scope:** "Recent activity" feed + "you're 1 of N sponsors, together supporting M students" strip.
 **New backend:** `GET /sponsor/activity/` synthesised from existing events for *this sponsor's* students (offer accepted = `Sponsorship.decided_at`; semester completed = `SemesterResult.created_at`; graduated; new-students-published count), refs only; small community-count endpoint.
 **Decision at sprint start:** synthesise on the fly (no migration — preferred) vs a lightweight event-log table.
 
-### R4 — My Account tab + giving statement · BE(tiny) + FE
+### R4 — My Account tab + giving statement · BE(tiny) + FE — ✅ DONE 2026-06-20 (no migration; `GET /sponsor/statement/` two ledgers + thank-you wall relocated to Account; +5 pytest = 100 sponsor; retro `docs/retrospective-sponsor-redesign-r4.md`)
 **Scope:** relocate + restyle existing pieces (profile + approved/trusted badges, notification cadence, thank-you wall, invite-a-friend) into the Account tab. Add the **giving statement as two ledgers**: *Donations to the trust* (in, `Donation`) and *Gifts to students* (out, `Sponsorship`), each amount + date, with a downloadable record. Framed as a *record*, not a tax receipt (Section 44(6) pending).
 **New backend:** `GET /sponsor/statement/` assembling both ledgers (data already exists). Mostly relocation → light.
 
