@@ -1,5 +1,25 @@
 # Architectural Decisions — HalaTuju
 
+## Request-owned document slots — slot key gains a `request_code` dimension — 2026-06-21
+**Decision:** A reviewer-requested upload is keyed by the officer ResolutionItem code (`officer_N`) it
+satisfies. The single-instance slot key changes from `(doc_type, household_member)` to
+`(doc_type, household_member, request_code)`. `request_code=''` is the student's own apply-form/route
+doc (the existing shared slot). The STR income-earner force-tag is **skipped** when `request_code` is set.
+**Alternatives considered:** (a) make `other` (and only `other`) multi-instance — append-only, never sweep;
+(b) a separate `RequestedDocument` table linked 1:1 to the ResolutionItem; (c) stash the code in the
+existing `vision_fields` JSON to avoid a migration.
+**Rationale:** (a) loses overwrite-on-reupload (a reviewer re-asking for a clearer copy would pile up
+duplicates) and doesn't fix the cross-person income case (those aren't `other`). (b) is a bigger schema
+change touching the upload/serializer/resolution paths for no extra capability. (c) avoids the migration
+but overloads a JSON field meant for extraction data with a routing key, and makes the hot-path sweep
+query filter on JSON. A dedicated, queryable column is the honest model: the request IS a first-class
+dimension of the slot. The column is additive and low-risk.
+**Trade-offs:** one more migration (and a number clash with the parallel `feat/whatsapp-comms` branch —
+renumber the later merge to `0068`). The cockpit shows multiple `other` docs as separate rows (acceptable;
+labelling-which-is-which is a possible later polish).
+**Revisit if:** documents ever need to satisfy more than one request, or requests become first-class
+enough to warrant their own table (e.g. per-request due dates / status beyond the ResolutionItem).
+
 ## AutoSponsor allocates via an hourly cron over fundable students, not the publish request — Sponsor Redesign R6, 2026-06-20
 **Decision:** Standing-gift allocation runs in a dedicated **hourly `auto-sponsor` cron** that processes EVERY currently-
 fundable pool student (`pool.eligible_pool_queryset` ∩ `is_fundable`) and funds each with the first matching gift via
