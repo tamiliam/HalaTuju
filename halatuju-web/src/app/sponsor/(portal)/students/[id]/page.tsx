@@ -62,6 +62,11 @@ export default function StudentDetailPage() {
                   <div><dt className="text-gray-500">{t('sponsorPool.durationLabel')}</dt><dd className="text-gray-900">{detail.programme_months} {t('sponsorPool.months')}</dd></div>
                 )}
               </dl>
+              {detail.enrolment_verified && (
+                <div className="mt-5 flex items-start gap-2 bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-800">
+                  🛡️ <span><b>{t('sponsorPortal.trust.verifiedBadge')}.</b> {t('sponsorPortal.trust.verifiedDetail')}</span>
+                </div>
+              )}
             </div>
 
             {detail.anon_profile && (

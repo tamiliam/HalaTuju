@@ -192,6 +192,54 @@
         "joined": "Menyertai",
         "expired": "Tamat tempoh"
       }
+    },
+    "trust": {
+      "back": "Kembali ke Sumbangan Saya",
+      "footerLink": "Kepercayaan & Ketelusan",
+      "title": "Kepercayaan & Ketelusan",
+      "intro": "Kerana anda menyokong pelajar yang tidak akan anda temui, segala-galanya tentang cara kami bekerja — dan aliran wang — adalah terbuka. Sebahagian bahagian di bawah masih ruang letak sementara organisasi diformalkan; ia akan dilengkapkan dari semasa ke semasa.",
+      "comingSoon": "Akan datang",
+      "illustrative": "Ilustrasi",
+      "toBePublished": "akan diterbitkan",
+      "auditorTbd": "juruaudit bebas — akan dilantik",
+      "verifiedBadge": "Pendaftaran disahkan secara bebas",
+      "verifiedDetail": "Tempat pelajar ini telah disahkan dengan institusinya oleh pihak bebas.",
+      "assured": {
+        "title": "Disahkan secara bebas",
+        "desc": "Anda tidak pernah melihat pelajar — jadi pihak bebas yang boleh mengesahkan mereka benar. Pendaftaran setiap pelajar disahkan dengan institusi mereka, wang disemak oleh juruaudit bebas setiap tahun, dan lembaga pemegang amanah menyokongnya.",
+        "latest": "Jaminan tahunan terkini · {fy} — {verified} pelajar disahkan · {disbursed} disalurkan · diaudit oleh {auditor}",
+        "cta": "Kepercayaan & ketelusan"
+      },
+      "whoWeAre": {
+        "title": "Siapa kami",
+        "body": "Program Bantuan B40 dikendalikan oleh pasukan di sebalik HalaTuju. Latar belakang penuh, entiti undang-undang dan butiran pendaftaran kami akan diterbitkan di sini apabila organisasi diformalkan.",
+        "legalLabel": "Entiti undang-undang & pendaftaran",
+        "storyLabel": "Kisah & misi kami",
+        "contactLabel": "Hubungan & aduan"
+      },
+      "governance": {
+        "title": "Tadbir urus",
+        "body": "Lembaga pemegang amanah bebas akan menyelia program dan menandatangani penyata jaminan tahunan.",
+        "trusteeLabel": "Pemegang amanah",
+        "tbd": "Nama & latar belakang akan disenaraikan setelah dilantik."
+      },
+      "sourcesUses": {
+        "title": "Sumber & penggunaan dana",
+        "body": "Wang seluruh program secara sepintas lalu — diterbitkan setiap tahun.",
+        "sourcesHead": "Sumber (wang masuk)",
+        "usesHead": "Penggunaan (wang keluar)",
+        "totalIn": "Jumlah masuk",
+        "totalOut": "Jumlah keluar & disimpan"
+      },
+      "assurance": {
+        "title": "Jaminan bebas",
+        "body": "Berlapis dan diterbitkan setiap tahun: pendaftaran setiap pelajar disahkan dengan institusi mereka; juruaudit bebas menyemak wang; lembaga pemegang amanah menandatangani penyata.",
+        "verified": "pelajar disahkan",
+        "disbursed": "disalurkan",
+        "latestReport": "laporan terkini",
+        "auditedBy": "Diaudit oleh {auditor}",
+        "downloadReport": "muat turun laporan jaminan tahunan"
+      }
     }
   },
   "sponsorPool": {
@@ -219,6 +267,13 @@
       "becomeSponsor": "Jadi penaja",
       "howItWorks": "Cara ia berfungsi",
       "counter": "{count} pelajar sedang menunggu penaja sekarang"
+    },
+    "trustBar": {
+      "title": "Dibina atas jaminan bebas",
+      "enrolment": "Pendaftaran disahkan dengan setiap institusi",
+      "audit": "Audit tahunan bebas ke atas dana",
+      "trustees": "Pengawasan pemegang amanah bebas",
+      "note": "Kami sedang melaksanakan rangka kerja jaminan ini sementara program diformalkan."
     },
     "promises": {
       "title": "Mengapa menaja melalui HalaTuju",

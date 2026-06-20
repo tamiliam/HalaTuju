@@ -688,6 +688,8 @@ export interface SponsorPoolCard {
   award_amount: string | null   // E3: admin-set; non-identifying
   // F2: coarse, non-identifying progress band — null until the student is sponsored.
   progress_state: 'on_track' | 'semester_completed' | 'needs_attention' | 'graduated' | null
+  // R5: a bare boolean — an independent party confirmed enrolment with the institution.
+  enrolment_verified: boolean
 }
 
 export interface SponsorPoolDetail extends SponsorPoolCard {
@@ -780,6 +782,33 @@ export interface SponsorStatement {
 
 export async function getSponsorStatement(options?: ApiOptions): Promise<SponsorStatement> {
   return apiRequest('/api/v1/sponsor/statement/', options)
+}
+
+/** R5 — the Trust & Transparency hub: programme-level content (who-we-are /
+ *  governance / sources & uses / assurance) + live community counts. The data is
+ *  editable in the DB without a deploy; figures are illustrative until real audited
+ *  ones are published. 404s while the pool flag is off. */
+export interface TrustTrustee { name: string; role?: string; bio?: string }
+export interface TrustFigure { label: string; amount: string }
+export interface SponsorTrust {
+  legal_entity: string
+  contact_email: string
+  trustees: TrustTrustee[]
+  sources: TrustFigure[]
+  uses: TrustFigure[]
+  assurance: {
+    fy?: string
+    students_verified?: number
+    disbursed?: string
+    auditor?: string
+    report_url?: string
+  }
+  figures_are_illustrative: boolean
+  community: SponsorCommunity
+}
+
+export async function getSponsorTrust(options?: ApiOptions): Promise<SponsorTrust> {
+  return apiRequest('/api/v1/sponsor/trust/', options)
 }
 
 /** F1 — public live counter for the sponsor landing. No auth (a public marketing

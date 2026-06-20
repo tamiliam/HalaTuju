@@ -76,6 +76,11 @@ export default function StudentsPage() {
               </div>
               <p className="text-[15px] font-medium text-gray-800 mt-1">{s.field || '—'}</p>
               {s.academic && <p className="text-xs text-gray-500">{s.academic}</p>}
+              {s.enrolment_verified && (
+                <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                  🛡️ {t('sponsorPortal.trust.verifiedBadge')}
+                </p>
+              )}
               {s.funding_categories.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-3">
                   {s.funding_categories.map((c) => (

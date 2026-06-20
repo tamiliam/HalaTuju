@@ -64,6 +64,20 @@ export default function SponsorLanding({ count }: { count: number }) {
           </div>
         </section>
 
+        {/* Trust bar — the "Regulated by…" equivalent (R5). Honest: describes the
+            assurance MODEL being established, not a current audited state. */}
+        <section className="container mx-auto px-6 -mt-2 pb-8 lg:pb-12 max-w-2xl lg:max-w-5xl">
+          <div className="rounded-2xl border border-green-100 bg-green-50/50 px-5 py-4">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 justify-center text-center">
+              <span className="inline-flex items-center gap-2 text-sm text-gray-700">🛡️ <b>{t('sponsorLanding.trustBar.title')}</b></span>
+              <span className="text-sm text-gray-500">{t('sponsorLanding.trustBar.enrolment')}</span>
+              <span className="text-sm text-gray-500">{t('sponsorLanding.trustBar.audit')}</span>
+              <span className="text-sm text-gray-500">{t('sponsorLanding.trustBar.trustees')}</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-2 text-center">{t('sponsorLanding.trustBar.note')}</p>
+          </div>
+        </section>
+
         {/* Why sponsor — three promise cards */}
         <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 lg:mb-6">{t('sponsorLanding.promises.title')}</h2>

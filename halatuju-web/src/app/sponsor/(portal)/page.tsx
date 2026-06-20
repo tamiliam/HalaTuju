@@ -6,6 +6,7 @@ import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { journeyStages, type JourneyStatus } from '@/lib/sponsorJourney'
+import { formatRM } from '@/lib/sponsorTrust'
 import type { SponsorPoolCard } from '@/lib/api'
 
 /**
@@ -16,7 +17,7 @@ import type { SponsorPoolCard } from '@/lib/api'
 export default function MyGivingPage() {
   const { t } = useT()
   const { account } = useSponsorAuth()
-  const { wallet, impact, activity, community } = useSponsorPortal()
+  const { wallet, impact, activity, community, trust } = useSponsorPortal()
 
   const b = impact?.balance
   const committed = b ? parseFloat(b.committed) || 0 : 0
@@ -47,6 +48,31 @@ export default function MyGivingPage() {
           {t('sponsorPortal.nav.support')} →
         </Link>
       </div>
+
+      {/* Assurance strip → Trust hub (R5) */}
+      {trust && (
+        <Link href="/sponsor/trust" className="block rounded-2xl border border-green-100 bg-white p-5 hover:border-green-200 transition-colors">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🛡️</span>
+              <div>
+                <p className="font-semibold text-gray-900">{t('sponsorPortal.trust.assured.title')}</p>
+                <p className="text-sm text-gray-500 max-w-2xl">{t('sponsorPortal.trust.assured.desc')}</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  {t('sponsorPortal.trust.assured.latest')
+                    .replace('{fy}', trust.assurance.fy || '—')
+                    .replace('{verified}', String(trust.assurance.students_verified ?? 0))
+                    .replace('{disbursed}', formatRM(trust.assurance.disbursed || '0'))
+                    .replace('{auditor}', trust.assurance.auditor || t('sponsorPortal.trust.auditorTbd'))}
+                </p>
+              </div>
+            </div>
+            <span className="text-sm font-semibold text-green-700 bg-green-50 px-3 py-2 rounded-xl whitespace-nowrap shrink-0">
+              {t('sponsorPortal.trust.assured.cta')} →
+            </span>
+          </div>
+        </Link>
+      )}
 
       {/* Impact numbers */}
       {impact && (

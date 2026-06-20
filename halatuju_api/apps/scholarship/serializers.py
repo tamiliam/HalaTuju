@@ -61,9 +61,15 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     programme_months = serializers.SerializerMethodField()
     award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
     progress_state = serializers.SerializerMethodField()  # F2: coarse, non-identifying
+    enrolment_verified = serializers.SerializerMethodField()  # R5: bare boolean badge
 
     def get_ref(self, app):
         return pool.pool_ref(app.id)
+
+    def get_enrolment_verified(self, app):
+        # R5: a BARE boolean — "an independent party confirmed this student's
+        # enrolment". Never the verifier, the evidence, or when/how. Allowlist-safe.
+        return bool(getattr(app, 'enrolment_verified', False))
 
     def get_progress_state(self, app):
         # F2: null until the student is sponsored; on_track thereafter (stub — F9a

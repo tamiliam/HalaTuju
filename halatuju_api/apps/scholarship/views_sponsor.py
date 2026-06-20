@@ -23,6 +23,7 @@ from . import in_programme as in_programme_service
 from . import referrals as referral_service
 from . import sponsor_feed
 from . import sponsorship as sponsorship_service
+from . import trust as trust_service
 from .emails import send_sponsor_interest_admin_email
 from .models import Donation, ScholarshipApplication, Sponsor, Sponsorship
 from .serializers import (
@@ -306,6 +307,19 @@ class SponsorCommunityView(_PoolBase):
         if err:
             return err
         return Response(sponsor_feed.community_stats())
+
+
+class SponsorTrustView(_PoolBase):
+    """GET /api/v1/sponsor/trust/ — R5: the Trust & Transparency hub content
+    (who-we-are / governance / sources & uses / independent assurance) + live
+    community counts. Programme-level content + counts only — no student or sponsor
+    identity, allowlist-safe by construction. Behind SPONSOR_POOL_ENABLED +
+    approved-sponsor (via _gate)."""
+    def get(self, request):
+        _, err = self._gate(request)
+        if err:
+            return err
+        return Response(trust_service.get_trust_content())
 
 
 class SponsorGraduationMessagesView(_PoolBase):
