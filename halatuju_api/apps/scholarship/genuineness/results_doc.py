@@ -196,11 +196,67 @@ PISMP_OFFER_SIGNATURES = [
     ('Penetapan bidang muktamad',   ['PENETAPAN BIDANG DAN TEMPAT PENGAJIAN ADALAH MUKTAMAD'], 2, 'text'),
 ]
 
+# Per-INSTITUTION offer families (owner-specified 2026-06-20). Asasi + UA-Diploma offers come from
+# many universities with divergent letterheads, so each enumerated institution is its own family
+# (the university NAME line is the forge-resistant anchor). TEXT-ONLY: institution logos can't be
+# reliably detected per-logo, and the printed university name is conclusive. Any university NOT
+# enumerated here stays unrecognised → holistic. Calibrated on 1–2 corpus docs each (thin — weights
+# conservative); a cropped capture (e.g. a75) hits only the anchor → suspect, as intended.
+ASASI_UPNM_SIGNATURES = [
+    ('UPNM (Univ Pertahanan Nasional)', ['UNIVERSITI PERTAHANAN NASIONAL MALAYSIA'],   3, 'text'),
+    ('Pusat Pengurusan Akademik & Pengijazahan', ['PUSAT PENGURUSAN AKADEMIK DAN PENGIJAZAHAN'], 2, 'text'),
+    ('Tawaran kemasukan ke UPNM',    ['TAWARAN KEMASUKAN KE UNIVERSITI PERTAHANAN NASIONAL MALAYSIA'], 2, 'text'),
+    ('pertukaran tidak dibenarkan',  ['SEBARANG PERTUKARAN PROGRAM ADALAH TIDAK DIBENARKAN'], 2, 'text'),
+    ('Program Pengajian',            ['PROGRAM PENGAJIAN'],                          1, 'text'),
+    ('Tarikh Pendaftaran',           ['TARIKH PENDAFTARAN'],                         1, 'text'),
+]
+ASASIPINTAR_UKM_SIGNATURES = [
+    ('ASASIpintar UKM',              ['TAWARAN KEMASUKAN PROGRAM ASASIPINTAR'],      3, 'text'),
+    ('Univ Kebangsaan Malaysia',     ['UNIVERSITI KEBANGSAAN MALAYSIA'],             2, 'text'),
+    ('Tawaran muktamad (asasipintar)', ['TAWARAN YANG DIBERIKAN ADALAH MUKTAMAD'],   2, 'text'),
+    ('Pusat Pengurusan Akademik',    ['PUSAT PENGURUSAN AKADEMIK'],                  1, 'text'),
+    ('Program Pengajian',            ['PROGRAM PENGAJIAN'],                          1, 'text'),
+    ('Tarikh Lapor Diri',            ['TARIKH LAPOR DIRI'],                          1, 'text'),
+]
+UTHM_DIPLOMA_SIGNATURES = [
+    ('UTHM (Univ Tun Hussein Onn)',  ['UNIVERSITI TUN HUSSEIN ONN MALAYSIA'],        3, 'text'),
+    ('Pejabat Pengurusan Akademik',  ['PEJABAT PENGURUSAN AKADEMIK'],                2, 'text'),
+    ('Tawaran kemasukan ke UTHM',    ['TAWARAN KEMASUKAN KE UNIVERSITI TUN HUSSEIN ONN MALAYSIA'], 2, 'text'),
+    ('Tahniah diucapkan',            ['TAHNIAH DIUCAPKAN'],                          1, 'text'),
+    ('Program & Kod',                ['PROGRAM KOD'],                                1, 'text'),
+]
+UPSI_DIPLOMA_SIGNATURES = [
+    ('UPSI (Univ Pendidikan Sultan Idris)', ['UNIVERSITI PENDIDIKAN SULTAN IDRIS'],  3, 'text'),
+    ('Bahagian Hal Ehwal Akademik',  ['BAHAGIAN HAL EHWAL AKADEMIK'],                2, 'text'),
+    ('Tawaran kemasukan ke UPSI',    ['TAWARAN KEMASUKAN KE UNIVERSITI PENDIDIKAN SULTAN IDRIS'], 2, 'text'),
+    ('tidak dibenarkan menukar program', ['TIDAK DIBENARKAN MENUKAR PROGRAM PENGAJIAN'], 2, 'text'),
+    ('Sultan Idris Education University', ['SULTAN IDRIS EDUCATION UNIVERSITY'],      1, 'text'),
+    ('Tarikh Mendaftar',             ['TARIKH MENDAFTAR'],                           1, 'text'),
+]
+UTEM_DIPLOMA_SIGNATURES = [
+    ('UTeM (Univ Teknikal Malaysia Melaka)', ['UNIVERSITI TEKNIKAL MALAYSIA MELAKA'], 3, 'text'),
+    ('Pejabat Pendaftar',            ['PEJABAT PENDAFTAR'],                          2, 'text'),
+    ('Tawaran kemasukan ke UTeM',    ['TAWARAN KEMASUKAN KE UNIVERSITI TEKNIKAL MALAYSIA'], 2, 'text'),
+    ('ditarik balik (UTeM clause)',  ['TAWARAN AKAN DITARIK BALIK SEKIRANYA UTEM'],  2, 'text'),
+    ('Program Pengajian',            ['PROGRAM PENGAJIAN'],                          1, 'text'),
+]
+UMP_DIPLOMA_SIGNATURES = [
+    ('UMP (Univ Malaysia Pahang)',   ['UNIVERSITI MALAYSIA PAHANG'],                 3, 'text'),
+    ('Pusat Pemasaran dan Kemasukan', ['PUSAT PEMASARAN DAN KEMASUKAN'],             2, 'text'),
+    ('Tawaran kemasukan ke Diploma UMP', ['TAWARAN KEMASUKAN KE PROGRAM DIPLOMA UNIVERSITI MALAYSIA PAHANG'], 2, 'text'),
+    ('pertukaran program tidak dibenarkan', ['PERTUKARAN PROGRAM ADALAH TIDAK DIBENARKAN'], 2, 'text'),
+    ('Program Pengajian',            ['PROGRAM PENGAJIAN'],                          1, 'text'),
+    ('Tarikh Pendaftaran',           ['TARIKH PENDAFTARAN'],                         1, 'text'),
+]
+
 # A doc_type is scored against its FAMILY of candidate lists (best fit wins + names the type).
 # results_slip + certificate are scored together (auto-detect); birth_certificate is its own.
 _RESULTS_LISTS = {'results_slip': SLIP_SIGNATURES, 'certificate': CERT_SIGNATURES}
 _OFFER_LISTS = {'stpm': STPM_OFFER_SIGNATURES, 'matriculation': MATRIC_OFFER_SIGNATURES,
-                'polytechnic': POLY_OFFER_SIGNATURES, 'pismp': PISMP_OFFER_SIGNATURES}
+                'polytechnic': POLY_OFFER_SIGNATURES, 'pismp': PISMP_OFFER_SIGNATURES,
+                'asasi_upnm': ASASI_UPNM_SIGNATURES, 'asasipintar_ukm': ASASIPINTAR_UKM_SIGNATURES,
+                'uthm_diploma': UTHM_DIPLOMA_SIGNATURES, 'upsi_diploma': UPSI_DIPLOMA_SIGNATURES,
+                'utem_diploma': UTEM_DIPLOMA_SIGNATURES, 'ump_diploma': UMP_DIPLOMA_SIGNATURES}
 _FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
              'birth_certificate': {'birth_certificate': BC_SIGNATURES},
              'epf': {'epf': EPF_SIGNATURES},
@@ -217,6 +273,13 @@ _IDENTITY = {'offer_letter': {
     'polytechnic':   ['JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI',
                       'SURAT TAWARAN PENGAJIAN', 'GALERIA PJH'],
     'pismp':         ['INSTITUT PENDIDIKAN GURU', 'IJAZAH SARJANA MUDA PERGURUAN'],
+    # Per-institution Asasi / UA-Diploma — the university NAME is the identity anchor.
+    'asasi_upnm':      ['UNIVERSITI PERTAHANAN NASIONAL MALAYSIA'],
+    'asasipintar_ukm': ['ASASIPINTAR', 'UNIVERSITI KEBANGSAAN MALAYSIA'],
+    'uthm_diploma':    ['UNIVERSITI TUN HUSSEIN ONN MALAYSIA'],
+    'upsi_diploma':    ['UNIVERSITI PENDIDIKAN SULTAN IDRIS', 'SULTAN IDRIS EDUCATION UNIVERSITY'],
+    'utem_diploma':    ['UNIVERSITI TEKNIKAL MALAYSIA MELAKA'],
+    'ump_diploma':     ['UNIVERSITI MALAYSIA PAHANG'],
 }}
 
 

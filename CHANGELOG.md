@@ -129,6 +129,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   old screen-only `editIv` toggle.
 
 ### Added
+- **Offer letter — 6 per-institution Asasi/UA-Diploma families + held-out validation (2026-06-20).**
+  Signature genuineness extended beyond the 4 central pathways to enumerated universities — **UPNM**
+  (Asasi), **UKM** (ASASIpintar), **UTHM/UPSI/UTeM/UMP** (Diploma) — each anchored on the university
+  name (text-only); a non-enumerated university (UM, IPTS) stays `unrecognised` → holistic. Validated
+  **out-of-sample** on 10 production offer letters uploaded after the corpus: Issue-1 detected type
+  matched the declared pathway in every standard case (2 correctly deferred); Issue-2 extracted the
+  per-pathway fields (incl. PISMP `bidang/elektif/aliran`) with NRIC matching the profile 9/10. New
+  reusable `eval/heldout_eval.py` (READ-ONLY, persists nothing, redacts PII). **Lesson:** the offer
+  NRIC is OCR-flaky (image-Gemini dropped a digit on a re-read) → identity should anchor on the IC's
+  NRIC, treat the offer NRIC as soft corroboration (never a hard gate). No migration; +tests.
 - **Offer letter — signature genuineness (4 standard issuers) + per-pathway extraction, wired live.**
   The probabilistic SIGNATURE scorer now covers the post-SPM offer across four single-issuer families —
   **STPM** (Sektor Operasi Sekolah), **Matriculation** (Bahagian Matrikulasi KPM), **Polytechnic**

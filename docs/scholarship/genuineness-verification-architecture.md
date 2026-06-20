@@ -242,8 +242,31 @@ from the OCR text. *(Layer-2 prep, captured-now/used-later: PISMP `aliran` selec
 code variant of the same subject — e.g. Pendidikan Jasmani is `50PD016J00P`/`036`/`046` — so the
 chosen-course match needs it; poly/PISMP map via `{programme|bidang|elektif} + aliran` token overlap.)*
 
-**Status:** Issue-1 signatures + band **done & committed** (`e9cc7d6`); extraction-schema update + live
-wiring pending (the next offer-letter step).
+**Per-institution Asasi / UA-Diploma families (added 2026-06-20).** Beyond the 4 central-issuer
+pathways, each *enumerated university* that appears in the corpus is its own family anchored on the
+university NAME (text-only — institution logos aren't reliably detectable): **UPNM** (Asasi),
+**UKM** (ASASIpintar), **UTHM / UPSI / UTeM / UMP** (Diploma). A university **not** enumerated stays
+`unrecognised` → holistic (a legit UM / IPTS offer is never flagged). **Scalable target:** since the
+public-university set is **fixed at 20**, fold these into ONE generic `ua_offer` family anchored on
+the canonical 20-UA name list (sourced from `course_institutions`) + the common offer structure
+(union-matched office/clause), keeping the per-institution clauses as bonus — covers all 20 without
+per-university code. (Asasi vs Diploma vs Degree all collapse to "a genuine offer from a real UA";
+the programme is an extraction matter.)
+
+**Held-out validation (2026-06-20).** Tested on 10 production offer letters uploaded AFTER the corpus
+(true out-of-sample). Issue 1: detected type matched the student's **declared pathway** in every
+standard case; 2 correctly deferred (a non-enumerated UA, an IPTS/Swinburne). Issue 2: per-contract
+fields extracted (incl. PISMP `bidang/elektif/aliran`), NRIC matched the profile 9/10. **Lessons:**
+(1) the **offer-letter NRIC is OCR-flaky** — image-Gemini non-deterministically dropped a digit on one
+re-read (`0806201578` vs `080620101578`), so **identity must anchor on the IC's NRIC; the offer NRIC is
+soft corroboration only** (tolerate small edit-distance; never a hard gate — the *name* matched every
+read and is the robust offer-side check). (2) `unrecognised` correctly catches IPTS + random/wrong-type
+letters (deferred, not auto-passed); the IPTS *disqualification* itself is the separate
+`upu_status='ipts'` eligibility rule, not genuineness.
+
+**Status:** Issue-1 signatures (4 pathways + 6 UA families) + Issue-2 extraction (image-Gemini) + live
+wiring all **done & committed** (`e9cc7d6`, `a1ecc64`) + held-out-validated. Open: the 20-UA generic
+refactor; the IC-anchored identity matcher (Layer-2).
 
 ---
 

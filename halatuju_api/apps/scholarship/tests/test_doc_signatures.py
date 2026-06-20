@@ -327,3 +327,44 @@ def test_pismp_announcement_is_suspect_not_genuine():
     g = signature_genuineness(PISMP_ANNOUNCEMENT, doc_type='offer_letter')
     assert g['type'] == 'pismp'
     assert g['status'] == 'suspect'
+
+
+# Per-institution Asasi / UA-Diploma offers — each university its own family (name = anchor).
+GENUINE_UTHM_OFFER = """UNIVERSITI TUN HUSSEIN ONN MALAYSIA
+PEJABAT PENGURUSAN AKADEMIK
+TAWARAN KEMASUKAN KE UNIVERSITI TUN HUSSEIN ONN MALAYSIA
+Tahniah diucapkan kepada saudara/i.
+Program & Kod : DIPLOMA TEKNOLOGI MAKLUMAT (DAT)
+Tarikh: 22 Mei 2026
+"""
+GENUINE_UPNM_OFFER = """UNIVERSITI PERTAHANAN NASIONAL MALAYSIA
+Pusat Pengurusan Akademik dan Pengijazahan
+TAWARAN KEMASUKAN KE UNIVERSITI PERTAHANAN NASIONAL MALAYSIA
+Program Pengajian : Asasi Perubatan
+Tarikh Pendaftaran : 1 Julai 2026
+Sebarang pertukaran program adalah TIDAK dibenarkan.
+"""
+# A public university we did NOT enumerate (Universiti Malaya) → unrecognised → holistic.
+UNENUMERATED_UNIV_OFFER = """UNIVERSITI MALAYA
+PUSAT ASASI SAINS
+TAWARAN KEMASUKAN PROGRAM ASASI SAINS SOSIAL
+Anda ditawarkan tempat pengajian.
+"""
+
+
+def test_uthm_diploma_offer_types_and_genuine():
+    g = signature_genuineness(GENUINE_UTHM_OFFER, doc_type='offer_letter')
+    assert g['type'] == 'uthm_diploma'
+    assert g['status'] == 'genuine'
+
+
+def test_upnm_asasi_offer_types_and_genuine():
+    g = signature_genuineness(GENUINE_UPNM_OFFER, doc_type='offer_letter')
+    assert g['type'] == 'asasi_upnm'
+    assert g['status'] == 'genuine'
+
+
+def test_unenumerated_university_defers_to_holistic():
+    # Not one of the enumerated institutions → unrecognised (a legit UM offer is never flagged).
+    g = signature_genuineness(UNENUMERATED_UNIV_OFFER, doc_type='offer_letter')
+    assert g['status'] == 'unrecognised'
