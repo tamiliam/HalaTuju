@@ -25,6 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   must renumber to `0068`.
 
 ### Fixed
+- **Reviewer-raised requests now notify the student (Check-2 Action Centre gap).**
+  **The bug:** when a reviewer raised a document-request or query from the cockpit (`AdminResolutionItemView`), the item
+  appeared in the student's Action Centre but **no notification was ever sent** — the student only saw it if they happened
+  to log in. (Student #50: a reviewer's offer-letter request sat unseen.) Meanwhile the delayed "we have a few questions"
+  sweep (`send_due_query_emails`) only counted system/clarify items, never reviewer-raised (`source='officer'`) ones.
+  **Fix (batched, not per-item):** raising an officer item now **resets `query_raised_notified_at`** (flag-gated on
+  `CHECK2_STUDENT_QUERIES_ENABLED`) so the existing delayed, idempotent hourly sweep sends **one** summary email per review
+  burst — and the sweep now counts open `source='officer'` items (excluding `kind='human'`) toward its threshold, so a
+  request or re-request re-fires. **No per-item email** (a reviewer raising several items in one sitting would otherwise
+  spam the student and burn the Brevo 300/day quota). Backend-only, no migration. +3 tests (1420 scholarship pytest).
+  Branch `fix/officer-request-notifies-student`. ⚠️ Existing open items (e.g. #50) aren't retroactively notified — the
+  reset fires only on a *new* raise; re-raise to nudge.
 - **Sponsor portal redesign (R7) — fixed ~47 missing i18n keys + Tamil refine + a11y (the final redesign sprint).**
   **The bug:** R1–R4 shipped the My Giving / Students / Account pages referencing **47 `sponsorPortal.{impact,journey,
   activity,community,statement,students,account}.*` keys that were never added to the message files** — so those pages
