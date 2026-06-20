@@ -1087,6 +1087,7 @@ class ProfileView(APIView):
             'contact_email_verified': contact_email_verified,
             'contact_phone': profile.contact_phone,
             'contact_phone_verified': profile.contact_phone_verified,
+            'whatsapp_opt_in': profile.whatsapp_opt_in,
             # TD-061: canonical financial fields (replace legacy family_income/
             # siblings/phone). The /profile family card reads these.
             'household_income': profile.household_income,

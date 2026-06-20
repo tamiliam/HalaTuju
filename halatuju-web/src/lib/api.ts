@@ -74,6 +74,7 @@ export interface StudentProfile {
   contact_email_verified?: boolean
   contact_phone?: string
   contact_phone_verified?: boolean
+  whatsapp_opt_in?: boolean
   exam_type?: 'spm' | 'stpm'
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number

@@ -302,7 +302,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'household_income', 'household_size',
             'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
             'spm_prereq_grades', 'stream_subjects', 'elective_subjects', 'referral_source',
-            'contact_email', 'contact_phone',
+            'contact_email', 'contact_phone', 'whatsapp_opt_in',
             # Structured family roster (the profile-level home; two-way synced with an
             # open application by ProfileView.put).
             'father_name', 'father_occupation', 'father_occupation_other',
