@@ -142,6 +142,14 @@ COURSE_REFRESH_REMINDER_EMAIL = os.environ.get('COURSE_REFRESH_REMINDER_EMAIL', 
 # every sponsor-pool browse endpoint returns 404. Build + test run on dummy data.
 SPONSOR_POOL_ENABLED = os.environ.get('SPONSOR_POOL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# WhatsApp outbound comms (Twilio). DARK by default: every send is a no-op unless
+# WHATSAPP_ENABLED is true AND the three Twilio creds are set (the billable-API
+# "ship disabled first" rule). The sandbox sender is 'whatsapp:+14155238886'.
+WHATSAPP_ENABLED = os.environ.get('WHATSAPP_ENABLED', '').lower() in ('1', 'true', 'yes')
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', '')
+
 # Check 2 STEP 2: the AI clarify queries asked of the STUDENT. While OFF (default), no
 # clarify query is shown in the student Action Centre and no query email/reminder is
 # sent — but officers still see them in the cockpit, so the questions can be reviewed

@@ -12,10 +12,29 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.scholarship import emails
+from apps.scholarship import emails, whatsapp
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.pool import pool_ref
 from apps.scholarship.scheduling import _student_identity
+
+
+def _wa_reminder_body(student_name, start, meeting_url, when, english_only):
+    """Plain-text bilingual interview reminder for WhatsApp (sandbox: free-form).
+
+    A production WhatsApp sender needs a Meta-approved template — that lands at
+    go-live (Sprint 2); the sandbox accepts free text to joined numbers."""
+    when_en = 'tomorrow' if when == '1day' else 'in 1 hour'
+    when_bm = 'esok' if when == '1day' else 'dalam 1 jam'
+    t = emails._fmt_myt(start)
+    en = f'Hi {student_name}, a reminder: your B40 Assistance interview is {when_en} — {t}.'
+    if meeting_url:
+        en += f'\nJoin: {meeting_url}'
+    if english_only:
+        return en
+    bm = f'Salam {student_name}, peringatan: temu duga Bantuan B40 anda {when_bm} — {t}.'
+    if meeting_url:
+        bm += f'\nSertai: {meeting_url}'
+    return f'{en}\n\n{bm}'
 
 
 class Command(BaseCommand):
@@ -45,10 +64,16 @@ class Command(BaseCommand):
 
             # 1-day reminder: inside 24h of the start, once.
             if app.interview_reminded_1d_at is None and start <= now + timedelta(hours=24):
+                _eo = emails.english_only_email(app)
                 emails.send_interview_reminder_email(
                     student_email, student_name=student_name, start=start,
                     meeting_url=app.interview_meeting_url, when='1day',
-                    english_only=emails.english_only_email(app))
+                    english_only=_eo)
+                # Best-effort WhatsApp alongside the email (no-op unless WHATSAPP_ENABLED).
+                whatsapp.send_whatsapp(
+                    getattr(app.profile, 'contact_phone', ''),
+                    _wa_reminder_body(student_name, start, app.interview_meeting_url, '1day', _eo),
+                    application=app, kind='interview_reminder_1day')
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
@@ -60,10 +85,15 @@ class Command(BaseCommand):
 
             # 1-hour reminder: inside 1h of the start, once.
             if app.interview_reminded_1h_at is None and start <= now + timedelta(hours=1):
+                _eo = emails.english_only_email(app)
                 emails.send_interview_reminder_email(
                     student_email, student_name=student_name, start=start,
                     meeting_url=app.interview_meeting_url, when='1hour',
-                    english_only=emails.english_only_email(app))
+                    english_only=_eo)
+                whatsapp.send_whatsapp(
+                    getattr(app.profile, 'contact_phone', ''),
+                    _wa_reminder_body(student_name, start, app.interview_meeting_url, '1hour', _eo),
+                    application=app, kind='interview_reminder_1hour')
                 if reviewer_email:
                     emails.send_reviewer_interview_reminder_email(
                         reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
