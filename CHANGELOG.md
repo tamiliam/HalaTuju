@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **WhatsApp comms — go-live wiring: send via approved Meta template (DARK).** Production business-initiated WhatsApp
+  must use a Meta-approved template, so `send_whatsapp`/`_post_to_twilio` now send a Twilio **Content template**
+  (`ContentSid` + `ContentVariables`) when `TWILIO_WHATSAPP_REMINDER_CONTENT_SID` is set; the free-text `Body` path
+  stays for the sandbox/dev. The interview reminder passes `{1:name, 2:time(MYT), 3:link}` (refactored into a
+  `_send_wa_reminder` helper, opt-in-gated). Approved template = `b40_interview_reminder` (Utility, `HX7b5eee…`).
+  +1 test (72 scholarship green). Still dark — flips on at deploy with the env vars set.
 - **WhatsApp comms channel — Sprint 2: consent + opt-out (DARK).** Adds the PDPA control so it's lawful to message
   real applicants. New `StudentProfile.whatsapp_opt_in` (boolean, **default True** = implied consent: a phone number
   given for contact is consent to be contacted on it, like email — owner decision 2026-06-20; the ADD COLUMN backfills

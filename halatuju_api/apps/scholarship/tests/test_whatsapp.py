@@ -79,3 +79,17 @@ def test_send_swallows_exception_and_marks_failed():
         row = whatsapp.send_whatsapp('0123456789', 'hi', kind='t')   # must NOT raise
     assert row.status == 'failed'
     assert 'boom' in row.error
+
+
+@pytest.mark.django_db
+@override_settings(**_CREDS)
+def test_send_uses_content_template_when_sid_given():
+    sid, variables = 'HXabc123', {'1': 'Priya', '2': 'Mon 23 Jun, 3:00pm (MYT)', '3': 'https://x'}
+    with mock.patch.object(whatsapp, '_post_to_twilio', return_value=('SM9', 'queued', '')) as m:
+        row = whatsapp.send_whatsapp('012-345 6789', kind='interview_reminder_1day',
+                                     content_sid=sid, content_variables=variables)
+    assert row.status == 'queued' and row.provider_sid == 'SM9'
+    # _post_to_twilio args = (sid, token, sender, to_e164, body, content_sid, content_variables)
+    args = m.call_args[0]
+    assert args[5] == sid and args[6] == variables
+    assert 'template' in row.body  # audit row records a template marker, not free text

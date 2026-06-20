@@ -52,12 +52,16 @@ def normalise_msisdn(raw, *, default_cc=_DEFAULT_CC):
     return ('+' + digits) if (digits.isdigit() and len(digits) >= 10) else ''
 
 
-def send_whatsapp(to, body, *, application=None, kind='', log=True):
+def send_whatsapp(to, body='', *, application=None, kind='', content_sid='', content_variables=None, log=True):
     """Best-effort outbound WhatsApp message. Returns the ``WhatsAppMessage`` row, or None.
 
     No-op (returns None) unless ``WHATSAPP_ENABLED`` and all Twilio creds are set.
     Never raises: a bad number or a transport/Twilio error is caught, logged, and
     recorded on the row as ``failed``.
+
+    Production business-initiated messages MUST use a Meta-approved template: pass
+    ``content_sid`` (the template's ``HX…``) + ``content_variables`` ({'1': …, '2': …}).
+    The free-text ``body`` path is only for the sandbox/dev (no template needed there).
     """
     from .models import WhatsAppMessage  # local import: avoids app-loading cycles
 
@@ -69,22 +73,24 @@ def send_whatsapp(to, body, *, application=None, kind='', log=True):
         logger.info('WhatsApp send skipped (disabled/unconfigured): kind=%s', kind)
         return None
 
+    # What we record for audit: the literal body, or a marker for a template send.
+    log_body = body or (f'[template:{content_sid}]' if content_sid else '')
     to_e164 = normalise_msisdn(to)
     if not to_e164:
         logger.warning('WhatsApp send skipped (invalid number): kind=%s', kind)
         if log:
             return WhatsAppMessage.objects.create(
                 application=application, kind=kind, to_number=str(to or ''),
-                body=body, status='failed', error='invalid_number')
+                body=log_body, status='failed', error='invalid_number')
         return None
 
     row = None
     if log:
         row = WhatsAppMessage.objects.create(
             application=application, kind=kind, to_number=to_e164,
-            body=body, status='queued')
+            body=log_body, status='queued')
     try:
-        msg_sid, status, err = _post_to_twilio(sid, token, sender, to_e164, body)
+        msg_sid, status, err = _post_to_twilio(sid, token, sender, to_e164, body, content_sid, content_variables)
         if row:
             row.provider_sid = msg_sid or ''
             row.status = status or ('sent' if msg_sid else 'failed')
@@ -99,18 +105,23 @@ def send_whatsapp(to, body, *, application=None, kind='', log=True):
     return row
 
 
-def _post_to_twilio(sid, token, sender, to_e164, body):
+def _post_to_twilio(sid, token, sender, to_e164, body, content_sid='', content_variables=None):
     """POST one message to Twilio. Returns ``(message_sid, status, error)``.
 
     Kept as a separate seam so tests mock THIS (no network) rather than urllib.
+    With ``content_sid`` it sends the approved template (+ ContentVariables JSON);
+    otherwise it sends the free-text ``Body`` (sandbox/dev).
     """
     url = _TWILIO_MESSAGES_URL.format(sid=urllib.parse.quote(sid, safe=''))
     from_addr = sender if sender.startswith('whatsapp:') else f'whatsapp:{sender}'
-    data = urllib.parse.urlencode({
-        'To': f'whatsapp:{to_e164}',
-        'From': from_addr,
-        'Body': body,
-    }).encode()
+    fields = {'To': f'whatsapp:{to_e164}', 'From': from_addr}
+    if content_sid:
+        fields['ContentSid'] = content_sid
+        if content_variables:
+            fields['ContentVariables'] = json.dumps(content_variables)
+    else:
+        fields['Body'] = body
+    data = urllib.parse.urlencode(fields).encode()
     req = urllib.request.Request(url, data=data, method='POST')
     creds = base64.b64encode(f'{sid}:{token}'.encode()).decode()
     req.add_header('Authorization', f'Basic {creds}')
