@@ -769,6 +769,19 @@ export async function getSponsorCommunity(options?: ApiOptions): Promise<Sponsor
   return apiRequest('/api/v1/sponsor/community/', options)
 }
 
+/** R4 — the giving statement's two ledgers: donations INTO the trust + gifts OUT to
+ *  students (anonymous ref only). 404s while the pool flag is off. */
+export interface SponsorStatement {
+  donations: Array<{ amount: string; reference: string; at: string }>
+  gifts: Array<{ ref: string; amount: string; at: string }>
+  total_in: string
+  total_out: string
+}
+
+export async function getSponsorStatement(options?: ApiOptions): Promise<SponsorStatement> {
+  return apiRequest('/api/v1/sponsor/statement/', options)
+}
+
 /** F1 — public live counter for the sponsor landing. No auth (a public marketing
  *  page calls it). While SPONSOR_POOL_ENABLED is off it returns {count:0,
  *  enabled:false} so the landing stays dark until go-live. */

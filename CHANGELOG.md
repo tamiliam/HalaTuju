@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Sponsor portal redesign (R4) — My Account + giving statement.** The thank-you wall moves from My Giving into **My
+  Account** (matching the prototype), and Account gains the **giving statement** as two ledgers: **Donations to the
+  trust** (in) beside **Gifts to students** (out, anonymous ref only), each amount + date + totals, with a print/save-PDF
+  affordance and the "tax-deductible once Section 44(6) is confirmed" note. New tiny `GET /api/v1/sponsor/statement/`
+  (flag-gated, allowlist-safe) assembling both ledgers from existing `Donation` + active `Sponsorship` rows — **no
+  migration**. +5 pytest (100 sponsor green); jest 353; `next build` clean. Ships dark behind `SPONSOR_POOL_ENABLED`.
 - **Sponsor portal redesign (R3) — activity feed + community strip.** My Giving gains a **Recent activity** feed (your
   students' funded → accepted → semester → graduated → thank-you events, newest first) and a **community belonging**
   strip ("you're one of N sponsors, together supporting M students"). Two new flag-gated, allowlist-safe endpoints —
