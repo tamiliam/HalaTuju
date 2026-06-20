@@ -37,6 +37,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   spam the student and burn the Brevo 300/day quota). Backend-only, no migration. +3 tests (1420 scholarship pytest).
   Branch `fix/officer-request-notifies-student`. ⚠️ Existing open items (e.g. #50) aren't retroactively notified — the
   reset fires only on a *new* raise; re-raise to nudge.
+- **Cockpit: reviewer interview notes lost on "Save draft" (data loss) + AI flags past dates as "future".** Two
+  live-reported bugs. **(1) Data loss:** `_validate_findings` accepted verdicts `{resolved, still_unclear, new_concern,
+  deleted}` but **not `''`** — yet the cockpit's natural action (typing a one-line "what you found" without clicking a
+  verdict button) sends `verdict=''`. So Save-draft 400'd (`bad_findings`), the whole save (findings **and** the overall
+  note) was rejected, and the reviewer's notes vanished on reload. Fix: allow `''` (an in-progress finding may carry just
+  a rationale). **(2) Wrong "future date":** the Gemini interview gap-spotter (`gap_engine.py`) was never told today's
+  date, so it flagged a *past* event ("father's accident on April 3rd, 2026") as "in the future". Fix: inject today's
+  date (MYT) into `GAP_PROMPT` with an explicit past-vs-future instruction. +2 regression tests (102 scholarship green).
+  No migration. Branch `fix/cockpit-date-and-savedraft`.
 - **Sponsor portal redesign (R7) — fixed ~47 missing i18n keys + Tamil refine + a11y (the final redesign sprint).**
   **The bug:** R1–R4 shipped the My Giving / Students / Account pages referencing **47 `sponsorPortal.{impact,journey,
   activity,community,statement,students,account}.*` keys that were never added to the message files** — so those pages

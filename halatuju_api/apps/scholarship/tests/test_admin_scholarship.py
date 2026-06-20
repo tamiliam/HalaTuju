@@ -102,6 +102,15 @@ class TestAdminScholarship(TestCase):
         self.assertIsNone(_validate_findings({'x': {'verdict': 'resolved', 'rationale': 'asked, fine'}}))
         self.assertIsNotNone(_validate_findings({'x': {'verdict': 'bogus'}}))
 
+    def test_findings_accepts_empty_verdict_draft(self):
+        # Regression: typing a one-line finding WITHOUT clicking a verdict button sends
+        # verdict='' (the cockpit's natural action). Rejecting it 400'd the whole Save-draft
+        # and LOST the reviewer's notes. An in-progress finding (just a rationale) must validate.
+        from apps.scholarship.views_admin import _validate_findings
+        self.assertIsNone(_validate_findings({'father_accident': {'verdict': '', 'rationale': 'in April, fine'}}))
+        self.assertIsNone(_validate_findings({'x': {'verdict': '', 'rationale': ''}}))   # untouched entry, harmless
+        self.assertIsNotNone(_validate_findings({'x': {'verdict': 'bogus'}}))            # still rejects nonsense
+
     # ── Check-2/Check-3 redesign S2: officer reviews student-answered caveats ──
     def _make_answered_caveat(self):
         from apps.scholarship.resolution import add_officer_item, resolve_item
