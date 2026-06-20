@@ -877,3 +877,12 @@
   by editing the `trust_content` DB row — **no deploy** (language-neutral data in the DB, trilingual chrome in i18n). A
   per-student `enrolment_verified` flag (the "Enrolment independently verified" badge) likewise stays False until that
   institution-confirmation process exists. (Logged 2026-06-20, Sponsor redesign R5/R7.)
+- TD-134: **[RESOLVED 2026-06-21]** Gap in the TD-115 slot model — the slot key `(doc_type, household_member)` could not
+  represent multiple reviewer-requested docs of the same type, so each Action-Centre "Other" upload overwrote the previous
+  one (live data loss — Theepicaa app 4: 5 requested, 1 stored) and a cross-person income request (father's IC on a
+  mother-STR route) overwrote the route doc. **Resolved** by `feat/request-owned-doc-slots` (commit `d9278f3`, migration
+  `scholarship/0067`): added `ApplicantDocument.request_code` so the slot key is `(doc_type, household_member,
+  request_code)`; the STR force-tag is skipped for request-keyed uploads; `resolve_doc_items_for_upload` resolves by code;
+  `MAX_OTHER_DOCS=10` cap. +6 tests. See `docs/decisions.md` + `docs/retrospective-2026-06-21-request-owned-doc-slots.md`.
+  ⚠️ Migration `0067` clashes with the unmerged `feat/whatsapp-comms` branch — renumber the later merge to `0068`.
+  (Logged + resolved 2026-06-21.)
