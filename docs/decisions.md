@@ -1,5 +1,34 @@
 # Architectural Decisions — HalaTuju
 
+## Trust hub content: language-neutral DATA in the DB, trilingual CHROME in i18n — Sponsor Redesign R5, 2026-06-20
+**Decision:** The Trust & Transparency hub's editable content is split. The new `TrustContent` model (one active row)
+holds ONLY language-neutral, owner-authored DATA — legal entity, trustee names/roles, the sources/uses figures, the
+auditor + FY + report URL. All UI chrome (section headings, "Coming soon"/"to be published" placeholders, explanatory
+sentences) lives in trilingual i18n on the frontend. The page renders DB data when present, else the i18n placeholder.
+**Alternatives considered:** (a) all four sections' copy in the DB (single JSON blob) — editable without a deploy but
+English-only, breaking the hard en/ms/ta parity rule; (b) all content in i18n — trilingual but every edit needs a code
+deploy, defeating the roadmap's "fill in as the org formalises" intent; (c) the chosen split.
+**Rationale:** Satisfies BOTH "editable without a deploy" (the data that changes as the org formalises is
+language-neutral — proper nouns + numbers — so a single-language DB row is correct) AND i18n parity (the translatable
+chrome stays in the message catalogues). Owner can update a DB row (via Supabase) with no deploy.
+**Trade-offs:** A future free-text org "story" that DOES need translation has no home yet; acceptable — no such content
+now (org not formalised).
+**Revisit if:** the org wants rich, translated narrative content in the hub → add per-language fields or move that copy
+to i18n.
+
+## `enrolment_verified` is distinct from identity `nric_verified` — Sponsor Redesign R5, 2026-06-20
+**Decision:** R5's "Enrolment independently verified" badge is backed by a NEW `ScholarshipApplication.enrolment_verified`
+boolean, separate from the identity-wall `profile.nric_verified`. Surfaced to sponsors as a bare boolean on the
+allowlist card — never the verifier, the evidence, or the timing. Honest default `False`.
+**Alternatives considered:** (a) reuse `nric_verified` / the `accepted` status as the badge signal; (b) derive it from
+the existing verify checklist.
+**Rationale:** Identity verification (the *person* is real — MyKad checklist) and enrolment verification (the *place* is
+real — an independent party confirmed enrolment with the institution) are different assurance layers. Conflating them
+would assert enrolment confirmation we don't have. A distinct flag stays honest-False until that process exists.
+**Trade-offs:** The badge shows for nobody until the process is built + the flag is set (no auto-derivation). Intended —
+better an absent badge than a fabricated assurance.
+**Revisit if:** an automated institution-enrolment-confirmation feed is built → set the flag from it.
+
 ## PISMP picker: aliran on the eligibility payload, browse replaces type-search — Sprint 2 (PISMP), 2026-06-19
 **Decision:** The PISMP Aliran→Bidang picker consumes an `aliran` field added to the eligible-courses payload
 (backend-derived via `pismp_taxonomy.aliran_of`), and the school-type→subject browse **replaces** the type-a-course-name

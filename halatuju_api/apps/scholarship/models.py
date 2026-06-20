@@ -284,6 +284,13 @@ class ScholarshipApplication(models.Model):
     # B40 Phase E/F (F8a): stamped when the student completes post-award onboarding
     # (acknowledgement + questionnaire). The hard gate before the first disbursement.
     onboarded_at = models.DateTimeField(null=True, blank=True)
+    # R5 (Trust & Assurance): an INDEPENDENT party has confirmed this student's
+    # enrolment with their institution — the institution-confirmation layer of the
+    # layered assurance stack. DISTINCT from identity (``profile.nric_verified``):
+    # that the person is real vs that the place is real. Surfaced to sponsors as a
+    # BARE BOOLEAN badge only (never the verifier's evidence). Honest default False
+    # until the enrolment-confirmation process exists.
+    enrolment_verified = models.BooleanField(default=False)
     # Phase C: the admin's "please send more documentation" request. Surfaced
     # read-only on the student's Step 4; does not change status.
     info_request_note = models.TextField(blank=True, default='')
@@ -1429,3 +1436,42 @@ class SponsorReferral(models.Model):
 
     def __str__(self):
         return f'SponsorReferral {self.code} by sponsor={self.inviter_id} [{self.status}]'
+
+
+class TrustContent(models.Model):
+    """R5 (Trust & Transparency hub): the EDITABLE content behind the four-layer
+    trust story — Who we are · Governance · Sources & uses of funds · Independent
+    assurance. A single active row holds the fillable DATA (legal entity, trustees,
+    annual figures, the auditor) as JSON so the organisation can fill it in over
+    time as it formalises **without a code deploy** (edit the row directly / via
+    admin). The UI CHROME (headings, "to be published" placeholders, explanatory
+    copy) lives in trilingual i18n on the frontend — only the language-neutral,
+    owner-authored data lives here, so i18n parity is never broken by DB content.
+
+    Seeded with HONEST placeholders: the org is not yet formalised, figures are
+    illustrative (``figures_are_illustrative``), trustees/auditor are empty. NEVER
+    any student/sponsor PII — programme-level content only."""
+    # Who we are — language-neutral facts; empty until the org registers.
+    legal_entity = models.CharField(max_length=300, blank=True, default='')
+    contact_email = models.EmailField(blank=True, default='help@halatuju.xyz')
+    # Governance — list of {name, role, bio}; empty until trustees are appointed.
+    trustees = models.JSONField(default=list, blank=True)
+    # Sources & uses of funds — each a list of {label, amount} (RM). Illustrative
+    # placeholders now; real figures (published annually) drop in as accounts mature.
+    sources = models.JSONField(default=list, blank=True)
+    uses = models.JSONField(default=list, blank=True)
+    # Independent assurance — {fy, students_verified, disbursed, auditor, report_url}.
+    assurance = models.JSONField(default=dict, blank=True)
+    # True while the figures above are illustrative placeholders (the FE shows an
+    # "illustrative" pill); flip to False once real audited figures are published.
+    figures_are_illustrative = models.BooleanField(default=True)
+    # Only the active row is served; lets a draft be staged without publishing.
+    is_active = models.BooleanField(default=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'trust_content'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f'TrustContent active={self.is_active} updated={self.updated_at:%Y-%m-%d}'

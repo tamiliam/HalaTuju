@@ -149,6 +149,13 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
         </div>
       </header>
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
+      {nav && (
+        <footer className="container mx-auto px-4 sm:px-6 py-6 text-center text-xs text-gray-400">
+          <Link href="/sponsor/trust" className="text-gray-500 hover:text-blue-600 underline">
+            {t('sponsorPortal.trust.footerLink')}
+          </Link>
+        </footer>
+      )}
     </div>
   )
 }
