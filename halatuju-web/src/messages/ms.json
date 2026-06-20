@@ -240,6 +240,21 @@
         "auditedBy": "Diaudit oleh {auditor}",
         "downloadReport": "muat turun laporan jaminan tahunan"
       }
+    },
+    "autoSponsor": {
+      "title": "AutoSponsor",
+      "enable": "Hidup",
+      "intro": "Tetapkan sekali: apabila pelajar yang sepadan dengan pilihan anda menyertai kumpulan, kami akan menawarkan sokongan anda secara automatik daripada baki anda. Mereka tetap menerimanya sendiri — tiada apa yang dihantar tanpa persetujuan mereka.",
+      "field": "Bidang pengajian",
+      "state": "Negeri",
+      "maxAmount": "Paling banyak setiap pelajar (RM)",
+      "any": "Mana-mana",
+      "noCap": "Tiada had",
+      "save": "Simpan",
+      "saving": "Menyimpan…",
+      "saved": "Disimpan",
+      "note": "Kami hanya menawarkan sokongan selagi baki anda mencukupi; apabila ia berkurangan, kami hanya menunggu sehingga anda menambah. Setiap tawaran masih memerlukan penerimaan pelajar.",
+      "lastAllocated": "Sepadan kali terakhir pada {date}"
     }
   },
   "sponsorPool": {

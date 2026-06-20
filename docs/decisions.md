@@ -1,5 +1,31 @@
 # Architectural Decisions — HalaTuju
 
+## AutoSponsor allocates via an hourly cron over fundable students, not the publish request — Sponsor Redesign R6, 2026-06-20
+**Decision:** Standing-gift allocation runs in a dedicated **hourly `auto-sponsor` cron** that processes EVERY currently-
+fundable pool student (`pool.eligible_pool_queryset` ∩ `is_fundable`) and funds each with the first matching gift via
+`fund_student`. It does NOT hook synchronously into the admin anon-publish request. Owner picked "event-driven (when a
+match is published)" over a weekly sweep; the hourly cron realises that within an hour.
+**Alternatives considered:** (a) call `fund_student` synchronously in `AdminPublishAnonProfileView.post` (truly instant);
+(b) a weekly sweep; (c) a new "published-since-last-run" stamp to process only deltas.
+**Rationale:** `fund_student` is a MONEY mutation; running it inside an unrelated admin action (publishing a profile)
+couples concerns and risks a 500 in that request. The hourly cron mirrors the established `sponsor-realtime` pattern.
+Processing *all* fundable students each run is **naturally idempotent + self-limiting** — `fund_student` creates a
+holding sponsorship, so a funded student immediately leaves the fundable set (and the DB partial-unique allows one
+holding sponsor per student) — so no delta-stamp is needed. Balance is the throttle: low balance → skip silently →
+retried next run (owner decision), needing no flag or count cap.
+**Trade-offs:** up to ~1h latency between publish and the auto-offer (vs instant); acceptable for an opt-in convenience.
+**Revisit if:** sponsors want instant allocation → add a best-effort synchronous attempt in the publish path on top of
+the cron (the cron stays the backstop).
+
+## AutoSponsor needs no separate consent step — Sponsor Redesign R6, 2026-06-20
+**Decision:** Enabling a standing gift records NO new consent/acknowledgement. (Owner decision.)
+**Alternatives considered:** a short in-app authorisation tick; defer the enable-flow wording to a lawyer.
+**Rationale:** the donation is already final into the trust (covered by the donation terms); a standing gift only
+automates the *offer* click — it still produces an offered sponsorship the student must accept, and no real money moves.
+So it directs already-committed funds rather than creating a new money obligation.
+**Revisit if:** real money (toyyibPay disbursement, TD-075) lands — auto-directing funds that actually move may then
+warrant an explicit authorisation; revisit at that track.
+
 ## Trust hub content: language-neutral DATA in the DB, trilingual CHROME in i18n — Sponsor Redesign R5, 2026-06-20
 **Decision:** The Trust & Transparency hub's editable content is split. The new `TrustContent` model (one active row)
 holds ONLY language-neutral, owner-authored DATA — legal entity, trustee names/roles, the sources/uses figures, the

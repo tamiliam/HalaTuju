@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Sponsor portal redesign (R6) — Standing gift / AutoSponsor (the AutoInvest-style innovation).** A sponsor can set a
+  **standing gift** on My Account: field/state preferences + an optional per-student cap + an on/off toggle. When a
+  matching student joins the pool, an **hourly `auto-sponsor` cron** auto-funds them from the sponsor's balance — via
+  the existing `fund_student`, so each allocation is still an **offered** sponsorship the student must accept (no real
+  money moves; same safety model as a manual fund). **Event-driven** (hourly), **idempotent + self-limiting** (a funded
+  student leaves the fundable set; one holding sponsor per student via the DB partial-unique), and **balance-throttled**
+  — when the balance can't cover the next match it's **skipped silently** and retried once topped up. Allocations spread
+  fairly (least-recently-allocated gift first). New `StandingGift` model (OneToOne sponsor) + `standing_gift` service +
+  `GET/PUT /api/v1/sponsor/standing-gift/` (flag + approved-sponsor gated; the sponsor's own config only, no student
+  data). **No consent step** (owner decision — the donation is already final into the trust; this only automates the
+  offer). **Migration `scholarship/0066`** (new `standing_gifts` table; migrate-first). +13 pytest (121 sponsor green) ;
+  jest 361; i18n parity 2747×3; `next build` clean. Ships dark behind `SPONSOR_POOL_ENABLED` (inert with no standing
+  gifts). New hourly Cloud Scheduler job `halatuju-auto-sponsor` at deploy.
 - **Sponsor portal redesign (R5) — Trust & Transparency hub (the load-bearing trust layer).** A new **Trust &
   Transparency page** (`/sponsor/trust`, reached from the My Giving assurance strip + the portal footer) surfaces the
   four-layer trust story — **Who we are · Governance · Sources & uses of funds · Independent assurance** — built as a
