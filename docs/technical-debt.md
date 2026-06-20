@@ -819,18 +819,19 @@
   band (or through `build_verdict`), so the two-directional scorecard reflects the genuineness layer. Verified inline
   during the sprint (a16 → suspect; 43 genuine → genuine; 4 cropped → review; zero misclassifications), just not wired
   into the command. (Logged 2026-06-16, Genuineness signatures.)
-- TD-122: **BC + EPF genuineness is not yet wired onto the live signature path** (only `results_slip` is).
-  The signature scorer + bands for `birth_certificate` and `epf` are built, calibrated and tested, but the
-  upload path (`vision.run_field_extraction_for_document`) still runs the holistic `doc_genuineness` for
-  them in production. **To resolve:** route BC + EPF through `signature_genuineness` in the upload flow
-  (mirror the `results_slip` branch, sourcing the OCR text + the visual crest/QR/logo flag), so prod uses
-  the signature outcome. Behind tests, no migration. (Logged 2026-06-16, Genuineness signatures.)
-- TD-123: **Issue-2 extraction build pass for the finalised BC + EPF contracts.** The contracts are
-  finalised (`docs/scholarship/genuineness-verification-architecture.md`) but the extraction schemas
-  aren't updated yet. BC: drop `bc_number`; make `child_nric` optional (barcode-bound). EPF: extract the
-  **employer- and employee-share contribution TOTALS separately** + the month count, derive
-  `monthly_salary = max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))`, capture `employer_number` (`000000000 ⇒
-  unemployed`), and retire the combined `avg_monthly_contribution`. (Logged 2026-06-16.)
+- TD-122 **✅ RESOLVED (2026-06-20):** BC + EPF genuineness now come from the probabilistic SIGNATURE
+  scorer in the live upload path (`vision.run_field_extraction_for_document` routes `birth_certificate`
+  + `epf` through `signature_genuineness`; STR stays holistic). Text-dominant (visual markers are bonus,
+  the text clears the band); the EPF scorer doubles as the wrong-type backstop (tax/withdrawal/STR →
+  not_epf, TD-117). Flag-gated, no migration; +wiring tests. (Logged 2026-06-16; done 2026-06-20.)
+- TD-123 **✅ RESOLVED (2026-06-20):** Issue-2 extraction updated for BC + EPF. BC: dropped `bc_number`
+  (schema + Gemini hint; `bc_child_nric` already optional/barcode-bound). EPF: extract the **employer-
+  and employee-share contribution TOTALS separately** + `months_counted` + `employer_number`; the income
+  engine derives `monthly_salary = max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))` (`income_engine._epf_monthly_salary`;
+  `employer_number == 000000000 ⇒ unemployed → 0`), with a **legacy fallback** (combined contribution ÷ 0.24)
+  so already-extracted prod EPFs don't regress. Retired `avg_monthly_contribution` from extraction. +tests.
+  *(Minor follow-up: the deterministic `doc_parse` EPF parser doesn't yet emit the split totals → those
+  records use the legacy-fallback estimate; image-Gemini EPFs use the precise max() formula.)* (Logged 2026-06-16; done 2026-06-20.)
 - TD-124: **Contact-form messages are email-only — no in-app inbox.** `/contact` → `contact_submissions`; the
   `notify-contact-submissions` cron (2026-06-18) emails each unread row to `contact@halatuju.xyz` and marks it read.
   There is no `/admin/messages` UI to browse/triage them. **To resolve:** a small admin inbox reading

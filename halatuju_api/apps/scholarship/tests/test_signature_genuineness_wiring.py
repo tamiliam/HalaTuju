@@ -188,6 +188,34 @@ class TestOfferLetterUsesSignatureScorer(_Base):
         self.assertIsNone(auth)
 
 
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class TestBcEpfUseSignatureScorer(_Base):
+    """TD-122: birth_certificate + epf genuineness now comes from the signature scorer (not the
+    holistic read); the EPF scorer doubles as the wrong-type backstop."""
+
+    def _run(self, doc_type, ocr_text):
+        from apps.scholarship.models import ApplicantDocument as _Doc
+        doc = _Doc.objects.create(application=self.app, doc_type=doc_type,
+                                  storage_path=f'{self.app.id}/{doc_type}/x')
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=None), \
+             patch('apps.scholarship.vision.ocr_document', return_value={'text': ocr_text, 'error': None}), \
+             patch('apps.scholarship.vision.extract_document_fields',
+                   return_value={'fields': {}, 'warnings': [], 'error': ''}):
+            return vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
+
+    def test_bc_scored_by_signatures(self):
+        from apps.scholarship.tests.test_doc_signatures import GENUINE_BC
+        auth = self._run('birth_certificate', GENUINE_BC)
+        self.assertIsNotNone(auth)
+        self.assertEqual(auth['doc_seen'], 'birth_certificate')
+        self.assertIn('probability', auth)              # signature-derived, not holistic
+
+    def test_epf_wrong_type_is_not_epf(self):
+        from apps.scholarship.tests.test_doc_signatures import WRONG_TYPE_EPF
+        auth = self._run('epf', WRONG_TYPE_EPF)
+        self.assertTrue(auth['status'].startswith('not_'))   # wrong-type backstop (TD-117)
+
+
 class TestFlagOffNoSignal(_Base):
     @override_settings(DOC_GENUINENESS_CHECK_ENABLED=False)
     def test_no_authenticity_when_flag_off(self):

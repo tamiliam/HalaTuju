@@ -425,7 +425,7 @@ from apps.scholarship.income_engine import (  # noqa: E402
     _parse_billing_month, _utility_currency, utility_reasonable, utility_check,
     _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
     slip_epf_divergence, _reconciled_holder_name, _arrears_amount,
-    earner_monthly_income, _epf_contribution,
+    earner_monthly_income, _epf_monthly_salary,
 )
 
 
@@ -458,25 +458,42 @@ def _app(docs, household_size=4, student_name=''):
     return app
 
 
-class TestEpfContribution(SimpleTestCase):
-    def test_prefers_average_over_latest_month(self):
-        # The income estimate uses the AVERAGE contribution (steadier), not the last month.
-        self.assertEqual(_epf_contribution({'avg_monthly_contribution': 'RM434.00',
-                                            'monthly_contribution': 'RM460.00'}), 434.0)
+class TestEpfMonthlySalary(SimpleTestCase):
+    def test_max_formula_agrees_below_5000(self):
+        # n=5 months; salary RM1,700 → employer 13% = 1105 total, employee 11% = 935 total;
+        # both terms reverse to 1700, max() = 1700.
+        f = {'employer_contribution_total': 'RM1105.00', 'employee_contribution_total': 'RM935.00',
+             'months_counted': '5'}
+        self.assertAlmostEqual(_epf_monthly_salary(f), 1700.0, places=0)
 
-    def test_falls_back_to_latest_for_old_records(self):
-        # Older EPFs captured only the latest month → still usable.
-        self.assertEqual(_epf_contribution({'monthly_contribution': 'RM460.00'}), 460.0)
+    def test_max_picks_employee_term_above_5000(self):
+        # Above RM5,000 the employer share is 12% (we hardcode 13%), so the employer term
+        # UNDER-states; the employee-via-11% term stays exact and max() selects it. Salary 6000,
+        # 1 month: employer 12% = 720, employee 11% = 660 → max(720/.13=5538, 660/.11=6000)=6000.
+        f = {'employer_contribution_total': 'RM720.00', 'employee_contribution_total': 'RM660.00',
+             'months_counted': '1'}
+        self.assertAlmostEqual(_epf_monthly_salary(f), 6000.0, places=0)
 
-    def test_none_when_no_contribution(self):
-        self.assertIsNone(_epf_contribution({'avg_monthly_contribution': '', 'monthly_contribution': ''}))
+    def test_unemployed_when_employer_number_all_zeros(self):
+        self.assertEqual(_epf_monthly_salary({'employer_number': '000000000',
+                                              'employee_contribution_total': 'RM935', 'months_counted': '5'}), 0.0)
 
-    def test_epf_estimate_uses_average(self):
-        app = _app([_bill('epf', {'avg_monthly_contribution': 'RM434.00',
-                                  'monthly_contribution': 'RM460.00'})])
+    def test_legacy_fallback_uses_combined_contribution(self):
+        # Records extracted before the split totals → old combined contribution ÷ 0.24.
+        self.assertAlmostEqual(_epf_monthly_salary({'avg_monthly_contribution': 'RM434.00'}),
+                               round(434.0 / 0.24, 2))
+        self.assertAlmostEqual(_epf_monthly_salary({'monthly_contribution': 'RM460.00'}),
+                               round(460.0 / 0.24, 2))
+
+    def test_none_when_nothing_usable(self):
+        self.assertIsNone(_epf_monthly_salary({'employee_contribution_total': '', 'monthly_contribution': ''}))
+
+    def test_epf_estimate_uses_max_formula(self):
+        app = _app([_bill('epf', {'employer_contribution_total': 'RM1105', 'months_counted': '5',
+                                  'employee_contribution_total': 'RM935'})])
         amt, src = earner_monthly_income(app, 'father')
         self.assertEqual(src, 'epf_estimate')
-        self.assertAlmostEqual(amt, round(434.0 / 0.24, 2))   # avg, not the 460 last-month
+        self.assertAlmostEqual(amt, 1700.0, places=0)
 
 
 class TestBillingMonthParse(SimpleTestCase):

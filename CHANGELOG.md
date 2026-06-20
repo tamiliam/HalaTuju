@@ -138,6 +138,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   old screen-only `editIv` toggle.
 
 ### Added
+- **BC + EPF genuineness wired live + EPF income reverse-engineered (TD-122/TD-123, 2026-06-20).**
+  Birth-certificate and EPF genuineness now come from the probabilistic SIGNATURE scorer in the live
+  upload path (text-dominant; the EPF scorer doubles as the wrong-type backstop → `not_epf` for a
+  tax/withdrawal/STR mis-slot). **EPF Issue-2** now extracts the **employer- and employee-share
+  contribution totals separately** + `months_counted` + `employer_number`, and the income engine derives
+  `monthly_salary = max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))` (`employer_number == 000000000 ⇒ unemployed`;
+  legacy fallback ÷0.24 for pre-split records so nothing regresses). **BC** dropped `bc_number`. Flag-gated;
+  no migration; +tests.
 - **Offer letter — generic `ua_offer` family for the fixed 20 public universities + held-out validation (2026-06-20).**
   Signature genuineness extended beyond the 4 central pathways to **all public-university (UA) offers**
   via ONE family anchored on the **university name (any of the fixed 20) + the offer/admission line**

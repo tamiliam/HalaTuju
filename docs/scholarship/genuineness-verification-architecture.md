@@ -144,8 +144,8 @@ full BCs at 0.81 text-only (→ ~1.0 with crest+barcode), the bilingual ones inc
 suspect (correctly — incomplete document → Gopal "upload the full certificate"). Zero false positives
 on full genuine BCs.
 
-**Status:** signatures + band done; **not yet wired** into the live verdict (same pending step as the
-slip — comes with the outcome-enum normalisation + tests).
+**Status:** ✅ signatures + band + **live wiring (TD-122)** + **Issue-2 extraction (TD-123: dropped
+`bc_number`)** all done 2026-06-20. Flag-gated; no migration.
 
 ### epf (KWSP Penyata Ahli) — LOCKED 2026-06-16
 Standard statement → **same approach + band.** Calibrated on all 13 corpus EPFs.
@@ -183,7 +183,10 @@ not_epf**: a Borang EC tax form (a11, 0.18), a KWSP *withdrawal* form (a53, 0.18
 screenshot (a37, 0.00 — **the TD-117 case**). Zero false positives on full EPF statements. The
 signature scorer thus doubles as the **deterministic wrong-type backstop** TD-117 asked for.
 
-**Status:** signatures + band done; not yet wired into the live verdict (pending step, with the slip/BC).
+**Status:** ✅ signatures + band + **live wiring (TD-122)** + **Issue-2 extraction (TD-123)** all done
+2026-06-20: split employer/employee contribution totals + `months_counted` + `employer_number` →
+`income_engine._epf_monthly_salary` derives `monthly_salary = max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))`
+(`000000000 ⇒ unemployed`), legacy fallback (÷0.24) for pre-split records. Flag-gated; no migration.
 
 ---
 
