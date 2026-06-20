@@ -31,8 +31,10 @@ class TestBackwardCompatibleImports(SimpleTestCase):
         # _GENUINENESS_DOCS` (only reached when the flag is ON — off in tests). Pin that the
         # name still resolves on the vision module after the move, or prod would NameError.
         from apps.scholarship import vision
-        self.assertIn('results_slip', vision._GENUINENESS_DOCS)
         self.assertIn('str', vision._GENUINENESS_DOCS)
+        # TD-133: results_slip is scored by the SIGNATURE scorer (its branch wins), so it was
+        # dropped from the holistic set — the live slip branch is independent.
+        self.assertNotIn('results_slip', vision._GENUINENESS_DOCS)
 
     def test_genuineness_package_entry_point(self):
         from apps.scholarship import genuineness

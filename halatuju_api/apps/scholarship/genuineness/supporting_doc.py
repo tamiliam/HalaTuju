@@ -22,10 +22,9 @@ _GENUINENESS_DOCS = {
     'str': {'screenshot_ok': True,
             'desc': 'a Malaysian STR (Sumbangan Tunai Rahmah) cash-aid document — a MySTR app '
                     'screenshot (Semakan Status / Dashboard) OR an official Kementerian Kewangan letter'},
-    'results_slip': {'screenshot_ok': False,
-                     'desc': 'a Malaysian SPM results slip (Sijil Pelajaran Malaysia) from Lembaga '
-                             'Peperiksaan / Kementerian Pendidikan, with the candidate name, Angka '
-                             'Giliran, a subject/grade table and a serial/seal'},
+    # TD-133: results_slip dropped — it's scored by the probabilistic SIGNATURE scorer in the
+    # upload path (its branch wins first), so the holistic membership was dead. (BC/EPF are kept
+    # here for the holistic doc_genuineness API even though their live path is now signatures too.)
     'birth_certificate': {'screenshot_ok': False,
                           'desc': "a Malaysian birth certificate (Sijil Kelahiran) from Jabatan "
                                   "Pendaftaran Negara (JPN), with a registration number, the child "
