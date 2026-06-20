@@ -232,12 +232,13 @@ Saudara/Saudari,
 2.2. PUSAT TINGKATAN ENAM
 """
 
-# A genuine UNIVERSITY offer — a legitimate offer letter, but NOT one of the three standard
-# issuers, so the signature scorer must NOT flag it; it defers to the holistic check.
+# A public-university (UA) offer — recognised by the generic ua_offer family (UM is one of the 20).
 UNIVERSITY_OFFER = """UNIVERSITI MALAYA
+PUSAT PENGURUSAN AKADEMIK
 TAWARAN KEMASUKAN PROGRAM ASASI SAINS SOSIAL
-Dengan sukacitanya dimaklumkan bahawa anda ditawarkan tempat.
-Pendaftaran akan dibuat secara dalam talian.
+Program Pengajian : Asasi Sains Sosial
+Tarikh Pendaftaran : 5 Julai 2026
+Pertukaran program adalah tidak dibenarkan.
 """
 
 
@@ -267,10 +268,11 @@ def test_cropped_offer_is_suspect_never_not_offer_letter():
     assert g['status'] == 'suspect'
 
 
-def test_university_offer_is_unrecognised_and_defers_to_holistic():
-    # A legitimate non-standard issuer must never be flagged by the signature scorer.
+def test_public_university_offer_recognised_as_ua_offer():
+    # A public-university (UA) offer is recognised by the generic ua_offer family (covers all 20).
     g = signature_genuineness(UNIVERSITY_OFFER, doc_type='offer_letter')
-    assert g['status'] == 'unrecognised'
+    assert g['type'] == 'ua_offer'
+    assert g['status'] == 'genuine'
 
 
 def test_assess_routes_offer_letter_to_signatures_when_recognised():
@@ -329,7 +331,7 @@ def test_pismp_announcement_is_suspect_not_genuine():
     assert g['status'] == 'suspect'
 
 
-# Per-institution Asasi / UA-Diploma offers — each university its own family (name = anchor).
+# Asasi / UA-Diploma offers — ONE generic ua_offer family anchored on the fixed 20-UA name list.
 GENUINE_UTHM_OFFER = """UNIVERSITI TUN HUSSEIN ONN MALAYSIA
 PEJABAT PENGURUSAN AKADEMIK
 TAWARAN KEMASUKAN KE UNIVERSITI TUN HUSSEIN ONN MALAYSIA
@@ -344,27 +346,27 @@ Program Pengajian : Asasi Perubatan
 Tarikh Pendaftaran : 1 Julai 2026
 Sebarang pertukaran program adalah TIDAK dibenarkan.
 """
-# A public university we did NOT enumerate (Universiti Malaya) → unrecognised → holistic.
-UNENUMERATED_UNIV_OFFER = """UNIVERSITI MALAYA
-PUSAT ASASI SAINS
-TAWARAN KEMASUKAN PROGRAM ASASI SAINS SOSIAL
-Anda ditawarkan tempat pengajian.
+# A PRIVATE university (IPTS) — NOT one of the fixed 20 UAs → unrecognised → holistic.
+PRIVATE_UNIV_OFFER = """SWINBURNE UNIVERSITY OF TECHNOLOGY
+OFFER OF ADMISSION
+Bachelor of Computer Science
+We are pleased to offer you a place.
 """
 
 
-def test_uthm_diploma_offer_types_and_genuine():
+def test_uthm_diploma_offer_types_as_ua_offer_and_genuine():
     g = signature_genuineness(GENUINE_UTHM_OFFER, doc_type='offer_letter')
-    assert g['type'] == 'uthm_diploma'
+    assert g['type'] == 'ua_offer'
     assert g['status'] == 'genuine'
 
 
-def test_upnm_asasi_offer_types_and_genuine():
+def test_upnm_asasi_offer_types_as_ua_offer_and_genuine():
     g = signature_genuineness(GENUINE_UPNM_OFFER, doc_type='offer_letter')
-    assert g['type'] == 'asasi_upnm'
+    assert g['type'] == 'ua_offer'
     assert g['status'] == 'genuine'
 
 
-def test_unenumerated_university_defers_to_holistic():
-    # Not one of the enumerated institutions → unrecognised (a legit UM offer is never flagged).
-    g = signature_genuineness(UNENUMERATED_UNIV_OFFER, doc_type='offer_letter')
+def test_private_university_defers_to_holistic():
+    # A private (IPTS) university is NOT one of the 20 UAs → unrecognised → holistic (never flagged).
+    g = signature_genuineness(PRIVATE_UNIV_OFFER, doc_type='offer_letter')
     assert g['status'] == 'unrecognised'

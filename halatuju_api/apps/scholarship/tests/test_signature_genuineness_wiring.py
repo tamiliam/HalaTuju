@@ -145,7 +145,8 @@ GENUINE_STPM_OFFER = (
     "2.1 BIDANG : SAINS\n2.2 PUSAT TINGKATAN ENAM : SMK CONTOH\n2.3 TARIKH LAPOR DIRI : 08 JUN 2026\n"
     "2.5 DOKUMEN DIPERLUKAN\nKeputusan ini adalah muktamad berdasarkan syarat kemasukan ke tingkatan enam.\n"
     "Tawaran ini terbatal serta-merta jika murid berstatus bukan warganegara Malaysia.\n")
-UNIVERSITY_OFFER = "UNIVERSITI MALAYA\nTAWARAN KEMASUKAN PROGRAM ASASI SAINS SOSIAL\nAnda ditawarkan tempat.\n"
+# A PRIVATE (IPTS) university — not one of the 20 UAs → unrecognised → holistic fallback.
+UNIVERSITY_OFFER = "SWINBURNE UNIVERSITY OF TECHNOLOGY\nOFFER OF ADMISSION\nBachelor of Computer Science\n"
 
 
 @override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)

@@ -129,10 +129,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   old screen-only `editIv` toggle.
 
 ### Added
-- **Offer letter — 6 per-institution Asasi/UA-Diploma families + held-out validation (2026-06-20).**
-  Signature genuineness extended beyond the 4 central pathways to enumerated universities — **UPNM**
-  (Asasi), **UKM** (ASASIpintar), **UTHM/UPSI/UTeM/UMP** (Diploma) — each anchored on the university
-  name (text-only); a non-enumerated university (UM, IPTS) stays `unrecognised` → holistic. Validated
+- **Offer letter — generic `ua_offer` family for the fixed 20 public universities + held-out validation (2026-06-20).**
+  Signature genuineness extended beyond the 4 central pathways to **all public-university (UA) offers**
+  via ONE family anchored on the **university name (any of the fixed 20) + the offer/admission line**
+  (office/clause/programme/date union-matched per institution; text-only). Covers all 20 with no
+  per-university code (Asasi/Diploma/Degree alike); a private/IPTS university (e.g. Swinburne) stays
+  `unrecognised` → holistic. Safety: a doc merely *mentioning* a UA, or a cropped letter, can't reach
+  `genuine` (lands `suspect` — only real UA offers clear 0.70). Validated
   **out-of-sample** on 10 production offer letters uploaded after the corpus: Issue-1 detected type
   matched the declared pathway in every standard case (2 correctly deferred); Issue-2 extracted the
   per-pathway fields (incl. PISMP `bidang/elektif/aliran`) with NRIC matching the profile 9/10. New
