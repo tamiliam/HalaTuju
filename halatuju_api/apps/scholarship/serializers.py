@@ -6,7 +6,7 @@ from .family import PROFESSION_CODES
 from .models import (
     ApplicantDocument, Consent, FundingNeed, GraduationMessage, Referee,
     ResolutionItem, ScholarshipApplication, SemesterResult, Sponsor,
-    SponsorReferral,
+    SponsorReferral, StandingGift,
 )
 
 
@@ -125,6 +125,21 @@ class SponsorReferralSerializer(serializers.ModelSerializer):
         fields = ['id', 'invitee_email', 'invitee_name', 'note', 'code',
                   'status', 'created_at', 'joined_at']
         read_only_fields = fields
+
+
+class StandingGiftSerializer(serializers.ModelSerializer):
+    """R6 — a sponsor's own AutoSponsor config (their settings only, never any
+    student data). Read + upsert: prefs empty = match any; ``max_amount`` null = no
+    per-student cap. ``last_allocated_at`` is system-set."""
+    class Meta:
+        model = StandingGift
+        fields = ['field_pref', 'state_pref', 'max_amount', 'active', 'last_allocated_at']
+        read_only_fields = ['last_allocated_at']
+
+    def validate_max_amount(self, value):
+        if value is not None and value <= 0:
+            raise serializers.ValidationError('max_amount must be positive')
+        return value
 
 
 class SponsorSponsorshipSerializer(serializers.Serializer):

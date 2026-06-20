@@ -1475,3 +1475,38 @@ class TrustContent(models.Model):
 
     def __str__(self):
         return f'TrustContent active={self.is_active} updated={self.updated_at:%Y-%m-%d}'
+
+
+class StandingGift(models.Model):
+    """R6 (AutoSponsor): a sponsor's standing instruction to auto-direct their
+    balance to the next matching pool student — an AutoInvest-style 'set it and
+    forget it'. Each allocation still produces an OFFERED ``Sponsorship`` the
+    student must accept (no real money moves) — the SAME safety model as a manual
+    fund; it only automates the 'offer' click. One per sponsor (OneToOne).
+
+    Matching (all optional): ``field_pref``/``state_pref`` empty = any; ``max_amount``
+    empty = no cap. The sponsor's balance is the real throttle — each allocation
+    holds the award, so the standing gift naturally stops when the balance runs low
+    (skip silently, by owner decision) and resumes when it's topped up."""
+    sponsor = models.OneToOneField(
+        Sponsor, on_delete=models.CASCADE, related_name='standing_gift',
+    )
+    # Empty string = match any field/state (the student's `field_of_study` /
+    # `profile.preferred_state`). Non-empty = only that exact value.
+    field_pref = models.CharField(max_length=120, blank=True, default='')
+    state_pref = models.CharField(max_length=60, blank=True, default='')
+    # The most this sponsor will commit to a single student (caps which award
+    # amounts qualify). Null = no per-student cap (balance is the only limit).
+    max_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    active = models.BooleanField(default=True)
+    # When this gift last produced an allocation — used to spread allocations
+    # fairly across standing gifts (least-recently-allocated goes next).
+    last_allocated_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'standing_gifts'
+
+    def __str__(self):
+        return f'StandingGift sponsor={self.sponsor_id} active={self.active}'

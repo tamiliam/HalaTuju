@@ -42,6 +42,7 @@ from .views_sponsor import (
     SponsorReferralView,
     SponsorRegisterView,
     SponsorSponsorshipsView,
+    SponsorStandingGiftView,
     SponsorStatementView,
     SponsorTrustView,
     SponsorWalletView,
@@ -126,6 +127,7 @@ urlpatterns = [
     path('sponsor/community/', SponsorCommunityView.as_view()),  # R3: community strip
     path('sponsor/statement/', SponsorStatementView.as_view()),  # R4: giving statement (two ledgers)
     path('sponsor/trust/', SponsorTrustView.as_view()),  # R5: Trust & Transparency hub
+    path('sponsor/standing-gift/', SponsorStandingGiftView.as_view()),  # R6: AutoSponsor
     path('sponsor/graduation-messages/', SponsorGraduationMessagesView.as_view()),  # F9a relay
     path('sponsor/referrals/', SponsorReferralView.as_view()),  # F4 referral/invite
     path('sponsor/wallet/donate/', SponsorDonateView.as_view()),

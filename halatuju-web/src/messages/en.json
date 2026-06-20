@@ -240,6 +240,21 @@
         "auditedBy": "Audited by {auditor}",
         "downloadReport": "download the annual assurance report"
       }
+    },
+    "autoSponsor": {
+      "title": "AutoSponsor",
+      "enable": "On",
+      "intro": "Set it once: when a student matching your choices joins the pool, we'll offer them your support automatically from your balance. They still accept it themselves — nothing is sent without their agreement.",
+      "field": "Field of study",
+      "state": "State",
+      "maxAmount": "Most per student (RM)",
+      "any": "Any",
+      "noCap": "No limit",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "note": "We only offer support while your balance covers it; when it runs low we simply wait until you top up. Each offer still needs the student's acceptance.",
+      "lastAllocated": "Last matched on {date}"
     }
   },
   "sponsorPool": {

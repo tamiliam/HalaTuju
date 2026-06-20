@@ -1122,6 +1122,7 @@ class CronRunView(APIView):
         'backfill-assigned-profiles': 'backfill_assigned_profiles',  # one-off: drafts for already-assigned
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly
         'sponsor-digests': 'send_sponsor_digests',     # F3: weekly
+        'auto-sponsor': 'auto_sponsor',                # R6: hourly AutoSponsor allocation
         'purge-referrals': 'purge_sponsor_referrals',  # F4: daily PDPA purge (60-day)
         'rescore-pending': 'rescore_pending_decisions',  # on-demand after a policy change
         'backup-documents': 'backup_documents',  # weekly: mirror the private doc bucket to GCS

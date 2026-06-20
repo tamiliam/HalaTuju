@@ -811,6 +811,31 @@ export async function getSponsorTrust(options?: ApiOptions): Promise<SponsorTrus
   return apiRequest('/api/v1/sponsor/trust/', options)
 }
 
+/** R6 — AutoSponsor: the sponsor's own standing-gift config (auto-direct their
+ *  balance to the next matching student; each allocation is still an offered
+ *  sponsorship the student accepts). 404s while the pool flag is off. */
+export interface SponsorStandingGift {
+  configured: boolean
+  active: boolean
+  field_pref?: string
+  state_pref?: string
+  max_amount?: string | null
+  last_allocated_at?: string | null
+}
+
+export async function getSponsorStandingGift(options?: ApiOptions): Promise<SponsorStandingGift> {
+  return apiRequest('/api/v1/sponsor/standing-gift/', options)
+}
+
+export async function putSponsorStandingGift(
+  body: { field_pref?: string; state_pref?: string; max_amount?: string | null; active?: boolean },
+  options?: ApiOptions,
+): Promise<SponsorStandingGift> {
+  return apiRequest('/api/v1/sponsor/standing-gift/', {
+    ...options, method: 'PUT', body: JSON.stringify(body),
+  })
+}
+
 /** F1 — public live counter for the sponsor landing. No auth (a public marketing
  *  page calls it). While SPONSOR_POOL_ENABLED is off it returns {count:0,
  *  enabled:false} so the landing stays dark until go-live. */

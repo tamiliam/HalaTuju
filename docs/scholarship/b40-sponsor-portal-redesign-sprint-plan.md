@@ -29,7 +29,7 @@
 | R3 | Activity feed + community strip | small | Medium |
 | R4 | **My Account** tab + **giving statement** (two ledgers) | tiny | Low–Med |
 | R5 | **🆕 Trust & Assurance** — ✅ **DONE** (`scholarship/0065`, dark) | small | Medium |
-| R6 | Standing gift / AutoSponsor | yes (new model + cron) | High |
+| R6 | Standing gift / AutoSponsor — ✅ **DONE** (`scholarship/0066`, dark) | yes (new model + cron) | High |
 | R7 | Polish + i18n parity + fold into go-live | none | Low–Med |
 
 ---
@@ -74,7 +74,7 @@
 
 **Content backlog (post-R5, small-change lane — arrives piece by piece):** Who-we-are copy + legal entity once registered · trustee names/bios once appointed · first real sources-and-uses figures · first independent auditor's report.
 
-### R6 — Standing gift / AutoSponsor · BE(new model + cron) + FE
+### R6 — Standing gift / AutoSponsor · BE(new model + cron) + FE — ✅ DONE 2026-06-20 (migration `scholarship/0066`; `StandingGift` model + `standing_gift` service + hourly `auto-sponsor` cron + `GET/PUT /sponsor/standing-gift/` + Account card; owner decisions: event-driven · skip-silently · no-consent; +13 pytest = 121 sponsor, jest 361; retro `docs/retrospective-sponsor-redesign-r6.md`)
 **Goal:** the AutoInvest-style innovation — a sponsor's balance auto-supports the next matching student.
 **Scope:** new `StandingGift(sponsor, cadence, field_pref, state_pref, max_amount, active, last_allocated_at)` + migration; allocation hook (reuses `fund_student`, still produces an *offered* sponsorship the student must accept — no real money moves) wired into the publish path / existing sponsor-realtime cron; the Account card.
 **Open questions for sprint-start:** cadence semantics; zero-balance behaviour; whether auto-allocating a donation needs a line in the lawyer bundle.
