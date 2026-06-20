@@ -846,6 +846,17 @@ class AdminResolutionItemView(_AdminBase):
                          doc_type=(request.data.get('doc_type') or '').strip(),
                          fact=(request.data.get('fact') or 'other').strip(),
                          household_member=member)
+        # Re-notify the student that there's something new for them — but DON'T email
+        # per item (a reviewer raises several in one sitting → email spam + Brevo quota).
+        # Instead reset the one-time notify stamp so the delayed, batched, idempotent
+        # `send_due_query_emails` sweep sends ONE summary email on its next run (it now
+        # counts officer items too). A re-request after the student cleared everything
+        # thus re-notifies them once. Flag-gated to the student-query channel.
+        from django.conf import settings as _settings
+        if (getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False)
+                and app.query_raised_notified_at is not None):
+            app.query_raised_notified_at = None
+            app.save(update_fields=['query_raised_notified_at'])
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

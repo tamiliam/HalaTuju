@@ -175,6 +175,39 @@ class TestAdminScholarship(TestCase):
         )
         self.assertEqual(r.status_code, 400)
 
+    @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
+    def test_officer_request_resets_notify_stamp(self):
+        """Raising a reviewer item re-notifies the student — but via the batched sweep,
+        not a per-item email (a reviewer raises several in one sitting). The endpoint
+        just resets the one-time notify stamp so `send_due_query_emails` re-sends ONE
+        summary; a re-request after the student cleared everything re-notifies them."""
+        from django.utils import timezone
+        self.app.query_raised_notified_at = timezone.now()
+        self.app.save(update_fields=['query_raised_notified_at'])
+        self._auth(ADMIN)
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/resolution-items/',
+            {'kind': 'doc', 'prompt': 'Please upload your offer letter.',
+             'doc_type': 'offer_letter', 'fact': 'pathway'},
+            format='json',
+        )
+        self.assertEqual(r.status_code, 200, r.content)
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.query_raised_notified_at)
+
+    @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=False)
+    def test_officer_request_keeps_stamp_when_flag_off(self):
+        from django.utils import timezone
+        stamp = timezone.now()
+        self.app.query_raised_notified_at = stamp
+        self.app.save(update_fields=['query_raised_notified_at'])
+        self._auth(ADMIN)
+        self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/resolution-items/',
+            {'kind': 'doc', 'prompt': 'x', 'doc_type': 'offer_letter'}, format='json')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.query_raised_notified_at, stamp)
+
     # ── Check-2/Check-3 redesign S3: auto-draft the profile at the reviewer handoff ──
     @override_settings(CHECK2_AUTO_GENERATE=True)
     @patch('apps.scholarship.services.is_ready_for_assignment', return_value=True)

@@ -632,7 +632,12 @@ def send_due_query_emails(now=None):
         queries = list(sync_check2_queries(app))
         doc_requests = app.resolution_items.filter(
             source='system', status='open', code__in=STUDENT_DOC_REQUEST_CODES).count()
-        n_open = len(queries) + doc_requests
+        # Reviewer-raised items (doc-request / clarify / explanation) also need the
+        # student to act — they always show in the Action Centre but were never counted
+        # toward this notification, so a reviewer doc-request/re-request went unnotified.
+        officer_open = (app.resolution_items
+                        .filter(source='officer', status='open').exclude(kind='human').count())
+        n_open = len(queries) + doc_requests + officer_open
         if n_open == 0:
             continue
         name = getattr(app.profile, 'name', '') if app.profile else ''
