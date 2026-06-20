@@ -451,3 +451,85 @@ class TestIcGeminiFallbackIntegration(TestCase):
         mock_ocr.return_value = self._MISREAD_OCR
         run_vision_for_document(self._ic_doc())
         mock_gemini.assert_not_called()
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestRequestOwnedSlots(TestCase):
+    """A reviewer-requested document lands in its OWN slot, keyed by the officer request
+    code (doc_type, household_member, request_code). So multiple 'Other' docs — and a
+    cross-person income doc — coexist instead of overwriting each other. Plus the 'other'
+    per-application cap. Regression for the live data loss (Theepicaa: 5 requests, 1 stored)."""
+    USER = 'ros-user'
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='ros', name='B40', year=2026)
+        cls.profile = StudentProfile.objects.create(supabase_user_id=cls.USER, nric='030101-14-2468')
+        cls.app = ScholarshipApplication.objects.create(
+            cohort=cls.cohort, profile=cls.profile, status='shortlisted',
+            income_route='str', income_earner='mother')
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(self.USER)}')
+
+    def _upload(self, doc_type, suffix, request_code='', household_member=''):
+        return self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': doc_type, 'storage_path': f'{self.app.id}/{doc_type}/{suffix}',
+            'request_code': request_code, 'household_member': household_member,
+            'original_filename': f'{suffix}.jpg', 'size': 1000,
+        }, format='json')
+
+    def test_multiple_other_requests_coexist(self):
+        self.assertEqual(self._upload('other', 'a', request_code='officer_1').status_code, 201)
+        self.assertEqual(self._upload('other', 'b', request_code='officer_2').status_code, 201)
+        self.assertEqual(
+            ApplicantDocument.objects.filter(application=self.app, doc_type='other').count(), 2)
+
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_same_request_replaces(self, _del):
+        self._upload('other', 'a', request_code='officer_1')
+        self._upload('other', 'b', request_code='officer_1')   # same request → replace, not a 2nd doc
+        rows = ApplicantDocument.objects.filter(application=self.app, doc_type='other')
+        self.assertEqual(rows.count(), 1)
+        self.assertTrue(rows.first().storage_path.endswith('/b'))
+
+    @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_request_income_doc_does_not_overwrite_str_earner(self, _del, _vis):
+        # the student's own STR-route mother IC (no request_code)
+        mother_ic = ApplicantDocument.objects.create(
+            application=self.app, doc_type='parent_ic', household_member='mother',
+            storage_path=f'{self.app.id}/parent_ic/mother')
+        # a reviewer asks for the FATHER's IC — must NOT be force-tagged to mother / overwrite hers
+        r = self._upload('parent_ic', 'father', request_code='officer_3', household_member='father')
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertTrue(ApplicantDocument.objects.filter(id=mother_ic.id).exists())   # mother's survives
+        self.assertEqual(
+            ApplicantDocument.objects.filter(application=self.app, doc_type='parent_ic').count(), 2)
+        father = ApplicantDocument.objects.get(
+            application=self.app, doc_type='parent_ic', request_code='officer_3')
+        self.assertEqual(father.household_member, 'father')   # honoured, NOT forced to 'mother'
+
+    @override_settings(MAX_OTHER_DOCS=2)
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_other_cap(self, _del):
+        self.assertEqual(self._upload('other', '1', request_code='officer_1').status_code, 201)
+        self.assertEqual(self._upload('other', '2', request_code='officer_2').status_code, 201)
+        r = self._upload('other', '3', request_code='officer_3')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['error'], 'other_doc_limit_reached')
+        # re-uploading an EXISTING 'other' slot is a replace, not a new doc → allowed past the cap
+        self.assertEqual(self._upload('other', '1b', request_code='officer_1').status_code, 201)
+
+    def test_resolve_targets_one_request_by_code(self):
+        from apps.scholarship.resolution import add_officer_item, resolve_doc_items_for_upload
+        i1 = add_officer_item(self.app, kind='doc', prompt='Upload A', admin_email='o@x', doc_type='other')
+        i2 = add_officer_item(self.app, kind='doc', prompt='Upload B', admin_email='o@x', doc_type='other')
+        doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type='other', request_code=i1.code,
+            storage_path=f'{self.app.id}/other/a')
+        resolve_doc_items_for_upload(self.app, doc)
+        i1.refresh_from_db(); i2.refresh_from_db()
+        self.assertEqual(i1.status, 'resolved')   # the matching request closes
+        self.assertEqual(i2.status, 'open')       # the OTHER request stays open

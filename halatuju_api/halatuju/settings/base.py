@@ -197,6 +197,9 @@ CHECK2_ANSWER_RELEVANCE_ENABLED = os.environ.get('CHECK2_ANSWER_RELEVANCE_ENABLE
 # Supporting-document upload guardrails (cost + abuse). Env-overridable.
 MAX_DOC_SIZE_BYTES = int(os.environ.get('MAX_DOC_SIZE_BYTES', str(8 * 1024 * 1024)))   # 8 MB/file
 MAX_DOCS_PER_APPLICATION = int(os.environ.get('MAX_DOCS_PER_APPLICATION', '40'))
+# Cap on 'other' (reviewer-requested extra) documents per application. Each lands in its
+# own request-keyed slot, so without a cap a reviewer could request unbounded extras.
+MAX_OTHER_DOCS = int(os.environ.get('MAX_OTHER_DOCS', '10'))
 # Document-assist (Gemini field extraction on upload): hourly cap per application —
 # beyond it the upload still succeeds + Vision/deterministic feedback still run, but
 # the billable Gemini call is skipped (student sees a "we'll review manually" note).

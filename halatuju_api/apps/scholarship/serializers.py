@@ -676,6 +676,9 @@ class DocumentCreateSerializer(serializers.Serializer):
     household_member = serializers.ChoiceField(
         choices=[c[0] for c in ApplicantDocument.HOUSEHOLD_MEMBER_CHOICES],
         required=False, allow_blank=True, default='')
+    # Set ONLY for an Action-Centre reviewer-requested upload (the officer ResolutionItem
+    # code, e.g. 'officer_3') — gives each request its own document slot. Blank otherwise.
+    request_code = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
     storage_path = serializers.CharField(max_length=500)
     original_filename = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     content_type = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
