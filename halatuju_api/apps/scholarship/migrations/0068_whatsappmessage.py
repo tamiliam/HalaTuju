@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('scholarship', '0066_standinggift'),
+        ('scholarship', '0067_applicantdocument_request_code'),
     ]
 
     operations = [

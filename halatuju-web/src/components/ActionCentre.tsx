@@ -116,8 +116,12 @@ function ActionCard({
       // the salary-route Action-Centre tagging gap). STR-route income docs are re-tagged
       // server-side from income_earner regardless, so this only matters on the salary route.
       const member = typeof item.params?.household_member === 'string' ? item.params.household_member : ''
+      // A reviewer (officer_N) request gets its own document slot keyed by its code, so
+      // multiple "Other" requests — and cross-person income docs — don't overwrite each
+      // other. System items (e.g. results_slip_missing) keep the shared slot (no code).
+      const requestCode = item.code.startsWith('officer_') ? item.code : ''
       const doc = await recordDocument(
-        { doc_type: item.doc_type, household_member: member, storage_path, original_filename: file.name, content_type: file.type, size: file.size },
+        { doc_type: item.doc_type, household_member: member, request_code: requestCode, storage_path, original_filename: file.name, content_type: file.type, size: file.size },
         { token },
       )
       if (doc.match_verdict === 'pending') {

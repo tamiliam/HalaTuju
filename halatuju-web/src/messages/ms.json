@@ -193,6 +193,67 @@
         "expired": "Tamat tempoh"
       }
     },
+    "impact": {
+      "totalGiven": "Jumlah diberi",
+      "acrossStudents": "merentas {n} pelajar",
+      "supported": "Pelajar disokong",
+      "semesters": "Semester selesai",
+      "semestersBy": "oleh pelajar anda",
+      "graduated": "Bergraduasi",
+      "graduatedSub": "telah menamatkan pengajian",
+      "givingTitle": "Pemberian anda",
+      "committed": "Dikomited",
+      "completed": "Selesai",
+      "available": "Tersedia",
+      "balanceNote": "Dikomited bersama pelajar sekarang · Selesai bergraduasi · Tersedia sedia diberi semula."
+    },
+    "journey": {
+      "matched": "Dipadankan",
+      "onboarded": "Didaftarkan",
+      "studying": "Belajar",
+      "graduated": "Bergraduasi",
+      "semesters": "{n} semester selesai"
+    },
+    "activity": {
+      "title": "Aktiviti terkini",
+      "live": "Langsung",
+      "funded": "Anda menawarkan sokongan kepada {ref}",
+      "accepted": "{ref} menerima sokongan anda",
+      "semester": "{ref} menyelesaikan satu semester",
+      "graduated": "{ref} bergraduasi 🎓",
+      "thank_you": "Ucapan terima kasih daripada {ref}"
+    },
+    "community": {
+      "line1": "Anda salah seorang daripada {n} penaja",
+      "line2": "Bersama-sama menyokong {n} pelajar",
+      "waiting": "{n} pelajar masih menunggu"
+    },
+    "statement": {
+      "title": "Penyata pemberian",
+      "intro": "Dua rekod berasingan: apa yang anda masukkan ke dalam amanah, dan apa yang anda hadiahkan kepada pelajar.",
+      "taxNote": "(Resit boleh tolak cukai setelah Seksyen 44(6) disahkan.)",
+      "print": "Cetak / simpan sebagai PDF",
+      "donations": "Derma kepada amanah",
+      "donationsNote": "Wang yang anda dermakan ke dalam amanah. Ia menjadi milik badan amal — tidak boleh dikeluarkan, hanya dialihkan.",
+      "gifts": "Hadiah kepada pelajar",
+      "giftsNote": "Hadiah daripada baki anda kepada pelajar — setiap satu disahkan secara bebas sebagai pelajar berdaftar."
+    },
+    "students": {
+      "title": "Pelajar",
+      "intro": "Setiap kad ialah pelajar tanpa nama yang boleh anda sokong. Tapis mengikut bidang, negeri atau peringkat.",
+      "allFields": "Semua bidang",
+      "allStates": "Semua negeri",
+      "allLevels": "Semua peringkat",
+      "shown": "{count} dipaparkan",
+      "filteredEmpty": "Tiada pelajar sepadan dengan tapisan ini.",
+      "support": "Sokong",
+      "fundingSoon": "Pembiayaan dibuka tidak lama lagi — kami sedang memuktamadkan alirannya dengan pasukan."
+    },
+    "account": {
+      "title": "Akaun Saya",
+      "detailsTitle": "Butiran anda",
+      "email": "E-mel"
+    },
     "trust": {
       "back": "Kembali ke Sumbangan Saya",
       "footerLink": "Kepercayaan & Ketelusan",

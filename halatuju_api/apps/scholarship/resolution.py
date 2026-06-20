@@ -299,7 +299,12 @@ def resolve_doc_items_for_upload(application, doc):
     """
     verdict = doc_match_verdict(doc)
     if verdict == 'ok':
-        for item in application.resolution_items.filter(
-                status='open', kind='doc', doc_type=doc.doc_type):
+        qs = application.resolution_items.filter(status='open', kind='doc')
+        rc = getattr(doc, 'request_code', '') or ''
+        # A request-keyed upload (an Action-Centre officer request) resolves EXACTLY that
+        # request by code — so two open 'other' requests don't BOTH clear on one upload.
+        # A plain upload (no request_code) resolves by doc_type, as before.
+        qs = qs.filter(code=rc) if rc else qs.filter(doc_type=doc.doc_type)
+        for item in qs:
             resolve_item(item, doc=doc, by='student')
     return verdict

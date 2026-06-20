@@ -33,6 +33,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are set — so the code/migration land safely with zero `WhatsAppMessage` access while off. **No consent gate yet** (Sprint
   2). Migration **not** applied to prod (deferred to go-live; needs the new-table RLS + contenttypes step). +16 pytest;
   existing 53 interview-scheduling tests green. Worktree `.worktrees/wa-comms`, branch `feat/whatsapp-comms`.
+- **Request-owned document slots — multiple "Other" docs + cross-person income docs no longer overwrite each other.**
+  **The bug (live data loss):** every doc was single-instance keyed on `(doc_type, household_member)`, so a reviewer who
+  requested several extra docs collapsed them into ONE `other` slot — each upload overwrote the last (Theepicaa: 5 "Other"
+  requests, 1 stored). On the STR route the income docs were also force-tagged to the single earner, so a reviewer asking
+  for the **father's** IC on a **mother**-STR route would overwrite the mother's IC. **Fix:** new
+  `ApplicantDocument.request_code` (the officer ResolutionItem code) makes a reviewer-requested upload its OWN
+  single-instance slot — slot key is now `(doc_type, household_member, request_code)`. So multiple "Other" docs and a
+  cross-person income request coexist; re-uploading the *same* request still replaces; and the STR force-tag is skipped
+  for request-keyed uploads (honours the requested member). `resolve_doc_items_for_upload` resolves the exact request by
+  code (two open "Other" tasks don't both clear on one upload). **"Other" cap** added: `MAX_OTHER_DOCS=10` per
+  application (the 40-total cap still applies). The Action Centre passes the `officer_N` code on upload; system docs
+  (the student's own route docs) keep the shared slot — unchanged. **Migration `scholarship/0067`** (additive). +6
+  tests (81 doc/resolution pytest); `next build` clean; 327 jest. Branch `feat/request-owned-doc-slots`.
+  ⚠️ **Migration-number clash:** the `feat/whatsapp-comms` branch also adds `scholarship/0067` — whichever merges second
+  must renumber to `0068`.
+
+### Fixed
+- **Reviewer-raised requests now notify the student (Check-2 Action Centre gap).**
+  **The bug:** when a reviewer raised a document-request or query from the cockpit (`AdminResolutionItemView`), the item
+  appeared in the student's Action Centre but **no notification was ever sent** — the student only saw it if they happened
+  to log in. (Student #50: a reviewer's offer-letter request sat unseen.) Meanwhile the delayed "we have a few questions"
+  sweep (`send_due_query_emails`) only counted system/clarify items, never reviewer-raised (`source='officer'`) ones.
+  **Fix (batched, not per-item):** raising an officer item now **resets `query_raised_notified_at`** (flag-gated on
+  `CHECK2_STUDENT_QUERIES_ENABLED`) so the existing delayed, idempotent hourly sweep sends **one** summary email per review
+  burst — and the sweep now counts open `source='officer'` items (excluding `kind='human'`) toward its threshold, so a
+  request or re-request re-fires. **No per-item email** (a reviewer raising several items in one sitting would otherwise
+  spam the student and burn the Brevo 300/day quota). Backend-only, no migration. +3 tests (1420 scholarship pytest).
+  Branch `fix/officer-request-notifies-student`. ⚠️ Existing open items (e.g. #50) aren't retroactively notified — the
+  reset fires only on a *new* raise; re-raise to nudge.
+- **Cockpit: reviewer interview notes lost on "Save draft" (data loss) + AI flags past dates as "future".** Two
+  live-reported bugs. **(1) Data loss:** `_validate_findings` accepted verdicts `{resolved, still_unclear, new_concern,
+  deleted}` but **not `''`** — yet the cockpit's natural action (typing a one-line "what you found" without clicking a
+  verdict button) sends `verdict=''`. So Save-draft 400'd (`bad_findings`), the whole save (findings **and** the overall
+  note) was rejected, and the reviewer's notes vanished on reload. Fix: allow `''` (an in-progress finding may carry just
+  a rationale). **(2) Wrong "future date":** the Gemini interview gap-spotter (`gap_engine.py`) was never told today's
+  date, so it flagged a *past* event ("father's accident on April 3rd, 2026") as "in the future". Fix: inject today's
+  date (MYT) into `GAP_PROMPT` with an explicit past-vs-future instruction. +2 regression tests (102 scholarship green).
+  No migration. Branch `fix/cockpit-date-and-savedraft`.
+- **Sponsor portal redesign (R7) — fixed ~47 missing i18n keys + Tamil refine + a11y (the final redesign sprint).**
+  **The bug:** R1–R4 shipped the My Giving / Students / Account pages referencing **47 `sponsorPortal.{impact,journey,
+  activity,community,statement,students,account}.*` keys that were never added to the message files** — so those pages
+  rendered the **raw key paths** (e.g. literally `sponsorPortal.impact.totalGiven`). It shipped silently: the portal is
+  dark/dormant (no real approved sponsor has used it), i18n parity only checks en===ms===ta (all three were equally
+  missing), and `next build`/jest don't validate that `t()` keys resolve. **Fix:** authored all 47 keys in en/ms/ta
+  (English defined to match each page's usage + placeholders; Tamil per `tamil-style-guide.md`). **Guardrail:** new
+  `sponsor-i18n.test.ts` asserts every statically-referenced `sponsor*` key resolves in en.json (would have caught this)
+  + cross-locale parity per namespace. **Tamil refine (TD-132):** rewrote the R5/R6 trust/AutoSponsor strings —
+  *independent* → சார்பற்ற (consistent + idiomatic), "My Giving" unified to பங்களிப்பு, sandhi fixes (காணக்கூடிய).
+  **Accessibility:** the portal tab bar is now a `<nav>` landmark with `aria-current="page"`; the decorative giving
+  donut is `aria-hidden` (its figures are in the legend). FE-only, **no migration**. jest 363 (+2); i18n parity
+  2794×3; `next build` clean. **This completes the 7-sprint sponsor-portal redesign.**
 
 ### Changed
 - **Sponsor portal redesign (R6) — Standing gift / AutoSponsor (the AutoInvest-style innovation).** A sponsor can set a

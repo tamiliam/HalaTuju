@@ -193,6 +193,67 @@
         "expired": "Expired"
       }
     },
+    "impact": {
+      "totalGiven": "Total given",
+      "acrossStudents": "across {n} students",
+      "supported": "Students supported",
+      "semesters": "Semesters completed",
+      "semestersBy": "by your students",
+      "graduated": "Graduated",
+      "graduatedSub": "have finished their studies",
+      "givingTitle": "Your giving",
+      "committed": "Committed",
+      "completed": "Completed",
+      "available": "Available",
+      "balanceNote": "Committed is with students now · Completed is graduated · Available is ready to give again."
+    },
+    "journey": {
+      "matched": "Matched",
+      "onboarded": "Onboarded",
+      "studying": "Studying",
+      "graduated": "Graduated",
+      "semesters": "{n} semesters done"
+    },
+    "activity": {
+      "title": "Recent activity",
+      "live": "Live",
+      "funded": "You offered support to {ref}",
+      "accepted": "{ref} accepted your support",
+      "semester": "{ref} completed a semester",
+      "graduated": "{ref} graduated 🎓",
+      "thank_you": "A thank-you from {ref}"
+    },
+    "community": {
+      "line1": "You're one of {n} sponsors",
+      "line2": "Together supporting {n} students",
+      "waiting": "{n} students still waiting"
+    },
+    "statement": {
+      "title": "Giving statement",
+      "intro": "Two separate records: what you put into the trust, and what you gifted to students.",
+      "taxNote": "(Tax-deductible receipts once Section 44(6) is confirmed.)",
+      "print": "Print / save as PDF",
+      "donations": "Donations to the trust",
+      "donationsNote": "Money you donated into the trust. It becomes the charity's — it can't be withdrawn, only redirected.",
+      "gifts": "Gifts to students",
+      "giftsNote": "Gifts from your balance to a student — each independently verified as enrolled."
+    },
+    "students": {
+      "title": "Students",
+      "intro": "Each card is an anonymised student you could support. Filter by field, state or level.",
+      "allFields": "All fields",
+      "allStates": "All states",
+      "allLevels": "All levels",
+      "shown": "{count} shown",
+      "filteredEmpty": "No students match these filters.",
+      "support": "Support",
+      "fundingSoon": "Funding opens shortly — we're finalising the flow with the team."
+    },
+    "account": {
+      "title": "My Account",
+      "detailsTitle": "Your details",
+      "email": "Email"
+    },
     "trust": {
       "back": "Back to My Giving",
       "footerLink": "Trust & Transparency",

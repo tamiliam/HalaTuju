@@ -9,6 +9,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 - 2026-06-16 feat(web): reviewer Guide + FAQ pages + nav items (English content, redacted screenshots; BM/Tamil content to follow) (halatuju-web: app/admin/guide, app/admin/faq, layout.tsx, messages/* nav labels, public/reviewer-guide/*; docs/reviewer-guide-content.md)
 - 2026-06-17 feat: reviewer language fluency (EN/BM/Tamil, None/Conversational/Fluent) + assignment matching (annotate + sort by student call_language) — migration scholarship/0059 migrate-first (halatuju_api: models, serializers_admin, views_admin, migration + tests; halatuju-web: admin/profile, admin/scholarship/page.tsx, admin-api.ts, messages/*)
 - 2026-06-17 feat: advance-notice email to student on reviewer assignment (bilingual EN+BM; flag STUDENT_ASSIGNMENT_EMAIL_ENABLED off by default; reviewer phone opt-out share_phone_with_students default on; migration scholarship/0060 migrate-first) (halatuju_api: emails.py, services.py assign_reviewer, models, serializers_admin, settings/base.py, migration + tests; halatuju-web: admin/profile toggle, admin-api.ts, messages/*)
+- 2026-06-21 fix(check2): reviewer-raised Action-Centre requests now notify the student (reset query_raised_notified_at on raise; send_due_query_emails counts source='officer' items; no per-item email) (halatuju_api: views_admin.py, services.py + tests)
 
 _(previous batch cleared at the 2026-06-16 review below)_
 
