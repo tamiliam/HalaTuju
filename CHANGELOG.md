@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Sponsor portal redesign (R7) — fixed ~47 missing i18n keys + Tamil refine + a11y (the final redesign sprint).**
+  **The bug:** R1–R4 shipped the My Giving / Students / Account pages referencing **47 `sponsorPortal.{impact,journey,
+  activity,community,statement,students,account}.*` keys that were never added to the message files** — so those pages
+  rendered the **raw key paths** (e.g. literally `sponsorPortal.impact.totalGiven`). It shipped silently: the portal is
+  dark/dormant (no real approved sponsor has used it), i18n parity only checks en===ms===ta (all three were equally
+  missing), and `next build`/jest don't validate that `t()` keys resolve. **Fix:** authored all 47 keys in en/ms/ta
+  (English defined to match each page's usage + placeholders; Tamil per `tamil-style-guide.md`). **Guardrail:** new
+  `sponsor-i18n.test.ts` asserts every statically-referenced `sponsor*` key resolves in en.json (would have caught this)
+  + cross-locale parity per namespace. **Tamil refine (TD-132):** rewrote the R5/R6 trust/AutoSponsor strings —
+  *independent* → சார்பற்ற (consistent + idiomatic), "My Giving" unified to பங்களிப்பு, sandhi fixes (காணக்கூடிய).
+  **Accessibility:** the portal tab bar is now a `<nav>` landmark with `aria-current="page"`; the decorative giving
+  donut is `aria-hidden` (its figures are in the legend). FE-only, **no migration**. jest 363 (+2); i18n parity
+  2794×3; `next build` clean. **This completes the 7-sprint sponsor-portal redesign.**
+
 ### Changed
 - **Sponsor portal redesign (R6) — Standing gift / AutoSponsor (the AutoInvest-style innovation).** A sponsor can set a
   **standing gift** on My Account: field/state preferences + an optional per-student cap + an on/off toggle. When a
