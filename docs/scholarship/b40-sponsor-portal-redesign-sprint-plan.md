@@ -50,7 +50,7 @@
 **New backend:** `GET /sponsor/activity/` synthesised from existing events for *this sponsor's* students (offer accepted = `Sponsorship.decided_at`; semester completed = `SemesterResult.created_at`; graduated; new-students-published count), refs only; small community-count endpoint.
 **Decision at sprint start:** synthesise on the fly (no migration — preferred) vs a lightweight event-log table.
 
-### R4 — My Account tab + giving statement · BE(tiny) + FE
+### R4 — My Account tab + giving statement · BE(tiny) + FE — ✅ DONE 2026-06-20 (no migration; `GET /sponsor/statement/` two ledgers + thank-you wall relocated to Account; +5 pytest = 100 sponsor; retro `docs/retrospective-sponsor-redesign-r4.md`)
 **Scope:** relocate + restyle existing pieces (profile + approved/trusted badges, notification cadence, thank-you wall, invite-a-friend) into the Account tab. Add the **giving statement as two ledgers**: *Donations to the trust* (in, `Donation`) and *Gifts to students* (out, `Sponsorship`), each amount + date, with a downloadable record. Framed as a *record*, not a tax receipt (Section 44(6) pending).
 **New backend:** `GET /sponsor/statement/` assembling both ledgers (data already exists). Mostly relocation → light.
 

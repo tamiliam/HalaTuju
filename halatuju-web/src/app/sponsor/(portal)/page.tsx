@@ -16,7 +16,7 @@ import type { SponsorPoolCard } from '@/lib/api'
 export default function MyGivingPage() {
   const { t } = useT()
   const { account } = useSponsorAuth()
-  const { wallet, impact, activity, community, gradMessages } = useSponsorPortal()
+  const { wallet, impact, activity, community } = useSponsorPortal()
 
   const b = impact?.balance
   const committed = b ? parseFloat(b.committed) || 0 : 0
@@ -141,22 +141,6 @@ export default function MyGivingPage() {
             {t('sponsorPortal.nav.support')} →
           </Link>
         </div>
-      )}
-
-      {/* Thank-you messages from students you supported — anonymous, linked to ref only */}
-      {gradMessages.length > 0 && (
-        <section>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t('sponsorPortal.graduationMessages.title')}</h2>
-          <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.graduationMessages.subtitle')}</p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {gradMessages.map((m, i) => (
-              <div key={i} className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
-                <p className="text-sm text-gray-800">💬 “{m.text}”</p>
-                <p className="text-xs text-gray-500 mt-3">{t('sponsorPortal.graduationMessages.attribution')} · {m.ref}</p>
-              </div>
-            ))}
-          </div>
-        </section>
       )}
 
       {/* Community belonging strip */}

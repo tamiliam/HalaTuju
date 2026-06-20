@@ -275,6 +275,17 @@ class SponsorImpactView(_PoolBase):
         return Response(sponsorship_service.sponsor_impact(sponsor))
 
 
+class SponsorStatementView(_PoolBase):
+    """GET /api/v1/sponsor/statement/ — R4: the giving statement's two ledgers —
+    donations INTO the trust + gifts OUT to students (anonymous ref only). Money +
+    refs only, allowlist-safe. Behind SPONSOR_POOL_ENABLED + approved-sponsor."""
+    def get(self, request):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        return Response(sponsorship_service.sponsor_statement(sponsor))
+
+
 class SponsorActivityView(_PoolBase):
     """GET /api/v1/sponsor/activity/ — R3: a time-ordered feed of THIS sponsor's
     own students' lifecycle events (funded/accepted/semester/graduated/thank-you),

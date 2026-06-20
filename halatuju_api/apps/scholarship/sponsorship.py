@@ -75,6 +75,30 @@ def sponsor_impact(sponsor):
     }
 
 
+def sponsor_statement(sponsor):
+    """R4 — the giving statement's two ledgers. **Donations INTO the trust** (the
+    sponsor's own deposit records — fine to show back to them) and **gifts OUT to
+    students** (active allocations carrying the anonymous ``ref`` only — never the
+    student's identity). Allowlist-safe; counts + money + refs only."""
+    donations = [
+        {'amount': str(d.amount), 'reference': d.reference, 'at': d.created_at}
+        for d in sponsor.donations.order_by('-created_at')
+    ]
+    gifts = []
+    out_total = Decimal('0')
+    for sp in (sponsor.sponsorships.filter(status='active')
+               .select_related('application').order_by('-decided_at')):
+        gifts.append({'ref': pool.pool_ref(sp.application_id), 'amount': str(sp.amount), 'at': sp.decided_at})
+        out_total += sp.amount
+    in_total = sum((Decimal(d['amount']) for d in donations), Decimal('0'))
+    return {
+        'donations': donations,
+        'gifts': gifts,
+        'total_in': str(in_total),
+        'total_out': str(out_total),
+    }
+
+
 def is_fundable(application):
     """A student can be funded iff they're in the pool (anon profile published +
     active share consent), an admin has set an award amount, they're not already
