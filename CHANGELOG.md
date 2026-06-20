@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Sponsor portal redesign (R5) — Trust & Transparency hub (the load-bearing trust layer).** A new **Trust &
+  Transparency page** (`/sponsor/trust`, reached from the My Giving assurance strip + the portal footer) surfaces the
+  four-layer trust story — **Who we are · Governance · Sources & uses of funds · Independent assurance** — built as a
+  **scaffold with honest placeholders** (the organisation is not yet formalised: legal entity / trustees / auditor read
+  "to be published"; the IR-style sources/uses + assurance figures are flagged **illustrative**). My Giving gains an
+  **assurance strip**, the public sponsor landing gains a **trust bar**, and student cards + detail show an **"Enrolment
+  independently verified" badge** (a bare boolean — never the verifier or the evidence). New `enrolment_verified`
+  boolean on `ScholarshipApplication` (distinct from identity `nric_verified` — that the *place* is real vs that the
+  *person* is) and a new **`TrustContent`** model holding the editable hub data as a single row so the org can fill it
+  in over time **without a deploy** (the trilingual UI chrome lives in i18n; only language-neutral owner data is in the
+  DB). New flag-gated, allowlist-safe `GET /api/v1/sponsor/trust/`. **Migration `scholarship/0065`** (additive
+  `enrolment_verified` col + new `trust_content` table seeded with illustrative placeholders; migrate-first). +8 pytest
+  (108 sponsor green) + 8 jest (361 total); i18n parity 2733×3; `next build` clean. Ships dark behind
+  `SPONSOR_POOL_ENABLED`. Gated on the owner naming the auditor + trustees (long-lead) — scaffold ships without them.
 - **Sponsor portal redesign (R4) — My Account + giving statement.** The thank-you wall moves from My Giving into **My
   Account** (matching the prototype), and Account gains the **giving statement** as two ledgers: **Donations to the
   trust** (in) beside **Gifts to students** (out, anonymous ref only), each amount + date + totals, with a print/save-PDF
