@@ -699,6 +699,15 @@ class ApplicantDocument(models.Model):
         max_length=10, blank=True, default='', choices=HOUSEHOLD_MEMBER_CHOICES,
         help_text="Salary-route income docs only — whose IC/salary slip/EPF this is. "
                   "Blank for all other documents.")
+    # The officer ResolutionItem code (e.g. 'officer_3') this document satisfies — set
+    # ONLY for a reviewer-requested upload via the Action Centre. It makes each request
+    # its own single-instance slot: the slot key becomes (doc_type, household_member,
+    # request_code). So multiple 'other' docs (4 separate "upload X" requests) coexist
+    # instead of overwriting each other, and a reviewer-requested cross-person income
+    # doc (e.g. father's IC on a mother-STR route) gets its own slot instead of
+    # clobbering the student's route doc. '' = the student's own apply-form/route doc
+    # (shared slot — unchanged behaviour).
+    request_code = models.CharField(max_length=20, blank=True, default='')
     storage_path = models.CharField(max_length=500)
     original_filename = models.CharField(max_length=255, blank=True, default='')
     content_type = models.CharField(max_length=100, blank=True, default='')

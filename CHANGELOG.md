@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Request-owned document slots — multiple "Other" docs + cross-person income docs no longer overwrite each other.**
+  **The bug (live data loss):** every doc was single-instance keyed on `(doc_type, household_member)`, so a reviewer who
+  requested several extra docs collapsed them into ONE `other` slot — each upload overwrote the last (Theepicaa: 5 "Other"
+  requests, 1 stored). On the STR route the income docs were also force-tagged to the single earner, so a reviewer asking
+  for the **father's** IC on a **mother**-STR route would overwrite the mother's IC. **Fix:** new
+  `ApplicantDocument.request_code` (the officer ResolutionItem code) makes a reviewer-requested upload its OWN
+  single-instance slot — slot key is now `(doc_type, household_member, request_code)`. So multiple "Other" docs and a
+  cross-person income request coexist; re-uploading the *same* request still replaces; and the STR force-tag is skipped
+  for request-keyed uploads (honours the requested member). `resolve_doc_items_for_upload` resolves the exact request by
+  code (two open "Other" tasks don't both clear on one upload). **"Other" cap** added: `MAX_OTHER_DOCS=10` per
+  application (the 40-total cap still applies). The Action Centre passes the `officer_N` code on upload; system docs
+  (the student's own route docs) keep the shared slot — unchanged. **Migration `scholarship/0067`** (additive). +6
+  tests (81 doc/resolution pytest); `next build` clean; 327 jest. Branch `feat/request-owned-doc-slots`.
+  ⚠️ **Migration-number clash:** the `feat/whatsapp-comms` branch also adds `scholarship/0067` — whichever merges second
+  must renumber to `0068`.
+
 ### Fixed
 - **Sponsor portal redesign (R7) — fixed ~47 missing i18n keys + Tamil refine + a11y (the final redesign sprint).**
   **The bug:** R1–R4 shipped the My Giving / Students / Account pages referencing **47 `sponsorPortal.{impact,journey,

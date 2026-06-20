@@ -571,25 +571,39 @@ class DocumentListCreateView(APIView):
             return Response({'error': 'file_too_large', 'max_mb': _settings.MAX_DOC_SIZE_BYTES // (1024 * 1024)},
                             status=status.HTTP_400_BAD_REQUEST)
         new_member = serializer.validated_data.get('household_member', '') or ''
+        # A reviewer-requested upload carries the officer ResolutionItem code — it makes this
+        # document its OWN single-instance slot, so it can't overwrite the student's route doc
+        # or another request. '' = the student's own apply-form/route doc (shared slot).
+        new_request_code = serializer.validated_data.get('request_code', '') or ''
         # Slot model (TD-115): income docs are tagged by the household member they belong to.
         # The STR route has a single earner, so the backend AUTHORITATIVELY tags the earner's
         # income docs (str/parent_ic/salary_slip/epf) regardless of what the client sent — this
         # also slots Action-Centre / Check-2 uploads, which carry no member. The salary route
-        # keeps the client's per-block member.
+        # keeps the client's per-block member. EXCEPTION: a request-keyed upload (e.g. a reviewer
+        # asking for the FATHER's IC on a mother-STR route) must NOT be force-tagged to the STR
+        # earner — that would overwrite the mother's IC. Honour the requested member instead.
         _INCOME_EARNER_DOCS = {'str', 'parent_ic', 'salary_slip', 'epf'}
         str_income = (new_doc_type in _INCOME_EARNER_DOCS
-                      and (getattr(app, 'income_route', '') or '').strip() == 'str')
+                      and (getattr(app, 'income_route', '') or '').strip() == 'str'
+                      and not new_request_code)
         if str_income:
             new_member = (getattr(app, 'income_earner', '') or '').strip()
             serializer.validated_data['household_member'] = new_member
         single = self._is_single_instance(new_doc_type, new_member)
-        # Slots this upload supersedes — the target (type, member), plus (STR income docs) the
-        # legacy UNTAGGED copy, so a re-upload replaces the old blank instead of duplicating it.
+        # Slots this upload supersedes — the target (type, member, request_code), plus (STR income
+        # docs) the legacy UNTAGGED copy. The request_code in the key is what lets multiple 'other'
+        # docs (and cross-person income requests) coexist instead of overwriting each other.
         sweep_members = [new_member, ''] if str_income else [new_member]
+        slot_filter = dict(application=app, doc_type=new_doc_type,
+                           household_member__in=sweep_members, request_code=new_request_code)
         # Guardrail 2: per-application document cap. A single-instance re-upload
         # replaces an existing doc, so it doesn't count toward growth.
-        replaces = (single and ApplicantDocument.objects.filter(
-            application=app, doc_type=new_doc_type, household_member__in=sweep_members).exists())
+        replaces = single and ApplicantDocument.objects.filter(**slot_filter).exists()
+        # 'other' (reviewer-requested extra) cap — a NEW 'other' slot beyond the cap is rejected.
+        if new_doc_type == 'other' and not replaces and ApplicantDocument.objects.filter(
+                application=app, doc_type='other').count() >= _settings.MAX_OTHER_DOCS:
+            return Response({'error': 'other_doc_limit_reached', 'max': _settings.MAX_OTHER_DOCS},
+                            status=status.HTTP_400_BAD_REQUEST)
         if not replaces and ApplicantDocument.objects.filter(application=app).count() >= _settings.MAX_DOCS_PER_APPLICATION:
             return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -601,8 +615,7 @@ class DocumentListCreateView(APIView):
         # Snapshot the stale ids/paths BEFORE the create so the new row (same slot) is never swept.
         stale_ids, stale_paths = [], []
         if single:
-            stale = list(ApplicantDocument.objects.filter(
-                application=app, doc_type=new_doc_type, household_member__in=sweep_members))
+            stale = list(ApplicantDocument.objects.filter(**slot_filter))
             stale_ids = [d.id for d in stale]
             stale_paths = [d.storage_path for d in stale if d.storage_path]
         with transaction.atomic():
