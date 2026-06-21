@@ -15,6 +15,8 @@ so no real applicant is messaged until Sprint 2 adds the ``whatsapp_opt_in`` gat
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import json
 import logging
 import re
@@ -37,6 +39,46 @@ SANDBOX_FROM = 'whatsapp:+14155238886'
 def is_sandbox_sender():
     """True when the configured WhatsApp sender is Twilio's shared sandbox number."""
     return getattr(settings, 'TWILIO_WHATSAPP_FROM', '') == SANDBOX_FROM
+
+
+def verify_twilio_signature(url, params, signature, *, token=None):
+    """Validate Twilio's ``X-Twilio-Signature`` so only Twilio can hit our inbound webhook.
+
+    Twilio signs: the full request URL + each POST param appended as ``key+value`` sorted by key,
+    HMAC-SHA1 with the account auth token, base64-encoded. (stdlib; no Twilio SDK.) ``params`` is the
+    parsed form dict (DRF ``request.data`` / a QueryDict)."""
+    token = token or getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+    if not token or not signature:
+        return False
+    payload = url + ''.join(f'{k}{params[k]}' for k in sorted(params.keys()))
+    digest = hmac.new(token.encode(), payload.encode('utf-8'), hashlib.sha1).digest()
+    expected = base64.b64encode(digest).decode()
+    return hmac.compare_digest(expected, signature)
+
+
+def apply_opt_out(from_number, *, opted_in):
+    """Sync ``StudentProfile.whatsapp_opt_in`` from an inbound STOP/START (roadmap S5, TD-135).
+
+    Maps the sender's E.164 number back to a profile via the messages we've SENT it (``to_number`` is
+    stored normalised), so we don't need a normalised-phone column. Returns True if a profile changed.
+    If no message maps to the number, there's nothing we ever sent it → nothing to opt out."""
+    e164 = (from_number or '').replace('whatsapp:', '').strip()
+    if not e164:
+        return False
+    from .models import WhatsAppMessage  # local import: avoids app-loading cycles
+    msg = (WhatsAppMessage.objects
+           .filter(to_number=e164)
+           .select_related('application__profile')
+           .order_by('-created_at').first())
+    profile = getattr(getattr(msg, 'application', None), 'profile', None)
+    if profile is None:
+        logger.info('WhatsApp opt-sync: no profile mapped to %s', e164)
+        return False
+    if profile.whatsapp_opt_in != opted_in:
+        profile.whatsapp_opt_in = opted_in
+        profile.save(update_fields=['whatsapp_opt_in'])
+        logger.info('WhatsApp opt-sync: %s → opted_in=%s', e164, opted_in)
+    return True
 
 
 def normalise_msisdn(raw, *, default_cc=_DEFAULT_CC):

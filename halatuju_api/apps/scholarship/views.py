@@ -2,7 +2,9 @@
 import logging
 
 from django.db import transaction
+from django.http import HttpResponse
 from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -30,6 +32,7 @@ from .serializers import (
 from . import in_programme as in_programme_service
 from . import scheduling
 from . import sponsorship as sponsorship_service
+from . import whatsapp
 from .serializers_admin import interview_schedule_payload
 from .services import (
     CONSENT_VERSION,
@@ -52,6 +55,33 @@ from .services import (
 
 def _get_profile(user_id):
     return StudentProfile.objects.filter(supabase_user_id=user_id).first()
+
+
+class WhatsAppInboundView(APIView):
+    """Twilio inbound-WhatsApp webhook — honours STOP/START to keep `whatsapp_opt_in` in sync
+    (roadmap S5, TD-135). Anonymous (Twilio calls it) but authenticated by the Twilio signature."""
+    permission_classes = [AllowAny]
+    authentication_classes = []   # no Bearer/session → no CSRF; the Twilio signature is the auth
+    # Twilio POSTs application/x-www-form-urlencoded — accept form bodies (the API defaults to JSON).
+    parser_classes = [FormParser, MultiPartParser]
+
+    _STOP = {'stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'}
+    _START = {'start', 'unstop', 'yes', 'resume'}
+
+    def post(self, request):
+        ok = whatsapp.verify_twilio_signature(
+            request.build_absolute_uri(), request.data,
+            request.META.get('HTTP_X_TWILIO_SIGNATURE', ''))
+        if not ok:
+            return HttpResponse(status=status.HTTP_403_FORBIDDEN)
+        body = (request.data.get('Body') or '').strip().lower()
+        from_number = request.data.get('From') or ''
+        if body in self._STOP:
+            whatsapp.apply_opt_out(from_number, opted_in=False)
+        elif body in self._START:
+            whatsapp.apply_opt_out(from_number, opted_in=True)
+        # Always 200 with no auto-reply (a TwiML body would send a WhatsApp back).
+        return HttpResponse(status=status.HTTP_200_OK)
 
 
 class ApplicationListCreateView(APIView):

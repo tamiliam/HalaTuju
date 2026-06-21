@@ -886,10 +886,11 @@
   `MAX_OTHER_DOCS=10` cap. +6 tests. See `docs/decisions.md` + `docs/retrospective-2026-06-21-request-owned-doc-slots.md`.
   ⚠️ Migration `0067` clashes with the unmerged `feat/whatsapp-comms` branch — renumber the later merge to `0068`.
   (Logged + resolved 2026-06-21.) **UPDATE:** whatsapp-comms shipped its model as `scholarship/0068`; clash resolved.
-- TD-135: **WhatsApp inbound STOP/opt-out → flag sync not built.** `whatsapp_opt_in` is honoured on send + togglable in
-  /profile, but an inbound "STOP" only triggers Twilio's carrier-level block — it is NOT recorded back into
-  `whatsapp_opt_in`, so our record can drift and the profile toggle won't reflect a STOP. **To resolve:** a Twilio inbound
-  webhook that flips `whatsapp_opt_in=False` on STOP (and back on START). (Logged 2026-06-21.)
+- TD-135: **[RESOLVED 2026-06-21]** WhatsApp inbound STOP/opt-out → flag sync. **Resolved (roadmap S5):** Twilio inbound
+  webhook `POST /api/v1/scholarship/whatsapp/inbound/` (`WhatsAppInboundView`) flips `whatsapp_opt_in` on STOP/START,
+  Twilio-signature authed (`whatsapp.verify_twilio_signature`), number→profile via sent `to_number`. +5 tests. **Remaining
+  to activate:** owner sets the inbound webhook URL in the Twilio console (code is signature-gated/inert until then).
+  (Logged + resolved 2026-06-21.)
 - TD-136: **Phone verification is a field, not a feature.** `contact_phone_verified` exists (resets on phone change) and is
   displayed, but nothing ever sets it True — there is no OTP send/verify flow. **To resolve (if wanted):** a "verify my
   number" flow via the **Twilio Verify API** (WhatsApp or SMS channel) → mark verified. Now feasible (Twilio wired).
