@@ -255,3 +255,26 @@ class ConsentRedGateTests(TestCase):
              patch('apps.scholarship.pathway_engine.student_offer_check',
                    return_value={'name': 'pending', 'ic': 'pending'}):
             self.assertEqual(document_unreadable_blockers(app), [])
+
+    def test_salary_route_unreadable_income_ic_blocks(self):
+        # Regression: an unreadable earner IC on the SALARY route must gate submission too.
+        # The earlier code passed the income_working_members LIST to working_members (which
+        # reads an APPLICATION) → it always resolved to [], so the per-earner loop never ran
+        # and a blurry salary-route earner IC/relationship doc slipped past the gate (STR was
+        # fine, salary was not). Now driven by effective_working_members(application).
+        from unittest.mock import patch
+        from django.utils import timezone
+        from apps.scholarship.models import ApplicantDocument
+        from apps.scholarship.services import document_unreadable_blockers
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'sal-{self.id()}', name='Y', nric='030202-14-2345')
+        app = ScholarshipApplication.objects.create(
+            profile=profile, cohort=self.cohort, income_route='salary',
+            income_working_members=['mother'])
+        ApplicantDocument.objects.create(
+            application=app, doc_type='parent_ic', household_member='mother',
+            storage_path='m-ic', vision_run_at=timezone.now())
+        with patch('apps.scholarship.income_engine.student_income_ic_check',
+                   return_value={'readable': False}), \
+             patch('apps.scholarship.income_engine.income_cluster_advice', return_value=''):
+            self.assertIn('income_document_unreadable', document_unreadable_blockers(app))
