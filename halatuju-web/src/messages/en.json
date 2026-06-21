@@ -1710,7 +1710,7 @@
       "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award.",
       "interview": {
         "title": "Your interview",
-        "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about 30–45 minutes).",
+        "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about 30 minutes).",
         "book": "Book this time",
         "selectFirst": "Please choose a time first.",
         "booked": "Your interview is booked for",

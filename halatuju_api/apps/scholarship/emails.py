@@ -1024,9 +1024,9 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     en_intro = ('Your application has reached the interview stage of the B40 Assistance Programme, '
                 + (f'and your interview will be with {reviewer}, one of our programme’s interviewers.'
                    if reviewer else 'and an interviewer from our team has now been assigned to you.'))
-    en_what = ('The interview is a short video call, about 30–45 minutes, to understand your '
-               'family’s situation fairly. We’ll email you shortly with a few times to choose '
-               'from, so you can pick the one that suits you best. Once you choose, we’ll send a '
+    en_what = ('The interview is a short video call, about 30 minutes, to understand your '
+               'family’s situation fairly. We’ll send you a few times to choose from shortly, '
+               'so you can pick the one that suits you best. Once you choose, we’ll send a '
                'Google Meet link and a reminder before the call — there’s nothing you need to '
                'arrange yourself in the meantime.')
     en_points = [
@@ -1043,9 +1043,9 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     bm_intro = ('Permohonan anda telah sampai ke peringkat temu duga Program Bantuan B40, '
                 + (f'dan temu duga anda akan bersama {reviewer}, salah seorang penemu duga program kami.'
                    if reviewer else 'dan seorang penemu duga daripada pasukan kami kini telah ditugaskan kepada anda.'))
-    bm_what = ('Temu duga ialah panggilan video ringkas, kira-kira 30–45 minit, untuk memahami '
-               'keadaan keluarga anda secara adil. Kami akan menghantar e-mel kepada anda tidak '
-               'lama lagi dengan beberapa masa untuk dipilih, supaya anda boleh memilih yang '
+    bm_what = ('Temu duga ialah panggilan video ringkas, kira-kira 30 minit, untuk memahami '
+               'keadaan keluarga anda secara adil. Kami akan menghantar kepada anda beberapa masa '
+               'untuk dipilih tidak lama lagi, supaya anda boleh memilih yang '
                'paling sesuai. Setelah anda memilih, kami akan menghantar pautan Google Meet dan '
                'peringatan sebelum panggilan — tiada apa-apa yang perlu anda uruskan sendiri buat '
                'masa ini.')
