@@ -37,16 +37,16 @@ slice, tested, ≤ a handful of files, no over-stuffing.
   logged in `whatsapp_messages`; email still sends; sandbox-tested then template approved.
 - **Complexity:** medium. New template (Meta), no migration.
 
-### Sprint 3 — Richer interview reminder (Join button / Meet deep-link) + optional booking-confirmation WhatsApp
-- **Goal:** make the reminder a one-tap "Join" from the phone; optionally also WhatsApp the booking confirmation (carries
-  the Meet link — arguably the most useful single message).
-- **Scope:** new reminder template v2 with a **CTA URL button** (dynamic suffix → the Meet code) + optional "View details"
-  button (app page); code tweak in `send_interview_reminders` to pass the meet code into the button var + point to the new
-  ContentSid; (optional) a WhatsApp send on `book_slot`. Tests + CHANGELOG.
-- **Acceptance:** the reminder renders a tappable Join button that opens Meet; (if included) booking fires a WhatsApp with
-  the Meet link; opt-in gated; sandbox-tested then approved.
-- **Complexity:** medium. New template(s) (Meta), no migration. *Owner decision: one Join button vs two; include the
-  booking-confirmation WhatsApp now or later.*
+### Sprint 3 — Richer interview reminder (Join button / Meet deep-link)
+- **Scope of WhatsApp messages is fixed at two: reminders + the pick-a-slot nudge. Booking confirmation is EMAIL-ONLY**
+  (owner, 2026-06-21) — NOT a WhatsApp message. S3 only enhances the existing reminder.
+- **Goal:** make the reminder a one-tap "Join" from the phone.
+- **Scope:** new reminder template v2 with a **CTA URL button** (dynamic suffix → the Meet code) + a code tweak in
+  `send_interview_reminders` to pass the meet code into the button var + point to the new ContentSid. Tests + CHANGELOG.
+  (The reminder already carries the Meet link inline/tappable, so the button is UX polish.)
+- **Acceptance:** the reminder renders a tappable Join button that opens Meet; opt-in gated; sandbox-tested then approved.
+- **Complexity:** low–medium. New template (Meta), no migration. *Owner decision: one Join button vs two (Join + View
+  details); whether to name the interviewer in the reminder.*
 
 ### Sprint 4 — Phone verification via Twilio Verify (TD-136)
 - **Goal:** let a student verify their `contact_phone` so `contact_phone_verified` becomes meaningful (data quality before
