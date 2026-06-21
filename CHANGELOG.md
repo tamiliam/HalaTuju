@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Reviewer reschedule can now offer nearer slots (TD-137).** The 24h minimum-lead floor on the reviewer's slot picker
+  was applied to both first-propose and reschedule. On a reschedule the candidate has already waited through the original
+  notice, so the floor is relaxed to a short lead (`RESCHEDULE_MIN_LEAD_HOURS = 2h`) — the picker offers same-/next-day
+  slots and jumps to the nearer earliest day. First-propose keeps the 24h floor. Backend already accepted any future slot,
+  so this is UI-only (`interviewSlots.ts` lead-time helpers parameterised + `InterviewScheduleCard`). +2 jest; no migration.
 - **Interview reminders now gate on booking notice (no more instant "reminder" on a same-day/last-minute booking).**
   Each reminder is gated on `interview_start − interview_booked_at`: the **24-hour** reminder only sends if the booking
   gave ≥24h notice, and the **1-hour** reminder only if it gave ≥1h. Previously a same-day booking immediately fired a
