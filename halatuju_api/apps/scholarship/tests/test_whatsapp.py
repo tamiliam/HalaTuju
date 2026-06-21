@@ -1,11 +1,16 @@
-"""Tests for the outbound WhatsApp comms helper (Sprint 1)."""
+"""Tests for the outbound WhatsApp comms helper (Sprint 1) + inbound opt-out webhook (S5/TD-135)."""
+import base64
+import hashlib
+import hmac
 from unittest import mock
 
 import pytest
-from django.test import override_settings
+from django.test import TestCase, override_settings
+from rest_framework.test import APIClient
 
+from apps.courses.models import StudentProfile
 from apps.scholarship import whatsapp
-from apps.scholarship.models import WhatsAppMessage
+from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort, WhatsAppMessage
 
 _CREDS = dict(
     WHATSAPP_ENABLED=True,
@@ -93,3 +98,66 @@ def test_send_uses_content_template_when_sid_given():
     args = m.call_args[0]
     assert args[5] == sid and args[6] == variables
     assert 'template' in row.body  # audit row records a template marker, not free text
+
+
+def _twilio_sig(url, params, token):
+    """Re-create Twilio's X-Twilio-Signature for a test POST (url + sorted key+value, HMAC-SHA1, b64)."""
+    payload = url + ''.join(f'{k}{params[k]}' for k in sorted(params.keys()))
+    return base64.b64encode(hmac.new(token.encode(), payload.encode('utf-8'), hashlib.sha1).digest()).decode()
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', TWILIO_AUTH_TOKEN='tok_test')
+class WhatsAppInboundWebhookTests(TestCase):
+    """Twilio inbound webhook honours STOP/START → whatsapp_opt_in (TD-135)."""
+    URL = '/api/v1/scholarship/whatsapp/inbound/'
+    TOKEN = 'tok_test'
+    NUMBER = '+60123456789'
+
+    def setUp(self):
+        self.client = APIClient()
+        self.cohort = ScholarshipCohort.objects.create(code='wi', name='B40', year=2026)
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id='wi-stud', nric='030101-14-7777', name='Devi')
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='interviewing')
+        # A prior outbound message maps the number back to this profile (to_number is normalised).
+        WhatsAppMessage.objects.create(
+            application=self.app, to_number=self.NUMBER, kind='interview_reminder_1day', status='sent')
+
+    def _post(self, body, from_number=None, sig=None):
+        params = {'Body': body, 'From': from_number or f'whatsapp:{self.NUMBER}'}
+        url = 'http://testserver' + self.URL
+        signature = sig if sig is not None else _twilio_sig(url, params, self.TOKEN)
+        return self.client.post(self.URL, params, HTTP_X_TWILIO_SIGNATURE=signature)
+
+    def test_stop_opts_out(self):
+        self.assertTrue(self.profile.whatsapp_opt_in)            # default on
+        resp = self._post('STOP')
+        self.assertEqual(resp.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.whatsapp_opt_in)
+
+    def test_start_opts_back_in(self):
+        self.profile.whatsapp_opt_in = False
+        self.profile.save(update_fields=['whatsapp_opt_in'])
+        self._post('START')
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.whatsapp_opt_in)
+
+    def test_bad_signature_rejected_and_no_change(self):
+        resp = self._post('STOP', sig='not-a-valid-signature')
+        self.assertEqual(resp.status_code, 403)
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.whatsapp_opt_in)            # untouched
+
+    def test_unknown_number_is_a_noop_200(self):
+        resp = self._post('STOP', from_number='whatsapp:+60999999999')
+        self.assertEqual(resp.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.whatsapp_opt_in)
+
+    def test_non_keyword_ignored(self):
+        resp = self._post('hello, is anyone there?')
+        self.assertEqual(resp.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.whatsapp_opt_in)

@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **WhatsApp STOP/START → opt-out sync (roadmap S5 / TD-135).** New Twilio inbound webhook
+  `POST /api/v1/scholarship/whatsapp/inbound/`: a student replying **STOP** flips their `whatsapp_opt_in` to off
+  (**START** flips it back), so our consent record + the profile toggle match what WhatsApp actually does and we stop
+  attempting to message them. Authenticated by the **Twilio request signature** (HMAC-SHA1, stdlib — no SDK; anonymous
+  otherwise, no CSRF). The sender's number is mapped back to a profile via the messages we've sent it (`to_number` is
+  stored normalised — no new column). The view declares **form parsers** (the API defaults to JSON; Twilio POSTs
+  url-encoded — without this the webhook would 415). Backend-only, no migration. +5 tests. **Go-live = owner sets the
+  inbound webhook URL in the Twilio console** (the code is inert/signature-gated until then).
 - **WhatsApp nudge when interview slots are PROPOSED (roadmap S2 / TD-138).** When a reviewer proposes (or reschedules)
   times, the student now also gets a WhatsApp — "your interview times are ready, please pick one" with a link to the
   application page — alongside the existing email, so students who don't check email still respond. Opt-in gated
