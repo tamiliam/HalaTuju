@@ -371,9 +371,9 @@ def _verdict_income_salary(application, student_name, present):
       - **never blocks**: assembled but thin proof (no payslip/EPF = informal) or an
         unprovable relationship (e.g. a Chinese-style name with no patronymic) →
         'recommend' + `income_unverified_needs_interview`, for the officer to place."""
-    from .income_engine import (working_members, member_relationship_status,
+    from .income_engine import (effective_working_members, member_relationship_status,
                                 relationship_doc_for)
-    members = working_members(application)
+    members = effective_working_members(application)
     if not members:
         # No working member declared → no income information yet → red (see STR route).
         return _fact('income', 'gap', _utility_context(application),

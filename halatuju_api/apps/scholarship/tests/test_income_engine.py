@@ -7,7 +7,7 @@ from django.test import SimpleTestCase
 from apps.scholarship.income_engine import (
     father_name_from_ic, father_relationship, father_via_bc, father_link,
     mother_relationship, guardian_relationship, relationship_doc_for, income_requirements,
-    working_members, salary_member_blocks, member_relationship_status,
+    working_members, effective_working_members, salary_member_blocks, member_relationship_status,
     student_income_ic_check, _str_currency,
 )
 from apps.scholarship.vision import relationship_name_match, name_match
@@ -718,3 +718,67 @@ class TestSlipEpfDivergence(SimpleTestCase):
         app = _app([_bill('salary_slip', {'gross_income': 'RM 3300'}),
                     _bill('epf', {'monthly_contribution': 'RM 720'})])
         self.assertIsNone(slip_epf_divergence(app, 'father'))
+
+
+class TestEffectiveWorkingMembers(SimpleTestCase):
+    """The salary-route fallback for the prefill-not-saved gap (#90): the income wizard
+    pre-ticks the roster earners + tags uploads, but only persists income_working_members on
+    an explicit toggle — so an accepted prefill leaves tagged docs + an EMPTY list. The
+    requirement engine must reconstruct the earners, never read income as undeclared."""
+
+    class _Docs:
+        """Minimal documents-manager stub: .filter(...).exclude(...).values_list('x', flat=True)."""
+        def __init__(self, tagged):
+            self._tagged = list(tagged)
+        def filter(self, **kw):
+            return self
+        def exclude(self, **kw):
+            return self
+        def values_list(self, *a, **kw):
+            return list(self._tagged)
+
+    @staticmethod
+    def _app(members=None, route='salary', tagged=None, mother='', father='', others=None):
+        return SimpleNamespace(
+            income_route=route, income_earner='', income_working_members=members or [],
+            documents=TestEffectiveWorkingMembers._Docs(tagged or []),
+            mother_occupation=mother, father_occupation=father,
+            other_family_members=others or [])
+
+    def test_explicit_selection_always_wins(self):
+        # A real saved selection is never overridden by the fallback.
+        app = self._app(members=['father'], tagged=['mother'], mother='clerk')
+        self.assertEqual(effective_working_members(app), ['father'])
+
+    def test_empty_falls_back_to_tagged_income_docs(self):
+        # #90 exactly: salary route, empty list, but mother's income docs are tagged → mother.
+        app = self._app(members=[], tagged=['mother', 'mother'], mother='clerk')
+        self.assertEqual(effective_working_members(app), ['mother'])
+
+    def test_empty_with_no_tags_falls_back_to_roster(self):
+        # No tagged docs yet → reconstruct from the family roster's earners (mother clerk works,
+        # father non-earner). Order follows _MEMBER_ORDER.
+        app = self._app(members=[], tagged=[], mother='clerk', father='no_contact')
+        self.assertEqual(effective_working_members(app), ['mother'])
+
+    def test_tagged_docs_take_priority_over_roster(self):
+        # The student actually uploaded the father's docs → trust that over the roster.
+        app = self._app(members=[], tagged=['father'], mother='clerk', father='no_contact')
+        self.assertEqual(effective_working_members(app), ['father'])
+
+    def test_str_route_never_falls_back(self):
+        app = self._app(members=[], route='str', tagged=['mother'], mother='clerk')
+        self.assertEqual(effective_working_members(app), [])
+
+    def test_blank_route_never_falls_back(self):
+        app = self._app(members=[], route='', tagged=['mother'], mother='clerk')
+        self.assertEqual(effective_working_members(app), [])
+
+    def test_income_requirements_uses_the_fallback(self):
+        # The headline fix: with an empty list but mother's docs tagged, income_requirements
+        # now yields mother's compulsory block (IC + salary slip + birth cert) — not nothing.
+        app = self._app(members=[], tagged=['mother'], mother='clerk')
+        req = income_requirements(app)
+        self.assertEqual([b['member'] for b in req['members']], ['mother'])
+        compulsory = {dt for dt, _ in req['members'][0]['compulsory']}
+        self.assertEqual(compulsory, {'parent_ic', 'salary_slip', 'birth_certificate'})
