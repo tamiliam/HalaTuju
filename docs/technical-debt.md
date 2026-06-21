@@ -894,10 +894,10 @@
   displayed, but nothing ever sets it True — there is no OTP send/verify flow. **To resolve (if wanted):** a "verify my
   number" flow via the **Twilio Verify API** (WhatsApp or SMS channel) → mark verified. Now feasible (Twilio wired).
   (Logged 2026-06-21.)
-- TD-137: **The 24h slot min-lead is frontend-only; reschedule can't offer nearer slots.** `propose_slots` (backend)
-  accepts any future slot; the 24h floor (`MIN_LEAD_HOURS`) lives only in the reviewer picker UI and applies to BOTH
-  first-propose and reschedule. On a reschedule the candidate has already waited, so the floor shouldn't apply. **To
-  resolve:** relax the picker floor in reschedule mode (FE-only; backend already permits it). (Logged 2026-06-21, owner-requested.)
+- TD-137: **[RESOLVED 2026-06-21]** The 24h slot min-lead was frontend-only and applied to reschedule too. **Resolved:**
+  reschedule mode now uses `RESCHEDULE_MIN_LEAD_HOURS = 2h` (the picker offers nearer slots + jumps to the nearer earliest
+  day); first-propose keeps 24h; backend already accepted any future slot. FE-only (`interviewSlots.ts` +
+  `InterviewScheduleCard`), +2 jest. (Logged + resolved 2026-06-21; roadmap Sprint 1.)
 - TD-138: **No WhatsApp when interview slots are PROPOSED.** `propose_slots` sends email only; students who don't check
   email leave bookings stalled (reviewer feedback). **To resolve:** a new Meta-approved "times proposed, please pick one"
   template + a `send_whatsapp` in `propose_slots` (opt-in gated, links to the application page). (Logged 2026-06-21, owner work-plan.)

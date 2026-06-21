@@ -5,6 +5,7 @@ import { useT } from '@/lib/i18n'
 import { formatMyt } from '@/lib/interviewTime'
 import {
   cellDateStr, daySlots, earliestDateStr, intlLocale, isoToSlotValue, monthCells, slotLabel12h,
+  MIN_LEAD_HOURS, RESCHEDULE_MIN_LEAD_HOURS,
 } from '@/lib/interviewSlots'
 import { proposeInterviewSlots, type InterviewSchedule } from '@/lib/admin-api'
 
@@ -37,8 +38,16 @@ export default function InterviewScheduleCard({
   const { t, locale } = useT()
   const il = intlLocale(locale)
   const todayNow = new Date()
-  // The earliest selectable day (now + 24h lead) — days before this are disabled.
-  const earliest = earliestDateStr(todayNow)
+  // Reviewer RESCHEDULE: move an already-booked interview (release booking → student re-picks).
+  // Declared first so the lead-time floor below can react to it.
+  const [rescheduling, setRescheduling] = useState(false)
+  const [confirmingReschedule, setConfirmingReschedule] = useState(false)
+  // On a reschedule the candidate has already waited through the original notice, so the 24h
+  // floor relaxes to a short lead — the reviewer can offer nearer slots (TD-137). First-propose
+  // keeps the 24h floor. (Backend already accepts any future slot; this is a UI-only relaxation.)
+  const leadHours = rescheduling ? RESCHEDULE_MIN_LEAD_HOURS : MIN_LEAD_HOURS
+  // The earliest selectable day (now + the lead window) — days before this are disabled.
+  const earliest = earliestDateStr(todayNow, leadHours)
   const earliestMonth = new Date(`${earliest}T00:00`)
   const [view, setView] = useState({ y: earliestMonth.getFullYear(), m: earliestMonth.getMonth() })
   const [date, setDate] = useState(earliest)
@@ -50,9 +59,6 @@ export default function InterviewScheduleCard({
       .slice(0, REQUIRED_PROPOSALS))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  // Reviewer RESCHEDULE: move an already-booked interview (release booking → student re-picks).
-  const [rescheduling, setRescheduling] = useState(false)
-  const [confirmingReschedule, setConfirmingReschedule] = useState(false)
 
   // The current (unbooked) proposed menu — shown read-only until the reviewer chooses to revise.
   const proposedSlots = useMemo(
@@ -70,7 +76,7 @@ export default function InterviewScheduleCard({
     [schedule],
   )
   // Future slots for the selected day (past times dropped, like Calendly).
-  const slots = useMemo(() => daySlots(date).filter((s) => !s.tooEarly), [date])
+  const slots = useMemo(() => daySlots(date, new Date(), leadHours).filter((s) => !s.tooEarly), [date, leadHours])
   // Days the reviewer has picked a time on → a dot on the calendar.
   const pickedDays = useMemo(() => new Set(selected.map((v) => v.slice(0, 10))), [selected])
 
@@ -110,18 +116,29 @@ export default function InterviewScheduleCard({
   }
 
   // Reviewer moves a booked interview: open the picker fresh (new times) in reschedule mode.
+  // Jump the calendar to the relaxed earliest day so nearer slots show without manual navigation.
   const startReschedule = () => {
     setSelected([])
     setError('')
     setConfirmingReschedule(false)
     setRescheduling(true)
     setEditing(true)
+    const re = earliestDateStr(new Date(), RESCHEDULE_MIN_LEAD_HOURS)
+    setDate(re)
+    const rm = new Date(`${re}T00:00`)
+    setView({ y: rm.getFullYear(), m: rm.getMonth() })
   }
 
   const startEdit = () => {
     // Re-open the picker pre-loaded with the current menu, so it's a revise, not a rebuild.
     setSelected(proposedSlots.map((s) => isoToSlotValue(s.start)).slice(0, REQUIRED_PROPOSALS))
     setError('')
+    // Normal (non-reschedule) re-open uses the 24h floor — snap the day back in case a prior
+    // reschedule left the picker on a nearer date that's now disabled.
+    const e = earliestDateStr(new Date(), MIN_LEAD_HOURS)
+    setDate(e)
+    const em = new Date(`${e}T00:00`)
+    setView({ y: em.getFullYear(), m: em.getMonth() })
     setEditing(true)
   }
   const cancelEdit = () => {
