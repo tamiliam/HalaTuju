@@ -1,6 +1,9 @@
 # Roadmap — WhatsApp & interview-scheduling follow-ups
 
-**Date:** 2026-06-21 · **Status:** roadmap for approval (do NOT start Sprint 1 until approved)
+**Date:** 2026-06-21 · **Status:** APPROVED + in progress. **S1 ✅ deployed · S2 ✅ deployed (sandbox-ready, dark in
+prod until Meta template + `TWILIO_WHATSAPP_PROPOSED_CONTENT_SID`) · S5 ✅ deployed (inert until owner sets Twilio inbound
+webhook URL) · S3 ⏸ needs decisions (one/two buttons, booking-confirmation WA) · S4 ⏸ needs decision (WhatsApp vs SMS).**
+Owner is sandbox-testing; templates NOT submitted to Meta yet (owner's call).
 **Source:** owner discussion 2026-06-21 after WhatsApp go-live, captured as TD-135–138 + the deferred template polish.
 
 ## Goal
