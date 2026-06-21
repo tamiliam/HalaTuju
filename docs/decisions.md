@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## Interview reminders gate on booking notice, not just the time-window — 2026-06-21
+**Decision:** Each interview reminder is gated on **how much notice the booking gave** (`interview_start −
+interview_booked_at`): the 24h reminder fires only if notice ≥ 24h, the 1h reminder only if notice ≥ 1h. Firing itself
+stays late-tolerant (fire at/after the mark). `book_slot` stamps `interview_booked_at` on every (re)booking.
+**Alternatives considered:** (a) keep "fire when within X hours" with no floor (the old behaviour); (b) fire only inside a
+narrow band around the X mark (e.g. [X, X+15min]) and skip otherwise.
+**Rationale:** (a) fires an instant, useless "24h reminder" the moment someone books same-day. (b) is fragile — if the
+cron has a hiccup and misses the narrow band, the reminder is silently lost. Gating on *booking notice* captures the
+intent ("only send a reminder the booking left room for") while keeping firing late-tolerant, so cron jitter never
+*skips* a legitimate reminder — only notice decides eligibility. Uses the existing `interview_booked_at`; no migration.
+**Trade-offs:** a booking made <1h before the interview gets no reminder at all (acceptable — the booking-confirmation
+email already went out, and they just booked). Same-day bookings (1–24h) get one reminder (the 1h), not two.
+**Revisit if:** we want a distinct "you booked same-day, here's a short-notice heads-up" message, or a configurable floor.
+
 ## WhatsApp consent is implied (opt-OUT, default on), not explicit opt-in — WhatsApp comms Sprint 2, 2026-06-20
 **Decision:** `StudentProfile.whatsapp_opt_in` defaults **True**; the profile shows an **opt-out** toggle. Existing
 applicants are backfilled to on (the ADD COLUMN default). Every outbound WhatsApp is gated on this flag.
