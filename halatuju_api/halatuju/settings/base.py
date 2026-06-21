@@ -164,10 +164,15 @@ TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM = os.environ.get('TWILIO_WHATSAPP_REMIND
 TWILIO_WHATSAPP_PROPOSED_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID', '')
 TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN', '')
 TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM', '')
-# Twilio Verify Service SID (roadmap S4/TD-136) — phone verification over WhatsApp. Blank →
-# the verify endpoints report "unconfigured" (503) and the /profile control stays inert. The
-# Verify Service is created once in the Twilio console; it manages code lifecycle + rate limits.
+# Twilio Verify Service SID (roadmap S4/TD-136) — phone verification. Blank → the verify
+# endpoints report "unconfigured" (503) and the /profile control stays inert. The Verify
+# Service is created once in the Twilio console; it manages code lifecycle + rate limits.
 TWILIO_VERIFY_SERVICE_SID = os.environ.get('TWILIO_VERIFY_SERVICE_SID', '')
+# Delivery channel for the OTP: 'sms' (default — works out of the box) or 'whatsapp'. WhatsApp
+# needs Twilio's bring-your-own-sender onboarding (~2-4 weeks, error 60223 until done), so we
+# ship on SMS and flip this env var to 'whatsapp' once that clears — no code change. The /profile
+# copy is channel-neutral ("to your number") so it stays correct either way.
+PHONE_VERIFY_CHANNEL = os.environ.get('PHONE_VERIFY_CHANNEL', 'sms')
 
 # Check 2 STEP 2: the AI clarify queries asked of the STUDENT. While OFF (default), no
 # clarify query is shown in the student Action Centre and no query email/reminder is

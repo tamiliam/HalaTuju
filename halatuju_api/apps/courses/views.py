@@ -1477,14 +1477,16 @@ class VerifyEmailView(APIView):
 class PhoneVerifyStartView(APIView):
     """
     POST /api/v1/profile/verify-phone/send/
-    Send a one-time code to the student's ``contact_phone`` over WhatsApp via Twilio Verify
-    (roadmap S4 / TD-136). Opt-in / voluntary — the student initiates this from /profile.
+    Send a one-time code to the student's ``contact_phone`` via Twilio Verify (roadmap S4 /
+    TD-136), over ``settings.PHONE_VERIFY_CHANNEL`` (SMS by default; WhatsApp once onboarded).
+    Opt-in / voluntary — the student initiates this from /profile.
     Body: optional ``phone`` (defaults to the saved contact_phone). Soft-rate-limited to 5
     sends/hour per profile (Twilio Verify enforces the hard per-number limits).
     """
     permission_classes = [SupabaseIsAuthenticated]
 
     def post(self, request):
+        from django.conf import settings
         from django.core.cache import cache
         from apps.scholarship import whatsapp  # local import: avoids app-load order issues
 
@@ -1503,7 +1505,8 @@ class PhoneVerifyStartView(APIView):
         if sent >= 5:
             return Response({'error': 'rate_limited'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
-        ok, vstatus, _err = whatsapp.start_phone_verification(phone, channel='whatsapp')
+        channel = getattr(settings, 'PHONE_VERIFY_CHANNEL', 'sms')
+        ok, vstatus, _err = whatsapp.start_phone_verification(phone, channel=channel)
         if not ok:
             http = {'unconfigured': status.HTTP_503_SERVICE_UNAVAILABLE,
                     'invalid_number': status.HTTP_400_BAD_REQUEST}.get(vstatus, status.HTTP_502_BAD_GATEWAY)
