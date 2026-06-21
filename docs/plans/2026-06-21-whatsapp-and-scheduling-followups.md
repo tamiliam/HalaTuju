@@ -48,8 +48,11 @@ slice, tested, ≤ a handful of files, no over-stuffing.
 - **Complexity:** low–medium. New template (Meta), no migration. *Owner decision: one Join button vs two (Join + View
   details); whether to name the interviewer in the reminder.*
 
-### Sprint 4 — Phone verification via Twilio Verify (TD-136)  ✅ BUILT 2026-06-21
-- **Decision (owner, 2026-06-21):** **WhatsApp** channel · **opt-in / voluntary** ("Verify my number" in /profile).
+### Sprint 4 — Phone verification via Twilio Verify (TD-136)  ✅ LIVE 2026-06-22 (SMS)
+- **Decision:** **opt-in / voluntary** (inline "Verify" in /profile, mirrors the email field). Channel via
+  `PHONE_VERIFY_CHANNEL` (default **`sms`**). Owner wanted WhatsApp, but Verify WhatsApp = 2–4wk BYO-sender onboarding
+  (Twilio error 60223 confirmed live), so shipped on SMS (works now); flip the env var to `whatsapp` later — no code change.
+  `TWILIO_VERIFY_SERVICE_SID=VA3ca85b…` set on halatuju-api 2026-06-22.
 - **Delivered:** `whatsapp.start_phone_verification`/`check_phone_verification` (urllib, Verify v2, WhatsApp channel,
   never-raise); `TWILIO_VERIFY_SERVICE_SID` setting; `PhoneVerifyStartView` + `PhoneVerifyCheckView`
   (`POST /api/v1/profile/verify-phone/{send,check}/`, self-scoped, 5-sends/hr soft cache limit + Twilio's hard limit);

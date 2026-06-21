@@ -5,7 +5,7 @@ these tests cover the view contract: rate limiting, status mapping, and that a c
 flips `contact_phone_verified` (and persists a newly-verified number)."""
 import unittest.mock
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIRequestFactory
 
 from apps.courses.models import StudentProfile
@@ -28,11 +28,17 @@ class TestPhoneVerifyStart(TestCase):
         return PhoneVerifyStartView.as_view()(request)
 
     @unittest.mock.patch(f'{_W}.start_phone_verification', return_value=(True, 'pending', ''))
-    def test_send_uses_saved_phone(self, m):
+    def test_send_uses_saved_phone_on_sms_by_default(self, m):
         resp = self._post()
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data['status'], 'sent')
         self.assertEqual(m.call_args[0][0], '012-345 6789')
+        self.assertEqual(m.call_args[1]['channel'], 'sms')   # PHONE_VERIFY_CHANNEL default
+
+    @override_settings(PHONE_VERIFY_CHANNEL='whatsapp')
+    @unittest.mock.patch(f'{_W}.start_phone_verification', return_value=(True, 'pending', ''))
+    def test_send_channel_follows_setting(self, m):
+        self._post()
         self.assertEqual(m.call_args[1]['channel'], 'whatsapp')
 
     def test_send_missing_phone_400(self):

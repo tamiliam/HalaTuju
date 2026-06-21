@@ -703,21 +703,46 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.contactPhone')}</label>
-                  <input
-                    type="tel"
-                    value={contactPhone}
-                    onChange={e => {
-                      setContactPhone(formatPhone(e.target.value))
-                      setContactPhoneVerified(false)   // editing the number un-verifies it
-                      setVerifyingPhone(false)
-                    }}
-                    placeholder="012-345 6789"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                  />
-                  {contactPhoneVerified ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      value={contactPhone}
+                      onChange={e => {
+                        setContactPhone(formatPhone(e.target.value))
+                        setContactPhoneVerified(false)   // editing the number un-verifies it
+                        setVerifyingPhone(false)
+                      }}
+                      placeholder="012-345 6789"
+                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!contactPhone || !token) return
+                        setSendingPhoneVerify(true)
+                        try {
+                          // Save first, then send the code (mirrors the email Verify flow)
+                          await updateProfile({ contact_phone: contactPhone }, { token })
+                          await sendPhoneVerification(contactPhone, { token })
+                          setVerifyingPhone(true)
+                          setPhoneCode('')
+                          showToast(t('profile.phoneCodeSent'), 'success')
+                        } catch {
+                          showToast(t('profile.phoneVerifyFailed'), 'error')
+                        } finally {
+                          setSendingPhoneVerify(false)
+                        }
+                      }}
+                      disabled={!contactPhone || sendingPhoneVerify}
+                      className="px-4 py-2.5 bg-primary-50 text-primary-700 border border-primary-200 rounded-lg text-sm font-medium hover:bg-primary-100 disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {sendingPhoneVerify ? '...' : t('profile.verify')}
+                    </button>
+                  </div>
+                  {contactPhoneVerified && (
                     <p className="text-xs text-green-600 mt-1.5 font-medium">✓ {t('profile.phoneVerified')}</p>
-                  ) : verifyingPhone ? (
-                    <div className="mt-2 space-y-2">
+                  )}
+                  {verifyingPhone && !contactPhoneVerified && (
+                    <div className="mt-2 space-y-1.5">
                       <p className="text-xs text-gray-500">{t('profile.phoneCodeSent')}</p>
                       <div className="flex gap-2">
                         <input
@@ -755,31 +780,6 @@ export default function ProfilePage() {
                           {checkingPhoneCode ? '...' : t('profile.confirm')}
                         </button>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="mt-2 flex items-center gap-2">
-                      <button
-                        onClick={async () => {
-                          if (!contactPhone || !token) return
-                          setSendingPhoneVerify(true)
-                          try {
-                            await updateProfile({ contact_phone: contactPhone }, { token })
-                            await sendPhoneVerification(contactPhone, { token })
-                            setVerifyingPhone(true)
-                            setPhoneCode('')
-                            showToast(t('profile.phoneCodeSent'), 'success')
-                          } catch {
-                            showToast(t('profile.phoneVerifyFailed'), 'error')
-                          } finally {
-                            setSendingPhoneVerify(false)
-                          }
-                        }}
-                        disabled={!contactPhone || sendingPhoneVerify}
-                        className="px-4 py-2 bg-primary-50 text-primary-700 border border-primary-200 rounded-lg text-sm font-medium hover:bg-primary-100 disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {sendingPhoneVerify ? '...' : t('profile.verifyMyNumber')}
-                      </button>
-                      <span className="text-xs text-amber-500">{t('profile.notVerified')}</span>
                     </div>
                   )}
                   <p className="text-xs text-gray-400 mt-1.5">{t('profile.phoneVerifyNote')}</p>

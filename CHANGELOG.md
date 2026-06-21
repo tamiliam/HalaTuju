@@ -8,16 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Phone verification over WhatsApp (roadmap S4 / TD-136) — opt-in, voluntary.** A student can now confirm their
-  `contact_phone` from /profile: "Verify my number" sends a one-time code over **WhatsApp via Twilio Verify**, and entering
-  it flips `contact_phone_verified` (a newly-typed number is persisted on success; editing the number un-verifies it).
-  Owner decision (2026-06-21): WhatsApp channel, opt-in only (no gating, no forced verification). Backend:
+- **Phone verification (roadmap S4 / TD-136) — opt-in, voluntary, SMS via Twilio Verify.** A student can confirm their
+  `contact_phone` from /profile: an inline **Verify** button (mirrors the email field) sends a one-time code; entering it
+  flips `contact_phone_verified` (a newly-typed number is persisted on success; editing the number un-verifies it).
+  **Channel is `settings.PHONE_VERIFY_CHANNEL` (default `sms`).** Owner wanted WhatsApp, but Twilio Verify WhatsApp needs
+  a 2–4 week bring-your-own-sender onboarding (error 60223 until done), so we ship on SMS — which works immediately — and
+  flip the env var to `whatsapp` later, no code change (the /profile copy is channel-neutral). Backend:
   `whatsapp.start_phone_verification`/`check_phone_verification` (urllib, Verify v2, never-raise — Twilio holds the code +
-  enforces its lifecycle/rate limits), new `TWILIO_VERIFY_SERVICE_SID` setting, `PhoneVerifyStartView` +
-  `PhoneVerifyCheckView` (`POST /api/v1/profile/verify-phone/{send,check}/`, self-scoped, 5-sends/hour soft cap). **No
-  migration** (`contact_phone_verified` already existed). FE: `sendPhoneVerification`/`checkPhoneVerification` + a
-  code-entry control in Contact Details; i18n en/ms/ta. +13 tests. **Inert until `TWILIO_VERIFY_SERVICE_SID` is set on
-  halatuju-api** (owner creates a Verify Service in the Twilio console; small per-verify cost).
+  enforces its lifecycle/rate limits), `TWILIO_VERIFY_SERVICE_SID` + `PHONE_VERIFY_CHANNEL` settings, `PhoneVerifyStartView`
+  + `PhoneVerifyCheckView` (`POST /api/v1/profile/verify-phone/{send,check}/`, self-scoped, 5-sends/hour soft cap). **No
+  migration** (`contact_phone_verified` already existed). FE: `sendPhoneVerification`/`checkPhoneVerification` + an inline
+  code-entry control in Contact Details; i18n en/ms/ta. +14 tests. Live once `TWILIO_VERIFY_SERVICE_SID` is set
+  (`VA3ca85b…`, set 2026-06-22).
 - **Proposed-slots nudge gains EN + EN+BM variants (S2 EN/BM correction).** `_send_wa_proposed` now picks the template by
   `english_only` (same standard as the emails/reminder) — EN-only (`TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN`) or EN+BM
   (`…_BM`), falling back to the legacy single SID, then sandbox free-text. Both variants reuse `{1}`name `{2}`reviewer
