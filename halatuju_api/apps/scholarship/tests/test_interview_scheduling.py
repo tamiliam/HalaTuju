@@ -302,6 +302,20 @@ class SchedulingServiceTests(TestCase):
         self.app.refresh_from_db()
         self.assertIsNone(self.app.interview_reminded_1d_at)
 
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_rebook_refreshes_booked_at(self, _mock):
+        # interview_booked_at must track the CURRENT booking so reminder-notice re-gates on reschedule.
+        slots = scheduling.propose_slots(
+            self.app, reviewer=self.reviewer,
+            starts=[self._future(days=5), self._future(days=6)])
+        scheduling.book_slot(self.app, slot_id=slots[0].id)
+        old = timezone.now() - timedelta(hours=10)
+        self.app.interview_booked_at = old
+        self.app.save(update_fields=['interview_booked_at'])
+        scheduling.book_slot(self.app, slot_id=slots[1].id)
+        self.app.refresh_from_db()
+        self.assertGreater(self.app.interview_booked_at, old)  # rebook refreshed it
+
     # ── cancel ───────────────────────────────────────────────────────────────
     @patch('apps.scholarship.meeting.create_event', return_value=None)
     def test_cancel_ok_and_notifies(self, _mock):
@@ -458,6 +472,51 @@ class ReminderCronTests(TestCase):
         call_command('send_interview_reminders')
         app.refresh_from_db()
         self.assertIsNone(app.interview_reminded_1d_at)
+
+    # ── booking-notice gating (skip a reminder the booking gave too little notice for) ──
+    def test_one_day_skipped_when_booked_within_24h(self):
+        # Same-day booking (10h notice): no "24h reminder", and not yet inside the 1h window → nothing.
+        start = timezone.now() + timedelta(hours=10)
+        app = self._booked_app(start)
+        app.interview_booked_at = timezone.now()
+        app.save(update_fields=['interview_booked_at'])
+        mail.outbox.clear()
+        call_command('send_interview_reminders')
+        app.refresh_from_db()
+        self.assertIsNone(app.interview_reminded_1d_at)   # 24h reminder skipped
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_one_day_fires_when_booked_with_24h_notice(self):
+        # Interview 20h away but booked 25h before it → ≥24h notice → 24h reminder fires.
+        start = timezone.now() + timedelta(hours=20)
+        app = self._booked_app(start)
+        app.interview_booked_at = start - timedelta(hours=25)
+        app.save(update_fields=['interview_booked_at'])
+        call_command('send_interview_reminders')
+        app.refresh_from_db()
+        self.assertIsNotNone(app.interview_reminded_1d_at)
+
+    def test_one_hour_skipped_when_booked_within_1h(self):
+        # Last-minute booking (30 min notice): neither reminder fires (confirmation already sent at booking).
+        start = timezone.now() + timedelta(minutes=30)
+        app = self._booked_app(start)
+        app.interview_booked_at = timezone.now()
+        app.save(update_fields=['interview_booked_at'])
+        call_command('send_interview_reminders')
+        app.refresh_from_db()
+        self.assertIsNone(app.interview_reminded_1h_at)
+        self.assertIsNone(app.interview_reminded_1d_at)
+
+    def test_one_hour_fires_when_booked_with_1h_notice(self):
+        # Interview 30 min away but booked 3h before → ≥1h notice → 1h reminder fires; 24h still skipped.
+        start = timezone.now() + timedelta(minutes=30)
+        app = self._booked_app(start)
+        app.interview_booked_at = start - timedelta(hours=3)
+        app.save(update_fields=['interview_booked_at'])
+        call_command('send_interview_reminders')
+        app.refresh_from_db()
+        self.assertIsNotNone(app.interview_reminded_1h_at)
+        self.assertIsNone(app.interview_reminded_1d_at)   # only 3h notice → no 24h reminder
 
     @override_settings(INTERVIEW_SCHEDULING_ENABLED=False)
     def test_inert_when_flag_off(self):
