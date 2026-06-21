@@ -1,9 +1,9 @@
 # Roadmap — WhatsApp & interview-scheduling follow-ups
 
-**Date:** 2026-06-21 · **Status:** APPROVED + in progress. **S1 ✅ deployed · S2 ✅ deployed (sandbox-ready, dark in
-prod until Meta template + `TWILIO_WHATSAPP_PROPOSED_CONTENT_SID`) · S5 ✅ deployed (inert until owner sets Twilio inbound
-webhook URL) · S3 ⏸ needs decisions (one/two buttons, booking-confirmation WA) · S4 ⏸ needs decision (WhatsApp vs SMS).**
-Owner is sandbox-testing; templates NOT submitted to Meta yet (owner's call).
+**Date:** 2026-06-21 · **Status:** **S1 ✅ · S2 ✅ LIVE · S3 ✅ LIVE** (Meta templates approved + env set on halatuju-api
+rev …00504, 2026-06-21) · **S5 ✅ deployed** (inert until owner sets the Twilio inbound-webhook URL) · **S4 ⏸** (needs
+decision: WhatsApp vs SMS, all vs opt-in). Booking confirmation is EMAIL-ONLY (dropped from WA scope). All WA templates
+are EN + EN+BM variants picked by english_only.
 **Source:** owner discussion 2026-06-21 after WhatsApp go-live, captured as TD-135–138 + the deferred template polish.
 
 ## Goal
