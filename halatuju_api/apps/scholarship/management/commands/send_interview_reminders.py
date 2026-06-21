@@ -18,22 +18,22 @@ from apps.scholarship.pool import pool_ref
 from apps.scholarship.scheduling import _student_identity
 
 
-def _wa_reminder_body(student_name, start, meeting_url, when, english_only):
-    """Plain-text bilingual interview reminder for WhatsApp (sandbox: free-form).
+def _wa_reminder_body(student_name, start, meeting_url, when, english_only, reviewer_name='your interviewer'):
+    """Plain-text interview reminder for WhatsApp (sandbox free-text path; mirrors the v2 templates).
 
-    A production WhatsApp sender needs a Meta-approved template — that lands at
-    go-live (Sprint 2); the sandbox accepts free text to joined numbers."""
-    when_en = 'tomorrow' if when == '1day' else 'in 1 hour'
-    when_bm = 'esok' if when == '1day' else 'dalam 1 jam'
-    t = emails._fmt_myt(start)
-    en = f'Hi {student_name}, a reminder: your B40 Assistance interview is {when_en} — {t}.'
-    if meeting_url:
-        en += f'\nJoin: {meeting_url}'
+    EN-only when ``english_only``, else EN + BM. Names the interviewer and differentiates the 24h
+    ("tomorrow at …") vs the 1h ("in about an hour, at …") reminder. The Meet link is inline so it
+    works from a phone OR a computer."""
+    t = emails._fmt_myt_time(start)
+    when_en = f'tomorrow at {t}' if when == '1day' else f'in about an hour, at {t}'
+    when_bm = f'esok pada {t}' if when == '1day' else f'kira-kira sejam lagi, pada {t}'
+    link = meeting_url or 'https://halatuju.xyz/scholarship/application'
+    en = (f'Hi {student_name} — a reminder: your B40 Assistance interview with {reviewer_name} is '
+          f'{when_en}. Join from your phone or computer here: {link} — see you then.')
     if english_only:
         return en
-    bm = f'Salam {student_name}, peringatan: temu duga Bantuan B40 anda {when_bm} — {t}.'
-    if meeting_url:
-        bm += f'\nSertai: {meeting_url}'
+    bm = (f'Salam {student_name} — peringatan: temu duga Bantuan B40 anda bersama {reviewer_name} adalah '
+          f'{when_bm}. Sertai melalui telefon atau komputer di sini: {link} — jumpa nanti.')
     return f'{en}\n\n{bm}'
 
 
@@ -54,24 +54,38 @@ def _booked_with_notice(app, hours):
 def _send_wa_reminder(app, student_name, start, when):
     """Best-effort WhatsApp interview reminder, gated on the student's opt-in.
 
-    Uses the approved Meta template (``TWILIO_WHATSAPP_REMINDER_CONTENT_SID``) when
-    configured — required for production business-initiated sends — and falls back to
-    free text in the sandbox/dev (no template set)."""
+    Picks a v2 template by ``english_only`` — EN-only (``..._CONTENT_SID_EN``) or EN+BM
+    (``..._CONTENT_SID_BM``) — each serving BOTH the 24h and 1h reminder via a 'when' variable and
+    naming the interviewer. Falls back to the legacy generic template (``..._CONTENT_SID``, current
+    prod) while the v2 templates aren't set, then to sandbox free text."""
     if not getattr(app.profile, 'whatsapp_opt_in', True):
         return
     phone = getattr(app.profile, 'contact_phone', '')
-    student_name = (student_name or '').strip().split(' ')[0] or 'there'   # first name, consistent with the nudge + assignment email
+    student_name = (student_name or '').strip().split(' ')[0] or 'there'   # first name
+    reviewer_name = (getattr(app.assigned_to, 'name', '') or '').strip() or 'your interviewer'
     kind = f'interview_reminder_{when}'
-    content_sid = getattr(settings, 'TWILIO_WHATSAPP_REMINDER_CONTENT_SID', '')
-    if content_sid:
-        link = app.interview_meeting_url or 'https://halatuju.xyz/scholarship/application'
+    link = app.interview_meeting_url or 'https://halatuju.xyz/scholarship/application'
+    t = emails._fmt_myt_time(start)
+    when_en = f'tomorrow at {t}' if when == '1day' else f'in about an hour, at {t}'
+    when_bm = f'esok pada {t}' if when == '1day' else f'kira-kira sejam lagi, pada {t}'
+    en_only = emails.english_only_email(app)
+    en_sid = getattr(settings, 'TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN', '')
+    bm_sid = getattr(settings, 'TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM', '')
+    new_sid = en_sid if en_only else (bm_sid or en_sid)   # variant by language preference
+    if new_sid:
+        cv = {'1': student_name, '2': reviewer_name, '3': when_en, '4': link}
+        if new_sid == bm_sid:          # the bilingual template carries the BM 'when' too
+            cv['5'] = when_bm
+        whatsapp.send_whatsapp(phone, application=app, kind=kind, content_sid=new_sid, content_variables=cv)
+        return
+    legacy_sid = getattr(settings, 'TWILIO_WHATSAPP_REMINDER_CONTENT_SID', '')
+    if legacy_sid:                     # current prod generic template (1=name, 2=time, 3=link)
         whatsapp.send_whatsapp(
-            phone, application=app, kind=kind, content_sid=content_sid,
+            phone, application=app, kind=kind, content_sid=legacy_sid,
             content_variables={'1': student_name, '2': emails._fmt_myt(start), '3': link})
-    else:
-        body = _wa_reminder_body(student_name, start, app.interview_meeting_url, when,
-                                 emails.english_only_email(app))
-        whatsapp.send_whatsapp(phone, body, application=app, kind=kind)
+        return
+    body = _wa_reminder_body(student_name, start, app.interview_meeting_url, when, en_only, reviewer_name)
+    whatsapp.send_whatsapp(phone, body, application=app, kind=kind)
 
 
 class Command(BaseCommand):

@@ -1137,6 +1137,20 @@ def send_contact_submission_admin_email(*, to_email, name, contact, category, me
 # student-facing term "interviewer" / "Penemu duga". Reviewer-facing emails are
 # plain English (internal staff). All best-effort; the booking never depends on them.
 
+def _fmt_myt_time(dt):
+    """Time-only in Malaysia time, e.g. '8:00 PM' (used in the reminder 'when' phrase)."""
+    if dt is None:
+        return ''
+    try:
+        from zoneinfo import ZoneInfo
+        local = dt.astimezone(ZoneInfo('Asia/Kuala_Lumpur'))
+    except Exception:
+        local = dt
+    hour12 = local.hour % 12 or 12
+    ampm = 'AM' if local.hour < 12 else 'PM'
+    return f'{hour12}:{local:%M} {ampm}'
+
+
 def _fmt_myt(dt):
     """Format a tz-aware datetime in Malaysia time, e.g. 'Mon, 23 Jun 2026, 8:00 PM (MYT)'."""
     if dt is None:
