@@ -29,6 +29,11 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 _TWILIO_MESSAGES_URL = 'https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json'
+# Twilio Verify (roadmap S4, TD-136): Twilio holds the one-time code + its lifecycle
+# (expiry, max-attempts, per-number rate limits), so we keep NO code in our DB — we just
+# ask Verify to send + later to check. WhatsApp channel (owner decision 2026-06-21).
+_TWILIO_VERIFY_START_URL = 'https://verify.twilio.com/v2/Services/{svc}/Verifications'
+_TWILIO_VERIFY_CHECK_URL = 'https://verify.twilio.com/v2/Services/{svc}/VerificationCheck'
 _DEFAULT_CC = '60'  # Malaysia
 # Twilio's shared WhatsApp **sandbox** sender. Free-text business-initiated messages are allowed
 # only from the sandbox (to numbers that joined it); a real sender REQUIRES an approved template.
@@ -79,6 +84,81 @@ def apply_opt_out(from_number, *, opted_in):
         profile.save(update_fields=['whatsapp_opt_in'])
         logger.info('WhatsApp opt-sync: %s → opted_in=%s', e164, opted_in)
     return True
+
+
+def verify_configured():
+    """True when Twilio Verify can be used (account creds + a Verify Service SID)."""
+    return bool(getattr(settings, 'TWILIO_ACCOUNT_SID', '')
+                and getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+                and getattr(settings, 'TWILIO_VERIFY_SERVICE_SID', ''))
+
+
+def start_phone_verification(phone, *, channel='whatsapp'):
+    """Ask Twilio Verify to send a one-time code to ``phone`` over ``channel``.
+
+    Returns ``(ok, status, error)``. ``ok`` is False (never raises) on an unconfigured
+    service, an unusable number, or a transport/Twilio error — the caller maps that to an
+    HTTP status. The code itself is generated + held by Twilio (we store nothing)."""
+    sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '')
+    token = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+    svc = getattr(settings, 'TWILIO_VERIFY_SERVICE_SID', '')
+    if not (sid and token and svc):
+        return False, 'unconfigured', ''
+    to_e164 = normalise_msisdn(phone)
+    if not to_e164:
+        return False, 'invalid_number', ''
+    url = _TWILIO_VERIFY_START_URL.format(svc=urllib.parse.quote(svc, safe=''))
+    try:
+        payload = _post_to_verify(url, sid, token, {'To': to_e164, 'Channel': channel})
+        return True, payload.get('status', 'pending'), ''
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors='replace')[:300]
+        logger.warning('Verify start failed (HTTP %s): %s', e.code, detail)
+        return False, 'failed', f'HTTP {e.code}'
+    except Exception as exc:  # never let comms break the caller
+        logger.exception('Verify start error')
+        return False, 'failed', str(exc)[:200]
+
+
+def check_phone_verification(phone, code):
+    """Check a one-time ``code`` against Twilio Verify. Returns ``(approved, error)``.
+
+    ``approved`` is True only when Twilio reports status ``approved``. A wrong/expired code
+    is ``(False, '')``; an unconfigured service or transport error is ``(False, '<reason>')``.
+    Twilio returns 404 once the verification has expired or hit max attempts — treated as a
+    plain wrong-code (``incorrect``) so the student just gets a friendly retry message."""
+    sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '')
+    token = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+    svc = getattr(settings, 'TWILIO_VERIFY_SERVICE_SID', '')
+    if not (sid and token and svc):
+        return False, 'unconfigured'
+    to_e164 = normalise_msisdn(phone)
+    if not (to_e164 and code):
+        return False, 'invalid'
+    url = _TWILIO_VERIFY_CHECK_URL.format(svc=urllib.parse.quote(svc, safe=''))
+    try:
+        payload = _post_to_verify(url, sid, token, {'To': to_e164, 'Code': str(code).strip()})
+        return payload.get('status') == 'approved', ''
+    except urllib.error.HTTPError as e:
+        if e.code == 404:           # verification expired / consumed / max attempts
+            return False, 'incorrect'
+        logger.warning('Verify check failed (HTTP %s)', e.code)
+        return False, 'failed'
+    except Exception:
+        logger.exception('Verify check error')
+        return False, 'failed'
+
+
+def _post_to_verify(url, sid, token, fields):
+    """POST to a Twilio Verify endpoint, returning the parsed JSON. Separate seam so tests
+    mock THIS (no network), mirroring ``_post_to_twilio``."""
+    data = urllib.parse.urlencode(fields).encode()
+    req = urllib.request.Request(url, data=data, method='POST')
+    creds = base64.b64encode(f'{sid}:{token}'.encode()).decode()
+    req.add_header('Authorization', f'Basic {creds}')
+    req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read().decode() or '{}')
 
 
 def normalise_msisdn(raw, *, default_cc=_DEFAULT_CC):

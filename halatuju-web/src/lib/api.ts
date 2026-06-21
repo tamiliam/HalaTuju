@@ -378,6 +378,30 @@ export async function sendVerificationEmail(
   })
 }
 
+// Phone verification over WhatsApp via Twilio Verify (S4 / TD-136). Opt-in / voluntary.
+export async function sendPhoneVerification(
+  phone?: string,
+  options?: ApiOptions
+): Promise<{ status: string }> {
+  return apiRequest('/api/v1/profile/verify-phone/send/', {
+    method: 'POST',
+    body: JSON.stringify(phone ? { phone } : {}),
+    ...options,
+  })
+}
+
+export async function checkPhoneVerification(
+  code: string,
+  phone?: string,
+  options?: ApiOptions
+): Promise<{ verified: boolean; error?: string }> {
+  return apiRequest('/api/v1/profile/verify-phone/check/', {
+    method: 'POST',
+    body: JSON.stringify(phone ? { code, phone } : { code }),
+    ...options,
+  })
+}
+
 export async function getProfile(options?: ApiOptions): Promise<StudentProfile> {
   return apiRequest('/api/v1/profile/', options)
 }

@@ -13,6 +13,8 @@ import {
   unsaveCourse,
   updateSavedCourseStatus,
   sendVerificationEmail,
+  sendPhoneVerification,
+  checkPhoneVerification,
 } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
 import { isValidPhone, formatPhone, setOnboardingReturn } from '@/lib/scholarship'
@@ -131,6 +133,11 @@ export default function ProfilePage() {
   const [whatsappOptIn, setWhatsappOptIn] = useState(true)
   const [loginMethod, setLoginMethod] = useState('')
   const [sendingVerification, setSendingVerification] = useState(false)
+  // Phone verification over WhatsApp (S4 / TD-136) — opt-in, student-initiated.
+  const [verifyingPhone, setVerifyingPhone] = useState(false)
+  const [phoneCode, setPhoneCode] = useState('')
+  const [sendingPhoneVerify, setSendingPhoneVerify] = useState(false)
+  const [checkingPhoneCode, setCheckingPhoneCode] = useState(false)
 
   // Course interests
   const [savedCourses, setSavedCourses] = useState<SavedCourseWithStatus[]>([])
@@ -699,11 +706,83 @@ export default function ProfilePage() {
                   <input
                     type="tel"
                     value={contactPhone}
-                    onChange={e => setContactPhone(formatPhone(e.target.value))}
+                    onChange={e => {
+                      setContactPhone(formatPhone(e.target.value))
+                      setContactPhoneVerified(false)   // editing the number un-verifies it
+                      setVerifyingPhone(false)
+                    }}
                     placeholder="012-345 6789"
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                   />
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.phoneVerifyNote')}</p>
+                  {contactPhoneVerified ? (
+                    <p className="text-xs text-green-600 mt-1.5 font-medium">✓ {t('profile.phoneVerified')}</p>
+                  ) : verifyingPhone ? (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-xs text-gray-500">{t('profile.phoneCodeSent')}</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={phoneCode}
+                          onChange={e => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                          placeholder={t('profile.phoneCodePlaceholder')}
+                          className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm tracking-widest focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                        />
+                        <button
+                          onClick={async () => {
+                            if (!phoneCode || !token) return
+                            setCheckingPhoneCode(true)
+                            try {
+                              const res = await checkPhoneVerification(phoneCode, contactPhone, { token })
+                              if (res.verified) {
+                                setContactPhoneVerified(true)
+                                setVerifyingPhone(false)
+                                setPhoneCode('')
+                                showToast(t('profile.phoneVerified'), 'success')
+                                window.dispatchEvent(new Event('profile-updated'))
+                              } else {
+                                showToast(t('profile.phoneCodeWrong'), 'error')
+                              }
+                            } catch {
+                              showToast(t('profile.phoneCodeWrong'), 'error')
+                            } finally {
+                              setCheckingPhoneCode(false)
+                            }
+                          }}
+                          disabled={!phoneCode || checkingPhoneCode}
+                          className="px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {checkingPhoneCode ? '...' : t('profile.confirm')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          if (!contactPhone || !token) return
+                          setSendingPhoneVerify(true)
+                          try {
+                            await updateProfile({ contact_phone: contactPhone }, { token })
+                            await sendPhoneVerification(contactPhone, { token })
+                            setVerifyingPhone(true)
+                            setPhoneCode('')
+                            showToast(t('profile.phoneCodeSent'), 'success')
+                          } catch {
+                            showToast(t('profile.phoneVerifyFailed'), 'error')
+                          } finally {
+                            setSendingPhoneVerify(false)
+                          }
+                        }}
+                        disabled={!contactPhone || sendingPhoneVerify}
+                        className="px-4 py-2 bg-primary-50 text-primary-700 border border-primary-200 rounded-lg text-sm font-medium hover:bg-primary-100 disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {sendingPhoneVerify ? '...' : t('profile.verifyMyNumber')}
+                      </button>
+                      <span className="text-xs text-amber-500">{t('profile.notVerified')}</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1.5">{t('profile.phoneVerifyNote')}</p>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <div>

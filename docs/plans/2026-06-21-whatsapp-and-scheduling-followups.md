@@ -1,9 +1,9 @@
 # Roadmap — WhatsApp & interview-scheduling follow-ups
 
 **Date:** 2026-06-21 · **Status:** **S1 ✅ · S2 ✅ LIVE · S3 ✅ LIVE** (Meta templates approved + env set on halatuju-api
-rev …00504, 2026-06-21) · **S5 ✅ deployed** (inert until owner sets the Twilio inbound-webhook URL) · **S4 ⏸** (needs
-decision: WhatsApp vs SMS, all vs opt-in). Booking confirmation is EMAIL-ONLY (dropped from WA scope). All WA templates
-are EN + EN+BM variants picked by english_only.
+rev …00504, 2026-06-21) · **S5 ✅ deployed** (inert until owner sets the Twilio inbound-webhook URL) · **S4 ✅ built**
+(WhatsApp channel, opt-in/voluntary — decided 2026-06-21; inert until `TWILIO_VERIFY_SERVICE_SID` is set). Booking
+confirmation is EMAIL-ONLY (dropped from WA scope). All WA templates are EN + EN+BM variants picked by english_only.
 **Source:** owner discussion 2026-06-21 after WhatsApp go-live, captured as TD-135–138 + the deferred template polish.
 
 ## Goal
@@ -48,7 +48,17 @@ slice, tested, ≤ a handful of files, no over-stuffing.
 - **Complexity:** low–medium. New template (Meta), no migration. *Owner decision: one Join button vs two (Join + View
   details); whether to name the interviewer in the reminder.*
 
-### Sprint 4 — Phone verification via Twilio Verify (TD-136)
+### Sprint 4 — Phone verification via Twilio Verify (TD-136)  ✅ BUILT 2026-06-21
+- **Decision (owner, 2026-06-21):** **WhatsApp** channel · **opt-in / voluntary** ("Verify my number" in /profile).
+- **Delivered:** `whatsapp.start_phone_verification`/`check_phone_verification` (urllib, Verify v2, WhatsApp channel,
+  never-raise); `TWILIO_VERIFY_SERVICE_SID` setting; `PhoneVerifyStartView` + `PhoneVerifyCheckView`
+  (`POST /api/v1/profile/verify-phone/{send,check}/`, self-scoped, 5-sends/hr soft cache limit + Twilio's hard limit);
+  on a confirmed code `contact_phone_verified=True` (persists a newly-verified number). FE: "Verify my number" →
+  code-entry → Confirm in /profile Contact Details; editing the number un-verifies it. NO migration (Twilio holds the
+  code; `contact_phone_verified` already existed). Tests: +13 (`test_whatsapp` Verify unit + `test_phone_verification`
+  view flow). **Inert until `TWILIO_VERIFY_SERVICE_SID` is set on halatuju-api** (owner creates a Verify Service in the
+  Twilio console — one-time, small per-verify cost).
+
 - **Goal:** let a student verify their `contact_phone` so `contact_phone_verified` becomes meaningful (data quality before
   leaning harder on WhatsApp).
 - **Scope:** backend — a "send code" + "check code" pair using the **Twilio Verify API** (WhatsApp or SMS channel),
