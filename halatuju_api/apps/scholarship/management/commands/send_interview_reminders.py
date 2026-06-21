@@ -37,6 +37,20 @@ def _wa_reminder_body(student_name, start, meeting_url, when, english_only):
     return f'{en}\n\n{bm}'
 
 
+def _booked_with_notice(app, hours):
+    """True if the booking gave at least ``hours`` of notice — i.e. the reminder is meaningful.
+
+    Gates each reminder on (interview_start − interview_booked_at): a same-day booking shouldn't
+    trigger an instant "24h reminder", and a last-minute booking shouldn't trigger an instant
+    "1h reminder". Firing itself stays late-tolerant (fire at/after the mark), so cron jitter never
+    *skips* a legitimate reminder — only the booking-notice decides eligibility. Unknown booked_at
+    (legacy rows) → True, so we never silently suppress an expected reminder."""
+    booked_at = app.interview_booked_at
+    if not booked_at or not app.interview_start:
+        return True
+    return (app.interview_start - booked_at) >= timedelta(hours=hours)
+
+
 def _send_wa_reminder(app, student_name, start, when):
     """Best-effort WhatsApp interview reminder, gated on the student's opt-in.
 
@@ -84,8 +98,10 @@ class Command(BaseCommand):
                 _sla = getattr(settings, 'REVIEW_SLA_DAYS', 10)
                 verdict_due = (app.assigned_at + timedelta(days=_sla)).date().strftime('%d %b %Y')
 
-            # 1-day reminder: inside 24h of the start, once.
-            if app.interview_reminded_1d_at is None and start <= now + timedelta(hours=24):
+            # 1-day reminder: inside 24h of the start, once — but only if the booking gave ≥24h
+            # notice (a same-day booking skips this; the 1-hour reminder still covers it).
+            if (app.interview_reminded_1d_at is None and start <= now + timedelta(hours=24)
+                    and _booked_with_notice(app, 24)):
                 _eo = emails.english_only_email(app)
                 emails.send_interview_reminder_email(
                     student_email, student_name=student_name, start=start,
@@ -103,8 +119,10 @@ class Command(BaseCommand):
                 app.save(update_fields=['interview_reminded_1d_at'])
                 sent_1d.append(app.id)
 
-            # 1-hour reminder: inside 1h of the start, once.
-            if app.interview_reminded_1h_at is None and start <= now + timedelta(hours=1):
+            # 1-hour reminder: inside 1h of the start, once — but only if the booking gave ≥1h
+            # notice (a sub-1h booking skips it; the confirmation already went out at booking).
+            if (app.interview_reminded_1h_at is None and start <= now + timedelta(hours=1)
+                    and _booked_with_notice(app, 1)):
                 _eo = emails.english_only_email(app)
                 emails.send_interview_reminder_email(
                     student_email, student_name=student_name, start=start,

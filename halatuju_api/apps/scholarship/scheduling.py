@@ -279,8 +279,9 @@ def book_slot(application, *, slot_id, now=None):
         application.interview_calendar_event_id = result.get('event_id', '') or application.interview_calendar_event_id
         if result.get('url'):
             application.interview_meeting_provider = 'google_meet'
-    if not application.interview_booked_at:
-        application.interview_booked_at = now
+    # Set on EVERY (re)booking so reminder-notice (interview_start − interview_booked_at) reflects
+    # the CURRENT slot — a reschedule to a sooner time then correctly re-gates the 24h/1h reminders.
+    application.interview_booked_at = now
     application.interview_confirmation_sent_at = now
     application.interview_reminded_1d_at = None
     application.interview_reminded_1h_at = None

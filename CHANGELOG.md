@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Interview reminders now gate on booking notice (no more instant "reminder" on a same-day/last-minute booking).**
+  Each reminder is gated on `interview_start − interview_booked_at`: the **24-hour** reminder only sends if the booking
+  gave ≥24h notice, and the **1-hour** reminder only if it gave ≥1h. Previously a same-day booking immediately fired a
+  "24h reminder" (and a sub-1h booking an instant "1h reminder") at the next 15-min cron tick, because the window had no
+  lower bound. Firing stays late-tolerant (fires at/after the mark, so cron jitter never *skips* a legitimate reminder —
+  only booking-notice decides eligibility); unknown `interview_booked_at` (legacy rows) still fires. `book_slot` now sets
+  `interview_booked_at` on **every** (re)booking so a reschedule re-gates correctly. Applies to all three channels
+  (student email + WhatsApp + reviewer email). Net effect: book ≥24h ahead → 2 reminders; book 1–24h ahead → 1 (the 1h);
+  book <1h ahead → 0 (the booking-confirmation email already went out). Backend-only, no migration. +5 tests.
+
 ### Added
 - **WhatsApp comms — go-live wiring: send via approved Meta template (DARK).** Production business-initiated WhatsApp
   must use a Meta-approved template, so `send_whatsapp`/`_post_to_twilio` now send a Twilio **Content template**
