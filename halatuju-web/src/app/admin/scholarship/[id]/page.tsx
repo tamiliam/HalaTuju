@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
-import { formatPhone, formatAddress, isValidPhone, formatNric } from '@/lib/scholarship'
+import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
   suggestInterviewGaps,
@@ -621,6 +621,14 @@ export default function AdminScholarshipDetailPage() {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
           <span>NRIC <span className="font-mono text-gray-700">{formatNric(app.nric || '') || '—'}</span></span>
+          {referralAcronym(app.referral_source) && (
+            <span
+              title={app.referral_source ? t(`scholarship.apply.org.${app.referral_source}`) : ''}
+              className="rounded-full border border-gray-200 px-2 py-0.5 font-medium text-gray-600"
+            >
+              {referralAcronym(app.referral_source)}
+            </span>
+          )}
           {app.submitted_at && (
             <span>{t('admin.scholarship.submitted')} {new Date(app.submitted_at).toLocaleDateString()}</span>
           )}

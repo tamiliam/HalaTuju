@@ -13,7 +13,7 @@ import {
 } from '@/lib/admin-api'
 import { Pagination } from '@/components/Pagination'
 // import AiReliabilityCard from '@/components/AiReliabilityCard' // hidden 2026-06-13 — re-add when placement is decided (component retained)
-import { REFERRING_ORG_OPTIONS } from '@/lib/scholarship'
+import { REFERRING_ORG_OPTIONS, referralAcronym } from '@/lib/scholarship'
 
 const bucketBadge = (b: string) =>
   b === 'A' ? 'bg-green-100 text-green-700'
@@ -285,7 +285,7 @@ export default function AdminScholarshipList() {
                       {a.name || '—'}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{a.referral_source ? t(`scholarship.apply.org.${a.referral_source}`) : '—'}</td>
+                  <td className="px-4 py-3 text-gray-600" title={a.referral_source ? t(`scholarship.apply.org.${a.referral_source}`) : ''}>{referralAcronym(a.referral_source) || '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${bucketBadge(a.bucket)}`}>{a.bucket || '—'}</span>
                   </td>
