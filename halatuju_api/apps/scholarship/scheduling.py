@@ -91,7 +91,7 @@ def _cutoff_ok(start, now):
 
 # ── Reviewer side: propose / withdraw ─────────────────────────────────────────
 
-def _send_wa_proposed(application, student_name):
+def _send_wa_proposed(application, student_name, reviewer=None):
     """Best-effort WhatsApp 'your interview times are ready — pick one' nudge (roadmap S2, TD-138).
 
     Opt-in gated. Uses the approved template (``TWILIO_WHATSAPP_PROPOSED_CONTENT_SID``) in prod;
@@ -105,24 +105,26 @@ def _send_wa_proposed(application, student_name):
     if not content_sid and not whatsapp.is_sandbox_sender():
         return  # no approved template yet + not sandbox → don't attempt a forbidden free-text send
     phone = getattr(profile, 'contact_phone', '')
+    student_name = (student_name or '').strip().split(' ')[0] or 'there'   # first name, like the assignment email
+    reviewer_name = (getattr(reviewer, 'name', '') or '').strip() or 'your interviewer'
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     link = f'{frontend}/scholarship/application'
     if content_sid:
         whatsapp.send_whatsapp(
-            phone, application=application, kind='interview_proposed',
-            content_sid=content_sid, content_variables={'1': student_name, '2': link})
+            phone, application=application, kind='interview_proposed', content_sid=content_sid,
+            content_variables={'1': student_name, '2': reviewer_name, '3': link})
         return
-    # Sandbox free-text (bilingual unless the student is English-only). Wording mirrors the
-    # assignment email ("a few times… pick the one that suits you… Google Meet link and a reminder").
-    en = (f'Hi {student_name} — as promised, here are a few times for your B40 Assistance interview. '
-          f'Please pick the one that suits you: {link}. Once you choose, we’ll send the Google Meet '
-          f'link and a reminder.')
+    # Sandbox free-text (bilingual unless the student is English-only). Names the interviewer +
+    # the 3 proposed times; mirrors the assignment email's "pick one → Meet link + reminder" voice.
+    en = (f'Hi {student_name} — your assigned interviewer, {reviewer_name}, has proposed three times '
+          f'for your B40 Assistance interview. Please pick the one that suits you: {link}. Once you '
+          f'choose, we’ll send the Google Meet link and a reminder.')
     if emails.english_only_email(application):
         body = en
     else:
-        bm = (f'Salam {student_name} — seperti dijanjikan, berikut beberapa masa untuk temu duga '
-              f'Bantuan B40 anda. Sila pilih yang sesuai untuk anda: {link}. Setelah anda memilih, '
-              f'kami akan menghantar pautan Google Meet dan peringatan.')
+        bm = (f'Salam {student_name} — penemu duga anda, {reviewer_name}, telah mencadangkan tiga masa '
+              f'untuk temu duga Bantuan B40 anda. Sila pilih yang sesuai untuk anda: {link}. Setelah '
+              f'anda memilih, kami akan menghantar pautan Google Meet dan peringatan.')
         body = f'{en}\n\n{bm}'
     whatsapp.send_whatsapp(phone, body, application=application, kind='interview_proposed')
 
@@ -237,7 +239,7 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
                 english_only=emails.english_only_email(application),
                 rescheduled=rescheduling)
         # Nudge on WhatsApp too (opt-in gated) so students who don't check email still respond.
-        _send_wa_proposed(application, student_name)
+        _send_wa_proposed(application, student_name, reviewer)
     return created
 
 

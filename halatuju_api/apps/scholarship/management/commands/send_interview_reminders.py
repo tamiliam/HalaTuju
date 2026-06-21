@@ -60,6 +60,7 @@ def _send_wa_reminder(app, student_name, start, when):
     if not getattr(app.profile, 'whatsapp_opt_in', True):
         return
     phone = getattr(app.profile, 'contact_phone', '')
+    student_name = (student_name or '').strip().split(' ')[0] or 'there'   # first name, consistent with the nudge + assignment email
     kind = f'interview_reminder_{when}'
     content_sid = getattr(settings, 'TWILIO_WHATSAPP_REMINDER_CONTENT_SID', '')
     if content_sid:
