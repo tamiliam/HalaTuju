@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   testable in the sandbox. Backend-only, no migration. +4 tests.
 
 ### Changed
+- **Interview length set to ~30 minutes + copy aligned across the journey.** `INTERVIEW_DURATION_MIN` 45 → **30** (the
+  booked slot + Google Meet event now match the student-facing copy; also removes the latent 45-min-on-30-min-step slot
+  overlap). Copy updated to "about 30 minutes" in the assignment email (EN+BM) and the booking panel `pickIntro`
+  (en/ms/ta). The assignment email no longer says "we'll **email** you" (it's now email **and** WhatsApp) → "we'll **send**
+  you a few times to choose from". The proposed-slots WhatsApp nudge reworded to continue the assignment email's voice
+  ("as promised, here are a few times… pick the one that suits you… we'll send the Google Meet link and a reminder").
+  Copy/settings only, no migration. (Landing/FAQ "20-minute phone call" left as-is per owner.)
 - **Reviewer reschedule can now offer nearer slots (TD-137).** The 24h minimum-lead floor on the reviewer's slot picker
   was applied to both first-propose and reschedule. On a reschedule the candidate has already waited through the original
   notice, so the floor is relaxed to a short lead (`RESCHEDULE_MIN_LEAD_HOURS = 2h`) — the picker offers same-/next-day

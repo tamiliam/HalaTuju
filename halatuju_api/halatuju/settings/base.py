@@ -199,7 +199,7 @@ MEET_ORGANISER_EMAIL = os.environ.get('MEET_ORGANISER_EMAIL', 'info@halatuju.xyz
 # Secret — set via Cloud Run env var, NEVER committed. Empty → Meet generation no-ops.
 GOOGLE_MEET_SA_JSON = os.environ.get('GOOGLE_MEET_SA_JSON', '')
 # Interview defaults.
-INTERVIEW_DURATION_MIN = int(os.environ.get('INTERVIEW_DURATION_MIN', '45'))
+INTERVIEW_DURATION_MIN = int(os.environ.get('INTERVIEW_DURATION_MIN', '30'))  # matches the "about 30 minutes" copy
 # How close to the start a student may still self-reschedule / cancel (hours before).
 INTERVIEW_RESCHEDULE_CUTOFF_HOURS = int(os.environ.get('INTERVIEW_RESCHEDULE_CUTOFF_HOURS', '12'))
 

@@ -112,14 +112,17 @@ def _send_wa_proposed(application, student_name):
             phone, application=application, kind='interview_proposed',
             content_sid=content_sid, content_variables={'1': student_name, '2': link})
         return
-    # Sandbox free-text (bilingual unless the student is English-only).
-    en = (f'Hi {student_name}, your B40 Assistance interview times are ready — '
-          f'please choose one as soon as you can: {link}')
+    # Sandbox free-text (bilingual unless the student is English-only). Wording mirrors the
+    # assignment email ("a few times… pick the one that suits you… Google Meet link and a reminder").
+    en = (f'Hi {student_name} — as promised, here are a few times for your B40 Assistance interview. '
+          f'Please pick the one that suits you: {link}. Once you choose, we’ll send the Google Meet '
+          f'link and a reminder.')
     if emails.english_only_email(application):
         body = en
     else:
-        bm = (f'Salam {student_name}, masa temu duga Bantuan B40 anda sudah sedia — '
-              f'sila pilih satu secepat mungkin: {link}')
+        bm = (f'Salam {student_name} — seperti dijanjikan, berikut beberapa masa untuk temu duga '
+              f'Bantuan B40 anda. Sila pilih yang sesuai untuk anda: {link}. Setelah anda memilih, '
+              f'kami akan menghantar pautan Google Meet dan peringatan.')
         body = f'{en}\n\n{bm}'
     whatsapp.send_whatsapp(phone, body, application=application, kind='interview_proposed')
 
