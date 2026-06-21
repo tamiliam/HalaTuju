@@ -50,6 +50,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   must renumber to `0068`.
 
 ### Fixed
+- **Salary-route income shown as "Optional"/undeclared when the earner was pre-ticked but not toggled (#90 + 4 others).**
+  **The bug:** the income wizard pre-ticks the earner from the family roster and tags uploaded income docs to them
+  (`household_member`), but only PERSISTS `income_working_members` on an explicit checkbox toggle. A student who accepts
+  the correct prefill and just uploads ends up with their docs tagged (e.g. mother's IC + salary slip + EPF) yet an EMPTY
+  `income_working_members` — so the cockpit's per-member Required/Optional layout, the requirement gate, and the income
+  verdict (which read only that list) saw "no earners declared" → income docs fell to **Optional** and the verdict went
+  red `income_earner_undeclared`. Hit 5 shortlisted salary-route apps (#90/#36/#48/#66/#93). **Fix (3 layers):**
+  (1) new `income_engine.effective_working_members(application)` reconstructs the earners from the authoritative signals
+  when the list is empty on the salary route — the tagged income docs first, then the roster's earning members (safe
+  because the salary route requires ≥1 earner at submit, so an empty list is always the unsaved-prefill case) — and is
+  wired into `income_requirements` + the salary income verdict; (2) the wizard now PERSISTS the roster-seeded "who works"
+  on mount (`ScholarshipDocuments.tsx`) so it's never silently empty going forward; (3) one-time backfill of the 5 apps'
+  `income_working_members` from their tagged docs. +8 income-engine tests (1448 scholarship pytest); `next build` clean.
+  Backend + FE, no migration. Branch `fix/salary-working-members-fallback`.
 - **Reviewer-raised requests now notify the student (Check-2 Action Centre gap).**
   **The bug:** when a reviewer raised a document-request or query from the cockpit (`AdminResolutionItemView`), the item
   appeared in the student's Action Centre but **no notification was ever sent** — the student only saw it if they happened

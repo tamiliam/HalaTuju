@@ -10,6 +10,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 - 2026-06-17 feat: reviewer language fluency (EN/BM/Tamil, None/Conversational/Fluent) + assignment matching (annotate + sort by student call_language) — migration scholarship/0059 migrate-first (halatuju_api: models, serializers_admin, views_admin, migration + tests; halatuju-web: admin/profile, admin/scholarship/page.tsx, admin-api.ts, messages/*)
 - 2026-06-17 feat: advance-notice email to student on reviewer assignment (bilingual EN+BM; flag STUDENT_ASSIGNMENT_EMAIL_ENABLED off by default; reviewer phone opt-out share_phone_with_students default on; migration scholarship/0060 migrate-first) (halatuju_api: emails.py, services.py assign_reviewer, models, serializers_admin, settings/base.py, migration + tests; halatuju-web: admin/profile toggle, admin-api.ts, messages/*)
 - 2026-06-21 fix(check2): reviewer-raised Action-Centre requests now notify the student (reset query_raised_notified_at on raise; send_due_query_emails counts source='officer' items; no per-item email) (halatuju_api: views_admin.py, services.py + tests)
+- 2026-06-21 fix(income): salary-route earner shown Optional/undeclared when pre-ticked-but-not-toggled (#90+4); effective_working_members fallback (tagged docs→roster) wired into income_requirements+verdict; FE persists roster seed on mount; backfilled 5 apps (halatuju_api: income_engine.py, verdict_engine.py + tests; halatuju-web: ScholarshipDocuments.tsx)
 
 _(previous batch cleared at the 2026-06-16 review below)_
 
