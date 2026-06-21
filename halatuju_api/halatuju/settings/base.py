@@ -152,6 +152,9 @@ TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', '')
 # Approved Meta template (Twilio Content SID, HX…) for the interview reminder. Required
 # for PRODUCTION business-initiated sends; blank in the sandbox (free-text is allowed there).
 TWILIO_WHATSAPP_REMINDER_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID', '')
+# Approved template for the "interview times proposed — please pick one" nudge (roadmap S2/TD-138).
+# Blank for now: the nudge free-texts in the sandbox and stays DARK on a real sender until this is set.
+TWILIO_WHATSAPP_PROPOSED_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID', '')
 
 # Check 2 STEP 2: the AI clarify queries asked of the STUDENT. While OFF (default), no
 # clarify query is shown in the student Action Centre and no query email/reminder is

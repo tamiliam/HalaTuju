@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **WhatsApp nudge when interview slots are PROPOSED (roadmap S2 / TD-138).** When a reviewer proposes (or reschedules)
+  times, the student now also gets a WhatsApp — "your interview times are ready, please pick one" with a link to the
+  application page — alongside the existing email, so students who don't check email still respond. Opt-in gated
+  (`whatsapp_opt_in`), fires on the same "menu changed / reschedule" condition as the email. Dual-path like the reminder:
+  approved template (`TWILIO_WHATSAPP_PROPOSED_CONTENT_SID`) in prod, free-text in the Twilio sandbox. **Safe by default:**
+  a real sender with no template SID set sends **nothing** (`whatsapp.is_sandbox_sender()` guard — never attempts a
+  forbidden free-text) — so it stays dark in prod until the template is approved + the SID set, while remaining fully
+  testable in the sandbox. Backend-only, no migration. +4 tests.
+
 ### Changed
 - **Reviewer reschedule can now offer nearer slots (TD-137).** The 24h minimum-lead floor on the reviewer's slot picker
   was applied to both first-propose and reschedule. On a reschedule the candidate has already waited through the original

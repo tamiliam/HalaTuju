@@ -898,6 +898,7 @@
   reschedule mode now uses `RESCHEDULE_MIN_LEAD_HOURS = 2h` (the picker offers nearer slots + jumps to the nearer earliest
   day); first-propose keeps 24h; backend already accepted any future slot. FE-only (`interviewSlots.ts` +
   `InterviewScheduleCard`), +2 jest. (Logged + resolved 2026-06-21; roadmap Sprint 1.)
-- TD-138: **No WhatsApp when interview slots are PROPOSED.** `propose_slots` sends email only; students who don't check
-  email leave bookings stalled (reviewer feedback). **To resolve:** a new Meta-approved "times proposed, please pick one"
-  template + a `send_whatsapp` in `propose_slots` (opt-in gated, links to the application page). (Logged 2026-06-21, owner work-plan.)
+- TD-138: **[CODE BUILT, sandbox-ready, dark in prod — 2026-06-21]** No WhatsApp when interview slots are PROPOSED.
+  **Built (roadmap S2):** `_send_wa_proposed` in `propose_slots` (opt-in gated, links to the application page), dual-path
+  (free-text in sandbox / template in prod). **Remaining to go live:** owner sandbox-tests the wording, then submit the
+  Meta template + set `TWILIO_WHATSAPP_PROPOSED_CONTENT_SID` (dark on a real sender until then). (Logged + built 2026-06-21.)

@@ -28,6 +28,15 @@ logger = logging.getLogger(__name__)
 
 _TWILIO_MESSAGES_URL = 'https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json'
 _DEFAULT_CC = '60'  # Malaysia
+# Twilio's shared WhatsApp **sandbox** sender. Free-text business-initiated messages are allowed
+# only from the sandbox (to numbers that joined it); a real sender REQUIRES an approved template.
+# So a caller with no approved template can safely free-text in the sandbox but must stay dark in prod.
+SANDBOX_FROM = 'whatsapp:+14155238886'
+
+
+def is_sandbox_sender():
+    """True when the configured WhatsApp sender is Twilio's shared sandbox number."""
+    return getattr(settings, 'TWILIO_WHATSAPP_FROM', '') == SANDBOX_FROM
 
 
 def normalise_msisdn(raw, *, default_cc=_DEFAULT_CC):
