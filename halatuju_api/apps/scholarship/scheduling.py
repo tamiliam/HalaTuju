@@ -118,13 +118,13 @@ def _send_wa_proposed(application, student_name, reviewer=None):
     # the 3 proposed times; mirrors the assignment email's "pick one → Meet link + reminder" voice.
     en = (f'Hi {student_name} — your assigned interviewer, {reviewer_name}, has proposed three times '
           f'for your B40 Assistance interview. Please pick the one that suits you: {link}. Once you '
-          f'choose, we’ll send the Google Meet link and a reminder.')
+          f'choose, we’ll send the Google Meet link and, if necessary, reminders.')
     if emails.english_only_email(application):
         body = en
     else:
         bm = (f'Salam {student_name} — penemu duga anda, {reviewer_name}, telah mencadangkan tiga masa '
               f'untuk temu duga Bantuan B40 anda. Sila pilih yang sesuai untuk anda: {link}. Setelah '
-              f'anda memilih, kami akan menghantar pautan Google Meet dan peringatan.')
+              f'anda memilih, kami akan menghantar pautan Google Meet dan, jika perlu, peringatan.')
         body = f'{en}\n\n{bm}'
     whatsapp.send_whatsapp(phone, body, application=application, kind='interview_proposed')
 
