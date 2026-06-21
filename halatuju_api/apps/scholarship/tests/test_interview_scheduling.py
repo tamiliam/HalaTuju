@@ -77,6 +77,56 @@ class SchedulingServiceTests(TestCase):
         self.assertIn('Choose your interview time', html)             # the button label
         self.assertIn('/scholarship/application"', html)              # button href
 
+    # ── WhatsApp "times proposed — please pick one" nudge (roadmap S2 / TD-138) ──
+    _SANDBOX = 'whatsapp:+14155238886'
+    _REAL = 'whatsapp:+19162597009'
+
+    def _opt_in(self):
+        self.profile.contact_phone = '012-345 6789'
+        self.profile.whatsapp_opt_in = True
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_SANDBOX)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_freetexts_in_sandbox(self, _post):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        msgs = WhatsAppMessage.objects.filter(application=self.app, kind='interview_proposed')
+        self.assertEqual(msgs.count(), 1)
+        self.assertIn('/scholarship/application', msgs.first().body)
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_REAL)  # real sender, NO proposed-template SID set
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_dark_on_real_sender_without_template(self, _post):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(
+            WhatsAppMessage.objects.filter(application=self.app, kind='interview_proposed').count(), 0)
+        _post.assert_not_called()   # never attempts a forbidden free-text on a real sender
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_REAL, TWILIO_WHATSAPP_PROPOSED_CONTENT_SID='HXproposed')
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_uses_template_in_prod(self, _post):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(
+            WhatsAppMessage.objects.filter(application=self.app, kind='interview_proposed').count(), 1)
+        _post.assert_called_once()
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_SANDBOX)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_skipped_when_opted_out(self, _post):
+        self.profile.contact_phone = '012-345 6789'
+        self.profile.whatsapp_opt_in = False
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(
+            WhatsAppMessage.objects.filter(application=self.app, kind='interview_proposed').count(), 0)
+
     def test_propose_rejects_unassigned_reviewer(self):
         with self.assertRaises(scheduling.SchedulingError) as cm:
             scheduling.propose_slots(self.app, reviewer=self.other_reviewer,

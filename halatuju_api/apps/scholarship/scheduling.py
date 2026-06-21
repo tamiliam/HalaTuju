@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.utils import timezone
 
-from . import emails, meeting, pool
+from . import emails, meeting, pool, whatsapp
 from .models import InterviewSlot
 
 logger = logging.getLogger(__name__)
@@ -90,6 +90,39 @@ def _cutoff_ok(start, now):
 
 
 # ── Reviewer side: propose / withdraw ─────────────────────────────────────────
+
+def _send_wa_proposed(application, student_name):
+    """Best-effort WhatsApp 'your interview times are ready — pick one' nudge (roadmap S2, TD-138).
+
+    Opt-in gated. Uses the approved template (``TWILIO_WHATSAPP_PROPOSED_CONTENT_SID``) in prod;
+    free text in the Twilio sandbox. **Dark in prod until that template SID is set** — a real sender
+    can't free-text a business-initiated message, so with no template + not-sandbox we send nothing.
+    Best-effort: ``send_whatsapp`` never raises into the caller."""
+    profile = getattr(application, 'profile', None)
+    if not getattr(profile, 'whatsapp_opt_in', True):
+        return
+    content_sid = getattr(settings, 'TWILIO_WHATSAPP_PROPOSED_CONTENT_SID', '')
+    if not content_sid and not whatsapp.is_sandbox_sender():
+        return  # no approved template yet + not sandbox → don't attempt a forbidden free-text send
+    phone = getattr(profile, 'contact_phone', '')
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/scholarship/application'
+    if content_sid:
+        whatsapp.send_whatsapp(
+            phone, application=application, kind='interview_proposed',
+            content_sid=content_sid, content_variables={'1': student_name, '2': link})
+        return
+    # Sandbox free-text (bilingual unless the student is English-only).
+    en = (f'Hi {student_name}, your B40 Assistance interview times are ready — '
+          f'please choose one as soon as you can: {link}')
+    if emails.english_only_email(application):
+        body = en
+    else:
+        bm = (f'Salam {student_name}, masa temu duga Bantuan B40 anda sudah sedia — '
+              f'sila pilih satu secepat mungkin: {link}')
+        body = f'{en}\n\n{bm}'
+    whatsapp.send_whatsapp(phone, body, application=application, kind='interview_proposed')
+
 
 def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
                   release_booking=False):
@@ -200,6 +233,8 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
                 student_email, student_name=student_name,
                 english_only=emails.english_only_email(application),
                 rescheduled=rescheduling)
+        # Nudge on WhatsApp too (opt-in gated) so students who don't check email still respond.
+        _send_wa_proposed(application, student_name)
     return created
 
 
