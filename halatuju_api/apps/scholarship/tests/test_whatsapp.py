@@ -100,6 +100,72 @@ def test_send_uses_content_template_when_sid_given():
     assert 'template' in row.body  # audit row records a template marker, not free text
 
 
+# --- Twilio Verify (S4 / TD-136) -------------------------------------------------------
+_VERIFY = dict(TWILIO_ACCOUNT_SID='AC_test', TWILIO_AUTH_TOKEN='tok_test',
+               TWILIO_VERIFY_SERVICE_SID='VA_test')
+
+
+def test_verify_configured_flag():
+    with override_settings(**_VERIFY):
+        assert whatsapp.verify_configured() is True
+    with override_settings(TWILIO_VERIFY_SERVICE_SID=''):
+        assert whatsapp.verify_configured() is False
+
+
+def test_verify_start_unconfigured():
+    with override_settings(TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                           TWILIO_VERIFY_SERVICE_SID=''):
+        ok, st, _ = whatsapp.start_phone_verification('0123456789')
+    assert ok is False and st == 'unconfigured'
+
+
+@override_settings(**_VERIFY)
+def test_verify_start_bad_number():
+    ok, st, _ = whatsapp.start_phone_verification('abc')
+    assert ok is False and st == 'invalid_number'
+
+
+@override_settings(**_VERIFY)
+def test_verify_start_sends_normalised_whatsapp():
+    with mock.patch.object(whatsapp, '_post_to_verify', return_value={'status': 'pending'}) as m:
+        ok, st, _ = whatsapp.start_phone_verification('012-345 6789')
+    assert ok is True and st == 'pending'
+    fields = m.call_args[0][3]                       # (url, sid, token, fields)
+    assert fields['To'] == '+60123456789' and fields['Channel'] == 'whatsapp'
+
+
+@override_settings(**_VERIFY)
+def test_verify_check_approved():
+    with mock.patch.object(whatsapp, '_post_to_verify', return_value={'status': 'approved'}) as m:
+        approved, err = whatsapp.check_phone_verification('012-345 6789', ' 123456 ')
+    assert approved is True and err == ''
+    assert m.call_args[0][3]['Code'] == '123456'      # trimmed
+
+
+@override_settings(**_VERIFY)
+def test_verify_check_wrong_code():
+    with mock.patch.object(whatsapp, '_post_to_verify', return_value={'status': 'pending'}):
+        approved, err = whatsapp.check_phone_verification('0123456789', '000000')
+    assert approved is False and err == ''
+
+
+@override_settings(**_VERIFY)
+def test_verify_check_expired_404_is_incorrect():
+    import io
+    import urllib.error
+    err404 = urllib.error.HTTPError('u', 404, 'NF', {}, io.BytesIO(b'{}'))
+    with mock.patch.object(whatsapp, '_post_to_verify', side_effect=err404):
+        approved, err = whatsapp.check_phone_verification('0123456789', '123456')
+    assert approved is False and err == 'incorrect'
+
+
+@override_settings(**_VERIFY)
+def test_verify_check_swallows_error():
+    with mock.patch.object(whatsapp, '_post_to_verify', side_effect=RuntimeError('boom')):
+        approved, err = whatsapp.check_phone_verification('0123456789', '123456')  # must NOT raise
+    assert approved is False and err == 'failed'
+
+
 def _twilio_sig(url, params, token):
     """Re-create Twilio's X-Twilio-Signature for a test POST (url + sorted key+value, HMAC-SHA1, b64)."""
     payload = url + ''.join(f'{k}{params[k]}' for k in sorted(params.keys()))

@@ -1474,6 +1474,83 @@ class VerifyEmailView(APIView):
         return Response({'status': 'verified', 'email': verification.email})
 
 
+class PhoneVerifyStartView(APIView):
+    """
+    POST /api/v1/profile/verify-phone/send/
+    Send a one-time code to the student's ``contact_phone`` over WhatsApp via Twilio Verify
+    (roadmap S4 / TD-136). Opt-in / voluntary — the student initiates this from /profile.
+    Body: optional ``phone`` (defaults to the saved contact_phone). Soft-rate-limited to 5
+    sends/hour per profile (Twilio Verify enforces the hard per-number limits).
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        from django.core.cache import cache
+        from apps.scholarship import whatsapp  # local import: avoids app-load order issues
+
+        try:
+            profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
+        except StudentProfile.DoesNotExist:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        phone = (request.data.get('phone') or profile.contact_phone or '').strip()
+        if not phone:
+            return Response({'error': 'phone_required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Soft rate limit: 5 sends/hour per profile (best-effort; Twilio Verify is the backstop).
+        rl_key = f'phoneverify:send:{profile.pk}'
+        sent = cache.get(rl_key, 0)
+        if sent >= 5:
+            return Response({'error': 'rate_limited'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        ok, vstatus, _err = whatsapp.start_phone_verification(phone, channel='whatsapp')
+        if not ok:
+            http = {'unconfigured': status.HTTP_503_SERVICE_UNAVAILABLE,
+                    'invalid_number': status.HTTP_400_BAD_REQUEST}.get(vstatus, status.HTTP_502_BAD_GATEWAY)
+            return Response({'error': vstatus or 'failed'}, status=http)
+
+        cache.set(rl_key, sent + 1, 3600)
+        return Response({'status': 'sent'})
+
+
+class PhoneVerifyCheckView(APIView):
+    """
+    POST /api/v1/profile/verify-phone/check/  {code, [phone]}
+    Confirm the one-time code with Twilio Verify; on success mark ``contact_phone_verified``
+    (and persist the number if a new one was being verified). A wrong/expired code → 400.
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        from apps.scholarship import whatsapp  # local import: avoids app-load order issues
+
+        try:
+            profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
+        except StudentProfile.DoesNotExist:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        code = (request.data.get('code') or '').strip()
+        phone = (request.data.get('phone') or profile.contact_phone or '').strip()
+        if not code:
+            return Response({'error': 'code_required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        approved, err = whatsapp.check_phone_verification(phone, code)
+        if not approved:
+            if err == 'unconfigured':
+                return Response({'verified': False, 'error': 'unconfigured'},
+                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response({'verified': False, 'error': err or 'incorrect'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        fields = ['contact_phone_verified']
+        if phone and profile.contact_phone != phone:
+            profile.contact_phone = phone
+            fields.append('contact_phone')
+        profile.contact_phone_verified = True
+        profile.save(update_fields=fields)
+        return Response({'verified': True})
+
+
 class OutcomeListView(APIView):
     """
     GET /api/v1/outcomes/ — List own admission outcomes.
