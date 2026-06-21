@@ -152,6 +152,11 @@ TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', '')
 # Approved Meta template (Twilio Content SID, HX…) for the interview reminder. Required
 # for PRODUCTION business-initiated sends; blank in the sandbox (free-text is allowed there).
 TWILIO_WHATSAPP_REMINDER_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID', '')
+# Reminder v2 (S3): two language variants picked by english_only — EN-only and EN+BM. Each serves
+# BOTH the 24h and 1h reminder via a 'when' variable + names the interviewer. While unset, the code
+# falls back to the legacy generic SID above (current prod), then to sandbox free-text.
+TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN', '')
+TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM', '')
 # Approved template for the "interview times proposed — please pick one" nudge (roadmap S2/TD-138).
 # Blank for now: the nudge free-texts in the sandbox and stays DARK on a real sender until this is set.
 TWILIO_WHATSAPP_PROPOSED_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID', '')

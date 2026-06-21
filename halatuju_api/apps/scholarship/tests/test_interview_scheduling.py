@@ -498,6 +498,41 @@ class ReminderCronTests(TestCase):
         # email is channel-independent — it still goes out to the opted-out student
         self.assertTrue(any('priya@example.com' in m.to for m in mail.outbox))
 
+    # ── reminder v2: EN / EN+BM template variants picked by english_only (S3) ──
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM='whatsapp:+19162597009',
+                       TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN='HXen',
+                       TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM='HXbm')
+    @patch('apps.scholarship.emails.english_only_email', return_value=True)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_reminder_uses_EN_variant_for_english_only(self, post, _eo):
+        self.profile.contact_phone = '012-345 6789'; self.profile.whatsapp_opt_in = True
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        self._booked_app(timezone.now() + timedelta(hours=20))
+        call_command('send_interview_reminders')
+        # _post_to_twilio args: (sid, token, sender, to, body, content_sid, content_variables)
+        self.assertEqual(post.call_count, 1)
+        content_sid, cv = post.call_args[0][5], post.call_args[0][6]
+        self.assertEqual(content_sid, 'HXen')
+        self.assertNotIn('5', cv)                       # EN template → no Malay 'when'
+        self.assertEqual(cv['2'], 'Rohini')             # interviewer named
+        self.assertIn('tomorrow', cv['3'])              # 24h 'when' phrase
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM='whatsapp:+19162597009',
+                       TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN='HXen',
+                       TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM='HXbm')
+    @patch('apps.scholarship.emails.english_only_email', return_value=False)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_reminder_uses_BM_variant_otherwise(self, post, _eo):
+        self.profile.contact_phone = '012-345 6789'; self.profile.whatsapp_opt_in = True
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        self._booked_app(timezone.now() + timedelta(hours=20))
+        call_command('send_interview_reminders')
+        content_sid, cv = post.call_args[0][5], post.call_args[0][6]
+        self.assertEqual(content_sid, 'HXbm')
+        self.assertIn('esok', cv['5'])                  # bilingual template carries the BM 'when'
+
     def test_one_day_reminder_fires_once(self):
         app = self._booked_app(timezone.now() + timedelta(hours=20))
         mail.outbox.clear()

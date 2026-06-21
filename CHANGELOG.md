@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Interview reminder v2 — names the interviewer, differentiates 24h/1h, EN + EN+BM variants (roadmap S3).**
+  `send_interview_reminders` now picks a reminder template by `english_only` — EN-only
+  (`TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN`) or EN+BM (`…_BM`) — each serving **both** the 24h and 1h reminder via a
+  "when" variable ("tomorrow at {time}" / "in about an hour, at {time}", + Malay mirror), and naming the assigned
+  interviewer. The Meet link stays **inline** (works from a phone or a computer — no phone-only button). Falls back to the
+  legacy generic template (`…_CONTENT_SID`, current prod) while the v2 SIDs are unset, then to sandbox free-text (now
+  matching the templates). New `emails._fmt_myt_time`. Templates submitted to Meta (UTILITY): EN
+  `HX5308de4af13daf6c8ebd93ec3a455ac6`, EN+BM `HX05f72c88595626baac298fcf2a3364ed`. **Go-live when approved:** set those
+  two env vars on halatuju-api. Backend-only, no migration. +2 tests.
 - **WhatsApp STOP/START → opt-out sync (roadmap S5 / TD-135).** New Twilio inbound webhook
   `POST /api/v1/scholarship/whatsapp/inbound/`: a student replying **STOP** flips their `whatsapp_opt_in` to off
   (**START** flips it back), so our consent record + the profile toggle match what WhatsApp actually does and we stop
