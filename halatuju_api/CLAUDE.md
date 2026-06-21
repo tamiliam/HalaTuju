@@ -516,7 +516,21 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-19)
+## Next Sprint (as of 2026-06-21)
+
+**▶ SHIPPED 2026-06-21 — WhatsApp comms go-live + cockpit fixes + interview reminder-notice gating (retro
+`docs/retrospective-2026-06-21-whatsapp-golive-cockpit-reminders.md`; same day: request-owned doc slots, retro
+`…-request-owned-doc-slots.md`).**
+- **WhatsApp comms is LIVE** (`WHATSAPP_ENABLED=1`, api rev `…00490-h96`). Interview reminders (1-day + 1-hour) now send a
+  real WhatsApp alongside the email, opt-in gated (`whatsapp_opt_in`, opt-out toggle in /profile). Migrate-first:
+  scholarship `0068` (`whatsapp_messages`, RLS) + courses `0059` (`whatsapp_opt_in`). Sender `whatsapp:+19162597009`,
+  approved template `copy_b40_interview_reminder` (`HX7b5eee…`). Smoke-test delivered. Twilio creds in Cloud Run env.
+- **Reminders gate on booking notice** (`1c15ca6`): 24h reminder needs ≥24h notice, 1h needs ≥1h (no instant same-day
+  "reminder"); `book_slot` stamps `interview_booked_at` on every (re)booking. All 3 channels.
+- **Cockpit** (`9197467`): Save-draft accepts `verdict=''` (no data loss); gap-spotter told today's date (MYT).
+- **▶ NEXT — roadmap `docs/plans/2026-06-21-whatsapp-and-scheduling-followups.md`** (awaiting approval): proposed-slots
+  WhatsApp nudge (TD-138, highest value) · enhanced reminder template w/ Join button · reschedule lead-time relax
+  (TD-137) · phone verification via Twilio Verify (TD-136) · STOP→opt-out webhook (TD-135).
 
 **▶ SHIPPED 2026-06-19 — Reviewer comms consistency + reschedule + verdict SLA (3-sprint roadmap, commits
 `a3c5d31`→`1d89393`; migration `scholarship/0064` additive migrate-first; retro
