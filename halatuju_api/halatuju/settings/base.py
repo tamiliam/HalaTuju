@@ -158,8 +158,12 @@ TWILIO_WHATSAPP_REMINDER_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_REMINDER_
 TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN', '')
 TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM', '')
 # Approved template for the "interview times proposed — please pick one" nudge (roadmap S2/TD-138).
-# Blank for now: the nudge free-texts in the sandbox and stays DARK on a real sender until this is set.
+# Two language variants picked by english_only — EN-only and EN+BM (both reuse vars {1}name {2}reviewer
+# {3}link; no language-specific var). `…_SID` is the legacy single (fallback). Blank → sandbox free-text
+# / dark on a real sender until set.
 TWILIO_WHATSAPP_PROPOSED_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID', '')
+TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN', '')
+TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM', '')
 
 # Check 2 STEP 2: the AI clarify queries asked of the STUDENT. While OFF (default), no
 # clarify query is shown in the student Action Centre and no query email/reminder is

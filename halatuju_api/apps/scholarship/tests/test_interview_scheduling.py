@@ -127,6 +127,28 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(
             WhatsAppMessage.objects.filter(application=self.app, kind='interview_proposed').count(), 0)
 
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_REAL,
+                       TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN='HXpen',
+                       TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM='HXpbm')
+    @patch('apps.scholarship.emails.english_only_email', return_value=True)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_picks_EN_variant_for_english_only(self, post, _eo):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(post.call_args[0][5], 'HXpen')   # content_sid
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_REAL,
+                       TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN='HXpen',
+                       TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM='HXpbm')
+    @patch('apps.scholarship.emails.english_only_email', return_value=False)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_picks_BM_variant_otherwise(self, post, _eo):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(post.call_args[0][5], 'HXpbm')   # content_sid
+
     def test_propose_rejects_unassigned_reviewer(self):
         with self.assertRaises(scheduling.SchedulingError) as cm:
             scheduling.propose_slots(self.app, reviewer=self.other_reviewer,
