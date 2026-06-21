@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Referral-source acronym on the admin cockpit.** The application detail header now shows the referring-source as a short
+  acronym chip right after the NRIC (e.g. `NRIC … · SMC`), and the B40 applications list "Source" column shows the same
+  acronym (full name on hover) instead of the long label. Owner-defined map (`referralAcronym` in `lib/scholarship.ts`):
+  partner orgs keep their acronym (SMC/CUMIG/EWRF/HYO/MHDM/SSBC/TARA/HSS/PPTM), the two individual coordinators + "other"
+  collapse to **Other**, self/website → **Halatuju**, social → **Social**; blank → `—`. FE-only (serializer already exposed
+  `referral_source`).
 - **Phone verification (roadmap S4 / TD-136) — opt-in, voluntary, SMS via Twilio Verify.** A student can confirm their
   `contact_phone` from /profile: an inline **Verify** button (mirrors the email field) sends a one-time code; entering it
   flips `contact_phone_verified` (a newly-typed number is persisted on success; editing the number un-verifies it).
