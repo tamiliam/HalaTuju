@@ -101,7 +101,12 @@ def _send_wa_proposed(application, student_name, reviewer=None):
     profile = getattr(application, 'profile', None)
     if not getattr(profile, 'whatsapp_opt_in', True):
         return
-    content_sid = getattr(settings, 'TWILIO_WHATSAPP_PROPOSED_CONTENT_SID', '')
+    # Variant by language preference — EN-only or EN+BM (both reuse {1}name {2}reviewer {3}link);
+    # fall back to the legacy single SID. Same english_only standard as the emails/reminder.
+    en_only = emails.english_only_email(application)
+    _en = getattr(settings, 'TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN', '')
+    _bm = getattr(settings, 'TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM', '')
+    content_sid = (_en if en_only else (_bm or _en)) or getattr(settings, 'TWILIO_WHATSAPP_PROPOSED_CONTENT_SID', '')
     if not content_sid and not whatsapp.is_sandbox_sender():
         return  # no approved template yet + not sandbox → don't attempt a forbidden free-text send
     phone = getattr(profile, 'contact_phone', '')
@@ -119,7 +124,7 @@ def _send_wa_proposed(application, student_name, reviewer=None):
     en = (f'Hi {student_name} — your assigned interviewer, {reviewer_name}, has proposed three times '
           f'for your B40 Assistance interview. Please pick the one that suits you: {link}. Once you '
           f'choose, we’ll send the Google Meet link and, if necessary, reminders.')
-    if emails.english_only_email(application):
+    if en_only:
         body = en
     else:
         bm = (f'Salam {student_name} — penemu duga anda, {reviewer_name}, telah mencadangkan tiga masa '

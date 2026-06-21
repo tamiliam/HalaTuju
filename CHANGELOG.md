@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Proposed-slots nudge gains EN + EN+BM variants (S2 EN/BM correction).** `_send_wa_proposed` now picks the template by
+  `english_only` (same standard as the emails/reminder) — EN-only (`TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN`) or EN+BM
+  (`…_BM`), falling back to the legacy single SID, then sandbox free-text. Both variants reuse `{1}`name `{2}`reviewer
+  `{3}`link (no language-specific var). EN template submitted (`HX0d24280a94407832001da4ed08bbf7cf`); the EN+BM
+  (`HX9da6e2900cc1eea2b1410be9bca7e54f`) is **Meta-approved**. Go-live: set both env vars once EN approves. +2 tests.
 - **Interview reminder v2 — names the interviewer, differentiates 24h/1h, EN + EN+BM variants (roadmap S3).**
   `send_interview_reminders` now picks a reminder template by `english_only` — EN-only
   (`TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN`) or EN+BM (`…_BM`) — each serving **both** the 24h and 1h reminder via a
