@@ -50,6 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   must renumber to `0068`.
 
 ### Fixed
+- **Unreadable salary-route earner IC / relationship doc now gates submission (was silently skipped).** Companion to the
+  #90 fix: `document_unreadable_blockers` passed the `income_working_members` LIST to `working_members` (which reads an
+  *application*), so it always resolved to `[]` on the salary route — the per-earner loop never ran and a blurry earner
+  IC / birth cert / guardianship letter slipped past the consent/submission gate (the STR route was correct). Now driven
+  by `effective_working_members(application)` (also inherits the #90 tagged-docs/roster fallback). +1 regression test in
+  the previously-uncovered income-cluster path (1449 scholarship pytest). No live student was mis-gated (all 26
+  salary-route earner ICs read cleanly); this closes it for future submitters. Backend only, no migration.
 - **Salary-route income shown as "Optional"/undeclared when the earner was pre-ticked but not toggled (#90 + 4 others).**
   **The bug:** the income wizard pre-ticks the earner from the family roster and tags uploaded income docs to them
   (`household_member`), but only PERSISTS `income_working_members` on an explicit checkbox toggle. A student who accepts

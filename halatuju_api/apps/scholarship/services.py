@@ -1391,7 +1391,7 @@ def document_unreadable_blockers(application):
     is not the student's fault). Returns blocker codes."""
     from .academic_engine import student_slip_check
     from .pathway_engine import student_offer_check
-    from .income_engine import (income_cluster_advice, working_members,
+    from .income_engine import (income_cluster_advice, effective_working_members,
                                 _member_ic_doc, student_income_ic_check)
     codes = set()
     slip = application.documents.filter(doc_type='results_slip').order_by('-uploaded_at').first()
@@ -1406,7 +1406,11 @@ def document_unreadable_blockers(application):
         earner = (getattr(application, 'income_earner', '') or '').strip()
         members = [earner] if earner else []
     elif route == 'salary':
-        members = working_members(getattr(application, 'income_working_members', None) or [])
+        # NB: pass the application (effective_working_members reads it) — an earlier version
+        # passed the income_working_members LIST, which always resolved to [] (the loop never
+        # ran → an unreadable salary-route earner IC/relationship doc was never gated). Using
+        # effective_working_members also picks up the #90 tagged-docs/roster fallback.
+        members = effective_working_members(application)
     else:
         members = []
     for member in members:
