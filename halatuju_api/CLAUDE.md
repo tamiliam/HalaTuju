@@ -518,6 +518,17 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-21)
 
+**▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
+ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,
+`CHECK2_STUDENT_QUERIES_ENABLED`, `CHECK2_AUTO_GENERATE`, **`CHECK2_ANSWER_RELEVANCE_ENABLED` (turned ON 2026-06-21)**,
+**`STUDENT_ASSIGNMENT_EMAIL_ENABLED` (ON — students DO get the "interview is next, times to follow" email on assignment)**,
+`DOC_GENUINENESS_CHECK_ENABLED`, `SPONSOR_POOL_ENABLED`, `IC_GEMINI_FALLBACK_ENABLED`, reminder template
+`TWILIO_WHATSAPP_REMINDER_CONTENT_SID` set.
+DARK/unset: `TWILIO_WHATSAPP_PROPOSED_CONTENT_SID` (S2 proposed-slots nudge free-texts in sandbox only until a template is
+approved) · the S5 STOP webhook is built but inert until the Twilio inbound webhook URL is set · `SHOW_REFEREES=false`.
+Meet SA key **rotated 2026-06-21** (old key `692d49f8…` deleted after a transcript exposure; new `7ef25e69…` in
+`GOOGLE_MEET_SA_JSON` — still an env var, TD-125 to move it to Secret Manager).
+
 **▶ SHIPPED 2026-06-21 — WhatsApp comms go-live + cockpit fixes + interview reminder-notice gating (retro
 `docs/retrospective-2026-06-21-whatsapp-golive-cockpit-reminders.md`; same day: request-owned doc slots, retro
 `…-request-owned-doc-slots.md`).**
@@ -685,7 +696,7 @@ pathway work; commits `4446c2e` bug+aliran, `4589a6a` req_disability; courses mi
 - **▶ NEXT:** scheduling is now LIVE — **monitor the first real bookings** (a Meet link should generate + the
   confirmation/reminders fire). Owner follow-ups: add the Guide scheduling screenshot (TD-126); add a merged **SPF**
   TXT (`v=spf1 include:_spf.google.com include:spf.brevo.com ~all`); refine the assignment email copy to point students
-  to "book your interview" (note: that email is itself gated by the separate OFF `STUDENT_ASSIGNMENT_EMAIL_ENABLED`).
+  to "book your interview" (the assignment email `STUDENT_ASSIGNMENT_EMAIL_ENABLED` is now **ON** in prod — 2026-06-21).
   TD-124 (contact inbox UI), TD-125 (Meet key → Secret Manager). Other thread: genuineness branch (unmerged).
 
 **▶ JUST SHIPPED & LIVE 2026-06-16 — Live-review round (10 commits `c6bc963`→`611e6b1`; migration `scholarship/0058`
@@ -923,7 +934,7 @@ AI-clarify-query switch `CHECK2_STUDENT_QUERIES_ENABLED` stays OFF** (owner's ca
 Tests: 989 scholarship backend pytest + 276 jest; i18n parity 2474.
 **▶ UPDATE 2026-06-15: `CHECK2_STUDENT_QUERIES_ENABLED` is now ON in prod — the student-facing Check-2 layer
 (auto clarify queries, doc requests, the "few questions" emails, AND the `pathway_confirm` "Is this where you're going?"
-step) is LIVE; students are responding. Only `CHECK2_ANSWER_RELEVANCE_ENABLED` remains OFF. Verify the live env var with
+step) is LIVE; students are responding. (`CHECK2_ANSWER_RELEVANCE_ENABLED` was also turned ON 2026-06-21.) Verify the live env var with
 `gcloud run services describe halatuju-api` before asserting flag state — do not trust older log entries.**
 
 **▶ JUST SHIPPED 2026-06-11 (b) — SARA≠STR fix + cockpit doc UX + in-cockpit viewer + HEIC (NO migration; retro
