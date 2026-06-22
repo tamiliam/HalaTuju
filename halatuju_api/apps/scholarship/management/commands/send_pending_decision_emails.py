@@ -15,7 +15,8 @@ from django.db import connection
 from django.utils import timezone
 
 from apps.scholarship.models import ScholarshipApplication
-from apps.scholarship.services import release_decision
+from apps.scholarship.services import release_decision, release_pending_declines
+from apps.scholarship.sponsorship import release_pending_awards
 
 
 class Command(BaseCommand):
@@ -58,3 +59,12 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"Decisions: {released} {'would be ' if dry else ''}released, {skipped} skipped"
         ))
+
+        # Cool-off releases (#13 decline +7d, #14 award +2d): reveal what's now past its
+        # cool-off. Not part of --dry-run (these mutate); they're idempotent + cheap.
+        if not dry:
+            declines = release_pending_declines(now=now)
+            awards = release_pending_awards(now=now)
+            self.stdout.write(self.style.SUCCESS(
+                f"Cool-off: {declines} decline(s) revealed, {awards} award(s) finalised"
+            ))

@@ -1219,8 +1219,21 @@ class StudentAwardView(APIView):
     def get(self, request):
         app = _award_application(request.user_id)
         offer = sponsorship_service.current_offer(app) if app else None
+        # Award cool-off (#14): once accepted the sponsorship is 'active' (no longer 'offered')
+        # but the app isn't 'sponsored' yet — surface a 'finalising' state so the page isn't
+        # blank during the window (the confirmation email + onboarding open at the cool-off end).
+        finalising = False
+        if not offer:
+            pend = (ScholarshipApplication.objects
+                    .filter(profile_id=request.user_id, award_due_at__isnull=False)
+                    .exclude(status='sponsored')
+                    .filter(sponsorships__status='active').select_related('profile').first())
+            if pend is not None:
+                finalising = True
+                app = app or pend
         return Response({
             'offer': StudentAwardSerializer(offer).data if offer else None,
+            'finalising': finalising,
             'is_minor': is_minor(app.profile) if (app and app.profile) else False,
         })
 

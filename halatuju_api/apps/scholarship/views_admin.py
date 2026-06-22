@@ -42,8 +42,9 @@ from .serializers_admin import (
 )
 from .services import (
     AssignmentError, admin_reject, application_completeness, assign_reviewer,
-    submit_interview,
+    cancel_pending_decline, submit_interview,
 )
+from .sponsorship import hold_pending_award
 
 logger = logging.getLogger(__name__)
 
@@ -317,6 +318,35 @@ class AdminRejectView(_AdminBase):
             return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
         # Declining a REOPENED decision is a real correction (counting model B).
         reopen_service.close_reopen_with_change(app)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminCancelDeclineView(_AdminBase):
+    """POST .../<pk>/cancel-decline/ — abort a scheduled-but-unrevealed decline within the
+    decline cool-off (the student never saw it). Reviewer-gated. Idempotent."""
+    def post(self, request, pk):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        cancel_pending_decline(app)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminHoldAwardView(_AdminBase):
+    """POST .../<pk>/hold-award/ — reverse an accepted-but-unconfirmed award within the award
+    cool-off (the amount returns to the sponsor; the student never saw confirmation).
+    Reviewer-gated. Idempotent."""
+    def post(self, request, pk):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        hold_pending_award(app)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

@@ -384,6 +384,32 @@ class ScholarshipApplication(models.Model):
         help_text="Email of the PartnerAdmin who rejected (post-shortlist buckets only); blank for engine rejections",
     )
 
+    # 7-day DECLINE cool-off (#13): an admin decline is recorded SILENTLY here (bucket + due
+    # date) instead of flipping status immediately. The release cron reveals it (status →
+    # rejected + bucket decline email) once decline_due_at passes; an admin can Cancel before
+    # then, so a reconsidered decline is never seen by the student. Blank/null = none pending.
+    pending_rejection_category = models.CharField(
+        max_length=20, choices=REJECTION_CATEGORIES, blank=True, default='',
+        help_text="A scheduled-but-unrevealed decline bucket (cool-off); blank = none pending",
+    )
+    decline_due_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When a pending decline reveals + emails (cool-off end)",
+    )
+    pending_decline_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the admin who scheduled the pending decline",
+    )
+
+    # 2-day AWARD-confirmation cool-off (#14): on student/guardian accept we record the
+    # acceptance + money hold immediately, but defer the 'sponsored' flip + the funding-confirmed
+    # email + onboarding until award_due_at. The release cron finalises it; an admin Hold reverts
+    # the acceptance before then. Null = no pending award confirmation.
+    award_due_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When a pending award confirmation finalises (cool-off end)",
+    )
+
     # Phase C: which reviewer this application is assigned to (for the interview
     # stage). Null = unassigned. SET_NULL so deactivating an admin doesn't delete
     # applications.

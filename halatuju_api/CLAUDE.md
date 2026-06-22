@@ -532,6 +532,10 @@ profile-complete; supersedes the basic submission-ack)**. **WhatsApp S2 proposed
 until done — flip the env var to `whatsapp` once cleared, no code change). **S5 STOP→opt-out webhook is LIVE** (owner set
 the Twilio inbound webhook URL 2026-06-22; unsigned POST→403, STOP maps a profile only when we've sent it an app-logged
 WhatsApp).
+**Decision cool-off LIVE** (2026-06-22): `DECLINE_COOLOFF_DAYS=7` + `AWARD_COOLOFF_DAYS=2` set — an admin decline (#13)
+and a student award acceptance (#14) are held silently for the window (admin can cancel/hold from the cockpit) before the
+comm + status reveal; the existing `send_pending_decision_emails` cron releases them. Migration `scholarship/0069` (4
+additive fields). Set either to 0 to disable (immediate, the old behaviour).
 DARK/unset: `SHOW_REFEREES=false`.
 Meet SA key **rotated 2026-06-21** (old key `692d49f8…` deleted after a transcript exposure; new `7ef25e69…` in
 `GOOGLE_MEET_SA_JSON` — still an env var, TD-125 to move it to Secret Manager).

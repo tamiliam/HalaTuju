@@ -1995,6 +1995,10 @@
         "body": "Tiada anugerah menunggu anda buat masa ini. Kami akan memberitahu anda sebaik sahaja seorang penyokong memilih untuk membiayai pengajian anda.",
         "cta": "Kembali ke permohonan saya"
       },
+      "finalising": {
+        "heading": "Anda telah menerima — terima kasih!",
+        "body": "Kami sedang memuktamadkan pembiayaan anda sekarang. Anda akan menerima e-mel pengesahan dan langkah onboarding dalam masa beberapa hari. Tiada apa-apa yang perlu anda lakukan buat masa ini."
+      },
       "confirmed": {
         "heading": "Berita baik — pengajian anda dibiayai",
         "body": "Seorang penyokong telah memilih untuk membiayai pengajian anda. Identiti mereka kekal rahsia, sama seperti identiti anda kekal rahsia daripada mereka.",
@@ -2722,10 +2726,20 @@
       "refError": "Tidak dapat menyimpan perujuk. Sila cuba lagi.",
       "genLang": "Bahasa output",
       "visionError": "Tidak dapat menjalankan semula Vision.",
+      "cooloff": {
+        "declineScheduled": "Penolakan ini dijadualkan untuk dihantar pada",
+        "awardScheduled": "Pengesahan pembiayaan ini dijadualkan untuk dihantar pada",
+        "silentNote": "Pelajar tidak melihat apa-apa sehingga itu — batalkan di sini untuk menimbang semula.",
+        "cancelDecline": "Batalkan penolakan",
+        "holdAward": "Tahan",
+        "cancelConfirm": "Batalkan penolakan berjadual ini? Pemohon tidak akan ditolak dan tidak pernah melihatnya.",
+        "holdConfirm": "Tahan anugerah ini? Penerimaan dibatalkan, jumlahnya dikembalikan kepada penaja, dan pelajar tidak pernah melihat pengesahan.",
+        "error": "Tidak dapat mengemas kini. Sila cuba lagi."
+      },
       "reject": {
         "declineContractual": "Tolak (kontrak)",
-        "confirmReview": "Tolak pemohon ini? Mereka telah disemak tetapi tidak terpilih. E-mel penolakan akan dihantar kepada mereka sekarang.",
-        "confirmContractual": "Tolak pemohon yang telah diterima ini atas sebab kontrak? E-mel penolakan akan dihantar kepada mereka sekarang.",
+        "confirmReview": "Tolak pemohon ini? Mereka telah disemak tetapi tidak terpilih. E-mel penolakan akan dihantar kepada mereka (selepas tempoh bertenang ringkas, jika ada).",
+        "confirmContractual": "Tolak pemohon yang telah diterima ini atas sebab kontrak? E-mel penolakan akan dihantar kepada mereka (selepas tempoh bertenang ringkas, jika ada).",
         "running": "Menolak…",
         "error": "Tidak dapat menolak pemohon ini. Sila cuba lagi.",
         "category": {

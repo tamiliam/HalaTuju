@@ -739,28 +739,15 @@ def autogenerate_ready_profiles(now=None):
 INTERVIEW_REJECT_FROM = ('shortlisted', 'profile_complete', 'interviewing', 'interviewed')
 
 
-def admin_reject(application, admin, category):
-    """Post-shortlist admin rejection (buckets 3 & 4). Sets status='rejected', stamps
-    the category + who/when, and sends the bucket's decline email immediately:
-      - 'interview'   (reviewed but not selected) — allowed from a post-shortlist,
-                       not-yet-accepted status; sends the extra-thankful email.
-      - 'contractual' (failed post-award steps) — allowed only from 'accepted'; sends
-                       the generic decline email (admin-typed reason deferred).
-    Raises ValueError on a bad category/status combination. Returns True."""
-    if category == 'interview':
-        if application.status not in INTERVIEW_REJECT_FROM:
-            raise ValueError('bad_status')
-    elif category == 'contractual':
-        if application.status != 'accepted':
-            raise ValueError('bad_status')
-    else:
-        raise ValueError('bad_category')
-
+def _finalise_reject(application, category, by_email):
+    """The actual effect of a decline: flip to rejected + send the bucket decline email +
+    stamp category/when/who. Shared by the immediate path (cool-off disabled) and the
+    release cron (cool-off elapsed)."""
     now = timezone.now()
     application.status = 'rejected'
     application.rejection_category = category
     application.rejected_at = now
-    application.rejected_by = getattr(admin, 'email', '') or ''
+    application.rejected_by = by_email or ''
     application.save(update_fields=['status', 'rejection_category', 'rejected_at', 'rejected_by'])
 
     name = getattr(application.profile, 'name', '') if application.profile else ''
@@ -771,7 +758,75 @@ def admin_reject(application, admin, category):
     ):
         application.decision_email_sent_at = now
         application.save(update_fields=['decision_email_sent_at'])
+
+
+def admin_reject(application, admin, category):
+    """Post-shortlist admin rejection (buckets 'interview' & 'contractual').
+
+    With a cool-off (DECLINE_COOLOFF_DAYS > 0, default 7) the decline is recorded **silently**
+    — status is NOT flipped and no email is sent — and ``release_pending_declines`` reveals it
+    (status → rejected + the bucket decline email) once ``decline_due_at`` passes. An admin can
+    ``cancel_pending_decline`` within the window, so a reconsidered decline is never seen by the
+    student. With the cool-off disabled (0) it rejects immediately (the old behaviour).
+      - 'interview'   (reviewed but not selected) — allowed from a post-shortlist, not-yet-
+                       accepted status.
+      - 'contractual' (failed post-award steps) — allowed only from 'accepted'.
+    Raises ValueError on a bad category/status combination. Returns True."""
+    if category == 'interview':
+        if application.status not in INTERVIEW_REJECT_FROM:
+            raise ValueError('bad_status')
+    elif category == 'contractual':
+        if application.status != 'accepted':
+            raise ValueError('bad_status')
+    else:
+        raise ValueError('bad_category')
+
+    from django.conf import settings as _settings
+    days = getattr(_settings, 'DECLINE_COOLOFF_DAYS', 7)
+    by = getattr(admin, 'email', '') or ''
+    if days and days > 0:
+        application.pending_rejection_category = category
+        application.decline_due_at = timezone.now() + timedelta(days=days)
+        application.pending_decline_by = by
+        application.save(update_fields=['pending_rejection_category', 'decline_due_at',
+                                        'pending_decline_by'])
+    else:
+        _finalise_reject(application, category, by)
     return True
+
+
+def cancel_pending_decline(application):
+    """Abort a scheduled-but-unrevealed decline within the cool-off. The student never knew.
+    Returns True if there was a pending decline to cancel."""
+    if not (application.decline_due_at or application.pending_rejection_category):
+        return False
+    application.pending_rejection_category = ''
+    application.decline_due_at = None
+    application.pending_decline_by = ''
+    application.save(update_fields=['pending_rejection_category', 'decline_due_at',
+                                    'pending_decline_by'])
+    return True
+
+
+def release_pending_declines(now=None):
+    """Reveal every decline whose cool-off has passed: flip to rejected + send the email, then
+    clear the pending markers. Intended for the scheduler. Returns the count released."""
+    now = now or timezone.now()
+    qs = (ScholarshipApplication.objects
+          .filter(decline_due_at__isnull=False, decline_due_at__lte=now)
+          .exclude(status='rejected').exclude(pending_rejection_category='')
+          .select_related('cohort', 'profile'))
+    released = 0
+    for app in qs:
+        category, by = app.pending_rejection_category, app.pending_decline_by
+        # Clear the pending markers first so a re-run can never double-send.
+        app.pending_rejection_category = ''
+        app.decline_due_at = None
+        app.pending_decline_by = ''
+        app.save(update_fields=['pending_rejection_category', 'decline_due_at', 'pending_decline_by'])
+        _finalise_reject(app, category, by)
+        released += 1
+    return released
 
 
 def confirm_profile(application):
