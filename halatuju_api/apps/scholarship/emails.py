@@ -1211,7 +1211,10 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
         bm_safety, 'Salam hormat,<br>Pasukan Program Bantuan B40')
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
-    return _send_html(to_email, subject, text_body, html_body)
+    # General programme email → from info@ (DEFAULT_FROM_EMAIL), reply to support; NOT interview@.
+    return _send_html(to_email, subject, text_body, html_body,
+                      from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'info@halatuju.xyz'),
+                      reply_to=[SUPPORT_EMAIL])
 
 
 def send_contact_submission_admin_email(*, to_email, name, contact, category, message, created_at):
@@ -1321,17 +1324,19 @@ def english_only_email(application) -> bool:
     return eng in ('A+', 'A')
 
 
-def _send_html(to_email, subject, text_body, html_body, reply_to=None, ics=None):
-    """Send a multipart email — HTML primary + plain-text fallback. Reply-To defaults to
-    the interview alias. ``ics`` (a calendar string) is attached as interview.ics so the
-    client offers "add to calendar". Best-effort → bool."""
+def _send_html(to_email, subject, text_body, html_body, reply_to=None, ics=None, from_email=None):
+    """Send a multipart email — HTML primary + plain-text fallback. From/Reply-To default to
+    the interview alias (interview emails are the main caller); pass ``from_email`` +
+    ``reply_to`` for a general (non-interview) email, e.g. the info@ sender. ``ics`` (a
+    calendar string) is attached as interview.ics so the client offers "add to calendar".
+    Best-effort → bool."""
     if not to_email:
         return False
     try:
         msg = EmailMultiAlternatives(
             subject=subject,
             body=text_body,
-            from_email=INTERVIEW_FROM_EMAIL,
+            from_email=from_email or INTERVIEW_FROM_EMAIL,
             to=[to_email],
             reply_to=reply_to or [INTERVIEW_REPLY_TO],
             headers=_interview_unsub_headers(),
