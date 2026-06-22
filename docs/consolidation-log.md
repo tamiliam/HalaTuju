@@ -13,6 +13,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 - 2026-06-21 fix(income): salary-route earner shown Optional/undeclared when pre-ticked-but-not-toggled (#90+4); effective_working_members fallback (tagged docs→roster) wired into income_requirements+verdict; FE persists roster seed on mount; backfilled 5 apps (halatuju_api: income_engine.py, verdict_engine.py + tests; halatuju-web: ScholarshipDocuments.tsx)
 - 2026-06-21 fix(income): document_unreadable_blockers passed a list (not the app) to working_members → always [] on salary route → unreadable salary-route earner IC/rel doc skipped the submission gate; now effective_working_members(application) + a regression test (halatuju_api: services.py, tests/test_family.py)
 - 2026-06-23 fix(scheduling): advance profile_complete->interviewing when interview times are proposed (status was stuck at Complete through booked/concluded interviews); propose_slots flip + 6-app backfill (halatuju_api: scheduling.py + tests)
+- 2026-06-23 fix(check2): surface system 'couldn't read your doc' upload requests to the form-locked student (unreadable/no-identity/stale-STR added to STUDENT_DOC_REQUEST_CODES; name-mismatch class stays reviewer-mediated); un-hides 5 live requests (halatuju_api: resolution.py + tests)
 
 _(previous batch cleared at the 2026-06-16 review below)_
 

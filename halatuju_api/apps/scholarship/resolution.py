@@ -72,16 +72,26 @@ CODE_TO_TICKET = {
     # from the student queue, so only the officer ever saw it.)
 }
 
-# The "review assistant" (Check 2) asks the STUDENT to upload any MISSING compulsory
-# document — birth cert, offer letter, earner IC, results slip, etc. These `doc`/`_missing`
-# system tickets ARE surfaced in the Action Centre (flag-gated) with an Upload button.
-# The uploaded-but-bad cases (`*_unreadable` / `*_name_mismatch` / `str_not_current`) are
-# NOT here: those are reviewer-raised re-uploads, coached inline by Gopal — surfacing them
-# as separate system tickets is the duplicate noise removed on 2026-06-10. (check2-design
-# §4: `doc` is a first-class Check-2 student kind.)
+# The "review assistant" (Check 2) asks the STUDENT to upload a compulsory document straight
+# in the Action Centre (flag-gated, with an Upload button). This matters because a post-submit
+# student is form-LOCKED — the Action Centre is their ONLY surface, so anything hidden here is
+# something they literally cannot fix. Two classes qualify:
+#   - MISSING (`*_missing`): the doc was never uploaded.
+#   - UN-USABLE but re-uploadable (`*_unreadable`, plus `offer_no_identity` = readable but shows
+#     no name/IC, and `str_not_current` = a stale STR): the system genuinely couldn't read/accept
+#     it, so the student replaces it with a clearer / correct / current copy.
+# The NAME-MISMATCH doc class (`offer_name_mismatch` / `results_slip_name_mismatch`) is
+# deliberately EXCLUDED — that's a verification JUDGEMENT (often a romanisation false positive,
+# and not something to auto-coach a wrong-doc uploader on), so the reviewer raises it explicitly
+# when warranted. (Supersedes the 2026-06-10 "hide all bad-doc tickets" rule, which left a
+# form-locked student with no way to replace a doc the system couldn't read — the inline Gopal
+# coaching it deferred to lives on the now-unreachable Documents tab.)
+_STUDENT_DOC_FIXABLE_EXTRA = frozenset({'offer_no_identity', 'str_not_current'})
 STUDENT_DOC_REQUEST_CODES = frozenset(
     code for code, spec in CODE_TO_TICKET.items()
-    if spec.get('kind') == 'doc' and code.endswith('_missing'))
+    if spec.get('kind') == 'doc' and (
+        code.endswith('_missing') or code.endswith('_unreadable')
+        or code in _STUDENT_DOC_FIXABLE_EXTRA))
 
 
 def _ticketable_unresolved(application):

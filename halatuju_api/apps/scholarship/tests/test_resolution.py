@@ -350,14 +350,29 @@ class TestCheck2QueriesInStudentQueue(TestCase):
         codes = {i['code'] for i in self.client.get(self.URL).json()['open']}
         self.assertIn('offer_letter_missing', codes)
 
-    def test_uploaded_but_bad_system_ticket_stays_hidden(self):
-        # A bad-upload ticket (unreadable) is the reviewer's + Gopal's job, not a student
-        # to-do — it must NOT surface even with the flag on.
+    def test_unreadable_system_ticket_shows_for_reupload(self):
+        # An unreadable doc the system genuinely couldn't read IS surfaced — the form-locked
+        # student's only way to fix it is an Action Centre Upload task (with inline Gopal on
+        # re-upload). Supersedes the old "stays hidden" rule. (Patch verdict-sync so the
+        # manually-created ticket isn't reconciled away — we're testing the visibility filter.)
+        from unittest.mock import patch
         ResolutionItem.objects.create(
-            application=self.app, source='system', code='ic_unreadable',
-            fact='identity', kind='doc', doc_type='ic', status='open')
-        codes = {i['code'] for i in self.client.get(self.URL).json()['open']}
-        self.assertNotIn('ic_unreadable', codes)
+            application=self.app, source='system', code='offer_unreadable',
+            fact='pathway', kind='doc', doc_type='offer_letter', status='open')
+        with patch('apps.scholarship.resolution.sync_resolution_items'):
+            codes = {i['code'] for i in self.client.get(self.URL).json()['open']}
+        self.assertIn('offer_unreadable', codes)
+
+    def test_name_mismatch_system_ticket_stays_hidden(self):
+        # The NAME-mismatch class is a verification judgement (often a romanisation false
+        # positive) — reviewer-mediated, NOT an automatic student to-do.
+        from unittest.mock import patch
+        ResolutionItem.objects.create(
+            application=self.app, source='system', code='offer_name_mismatch',
+            fact='pathway', kind='doc', doc_type='offer_letter', status='open')
+        with patch('apps.scholarship.resolution.sync_resolution_items'):
+            codes = {i['code'] for i in self.client.get(self.URL).json()['open']}
+        self.assertNotIn('offer_name_mismatch', codes)
 
     @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=False)
     def test_doc_request_hidden_when_flag_off(self):
@@ -367,15 +382,20 @@ class TestCheck2QueriesInStudentQueue(TestCase):
 
 class TestStudentDocRequestCodes(TestCase):
     """The set the "review assistant" asks the student to upload = MISSING-compulsory docs
-    only; never the uploaded-but-bad re-upload tickets (those are reviewer + Gopal)."""
+    AND the re-uploadable un-usable ones (unreadable / no-identity / stale STR). The
+    NAME-MISMATCH doc class stays reviewer-mediated (a verification judgement, not a to-do)."""
 
-    def test_missing_only(self):
+    def test_missing_and_unreadable_in_stale_in(self):
         from apps.scholarship.resolution import STUDENT_DOC_REQUEST_CODES
-        for c in ('birth_cert_missing', 'offer_letter_missing', 'earner_ic_missing',
-                  'results_slip_missing', 'guardianship_letter_missing', 'ic_missing'):
+        for c in (  # missing
+                  'birth_cert_missing', 'offer_letter_missing', 'earner_ic_missing',
+                  'results_slip_missing', 'guardianship_letter_missing', 'ic_missing',
+                  # un-usable but re-uploadable
+                  'ic_unreadable', 'results_slip_unreadable', 'earner_ic_unreadable',
+                  'offer_unreadable', 'offer_no_identity', 'str_not_current'):
             self.assertIn(c, STUDENT_DOC_REQUEST_CODES)
-        for c in ('ic_unreadable', 'results_slip_name_mismatch', 'offer_name_mismatch',
-                  'str_not_current', 'offer_no_identity'):
+        # The name/recipient-mismatch class stays reviewer-mediated.
+        for c in ('results_slip_name_mismatch', 'offer_name_mismatch'):
             self.assertNotIn(c, STUDENT_DOC_REQUEST_CODES)
 
 
