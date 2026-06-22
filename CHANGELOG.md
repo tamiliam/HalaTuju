@@ -148,6 +148,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   must renumber to `0068`.
 
 ### Fixed
+- **Self-heal IC/parent_ic stuck unprocessed — fixes the false "document-check service unavailable" consent block.** A
+  transient Vision MyKad-pipeline failure at upload can leave an IC/parent_ic with `vision_run_at=NULL` and no error,
+  never retried (`run_vision_for_document` never raises and always stamps a run, so a NULL means it was never called).
+  That strands the student behind `ic_identity_blockers`'s "never processed → `ic_service_down`" → "Our document-check
+  service is temporarily unavailable" at the Consent step (the service is actually up), and a "couldn't read the IC"
+  cockpit verdict — and the two surfaces show different messages. **Fix:** new `services.reprocess_unread_ic_documents`
+  + `reprocess_unread_ic` management command + cron job `reprocess-ic-vision`, which re-runs Vision on every stuck doc
+  (once each — a run stamps `vision_run_at`, so no re-pick; a raising run still stamps an outcome so it can't loop).
+  Backend only, no migration; +2 tests (1482 scholarship pytest). One-time heal of the current stuck docs (incl. the IC
+  blocking app #105, and app #84's mother IC). Branch `fix/interviewing-on-propose`.
 - **Check-2 "couldn't read your document" upload requests now reach the student (were silently hidden).** A post-submit
   student is form-LOCKED — the Action Centre is their ONLY surface — but the visibility filter (`STUDENT_DOC_REQUEST_CODES`)
   only showed system doc requests for genuinely MISSING docs (`*_missing`). An uploaded-but-unreadable doc (e.g.
