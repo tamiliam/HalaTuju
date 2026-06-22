@@ -522,12 +522,17 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,
 `CHECK2_STUDENT_QUERIES_ENABLED`, `CHECK2_AUTO_GENERATE`, **`CHECK2_ANSWER_RELEVANCE_ENABLED` (turned ON 2026-06-21)**,
 **`STUDENT_ASSIGNMENT_EMAIL_ENABLED` (ON — students DO get the "interview is next, times to follow" email on assignment)**,
-`DOC_GENUINENESS_CHECK_ENABLED`, `SPONSOR_POOL_ENABLED`, `IC_GEMINI_FALLBACK_ENABLED`. **WhatsApp S2 proposed-slots
-nudge + S3 reminder-v2 are LIVE** (the four `TWILIO_WHATSAPP_{PROPOSED,REMINDER}_CONTENT_SID_{EN,BM}` set on rev …00504,
-Meta-approved 2026-06-21; legacy `TWILIO_WHATSAPP_REMINDER_CONTENT_SID` also set).
-DARK/unset: the **S5 STOP webhook** is built but inert until the Twilio **inbound webhook URL** is set in the console ·
-the **S4 phone-verify** (verify-phone endpoints + /profile control) is built but inert until **`TWILIO_VERIFY_SERVICE_SID`**
-is set (owner creates a Verify Service in the Twilio console) · `SHOW_REFEREES=false`.
+`DOC_GENUINENESS_CHECK_ENABLED`, `SPONSOR_POOL_ENABLED`, `IC_GEMINI_FALLBACK_ENABLED`,
+**`PROFILE_COMPLETE_EMAIL_ENABLED` (ON 2026-06-22 — the "your application is in — what happens next" student email at
+profile-complete; supersedes the basic submission-ack)**. **WhatsApp S2 proposed-slots nudge + S3 reminder-v2 are LIVE**
+(the four `TWILIO_WHATSAPP_{PROPOSED,REMINDER}_CONTENT_SID_{EN,BM}` set on rev …00504, Meta-approved 2026-06-21; legacy
+`TWILIO_WHATSAPP_REMINDER_CONTENT_SID` also set).
+**S4 phone-verify is LIVE on SMS** (2026-06-22): `TWILIO_VERIFY_SERVICE_SID=VA3ca85b…` set, channel via
+`PHONE_VERIFY_CHANNEL` (default `sms`; WhatsApp channel deferred — Twilio's BYO-sender onboarding is ~2-4wk, error 60223
+until done — flip the env var to `whatsapp` once cleared, no code change). **S5 STOP→opt-out webhook is LIVE** (owner set
+the Twilio inbound webhook URL 2026-06-22; unsigned POST→403, STOP maps a profile only when we've sent it an app-logged
+WhatsApp).
+DARK/unset: `SHOW_REFEREES=false`.
 Meet SA key **rotated 2026-06-21** (old key `692d49f8…` deleted after a transcript exposure; new `7ef25e69…` in
 `GOOGLE_MEET_SA_JSON` — still an env var, TD-125 to move it to Secret Manager).
 

@@ -191,6 +191,12 @@ CHECK2_AUTO_GENERATE = os.environ.get('CHECK2_AUTO_GENERATE', '').lower() in ('1
 # ReviewerProfile.share_phone_with_students (default shared).
 STUDENT_ASSIGNMENT_EMAIL_ENABLED = os.environ.get('STUDENT_ASSIGNMENT_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# When a student confirms their profile (shortlisted → profile_complete), send the richer
+# "your application is in — here's what happens next" email (Check-2 review → doc requests →
+# interview with 3 slots → minor needs a guardian). When ON it SUPERSEDES the basic
+# submission-ack email at that step; when OFF the basic ack still sends. EN+BM.
+PROFILE_COMPLETE_EMAIL_ENABLED = os.environ.get('PROFILE_COMPLETE_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
+
 # Interview scheduling: the assigned reviewer proposes a few times, the student books
 # one in-app, and we send confirmations + reminders. OFF by default — the whole surface
 # (admin propose-card + student booking panel + endpoints) is dark until flipped on.

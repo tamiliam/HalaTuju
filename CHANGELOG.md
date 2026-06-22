@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **"Your application is in — here's what happens next" student email at profile-complete
+  (`PROFILE_COMPLETE_EMAIL_ENABLED`).** When a student confirms their profile (shortlisted →
+  profile_complete), they now get a warm HTML email that thanks them and sets expectations for the
+  road ahead: Check-2 review + possible document requests / clarifying questions (via the Action
+  Centre), then an interview where they pick one of three slots, the ~30-min Google Meet call
+  (joining link on booking + reminder), and that under-18s need a parent/guardian present. EN+BM,
+  from `info@` (reply-to `help@`). When ON it **supersedes** the basic plain-text "submission
+  received" ack at that step (no double-email); OFF keeps the basic ack.
+  `emails.send_profile_complete_student_email` + a wire-in in `services.confirm_profile`; `_send_html`
+  gained a `from_email` param so a general (non-interview) email isn't sent from `interview@`. New
+  `send_test_email` management command (ops preview). +2 tests. **Switched ON in prod 2026-06-22.**
 - **Referral-source acronym on the admin cockpit.** The application detail header now shows the referring-source as a short
   acronym chip right after the NRIC (e.g. `NRIC … · SMC`), and the B40 applications list "Source" column shows the same
   acronym (full name on hover) instead of the long label. Owner-defined map (`referralAcronym` in `lib/scholarship.ts`):
