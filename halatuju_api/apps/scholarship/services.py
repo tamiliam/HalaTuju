@@ -800,8 +800,17 @@ def confirm_profile(application):
     # revert") and raise the clarify queries SILENTLY. The "we have a few questions"
     # email is deliberately delayed (send_due_query_emails, ~2h later) so it reads as a
     # human review, not an instant bot reply. All best-effort — never blocks the confirm.
-    send_submission_received_email(to_email=application.notify_email, applicant_name=name,
-                                   programme_name=application.cohort.name, lang=application.locale)
+    # The richer "your application is in — here's what happens next" email supersedes the
+    # basic submission-ack when PROFILE_COMPLETE_EMAIL_ENABLED is on (avoids a double-email).
+    from django.conf import settings as _settings
+    if getattr(_settings, 'PROFILE_COMPLETE_EMAIL_ENABLED', False):
+        from .emails import english_only_email, send_profile_complete_student_email
+        send_profile_complete_student_email(
+            application.notify_email, student_name=name,
+            english_only=english_only_email(application))
+    else:
+        send_submission_received_email(to_email=application.notify_email, applicant_name=name,
+                                       programme_name=application.cohort.name, lang=application.locale)
     try:
         from .check2_queries import sync_check2_queries
         from .resolution import sync_resolution_items
