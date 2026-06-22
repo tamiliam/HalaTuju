@@ -77,6 +77,31 @@ class SchedulingServiceTests(TestCase):
         self.assertIn('Choose your interview time', html)             # the button label
         self.assertIn('/scholarship/application"', html)              # button href
 
+    # ── status advances when the interview process starts ─────────────────────
+    def _pc_app(self, uid='stud-pc'):
+        p = StudentProfile.objects.create(
+            supabase_user_id=uid, nric='990101-14-9999', name='Devi')
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='profile_complete',
+            notify_email=f'{uid}@example.com', assigned_to=self.reviewer)
+
+    def test_propose_advances_profile_complete_to_interviewing(self):
+        # The interview process begins at propose (the first interview@ email) — the status
+        # must follow, not wait for the reviewer to open the capture form.
+        app = self._pc_app()
+        scheduling.propose_slots(app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewing')
+
+    def test_propose_never_pulls_a_decided_case_back(self):
+        # Re-proposing (e.g. a reschedule) on an accepted case must NOT revert it to interviewing.
+        app = self._pc_app(uid='stud-acc')
+        app.status = 'accepted'
+        app.save(update_fields=['status'])
+        scheduling.propose_slots(app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'accepted')
+
     # ── WhatsApp "times proposed — please pick one" nudge (roadmap S2 / TD-138) ──
     _SANDBOX = 'whatsapp:+14155238886'
     _REAL = 'whatsapp:+19162597009'

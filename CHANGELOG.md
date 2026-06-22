@@ -123,6 +123,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   must renumber to `0068`.
 
 ### Fixed
+- **Status now advances to "Interviewing" when the interview process starts (was stuck at "Complete").** The
+  `profile_complete → interviewing` transition only fired when a reviewer opened the *Interview-Stage capture* and saved
+  a draft (`views_admin.AdminInterviewView`). But reviewers run the interview through the *scheduling* flow (propose
+  times → the interview@ "pick a time" email → Meet) and fill the capture form last, or not at all — so cases sat at
+  "Complete" through a proposed/booked/concluded interview (e.g. Theresa: interview done, board still read Complete).
+  **Fix:** `scheduling.propose_slots` now advances `profile_complete → interviewing` when interview times are proposed
+  (the moment the first interview@ email goes out). Guarded to only advance FROM `profile_complete` — never pulls a
+  later/decided case backward; the old capture-draft trigger stays as a fallback. Backend only, no migration; +2 tests
+  (70 interview-scheduling, 1477 scholarship pytest). A one-time backfill moved the 6 already-stuck cases (proposed/booked
+  but Complete) to Interviewing. Branch `fix/interviewing-on-propose`.
 - **Unreadable salary-route earner IC / relationship doc now gates submission (was silently skipped).** Companion to the
   #90 fix: `document_unreadable_blockers` passed the `income_working_members` LIST to `working_members` (which reads an
   *application*), so it always resolved to `[]` on the salary route — the per-earner loop never ran and a blurry earner

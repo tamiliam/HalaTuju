@@ -12,6 +12,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 - 2026-06-21 fix(check2): reviewer-raised Action-Centre requests now notify the student (reset query_raised_notified_at on raise; send_due_query_emails counts source='officer' items; no per-item email) (halatuju_api: views_admin.py, services.py + tests)
 - 2026-06-21 fix(income): salary-route earner shown Optional/undeclared when pre-ticked-but-not-toggled (#90+4); effective_working_members fallback (tagged docs→roster) wired into income_requirements+verdict; FE persists roster seed on mount; backfilled 5 apps (halatuju_api: income_engine.py, verdict_engine.py + tests; halatuju-web: ScholarshipDocuments.tsx)
 - 2026-06-21 fix(income): document_unreadable_blockers passed a list (not the app) to working_members → always [] on salary route → unreadable salary-route earner IC/rel doc skipped the submission gate; now effective_working_members(application) + a regression test (halatuju_api: services.py, tests/test_family.py)
+- 2026-06-23 fix(scheduling): advance profile_complete->interviewing when interview times are proposed (status was stuck at Complete through booked/concluded interviews); propose_slots flip + 6-app backfill (halatuju_api: scheduling.py + tests)
 
 _(previous batch cleared at the 2026-06-16 review below)_
 
