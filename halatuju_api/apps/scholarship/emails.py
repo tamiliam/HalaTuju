@@ -1104,6 +1104,116 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     return _send_html(to_email, subject, text_body, html_body)
 
 
+def send_profile_complete_student_email(to_email, *, student_name, english_only=False):
+    """Sent to the STUDENT when they confirm their profile (shortlisted → profile_complete):
+    thanks + congratulates them for completing the stage and submitting documents, then sets
+    expectations for what comes next (Check-2 review → possible doc requests / questions →
+    interview with three slots to pick → minors need a parent/guardian present). HTML primary
+    + plain-text fallback; bilingual (EN + BM) unless ``english_only``. Best-effort → bool."""
+    if not to_email:
+        return False
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/scholarship/application'
+    subject = 'Thank you — your B40 Assistance Programme application is complete ✅'
+
+    en_intro = ('Congratulations, and thank you — you’ve completed your application and submitted '
+                'your documents for the B40 Assistance Programme. That’s an important step, and we '
+                'know it takes real effort to gather everything. Well done.')
+    en_lead = ('Your application is now with our team. Here’s exactly what happens next, so there '
+               'are no surprises:')
+    en_steps = [
+        ('We review everything you’ve sent', 'Our team carefully checks your application and '
+         'documents to understand your family’s situation fairly.'),
+        ('We may come back to you with a few things', 'Sometimes we need a clearer photo of a '
+         'document, one more document, or a short answer to a question. If we do, you’ll see it in '
+         'your Action Centre and we’ll email you — just reply there. Responding quickly helps your '
+         'application move along faster.'),
+        ('We invite you to a short interview', 'Once the review is settled, we’ll invite you to a '
+         'friendly interview. You’ll be offered three time slots — simply pick the one that suits '
+         'you best.'),
+        ('The interview itself', 'It’s a short video call, about 30 minutes, on Google Meet. After '
+         'you pick your time, we’ll send the link and reminders one day and one hour before. Please '
+         'join with your camera on — it helps us verify your application.'),
+        ('If you are under 18', 'A parent or guardian must be with you during the interview. '
+         '(Whatever your age, our interviewer is always glad to speak with them too.)'),
+    ]
+    en_after = ('For now, there’s nothing you need to arrange — just keep an eye on your email and '
+                'Action Centre. If we have any questions, that’s where they’ll appear.')
+    en_safety = (f'One note for your peace of mind: we’ll only ever ask about you and your studies. '
+                 f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
+                 f'does, it’s not us — please tell us at {SUPPORT_EMAIL}.')
+
+    bm_intro = ('Tahniah, dan terima kasih — anda telah melengkapkan permohonan dan menghantar '
+                'dokumen anda untuk Program Bantuan B40. Itu satu langkah penting, dan kami tahu ia '
+                'memerlukan usaha yang sungguh-sungguh untuk mengumpulkan semuanya. Syabas.')
+    bm_lead = ('Permohonan anda kini bersama pasukan kami. Berikut ialah perkara yang akan berlaku '
+               'seterusnya, supaya tiada kejutan:')
+    bm_steps = [
+        ('Kami menyemak semua yang anda hantar', 'Pasukan kami menyemak permohonan dan dokumen anda '
+         'dengan teliti untuk memahami keadaan keluarga anda secara adil.'),
+        ('Kami mungkin menghubungi anda untuk beberapa perkara', 'Kadangkala kami memerlukan foto '
+         'dokumen yang lebih jelas, satu lagi dokumen, atau jawapan ringkas kepada soalan. Jika ya, '
+         'anda akan melihatnya di Pusat Tindakan anda dan kami akan menghantar e-mel — balas di '
+         'situ sahaja. Membalas dengan cepat membantu permohonan anda bergerak lebih pantas.'),
+        ('Kami menjemput anda ke temu duga ringkas', 'Setelah semakan selesai, kami akan menjemput '
+         'anda ke temu duga mesra. Anda akan diberikan tiga slot masa — pilih sahaja yang paling '
+         'sesuai untuk anda.'),
+        ('Temu duga itu sendiri', 'Ia panggilan video ringkas, kira-kira 30 minit, melalui Google '
+         'Meet. Selepas anda memilih masa, kami akan menghantar pautan dan peringatan satu hari dan '
+         'satu jam sebelumnya. Sila sertai dengan kamera dibuka — ia membantu kami mengesahkan '
+         'permohonan anda.'),
+        ('Jika anda di bawah 18 tahun', 'Ibu bapa atau penjaga mesti bersama anda semasa temu duga. '
+         '(Tidak kira umur anda, penemu duga kami sentiasa berbesar hati untuk bercakap dengan '
+         'mereka juga.)'),
+    ]
+    bm_after = ('Buat masa ini, tiada apa-apa yang perlu anda uruskan — pantau sahaja e-mel dan '
+                'Pusat Tindakan anda. Jika kami ada sebarang soalan, di situlah ia akan muncul.')
+    bm_safety = (f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan '
+                 f'pengajian anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
+                 f'OTP atau PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami '
+                 f'di {SUPPORT_EMAIL}.')
+
+    # ── Plain text ────────────────────────────────────────────────────────────
+    def text_block(greeting, intro, lead, steps, btn_line, after, safety, signoff):
+        body_steps = '\n\n'.join(f'{i}. {t} — {d}' for i, (t, d) in enumerate(steps, 1))
+        return (f'{greeting}\n\n{intro}\n\n{lead}\n\n{body_steps}\n\n{btn_line}\n\n'
+                f'{after}\n\n{safety}\n\n{signoff}')
+    en_text = text_block(
+        f'Hi {en_name},', en_intro, en_lead, en_steps, f'View my application: {link}', en_after,
+        en_safety, 'Warm regards,\nThe B40 Assistance Programme Team')
+    bm_text = text_block(
+        f'Salam {bm_name},', bm_intro, bm_lead, bm_steps, f'Lihat permohonan saya: {link}', bm_after,
+        bm_safety, 'Salam hormat,\nPasukan Program Bantuan B40')
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    # ── HTML ──────────────────────────────────────────────────────────────────
+    def html_block(greeting, intro, lead, steps, btn_label, after, safety, signoff):
+        lis = ''.join(
+            f'<li style="margin:0 0 12px;"><strong>{t}</strong> — {d}</li>' for t, d in steps)
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 14px;">{intro}</p>'
+            f'<p style="margin:0 0 10px;">{lead}</p>'
+            f'<ol style="margin:0 0 18px;padding-left:20px;">{lis}</ol>'
+            f'<p style="margin:0 0 18px;">{_email_button(link, btn_label)}</p>'
+            f'<p style="margin:0 0 14px;">{after}</p>'
+            f'<p style="margin:0 0 16px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    en_html = html_block(
+        f'Hi {en_name},', en_intro, en_lead, en_steps, 'View my application', en_after,
+        en_safety, 'Warm regards,<br>The B40 Assistance Programme Team')
+    bm_html = html_block(
+        f'Salam {bm_name},', bm_intro, bm_lead, bm_steps, 'Lihat permohonan saya', bm_after,
+        bm_safety, 'Salam hormat,<br>Pasukan Program Bantuan B40')
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
+    return _send_html(to_email, subject, text_body, html_body)
+
+
 def send_contact_submission_admin_email(*, to_email, name, contact, category, message, created_at):
     """Internal: email a public contact-form submission to the team (contact@ via
     ADMIN_NOTIFY_EMAIL). Reply-To is set to the submitter's contact when it looks like
