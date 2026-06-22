@@ -1995,6 +1995,10 @@
         "body": "There's no award waiting for you right now. We'll let you know the moment a supporter chooses to fund your studies.",
         "cta": "Back to my application"
       },
+      "finalising": {
+        "heading": "You've accepted — thank you!",
+        "body": "We're finalising your funding now. You'll get a confirmation email and your onboarding steps within a couple of days. There's nothing you need to do in the meantime."
+      },
       "confirmed": {
         "heading": "Great news — your studies are funded",
         "body": "A supporter has chosen to fund your studies. Their identity stays private, just as yours stays private from them.",
@@ -2722,10 +2726,20 @@
       "refError": "Could not save the referee. Please try again.",
       "genLang": "Output language",
       "visionError": "Could not re-run Vision.",
+      "cooloff": {
+        "declineScheduled": "This decline is scheduled to be sent on",
+        "awardScheduled": "This funding confirmation is scheduled to be sent on",
+        "silentNote": "The student sees nothing until then — cancel here to reconsider.",
+        "cancelDecline": "Cancel decline",
+        "holdAward": "Hold",
+        "cancelConfirm": "Cancel this scheduled decline? The applicant will not be declined and never saw it.",
+        "holdConfirm": "Hold this award? The acceptance is reversed, the amount returns to the sponsor, and the student never saw a confirmation.",
+        "error": "Couldn't update. Please try again."
+      },
       "reject": {
         "declineContractual": "Decline (contractual)",
-        "confirmReview": "Decline this applicant? They were reviewed but not selected. A decline email will be sent to them now.",
-        "confirmContractual": "Decline this accepted applicant for contractual reasons? A decline email will be sent to them now.",
+        "confirmReview": "Decline this applicant? They were reviewed but not selected. A decline email will be sent to them (after a short cool-off, if one is set).",
+        "confirmContractual": "Decline this accepted applicant for contractual reasons? A decline email will be sent to them (after a short cool-off, if one is set).",
         "running": "Declining…",
         "error": "Couldn't decline this applicant. Please try again.",
         "category": {

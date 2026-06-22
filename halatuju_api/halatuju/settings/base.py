@@ -197,6 +197,15 @@ STUDENT_ASSIGNMENT_EMAIL_ENABLED = os.environ.get('STUDENT_ASSIGNMENT_EMAIL_ENAB
 # submission-ack email at that step; when OFF the basic ack still sends. EN+BM.
 PROFILE_COMPLETE_EMAIL_ENABLED = os.environ.get('PROFILE_COMPLETE_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# Cool-off windows before a decision's comm goes out, giving time to reconsider/reverse.
+# DECLINE: a post-shortlist admin decline is held silently this many days before it reveals
+# (status → rejected) + the decline email sends. AWARD: a student-accepted award is held this
+# many days before the 'funding confirmed' email + onboarding (the 'sponsored' flip). An admin
+# can cancel/hold within the window and the student never sees it. **Default 0 = OFF (immediate),
+# like the other comms flags — prod sets the env vars (DECLINE=7, AWARD=2) to switch the cool-off on.**
+DECLINE_COOLOFF_DAYS = float(os.environ.get('DECLINE_COOLOFF_DAYS', '0'))
+AWARD_COOLOFF_DAYS = float(os.environ.get('AWARD_COOLOFF_DAYS', '0'))
+
 # Interview scheduling: the assigned reviewer proposes a few times, the student books
 # one in-app, and we send confirmations + reminders. OFF by default — the whole surface
 # (admin propose-card + student booking panel + endpoints) is dark until flipped on.

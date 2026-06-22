@@ -27,6 +27,7 @@ export default function ScholarshipAwardPage() {
   const router = useRouter()
 
   const [offer, setOffer] = useState<StudentAward | null>(null)
+  const [finalising, setFinalising] = useState(false)
   const [isMinor, setIsMinor] = useState(false)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -46,7 +47,7 @@ export default function ScholarshipAwardPage() {
       return
     }
     getStudentAward({ token })
-      .then((res) => { if (active) { setOffer(res.offer); setIsMinor(res.is_minor) } })
+      .then((res) => { if (active) { setOffer(res.offer); setIsMinor(res.is_minor); setFinalising(!!res.finalising) } })
       .catch(() => { if (active) setOffer(null) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
@@ -87,7 +88,11 @@ export default function ScholarshipAwardPage() {
           : { action: 'accept', locale },
         { token },
       )
-      router.push('/scholarship/onboarding')
+      // With the award cool-off on, the acceptance is held — onboarding isn't open yet, so
+      // show the 'finalising' state instead of pushing to onboarding (cool-off off → push).
+      const res = await getStudentAward({ token })
+      if (res.finalising) { setFinalising(true); setOffer(null) }
+      else router.push('/scholarship/onboarding')
     } catch (e) {
       const code = (e as Error & { code?: string }).code || ''
       setError(messageForCode(code))
@@ -125,6 +130,24 @@ export default function ScholarshipAwardPage() {
 
   if (status === 'loading' || loading) {
     return wrap(<p className="text-gray-500">{t('scholarship.apply.loading')}</p>)
+  }
+
+  // Award cool-off: accepted, being finalised — confirmation + onboarding open in a couple of days.
+  if (finalising) {
+    return wrap(
+      <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+          <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900">{t('scholarship.award.finalising.heading')}</h1>
+        <p className="mx-auto mt-3 max-w-md text-gray-600">{t('scholarship.award.finalising.body')}</p>
+        <Link href="/scholarship/application" className="btn-primary mt-6 inline-block">
+          {t('scholarship.award.empty.cta')}
+        </Link>
+      </div>
+    )
   }
 
   // Gentle empty state — no offer waiting.

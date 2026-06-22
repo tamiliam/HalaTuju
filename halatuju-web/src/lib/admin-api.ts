@@ -475,6 +475,10 @@ export interface AdminScholarshipDetail {
   rejection_category: string
   rejected_at: string | null
   rejected_by: string
+  // Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation + its reveal date.
+  pending_rejection_category: string
+  decline_due_at: string | null
+  award_due_at: string | null
   submitted_at: string
   funding_need: { categories: string[]; funding_note: string; programme_months: number | null } | null
   // S16 Phase A: deterministic pre-interview flag list. {code, params}; the
@@ -749,6 +753,20 @@ export async function rejectApplication(
 ) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/reject/`, 'POST', { category }, options
+  )
+}
+
+/** Cancel a scheduled-but-unrevealed decline within the cool-off (the student never saw it). */
+export async function cancelPendingDecline(id: number, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/cancel-decline/`, 'POST', {}, options
+  )
+}
+
+/** Hold an accepted-but-unconfirmed award within the cool-off (amount returns to the sponsor). */
+export async function holdPendingAward(id: number, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/hold-award/`, 'POST', {}, options
   )
 }
 

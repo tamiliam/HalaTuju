@@ -1908,7 +1908,7 @@ export interface StudentAward {
  *  (so the page knows to require a guardian to accept). */
 export async function getStudentAward(
   options?: ApiOptions
-): Promise<{ offer: StudentAward | null; is_minor: boolean }> {
+): Promise<{ offer: StudentAward | null; finalising?: boolean; is_minor: boolean }> {
   return apiRequest('/api/v1/scholarship/award/', options)
 }
 

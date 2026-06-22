@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Decision cool-off: a reconsideration window before the decline (#13) and award-confirmed (#14)
+  comms go out (`DECLINE_COOLOFF_DAYS`=7, `AWARD_COOLOFF_DAYS`=2 in prod; 0 = off/immediate).**
+  A post-shortlist admin **decline** is now recorded **silently** — status isn't flipped and no
+  email sends — and the existing every-15-min `send_pending_decision_emails` cron reveals it
+  (status → rejected + the bucket decline email) once the 7-day window passes. A student **award
+  acceptance** likewise records the consent + money hold immediately but defers the 'sponsored'
+  flip + the "funding confirmed" email + onboarding for 2 days. Within either window an admin can
+  **Cancel** the decline / **Hold** the award from the cockpit (an amber "scheduled — cancel/hold"
+  banner) and the student never saw it; a held award lapses (the amount returns to the sponsor).
+  The student's award page shows a "we're finalising your funding" state during the window instead
+  of a blank page. Backend: `admin_reject`/`respond_to_award` now schedule;
+  `cancel_pending_decline`/`hold_pending_award` + `release_pending_declines`/`release_pending_awards`;
+  endpoints `…/<id>/cancel-decline/` + `…/hold-award/`. **Migration `scholarship/0069`** (4 additive
+  fields, migrate-first). +15 tests; cockpit banners + award "finalising" card, i18n en/ms/ta.
 - **"Your application is in — here's what happens next" student email at profile-complete
   (`PROFILE_COMPLETE_EMAIL_ENABLED`).** When a student confirms their profile (shortlisted →
   profile_complete), they now get a warm HTML email that thanks them and sets expectations for the
