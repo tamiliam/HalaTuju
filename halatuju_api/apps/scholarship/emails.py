@@ -1117,68 +1117,70 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
     bm_name = first or 'di sana'
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     link = f'{frontend}/scholarship/application'
-    subject = 'Thank you — your B40 Assistance Programme application is complete ✅'
+    subject = 'Your B40 application is in — here’s what happens next'
 
-    en_intro = ('Congratulations, and thank you — you’ve completed your application and submitted '
-                'your documents for the B40 Assistance Programme. That’s an important step, and we '
-                'know it takes real effort to gather everything. Well done.')
+    en_intro = ('Thank you — your application and documents for the B40 Assistance Programme are '
+                'safely in. Pulling everything together takes real effort, so well done for getting '
+                'it done.')
     en_lead = ('Your application is now with our team. Here’s exactly what happens next, so there '
                'are no surprises:')
     en_steps = [
-        ('We review everything you’ve sent', 'Our team carefully checks your application and '
-         'documents to understand your family’s situation fairly.'),
-        ('We may come back to you with a few things', 'Sometimes we need a clearer photo of a '
-         'document, one more document, or a short answer to a question. If we do, you’ll see it in '
-         'your Action Centre and we’ll email you — just reply there. Responding quickly helps your '
-         'application move along faster.'),
-        ('We invite you to a short interview', 'Once the review is settled, we’ll invite you to a '
-         'friendly interview. You’ll be offered three time slots — simply pick the one that suits '
-         'you best.'),
-        ('The interview itself', 'It’s a short video call, about 30 minutes, on Google Meet. After '
-         'you pick your time, we’ll send the link and reminders one day and one hour before. Please '
-         'join with your camera on — it helps us verify your application.'),
-        ('If you are under 18', 'A parent or guardian must be with you during the interview. '
-         '(Whatever your age, our interviewer is always glad to speak with them too.)'),
+        ('We review everything you’ve sent.', 'Our team reads through your application and documents '
+         'carefully, to understand your family’s situation fairly. Sometimes we need a clearer copy '
+         'of a document, an extra document, or a short answer to a question — if so, it’ll appear in '
+         'your Action Centre and we’ll email to let you know. Just reply inside the Action Centre; '
+         'responding quickly helps your application move along.'),
+        ('We invite you to a short interview.', 'Once the review is settled, we’ll offer you three '
+         'time slots — pick the one that suits you best. If you’re under 18, please choose a time a '
+         'parent or guardian can join too, as they’ll need to be with you for the call.'),
+        ('The interview itself.', 'It’s a short video call, about 30 minutes, on Google Meet. We’ll '
+         'email the joining link as soon as you book, with a reminder before the call. Please join '
+         'with your camera on so we can meet you face to face. If you’re under 18, your parent or '
+         'guardian should be with you — and whatever your age, our interviewer is always glad to '
+         'say hello to them.'),
     ]
     en_after = ('For now, there’s nothing you need to arrange — just keep an eye on your email and '
-                'Action Centre. If we have any questions, that’s where they’ll appear.')
+                'Action Centre. You’ll usually hear from us within about one to two weeks, whether '
+                'that’s a quick question or your invitation to interview.')
     en_safety = (f'One note for your peace of mind: we’ll only ever ask about you and your studies. '
                  f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
-                 f'does, it’s not us — please tell us at {SUPPORT_EMAIL}.')
+                 f'does, it isn’t us — please tell us straight away at {SUPPORT_EMAIL}.')
 
-    bm_intro = ('Tahniah, dan terima kasih — anda telah melengkapkan permohonan dan menghantar '
-                'dokumen anda untuk Program Bantuan B40. Itu satu langkah penting, dan kami tahu ia '
-                'memerlukan usaha yang sungguh-sungguh untuk mengumpulkan semuanya. Syabas.')
+    bm_intro = ('Terima kasih — permohonan dan dokumen anda untuk Program Bantuan B40 telah selamat '
+                'diterima. Mengumpulkan semuanya memerlukan usaha yang sungguh-sungguh, jadi syabas '
+                'kerana menyelesaikannya.')
     bm_lead = ('Permohonan anda kini bersama pasukan kami. Berikut ialah perkara yang akan berlaku '
                'seterusnya, supaya tiada kejutan:')
     bm_steps = [
-        ('Kami menyemak semua yang anda hantar', 'Pasukan kami menyemak permohonan dan dokumen anda '
-         'dengan teliti untuk memahami keadaan keluarga anda secara adil.'),
-        ('Kami mungkin menghubungi anda untuk beberapa perkara', 'Kadangkala kami memerlukan foto '
-         'dokumen yang lebih jelas, satu lagi dokumen, atau jawapan ringkas kepada soalan. Jika ya, '
-         'anda akan melihatnya di Pusat Tindakan anda dan kami akan menghantar e-mel — balas di '
-         'situ sahaja. Membalas dengan cepat membantu permohonan anda bergerak lebih pantas.'),
-        ('Kami menjemput anda ke temu duga ringkas', 'Setelah semakan selesai, kami akan menjemput '
-         'anda ke temu duga mesra. Anda akan diberikan tiga slot masa — pilih sahaja yang paling '
-         'sesuai untuk anda.'),
-        ('Temu duga itu sendiri', 'Ia panggilan video ringkas, kira-kira 30 minit, melalui Google '
-         'Meet. Selepas anda memilih masa, kami akan menghantar pautan dan peringatan satu hari dan '
-         'satu jam sebelumnya. Sila sertai dengan kamera dibuka — ia membantu kami mengesahkan '
-         'permohonan anda.'),
-        ('Jika anda di bawah 18 tahun', 'Ibu bapa atau penjaga mesti bersama anda semasa temu duga. '
-         '(Tidak kira umur anda, penemu duga kami sentiasa berbesar hati untuk bercakap dengan '
-         'mereka juga.)'),
+        ('Kami menyemak semua yang anda hantar.', 'Pasukan kami membaca permohonan dan dokumen anda '
+         'dengan teliti, untuk memahami keadaan keluarga anda secara adil. Kadangkala kami '
+         'memerlukan salinan dokumen yang lebih jelas, dokumen tambahan, atau jawapan ringkas '
+         'kepada soalan — jika ya, ia akan muncul di Pusat Tindakan anda dan kami akan menghantar '
+         'e-mel untuk memberitahu anda. Balas sahaja di dalam Pusat Tindakan; membalas dengan cepat '
+         'membantu permohonan anda bergerak.'),
+        ('Kami menjemput anda ke temu duga ringkas.', 'Setelah semakan selesai, kami akan menawarkan '
+         'anda tiga slot masa — pilih yang paling sesuai untuk anda. Jika anda di bawah 18 tahun, '
+         'sila pilih masa yang membolehkan ibu bapa atau penjaga turut menyertai, kerana mereka '
+         'perlu bersama anda semasa panggilan.'),
+        ('Temu duga itu sendiri.', 'Ia panggilan video ringkas, kira-kira 30 minit, melalui Google '
+         'Meet. Kami akan menghantar pautan untuk menyertai sebaik sahaja anda menempah, dengan '
+         'peringatan sebelum panggilan. Sila sertai dengan kamera dibuka supaya kami dapat bertemu '
+         'anda secara bersemuka. Jika anda di bawah 18 tahun, ibu bapa atau penjaga anda perlu '
+         'bersama anda — dan tidak kira umur anda, penemu duga kami sentiasa berbesar hati untuk '
+         'menyapa mereka.'),
     ]
     bm_after = ('Buat masa ini, tiada apa-apa yang perlu anda uruskan — pantau sahaja e-mel dan '
-                'Pusat Tindakan anda. Jika kami ada sebarang soalan, di situlah ia akan muncul.')
+                'Pusat Tindakan anda. Kebiasaannya anda akan mendengar daripada kami dalam masa '
+                'kira-kira satu hingga dua minggu, sama ada soalan ringkas atau jemputan temu duga '
+                'anda.')
     bm_safety = (f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan '
                  f'pengajian anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
                  f'OTP atau PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami '
-                 f'di {SUPPORT_EMAIL}.')
+                 f'dengan segera di {SUPPORT_EMAIL}.')
 
     # ── Plain text ────────────────────────────────────────────────────────────
     def text_block(greeting, intro, lead, steps, btn_line, after, safety, signoff):
-        body_steps = '\n\n'.join(f'{i}. {t} — {d}' for i, (t, d) in enumerate(steps, 1))
+        body_steps = '\n\n'.join(f'{i}. {t} {d}' for i, (t, d) in enumerate(steps, 1))
         return (f'{greeting}\n\n{intro}\n\n{lead}\n\n{body_steps}\n\n{btn_line}\n\n'
                 f'{after}\n\n{safety}\n\n{signoff}')
     en_text = text_block(
@@ -1192,7 +1194,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
     # ── HTML ──────────────────────────────────────────────────────────────────
     def html_block(greeting, intro, lead, steps, btn_label, after, safety, signoff):
         lis = ''.join(
-            f'<li style="margin:0 0 12px;"><strong>{t}</strong> — {d}</li>' for t, d in steps)
+            f'<li style="margin:0 0 12px;"><strong>{t}</strong> {d}</li>' for t, d in steps)
         return (
             f'<p style="margin:0 0 14px;">{greeting}</p>'
             f'<p style="margin:0 0 14px;">{intro}</p>'
