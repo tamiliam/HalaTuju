@@ -245,6 +245,15 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
                 rescheduled=rescheduling)
         # Nudge on WhatsApp too (opt-in gated) so students who don't check email still respond.
         _send_wa_proposed(application, student_name, reviewer)
+    # The interview process has begun — times are out, the first interview@ email goes to the
+    # student — so advance the application to 'interviewing' to reflect reality on the board.
+    # (The old trigger, creating the Interview-Stage capture draft, fired too late: reviewers
+    # schedule + conduct the interview first and fill the capture form last, so cases sat at
+    # 'profile_complete' through a booked/concluded interview.) Only ever advances FROM
+    # profile_complete — never pulls a later or decided case backward.
+    if application.status == 'profile_complete':
+        application.status = 'interviewing'
+        application.save(update_fields=['status'])
     return created
 
 
