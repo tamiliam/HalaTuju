@@ -1281,6 +1281,37 @@ def detect_vision_outage(window_hours=24):
     }
 
 
+def reprocess_unread_ic_documents(limit=200):
+    """Self-heal IC / parent_ic documents stuck UN-PROCESSED (``vision_run_at`` is NULL).
+
+    ``run_vision_for_document`` never raises and ALWAYS stamps ``vision_run_at``, so a NULL
+    means Vision was never run on the doc — a silent upload-time pipeline failure with no
+    retry. That strands the student behind a false ``ic_service_down`` ("document-check
+    service unavailable") consent block (``ic_identity_blockers`` line ~1170) and a "couldn't
+    read the IC" cockpit verdict, even though the service is up. This re-runs Vision on every
+    such doc — once each: after a run, ``vision_run_at`` is set, so it's never re-picked (cost
+    is one Vision read per stuck doc). Defensive: if a run ever does raise, we stamp an outcome
+    so it can't loop. Returns ``{scanned, processed, errored}``.
+    """
+    from .vision import run_vision_for_document
+    stuck = list(ApplicantDocument.objects
+                 .filter(doc_type__in=('ic', 'parent_ic'), vision_run_at__isnull=True)
+                 .order_by('uploaded_at')[:limit])
+    scanned = processed = errored = 0
+    for doc in stuck:
+        scanned += 1
+        try:
+            res = run_vision_for_document(doc)
+            errored += 1 if res.get('error') else 0
+            processed += 0 if res.get('error') else 1
+        except Exception:
+            errored += 1
+            doc.vision_error = doc.vision_error or 'reprocess_failed'
+            doc.vision_run_at = timezone.now()
+            doc.save(update_fields=['vision_error', 'vision_run_at'])
+    return {'scanned': scanned, 'processed': processed, 'errored': errored}
+
+
 def income_doc_blockers(application):
     """The route + selection aware COMPULSORY income documents still missing, as blocker
     codes (gate v2, 2026-06-05). Sourced from ``income_engine`` so the consent gate and

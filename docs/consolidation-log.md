@@ -14,6 +14,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 - 2026-06-21 fix(income): document_unreadable_blockers passed a list (not the app) to working_members → always [] on salary route → unreadable salary-route earner IC/rel doc skipped the submission gate; now effective_working_members(application) + a regression test (halatuju_api: services.py, tests/test_family.py)
 - 2026-06-23 fix(scheduling): advance profile_complete->interviewing when interview times are proposed (status was stuck at Complete through booked/concluded interviews); propose_slots flip + 6-app backfill (halatuju_api: scheduling.py + tests)
 - 2026-06-23 fix(check2): surface system 'couldn't read your doc' upload requests to the form-locked student (unreadable/no-identity/stale-STR added to STUDENT_DOC_REQUEST_CODES; name-mismatch class stays reviewer-mediated); un-hides 5 live requests (halatuju_api: resolution.py + tests)
+- 2026-06-23 fix(vision): self-heal IC/parent_ic stuck unprocessed (vision_run_at NULL from silent upload OCR failures) → false 'ic_service_down' consent block; reprocess_unread_ic command + cron job + sweep fn (halatuju_api: services.py, views.py JOBS, mgmt command + tests)
 
 _(previous batch cleared at the 2026-06-16 review below)_
 
