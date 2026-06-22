@@ -134,6 +134,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   must renumber to `0068`.
 
 ### Fixed
+- **Check-2 "couldn't read your document" upload requests now reach the student (were silently hidden).** A post-submit
+  student is form-LOCKED — the Action Centre is their ONLY surface — but the visibility filter (`STUDENT_DOC_REQUEST_CODES`)
+  only showed system doc requests for genuinely MISSING docs (`*_missing`). An uploaded-but-unreadable doc (e.g.
+  `offer_unreadable` — "your offer letter was hard to read") was hidden, so the cockpit showed an open request the student
+  never saw and had no way to act on (the inline Gopal coach it deferred to lives on the now-unreachable Documents tab).
+  **Fix:** the student-visible set now also includes the re-uploadable un-usable class — `*_unreadable` plus
+  `offer_no_identity` (readable but no name/IC) and `str_not_current` (stale STR) — so the student gets an Action Centre
+  Upload task and can replace the doc. The NAME-MISMATCH class (`offer_name_mismatch` / `results_slip_name_mismatch`)
+  stays reviewer-mediated (a verification judgement, often a romanisation false positive). Supersedes the 2026-06-10
+  "hide all bad-doc tickets" rule. Backend only, no migration; the FE (KNOWN_CODES + trilingual titles) already existed.
+  +1 test, 2 updated (1478 scholarship pytest). Currently un-hides 5 live requests across 5 students. Branch
+  `fix/interviewing-on-propose`.
 - **Status now advances to "Interviewing" when the interview process starts (was stuck at "Complete").** The
   `profile_complete → interviewing` transition only fired when a reviewer opened the *Interview-Stage capture* and saved
   a draft (`views_admin.AdminInterviewView`). But reviewers run the interview through the *scheduling* flow (propose
