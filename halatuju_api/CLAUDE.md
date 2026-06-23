@@ -286,6 +286,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/management/commands/audit_data.py` | Data completeness report (records dashboard `audit` status) | No |
 | `apps/courses/management/commands/course_data_check.py` | READ-ONLY dashboard health check: audit + concurrent link reachability (no writes) | No |
 | `apps/courses/course_data_status.py` | Course Data dashboard support: `record_status` + live `coverage_snapshot` | No |
+| `apps/courses/management/commands/refresh_institution_urls.py` | Re-source institution URLs from authoritative index (matrikulasi/poly/kk); dry-run, --apply writes canonicalisations; run from a MY-capable network | No |
 | `apps/courses/management/commands/generate_stpm_headlines.py` | Gemini-powered STPM headline generator | No |
 | `apps/courses/management/commands/backfill_spm_field_key.py` | Deterministic SPM field_key classifier + backfill | No |
 | `apps/courses/management/commands/classify_stpm_fields.py` | Deterministic STPM field_key classifier + backfill | No |
@@ -515,7 +516,43 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-19)
+## Next Sprint (as of 2026-06-21)
+
+**▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
+ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,
+`CHECK2_STUDENT_QUERIES_ENABLED`, `CHECK2_AUTO_GENERATE`, **`CHECK2_ANSWER_RELEVANCE_ENABLED` (turned ON 2026-06-21)**,
+**`STUDENT_ASSIGNMENT_EMAIL_ENABLED` (ON — students DO get the "interview is next, times to follow" email on assignment)**,
+`DOC_GENUINENESS_CHECK_ENABLED`, `SPONSOR_POOL_ENABLED`, `IC_GEMINI_FALLBACK_ENABLED`,
+**`PROFILE_COMPLETE_EMAIL_ENABLED` (ON 2026-06-22 — the "your application is in — what happens next" student email at
+profile-complete; supersedes the basic submission-ack)**. **WhatsApp S2 proposed-slots nudge + S3 reminder-v2 are LIVE**
+(the four `TWILIO_WHATSAPP_{PROPOSED,REMINDER}_CONTENT_SID_{EN,BM}` set on rev …00504, Meta-approved 2026-06-21; legacy
+`TWILIO_WHATSAPP_REMINDER_CONTENT_SID` also set).
+**S4 phone-verify is LIVE on SMS** (2026-06-22): `TWILIO_VERIFY_SERVICE_SID=VA3ca85b…` set, channel via
+`PHONE_VERIFY_CHANNEL` (default `sms`; WhatsApp channel deferred — Twilio's BYO-sender onboarding is ~2-4wk, error 60223
+until done — flip the env var to `whatsapp` once cleared, no code change). **S5 STOP→opt-out webhook is LIVE** (owner set
+the Twilio inbound webhook URL 2026-06-22; unsigned POST→403, STOP maps a profile only when we've sent it an app-logged
+WhatsApp).
+**Decision cool-off LIVE** (2026-06-22): `DECLINE_COOLOFF_DAYS=7` + `AWARD_COOLOFF_DAYS=2` set — an admin decline (#13)
+and a student award acceptance (#14) are held silently for the window (admin can cancel/hold from the cockpit) before the
+comm + status reveal; the existing `send_pending_decision_emails` cron releases them. Migration `scholarship/0069` (4
+additive fields). Set either to 0 to disable (immediate, the old behaviour).
+DARK/unset: `SHOW_REFEREES=false`.
+Meet SA key **rotated 2026-06-21** (old key `692d49f8…` deleted after a transcript exposure; new `7ef25e69…` in
+`GOOGLE_MEET_SA_JSON` — still an env var, TD-125 to move it to Secret Manager).
+
+**▶ SHIPPED 2026-06-21 — WhatsApp comms go-live + cockpit fixes + interview reminder-notice gating (retro
+`docs/retrospective-2026-06-21-whatsapp-golive-cockpit-reminders.md`; same day: request-owned doc slots, retro
+`…-request-owned-doc-slots.md`).**
+- **WhatsApp comms is LIVE** (`WHATSAPP_ENABLED=1`, api rev `…00490-h96`). Interview reminders (1-day + 1-hour) now send a
+  real WhatsApp alongside the email, opt-in gated (`whatsapp_opt_in`, opt-out toggle in /profile). Migrate-first:
+  scholarship `0068` (`whatsapp_messages`, RLS) + courses `0059` (`whatsapp_opt_in`). Sender `whatsapp:+19162597009`,
+  approved template `copy_b40_interview_reminder` (`HX7b5eee…`). Smoke-test delivered. Twilio creds in Cloud Run env.
+- **Reminders gate on booking notice** (`1c15ca6`): 24h reminder needs ≥24h notice, 1h needs ≥1h (no instant same-day
+  "reminder"); `book_slot` stamps `interview_booked_at` on every (re)booking. All 3 channels.
+- **Cockpit** (`9197467`): Save-draft accepts `verdict=''` (no data loss); gap-spotter told today's date (MYT).
+- **▶ NEXT — roadmap `docs/plans/2026-06-21-whatsapp-and-scheduling-followups.md`** (awaiting approval): proposed-slots
+  WhatsApp nudge (TD-138, highest value) · enhanced reminder template w/ Join button · reschedule lead-time relax
+  (TD-137) · phone verification via Twilio Verify (TD-136) · STOP→opt-out webhook (TD-135).
 
 **▶ SHIPPED 2026-06-19 — Reviewer comms consistency + reschedule + verdict SLA (3-sprint roadmap, commits
 `a3c5d31`→`1d89393`; migration `scholarship/0064` additive migrate-first; retro
@@ -670,7 +707,7 @@ pathway work; commits `4446c2e` bug+aliran, `4589a6a` req_disability; courses mi
 - **▶ NEXT:** scheduling is now LIVE — **monitor the first real bookings** (a Meet link should generate + the
   confirmation/reminders fire). Owner follow-ups: add the Guide scheduling screenshot (TD-126); add a merged **SPF**
   TXT (`v=spf1 include:_spf.google.com include:spf.brevo.com ~all`); refine the assignment email copy to point students
-  to "book your interview" (note: that email is itself gated by the separate OFF `STUDENT_ASSIGNMENT_EMAIL_ENABLED`).
+  to "book your interview" (the assignment email `STUDENT_ASSIGNMENT_EMAIL_ENABLED` is now **ON** in prod — 2026-06-21).
   TD-124 (contact inbox UI), TD-125 (Meet key → Secret Manager). Other thread: genuineness branch (unmerged).
 
 **▶ DONE — NOT MERGED/DEPLOYED (branch `feature/doc-eval-harness`, 2 sprint-closes this session: `f57f343`→`c788c8e`
@@ -934,7 +971,7 @@ AI-clarify-query switch `CHECK2_STUDENT_QUERIES_ENABLED` stays OFF** (owner's ca
 Tests: 989 scholarship backend pytest + 276 jest; i18n parity 2474.
 **▶ UPDATE 2026-06-15: `CHECK2_STUDENT_QUERIES_ENABLED` is now ON in prod — the student-facing Check-2 layer
 (auto clarify queries, doc requests, the "few questions" emails, AND the `pathway_confirm` "Is this where you're going?"
-step) is LIVE; students are responding. Only `CHECK2_ANSWER_RELEVANCE_ENABLED` remains OFF. Verify the live env var with
+step) is LIVE; students are responding. (`CHECK2_ANSWER_RELEVANCE_ENABLED` was also turned ON 2026-06-21.) Verify the live env var with
 `gcloud run services describe halatuju-api` before asserting flag state — do not trust older log entries.**
 
 **▶ JUST SHIPPED 2026-06-11 (b) — SARA≠STR fix + cockpit doc UX + in-cockpit viewer + HEIC (NO migration; retro

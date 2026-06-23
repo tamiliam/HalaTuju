@@ -162,6 +162,47 @@ def working_members(application) -> list:
     return [m for m in _MEMBER_ORDER if m in chosen]
 
 
+def effective_working_members(application) -> list:
+    """The salary-route working members, with a fallback for the prefill-not-saved gap.
+
+    ``working_members`` reads ONLY the persisted ``income_working_members`` list. The income
+    wizard pre-ticks earners from the family roster and tags uploaded income docs to them, but
+    only PERSISTS the list when the student toggles a checkbox — so a student who accepts the
+    correct prefill and just uploads can leave ``income_working_members`` empty while their docs
+    are already tagged (e.g. mother's IC + salary slip + EPF). The salary route requires at least
+    one earner at submit, so an EMPTY list here is always that unsaved-prefill case, never a
+    deliberate choice — making it safe to reconstruct from the authoritative signals, in order:
+      1. the income docs the student actually uploaded + tagged (``household_member``), then
+      2. the family roster's earning members.
+    A non-empty explicit list always wins (a real selection is never overridden); off the salary
+    route, or with no signal to fall back to, returns []. No side effects; tolerant of a test
+    double without ``.documents`` / roster columns."""
+    explicit = working_members(application)
+    if explicit:
+        return explicit
+    if (getattr(application, 'income_route', '') or '').strip() != 'salary':
+        return []
+    # (1) Members the uploaded income docs are tagged to — what the student actually did.
+    found: set = set()
+    docs = getattr(application, 'documents', None)
+    if docs is not None:
+        try:
+            tagged = (docs.filter(doc_type__in=('parent_ic', 'salary_slip', 'epf'))
+                      .exclude(household_member='')
+                      .values_list('household_member', flat=True))
+            found.update(m for m in tagged if m in _MEMBER_ORDER)
+        except (AttributeError, TypeError):
+            pass
+    # (2) Else the declared earners from the family roster.
+    if not found:
+        try:
+            from .family import earning_members
+            found.update(m for m in earning_members(application) if m in _MEMBER_ORDER)
+        except (AttributeError, TypeError):
+            pass
+    return [m for m in _MEMBER_ORDER if m in found]
+
+
 def member_relationship_status(member: str, student_name: str, member_ic_name: str,
                                bc_child_name: str = '', bc_mother_name: str = '',
                                letter_name: str = '', bc_father_name: str = '') -> str:
@@ -1053,7 +1094,7 @@ def income_requirements(application) -> dict:
     route = (getattr(application, 'income_route', '') or '').strip()
 
     if route == 'salary':
-        members = salary_member_blocks(working_members(application))
+        members = salary_member_blocks(effective_working_members(application))
         return {'route': 'salary', 'members': members,
                 'compulsory': [], 'optional': ['water_bill', 'electricity_bill']}
 

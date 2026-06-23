@@ -177,17 +177,69 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
     sponsorship.decided_at = timezone.now()
     sponsorship.save(update_fields=['status', 'consent', 'decided_at', 'updated_at'])
 
-    application.status = 'sponsored'
-    application.save(update_fields=['status'])
+    # Cool-off (#14): the acceptance + money hold are recorded now, but the 'sponsored' flip +
+    # the funding-confirmed email + onboarding wait AWARD_COOLOFF_DAYS so we can reconsider /
+    # hold within the window (hold_pending_award reverts it; the student never saw confirmation).
+    from django.conf import settings as _settings
+    days = getattr(_settings, 'AWARD_COOLOFF_DAYS', 2)
+    if days and days > 0:
+        from datetime import timedelta
+        application.award_due_at = timezone.now() + timedelta(days=days)
+        application.save(update_fields=['award_due_at'])
+    else:
+        _finalise_award(application, locale)
+    return sponsorship
 
-    # F8a: tell the student their funding is confirmed + point them to onboarding.
-    # NO sponsor identity in the email (B4 two-way anonymity). Best-effort.
+
+def _finalise_award(application, locale='en'):
+    """The actual effect of an accepted award: flip to 'sponsored' + send the funding-confirmed
+    email (no sponsor identity, B4) + clear the cool-off marker. Shared by the immediate path
+    (cool-off disabled) and the release cron (cool-off elapsed). Best-effort email."""
+    application.status = 'sponsored'
+    application.award_due_at = None
+    application.save(update_fields=['status', 'award_due_at'])
     name = getattr(application.profile, 'name', '') if application.profile else ''
     send_award_confirmed_email(
         to_email=application.notify_email, applicant_name=name,
         programme_name=application.cohort.name, lang=locale,
     )
-    return sponsorship
+
+
+def hold_pending_award(application):
+    """Reverse an accepted-but-unconfirmed award within the cool-off so the org can reconsider:
+    the active sponsorship lapses (its amount returns to the sponsor's balance) and the cool-off
+    marker clears. The app stays 'accepted' (it was never flipped to 'sponsored'); the student
+    never saw a confirmation. Returns True if there was a pending award to hold."""
+    if not application.award_due_at:
+        return False
+    sp = application.sponsorships.filter(status='active').order_by('-decided_at').first()
+    if sp is not None:
+        sp.status = 'lapsed'
+        sp.decided_at = timezone.now()
+        sp.save(update_fields=['status', 'decided_at', 'updated_at'])
+    application.award_due_at = None
+    application.save(update_fields=['award_due_at'])
+    return True
+
+
+def release_pending_awards(now=None):
+    """Finalise every accepted award whose cool-off has passed: flip 'sponsored' + send the
+    funding-confirmed email + open onboarding. Intended for the scheduler. Returns the count."""
+    from .models import ScholarshipApplication
+    now = now or timezone.now()
+    qs = (ScholarshipApplication.objects
+          .filter(award_due_at__isnull=False, award_due_at__lte=now)
+          .exclude(status='sponsored').select_related('cohort', 'profile'))
+    released = 0
+    for app in qs:
+        # Only finalise if the acceptance still holds (not held/lapsed in the window).
+        if not app.sponsorships.filter(status='active').exists():
+            app.award_due_at = None
+            app.save(update_fields=['award_due_at'])
+            continue
+        _finalise_award(app, app.locale)
+        released += 1
+    return released
 
 
 def lapse_expired_offers():

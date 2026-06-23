@@ -193,6 +193,67 @@
         "expired": "Expired"
       }
     },
+    "impact": {
+      "totalGiven": "Total given",
+      "acrossStudents": "across {n} students",
+      "supported": "Students supported",
+      "semesters": "Semesters completed",
+      "semestersBy": "by your students",
+      "graduated": "Graduated",
+      "graduatedSub": "have finished their studies",
+      "givingTitle": "Your giving",
+      "committed": "Committed",
+      "completed": "Completed",
+      "available": "Available",
+      "balanceNote": "Committed is with students now · Completed is graduated · Available is ready to give again."
+    },
+    "journey": {
+      "matched": "Matched",
+      "onboarded": "Onboarded",
+      "studying": "Studying",
+      "graduated": "Graduated",
+      "semesters": "{n} semesters done"
+    },
+    "activity": {
+      "title": "Recent activity",
+      "live": "Live",
+      "funded": "You offered support to {ref}",
+      "accepted": "{ref} accepted your support",
+      "semester": "{ref} completed a semester",
+      "graduated": "{ref} graduated 🎓",
+      "thank_you": "A thank-you from {ref}"
+    },
+    "community": {
+      "line1": "You're one of {n} sponsors",
+      "line2": "Together supporting {n} students",
+      "waiting": "{n} students still waiting"
+    },
+    "statement": {
+      "title": "Giving statement",
+      "intro": "Two separate records: what you put into the trust, and what you gifted to students.",
+      "taxNote": "(Tax-deductible receipts once Section 44(6) is confirmed.)",
+      "print": "Print / save as PDF",
+      "donations": "Donations to the trust",
+      "donationsNote": "Money you donated into the trust. It becomes the charity's — it can't be withdrawn, only redirected.",
+      "gifts": "Gifts to students",
+      "giftsNote": "Gifts from your balance to a student — each independently verified as enrolled."
+    },
+    "students": {
+      "title": "Students",
+      "intro": "Each card is an anonymised student you could support. Filter by field, state or level.",
+      "allFields": "All fields",
+      "allStates": "All states",
+      "allLevels": "All levels",
+      "shown": "{count} shown",
+      "filteredEmpty": "No students match these filters.",
+      "support": "Support",
+      "fundingSoon": "Funding opens shortly — we're finalising the flow with the team."
+    },
+    "account": {
+      "title": "My Account",
+      "detailsTitle": "Your details",
+      "email": "Email"
+    },
     "trust": {
       "back": "Back to My Giving",
       "footerLink": "Trust & Transparency",
@@ -240,6 +301,21 @@
         "auditedBy": "Audited by {auditor}",
         "downloadReport": "download the annual assurance report"
       }
+    },
+    "autoSponsor": {
+      "title": "AutoSponsor",
+      "enable": "On",
+      "intro": "Set it once: when a student matching your choices joins the pool, we'll offer them your support automatically from your balance. They still accept it themselves — nothing is sent without their agreement.",
+      "field": "Field of study",
+      "state": "State",
+      "maxAmount": "Most per student (RM)",
+      "any": "Any",
+      "noCap": "No limit",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "note": "We only offer support while your balance covers it; when it runs low we simply wait until you top up. Each offer still needs the student's acceptance.",
+      "lastAllocated": "Last matched on {date}"
     }
   },
   "sponsorPool": {
@@ -1634,7 +1710,7 @@
       "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award.",
       "interview": {
         "title": "Your interview",
-        "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about 30–45 minutes).",
+        "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about 30 minutes).",
         "book": "Book this time",
         "selectFirst": "Please choose a time first.",
         "booked": "Your interview is booked for",
@@ -1919,6 +1995,10 @@
         "body": "There's no award waiting for you right now. We'll let you know the moment a supporter chooses to fund your studies.",
         "cta": "Back to my application"
       },
+      "finalising": {
+        "heading": "You've accepted — thank you!",
+        "body": "We're finalising your funding now. You'll get a confirmation email and your onboarding steps within a couple of days. There's nothing you need to do in the meantime."
+      },
       "confirmed": {
         "heading": "Great news — your studies are funded",
         "body": "A supporter has chosen to fund your studies. Their identity stays private, just as yours stays private from them.",
@@ -2149,7 +2229,17 @@
     "email": "Email Address",
     "emailVerified": "Verified",
     "emailVerifyNote": "A verification link will be sent to your new email",
-    "phoneVerifyNote": "A verification code will be sent to your new number",
+    "phoneVerifyNote": "We'll send a one-time code to your number to confirm it's yours.",
+    "phoneVerified": "Number verified",
+    "phoneCodeSent": "We sent a code to your number. Enter it below.",
+    "phoneCodePlaceholder": "Enter code",
+    "phoneCodeWrong": "That code didn't match. Please try again.",
+    "phoneVerifyFailed": "Couldn't send the code. Please try again.",
+    "confirm": "Confirm",
+    "whatsappUpdates": "Updates on WhatsApp",
+    "whatsappUpdatesNote": "We may message this number on WhatsApp about your application. Turn off to stop.",
+    "whatsappOn": "On",
+    "whatsappOff": "Off",
     "angkaGiliran": "Angka Giliran",
     "angkaGiliranHelper": "Your university application reference number (e.g. AB123C456)",
     "angkaGiliranInvalid": "Wrong format — must be AB123C456 (2 letters, 3 digits, 1 letter, 3 digits)",
@@ -2636,10 +2726,20 @@
       "refError": "Could not save the referee. Please try again.",
       "genLang": "Output language",
       "visionError": "Could not re-run Vision.",
+      "cooloff": {
+        "declineScheduled": "This decline is scheduled to be sent on",
+        "awardScheduled": "This funding confirmation is scheduled to be sent on",
+        "silentNote": "The student sees nothing until then — cancel here to reconsider.",
+        "cancelDecline": "Cancel decline",
+        "holdAward": "Hold",
+        "cancelConfirm": "Cancel this scheduled decline? The applicant will not be declined and never saw it.",
+        "holdConfirm": "Hold this award? The acceptance is reversed, the amount returns to the sponsor, and the student never saw a confirmation.",
+        "error": "Couldn't update. Please try again."
+      },
       "reject": {
         "declineContractual": "Decline (contractual)",
-        "confirmReview": "Decline this applicant? They were reviewed but not selected. A decline email will be sent to them now.",
-        "confirmContractual": "Decline this accepted applicant for contractual reasons? A decline email will be sent to them now.",
+        "confirmReview": "Decline this applicant? They were reviewed but not selected. A decline email will be sent to them (after a short cool-off, if one is set).",
+        "confirmContractual": "Decline this accepted applicant for contractual reasons? A decline email will be sent to them (after a short cool-off, if one is set).",
         "running": "Declining…",
         "error": "Couldn't decline this applicant. Please try again.",
         "category": {

@@ -36,6 +36,23 @@ export const REFERRING_ORG_OPTIONS = [
 ] as const
 export type ReferringOrg = typeof REFERRING_ORG_OPTIONS[number] | ''
 
+// Short source tag for admin surfaces (owner-defined, 2026-06-22). Partner orgs keep their
+// official acronym; the two individual coordinators + the generic "other" all collapse to
+// "Other"; self/website → "Halatuju"; social → "Social".
+export const REFERRAL_SOURCE_ACRONYM: Record<string, string> = {
+  smc: 'SMC', cumig: 'CUMIG', ewrf: 'EWRF', hyo: 'HYO', mhm: 'MHDM',
+  sathya_sai: 'SSBC', tara: 'TARA', hss: 'HSS', pptm: 'PPTM',
+  halatuju: 'Halatuju', social: 'Social',
+  pushparani: 'Other', govind: 'Other', other: 'Other',
+}
+
+// Acronym for a referral_source code. Blank → '' (caller renders a dash); any unknown
+// non-blank code → 'Other' so a stray legacy value never leaks a raw code to the admin.
+export function referralAcronym(code?: string | null): string {
+  if (!code) return ''
+  return REFERRAL_SOURCE_ACRONYM[code] ?? 'Other'
+}
+
 // Preferred language for phone calls (B40 outreach). Labels via i18n
 // (`scholarship.apply.callLang.<code>`); stored on profile.preferred_call_language.
 export const CALL_LANGUAGE_OPTIONS = ['en', 'ms', 'ta', 'mixed'] as const

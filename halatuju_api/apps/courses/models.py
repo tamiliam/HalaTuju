@@ -507,6 +507,11 @@ class StudentProfile(models.Model):
     contact_phone = models.CharField(max_length=20, blank=True, default='',
                                       help_text="Verified contact phone")
     contact_phone_verified = models.BooleanField(default=False)
+    # WhatsApp comms consent. Default True = implied consent: a phone number given
+    # for contact is consent to be contacted on it, like email (owner decision,
+    # 2026-06-20). Surfaced as an opt-OUT toggle in the profile; gates every
+    # outbound WhatsApp send (a value of False = the user opted out).
+    whatsapp_opt_in = models.BooleanField(default=True)
 
     # Identity (Lentera longitudinal tracking)
     nric = models.CharField(max_length=14, blank=True, default='',

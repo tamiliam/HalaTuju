@@ -190,6 +190,24 @@ class TestDueQueryEmails(_Base):
         self.assertFalse(mock_email.called)
 
     @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
+    def test_sends_for_an_officer_item_only(self, mock_email):
+        # No clarify gaps, no system docs — but the reviewer raised a doc-request. Officer
+        # items always show in the Action Centre, so they now count toward this delayed
+        # email (previously ignored → a reviewer request/re-request went unnotified).
+        self.app.profile_completed_at = timezone.now() - timedelta(hours=3)
+        self.app.field_of_study = 'Education'
+        self.app.siblings_in_tertiary = 0
+        self.app.chosen_pathway = 'matric'
+        self.app.pathway_certainty = 'sure'
+        self.app.save()
+        FundingNeed.objects.create(application=self.app, categories=['device'])
+        ResolutionItem.objects.create(
+            application=self.app, source='officer', code='officer_1', fact='pathway',
+            kind='doc', doc_type='offer_letter', prompt='Upload your offer letter.', status='open')
+        self.assertEqual(send_due_query_emails()['sent'], 1)
+        self.assertTrue(mock_email.called)
+
+    @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
     def test_sends_for_a_pathway_confirm_only(self, mock_email):
         # No clarify gaps, but the offer clashes with the declared school → the one-tap
         # pathway confirm is an open Check-2 query, so the email still goes out.

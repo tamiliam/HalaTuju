@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
-import { createSponsorReferral } from '@/lib/api'
+import { createSponsorReferral, getSponsorStandingGift, putSponsorStandingGift } from '@/lib/api'
+import { poolFacets } from '@/lib/sponsorFilter'
 import SponsorNotifyPrefs from '@/components/SponsorNotifyPrefs'
 
 /**
@@ -14,7 +15,7 @@ import SponsorNotifyPrefs from '@/components/SponsorNotifyPrefs'
 export default function AccountPage() {
   const { t } = useT()
   const { account } = useSponsorAuth()
-  const { referrals, refreshReferrals, statement, gradMessages } = useSponsorPortal()
+  const { referrals, refreshReferrals, statement, gradMessages, pool } = useSponsorPortal()
 
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
@@ -23,6 +24,41 @@ export default function AccountPage() {
   const [inviteError, setInviteError] = useState('')
   const [inviteSent, setInviteSent] = useState(false)
   const { token } = useSponsorAuth()
+
+  // AutoSponsor (R6) — standing-gift config, fetched + saved on this page.
+  const facets = useMemo(() => poolFacets(pool || []), [pool])
+  const [sgActive, setSgActive] = useState(false)
+  const [sgField, setSgField] = useState('')
+  const [sgState, setSgState] = useState('')
+  const [sgMax, setSgMax] = useState('')
+  const [sgConfigured, setSgConfigured] = useState(false)
+  const [sgLast, setSgLast] = useState<string | null>(null)
+  const [sgSaving, setSgSaving] = useState(false)
+  const [sgSaved, setSgSaved] = useState(false)
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    getSponsorStandingGift({ token }).then((g) => {
+      if (cancelled) return
+      setSgConfigured(g.configured); setSgActive(!!g.active)
+      setSgField(g.field_pref || ''); setSgState(g.state_pref || '')
+      setSgMax(g.max_amount || ''); setSgLast(g.last_allocated_at || null)
+    }).catch(() => { /* 404 while flag off — leave defaults */ })
+    return () => { cancelled = true }
+  }, [token])
+
+  const saveStandingGift = async () => {
+    if (!token || sgSaving) return
+    setSgSaving(true); setSgSaved(false)
+    try {
+      const g = await putSponsorStandingGift(
+        { field_pref: sgField, state_pref: sgState, max_amount: sgMax.trim() || null, active: sgActive },
+        { token },
+      )
+      setSgConfigured(g.configured); setSgLast(g.last_allocated_at || null); setSgSaved(true)
+    } catch { /* keep the form on failure */ } finally { setSgSaving(false) }
+  }
 
   const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
@@ -68,6 +104,53 @@ export default function AccountPage() {
           <SponsorNotifyPrefs />
         </div>
       </div>
+
+      {/* AutoSponsor — standing gift (R6) */}
+      <section className="rounded-2xl border bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-bold text-gray-900">🔁 {t('sponsorPortal.autoSponsor.title')}</h2>
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+            <input type="checkbox" checked={sgActive}
+              onChange={(e) => { setSgActive(e.target.checked); setSgSaved(false) }} className="h-4 w-4" />
+            {t('sponsorPortal.autoSponsor.enable')}
+          </label>
+        </div>
+        <p className="text-sm text-gray-600 mt-1 max-w-2xl">{t('sponsorPortal.autoSponsor.intro')}</p>
+        <div className="mt-4 grid sm:grid-cols-3 gap-3">
+          <label className="text-sm block">
+            <span className="text-gray-500">{t('sponsorPortal.autoSponsor.field')}</span>
+            <select value={sgField} onChange={(e) => { setSgField(e.target.value); setSgSaved(false) }} className={inputCls}>
+              <option value="">{t('sponsorPortal.autoSponsor.any')}</option>
+              {facets.fields.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </label>
+          <label className="text-sm block">
+            <span className="text-gray-500">{t('sponsorPortal.autoSponsor.state')}</span>
+            <select value={sgState} onChange={(e) => { setSgState(e.target.value); setSgSaved(false) }} className={inputCls}>
+              <option value="">{t('sponsorPortal.autoSponsor.any')}</option>
+              {facets.states.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+          <label className="text-sm block">
+            <span className="text-gray-500">{t('sponsorPortal.autoSponsor.maxAmount')}</span>
+            <input type="number" min="0" value={sgMax} onChange={(e) => { setSgMax(e.target.value); setSgSaved(false) }}
+              placeholder={t('sponsorPortal.autoSponsor.noCap')} className={inputCls} />
+          </label>
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <button onClick={saveStandingGift} disabled={sgSaving}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            {sgSaving ? t('sponsorPortal.autoSponsor.saving') : t('sponsorPortal.autoSponsor.save')}
+          </button>
+          {sgSaved && <span className="text-sm text-green-600">{t('sponsorPortal.autoSponsor.saved')}</span>}
+        </div>
+        <p className="text-[11px] text-gray-400 mt-3">{t('sponsorPortal.autoSponsor.note')}</p>
+        {sgConfigured && sgLast && (
+          <p className="text-[11px] text-gray-400 mt-1">
+            {t('sponsorPortal.autoSponsor.lastAllocated').replace('{date}', new Date(sgLast).toLocaleDateString())}
+          </p>
+        )}
+      </section>
 
       {/* Messages from students you supported — anonymous, linked to ref only */}
       {gradMessages.length > 0 && (

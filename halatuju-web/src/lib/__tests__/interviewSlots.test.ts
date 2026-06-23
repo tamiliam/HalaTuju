@@ -1,6 +1,6 @@
 import {
   allSlotTimes, cellDateStr, daySlots, earliestDateStr, isoToSlotValue, monthCells, slotLabel12h,
-  todayStr,
+  todayStr, RESCHEDULE_MIN_LEAD_HOURS,
 } from '../interviewSlots'
 
 describe('interview slot rule', () => {
@@ -34,6 +34,24 @@ describe('interview slot rule', () => {
 
   test('earliestDateStr is 24h ahead', () => {
     expect(earliestDateStr(new Date('2026-06-22T10:00:00'))).toBe('2026-06-23')
+  })
+
+  test('reschedule lead relaxes the floor to a short notice (TD-137)', () => {
+    const now = new Date('2026-06-22T10:00:00')
+    // default 24h floor: every same-day slot is too early
+    expect(daySlots('2026-06-22', now).every((s) => s.tooEarly)).toBe(true)
+    // reschedule (2h) floor: same-day slots from now+2h (12:00) onward become selectable
+    const re = daySlots('2026-06-22', now, RESCHEDULE_MIN_LEAD_HOURS)
+    const at = (label: string) => re.find((s) => s.label === label)!
+    expect(at('11:30').tooEarly).toBe(true)    // before now+2h
+    expect(at('12:00').tooEarly).toBe(false)   // == now+2h, allowed
+    expect(at('14:00').tooEarly).toBe(false)
+  })
+
+  test('earliestDateStr honours a custom lead', () => {
+    const now = new Date('2026-06-22T10:00:00')
+    expect(earliestDateStr(now, RESCHEDULE_MIN_LEAD_HOURS)).toBe('2026-06-22')  // 12:00 same day
+    expect(earliestDateStr(now)).toBe('2026-06-23')                            // 24h default
   })
 
   test('isoToSlotValue converts a UTC timestamp to the MYT slot key', () => {

@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.utils import timezone
 
-from . import emails, meeting, pool
+from . import emails, meeting, pool, whatsapp
 from .models import InterviewSlot
 
 logger = logging.getLogger(__name__)
@@ -90,6 +90,49 @@ def _cutoff_ok(start, now):
 
 
 # ── Reviewer side: propose / withdraw ─────────────────────────────────────────
+
+def _send_wa_proposed(application, student_name, reviewer=None):
+    """Best-effort WhatsApp 'your interview times are ready — pick one' nudge (roadmap S2, TD-138).
+
+    Opt-in gated. Uses the approved template (``TWILIO_WHATSAPP_PROPOSED_CONTENT_SID``) in prod;
+    free text in the Twilio sandbox. **Dark in prod until that template SID is set** — a real sender
+    can't free-text a business-initiated message, so with no template + not-sandbox we send nothing.
+    Best-effort: ``send_whatsapp`` never raises into the caller."""
+    profile = getattr(application, 'profile', None)
+    if not getattr(profile, 'whatsapp_opt_in', True):
+        return
+    # Variant by language preference — EN-only or EN+BM (both reuse {1}name {2}reviewer {3}link);
+    # fall back to the legacy single SID. Same english_only standard as the emails/reminder.
+    en_only = emails.english_only_email(application)
+    _en = getattr(settings, 'TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN', '')
+    _bm = getattr(settings, 'TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM', '')
+    content_sid = (_en if en_only else (_bm or _en)) or getattr(settings, 'TWILIO_WHATSAPP_PROPOSED_CONTENT_SID', '')
+    if not content_sid and not whatsapp.is_sandbox_sender():
+        return  # no approved template yet + not sandbox → don't attempt a forbidden free-text send
+    phone = getattr(profile, 'contact_phone', '')
+    student_name = (student_name or '').strip().split(' ')[0] or 'there'   # first name, like the assignment email
+    reviewer_name = (getattr(reviewer, 'name', '') or '').strip() or 'your interviewer'
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/scholarship/application'
+    if content_sid:
+        whatsapp.send_whatsapp(
+            phone, application=application, kind='interview_proposed', content_sid=content_sid,
+            content_variables={'1': student_name, '2': reviewer_name, '3': link})
+        return
+    # Sandbox free-text (bilingual unless the student is English-only). Names the interviewer +
+    # the 3 proposed times; mirrors the assignment email's "pick one → Meet link + reminder" voice.
+    en = (f'Hi {student_name} — your assigned interviewer, {reviewer_name}, has proposed three times '
+          f'for your B40 Assistance interview. Please pick the one that suits you: {link}. Once you '
+          f'choose, we’ll send the Google Meet link and, if necessary, reminders.')
+    if en_only:
+        body = en
+    else:
+        bm = (f'Salam {student_name} — penemu duga anda, {reviewer_name}, telah mencadangkan tiga masa '
+              f'untuk temu duga Bantuan B40 anda. Sila pilih yang sesuai untuk anda: {link}. Setelah '
+              f'anda memilih, kami akan menghantar pautan Google Meet dan, jika perlu, peringatan.')
+        body = f'{en}\n\n{bm}'
+    whatsapp.send_whatsapp(phone, body, application=application, kind='interview_proposed')
+
 
 def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
                   release_booking=False):
@@ -200,6 +243,17 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
                 student_email, student_name=student_name,
                 english_only=emails.english_only_email(application),
                 rescheduled=rescheduling)
+        # Nudge on WhatsApp too (opt-in gated) so students who don't check email still respond.
+        _send_wa_proposed(application, student_name, reviewer)
+    # The interview process has begun — times are out, the first interview@ email goes to the
+    # student — so advance the application to 'interviewing' to reflect reality on the board.
+    # (The old trigger, creating the Interview-Stage capture draft, fired too late: reviewers
+    # schedule + conduct the interview first and fill the capture form last, so cases sat at
+    # 'profile_complete' through a booked/concluded interview.) Only ever advances FROM
+    # profile_complete — never pulls a later or decided case backward.
+    if application.status == 'profile_complete':
+        application.status = 'interviewing'
+        application.save(update_fields=['status'])
     return created
 
 
@@ -279,8 +333,9 @@ def book_slot(application, *, slot_id, now=None):
         application.interview_calendar_event_id = result.get('event_id', '') or application.interview_calendar_event_id
         if result.get('url'):
             application.interview_meeting_provider = 'google_meet'
-    if not application.interview_booked_at:
-        application.interview_booked_at = now
+    # Set on EVERY (re)booking so reminder-notice (interview_start − interview_booked_at) reflects
+    # the CURRENT slot — a reschedule to a sooner time then correctly re-gates the 24h/1h reminders.
+    application.interview_booked_at = now
     application.interview_confirmation_sent_at = now
     application.interview_reminded_1d_at = None
     application.interview_reminded_1h_at = None

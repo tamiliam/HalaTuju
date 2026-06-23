@@ -14,6 +14,10 @@ export const SLOT_STEP_MIN = 30
 // Minimum scheduling notice: the earliest proposable slot is this far ahead, so the student
 // has time to see the email, pick, and prepare. Mirrored in scheduling.py. (owner: 24h)
 export const MIN_LEAD_HOURS = 24
+// On a reviewer RESCHEDULE the candidate has already waited through the original notice, so the
+// 24h floor is relaxed to a short lead — the reviewer can offer nearer slots. (TD-137, owner 2026-06-21.)
+// The backend (`propose_slots`) already accepts any future slot, so this is a UI-only relaxation.
+export const RESCHEDULE_MIN_LEAD_HOURS = 2
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -31,14 +35,15 @@ export function todayStr(now: Date = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-/** The earliest selectable moment (now + the minimum-lead window). */
-export function earliestStart(now: Date = new Date()): Date {
-  return new Date(now.getTime() + MIN_LEAD_HOURS * 3600_000)
+/** The earliest selectable moment (now + the lead window). `leadHours` defaults to the 24h
+ *  first-propose floor; pass RESCHEDULE_MIN_LEAD_HOURS on a reschedule. */
+export function earliestStart(now: Date = new Date(), leadHours: number = MIN_LEAD_HOURS): Date {
+  return new Date(now.getTime() + leadHours * 3600_000)
 }
 
 /** The earliest selectable DATE (`YYYY-MM-DD`) — days before this are fully disabled. */
-export function earliestDateStr(now: Date = new Date()): string {
-  return todayStr(earliestStart(now))
+export function earliestDateStr(now: Date = new Date(), leadHours: number = MIN_LEAD_HOURS): string {
+  return todayStr(earliestStart(now, leadHours))
 }
 
 export interface DaySlot {
@@ -49,8 +54,8 @@ export interface DaySlot {
 
 /** The slots for a given date. Times before the minimum-lead cutoff are flagged so the
  *  UI can drop them. `value` is the naive-MYT string the backend expects. */
-export function daySlots(dateStr: string, now: Date = new Date()): DaySlot[] {
-  const earliest = earliestStart(now).getTime()
+export function daySlots(dateStr: string, now: Date = new Date(), leadHours: number = MIN_LEAD_HOURS): DaySlot[] {
+  const earliest = earliestStart(now, leadHours).getTime()
   return allSlotTimes().map((label) => {
     const value = `${dateStr}T${label}`
     return { value, label, tooEarly: new Date(value).getTime() < earliest }

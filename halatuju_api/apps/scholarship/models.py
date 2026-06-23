@@ -384,6 +384,32 @@ class ScholarshipApplication(models.Model):
         help_text="Email of the PartnerAdmin who rejected (post-shortlist buckets only); blank for engine rejections",
     )
 
+    # 7-day DECLINE cool-off (#13): an admin decline is recorded SILENTLY here (bucket + due
+    # date) instead of flipping status immediately. The release cron reveals it (status →
+    # rejected + bucket decline email) once decline_due_at passes; an admin can Cancel before
+    # then, so a reconsidered decline is never seen by the student. Blank/null = none pending.
+    pending_rejection_category = models.CharField(
+        max_length=20, choices=REJECTION_CATEGORIES, blank=True, default='',
+        help_text="A scheduled-but-unrevealed decline bucket (cool-off); blank = none pending",
+    )
+    decline_due_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When a pending decline reveals + emails (cool-off end)",
+    )
+    pending_decline_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the admin who scheduled the pending decline",
+    )
+
+    # 2-day AWARD-confirmation cool-off (#14): on student/guardian accept we record the
+    # acceptance + money hold immediately, but defer the 'sponsored' flip + the funding-confirmed
+    # email + onboarding until award_due_at. The release cron finalises it; an admin Hold reverts
+    # the acceptance before then. Null = no pending award confirmation.
+    award_due_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When a pending award confirmation finalises (cool-off end)",
+    )
+
     # Phase C: which reviewer this application is assigned to (for the interview
     # stage). Null = unassigned. SET_NULL so deactivating an admin doesn't delete
     # applications.
@@ -699,6 +725,15 @@ class ApplicantDocument(models.Model):
         max_length=10, blank=True, default='', choices=HOUSEHOLD_MEMBER_CHOICES,
         help_text="Salary-route income docs only — whose IC/salary slip/EPF this is. "
                   "Blank for all other documents.")
+    # The officer ResolutionItem code (e.g. 'officer_3') this document satisfies — set
+    # ONLY for a reviewer-requested upload via the Action Centre. It makes each request
+    # its own single-instance slot: the slot key becomes (doc_type, household_member,
+    # request_code). So multiple 'other' docs (4 separate "upload X" requests) coexist
+    # instead of overwriting each other, and a reviewer-requested cross-person income
+    # doc (e.g. father's IC on a mother-STR route) gets its own slot instead of
+    # clobbering the student's route doc. '' = the student's own apply-form/route doc
+    # (shared slot — unchanged behaviour).
+    request_code = models.CharField(max_length=20, blank=True, default='')
     storage_path = models.CharField(max_length=500)
     original_filename = models.CharField(max_length=255, blank=True, default='')
     content_type = models.CharField(max_length=100, blank=True, default='')
@@ -1475,3 +1510,73 @@ class TrustContent(models.Model):
 
     def __str__(self):
         return f'TrustContent active={self.is_active} updated={self.updated_at:%Y-%m-%d}'
+
+
+class StandingGift(models.Model):
+    """R6 (AutoSponsor): a sponsor's standing instruction to auto-direct their
+    balance to the next matching pool student — an AutoInvest-style 'set it and
+    forget it'. Each allocation still produces an OFFERED ``Sponsorship`` the
+    student must accept (no real money moves) — the SAME safety model as a manual
+    fund; it only automates the 'offer' click. One per sponsor (OneToOne).
+
+    Matching (all optional): ``field_pref``/``state_pref`` empty = any; ``max_amount``
+    empty = no cap. The sponsor's balance is the real throttle — each allocation
+    holds the award, so the standing gift naturally stops when the balance runs low
+    (skip silently, by owner decision) and resumes when it's topped up."""
+    sponsor = models.OneToOneField(
+        Sponsor, on_delete=models.CASCADE, related_name='standing_gift',
+    )
+    # Empty string = match any field/state (the student's `field_of_study` /
+    # `profile.preferred_state`). Non-empty = only that exact value.
+    field_pref = models.CharField(max_length=120, blank=True, default='')
+    state_pref = models.CharField(max_length=60, blank=True, default='')
+    # The most this sponsor will commit to a single student (caps which award
+    # amounts qualify). Null = no per-student cap (balance is the only limit).
+    max_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    active = models.BooleanField(default=True)
+    # When this gift last produced an allocation — used to spread allocations
+    # fairly across standing gifts (least-recently-allocated goes next).
+    last_allocated_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'standing_gifts'
+
+    def __str__(self):
+        return f'StandingGift sponsor={self.sponsor_id} active={self.active}'
+
+
+class WhatsAppMessage(models.Model):
+    """Audit log of every outbound WhatsApp send attempt (Twilio).
+
+    Comms are best-effort, so one row is written per attempt: delivery stays
+    auditable and failures are visible. ``status`` mirrors Twilio's message status
+    where known (queued→sent→delivered, or failed/undelivered)."""
+    STATUS_CHOICES = [
+        ('queued', 'Queued'),
+        ('sent', 'Sent'),
+        ('delivered', 'Delivered'),
+        ('failed', 'Failed'),
+        ('undelivered', 'Undelivered'),
+    ]
+    # SET_NULL (not CASCADE): the message log outlives a deleted application.
+    application = models.ForeignKey(
+        'ScholarshipApplication', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='whatsapp_messages',
+    )
+    kind = models.CharField(max_length=50, blank=True, default='')  # e.g. 'interview_reminder_1day'
+    to_number = models.CharField(max_length=32, blank=True, default='')  # E.164, or the raw value on a bad number
+    body = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='queued')
+    provider_sid = models.CharField(max_length=64, blank=True, default='')  # Twilio message SID
+    error = models.CharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'whatsapp_messages'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'WA {self.kind} → {self.to_number} [{self.status}]'

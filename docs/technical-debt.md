@@ -886,8 +886,51 @@
   `tamil-style-guide.md`. **To resolve (owner):** refine the Tamil copy on the three new sponsor-portal blocks.
   (Logged 2026-06-19, Sponsor redesign R1.) Related: **TD-101** (the Students "Support" button is a stub — funding not
   wired pending the owner's fund-UX sign-off).
-- TD-133 **✅ RESOLVED (2026-06-20):** dropped `results_slip` from `genuineness.supporting_doc._GENUINENESS_DOCS`
+  **Extended R7 (2026-06-20):** now covers the **whole redesign (R1–R7)** sponsor copy, not just R1. R7 also revealed
+  that ~47 keys (`sponsorPortal.{impact,journey,activity,community,statement,students,account}.*`) were referenced by
+  R1–R4 pages but **never authored in any language** — they were added EN/MS/TA in R7, so the **English is freshly
+  authored (not just the Tamil)** and the **Tamil is a second-draft per the style guide**. A `sponsor-i18n.test.ts`
+  guardrail now prevents missing keys recurring. **To resolve (owner):** a copy pass — **English AND Tamil** — over the
+  full sponsor portal (My Giving / Students / Account / Trust / AutoSponsor) on the live site. (Mechanically the strings
+  render correctly; this is a quality/voice pass.)
+- TD-133: **R5 Trust & Transparency hub ships with honest PLACEHOLDERS — real content is owner-gated.** The hub's
+  *Who we are* (legal entity), *Governance* (trustee board), *Sources & uses* (annual figures) and *Independent
+  assurance* (auditor + FY report) render "to be published" / illustrative placeholders because the organisation is not
+  yet formalised. The My Giving assurance strip likewise shows illustrative figures ("112 verified · RM 284,000 · FY2025
+  · auditor to be appointed"), flagged illustrative. **To resolve (owner long-lead):** appoint the **independent
+  auditor + trustee board**, define the attestation scope, and register the legal entity; then the real content drops in
+  by editing the `trust_content` DB row — **no deploy** (language-neutral data in the DB, trilingual chrome in i18n). A
+  per-student `enrolment_verified` flag (the "Enrolment independently verified" badge) likewise stays False until that
+  institution-confirmation process exists. (Logged 2026-06-20, Sponsor redesign R5/R7.)
+- TD-134: **[RESOLVED 2026-06-21]** Gap in the TD-115 slot model — the slot key `(doc_type, household_member)` could not
+  represent multiple reviewer-requested docs of the same type, so each Action-Centre "Other" upload overwrote the previous
+  one (live data loss — Theepicaa app 4: 5 requested, 1 stored) and a cross-person income request (father's IC on a
+  mother-STR route) overwrote the route doc. **Resolved** by `feat/request-owned-doc-slots` (commit `d9278f3`, migration
+  `scholarship/0067`): added `ApplicantDocument.request_code` so the slot key is `(doc_type, household_member,
+  request_code)`; the STR force-tag is skipped for request-keyed uploads; `resolve_doc_items_for_upload` resolves by code;
+  `MAX_OTHER_DOCS=10` cap. +6 tests. See `docs/decisions.md` + `docs/retrospective-2026-06-21-request-owned-doc-slots.md`.
+  ⚠️ Migration `0067` clashes with the unmerged `feat/whatsapp-comms` branch — renumber the later merge to `0068`.
+  (Logged + resolved 2026-06-21.) **UPDATE:** whatsapp-comms shipped its model as `scholarship/0068`; clash resolved.
+- TD-135: **[RESOLVED 2026-06-21]** WhatsApp inbound STOP/opt-out → flag sync. **Resolved (roadmap S5):** Twilio inbound
+  webhook `POST /api/v1/scholarship/whatsapp/inbound/` (`WhatsAppInboundView`) flips `whatsapp_opt_in` on STOP/START,
+  Twilio-signature authed (`whatsapp.verify_twilio_signature`), number→profile via sent `to_number`. +5 tests. **Remaining
+  to activate:** owner sets the inbound webhook URL in the Twilio console (code is signature-gated/inert until then).
+  (Logged + resolved 2026-06-21.)
+- TD-136: **Phone verification is a field, not a feature.** `contact_phone_verified` exists (resets on phone change) and is
+  displayed, but nothing ever sets it True — there is no OTP send/verify flow. **To resolve (if wanted):** a "verify my
+  number" flow via the **Twilio Verify API** (WhatsApp or SMS channel) → mark verified. Now feasible (Twilio wired).
+  (Logged 2026-06-21.)
+- TD-137: **[RESOLVED 2026-06-21]** The 24h slot min-lead was frontend-only and applied to reschedule too. **Resolved:**
+  reschedule mode now uses `RESCHEDULE_MIN_LEAD_HOURS = 2h` (the picker offers nearer slots + jumps to the nearer earliest
+  day); first-propose keeps 24h; backend already accepted any future slot. FE-only (`interviewSlots.ts` +
+  `InterviewScheduleCard`), +2 jest. (Logged + resolved 2026-06-21; roadmap Sprint 1.)
+- TD-138: **[CODE BUILT, sandbox-ready, dark in prod — 2026-06-21]** No WhatsApp when interview slots are PROPOSED.
+  **Built (roadmap S2):** `_send_wa_proposed` in `propose_slots` (opt-in gated, links to the application page), dual-path
+  (free-text in sandbox / template in prod). **Remaining to go live:** owner sandbox-tests the wording, then submit the
+  Meta template + set `TWILIO_WHATSAPP_PROPOSED_CONTENT_SID` (dark on a real sender until then). (Logged + built 2026-06-21.)
+- TD-139 **✅ RESOLVED (2026-06-20):** dropped `results_slip` from `genuineness.supporting_doc._GENUINENESS_DOCS`
   (it was scored by the SIGNATURE scorer — its upload branch wins first — so the holistic membership was dead);
-  the slip branch is independent and the holistic set is now just STR. Test updated. (Logged 2026-06-16; this
-  branch's _GENUINENESS_DOCS tidy — had been renumbered 120→124→127→130→132→133 as parallel main merges kept
-  reusing the number, hence resolved outright to end the churn.)
+  the slip branch is independent and the holistic set is now just STR. Test updated. (Originally logged as TD-133 on
+  `feature/doc-eval-harness`; **renumbered to TD-139 at the 2026-06-23 merge** because main's TD-133 = the R5 Trust hub.
+  This entry's number had churned 120→124→127→130→132→133→139 across parallel main merges — the exact collision the
+  doc-eval lessons flag; resolved outright so the number no longer matters for tracking.)

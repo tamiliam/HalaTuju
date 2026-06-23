@@ -13,6 +13,8 @@ import {
   unsaveCourse,
   updateSavedCourseStatus,
   sendVerificationEmail,
+  sendPhoneVerification,
+  checkPhoneVerification,
 } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
 import { isValidPhone, formatPhone, setOnboardingReturn } from '@/lib/scholarship'
@@ -22,6 +24,7 @@ import PathwayPicker, { type PathwayForm } from '@/components/PathwayPicker'
 import type { OtherMember } from '@/lib/familyRoster'
 import type { StudentProfile } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
+import Toggle from '@/components/Toggle'
 import { useToast } from '@/components/Toast'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { KEY_PROFILE } from '@/lib/storage'
@@ -127,8 +130,14 @@ export default function ProfilePage() {
   const [contactEmailVerified, setContactEmailVerified] = useState(false)
   const [contactPhone, setContactPhone] = useState('')
   const [contactPhoneVerified, setContactPhoneVerified] = useState(false)
+  const [whatsappOptIn, setWhatsappOptIn] = useState(true)
   const [loginMethod, setLoginMethod] = useState('')
   const [sendingVerification, setSendingVerification] = useState(false)
+  // Phone verification over WhatsApp (S4 / TD-136) — opt-in, student-initiated.
+  const [verifyingPhone, setVerifyingPhone] = useState(false)
+  const [phoneCode, setPhoneCode] = useState('')
+  const [sendingPhoneVerify, setSendingPhoneVerify] = useState(false)
+  const [checkingPhoneCode, setCheckingPhoneCode] = useState(false)
 
   // Course interests
   const [savedCourses, setSavedCourses] = useState<SavedCourseWithStatus[]>([])
@@ -200,6 +209,7 @@ export default function ProfilePage() {
       setContactEmailVerified(profileData.contact_email_verified || false)
       setContactPhone(profileData.contact_phone || '')
       setContactPhoneVerified(profileData.contact_phone_verified || false)
+      setWhatsappOptIn(profileData.whatsapp_opt_in ?? true)
       // Determine login method from session
       if (session?.user?.email) {
         setLoginMethod(`Google (${session.user.email})`)
@@ -288,6 +298,7 @@ export default function ProfilePage() {
         email,
         contact_email: contactEmail,
         contact_phone: contactPhone,
+        whatsapp_opt_in: whatsappOptIn,
         household_income: householdIncome ? parseInt(householdIncome, 10) : null,
         household_size: householdSize ? parseInt(householdSize, 10) : null,
         colorblind,
@@ -336,7 +347,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, family, pathwayForm })
+    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, school, contactEmail, contactPhone, whatsappOptIn, family, pathwayForm })
     setEditingSection(section)
   }
 
@@ -357,6 +368,7 @@ export default function ProfilePage() {
     setSchool(snapshot.school as string || '')
     setContactEmail(snapshot.contactEmail as string || '')
     setContactPhone(snapshot.contactPhone as string || '')
+    setWhatsappOptIn(snapshot.whatsappOptIn as boolean ?? true)
     setFamily((snapshot.family as FamilyRosterForm) || EMPTY_FAMILY)
     setPathwayForm((snapshot.pathwayForm as PathwayForm) || EMPTY_PATHWAY)
     setEditingSection(null)
@@ -691,14 +703,93 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.contactPhone')}</label>
-                  <input
-                    type="tel"
-                    value={contactPhone}
-                    onChange={e => setContactPhone(formatPhone(e.target.value))}
-                    placeholder="012-345 6789"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.phoneVerifyNote')}</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      value={contactPhone}
+                      onChange={e => {
+                        setContactPhone(formatPhone(e.target.value))
+                        setContactPhoneVerified(false)   // editing the number un-verifies it
+                        setVerifyingPhone(false)
+                      }}
+                      placeholder="012-345 6789"
+                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!contactPhone || !token) return
+                        setSendingPhoneVerify(true)
+                        try {
+                          // Save first, then send the code (mirrors the email Verify flow)
+                          await updateProfile({ contact_phone: contactPhone }, { token })
+                          await sendPhoneVerification(contactPhone, { token })
+                          setVerifyingPhone(true)
+                          setPhoneCode('')
+                          showToast(t('profile.phoneCodeSent'), 'success')
+                        } catch {
+                          showToast(t('profile.phoneVerifyFailed'), 'error')
+                        } finally {
+                          setSendingPhoneVerify(false)
+                        }
+                      }}
+                      disabled={!contactPhone || sendingPhoneVerify}
+                      className="px-4 py-2.5 bg-primary-50 text-primary-700 border border-primary-200 rounded-lg text-sm font-medium hover:bg-primary-100 disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {sendingPhoneVerify ? '...' : t('profile.verify')}
+                    </button>
+                  </div>
+                  {contactPhoneVerified && (
+                    <p className="text-xs text-green-600 mt-1.5 font-medium">✓ {t('profile.phoneVerified')}</p>
+                  )}
+                  {verifyingPhone && !contactPhoneVerified && (
+                    <div className="mt-2 space-y-1.5">
+                      <p className="text-xs text-gray-500">{t('profile.phoneCodeSent')}</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={phoneCode}
+                          onChange={e => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                          placeholder={t('profile.phoneCodePlaceholder')}
+                          className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm tracking-widest focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                        />
+                        <button
+                          onClick={async () => {
+                            if (!phoneCode || !token) return
+                            setCheckingPhoneCode(true)
+                            try {
+                              const res = await checkPhoneVerification(phoneCode, contactPhone, { token })
+                              if (res.verified) {
+                                setContactPhoneVerified(true)
+                                setVerifyingPhone(false)
+                                setPhoneCode('')
+                                showToast(t('profile.phoneVerified'), 'success')
+                                window.dispatchEvent(new Event('profile-updated'))
+                              } else {
+                                showToast(t('profile.phoneCodeWrong'), 'error')
+                              }
+                            } catch {
+                              showToast(t('profile.phoneCodeWrong'), 'error')
+                            } finally {
+                              setCheckingPhoneCode(false)
+                            }
+                          }}
+                          disabled={!phoneCode || checkingPhoneCode}
+                          className="px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {checkingPhoneCode ? '...' : t('profile.confirm')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1.5">{t('profile.phoneVerifyNote')}</p>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">{t('profile.whatsappUpdates')}</span>
+                    <p className="text-xs text-gray-400 mt-0.5">{t('profile.whatsappUpdatesNote')}</p>
+                  </div>
+                  <Toggle on={whatsappOptIn} onChange={setWhatsappOptIn} label={t('profile.whatsappUpdates')} />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
@@ -744,6 +835,10 @@ export default function ProfilePage() {
                   ) : (
                     <FieldValue value="" t={t} />
                   )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.whatsappUpdates')}</span>
+                  <span className="text-sm text-gray-900">{whatsappOptIn ? t('profile.whatsappOn') : t('profile.whatsappOff')}</span>
                 </div>
               </div>
             )}

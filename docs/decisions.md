@@ -1,5 +1,90 @@
 # Architectural Decisions — HalaTuju
 
+## Interview reminders gate on booking notice, not just the time-window — 2026-06-21
+**Decision:** Each interview reminder is gated on **how much notice the booking gave** (`interview_start −
+interview_booked_at`): the 24h reminder fires only if notice ≥ 24h, the 1h reminder only if notice ≥ 1h. Firing itself
+stays late-tolerant (fire at/after the mark). `book_slot` stamps `interview_booked_at` on every (re)booking.
+**Alternatives considered:** (a) keep "fire when within X hours" with no floor (the old behaviour); (b) fire only inside a
+narrow band around the X mark (e.g. [X, X+15min]) and skip otherwise.
+**Rationale:** (a) fires an instant, useless "24h reminder" the moment someone books same-day. (b) is fragile — if the
+cron has a hiccup and misses the narrow band, the reminder is silently lost. Gating on *booking notice* captures the
+intent ("only send a reminder the booking left room for") while keeping firing late-tolerant, so cron jitter never
+*skips* a legitimate reminder — only notice decides eligibility. Uses the existing `interview_booked_at`; no migration.
+**Trade-offs:** a booking made <1h before the interview gets no reminder at all (acceptable — the booking-confirmation
+email already went out, and they just booked). Same-day bookings (1–24h) get one reminder (the 1h), not two.
+**Revisit if:** we want a distinct "you booked same-day, here's a short-notice heads-up" message, or a configurable floor.
+
+## WhatsApp consent is implied (opt-OUT, default on), not explicit opt-in — WhatsApp comms Sprint 2, 2026-06-20
+**Decision:** `StudentProfile.whatsapp_opt_in` defaults **True**; the profile shows an **opt-out** toggle. Existing
+applicants are backfilled to on (the ADD COLUMN default). Every outbound WhatsApp is gated on this flag.
+**Why (owner call):** a phone number given for contact is consent to be contacted on it — the same basis on which we
+already email applicants and phone them for details; WhatsApp is the same channel, not a new purpose. The engineer
+flagged the PDPA-safer alternative (explicit opt-in, default off) and recommended it; the owner, as data controller,
+chose implied consent with these mitigations: a **visible opt-out toggle** + a **clear notice** ("we may message this
+number on WhatsApp") on the toggle.
+**Follow-up:** mention WhatsApp use in the privacy/consent copy (not done — the legal text wasn't edited this sprint);
+honour an inbound "STOP" via Twilio's native opt-out now, recording it back into the flag is a later webhook.
+**Gate placement:** consent is checked at the **call site** (the reminder command reads `profile.whatsapp_opt_in`),
+keeping `send_whatsapp` a pure transport — each future caller (sponsor comms, etc.) asserts its own consent.
+
+## WhatsApp channel calls Twilio's REST API via stdlib `urllib`, not the Twilio SDK — WhatsApp comms Sprint 1, 2026-06-20
+**Decision:** The `send_whatsapp` helper POSTs to Twilio's `Messages.json` endpoint using stdlib `urllib`
+(basic-auth + form-encoded body), rather than adding the `twilio` Python SDK.
+**Why:** The call is a single trivial HTTP POST; the SDK would be a new runtime dependency for no real gain, and the
+project lesson is "a new external-SDK import is a requirements bump in the same diff" — avoiding the SDK avoids the
+bump entirely. `requests` isn't pinned either, so `urllib` (always present) is the zero-dependency choice.
+**Posture:** comms are **best-effort** — `send_whatsapp` never raises into the caller (email is the system of record);
+**DARK by default** (no-op unless `WHATSAPP_ENABLED` + the three Twilio creds are set), mirroring the billable-API
+"ship disabled first" rule. Every attempt is logged to `WhatsAppMessage` for an audit trail.
+**Deferred to Sprint 2:** a per-recipient `whatsapp_opt_in` consent gate (PDPA) before any real applicant is messaged;
+and a Meta-approved utility **template** for production business-initiated sends (the sandbox accepts free text).
+
+## Request-owned document slots — slot key gains a `request_code` dimension — 2026-06-21
+**Decision:** A reviewer-requested upload is keyed by the officer ResolutionItem code (`officer_N`) it
+satisfies. The single-instance slot key changes from `(doc_type, household_member)` to
+`(doc_type, household_member, request_code)`. `request_code=''` is the student's own apply-form/route
+doc (the existing shared slot). The STR income-earner force-tag is **skipped** when `request_code` is set.
+**Alternatives considered:** (a) make `other` (and only `other`) multi-instance — append-only, never sweep;
+(b) a separate `RequestedDocument` table linked 1:1 to the ResolutionItem; (c) stash the code in the
+existing `vision_fields` JSON to avoid a migration.
+**Rationale:** (a) loses overwrite-on-reupload (a reviewer re-asking for a clearer copy would pile up
+duplicates) and doesn't fix the cross-person income case (those aren't `other`). (b) is a bigger schema
+change touching the upload/serializer/resolution paths for no extra capability. (c) avoids the migration
+but overloads a JSON field meant for extraction data with a routing key, and makes the hot-path sweep
+query filter on JSON. A dedicated, queryable column is the honest model: the request IS a first-class
+dimension of the slot. The column is additive and low-risk.
+**Trade-offs:** one more migration (and a number clash with the parallel `feat/whatsapp-comms` branch —
+renumber the later merge to `0068`). The cockpit shows multiple `other` docs as separate rows (acceptable;
+labelling-which-is-which is a possible later polish).
+**Revisit if:** documents ever need to satisfy more than one request, or requests become first-class
+enough to warrant their own table (e.g. per-request due dates / status beyond the ResolutionItem).
+
+## AutoSponsor allocates via an hourly cron over fundable students, not the publish request — Sponsor Redesign R6, 2026-06-20
+**Decision:** Standing-gift allocation runs in a dedicated **hourly `auto-sponsor` cron** that processes EVERY currently-
+fundable pool student (`pool.eligible_pool_queryset` ∩ `is_fundable`) and funds each with the first matching gift via
+`fund_student`. It does NOT hook synchronously into the admin anon-publish request. Owner picked "event-driven (when a
+match is published)" over a weekly sweep; the hourly cron realises that within an hour.
+**Alternatives considered:** (a) call `fund_student` synchronously in `AdminPublishAnonProfileView.post` (truly instant);
+(b) a weekly sweep; (c) a new "published-since-last-run" stamp to process only deltas.
+**Rationale:** `fund_student` is a MONEY mutation; running it inside an unrelated admin action (publishing a profile)
+couples concerns and risks a 500 in that request. The hourly cron mirrors the established `sponsor-realtime` pattern.
+Processing *all* fundable students each run is **naturally idempotent + self-limiting** — `fund_student` creates a
+holding sponsorship, so a funded student immediately leaves the fundable set (and the DB partial-unique allows one
+holding sponsor per student) — so no delta-stamp is needed. Balance is the throttle: low balance → skip silently →
+retried next run (owner decision), needing no flag or count cap.
+**Trade-offs:** up to ~1h latency between publish and the auto-offer (vs instant); acceptable for an opt-in convenience.
+**Revisit if:** sponsors want instant allocation → add a best-effort synchronous attempt in the publish path on top of
+the cron (the cron stays the backstop).
+
+## AutoSponsor needs no separate consent step — Sponsor Redesign R6, 2026-06-20
+**Decision:** Enabling a standing gift records NO new consent/acknowledgement. (Owner decision.)
+**Alternatives considered:** a short in-app authorisation tick; defer the enable-flow wording to a lawyer.
+**Rationale:** the donation is already final into the trust (covered by the donation terms); a standing gift only
+automates the *offer* click — it still produces an offered sponsorship the student must accept, and no real money moves.
+So it directs already-committed funds rather than creating a new money obligation.
+**Revisit if:** real money (toyyibPay disbursement, TD-075) lands — auto-directing funds that actually move may then
+warrant an explicit authorisation; revisit at that track.
+
 ## Trust hub content: language-neutral DATA in the DB, trilingual CHROME in i18n — Sponsor Redesign R5, 2026-06-20
 **Decision:** The Trust & Transparency hub's editable content is split. The new `TrustContent` model (one active row)
 holds ONLY language-neutral, owner-authored DATA — legal entity, trustee names/roles, the sources/uses figures, the
