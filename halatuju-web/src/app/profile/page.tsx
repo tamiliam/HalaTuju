@@ -1114,13 +1114,17 @@ export default function ProfilePage() {
                   )}
                   <p className="text-xs text-gray-400 mt-1">{t('profile.angkaGiliranHelper')}</p>
                 </div>
-                {/* Merit — read-only (computed); editable via the grades page from the view. */}
-                <div className="flex justify-between items-center">
+                {/* Merit — computed from grades, so "editing" it means the grades editor. Make it
+                    the SAME tappable shortcut as the view state (it was an inert span here, which is
+                    why merit looked editable from the view but not from inside edit). Tapping jumps
+                    to the grades page (stashing a return to /profile). */}
+                <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push('/onboarding/grades') }}
+                  className="w-full flex justify-between items-center gap-3 text-left group">
                   <span className="text-sm font-medium text-gray-700">{t('profile.meritScore')}</span>
-                  <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'}`}>
+                  <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'} group-hover:text-primary-600`}>
                     {meritScore != null ? meritScore : t('profile.meritTapAdd')}
                   </span>
-                </div>
+                </button>
                 <div className="border-t border-gray-100 pt-4">
                   <p className="text-sm font-medium text-gray-900 mb-3">{t('profile.pathway')}</p>
                   <PathwayPicker value={pathwayForm} onChange={updatePathway} profile={profileObj} token={token} />
