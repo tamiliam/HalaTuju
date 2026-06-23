@@ -142,6 +142,38 @@ COURSE_REFRESH_REMINDER_EMAIL = os.environ.get('COURSE_REFRESH_REMINDER_EMAIL', 
 # every sponsor-pool browse endpoint returns 404. Build + test run on dummy data.
 SPONSOR_POOL_ENABLED = os.environ.get('SPONSOR_POOL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# WhatsApp outbound comms (Twilio). DARK by default: every send is a no-op unless
+# WHATSAPP_ENABLED is true AND the three Twilio creds are set (the billable-API
+# "ship disabled first" rule). The sandbox sender is 'whatsapp:+14155238886'.
+WHATSAPP_ENABLED = os.environ.get('WHATSAPP_ENABLED', '').lower() in ('1', 'true', 'yes')
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', '')
+# Approved Meta template (Twilio Content SID, HX…) for the interview reminder. Required
+# for PRODUCTION business-initiated sends; blank in the sandbox (free-text is allowed there).
+TWILIO_WHATSAPP_REMINDER_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID', '')
+# Reminder v2 (S3): two language variants picked by english_only — EN-only and EN+BM. Each serves
+# BOTH the 24h and 1h reminder via a 'when' variable + names the interviewer. While unset, the code
+# falls back to the legacy generic SID above (current prod), then to sandbox free-text.
+TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN', '')
+TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM = os.environ.get('TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM', '')
+# Approved template for the "interview times proposed — please pick one" nudge (roadmap S2/TD-138).
+# Two language variants picked by english_only — EN-only and EN+BM (both reuse vars {1}name {2}reviewer
+# {3}link; no language-specific var). `…_SID` is the legacy single (fallback). Blank → sandbox free-text
+# / dark on a real sender until set.
+TWILIO_WHATSAPP_PROPOSED_CONTENT_SID = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID', '')
+TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN', '')
+TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM = os.environ.get('TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM', '')
+# Twilio Verify Service SID (roadmap S4/TD-136) — phone verification. Blank → the verify
+# endpoints report "unconfigured" (503) and the /profile control stays inert. The Verify
+# Service is created once in the Twilio console; it manages code lifecycle + rate limits.
+TWILIO_VERIFY_SERVICE_SID = os.environ.get('TWILIO_VERIFY_SERVICE_SID', '')
+# Delivery channel for the OTP: 'sms' (default — works out of the box) or 'whatsapp'. WhatsApp
+# needs Twilio's bring-your-own-sender onboarding (~2-4 weeks, error 60223 until done), so we
+# ship on SMS and flip this env var to 'whatsapp' once that clears — no code change. The /profile
+# copy is channel-neutral ("to your number") so it stays correct either way.
+PHONE_VERIFY_CHANNEL = os.environ.get('PHONE_VERIFY_CHANNEL', 'sms')
+
 # Check 2 STEP 2: the AI clarify queries asked of the STUDENT. While OFF (default), no
 # clarify query is shown in the student Action Centre and no query email/reminder is
 # sent — but officers still see them in the cockpit, so the questions can be reviewed
@@ -158,6 +190,21 @@ CHECK2_AUTO_GENERATE = os.environ.get('CHECK2_AUTO_GENERATE', '').lower() in ('1
 # reviewers have given non-objection to sharing their contact. Per-reviewer opt-out lives on
 # ReviewerProfile.share_phone_with_students (default shared).
 STUDENT_ASSIGNMENT_EMAIL_ENABLED = os.environ.get('STUDENT_ASSIGNMENT_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
+
+# When a student confirms their profile (shortlisted → profile_complete), send the richer
+# "your application is in — here's what happens next" email (Check-2 review → doc requests →
+# interview with 3 slots → minor needs a guardian). When ON it SUPERSEDES the basic
+# submission-ack email at that step; when OFF the basic ack still sends. EN+BM.
+PROFILE_COMPLETE_EMAIL_ENABLED = os.environ.get('PROFILE_COMPLETE_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
+
+# Cool-off windows before a decision's comm goes out, giving time to reconsider/reverse.
+# DECLINE: a post-shortlist admin decline is held silently this many days before it reveals
+# (status → rejected) + the decline email sends. AWARD: a student-accepted award is held this
+# many days before the 'funding confirmed' email + onboarding (the 'sponsored' flip). An admin
+# can cancel/hold within the window and the student never sees it. **Default 0 = OFF (immediate),
+# like the other comms flags — prod sets the env vars (DECLINE=7, AWARD=2) to switch the cool-off on.**
+DECLINE_COOLOFF_DAYS = float(os.environ.get('DECLINE_COOLOFF_DAYS', '0'))
+AWARD_COOLOFF_DAYS = float(os.environ.get('AWARD_COOLOFF_DAYS', '0'))
 
 # Interview scheduling: the assigned reviewer proposes a few times, the student books
 # one in-app, and we send confirmations + reminders. OFF by default — the whole surface
@@ -185,7 +232,7 @@ MEET_ORGANISER_EMAIL = os.environ.get('MEET_ORGANISER_EMAIL', 'info@halatuju.xyz
 # Secret — set via Cloud Run env var, NEVER committed. Empty → Meet generation no-ops.
 GOOGLE_MEET_SA_JSON = os.environ.get('GOOGLE_MEET_SA_JSON', '')
 # Interview defaults.
-INTERVIEW_DURATION_MIN = int(os.environ.get('INTERVIEW_DURATION_MIN', '45'))
+INTERVIEW_DURATION_MIN = int(os.environ.get('INTERVIEW_DURATION_MIN', '30'))  # matches the "about 30 minutes" copy
 # How close to the start a student may still self-reschedule / cancel (hours before).
 INTERVIEW_RESCHEDULE_CUTOFF_HOURS = int(os.environ.get('INTERVIEW_RESCHEDULE_CUTOFF_HOURS', '12'))
 
@@ -197,6 +244,9 @@ CHECK2_ANSWER_RELEVANCE_ENABLED = os.environ.get('CHECK2_ANSWER_RELEVANCE_ENABLE
 # Supporting-document upload guardrails (cost + abuse). Env-overridable.
 MAX_DOC_SIZE_BYTES = int(os.environ.get('MAX_DOC_SIZE_BYTES', str(8 * 1024 * 1024)))   # 8 MB/file
 MAX_DOCS_PER_APPLICATION = int(os.environ.get('MAX_DOCS_PER_APPLICATION', '40'))
+# Cap on 'other' (reviewer-requested extra) documents per application. Each lands in its
+# own request-keyed slot, so without a cap a reviewer could request unbounded extras.
+MAX_OTHER_DOCS = int(os.environ.get('MAX_OTHER_DOCS', '10'))
 # Document-assist (Gemini field extraction on upload): hourly cap per application —
 # beyond it the upload still succeeds + Vision/deterministic feedback still run, but
 # the billable Gemini call is skipped (student sees a "we'll review manually" note).

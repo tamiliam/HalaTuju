@@ -25,12 +25,13 @@ from . import sponsor_feed
 from . import sponsorship as sponsorship_service
 from . import trust as trust_service
 from .emails import send_sponsor_interest_admin_email
-from .models import Donation, ScholarshipApplication, Sponsor, Sponsorship
+from .models import Donation, ScholarshipApplication, Sponsor, Sponsorship, StandingGift
 from .serializers import (
     GraduationRelaySerializer,
     SponsorPoolCardSerializer, SponsorPoolDetailSerializer,
     SponsorReferralSerializer,
     SponsorSerializer, SponsorSponsorshipSerializer,
+    StandingGiftSerializer,
 )
 
 # PDPA consent text version a sponsor accepts at registration. Bump when the
@@ -320,6 +321,34 @@ class SponsorTrustView(_PoolBase):
         if err:
             return err
         return Response(trust_service.get_trust_content())
+
+
+class SponsorStandingGiftView(_PoolBase):
+    """GET/PUT /api/v1/sponsor/standing-gift/ — R6 AutoSponsor. The sponsor's own
+    standing-gift config (field/state prefs + optional per-student cap + active).
+    GET returns the config (``configured: false`` if none set). PUT upserts it.
+    The sponsor's own settings only — no student data. Each allocation still
+    produces an OFFERED sponsorship the student must accept (no real money moves).
+    Behind SPONSOR_POOL_ENABLED + approved-sponsor (via _gate)."""
+    def get(self, request):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        sg = StandingGift.objects.filter(sponsor=sponsor).first()
+        if sg is None:
+            return Response({'configured': False, 'active': False})
+        return Response({'configured': True, **StandingGiftSerializer(sg).data})
+
+    def put(self, request):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        data = request.data if isinstance(request.data, dict) else {}
+        ser = StandingGiftSerializer(data=data)
+        ser.is_valid(raise_exception=True)
+        sg, _ = StandingGift.objects.update_or_create(
+            sponsor=sponsor, defaults=ser.validated_data)
+        return Response({'configured': True, **StandingGiftSerializer(sg).data})
 
 
 class SponsorGraduationMessagesView(_PoolBase):

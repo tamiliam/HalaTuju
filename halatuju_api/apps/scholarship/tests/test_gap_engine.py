@@ -76,6 +76,18 @@ class TestGapEngine(TestCase):
         self.assertIn('ALREADY ANSWERED', prompt)
         self.assertIn('ACADEMIC RECORD', prompt)
 
+    def test_prompt_includes_todays_date(self):
+        """Regression: the gap prompt must give the model today's date so it never flags a
+        PAST date as 'in the future' (the 'AI doesn't know today's date' bug)."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+        prompt = gap_engine._build_gap_prompt(self.app)
+        today = (timezone.now() + timedelta(hours=8)).strftime('%d %B %Y')
+        self.assertIn(today, prompt)
+        self.assertIn("Today's date is", prompt)
+        self.assertIn('in the future', prompt)   # the past-vs-future guard instruction
+
     def test_prompt_feeds_quiz_for_exploratory_question(self):
         """Idea 2: the quiz signals are in the gap prompt, with an instruction to ask ONE
         exploratory (non-judgmental) question when quiz interests diverge from the pathway."""

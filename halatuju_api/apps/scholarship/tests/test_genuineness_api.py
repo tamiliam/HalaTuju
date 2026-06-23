@@ -32,7 +32,7 @@ class TestBackwardCompatibleImports(SimpleTestCase):
         # name still resolves on the vision module after the move, or prod would NameError.
         from apps.scholarship import vision
         self.assertIn('str', vision._GENUINENESS_DOCS)
-        # TD-133: results_slip is scored by the SIGNATURE scorer (its branch wins), so it was
+        # TD-139: results_slip is scored by the SIGNATURE scorer (its branch wins), so it was
         # dropped from the holistic set — the live slip branch is independent.
         self.assertNotIn('results_slip', vision._GENUINENESS_DOCS)
 

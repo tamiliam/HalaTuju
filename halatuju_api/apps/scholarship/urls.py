@@ -25,6 +25,7 @@ from .views import (
     StudentInterviewBookView,
     StudentInterviewCancelView,
     StudentInterviewRequestAlternativesView,
+    WhatsAppInboundView,
 )
 from .views_sponsor import (
     SponsorActivityView,
@@ -42,6 +43,7 @@ from .views_sponsor import (
     SponsorReferralView,
     SponsorRegisterView,
     SponsorSponsorshipsView,
+    SponsorStandingGiftView,
     SponsorStatementView,
     SponsorTrustView,
     SponsorWalletView,
@@ -64,6 +66,8 @@ from .views_admin import (
     AdminProfileEditView,
     AdminPublishProfileView,
     AdminRejectView,
+    AdminCancelDeclineView,
+    AdminHoldAwardView,
     AdminRefereeDetailView,
     AdminRecordVerdictView,
     AdminReopenDecisionView,
@@ -84,6 +88,8 @@ from .views_admin import (
 )
 
 urlpatterns = [
+    # Twilio inbound-WhatsApp webhook (STOP/START → opt-out sync; Twilio-signature authed). TD-135.
+    path('scholarship/whatsapp/inbound/', WhatsAppInboundView.as_view()),
     path('scholarship/applications/', ApplicationListCreateView.as_view()),
     path('scholarship/applications/<int:pk>/', ApplicationDetailView.as_view()),
     path('scholarship/applications/<int:pk>/confirm/', ApplicationConfirmView.as_view()),
@@ -126,6 +132,7 @@ urlpatterns = [
     path('sponsor/community/', SponsorCommunityView.as_view()),  # R3: community strip
     path('sponsor/statement/', SponsorStatementView.as_view()),  # R4: giving statement (two ledgers)
     path('sponsor/trust/', SponsorTrustView.as_view()),  # R5: Trust & Transparency hub
+    path('sponsor/standing-gift/', SponsorStandingGiftView.as_view()),  # R6: AutoSponsor
     path('sponsor/graduation-messages/', SponsorGraduationMessagesView.as_view()),  # F9a relay
     path('sponsor/referrals/', SponsorReferralView.as_view()),  # F4 referral/invite
     path('sponsor/wallet/donate/', SponsorDonateView.as_view()),
@@ -149,6 +156,9 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/verify-accept/', AdminVerifyAcceptView.as_view()),
     path('admin/scholarship/applications/<int:pk>/reject/', AdminRejectView.as_view()),
+    # Cool-off controls: cancel a pending decline / hold a pending award before it reveals.
+    path('admin/scholarship/applications/<int:pk>/cancel-decline/', AdminCancelDeclineView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/hold-award/', AdminHoldAwardView.as_view()),
     # F7: super-only audited reviewer (re)assignment.
     path('admin/scholarship/applications/<int:pk>/assign/', AdminAssignReviewerView.as_view()),
     # Interview scheduling (reviewer proposes times; dark behind INTERVIEW_SCHEDULING_ENABLED)

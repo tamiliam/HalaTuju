@@ -193,6 +193,67 @@
         "expired": "Tamat tempoh"
       }
     },
+    "impact": {
+      "totalGiven": "Jumlah diberi",
+      "acrossStudents": "merentas {n} pelajar",
+      "supported": "Pelajar disokong",
+      "semesters": "Semester selesai",
+      "semestersBy": "oleh pelajar anda",
+      "graduated": "Bergraduasi",
+      "graduatedSub": "telah menamatkan pengajian",
+      "givingTitle": "Pemberian anda",
+      "committed": "Dikomited",
+      "completed": "Selesai",
+      "available": "Tersedia",
+      "balanceNote": "Dikomited bersama pelajar sekarang · Selesai bergraduasi · Tersedia sedia diberi semula."
+    },
+    "journey": {
+      "matched": "Dipadankan",
+      "onboarded": "Didaftarkan",
+      "studying": "Belajar",
+      "graduated": "Bergraduasi",
+      "semesters": "{n} semester selesai"
+    },
+    "activity": {
+      "title": "Aktiviti terkini",
+      "live": "Langsung",
+      "funded": "Anda menawarkan sokongan kepada {ref}",
+      "accepted": "{ref} menerima sokongan anda",
+      "semester": "{ref} menyelesaikan satu semester",
+      "graduated": "{ref} bergraduasi 🎓",
+      "thank_you": "Ucapan terima kasih daripada {ref}"
+    },
+    "community": {
+      "line1": "Anda salah seorang daripada {n} penaja",
+      "line2": "Bersama-sama menyokong {n} pelajar",
+      "waiting": "{n} pelajar masih menunggu"
+    },
+    "statement": {
+      "title": "Penyata pemberian",
+      "intro": "Dua rekod berasingan: apa yang anda masukkan ke dalam amanah, dan apa yang anda hadiahkan kepada pelajar.",
+      "taxNote": "(Resit boleh tolak cukai setelah Seksyen 44(6) disahkan.)",
+      "print": "Cetak / simpan sebagai PDF",
+      "donations": "Derma kepada amanah",
+      "donationsNote": "Wang yang anda dermakan ke dalam amanah. Ia menjadi milik badan amal — tidak boleh dikeluarkan, hanya dialihkan.",
+      "gifts": "Hadiah kepada pelajar",
+      "giftsNote": "Hadiah daripada baki anda kepada pelajar — setiap satu disahkan secara bebas sebagai pelajar berdaftar."
+    },
+    "students": {
+      "title": "Pelajar",
+      "intro": "Setiap kad ialah pelajar tanpa nama yang boleh anda sokong. Tapis mengikut bidang, negeri atau peringkat.",
+      "allFields": "Semua bidang",
+      "allStates": "Semua negeri",
+      "allLevels": "Semua peringkat",
+      "shown": "{count} dipaparkan",
+      "filteredEmpty": "Tiada pelajar sepadan dengan tapisan ini.",
+      "support": "Sokong",
+      "fundingSoon": "Pembiayaan dibuka tidak lama lagi — kami sedang memuktamadkan alirannya dengan pasukan."
+    },
+    "account": {
+      "title": "Akaun Saya",
+      "detailsTitle": "Butiran anda",
+      "email": "E-mel"
+    },
     "trust": {
       "back": "Kembali ke Sumbangan Saya",
       "footerLink": "Kepercayaan & Ketelusan",
@@ -240,6 +301,21 @@
         "auditedBy": "Diaudit oleh {auditor}",
         "downloadReport": "muat turun laporan jaminan tahunan"
       }
+    },
+    "autoSponsor": {
+      "title": "AutoSponsor",
+      "enable": "Hidup",
+      "intro": "Tetapkan sekali: apabila pelajar yang sepadan dengan pilihan anda menyertai kumpulan, kami akan menawarkan sokongan anda secara automatik daripada baki anda. Mereka tetap menerimanya sendiri — tiada apa yang dihantar tanpa persetujuan mereka.",
+      "field": "Bidang pengajian",
+      "state": "Negeri",
+      "maxAmount": "Paling banyak setiap pelajar (RM)",
+      "any": "Mana-mana",
+      "noCap": "Tiada had",
+      "save": "Simpan",
+      "saving": "Menyimpan…",
+      "saved": "Disimpan",
+      "note": "Kami hanya menawarkan sokongan selagi baki anda mencukupi; apabila ia berkurangan, kami hanya menunggu sehingga anda menambah. Setiap tawaran masih memerlukan penerimaan pelajar.",
+      "lastAllocated": "Sepadan kali terakhir pada {date}"
     }
   },
   "sponsorPool": {
@@ -1634,7 +1710,7 @@
       "acceptedBody": "Tahniah — permohonan anda telah disahkan. Pasukan kami akan menghubungi anda tentang langkah seterusnya untuk anugerah anda.",
       "interview": {
         "title": "Temu duga anda",
-        "pickIntro": "Penemu duga anda telah mencadangkan masa berikut. Pilih yang sesuai untuk anda — ia panggilan video ringkas (kira-kira 30–45 minit).",
+        "pickIntro": "Penemu duga anda telah mencadangkan masa berikut. Pilih yang sesuai untuk anda — ia panggilan video ringkas (kira-kira 30 minit).",
         "book": "Tempah masa ini",
         "selectFirst": "Sila pilih masa dahulu.",
         "booked": "Temu duga anda ditempah pada",
@@ -1919,6 +1995,10 @@
         "body": "Tiada anugerah menunggu anda buat masa ini. Kami akan memberitahu anda sebaik sahaja seorang penyokong memilih untuk membiayai pengajian anda.",
         "cta": "Kembali ke permohonan saya"
       },
+      "finalising": {
+        "heading": "Anda telah menerima — terima kasih!",
+        "body": "Kami sedang memuktamadkan pembiayaan anda sekarang. Anda akan menerima e-mel pengesahan dan langkah onboarding dalam masa beberapa hari. Tiada apa-apa yang perlu anda lakukan buat masa ini."
+      },
       "confirmed": {
         "heading": "Berita baik — pengajian anda dibiayai",
         "body": "Seorang penyokong telah memilih untuk membiayai pengajian anda. Identiti mereka kekal rahsia, sama seperti identiti anda kekal rahsia daripada mereka.",
@@ -2149,7 +2229,17 @@
     "email": "Alamat Emel",
     "emailVerified": "Disahkan",
     "emailVerifyNote": "Pautan pengesahan akan dihantar ke emel baharu anda",
-    "phoneVerifyNote": "Kod pengesahan akan dihantar ke nombor baharu anda",
+    "phoneVerifyNote": "Kami akan menghantar kod sekali guna ke nombor anda untuk mengesahkan ia milik anda.",
+    "phoneVerified": "Nombor disahkan",
+    "phoneCodeSent": "Kami telah menghantar kod ke nombor anda. Masukkannya di bawah.",
+    "phoneCodePlaceholder": "Masukkan kod",
+    "phoneCodeWrong": "Kod itu tidak sepadan. Sila cuba lagi.",
+    "phoneVerifyFailed": "Tidak dapat menghantar kod. Sila cuba lagi.",
+    "confirm": "Sahkan",
+    "whatsappUpdates": "Kemas kini melalui WhatsApp",
+    "whatsappUpdatesNote": "Kami mungkin menghantar mesej tentang permohonan anda ke nombor ini melalui WhatsApp. Matikan untuk berhenti.",
+    "whatsappOn": "Hidup",
+    "whatsappOff": "Mati",
     "angkaGiliran": "Angka Giliran",
     "angkaGiliranHelper": "Nombor rujukan permohonan universiti anda (cth. AB123C456)",
     "angkaGiliranInvalid": "Format salah — mestilah AB123C456 (2 huruf, 3 digit, 1 huruf, 3 digit)",
@@ -2636,10 +2726,20 @@
       "refError": "Tidak dapat menyimpan perujuk. Sila cuba lagi.",
       "genLang": "Bahasa output",
       "visionError": "Tidak dapat menjalankan semula Vision.",
+      "cooloff": {
+        "declineScheduled": "Penolakan ini dijadualkan untuk dihantar pada",
+        "awardScheduled": "Pengesahan pembiayaan ini dijadualkan untuk dihantar pada",
+        "silentNote": "Pelajar tidak melihat apa-apa sehingga itu — batalkan di sini untuk menimbang semula.",
+        "cancelDecline": "Batalkan penolakan",
+        "holdAward": "Tahan",
+        "cancelConfirm": "Batalkan penolakan berjadual ini? Pemohon tidak akan ditolak dan tidak pernah melihatnya.",
+        "holdConfirm": "Tahan anugerah ini? Penerimaan dibatalkan, jumlahnya dikembalikan kepada penaja, dan pelajar tidak pernah melihat pengesahan.",
+        "error": "Tidak dapat mengemas kini. Sila cuba lagi."
+      },
       "reject": {
         "declineContractual": "Tolak (kontrak)",
-        "confirmReview": "Tolak pemohon ini? Mereka telah disemak tetapi tidak terpilih. E-mel penolakan akan dihantar kepada mereka sekarang.",
-        "confirmContractual": "Tolak pemohon yang telah diterima ini atas sebab kontrak? E-mel penolakan akan dihantar kepada mereka sekarang.",
+        "confirmReview": "Tolak pemohon ini? Mereka telah disemak tetapi tidak terpilih. E-mel penolakan akan dihantar kepada mereka (selepas tempoh bertenang ringkas, jika ada).",
+        "confirmContractual": "Tolak pemohon yang telah diterima ini atas sebab kontrak? E-mel penolakan akan dihantar kepada mereka (selepas tempoh bertenang ringkas, jika ada).",
         "running": "Menolak…",
         "error": "Tidak dapat menolak pemohon ini. Sila cuba lagi.",
         "category": {

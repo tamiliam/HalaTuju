@@ -6,12 +6,14 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
-import { formatPhone, formatAddress, isValidPhone, formatNric } from '@/lib/scholarship'
+import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
   suggestInterviewGaps,
   verifyAcceptApplication,
   rejectApplication,
+  cancelPendingDecline,
+  holdPendingAward,
   addReferee,
   deleteReferee,
   reRunVision,
@@ -257,6 +259,20 @@ export default function AdminScholarshipDetailPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : t('admin.scholarship.reject.error'))
     } finally { setBusy('') }
+  }
+
+  // Cool-off controls: cancel a scheduled decline / hold a pending award before it reveals.
+  const doCancelDecline = async () => {
+    if (!token || !window.confirm(t('admin.scholarship.cooloff.cancelConfirm'))) return
+    setBusy('cooloff'); setError('')
+    try { setApp(await cancelPendingDecline(id, { token })) }
+    catch { setError(t('admin.scholarship.cooloff.error')) } finally { setBusy('') }
+  }
+  const doHoldAward = async () => {
+    if (!token || !window.confirm(t('admin.scholarship.cooloff.holdConfirm'))) return
+    setBusy('cooloff'); setError('')
+    try { setApp(await holdPendingAward(id, { token })) }
+    catch { setError(t('admin.scholarship.cooloff.error')) } finally { setBusy('') }
   }
 
   const doAssign = async (adminId: number | null) => {
@@ -621,6 +637,14 @@ export default function AdminScholarshipDetailPage() {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
           <span>NRIC <span className="font-mono text-gray-700">{formatNric(app.nric || '') || '—'}</span></span>
+          {referralAcronym(app.referral_source) && (
+            <span
+              title={app.referral_source ? t(`scholarship.apply.org.${app.referral_source}`) : ''}
+              className="rounded-full border border-gray-200 px-2 py-0.5 font-medium text-gray-600"
+            >
+              {referralAcronym(app.referral_source)}
+            </span>
+          )}
           {app.submitted_at && (
             <span>{t('admin.scholarship.submitted')} {new Date(app.submitted_at).toLocaleDateString()}</span>
           )}
@@ -630,6 +654,35 @@ export default function AdminScholarshipDetailPage() {
           <span>{t('admin.scholarship.assigned')} <span className="text-gray-700">{app.assigned_to_name || '—'}</span></span>
         </div>
       </header>
+
+      {/* Cool-off (#13/#14): a decision recorded but held silently — the student sees nothing
+          until the reveal date, so it can be cancelled/held in the window. Admin-only. */}
+      {app.decline_due_at && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-800">
+            ⏳ {t('admin.scholarship.cooloff.declineScheduled')}{' '}
+            <strong>{new Date(app.decline_due_at).toLocaleDateString()}</strong>.{' '}
+            {t('admin.scholarship.cooloff.silentNote')}
+          </p>
+          <button onClick={doCancelDecline} disabled={busy === 'cooloff'}
+            className="whitespace-nowrap rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+            {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.cancelDecline')}
+          </button>
+        </div>
+      )}
+      {app.award_due_at && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-800">
+            ⏳ {t('admin.scholarship.cooloff.awardScheduled')}{' '}
+            <strong>{new Date(app.award_due_at).toLocaleDateString()}</strong>.{' '}
+            {t('admin.scholarship.cooloff.silentNote')}
+          </p>
+          <button onClick={doHoldAward} disabled={busy === 'cooloff'}
+            className="whitespace-nowrap rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+            {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.holdAward')}
+          </button>
+        </div>
+      )}
 
       {/* Applicant info — three explicit columns (About+Family / Academic / Support…) */}
       {(() => {

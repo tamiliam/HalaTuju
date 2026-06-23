@@ -74,6 +74,7 @@ export interface StudentProfile {
   contact_email_verified?: boolean
   contact_phone?: string
   contact_phone_verified?: boolean
+  whatsapp_opt_in?: boolean
   exam_type?: 'spm' | 'stpm'
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
@@ -373,6 +374,30 @@ export async function sendVerificationEmail(
   return apiRequest('/api/v1/profile/verify-email/send/', {
     method: 'POST',
     body: JSON.stringify({ email, lang }),
+    ...options,
+  })
+}
+
+// Phone verification over WhatsApp via Twilio Verify (S4 / TD-136). Opt-in / voluntary.
+export async function sendPhoneVerification(
+  phone?: string,
+  options?: ApiOptions
+): Promise<{ status: string }> {
+  return apiRequest('/api/v1/profile/verify-phone/send/', {
+    method: 'POST',
+    body: JSON.stringify(phone ? { phone } : {}),
+    ...options,
+  })
+}
+
+export async function checkPhoneVerification(
+  code: string,
+  phone?: string,
+  options?: ApiOptions
+): Promise<{ verified: boolean; error?: string }> {
+  return apiRequest('/api/v1/profile/verify-phone/check/', {
+    method: 'POST',
+    body: JSON.stringify(phone ? { code, phone } : { code }),
     ...options,
   })
 }
@@ -809,6 +834,31 @@ export interface SponsorTrust {
 
 export async function getSponsorTrust(options?: ApiOptions): Promise<SponsorTrust> {
   return apiRequest('/api/v1/sponsor/trust/', options)
+}
+
+/** R6 — AutoSponsor: the sponsor's own standing-gift config (auto-direct their
+ *  balance to the next matching student; each allocation is still an offered
+ *  sponsorship the student accepts). 404s while the pool flag is off. */
+export interface SponsorStandingGift {
+  configured: boolean
+  active: boolean
+  field_pref?: string
+  state_pref?: string
+  max_amount?: string | null
+  last_allocated_at?: string | null
+}
+
+export async function getSponsorStandingGift(options?: ApiOptions): Promise<SponsorStandingGift> {
+  return apiRequest('/api/v1/sponsor/standing-gift/', options)
+}
+
+export async function putSponsorStandingGift(
+  body: { field_pref?: string; state_pref?: string; max_amount?: string | null; active?: boolean },
+  options?: ApiOptions,
+): Promise<SponsorStandingGift> {
+  return apiRequest('/api/v1/sponsor/standing-gift/', {
+    ...options, method: 'PUT', body: JSON.stringify(body),
+  })
 }
 
 /** F1 — public live counter for the sponsor landing. No auth (a public marketing
@@ -1716,7 +1766,7 @@ export async function uploadFileToSignedUrl(uploadUrl: string, file: File): Prom
 }
 
 export async function recordDocument(
-  payload: { doc_type: string; storage_path: string; household_member?: string; original_filename?: string; content_type?: string; size?: number },
+  payload: { doc_type: string; storage_path: string; household_member?: string; request_code?: string; original_filename?: string; content_type?: string; size?: number },
   options?: ApiOptions
 ): Promise<ApplicantDocument & { match_verdict?: 'ok' | 'mismatch' | 'unreadable' | 'pending' }> {
   return apiRequest('/api/v1/scholarship/documents/', {
@@ -1859,7 +1909,7 @@ export interface StudentAward {
  *  (so the page knows to require a guardian to accept). */
 export async function getStudentAward(
   options?: ApiOptions
-): Promise<{ offer: StudentAward | null; is_minor: boolean }> {
+): Promise<{ offer: StudentAward | null; finalising?: boolean; is_minor: boolean }> {
   return apiRequest('/api/v1/scholarship/award/', options)
 }
 

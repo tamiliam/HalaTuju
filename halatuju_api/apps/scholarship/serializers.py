@@ -6,7 +6,7 @@ from .family import PROFESSION_CODES
 from .models import (
     ApplicantDocument, Consent, FundingNeed, GraduationMessage, Referee,
     ResolutionItem, ScholarshipApplication, SemesterResult, Sponsor,
-    SponsorReferral,
+    SponsorReferral, StandingGift,
 )
 
 
@@ -125,6 +125,21 @@ class SponsorReferralSerializer(serializers.ModelSerializer):
         fields = ['id', 'invitee_email', 'invitee_name', 'note', 'code',
                   'status', 'created_at', 'joined_at']
         read_only_fields = fields
+
+
+class StandingGiftSerializer(serializers.ModelSerializer):
+    """R6 — a sponsor's own AutoSponsor config (their settings only, never any
+    student data). Read + upsert: prefs empty = match any; ``max_amount`` null = no
+    per-student cap. ``last_allocated_at`` is system-set."""
+    class Meta:
+        model = StandingGift
+        fields = ['field_pref', 'state_pref', 'max_amount', 'active', 'last_allocated_at']
+        read_only_fields = ['last_allocated_at']
+
+    def validate_max_amount(self, value):
+        if value is not None and value <= 0:
+            raise serializers.ValidationError('max_amount must be positive')
+        return value
 
 
 class SponsorSponsorshipSerializer(serializers.Serializer):
@@ -664,6 +679,9 @@ class DocumentCreateSerializer(serializers.Serializer):
     household_member = serializers.ChoiceField(
         choices=[c[0] for c in ApplicantDocument.HOUSEHOLD_MEMBER_CHOICES],
         required=False, allow_blank=True, default='')
+    # Set ONLY for an Action-Centre reviewer-requested upload (the officer ResolutionItem
+    # code, e.g. 'officer_3') — gives each request its own document slot. Blank otherwise.
+    request_code = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
     storage_path = serializers.CharField(max_length=500)
     original_filename = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     content_type = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')

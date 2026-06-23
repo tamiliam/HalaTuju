@@ -113,6 +113,29 @@ class TestConfirm(PhaseCBase):
         self.assertIsNotNone(app.profile_completed_at)
         mock_email.assert_called_once()
 
+    @override_settings(PROFILE_COMPLETE_EMAIL_ENABLED=True)
+    @patch('apps.scholarship.emails.send_profile_complete_student_email')
+    @patch('apps.scholarship.services.send_submission_received_email')
+    @patch('apps.scholarship.services.send_profile_complete_admin_email')
+    def test_confirm_sends_profile_complete_email_when_flag_on(self, _admin, mock_ack, mock_new):
+        app = self._complete(self._make_app())
+        self._auth(STUDENT)
+        r = self.client.post(f'/api/v1/scholarship/applications/{app.id}/confirm/')
+        self.assertEqual(r.status_code, 200)
+        mock_new.assert_called_once()            # richer email sent
+        mock_ack.assert_not_called()             # basic ack superseded (no double-email)
+
+    @patch('apps.scholarship.emails.send_profile_complete_student_email')
+    @patch('apps.scholarship.services.send_submission_received_email')
+    @patch('apps.scholarship.services.send_profile_complete_admin_email')
+    def test_confirm_sends_basic_ack_when_flag_off(self, _admin, mock_ack, mock_new):
+        app = self._complete(self._make_app())
+        self._auth(STUDENT)
+        r = self.client.post(f'/api/v1/scholarship/applications/{app.id}/confirm/')
+        self.assertEqual(r.status_code, 200)
+        mock_ack.assert_called_once()            # default: basic ack
+        mock_new.assert_not_called()
+
     @patch('apps.scholarship.services.send_profile_complete_admin_email')
     def test_confirm_is_idempotent(self, _mock):
         app = self._complete(self._assigned_app(status='profile_complete'))

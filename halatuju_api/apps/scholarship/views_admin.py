@@ -42,12 +42,17 @@ from .serializers_admin import (
 )
 from .services import (
     AssignmentError, admin_reject, application_completeness, assign_reviewer,
-    submit_interview,
+    cancel_pending_decline, submit_interview,
 )
+from .sponsorship import hold_pending_award
 
 logger = logging.getLogger(__name__)
 
-_VALID_VERDICTS = {'resolved', 'still_unclear', 'new_concern', 'deleted'}
+# '' = an in-progress finding: the reviewer typed a one-line "what you found" but
+# hasn't classified it (resolved/still_unclear/new_concern). The cockpit produces this
+# for any gap whose verdict button wasn't clicked — rejecting it 400'd the whole
+# Save-draft and lost the reviewer's notes. A draft finding may carry just a rationale.
+_VALID_VERDICTS = {'', 'resolved', 'still_unclear', 'new_concern', 'deleted'}
 _RATIONALE_MAX = 140
 
 
@@ -313,6 +318,35 @@ class AdminRejectView(_AdminBase):
             return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
         # Declining a REOPENED decision is a real correction (counting model B).
         reopen_service.close_reopen_with_change(app)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminCancelDeclineView(_AdminBase):
+    """POST .../<pk>/cancel-decline/ — abort a scheduled-but-unrevealed decline within the
+    decline cool-off (the student never saw it). Reviewer-gated. Idempotent."""
+    def post(self, request, pk):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        cancel_pending_decline(app)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminHoldAwardView(_AdminBase):
+    """POST .../<pk>/hold-award/ — reverse an accepted-but-unconfirmed award within the award
+    cool-off (the amount returns to the sponsor; the student never saw confirmation).
+    Reviewer-gated. Idempotent."""
+    def post(self, request, pk):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        hold_pending_award(app)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
@@ -846,6 +880,17 @@ class AdminResolutionItemView(_AdminBase):
                          doc_type=(request.data.get('doc_type') or '').strip(),
                          fact=(request.data.get('fact') or 'other').strip(),
                          household_member=member)
+        # Re-notify the student that there's something new for them — but DON'T email
+        # per item (a reviewer raises several in one sitting → email spam + Brevo quota).
+        # Instead reset the one-time notify stamp so the delayed, batched, idempotent
+        # `send_due_query_emails` sweep sends ONE summary email on its next run (it now
+        # counts officer items too). A re-request after the student cleared everything
+        # thus re-notifies them once. Flag-gated to the student-query channel.
+        from django.conf import settings as _settings
+        if (getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False)
+                and app.query_raised_notified_at is not None):
+            app.query_raised_notified_at = None
+            app.save(update_fields=['query_raised_notified_at'])
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

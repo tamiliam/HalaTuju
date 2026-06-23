@@ -297,6 +297,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'award_amount',
             # Rejection bucket (merit/need/ineligible/interview/contractual) + stamps
             'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
+            # Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation +
+            # its reveal date — drives the cockpit "scheduled — cancel/hold" banners.
+            'pending_rejection_category', 'decline_due_at', 'award_due_at',
             # Phase C handoff + interview funnel
             'profile_completed_at', 'completeness', 'interview_session',
             'interview_gaps', 'interview_gaps_run_at', 'interview_schedule',

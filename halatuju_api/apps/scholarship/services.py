@@ -632,7 +632,12 @@ def send_due_query_emails(now=None):
         queries = list(sync_check2_queries(app))
         doc_requests = app.resolution_items.filter(
             source='system', status='open', code__in=STUDENT_DOC_REQUEST_CODES).count()
-        n_open = len(queries) + doc_requests
+        # Reviewer-raised items (doc-request / clarify / explanation) also need the
+        # student to act — they always show in the Action Centre but were never counted
+        # toward this notification, so a reviewer doc-request/re-request went unnotified.
+        officer_open = (app.resolution_items
+                        .filter(source='officer', status='open').exclude(kind='human').count())
+        n_open = len(queries) + doc_requests + officer_open
         if n_open == 0:
             continue
         name = getattr(app.profile, 'name', '') if app.profile else ''
@@ -734,28 +739,15 @@ def autogenerate_ready_profiles(now=None):
 INTERVIEW_REJECT_FROM = ('shortlisted', 'profile_complete', 'interviewing', 'interviewed')
 
 
-def admin_reject(application, admin, category):
-    """Post-shortlist admin rejection (buckets 3 & 4). Sets status='rejected', stamps
-    the category + who/when, and sends the bucket's decline email immediately:
-      - 'interview'   (reviewed but not selected) — allowed from a post-shortlist,
-                       not-yet-accepted status; sends the extra-thankful email.
-      - 'contractual' (failed post-award steps) — allowed only from 'accepted'; sends
-                       the generic decline email (admin-typed reason deferred).
-    Raises ValueError on a bad category/status combination. Returns True."""
-    if category == 'interview':
-        if application.status not in INTERVIEW_REJECT_FROM:
-            raise ValueError('bad_status')
-    elif category == 'contractual':
-        if application.status != 'accepted':
-            raise ValueError('bad_status')
-    else:
-        raise ValueError('bad_category')
-
+def _finalise_reject(application, category, by_email):
+    """The actual effect of a decline: flip to rejected + send the bucket decline email +
+    stamp category/when/who. Shared by the immediate path (cool-off disabled) and the
+    release cron (cool-off elapsed)."""
     now = timezone.now()
     application.status = 'rejected'
     application.rejection_category = category
     application.rejected_at = now
-    application.rejected_by = getattr(admin, 'email', '') or ''
+    application.rejected_by = by_email or ''
     application.save(update_fields=['status', 'rejection_category', 'rejected_at', 'rejected_by'])
 
     name = getattr(application.profile, 'name', '') if application.profile else ''
@@ -766,7 +758,75 @@ def admin_reject(application, admin, category):
     ):
         application.decision_email_sent_at = now
         application.save(update_fields=['decision_email_sent_at'])
+
+
+def admin_reject(application, admin, category):
+    """Post-shortlist admin rejection (buckets 'interview' & 'contractual').
+
+    With a cool-off (DECLINE_COOLOFF_DAYS > 0, default 7) the decline is recorded **silently**
+    — status is NOT flipped and no email is sent — and ``release_pending_declines`` reveals it
+    (status → rejected + the bucket decline email) once ``decline_due_at`` passes. An admin can
+    ``cancel_pending_decline`` within the window, so a reconsidered decline is never seen by the
+    student. With the cool-off disabled (0) it rejects immediately (the old behaviour).
+      - 'interview'   (reviewed but not selected) — allowed from a post-shortlist, not-yet-
+                       accepted status.
+      - 'contractual' (failed post-award steps) — allowed only from 'accepted'.
+    Raises ValueError on a bad category/status combination. Returns True."""
+    if category == 'interview':
+        if application.status not in INTERVIEW_REJECT_FROM:
+            raise ValueError('bad_status')
+    elif category == 'contractual':
+        if application.status != 'accepted':
+            raise ValueError('bad_status')
+    else:
+        raise ValueError('bad_category')
+
+    from django.conf import settings as _settings
+    days = getattr(_settings, 'DECLINE_COOLOFF_DAYS', 7)
+    by = getattr(admin, 'email', '') or ''
+    if days and days > 0:
+        application.pending_rejection_category = category
+        application.decline_due_at = timezone.now() + timedelta(days=days)
+        application.pending_decline_by = by
+        application.save(update_fields=['pending_rejection_category', 'decline_due_at',
+                                        'pending_decline_by'])
+    else:
+        _finalise_reject(application, category, by)
     return True
+
+
+def cancel_pending_decline(application):
+    """Abort a scheduled-but-unrevealed decline within the cool-off. The student never knew.
+    Returns True if there was a pending decline to cancel."""
+    if not (application.decline_due_at or application.pending_rejection_category):
+        return False
+    application.pending_rejection_category = ''
+    application.decline_due_at = None
+    application.pending_decline_by = ''
+    application.save(update_fields=['pending_rejection_category', 'decline_due_at',
+                                    'pending_decline_by'])
+    return True
+
+
+def release_pending_declines(now=None):
+    """Reveal every decline whose cool-off has passed: flip to rejected + send the email, then
+    clear the pending markers. Intended for the scheduler. Returns the count released."""
+    now = now or timezone.now()
+    qs = (ScholarshipApplication.objects
+          .filter(decline_due_at__isnull=False, decline_due_at__lte=now)
+          .exclude(status='rejected').exclude(pending_rejection_category='')
+          .select_related('cohort', 'profile'))
+    released = 0
+    for app in qs:
+        category, by = app.pending_rejection_category, app.pending_decline_by
+        # Clear the pending markers first so a re-run can never double-send.
+        app.pending_rejection_category = ''
+        app.decline_due_at = None
+        app.pending_decline_by = ''
+        app.save(update_fields=['pending_rejection_category', 'decline_due_at', 'pending_decline_by'])
+        _finalise_reject(app, category, by)
+        released += 1
+    return released
 
 
 def confirm_profile(application):
@@ -795,8 +855,17 @@ def confirm_profile(application):
     # revert") and raise the clarify queries SILENTLY. The "we have a few questions"
     # email is deliberately delayed (send_due_query_emails, ~2h later) so it reads as a
     # human review, not an instant bot reply. All best-effort — never blocks the confirm.
-    send_submission_received_email(to_email=application.notify_email, applicant_name=name,
-                                   programme_name=application.cohort.name, lang=application.locale)
+    # The richer "your application is in — here's what happens next" email supersedes the
+    # basic submission-ack when PROFILE_COMPLETE_EMAIL_ENABLED is on (avoids a double-email).
+    from django.conf import settings as _settings
+    if getattr(_settings, 'PROFILE_COMPLETE_EMAIL_ENABLED', False):
+        from .emails import english_only_email, send_profile_complete_student_email
+        send_profile_complete_student_email(
+            application.notify_email, student_name=name,
+            english_only=english_only_email(application))
+    else:
+        send_submission_received_email(to_email=application.notify_email, applicant_name=name,
+                                       programme_name=application.cohort.name, lang=application.locale)
     try:
         from .check2_queries import sync_check2_queries
         from .resolution import sync_resolution_items
@@ -1212,6 +1281,37 @@ def detect_vision_outage(window_hours=24):
     }
 
 
+def reprocess_unread_ic_documents(limit=200):
+    """Self-heal IC / parent_ic documents stuck UN-PROCESSED (``vision_run_at`` is NULL).
+
+    ``run_vision_for_document`` never raises and ALWAYS stamps ``vision_run_at``, so a NULL
+    means Vision was never run on the doc — a silent upload-time pipeline failure with no
+    retry. That strands the student behind a false ``ic_service_down`` ("document-check
+    service unavailable") consent block (``ic_identity_blockers`` line ~1170) and a "couldn't
+    read the IC" cockpit verdict, even though the service is up. This re-runs Vision on every
+    such doc — once each: after a run, ``vision_run_at`` is set, so it's never re-picked (cost
+    is one Vision read per stuck doc). Defensive: if a run ever does raise, we stamp an outcome
+    so it can't loop. Returns ``{scanned, processed, errored}``.
+    """
+    from .vision import run_vision_for_document
+    stuck = list(ApplicantDocument.objects
+                 .filter(doc_type__in=('ic', 'parent_ic'), vision_run_at__isnull=True)
+                 .order_by('uploaded_at')[:limit])
+    scanned = processed = errored = 0
+    for doc in stuck:
+        scanned += 1
+        try:
+            res = run_vision_for_document(doc)
+            errored += 1 if res.get('error') else 0
+            processed += 0 if res.get('error') else 1
+        except Exception:
+            errored += 1
+            doc.vision_error = doc.vision_error or 'reprocess_failed'
+            doc.vision_run_at = timezone.now()
+            doc.save(update_fields=['vision_error', 'vision_run_at'])
+    return {'scanned': scanned, 'processed': processed, 'errored': errored}
+
+
 def income_doc_blockers(application):
     """The route + selection aware COMPULSORY income documents still missing, as blocker
     codes (gate v2, 2026-06-05). Sourced from ``income_engine`` so the consent gate and
@@ -1386,7 +1486,7 @@ def document_unreadable_blockers(application):
     is not the student's fault). Returns blocker codes."""
     from .academic_engine import student_slip_check
     from .pathway_engine import student_offer_check
-    from .income_engine import (income_cluster_advice, working_members,
+    from .income_engine import (income_cluster_advice, effective_working_members,
                                 _member_ic_doc, student_income_ic_check)
     codes = set()
     slip = application.documents.filter(doc_type='results_slip').order_by('-uploaded_at').first()
@@ -1401,7 +1501,11 @@ def document_unreadable_blockers(application):
         earner = (getattr(application, 'income_earner', '') or '').strip()
         members = [earner] if earner else []
     elif route == 'salary':
-        members = working_members(getattr(application, 'income_working_members', None) or [])
+        # NB: pass the application (effective_working_members reads it) — an earlier version
+        # passed the income_working_members LIST, which always resolved to [] (the loop never
+        # ran → an unreadable salary-route earner IC/relationship doc was never gated). Using
+        # effective_working_members also picks up the #90 tagged-docs/roster fallback.
+        members = effective_working_members(application)
     else:
         members = []
     for member in members:

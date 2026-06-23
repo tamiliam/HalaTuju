@@ -132,16 +132,21 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
             <span className="text-sm font-semibold text-blue-600">{t('sponsorAuth.badge')}</span>
           </Link>
           <div className="flex items-center gap-0.5 sm:gap-1">
-            {nav && tabs.map((tb) => (
-              <Link
-                key={tb.href} href={tb.href}
-                className={`px-2.5 sm:px-3 py-2 text-sm font-medium rounded-lg ${
-                  active(tb.href) ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {tb.label}
-              </Link>
-            ))}
+            {nav && (
+              <nav aria-label={t('sponsorPortal.account.title')} className="flex items-center gap-0.5 sm:gap-1">
+                {tabs.map((tb) => (
+                  <Link
+                    key={tb.href} href={tb.href}
+                    aria-current={active(tb.href) ? 'page' : undefined}
+                    className={`px-2.5 sm:px-3 py-2 text-sm font-medium rounded-lg ${
+                      active(tb.href) ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {tb.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
             <button onClick={signOut} className="ml-1 sm:ml-2 px-2.5 sm:px-3 py-2 text-sm text-gray-400 hover:text-gray-600">
               {t('header.logout')}
             </button>

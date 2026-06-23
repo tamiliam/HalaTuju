@@ -1012,11 +1012,23 @@ function IncomeWizard({
     }
   }
 
-  // Persist the prefilled route once (so the verdict reflects the declaration), only if
-  // the student hasn't already set a route.
+  // Persist the prefilled route once (so the verdict reflects the declaration), AND — on the
+  // salary route — persist the roster-seeded "who works" so it isn't left silently empty when
+  // the student accepts the prefill and just uploads. The uploads get tagged to the earner, but
+  // income_working_members was previously only saved on an explicit toggle, so an accepted prefill
+  // left tagged docs disagreeing with an empty list → income read as Optional/undeclared. (Backend
+  // mirror: income_engine.effective_working_members reconstructs the same fallback.)
   useEffect(() => {
-    if (!app.income_route && token) {
-      updateScholarshipDetails(app.id, { income_route: prefillRoute }, { token })
+    if (!token) return
+    const patch: Record<string, unknown> = {}
+    if (!app.income_route) patch.income_route = prefillRoute
+    const routeIsSalary = (app.income_route || prefillRoute) === 'salary'
+    if (routeIsSalary && !(app.income_working_members && app.income_working_members.length)
+        && rosterEarners.length) {
+      patch.income_working_members = rosterEarners
+    }
+    if (Object.keys(patch).length) {
+      updateScholarshipDetails(app.id, patch, { token })
         .then(() => onChange?.())
         .catch(() => { /* soft */ })
     }

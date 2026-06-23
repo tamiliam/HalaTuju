@@ -16,7 +16,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship import scheduling
-from apps.scholarship.models import InterviewSlot, ReviewerProfile, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import InterviewSlot, ReviewerProfile, ScholarshipApplication, ScholarshipCohort, WhatsAppMessage
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
@@ -76,6 +76,103 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(mime, 'text/html')
         self.assertIn('Choose your interview time', html)             # the button label
         self.assertIn('/scholarship/application"', html)              # button href
+
+    # ── status advances when the interview process starts ─────────────────────
+    def _pc_app(self, uid='stud-pc'):
+        p = StudentProfile.objects.create(
+            supabase_user_id=uid, nric='990101-14-9999', name='Devi')
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='profile_complete',
+            notify_email=f'{uid}@example.com', assigned_to=self.reviewer)
+
+    def test_propose_advances_profile_complete_to_interviewing(self):
+        # The interview process begins at propose (the first interview@ email) — the status
+        # must follow, not wait for the reviewer to open the capture form.
+        app = self._pc_app()
+        scheduling.propose_slots(app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewing')
+
+    def test_propose_never_pulls_a_decided_case_back(self):
+        # Re-proposing (e.g. a reschedule) on an accepted case must NOT revert it to interviewing.
+        app = self._pc_app(uid='stud-acc')
+        app.status = 'accepted'
+        app.save(update_fields=['status'])
+        scheduling.propose_slots(app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'accepted')
+
+    # ── WhatsApp "times proposed — please pick one" nudge (roadmap S2 / TD-138) ──
+    _SANDBOX = 'whatsapp:+14155238886'
+    _REAL = 'whatsapp:+19162597009'
+
+    def _opt_in(self):
+        self.profile.contact_phone = '012-345 6789'
+        self.profile.whatsapp_opt_in = True
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_SANDBOX)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_freetexts_in_sandbox(self, _post):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        msgs = WhatsAppMessage.objects.filter(application=self.app, kind='interview_proposed')
+        self.assertEqual(msgs.count(), 1)
+        self.assertIn('/scholarship/application', msgs.first().body)
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_REAL)  # real sender, NO proposed-template SID set
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_dark_on_real_sender_without_template(self, _post):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(
+            WhatsAppMessage.objects.filter(application=self.app, kind='interview_proposed').count(), 0)
+        _post.assert_not_called()   # never attempts a forbidden free-text on a real sender
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_REAL, TWILIO_WHATSAPP_PROPOSED_CONTENT_SID='HXproposed')
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_uses_template_in_prod(self, _post):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(
+            WhatsAppMessage.objects.filter(application=self.app, kind='interview_proposed').count(), 1)
+        _post.assert_called_once()
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_SANDBOX)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_skipped_when_opted_out(self, _post):
+        self.profile.contact_phone = '012-345 6789'
+        self.profile.whatsapp_opt_in = False
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(
+            WhatsAppMessage.objects.filter(application=self.app, kind='interview_proposed').count(), 0)
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_REAL,
+                       TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN='HXpen',
+                       TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM='HXpbm')
+    @patch('apps.scholarship.emails.english_only_email', return_value=True)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_picks_EN_variant_for_english_only(self, post, _eo):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(post.call_args[0][5], 'HXpen')   # content_sid
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM=_REAL,
+                       TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN='HXpen',
+                       TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_BM='HXpbm')
+    @patch('apps.scholarship.emails.english_only_email', return_value=False)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_proposed_nudge_picks_BM_variant_otherwise(self, post, _eo):
+        self._opt_in()
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=3)])
+        self.assertEqual(post.call_args[0][5], 'HXpbm')   # content_sid
 
     def test_propose_rejects_unassigned_reviewer(self):
         with self.assertRaises(scheduling.SchedulingError) as cm:
@@ -302,6 +399,20 @@ class SchedulingServiceTests(TestCase):
         self.app.refresh_from_db()
         self.assertIsNone(self.app.interview_reminded_1d_at)
 
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_rebook_refreshes_booked_at(self, _mock):
+        # interview_booked_at must track the CURRENT booking so reminder-notice re-gates on reschedule.
+        slots = scheduling.propose_slots(
+            self.app, reviewer=self.reviewer,
+            starts=[self._future(days=5), self._future(days=6)])
+        scheduling.book_slot(self.app, slot_id=slots[0].id)
+        old = timezone.now() - timedelta(hours=10)
+        self.app.interview_booked_at = old
+        self.app.save(update_fields=['interview_booked_at'])
+        scheduling.book_slot(self.app, slot_id=slots[1].id)
+        self.app.refresh_from_db()
+        self.assertGreater(self.app.interview_booked_at, old)  # rebook refreshed it
+
     # ── cancel ───────────────────────────────────────────────────────────────
     @patch('apps.scholarship.meeting.create_event', return_value=None)
     def test_cancel_ok_and_notifies(self, _mock):
@@ -408,6 +519,67 @@ class ReminderCronTests(TestCase):
             notify_email='priya@example.com', assigned_to=self.reviewer,
             interview_status='booked', interview_start=start)
 
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC',
+                       TWILIO_AUTH_TOKEN='t', TWILIO_WHATSAPP_FROM='whatsapp:+14155238886')
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_whatsapp_reminder_sent_when_opted_in(self, _post):
+        self.profile.contact_phone = '012-345 6789'
+        self.profile.whatsapp_opt_in = True
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        app = self._booked_app(timezone.now() + timedelta(hours=20))
+        call_command('send_interview_reminders')
+        self.assertEqual(
+            WhatsAppMessage.objects.filter(application=app, kind='interview_reminder_1day').count(), 1)
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC',
+                       TWILIO_AUTH_TOKEN='t', TWILIO_WHATSAPP_FROM='whatsapp:+14155238886')
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_whatsapp_reminder_skipped_when_opted_out(self, _post):
+        self.profile.contact_phone = '012-345 6789'
+        self.profile.whatsapp_opt_in = False
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        app = self._booked_app(timezone.now() + timedelta(hours=20))
+        mail.outbox.clear()
+        call_command('send_interview_reminders')
+        self.assertEqual(WhatsAppMessage.objects.filter(application=app).count(), 0)
+        # email is channel-independent — it still goes out to the opted-out student
+        self.assertTrue(any('priya@example.com' in m.to for m in mail.outbox))
+
+    # ── reminder v2: EN / EN+BM template variants picked by english_only (S3) ──
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM='whatsapp:+19162597009',
+                       TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN='HXen',
+                       TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM='HXbm')
+    @patch('apps.scholarship.emails.english_only_email', return_value=True)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_reminder_uses_EN_variant_for_english_only(self, post, _eo):
+        self.profile.contact_phone = '012-345 6789'; self.profile.whatsapp_opt_in = True
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        self._booked_app(timezone.now() + timedelta(hours=20))
+        call_command('send_interview_reminders')
+        # _post_to_twilio args: (sid, token, sender, to, body, content_sid, content_variables)
+        self.assertEqual(post.call_count, 1)
+        content_sid, cv = post.call_args[0][5], post.call_args[0][6]
+        self.assertEqual(content_sid, 'HXen')
+        self.assertNotIn('5', cv)                       # EN template → no Malay 'when'
+        self.assertEqual(cv['2'], 'Rohini')             # interviewer named
+        self.assertIn('tomorrow', cv['3'])              # 24h 'when' phrase
+
+    @override_settings(WHATSAPP_ENABLED=True, TWILIO_ACCOUNT_SID='AC', TWILIO_AUTH_TOKEN='t',
+                       TWILIO_WHATSAPP_FROM='whatsapp:+19162597009',
+                       TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN='HXen',
+                       TWILIO_WHATSAPP_REMINDER_CONTENT_SID_BM='HXbm')
+    @patch('apps.scholarship.emails.english_only_email', return_value=False)
+    @patch('apps.scholarship.whatsapp._post_to_twilio', return_value=('SM1', 'queued', ''))
+    def test_reminder_uses_BM_variant_otherwise(self, post, _eo):
+        self.profile.contact_phone = '012-345 6789'; self.profile.whatsapp_opt_in = True
+        self.profile.save(update_fields=['contact_phone', 'whatsapp_opt_in'])
+        self._booked_app(timezone.now() + timedelta(hours=20))
+        call_command('send_interview_reminders')
+        content_sid, cv = post.call_args[0][5], post.call_args[0][6]
+        self.assertEqual(content_sid, 'HXbm')
+        self.assertIn('esok', cv['5'])                  # bilingual template carries the BM 'when'
+
     def test_one_day_reminder_fires_once(self):
         app = self._booked_app(timezone.now() + timedelta(hours=20))
         mail.outbox.clear()
@@ -432,6 +604,51 @@ class ReminderCronTests(TestCase):
         call_command('send_interview_reminders')
         app.refresh_from_db()
         self.assertIsNone(app.interview_reminded_1d_at)
+
+    # ── booking-notice gating (skip a reminder the booking gave too little notice for) ──
+    def test_one_day_skipped_when_booked_within_24h(self):
+        # Same-day booking (10h notice): no "24h reminder", and not yet inside the 1h window → nothing.
+        start = timezone.now() + timedelta(hours=10)
+        app = self._booked_app(start)
+        app.interview_booked_at = timezone.now()
+        app.save(update_fields=['interview_booked_at'])
+        mail.outbox.clear()
+        call_command('send_interview_reminders')
+        app.refresh_from_db()
+        self.assertIsNone(app.interview_reminded_1d_at)   # 24h reminder skipped
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_one_day_fires_when_booked_with_24h_notice(self):
+        # Interview 20h away but booked 25h before it → ≥24h notice → 24h reminder fires.
+        start = timezone.now() + timedelta(hours=20)
+        app = self._booked_app(start)
+        app.interview_booked_at = start - timedelta(hours=25)
+        app.save(update_fields=['interview_booked_at'])
+        call_command('send_interview_reminders')
+        app.refresh_from_db()
+        self.assertIsNotNone(app.interview_reminded_1d_at)
+
+    def test_one_hour_skipped_when_booked_within_1h(self):
+        # Last-minute booking (30 min notice): neither reminder fires (confirmation already sent at booking).
+        start = timezone.now() + timedelta(minutes=30)
+        app = self._booked_app(start)
+        app.interview_booked_at = timezone.now()
+        app.save(update_fields=['interview_booked_at'])
+        call_command('send_interview_reminders')
+        app.refresh_from_db()
+        self.assertIsNone(app.interview_reminded_1h_at)
+        self.assertIsNone(app.interview_reminded_1d_at)
+
+    def test_one_hour_fires_when_booked_with_1h_notice(self):
+        # Interview 30 min away but booked 3h before → ≥1h notice → 1h reminder fires; 24h still skipped.
+        start = timezone.now() + timedelta(minutes=30)
+        app = self._booked_app(start)
+        app.interview_booked_at = start - timedelta(hours=3)
+        app.save(update_fields=['interview_booked_at'])
+        call_command('send_interview_reminders')
+        app.refresh_from_db()
+        self.assertIsNotNone(app.interview_reminded_1h_at)
+        self.assertIsNone(app.interview_reminded_1d_at)   # only 3h notice → no 24h reminder
 
     @override_settings(INTERVIEW_SCHEDULING_ENABLED=False)
     def test_inert_when_flag_off(self):

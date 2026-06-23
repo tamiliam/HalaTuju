@@ -93,7 +93,7 @@ export default function MyGivingPage() {
         <div className="rounded-2xl border bg-white p-5 sm:max-w-md">
           <h2 className="font-semibold text-gray-900">{t('sponsorPortal.impact.givingTitle')}</h2>
           <div className="flex items-center gap-5 mt-4">
-            <div className="w-28 h-28 shrink-0 rounded-full grid place-items-center" style={{ background: donut }}>
+            <div aria-hidden="true" className="w-28 h-28 shrink-0 rounded-full grid place-items-center" style={{ background: donut }}>
               <div className="bg-white w-16 h-16 rounded-full grid place-items-center text-center">
                 <span className="text-[11px] leading-tight text-gray-500">
                   {t('sponsorPortal.impact.available')}<br /><b className="text-gray-900 text-sm">RM {available.toLocaleString()}</b>

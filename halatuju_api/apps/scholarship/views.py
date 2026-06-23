@@ -2,7 +2,9 @@
 import logging
 
 from django.db import transaction
+from django.http import HttpResponse
 from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -30,6 +32,7 @@ from .serializers import (
 from . import in_programme as in_programme_service
 from . import scheduling
 from . import sponsorship as sponsorship_service
+from . import whatsapp
 from .serializers_admin import interview_schedule_payload
 from .services import (
     CONSENT_VERSION,
@@ -52,6 +55,33 @@ from .services import (
 
 def _get_profile(user_id):
     return StudentProfile.objects.filter(supabase_user_id=user_id).first()
+
+
+class WhatsAppInboundView(APIView):
+    """Twilio inbound-WhatsApp webhook — honours STOP/START to keep `whatsapp_opt_in` in sync
+    (roadmap S5, TD-135). Anonymous (Twilio calls it) but authenticated by the Twilio signature."""
+    permission_classes = [AllowAny]
+    authentication_classes = []   # no Bearer/session → no CSRF; the Twilio signature is the auth
+    # Twilio POSTs application/x-www-form-urlencoded — accept form bodies (the API defaults to JSON).
+    parser_classes = [FormParser, MultiPartParser]
+
+    _STOP = {'stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'}
+    _START = {'start', 'unstop', 'yes', 'resume'}
+
+    def post(self, request):
+        ok = whatsapp.verify_twilio_signature(
+            request.build_absolute_uri(), request.data,
+            request.META.get('HTTP_X_TWILIO_SIGNATURE', ''))
+        if not ok:
+            return HttpResponse(status=status.HTTP_403_FORBIDDEN)
+        body = (request.data.get('Body') or '').strip().lower()
+        from_number = request.data.get('From') or ''
+        if body in self._STOP:
+            whatsapp.apply_opt_out(from_number, opted_in=False)
+        elif body in self._START:
+            whatsapp.apply_opt_out(from_number, opted_in=True)
+        # Always 200 with no auto-reply (a TwiML body would send a WhatsApp back).
+        return HttpResponse(status=status.HTTP_200_OK)
 
 
 class ApplicationListCreateView(APIView):
@@ -571,25 +601,39 @@ class DocumentListCreateView(APIView):
             return Response({'error': 'file_too_large', 'max_mb': _settings.MAX_DOC_SIZE_BYTES // (1024 * 1024)},
                             status=status.HTTP_400_BAD_REQUEST)
         new_member = serializer.validated_data.get('household_member', '') or ''
+        # A reviewer-requested upload carries the officer ResolutionItem code — it makes this
+        # document its OWN single-instance slot, so it can't overwrite the student's route doc
+        # or another request. '' = the student's own apply-form/route doc (shared slot).
+        new_request_code = serializer.validated_data.get('request_code', '') or ''
         # Slot model (TD-115): income docs are tagged by the household member they belong to.
         # The STR route has a single earner, so the backend AUTHORITATIVELY tags the earner's
         # income docs (str/parent_ic/salary_slip/epf) regardless of what the client sent — this
         # also slots Action-Centre / Check-2 uploads, which carry no member. The salary route
-        # keeps the client's per-block member.
+        # keeps the client's per-block member. EXCEPTION: a request-keyed upload (e.g. a reviewer
+        # asking for the FATHER's IC on a mother-STR route) must NOT be force-tagged to the STR
+        # earner — that would overwrite the mother's IC. Honour the requested member instead.
         _INCOME_EARNER_DOCS = {'str', 'parent_ic', 'salary_slip', 'epf'}
         str_income = (new_doc_type in _INCOME_EARNER_DOCS
-                      and (getattr(app, 'income_route', '') or '').strip() == 'str')
+                      and (getattr(app, 'income_route', '') or '').strip() == 'str'
+                      and not new_request_code)
         if str_income:
             new_member = (getattr(app, 'income_earner', '') or '').strip()
             serializer.validated_data['household_member'] = new_member
         single = self._is_single_instance(new_doc_type, new_member)
-        # Slots this upload supersedes — the target (type, member), plus (STR income docs) the
-        # legacy UNTAGGED copy, so a re-upload replaces the old blank instead of duplicating it.
+        # Slots this upload supersedes — the target (type, member, request_code), plus (STR income
+        # docs) the legacy UNTAGGED copy. The request_code in the key is what lets multiple 'other'
+        # docs (and cross-person income requests) coexist instead of overwriting each other.
         sweep_members = [new_member, ''] if str_income else [new_member]
+        slot_filter = dict(application=app, doc_type=new_doc_type,
+                           household_member__in=sweep_members, request_code=new_request_code)
         # Guardrail 2: per-application document cap. A single-instance re-upload
         # replaces an existing doc, so it doesn't count toward growth.
-        replaces = (single and ApplicantDocument.objects.filter(
-            application=app, doc_type=new_doc_type, household_member__in=sweep_members).exists())
+        replaces = single and ApplicantDocument.objects.filter(**slot_filter).exists()
+        # 'other' (reviewer-requested extra) cap — a NEW 'other' slot beyond the cap is rejected.
+        if new_doc_type == 'other' and not replaces and ApplicantDocument.objects.filter(
+                application=app, doc_type='other').count() >= _settings.MAX_OTHER_DOCS:
+            return Response({'error': 'other_doc_limit_reached', 'max': _settings.MAX_OTHER_DOCS},
+                            status=status.HTTP_400_BAD_REQUEST)
         if not replaces and ApplicantDocument.objects.filter(application=app).count() >= _settings.MAX_DOCS_PER_APPLICATION:
             return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -601,8 +645,7 @@ class DocumentListCreateView(APIView):
         # Snapshot the stale ids/paths BEFORE the create so the new row (same slot) is never swept.
         stale_ids, stale_paths = [], []
         if single:
-            stale = list(ApplicantDocument.objects.filter(
-                application=app, doc_type=new_doc_type, household_member__in=sweep_members))
+            stale = list(ApplicantDocument.objects.filter(**slot_filter))
             stale_ids = [d.id for d in stale]
             stale_paths = [d.storage_path for d in stale if d.storage_path]
         with transaction.atomic():
@@ -1122,6 +1165,7 @@ class CronRunView(APIView):
         'backfill-assigned-profiles': 'backfill_assigned_profiles',  # one-off: drafts for already-assigned
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly
         'sponsor-digests': 'send_sponsor_digests',     # F3: weekly
+        'auto-sponsor': 'auto_sponsor',                # R6: hourly AutoSponsor allocation
         'purge-referrals': 'purge_sponsor_referrals',  # F4: daily PDPA purge (60-day)
         'rescore-pending': 'rescore_pending_decisions',  # on-demand after a policy change
         'backup-documents': 'backup_documents',  # weekly: mirror the private doc bucket to GCS
@@ -1131,6 +1175,7 @@ class CronRunView(APIView):
         'review-nudges': 'send_review_nudges',  # daily (TD-131): verdict due/overdue reviewer nudges + super escalation
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
         'reextract-documents': 'reextract_documents',  # one-off batches (20/run): re-read stale docs with current parsers
+        'reprocess-ic-vision': 'reprocess_unread_ic',  # frequent (~15 min): self-heal IC/parent_ic stuck unprocessed (silent upload OCR failures → false 'service unavailable' consent block)
     }
 
     def post(self, request, job):
@@ -1175,8 +1220,21 @@ class StudentAwardView(APIView):
     def get(self, request):
         app = _award_application(request.user_id)
         offer = sponsorship_service.current_offer(app) if app else None
+        # Award cool-off (#14): once accepted the sponsorship is 'active' (no longer 'offered')
+        # but the app isn't 'sponsored' yet — surface a 'finalising' state so the page isn't
+        # blank during the window (the confirmation email + onboarding open at the cool-off end).
+        finalising = False
+        if not offer:
+            pend = (ScholarshipApplication.objects
+                    .filter(profile_id=request.user_id, award_due_at__isnull=False)
+                    .exclude(status='sponsored')
+                    .filter(sponsorships__status='active').select_related('profile').first())
+            if pend is not None:
+                finalising = True
+                app = app or pend
         return Response({
             'offer': StudentAwardSerializer(offer).data if offer else None,
+            'finalising': finalising,
             'is_minor': is_minor(app.profile) if (app and app.profile) else False,
         })
 

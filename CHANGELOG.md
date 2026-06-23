@@ -16,7 +16,249 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stays anchored on the IC + profile NRIC (read reliably); the offer NRIC is soft corroboration, the
   name is the robust offer-side check. +2 tests.
 
+### Added
+- **Decision cool-off: a reconsideration window before the decline (#13) and award-confirmed (#14)
+  comms go out (`DECLINE_COOLOFF_DAYS`=7, `AWARD_COOLOFF_DAYS`=2 in prod; 0 = off/immediate).**
+  A post-shortlist admin **decline** is now recorded **silently** — status isn't flipped and no
+  email sends — and the existing every-15-min `send_pending_decision_emails` cron reveals it
+  (status → rejected + the bucket decline email) once the 7-day window passes. A student **award
+  acceptance** likewise records the consent + money hold immediately but defers the 'sponsored'
+  flip + the "funding confirmed" email + onboarding for 2 days. Within either window an admin can
+  **Cancel** the decline / **Hold** the award from the cockpit (an amber "scheduled — cancel/hold"
+  banner) and the student never saw it; a held award lapses (the amount returns to the sponsor).
+  The student's award page shows a "we're finalising your funding" state during the window instead
+  of a blank page. Backend: `admin_reject`/`respond_to_award` now schedule;
+  `cancel_pending_decline`/`hold_pending_award` + `release_pending_declines`/`release_pending_awards`;
+  endpoints `…/<id>/cancel-decline/` + `…/hold-award/`. **Migration `scholarship/0069`** (4 additive
+  fields, migrate-first). +15 tests; cockpit banners + award "finalising" card, i18n en/ms/ta.
+- **"Your application is in — here's what happens next" student email at profile-complete
+  (`PROFILE_COMPLETE_EMAIL_ENABLED`).** When a student confirms their profile (shortlisted →
+  profile_complete), they now get a warm HTML email that thanks them and sets expectations for the
+  road ahead: Check-2 review + possible document requests / clarifying questions (via the Action
+  Centre), then an interview where they pick one of three slots, the ~30-min Google Meet call
+  (joining link on booking + reminder), and that under-18s need a parent/guardian present. EN+BM,
+  from `info@` (reply-to `help@`). When ON it **supersedes** the basic plain-text "submission
+  received" ack at that step (no double-email); OFF keeps the basic ack.
+  `emails.send_profile_complete_student_email` + a wire-in in `services.confirm_profile`; `_send_html`
+  gained a `from_email` param so a general (non-interview) email isn't sent from `interview@`. New
+  `send_test_email` management command (ops preview). +2 tests. **Switched ON in prod 2026-06-22.**
+- **Referral-source acronym on the admin cockpit.** The application detail header now shows the referring-source as a short
+  acronym chip right after the NRIC (e.g. `NRIC … · SMC`), and the B40 applications list "Source" column shows the same
+  acronym (full name on hover) instead of the long label. Owner-defined map (`referralAcronym` in `lib/scholarship.ts`):
+  partner orgs keep their acronym (SMC/CUMIG/EWRF/HYO/MHDM/SSBC/TARA/HSS/PPTM), the two individual coordinators + "other"
+  collapse to **Other**, self/website → **Halatuju**, social → **Social**; blank → `—`. FE-only (serializer already exposed
+  `referral_source`).
+- **Phone verification (roadmap S4 / TD-136) — opt-in, voluntary, SMS via Twilio Verify.** A student can confirm their
+  `contact_phone` from /profile: an inline **Verify** button (mirrors the email field) sends a one-time code; entering it
+  flips `contact_phone_verified` (a newly-typed number is persisted on success; editing the number un-verifies it).
+  **Channel is `settings.PHONE_VERIFY_CHANNEL` (default `sms`).** Owner wanted WhatsApp, but Twilio Verify WhatsApp needs
+  a 2–4 week bring-your-own-sender onboarding (error 60223 until done), so we ship on SMS — which works immediately — and
+  flip the env var to `whatsapp` later, no code change (the /profile copy is channel-neutral). Backend:
+  `whatsapp.start_phone_verification`/`check_phone_verification` (urllib, Verify v2, never-raise — Twilio holds the code +
+  enforces its lifecycle/rate limits), `TWILIO_VERIFY_SERVICE_SID` + `PHONE_VERIFY_CHANNEL` settings, `PhoneVerifyStartView`
+  + `PhoneVerifyCheckView` (`POST /api/v1/profile/verify-phone/{send,check}/`, self-scoped, 5-sends/hour soft cap). **No
+  migration** (`contact_phone_verified` already existed). FE: `sendPhoneVerification`/`checkPhoneVerification` + an inline
+  code-entry control in Contact Details; i18n en/ms/ta. +14 tests. Live once `TWILIO_VERIFY_SERVICE_SID` is set
+  (`VA3ca85b…`, set 2026-06-22).
+- **Proposed-slots nudge gains EN + EN+BM variants (S2 EN/BM correction).** `_send_wa_proposed` now picks the template by
+  `english_only` (same standard as the emails/reminder) — EN-only (`TWILIO_WHATSAPP_PROPOSED_CONTENT_SID_EN`) or EN+BM
+  (`…_BM`), falling back to the legacy single SID, then sandbox free-text. Both variants reuse `{1}`name `{2}`reviewer
+  `{3}`link (no language-specific var). EN template submitted (`HX0d24280a94407832001da4ed08bbf7cf`); the EN+BM
+  (`HX9da6e2900cc1eea2b1410be9bca7e54f`) is **Meta-approved**. Go-live: set both env vars once EN approves. +2 tests.
+- **Interview reminder v2 — names the interviewer, differentiates 24h/1h, EN + EN+BM variants (roadmap S3).**
+  `send_interview_reminders` now picks a reminder template by `english_only` — EN-only
+  (`TWILIO_WHATSAPP_REMINDER_CONTENT_SID_EN`) or EN+BM (`…_BM`) — each serving **both** the 24h and 1h reminder via a
+  "when" variable ("tomorrow at {time}" / "in about an hour, at {time}", + Malay mirror), and naming the assigned
+  interviewer. The Meet link stays **inline** (works from a phone or a computer — no phone-only button). Falls back to the
+  legacy generic template (`…_CONTENT_SID`, current prod) while the v2 SIDs are unset, then to sandbox free-text (now
+  matching the templates). New `emails._fmt_myt_time`. Templates submitted to Meta (UTILITY): EN
+  `HX5308de4af13daf6c8ebd93ec3a455ac6`, EN+BM `HX05f72c88595626baac298fcf2a3364ed`. **Go-live when approved:** set those
+  two env vars on halatuju-api. Backend-only, no migration. +2 tests.
+- **WhatsApp STOP/START → opt-out sync (roadmap S5 / TD-135).** New Twilio inbound webhook
+  `POST /api/v1/scholarship/whatsapp/inbound/`: a student replying **STOP** flips their `whatsapp_opt_in` to off
+  (**START** flips it back), so our consent record + the profile toggle match what WhatsApp actually does and we stop
+  attempting to message them. Authenticated by the **Twilio request signature** (HMAC-SHA1, stdlib — no SDK; anonymous
+  otherwise, no CSRF). The sender's number is mapped back to a profile via the messages we've sent it (`to_number` is
+  stored normalised — no new column). The view declares **form parsers** (the API defaults to JSON; Twilio POSTs
+  url-encoded — without this the webhook would 415). Backend-only, no migration. +5 tests. **Go-live = owner sets the
+  inbound webhook URL in the Twilio console** (the code is inert/signature-gated until then).
+- **WhatsApp nudge when interview slots are PROPOSED (roadmap S2 / TD-138).** When a reviewer proposes (or reschedules)
+  times, the student now also gets a WhatsApp — "your interview times are ready, please pick one" with a link to the
+  application page — alongside the existing email, so students who don't check email still respond. Opt-in gated
+  (`whatsapp_opt_in`), fires on the same "menu changed / reschedule" condition as the email. Dual-path like the reminder:
+  approved template (`TWILIO_WHATSAPP_PROPOSED_CONTENT_SID`) in prod, free-text in the Twilio sandbox. **Safe by default:**
+  a real sender with no template SID set sends **nothing** (`whatsapp.is_sandbox_sender()` guard — never attempts a
+  forbidden free-text) — so it stays dark in prod until the template is approved + the SID set, while remaining fully
+  testable in the sandbox. Backend-only, no migration. +4 tests.
+
 ### Changed
+- **Interview length set to ~30 minutes + copy aligned across the journey.** `INTERVIEW_DURATION_MIN` 45 → **30** (the
+  booked slot + Google Meet event now match the student-facing copy; also removes the latent 45-min-on-30-min-step slot
+  overlap). Copy updated to "about 30 minutes" in the assignment email (EN+BM) and the booking panel `pickIntro`
+  (en/ms/ta). The assignment email no longer says "we'll **email** you" (it's now email **and** WhatsApp) → "we'll **send**
+  you a few times to choose from". The proposed-slots WhatsApp nudge reworded to continue the assignment email's voice
+  ("as promised, here are a few times… pick the one that suits you… we'll send the Google Meet link and a reminder").
+  Copy/settings only, no migration. (Landing/FAQ "20-minute phone call" left as-is per owner.)
+- **Reviewer reschedule can now offer nearer slots (TD-137).** The 24h minimum-lead floor on the reviewer's slot picker
+  was applied to both first-propose and reschedule. On a reschedule the candidate has already waited through the original
+  notice, so the floor is relaxed to a short lead (`RESCHEDULE_MIN_LEAD_HOURS = 2h`) — the picker offers same-/next-day
+  slots and jumps to the nearer earliest day. First-propose keeps the 24h floor. Backend already accepted any future slot,
+  so this is UI-only (`interviewSlots.ts` lead-time helpers parameterised + `InterviewScheduleCard`). +2 jest; no migration.
+- **Interview reminders now gate on booking notice (no more instant "reminder" on a same-day/last-minute booking).**
+  Each reminder is gated on `interview_start − interview_booked_at`: the **24-hour** reminder only sends if the booking
+  gave ≥24h notice, and the **1-hour** reminder only if it gave ≥1h. Previously a same-day booking immediately fired a
+  "24h reminder" (and a sub-1h booking an instant "1h reminder") at the next 15-min cron tick, because the window had no
+  lower bound. Firing stays late-tolerant (fires at/after the mark, so cron jitter never *skips* a legitimate reminder —
+  only booking-notice decides eligibility); unknown `interview_booked_at` (legacy rows) still fires. `book_slot` now sets
+  `interview_booked_at` on **every** (re)booking so a reschedule re-gates correctly. Applies to all three channels
+  (student email + WhatsApp + reviewer email). Net effect: book ≥24h ahead → 2 reminders; book 1–24h ahead → 1 (the 1h);
+  book <1h ahead → 0 (the booking-confirmation email already went out). Backend-only, no migration. +5 tests.
+
+### Added
+- **WhatsApp comms — go-live wiring: send via approved Meta template (DARK).** Production business-initiated WhatsApp
+  must use a Meta-approved template, so `send_whatsapp`/`_post_to_twilio` now send a Twilio **Content template**
+  (`ContentSid` + `ContentVariables`) when `TWILIO_WHATSAPP_REMINDER_CONTENT_SID` is set; the free-text `Body` path
+  stays for the sandbox/dev. The interview reminder passes `{1:name, 2:time(MYT), 3:link}` (refactored into a
+  `_send_wa_reminder` helper, opt-in-gated). Approved template = `b40_interview_reminder` (Utility, `HX7b5eee…`).
+  +1 test (72 scholarship green). Still dark — flips on at deploy with the env vars set.
+- **WhatsApp comms channel — Sprint 2: consent + opt-out (DARK).** Adds the PDPA control so it's lawful to message
+  real applicants. New `StudentProfile.whatsapp_opt_in` (boolean, **default True** = implied consent: a phone number
+  given for contact is consent to be contacted on it, like email — owner decision 2026-06-20; the ADD COLUMN backfills
+  the existing 99 applicants to on). **Courses migration `0059`** (additive). Surfaced as an **opt-out toggle** in the
+  profile Contact Details ("Updates on WhatsApp", trilingual en/ms/ta), read/written via the profile serializer + GET +
+  `/profile/sync`. The interview reminder now **only fires WhatsApp when `whatsapp_opt_in` is true** (email is
+  channel-independent and always sends). +2 reminder-gate tests + i18n parity (2751×3); `next build` clean; 361 jest.
+  Migration **not** applied to prod (go-live step). Branch `feat/whatsapp-comms`.
+- **WhatsApp comms channel — Sprint 1: foundation + interview reminder (DARK).** First slice of the outbound WhatsApp
+  channel (plan `docs/plans/2026-06-20-whatsapp-comms-channel.md`). New `apps/scholarship/whatsapp.py`:
+  `normalise_msisdn` (Malaysian phone → E.164 `+60…`, deterministic + unit-tested — 98/99 prod applicants are `0XX…`)
+  and `send_whatsapp` (best-effort POST to the **Twilio** REST API via stdlib `urllib` — **no new dependency, no Twilio
+  SDK**; never raises into the caller). New `WhatsAppMessage` model (`whatsapp_messages` table, **migration `0067`**) logs
+  every attempt with delivery status + Twilio SID for audit. The **interview reminder** (`send_interview_reminders`) now
+  fires a bilingual WhatsApp **alongside** the existing email. **DARK by default**: every send is a no-op unless
+  `WHATSAPP_ENABLED` is true AND the three Twilio creds (`TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_WHATSAPP_FROM`)
+  are set — so the code/migration land safely with zero `WhatsAppMessage` access while off. **No consent gate yet** (Sprint
+  2). Migration **not** applied to prod (deferred to go-live; needs the new-table RLS + contenttypes step). +16 pytest;
+  existing 53 interview-scheduling tests green. Worktree `.worktrees/wa-comms`, branch `feat/whatsapp-comms`.
+- **Request-owned document slots — multiple "Other" docs + cross-person income docs no longer overwrite each other.**
+  **The bug (live data loss):** every doc was single-instance keyed on `(doc_type, household_member)`, so a reviewer who
+  requested several extra docs collapsed them into ONE `other` slot — each upload overwrote the last (Theepicaa: 5 "Other"
+  requests, 1 stored). On the STR route the income docs were also force-tagged to the single earner, so a reviewer asking
+  for the **father's** IC on a **mother**-STR route would overwrite the mother's IC. **Fix:** new
+  `ApplicantDocument.request_code` (the officer ResolutionItem code) makes a reviewer-requested upload its OWN
+  single-instance slot — slot key is now `(doc_type, household_member, request_code)`. So multiple "Other" docs and a
+  cross-person income request coexist; re-uploading the *same* request still replaces; and the STR force-tag is skipped
+  for request-keyed uploads (honours the requested member). `resolve_doc_items_for_upload` resolves the exact request by
+  code (two open "Other" tasks don't both clear on one upload). **"Other" cap** added: `MAX_OTHER_DOCS=10` per
+  application (the 40-total cap still applies). The Action Centre passes the `officer_N` code on upload; system docs
+  (the student's own route docs) keep the shared slot — unchanged. **Migration `scholarship/0067`** (additive). +6
+  tests (81 doc/resolution pytest); `next build` clean; 327 jest. Branch `feat/request-owned-doc-slots`.
+  ⚠️ **Migration-number clash:** the `feat/whatsapp-comms` branch also adds `scholarship/0067` — whichever merges second
+  must renumber to `0068`.
+
+### Fixed
+- **Self-heal IC/parent_ic stuck unprocessed — fixes the false "document-check service unavailable" consent block.** A
+  transient Vision MyKad-pipeline failure at upload can leave an IC/parent_ic with `vision_run_at=NULL` and no error,
+  never retried (`run_vision_for_document` never raises and always stamps a run, so a NULL means it was never called).
+  That strands the student behind `ic_identity_blockers`'s "never processed → `ic_service_down`" → "Our document-check
+  service is temporarily unavailable" at the Consent step (the service is actually up), and a "couldn't read the IC"
+  cockpit verdict — and the two surfaces show different messages. **Fix:** new `services.reprocess_unread_ic_documents`
+  + `reprocess_unread_ic` management command + cron job `reprocess-ic-vision`, which re-runs Vision on every stuck doc
+  (once each — a run stamps `vision_run_at`, so no re-pick; a raising run still stamps an outcome so it can't loop).
+  Backend only, no migration; +2 tests (1482 scholarship pytest). One-time heal of the current stuck docs (incl. the IC
+  blocking app #105, and app #84's mother IC). Branch `fix/interviewing-on-propose`.
+- **Check-2 "couldn't read your document" upload requests now reach the student (were silently hidden).** A post-submit
+  student is form-LOCKED — the Action Centre is their ONLY surface — but the visibility filter (`STUDENT_DOC_REQUEST_CODES`)
+  only showed system doc requests for genuinely MISSING docs (`*_missing`). An uploaded-but-unreadable doc (e.g.
+  `offer_unreadable` — "your offer letter was hard to read") was hidden, so the cockpit showed an open request the student
+  never saw and had no way to act on (the inline Gopal coach it deferred to lives on the now-unreachable Documents tab).
+  **Fix:** the student-visible set now also includes the re-uploadable un-usable class — `*_unreadable` plus
+  `offer_no_identity` (readable but no name/IC) and `str_not_current` (stale STR) — so the student gets an Action Centre
+  Upload task and can replace the doc. The NAME-MISMATCH class (`offer_name_mismatch` / `results_slip_name_mismatch`)
+  stays reviewer-mediated (a verification judgement, often a romanisation false positive). Supersedes the 2026-06-10
+  "hide all bad-doc tickets" rule. Backend only, no migration; the FE (KNOWN_CODES + trilingual titles) already existed.
+  +1 test, 2 updated (1478 scholarship pytest). Currently un-hides 5 live requests across 5 students. Branch
+  `fix/interviewing-on-propose`.
+- **Status now advances to "Interviewing" when the interview process starts (was stuck at "Complete").** The
+  `profile_complete → interviewing` transition only fired when a reviewer opened the *Interview-Stage capture* and saved
+  a draft (`views_admin.AdminInterviewView`). But reviewers run the interview through the *scheduling* flow (propose
+  times → the interview@ "pick a time" email → Meet) and fill the capture form last, or not at all — so cases sat at
+  "Complete" through a proposed/booked/concluded interview (e.g. Theresa: interview done, board still read Complete).
+  **Fix:** `scheduling.propose_slots` now advances `profile_complete → interviewing` when interview times are proposed
+  (the moment the first interview@ email goes out). Guarded to only advance FROM `profile_complete` — never pulls a
+  later/decided case backward; the old capture-draft trigger stays as a fallback. Backend only, no migration; +2 tests
+  (70 interview-scheduling, 1477 scholarship pytest). A one-time backfill moved the 6 already-stuck cases (proposed/booked
+  but Complete) to Interviewing. Branch `fix/interviewing-on-propose`.
+- **Unreadable salary-route earner IC / relationship doc now gates submission (was silently skipped).** Companion to the
+  #90 fix: `document_unreadable_blockers` passed the `income_working_members` LIST to `working_members` (which reads an
+  *application*), so it always resolved to `[]` on the salary route — the per-earner loop never ran and a blurry earner
+  IC / birth cert / guardianship letter slipped past the consent/submission gate (the STR route was correct). Now driven
+  by `effective_working_members(application)` (also inherits the #90 tagged-docs/roster fallback). +1 regression test in
+  the previously-uncovered income-cluster path (1449 scholarship pytest). No live student was mis-gated (all 26
+  salary-route earner ICs read cleanly); this closes it for future submitters. Backend only, no migration.
+- **Salary-route income shown as "Optional"/undeclared when the earner was pre-ticked but not toggled (#90 + 4 others).**
+  **The bug:** the income wizard pre-ticks the earner from the family roster and tags uploaded income docs to them
+  (`household_member`), but only PERSISTS `income_working_members` on an explicit checkbox toggle. A student who accepts
+  the correct prefill and just uploads ends up with their docs tagged (e.g. mother's IC + salary slip + EPF) yet an EMPTY
+  `income_working_members` — so the cockpit's per-member Required/Optional layout, the requirement gate, and the income
+  verdict (which read only that list) saw "no earners declared" → income docs fell to **Optional** and the verdict went
+  red `income_earner_undeclared`. Hit 5 shortlisted salary-route apps (#90/#36/#48/#66/#93). **Fix (3 layers):**
+  (1) new `income_engine.effective_working_members(application)` reconstructs the earners from the authoritative signals
+  when the list is empty on the salary route — the tagged income docs first, then the roster's earning members (safe
+  because the salary route requires ≥1 earner at submit, so an empty list is always the unsaved-prefill case) — and is
+  wired into `income_requirements` + the salary income verdict; (2) the wizard now PERSISTS the roster-seeded "who works"
+  on mount (`ScholarshipDocuments.tsx`) so it's never silently empty going forward; (3) one-time backfill of the 5 apps'
+  `income_working_members` from their tagged docs. +8 income-engine tests (1448 scholarship pytest); `next build` clean.
+  Backend + FE, no migration. Branch `fix/salary-working-members-fallback`.
+- **Reviewer-raised requests now notify the student (Check-2 Action Centre gap).**
+  **The bug:** when a reviewer raised a document-request or query from the cockpit (`AdminResolutionItemView`), the item
+  appeared in the student's Action Centre but **no notification was ever sent** — the student only saw it if they happened
+  to log in. (Student #50: a reviewer's offer-letter request sat unseen.) Meanwhile the delayed "we have a few questions"
+  sweep (`send_due_query_emails`) only counted system/clarify items, never reviewer-raised (`source='officer'`) ones.
+  **Fix (batched, not per-item):** raising an officer item now **resets `query_raised_notified_at`** (flag-gated on
+  `CHECK2_STUDENT_QUERIES_ENABLED`) so the existing delayed, idempotent hourly sweep sends **one** summary email per review
+  burst — and the sweep now counts open `source='officer'` items (excluding `kind='human'`) toward its threshold, so a
+  request or re-request re-fires. **No per-item email** (a reviewer raising several items in one sitting would otherwise
+  spam the student and burn the Brevo 300/day quota). Backend-only, no migration. +3 tests (1420 scholarship pytest).
+  Branch `fix/officer-request-notifies-student`. ⚠️ Existing open items (e.g. #50) aren't retroactively notified — the
+  reset fires only on a *new* raise; re-raise to nudge.
+- **Cockpit: reviewer interview notes lost on "Save draft" (data loss) + AI flags past dates as "future".** Two
+  live-reported bugs. **(1) Data loss:** `_validate_findings` accepted verdicts `{resolved, still_unclear, new_concern,
+  deleted}` but **not `''`** — yet the cockpit's natural action (typing a one-line "what you found" without clicking a
+  verdict button) sends `verdict=''`. So Save-draft 400'd (`bad_findings`), the whole save (findings **and** the overall
+  note) was rejected, and the reviewer's notes vanished on reload. Fix: allow `''` (an in-progress finding may carry just
+  a rationale). **(2) Wrong "future date":** the Gemini interview gap-spotter (`gap_engine.py`) was never told today's
+  date, so it flagged a *past* event ("father's accident on April 3rd, 2026") as "in the future". Fix: inject today's
+  date (MYT) into `GAP_PROMPT` with an explicit past-vs-future instruction. +2 regression tests (102 scholarship green).
+  No migration. Branch `fix/cockpit-date-and-savedraft`.
+- **Sponsor portal redesign (R7) — fixed ~47 missing i18n keys + Tamil refine + a11y (the final redesign sprint).**
+  **The bug:** R1–R4 shipped the My Giving / Students / Account pages referencing **47 `sponsorPortal.{impact,journey,
+  activity,community,statement,students,account}.*` keys that were never added to the message files** — so those pages
+  rendered the **raw key paths** (e.g. literally `sponsorPortal.impact.totalGiven`). It shipped silently: the portal is
+  dark/dormant (no real approved sponsor has used it), i18n parity only checks en===ms===ta (all three were equally
+  missing), and `next build`/jest don't validate that `t()` keys resolve. **Fix:** authored all 47 keys in en/ms/ta
+  (English defined to match each page's usage + placeholders; Tamil per `tamil-style-guide.md`). **Guardrail:** new
+  `sponsor-i18n.test.ts` asserts every statically-referenced `sponsor*` key resolves in en.json (would have caught this)
+  + cross-locale parity per namespace. **Tamil refine (TD-132):** rewrote the R5/R6 trust/AutoSponsor strings —
+  *independent* → சார்பற்ற (consistent + idiomatic), "My Giving" unified to பங்களிப்பு, sandhi fixes (காணக்கூடிய).
+  **Accessibility:** the portal tab bar is now a `<nav>` landmark with `aria-current="page"`; the decorative giving
+  donut is `aria-hidden` (its figures are in the legend). FE-only, **no migration**. jest 363 (+2); i18n parity
+  2794×3; `next build` clean. **This completes the 7-sprint sponsor-portal redesign.**
+
+### Changed
+- **Sponsor portal redesign (R6) — Standing gift / AutoSponsor (the AutoInvest-style innovation).** A sponsor can set a
+  **standing gift** on My Account: field/state preferences + an optional per-student cap + an on/off toggle. When a
+  matching student joins the pool, an **hourly `auto-sponsor` cron** auto-funds them from the sponsor's balance — via
+  the existing `fund_student`, so each allocation is still an **offered** sponsorship the student must accept (no real
+  money moves; same safety model as a manual fund). **Event-driven** (hourly), **idempotent + self-limiting** (a funded
+  student leaves the fundable set; one holding sponsor per student via the DB partial-unique), and **balance-throttled**
+  — when the balance can't cover the next match it's **skipped silently** and retried once topped up. Allocations spread
+  fairly (least-recently-allocated gift first). New `StandingGift` model (OneToOne sponsor) + `standing_gift` service +
+  `GET/PUT /api/v1/sponsor/standing-gift/` (flag + approved-sponsor gated; the sponsor's own config only, no student
+  data). **No consent step** (owner decision — the donation is already final into the trust; this only automates the
+  offer). **Migration `scholarship/0066`** (new `standing_gifts` table; migrate-first). +13 pytest (121 sponsor green) ;
+  jest 361; i18n parity 2747×3; `next build` clean. Ships dark behind `SPONSOR_POOL_ENABLED` (inert with no standing
+  gifts). New hourly Cloud Scheduler job `halatuju-auto-sponsor` at deploy.
 - **Sponsor portal redesign (R5) — Trust & Transparency hub (the load-bearing trust layer).** A new **Trust &
   Transparency page** (`/sponsor/trust`, reached from the My Giving assurance strip + the portal footer) surfaces the
   four-layer trust story — **Who we are · Governance · Sources & uses of funds · Independent assurance** — built as a
@@ -837,6 +1079,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (2 web deploys + 1 review web deploy). Auto-draft/auto-finalise stay dark until `CHECK2_AUTO_GENERATE=1`.
 
 ### Added
+- **`refresh_institution_urls` — authoritative-index URL refresher (local operator tool; no migration; on branch `link-refresh`, NOT merged).**
+  Fixes dead/renamed institution links by re-sourcing from the official directory (never guessing). Source registry:
+  `matrikulasi` (moe.gov.my/senarai-matrikulasi, matched by subdomain id), `politeknik` + `kk` (MyPolyCC `portalbpp2`,
+  matched by name). Scrapes the index → pure `build_proposals` classifies **canonicalise** (matched + index URL differs +
+  reachable) / **missing** (ours not in index → renamed/closed) / **extra** (index has one we lack). **Dry-run by default;
+  `--apply` writes ONLY canonicalisations**, guarded by a mass-change cap; missing/extra are report-only. +7 tests.
+  **Constraint found:** these MY gov/edu sites aren't reliably reachable from the agent sandbox / Cloud Run (same cause as
+  the prod "timeouts"), so the reachability gate + live run must execute from a MY-capable network or be confirmed in the
+  owner's browser — don't bulk-write from an environment that can't verify.
 - **Course Data dashboard — "Problem links" drill-down (read-only; no migration).** The link check now STORES the failing
   URLs (was counts-only), so the dashboard can show *which* links failed: `validate_course_urls` records a `failures` list
   in its status — each `{url, kind, institutions, refs}` — and tags errors by kind (`_error_kind`: `dns`/`timeout`/`conn`/
