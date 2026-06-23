@@ -291,7 +291,7 @@ class StudentInterviewCancelView(_StudentInterviewBase):
         if err:
             return err
         try:
-            scheduling.cancel(app, by='student')
+            scheduling.cancel(app, by='student', reason=request.data.get('reason', ''))
         except scheduling.SchedulingError as e:
             return self._error(e)
         return Response(interview_schedule_payload(app))

@@ -231,6 +231,9 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
         application.interview_alternatives_requested_at = None
         application.interview_alternatives_note = ''
         reset_fields += ['interview_alternatives_requested_at', 'interview_alternatives_note']
+    if application.interview_cancel_reason:        # fresh menu → the prior cancel reason is stale
+        application.interview_cancel_reason = ''
+        reset_fields.append('interview_cancel_reason')
     if reset_fields:
         application.save(update_fields=reset_fields)
     # Tell the student their times are ready to pick — but ONLY when the menu actually
@@ -360,8 +363,9 @@ def book_slot(application, *, slot_id, now=None):
     return application
 
 
-def cancel(application, *, by='student', now=None):
-    """Cancel the booked interview. A student cancel is subject to the cutoff."""
+def cancel(application, *, by='student', reason='', now=None):
+    """Cancel the booked interview. A student cancel is subject to the cutoff. ``reason`` is the
+    student's optional 'why I'm cancelling' — stored + passed to the reviewer's notice."""
     now = now or timezone.now()
     if application.interview_status != 'booked':
         raise SchedulingError('not_booked')
@@ -370,6 +374,7 @@ def cancel(application, *, by='student', now=None):
 
     reviewer = application.assigned_to
     student_email, student_name = _student_identity(application)
+    reason = (reason or '').strip()[:1000]
 
     if application.interview_calendar_event_id:
         meeting.cancel_event(application.interview_calendar_event_id)
@@ -387,10 +392,11 @@ def cancel(application, *, by='student', now=None):
     application.interview_meeting_provider = ''
     application.interview_reminded_1d_at = None
     application.interview_reminded_1h_at = None
+    application.interview_cancel_reason = reason
     application.save(update_fields=[
         'interview_status', 'interview_cancelled_at', 'interview_slot', 'interview_start',
         'interview_meeting_url', 'interview_calendar_event_id', 'interview_meeting_provider',
-        'interview_reminded_1d_at', 'interview_reminded_1h_at',
+        'interview_reminded_1d_at', 'interview_reminded_1h_at', 'interview_cancel_reason',
     ])
 
     emails.send_interview_cancelled_email(student_email, student_name=student_name,
@@ -398,7 +404,7 @@ def cancel(application, *, by='student', now=None):
     if reviewer is not None and getattr(reviewer, 'email', ''):
         emails.send_reviewer_interview_cancelled_email(
             reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
-            applicant_name=student_name, ref=pool.pool_ref(application.id))
+            applicant_name=student_name, ref=pool.pool_ref(application.id), reason=reason)
     return application
 
 

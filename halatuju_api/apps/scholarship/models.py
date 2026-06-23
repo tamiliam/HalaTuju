@@ -464,6 +464,9 @@ class ScholarshipApplication(models.Model):
     # request alternatives in-app; cleared when the reviewer proposes a fresh menu.
     interview_alternatives_requested_at = models.DateTimeField(null=True, blank=True)
     interview_alternatives_note = models.TextField(blank=True, default='')
+    # Why the student cancelled their booked interview (optional free text). Set on cancel,
+    # passed to the reviewer's notice + shown on the cockpit; cleared when fresh times are proposed.
+    interview_cancel_reason = models.TextField(blank=True, default='')
     # Idempotency stamps for the confirmation + the reminder cron (reset on reschedule).
     interview_confirmation_sent_at = models.DateTimeField(null=True, blank=True)
     interview_reminded_1d_at = models.DateTimeField(null=True, blank=True)
