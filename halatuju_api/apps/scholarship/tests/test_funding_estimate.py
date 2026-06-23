@@ -71,6 +71,20 @@ class TestClassify(_Base):
                           'course_name': 'PISMP Perguruan'})
         self.assertEqual(classify_pathway(pismp), 'pismp')
 
+    def test_asasi_at_politeknik_is_asasi_not_poly(self):
+        # #11: "Asasi Teknologi Kejuruteraan" issued by JPPKK / Politeknik Ungku Omar.
+        # A foundation LEVEL beats the host-institution coding — it must NOT be read as a
+        # poly diploma (which would size funding as poly ~RM4.3k instead of asasi ~RM7k),
+        # even though the genuineness scorer correctly calls the DOCUMENT polytechnic-issued.
+        as_is = self._app(chosen_programme={'course_id': 'UZ0520001',
+                          'course_name': 'Asasi Kejuruteraan Dan Teknologi'})
+        self.assertEqual(classify_pathway(as_is), 'asasi')
+        # And the latent trap: an Asasi programme carried under a 'poly'-prefixed course id
+        # must still classify as asasi (the name's foundation level wins over the id prefix).
+        poly_coded = self._app(chosen_programme={'course_id': 'POLY-ASASI-1',
+                               'course_name': 'Asasi Teknologi Kejuruteraan'})
+        self.assertEqual(classify_pathway(poly_coded), 'asasi')
+
     def test_chosen_programme_kkom_gives_no_estimate(self):
         app = self._app(chosen_programme={'course_id': 'KKOM-DIP-1',
                         'course_name': 'Diploma Kolej Komuniti'})

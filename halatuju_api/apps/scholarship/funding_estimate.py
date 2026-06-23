@@ -75,12 +75,21 @@ def _classify_programme(programme) -> str | None:
     cid = _norm(programme.get('course_id'))
     if any(cid.startswith(p) for p in _NO_ESTIMATE_ID_PREFIXES):
         return None
-    for prefix, cat in _PROGRAMME_ID_PREFIXES:
-        if cid.startswith(prefix):
-            return cat
     name = _norm(programme.get('course_name'))
     if 'kolej komuniti' in name:
         return None
+    # A foundation LEVEL named in the course (Asasi / Foundation) DEFINES the pathway even
+    # when the course is hosted/coded under the Polytechnic system — JPPKK runs Asasi
+    # programmes at a Politeknik, so the 'poly' course_id prefix below must NOT win over it.
+    # (#11: "Asasi Teknologi Kejuruteraan" issued by JPPKK / Politeknik Ungku Omar is an
+    # Asasi pathway, not a poly diploma — mis-classing it would size funding as poly ~RM4.3k
+    # instead of asasi ~RM7k.) The genuineness scorer separately, and correctly, calls this
+    # a 'polytechnic'-ISSUED document — that is the issuer family, not the programme level.
+    if 'asasi' in name or 'foundation' in name:
+        return 'asasi'
+    for prefix, cat in _PROGRAMME_ID_PREFIXES:
+        if cid.startswith(prefix):
+            return cat
     for kw, cat in _PROGRAMME_NAME_KEYWORDS:
         if kw in name:
             return cat
