@@ -1883,11 +1883,13 @@ def send_reviewer_alternatives_requested_email(to_email, *, reviewer_name, appli
     return _send_plain(to_email, _reviewer_subject('Applicant needs different interview times', ref), body)
 
 
-def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name, ref=''):
-    """Reviewer notice that a student cancelled. Plain EN."""
+def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name, ref='', reason=''):
+    """Reviewer notice that a student cancelled. Plain EN. Includes the student's reason if given."""
+    reason_line = f'Reason they gave: "{reason.strip()}"\n\n' if (reason or '').strip() else ''
     body = (
         f'Dear {reviewer_name or "there"},\n\n'
         f'{applicant_name or "An applicant"} has cancelled their booked B40 interview.\n\n'
+        f'{reason_line}'
         f'Their application is still open — only the interview slot was released. When you\'re '
         f'ready, open their record and use "Propose alternative times" to offer new ones.\n\n'
         f'{_reviewer_dashboard_cta()}\n\n'

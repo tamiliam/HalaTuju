@@ -22,6 +22,7 @@ export default function InterviewBookingPanel({
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [requesting, setRequesting] = useState(false)
   const [note, setNote] = useState('')
+  const [cancelReason, setCancelReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -54,8 +55,10 @@ export default function InterviewBookingPanel({
 
   const cancel = async () => {
     setBusy(true); setError('')
-    try { setSched(await cancelInterview(applicationId, { token })) }
-    catch (e) {
+    try {
+      setSched(await cancelInterview(applicationId, cancelReason, { token }))
+      setCancelReason('')
+    } catch (e) {
       setError((e as Error & { code?: string }).code === 'too_late'
         ? t('scholarship.application.interview.tooLateNote')
         : t('scholarship.application.interview.error'))
@@ -103,6 +106,12 @@ export default function InterviewBookingPanel({
           ) : confirmingCancel ? (
             <div className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-3">
               <p className="text-sm text-gray-800">{t('scholarship.application.interview.cancelConfirm')}</p>
+              <label className="mt-2 block text-xs font-medium text-gray-600">
+                {t('scholarship.application.interview.cancelReasonLabel')}
+              </label>
+              <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={2} maxLength={1000}
+                placeholder={t('scholarship.application.interview.cancelReasonPlaceholder')}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <button type="button" onClick={cancel} disabled={busy}
                   className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">

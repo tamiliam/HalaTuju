@@ -208,9 +208,15 @@ export default function InterviewScheduleCard({
       )}
 
       {schedule.status === 'cancelled' && (
-        <p className="mt-3 text-sm text-amber-700">
-          {t('admin.scholarship.interview.schedule.cancelledNote')}
-        </p>
+        <div className="mt-3 text-sm text-amber-700">
+          <p>{t('admin.scholarship.interview.schedule.cancelledNote')}</p>
+          {schedule.cancel_reason && (
+            <p className="mt-1">
+              {t('admin.scholarship.interview.schedule.cancelReasonLabel')}{' '}
+              <span className="italic">“{schedule.cancel_reason}”</span>
+            </p>
+          )}
+        </div>
       )}
 
       {/* Once proposed, the menu is LOCKED to a read-only view until the reviewer chooses to

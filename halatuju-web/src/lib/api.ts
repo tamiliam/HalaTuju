@@ -1459,9 +1459,11 @@ export async function bookInterviewSlot(id: number, slotId: number, options?: Ap
 }
 
 /** Cancel the booked interview (subject to the reschedule cutoff). */
-export async function cancelInterview(id: number, options?: ApiOptions): Promise<InterviewSchedule> {
+export async function cancelInterview(
+  id: number, reason?: string, options?: ApiOptions
+): Promise<InterviewSchedule> {
   return apiRequest(`/api/v1/scholarship/applications/${id}/interview/cancel/`, {
-    method: 'POST', body: JSON.stringify({}), ...options,
+    method: 'POST', body: JSON.stringify(reason ? { reason } : {}), ...options,
   })
 }
 

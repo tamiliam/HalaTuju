@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Student can give a reason when cancelling their interview.** Cancelling a booked interview is the student's route to a
+  reschedule (the reviewer then proposes fresh times), so the cancel-confirm box now has an optional **"Reason for
+  cancelling"** field. The reason is stored (`interview_cancel_reason`), included in the reviewer's cancellation email, and
+  shown on the cockpit's interview card, cleared when fresh times are proposed. **Migration `scholarship/0070`** (1 additive
+  field, migrate-first). +2 tests; i18n en/ms/ta.
+
 ### Fixed
 - **Student interview panel no longer offers past slots, and clears stale errors.** The booking panel showed every
   proposed slot regardless of time, so a slot whose time had passed appeared bookable and selecting it failed with the

@@ -564,6 +564,7 @@ export interface InterviewSchedule {
   /** The student said none of the proposed times work and asked for others. */
   alternatives_requested?: boolean
   alternatives_note?: string
+  cancel_reason?: string
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in
