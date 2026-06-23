@@ -1730,6 +1730,8 @@
         "cancelKeep": "Keep my interview",
         "cancelledNote": "Your interview was cancelled. Your interviewer will propose new times soon.",
         "tooLateNote": "It's close to your interview time — please contact us if you need to change it.",
+        "slotPassed": "That time has already passed — please pick another one.",
+        "allPassed": "These proposed times have all passed. Please ask for other times below.",
         "error": "Something went wrong. Please try again."
       },
       "awardPanel": {
