@@ -1730,6 +1730,8 @@
         "cancelKeep": "Kekalkan temu duga saya",
         "cancelledNote": "Temu duga anda telah dibatalkan. Penemu duga anda akan mencadangkan masa baharu tidak lama lagi.",
         "tooLateNote": "Sudah hampir dengan masa temu duga anda — sila hubungi kami jika anda perlu menukarnya.",
+        "slotPassed": "Masa itu telah pun berlalu — sila pilih masa lain.",
+        "allPassed": "Masa-masa yang dicadangkan ini semuanya telah berlalu. Sila minta masa lain di bawah.",
         "error": "Sesuatu tidak kena. Sila cuba lagi."
       },
       "awardPanel": {

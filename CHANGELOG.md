@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Student interview panel no longer offers past slots, and clears stale errors.** The booking panel showed every
+  proposed slot regardless of time, so a slot whose time had passed appeared bookable and selecting it failed with the
+  backend's `past_slot` — surfaced as a generic "Something went wrong". Both the first-pick and the reschedule lists are
+  now filtered to **future slots only** (if all proposed times have passed, a clear note points to "ask for other times");
+  `past_slot` maps to a friendly message; and the error now **clears on every toggle** (it lingered after "Keep my booked
+  time" / "Cancel" etc.). FE-only; +2 i18n keys (en/ms/ta).
 - **/profile merit score is now editable from the edit state too.** The merit row (computed from grades, so it links to
   the grades editor) was a tappable shortcut in the card's view state but an inert span once you hit "Edit" — so merit
   looked editable from outside but not inside. The edit-state row is now the same tappable shortcut to `/onboarding/grades`
