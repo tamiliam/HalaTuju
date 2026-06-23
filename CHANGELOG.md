@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **An Asasi (Foundation) programme hosted at a Politeknik now classifies as the `asasi` pathway, not
+  `poly`.** `funding_estimate._classify_programme` checked the `poly` course-id prefix *before* the
+  course-name scan, so an Asasi programme carried under a poly-prefixed id (JPPKK runs Asasi at a
+  Politeknik — e.g. #11's "Asasi Teknologi Kejuruteraan" at Politeknik Ungku Omar) would mis-size
+  funding as poly (~RM4.3k) instead of asasi (~RM7k). A foundation LEVEL named in the course now beats
+  the host-institution coding. The genuineness scorer still, correctly, calls the *document*
+  polytechnic-ISSUED — that is the issuer family, a separate axis from the programme level. +1 test.
 - **Offer-letter identity check is now OCR-tolerant on the NRIC (anchored on the IC).** The
   offer-letter NRIC is read by image-Gemini, which non-deterministically drops/garbles a digit
   (observed: `0806201578` vs `080620101578`) — which previously raised a **false wrong-person flag**.
