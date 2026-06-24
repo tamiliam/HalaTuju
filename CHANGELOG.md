@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Programme renamed: "B40 Assistance Programme" → "BrightPath Bursary Programme"** (user-facing copy only). EN
+  "BrightPath Bursary Programme" / "BrightPath Bursary", BM "Program Bursari BrightPath", TA "BrightPath Bursary
+  திட்டம்" (Tamil = first draft, pending owner refine). The `{programme}` value (driven by `cohort.name`) is renamed via
+  `seed_b40_2026_cohort` (now idempotently syncs the name → run on prod to flip every interpolated email). Hardcoded
+  strings updated across `emails.py`, i18n en/ms/ta, FE (AppHeader/Footer/SponsorLanding/privacy), AI prompts
+  (help/profile engines), and email-copy test assertions. **Deliberately UNCHANGED:** the **"B40" income bracket** term
+  (B40 families/applicants/income line — a real demographic), the internal cohort **code** `b40-2026`, code
+  docstrings/`verbose_name`, history (retros/migrations), and **WhatsApp** copy (deferred — the live Meta templates are
+  locked until re-approved). No migration.
+
 ### Added
 - **Student can give a reason when cancelling their interview.** Cancelling a booked interview is the student's route to a
   reschedule (the reviewer then proposes fresh times), so the cancel-confirm box now has an optional **"Reason for

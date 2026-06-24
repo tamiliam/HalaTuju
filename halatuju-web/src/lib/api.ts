@@ -79,7 +79,7 @@ export interface StudentProfile {
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   muet_band?: number
-  // Financial detail — canonical home for the B40 Assistance Programme
+  // Financial detail — canonical home for the BrightPath Bursary Programme
   household_income?: number | null
   household_size?: number | null
   receives_str?: boolean
@@ -1304,7 +1304,7 @@ export async function calculatePathways(
   return { pathways }
 }
 
-// ── Scholarship (B40 Assistance Programme) ──────────────────────────────
+// ── Scholarship (BrightPath Bursary Programme) ──────────────────────────────
 
 export interface FundingNeed {
   // "How you'd use the support" — the S3 reframe (RM3,000 cap; tick-only categories

@@ -1,5 +1,5 @@
 /**
- * B40 Assistance Programme — pure form helpers.
+ * BrightPath Bursary Programme — pure form helpers.
  *
  * Logic lives here (node-testable) so the page component stays a thin renderer.
  */

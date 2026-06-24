@@ -1,5 +1,5 @@
 """
-AI student profile for the B40 Assistance Programme.
+AI student profile for the BrightPath Bursary Programme.
 
 There is ONE profile, common to the reviewer and (once the student is approved) the
 sponsor — generated twice by the system, never by a human clicking "generate":
