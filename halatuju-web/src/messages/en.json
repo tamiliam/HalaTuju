@@ -273,7 +273,7 @@
       },
       "whoWeAre": {
         "title": "Who we are",
-        "body": "The B40 Assistance Programme is run by the team behind HalaTuju. Our full background, legal entity and registration details will be published here as the organisation is formalised.",
+        "body": "The BrightPath Bursary Programme is run by the team behind HalaTuju. Our full background, legal entity and registration details will be published here as the organisation is formalised.",
         "legalLabel": "Legal entity & registration",
         "storyLabel": "Our story & mission",
         "contactLabel": "Contact & complaints"
@@ -384,7 +384,7 @@
       "q5": "How much does it cost to sponsor someone?",
       "a5": "It depends on the student's programme and needs. Each profile shows the support required so you can decide what works for you.",
       "q6": "Who runs this programme?",
-      "a6": "HalaTuju runs the B40 Assistance Programme; Yayasan myNADI will hold and disburse the funds (partnership being finalised)."
+      "a6": "HalaTuju runs the BrightPath Bursary Programme; Yayasan myNADI will hold and disburse the funds (partnership being finalised)."
     },
     "cta": {
       "heading": "Ready to change a life?",
@@ -397,7 +397,7 @@
     "quickLinks": "Quick Links",
     "legal": "Legal",
     "startHere": "Start Here",
-    "b40Heading": "B40 Aid",
+    "b40Heading": "BrightPath Bursary",
     "applyAssistance": "Apply for assistance",
     "becomeSponsor": "Become a sponsor"
   },
@@ -703,7 +703,7 @@
     "noStpm": "No STPM courses saved yet."
   },
   "scholarship": {
-    "nav": "B40 Aid",
+    "nav": "BrightPath Bursary",
     "apply": {
       "title": "Apply for B40 Education Assistance",
       "intro": "Financial assistance for B40 students continuing to IPTA/ILKA. Read the criteria, then complete the short form below.",
@@ -1508,8 +1508,8 @@
     "consent": {
       "subtitle": "Please review and agree below to share your profile with potential sponsors.",
       "minorInfoNotice": "Please ask your parent or guardian to read the following section carefully and give their consent to share your particulars with potential sponsors.",
-      "text": "I, the named applicant (**{student_name}**, NRIC **{student_nric}**), consent to the **B40 Assistance Programme** sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time.",
-      "textMinor": "I confirm that I am the parent or guardian of **{student_name}** (NRIC: **{student_nric}**), who is under 18 years old.\n\nI give permission for the **B40 Assistance Programme** to share {his_or_her} profile and documents with sponsors. This is to help {him_or_her} get financial aid. I understand that I can cancel this permission at any time.",
+      "text": "I, the named applicant (**{student_name}**, NRIC **{student_nric}**), consent to the **BrightPath Bursary Programme** sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time.",
+      "textMinor": "I confirm that I am the parent or guardian of **{student_name}** (NRIC: **{student_nric}**), who is under 18 years old.\n\nI give permission for the **BrightPath Bursary Programme** to share {his_or_her} profile and documents with sponsors. This is to help {him_or_her} get financial aid. I understand that I can cancel this permission at any time.",
       "fallback": {
         "student": "the applicant"
       },
@@ -1688,7 +1688,7 @@
       },
       "about": {
         "title": "About this programme",
-        "body": "The B40 Assistance Programme is coordinated by HalaTuju, with Yayasan myNADI expected to administer the funds (partnership being finalised), and a network of community organisations — including Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) and others — that refer and support students.",
+        "body": "The BrightPath Bursary Programme is coordinated by HalaTuju, with Yayasan myNADI expected to administer the funds (partnership being finalised), and a network of community organisations — including Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) and others — that refer and support students.",
         "contact": "Questions or feedback? Email"
       },
       "cta": {
@@ -2566,7 +2566,7 @@
     },
     "scholarship": {
       "nav": "B40 Applications",
-      "title": "B40 Assistance Applicants",
+      "title": "BrightPath Bursary Applicants",
       "countSubtitle": "{count} applicants",
       "loadFailed": "Could not load applications.",
       "showingRange": "Showing {start}–{end} of {total} applications",

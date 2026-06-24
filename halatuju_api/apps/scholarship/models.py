@@ -1,5 +1,5 @@
 """
-B40 Assistance Programme — data models.
+BrightPath Bursary Programme — data models.
 
 Phase 1 (intake & profile engine). Sponsor and money models arrive in
 Phases 2-3. See docs/scholarship/b40-assistance-prd.md and
@@ -22,7 +22,7 @@ class ScholarshipCohort(models.Model):
     )
     name = models.CharField(
         max_length=200,
-        help_text="Display name, e.g. 'B40 Assistance Programme 2026'",
+        help_text="Display name, e.g. 'BrightPath Bursary Programme 2026'",
     )
     year = models.IntegerField()
     is_active = models.BooleanField(default=True)

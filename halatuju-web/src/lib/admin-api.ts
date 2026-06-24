@@ -322,7 +322,7 @@ export async function inviteAdmin(
   return res.json()
 }
 
-// ── Scholarship (B40 Assistance Programme) ──────────────────────────────
+// ── Scholarship (BrightPath Bursary Programme) ──────────────────────────────
 
 export interface AdminScholarshipListItem {
   id: number

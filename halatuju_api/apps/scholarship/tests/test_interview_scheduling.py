@@ -687,7 +687,7 @@ class BookingEmailTests(TestCase):
             's@example.com', student_name='Priya Devi', reviewer_name='Rohini',
             start=start, meeting_url='https://meet.google.com/abc', duration_min=45))
         msg = mail.outbox[-1]
-        self.assertEqual(msg.subject, 'Your B40 Assistance Programme interview is booked')
+        self.assertEqual(msg.subject, 'Your BrightPath Bursary Programme interview is booked')
         self.assertEqual(msg.reply_to, ['interview@halatuju.xyz'])
         self.assertEqual(msg.from_email, 'interview@halatuju.xyz')   # #2: sends FROM interview@
         # Harmless List-Unsubscribe (mailto to support, no one-click) so a mistaken click
@@ -716,8 +716,8 @@ class BookingEmailTests(TestCase):
             's@example.com', student_name='Priya', reviewer_name='Rohini',
             start=timezone.now() + timedelta(days=2), meeting_url='', english_only=True)
         body = mail.outbox[-1].body
-        self.assertIn('B40 Assistance Programme', body)
-        self.assertNotIn('Program Bantuan B40', body)
+        self.assertIn('BrightPath Bursary Programme', body)
+        self.assertNotIn('Program Bursari BrightPath', body)
 
     def test_reminder_email_when_labels(self):
         from apps.scholarship.emails import send_interview_reminder_email

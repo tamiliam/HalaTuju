@@ -1,5 +1,5 @@
 """
-Trilingual emails for the B40 Assistance Programme.
+Trilingual emails for the BrightPath Bursary Programme.
 
 Phase 1 uses email (every HalaTuju account has a verified Google address).
 WhatsApp is a Phase 2 enhancement.
@@ -430,7 +430,7 @@ SPONSOR_NOTIFY_BODIES = {
         "Sign in to read their anonymous profiles and choose someone to support:\n{link}\n\n"
         "You're receiving this because your notifications are set to {freq}. You can "
         "change this any time in your sponsor account.\n\n"
-        "Warm regards,\nThe B40 Assistance Programme Team"
+        "Warm regards,\nThe BrightPath Bursary Programme Team"
     ),
     'ms': (
         "Salam Penaja,\n\n"
@@ -438,7 +438,7 @@ SPONSOR_NOTIFY_BODIES = {
         "Log masuk untuk membaca profil tanpa nama mereka dan memilih seseorang untuk ditaja:\n{link}\n\n"
         "Anda menerima ini kerana pemberitahuan anda ditetapkan kepada {freq}. Anda boleh "
         "menukarnya bila-bila masa dalam akaun penaja anda.\n\n"
-        "Salam hormat,\nPasukan Program Bantuan B40"
+        "Salam hormat,\nPasukan Program Bursari BrightPath"
     ),
     'ta': (
         "அன்புள்ள நிதியுதவியாளரே,\n\n"
@@ -446,7 +446,7 @@ SPONSOR_NOTIFY_BODIES = {
         "அவர்களின் அடையாளம் தெரியாத சுயவிவரங்களைப் படித்து, உதவ ஒருவரைத் தேர்ந்தெடுக்க உள்நுழையவும்:\n{link}\n\n"
         "உங்கள் அறிவிப்புகள் {freq} என அமைக்கப்பட்டுள்ளதால் இதைப் பெறுகிறீர்கள். உங்கள் நிதியுதவியாளர் "
         "கணக்கில் எப்போது வேண்டுமானாலும் இதை மாற்றலாம்.\n\n"
-        "அன்புடன்,\nB40 உதவித் திட்டக் குழு"
+        "அன்புடன்,\nBrightPath Bursary திட்டக் குழு"
     ),
 }
 _SPONSOR_NEW_INTRO = {
@@ -966,7 +966,7 @@ def send_profile_complete_admin_email(application_id, applicant_name, programme_
 # All reviewer mail goes out via _send_plain → from the monitored interview@ alias with a
 # working reply-to, so "reply to reassign" / replies actually reach a person. The subject
 # carries the Scholar-code so a reviewer juggling several applicants can triage at a glance.
-_REVIEWER_SIGNOFF = 'Thanks,\nThe B40 Assistance Team'
+_REVIEWER_SIGNOFF = 'Thanks,\nThe BrightPath Bursary Team'
 
 
 def _reviewer_dashboard_cta():
@@ -1019,9 +1019,9 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     en_name = first or 'there'
     bm_name = first or 'di sana'
     reviewer = (reviewer_name or '').strip()
-    subject = 'Your B40 Assistance Programme interview — what happens next'
+    subject = 'Your BrightPath Bursary Programme interview — what happens next'
 
-    en_intro = ('Your application has reached the interview stage of the B40 Assistance Programme, '
+    en_intro = ('Your application has reached the interview stage of the BrightPath Bursary Programme, '
                 + (f'and your interview will be with {reviewer}, one of our programme’s interviewers.'
                    if reviewer else 'and an interviewer from our team has now been assigned to you.'))
     en_what = ('The interview is a short video call, about 30 minutes, to understand your '
@@ -1040,7 +1040,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
                  f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
                  f'does, it’s not us — please tell us at {SUPPORT_EMAIL}.')
 
-    bm_intro = ('Permohonan anda telah sampai ke peringkat temu duga Program Bantuan B40, '
+    bm_intro = ('Permohonan anda telah sampai ke peringkat temu duga Program Bursari BrightPath, '
                 + (f'dan temu duga anda akan bersama {reviewer}, salah seorang penemu duga program kami.'
                    if reviewer else 'dan seorang penemu duga daripada pasukan kami kini telah ditugaskan kepada anda.'))
     bm_what = ('Temu duga ialah panggilan video ringkas, kira-kira 30 minit, untuk memahami '
@@ -1071,11 +1071,11 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     en_text = text_block(
         f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
         en_safety, 'We look forward to speaking with you.',
-        'Warm regards,\nThe B40 Assistance Programme team')
+        'Warm regards,\nThe BrightPath Bursary Programme team')
     bm_text = text_block(
         f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
         bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
-        'Salam hormat,\nPasukan Program Bantuan B40')
+        'Salam hormat,\nPasukan Program Bursari BrightPath')
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
     # ── HTML ──────────────────────────────────────────────────────────────────
@@ -1094,11 +1094,11 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     en_html = html_block(
         f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
         en_safety, 'We look forward to speaking with you.',
-        'Warm regards,<br>The B40 Assistance Programme team')
+        'Warm regards,<br>The BrightPath Bursary Programme team')
     bm_html = html_block(
         f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
         bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
-        'Salam hormat,<br>Pasukan Program Bantuan B40')
+        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
     return _send_html(to_email, subject, text_body, html_body)
@@ -1119,7 +1119,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
     link = f'{frontend}/scholarship/application'
     subject = 'Your B40 application is in — here’s what happens next'
 
-    en_intro = ('Thank you — your application and documents for the B40 Assistance Programme are '
+    en_intro = ('Thank you — your application and documents for the BrightPath Bursary Programme are '
                 'safely in. Pulling everything together takes real effort, so well done for getting '
                 'it done.')
     en_lead = ('Your application is now with our team. Here’s exactly what happens next, so there '
@@ -1146,7 +1146,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
                  f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
                  f'does, it isn’t us — please tell us straight away at {SUPPORT_EMAIL}.')
 
-    bm_intro = ('Terima kasih — permohonan dan dokumen anda untuk Program Bantuan B40 telah selamat '
+    bm_intro = ('Terima kasih — permohonan dan dokumen anda untuk Program Bursari BrightPath telah selamat '
                 'diterima. Mengumpulkan semuanya memerlukan usaha yang sungguh-sungguh, jadi syabas '
                 'kerana menyelesaikannya.')
     bm_lead = ('Permohonan anda kini bersama pasukan kami. Berikut ialah perkara yang akan berlaku '
@@ -1185,10 +1185,10 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
                 f'{after}\n\n{safety}\n\n{signoff}')
     en_text = text_block(
         f'Hi {en_name},', en_intro, en_lead, en_steps, f'View my application: {link}', en_after,
-        en_safety, 'Warm regards,\nThe B40 Assistance Programme Team')
+        en_safety, 'Warm regards,\nThe BrightPath Bursary Programme Team')
     bm_text = text_block(
         f'Salam {bm_name},', bm_intro, bm_lead, bm_steps, f'Lihat permohonan saya: {link}', bm_after,
-        bm_safety, 'Salam hormat,\nPasukan Program Bantuan B40')
+        bm_safety, 'Salam hormat,\nPasukan Program Bursari BrightPath')
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
     # ── HTML ──────────────────────────────────────────────────────────────────
@@ -1207,10 +1207,10 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
         )
     en_html = html_block(
         f'Hi {en_name},', en_intro, en_lead, en_steps, 'View my application', en_after,
-        en_safety, 'Warm regards,<br>The B40 Assistance Programme Team')
+        en_safety, 'Warm regards,<br>The BrightPath Bursary Programme Team')
     bm_html = html_block(
         f'Salam {bm_name},', bm_intro, bm_lead, bm_steps, 'Lihat permohonan saya', bm_after,
-        bm_safety, 'Salam hormat,<br>Pasukan Program Bantuan B40')
+        bm_safety, 'Salam hormat,<br>Pasukan Program Bursari BrightPath')
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
     # General programme email → from info@ (DEFAULT_FROM_EMAIL), reply to support; NOT interview@.
@@ -1436,7 +1436,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
     cutoff = getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
     duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
     app_link = f"{getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')}/scholarship/application"
-    summary = 'B40 Assistance Programme interview'
+    summary = 'BrightPath Bursary Programme interview'
     details = f'Join: {meeting_url}' if meeting_url else 'Your interviewer will share the video-call link.'
     gcal = _gcal_url(start=start, duration_min=duration_min, text=summary,
                      details=details, location=meeting_url or 'Video call')
@@ -1449,7 +1449,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
 
     en_text = (
         f'Hi {en_name},\n\n'
-        f'Your B40 Assistance Programme interview is confirmed. Here are the details:\n\n'
+        f'Your BrightPath Bursary Programme interview is confirmed. Here are the details:\n\n'
         f'Date & time: {when}\n'
         f'Interviewer: {rev_en}\n'
         f'{join_en}\n\n'
@@ -1463,11 +1463,11 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {SUPPORT_EMAIL}.\n\n'
         f'We look forward to speaking with you.\n\n'
-        f'Warm regards,\nThe B40 Assistance Programme team'
+        f'Warm regards,\nThe BrightPath Bursary Programme team'
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
-        f'Temu duga Program Bantuan B40 anda telah disahkan. Berikut butirannya:\n\n'
+        f'Temu duga Program Bursari BrightPath anda telah disahkan. Berikut butirannya:\n\n'
         f'Tarikh & masa: {when}\n'
         f'Penemu duga: {rev_bm}\n'
         f'{join_bm}\n\n'
@@ -1481,7 +1481,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
         f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
         f'Kami menantikan untuk bercakap dengan anda.\n\n'
-        f'Salam hormat,\nPasukan Program Bantuan B40'
+        f'Salam hormat,\nPasukan Program Bursari BrightPath'
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
@@ -1507,7 +1507,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
                     else 'Penemu duga anda akan berkongsi pautan sebelum temu duga.')
     en_html = section(
         f'Hi {en_name},',
-        'Your B40 Assistance Programme interview is confirmed. Here are the details:',
+        'Your BrightPath Bursary Programme interview is confirmed. Here are the details:',
         [('Date &amp; time', when), ('Interviewer', rev_en)], ('Join here', join_cell_en),
         'Add to calendar',
         'The interview is a video call and takes about 30 minutes. Please join with your camera on. '
@@ -1519,10 +1519,10 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {SUPPORT_EMAIL}.',
         'We look forward to speaking with you.',
-        'Warm regards,<br>The B40 Assistance Programme team')
+        'Warm regards,<br>The BrightPath Bursary Programme team')
     bm_html = section(
         f'Salam {bm_name},',
-        'Temu duga Program Bantuan B40 anda telah disahkan. Berikut butirannya:',
+        'Temu duga Program Bursari BrightPath anda telah disahkan. Berikut butirannya:',
         [('Tarikh &amp; masa', when), ('Penemu duga', rev_bm)], ('Sertai di sini', join_cell_bm),
         'Tambah ke kalendar',
         'Temu duga ialah panggilan video dan mengambil masa kira-kira 30 minit. Sila sertai dengan '
@@ -1534,10 +1534,10 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika sesiapa '
         f'berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
         'Kami menantikan untuk bercakap dengan anda.',
-        'Salam hormat,<br>Pasukan Program Bantuan B40')
+        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
-    return _send_html(to_email, 'Your B40 Assistance Programme interview is booked',
+    return _send_html(to_email, 'Your BrightPath Bursary Programme interview is booked',
                       text_body, html_body, ics=ics)
 
 
@@ -1556,20 +1556,20 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
     bm_name = first or 'di sana'
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     link = f'{frontend}/scholarship/application'
-    subject = ('Your B40 Assistance Programme interview time has changed — pick a new slot'
+    subject = ('Your BrightPath Bursary Programme interview time has changed — pick a new slot'
                if rescheduled
-               else 'Pick a time slot for your B40 Assistance Programme interview')
+               else 'Pick a time slot for your BrightPath Bursary Programme interview')
     intro_en = (
         'Your interviewer has had to move your interview, so the time you had booked has been '
         'released. Please choose a new date and time that suits you best.'
         if rescheduled else
-        'The next step in your B40 Assistance Programme application is a short interview, and '
+        'The next step in your BrightPath Bursary Programme application is a short interview, and '
         'you can choose the date and time that suits you best.')
     intro_bm = (
         'Penemu duga anda terpaksa menukar temu duga anda, jadi masa yang anda tempah sebelum ini '
         'telah dilepaskan. Sila pilih tarikh dan masa baharu yang paling sesuai untuk anda.'
         if rescheduled else
-        'Langkah seterusnya dalam permohonan Program Bantuan B40 anda ialah temu duga ringkas, '
+        'Langkah seterusnya dalam permohonan Program Bursari BrightPath anda ialah temu duga ringkas, '
         'dan anda boleh memilih tarikh dan masa yang paling sesuai.')
 
     # ── Plain-text fallback ───────────────────────────────────────────────────
@@ -1584,8 +1584,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         f'interviewer will then suggest new ones.\n\n'
         f'For your peace of mind: we’ll only ever ask about you and your studies. We will never '
         f'ask you for money, your password, or an OTP or PIN. If anyone claiming to represent the '
-        f'B40 Assistance Programme does, it isn’t us.\n\n'
-        f'Warm regards,\nThe B40 Assistance Programme Team'
+        f'BrightPath Bursary Programme does, it isn’t us.\n\n'
+        f'Warm regards,\nThe BrightPath Bursary Programme Team'
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
@@ -1598,8 +1598,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         f'duga anda kemudian akan mencadangkan masa baharu.\n\n'
         f'Untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. Kami '
         f'tidak sekali-kali akan meminta wang, kata laluan, atau OTP atau PIN. Jika sesiapa yang '
-        f'mendakwa mewakili Program Bantuan B40 berbuat demikian, itu bukan kami.\n\n'
-        f'Salam hormat,\nPasukan Program Bantuan B40'
+        f'mendakwa mewakili Program Bursari BrightPath berbuat demikian, itu bukan kami.\n\n'
+        f'Salam hormat,\nPasukan Program Bursari BrightPath'
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
@@ -1626,7 +1626,7 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         'For your peace of mind: we’ll only ever ask about you and your studies. We will never ask '
         'you for money, your password, or an OTP or PIN. If anyone claiming to represent the B40 '
         'Assistance Programme does, it isn’t us.',
-        'Warm regards,<br>The B40 Assistance Programme Team')
+        'Warm regards,<br>The BrightPath Bursary Programme Team')
     bm_html = section(
         f'Salam {bm_name},',
         intro_bm,
@@ -1638,8 +1638,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         'anda kemudian akan mencadangkan masa baharu.',
         'Untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. Kami '
         'tidak sekali-kali akan meminta wang, kata laluan, atau OTP atau PIN. Jika sesiapa yang '
-        'mendakwa mewakili Program Bantuan B40 berbuat demikian, itu bukan kami.',
-        'Salam hormat,<br>Pasukan Program Bantuan B40')
+        'mendakwa mewakili Program Bursari BrightPath berbuat demikian, itu bukan kami.',
+        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
 
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
     return _send_html(to_email, subject, text_body, html_body)
@@ -1659,19 +1659,19 @@ def send_interview_reminder_email(to_email, *, student_name, start, meeting_url=
     # ── Plain-text fallback ───────────────────────────────────────────────────
     en_text = (
         f'Hi {en_name},\n\n'
-        f'A reminder that your B40 Assistance Programme interview is {soon_en}:\n\n'
+        f'A reminder that your BrightPath Bursary Programme interview is {soon_en}:\n\n'
         f'• {whenfmt}\n'
         f'{_join_line(meeting_url, "en")}\n'
         f'Please be on camera and ready a few minutes early. See you soon.\n\n'
-        f'Warm regards,\nThe B40 Assistance Programme Team'
+        f'Warm regards,\nThe BrightPath Bursary Programme Team'
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
-        f'Peringatan bahawa temu duga Program Bantuan B40 anda adalah {soon_bm}:\n\n'
+        f'Peringatan bahawa temu duga Program Bursari BrightPath anda adalah {soon_bm}:\n\n'
         f'• {whenfmt}\n'
         f'{_join_line(meeting_url, "bm")}\n'
         f'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.\n\n'
-        f'Salam hormat,\nPasukan Program Bantuan B40'
+        f'Salam hormat,\nPasukan Program Bursari BrightPath'
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
@@ -1694,16 +1694,16 @@ def send_interview_reminder_email(to_email, *, student_name, start, meeting_url=
         )
     en_html = section(
         f'Hi {en_name},',
-        f'A reminder that your B40 Assistance Programme interview is {soon_en}:',
+        f'A reminder that your BrightPath Bursary Programme interview is {soon_en}:',
         join_en_html,
         'Please be on camera and ready a few minutes early. See you soon.',
-        'Warm regards,<br>The B40 Assistance Programme Team')
+        'Warm regards,<br>The BrightPath Bursary Programme Team')
     bm_html = section(
         f'Salam {bm_name},',
-        f'Peringatan bahawa temu duga Program Bantuan B40 anda adalah {soon_bm}:',
+        f'Peringatan bahawa temu duga Program Bursari BrightPath anda adalah {soon_bm}:',
         join_bm_html,
         'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.',
-        'Salam hormat,<br>Pasukan Program Bantuan B40')
+        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
     subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
@@ -1723,7 +1723,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
     # ── Plain-text fallback (the owner-approved copy) ─────────────────────────
     en_text = (
         f'Hi {en_name},\n\n'
-        f"This confirms that you've cancelled your interview for the B40 Assistance Programme, so "
+        f"This confirms that you've cancelled your interview for the BrightPath Bursary Programme, so "
         f'the time you had booked is now released.\n\n'
         f'Your application is still active — cancelling the interview doesn\'t affect it. Your '
         f"interviewer will propose some alternative times, and you're welcome to choose one "
@@ -1733,11 +1733,11 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'One note for your peace of mind: we\'ll only ever ask about you and your studies. We '
         f'will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it\'s '
         f'not us — please tell us at {SUPPORT_EMAIL}.\n\n'
-        f'Warm regards,\nThe B40 Assistance Programme Team'
+        f'Warm regards,\nThe BrightPath Bursary Programme Team'
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
-        f'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bantuan B40 anda, '
+        f'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bursari BrightPath anda, '
         f'jadi masa yang anda tempah sebelum ini kini dilepaskan.\n\n'
         f'Permohonan anda masih aktif — membatalkan temu duga tidak menjejaskannya. Penemu duga '
         f'anda akan mencadangkan beberapa masa alternatif, dan anda dialu-alukan untuk memilih satu '
@@ -1747,7 +1747,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
         f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
         f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
-        f'Salam hormat,\nPasukan Program Bantuan B40'
+        f'Salam hormat,\nPasukan Program Bursari BrightPath'
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
@@ -1763,7 +1763,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         )
     en_html = section(
         f'Hi {en_name},',
-        "This confirms that you've cancelled your interview for the B40 Assistance Programme, so the "
+        "This confirms that you've cancelled your interview for the BrightPath Bursary Programme, so the "
         'time you had booked is now released.',
         "Your application is still active — cancelling the interview doesn’t affect it. Your interviewer "
         "will propose some alternative times, and you’re welcome to choose one whenever you’re ready, if "
@@ -1773,10 +1773,10 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will never '
         f'ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — please tell '
         f'us at {SUPPORT_EMAIL}.',
-        'Warm regards,<br>The B40 Assistance Programme Team')
+        'Warm regards,<br>The BrightPath Bursary Programme Team')
     bm_html = section(
         f'Salam {bm_name},',
-        'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bantuan B40 anda, jadi '
+        'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bursari BrightPath anda, jadi '
         'masa yang anda tempah sebelum ini kini dilepaskan.',
         'Permohonan anda masih aktif — membatalkan temu duga tidak menjejaskannya. Penemu duga anda akan '
         'mencadangkan beberapa masa alternatif, dan anda dialu-alukan untuk memilih satu bila-bila masa '
@@ -1786,10 +1786,10 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan pengajian '
         f'anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
         f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
-        'Salam hormat,<br>Pasukan Program Bantuan B40')
+        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
-    return _send_html(to_email, "You've cancelled your B40 Assistance Programme interview",
+    return _send_html(to_email, "You've cancelled your BrightPath Bursary Programme interview",
                       text_body, html_body)
 
 
@@ -1825,7 +1825,7 @@ def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_n
     else:
         gcal = _gcal_url(start=start, duration_min=duration_min or 30,
                          text=f'B40 interview — {applicant}',
-                         details='B40 Assistance Programme interview.', location=meeting_url or '')
+                         details='BrightPath Bursary Programme interview.', location=meeting_url or '')
         calendar_line = (
             "The booking is in their record. Add it to your calendar so you don't lose the time:\n"
             f'Add to your calendar:\n{gcal}')
@@ -1901,7 +1901,7 @@ def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applican
 def send_reviewer_verdict_due_email(to_email, *, reviewer_name, applicant_name, ref='',
                                     due_by='', overdue=False):
     """TD-131: nudge the assigned reviewer that a verdict is due soon / now overdue. Plain EN,
-    consistent reviewer style (Dear / dashboard CTA / {ref} subject / B40 Assistance Team)."""
+    consistent reviewer style (Dear / dashboard CTA / {ref} subject / BrightPath Bursary Team)."""
     applicant = applicant_name or 'an applicant'
     if overdue:
         lead = (f'Your verdict for {applicant} is overdue'

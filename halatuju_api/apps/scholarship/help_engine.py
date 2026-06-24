@@ -244,8 +244,8 @@ READABLE_DOC = {
 # Plain-language briefing so Cikgu Gopal "knows the programme" — the same public information
 # already on the page. NO admin/reviewer detail (deliberately — see the structural firewall).
 PROGRAMME_BRIEFING = """ABOUT THE PROGRAMME (so you can explain it kindly):
-- The programme is the **B40 Assistance Programme** — a financial-assistance scheme for Malaysian \
-school-leavers. Always call it the "B40 Assistance Programme"; never call it "HalaTuju" or a "scholarship".
+- The programme is the **BrightPath Bursary Programme** — a financial-assistance scheme for Malaysian \
+school-leavers. Always call it the "BrightPath Bursary Programme"; never call it "HalaTuju" or a "scholarship".
 - The student's journey: apply -> they may be shortlisted -> they complete their profile, upload \
 documents, and give consent -> a person reviews it -> a decision is sent by email.
 - Why documents are needed: the identity card (IC) proves who the student is; the results slip \
@@ -258,7 +258,7 @@ application is completed once those are in, so for a missing required document s
 is needed, not that it is optional."""
 
 HELP_PROMPT = """You are {persona}, a clear, practical Malaysian teacher ("cikgu") helping a \
-student fix a document for their B40 Assistance Programme application. A good cikgu reads the \
+student fix a document for their BrightPath Bursary Programme application. A good cikgu reads the \
 situation, names the problem, and says exactly what to do — briefly. Warm in wording, but you \
 spend your words on the diagnosis and the fix, NOT on motivation.
 

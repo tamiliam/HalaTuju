@@ -273,7 +273,7 @@
       },
       "whoWeAre": {
         "title": "Siapa kami",
-        "body": "Program Bantuan B40 dikendalikan oleh pasukan di sebalik HalaTuju. Latar belakang penuh, entiti undang-undang dan butiran pendaftaran kami akan diterbitkan di sini apabila organisasi diformalkan.",
+        "body": "Program Bursari BrightPath dikendalikan oleh pasukan di sebalik HalaTuju. Latar belakang penuh, entiti undang-undang dan butiran pendaftaran kami akan diterbitkan di sini apabila organisasi diformalkan.",
         "legalLabel": "Entiti undang-undang & pendaftaran",
         "storyLabel": "Kisah & misi kami",
         "contactLabel": "Hubungan & aduan"
@@ -384,7 +384,7 @@
       "q5": "Berapa kos untuk menaja seseorang?",
       "a5": "Ia bergantung pada program dan keperluan pelajar. Setiap profil menunjukkan bantuan yang diperlukan supaya anda boleh menentukan apa yang sesuai.",
       "q6": "Siapa yang mengendalikan program ini?",
-      "a6": "HalaTuju mengendalikan Program Bantuan B40; Yayasan myNADI akan memegang dan menyalurkan dana (perkongsian sedang dimuktamadkan)."
+      "a6": "HalaTuju mengendalikan Program Bursari BrightPath; Yayasan myNADI akan memegang dan menyalurkan dana (perkongsian sedang dimuktamadkan)."
     },
     "cta": {
       "heading": "Bersedia untuk mengubah hidup?",
@@ -397,7 +397,7 @@
     "quickLinks": "Pautan Pantas",
     "legal": "Undang-undang",
     "startHere": "Mula Di Sini",
-    "b40Heading": "Bantuan B40",
+    "b40Heading": "Bursari BrightPath",
     "applyAssistance": "Mohon bantuan",
     "becomeSponsor": "Jadi penaja"
   },
@@ -703,7 +703,7 @@
     "noStpm": "Tiada kursus STPM disimpan lagi."
   },
   "scholarship": {
-    "nav": "Bantuan B40",
+    "nav": "Bursari BrightPath",
     "apply": {
       "title": "Mohon Bantuan Pendidikan B40",
       "intro": "Bantuan kewangan untuk pelajar B40 yang melanjutkan ke IPTA/ILKA. Baca kriteria, kemudian lengkapkan borang ringkas di bawah.",
@@ -1508,8 +1508,8 @@
     "consent": {
       "subtitle": "Sila semak dan bersetuju di bawah untuk berkongsi profil anda dengan bakal penaja.",
       "minorInfoNotice": "Sila minta ibu bapa atau penjaga anda membaca bahagian berikut dengan teliti dan memberikan persetujuan mereka untuk berkongsi butiran anda dengan bakal penaja.",
-      "text": "Saya, pemohon yang dinamakan (**{student_name}**, NRIC **{student_nric}**), bersetuju **Program Bantuan B40** berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
-      "textMinor": "Saya mengesahkan bahawa saya adalah ibu bapa atau penjaga **{student_name}** (NRIC: **{student_nric}**), yang berumur di bawah 18 tahun.\n\nSaya memberi kebenaran kepada **Program Bantuan B40** untuk berkongsi profil dan dokumen {his_or_her} dengan penaja. Ini adalah untuk membantu {him_or_her} mendapat bantuan kewangan. Saya faham saya boleh membatalkan kebenaran ini pada bila-bila masa.",
+      "text": "Saya, pemohon yang dinamakan (**{student_name}**, NRIC **{student_nric}**), bersetuju **Program Bursari BrightPath** berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
+      "textMinor": "Saya mengesahkan bahawa saya adalah ibu bapa atau penjaga **{student_name}** (NRIC: **{student_nric}**), yang berumur di bawah 18 tahun.\n\nSaya memberi kebenaran kepada **Program Bursari BrightPath** untuk berkongsi profil dan dokumen {his_or_her} dengan penaja. Ini adalah untuk membantu {him_or_her} mendapat bantuan kewangan. Saya faham saya boleh membatalkan kebenaran ini pada bila-bila masa.",
       "fallback": {
         "student": "pemohon"
       },
@@ -1688,7 +1688,7 @@
       },
       "about": {
         "title": "Tentang program ini",
-        "body": "Program Bantuan B40 diselaraskan oleh HalaTuju, dengan Yayasan myNADI dijangka mentadbir dana (kerjasama sedang dimuktamadkan), serta rangkaian pertubuhan komuniti — termasuk Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) dan lain-lain — yang merujuk dan menyokong pelajar.",
+        "body": "Program Bursari BrightPath diselaraskan oleh HalaTuju, dengan Yayasan myNADI dijangka mentadbir dana (kerjasama sedang dimuktamadkan), serta rangkaian pertubuhan komuniti — termasuk Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) dan lain-lain — yang merujuk dan menyokong pelajar.",
         "contact": "Soalan atau maklum balas? E-mel"
       },
       "cta": {
@@ -2566,7 +2566,7 @@
     },
     "scholarship": {
       "nav": "Permohonan B40",
-      "title": "Pemohon Bantuan B40",
+      "title": "Pemohon Bursari BrightPath",
       "countSubtitle": "{count} pemohon",
       "loadFailed": "Tidak dapat memuatkan permohonan.",
       "showingRange": "Papar {start}–{end} daripada {total} permohonan",

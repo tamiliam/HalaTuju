@@ -18,7 +18,7 @@ export default function PrivacyPage() {
 
           <p className="text-gray-600">
             HalaTuju provides two things: a free <strong>course-matching tool</strong> for
-            SPM/STPM students, and the <strong>B40 Assistance Programme</strong>, which
+            SPM/STPM students, and the <strong>BrightPath Bursary Programme</strong>, which
             connects verified low-income students with sponsors who support their public
             tertiary studies. This policy covers both.
           </p>
