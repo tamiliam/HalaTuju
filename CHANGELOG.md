@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **"Yayasan myNADI" replaced with a generic "independent trust foundation (currently being established)" on the
+  BrightPath Bursary surfaces** (no new org — the trust foundation is being formed). Done on the applicant landing
+  (about, how-step7, donor caption — dead `yayasanmynadi.org` link removed), the sponsor landing (promise card + FAQ a2/a6),
+  the award-accepted page, and /privacy; the myNADI-specific "Tax Exemption under 44(6)" claim was dropped. **Kept on the
+  /About Us page** (per owner). EN + BM + TA (Tamil draft). Also fixed four "Assistance Programme" → "BrightPath Bursary
+  Programme" rebrand leftovers on /privacy + /terms. FE-only.
 - **Programme renamed: "B40 Assistance Programme" → "BrightPath Bursary Programme"** (user-facing copy only). EN
   "BrightPath Bursary Programme" / "BrightPath Bursary", BM "Program Bursari BrightPath", TA "BrightPath Bursary
   திட்டம்" (Tamil = first draft, pending owner refine). The `{programme}` value (driven by `cohort.name`) is renamed via
