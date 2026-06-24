@@ -49,10 +49,10 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-gray-900">Scope</h2>
           <p className="text-gray-600">
             HalaTuju provides a free course-matching tool and operates the B40
-            Assistance Programme. Using either means you accept these terms.
+            BrightPath Bursary Programme. Using either means you accept these terms.
           </p>
 
-          <h2 className="text-lg font-semibold text-gray-900">The Assistance Programme</h2>
+          <h2 className="text-lg font-semibold text-gray-900">The BrightPath Bursary Programme</h2>
           <p className="text-gray-600">
             Applying does <strong>not</strong> guarantee assistance &mdash; places are
             limited and subject to eligibility checks and a human review. Assistance is a

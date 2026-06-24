@@ -356,7 +356,7 @@
       "card1Title": "Tanpa nama sepenuhnya",
       "card1Desc": "Anda tidak pernah melihat nama atau butiran hubungan, hanya profil pelajar tanpa nama. Identiti dilindungi kedua-dua belah pihak.",
       "card2Title": "Setiap ringgit bertanggungjawab",
-      "card2Desc": "Dana akan ditadbir oleh Yayasan myNADI dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. (Perkongsian sedang dimuktamadkan.)",
+      "card2Desc": "Dana akan ditadbir oleh sebuah yayasan amanah bebas dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. (Yayasan ini sedang ditubuhkan.)",
       "card3Title": "Impak sebenar yang disahkan",
       "card3Desc": "Setiap pelajar disahkan pendapatan dan ditemu duga, supaya bantuan anda sampai kepada keluarga B40 yang sebenar."
     },
@@ -376,7 +376,7 @@
       "q1": "Adakah saya akan melihat identiti pelajar?",
       "a1": "Tidak. Untuk melindungi semua pihak, anda hanya melihat profil tanpa nama — tidak pernah nama, IC, alamat, telefon, e-mel atau foto. Pelajar juga tidak melihat butiran anda.",
       "q2": "Ke mana wang saya pergi?",
-      "a2": "Dana akan ditadbir oleh Yayasan myNADI (sebuah badan bukan untung yang berdaftar) dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. Kami sedang memuktamadkan perkongsian ini.",
+      "a2": "Dana akan ditadbir oleh sebuah yayasan amanah bebas dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. Yayasan ini sedang ditubuhkan.",
       "q3": "Bolehkah saya memilih siapa yang saya taja?",
       "a3": "Boleh. Setelah diluluskan, anda boleh melihat profil tanpa nama dan memilih pelajar yang ingin anda taja.",
       "q4": "Apa berlaku jika pelajar berhenti?",
@@ -384,7 +384,7 @@
       "q5": "Berapa kos untuk menaja seseorang?",
       "a5": "Ia bergantung pada program dan keperluan pelajar. Setiap profil menunjukkan bantuan yang diperlukan supaya anda boleh menentukan apa yang sesuai.",
       "q6": "Siapa yang mengendalikan program ini?",
-      "a6": "HalaTuju mengendalikan Program Bursari BrightPath; Yayasan myNADI akan memegang dan menyalurkan dana (perkongsian sedang dimuktamadkan)."
+      "a6": "HalaTuju mengendalikan Program Bursari BrightPath; sebuah yayasan amanah bebas akan memegang dan menyalurkan dana (yayasan ini sedang ditubuhkan)."
     },
     "cta": {
       "heading": "Bersedia untuk mengubah hidup?",
@@ -1654,7 +1654,7 @@
         "step6Title": "Sedia untuk penaja",
         "step6Desc": "Dengan kebenaran bertulis anda, kami menyediakan profil sulit untuk pertimbangan penaja.",
         "step7Title": "Dipadankan dan dianugerahkan",
-        "step7Desc": "Apabila penaja memilih untuk menyokong anda, Yayasan myNADI mengatur bantuan dan mentadbir dana. Daripada permohonan hingga anugerah biasanya mengambil masa sehingga dua bulan. (Kerjasama sedang dimuktamadkan.)",
+        "step7Desc": "Apabila penaja memilih untuk menyokong anda, sebuah yayasan amanah bebas mengatur bantuan dan mentadbir dana. Daripada permohonan hingga anugerah biasanya mengambil masa sehingga dua bulan. (Yayasan ini sedang ditubuhkan.)",
         "step8Title": "Sokongan berterusan",
         "step8Desc": "Setiap semester, anda muat naik keputusan dan nota kemajuan ringkas. Selagi anda membuat kemajuan, sokongan akan diteruskan."
       },
@@ -1682,13 +1682,13 @@
       "donor": {
         "title": "Ingin menyokong seorang pelajar?",
         "body": "Program ini wujud kerana individu dalam komuniti memilih untuk membiayai pengajian pelajar tertentu. Jika anda ingin tahu lebih lanjut tentang menyokong seorang pelajar — sama ada untuk satu semester, satu tahun, atau sepanjang tempoh pengajian mereka — kami berbesar hati mendengar daripada anda.",
-        "fundsPre": "Dana akan ditadbir oleh ",
-        "fundsPost": ", sebuah pertubuhan bukan untung Malaysia dengan Pengecualian Cukai di bawah Subseksyen 44(6) Akta Cukai Pendapatan 1967. (Kerjasama sedang dimuktamadkan.)",
+        "fundsPre": "Dana akan ditadbir oleh sebuah yayasan amanah bebas",
+        "fundsPost": " (sedang ditubuhkan).",
         "cta": "Hubungi kami"
       },
       "about": {
         "title": "Tentang program ini",
-        "body": "Program Bursari BrightPath diselaraskan oleh HalaTuju, dengan Yayasan myNADI dijangka mentadbir dana (kerjasama sedang dimuktamadkan), serta rangkaian pertubuhan komuniti — termasuk Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) dan lain-lain — yang merujuk dan menyokong pelajar.",
+        "body": "Program Bursari BrightPath diselaraskan oleh HalaTuju, dengan sebuah yayasan amanah bebas dijangka mentadbir dana (yayasan ini sedang ditubuhkan), serta rangkaian pertubuhan komuniti — termasuk Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) dan lain-lain — yang merujuk dan menyokong pelajar.",
         "contact": "Soalan atau maklum balas? E-mel"
       },
       "cta": {
@@ -2011,7 +2011,7 @@
         "accept": "Terima dan teruskan",
         "accepting": "Sedang menerima…",
         "decline": "Bukan sekarang",
-        "heldNote": "Dana dipegang oleh Yayasan myNADI dan dikeluarkan mengikut kemajuan anda."
+        "heldNote": "Dana dipegang oleh sebuah yayasan amanah bebas dan dikeluarkan mengikut kemajuan anda."
       },
       "declineConfirm": "Adakah anda pasti mahu menolak anugerah ini buat masa ini? Anda boleh kembali sebelum tarikh tutup penerimaan.",
       "guardian": {

@@ -356,7 +356,7 @@
       "card1Title": "Complete anonymity",
       "card1Desc": "You never see names or contact details, only an anonymous student profile. Identities are protected both ways.",
       "card2Title": "Every ringgit accountable",
-      "card2Desc": "Funds will be administered by Yayasan myNADI and released against verified study milestones — never handed directly to a student. (Partnership being finalised.)",
+      "card2Desc": "Funds will be administered by an independent trust foundation and released against verified study milestones — never handed directly to a student. (The foundation is currently being established.)",
       "card3Title": "Real, verified impact",
       "card3Desc": "Each student is income-verified and interviewed, so your support reaches a genuine B40 family."
     },
@@ -376,7 +376,7 @@
       "q1": "Will I see the student's identity?",
       "a1": "No. To protect everyone, you see an anonymous profile only — never a name, IC, address, phone, email or photo. The student never sees your details either.",
       "q2": "Where does my money go?",
-      "a2": "Funds will be administered by Yayasan myNADI (a registered non-profit) and released against verified study milestones — never handed directly to a student. We're finalising this partnership.",
+      "a2": "Funds will be administered by an independent trust foundation and released against verified study milestones — never handed directly to a student. We're establishing this foundation.",
       "q3": "Can I choose who I support?",
       "a3": "Yes. Once approved, you can browse the anonymised profiles and choose the student you'd like to support.",
       "q4": "What happens if a student withdraws?",
@@ -384,7 +384,7 @@
       "q5": "How much does it cost to sponsor someone?",
       "a5": "It depends on the student's programme and needs. Each profile shows the support required so you can decide what works for you.",
       "q6": "Who runs this programme?",
-      "a6": "HalaTuju runs the BrightPath Bursary Programme; Yayasan myNADI will hold and disburse the funds (partnership being finalised)."
+      "a6": "HalaTuju runs the BrightPath Bursary Programme; an independent trust foundation will hold and disburse the funds (currently being established)."
     },
     "cta": {
       "heading": "Ready to change a life?",
@@ -1654,7 +1654,7 @@
         "step6Title": "Ready for sponsors",
         "step6Desc": "With your written consent, we prepare a confidential profile for sponsors to consider.",
         "step7Title": "Matched and awarded",
-        "step7Desc": "Once a sponsor chooses to support you, Yayasan myNADI arranges the assistance and administers the funds. From application to award typically takes up to two months. (Partnership being finalised.)",
+        "step7Desc": "Once a sponsor chooses to support you, an independent trust foundation arranges the assistance and administers the funds. From application to award typically takes up to two months. (The foundation is currently being established.)",
         "step8Title": "Staying supported",
         "step8Desc": "Each semester, you upload your results and a short progress note. As long as you're progressing, the support continues."
       },
@@ -1682,13 +1682,13 @@
       "donor": {
         "title": "Want to support a student?",
         "body": "This programme exists because individuals in the community choose to fund the studies of specific students. If you'd like to know more about supporting a student — whether for a semester, a year, or the full course of their studies — we'd be glad to hear from you.",
-        "fundsPre": "Funds will be administered by ",
-        "fundsPost": ", a Malaysian non-profit organisation with Tax Exemption under Subsection 44(6) of the Income Tax Act 1967. (Partnership being finalised.)",
+        "fundsPre": "Funds will be administered by an independent trust foundation",
+        "fundsPost": " (currently being established).",
         "cta": "Get in touch"
       },
       "about": {
         "title": "About this programme",
-        "body": "The BrightPath Bursary Programme is coordinated by HalaTuju, with Yayasan myNADI expected to administer the funds (partnership being finalised), and a network of community organisations — including Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) and others — that refer and support students.",
+        "body": "The BrightPath Bursary Programme is coordinated by HalaTuju, with an independent trust foundation expected to administer the funds (currently being established), and a network of community organisations — including Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) and others — that refer and support students.",
         "contact": "Questions or feedback? Email"
       },
       "cta": {
@@ -2011,7 +2011,7 @@
         "accept": "Accept and continue",
         "accepting": "Accepting…",
         "decline": "Not right now",
-        "heldNote": "Funds are held by Yayasan myNADI and released as you progress."
+        "heldNote": "Funds are held by an independent trust foundation and released as you progress."
       },
       "declineConfirm": "Are you sure you want to decline this award for now? You can come back to it before the accept-by date.",
       "guardian": {
