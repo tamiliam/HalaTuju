@@ -31,7 +31,11 @@ export default function AdminAuthCallbackPage() {
         )
         const role = await res.json()
         if (!role.is_admin) {
-          await supabase.auth.signOut()
+          // Clear ONLY this admin-scope session. `scope: 'local'` matters: the default
+          // (global) revokes EVERY session for this Supabase user — so a person who is
+          // also a signed-in sponsor (same Google identity, other tab) would be kicked
+          // out of the sponsor portal just for landing here. Mirror the other signOuts.
+          await supabase.auth.signOut({ scope: 'local' })
           setError(t('errors.noAdminAccess'))
           return
         }
