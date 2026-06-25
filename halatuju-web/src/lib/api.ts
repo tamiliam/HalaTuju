@@ -707,7 +707,10 @@ export interface SponsorPoolCard {
   ref: string         // human alias, e.g. "S-A3F9C1"
   state: string
   field: string
+  course: string      // confirmed programme name (e.g. "Diploma Kejuruteraan Mekanikal")
   academic: string
+  institution: string // TARGET university — '' when unknown (card shows course only)
+  blurb: string       // ≤20-word card-strict one-liner — '' when none
   funding_categories: string[]
   programme_months: number | null
   award_amount: string | null   // E3: admin-set; non-identifying
