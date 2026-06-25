@@ -768,3 +768,45 @@ def generate_sponsor_profile(application, language=None):
     target_language = _resolve_language(application, language)
     prompt = _build_prompt(application, target_language=target_language)
     return _with_version(_call_gemini_text(prompt, target_language))
+
+
+# ── Sponsor-pool CARD blurb (card-strict: stricter than the profile) ──────────
+ANON_BLURB_MAX_WORDS = 20
+
+
+def _clip_words(text, n):
+    """Collapse whitespace, drop stray wrapping quotes, and cap to ``n`` words."""
+    text = ' '.join((text or '').split()).strip('"“”‘’\'')
+    words = text.split(' ')
+    if len(words) <= n:
+        return text
+    return ' '.join(words[:n]).rstrip(',;:') + '…'
+
+
+def _build_anon_blurb_prompt(source):
+    return (
+        'You write a one-line card summary for a donor browsing students to support.\n\n'
+        f'From the anonymous profile below, write ONE plain sentence of AT MOST {ANON_BLURB_MAX_WORDS} '
+        "words, in English, third person, capturing the student's circumstances and what the support "
+        'helps with.\n'
+        'STRICT RULES:\n'
+        '- NEVER include any name, alias, code, school, town, city, state, institution, or any number.\n'
+        '- No markdown, no quotes, no labels — output only the sentence.\n'
+        '- Warm but factual; never invent anything beyond the profile.\n\n'
+        f'PROFILE:\n{source}\n'
+    )
+
+
+def generate_anon_blurb(application, anon_markdown=''):
+    """A ≤20-word, CARD-STRICT donor-facing one-liner for the sponsor-pool card, derived
+    from the already-anonymous ``anon_markdown``. Returns '' on any engine error or empty
+    input (the card then falls back to course-only). The CALLER must still backstop the
+    result with ``pool.scan_anon_for_identifiers`` before persisting — this is generation,
+    not the safety boundary."""
+    source = (anon_markdown or '').strip()
+    if not source:
+        return ''
+    res = _call_gemini_text(_build_anon_blurb_prompt(source), 'English')
+    if not isinstance(res, dict) or res.get('error'):
+        return ''
+    return _clip_words((res.get('markdown') or '').strip(), ANON_BLURB_MAX_WORDS)

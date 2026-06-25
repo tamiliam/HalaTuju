@@ -18,7 +18,7 @@ from apps.scholarship import pool
 from apps.scholarship.models import (
     Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort, SponsorProfile, Sponsor,
 )
-from apps.scholarship.profile_engine import _build_prompt
+from apps.scholarship.profile_engine import _build_prompt, generate_anon_blurb
 from apps.scholarship.serializers import (
     SponsorPoolCardSerializer, SponsorPoolDetailSerializer,
 )
@@ -26,9 +26,8 @@ from apps.scholarship.serializers import (
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
 # Distinctive identifying values — if any appears in a sponsor-facing payload, it leaked.
-# `school` is special: post-2026-06-07 Boundary decision it MAY cross as `institution`
-# to a TRUSTED sponsor — so leak tests run on the default (non-trusted) card, and the
-# trusted-card test exempts only `school`. Everything else (incl. the PARENTS') stays out.
+# The secondary `school` is NOW NEVER surfaced (the card's institution is the TARGET
+# university, never the school). Everything here — including the PARENTS' — must stay out.
 IDENTIFIERS = {
     'name': 'Zxqvbn Identifiable',
     'nric': '050505-10-9999',
@@ -69,6 +68,8 @@ def _make_eligible_app(cohort, *, suffix='1', anon_published=True, consent=True)
     app = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile, status='accepted',
         field_of_study='engineering', first_in_family=True,
+        chosen_programme={'course_name': 'Diploma Test Engineering', 'field_key': 'engineering',
+                          'institution': 'Politeknik Test'},
         aspirations='I want to be an engineer.', plans='Study hard.',
         parents_occupation='farmer',
     )
@@ -76,6 +77,7 @@ def _make_eligible_app(cohort, *, suffix='1', anon_published=True, consent=True)
     SponsorProfile.objects.create(
         application=app,
         anon_markdown='The student is a determined SPM leaver pursuing engineering in their home state.',
+        anon_blurb='A determined SPM leaver pursuing engineering; sponsorship covers monthly living costs.',
         anon_published=anon_published,
     )
     if consent:
@@ -141,9 +143,11 @@ class TestAllowlistNoLeak(TestCase):
     def test_card_leaks_nothing(self):
         app = _make_eligible_app(self.cohort)
         data = SponsorPoolCardSerializer(app).data
-        self._assert_no_identifiers(data)
+        self._assert_no_identifiers(data)        # also scans the new course/institution/blurb
         self.assertEqual(data['state'], 'Kedah')       # state-level region IS allowed
         self.assertEqual(data['field'], 'engineering')
+        self.assertEqual(data['course'], 'Diploma Test Engineering')
+        self.assertTrue(data['blurb'])
 
     def test_detail_leaks_nothing(self):
         app = _make_eligible_app(self.cohort)
@@ -151,24 +155,62 @@ class TestAllowlistNoLeak(TestCase):
         self._assert_no_identifiers(data)
         self.assertIn('anon_profile', data)
 
-    def test_institution_absent_for_non_trusted(self):
-        # Default (no context) = non-trusted: institution empty, school never appears.
+    def test_institution_is_target_university_never_school(self):
+        # institution = the TARGET university (chosen programme), shown to every sponsor;
+        # the secondary school is never surfaced, with or without any context.
         app = _make_eligible_app(self.cohort)
+        for ctx in (None, {'is_trusted': True}):
+            data = SponsorPoolCardSerializer(app, context=ctx or {}).data
+            self.assertEqual(data['institution'], 'Politeknik Test')
+            self.assertNotIn(IDENTIFIERS['school'], json.dumps(data))
+
+    def test_institution_blank_when_target_unknown(self):
+        # No institution on the chosen programme → '' so the card falls back to course-only.
+        app = _make_eligible_app(self.cohort)
+        app.chosen_programme = {'course_name': 'Diploma Test Engineering', 'field_key': 'engineering'}
+        app.save(update_fields=['chosen_programme'])
         data = SponsorPoolCardSerializer(app).data
         self.assertEqual(data['institution'], '')
-        self.assertNotIn(IDENTIFIERS['school'], json.dumps(data))
+        self.assertEqual(data['course'], 'Diploma Test Engineering')
 
-    def test_institution_present_for_trusted_only(self):
-        # Boundary (2026-06-07): a TRUSTED sponsor sees institution (= school); every
-        # OTHER identifier — including the parents' name/NRIC — still never appears.
+    def test_course_falls_back_to_field(self):
         app = _make_eligible_app(self.cohort)
-        data = SponsorPoolCardSerializer(app, context={'is_trusted': True}).data
-        self.assertEqual(data['institution'], IDENTIFIERS['school'])
-        blob = json.dumps(data)
-        for label, value in IDENTIFIERS.items():
-            if label == 'school':
-                continue  # institution IS the school — deliberately exposed to a trusted sponsor
-            self.assertNotIn(value, blob, f'{label} leaked to a trusted sponsor')
+        app.chosen_programme = {}
+        app.save(update_fields=['chosen_programme'])
+        data = SponsorPoolCardSerializer(app).data
+        self.assertEqual(data['course'], 'engineering')
+
+    def test_blurb_passthrough(self):
+        app = _make_eligible_app(self.cohort)
+        data = SponsorPoolCardSerializer(app).data
+        self.assertIn('sponsorship covers monthly living costs', data['blurb'])
+
+
+# ─── card blurb generation (card-strict, mocked Gemini) ──────────────────────
+
+class TestAnonBlurb(TestCase):
+    def test_empty_source_skips_the_model(self):
+        with patch('apps.scholarship.profile_engine._call_gemini_text') as m:
+            self.assertEqual(generate_anon_blurb(None, ''), '')
+            m.assert_not_called()
+
+    def test_clips_to_twenty_words(self):
+        with patch('apps.scholarship.profile_engine._call_gemini_text',
+                   return_value={'markdown': ' '.join(f'w{i}' for i in range(30))}):
+            out = generate_anon_blurb(None, 'an anonymous profile')
+        self.assertLessEqual(len(out.rstrip('…').split(' ')), 20)
+        self.assertTrue(out.endswith('…'))
+
+    def test_strips_wrapping_quotes(self):
+        with patch('apps.scholarship.profile_engine._call_gemini_text',
+                   return_value={'markdown': '"A determined leaver."'}):
+            out = generate_anon_blurb(None, 'profile')
+        self.assertEqual(out, 'A determined leaver.')
+
+    def test_engine_error_returns_empty(self):
+        with patch('apps.scholarship.profile_engine._call_gemini_text',
+                   return_value={'error': 'boom'}):
+            self.assertEqual(generate_anon_blurb(None, 'profile'), '')
 
 
 class TestProgressState(TestCase):

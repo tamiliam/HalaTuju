@@ -28,7 +28,7 @@ from .models import (
     ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
 from . import scheduling
-from .profile_engine import refine_sponsor_profile
+from .profile_engine import generate_anon_blurb, refine_sponsor_profile
 from . import in_programme as in_programme_service
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
 from .serializers_admin import (
@@ -1025,6 +1025,15 @@ class AdminRecordVerdictView(_AdminBase):
                             sp.anon_published = True
                             sp.anon_published_at = timezone.now()
                             sp.realtime_notified_at = None
+                            # The ≤20-word CARD blurb (card-strict — stricter than the
+                            # profile). Generated from the already-anonymous markdown, then
+                            # backstopped by the STRICT identifier scan; on any leak/empty
+                            # leave it blank so the card falls back to the course alone.
+                            blurb = generate_anon_blurb(app, result['markdown'])
+                            sp.anon_blurb = blurb if (
+                                blurb and not pool.scan_anon_for_identifiers(
+                                    blurb, getattr(app, 'profile', None))
+                            ) else ''
                         sp_to_save = sp
                         finalise_result = {'ok': True, 'published': published, 'leaks': leaks}
 

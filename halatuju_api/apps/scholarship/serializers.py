@@ -46,17 +46,20 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     (Tests assert no name/NRIC/address/phone/email appears in the output — for the
     student OR their parents.)
 
-    Boundary decision (2026-06-07): ``institution`` (the student's school/college) is
-    a LOCATOR and crosses ONLY to a **trusted** sponsor — set ``context['is_trusted']``
-    True. Fail-closed: with no context it is absent. ``state`` stays region-level."""
+    ``institution`` is the TARGET university/college the student is heading to (from the
+    confirmed offer / chosen programme) — NEVER the secondary school, which is no longer
+    surfaced on any sponsor card. ``state`` stays region-level. ``blurb`` is a ≤20-word
+    card-strict one-liner (generated + identifier-scanned at publish)."""
     # `id` is the application row id — used only as the opaque key to fetch the
     # detail; it is not identifying. `ref` is the human-facing alias.
     id = serializers.IntegerField(read_only=True)
     ref = serializers.SerializerMethodField()
     state = serializers.SerializerMethodField()
     field = serializers.SerializerMethodField()
+    course = serializers.SerializerMethodField()        # the confirmed programme name
     academic = serializers.SerializerMethodField()
-    institution = serializers.SerializerMethodField()  # Boundary: trusted-sponsor-gated
+    institution = serializers.SerializerMethodField()   # TARGET university — never the school
+    blurb = serializers.SerializerMethodField()         # ≤20-word card-strict one-liner
     funding_categories = serializers.SerializerMethodField()
     programme_months = serializers.SerializerMethodField()
     award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
@@ -86,16 +89,30 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     def get_field(self, app):
         return app.field_of_study or ''
 
+    def get_course(self, app):
+        # The confirmed programme NAME (e.g. "Diploma Kejuruteraan Mekanikal"), from the
+        # chosen programme; falls back to the broad field. Non-identifying.
+        cp = getattr(app, 'chosen_programme', None)
+        if isinstance(cp, dict) and (cp.get('course_name') or '').strip():
+            return cp['course_name'].strip()
+        return app.field_of_study or ''
+
     def get_academic(self, app):
         return pool.academic_band(app.profile)
 
     def get_institution(self, app):
-        # Boundary decision (2026-06-07): institution (school/college) is a LOCATOR —
-        # it crosses ONLY to a trusted sponsor (the launch default). Fail-closed:
-        # absent unless the calling view sets context['is_trusted'] = True.
-        if not self.context.get('is_trusted', False):
-            return ''
-        return (getattr(app.profile, 'school', '') or '') if app.profile else ''
+        # The TARGET institution the student will study AT (from the confirmed offer /
+        # chosen programme), e.g. "Politeknik Ungku Omar". A university/college is a far
+        # weaker locator than a school, and it's the place a sponsor cares about. The
+        # SECONDARY SCHOOL is NEVER surfaced. '' when unknown → the card shows course only.
+        cp = getattr(app, 'chosen_programme', None)
+        if isinstance(cp, dict) and (cp.get('institution') or '').strip():
+            return cp['institution'].strip()
+        return (getattr(app, 'pre_u_institution', '') or '').strip()
+
+    def get_blurb(self, app):
+        sp = getattr(app, 'sponsor_profile', None)
+        return (sp.anon_blurb or '') if sp else ''
 
     def get_funding_categories(self, app):
         fn = _funding_need_or_none(app)

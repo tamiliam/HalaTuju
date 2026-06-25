@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Sponsor-pool browse card redesigned (4-region layout).** Each anonymous student card now reads: (1) code · `SPM · N As`
+  · state on one quiet header line; (2) the confirmed **programme name** (`chosen_programme.course_name`) with the **target
+  university** beneath it (`chosen_programme.institution`, e.g. "Politeknik Ungku Omar"; omitted when unknown → course
+  only); (3) a **≤20-word card-strict blurb**; (4) amount · Support. The secondary **school is no longer surfaced on any
+  sponsor card** (the institution shown is the place they'll study, a far weaker locator — the old trusted-sponsor
+  school gate is gone). Funding-category chips dropped (the blurb carries the "what for"). New allowlist fields `course`,
+  `institution` (repointed), `blurb` on `SponsorPoolCardSerializer`; new `SponsorProfile.anon_blurb`
+  (migration `scholarship/0071`, additive). The blurb is **generated at publish** (`profile_engine.generate_anon_blurb`,
+  card-strict prompt) and **backstopped by the strict `pool.scan_anon_for_identifiers`** — a leak/empty leaves it blank.
+  Backfill for already-published profiles: `backfill_anon_blurbs` command + cron job `backfill-anon-blurbs` (billable,
+  on-service). Leak tests extended to the new fields; +`TestAnonBlurb` (clip/quote-strip/error). Stitch-approved.
 - **"Yayasan myNADI" replaced with a generic "independent trust foundation (currently being established)" on the
   BrightPath Bursary surfaces** (no new org — the trust foundation is being formed). Done on the applicant landing
   (about, how-step7, donor caption — dead `yayasanmynadi.org` link removed), the sponsor landing (promise card + FAQ a2/a6),
