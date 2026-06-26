@@ -194,6 +194,39 @@ class StudentAwardSerializer(serializers.Serializer):
     accept_deadline = serializers.DateTimeField(read_only=True)
 
 
+class BursaryAgreementSerializer(serializers.Serializer):
+    """The student's view of their bursary agreement: derived status + the frozen
+    particulars + a time-limited signed URL to the PDF. Allowlist-safe: there is NO
+    donor field anywhere — the document names only the Foundation signatory."""
+    id = serializers.IntegerField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    version = serializers.CharField(read_only=True)
+    locale = serializers.CharField(read_only=True)
+    award_amount = serializers.DecimalField(max_digits=10, decimal_places=2,
+                                            read_only=True, allow_null=True)
+    payment_schedule = serializers.CharField(read_only=True)
+    institution_name = serializers.CharField(read_only=True)
+    course_name = serializers.CharField(read_only=True)
+    progress_standard = serializers.CharField(read_only=True)
+    foundation_signatory_name = serializers.CharField(read_only=True)
+    foundation_signatory_title = serializers.CharField(read_only=True)
+    student_signed_name = serializers.CharField(read_only=True)
+    student_signed_at = serializers.DateTimeField(read_only=True)
+    guarantor_name = serializers.CharField(read_only=True)
+    guarantor_relationship = serializers.CharField(read_only=True)
+    guarantor_signed_at = serializers.DateTimeField(read_only=True)
+    foundation_signed_at = serializers.DateTimeField(read_only=True)
+    witness_signed_at = serializers.DateTimeField(read_only=True)
+    agreement_sha256 = serializers.CharField(read_only=True)
+    pdf_url = serializers.SerializerMethodField()
+
+    def get_pdf_url(self, obj):
+        if not obj.pdf_storage_path:
+            return None
+        from .storage import create_signed_download_url
+        return create_signed_download_url(obj.pdf_storage_path)
+
+
 class SemesterResultSerializer(serializers.ModelSerializer):
     """F9a — a student's own in-programme semester result (read). This is the
     student's own data (not the sponsor boundary), so a ModelSerializer is fine.

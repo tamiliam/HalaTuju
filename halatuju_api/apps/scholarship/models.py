@@ -1588,3 +1588,104 @@ class WhatsAppMessage(models.Model):
 
     def __str__(self):
         return f'WA {self.kind} → {self.to_number} [{self.status}]'
+
+
+class BursaryAgreement(models.Model):
+    """The binding Conditional Bursary Award Agreement a student signs (with a
+    parent/guardian as surety/guarantor) when they accept a sponsor's award.
+
+    Parties: the STUDENT (primary), the PARENT/GUARDIAN (surety/guarantor), the
+    FOUNDATION (counterparty — signatory from settings) and the PARTNER ORGANISATION
+    (non-blocking witness). The DONOR is NEVER a party and is never named — anonymity
+    is sacred, so there is no sponsor-name field here. The signed artefact is an
+    immutable rendered HTML snapshot (+ its sha256) and a generated PDF in the private
+    document bucket. v1: the parent co-signs in-session on the same device; the witness
+    attestation is non-blocking. Behind BURSARY_AGREEMENT_ENABLED (default OFF)."""
+    application = models.OneToOneField(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='bursary_agreement',
+    )
+    # The funded allocation this agreement binds (kept even if the sponsorship row is
+    # later cleared — SET_NULL, never names the donor).
+    sponsorship = models.ForeignKey(
+        Sponsorship, null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+    )
+    version = models.CharField(max_length=20)
+    locale = models.CharField(max_length=5, default='en')
+
+    # ── Particulars (the filled-in terms, frozen at signing) ──────────────────
+    award_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    payment_schedule = models.TextField(blank=True, default='')
+    institution_name = models.CharField(max_length=255, blank=True, default='')
+    course_name = models.CharField(max_length=255, blank=True, default='')
+    commencement_date = models.DateField(null=True, blank=True)
+    progress_standard = models.TextField(blank=True, default='')
+    foundation_signatory_name = models.CharField(max_length=200, blank=True, default='')
+    foundation_signatory_title = models.CharField(max_length=255, blank=True, default='')
+    foundation_signatory_nric = models.CharField(max_length=20, blank=True, default='')
+
+    # ── Student signature ─────────────────────────────────────────────────────
+    student_signed_name = models.CharField(max_length=200, blank=True, default='')
+    student_signed_nric = models.CharField(max_length=20, blank=True, default='')
+    student_signed_at = models.DateTimeField(null=True, blank=True)
+    student_ip = models.GenericIPAddressField(null=True, blank=True)
+
+    # ── Guarantor (parent/guardian surety) signature ──────────────────────────
+    guarantor_name = models.CharField(max_length=200, blank=True, default='')
+    guarantor_nric = models.CharField(max_length=20, blank=True, default='')
+    guarantor_relationship = models.CharField(max_length=50, blank=True, default='')
+    guarantor_method = models.CharField(max_length=20, default='in_session')
+    guarantor_signed_at = models.DateTimeField(null=True, blank=True)
+    guarantor_ip = models.GenericIPAddressField(null=True, blank=True)
+
+    # ── Foundation countersignature ───────────────────────────────────────────
+    foundation_signed_by = models.CharField(max_length=200, blank=True, default='')
+    foundation_signed_at = models.DateTimeField(null=True, blank=True)
+
+    # ── Witness (partner/referring organisation; non-blocking) ────────────────
+    witness_org = models.ForeignKey(
+        'courses.PartnerOrganisation', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='+',
+    )
+    witness_signed_by = models.CharField(max_length=200, blank=True, default='')
+    witness_name = models.CharField(max_length=200, blank=True, default='')
+    witness_signed_at = models.DateTimeField(null=True, blank=True)
+
+    # ── Artefact (immutable snapshot) ─────────────────────────────────────────
+    rendered_html = models.TextField(blank=True, default='')
+    agreement_sha256 = models.CharField(max_length=64, blank=True, default='')
+    pdf_storage_path = models.CharField(max_length=500, blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'bursary_agreements'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'BursaryAgreement #{self.id} app={self.application_id} ({self.status})'
+
+    @property
+    def binds(self):
+        """True once BOTH the student and the guarantor have signed — the point the
+        contract is binding on the student side (the Foundation/witness follow)."""
+        return bool(self.student_signed_at and self.guarantor_signed_at)
+
+    @property
+    def is_executed(self):
+        """Fully executed: the student+guarantor bind it AND the Foundation has
+        countersigned AND the witness has attested."""
+        return bool(self.binds and self.foundation_signed_at and self.witness_signed_at)
+
+    @property
+    def status(self):
+        """Derived lifecycle: draft → student_signed → binds → countersigned → executed."""
+        if self.is_executed:
+            return 'executed'
+        if self.binds and self.foundation_signed_at:
+            return 'countersigned'
+        if self.binds:
+            return 'binds'
+        if self.student_signed_at:
+            return 'student_signed'
+        return 'draft'
