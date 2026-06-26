@@ -29,6 +29,8 @@ import {
   setAwardAmount,
   raiseResolutionItem,
   actionResolutionItem,
+  adminCountersignBursary,
+  adminWitnessBursary,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
   type AdminApplicantDocument,
@@ -56,6 +58,7 @@ import {
 } from '@/lib/officerCockpit'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
+import type { BursaryAgreement } from '@/lib/api'
 
 const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done', 'family_done'] as const
 
@@ -203,6 +206,34 @@ export default function AdminScholarshipDetailPage() {
   // Consolidation: the student's own words (note/story/funding) are collapsed by
   // default under the Sponsor profile — the reviewer checks the AI draft first.
   const [showOwnWords, setShowOwnWords] = useState(false)
+  // Conditional Bursary Award Agreement (flag-gated, dark by default). The admin
+  // detail GET does not carry the agreement, so the card's state is populated by
+  // the countersign/witness action responses (each returns the full agreement).
+  const [bursary, setBursary] = useState<BursaryAgreement | null>(null)
+  const [bursaryMsg, setBursaryMsg] = useState('')
+
+  const doCountersignBursary = async () => {
+    if (!token) return
+    setBusy('bursary'); setBursaryMsg('')
+    try {
+      setBursary(await adminCountersignBursary(id, { token }))
+    } catch (e) {
+      setBursaryMsg(t('admin.scholarship.bursary.actionError'))
+    } finally { setBusy('') }
+  }
+
+  const doWitnessBursary = async () => {
+    if (!token) return
+    setBusy('bursary'); setBursaryMsg('')
+    try {
+      setBursary(await adminWitnessBursary(id, undefined, { token }))
+    } catch (e) {
+      const status = (e as Error & { status?: number }).status
+      setBursaryMsg(status === 403
+        ? t('admin.scholarship.bursary.witnessForbidden')
+        : t('admin.scholarship.bursary.actionError'))
+    } finally { setBusy('') }
+  }
 
   const loadInterviewState = (d: AdminScholarshipDetail) => {
     const s = d.interview_session
@@ -2005,6 +2036,80 @@ export default function AdminScholarshipDetailPage() {
       </div>{/* end RIGHT column */}
 
       </div>{/* end cockpit grid */}
+
+      {/* ── Conditional Bursary Award Agreement (flag-gated; dark by default) ──
+          Shown once the award has been accepted (the student + guarantor have
+          signed in-session). The Foundation countersignature + the partner-org
+          witness are recorded here. The admin detail GET doesn't carry the
+          agreement, so the four states resolve from the action responses. */}
+      {(app.status === 'accepted' || app.status === 'sponsored') && (() => {
+        // Signed-by-now is implied once accepted (the in-session signing is the gate);
+        // the action responses confirm the Foundation/Witness columns + the PDF link.
+        const studentDone = bursary ? !!bursary.student_signed_at : true
+        const guarantorDone = bursary ? !!bursary.guarantor_signed_at : true
+        const foundationDone = !!bursary?.foundation_signed_at
+        const witnessDone = !!bursary?.witness_signed_at
+        const stateRow = (label: string, done: boolean) => (
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+            <span className="text-sm text-gray-700">{label}</span>
+            <span className={done ? 'text-green-600' : 'text-gray-300'} aria-hidden>
+              {done ? '✓' : '–'}
+            </span>
+          </div>
+        )
+        return (
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold tracking-tight text-gray-900">
+                {t('admin.scholarship.bursary.title')}
+              </h2>
+              {bursary?.status && (
+                <span className="rounded-full border border-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                  {bursary.status}
+                </span>
+              )}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {stateRow(t('admin.scholarship.bursary.student'), studentDone)}
+              {stateRow(t('admin.scholarship.bursary.guarantor'), guarantorDone)}
+              {stateRow(t('admin.scholarship.bursary.foundation'), foundationDone)}
+              {stateRow(t('admin.scholarship.bursary.witness'), witnessDone)}
+            </div>
+            {bursaryMsg && <p className="text-xs text-amber-600">{bursaryMsg}</p>}
+            <div className="flex flex-wrap items-center gap-2">
+              {isSuper && (
+                <button
+                  type="button"
+                  onClick={doCountersignBursary}
+                  disabled={busy === 'bursary' || foundationDone}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                >
+                  {t('admin.scholarship.bursary.countersign')}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={doWitnessBursary}
+                disabled={busy === 'bursary' || witnessDone}
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                {t('admin.scholarship.bursary.witnessAction')}
+              </button>
+              {bursary?.pdf_url && (
+                <a
+                  href={bursary.pdf_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  {t('admin.scholarship.bursary.download')}
+                </a>
+              )}
+            </div>
+            <p className="text-xs text-gray-400">{t('admin.scholarship.bursary.note')}</p>
+          </div>
+        )
+      })()}
       </>)}
     </div>
   )

@@ -1743,6 +1743,11 @@
         "acceptCta": "Lihat anugerah saya",
         "onboardingBody": "Anda telah menerima anugerah anda — hanya beberapa soalan ringkas untuk melengkapkan persediaan.",
         "onboardingCta": "Lengkapkan pendaftaran"
+      },
+      "bursaryPanel": {
+        "title": "Perjanjian biasiswa anda",
+        "body": "Anda telah menandatangani Perjanjian Pemberian Biasiswa Bersyarat anda. Simpan satu salinan untuk rekod anda.",
+        "download": "Muat turun (PDF)"
       }
     },
     "banner": {
@@ -2030,7 +2035,47 @@
         "no_offer": "Tiada anugerah untuk dijawab buat masa ini.",
         "guardian_required": "Sila isi nama, hubungan dan nombor kad pengenalan ibu bapa atau penjaga.",
         "bad_action": "Sesuatu telah berlaku. Sila cuba lagi.",
-        "generic": "Sesuatu telah berlaku. Sila cuba lagi."
+        "generic": "Sesuatu telah berlaku. Sila cuba lagi.",
+        "student_signature_required": "Sila taipkan nama penuh anda untuk menandatangani perjanjian.",
+        "guarantor_required": "Sila isikan nama, hubungan dan nombor IC ibu bapa atau penjaga anda.",
+        "parent_ic_missing": "Kami tidak menemui IC ibu bapa atau penjaga anda dalam rekod. Sila pastikan ia telah dimuat naik dahulu.",
+        "parent_ic_required": "Kami tidak menemui IC ibu bapa atau penjaga anda dalam rekod. Sila pastikan ia telah dimuat naik dahulu.",
+        "parent_ic_nric_mismatch": "Nama atau nombor IC ibu bapa tidak sepadan dengan IC dalam rekod. Sila semak kedua-duanya.",
+        "parent_ic_name_mismatch": "Nama atau nombor IC ibu bapa tidak sepadan dengan IC dalam rekod. Sila semak kedua-duanya."
+      },
+      "bursary": {
+        "heading": "Tandatangani Perjanjian Pemberian Biasiswa Bersyarat anda",
+        "intro": "Sebelum pengajian anda dibiayai, sila baca perjanjian ini dan tandatanganinya. Ibu bapa atau penjaga anda menandatangani bersama anda sebagai penjamin, pada peranti yang sama ini.",
+        "particulars": "Butiran",
+        "amount": "Jumlah biasiswa",
+        "schedule": "Jadual pembayaran",
+        "institution": "Institusi",
+        "course": "Kursus",
+        "documentTitle": "Perjanjian",
+        "student": {
+          "title": "Tandatangan anda",
+          "intro": "Dengan menandatangani, anda mengesahkan bahawa anda telah membaca dan bersetuju dengan perjanjian ini.",
+          "signLabel": "Taipkan nama penuh anda seperti dalam IC untuk menandatangani",
+          "signPlaceholder": "Nama penuh anda",
+          "nricLabel": "Nombor IC anda (pilihan)",
+          "agree": "Saya telah membaca dan bersetuju dengan Perjanjian ini."
+        },
+        "guarantor": {
+          "title": "Ibu bapa atau penjaga anda (penjamin)",
+          "intro": "Seorang ibu bapa atau penjaga mesti menandatangani sebagai penjamin untuk biasiswa ini. Sila minta mereka mengisinya sekarang, pada peranti ini.",
+          "name": "Nama penuh ibu bapa atau penjaga",
+          "namePlaceholder": "Seperti tertera pada IC mereka",
+          "relationship": "Hubungan dengan anda",
+          "nric": "Nombor IC ibu bapa atau penjaga",
+          "agree": "Saya bersetuju menjadi penjamin untuk biasiswa ini."
+        },
+        "signSubmit": "Tandatangan dan terima pemberian",
+        "signing": "Menandatangani…",
+        "signed": {
+          "heading": "Perjanjian anda telah ditandatangani — terima kasih!",
+          "body": "Perjanjian biasiswa anda telah ditandatangani. Anda boleh memuat turun salinan untuk rekod anda di bawah.",
+          "download": "Muat turun perjanjian anda (PDF)"
+        }
       }
     },
     "onboarding": {
@@ -3135,7 +3180,20 @@
       "finalProfile": {
         "title": "Profil akhir (v2 — dengan temu duga)"
       },
-      "prefersLang": "Suka {lang}"
+      "prefersLang": "Suka {lang}",
+      "bursary": {
+        "title": "Perjanjian biasiswa",
+        "student": "Pelajar",
+        "guarantor": "Penjamin",
+        "foundation": "Yayasan",
+        "witness": "Saksi",
+        "countersign": "Tandatangan balas (Yayasan)",
+        "witnessAction": "Saksikan",
+        "download": "Muat turun (PDF)",
+        "actionError": "Tindakan itu tidak dapat diselesaikan. Sila cuba lagi.",
+        "witnessForbidden": "Hanya organisasi rakan kongsi yang merujuk (atau super admin) boleh menyaksikan perjanjian ini.",
+        "note": "Saksi adalah rekod sahaja dan tidak pernah menyekat pemberian. Penderma tidak pernah dinamakan dalam perjanjian ini."
+      }
     },
     "students": "Pelajar",
     "invite": "Jemputan",
