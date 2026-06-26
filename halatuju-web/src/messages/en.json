@@ -1743,6 +1743,11 @@
         "acceptCta": "View my award",
         "onboardingBody": "You've accepted your award — just a few quick questions to finish setting up.",
         "onboardingCta": "Complete onboarding"
+      },
+      "bursaryPanel": {
+        "title": "Your bursary agreement",
+        "body": "You've signed your Conditional Bursary Award Agreement. Keep a copy for your records.",
+        "download": "Download (PDF)"
       }
     },
     "banner": {
@@ -2030,7 +2035,47 @@
         "no_offer": "There's no award available to respond to right now.",
         "guardian_required": "Please fill in the parent or guardian's name, relationship and IC number.",
         "bad_action": "Something went wrong. Please try again.",
-        "generic": "Something went wrong. Please try again."
+        "generic": "Something went wrong. Please try again.",
+        "student_signature_required": "Please type your full name to sign the agreement.",
+        "guarantor_required": "Please fill in your parent or guardian's name, relationship and IC number.",
+        "parent_ic_missing": "We couldn't find your parent or guardian's IC on file. Please make sure it has been uploaded first.",
+        "parent_ic_required": "We couldn't find your parent or guardian's IC on file. Please make sure it has been uploaded first.",
+        "parent_ic_nric_mismatch": "The parent name or IC number doesn't match the IC on file. Please check both.",
+        "parent_ic_name_mismatch": "The parent name or IC number doesn't match the IC on file. Please check both."
+      },
+      "bursary": {
+        "heading": "Sign your Conditional Bursary Award Agreement",
+        "intro": "Before your studies are funded, please read this agreement and sign it. Your parent or guardian signs with you as your guarantor, on this same device.",
+        "particulars": "The particulars",
+        "amount": "Bursary amount",
+        "schedule": "Payment schedule",
+        "institution": "Institution",
+        "course": "Course",
+        "documentTitle": "The agreement",
+        "student": {
+          "title": "Your signature",
+          "intro": "By signing you confirm you have read and agree to this agreement.",
+          "signLabel": "Type your full name as in your IC to sign",
+          "signPlaceholder": "Your full name",
+          "nricLabel": "Your IC number (optional)",
+          "agree": "I have read and agree to this Agreement."
+        },
+        "guarantor": {
+          "title": "Your parent or guardian (guarantor)",
+          "intro": "A parent or guardian must sign as your surety (guarantor) for this bursary. Please ask them to fill this in now, on this device.",
+          "name": "Parent or guardian's full name",
+          "namePlaceholder": "As shown on their IC",
+          "relationship": "Relationship to you",
+          "nric": "Parent or guardian's IC number",
+          "agree": "I agree to stand as guarantor for this bursary."
+        },
+        "signSubmit": "Sign and accept the award",
+        "signing": "Signing…",
+        "signed": {
+          "heading": "Your agreement is signed — thank you!",
+          "body": "Your bursary agreement has been signed. You can download a copy for your records below.",
+          "download": "Download your agreement (PDF)"
+        }
       }
     },
     "onboarding": {
@@ -3135,7 +3180,20 @@
       "finalProfile": {
         "title": "Final profile (v2 — with interview)"
       },
-      "prefersLang": "Prefers {lang}"
+      "prefersLang": "Prefers {lang}",
+      "bursary": {
+        "title": "Bursary agreement",
+        "student": "Student",
+        "guarantor": "Guarantor",
+        "foundation": "Foundation",
+        "witness": "Witness",
+        "countersign": "Counter-sign (Foundation)",
+        "witnessAction": "Witness",
+        "download": "Download (PDF)",
+        "actionError": "That action could not be completed. Please try again.",
+        "witnessForbidden": "Only the referring partner organisation (or a super admin) can witness this agreement.",
+        "note": "The witness is a record only and never blocks the award. The donor is never named on this agreement."
+      }
     },
     "students": "Students",
     "invite": "Invite",
