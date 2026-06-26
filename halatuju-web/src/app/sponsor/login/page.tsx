@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -9,6 +9,7 @@ import {
   sponsorSignInWithGoogle,
   sponsorResetPassword,
 } from '@/lib/sponsor-supabase'
+import { enforceSingleScope, consumeSuperseded } from '@/lib/sessionPolicy'
 import { useT } from '@/lib/i18n'
 
 type Step = 'login' | 'forgot' | 'forgot-sent'
@@ -21,6 +22,10 @@ export default function SponsorLoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Shown when this sponsor session was ended because the same account signed into the
+  // partner console (one active privileged scope per identity, except super admins).
+  const [superseded, setSuperseded] = useState(false)
+  useEffect(() => { setSuperseded(consumeSuperseded('sponsor')) }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,6 +38,8 @@ export default function SponsorLoginPage() {
       return
     }
     if (data.session) {
+      // One privileged scope per identity (super exempt): ends an active partner session.
+      await enforceSingleScope('sponsor', { token: data.session.access_token })
       router.push('/sponsor')
       return
     }
@@ -76,6 +83,12 @@ export default function SponsorLoginPage() {
             <>
               <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('sponsorAuth.loginTitle')}</h1>
               <p className="text-gray-600 text-center mb-8">{t('sponsorAuth.loginSubtitle')}</p>
+
+              {superseded && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                  <p className="text-amber-800 text-sm">{t('sponsorAuth.signedOutElsewhere')}</p>
+                </div>
+              )}
 
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">

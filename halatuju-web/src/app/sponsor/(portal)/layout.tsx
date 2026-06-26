@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { sponsorSignOut } from '@/lib/sponsor-supabase'
+import { wasScopeSuperseded } from '@/lib/sessionPolicy'
 import { getStudentsWaitingCount } from '@/lib/api'
 import SponsorLanding from '@/components/SponsorLanding'
 import SponsorDetailsForm from '@/components/SponsorDetailsForm'
@@ -23,6 +24,7 @@ import { SponsorPortalProvider, useSponsorPortal } from '@/lib/sponsor-portal-co
  */
 export default function SponsorPortalLayout({ children }: { children: ReactNode }) {
   const { t } = useT()
+  const router = useRouter()
   const { isLoading, isSignedIn, account } = useSponsorAuth()
 
   // Public "students waiting" counter for the signed-out landing (mirrors /scholarship).
@@ -34,6 +36,13 @@ export default function SponsorPortalLayout({ children }: { children: ReactNode 
       .catch(() => { /* leave at 0; the landing still renders */ })
     return () => { cancelled = true }
   }, [])
+
+  // If this sponsor session was just ended because the same account signed into the
+  // partner console, send the tab to /sponsor/login (outside this layout) so it shows
+  // the "signed out elsewhere" note — rather than silently dropping to the landing.
+  useEffect(() => {
+    if (!isSignedIn && wasScopeSuperseded('sponsor')) router.replace('/sponsor/login')
+  }, [isSignedIn, router])
 
   // Signed-out → public marketing landing, rendered immediately (no auth spinner).
   if (!isSignedIn) return <SponsorLanding count={waitingCount} />
