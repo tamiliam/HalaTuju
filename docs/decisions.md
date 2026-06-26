@@ -3306,3 +3306,31 @@ single-inbox.
 **Rationale:** the source events already exist and are few per sponsor, so synthesis is a handful of indexed queries with zero schema/write-path churn and nothing to backfill; it can never drift from the underlying state because it IS the underlying state. Allowlist-safe by construction (refs + counts only).
 **Trade-offs:** an N+1-ish read (per-student result/message lookups) and no durable record of events the models don't already retain (e.g. a lapsed offer's history). Both are immaterial at the expected per-sponsor volume.
 **Revisit if:** a sponsor funds enough students that the per-request synthesis is slow, or the feed needs event types not derivable from current models — then add a lightweight event-log table written at each transition.
+
+## Bursary agreement is a dedicated contract record, not a `Consent` — Sprint 2026-06-26
+**Decision:** The signed bursary agreement is a new `BursaryAgreement` model (`bursary_agreements`, OneToOne→application) that snapshots the **exact wording signed** (`rendered_html` + `agreement_sha256`) and freezes the particulars, rather than another versioned `Consent` row.
+**Alternatives considered:** reuse the existing `Consent` model (versioned, withdrawable) for the agreement.
+**Rationale:** a contract must preserve the precise text and particulars the parties signed and be tamper-evident; `Consent` deliberately does NOT snapshot wording (it references a version key and is withdrawable). Collapsing the two would either weaken the contract's evidentiary value or distort the consent model. A separate record also lets the four-party signature lifecycle (student → guarantor binds → Foundation countersign → witness executes) live on its own state machine.
+**Trade-offs:** a second signing-adjacent model + migration; the accept path now writes both a `Consent` and a `BursaryAgreement`.
+**Revisit if:** the agreement ever needs the withdrawal semantics of `Consent`, or the two records start duplicating fields that drift.
+
+## Bursary anonymity-preserving party structure — donor is never a party — Sprint 2026-06-26
+**Decision:** The contract parties are **Student + Parent/guarantor ↔ the Foundation** (counterparty + interim signatory from `FOUNDATION_SIGNATORY_*`), with the referring **partner org as a non-blocking witness**. The **donor is never a party and never named** in the rendered agreement or PDF.
+**Alternatives considered:** the owner's source draft — a bilateral, fully-identified **Donor↔Student** agreement (mutual names/NRICs/addresses/signatures).
+**Rationale:** the system's core invariant is that the sponsor never sees the student and the donor is never named; money flows through the Foundation. Adopting the draft verbatim would break anonymity irreparably. Putting the Foundation in the donor's contractual place keeps every adopted clause while satisfying the invariant; the witness role gives the partner org standing without exposing the donor.
+**Trade-offs:** the Foundation must be a real signing entity (currently interim "Suresh" — a Phase-0 go-live gate, TD-140); the donor gets no direct contractual relationship with the student.
+**Revisit if:** a regulator or the finalised Foundation entity requires the funder to be a named party (would force a rethink of the anonymity model itself).
+
+## `xhtml2pdf` for server-side PDF generation, not weasyprint — Sprint 2026-06-26
+**Decision:** Render the agreement HTML→PDF with the pure-Python `xhtml2pdf` (pisa); keep `rendered_html` as the canonical record and treat the PDF as a regenerable artefact.
+**Alternatives considered:** `weasyprint` (best HTML/CSS fidelity); `reportlab`/`fpdf2` (lower-level).
+**Rationale:** no PDF generator existed. `weasyprint` needs cairo/pango **system libraries** that don't fit the Cloud Run `--source` buildpack deploy (no apt layer); a pure-Python lib installs cleanly via `requirements.txt`. CSS fidelity is adequate for a text contract.
+**Trade-offs:** `xhtml2pdf`'s CSS support is weaker than weasyprint's — the template must stay simple (tables/inline styles, no modern layout).
+**Revisit if:** the agreement needs richer layout, or the deploy moves to a Docker image where weasyprint's system deps can be installed.
+
+## One active privileged scope per Google identity, super-exempt — Sprint 2026-06-26
+**Decision:** A single Google identity may hold only ONE of {partner console, sponsor portal} at a time; signing into one ends the other scope's local session. **Super admins are exempt.** Implemented in `lib/sessionPolicy.ts`, super check via `/admin/role/`.
+**Alternatives considered:** (a) leave the prior emergent Supabase same-identity kick as-is; (b) allow both scopes concurrently for everyone.
+**Rationale:** the prior kick was an accident of shared-identity session handling with no carve-out, so a partner-admin-who-is-also-a-sponsor was bounced unpredictably (the Suresh report). Making it intentional + adding the super-admin exemption turns a confusing bug into a deliberate control with a clear "signed out elsewhere" message; supers legitimately need both surfaces.
+**Trade-offs:** a user with two genuine roles must re-authenticate to switch surfaces; the policy lives in the FE (local-session scope), not enforced server-side.
+**Revisit if:** server-side scope enforcement becomes necessary, or non-super users legitimately need both surfaces open at once.

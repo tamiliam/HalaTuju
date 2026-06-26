@@ -903,3 +903,22 @@
   **Built (roadmap S2):** `_send_wa_proposed` in `propose_slots` (opt-in gated, links to the application page), dual-path
   (free-text in sandbox / template in prod). **Remaining to go live:** owner sandbox-tests the wording, then submit the
   Meta template + set `TWILIO_WHATSAPP_PROPOSED_CONTENT_SID` (dark on a real sender until then). (Logged + built 2026-06-21.)
+- TD-140: **Bursary agreement go-live is blocked on two Phase-0 gates (DARK until both clear).** The Conditional Bursary
+  Award Agreement shipped 2026-06-26 behind `BURSARY_AGREEMENT_ENABLED` (default OFF). It is a real legal instrument and
+  must **not** be exposed to live students until: (1) **a lawyer vets the template wording** in
+  `apps/scholarship/bursary.py` (it currently carries a "DRAFT — pending legal review" banner, EN+BM; Tamil not yet
+  drafted) and confirms typed e-signature sufficiency for this contract type (Malaysia ECA 2006 — a bursary is not an
+  excluded instrument, but confirm); and (2) **the Foundation entity + signatory are finalised** (interim
+  `FOUNDATION_SIGNATORY_NAME/_TITLE/_NRIC` = "Suresh"; old agreements stand as signed when the entity changes). **To
+  resolve:** owner/legal action (not code) → then set `BURSARY_AGREEMENT_ENABLED=1`. (Logged 2026-06-26.)
+- TD-141: **Bursary parent surety signs IN-SESSION only — no separate parent-phone signing link (Phase 2).** v1 has the
+  student and parent/guarantor sign on the same device in one sitting (`guarantor_method='in_session'`); the model already
+  carries `guarantor_method='link'` for the future path. **To resolve (Phase 2):** a tokenised public signing page
+  (`secrets.token_urlsafe`, mirrors the referral-link pattern) sent to the parent's phone via WhatsApp/SMS, gated by a
+  Twilio Verify OTP, with reminders + expiry — so a parent who isn't physically present can co-sign. (Logged 2026-06-26.)
+- TD-142: **Bursary agreement states a payment schedule it cannot yet honour — disbursement + suspension are still mocked
+  (Phase 3; folds into TD-075).** The signed agreement *names* the RM500 + 10×RM250 schedule and the Foundation's right to
+  suspend/withhold, but no money moves and `agreement.status` gates nothing operationally (the `is_executed` /
+  all-four-signed state is recorded but inert). **To resolve (Phase 3, with TD-075):** wire real disbursement +
+  suspension/withholding to `agreement.status == executed` + academic-progress signals so the stated schedule becomes
+  operative. Until then the contract is a binding *instrument* on a mocked-money flow. (Logged 2026-06-26.)
