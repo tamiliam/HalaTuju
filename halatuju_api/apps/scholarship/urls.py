@@ -6,6 +6,7 @@ from .views import (
     ApplicationOnboardingCompleteView,
     ApplicationDetailView,
     ApplicationListCreateView,
+    BursaryAgreementView,
     ConsentView,
     CronRunView,
     DocumentDetailView,
@@ -51,6 +52,8 @@ from .views_sponsor import (
 from .views_admin import (
     AdminApplicationDetailView,
     AdminApplicationListView,
+    AdminBursaryCountersignView,
+    AdminBursaryWitnessView,
     AdminGraduationMessageListView,
     AdminGraduationMessageReviewView,
     AdminSetAwardAmountView,
@@ -114,6 +117,8 @@ urlpatterns = [
     path('scholarship/consent/', ConsentView.as_view()),
     # Phase E3: the student's award offer (accept/decline; guardian-gated for minors)
     path('scholarship/award/', StudentAwardView.as_view()),
+    # Conditional Bursary Award Agreement — the student's own signed contract (flag-gated)
+    path('scholarship/bursary-agreement/', BursaryAgreementView.as_view()),
     # S3: the student's resolution queue (IBKR Action Centre)
     path('scholarship/resolution-items/', ResolutionItemListView.as_view()),
     path('scholarship/resolution-items/<int:pk>/resolve/', ResolutionItemResolveView.as_view()),
@@ -156,6 +161,12 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/verify-accept/', AdminVerifyAcceptView.as_view()),
     path('admin/scholarship/applications/<int:pk>/reject/', AdminRejectView.as_view()),
+    # Conditional Bursary Award Agreement — Foundation countersignature (super-only) +
+    # partner-org witness attestation (referring-org admin or super; non-blocking).
+    path('admin/scholarship/applications/<int:pk>/bursary-agreement/countersign/',
+         AdminBursaryCountersignView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/bursary-agreement/witness/',
+         AdminBursaryWitnessView.as_view()),
     # Cool-off controls: cancel a pending decline / hold a pending award before it reveals.
     path('admin/scholarship/applications/<int:pk>/cancel-decline/', AdminCancelDeclineView.as_view()),
     path('admin/scholarship/applications/<int:pk>/hold-award/', AdminHoldAwardView.as_view()),

@@ -19,6 +19,7 @@ from .serializers import (
     ApplicationCreateSerializer,
     ApplicationDetailsUpdateSerializer,
     ApplicationReadSerializer,
+    BursaryAgreementSerializer,
     ConsentCreateSerializer,
     IncomeRouteSwitchSerializer,
     ConsentSerializer,
@@ -1233,11 +1234,43 @@ class StudentAwardView(APIView):
             if pend is not None:
                 finalising = True
                 app = app or pend
-        return Response({
+        payload = {
             'offer': StudentAwardSerializer(offer).data if offer else None,
             'finalising': finalising,
             'is_minor': is_minor(app.profile) if (app and app.profile) else False,
-        })
+        }
+        # Bursary agreement (flag-gated): surface the contract the student is about to
+        # sign (particulars + rendered body) when an offer/active award exists, and — if
+        # already signed — the agreement status + a signed PDF URL. Never a donor field.
+        from django.conf import settings as _settings
+        if getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False) and app:
+            from . import bursary
+            existing = getattr(app, 'bursary_agreement', None)
+            if existing is not None:
+                payload['bursary_agreement'] = BursaryAgreementSerializer(existing).data
+            elif offer or finalising:
+                p = bursary.particulars_for(app)
+                locale = app.locale if app.profile else 'en'
+                preview_html = bursary.render_agreement_html(
+                    app, p,
+                    student={'name': getattr(app.profile, 'name', '') if app.profile else '',
+                             'nric': '', 'signed_at': None},
+                    guarantor={'name': '', 'nric': '', 'relationship': '', 'signed_at': None},
+                    foundation={'name': p['foundation_signatory_name'],
+                                'title': p['foundation_signatory_title'],
+                                'nric': p['foundation_signatory_nric'], 'signed_at': None},
+                    witness={'by': '', 'org': '', 'signed_at': None}, locale=locale)
+                payload['bursary_preview'] = {
+                    'award_amount': str(p['award_amount']) if p['award_amount'] is not None else None,
+                    'payment_schedule': p['payment_schedule'],
+                    'institution_name': p['institution_name'],
+                    'course_name': p['course_name'],
+                    'progress_standard': p['progress_standard'],
+                    'foundation_signatory_name': p['foundation_signatory_name'],
+                    'foundation_signatory_title': p['foundation_signatory_title'],
+                    'rendered_html': preview_html,
+                }
+        return Response(payload)
 
     def post(self, request):
         app = _award_application(request.user_id)
@@ -1255,7 +1288,30 @@ class StudentAwardView(APIView):
                 guardian_relationship=request.data.get('guardian_relationship', '') or '',
                 guardian_nric=request.data.get('guardian_nric', '') or '',
                 ip=request.META.get('REMOTE_ADDR'),
+                student_signed_name=request.data.get('student_signed_name', '') or '',
+                student_signed_nric=request.data.get('student_signed_nric', '') or '',
+                guarantor_name=request.data.get('guarantor_name', '') or '',
+                guarantor_nric=request.data.get('guarantor_nric', '') or '',
+                guarantor_relationship=request.data.get('guarantor_relationship', '') or '',
             )
         except sponsorship_service.SponsorshipError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(StudentAwardSerializer(sponsorship).data)
+
+
+class BursaryAgreementView(APIView):
+    """GET the student's OWN bursary agreement (status + particulars + signed PDF URL).
+    Allowlist-safe: the serializer never carries a donor field. 404 when the feature is
+    off or no agreement exists yet."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        from django.conf import settings as _settings
+        if not getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False):
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        app = (ScholarshipApplication.objects
+               .filter(profile_id=request.user_id, bursary_agreement__isnull=False)
+               .select_related('bursary_agreement').order_by('-id').first())
+        if app is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(BursaryAgreementSerializer(app.bursary_agreement).data)
