@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **One active privileged scope per Google identity (except super admins).** A single Google identity may now hold
+  only ONE of the partner console / sponsor portal at a time; signing into one **ends the other scope's local session**.
+  This is the *intentional* control replacing the prior emergent Supabase-level kick (which fired as an accident of
+  shared-identity session handling and had no super-admin carve-out): a partner admin who was also a sponsor used to be
+  bounced between the two with no explanation. **Super admins are exempt** (`isSuperIdentity` via `/admin/role/`) and may
+  hold both. The kicked tab routes to its own login with a clear **"signed out elsewhere"** note. New
+  `lib/sessionPolicy.ts` (`enforceSingleScope` / `wasScopeSuperseded` / `consumeSuperseded`, `SUPERSEDED_KEY`), wired into
+  both admin + sponsor callbacks/login pages and the sponsor portal layout guard. FE-only; +6 jest; i18n en/ms/ta
+  (`admin.signedOutElsewhere`, `sponsorAuth.signedOutElsewhere`; Tamil first-draft).
+
 ### Changed
 - **Sponsor-pool browse card redesigned (4-region layout).** Each anonymous student card now reads: (1) code · `SPM · N As`
   · state on one quiet header line; (2) the confirmed **programme name** (`chosen_programme.course_name`) with the **target
@@ -36,6 +47,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   locked until re-approved). No migration.
 
 ### Added
+- **Conditional Bursary Award Agreement — a binding, online-signed, tri-partite contract (Phase 1, shipped DARK
+  behind `BURSARY_AGREEMENT_ENABLED`, default off).** When enabled, accepting an award becomes a real contract instead
+  of the thin "accept + onboarding-ack": the **student** signs (typed name + NRIC), the **parent/guardian** co-signs
+  **in-session** as **surety/guarantor** (name + NRIC + relationship, hard-gated against the compulsory `parent_ic`
+  Vision-OCR — reusing the consent-submit guardian gate, adults included), the **Foundation** is the counterparty
+  (interim signatory from `FOUNDATION_SIGNATORY_*` settings, "Suresh" for now), and the referring **partner org** is a
+  **non-blocking witness**. **The donor is never a party and never named** — anonymity is preserved end-to-end (the
+  rendered agreement + PDF carry no donor reference). For a minor the guardian's single signature covers both consent +
+  surety; an adult needs student-primary + parent-surety. New `BursaryAgreement` model (`bursary_agreements`,
+  OneToOne→application) snapshots the **exact wording signed** (`rendered_html` + `agreement_sha256` tamper-hash),
+  freezes the particulars (amount, RM500+10×RM250 schedule *stated*, institution, course), records all four signatures,
+  and stores a generated **PDF** (`b40-documents` private bucket, pure-python `xhtml2pdf` — weasyprint avoided for the
+  buildpack deploy). `bursary.py` holds the EN+BM clause template (best-of the owner's draft, carrying a **"DRAFT —
+  pending legal review"** banner; criminal-record / unilateral-change clauses dropped per critical review),
+  `sign_agreement` / `countersign_foundation` / `record_witness`, and `guarantor_identity_check`. Signing is wired into
+  `respond_to_award` inside the existing cool-off transaction (flag OFF = the flow is byte-for-byte unchanged). New
+  `BursaryAgreementView` (student GET + signed-PDF URL), `AdminBursaryCountersignView` (super-only),
+  `AdminBursaryWitnessView` (referring-org admin only). FE: `/scholarship/award` becomes the signing page (particulars +
+  the full agreement in a **script-less `<iframe sandbox="">`** + adult/minor signature blocks), a PDF panel on
+  `/scholarship/application`, and a Bursary-Agreement card (counter-sign / witness / download) in the admin detail view.
+  **Migration `scholarship/0072`** (new table + RLS, migrate-first). +15 backend tests / +i18n parity (en/ms/ta).
+  **Not for real students until two Phase-0 gates clear: lawyer-vet the template wording, and finalise the Foundation
+  entity/signatory.** Deferred: parent-phone signing link (Phase 2), real disbursement + suspension (Phase 3 / TD-075).
 - **Student can give a reason when cancelling their interview.** Cancelling a booked interview is the student's route to a
   reschedule (the reviewer then proposes fresh times), so the cancel-confirm box now has an optional **"Reason for
   cancelling"** field. The reason is stored (`interview_cancel_reason`), included in the reviewer's cancellation email, and
@@ -43,6 +77,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   field, migrate-first). +2 tests; i18n en/ms/ta.
 
 ### Fixed
+- **Partner OAuth-callback denial no longer signs the user out of the sponsor portal too.** When the Google user landing
+  on the partner `/admin/auth/callback` was **not** a partner admin, the page called `supabase.auth.signOut()` with no
+  scope — which defaults to **GLOBAL** and revoked *every* session for that Supabase user. So someone who was also a
+  signed-in sponsor (same Google identity, another tab) got kicked out of the sponsor portal merely by landing on the
+  partner callback. Now uses `scope:'local'` (clears only the admin-scope session). FE-only. (The *deliberate* one-scope
+  policy that supersedes the old emergent behaviour is the Security entry above.)
+- **"Asasi TVET" (`FB0500001`) now appears under the Asasi programme picker.** A redundant
+  `{count:2, subjects:["ANY"]}` or-group on the course's requirements was treated literally by
+  `engine.check_complex_requirements` (`"ANY"` is not a real subject code → unsatisfiable), so the programme was hidden
+  from every otherwise-eligible student. Removed the dead clause (data-only fix on `course_requirements`, applied
+  migrate-first + catalogue reload); live-verified eligible. No code change.
 - **Student interview panel no longer offers past slots, and clears stale errors.** The booking panel showed every
   proposed slot regardless of time, so a slot whose time had passed appeared bookable and selecting it failed with the
   backend's `past_slot` — surfaced as a generic "Something went wrong". Both the first-pick and the reschedule lists are
