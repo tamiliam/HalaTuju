@@ -8,7 +8,8 @@ from django.test import TestCase, override_settings
 from apps.scholarship.vision import (
     _as_image_for_gemini, canonical_name_tokens, _canonical_nric, _extract_address,
     _extract_name, _extract_nric, _is_card_label_line, _merge_ic_reads, _should_gemini_ic,
-    address_present, address_match, extract_mykad, name_match, nric_match, relationship_name_match,
+    address_present, address_match, extract_mykad, name_match, nric_match, nric_close,
+    relationship_name_match,
 )
 
 
@@ -25,6 +26,17 @@ class TestNricMatch(TestCase):
         self.assertEqual(_canonical_nric('030101-14-1234'), '030101141234')
         self.assertEqual(_canonical_nric('030101 14 1234'), '030101141234')
         self.assertEqual(_canonical_nric(' 030101-14-1234 '), '030101141234')
+
+    def test_nric_close_single_digit(self):
+        # One substituted digit (the POVIENTHIRAN 76-08 → 76-09 OCR slip) is "close".
+        self.assertTrue(nric_close('760824-10-5692', '760924-10-5692'))
+        # One inserted / dropped digit is also "close".
+        self.assertTrue(nric_close('030101-14-1234', '030101-14-12345'))
+
+    def test_nric_close_excludes_equal_blank_and_far(self):
+        self.assertFalse(nric_close('030101-14-1234', '030101141234'))   # equal → not "close"
+        self.assertFalse(nric_close('', '030101141234'))                 # blank
+        self.assertFalse(nric_close('760824-10-5692', '880123-10-1234')) # many digits differ
 
     def test_match_canonical(self):
         self.assertTrue(nric_match('030101-14-1234', '030101141234'))

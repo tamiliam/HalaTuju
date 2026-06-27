@@ -141,12 +141,23 @@ def current_offer(application):
 
 @transaction.atomic
 def respond_to_award(application, *, action, locale='en', granted_by='self',
-                     guardian_name='', guardian_relationship='', guardian_nric='', ip=None):
+                     guardian_name='', guardian_relationship='', guardian_nric='', ip=None,
+                     student_signed_name='', student_signed_nric='',
+                     guarantor_name='', guarantor_nric='', guarantor_relationship=''):
     """Student/guardian accepts or declines the open award offer.
 
     accept → (guardian gate for minors) record a consent + 'active' + app 'sponsored'.
     decline → 'lapsed' (the amount returns to the sponsor's balance).
-    Raises SponsorshipError on a bad state."""
+    Raises SponsorshipError on a bad state.
+
+    Bursary agreement (BURSARY_AGREEMENT_ENABLED, default OFF): on accept, the student
+    + a parent/guardian surety sign the binding bursary CONTRACT in-session. For a MINOR
+    the GUARDIAN is the guarantor (the guardian_* fields), so the student signature is
+    optional; for an ADULT the student must type their own signature AND a parent surety
+    (guarantor_name/_nric/_relationship). The agreement is signed INSIDE this atomic block
+    BEFORE the consent + 'active' flip, so a BursaryError rolls the whole acceptance back.
+    When the flag is OFF, none of the new fields are required and no agreement is created —
+    behaviour is exactly as before."""
     sponsorship = current_offer(application)
     if sponsorship is None:
         raise SponsorshipError('no_offer')
@@ -160,12 +171,42 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
     if action != 'accept':
         raise SponsorshipError('bad_action')
 
+    minor = is_minor(application.profile)
+
     # A minor's guardian must accept (name + NRIC + relationship), mirroring the
     # share-consent guardian gate.
-    if is_minor(application.profile):
+    if minor:
         if (granted_by != 'guardian' or not guardian_name.strip()
                 or not guardian_relationship.strip() or not guardian_nric.strip()):
             raise SponsorshipError('guardian_required')
+
+    # Bursary contract (flag-gated). Sign BEFORE recording consent / flipping to active
+    # so a BursaryError aborts the whole acceptance (transaction.atomic rolls back).
+    from django.conf import settings as _settings
+    if getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False):
+        from . import bursary
+        if minor:
+            # The guardian IS the surety/guarantor for a minor; the student signature is
+            # optional (the guardian signs on the student's behalf).
+            g_name, g_nric, g_rel = guardian_name, guardian_nric, guardian_relationship
+            s_name = student_signed_name or guardian_name
+        else:
+            # An adult signs their own name AND brings a parent surety.
+            if not student_signed_name.strip():
+                raise SponsorshipError('student_signature_required')
+            if not (guarantor_name.strip() and guarantor_nric.strip()
+                    and guarantor_relationship.strip()):
+                raise SponsorshipError('guarantor_required')
+            g_name, g_nric, g_rel = guarantor_name, guarantor_nric, guarantor_relationship
+            s_name = student_signed_name
+        try:
+            bursary.sign_agreement(
+                application, sponsorship=sponsorship,
+                student_signed_name=s_name, student_signed_nric=student_signed_nric,
+                guarantor_name=g_name, guarantor_nric=g_nric,
+                guarantor_relationship=g_rel, locale=locale, ip=ip)
+        except bursary.BursaryError as e:
+            raise SponsorshipError(e.code)
 
     consent = record_consent(
         application, consent_type=SPONSORSHIP_CONSENT_TYPE, locale=locale,

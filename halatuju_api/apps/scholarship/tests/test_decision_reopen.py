@@ -106,6 +106,45 @@ class TestDecisionReopen(TestCase):
         r = self.client.post(self._reopen_url(), {'reason': 'x'}, format='json')
         self.assertEqual(r.status_code, 403)
 
+    # ── reopen returns an accepted case to the decision point (interviewed) ───
+    def test_reopen_moves_accepted_to_interviewed(self):
+        from apps.scholarship import reopen as reopen_service
+        reopen_service.reopen_decision(self.app, by_admin=self.superadmin, reason='wrong institution')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')
+
+    def test_cancel_reopen_restores_accepted_status(self):
+        from apps.scholarship import reopen as reopen_service
+        reopen_service.reopen_decision(self.app, by_admin=self.superadmin, reason='check')
+        reopen_service.cancel_reopen(self.app)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'accepted')
+
+    def test_reopen_clears_pending_decline(self):
+        from datetime import timedelta
+        self.app.pending_rejection_category = 'contractual'
+        self.app.decline_due_at = timezone.now() + timedelta(days=7)
+        self.app.pending_decline_by = 's@x.com'
+        self.app.save(update_fields=['pending_rejection_category', 'decline_due_at', 'pending_decline_by'])
+        from apps.scholarship import reopen as reopen_service
+        reopen_service.reopen_decision(self.app, by_admin=self.superadmin, reason='reconsider')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')
+        self.assertEqual(self.app.pending_rejection_category, '')
+        self.assertIsNone(self.app.decline_due_at)
+
+    def test_reject_after_reopen_is_interview_not_contractual(self):
+        # Reopen an accepted case → 'interviewed'; declining then buckets as 'interview'
+        # (reviewed-but-not-selected), NOT 'contractual'. Cool-off is 0 in tests → immediate.
+        from apps.scholarship import reopen as reopen_service
+        from apps.scholarship.services import admin_reject
+        reopen_service.reopen_decision(self.app, by_admin=self.superadmin, reason='private college')
+        self.app.refresh_from_db()
+        admin_reject(self.app, self.superadmin, 'interview')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'rejected')
+        self.assertEqual(self.app.rejection_category, 'interview')
+
     # ── cancel-reopen (no change → restore, no correction) ───────────────────
     def test_cancel_restores_published_state_without_counting(self):
         self._auth(SUPER)
@@ -154,9 +193,11 @@ class TestDecisionReopen(TestCase):
     def test_reject_after_reopen_counts_correction_and_stays_unpublished(self):
         self._auth(SUPER)
         self.client.post(self._reopen_url(), {'reason': 'should be declined'}, format='json')
+        # Reopen moved the accepted case back to 'interviewed', so the decline is bucketed
+        # as 'interview' (reviewed-but-not-selected), not 'contractual'.
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{self.app.id}/reject/',
-            {'category': 'contractual'}, format='json')
+            {'category': 'interview'}, format='json')
         self.assertEqual(r.status_code, 200)
         self.app.refresh_from_db(); self.sp.refresh_from_db()
         self.assertEqual(self.app.status, 'rejected')

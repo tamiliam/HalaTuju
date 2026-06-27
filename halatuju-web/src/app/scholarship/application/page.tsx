@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { getMyScholarshipApplications, getStudentAward, type ScholarshipApplication, type StudentAward } from '@/lib/api'
+import { getMyScholarshipApplications, getStudentAward, getBursaryAgreement, type ScholarshipApplication, type StudentAward, type BursaryAgreement } from '@/lib/api'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import ActionCentre from '@/components/ActionCentre'
 import InterviewBookingPanel from '@/components/scholarship/InterviewBookingPanel'
@@ -26,6 +26,7 @@ export default function ScholarshipApplicationPage() {
   const router = useRouter()
   const [app, setApp] = useState<ScholarshipApplication | null>(null)
   const [award, setAward] = useState<StudentAward | null>(null)
+  const [bursary, setBursary] = useState<BursaryAgreement | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -45,6 +46,11 @@ export default function ScholarshipApplicationPage() {
     getStudentAward({ token })
       .then((res) => { if (active) setAward(res.offer) })
       .catch(() => { if (active) setAward(null) })
+    // Bursary agreement (flag-gated): a signed student gets a small "your agreement"
+    // panel with a PDF download. 404s while the flag is off / unsigned → hide it.
+    getBursaryAgreement({ token })
+      .then((res) => { if (active) setBursary(res) })
+      .catch(() => { if (active) setBursary(null) })
     return () => { active = false }
   }, [status, token, router])
 
@@ -63,6 +69,7 @@ export default function ScholarshipApplicationPage() {
         <main className={`container mx-auto w-full flex-1 px-6 py-10 ${isShortlisted ? 'max-w-2xl lg:max-w-4xl' : 'max-w-2xl'}`}>
           <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('scholarship.application.title')}</h1>
           {awardPanel()}
+          {bursaryPanel()}
           {children}
         </main>
         <AppFooter />
@@ -93,6 +100,32 @@ export default function ScholarshipApplicationPage() {
             <h2 className="font-semibold text-gray-900">{t('scholarship.application.awardPanel.title')}</h2>
             <p className="mt-1 text-sm text-gray-700">{body}</p>
             <Link href={href} className="btn-primary mt-3 inline-block">{cta}</Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // "Your bursary agreement" — a minimal panel with a PDF download, shown only once
+  // the student has signed (getBursaryAgreement returned an agreement). Flag-gated:
+  // null while the feature is off or unsigned. No donor identity anywhere.
+  function bursaryPanel() {
+    if (!bursary || !bursary.pdf_url) return null
+    return (
+      <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <span className="shrink-0 text-green-600" aria-hidden>📄</span>
+          <div className="flex-1">
+            <h2 className="font-semibold text-gray-900">{t('scholarship.application.bursaryPanel.title')}</h2>
+            <p className="mt-1 text-sm text-gray-700">{t('scholarship.application.bursaryPanel.body')}</p>
+            <a
+              href={bursary.pdf_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary mt-3 inline-block"
+            >
+              {t('scholarship.application.bursaryPanel.download')}
+            </a>
           </div>
         </div>
       </div>

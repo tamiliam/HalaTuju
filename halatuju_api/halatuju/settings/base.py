@@ -264,6 +264,20 @@ DOC_GENUINENESS_CHECK_ENABLED = os.environ.get('DOC_GENUINENESS_CHECK_ENABLED', 
 # if cost ever spikes. Default ON.
 IC_GEMINI_FALLBACK_ENABLED = os.environ.get('IC_GEMINI_FALLBACK_ENABLED', '1') != '0'
 
+# Conditional Bursary Award Agreement (the binding bursary CONTRACT a student + their
+# parent/guardian surety sign in-session when they accept an award). OFF by default —
+# the template wording is a DRAFT pending lawyer review, and turning it on adds new
+# required signature fields to award acceptance. The donor is NEVER a party or named;
+# the Foundation (signatory configured below) is the named counterparty.
+BURSARY_AGREEMENT_ENABLED = os.environ.get('BURSARY_AGREEMENT_ENABLED', '').lower() in ('1', 'true', 'yes')
+BURSARY_AGREEMENT_VERSION = '2026-v1'
+# The Foundation's interim signatory (placeholder "Suresh" until the real officer is set
+# via env var). The donor is never named — this is the FOUNDATION counterparty only.
+FOUNDATION_SIGNATORY_NAME = os.environ.get('FOUNDATION_SIGNATORY_NAME', 'Suresh')
+FOUNDATION_SIGNATORY_TITLE = os.environ.get(
+    'FOUNDATION_SIGNATORY_TITLE', 'For and on behalf of the Foundation (interim signatory)')
+FOUNDATION_SIGNATORY_NRIC = os.environ.get('FOUNDATION_SIGNATORY_NRIC', '')
+
 # Logging configuration (structured JSON for Cloud Run)
 LOGGING = {
     'version': 1,

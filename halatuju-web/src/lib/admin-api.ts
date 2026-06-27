@@ -8,6 +8,7 @@
 import type {
   AcademicCheck, PathwayCheck, IncomeIcCheck, IncomeProofCheck,
   StrCheck, UtilityCheck, BcCheck, GuardianshipCheck,
+  BursaryAgreement,
 } from '@/lib/api'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -322,7 +323,7 @@ export async function inviteAdmin(
   return res.json()
 }
 
-// ── Scholarship (B40 Assistance Programme) ──────────────────────────────
+// ── Scholarship (BrightPath Bursary Programme) ──────────────────────────────
 
 export interface AdminScholarshipListItem {
   id: number
@@ -564,6 +565,7 @@ export interface InterviewSchedule {
   /** The student said none of the proposed times work and asked for others. */
   alternatives_requested?: boolean
   alternatives_note?: string
+  cancel_reason?: string
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in
@@ -784,6 +786,44 @@ export async function setMentoringCandidate(id: number, value: boolean, options?
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/`, 'PATCH', { mentoring_candidate: value }, options
   )
+}
+
+// ── Conditional Bursary Award Agreement (admin actions) ─────────────────────
+// A thin POST helper that carries the HTTP status on the thrown error so the
+// cockpit card can surface a 403 (e.g. a non-referring-org admin trying to
+// witness) gracefully, rather than as a generic failure.
+async function adminBursaryPost(path: string, body: unknown, options?: ApiOptions): Promise<BursaryAgreement> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST', headers, body: body != null ? JSON.stringify(body) : undefined,
+  })
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}))
+    const err = new Error(b.error || `Admin API error: ${res.status}`) as Error & { status?: number; code?: string }
+    err.status = res.status
+    err.code = b.error || b.code || ''
+    throw err
+  }
+  return res.json()
+}
+
+/** The Foundation countersignature on a student's bursary agreement. SUPER-ONLY
+ *  (the backend gates it). Returns the updated agreement (Foundation now signed). */
+export async function adminCountersignBursary(applicationId: number, options?: ApiOptions): Promise<BursaryAgreement> {
+  return adminBursaryPost(
+    `/api/v1/admin/scholarship/applications/${applicationId}/bursary-agreement/countersign/`, {}, options)
+}
+
+/** The partner organisation's (non-blocking) witness attestation. The backend
+ *  allows the referring-org admin or a super; anyone else gets a 403 (surfaced
+ *  via err.status === 403). `witnessName` is the optional named signatory. */
+export async function adminWitnessBursary(
+  applicationId: number, witnessName?: string, options?: ApiOptions,
+): Promise<BursaryAgreement> {
+  return adminBursaryPost(
+    `/api/v1/admin/scholarship/applications/${applicationId}/bursary-agreement/witness/`,
+    witnessName ? { witness_name: witnessName } : {}, options)
 }
 
 /** S16 Phase A: deterministic pre-interview flag (anomaly engine). The `code`

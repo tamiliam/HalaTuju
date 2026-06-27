@@ -22,6 +22,7 @@ export default function InterviewBookingPanel({
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [requesting, setRequesting] = useState(false)
   const [note, setNote] = useState('')
+  const [cancelReason, setCancelReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -44,16 +45,20 @@ export default function InterviewBookingPanel({
       setSched(await bookInterviewSlot(applicationId, slotId, { token }))
       setRescheduling(false); setPicked(null)
     } catch (e) {
-      setError((e as Error & { code?: string }).code === 'too_late'
-        ? t('scholarship.application.interview.tooLateNote')
+      const code = (e as Error & { code?: string }).code
+      setError(
+        code === 'too_late' ? t('scholarship.application.interview.tooLateNote')
+        : code === 'past_slot' ? t('scholarship.application.interview.slotPassed')
         : t('scholarship.application.interview.error'))
     } finally { setBusy(false) }
   }
 
   const cancel = async () => {
     setBusy(true); setError('')
-    try { setSched(await cancelInterview(applicationId, { token })) }
-    catch (e) {
+    try {
+      setSched(await cancelInterview(applicationId, cancelReason, { token }))
+      setCancelReason('')
+    } catch (e) {
       setError((e as Error & { code?: string }).code === 'too_late'
         ? t('scholarship.application.interview.tooLateNote')
         : t('scholarship.application.interview.error'))
@@ -71,6 +76,14 @@ export default function InterviewBookingPanel({
 
   const cutoffH = sched.reschedule_cutoff_hours
   const locked = sched.status === 'booked' && withinCutoff(sched.start, cutoffH)
+
+  // Only offer slots whose time hasn't already passed — a past slot can't be booked
+  // (book_slot → 'past_slot'), so it must never appear as a choice.
+  const isFuture = (iso: string) => new Date(iso).getTime() > Date.now()
+  const reschedulable = sched.slots.filter((s) => s.id !== sched.booked_slot_id && isFuture(s.start))
+  const pickable = sched.slots.filter((s) => isFuture(s.start))
+  // Any UI toggle clears a stale error (it lingered after "Keep my booked time" etc.).
+  const toggleReschedule = () => { setError(''); setRescheduling((v) => !v) }
 
   return (
     <section className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/40 p-5">
@@ -93,12 +106,18 @@ export default function InterviewBookingPanel({
           ) : confirmingCancel ? (
             <div className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-3">
               <p className="text-sm text-gray-800">{t('scholarship.application.interview.cancelConfirm')}</p>
+              <label className="mt-2 block text-xs font-medium text-gray-600">
+                {t('scholarship.application.interview.cancelReasonLabel')}
+              </label>
+              <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={2} maxLength={1000}
+                placeholder={t('scholarship.application.interview.cancelReasonPlaceholder')}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <button type="button" onClick={cancel} disabled={busy}
                   className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
                   {t('scholarship.application.interview.cancelYes')}
                 </button>
-                <button type="button" onClick={() => setConfirmingCancel(false)} disabled={busy}
+                <button type="button" onClick={() => { setError(''); setConfirmingCancel(false) }} disabled={busy}
                   className="text-sm text-gray-600 hover:text-gray-800">
                   {t('scholarship.application.interview.cancelKeep')}
                 </button>
@@ -106,15 +125,15 @@ export default function InterviewBookingPanel({
             </div>
           ) : (
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              {sched.slots.filter((s) => s.id !== sched.booked_slot_id).length > 0 && (
-                <button type="button" onClick={() => setRescheduling((v) => !v)}
+              {reschedulable.length > 0 && (
+                <button type="button" onClick={toggleReschedule}
                   className="text-sm text-blue-600 hover:underline">
                   {t(rescheduling
                     ? 'scholarship.application.interview.rescheduleKeep'
                     : 'scholarship.application.interview.reschedule')}
                 </button>
               )}
-              <button type="button" onClick={() => setConfirmingCancel(true)} disabled={busy}
+              <button type="button" onClick={() => { setError(''); setConfirmingCancel(true) }} disabled={busy}
                 className="text-sm text-gray-500 hover:text-red-600 disabled:opacity-50">
                 {t('scholarship.application.interview.cancelInterview')}
               </button>
@@ -123,7 +142,7 @@ export default function InterviewBookingPanel({
 
           {rescheduling && (
             <ul className="mt-3 space-y-2">
-              {sched.slots.filter((s) => s.id !== sched.booked_slot_id).map((s) => (
+              {reschedulable.map((s) => (
                 <li key={s.id}>
                   <button type="button" onClick={() => book(s.id)} disabled={busy}
                     className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm hover:border-blue-400 disabled:opacity-50">
@@ -138,24 +157,30 @@ export default function InterviewBookingPanel({
         <p className="mt-2 text-sm text-amber-700">{t('scholarship.application.interview.cancelledNote')}</p>
       ) : (
         <div className="mt-2">
-          <p className="text-sm text-gray-700">{t('scholarship.application.interview.pickIntro')}</p>
-          <ul className="mt-3 space-y-2">
-            {sched.slots.map((s) => (
-              <li key={s.id}>
-                <label className="flex items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm hover:border-blue-400">
-                  <input type="radio" name="slot" checked={picked === s.id}
-                    onChange={() => setPicked(s.id)} className="accent-blue-600" />
-                  <span>{formatMyt(s.start)}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-xs text-gray-500">{t('scholarship.application.interview.parentsNote')}</p>
-          <button type="button" disabled={busy || picked == null}
-            onClick={() => picked != null ? book(picked) : setError(t('scholarship.application.interview.selectFirst'))}
-            className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-            {t('scholarship.application.interview.book')}
-          </button>
+          {pickable.length > 0 ? (
+            <>
+              <p className="text-sm text-gray-700">{t('scholarship.application.interview.pickIntro')}</p>
+              <ul className="mt-3 space-y-2">
+                {pickable.map((s) => (
+                  <li key={s.id}>
+                    <label className="flex items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm hover:border-blue-400">
+                      <input type="radio" name="slot" checked={picked === s.id}
+                        onChange={() => { setError(''); setPicked(s.id) }} className="accent-blue-600" />
+                      <span>{formatMyt(s.start)}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-gray-500">{t('scholarship.application.interview.parentsNote')}</p>
+              <button type="button" disabled={busy || picked == null}
+                onClick={() => picked != null ? book(picked) : setError(t('scholarship.application.interview.selectFirst'))}
+                className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                {t('scholarship.application.interview.book')}
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-amber-700">{t('scholarship.application.interview.allPassed')}</p>
+          )}
 
           {/* "None of these work" — request other times (notifies the interviewer). */}
           {sched.alternatives_requested ? (
@@ -179,7 +204,7 @@ export default function InterviewBookingPanel({
               </div>
             </div>
           ) : (
-            <button type="button" onClick={() => setRequesting(true)}
+            <button type="button" onClick={() => { setError(''); setRequesting(true) }}
               className="mt-4 block text-sm text-blue-600 hover:underline">
               {t('scholarship.application.interview.altAsk')}
             </button>

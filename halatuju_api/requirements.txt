@@ -46,5 +46,10 @@ Pillow>=10.0,<12.0
 # (a HEIC degrades to "open original" in the viewer if absent).
 pillow-heif>=0.16,<1.0
 
+# Conditional Bursary Award Agreement → PDF. Pure-Python HTML→PDF (no system libs,
+# unlike weasyprint which breaks the Cloud Run buildpack). Renders the signed contract
+# snapshot for the private document bucket.
+xhtml2pdf>=0.2.16,<0.3
+
 # Development
 python-dotenv>=1.0,<2.0

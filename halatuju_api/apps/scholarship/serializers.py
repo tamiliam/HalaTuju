@@ -46,17 +46,20 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     (Tests assert no name/NRIC/address/phone/email appears in the output — for the
     student OR their parents.)
 
-    Boundary decision (2026-06-07): ``institution`` (the student's school/college) is
-    a LOCATOR and crosses ONLY to a **trusted** sponsor — set ``context['is_trusted']``
-    True. Fail-closed: with no context it is absent. ``state`` stays region-level."""
+    ``institution`` is the TARGET university/college the student is heading to (from the
+    confirmed offer / chosen programme) — NEVER the secondary school, which is no longer
+    surfaced on any sponsor card. ``state`` stays region-level. ``blurb`` is a ≤20-word
+    card-strict one-liner (generated + identifier-scanned at publish)."""
     # `id` is the application row id — used only as the opaque key to fetch the
     # detail; it is not identifying. `ref` is the human-facing alias.
     id = serializers.IntegerField(read_only=True)
     ref = serializers.SerializerMethodField()
     state = serializers.SerializerMethodField()
     field = serializers.SerializerMethodField()
+    course = serializers.SerializerMethodField()        # the confirmed programme name
     academic = serializers.SerializerMethodField()
-    institution = serializers.SerializerMethodField()  # Boundary: trusted-sponsor-gated
+    institution = serializers.SerializerMethodField()   # TARGET university — never the school
+    blurb = serializers.SerializerMethodField()         # ≤20-word card-strict one-liner
     funding_categories = serializers.SerializerMethodField()
     programme_months = serializers.SerializerMethodField()
     award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
@@ -86,16 +89,30 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     def get_field(self, app):
         return app.field_of_study or ''
 
+    def get_course(self, app):
+        # The confirmed programme NAME (e.g. "Diploma Kejuruteraan Mekanikal"), from the
+        # chosen programme; falls back to the broad field. Non-identifying.
+        cp = getattr(app, 'chosen_programme', None)
+        if isinstance(cp, dict) and (cp.get('course_name') or '').strip():
+            return cp['course_name'].strip()
+        return app.field_of_study or ''
+
     def get_academic(self, app):
         return pool.academic_band(app.profile)
 
     def get_institution(self, app):
-        # Boundary decision (2026-06-07): institution (school/college) is a LOCATOR —
-        # it crosses ONLY to a trusted sponsor (the launch default). Fail-closed:
-        # absent unless the calling view sets context['is_trusted'] = True.
-        if not self.context.get('is_trusted', False):
-            return ''
-        return (getattr(app.profile, 'school', '') or '') if app.profile else ''
+        # The TARGET institution the student will study AT (from the confirmed offer /
+        # chosen programme), e.g. "Politeknik Ungku Omar". A university/college is a far
+        # weaker locator than a school, and it's the place a sponsor cares about. The
+        # SECONDARY SCHOOL is NEVER surfaced. '' when unknown → the card shows course only.
+        cp = getattr(app, 'chosen_programme', None)
+        if isinstance(cp, dict) and (cp.get('institution') or '').strip():
+            return cp['institution'].strip()
+        return (getattr(app, 'pre_u_institution', '') or '').strip()
+
+    def get_blurb(self, app):
+        sp = getattr(app, 'sponsor_profile', None)
+        return (sp.anon_blurb or '') if sp else ''
 
     def get_funding_categories(self, app):
         fn = _funding_need_or_none(app)
@@ -175,6 +192,39 @@ class StudentAwardSerializer(serializers.Serializer):
     status = serializers.CharField(read_only=True)
     offered_at = serializers.DateTimeField(read_only=True)
     accept_deadline = serializers.DateTimeField(read_only=True)
+
+
+class BursaryAgreementSerializer(serializers.Serializer):
+    """The student's view of their bursary agreement: derived status + the frozen
+    particulars + a time-limited signed URL to the PDF. Allowlist-safe: there is NO
+    donor field anywhere — the document names only the Foundation signatory."""
+    id = serializers.IntegerField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    version = serializers.CharField(read_only=True)
+    locale = serializers.CharField(read_only=True)
+    award_amount = serializers.DecimalField(max_digits=10, decimal_places=2,
+                                            read_only=True, allow_null=True)
+    payment_schedule = serializers.CharField(read_only=True)
+    institution_name = serializers.CharField(read_only=True)
+    course_name = serializers.CharField(read_only=True)
+    progress_standard = serializers.CharField(read_only=True)
+    foundation_signatory_name = serializers.CharField(read_only=True)
+    foundation_signatory_title = serializers.CharField(read_only=True)
+    student_signed_name = serializers.CharField(read_only=True)
+    student_signed_at = serializers.DateTimeField(read_only=True)
+    guarantor_name = serializers.CharField(read_only=True)
+    guarantor_relationship = serializers.CharField(read_only=True)
+    guarantor_signed_at = serializers.DateTimeField(read_only=True)
+    foundation_signed_at = serializers.DateTimeField(read_only=True)
+    witness_signed_at = serializers.DateTimeField(read_only=True)
+    agreement_sha256 = serializers.CharField(read_only=True)
+    pdf_url = serializers.SerializerMethodField()
+
+    def get_pdf_url(self, obj):
+        if not obj.pdf_storage_path:
+            return None
+        from .storage import create_signed_download_url
+        return create_signed_download_url(obj.pdf_storage_path)
 
 
 class SemesterResultSerializer(serializers.ModelSerializer):
@@ -413,6 +463,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     spm_a_count = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
     # The address decision/comms emails are actually sent to (resolved at submit).
     notify_email = serializers.EmailField(read_only=True)
 
@@ -455,6 +506,15 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'funding_need', 'completeness', 'notify_email',
             'form_data', 'intake_snapshot',
         ]
+
+    def get_status(self, obj):
+        # Immediate-rejection model: the decision flips to 'rejected' at once, but the student
+        # email is EMBARGOED for the cool-off to soften the news. Until that email goes (the
+        # pending marker is still set), the STUDENT sees the in-review state, not the rejection.
+        # (The admin cockpit uses a different serializer and always sees the real status.)
+        if obj.status == 'rejected' and (obj.pending_rejection_category or ''):
+            return 'interviewed'
+        return obj.status
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades

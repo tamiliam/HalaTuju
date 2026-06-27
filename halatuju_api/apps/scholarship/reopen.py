@@ -62,7 +62,23 @@ def reopen_decision(app, *, by_admin, reason):
             sp.save(update_fields=['anon_published', 'anon_published_at',
                                    'realtime_notified_at', 'updated_at'])
         app.decision_reopened_at = timezone.now()
-        app.save(update_fields=['decision_reopened_at'])
+        fields = ['decision_reopened_at']
+        # Reopening returns the case to the decision point so the reviewer can re-decide.
+        # An ACCEPTED case moves back to 'interviewed' — so a subsequent decline is correctly
+        # bucketed as 'interview' (reviewed-but-not-selected, NOT 'contractual'), and a
+        # re-approve flows through verify-accept again. A 'sponsored' (funded) case is genuinely
+        # post-award and stays put (its decline path IS 'contractual').
+        if app.status == 'accepted':
+            app.status = 'interviewed'
+            fields.append('status')
+        # A pending (cool-off) decline is part of the decision being reversed — clear it so the
+        # reopened case is a clean slate (the reviewer re-decides from 'interviewed').
+        if app.decline_due_at or app.pending_rejection_category:
+            app.pending_rejection_category = ''
+            app.decline_due_at = None
+            app.pending_decline_by = ''
+            fields += ['pending_rejection_category', 'decline_due_at', 'pending_decline_by']
+        app.save(update_fields=fields)
         row = DecisionReopen.objects.create(
             application=app,
             reviewer=app.assigned_to,
@@ -94,7 +110,14 @@ def cancel_reopen(app):
                 sp.save(update_fields=['anon_published', 'anon_published_at',
                                        'realtime_notified_at', 'updated_at'])
         app.decision_reopened_at = None
-        app.save(update_fields=['decision_reopened_at'])
+        restore = ['decision_reopened_at']
+        # Mirror of reopen: restore the status we moved. A decided case is never 'interviewed'
+        # before a reopen (it's accepted/rejected), so an 'interviewed' status here is one we
+        # set when reopening an accepted case → put it back to 'accepted'.
+        if app.status == 'interviewed':
+            app.status = 'accepted'
+            restore.append('status')
+        app.save(update_fields=restore)
         row.resulted_in_change = False
         row.closed_at = timezone.now()
         row.save(update_fields=['resulted_in_change', 'closed_at'])

@@ -79,7 +79,7 @@ export interface StudentProfile {
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   muet_band?: number
-  // Financial detail — canonical home for the B40 Assistance Programme
+  // Financial detail — canonical home for the BrightPath Bursary Programme
   household_income?: number | null
   household_size?: number | null
   receives_str?: boolean
@@ -707,7 +707,10 @@ export interface SponsorPoolCard {
   ref: string         // human alias, e.g. "S-A3F9C1"
   state: string
   field: string
+  course: string      // confirmed programme name (e.g. "Diploma Kejuruteraan Mekanikal")
   academic: string
+  institution: string // TARGET university — '' when unknown (card shows course only)
+  blurb: string       // ≤20-word card-strict one-liner — '' when none
   funding_categories: string[]
   programme_months: number | null
   award_amount: string | null   // E3: admin-set; non-identifying
@@ -1304,7 +1307,7 @@ export async function calculatePathways(
   return { pathways }
 }
 
-// ── Scholarship (B40 Assistance Programme) ──────────────────────────────
+// ── Scholarship (BrightPath Bursary Programme) ──────────────────────────────
 
 export interface FundingNeed {
   // "How you'd use the support" — the S3 reframe (RM3,000 cap; tick-only categories
@@ -1459,9 +1462,11 @@ export async function bookInterviewSlot(id: number, slotId: number, options?: Ap
 }
 
 /** Cancel the booked interview (subject to the reschedule cutoff). */
-export async function cancelInterview(id: number, options?: ApiOptions): Promise<InterviewSchedule> {
+export async function cancelInterview(
+  id: number, reason?: string, options?: ApiOptions
+): Promise<InterviewSchedule> {
   return apiRequest(`/api/v1/scholarship/applications/${id}/interview/cancel/`, {
-    method: 'POST', body: JSON.stringify({}), ...options,
+    method: 'POST', body: JSON.stringify(reason ? { reason } : {}), ...options,
   })
 }
 
@@ -1905,18 +1910,73 @@ export interface StudentAward {
   accept_deadline: string
 }
 
+// ── Conditional Bursary Award Agreement (BURSARY_AGREEMENT_ENABLED, default OFF) ──
+// The binding bursary CONTRACT a student + a parent/guardian surety sign when they
+// accept an award. The DONOR is never a party and is never named (anonymity): none
+// of these shapes carry a sponsor/donor field.
+
+/** The not-yet-signed agreement the student is about to sign — frozen particulars +
+ *  the server-rendered HTML body. Present in the award GET (alongside `offer`) only
+ *  when the flag is on AND an offer/active award exists AND it's not yet signed. */
+export interface BursaryPreview {
+  award_amount: string | null
+  payment_schedule: string
+  institution_name: string
+  course_name: string
+  progress_standard: string
+  foundation_signatory_name: string
+  foundation_signatory_title: string
+  rendered_html: string   // the full agreement body (server-rendered HTML; carries the DRAFT banner)
+}
+
+/** A signed (or part-signed) agreement: derived status + frozen particulars + the
+ *  four signature timestamps + a time-limited signed PDF URL. No donor field. */
+export interface BursaryAgreement {
+  id: number
+  status: string
+  version: string
+  locale: string
+  award_amount: string | null
+  payment_schedule: string
+  institution_name: string
+  course_name: string
+  progress_standard: string
+  foundation_signatory_name: string
+  foundation_signatory_title: string
+  student_signed_name: string
+  student_signed_at: string | null
+  guarantor_name: string
+  guarantor_relationship: string
+  guarantor_signed_at: string | null
+  foundation_signed_at: string | null
+  witness_signed_at: string | null
+  agreement_sha256: string
+  pdf_url: string | null
+}
+
 /** GET the student's current award offer (if any) + whether they're a minor
- *  (so the page knows to require a guardian to accept). */
+ *  (so the page knows to require a guardian to accept). When the bursary flag is
+ *  on the payload also carries either `bursary_preview` (about to sign) or
+ *  `bursary_agreement` (already signed) — never a donor field. */
 export async function getStudentAward(
   options?: ApiOptions
-): Promise<{ offer: StudentAward | null; finalising?: boolean; is_minor: boolean }> {
+): Promise<{
+  offer: StudentAward | null
+  finalising?: boolean
+  is_minor: boolean
+  bursary_preview?: BursaryPreview
+  bursary_agreement?: BursaryAgreement
+}> {
   return apiRequest('/api/v1/scholarship/award/', options)
 }
 
 /** Accept or decline the award. A minor's guardian must accept (name +
- *  relationship + NRIC), mirroring the share-consent guardian gate. On error
- *  the API returns { error: code } with status 400/403; the code surfaces via
- *  err.code (apiRequest carries it). */
+ *  relationship + NRIC), mirroring the share-consent guardian gate. When the
+ *  bursary flag is on, accepting also signs the contract in-session: an ADULT
+ *  types their own signature (`student_signed_name` + optional `_nric`) AND a
+ *  parent surety (`guarantor_*`); a MINOR's guardian IS the guarantor (the
+ *  `guardian_*` fields). On error the API returns { error: code }; the code
+ *  surfaces via err.code (apiRequest carries it). */
 export async function respondToAward(
   payload: {
     action: 'accept' | 'decline'
@@ -1925,6 +1985,12 @@ export async function respondToAward(
     guardian_name?: string
     guardian_relationship?: string
     guardian_nric?: string
+    // Bursary agreement (flag-gated) — adult student signs their own name + brings a surety.
+    student_signed_name?: string
+    student_signed_nric?: string
+    guarantor_name?: string
+    guarantor_nric?: string
+    guarantor_relationship?: string
   },
   options?: ApiOptions
 ): Promise<StudentAward> {
@@ -1933,6 +1999,13 @@ export async function respondToAward(
     body: JSON.stringify(payload),
     ...options,
   })
+}
+
+/** GET the student's OWN signed bursary agreement (status + particulars + signed
+ *  PDF URL). 404s when the feature is off or no agreement exists yet — callers
+ *  treat that as "no agreement" and render nothing. */
+export async function getBursaryAgreement(options?: ApiOptions): Promise<BursaryAgreement> {
+  return apiRequest('/api/v1/scholarship/bursary-agreement/', options)
 }
 
 /** F8a: finish post-award onboarding — store the questionnaire answers and

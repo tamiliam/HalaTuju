@@ -58,6 +58,7 @@
     "badge": "Sponsor",
     "loginTitle": "Sponsor sign in",
     "loginSubtitle": "Welcome back. Sign in to your sponsor account.",
+    "signedOutElsewhere": "You were signed out here because the same account signed into the partner console. Sign in again to continue.",
     "email": "Email",
     "password": "Password",
     "enterPassword": "Enter your password",
@@ -273,7 +274,7 @@
       },
       "whoWeAre": {
         "title": "Who we are",
-        "body": "The B40 Assistance Programme is run by the team behind HalaTuju. Our full background, legal entity and registration details will be published here as the organisation is formalised.",
+        "body": "The BrightPath Bursary Programme is run by the team behind HalaTuju. Our full background, legal entity and registration details will be published here as the organisation is formalised.",
         "legalLabel": "Legal entity & registration",
         "storyLabel": "Our story & mission",
         "contactLabel": "Contact & complaints"
@@ -356,7 +357,7 @@
       "card1Title": "Complete anonymity",
       "card1Desc": "You never see names or contact details, only an anonymous student profile. Identities are protected both ways.",
       "card2Title": "Every ringgit accountable",
-      "card2Desc": "Funds will be administered by Yayasan myNADI and released against verified study milestones — never handed directly to a student. (Partnership being finalised.)",
+      "card2Desc": "Funds will be administered by an independent trust foundation and released against verified study milestones — never handed directly to a student. (The foundation is currently being established.)",
       "card3Title": "Real, verified impact",
       "card3Desc": "Each student is income-verified and interviewed, so your support reaches a genuine B40 family."
     },
@@ -376,7 +377,7 @@
       "q1": "Will I see the student's identity?",
       "a1": "No. To protect everyone, you see an anonymous profile only — never a name, IC, address, phone, email or photo. The student never sees your details either.",
       "q2": "Where does my money go?",
-      "a2": "Funds will be administered by Yayasan myNADI (a registered non-profit) and released against verified study milestones — never handed directly to a student. We're finalising this partnership.",
+      "a2": "Funds will be administered by an independent trust foundation and released against verified study milestones — never handed directly to a student. We're establishing this foundation.",
       "q3": "Can I choose who I support?",
       "a3": "Yes. Once approved, you can browse the anonymised profiles and choose the student you'd like to support.",
       "q4": "What happens if a student withdraws?",
@@ -384,7 +385,7 @@
       "q5": "How much does it cost to sponsor someone?",
       "a5": "It depends on the student's programme and needs. Each profile shows the support required so you can decide what works for you.",
       "q6": "Who runs this programme?",
-      "a6": "HalaTuju runs the B40 Assistance Programme; Yayasan myNADI will hold and disburse the funds (partnership being finalised)."
+      "a6": "HalaTuju runs the BrightPath Bursary Programme; an independent trust foundation will hold and disburse the funds (currently being established)."
     },
     "cta": {
       "heading": "Ready to change a life?",
@@ -397,7 +398,7 @@
     "quickLinks": "Quick Links",
     "legal": "Legal",
     "startHere": "Start Here",
-    "b40Heading": "B40 Aid",
+    "b40Heading": "BrightPath Bursary",
     "applyAssistance": "Apply for assistance",
     "becomeSponsor": "Become a sponsor"
   },
@@ -703,7 +704,7 @@
     "noStpm": "No STPM courses saved yet."
   },
   "scholarship": {
-    "nav": "B40 Aid",
+    "nav": "BrightPath Bursary",
     "apply": {
       "title": "Apply for B40 Education Assistance",
       "intro": "Financial assistance for B40 students continuing to IPTA/ILKA. Read the criteria, then complete the short form below.",
@@ -1363,6 +1364,7 @@
       "uploading": "Uploading…",
       "remove": "Remove",
       "uploadError": "Upload failed. Please try again.",
+      "uploadIncomplete": "The file didn't finish uploading. Please try again.",
       "deleteError": "Could not remove the document.",
       "assist": {
         "ok": "Looks good — we read this document and the details match you.",
@@ -1442,6 +1444,8 @@
         "ward": "Child in their care (you)",
         "confirmed": "Confirmed",
         "mismatch": "Doesn't match — re-check",
+        "checkNumber": "Name matches — check the IC number",
+        "checkNumberOneDigit": "Name matches — IC number differs by one digit (likely a scan misread)",
         "reviewing": "We'll review this"
       },
       "strCheck": {
@@ -1508,8 +1512,8 @@
     "consent": {
       "subtitle": "Please review and agree below to share your profile with potential sponsors.",
       "minorInfoNotice": "Please ask your parent or guardian to read the following section carefully and give their consent to share your particulars with potential sponsors.",
-      "text": "I, the named applicant (**{student_name}**, NRIC **{student_nric}**), consent to the **B40 Assistance Programme** sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time.",
-      "textMinor": "I confirm that I am the parent or guardian of **{student_name}** (NRIC: **{student_nric}**), who is under 18 years old.\n\nI give permission for the **B40 Assistance Programme** to share {his_or_her} profile and documents with sponsors. This is to help {him_or_her} get financial aid. I understand that I can cancel this permission at any time.",
+      "text": "I, the named applicant (**{student_name}**, NRIC **{student_nric}**), consent to the **BrightPath Bursary Programme** sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time.",
+      "textMinor": "I confirm that I am the parent or guardian of **{student_name}** (NRIC: **{student_nric}**), who is under 18 years old.\n\nI give permission for the **BrightPath Bursary Programme** to share {his_or_her} profile and documents with sponsors. This is to help {him_or_her} get financial aid. I understand that I can cancel this permission at any time.",
       "fallback": {
         "student": "the applicant"
       },
@@ -1654,7 +1658,7 @@
         "step6Title": "Ready for sponsors",
         "step6Desc": "With your written consent, we prepare a confidential profile for sponsors to consider.",
         "step7Title": "Matched and awarded",
-        "step7Desc": "Once a sponsor chooses to support you, Yayasan myNADI arranges the assistance and administers the funds. From application to award typically takes up to two months. (Partnership being finalised.)",
+        "step7Desc": "Once a sponsor chooses to support you, an independent trust foundation arranges the assistance and administers the funds. From application to award typically takes up to two months. (The foundation is currently being established.)",
         "step8Title": "Staying supported",
         "step8Desc": "Each semester, you upload your results and a short progress note. As long as you're progressing, the support continues."
       },
@@ -1682,13 +1686,13 @@
       "donor": {
         "title": "Want to support a student?",
         "body": "This programme exists because individuals in the community choose to fund the studies of specific students. If you'd like to know more about supporting a student — whether for a semester, a year, or the full course of their studies — we'd be glad to hear from you.",
-        "fundsPre": "Funds will be administered by ",
-        "fundsPost": ", a Malaysian non-profit organisation with Tax Exemption under Subsection 44(6) of the Income Tax Act 1967. (Partnership being finalised.)",
+        "fundsPre": "Funds will be administered by an independent trust foundation",
+        "fundsPost": " (currently being established).",
         "cta": "Get in touch"
       },
       "about": {
         "title": "About this programme",
-        "body": "The B40 Assistance Programme is coordinated by HalaTuju, with Yayasan myNADI expected to administer the funds (partnership being finalised), and a network of community organisations — including Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) and others — that refer and support students.",
+        "body": "The BrightPath Bursary Programme is coordinated by HalaTuju, with an independent trust foundation expected to administer the funds (currently being established), and a network of community organisations — including Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) and others — that refer and support students.",
         "contact": "Questions or feedback? Email"
       },
       "cta": {
@@ -1726,10 +1730,14 @@
         "rescheduleKeep": "Keep my booked time",
         "cancelInterview": "Cancel interview",
         "cancelConfirm": "Cancel your whole interview? Your interviewer will need to propose new times before you can book again.",
+        "cancelReasonLabel": "Reason for cancelling (optional)",
+        "cancelReasonPlaceholder": "Let your interviewer know why, so they can suggest times that suit you better.",
         "cancelYes": "Yes, cancel the interview",
         "cancelKeep": "Keep my interview",
         "cancelledNote": "Your interview was cancelled. Your interviewer will propose new times soon.",
         "tooLateNote": "It's close to your interview time — please contact us if you need to change it.",
+        "slotPassed": "That time has already passed — please pick another one.",
+        "allPassed": "These proposed times have all passed. Please ask for other times below.",
         "error": "Something went wrong. Please try again."
       },
       "awardPanel": {
@@ -1738,6 +1746,11 @@
         "acceptCta": "View my award",
         "onboardingBody": "You've accepted your award — just a few quick questions to finish setting up.",
         "onboardingCta": "Complete onboarding"
+      },
+      "bursaryPanel": {
+        "title": "Your bursary agreement",
+        "body": "You've signed your Conditional Bursary Award Agreement. Keep a copy for your records.",
+        "download": "Download (PDF)"
       }
     },
     "banner": {
@@ -2007,7 +2020,7 @@
         "accept": "Accept and continue",
         "accepting": "Accepting…",
         "decline": "Not right now",
-        "heldNote": "Funds are held by Yayasan myNADI and released as you progress."
+        "heldNote": "Funds are held by an independent trust foundation and released as you progress."
       },
       "declineConfirm": "Are you sure you want to decline this award for now? You can come back to it before the accept-by date.",
       "guardian": {
@@ -2025,7 +2038,47 @@
         "no_offer": "There's no award available to respond to right now.",
         "guardian_required": "Please fill in the parent or guardian's name, relationship and IC number.",
         "bad_action": "Something went wrong. Please try again.",
-        "generic": "Something went wrong. Please try again."
+        "generic": "Something went wrong. Please try again.",
+        "student_signature_required": "Please type your full name to sign the agreement.",
+        "guarantor_required": "Please fill in your parent or guardian's name, relationship and IC number.",
+        "parent_ic_missing": "We couldn't find your parent or guardian's IC on file. Please make sure it has been uploaded first.",
+        "parent_ic_required": "We couldn't find your parent or guardian's IC on file. Please make sure it has been uploaded first.",
+        "parent_ic_nric_mismatch": "The parent name or IC number doesn't match the IC on file. Please check both.",
+        "parent_ic_name_mismatch": "The parent name or IC number doesn't match the IC on file. Please check both."
+      },
+      "bursary": {
+        "heading": "Sign your Conditional Bursary Award Agreement",
+        "intro": "Before your studies are funded, please read this agreement and sign it. Your parent or guardian signs with you as your guarantor, on this same device.",
+        "particulars": "The particulars",
+        "amount": "Bursary amount",
+        "schedule": "Payment schedule",
+        "institution": "Institution",
+        "course": "Course",
+        "documentTitle": "The agreement",
+        "student": {
+          "title": "Your signature",
+          "intro": "By signing you confirm you have read and agree to this agreement.",
+          "signLabel": "Type your full name as in your IC to sign",
+          "signPlaceholder": "Your full name",
+          "nricLabel": "Your IC number (optional)",
+          "agree": "I have read and agree to this Agreement."
+        },
+        "guarantor": {
+          "title": "Your parent or guardian (guarantor)",
+          "intro": "A parent or guardian must sign as your surety (guarantor) for this bursary. Please ask them to fill this in now, on this device.",
+          "name": "Parent or guardian's full name",
+          "namePlaceholder": "As shown on their IC",
+          "relationship": "Relationship to you",
+          "nric": "Parent or guardian's IC number",
+          "agree": "I agree to stand as guarantor for this bursary."
+        },
+        "signSubmit": "Sign and accept the award",
+        "signing": "Signing…",
+        "signed": {
+          "heading": "Your agreement is signed — thank you!",
+          "body": "Your bursary agreement has been signed. You can download a copy for your records below.",
+          "download": "Download your agreement (PDF)"
+        }
       }
     },
     "onboarding": {
@@ -2562,7 +2615,7 @@
     },
     "scholarship": {
       "nav": "B40 Applications",
-      "title": "B40 Assistance Applicants",
+      "title": "BrightPath Bursary Applicants",
       "countSubtitle": "{count} applicants",
       "loadFailed": "Could not load applications.",
       "showingRange": "Showing {start}–{end} of {total} applications",
@@ -2672,6 +2725,7 @@
           "meetLink": "Join the video call",
           "noLink": "No link yet — it is created when the student books.",
           "cancelledNote": "The student cancelled — propose fresh times.",
+          "cancelReasonLabel": "Reason they gave:",
           "availableTimes": "Available times (8:00am–9:30pm, 30-min)",
           "noneToday": "No more times available today — pick another date.",
           "selectedCount": "Selected ({n} of {max})",
@@ -3129,7 +3183,20 @@
       "finalProfile": {
         "title": "Final profile (v2 — with interview)"
       },
-      "prefersLang": "Prefers {lang}"
+      "prefersLang": "Prefers {lang}",
+      "bursary": {
+        "title": "Bursary agreement",
+        "student": "Student",
+        "guarantor": "Guarantor",
+        "foundation": "Foundation",
+        "witness": "Witness",
+        "countersign": "Counter-sign (Foundation)",
+        "witnessAction": "Witness",
+        "download": "Download (PDF)",
+        "actionError": "That action could not be completed. Please try again.",
+        "witnessForbidden": "Only the referring partner organisation (or a super admin) can witness this agreement.",
+        "note": "The witness is a record only and never blocks the award. The donor is never named on this agreement."
+      }
     },
     "students": "Students",
     "invite": "Invite",
@@ -3137,6 +3204,7 @@
     "superAdmin": "Super Admin",
     "loginTitle": "Partner Login",
     "loginSubtitle": "For partner organisations and invited individuals",
+    "signedOutElsewhere": "You were signed out here because the same account signed into the sponsor portal. Sign in again to continue.",
     "email": "Email",
     "password": "Password",
     "enterPassword": "Enter your password",

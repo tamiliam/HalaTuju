@@ -516,7 +516,7 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-21)
+## Next Sprint (as of 2026-06-26)
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,
@@ -536,9 +536,28 @@ WhatsApp).
 and a student award acceptance (#14) are held silently for the window (admin can cancel/hold from the cockpit) before the
 comm + status reveal; the existing `send_pending_decision_emails` cron releases them. Migration `scholarship/0069` (4
 additive fields). Set either to 0 to disable (immediate, the old behaviour).
-DARK/unset: `SHOW_REFEREES=false`.
+DARK/unset: `SHOW_REFEREES=false`, **`BURSARY_AGREEMENT_ENABLED=false`** (the tri-partite conditional bursary agreement —
+code shipped 2026-06-26 but OFF; flip only AFTER the two Phase-0 gates: lawyer-vet the `bursary.py` template wording, and
+finalise the Foundation entity via `FOUNDATION_SIGNATORY_NAME/_TITLE/_NRIC`).
 Meet SA key **rotated 2026-06-21** (old key `692d49f8…` deleted after a transcript exposure; new `7ef25e69…` in
 `GOOGLE_MEET_SA_JSON` — still an env var, TD-125 to move it to Secret Manager).
+
+**▶ SHIPPED 2026-06-26 — Conditional Bursary Award Agreement (Phase 1, DARK) + auth scope policy + sponsor card
+(retro `docs/retrospective-2026-06-26-bursary-agreement-and-auth-scope.md`).**
+- **Conditional Bursary Award Agreement** (`a085774` backend + `f596dd0` frontend, `BURSARY_AGREEMENT_ENABLED` OFF):
+  award-accept becomes a tri-partite signed contract — student + parent surety ↔ Foundation, partner org witness, donor
+  never a party. New `BursaryAgreement` model (migration `scholarship/0072`, table + RLS, migrate-first); `bursary.py`
+  (EN+BM DRAFT template, `rendered_html`+sha256 snapshot, `xhtml2pdf` PDF to `b40-documents`, `guarantor_identity_check`
+  reusing the `parent_ic` Vision gate); signing wired into `respond_to_award`; admin counter-sign + partner witness
+  endpoints; `/scholarship/award` signing page. **Two Phase-0 gates before flip-on: lawyer-vet the template; finalise the
+  Foundation entity.** Deferred: parent-phone link (Phase 2), real disbursement (Phase 3 / TD-075). TD-140..142.
+- **Auth: one active privileged scope per Google identity, super-exempt** (`63fec7c` local-signout fix + `bf832ce`
+  intentional policy): `lib/sessionPolicy.ts`; signing into partner *or* sponsor ends the other's local session, super
+  admins keep both; kicked tab → its login with a "signed out elsewhere" note. Replaces the prior emergent Supabase kick.
+- **Sponsor pool card redesign** (`511259f`): 4-region card (code·SPM·As·state / programme + target university / ≤20-word
+  blurb / amount·Support); school dropped from sponsor view; `SponsorProfile.anon_blurb` (migration `scholarship/0071`).
+- **Asasi TVET (`FB0500001`) un-hidden**: removed an unsatisfiable `"ANY"` or-group on its requirements (data-only,
+  migrate-first + catalogue reload). No code change.
 
 **▶ SHIPPED 2026-06-21 — WhatsApp comms go-live + cockpit fixes + interview reminder-notice gating (retro
 `docs/retrospective-2026-06-21-whatsapp-golive-cockpit-reminders.md`; same day: request-owned doc slots, retro

@@ -102,6 +102,8 @@ def interview_schedule_payload(application, *, include_reviewer_busy=False):
         # Student asked for different times (none of the proposed slots worked).
         'alternatives_requested': application.interview_alternatives_requested_at is not None,
         'alternatives_note': application.interview_alternatives_note or '',
+        # Why the student cancelled their booked interview (if they gave a reason).
+        'cancel_reason': application.interview_cancel_reason or '',
     }
     if include_reviewer_busy:
         reviewer = application.assigned_to
