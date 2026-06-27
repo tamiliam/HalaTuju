@@ -504,6 +504,25 @@ _EPF_CONTRIB_RATE = 0.24
 _SLIP_EPF_LO = 0.6
 _SLIP_EPF_HI = 1.67
 
+# A backstop on a garbled salary read: net (take-home) can never exceed gross (net =
+# gross − deductions). A small tolerance absorbs rounding/OCR noise; beyond it the read
+# is inconsistent and must not be trusted for the income figure.
+_NET_OVER_GROSS_TOL = 1.02
+
+
+def _salary_monthly_amount(f):
+    """A salary slip's monthly pay (gross preferred, else net) — but ONLY when the read is
+    internally consistent. A garbled OCR of a hand-written voucher can mis-read the ruled
+    ringgit|sen columns or grab the wrong cells; the tell is **net > gross**, impossible on
+    a real payslip. When that happens the amount is unreliable → return None, so income
+    falls to 'verify at interview' rather than asserting a false (often 100x-inflated)
+    figure. (#66: a voucher whose 'RM326.00' EPF deduction was read as gross '32600'.)"""
+    gross = _parse_rm(f.get('gross_income'))
+    net = _parse_rm(f.get('net_income'))
+    if gross and net and net > gross * _NET_OVER_GROSS_TOL:
+        return None
+    return gross or net
+
 
 def _parse_rm(s):
     """Parse an RM figure ('RM 9,900.04' / '2400.00' / 'RM2,400') → float, or None."""
@@ -551,8 +570,7 @@ def earner_monthly_income(application, member):
     contribution (≈24% of salary, AVERAGED over the months shown). Returns
     ``(amount: float | None, source)`` where source is 'salary' | 'epf_estimate' | 'unknown'."""
     for slip in _cluster_docs(application, member, 'salary_slip'):
-        f = _doc_fields(slip)
-        amt = _parse_rm(f.get('gross_income') or f.get('net_income'))
+        amt = _salary_monthly_amount(_doc_fields(slip))
         if amt:
             return amt, 'salary'
     for epf in _cluster_docs(application, member, 'epf'):

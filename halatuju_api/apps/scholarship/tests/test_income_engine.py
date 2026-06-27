@@ -425,7 +425,7 @@ from apps.scholarship.income_engine import (  # noqa: E402
     _parse_billing_month, _utility_currency, utility_reasonable, utility_check,
     _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
     slip_epf_divergence, _reconciled_holder_name, _arrears_amount,
-    earner_monthly_income, _epf_contribution,
+    earner_monthly_income, _epf_contribution, _salary_monthly_amount,
 )
 
 
@@ -477,6 +477,32 @@ class TestEpfContribution(SimpleTestCase):
         amt, src = earner_monthly_income(app, 'father')
         self.assertEqual(src, 'epf_estimate')
         self.assertAlmostEqual(amt, round(434.0 / 0.24, 2))   # avg, not the 460 last-month
+
+
+class TestSalaryMonthlyAmount(SimpleTestCase):
+    def test_consistent_read_uses_gross(self):
+        self.assertEqual(_salary_monthly_amount({'gross_income': 'RM5300.00',
+                                                 'net_income': 'RM4856.75'}), 5300.0)
+
+    def test_gross_only(self):
+        self.assertEqual(_salary_monthly_amount({'gross_income': 'RM3000'}), 3000.0)
+
+    def test_net_only_when_no_gross(self):
+        self.assertEqual(_salary_monthly_amount({'net_income': 'RM2400'}), 2400.0)
+
+    def test_net_over_gross_is_rejected(self):
+        # #66: a hand-written voucher whose ruled ringgit|sen columns were concatenated —
+        # the RM326.00 EPF deduction read as gross '32600', RM343.25 deductions as net
+        # '34325'. net > gross is impossible on a real payslip → don't trust the amount.
+        self.assertIsNone(_salary_monthly_amount({'gross_income': '32600', 'net_income': '34325'}))
+
+    def test_garbled_slip_makes_income_unknown(self):
+        # The knock-on: the per-capita driver returns unknown, so income → verify-at-interview
+        # instead of asserting a false (100x-inflated) figure over the B40 line.
+        app = _app([_bill('salary_slip', {'gross_income': '32600', 'net_income': '34325'})])
+        amt, src = earner_monthly_income(app, 'father')
+        self.assertIsNone(amt)
+        self.assertEqual(src, 'unknown')
 
 
 class TestBillingMonthParse(SimpleTestCase):

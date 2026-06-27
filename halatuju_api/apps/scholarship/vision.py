@@ -1240,6 +1240,13 @@ _DOC_HINTS = {
                     'keep the 12 digits) if printed; "employer" = the company; "gross_income" '
                     '= the gross/basic monthly pay (with the RM figure); "net_income" = the '
                     'net/take-home pay; "period" = the pay month/year (e.g. "March 2026"). '
+                    'IMPORTANT for money fields: on a HAND-WRITTEN voucher the amount is often '
+                    'ruled into TWO columns — ringgit (RM) and sen (cents) — separated by a '
+                    'vertical line. Read that line as a DECIMAL POINT: "326 | 00" is RM326.00, '
+                    '"4856 | 75" is RM4856.75. NEVER concatenate the two columns into one whole '
+                    'number (RM326.00 must not become 32600). Also: the take-home pay (net) can '
+                    'never exceed the gross — if your reading makes net > gross, you have likely '
+                    'mis-read a column; re-read. '
                     'Leave a field empty if it is not present.'),
     'epf': (' This is a Malaysian EPF/KWSP statement ("PENYATA AHLI"). "name" = the '
             'member\'s full name; "nric" = "No. Kad Pengenalan" (keep the 12 digits); '

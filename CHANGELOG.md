@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Hand-written salary vouchers no longer read 100× too high (ringgit|sen columns).** A hand-written
+  voucher rules ringgit and sen into two columns separated by a vertical line; the AI was concatenating
+  them (RM326.00 → "32600") and sometimes grabbing a deduction cell as the gross — on #66 that made
+  per-capita read RM8,150 and falsely flagged a genuine B40 applicant as over the income line. The
+  salary-slip extraction prompt now treats the ruled ringgit|sen layout as a decimal (validated on #66:
+  gross now RM5,200, net RM4,856.75 — consistent). Backstop in `income_engine`: a salary read with
+  **net > gross** (impossible on a real payslip) is treated as unreadable, so income falls to
+  "verify at interview" instead of asserting a false figure. +5 tests.
 - **The SPM results-slip parser no longer emits a partial, mis-graded read for a two-column slip.** On a
   digital-PDF slip whose `GRED` column is a separate right-hand block (e.g. #66/doc912), the flattened OCR
   splits each grade from its subject — so the positional parser dropped 6 of 10 subjects AND mis-paired 3
