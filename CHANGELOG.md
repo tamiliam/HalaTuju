@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Reopen now returns an accepted case to the decision point, so a post-accept decline is bucketed correctly.**
+  Reopening an `accepted` application moves its status back to `interviewed` (the pre-decision state) — not just a
+  side-flag — and clears any pending cool-off decline; cancel-reopen restores `accepted`. Consequences: declining a
+  reopened case is now `interview` ("reviewed but not selected", with the warm interview-bucket email after the 7-day
+  cool-off), **not** `contractual`; re-approve flows back through verify-accept. `contractual` is now reserved for a
+  genuinely post-award (`sponsored`) case — the direct "Decline (contractual)" button shows only for `sponsored`; an
+  accepted case is declined by reopening first. Fixes the #11/#12 mis-bucketing (both an engine-flagged
+  income/pathway case that reached interview, then was declined). `reopen.py` (status + pending-decline clear),
+  `services.admin_reject` (contractual allowed from `sponsored`), admin cockpit button gating. +5 backend tests.
+- **Decline emails are now HTML** (branded card + plain-text fallback), sent from `info@` with reply-to `help@`. The
+  interview bucket already thanks the student for their time and for submitting their documents. `send_decline_email`
+  routes through the shared HTML shell (`_send_html`). +1 test.
+
 ### Fixed
 - **Hand-written salary vouchers no longer read 100× too high (ringgit|sen columns).** A hand-written
   voucher rules ringgit and sen into two columns separated by a vertical line; the AI was concatenating

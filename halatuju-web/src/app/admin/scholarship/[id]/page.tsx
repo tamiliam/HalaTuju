@@ -1815,7 +1815,7 @@ export default function AdminScholarshipDetailPage() {
                 {app.verdict_decided_at ? ` · ${new Date(app.verdict_decided_at).toLocaleDateString()}` : ''}
               </p>
             )}
-            {app.status === 'accepted' && canWrite && (
+            {app.status === 'sponsored' && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
                 className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
                 {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
@@ -1924,15 +1924,17 @@ export default function AdminScholarshipDetailPage() {
         </div>
 
         {/* Decision actions — pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. */}
-        {app.status === 'accepted' && !decisionReopened ? (
-          /* Committed acceptance → read-only summary + the post-accept contractual decline. */
+        {(app.status === 'accepted' || app.status === 'sponsored') && !decisionReopened ? (
+          /* Committed acceptance → read-only summary. A post-accept decline goes through
+             Reopen (→ interviewed → declined as 'interview'); the direct 'contractual'
+             decline is reserved for a genuinely post-award (sponsored) case. */
           <div className="space-y-2 border-t pt-3">
             <p className="flex items-center gap-1.5 text-sm text-green-700">
               <span aria-hidden>✓</span>
               {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
               {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
             </p>
-            {canWrite && (
+            {app.status === 'sponsored' && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
                 className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
                 {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}

@@ -516,12 +516,38 @@ def send_sponsor_digest_email(to_email, cards, lang='en'):
     return _send_sponsor_notify(to_email, SPONSOR_DIGEST_SUBJECTS, cards, 'weekly', lang, _SPONSOR_DIGEST_INTRO)
 
 
+def _decline_html(text_body):
+    """Render a plain-text decline body as a branded HTML card: blank-line-separated
+    paragraphs become <p>, single newlines (the sign-off) become <br>. Escaped."""
+    import html as _h
+    paras = [p.strip() for p in (text_body or '').split('\n\n') if p.strip()]
+    blocks = ''.join(
+        '<p style="margin:0 0 14px;">%s</p>' % _h.escape(p).replace('\n', '<br>')
+        for p in paras
+    )
+    return _html_email_shell(blocks)
+
+
 def send_decline_email(to_email, applicant_name, programme_name, category='', lang='en'):
-    """Send the right decline email for a rejection bucket. merit/need/interview each
-    get suggestive bucket-specific copy; ineligible/contractual/unknown fall back to
-    the generic warm decline (FAIL_*)."""
+    """Send the right decline email for a rejection bucket, as HTML (branded, warm) with a
+    plain-text fallback — From info@, reply-to help@. merit/need/interview get bucket-specific
+    copy (the interview bucket thanks the student for their time and for submitting their
+    documents); ineligible/contractual/unknown fall back to the generic warm decline (FAIL_*)."""
+    if not to_email:
+        return False
+    lang = normalise_lang(lang)
+    name = applicant_name or _DEFAULT_NAME[lang]
     subjects, bodies = _DECLINE_TEMPLATES.get(category, (FAIL_SUBJECTS, FAIL_BODIES))
-    return _send(to_email, subjects, bodies, applicant_name, programme_name, lang)
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    fmt = {'name': name, 'programme': programme_name,
+           'link': f'{frontend}/scholarship/application'}
+    subject = subjects[lang].format(programme=programme_name)
+    text_body = bodies[lang].format(**fmt)
+    return _send_html(
+        to_email, subject, text_body, _decline_html(text_body),
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+        reply_to=[SUPPORT_EMAIL],
+    )
 
 
 # ── Completion reminders (R1 +2d · R2 +9d · R3 +23d · R4/final +53d) ──────────
