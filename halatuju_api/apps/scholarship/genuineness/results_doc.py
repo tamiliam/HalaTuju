@@ -255,8 +255,12 @@ STR_DASHBOARD_SIGNATURES = [       # MySTR app dashboard
     ('Jumlah Bayaran Keseluruhan',    ['JUMLAH BAYARAN KESELURUHAN'],             1, 'text'),
 ]
 STR_SEMAKAN_SIGNATURES = [         # MySTR Semakan Status check page
-    ('Semakan Status',                ['SEMAKAN STATUS'],                         3, 'text'),
-    ('Status Permohonan Semasa',      ['STATUS PERMOHONAN SEMASA'],               2, 'text'),
+    # 'Status Permohonan Semasa' (the approval status field) outweighs the 'Semakan Status'
+    # page title — real Semakan screenshots are commonly cropped to start at 'Maklumat
+    # Pemohon', dropping the title, so the status field is the more reliable anchor (and it's
+    # ABSENT on an LHDN SALINAN application copy, which carries Umur/Jantina/Pekerjaan instead).
+    ('Status Permohonan Semasa',      ['STATUS PERMOHONAN SEMASA'],               3, 'text'),
+    ('Semakan Status',                ['SEMAKAN STATUS'],                         2, 'text'),
     ('Maklumat Pemohon',              ['MAKLUMAT PEMOHON'],                       1, 'text'),
     ('No. MyKad',                     ['NO MYKAD'],                               1, 'text'),
     ('Fasa Bayaran',                  ['FASA BAYARAN'],                           1, 'text'),
@@ -297,7 +301,9 @@ _IDENTITY = {'offer_letter': {
     # (a SALINAN, a SARA letter) is 'unrecognised' → holistic, never a genuine STR.
     'str_letter':    ['KEMENTERIAN KEWANGAN MALAYSIA'],
     'str_dashboard': ['STATUS PERMOHONAN STR'],
-    'str_semakan':   ['SEMAKAN STATUS'],
+    # The page title OR the status field — a genuine Semakan cropped above its title is still
+    # recognised by 'Status Permohonan Semasa' (which a SALINAN copy does not carry).
+    'str_semakan':   ['SEMAKAN STATUS', 'STATUS PERMOHONAN SEMASA'],
 }}
 
 

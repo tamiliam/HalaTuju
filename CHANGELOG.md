@@ -18,7 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   via `assess('str', …)` in `vision.run_field_extraction_for_document` (text-first, image fallback).
   **Approval vs SALINAN stays the extraction `status` field** (a separate axis). Validated: 24/24 corpus
   STR docs recognised (genuine), 4/4 counter docs (SALINAN ×2, SARA ×2 incl. a9 MyKasih-SARA) rejected.
-  +8 tests. Owner-gated branch — not deployed.
+  **Held-out run on 15 unseen prod STR docs** then drove a calibration fix: a real Semakan screenshot is
+  often cropped ABOVE its "Semakan Status" title, so the form is now anchored on the **`Status Permohonan
+  Semasa`** status field (weighted above the title) — which a SALINAN copy does not carry. Result: 12/12
+  unseen STR recognised, 3/3 non-STR (2 SALINAN + 1 SARA) rejected, zero false negatives. +9 tests total.
+  Owner-gated branch — not deployed.
 
 ### Fixed
 - **The SPM results-slip parser no longer emits a partial, mis-graded read for a two-column slip.** On a

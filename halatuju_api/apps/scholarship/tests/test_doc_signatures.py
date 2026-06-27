@@ -458,3 +458,26 @@ def test_assess_routes_str_to_signatures_when_recognised():
     from apps.scholarship.genuineness import assess
     g = assess('str', ocr_text=GENUINE_STR_DASHBOARD)
     assert g['type'] == 'str_dashboard' and g['status'] == 'genuine'
+
+
+# Held-out finding (2026-06-27): real Semakan screenshots are often cropped ABOVE the
+# "Semakan Status" title, starting at "Maklumat Pemohon". They must still be recognised by
+# the status field — while a SALINAN copy (carrying Maklumat Pemohon but NOT the status field)
+# stays unrecognised. (Prod docs 1013/1210 were false negatives before the fix.)
+CROPPED_STR_SEMAKAN = """Maklumat Pemohon
+Nama
+No. MyKad
+Status Pedalaman
+Tidak
+Status Permohonan Semasa
+Lulus
+Fasa Bayaran
+Jumlah Telah Dibayar
+"""
+
+
+def test_title_cropped_semakan_still_genuine_via_status_field():
+    g = signature_genuineness(CROPPED_STR_SEMAKAN, doc_type='str')
+    assert g['type'] == 'str_semakan'
+    assert g['status'] == 'genuine'      # status field anchors it even without the page title
+    assert g['probability'] >= GENUINE_MIN
