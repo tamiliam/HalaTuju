@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **BC genuineness no longer soft-flags plain birth certificates (text-only visual cap).** The BC scorer
+  runs TEXT-only in prod (no image read is wired), yet its signature list weighted the `JATA NEGARA`
+  crest + barcode (visual) — which could never be credited, so they only dragged genuine plain BCs toward
+  `suspect` (3/13 unseen BCs dipped to 0.63–0.67 in held-out testing) while catching zero fakes. Dropped
+  both visual signatures so the text signatures score honestly; held-out re-run: 13/13 genuine. (Patterns
+  kept in a comment as the ready escalation to a real BC visual read if ever needed.)
+
 ### Changed
 - **Decline cool-off is now "immediate decision, embargoed email".** Previously a cool-off decline held the whole
   decision silently (status unflipped) until release. Now the rejection is **immediate** — the application flips to
