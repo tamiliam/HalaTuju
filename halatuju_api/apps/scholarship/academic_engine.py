@@ -286,10 +286,32 @@ def _slip_exam(rows):
     return f'SIJIL PELAJARAN MALAYSIA TAHUN {m.group(1)}' if m else 'SIJIL PELAJARAN MALAYSIA'
 
 
+# Malay cardinals for the slip's own declared subject total ("JUMLAH MATA PELAJARAN :
+# SEPULUH" = 10). Used to detect an under-read and bounce to Gemini.
+_MALAY_NUM = {'ENAM': 6, 'TUJUH': 7, 'LAPAN': 8, 'DELAPAN': 8, 'SEMBILAN': 9,
+              'SEPULUH': 10, 'SEBELAS': 11}
+
+
+def _declared_subject_count(full_upper: str):
+    """The subject total the slip prints in 'JUMLAH MATA PELAJARAN <word>', or None.
+    SPM slips state it as a Malay cardinal (e.g. SEPULUH = 10)."""
+    m = re.search(r'JUMLAH MATA PELAJARAN\s*:?\s*(.{0,30})', full_upper)
+    if not m:
+        return None
+    tail = m.group(1)
+    if 'DUA BELAS' in tail:
+        return 12
+    for word, n in _MALAY_NUM.items():
+        if re.search(r'\b' + word + r'\b', tail):
+            return n
+    return None
+
+
 def parse_spm_slip(words):
     """Deterministic positional parse of SPM-slip OCR words →
     ``{candidate_name, exam, results: [{subject, grade, band}]}``, or **None** to fall
-    back to Gemini (not an SPM slip, or fewer than 3 subject rows recognised)."""
+    back to Gemini (not an SPM slip, fewer than 3 subject rows recognised, or fewer rows
+    than the slip's own declared subject total — an under-read)."""
     rows = _group_rows(words)
     if not rows:
         return None
@@ -307,6 +329,15 @@ def parse_spm_slip(words):
         seen.add(nn)
         results.append(gr)
     if len(results) < 3:
+        return None
+    # The slip declares its own subject total — recovering fewer means the positional parse
+    # UNDER-read. The classic cause is a 2-column slip whose GRED column is a separate block,
+    # so flattened OCR splits each grade from its subject (dropping subjects AND mis-pairing
+    # the ones it keeps with a neighbour's grade). A partial/mis-aligned read is worse than no
+    # read, so discard it → the Gemini IMAGE reader handles the 2-D table. (#66/doc912:
+    # declared SEPULUH=10, positional parse recovered only 4, 3 of them mis-graded.)
+    declared = _declared_subject_count(full)
+    if declared and len(results) < declared:
         return None
     # The slip's measured tilt (0.0 when upright; ~±90 for a sideways photo). Surfaced so the
     # help coach can give POINTED advice — "your slip was at an angle, retake it flat" — but
