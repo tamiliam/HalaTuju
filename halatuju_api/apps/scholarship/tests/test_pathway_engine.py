@@ -148,6 +148,24 @@ class TestOfferPathwayMatch(SimpleTestCase):
         self.assertEqual(offer_pathway_match('Diploma', 'Politeknik',
                                              'Diploma', 'Politeknik'), 'unknown')
 
+    def test_ministry_boilerplate_in_programme_does_not_false_clash(self):
+        # #30: declared "Program Matrikulasi (Sains)" at "KM Selangor"; the offer's programme
+        # line read as the ISSUER boilerplate ("PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN"),
+        # not the stream. The ministry words carry no field/place signal, so they must not
+        # "clash" with "Sains" — the matching college (Selangor) settles it as a match.
+        self.assertEqual(
+            offer_pathway_match('Program Matrikulasi (Sains)', 'KM Selangor',
+                                'PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN',
+                                'KOLEJ MATRIKULASI SELANGOR'),
+            'match')
+
+    def test_real_wrong_stream_still_clashes(self):
+        # Guard: when the offer DOES carry a real (different) field, the clash still fires.
+        self.assertEqual(
+            offer_pathway_match('Program Matrikulasi (Sains)', 'KM Selangor',
+                                'PROGRAM MATRIKULASI PERAKAUNAN', 'KOLEJ MATRIKULASI SELANGOR'),
+            'mismatch')
+
     def test_form6_enrolment_wording_does_not_false_clash(self):
         # Divashini: declared a Form-6 (STPM) Sains Sosial place; the offer's "programme"
         # was read as the enrolment TYPE ("Tingkatan Enam Semester 1 Tahun 2026"), not a
