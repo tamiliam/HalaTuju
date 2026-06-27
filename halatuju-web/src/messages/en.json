@@ -3119,6 +3119,7 @@
         "notUploaded": "not uploaded yet",
         "view": "View",
         "rerun": "Re-run",
+        "examYear": "SPM {year}",
         "viewer": {
           "newTab": "Open in new tab",
           "close": "Close",

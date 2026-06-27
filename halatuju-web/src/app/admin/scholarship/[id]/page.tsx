@@ -1512,10 +1512,13 @@ export default function AdminScholarshipDetailPage() {
             s === 'verified' ? 'text-green-600' : s === 'partial' ? 'text-amber-600'
               : s === 'not' ? 'text-red-600' : 'text-gray-400'
           const subLabel = 'text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5'
-          // Line 2: the coloured fact-labels — only the facts THIS document provides.
+          // Line 2: the coloured fact-labels — only the facts THIS document provides. A results
+          // slip also surfaces the SPM exam YEAR (a muted data point, not a pass/fail check) after
+          // Results, so the officer can see which year's slip this is.
           const factLine = (d: AdminApplicantDocument) => {
             const facts = documentFacts(d)
-            if (facts.length === 0) return null
+            const examYear = d.doc_type === 'results_slip' ? (d.academic_check?.exam_year || '') : ''
+            if (facts.length === 0 && !examYear) return null
             return (
               <p className="mt-0.5 flex flex-wrap items-center text-[11px]">
                 {facts.map((f, i) => (
@@ -1526,6 +1529,14 @@ export default function AdminScholarshipDetailPage() {
                     </span>
                   </span>
                 ))}
+                {examYear && (
+                  <span className="flex items-center">
+                    {facts.length > 0 && <span className="text-gray-300 mx-1.5">·</span>}
+                    <span className="font-medium text-gray-500">
+                      {t('admin.scholarship.docsDrawer.examYear', { year: examYear })}
+                    </span>
+                  </span>
+                )}
               </p>
             )
           }
