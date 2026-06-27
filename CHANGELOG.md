@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Birth-certificate / guardianship relationship rows no longer show a false red "Doesn't match" on an AI-misread IC
+  number.** The relationship rows (BC Child/Mother, guardianship Guardian) treat the NAME as the primary proof of the
+  link and the AI-read IC number as corroboration. Because a BC/letter IC number is read off green JPN security paper,
+  a single misread digit (e.g. 76-**08** → 76-**09**) is common; previously that flipped the row to a hard red
+  "Doesn't match" even when the name matched and the parent's own IC was separately verified. Now, when the **name
+  matches** but the **IC number** differs, the row shows an amber **"Name matches — check the IC number"** instead of
+  red. Red is reserved for a genuine NAME mismatch (a different person) or an IC clash with no name to vouch for it.
+  New `income_engine._combine_relationship`; amber `check` pill in the student docs view + officer cockpit
+  (`factStatus`); i18n `scholarship.docs.relCheck.checkNumber` (en/ms/ta). SOFT signal throughout — never blocked
+  submission, this only corrects misleading wording. +1 backend test (POVIENTHIRAN case). No migration.
+
 ### Security
 - **One active privileged scope per Google identity (except super admins).** A single Google identity may now hold
   only ONE of the partner console / sponsor portal at a time; signing into one **ends the other scope's local session**.

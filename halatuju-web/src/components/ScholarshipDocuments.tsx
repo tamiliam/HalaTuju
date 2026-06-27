@@ -449,11 +449,13 @@ const REL_PILL: Record<ICCheckKind, string> = {
 }
 
 function relPill(status: string, t: (k: string) => string): ReactNode {
-  const kind: ICCheckKind = status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : 'none'
+  const kind: ICCheckKind =
+    status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : status === 'check' ? 'partial' : 'none'
   const label =
     status === 'match' ? t('scholarship.docs.relCheck.confirmed')
       : status === 'mismatch' ? t('scholarship.docs.relCheck.mismatch')
-        : t('scholarship.docs.relCheck.reviewing')
+        : status === 'check' ? t('scholarship.docs.relCheck.checkNumber')
+          : t('scholarship.docs.relCheck.reviewing')
   return <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${REL_PILL[kind]}`}>{label}</span>
 }
 

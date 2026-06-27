@@ -1000,6 +1000,19 @@ class TestRelationshipChecklists(TestCase):
                               'bc_mother_name': 'STRANGER WOMAN', 'bc_mother_nric': '111111-11-1111'})
         self.assertEqual(student_bc_check(bc)['mother_status'], 'mismatch')
 
+    def test_bc_mother_name_match_nric_misread_is_check_not_red(self):
+        # POVIENTHIRAN case: the BC mother NAME matches the verified mother IC, but the AI
+        # misread one digit of her NRIC off the green JPN security paper (76-08 → 76-09).
+        # The relationship is proven by the name + the verified IC, so this is an amber
+        # 'check' ("look at the number"), NOT a red 'mismatch'.
+        from apps.scholarship.income_engine import student_bc_check
+        _parent_ic(self.app, 'MAGESWARY A/P RAJAGOPAL', member='mother', nric='760824-10-5692')
+        bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                      fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
+                              'bc_mother_name': 'MAGESWARY A/P RAJAGOPAL',
+                              'bc_mother_nric': '760924-10-5692'})  # AI misread: 08 → 09
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'check')
+
     def test_guardianship_check(self):
         from apps.scholarship.income_engine import student_guardianship_check
         self.app.income_working_members = ['guardian']

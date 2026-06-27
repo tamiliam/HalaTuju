@@ -621,8 +621,24 @@ def _nric_bucket(extracted, reference):
     return 'match' if nric_match(extracted, reference) else 'mismatch'
 
 
-def _combine(a, b):
-    return 'mismatch' if 'mismatch' in (a, b) else ('match' if 'match' in (a, b) else 'no_ref')
+def _combine_relationship(name_b, nric_b):
+    """Combine a relationship row's NAME + NRIC buckets, treating the NAME as the primary
+    proof of the link and the NRIC as corroboration. A birth-certificate / letter NRIC is
+    AI-read off a security-printed JPN document, so a single misread digit (8↔9, 0↔6 over
+    the green guilloche) is common; when the NAME matches, an NRIC clash is therefore an
+    amber 'check' ("look at the number"), NOT a red 'mismatch'. Red is reserved for a real
+    NAME mismatch (a genuinely different person) or an NRIC clash with no name to vouch for
+    it. Strictly demotes false reds to amber — never turns a real mismatch green."""
+    if name_b == 'mismatch':
+        return 'mismatch'
+    if name_b == 'match':
+        return 'check' if nric_b == 'mismatch' else 'match'
+    # No NAME to compare (no_ref) — fall back to the NRIC alone.
+    if nric_b == 'mismatch':
+        return 'mismatch'
+    if nric_b == 'match':
+        return 'match'
+    return 'no_ref'
 
 
 def student_bc_check(doc):
@@ -636,13 +652,13 @@ def student_bc_check(doc):
     student = getattr(getattr(app, 'profile', None), 'name', '') or ''
     student_nric = getattr(getattr(app, 'profile', None), 'nric', '') or ''
     child_name = (f.get('bc_child_name', '') or '').strip()
-    child_status = _combine(_name_bucket(child_name, student),
-                            _nric_bucket(f.get('bc_child_nric'), student_nric))
+    child_status = _combine_relationship(_name_bucket(child_name, student),
+                                         _nric_bucket(f.get('bc_child_nric'), student_nric))
     mother_name = (f.get('bc_mother_name', '') or '').strip()
     mother_nric = (f.get('bc_mother_nric', '') or '').strip()
     mic = _member_ic_doc(app, 'mother')
-    mother_status = _combine(_name_bucket(mother_name, getattr(mic, 'vision_name', '') if mic else ''),
-                             _nric_bucket(mother_nric, getattr(mic, 'vision_nric', '') if mic else ''))
+    mother_status = _combine_relationship(_name_bucket(mother_name, getattr(mic, 'vision_name', '') if mic else ''),
+                                          _nric_bucket(mother_nric, getattr(mic, 'vision_nric', '') if mic else ''))
     father_name = (f.get('bc_father_name', '') or '').strip()
     father_status = _name_bucket(father_name, father_name_from_ic(student))
     return {
@@ -665,8 +681,8 @@ def student_guardianship_check(doc):
     g_name = (f.get('guardian_name', '') or '').strip()
     g_nric = (f.get('guardian_nric', '') or '').strip()
     gic = _member_ic_doc(app, 'guardian')
-    guardian_status = _combine(_name_bucket(g_name, getattr(gic, 'vision_name', '') if gic else ''),
-                               _nric_bucket(g_nric, getattr(gic, 'vision_nric', '') if gic else ''))
+    guardian_status = _combine_relationship(_name_bucket(g_name, getattr(gic, 'vision_name', '') if gic else ''),
+                                            _nric_bucket(g_nric, getattr(gic, 'vision_nric', '') if gic else ''))
     ward_name = (f.get('ward_name', '') or '').strip()
     return {
         'guardian_name': g_name, 'guardian_nric': g_nric, 'guardian_status': guardian_status,
