@@ -1444,6 +1444,7 @@
         "confirmed": "Confirmed",
         "mismatch": "Doesn't match — re-check",
         "checkNumber": "Name matches — check the IC number",
+        "checkNumberOneDigit": "Name matches — IC number differs by one digit (likely a scan misread)",
         "reviewing": "We'll review this"
       },
       "strCheck": {
