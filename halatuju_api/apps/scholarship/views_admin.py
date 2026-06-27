@@ -28,7 +28,7 @@ from .models import (
     ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
 from . import scheduling
-from .profile_engine import refine_sponsor_profile
+from .profile_engine import generate_anon_blurb, refine_sponsor_profile
 from . import in_programme as in_programme_service
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
 from .serializers_admin import (
@@ -1025,6 +1025,15 @@ class AdminRecordVerdictView(_AdminBase):
                             sp.anon_published = True
                             sp.anon_published_at = timezone.now()
                             sp.realtime_notified_at = None
+                            # The ≤20-word CARD blurb (card-strict — stricter than the
+                            # profile). Generated from the already-anonymous markdown, then
+                            # backstopped by the STRICT identifier scan; on any leak/empty
+                            # leave it blank so the card falls back to the course alone.
+                            blurb = generate_anon_blurb(app, result['markdown'])
+                            sp.anon_blurb = blurb if (
+                                blurb and not pool.scan_anon_for_identifiers(
+                                    blurb, getattr(app, 'profile', None))
+                            ) else ''
                         sp_to_save = sp
                         finalise_result = {'ok': True, 'published': published, 'leaks': leaks}
 
@@ -1307,3 +1316,60 @@ class AdminGraduationMessageReviewView(_AdminBase):
             return Response({'error': exc.code, 'code': exc.code},
                             status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminGraduationMessageSerializer(message).data)
+
+
+class _BursaryAdminBase(_AdminBase):
+    """Shared lookup for the bursary-agreement admin actions."""
+
+    def _agreement(self, pk):
+        from .models import BursaryAgreement
+        return BursaryAgreement.objects.select_related(
+            'application', 'application__profile', 'witness_org').filter(application_id=pk).first()
+
+
+class AdminBursaryCountersignView(_BursaryAdminBase):
+    """POST — the Foundation countersignature on a student's bursary agreement.
+    SUPER-ONLY (the Foundation acts as counterparty). Stamps foundation_signed_by/_at
+    with the acting super-admin's name and regenerates the PDF."""
+
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not (admin.is_super_admin or self.has_role(admin, 'super')):
+            return self._deny_role()
+        agreement = self._agreement(pk)
+        if agreement is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        from . import bursary
+        from .serializers import BursaryAgreementSerializer
+        bursary.countersign_foundation(agreement, by_name=getattr(admin, 'name', '') or '')
+        return Response(BursaryAgreementSerializer(agreement).data)
+
+
+class AdminBursaryWitnessView(_BursaryAdminBase):
+    """POST — the partner organisation's (non-blocking) witness attestation. Allowed for
+    a PartnerAdmin whose org == the application's referring org (else 403); a super may
+    also witness. This NEVER blocks the award lifecycle — it is a record only."""
+
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        agreement = self._agreement(pk)
+        if agreement is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        profile = agreement.application.profile
+        org = getattr(profile, 'referred_by_org', None) if profile else None
+        is_super = bool(admin.is_super_admin or self.has_role(admin, 'super'))
+        is_referring_partner = bool(
+            org is not None and admin.org_id is not None and admin.org_id == org.id)
+        if not (is_super or is_referring_partner):
+            return self._deny_role()
+        from . import bursary
+        from .serializers import BursaryAgreementSerializer
+        bursary.record_witness(
+            agreement, org=org,
+            by_name=getattr(admin, 'name', '') or '',
+            witness_name=request.data.get('witness_name', '') or '')
+        return Response(BursaryAgreementSerializer(agreement).data)

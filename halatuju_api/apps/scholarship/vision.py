@@ -78,6 +78,36 @@ def nric_match(extracted: str, profile_nric: str) -> bool:
     return bool(a) and bool(b) and a == b
 
 
+def nric_close(extracted: str, reference: str) -> bool:
+    """True iff two NRICs are a SINGLE-digit edit apart (one substitution, or one inserted
+    /dropped digit) after canonicalisation — i.e. a likely OCR slip on a security-printed
+    document (e.g. 76-08 read as 76-09 over the green JPN guilloche), NOT a different number.
+    False when either is blank, when they're equal (that's an exact match — use nric_match),
+    or when they differ by more than one digit. RELATIONSHIP context only — used to phrase a
+    soft 'check the number' nudge more precisely; it never relaxes the strict identity gate."""
+    a, b = _canonical_nric(extracted), _canonical_nric(reference)
+    if not a or not b or a == b:
+        return False
+    la, lb = len(a), len(b)
+    if abs(la - lb) > 1:
+        return False
+    if la == lb:                                   # one substitution
+        return sum(1 for x, y in zip(a, b) if x != y) == 1
+    short, long = (a, b) if la < lb else (b, a)    # one inserted/dropped digit
+    i = j = 0
+    skipped = False
+    while i < len(short) and j < len(long):
+        if short[i] == long[j]:
+            i += 1
+            j += 1
+        elif skipped:
+            return False
+        else:
+            skipped = True
+            j += 1
+    return True
+
+
 def name_match(extracted: str, profile_name: str) -> str:
     """
     'match' if the token sets are equal after stripping MyKad parentage tokens;
@@ -1126,6 +1156,13 @@ _DOC_HINTS = {
                     'keep the 12 digits) if printed; "employer" = the company; "gross_income" '
                     '= the gross/basic monthly pay (with the RM figure); "net_income" = the '
                     'net/take-home pay; "period" = the pay month/year (e.g. "March 2026"). '
+                    'IMPORTANT for money fields: on a HAND-WRITTEN voucher the amount is often '
+                    'ruled into TWO columns — ringgit (RM) and sen (cents) — separated by a '
+                    'vertical line. Read that line as a DECIMAL POINT: "326 | 00" is RM326.00, '
+                    '"4856 | 75" is RM4856.75. NEVER concatenate the two columns into one whole '
+                    'number (RM326.00 must not become 32600). Also: the take-home pay (net) can '
+                    'never exceed the gross — if your reading makes net > gross, you have likely '
+                    'mis-read a column; re-read. '
                     'Leave a field empty if it is not present.'),
     'epf': (' This is a Malaysian EPF/KWSP statement ("PENYATA AHLI"). "name" = the member\'s '
             'full name; "nric" = "No. Kad Pengenalan" (keep the 12 digits). "employer_number" = '

@@ -58,6 +58,7 @@
     "badge": "Penaja",
     "loginTitle": "Log masuk penaja",
     "loginSubtitle": "Selamat kembali. Log masuk ke akaun penaja anda.",
+    "signedOutElsewhere": "Anda telah dilog keluar di sini kerana akaun yang sama telah log masuk ke konsol rakan kongsi. Sila log masuk semula untuk meneruskan.",
     "email": "E-mel",
     "password": "Kata laluan",
     "enterPassword": "Masukkan kata laluan anda",
@@ -273,7 +274,7 @@
       },
       "whoWeAre": {
         "title": "Siapa kami",
-        "body": "Program Bantuan B40 dikendalikan oleh pasukan di sebalik HalaTuju. Latar belakang penuh, entiti undang-undang dan butiran pendaftaran kami akan diterbitkan di sini apabila organisasi diformalkan.",
+        "body": "Program Bursari BrightPath dikendalikan oleh pasukan di sebalik HalaTuju. Latar belakang penuh, entiti undang-undang dan butiran pendaftaran kami akan diterbitkan di sini apabila organisasi diformalkan.",
         "legalLabel": "Entiti undang-undang & pendaftaran",
         "storyLabel": "Kisah & misi kami",
         "contactLabel": "Hubungan & aduan"
@@ -356,7 +357,7 @@
       "card1Title": "Tanpa nama sepenuhnya",
       "card1Desc": "Anda tidak pernah melihat nama atau butiran hubungan, hanya profil pelajar tanpa nama. Identiti dilindungi kedua-dua belah pihak.",
       "card2Title": "Setiap ringgit bertanggungjawab",
-      "card2Desc": "Dana akan ditadbir oleh Yayasan myNADI dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. (Perkongsian sedang dimuktamadkan.)",
+      "card2Desc": "Dana akan ditadbir oleh sebuah yayasan amanah bebas dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. (Yayasan ini sedang ditubuhkan.)",
       "card3Title": "Impak sebenar yang disahkan",
       "card3Desc": "Setiap pelajar disahkan pendapatan dan ditemu duga, supaya bantuan anda sampai kepada keluarga B40 yang sebenar."
     },
@@ -376,7 +377,7 @@
       "q1": "Adakah saya akan melihat identiti pelajar?",
       "a1": "Tidak. Untuk melindungi semua pihak, anda hanya melihat profil tanpa nama — tidak pernah nama, IC, alamat, telefon, e-mel atau foto. Pelajar juga tidak melihat butiran anda.",
       "q2": "Ke mana wang saya pergi?",
-      "a2": "Dana akan ditadbir oleh Yayasan myNADI (sebuah badan bukan untung yang berdaftar) dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. Kami sedang memuktamadkan perkongsian ini.",
+      "a2": "Dana akan ditadbir oleh sebuah yayasan amanah bebas dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. Yayasan ini sedang ditubuhkan.",
       "q3": "Bolehkah saya memilih siapa yang saya taja?",
       "a3": "Boleh. Setelah diluluskan, anda boleh melihat profil tanpa nama dan memilih pelajar yang ingin anda taja.",
       "q4": "Apa berlaku jika pelajar berhenti?",
@@ -384,7 +385,7 @@
       "q5": "Berapa kos untuk menaja seseorang?",
       "a5": "Ia bergantung pada program dan keperluan pelajar. Setiap profil menunjukkan bantuan yang diperlukan supaya anda boleh menentukan apa yang sesuai.",
       "q6": "Siapa yang mengendalikan program ini?",
-      "a6": "HalaTuju mengendalikan Program Bantuan B40; Yayasan myNADI akan memegang dan menyalurkan dana (perkongsian sedang dimuktamadkan)."
+      "a6": "HalaTuju mengendalikan Program Bursari BrightPath; sebuah yayasan amanah bebas akan memegang dan menyalurkan dana (yayasan ini sedang ditubuhkan)."
     },
     "cta": {
       "heading": "Bersedia untuk mengubah hidup?",
@@ -397,7 +398,7 @@
     "quickLinks": "Pautan Pantas",
     "legal": "Undang-undang",
     "startHere": "Mula Di Sini",
-    "b40Heading": "Bantuan B40",
+    "b40Heading": "Bursari BrightPath",
     "applyAssistance": "Mohon bantuan",
     "becomeSponsor": "Jadi penaja"
   },
@@ -703,7 +704,7 @@
     "noStpm": "Tiada kursus STPM disimpan lagi."
   },
   "scholarship": {
-    "nav": "Bantuan B40",
+    "nav": "Bursari BrightPath",
     "apply": {
       "title": "Mohon Bantuan Pendidikan B40",
       "intro": "Bantuan kewangan untuk pelajar B40 yang melanjutkan ke IPTA/ILKA. Baca kriteria, kemudian lengkapkan borang ringkas di bawah.",
@@ -1363,6 +1364,7 @@
       "uploading": "Memuat naik…",
       "remove": "Buang",
       "uploadError": "Muat naik gagal. Sila cuba lagi.",
+      "uploadIncomplete": "Fail tidak selesai dimuat naik. Sila cuba lagi.",
       "deleteError": "Tidak dapat membuang dokumen.",
       "assist": {
         "ok": "Nampak baik — kami baca dokumen ini dan butirannya sepadan dengan anda.",
@@ -1442,6 +1444,8 @@
         "ward": "Anak dalam jagaan mereka (anda)",
         "confirmed": "Disahkan",
         "mismatch": "Tidak sepadan — semak semula",
+        "checkNumber": "Nama sepadan — semak nombor KP",
+        "checkNumberOneDigit": "Nama sepadan — nombor KP berbeza satu digit (mungkin salah baca imbasan)",
         "reviewing": "Kami akan semak ini"
       },
       "strCheck": {
@@ -1508,8 +1512,8 @@
     "consent": {
       "subtitle": "Sila semak dan bersetuju di bawah untuk berkongsi profil anda dengan bakal penaja.",
       "minorInfoNotice": "Sila minta ibu bapa atau penjaga anda membaca bahagian berikut dengan teliti dan memberikan persetujuan mereka untuk berkongsi butiran anda dengan bakal penaja.",
-      "text": "Saya, pemohon yang dinamakan (**{student_name}**, NRIC **{student_nric}**), bersetuju **Program Bantuan B40** berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
-      "textMinor": "Saya mengesahkan bahawa saya adalah ibu bapa atau penjaga **{student_name}** (NRIC: **{student_nric}**), yang berumur di bawah 18 tahun.\n\nSaya memberi kebenaran kepada **Program Bantuan B40** untuk berkongsi profil dan dokumen {his_or_her} dengan penaja. Ini adalah untuk membantu {him_or_her} mendapat bantuan kewangan. Saya faham saya boleh membatalkan kebenaran ini pada bila-bila masa.",
+      "text": "Saya, pemohon yang dinamakan (**{student_name}**, NRIC **{student_nric}**), bersetuju **Program Bursari BrightPath** berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
+      "textMinor": "Saya mengesahkan bahawa saya adalah ibu bapa atau penjaga **{student_name}** (NRIC: **{student_nric}**), yang berumur di bawah 18 tahun.\n\nSaya memberi kebenaran kepada **Program Bursari BrightPath** untuk berkongsi profil dan dokumen {his_or_her} dengan penaja. Ini adalah untuk membantu {him_or_her} mendapat bantuan kewangan. Saya faham saya boleh membatalkan kebenaran ini pada bila-bila masa.",
       "fallback": {
         "student": "pemohon"
       },
@@ -1654,7 +1658,7 @@
         "step6Title": "Sedia untuk penaja",
         "step6Desc": "Dengan kebenaran bertulis anda, kami menyediakan profil sulit untuk pertimbangan penaja.",
         "step7Title": "Dipadankan dan dianugerahkan",
-        "step7Desc": "Apabila penaja memilih untuk menyokong anda, Yayasan myNADI mengatur bantuan dan mentadbir dana. Daripada permohonan hingga anugerah biasanya mengambil masa sehingga dua bulan. (Kerjasama sedang dimuktamadkan.)",
+        "step7Desc": "Apabila penaja memilih untuk menyokong anda, sebuah yayasan amanah bebas mengatur bantuan dan mentadbir dana. Daripada permohonan hingga anugerah biasanya mengambil masa sehingga dua bulan. (Yayasan ini sedang ditubuhkan.)",
         "step8Title": "Sokongan berterusan",
         "step8Desc": "Setiap semester, anda muat naik keputusan dan nota kemajuan ringkas. Selagi anda membuat kemajuan, sokongan akan diteruskan."
       },
@@ -1682,13 +1686,13 @@
       "donor": {
         "title": "Ingin menyokong seorang pelajar?",
         "body": "Program ini wujud kerana individu dalam komuniti memilih untuk membiayai pengajian pelajar tertentu. Jika anda ingin tahu lebih lanjut tentang menyokong seorang pelajar — sama ada untuk satu semester, satu tahun, atau sepanjang tempoh pengajian mereka — kami berbesar hati mendengar daripada anda.",
-        "fundsPre": "Dana akan ditadbir oleh ",
-        "fundsPost": ", sebuah pertubuhan bukan untung Malaysia dengan Pengecualian Cukai di bawah Subseksyen 44(6) Akta Cukai Pendapatan 1967. (Kerjasama sedang dimuktamadkan.)",
+        "fundsPre": "Dana akan ditadbir oleh sebuah yayasan amanah bebas",
+        "fundsPost": " (sedang ditubuhkan).",
         "cta": "Hubungi kami"
       },
       "about": {
         "title": "Tentang program ini",
-        "body": "Program Bantuan B40 diselaraskan oleh HalaTuju, dengan Yayasan myNADI dijangka mentadbir dana (kerjasama sedang dimuktamadkan), serta rangkaian pertubuhan komuniti — termasuk Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) dan lain-lain — yang merujuk dan menyokong pelajar.",
+        "body": "Program Bursari BrightPath diselaraskan oleh HalaTuju, dengan sebuah yayasan amanah bebas dijangka mentadbir dana (yayasan ini sedang ditubuhkan), serta rangkaian pertubuhan komuniti — termasuk Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) dan lain-lain — yang merujuk dan menyokong pelajar.",
         "contact": "Soalan atau maklum balas? E-mel"
       },
       "cta": {
@@ -1726,10 +1730,14 @@
         "rescheduleKeep": "Kekalkan masa tempahan saya",
         "cancelInterview": "Batalkan temu duga",
         "cancelConfirm": "Batalkan keseluruhan temu duga anda? Penemu duga anda perlu mencadangkan masa baharu sebelum anda boleh menempah semula.",
+        "cancelReasonLabel": "Sebab pembatalan (pilihan)",
+        "cancelReasonPlaceholder": "Beritahu penemu duga anda sebabnya, supaya mereka boleh mencadangkan masa yang lebih sesuai untuk anda.",
         "cancelYes": "Ya, batalkan temu duga",
         "cancelKeep": "Kekalkan temu duga saya",
         "cancelledNote": "Temu duga anda telah dibatalkan. Penemu duga anda akan mencadangkan masa baharu tidak lama lagi.",
         "tooLateNote": "Sudah hampir dengan masa temu duga anda — sila hubungi kami jika anda perlu menukarnya.",
+        "slotPassed": "Masa itu telah pun berlalu — sila pilih masa lain.",
+        "allPassed": "Masa-masa yang dicadangkan ini semuanya telah berlalu. Sila minta masa lain di bawah.",
         "error": "Sesuatu tidak kena. Sila cuba lagi."
       },
       "awardPanel": {
@@ -1738,6 +1746,11 @@
         "acceptCta": "Lihat anugerah saya",
         "onboardingBody": "Anda telah menerima anugerah anda — hanya beberapa soalan ringkas untuk melengkapkan persediaan.",
         "onboardingCta": "Lengkapkan pendaftaran"
+      },
+      "bursaryPanel": {
+        "title": "Perjanjian biasiswa anda",
+        "body": "Anda telah menandatangani Perjanjian Pemberian Biasiswa Bersyarat anda. Simpan satu salinan untuk rekod anda.",
+        "download": "Muat turun (PDF)"
       }
     },
     "banner": {
@@ -2007,7 +2020,7 @@
         "accept": "Terima dan teruskan",
         "accepting": "Sedang menerima…",
         "decline": "Bukan sekarang",
-        "heldNote": "Dana dipegang oleh Yayasan myNADI dan dikeluarkan mengikut kemajuan anda."
+        "heldNote": "Dana dipegang oleh sebuah yayasan amanah bebas dan dikeluarkan mengikut kemajuan anda."
       },
       "declineConfirm": "Adakah anda pasti mahu menolak anugerah ini buat masa ini? Anda boleh kembali sebelum tarikh tutup penerimaan.",
       "guardian": {
@@ -2025,7 +2038,47 @@
         "no_offer": "Tiada anugerah untuk dijawab buat masa ini.",
         "guardian_required": "Sila isi nama, hubungan dan nombor kad pengenalan ibu bapa atau penjaga.",
         "bad_action": "Sesuatu telah berlaku. Sila cuba lagi.",
-        "generic": "Sesuatu telah berlaku. Sila cuba lagi."
+        "generic": "Sesuatu telah berlaku. Sila cuba lagi.",
+        "student_signature_required": "Sila taipkan nama penuh anda untuk menandatangani perjanjian.",
+        "guarantor_required": "Sila isikan nama, hubungan dan nombor IC ibu bapa atau penjaga anda.",
+        "parent_ic_missing": "Kami tidak menemui IC ibu bapa atau penjaga anda dalam rekod. Sila pastikan ia telah dimuat naik dahulu.",
+        "parent_ic_required": "Kami tidak menemui IC ibu bapa atau penjaga anda dalam rekod. Sila pastikan ia telah dimuat naik dahulu.",
+        "parent_ic_nric_mismatch": "Nama atau nombor IC ibu bapa tidak sepadan dengan IC dalam rekod. Sila semak kedua-duanya.",
+        "parent_ic_name_mismatch": "Nama atau nombor IC ibu bapa tidak sepadan dengan IC dalam rekod. Sila semak kedua-duanya."
+      },
+      "bursary": {
+        "heading": "Tandatangani Perjanjian Pemberian Biasiswa Bersyarat anda",
+        "intro": "Sebelum pengajian anda dibiayai, sila baca perjanjian ini dan tandatanganinya. Ibu bapa atau penjaga anda menandatangani bersama anda sebagai penjamin, pada peranti yang sama ini.",
+        "particulars": "Butiran",
+        "amount": "Jumlah biasiswa",
+        "schedule": "Jadual pembayaran",
+        "institution": "Institusi",
+        "course": "Kursus",
+        "documentTitle": "Perjanjian",
+        "student": {
+          "title": "Tandatangan anda",
+          "intro": "Dengan menandatangani, anda mengesahkan bahawa anda telah membaca dan bersetuju dengan perjanjian ini.",
+          "signLabel": "Taipkan nama penuh anda seperti dalam IC untuk menandatangani",
+          "signPlaceholder": "Nama penuh anda",
+          "nricLabel": "Nombor IC anda (pilihan)",
+          "agree": "Saya telah membaca dan bersetuju dengan Perjanjian ini."
+        },
+        "guarantor": {
+          "title": "Ibu bapa atau penjaga anda (penjamin)",
+          "intro": "Seorang ibu bapa atau penjaga mesti menandatangani sebagai penjamin untuk biasiswa ini. Sila minta mereka mengisinya sekarang, pada peranti ini.",
+          "name": "Nama penuh ibu bapa atau penjaga",
+          "namePlaceholder": "Seperti tertera pada IC mereka",
+          "relationship": "Hubungan dengan anda",
+          "nric": "Nombor IC ibu bapa atau penjaga",
+          "agree": "Saya bersetuju menjadi penjamin untuk biasiswa ini."
+        },
+        "signSubmit": "Tandatangan dan terima pemberian",
+        "signing": "Menandatangani…",
+        "signed": {
+          "heading": "Perjanjian anda telah ditandatangani — terima kasih!",
+          "body": "Perjanjian biasiswa anda telah ditandatangani. Anda boleh memuat turun salinan untuk rekod anda di bawah.",
+          "download": "Muat turun perjanjian anda (PDF)"
+        }
       }
     },
     "onboarding": {
@@ -2562,7 +2615,7 @@
     },
     "scholarship": {
       "nav": "Permohonan B40",
-      "title": "Pemohon Bantuan B40",
+      "title": "Pemohon Bursari BrightPath",
       "countSubtitle": "{count} pemohon",
       "loadFailed": "Tidak dapat memuatkan permohonan.",
       "showingRange": "Papar {start}–{end} daripada {total} permohonan",
@@ -2672,6 +2725,7 @@
           "meetLink": "Sertai panggilan video",
           "noLink": "Tiada pautan lagi — ia dijana apabila pelajar menempah.",
           "cancelledNote": "Pelajar telah membatalkan — cadangkan masa baharu.",
+          "cancelReasonLabel": "Sebab yang diberikan:",
           "availableTimes": "Masa tersedia (8:00 pagi–9:30 malam, 30 minit)",
           "noneToday": "Tiada lagi masa tersedia hari ini — pilih tarikh lain.",
           "selectedCount": "Dipilih ({n} daripada {max})",
@@ -3129,7 +3183,20 @@
       "finalProfile": {
         "title": "Profil akhir (v2 — dengan temu duga)"
       },
-      "prefersLang": "Suka {lang}"
+      "prefersLang": "Suka {lang}",
+      "bursary": {
+        "title": "Perjanjian biasiswa",
+        "student": "Pelajar",
+        "guarantor": "Penjamin",
+        "foundation": "Yayasan",
+        "witness": "Saksi",
+        "countersign": "Tandatangan balas (Yayasan)",
+        "witnessAction": "Saksikan",
+        "download": "Muat turun (PDF)",
+        "actionError": "Tindakan itu tidak dapat diselesaikan. Sila cuba lagi.",
+        "witnessForbidden": "Hanya organisasi rakan kongsi yang merujuk (atau super admin) boleh menyaksikan perjanjian ini.",
+        "note": "Saksi adalah rekod sahaja dan tidak pernah menyekat pemberian. Penderma tidak pernah dinamakan dalam perjanjian ini."
+      }
     },
     "students": "Pelajar",
     "invite": "Jemputan",
@@ -3137,6 +3204,7 @@
     "superAdmin": "Pentadbir Utama",
     "loginTitle": "Log Masuk Rakan Kongsi",
     "loginSubtitle": "Untuk organisasi rakan kongsi dan individu yang dijemput",
+    "signedOutElsewhere": "Anda telah dilog keluar di sini kerana akaun yang sama telah log masuk ke portal penaja. Sila log masuk semula untuk meneruskan.",
     "email": "Emel",
     "password": "Kata Laluan",
     "enterPassword": "Masukkan kata laluan anda",

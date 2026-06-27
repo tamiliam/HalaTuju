@@ -7,6 +7,161 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Decline cool-off is now "immediate decision, embargoed email".** Previously a cool-off decline held the whole
+  decision silently (status unflipped) until release. Now the rejection is **immediate** — the application flips to
+  `rejected` (status + bucket + when/who) the moment the admin declines, so the cockpit and records reflect it at once —
+  and **only the student EMAIL is embargoed** for the window (`decline_due_at`), sent by the release cron to soften the
+  news. The **student does not see the rejection** during the embargo: `ApplicationReadSerializer.status` masks an
+  email-embargoed rejection as `interviewed`. `cancel_pending_decline` (within the window) now *reverses* the rejection
+  back to in-review and cancels the email; `release_pending_declines` only lifts the email embargo (status is already
+  rejected). `services.admin_reject` + new `_record_reject`/`_send_decline_for`. +tests (cool-off + masking).
+- **Reopen now returns an accepted case to the decision point, so a post-accept decline is bucketed correctly.**
+  Reopening an `accepted` application moves its status back to `interviewed` (the pre-decision state) — not just a
+  side-flag — and clears any pending cool-off decline; cancel-reopen restores `accepted`. Consequences: declining a
+  reopened case is now `interview` ("reviewed but not selected", with the warm interview-bucket email after the 7-day
+  cool-off), **not** `contractual`; re-approve flows back through verify-accept. `contractual` is now reserved for a
+  genuinely post-award (`sponsored`) case — the direct "Decline (contractual)" button shows only for `sponsored`; an
+  accepted case is declined by reopening first. Fixes the #11/#12 mis-bucketing (both an engine-flagged
+  income/pathway case that reached interview, then was declined). `reopen.py` (status + pending-decline clear),
+  `services.admin_reject` (contractual allowed from `sponsored`), admin cockpit button gating. +5 backend tests.
+- **Decline emails are now HTML** (branded card + plain-text fallback), sent from `info@` with reply-to `help@`. The
+  interview bucket already thanks the student for their time and for submitting their documents. `send_decline_email`
+  routes through the shared HTML shell (`_send_html`). +1 test.
+
+### Fixed
+- **Hand-written salary vouchers no longer read 100× too high (ringgit|sen columns).** A hand-written
+  voucher rules ringgit and sen into two columns separated by a vertical line; the AI was concatenating
+  them (RM326.00 → "32600") and sometimes grabbing a deduction cell as the gross — on #66 that made
+  per-capita read RM8,150 and falsely flagged a genuine B40 applicant as over the income line. The
+  salary-slip extraction prompt now treats the ruled ringgit|sen layout as a decimal (validated on #66:
+  gross now RM5,200, net RM4,856.75 — consistent). Backstop in `income_engine`: a salary read with
+  **net > gross** (impossible on a real payslip) is treated as unreadable, so income falls to
+  "verify at interview" instead of asserting a false figure. +5 tests.
+- **The SPM results-slip parser no longer emits a partial, mis-graded read for a two-column slip.** On a
+  digital-PDF slip whose `GRED` column is a separate right-hand block (e.g. #66/doc912), the flattened OCR
+  splits each grade from its subject — so the positional parser dropped 6 of 10 subjects AND mis-paired 3
+  of the 4 it kept with a neighbour's grade, yet still reported `ok`. The parser now reads the slip's own
+  declared total (`JUMLAH MATA PELAJARAN <malay-cardinal>`, e.g. SEPULUH = 10) and, when it recovers
+  fewer subjects than declared, returns `None` so the Gemini IMAGE reader (which handles the 2-D table —
+  validated: all 10 subjects, correct grades) reads it instead. Real prod slip frozen as a (PII-scrubbed)
+  regression fixture. +5 tests.
+- **Document uploads can no longer create an orphan row with a dead view link.** The file bytes are PUT
+  client→Supabase Storage via a signed URL *before* the row-create POST; if that PUT silently failed, we recorded a
+  document row pointing at a blob that was never there — a dead "view" link and an unreadable doc that never resolved
+  (hit on app #80's Mother's EPF, where `80/epf/` was empty and signing the view URL returned HTTP 400). The
+  upload-create endpoint now verifies the blob actually landed (`storage.object_exists`, tri-state True/False/None) and
+  **rejects only a CONFIRMED-missing upload** (`400 upload_incomplete`) — a transient storage hiccup (None) never blocks
+  a legitimate upload, and the guard runs *before* the stale-sweep so a rejection never touches the student's existing
+  copy. Student-facing message `scholarship.docs.uploadIncomplete` (en/ms/ta). +2 backend tests. No migration.
+  (A one-off sweep of all 603 documents found this was the only orphan; the #80 row was deleted so the slot reads
+  "missing" for a clean re-upload.)
+- **Birth-certificate / guardianship relationship rows no longer show a false red "Doesn't match" on an AI-misread IC
+  number.** The relationship rows (BC Child/Mother, guardianship Guardian) treat the NAME as the primary proof of the
+  link and the AI-read IC number as corroboration. Because a BC/letter IC number is read off green JPN security paper,
+  a single misread digit (e.g. 76-**08** → 76-**09**) is common; previously that flipped the row to a hard red
+  "Doesn't match" even when the name matched and the parent's own IC was separately verified. Now, when the **name
+  matches** but the **IC number** differs, the row shows an amber **"Name matches — check the IC number"** instead of
+  red. Red is reserved for a genuine NAME mismatch (a different person) or an IC clash with no name to vouch for it.
+  New `income_engine._combine_relationship`; amber `check` pill in the student docs view + officer cockpit
+  (`factStatus`); i18n `scholarship.docs.relCheck.checkNumber` (en/ms/ta). When the clash is **exactly one digit**
+  (`vision.nric_close`, a Levenshtein-≤1 OCR slip), the amber is the more precise **"IC number differs by one digit
+  (likely a scan misread)"** (`relCheck.checkNumberOneDigit` / status `check_near`); a larger clash keeps the plainer
+  "check the IC number". SOFT signal throughout — never blocked submission, this only corrects misleading wording.
+  +backend tests (`nric_close` units + POVIENTHIRAN one-digit + far-clash). No migration.
+
+### Security
+- **One active privileged scope per Google identity (except super admins).** A single Google identity may now hold
+  only ONE of the partner console / sponsor portal at a time; signing into one **ends the other scope's local session**.
+  This is the *intentional* control replacing the prior emergent Supabase-level kick (which fired as an accident of
+  shared-identity session handling and had no super-admin carve-out): a partner admin who was also a sponsor used to be
+  bounced between the two with no explanation. **Super admins are exempt** (`isSuperIdentity` via `/admin/role/`) and may
+  hold both. The kicked tab routes to its own login with a clear **"signed out elsewhere"** note. New
+  `lib/sessionPolicy.ts` (`enforceSingleScope` / `wasScopeSuperseded` / `consumeSuperseded`, `SUPERSEDED_KEY`), wired into
+  both admin + sponsor callbacks/login pages and the sponsor portal layout guard. FE-only; +6 jest; i18n en/ms/ta
+  (`admin.signedOutElsewhere`, `sponsorAuth.signedOutElsewhere`; Tamil first-draft).
+
+### Changed
+- **Sponsor-pool browse card redesigned (4-region layout).** Each anonymous student card now reads: (1) code · `SPM · N As`
+  · state on one quiet header line; (2) the confirmed **programme name** (`chosen_programme.course_name`) with the **target
+  university** beneath it (`chosen_programme.institution`, e.g. "Politeknik Ungku Omar"; omitted when unknown → course
+  only); (3) a **≤20-word card-strict blurb**; (4) amount · Support. The secondary **school is no longer surfaced on any
+  sponsor card** (the institution shown is the place they'll study, a far weaker locator — the old trusted-sponsor
+  school gate is gone). Funding-category chips dropped (the blurb carries the "what for"). New allowlist fields `course`,
+  `institution` (repointed), `blurb` on `SponsorPoolCardSerializer`; new `SponsorProfile.anon_blurb`
+  (migration `scholarship/0071`, additive). The blurb is **generated at publish** (`profile_engine.generate_anon_blurb`,
+  card-strict prompt) and **backstopped by the strict `pool.scan_anon_for_identifiers`** — a leak/empty leaves it blank.
+  Backfill for already-published profiles: `backfill_anon_blurbs` command + cron job `backfill-anon-blurbs` (billable,
+  on-service). Leak tests extended to the new fields; +`TestAnonBlurb` (clip/quote-strip/error). Stitch-approved.
+- **"Yayasan myNADI" replaced with a generic "independent trust foundation (currently being established)" on the
+  BrightPath Bursary surfaces** (no new org — the trust foundation is being formed). Done on the applicant landing
+  (about, how-step7, donor caption — dead `yayasanmynadi.org` link removed), the sponsor landing (promise card + FAQ a2/a6),
+  the award-accepted page, and /privacy; the myNADI-specific "Tax Exemption under 44(6)" claim was dropped. **Kept on the
+  /About Us page** (per owner). EN + BM + TA (Tamil draft). Also fixed four "Assistance Programme" → "BrightPath Bursary
+  Programme" rebrand leftovers on /privacy + /terms. FE-only.
+- **Programme renamed: "B40 Assistance Programme" → "BrightPath Bursary Programme"** (user-facing copy only). EN
+  "BrightPath Bursary Programme" / "BrightPath Bursary", BM "Program Bursari BrightPath", TA "BrightPath Bursary
+  திட்டம்" (Tamil = first draft, pending owner refine). The `{programme}` value (driven by `cohort.name`) is renamed via
+  `seed_b40_2026_cohort` (now idempotently syncs the name → run on prod to flip every interpolated email). Hardcoded
+  strings updated across `emails.py`, i18n en/ms/ta, FE (AppHeader/Footer/SponsorLanding/privacy), AI prompts
+  (help/profile engines), and email-copy test assertions. **Deliberately UNCHANGED:** the **"B40" income bracket** term
+  (B40 families/applicants/income line — a real demographic), the internal cohort **code** `b40-2026`, code
+  docstrings/`verbose_name`, history (retros/migrations), and **WhatsApp** copy (deferred — the live Meta templates are
+  locked until re-approved). No migration.
+
+### Added
+- **Conditional Bursary Award Agreement — a binding, online-signed, tri-partite contract (Phase 1, shipped DARK
+  behind `BURSARY_AGREEMENT_ENABLED`, default off).** When enabled, accepting an award becomes a real contract instead
+  of the thin "accept + onboarding-ack": the **student** signs (typed name + NRIC), the **parent/guardian** co-signs
+  **in-session** as **surety/guarantor** (name + NRIC + relationship, hard-gated against the compulsory `parent_ic`
+  Vision-OCR — reusing the consent-submit guardian gate, adults included), the **Foundation** is the counterparty
+  (interim signatory from `FOUNDATION_SIGNATORY_*` settings, "Suresh" for now), and the referring **partner org** is a
+  **non-blocking witness**. **The donor is never a party and never named** — anonymity is preserved end-to-end (the
+  rendered agreement + PDF carry no donor reference). For a minor the guardian's single signature covers both consent +
+  surety; an adult needs student-primary + parent-surety. New `BursaryAgreement` model (`bursary_agreements`,
+  OneToOne→application) snapshots the **exact wording signed** (`rendered_html` + `agreement_sha256` tamper-hash),
+  freezes the particulars (amount, RM500+10×RM250 schedule *stated*, institution, course), records all four signatures,
+  and stores a generated **PDF** (`b40-documents` private bucket, pure-python `xhtml2pdf` — weasyprint avoided for the
+  buildpack deploy). `bursary.py` holds the EN+BM clause template (best-of the owner's draft, carrying a **"DRAFT —
+  pending legal review"** banner; criminal-record / unilateral-change clauses dropped per critical review),
+  `sign_agreement` / `countersign_foundation` / `record_witness`, and `guarantor_identity_check`. Signing is wired into
+  `respond_to_award` inside the existing cool-off transaction (flag OFF = the flow is byte-for-byte unchanged). New
+  `BursaryAgreementView` (student GET + signed-PDF URL), `AdminBursaryCountersignView` (super-only),
+  `AdminBursaryWitnessView` (referring-org admin only). FE: `/scholarship/award` becomes the signing page (particulars +
+  the full agreement in a **script-less `<iframe sandbox="">`** + adult/minor signature blocks), a PDF panel on
+  `/scholarship/application`, and a Bursary-Agreement card (counter-sign / witness / download) in the admin detail view.
+  **Migration `scholarship/0072`** (new table + RLS, migrate-first). +15 backend tests / +i18n parity (en/ms/ta).
+  **Not for real students until two Phase-0 gates clear: lawyer-vet the template wording, and finalise the Foundation
+  entity/signatory.** Deferred: parent-phone signing link (Phase 2), real disbursement + suspension (Phase 3 / TD-075).
+- **Student can give a reason when cancelling their interview.** Cancelling a booked interview is the student's route to a
+  reschedule (the reviewer then proposes fresh times), so the cancel-confirm box now has an optional **"Reason for
+  cancelling"** field. The reason is stored (`interview_cancel_reason`), included in the reviewer's cancellation email, and
+  shown on the cockpit's interview card, cleared when fresh times are proposed. **Migration `scholarship/0070`** (1 additive
+  field, migrate-first). +2 tests; i18n en/ms/ta.
+
+### Fixed
+- **Partner OAuth-callback denial no longer signs the user out of the sponsor portal too.** When the Google user landing
+  on the partner `/admin/auth/callback` was **not** a partner admin, the page called `supabase.auth.signOut()` with no
+  scope — which defaults to **GLOBAL** and revoked *every* session for that Supabase user. So someone who was also a
+  signed-in sponsor (same Google identity, another tab) got kicked out of the sponsor portal merely by landing on the
+  partner callback. Now uses `scope:'local'` (clears only the admin-scope session). FE-only. (The *deliberate* one-scope
+  policy that supersedes the old emergent behaviour is the Security entry above.)
+- **"Asasi TVET" (`FB0500001`) now appears under the Asasi programme picker.** A redundant
+  `{count:2, subjects:["ANY"]}` or-group on the course's requirements was treated literally by
+  `engine.check_complex_requirements` (`"ANY"` is not a real subject code → unsatisfiable), so the programme was hidden
+  from every otherwise-eligible student. Removed the dead clause (data-only fix on `course_requirements`, applied
+  migrate-first + catalogue reload); live-verified eligible. No code change.
+- **Student interview panel no longer offers past slots, and clears stale errors.** The booking panel showed every
+  proposed slot regardless of time, so a slot whose time had passed appeared bookable and selecting it failed with the
+  backend's `past_slot` — surfaced as a generic "Something went wrong". Both the first-pick and the reschedule lists are
+  now filtered to **future slots only** (if all proposed times have passed, a clear note points to "ask for other times");
+  `past_slot` maps to a friendly message; and the error now **clears on every toggle** (it lingered after "Keep my booked
+  time" / "Cancel" etc.). FE-only; +2 i18n keys (en/ms/ta).
+- **/profile merit score is now editable from the edit state too.** The merit row (computed from grades, so it links to
+  the grades editor) was a tappable shortcut in the card's view state but an inert span once you hit "Edit" — so merit
+  looked editable from outside but not inside. The edit-state row is now the same tappable shortcut to `/onboarding/grades`
+  (returns to /profile). FE-only.
+
 ### Added
 - **STR genuineness now scored by the probabilistic SIGNATURE scorer — three approval forms.** STR
   (Sumbangan Tunai Rahmah) joins the deterministic signature path (like slip/cert/BC/EPF/offer): three

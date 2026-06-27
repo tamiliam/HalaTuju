@@ -44,7 +44,7 @@ export default function AppHeader() {
   const navLinks = [
     { href: '/dashboard', label: t('common.dashboard') },
     { href: '/search', label: t('search.nav') },
-    // B40 Aid is the umbrella for both audiences: students who apply + sponsors who give.
+    // BrightPath Bursary is the umbrella for both audiences: students who apply + sponsors who give.
     { href: '/scholarship', label: t('scholarship.nav'), children: [
       { href: '/scholarship', label: t('scholarship.subnav.apply') },
       { href: '/sponsor', label: t('scholarship.subnav.sponsor') },
@@ -52,7 +52,7 @@ export default function AppHeader() {
     { href: '/saved', label: t('common.saved'), authRequired: true as const, authReason: 'save' as const },
     { href: '/profile', label: t('header.myProfile'), authRequired: true as const, authReason: 'profile' as const },
   ]
-  // The B40 Aid dropdown is "active" on either the student or sponsor side.
+  // The BrightPath Bursary dropdown is "active" on either the student or sponsor side.
   const b40Active = pathname?.startsWith('/scholarship') || pathname === '/sponsor'
 
   // User display info from Supabase session metadata
@@ -82,7 +82,7 @@ export default function AppHeader() {
         <nav className="hidden lg:flex items-center gap-1 ml-8">
           {navLinks.map((link) => (
             link.children ? (
-              // B40 Aid: a hover/focus dropdown of the two audience paths (CSS-only).
+              // BrightPath Bursary: a hover/focus dropdown of the two audience paths (CSS-only).
               <div key={link.href} className="relative group">
                 <button
                   type="button"
@@ -260,7 +260,7 @@ export default function AppHeader() {
           <div className="container mx-auto px-6 py-4 space-y-1">
             {navLinks.map((link) => (
               link.children ? (
-                // B40 Aid: a section label + its two audience sub-links, indented.
+                // BrightPath Bursary: a section label + its two audience sub-links, indented.
                 <div key={link.href}>
                   <p className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">{link.label}</p>
                   {link.children.map((c) => (

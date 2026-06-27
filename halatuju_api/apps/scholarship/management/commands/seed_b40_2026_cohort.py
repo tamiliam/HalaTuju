@@ -1,5 +1,5 @@
 """
-Create the live B40 Assistance Programme cohort for 2026 (idempotent).
+Create the live BrightPath Bursary Programme cohort for 2026 (idempotent).
 
 The shortlisting thresholds are the model defaults (settled 2026-05-24): SPM
 4 A- + 5 B+, STPM PNGK 2.9, per-capita ceiling RM1,584, reveal delays 2h/48h —
@@ -14,7 +14,8 @@ from django.db import connection
 
 from apps.scholarship.models import ScholarshipCohort
 
-CODE = 'b40-2026'
+CODE = 'b40-2026'   # internal slug — unchanged by the BrightPath rename (never shown to users)
+DISPLAY_NAME = 'BrightPath Bursary Programme 2026'   # the {programme} value in emails/UI
 
 
 class Command(BaseCommand):
@@ -35,7 +36,7 @@ class Command(BaseCommand):
         cohort, created = ScholarshipCohort.objects.get_or_create(
             code=CODE,
             defaults={
-                'name': 'B40 Assistance Programme 2026',
+                'name': DISPLAY_NAME,
                 'year': 2026,
                 'is_active': True,
                 'is_open': is_open,
@@ -47,9 +48,14 @@ class Command(BaseCommand):
 
         if created:
             self.stdout.write(self.style.SUCCESS(f"Created cohort '{CODE}' (is_open={cohort.is_open})"))
+        elif cohort.name != DISPLAY_NAME:
+            old = cohort.name
+            cohort.name = DISPLAY_NAME       # idempotent name sync (the BrightPath rename)
+            cohort.save(update_fields=['name'])
+            self.stdout.write(self.style.SUCCESS(f"Renamed cohort '{CODE}': '{old}' → '{DISPLAY_NAME}'"))
         else:
             self.stdout.write(self.style.WARNING(
-                f"Cohort '{CODE}' already exists (is_open={cohort.is_open}) — left unchanged"
+                f"Cohort '{CODE}' already exists (is_open={cohort.is_open}) — name already current"
             ))
 
         # Echo the thresholds the engine will use, for verification.

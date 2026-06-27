@@ -427,6 +427,27 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(len(mail.outbox), 2)  # student + reviewer
 
     @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_cancel_stores_reason_and_emails_it(self, _mock):
+        slot = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                        starts=[self._future(days=5)])[0]
+        scheduling.book_slot(self.app, slot_id=slot.id)
+        mail.outbox.clear()
+        scheduling.cancel(self.app, by='student', reason='Clashes with my exam')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_cancel_reason, 'Clashes with my exam')
+        self.assertTrue(any('Clashes with my exam' in m.body for m in mail.outbox))  # reviewer notice
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_proposing_after_cancel_clears_reason(self, _mock):
+        slot = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                        starts=[self._future(days=5)])[0]
+        scheduling.book_slot(self.app, slot_id=slot.id)
+        scheduling.cancel(self.app, by='student', reason='Clashes with my exam')
+        scheduling.propose_slots(self.app, reviewer=self.reviewer, starts=[self._future(days=6)])
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.interview_cancel_reason, '')
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
     def test_cancel_too_late_for_student(self, _mock):
         slot = scheduling.propose_slots(self.app, reviewer=self.reviewer,
                                         starts=[self._future(hours=2)])[0]
@@ -666,7 +687,7 @@ class BookingEmailTests(TestCase):
             's@example.com', student_name='Priya Devi', reviewer_name='Rohini',
             start=start, meeting_url='https://meet.google.com/abc', duration_min=45))
         msg = mail.outbox[-1]
-        self.assertEqual(msg.subject, 'Your B40 Assistance Programme interview is booked')
+        self.assertEqual(msg.subject, 'Your BrightPath Bursary Programme interview is booked')
         self.assertEqual(msg.reply_to, ['interview@halatuju.xyz'])
         self.assertEqual(msg.from_email, 'interview@halatuju.xyz')   # #2: sends FROM interview@
         # Harmless List-Unsubscribe (mailto to support, no one-click) so a mistaken click
@@ -695,8 +716,8 @@ class BookingEmailTests(TestCase):
             's@example.com', student_name='Priya', reviewer_name='Rohini',
             start=timezone.now() + timedelta(days=2), meeting_url='', english_only=True)
         body = mail.outbox[-1].body
-        self.assertIn('B40 Assistance Programme', body)
-        self.assertNotIn('Program Bantuan B40', body)
+        self.assertIn('BrightPath Bursary Programme', body)
+        self.assertNotIn('Program Bursari BrightPath', body)
 
     def test_reminder_email_when_labels(self):
         from apps.scholarship.emails import send_interview_reminder_email

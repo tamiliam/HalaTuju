@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -9,6 +9,7 @@ import {
   adminSignInWithGoogle,
   adminResetPassword,
 } from '@/lib/admin-supabase'
+import { enforceSingleScope, consumeSuperseded } from '@/lib/sessionPolicy'
 import { useT } from '@/lib/i18n'
 
 type Step = 'login' | 'forgot' | 'forgot-sent'
@@ -21,6 +22,10 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Shown when this partner session was ended because the same account signed into the
+  // sponsor portal (one active privileged scope per identity, except super admins).
+  const [superseded, setSuperseded] = useState(false)
+  useEffect(() => { setSuperseded(consumeSuperseded('admin')) }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,6 +60,11 @@ export default function AdminLoginPage() {
           setLoading(false)
           return
         }
+        // One privileged scope per identity (super exempt): ends an active sponsor session.
+        await enforceSingleScope('admin', {
+          token: data.session.access_token,
+          isSuper: !!(role.is_super_admin || role.role === 'super'),
+        })
         // Reviewers/viewers have no partner-org dashboard — send them to their
         // workspace (B40 Applications); org admins/super keep the dashboard.
         router.push(role.role === 'reviewer' || role.role === 'viewer'
@@ -113,6 +123,12 @@ export default function AdminLoginPage() {
               <p className="text-gray-600 text-center mb-8">
                 {t('admin.loginSubtitle')}
               </p>
+
+              {superseded && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                  <p className="text-amber-800 text-sm">{t('admin.signedOutElsewhere')}</p>
+                </div>
+              )}
 
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">

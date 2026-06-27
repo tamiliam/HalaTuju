@@ -19,6 +19,7 @@ from .serializers import (
     ApplicationCreateSerializer,
     ApplicationDetailsUpdateSerializer,
     ApplicationReadSerializer,
+    BursaryAgreementSerializer,
     ConsentCreateSerializer,
     IncomeRouteSwitchSerializer,
     ConsentSerializer,
@@ -291,7 +292,7 @@ class StudentInterviewCancelView(_StudentInterviewBase):
         if err:
             return err
         try:
-            scheduling.cancel(app, by='student')
+            scheduling.cancel(app, by='student', reason=request.data.get('reason', ''))
         except scheduling.SchedulingError as e:
             return self._error(e)
         return Response(interview_schedule_payload(app))
@@ -636,6 +637,17 @@ class DocumentListCreateView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
         if not replaces and ApplicantDocument.objects.filter(application=app).count() >= _settings.MAX_DOCS_PER_APPLICATION:
             return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
+        # client→Storage via the signed URL BEFORE this POST. If that PUT silently failed, we'd
+        # record a row pointing at a blob that isn't there — a dead "view" link + an unreadable
+        # doc that never resolves. Verify the object actually landed before recording it. Reject
+        # ONLY on a CONFIRMED-missing blob (False); a storage hiccup during the check (None) must
+        # not block a legitimate upload. This runs BEFORE the stale-sweep below, so a rejection
+        # never touches the student's existing good copy.
+        from .storage import object_exists
+        if object_exists(serializer.validated_data.get('storage_path')) is False:
+            return Response({'error': 'upload_incomplete', 'code': 'upload_incomplete'},
                             status=status.HTTP_400_BAD_REQUEST)
         # Single-instance re-upload REPLACES the existing copy. Order matters for data safety
         # (TD audit 2026-06-14): create the replacement row FIRST (inside a transaction), and only
@@ -1176,6 +1188,7 @@ class CronRunView(APIView):
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
         'reextract-documents': 'reextract_documents',  # one-off batches (20/run): re-read stale docs with current parsers
         'reprocess-ic-vision': 'reprocess_unread_ic',  # frequent (~15 min): self-heal IC/parent_ic stuck unprocessed (silent upload OCR failures → false 'service unavailable' consent block)
+        'backfill-anon-blurbs': 'backfill_anon_blurbs',  # one-off (billable): card blurb for published profiles missing one
     }
 
     def post(self, request, job):
@@ -1232,11 +1245,43 @@ class StudentAwardView(APIView):
             if pend is not None:
                 finalising = True
                 app = app or pend
-        return Response({
+        payload = {
             'offer': StudentAwardSerializer(offer).data if offer else None,
             'finalising': finalising,
             'is_minor': is_minor(app.profile) if (app and app.profile) else False,
-        })
+        }
+        # Bursary agreement (flag-gated): surface the contract the student is about to
+        # sign (particulars + rendered body) when an offer/active award exists, and — if
+        # already signed — the agreement status + a signed PDF URL. Never a donor field.
+        from django.conf import settings as _settings
+        if getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False) and app:
+            from . import bursary
+            existing = getattr(app, 'bursary_agreement', None)
+            if existing is not None:
+                payload['bursary_agreement'] = BursaryAgreementSerializer(existing).data
+            elif offer or finalising:
+                p = bursary.particulars_for(app)
+                locale = app.locale if app.profile else 'en'
+                preview_html = bursary.render_agreement_html(
+                    app, p,
+                    student={'name': getattr(app.profile, 'name', '') if app.profile else '',
+                             'nric': '', 'signed_at': None},
+                    guarantor={'name': '', 'nric': '', 'relationship': '', 'signed_at': None},
+                    foundation={'name': p['foundation_signatory_name'],
+                                'title': p['foundation_signatory_title'],
+                                'nric': p['foundation_signatory_nric'], 'signed_at': None},
+                    witness={'by': '', 'org': '', 'signed_at': None}, locale=locale)
+                payload['bursary_preview'] = {
+                    'award_amount': str(p['award_amount']) if p['award_amount'] is not None else None,
+                    'payment_schedule': p['payment_schedule'],
+                    'institution_name': p['institution_name'],
+                    'course_name': p['course_name'],
+                    'progress_standard': p['progress_standard'],
+                    'foundation_signatory_name': p['foundation_signatory_name'],
+                    'foundation_signatory_title': p['foundation_signatory_title'],
+                    'rendered_html': preview_html,
+                }
+        return Response(payload)
 
     def post(self, request):
         app = _award_application(request.user_id)
@@ -1254,7 +1299,30 @@ class StudentAwardView(APIView):
                 guardian_relationship=request.data.get('guardian_relationship', '') or '',
                 guardian_nric=request.data.get('guardian_nric', '') or '',
                 ip=request.META.get('REMOTE_ADDR'),
+                student_signed_name=request.data.get('student_signed_name', '') or '',
+                student_signed_nric=request.data.get('student_signed_nric', '') or '',
+                guarantor_name=request.data.get('guarantor_name', '') or '',
+                guarantor_nric=request.data.get('guarantor_nric', '') or '',
+                guarantor_relationship=request.data.get('guarantor_relationship', '') or '',
             )
         except sponsorship_service.SponsorshipError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(StudentAwardSerializer(sponsorship).data)
+
+
+class BursaryAgreementView(APIView):
+    """GET the student's OWN bursary agreement (status + particulars + signed PDF URL).
+    Allowlist-safe: the serializer never carries a donor field. 404 when the feature is
+    off or no agreement exists yet."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        from django.conf import settings as _settings
+        if not getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False):
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        app = (ScholarshipApplication.objects
+               .filter(profile_id=request.user_id, bursary_agreement__isnull=False)
+               .select_related('bursary_agreement').order_by('-id').first())
+        if app is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(BursaryAgreementSerializer(app.bursary_agreement).data)

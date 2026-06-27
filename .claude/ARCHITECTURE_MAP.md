@@ -321,6 +321,19 @@ cancel (`views_sponsor.py`, flag+approved gated); student `scholarship/award/` (
 award-amount + `admin/sponsorships/` (`views_admin.py`). Migration `0034` (new `sponsor_donations`+`sponsorships`
 tables + RLS, migrate-first). **Real toyyibPay + disbursement + tranches = TD-075 (later, lawyer+gateway-gated).**
 
+**Conditional Bursary Award Agreement (Phase 1, 2026-06-26, backend, flag-gated DARK `BURSARY_AGREEMENT_ENABLED`).** The
+award-acceptance becomes a binding tri-partite contract. `apps/scholarship/bursary.py` = the agreement layer — the EN+BM
+clause template (DRAFT banner), `render_agreement_html`, `agreement_sha256`, `generate_pdf` (pure-python `xhtml2pdf` →
+`b40-documents` bucket), `guarantor_identity_check` (reuses the `parent_ic` Vision-OCR gate), `sign_agreement` /
+`countersign_foundation` / `record_witness`. New `BursaryAgreement` model (`bursary_agreements`, OneToOne→application):
+snapshots `rendered_html`, frozen particulars + four-party signatures, `binds`/`is_executed`/`status` props. **Parties:
+student + parent/guarantor (surety) ↔ the Foundation (signatory from `FOUNDATION_SIGNATORY_*`); partner org = non-blocking
+witness; the donor is NEVER a party or named** (anonymity preserved in the rendered doc + PDF). Signing wired into
+`sponsorship.respond_to_award` inside the cool-off transaction (flag OFF = byte-for-byte unchanged). Endpoints:
+`BursaryAgreementView` (student GET + signed PDF), `AdminBursaryCountersignView` (super-only), `AdminBursaryWitnessView`
+(referring-org admin). Migration `0072` (new table + RLS, migrate-first). **Go-live blocked on two Phase-0 gates
+(TD-140); parent-phone link = TD-141; real disbursement = TD-142 / TD-075.**
+
 **Three isolated Supabase clients + the PKCE invariant (v2.23.1):** student `getSupabase` (default storage key, mounted
 globally via `app/providers.tsx`), `getAdminSupabase` (`halatuju_admin_session`, mounted under `/admin/*`), and
 `getSponsorSupabase` (`halatuju_sponsor_session`, mounted under `/sponsor/*`). **All three set `flowType: 'pkce'` — this

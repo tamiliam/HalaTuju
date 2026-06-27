@@ -97,12 +97,12 @@ class TestReviewerAssignment(TestCase):
         self.assertTrue(send_student_assigned_reviewer_email(
             's@example.com', student_name='Priya Devi', reviewer_name='Rohini'))
         msg = mail.outbox[-1]
-        self.assertEqual(msg.subject, 'Your B40 Assistance Programme interview — what happens next')
+        self.assertEqual(msg.subject, 'Your BrightPath Bursary Programme interview — what happens next')
         self.assertEqual(msg.reply_to, ['interview@halatuju.xyz'])
         body = msg.body
         self.assertIn('Hi Priya,', body)                      # first name only
-        self.assertIn('B40 Assistance Programme', body)
-        self.assertIn('Program Bantuan B40', body)            # BM mirror present
+        self.assertIn('BrightPath Bursary Programme', body)
+        self.assertIn('Program Bursari BrightPath', body)            # BM mirror present
         self.assertIn('your interview will be with Rohini', body)  # interviewer NAME woven in
         self.assertIn('camera on', body)                      # prep list
         self.assertIn('help@halatuju.xyz', body)              # safety contact
@@ -115,8 +115,8 @@ class TestReviewerAssignment(TestCase):
         send_student_assigned_reviewer_email(
             's@example.com', student_name='Priya Devi', english_only=True)
         body2 = mail.outbox[-1].body
-        self.assertIn('B40 Assistance Programme', body2)
-        self.assertNotIn('Program Bantuan B40', body2)
+        self.assertIn('BrightPath Bursary Programme', body2)
+        self.assertNotIn('Program Bursari BrightPath', body2)
 
     # --- happy path -----------------------------------------------------------
 

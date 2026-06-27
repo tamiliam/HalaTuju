@@ -57,7 +57,7 @@ export default function AppFooter() {
             </ul>
           </div>
 
-          {/* B40 Aid — the assistance programme entry points */}
+          {/* BrightPath Bursary — the assistance programme entry points */}
           <div>
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
               {t('footer.b40Heading')}

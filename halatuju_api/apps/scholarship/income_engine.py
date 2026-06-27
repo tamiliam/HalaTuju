@@ -29,6 +29,7 @@ import re
 # (relationships, earner-IC ↔ income-proof, STR-recipient ↔ IC, BC names) — never the student's
 # own identity — so they all use the transliteration-tolerant matcher (#2, Sarawanan A/L case).
 from .vision import relationship_name_match as name_match
+from .vision import nric_close
 from .vision import canonical_name_tokens   # token folding — reused for cross-bill holder reconciliation
 
 
@@ -503,6 +504,25 @@ _EPF_CONTRIB_RATE = 0.24
 _SLIP_EPF_LO = 0.6
 _SLIP_EPF_HI = 1.67
 
+# A backstop on a garbled salary read: net (take-home) can never exceed gross (net =
+# gross − deductions). A small tolerance absorbs rounding/OCR noise; beyond it the read
+# is inconsistent and must not be trusted for the income figure.
+_NET_OVER_GROSS_TOL = 1.02
+
+
+def _salary_monthly_amount(f):
+    """A salary slip's monthly pay (gross preferred, else net) — but ONLY when the read is
+    internally consistent. A garbled OCR of a hand-written voucher can mis-read the ruled
+    ringgit|sen columns or grab the wrong cells; the tell is **net > gross**, impossible on
+    a real payslip. When that happens the amount is unreliable → return None, so income
+    falls to 'verify at interview' rather than asserting a false (often 100x-inflated)
+    figure. (#66: a voucher whose 'RM326.00' EPF deduction was read as gross '32600'.)"""
+    gross = _parse_rm(f.get('gross_income'))
+    net = _parse_rm(f.get('net_income'))
+    if gross and net and net > gross * _NET_OVER_GROSS_TOL:
+        return None
+    return gross or net
+
 
 def _parse_rm(s):
     """Parse an RM figure ('RM 9,900.04' / '2400.00' / 'RM2,400') → float, or None."""
@@ -575,8 +595,7 @@ def earner_monthly_income(application, member):
     salary reverse, or 0 when unemployed). Returns ``(amount: float | None, source)`` where
     source is 'salary' | 'epf_estimate' | 'unknown'."""
     for slip in _cluster_docs(application, member, 'salary_slip'):
-        f = _doc_fields(slip)
-        amt = _parse_rm(f.get('gross_income') or f.get('net_income'))
+        amt = _salary_monthly_amount(_doc_fields(slip))
         if amt:
             return amt, 'salary'
     for epf in _cluster_docs(application, member, 'epf'):
@@ -646,8 +665,28 @@ def _nric_bucket(extracted, reference):
     return 'match' if nric_match(extracted, reference) else 'mismatch'
 
 
-def _combine(a, b):
-    return 'mismatch' if 'mismatch' in (a, b) else ('match' if 'match' in (a, b) else 'no_ref')
+def _combine_relationship(name_b, nric_b, nric_one_digit=False):
+    """Combine a relationship row's NAME + NRIC buckets, treating the NAME as the primary
+    proof of the link and the NRIC as corroboration. A birth-certificate / letter NRIC is
+    AI-read off a security-printed JPN document, so a single misread digit (8↔9, 0↔6 over
+    the green guilloche) is common; when the NAME matches, an NRIC clash is therefore amber
+    ("look at the number"), NOT a red 'mismatch'. When the clash is exactly one digit
+    (``nric_one_digit``) the amber is the more reassuring 'check_near' ("differs by one
+    digit — likely a scan misread"); a larger clash is the plainer 'check'. Red is reserved
+    for a real NAME mismatch (a genuinely different person) or an NRIC clash with no name to
+    vouch for it. Strictly demotes false reds to amber — never turns a real mismatch green."""
+    if name_b == 'mismatch':
+        return 'mismatch'
+    if name_b == 'match':
+        if nric_b == 'mismatch':
+            return 'check_near' if nric_one_digit else 'check'
+        return 'match'
+    # No NAME to compare (no_ref) — fall back to the NRIC alone.
+    if nric_b == 'mismatch':
+        return 'mismatch'
+    if nric_b == 'match':
+        return 'match'
+    return 'no_ref'
 
 
 def student_bc_check(doc):
@@ -661,13 +700,18 @@ def student_bc_check(doc):
     student = getattr(getattr(app, 'profile', None), 'name', '') or ''
     student_nric = getattr(getattr(app, 'profile', None), 'nric', '') or ''
     child_name = (f.get('bc_child_name', '') or '').strip()
-    child_status = _combine(_name_bucket(child_name, student),
-                            _nric_bucket(f.get('bc_child_nric'), student_nric))
+    child_nric = (f.get('bc_child_nric', '') or '').strip()
+    child_status = _combine_relationship(_name_bucket(child_name, student),
+                                         _nric_bucket(child_nric, student_nric),
+                                         nric_close(child_nric, student_nric))
     mother_name = (f.get('bc_mother_name', '') or '').strip()
     mother_nric = (f.get('bc_mother_nric', '') or '').strip()
     mic = _member_ic_doc(app, 'mother')
-    mother_status = _combine(_name_bucket(mother_name, getattr(mic, 'vision_name', '') if mic else ''),
-                             _nric_bucket(mother_nric, getattr(mic, 'vision_nric', '') if mic else ''))
+    mic_name = getattr(mic, 'vision_name', '') if mic else ''
+    mic_nric = getattr(mic, 'vision_nric', '') if mic else ''
+    mother_status = _combine_relationship(_name_bucket(mother_name, mic_name),
+                                          _nric_bucket(mother_nric, mic_nric),
+                                          nric_close(mother_nric, mic_nric))
     father_name = (f.get('bc_father_name', '') or '').strip()
     father_status = _name_bucket(father_name, father_name_from_ic(student))
     return {
@@ -690,8 +734,11 @@ def student_guardianship_check(doc):
     g_name = (f.get('guardian_name', '') or '').strip()
     g_nric = (f.get('guardian_nric', '') or '').strip()
     gic = _member_ic_doc(app, 'guardian')
-    guardian_status = _combine(_name_bucket(g_name, getattr(gic, 'vision_name', '') if gic else ''),
-                               _nric_bucket(g_nric, getattr(gic, 'vision_nric', '') if gic else ''))
+    gic_name = getattr(gic, 'vision_name', '') if gic else ''
+    gic_nric = getattr(gic, 'vision_nric', '') if gic else ''
+    guardian_status = _combine_relationship(_name_bucket(g_name, gic_name),
+                                            _nric_bucket(g_nric, gic_nric),
+                                            nric_close(g_nric, gic_nric))
     ward_name = (f.get('ward_name', '') or '').strip()
     return {
         'guardian_name': g_name, 'guardian_nric': g_nric, 'guardian_status': guardian_status,

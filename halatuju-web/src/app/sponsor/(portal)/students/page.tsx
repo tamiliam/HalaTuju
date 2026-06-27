@@ -69,28 +69,33 @@ export default function StudentsPage() {
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((s) => (
             <Link key={s.id} href={`/sponsor/students/${s.id}`}
-              className="block bg-white rounded-2xl border p-4 hover:border-blue-300 hover:shadow-sm transition">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-gray-900">{s.ref}</span>
-                {s.state && <span className="text-xs text-gray-500">{s.state}</span>}
+              className="flex flex-col bg-white rounded-2xl border p-5 hover:border-blue-300 hover:shadow-sm transition">
+              {/* 1. Code · qualification · As · state */}
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-sm text-gray-700">
+                  <span className="font-semibold text-gray-900">{s.ref}</span>
+                  {s.academic && <span className="text-gray-400"> · {s.academic}</span>}
+                </span>
+                {s.state && <span className="shrink-0 text-xs text-gray-500">{s.state}</span>}
               </div>
-              <p className="text-[15px] font-medium text-gray-800 mt-1">{s.field || '—'}</p>
-              {s.academic && <p className="text-xs text-gray-500">{s.academic}</p>}
+
+              {/* 2. Course + target institution (institution omitted when unknown) */}
+              <p className="mt-3 text-[15px] font-semibold text-blue-700 leading-snug">{s.course || s.field || '—'}</p>
+              {s.institution && <p className="text-xs text-gray-500 mt-0.5">{s.institution}</p>}
+
               {s.enrolment_verified && (
-                <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                <p className="mt-2 inline-flex w-fit items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
                   🛡️ {t('sponsorPortal.trust.verifiedBadge')}
                 </p>
               )}
-              {s.funding_categories.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-3">
-                  {s.funding_categories.map((c) => (
-                    <span key={c} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{c}</span>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                {s.award_amount ? <span className="text-sm font-semibold text-gray-900">RM {s.award_amount}</span> : <span />}
-                <span className="text-xs text-blue-600 font-medium">{t('sponsorPortal.students.support')} →</span>
+
+              {/* 3. Short blurb */}
+              {s.blurb && <p className="mt-3 text-sm text-gray-600 leading-relaxed">{s.blurb}</p>}
+
+              {/* 4. Amount · Support */}
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                {s.award_amount ? <span className="text-base font-semibold text-gray-900">RM {s.award_amount}</span> : <span />}
+                <span className="text-sm text-blue-600 font-medium">{t('sponsorPortal.students.support')} →</span>
               </div>
             </Link>
           ))}
