@@ -539,6 +539,9 @@ export interface AdminScholarshipDetail {
   /** Internal-only corrections tally for the assigned reviewer (reopened decisions
    *  that led to a real change). Never shown on a sponsor/student surface. */
   assigned_to_corrections: number
+  /** Whether the dark-by-default Conditional Bursary Agreement feature is live; the cockpit
+   *  only renders the agreement panel when true. */
+  bursary_agreement_enabled?: boolean
 }
 
 /** One proposed interview time. `start` is ISO (UTC); render in MYT on the client. */
