@@ -103,6 +103,39 @@ def list_objects(prefix='', limit=1000):
         return []
 
 
+def object_exists(path):
+    """Tri-state existence check for a blob: True (present), False (CONFIRMED absent),
+    or None (couldn't verify — unconfigured or a storage error). Callers must treat
+    only False as "missing" and never block on None, so a storage hiccup during the
+    check can't reject a legitimate upload. Lists the object's folder and looks for its
+    exact name (signing can't be used — it returns None for BOTH missing and transient
+    failure, which we must distinguish)."""
+    path = (path or '').strip().strip('/')
+    if '/' not in path:
+        return None
+    base, key = _base_url(), _service_key()
+    if not base or not key:
+        return None
+    prefix, name = path.rsplit('/', 1)
+    payload = {'prefix': prefix, 'limit': 1000, 'offset': 0,
+               'sortBy': {'column': 'name', 'order': 'asc'}}
+    req = urllib.request.Request(
+        f'{base}/storage/v1/object/list/{BUCKET}',
+        data=json.dumps(payload).encode(),
+        method='POST',
+        headers={'Authorization': f'Bearer {key}', 'apikey': key, 'Content-Type': 'application/json'},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            items = json.loads(resp.read().decode())
+            if not isinstance(items, list):
+                return None
+            return any((o or {}).get('name') == name for o in items)
+    except (urllib.error.URLError, ValueError, TimeoutError):
+        logger.warning('Supabase Storage exists-check failed', exc_info=True)
+        return None
+
+
 def download_object(path):
     """Fetch the raw bytes of one private object via the service key. None on failure.
 

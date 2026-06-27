@@ -1338,6 +1338,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
         code === 'doc_limit_reached' ? t('scholarship.docs.doc_limit_reached')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large')
         : code === 'unsupported_format' ? t('scholarship.docs.unsupportedFormat')
+        : code === 'upload_incomplete' ? t('scholarship.docs.uploadIncomplete')
         : t('scholarship.docs.uploadError'),
       )
     } finally {

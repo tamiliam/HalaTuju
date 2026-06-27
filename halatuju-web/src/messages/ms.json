@@ -1364,6 +1364,7 @@
       "uploading": "Memuat naik…",
       "remove": "Buang",
       "uploadError": "Muat naik gagal. Sila cuba lagi.",
+      "uploadIncomplete": "Fail tidak selesai dimuat naik. Sila cuba lagi.",
       "deleteError": "Tidak dapat membuang dokumen.",
       "assist": {
         "ok": "Nampak baik — kami baca dokumen ini dan butirannya sepadan dengan anda.",
