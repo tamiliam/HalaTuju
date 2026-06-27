@@ -777,6 +777,21 @@ SIGNATURE genuineness scorer (`genuineness/results_doc.py`) for ALL standard doc
 - **▶ NEXT (deferred):** Layer-2 cross-doc matching (parent-IC **TD-119**, via `courses.pismp_taxonomy.aliran_of`),
   **TD-121** (harness genuineness cap), **TD-143** (header-cropped BC → not_type, owner's call).
 
+**▶ JUST SHIPPED & LIVE 2026-06-27 — Offer-validity SUBMISSION GATE + cockpit genuineness consistency
+(commits `c935dad`→`c48ffbd`; no migration; retro `docs/retrospective-2026-06-27-offer-validity-gate.md`).**
+- **Only a genuine OFFICIAL public offer qualifies** (`MODEL_VERSION 1.1`). Conditional / private-IPTS / non-official
+  (pemakluman / UPU-semakan) → `offer_not_official` blocker at submission (en/ms/ta); **GRANDFATHERED** for already-
+  submitted (the check is in `consent_blockers`, NOT `application_completeness` → status never reverts, only the pathway
+  BADGE recomputes). Pathway verdict gates on `pathway_engine.offer_official_status`; the offer holistic fallback is
+  dropped so a private/IPTS letter stays not-genuine (gate-able), not image-rescued.
+- **Cockpit Documents drawer now reflects offer genuineness** — `get_authenticity` was dropping `offer_letter`, so a
+  non-genuine offer showed a green "Verified"/"Pathway"; now Pathway→red + an "Official"→red fact → chip amber, never
+  green (matches the verdict tile). **#30 false-clash fixed** — ministry/issuer boilerplate (`kementerian/pendidikan/…`)
+  added to the non-distinguishing token set. **SPM exam year** now shown on the results-slip chip.
+- **▶ NEXT (deferred fast-follow, TD-145):** wrong-PUBLIC-university soft-confirm — resolve `course_id →
+  course_institutions → institution` so a declared-UMK vs UM-offer clash raises `pathway_confirm` (today invisible when
+  the declared institution field is blank). **Existing offers need a re-run for badges to reflect the new scorer.**
+
 **▶ JUST SHIPPED & LIVE 2026-06-16 — Live-review round (10 commits `c6bc963`→`611e6b1`; migration `scholarship/0058`
 migrate-first via MCP; retro `docs/retrospective-2026-06-16-livereview-round.md`).**
 - **AI profile — completeness & safety.** Now distils ALL student inputs (justification, fears, anything-else, top
