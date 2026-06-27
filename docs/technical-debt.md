@@ -960,3 +960,8 @@
   doc deserves). All 13 unseen held-out BCs pass — this is a narrow header-crop edge. **To resolve (owner's call):** leave
   as-is (acceptable — half a BC isn't clearly a BC), OR floor a header-cropped-but-BC-ish doc at `suspect` rather than
   `not_type`. (Logged 2026-06-27, Layer-1 doc-recognition go-live.)
+
+### [TD-144] Bursary-agreement panel: derive ticks from the real agreement when the feature goes live
+**Status:** Open (deferred to the agent finishing the Conditional Bursary Agreement).
+**Context:** The cockpit panel is now gated on `bursary_agreement_enabled` (2026-06-27), so it stays dark while OFF. But the Student/Guarantor ticks still default to ✓ (`bursary ? !!… : true`) on the assumption "signed-by-now once accepted", and the admin detail GET does not load the agreement.
+**Fix when enabling:** include the `BursaryAgreement` (signed timestamps) in `AdminApplicationDetailSerializer`, initialise the panel's `bursary` state from it, and default all four ticks to **unsigned** (—) — so an accepted-but-not-yet-signed case isn't over-stated. Reuses the existing `BursaryAgreementSerializer`.
