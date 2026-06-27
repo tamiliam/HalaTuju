@@ -100,6 +100,7 @@ export const KNOWN_CODES = [
   'str_not_current',
   'str_recipient_mismatch',
   'offer_letter_missing',
+  'offer_not_official',
   'offer_unreadable',
   'offer_no_identity',
   'offer_name_mismatch',

@@ -1400,6 +1400,17 @@ def income_doc_blockers(application):
     return out
 
 
+def _offer_not_official(application):
+    """True iff the latest offer letter is present but judged NOT a genuine official PUBLIC offer
+    (a conditional offer, a private/IPTS offer, or a non-official notification — pemakluman /
+    UPU-semakan) by the signature scorer. 'unknown' (genuineness not computed / not re-run since the
+    signature model shipped) is NOT a block — we never gate on our own gap."""
+    from .pathway_engine import offer_official_status
+    offer = (application.documents.filter(doc_type='offer_letter')
+             .order_by('-uploaded_at').first())
+    return offer is not None and offer_official_status(offer) == 'not_genuine'
+
+
 def consent_blockers(application):
     """Every gate that must pass BEFORE consent can be given, as a list of blocker
     codes (empty list = ready). Consent is the final step: the profile must be
@@ -1429,6 +1440,14 @@ def consent_blockers(application):
         blockers.append('results_slip_missing')
     if 'offer_letter' not in present:                 # gate v2: compulsory for everyone
         blockers.append('offer_letter_missing')
+    elif application.profile_completed_at is None and _offer_not_official(application):
+        # Owner policy: we can only support a genuine OFFICIAL public offer. A CONDITIONAL offer, a
+        # PRIVATE/IPTS offer, or a non-official notification (pemakluman / UPU-semakan) is judged
+        # not-genuine by the signature scorer → block submission so the student uploads the official
+        # letter if they have one. GRANDFATHER: only for a NOT-yet-submitted app (profile_completed_at
+        # is None) so an already-submitted student is NEVER reverted — their pathway BADGE still
+        # reflects it via the verdict, but their status is untouched.
+        blockers.append('offer_not_official')
     blockers.extend(income_doc_blockers(application))  # route-aware (replaces parent_ic + income_proof)
     # Identity check only once the IC is actually uploaded (else 'ic_missing' leads).
     if 'ic' in present:

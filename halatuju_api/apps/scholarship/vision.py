@@ -1465,10 +1465,17 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
             rr = ocr if ocr is not None else ocr_document(doc)
             text = (rr or {}).get('text', '') or ''
             gimg = image if image is not None else _fetch_image_bytes(doc.storage_path)
-            auth = assess('offer_letter', image=gimg, content_type=doc.content_type, ocr_text=text)
+            # The offer is scored TEXT-only (signatures). An empty/failed OCR is OUR failure →
+            # no signal, never a 'suspect' penalty (mirrors the slip/BC/EPF branches).
+            auth = (assess('offer_letter', image=gimg, content_type=doc.content_type, ocr_text=text)
+                    if text.strip() and not (rr or {}).get('error') else None)
             if auth and auth.get('status'):
+                # 'unrecognised' (not a supported public-issuer offer — private/IPTS or a non-official
+                # notification) is surfaced as 'suspect' so the badge + cap vocabulary handle it; the
+                # pathway verdict + submission gate treat anything != 'genuine' as not an official offer.
+                st = 'suspect' if auth['status'] == 'unrecognised' else auth['status']
                 result['authenticity'] = {
-                    'status': auth['status'],
+                    'status': st,
                     'reason': auth.get('reason', ''),
                     'doc_seen': auth.get('type') or auth.get('doc_seen', ''),
                     **({'probability': auth['probability'], 'present': auth['present'],

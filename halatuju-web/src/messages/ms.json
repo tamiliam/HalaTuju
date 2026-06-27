@@ -1572,6 +1572,7 @@
         "income_proof_missing": "Muat naik dokumen STR (Sumbangan Tunai Rahmah) anda dalam langkah Dokumen.",
         "income_incomplete": "Lengkapkan bahagian Pendapatan isi rumah dalam langkah Dokumen.",
         "offer_letter_missing": "Muat naik surat tawaran anda dalam langkah Dokumen.",
+        "offer_not_official": "Muat naik surat tawaran rasmi anda — tawaran tanpa syarat daripada universiti awam — dalam langkah Dokumen. Tawaran bersyarat, tawaran universiti swasta (IPTS), atau pemakluman kemasukan tidak boleh disokong.",
         "str_missing": "Muat naik dokumen STR anda dalam langkah Dokumen.",
         "salary_slip_missing": "Muat naik slip gaji bagi setiap ahli keluarga yang bekerja dalam langkah Dokumen.",
         "parent_ic_missing_member": "Muat naik IC {member} dalam langkah Dokumen.",
@@ -1912,6 +1913,10 @@
         "offer_letter_missing": {
           "title": "Muat naik surat tawaran anda",
           "desc": "Kami hanya boleh menyokong tempat yang disahkan, jadi surat tawaran diperlukan. Sila muat naik di Dokumen."
+        },
+        "offer_not_official": {
+          "title": "Muat naik surat tawaran rasmi anda",
+          "desc": "Dokumen yang dimuat naik bukan tawaran rasmi muktamad — ia kelihatan seperti tawaran bersyarat, tawaran universiti swasta (IPTS), atau pemakluman kemasukan. Kami hanya boleh menyokong tempat pengajian yang disahkan dan tanpa syarat di institusi awam. Sila muat naik surat tawaran rasmi jika anda memilikinya."
         },
         "course_unspecified": {
           "title": "Apakah yang anda rancang untuk belajar?",
@@ -3035,6 +3040,7 @@
           "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",
           "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan.",
           "offer_letter_missing": "Tiada surat tawaran dimuat naik — diperlukan sebelum kami boleh menyokong tempat pengajian.",
+          "offer_not_official": "Surat tawaran bukan tawaran rasmi universiti awam yang sah (bersyarat / swasta-IPTS / pemakluman tidak rasmi) — pelajar diminta memuat naik surat rasmi.",
           "course_unspecified": "Belum memilih kursus/bidang — pelajar telah ditanya apa yang mereka rancang untuk belajar.",
           "sibling_level_unknown": "Pecahan adik-beradik sekolah lwn pengajian tinggi belum direkod — pelajar telah diminta memecahkan jumlah itu.",
           "device_status_unknown": "Keperluan peranti tidak diketahui — pelajar telah ditanya sama ada mereka mempunyai komputer riba/tablet.",

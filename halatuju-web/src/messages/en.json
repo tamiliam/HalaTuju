@@ -1572,6 +1572,7 @@
         "income_proof_missing": "Upload your STR (Sumbangan Tunai Rahmah) document in the Documents step.",
         "income_incomplete": "Complete the Household income section in the Documents step.",
         "offer_letter_missing": "Upload your offer letter in the Documents step.",
+        "offer_not_official": "Upload your official offer letter — an unconditional offer from a public university — in the Documents step. A conditional offer, a private-university (IPTS) offer, or an admission notification can't be supported.",
         "str_missing": "Upload your STR document in the Documents step.",
         "salary_slip_missing": "Upload a salary slip for each working family member in the Documents step.",
         "parent_ic_missing_member": "Upload {member}'s IC in the Documents step.",
@@ -1912,6 +1913,10 @@
         "offer_letter_missing": {
           "title": "Upload your offer letter",
           "desc": "We can only support a confirmed place, so an offer letter is required. Please upload it in Documents."
+        },
+        "offer_not_official": {
+          "title": "Upload your official offer letter",
+          "desc": "The document uploaded isn't a final official offer — it looks like a conditional offer, a private-university (IPTS) offer, or an admission notification. We can only support a confirmed, unconditional place at a public institution. Please upload the official offer letter if you have one."
         },
         "course_unspecified": {
           "title": "What do you plan to study?",
@@ -3035,6 +3040,7 @@
           "academic_grade_uncertain": "{subject}: our read shows {slip}, but the student typed {typed} — an A/A+ (±) read we can't be sure of. Check it by eye against the slip.",
           "grades_verified": "All {count} grades match the results slip.",
           "offer_letter_missing": "No offer letter uploaded — required before we can support a place.",
+          "offer_not_official": "Offer is not a genuine official public-university offer (conditional / private-IPTS / non-official notification) — student asked to upload the official letter.",
           "course_unspecified": "No course/field chosen yet — the student has been asked what they plan to study.",
           "sibling_level_unknown": "Sibling school-vs-tertiary split not captured — the student has been asked to split the count.",
           "device_status_unknown": "Device need unknown — the student has been asked whether they have a laptop/tablet.",

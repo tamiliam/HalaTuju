@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Offer-validity submission gate — only a genuine OFFICIAL public-university offer qualifies
+  (`MODEL_VERSION 1.1`).** Owner policy: we cannot support a student on a **conditional** offer, a
+  **private/IPTS** offer, or a **non-official notification** (UM *Pemakluman Kemasukan* / UPU *Semakan
+  Kemasukan*). The offer-letter signature scorer is the judge: pemakluman/semakan/conditional → `suspect`;
+  a private/IPTS offer is no longer holistic-rescued (the holistic fallback for offers is dropped) → stays
+  not-genuine. (a) **Submission gate** — a NOT-yet-submitted student whose offer is non-genuine is blocked
+  (`offer_not_official`, en/ms/ta) to upload the official letter; **grandfathered** — an already-submitted
+  student is never reverted (the check is in `consent_blockers`, NOT `application_completeness`, so status
+  never changes — only the pathway BADGE recomputes to `review`). (b) **Pathway verdict** — `_verdict_pathway`
+  returns `review` + `offer_not_official` for a non-genuine offer (was wrongly `verified`). (c) the offer-line
+  signature requires the real header `TAWARAN KEMASUKAN` (a pemakluman that merely mentions "surat tawaran
+  rasmi akan menyusul" no longer matches; #31). New `pathway_engine.offer_official_status`. +9 tests. **Note:**
+  existing offers must be re-run for their badge to reflect the new scorer. **Deferred (fast-follow):** the
+  wrong-PUBLIC-university soft-confirm (resolve `course_id → course_institutions → institution`).
 - **Document-recognition model is now versioned (`MODEL_VERSION`, `1.0`).** The deterministic signature
   scorer (`genuineness/results_doc.py`) stamps a `model_version` on every result, persisted in
   `vision_fields['authenticity']`, so a stored genuineness verdict is traceable to the model that

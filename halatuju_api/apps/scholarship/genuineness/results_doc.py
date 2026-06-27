@@ -30,7 +30,11 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       results_slip + certificate, birth_certificate (text-only, visual signatures dropped),
 #       epf (+ wrong-type backstop), offer_letter families (stpm / matriculation / polytechnic /
 #       pismp / ua_offer, identity-anchor gated), STR (letter / dashboard / semakan, identity gated).
-MODEL_VERSION = '1.0'
+#   1.1 (2026-06-27) — ua_offer offer-line now requires the OFFICIAL offer wording ("Tawaran
+#       Kemasukan" / "Surat Tawaran") only; a "Pemakluman Kemasukan" admission notification
+#       (UM SATU / UPU-rayuan pre-offer, #31) no longer matches → floors at suspect. Owner policy:
+#       official offer letters only. (Only a31 used the dropped 'PEMAKLUMAN KEMASUKAN' anchor.)
+MODEL_VERSION = '1.1'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -236,7 +240,12 @@ _UA_NAMES = [
 # office / clause / program / date wordings vary by institution → union-matched, weight 1 each.
 UA_OFFER_SIGNATURES = [
     ('public university (UA) name', list(_UA_NAMES),                               3, 'text'),
-    ('offer/admission line',        ['TAWARAN KEMASUKAN', 'PEMAKLUMAN KEMASUKAN'], 3, 'text'),
+    # ONLY the official offer HEADER "Tawaran Kemasukan". A "Pemakluman Kemasukan" (admission
+    # NOTIFICATION — e.g. the UM SATU/UPU-rayuan pre-offer, #31) is NOT the official offer, so it
+    # must not match here → it floors at suspect → reviewer requests the real offer. (NB: do NOT add
+    # 'SURAT TAWARAN' — a pemakluman MENTIONS "surat tawaran rasmi (akan menyusul)", which would
+    # wrongly match.) Owner policy: official offer letters only.
+    ('offer/admission line',        ['TAWARAN KEMASUKAN'],                        3, 'text'),
     ('academic office',             ['PEJABAT PENGURUSAN AKADEMIK', 'PUSAT PENGURUSAN AKADEMIK',
                                      'BAHAGIAN HAL EHWAL AKADEMIK', 'PEJABAT PENDAFTAR',
                                      'PUSAT PEMASARAN DAN KEMASUKAN'],             1, 'text'),
