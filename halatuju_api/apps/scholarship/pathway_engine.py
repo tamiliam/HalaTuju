@@ -40,7 +40,14 @@ _GENERIC_TOKENS = frozenset({
     # qualification / pathway type
     'asasi', 'foundation', 'diploma', 'ijazah', 'sarjana', 'muda', 'degree', 'bachelor',
     'program', 'programme', 'sijil', 'certificate', 'persediaan', 'pengajian',
-    'tingkatan', 'form', 'stpm', 'matrik', 'pra',
+    'tingkatan', 'form', 'stpm', 'matrik', 'matriculation', 'pra',
+    # issuer / ministry / administrative boilerplate printed on official letters. NONE of these
+    # name a field or a place, so they must never count as a distinguishing token — else an
+    # offer whose programme line reads "PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN" would
+    # falsely "clash" with a declared stream like "Sains" (#30). Place names + real fields are
+    # still kept; only the ministry/administrative wrapper is dropped.
+    'kementerian', 'ministry', 'pendidikan', 'pelajaran', 'bahagian', 'malaysia',
+    'kpm', 'kpt', 'rasmi', 'surat',
     # enrolment-structure wording on an offer (a Form-6 offer reads "Tingkatan Enam
     # Semester 1 Tahun 2026" — none of which is a FIELD, so it must not "clash" with a
     # declared field like "sains sosial"). Cardinals cover "Semester Satu/Dua", "Tingkatan Enam".

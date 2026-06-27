@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Offer-vs-declared pathway no longer false-clashes on ministry boilerplate (#30).** A genuine
+  matriculation offer (declared "Program Matrikulasi (Sains)" at "KM Selangor"; offer "KOLEJ
+  MATRIKULASI SELANGOR") was flagged as a pathway MISMATCH because the offer's programme line was
+  read as the issuer wrapper "PROGRAM MATRIKULASI **KEMENTERIAN PENDIDIKAN**" — whose tokens
+  (`kementerian`/`pendidikan`) clashed with the declared stream `sains`, even though the institution
+  matched (both → `selangor`; "KM" ≡ "Kolej Matrikulasi" already bridges via the place token). Added
+  ministry/issuer boilerplate (`kementerian`, `pendidikan`, `pelajaran`, `bahagian`, `malaysia`,
+  `kpm`, `kpt`, `rasmi`, `surat`, `matriculation`) to the non-distinguishing token set so it can't
+  cause a clash. A REAL wrong stream/place still clashes (guarded by tests).
 - **Officer Documents drawer now reflects offer genuineness (was always green "Verified").** The
   offer-letter chip derived its facts only from `pathway_check` and **ignored genuineness entirely** —
   `get_authenticity` excluded `offer_letter`, so `doc.authenticity` was always null on the FE. A
