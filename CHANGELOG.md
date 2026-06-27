@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Officer Documents drawer now reflects offer genuineness (was always green "Verified").** The
+  offer-letter chip derived its facts only from `pathway_check` and **ignored genuineness entirely** —
+  `get_authenticity` excluded `offer_letter`, so `doc.authenticity` was always null on the FE. A
+  non-genuine offer (e.g. #31's UM *pemakluman*) therefore showed a green "Verified" pill and a green
+  "Pathway" sub-check (the lenient matcher hit the programme-name tokens while the institution clash
+  was invisible — declared institution blank), contradicting the verdict tile. Now: the serializer
+  exposes offer authenticity, and a non-genuine offer forces the **Pathway** fact red + adds a red
+  **Official** fact → the chip rolls up to amber "Check", never green. (The wrong-PUBLIC-university
+  blind spot — declared UMK vs UM offer when the declared institution is blank — remains the deferred
+  fast-follow: resolve `course_id → course_institutions → institution`.)
+
 ### Added
 - **Offer-validity submission gate — only a genuine OFFICIAL public-university offer qualifies
   (`MODEL_VERSION 1.1`).** Owner policy: we cannot support a student on a **conditional** offer, a

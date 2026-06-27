@@ -173,6 +173,8 @@ const strCheck = (o: Partial<NonNullable<AdminApplicantDocument['str_check']>>) 
   ({ name: '', nric: '', status: '', year: '', amount: '', member: '', name_status: 'no_ref', nric_status: 'no_ref', current_status: 'current', ic_present: false, ...o } as NonNullable<AdminApplicantDocument['str_check']>)
 const acadCheck = (o: Partial<NonNullable<AdminApplicantDocument['academic_check']>>) =>
   ({ name: 'pending', subjects: 'pending', results: 'pending', candidate_name: '', exam: '', exam_year: '', missing: [], mismatched: [], uncertain: [], slip_count: 1, ...o } as NonNullable<AdminApplicantDocument['academic_check']>)
+const pathCheck = (o: Partial<NonNullable<AdminApplicantDocument['pathway_check']>>) =>
+  ({ name: 'match', ic: 'match', candidate_name: '', candidate_nric: '', programme: '', institution: '', issuer: '', offer_date: '', intake: '', address: '', pathway: 'match', declared_programme: '', declared_institution: '', ...o } as NonNullable<AdminApplicantDocument['pathway_check']>)
 
 // ── documentPill (rolls up the fact colours) ──────────────────────────────────
 
@@ -280,6 +282,26 @@ describe('documentFacts', () => {
 
   it('returns [] when the check has not run', () => {
     expect(documentFacts(doc({ doc_type: 'str' }))).toEqual([])
+  })
+
+  it('offer letter: a genuine official offer keeps Pathway green and no Official flag', () => {
+    const facts = documentFacts(doc({ doc_type: 'offer_letter',
+      pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match' }),
+      authenticity: { status: 'genuine', reason: '' } }))
+    expect(facts.find((f) => f.key === 'pathway')?.status).toBe('verified')
+    expect(facts.some((f) => f.key === 'official')).toBe(false)
+  })
+
+  it('offer letter: a NON-genuine offer forces Pathway red + an Official=red flag (chip not green)', () => {
+    // #31 the pemakluman: identity matches, programme tokens match, but the offer is not an
+    // official public offer → Pathway can't be green, an Official fact goes red, pill → check.
+    const d = doc({ doc_type: 'offer_letter',
+      pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match' }),
+      authenticity: { status: 'suspect', reason: 'pemakluman' } })
+    const facts = documentFacts(d)
+    expect(facts.find((f) => f.key === 'pathway')?.status).toBe('not')
+    expect(facts.find((f) => f.key === 'official')?.status).toBe('not')
+    expect(documentPill(d)).toBe('check')   // never 'verified'
   })
 })
 

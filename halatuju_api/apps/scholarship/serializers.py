@@ -621,7 +621,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         """Genuineness fingerprint summary {status, reason, doc_seen} — soft, flag-gated.
         IC/parent_ic (Sprint 1) + the standardised supporting docs (Sprint 2: STR, results
         slip, birth cert, EPF). Null when the check didn't run (flag off / AI outage)."""
-        if obj.doc_type not in ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf'):
+        if obj.doc_type not in ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf',
+                                'offer_letter'):
             return None
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         auth = vf.get('authenticity')

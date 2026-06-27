@@ -285,11 +285,19 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   if (dt === 'offer_letter') {
     const c = doc.pathway_check
     if (!c) return []
+    // Owner policy: an offer can settle identity + pathway ONLY if it is a genuine OFFICIAL
+    // public offer. A non-genuine offer (conditional / private-IPTS / a non-official
+    // pemakluman/semakan notification) can't confirm the pathway — so an 'Official' fact goes
+    // red and Pathway can never show green off a letter we don't accept. This keeps the chip in
+    // step with the verdict tile (which gates on the same signal).
+    const auth = doc.authenticity?.status
+    const notOfficial = !!auth && auth !== 'genuine'
     const facts: DocumentFactLabel[] = [
       { key: 'name', status: factStatus(c.name) },
       { key: 'ic_no', status: factStatus(c.ic) },
     ]
-    if (c.pathway) facts.push({ key: 'pathway', status: factStatus(c.pathway) })
+    if (c.pathway) facts.push({ key: 'pathway', status: notOfficial ? 'not' : factStatus(c.pathway) })
+    if (notOfficial) facts.push({ key: 'official', status: 'not' })
     return facts
   }
   if (dt === 'str') {
