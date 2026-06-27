@@ -953,3 +953,10 @@
   all-four-signed state is recorded but inert). **To resolve (Phase 3, with TD-075):** wire real disbursement +
   suspension/withholding to `agreement.status == executed` + academic-progress signals so the stated schedule becomes
   operative. Until then the contract is a binding *instrument* on a mocked-money flow. (Logged 2026-06-26.)
+- TD-143: **A birth certificate cropped ABOVE its header scores `not_birth_certificate`, not `suspect`.** The BC
+  signature anchors live in the header block (`Sijil Kelahiran` / `Pendaftaran Kelahiran dan Kematian` / `Kerajaan
+  Malaysia`); a screenshot cropped to the lower half (particulars only, e.g. corpus a27) loses them and the text score
+  falls below 0.35 → `not_birth_certificate` (a harder "wrong type" verdict than the soft `suspect` a genuine-but-cropped
+  doc deserves). All 13 unseen held-out BCs pass — this is a narrow header-crop edge. **To resolve (owner's call):** leave
+  as-is (acceptable — half a BC isn't clearly a BC), OR floor a header-cropped-but-BC-ish doc at `suspect` rather than
+  `not_type`. (Logged 2026-06-27, Layer-1 doc-recognition go-live.)
