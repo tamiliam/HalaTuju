@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Results-slip chip shows the SPM exam year.** The drawer now surfaces the OCR'd exam year as a
+  muted data point after Results (e.g. "Name · Subjects · Results · SPM 2025"), so the officer can
+  see which year's slip it is. Already extracted (`academic_check.exam_year`); now displayed.
+
 ### Fixed
 - **Offer-vs-declared pathway no longer false-clashes on ministry boilerplate (#30).** A genuine
   matriculation offer (declared "Program Matrikulasi (Sains)" at "KM Selangor"; offer "KOLEJ

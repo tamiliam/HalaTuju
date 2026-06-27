@@ -3119,6 +3119,7 @@
         "notUploaded": "belum dimuat naik",
         "view": "Lihat",
         "rerun": "Jalankan semula",
+        "examYear": "SPM {year}",
         "viewer": {
           "newTab": "Buka dalam tab baharu",
           "close": "Tutup",
