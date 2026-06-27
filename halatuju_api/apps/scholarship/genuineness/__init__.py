@@ -27,12 +27,12 @@ def assess(doc_type, *, image=None, content_type='', ocr_text='', has_qr=False, 
     if doc_type in ('results_slip', 'certificate'):
         return signature_genuineness(ocr_text, has_qr=has_qr, has_crest=has_crest)
     if doc_type == 'offer_letter':
-        # Three standard issuers (STPM / matriculation / polytechnic) are signature-scored;
-        # anything else (university / IPG / private) is unrecognised → holistic fallback.
-        sig = signature_genuineness(ocr_text, doc_type='offer_letter')
-        if sig.get('status') != 'unrecognised':
-            return sig
-        return doc_genuineness(image, content_type, doc_type)
+        # Public-issuer offers (stpm / matriculation / polytechnic / pismp / ua_offer = 20 UAs) are
+        # signature-scored. Owner policy: only a genuine OFFICIAL public offer qualifies — we do NOT
+        # holistic-rescue an UNRECOGNISED offer (a private/IPTS letter, or a non-official notification
+        # whose issuer we don't recognise). It stays not-genuine so the submission gate + pathway
+        # verdict can act on it, rather than being quietly passed by the image read.
+        return signature_genuineness(ocr_text, doc_type='offer_letter')
     if doc_type == 'str':
         # Three genuine STR approval forms (MOF letter / dashboard / semakan) are signature-
         # scored off the OCR text; an LHDN SALINAN copy or a SARA letter matches no form marker

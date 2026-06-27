@@ -154,6 +154,24 @@ def _ic_status(candidate_nric: str, profile_nric: str, extracted: bool) -> str:
     return 'mismatch'
 
 
+def offer_official_status(doc) -> str:
+    """Whether an offer is a genuine OFFICIAL offer for gating purposes, from its stored
+    signature-genuineness (``vision_fields['authenticity']``):
+      * 'genuine'     — a genuine official offer from a supported PUBLIC issuer (ua_offer / stpm /
+                        matriculation / polytechnic / pismp). The only kind we can support.
+      * 'not_genuine' — anything else the scorer judged: a CONDITIONAL offer / a non-official
+                        notification (pemakluman / UPU-semakan) → suspect; a PRIVATE/IPTS offer →
+                        unrecognised (stored as suspect). Owner policy: cannot support these.
+      * 'unknown'     — genuineness not computed yet (flag off / AI outage / not re-run since the
+                        signature model shipped). Never gate on our own gap — defer to the reviewer.
+    """
+    vf = getattr(doc, 'vision_fields', None)
+    auth = vf.get('authenticity') if isinstance(vf, dict) else None
+    if not isinstance(auth, dict) or not auth.get('status'):
+        return 'unknown'
+    return 'genuine' if auth.get('status') == 'genuine' else 'not_genuine'
+
+
 def student_offer_check(doc) -> dict:
     """The clinical read of ONE offer letter against the student's own profile.
 

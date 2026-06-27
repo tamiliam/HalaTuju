@@ -183,3 +183,33 @@ class TestStudentOfferCheckPathway(SimpleTestCase):
         # Offer is "Diploma Kejuruteraan Elektrik" — a different field → mismatch.
         self.assertEqual(chk['pathway'], 'mismatch')
         self.assertEqual(chk['declared_programme'], 'Diploma Senibina')
+
+
+# ── Offer-validity signal (owner policy: only genuine official PUBLIC offers qualify) ──
+from apps.scholarship.pathway_engine import offer_official_status  # noqa: E402
+
+
+def _auth_doc(authenticity):
+    vf = {'fields': {}}
+    if authenticity is not None:
+        vf['authenticity'] = authenticity
+    return SimpleNamespace(doc_type='offer_letter', vision_fields=vf)
+
+
+class TestOfferOfficialStatus(SimpleTestCase):
+    def test_genuine_official(self):
+        self.assertEqual(offer_official_status(
+            _auth_doc({'status': 'genuine', 'probability': 0.9, 'model_version': '1.1'})), 'genuine')
+
+    def test_suspect_is_not_genuine(self):
+        # conditional / pemakluman / UPU-semakan → suspect → not an official offer.
+        self.assertEqual(offer_official_status(
+            _auth_doc({'status': 'suspect', 'probability': 0.4, 'model_version': '1.1'})), 'not_genuine')
+
+    def test_not_offer_is_not_genuine(self):
+        self.assertEqual(offer_official_status(
+            _auth_doc({'status': 'not_offer_letter', 'probability': 0.1})), 'not_genuine')
+
+    def test_no_authenticity_is_unknown(self):
+        # Genuineness not computed (flag off / not re-run) → 'unknown' → never gate on our gap.
+        self.assertEqual(offer_official_status(_auth_doc(None)), 'unknown')

@@ -463,6 +463,25 @@ class TestPathway(_Base):
         self.assertNotIn('pathway_confirm', _codes(f['unresolved']))
         self.assertIn('offer_programme', _codes(f['evidence']))
 
+    def test_non_genuine_offer_is_review_not_official(self):
+        # Identity + programme match, but the signature scorer flagged the offer not-genuine
+        # (conditional / IPTS / pemakluman) → pathway 'review' (offer_not_official), never verified.
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
+        d.vision_fields = dict(d.vision_fields,
+                               authenticity={'status': 'suspect', 'reason': 'pemakluman',
+                                             'probability': 0.4, 'model_version': '1.1'})
+        d.save(update_fields=['vision_fields'])
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('offer_not_official', _codes(f['unresolved']))
+
+    def test_genuine_official_offer_still_verifies(self):
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
+        d.vision_fields = dict(d.vision_fields,
+                               authenticity={'status': 'genuine', 'probability': 0.9, 'model_version': '1.1'})
+        d.save(update_fields=['vision_fields'])
+        self.assertEqual(_facts(self.app)['pathway']['status'], 'verified')
+
     def test_offer_matching_declared_is_verified_no_nag(self):
         # Declared institution matches the offer (naming quirk) → verified, no query.
         self.app.pre_u_institution = 'KM Melaka'

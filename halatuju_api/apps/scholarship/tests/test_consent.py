@@ -553,3 +553,68 @@ class TestIncomeGateV2(TestCase):
             self._doc(app, dt)
         # Lenient (old) bar for a submitted app → stays done, so revert never fires.
         self.assertTrue(application_completeness(app)['documents_done'])
+
+
+class TestOfferValidityGate(TestCase):
+    """Owner policy: only a genuine OFFICIAL public offer lets a student submit. A conditional /
+    IPTS / non-official (pemakluman / semakan) offer is gated at SUBMISSION (so they can upload the
+    right doc), but an already-submitted student is grandfathered — never reverted."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='ovg', name='B40', year=2026)
+
+    def _app(self, *, submitted=False):
+        import uuid
+        from django.utils import timezone
+        prof = StudentProfile.objects.create(
+            supabase_user_id=str(uuid.uuid4()), nric='030101-14-1234', name='Student')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=prof, status='shortlisted')
+        if submitted:
+            app.status, app.profile_completed_at = 'profile_complete', timezone.now()
+            app.save()
+        return app
+
+    def _offer(self, app, status):
+        from apps.scholarship.models import ApplicantDocument
+        from django.utils import timezone
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
+            vision_fields={'fields': {}, 'authenticity': {
+                'status': status, 'probability': 0.9 if status == 'genuine' else 0.4,
+                'model_version': '1.1'}},
+            vision_run_at=timezone.now())
+
+    def test_non_genuine_offer_blocks_not_yet_submitted(self):
+        from apps.scholarship.services import consent_blockers
+        app = self._app()
+        self._offer(app, 'suspect')
+        self.assertIn('offer_not_official', consent_blockers(app))
+
+    def test_genuine_offer_has_no_offer_not_official_blocker(self):
+        from apps.scholarship.services import consent_blockers
+        app = self._app()
+        self._offer(app, 'genuine')
+        self.assertNotIn('offer_not_official', consent_blockers(app))
+
+    def test_submitted_student_grandfathered_not_blocked(self):
+        # An already-submitted student with a now-non-genuine offer is NOT gated by the offer-
+        # validity check (grandfathered on profile_completed_at) — so it can never appear as a
+        # blocker that would trip a re-submission.
+        from apps.scholarship.services import consent_blockers
+        app = self._app(submitted=True)
+        self._offer(app, 'suspect')
+        self.assertNotIn('offer_not_official', consent_blockers(app))
+
+    def test_offer_validity_not_in_application_completeness(self):
+        # Status invariant: the offer-validity check lives ONLY in the submission gate, NOT in
+        # application_completeness — so revert_if_profile_incomplete (which keys on 'complete')
+        # can never roll a submitted student back because their offer became non-genuine.
+        from apps.scholarship.services import application_completeness
+        app = self._app()
+        self._offer(app, 'genuine')
+        genuine_complete = application_completeness(app)['complete']
+        app.documents.all().delete()
+        self._offer(app, 'suspect')
+        self.assertEqual(application_completeness(app)['complete'], genuine_complete)

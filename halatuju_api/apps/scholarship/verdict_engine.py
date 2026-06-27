@@ -496,7 +496,7 @@ def _verdict_pathway(application):
 
     No offer is fine (many apply pre-offer) — the pathway is then merely declared
     → 'review'."""
-    from .pathway_engine import student_offer_check
+    from .pathway_engine import student_offer_check, offer_official_status
     evidence, unresolved = [], []
     offer = _latest_doc(application, 'offer_letter')
     chosen = (application.chosen_pathway or application.intended_pathway or '').strip()
@@ -513,6 +513,13 @@ def _verdict_pathway(application):
     # Identity guard: a wrong name OR IC means a wrong-person letter.
     if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
         return _fact('pathway', 'review', evidence, [_item('offer_name_mismatch')])
+    # Owner policy: only a genuine OFFICIAL public-issuer offer can settle the pathway. A CONDITIONAL
+    # offer, a PRIVATE/IPTS offer, or a non-official notification (pemakluman / UPU-semakan) is not
+    # support-able → the pathway can't verify on it; the student must provide the official offer. This
+    # only colours the badge for an already-submitted student (status never changes here — the
+    # SUBMISSION gate is what blocks a not-yet-submitted one). 'unknown' (not scored) → don't act.
+    if offer_official_status(offer) == 'not_genuine':
+        return _fact('pathway', 'review', evidence, [_item('offer_not_official')])
     # No identity read off the letter. Distinguish a general NOTICE / wrong document
     # (the body read fine — issuer/institution/programme present — but it carries no
     # name or IC, e.g. a "your offer will be released later" memo) from a genuinely

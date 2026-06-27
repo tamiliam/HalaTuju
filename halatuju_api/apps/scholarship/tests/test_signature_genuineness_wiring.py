@@ -169,19 +169,18 @@ class TestOfferLetterUsesSignatureScorer(_Base):
         self.assertEqual(auth['status'], 'genuine')
         self.assertEqual(auth['doc_seen'], 'stpm')
 
-    def test_unrecognised_issuer_defers_to_holistic(self):
-        # No standard fingerprint → assess() falls back to the holistic read (here mocked).
+    def test_unrecognised_issuer_is_suspect_not_holistic(self):
+        # Owner policy: a private/IPTS offer (not one of the supported public issuers) is NOT
+        # holistic-rescued to genuine — it stays not-genuine ('unrecognised' surfaced as 'suspect')
+        # so the pathway verdict + submission gate can act on it.
         doc = ApplicantDocument.objects.create(
             application=self.app, doc_type='offer_letter', storage_path=f'{self.app.id}/of/u')
         with patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'img'), \
              patch('apps.scholarship.vision.ocr_document', return_value={'text': UNIVERSITY_OFFER, 'error': None}), \
              patch('apps.scholarship.vision.extract_document_fields',
-                   return_value={'fields': {}, 'warnings': [], 'error': ''}), \
-             patch('apps.scholarship.genuineness.doc_genuineness',
-                   return_value={'status': 'genuine', 'doc_seen': 'university offer', 'reason': 'looks real'}):
+                   return_value={'fields': {}, 'warnings': [], 'error': ''}):
             auth = vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
-        self.assertEqual(auth['status'], 'genuine')
-        self.assertEqual(auth['doc_seen'], 'university offer')
+        self.assertEqual(auth['status'], 'suspect')
 
     def test_empty_ocr_no_image_gives_no_signal(self):
         auth = self._run('').get('authenticity')
