@@ -33,4 +33,12 @@ def assess(doc_type, *, image=None, content_type='', ocr_text='', has_qr=False, 
         if sig.get('status') != 'unrecognised':
             return sig
         return doc_genuineness(image, content_type, doc_type)
+    if doc_type == 'str':
+        # Three genuine STR approval forms (MOF letter / dashboard / semakan) are signature-
+        # scored off the OCR text; an LHDN SALINAN copy or a SARA letter matches no form marker
+        # → unrecognised → holistic fallback (which still accepts a genuine MySTR screenshot).
+        sig = signature_genuineness(ocr_text, doc_type='str')
+        if sig.get('status') != 'unrecognised':
+            return sig
+        return doc_genuineness(image, content_type, doc_type)
     return doc_genuineness(image, content_type, doc_type)

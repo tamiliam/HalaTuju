@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **STR genuineness now scored by the probabilistic SIGNATURE scorer — three approval forms.** STR
+  (Sumbangan Tunai Rahmah) joins the deterministic signature path (like slip/cert/BC/EPF/offer): three
+  owner-specified forms — **MOF approval letter** (Kementerian Kewangan), **MySTR dashboard**, **Semakan
+  Status** — each with its printed-string signatures in `genuineness/results_doc.py` + an identity-anchor
+  gate on the DISTINCTIVE page marker. The markers (not the shared "Maklumat Pemohon" / "Sumbangan Tunai
+  Rahmah" strings) keep an LHDN **SALINAN** application copy and a **SARA** letter out — they match no
+  form → `unrecognised` → holistic fallback (which still accepts a genuine MySTR screenshot). Wired live
+  via `assess('str', …)` in `vision.run_field_extraction_for_document` (text-first, image fallback).
+  **Approval vs SALINAN stays the extraction `status` field** (a separate axis). Validated: 24/24 corpus
+  STR docs recognised (genuine), 4/4 counter docs (SALINAN ×2, SARA ×2 incl. a9 MyKasih-SARA) rejected.
+  +8 tests. Owner-gated branch — not deployed.
+
 ### Fixed
 - **The SPM results-slip parser no longer emits a partial, mis-graded read for a two-column slip.** On a
   digital-PDF slip whose `GRED` column is a separate right-hand block (e.g. #66/doc912), the flattened OCR

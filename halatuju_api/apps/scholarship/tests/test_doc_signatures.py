@@ -370,3 +370,91 @@ def test_private_university_defers_to_holistic():
     # A private (IPTS) university is NOT one of the 20 UAs → unrecognised → holistic (never flagged).
     g = signature_genuineness(PRIVATE_UNIV_OFFER, doc_type='offer_letter')
     assert g['status'] == 'unrecognised'
+
+
+# ── STR (Sumbangan Tunai Rahmah) — three genuine approval forms + SALINAN/SARA counters ──
+GENUINE_STR_LETTER = """KEMENTERIAN KEWANGAN MALAYSIA
+KOMPLEKS KEMENTERIAN KEWANGAN
+NO. 5, PERSIARAN PERDANA, PRESINT 2
+62592 PUTRAJAYA
+Laman Web www.mof.gov.my
+No. Rujukan : STR-01(A)(i)
+SUMBANGAN TUNAI RAHMAH (STR) 2026
+Sukacita dimaklumkan bahawa permohonan STR dan SARA 2026 tuan/puan telah diluluskan.
+Status terkini STR.
+Sekiranya terdapat pertanyaan lanjut berhubung kelayakan STR.
+"""
+
+GENUINE_STR_DASHBOARD = """Dashboard
+Profil
+Status Permohonan STR
+Lulus
+Jumlah Telah Dibayar
+Jumlah Bayaran Keseluruhan STR
+"""
+
+GENUINE_STR_SEMAKAN = """Semakan Status
+Maklumat Pemohon
+No. MyKad
+Status Pedalaman
+Status Permohonan Semasa
+Lulus
+Fasa Bayaran
+Jumlah Telah Dibayar
+Sumbangan Asas Rumah
+"""
+
+# An LHDN application SALINAN: carries the shared "Sumbangan Tunai Rahmah" + "Maklumat Pemohon"
+# strings but NONE of the three approval-page markers → must not pass as a genuine STR.
+SALINAN_COPY = """LHDN MALAYSIA
+KERAJAAN MALAYSIA
+SUMBANGAN TUNAI RAHMAH (STR)
+MAKLUMAT PEMOHON
+Nama : MURALY A/L JAYARAMAN
+No. MyKad : 781026025199
+SALINAN
+"""
+
+# A SARA letter from the Perdana Menteri — not STR, not MOF.
+SARA_PM_LETTER = """PERDANA MENTERI MALAYSIA
+Salam Sejahtera,
+saudara/saudari adalah salah seorang yang terpilih untuk terus menerima bantuan SARA.
+ANWAR IBRAHIM
+"""
+
+
+def test_genuine_str_letter_types_as_str_letter():
+    g = signature_genuineness(GENUINE_STR_LETTER, doc_type='str')
+    assert g['type'] == 'str_letter'
+    assert g['status'] == 'genuine'
+    assert g['probability'] >= GENUINE_MIN
+
+
+def test_genuine_str_dashboard_types_as_str_dashboard():
+    g = signature_genuineness(GENUINE_STR_DASHBOARD, doc_type='str')
+    assert g['type'] == 'str_dashboard'
+    assert g['status'] == 'genuine'
+
+
+def test_genuine_str_semakan_types_as_str_semakan():
+    g = signature_genuineness(GENUINE_STR_SEMAKAN, doc_type='str')
+    assert g['type'] == 'str_semakan'
+    assert g['status'] == 'genuine'
+
+
+def test_salinan_copy_is_unrecognised_not_genuine_str():
+    # The SALINAN trap: shared strings present, page markers absent → unrecognised → holistic.
+    g = signature_genuineness(SALINAN_COPY, doc_type='str')
+    assert g['status'] == 'unrecognised'
+
+
+def test_sara_letter_is_unrecognised_not_str():
+    # SARA != STR — a Perdana Menteri SARA letter matches no STR form marker.
+    g = signature_genuineness(SARA_PM_LETTER, doc_type='str')
+    assert g['status'] == 'unrecognised'
+
+
+def test_assess_routes_str_to_signatures_when_recognised():
+    from apps.scholarship.genuineness import assess
+    g = assess('str', ocr_text=GENUINE_STR_DASHBOARD)
+    assert g['type'] == 'str_dashboard' and g['status'] == 'genuine'

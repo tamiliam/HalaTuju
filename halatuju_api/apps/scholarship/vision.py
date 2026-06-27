@@ -1451,7 +1451,25 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                     'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['type'],
                     'probability': sg['probability'], 'present': sg['present'], 'missing': sg['missing'],
                 }
-        elif doc.doc_type in _GENUINENESS_DOCS:   # str (+ any other) → holistic multimodal read
+        elif doc.doc_type == 'str':
+            # SIGNATURE genuineness over the OCR text for the three STR approval forms (MOF
+            # letter / MySTR dashboard / Semakan Status); an LHDN SALINAN copy or a SARA letter
+            # is unrecognised → holistic fallback on the image (which still accepts a genuine
+            # MySTR screenshot). Approval vs SALINAN stays the extraction `status` field.
+            from .genuineness import assess
+            rr = ocr if ocr is not None else ocr_document(doc)
+            text = (rr or {}).get('text', '') or ''
+            gimg = _fetch_image_bytes(doc.storage_path)   # str field-extraction is text-based; fetch for the holistic fallback
+            auth = assess('str', image=gimg, content_type=doc.content_type, ocr_text=text)
+            if auth and auth.get('status'):
+                result['authenticity'] = {
+                    'status': auth['status'],
+                    'reason': auth.get('reason', ''),
+                    'doc_seen': auth.get('type') or auth.get('doc_seen', ''),
+                    **({'probability': auth['probability'], 'present': auth['present'],
+                        'missing': auth['missing']} if 'probability' in auth else {}),
+                }
+        elif doc.doc_type in _GENUINENESS_DOCS:   # birth_certificate/epf holistic fallback (+ any other)
             gimg = _fetch_image_bytes(doc.storage_path)
             if gimg is not None:
                 auth = doc_genuineness(gimg, doc.content_type, doc.doc_type)
