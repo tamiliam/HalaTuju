@@ -8,7 +8,8 @@ from types import SimpleNamespace
 from django.test import SimpleTestCase
 
 from apps.scholarship.academic_engine import (
-    _split_band, compare_academics, parse_spm_slip, read_slip, student_slip_check,
+    _declared_subject_count, _split_band, compare_academics, parse_spm_slip, read_slip,
+    student_slip_check,
 )
 
 
@@ -391,6 +392,27 @@ class TestParseSpmSlip(SimpleTestCase):
 
     def test_non_spm_returns_none(self):
         self.assertIsNone(parse_spm_slip([_word('STPM', 100, 100), _word('SLIP', 200, 100)]))
+
+    def test_under_read_vs_declared_total_falls_back(self):
+        # #66/doc912: the slip declares SEPULUH (10) subjects but only 4 rows pair
+        # positionally (a 2-column slip whose GRED column the OCR detached). A partial,
+        # possibly-mis-graded read must NOT be emitted — return None → Gemini image read.
+        header = self.HEADER + [('JUMLAH MATA PELAJARAN : SEPULUH', 350)]
+        self.assertIsNone(self._parse(rows=self.SHARMILA[:4], header=header))
+
+    def test_recovered_meets_declared_total_parses(self):
+        # Declared total met (9 of 9) → trust the positional read, no needless fallback.
+        header = self.HEADER + [('JUMLAH MATA PELAJARAN : SEMBILAN', 350)]
+        out = self._parse(rows=self.SHARMILA, header=header)
+        self.assertIsNotNone(out)
+        self.assertEqual(len(out['results']), 9)
+
+    def test_declared_count_reads_malay_cardinal(self):
+        self.assertEqual(_declared_subject_count('JUMLAH MATA PELAJARAN : SEPULUH'), 10)
+        self.assertEqual(_declared_subject_count('JUMLAH MATA PELAJARAN SEMBILAN'), 9)
+        self.assertEqual(_declared_subject_count('JUMLAH MATA PELAJARAN : DUA BELAS'), 12)
+        self.assertIsNone(_declared_subject_count('JUMLAH MATA PELAJARAN :'))
+        self.assertIsNone(_declared_subject_count('no such line here'))
 
     def test_too_few_rows_returns_none(self):
         self.assertIsNone(self._parse(self.SHARMILA[:2]))

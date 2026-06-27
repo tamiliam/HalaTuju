@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **The SPM results-slip parser no longer emits a partial, mis-graded read for a two-column slip.** On a
+  digital-PDF slip whose `GRED` column is a separate right-hand block (e.g. #66/doc912), the flattened OCR
+  splits each grade from its subject — so the positional parser dropped 6 of 10 subjects AND mis-paired 3
+  of the 4 it kept with a neighbour's grade, yet still reported `ok`. The parser now reads the slip's own
+  declared total (`JUMLAH MATA PELAJARAN <malay-cardinal>`, e.g. SEPULUH = 10) and, when it recovers
+  fewer subjects than declared, returns `None` so the Gemini IMAGE reader (which handles the 2-D table —
+  validated: all 10 subjects, correct grades) reads it instead. Real prod slip frozen as a (PII-scrubbed)
+  regression fixture. +5 tests.
 - **Birth-certificate / guardianship relationship rows no longer show a false red "Doesn't match" on an AI-misread IC
   number.** The relationship rows (BC Child/Mother, guardianship Guardian) treat the NAME as the primary proof of the
   link and the AI-read IC number as corroboration. Because a BC/letter IC number is read off green JPN security paper,
