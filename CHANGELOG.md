@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Document-recognition model is now versioned (`MODEL_VERSION`, `1.0`).** The deterministic signature
+  scorer (`genuineness/results_doc.py`) stamps a `model_version` on every result, persisted in
+  `vision_fields['authenticity']`, so a stored genuineness verdict is traceable to the model that
+  produced it and performance can be compared across versions / errors tracked to a version. Bumped on
+  any calibration change (guard test + feedback memory enforce the discipline).
+
 ### Fixed
 - **BC genuineness no longer soft-flags plain birth certificates (text-only visual cap).** The BC scorer
   runs TEXT-only in prod (no image read is wired), yet its signature list weighted the `JATA NEGARA`

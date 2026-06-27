@@ -20,6 +20,18 @@ import unicodedata
 
 from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exported for callers)
 
+# Version of the deterministic document-recognition model — the signature FAMILIES + weights +
+# identity gates + bands in THIS module. **Bump on ANY calibration change** (a new family, a
+# weight/anchor/threshold tweak) so a stored genuineness result can be traced to the model that
+# produced it and performance compared across versions. It travels on every result as
+# ``model_version`` (and is persisted in ``vision_fields['authenticity']``).
+# History:
+#   1.0 (2026-06-27) — first full Layer-1 set held-out-validated on unseen prod docs:
+#       results_slip + certificate, birth_certificate (text-only, visual signatures dropped),
+#       epf (+ wrong-type backstop), offer_letter families (stpm / matriculation / polytechnic /
+#       pismp / ua_offer, identity-anchor gated), STR (letter / dashboard / semakan, identity gated).
+MODEL_VERSION = '1.0'
+
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
 # label, 2 = distinctive, 3 = forge-hard / near-unique to the genuine document.
@@ -413,12 +425,14 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
             return {'status': 'unrecognised', 'probability': r['probability'], 'type': r['type'],
                     'present': r['present'], 'missing': r['missing'],
                     'reason': (f"not one of the standard {doc_type.replace('_', ' ')} issuers "
-                               f"(p={r['probability']:.2f}) — defer to holistic check")[:300]}
+                               f"(p={r['probability']:.2f}) — defer to holistic check")[:300],
+                    'model_version': MODEL_VERSION}
         status = 'genuine' if r['probability'] >= GENUINE_MIN else 'suspect'
         reason = (f"{n_have}/{n_all} {r['type']} offer signatures present "
                   f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
         return {'status': status, 'probability': r['probability'], 'type': r['type'],
-                'present': r['present'], 'missing': r['missing'], 'reason': reason[:300]}
+                'present': r['present'], 'missing': r['missing'], 'reason': reason[:300],
+                'model_version': MODEL_VERSION}
 
     status = band_for(r['probability'])
     if status == 'not_type':                       # <0.35 → not recognisably that document
@@ -426,4 +440,5 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
     reason = (f"{n_have}/{n_all} {r['type'].replace('_', ' ')} signatures present "
               f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
     return {'status': status, 'probability': r['probability'], 'type': r['type'],
-            'present': r['present'], 'missing': r['missing'], 'reason': reason[:300]}
+            'present': r['present'], 'missing': r['missing'], 'reason': reason[:300],
+            'model_version': MODEL_VERSION}
