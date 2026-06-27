@@ -21,7 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Held-out run on 15 unseen prod STR docs** then drove a calibration fix: a real Semakan screenshot is
   often cropped ABOVE its "Semakan Status" title, so the form is now anchored on the **`Status Permohonan
   Semasa`** status field (weighted above the title) — which a SALINAN copy does not carry. Result: 12/12
-  unseen STR recognised, 3/3 non-STR (2 SALINAN + 1 SARA) rejected, zero false negatives. +9 tests total.
+  unseen STR recognised, 3/3 non-STR (2 SALINAN + 1 SARA) rejected, zero false negatives. The Semakan
+  form now has THREE redundant identity anchors (`Semakan Status` title / `Status Permohonan Semasa` /
+  `Status Pedalaman`) so it survives both crop-above-title AND the desktop label-wrap that OCR-splits the
+  status field (`Status Permohonan` / value / `Semasa`, seen on a51). `Sumbangan Asas Rahmah` corrected
+  (was a "Rumah" typo that never matched) and kept as a weight-1 corroborator. +11 tests total.
   Owner-gated branch — not deployed.
 
 ### Fixed

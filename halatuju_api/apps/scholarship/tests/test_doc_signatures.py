@@ -401,7 +401,7 @@ Status Permohonan Semasa
 Lulus
 Fasa Bayaran
 Jumlah Telah Dibayar
-Sumbangan Asas Rumah
+Sumbangan Asas Rahmah
 """
 
 # An LHDN application SALINAN: carries the shared "Sumbangan Tunai Rahmah" + "Maklumat Pemohon"
@@ -481,3 +481,25 @@ def test_title_cropped_semakan_still_genuine_via_status_field():
     assert g['type'] == 'str_semakan'
     assert g['status'] == 'genuine'      # status field anchors it even without the page title
     assert g['probability'] >= GENUINE_MIN
+
+
+# a51-class: a FULL desktop Semakan (not cropped) whose 'Status Permohonan Semasa' label wraps,
+# so OCR interleaves the value ("Status Permohonan" / Lulus / "Semasa") and the contiguous phrase
+# never matches. With ALSO no title, 'Status Pedalaman' is the backstop anchor → still recognised.
+DESKTOP_SPLIT_SEMAKAN = """Maklumat Pemohon
+Nama
+No. MyKad
+Status Pedalaman
+Tidak
+Status Permohonan
+Lulus
+Semasa
+Fasa Bayaran
+Jumlah Telah Dibayar
+"""
+
+
+def test_desktop_split_status_field_recognised_via_pedalaman():
+    g = signature_genuineness(DESKTOP_SPLIT_SEMAKAN, doc_type='str')
+    assert g['type'] == 'str_semakan'
+    assert g['status'] != 'unrecognised'   # Status Pedalaman anchors it despite no title + split field
