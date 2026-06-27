@@ -209,7 +209,7 @@ function factStatus(s: string | undefined | null): FactStatus {
   switch (s) {
     case 'match': case 'found': case 'ok': case 'current':
       return 'verified'
-    case 'partial': case 'uncertain': case 'pending': case 'stale': case 'unconfirmed':
+    case 'partial': case 'uncertain': case 'pending': case 'stale': case 'unconfirmed': case 'check':
       return 'partial'
     case 'mismatch': case 'unreadable': case 'not_found': case 'rejected':
       return 'not'

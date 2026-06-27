@@ -1443,6 +1443,7 @@
         "ward": "Child in their care (you)",
         "confirmed": "Confirmed",
         "mismatch": "Doesn't match — re-check",
+        "checkNumber": "Name matches — check the IC number",
         "reviewing": "We'll review this"
       },
       "strCheck": {
