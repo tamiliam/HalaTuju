@@ -516,7 +516,7 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-26)
+## Next Sprint (as of 2026-06-27)
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,
@@ -532,15 +532,44 @@ profile-complete; supersedes the basic submission-ack)**. **WhatsApp S2 proposed
 until done — flip the env var to `whatsapp` once cleared, no code change). **S5 STOP→opt-out webhook is LIVE** (owner set
 the Twilio inbound webhook URL 2026-06-22; unsigned POST→403, STOP maps a profile only when we've sent it an app-logged
 WhatsApp).
-**Decision cool-off LIVE** (2026-06-22): `DECLINE_COOLOFF_DAYS=7` + `AWARD_COOLOFF_DAYS=2` set — an admin decline (#13)
-and a student award acceptance (#14) are held silently for the window (admin can cancel/hold from the cockpit) before the
-comm + status reveal; the existing `send_pending_decision_emails` cron releases them. Migration `scholarship/0069` (4
-additive fields). Set either to 0 to disable (immediate, the old behaviour).
+**Decision cool-off LIVE — REWORKED 2026-06-27 to "immediate decision, embargoed email".** `DECLINE_COOLOFF_DAYS=7`.
+A cool-off DECLINE now flips the application to `rejected` IMMEDIATELY (status + bucket + when/who — the cockpit and
+records reflect it at once); only the student EMAIL is embargoed for the window and sent by the `send_pending_decision_emails`
+cron. The student does NOT see the rejection during the embargo — `ApplicationReadSerializer.status` masks an
+email-embargoed rejection (`status='rejected'` + `pending_rejection_category` set) as `interviewed`; the admin cockpit uses
+its own serializer and sees the real `rejected`. `cancel_pending_decline` now REVERSES the rejection (restores
+`interviewed` + cancels the email); `release_pending_declines` only lifts the email embargo (status already rejected).
+`services.admin_reject` + `_record_reject`/`_send_decline_for`. Decline emails are now HTML (interview bucket thanks for
+time + documents). `AWARD_COOLOFF_DAYS=2` (accept side) is UNCHANGED (still defers status until release). Set
+`DECLINE_COOLOFF_DAYS=0` to email immediately. Migration `scholarship/0069` (4 additive fields).
 DARK/unset: `SHOW_REFEREES=false`, **`BURSARY_AGREEMENT_ENABLED=false`** (the tri-partite conditional bursary agreement —
-code shipped 2026-06-26 but OFF; flip only AFTER the two Phase-0 gates: lawyer-vet the `bursary.py` template wording, and
-finalise the Foundation entity via `FOUNDATION_SIGNATORY_NAME/_TITLE/_NRIC`).
+code shipped 2026-06-26 but OFF; the cockpit panel is now **gated on this flag** (2026-06-27) so it stays hidden while
+OFF — `bursary_agreement_enabled` on `AdminApplicationDetailSerializer`). Flip only AFTER the two Phase-0 gates:
+lawyer-vet the `bursary.py` template wording, and finalise the Foundation entity via
+`FOUNDATION_SIGNATORY_NAME/_TITLE/_NRIC`. **When flipping on, also do TD-144** (base the panel's signed-ticks on the real
+loaded agreement, not the `: true` default).
 Meet SA key **rotated 2026-06-21** (old key `692d49f8…` deleted after a transcript exposure; new `7ef25e69…` in
 `GOOGLE_MEET_SA_JSON` — still an env var, TD-125 to move it to Secret Manager).
+
+**▶ SHIPPED 2026-06-27 — Decision-flow & verification hardening (worktree `.worktrees/wa-comms`; commits `2410f25`,
+`791a582`, `badda56d`, `f2059d1c`, `435ba2ef`, `3d0b4f27`; NO migration; retro
+`docs/retrospective-2026-06-27-decision-flow-hardening.md`).**
+- **Decline = immediate rejection + embargoed email** (see the cool-off note above) — fixes #11/#12 showing "Accepted".
+- **Reopen returns an accepted case to `interviewed`** (real status transition, not a side-flag) + clears any pending
+  decline; cancel-reopen restores `accepted`. A decline after reopen is bucketed **`interview`** (not `contractual`);
+  `contractual` is reserved for genuinely post-award (`sponsored`) — the direct decline button shows only for `sponsored`.
+  Decline emails are now **HTML** (`send_decline_email` → `_send_html`; interview bucket thanks for time + documents).
+- **BC/guardianship relationship rows: name-primary matching.** name-match + AI-misread IC → amber "check the IC number"
+  / "differs by one digit" (`vision.nric_close`, `income_engine._combine_relationship`), never a hard red. Fixes #12.
+- **Upload orphan-row guard** (`storage.object_exists`): reject a CONFIRMED-missing blob (`400 upload_incomplete`) before
+  the stale-sweep. Found+deleted the 1 orphan across 603 docs (#80 EPF). Student msg `scholarship.docs.uploadIncomplete`.
+- **Bursary-agreement cockpit panel gated** behind `BURSARY_AGREEMENT_ENABLED` (was leaking false "signed" ticks while
+  dark) — TD-144 for the real-agreement ticks at flip-on.
+- **Ops:** api memory **1 GiB → 2 GiB** (was OOM-killing interview "Propose times", #90). #11/#12 → `interview` bucket;
+  #12 `rejected` (email embargoed to 7/4); #12/#62 mislabelled accepted→`interviewed`. B40 invite **batch 8** (27 new
+  SPM merit+need) + **Group A reminder** (6). Supabase MCP connected to the CLI session.
+- **▶ NEXT:** no queued sprint. Owner gates remain: bursary Phase-0 (lawyer + Foundation entity) before flipping
+  `BURSARY_AGREEMENT_ENABLED`; #12 releases its decline email automatically on 4 July; #62 awaits the reviewer's re-decision.
 
 **▶ SHIPPED 2026-06-26 — Conditional Bursary Award Agreement (Phase 1, DARK) + auth scope policy + sponsor card
 (retro `docs/retrospective-2026-06-26-bursary-agreement-and-auth-scope.md`).**

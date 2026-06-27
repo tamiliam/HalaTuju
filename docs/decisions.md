@@ -3441,3 +3441,17 @@ single-inbox.
 **Rationale:** the programme can only fund a confirmed, unconditional place at a public institution; surfacing this at submission (not post-hoc) is kinder and avoids dead-end applications. Reusing the signature genuineness as the gate keeps one source of truth and no new bespoke detector.
 **Trade-offs:** existing offers need a re-run for their badge to reflect the new scorer; a genuine public offer with non-standard signatures could be wrongly gated (reviewer backstop); a fully-structured-but-conditional offer that still scores genuine would slip through (accepted residual).
 **Revisit if:** conditional offers start scoring genuine in practice (then add a conditional-text detector), or the owner decides to accept a non-official artifact (UPU semakan) as proof.
+
+## Decline = immediate rejection + embargoed student email — 2026-06-27
+**Decision:** A cool-off decline records the rejection IMMEDIATELY (status→`rejected` + bucket + when/who); only the student EMAIL is embargoed for the window (sent by the release cron). The student does not see the rejection during the embargo — `ApplicationReadSerializer.status` masks an email-embargoed rejection as `interviewed`.
+**Alternatives considered:** The original model — hold the WHOLE decision silently (status unflipped) until release.
+**Rationale:** The silent-until-release model conflated decision-finality with notification-timing, so a declined case displayed at its pre-decision status (#11/#12 read "Accepted"). The owner's intent: the rejection is final at the click; the 7-day window is only to soften the news.
+**Trade-offs:** Adds a student-facing mask (one `get_status` method) so the admin and student see different statuses during the embargo; `cancel_pending_decline` now reverses the rejection (restores `interviewed`) rather than just clearing a pending flag.
+**Revisit if:** the programme wants the student to see "decision pending" explicitly, or the embargo concept is dropped.
+
+## Reopen moves status accepted→interviewed (a real transition) — 2026-06-27
+**Decision:** Reopening an accepted case sets status `accepted`→`interviewed` (+ clears any pending decline); cancel-reopen restores `accepted`. A decline from the reopened (interviewed) state is therefore bucketed `interview`; `contractual` is reserved for genuinely post-award (`sponsored`).
+**Alternatives considered:** Keep the existing `decision_reopened_at` side-flag and special-case the decline category.
+**Rationale:** The side-flag left the status at `accepted` through a reopen, so the only decline available was `contractual` (wrong bucket for an interviewed-then-declined case) and re-approve couldn't flow through verify-accept. Moving the status fixes the bucket, the re-approve path, and the cockpit display in one change; the existing frontend (`doSave`/`decisionLocked`/cancel-reopen) needed no category logic.
+**Trade-offs:** A reopened-then-declined case sits at `interviewed` during the email embargo (correct: in-review, pending reveal). `contractual` is effectively dormant until the funded (`sponsored`) flow is live.
+**Revisit if:** a post-award (sponsored) contractual-decline flow goes live and needs its own UI path.
