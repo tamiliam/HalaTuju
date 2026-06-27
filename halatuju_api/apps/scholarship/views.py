@@ -638,6 +638,17 @@ class DocumentListCreateView(APIView):
         if not replaces and ApplicantDocument.objects.filter(application=app).count() >= _settings.MAX_DOCS_PER_APPLICATION:
             return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
                             status=status.HTTP_400_BAD_REQUEST)
+        # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
+        # client→Storage via the signed URL BEFORE this POST. If that PUT silently failed, we'd
+        # record a row pointing at a blob that isn't there — a dead "view" link + an unreadable
+        # doc that never resolves. Verify the object actually landed before recording it. Reject
+        # ONLY on a CONFIRMED-missing blob (False); a storage hiccup during the check (None) must
+        # not block a legitimate upload. This runs BEFORE the stale-sweep below, so a rejection
+        # never touches the student's existing good copy.
+        from .storage import object_exists
+        if object_exists(serializer.validated_data.get('storage_path')) is False:
+            return Response({'error': 'upload_incomplete', 'code': 'upload_incomplete'},
+                            status=status.HTTP_400_BAD_REQUEST)
         # Single-instance re-upload REPLACES the existing copy. Order matters for data safety
         # (TD audit 2026-06-14): create the replacement row FIRST (inside a transaction), and only
         # sweep the superseded copies AFTER it is safely committed. The old order (delete blob +

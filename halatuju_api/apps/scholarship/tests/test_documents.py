@@ -59,6 +59,39 @@ class TestDocumentApi(TestCase):
         resp = self.client.post('/api/v1/scholarship/documents/sign-upload/', {'doc_type': 'ic'}, format='json')
         self.assertEqual(resp.status_code, 403)
 
+    @patch('apps.scholarship.storage.object_exists', return_value=False)
+    def test_create_rejects_when_blob_confirmed_missing(self, _mock):
+        """If the file never landed in Storage (confirmed missing), the row is NOT created —
+        no orphan record with a dead view link (app #80 EPF, 2026-06-27)."""
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'epf',
+            'storage_path': f'{self.app_a.id}/epf/ghost',
+            'original_filename': 'SUMATHY.pdf', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json().get('code'), 'upload_incomplete')
+        self.assertEqual(
+            ApplicantDocument.objects.filter(application=self.app_a, doc_type='epf').count(), 0)
+
+    @patch('apps.scholarship.storage.delete_objects')
+    @patch('apps.scholarship.storage.object_exists', return_value=False)
+    def test_rejected_upload_keeps_existing_doc(self, _exists, mock_del):
+        """A confirmed-missing re-upload must NOT sweep the student's existing good copy."""
+        self._auth(USER_A)
+        ApplicantDocument.objects.create(application=self.app_a, doc_type='ic',
+                                         storage_path=f'{self.app_a.id}/ic/good')
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'ic',
+            'storage_path': f'{self.app_a.id}/ic/ghost',
+            'original_filename': 'ic.pdf', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+        rows = ApplicantDocument.objects.filter(application=self.app_a, doc_type='ic')
+        self.assertEqual(rows.count(), 1)
+        self.assertEqual(rows.first().storage_path, f'{self.app_a.id}/ic/good')
+        mock_del.assert_not_called()
+
     @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://signed.example/dl')
     def test_create_and_list_document(self, _mock):
         self._auth(USER_A)

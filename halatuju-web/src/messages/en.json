@@ -1364,6 +1364,7 @@
       "uploading": "Uploading…",
       "remove": "Remove",
       "uploadError": "Upload failed. Please try again.",
+      "uploadIncomplete": "The file didn't finish uploading. Please try again.",
       "deleteError": "Could not remove the document.",
       "assist": {
         "ok": "Looks good — we read this document and the details match you.",

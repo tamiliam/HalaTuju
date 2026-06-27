@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fewer subjects than declared, returns `None` so the Gemini IMAGE reader (which handles the 2-D table —
   validated: all 10 subjects, correct grades) reads it instead. Real prod slip frozen as a (PII-scrubbed)
   regression fixture. +5 tests.
+- **Document uploads can no longer create an orphan row with a dead view link.** The file bytes are PUT
+  client→Supabase Storage via a signed URL *before* the row-create POST; if that PUT silently failed, we recorded a
+  document row pointing at a blob that was never there — a dead "view" link and an unreadable doc that never resolved
+  (hit on app #80's Mother's EPF, where `80/epf/` was empty and signing the view URL returned HTTP 400). The
+  upload-create endpoint now verifies the blob actually landed (`storage.object_exists`, tri-state True/False/None) and
+  **rejects only a CONFIRMED-missing upload** (`400 upload_incomplete`) — a transient storage hiccup (None) never blocks
+  a legitimate upload, and the guard runs *before* the stale-sweep so a rejection never touches the student's existing
+  copy. Student-facing message `scholarship.docs.uploadIncomplete` (en/ms/ta). +2 backend tests. No migration.
+  (A one-off sweep of all 603 documents found this was the only orphan; the #80 row was deleted so the slot reads
+  "missing" for a clean re-upload.)
 - **Birth-certificate / guardianship relationship rows no longer show a false red "Doesn't match" on an AI-misread IC
   number.** The relationship rows (BC Child/Mother, guardianship Guardian) treat the NAME as the primary proof of the
   link and the AI-read IC number as corroboration. Because a BC/letter IC number is read off green JPN security paper,
