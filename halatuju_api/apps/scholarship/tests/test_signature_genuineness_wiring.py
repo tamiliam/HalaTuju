@@ -227,3 +227,38 @@ class TestFlagOffNoSignal(_Base):
                    return_value={'fields': {}, 'warnings': [], 'error': ''}):
             result = vision.run_field_extraction_for_document(doc, names=[])
         self.assertNotIn('authenticity', result)
+
+
+GENUINE_STR_DASHBOARD = "Dashboard\nProfil\nStatus Permohonan STR\nLulus\nJumlah Telah Dibayar\nJumlah Bayaran Keseluruhan STR\n"
+STR_SALINAN = "LHDN MALAYSIA\nSUMBANGAN TUNAI RAHMAH (STR)\nMAKLUMAT PEMOHON\nNo. MyKad\nSALINAN\n"
+
+
+@override_settings(DOC_GENUINENESS_CHECK_ENABLED=True)
+class TestStrUsesSignatureScorer(_Base):
+    """run_field_extraction_for_document scores the three STR approval forms by signatures;
+    a SALINAN / SARA defers to the holistic read."""
+
+    def test_dashboard_scores_genuine_via_signatures(self):
+        doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type='str', storage_path=f'{self.app.id}/str/x')
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=None), \
+             patch('apps.scholarship.vision.ocr_document', return_value={'text': GENUINE_STR_DASHBOARD, 'error': None}), \
+             patch('apps.scholarship.vision.extract_document_fields',
+                   return_value={'fields': {}, 'warnings': [], 'error': ''}):
+            auth = vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
+        self.assertIsNotNone(auth)
+        self.assertEqual(auth['status'], 'genuine')
+        self.assertEqual(auth['doc_seen'], 'str_dashboard')
+
+    def test_salinan_defers_to_holistic(self):
+        doc = ApplicantDocument.objects.create(
+            application=self.app, doc_type='str', storage_path=f'{self.app.id}/str/u')
+        with patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'img'), \
+             patch('apps.scholarship.vision.ocr_document', return_value={'text': STR_SALINAN, 'error': None}), \
+             patch('apps.scholarship.vision.extract_document_fields',
+                   return_value={'fields': {}, 'warnings': [], 'error': ''}), \
+             patch('apps.scholarship.genuineness.doc_genuineness',
+                   return_value={'status': 'genuine', 'doc_seen': 'MySTR screenshot', 'reason': 'real'}):
+            auth = vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
+        self.assertEqual(auth['status'], 'genuine')
+        self.assertEqual(auth['doc_seen'], 'MySTR screenshot')

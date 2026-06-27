@@ -231,16 +231,52 @@ UA_OFFER_SIGNATURES = [
                                      'TARIKH LAPOR DIRI'],                         1, 'text'),
 ]
 
+# STR (Sumbangan Tunai Rahmah) — THREE genuine approval artefacts (owner-specified 2026-06-27),
+# each scored as its own form; score_signatures takes the best fit. The IDENTITY anchor for each
+# is its DISTINCTIVE PAGE MARKER, deliberately NOT the shared "Maklumat Pemohon" / "Sumbangan
+# Tunai Rahmah" strings — because those also appear on an LHDN **SALINAN** application copy (a8,
+# a23) and must NOT be mistaken for an approval. A **SARA** letter (a63, Perdana Menteri) carries
+# none of these markers. So: SALINAN + SARA fall to 'unrecognised' → holistic, never genuine STR.
+# (Approval vs not — diluluskan / Lulus — is the extraction `status` field, a separate axis.)
+STR_LETTER_SIGNATURES = [          # MOF approval letter (Kementerian Kewangan)
+    ('Kementerian Kewangan Malaysia', ['KEMENTERIAN KEWANGAN MALAYSIA'],         3, 'text'),
+    ('Sumbangan Tunai Rahmah (STR)',  ['SUMBANGAN TUNAI RAHMAH'],                 2, 'text'),
+    ('STR application approved body', ['SUKACITA DIMAKLUMKAN BAHAWA PERMOHONAN STR'], 2, 'text'),
+    ('MOF Putrajaya address',         ['62592 PUTRAJAYA', 'PERSIARAN PERDANA'],   1, 'text'),
+    ('mof.gov.my',                    ['MOF GOV MY'],                             1, 'text'),
+    ('No. Rujukan',                   ['NO RUJUKAN'],                             1, 'text'),
+    ('kelayakan STR enquiry clause',  ['BERHUBUNG KELAYAKAN STR', 'PERTANYAAN LANJUT'], 1, 'text'),
+]
+STR_DASHBOARD_SIGNATURES = [       # MySTR app dashboard
+    ('Status Permohonan STR',         ['STATUS PERMOHONAN STR'],                  3, 'text'),
+    ('Dashboard',                     ['DASHBOARD'],                              2, 'text'),
+    ('Profil',                        ['PROFIL'],                                 1, 'text'),
+    ('Jumlah Telah Dibayar',          ['JUMLAH TELAH DIBAYAR'],                   1, 'text'),
+    ('Jumlah Bayaran Keseluruhan',    ['JUMLAH BAYARAN KESELURUHAN'],             1, 'text'),
+]
+STR_SEMAKAN_SIGNATURES = [         # MySTR Semakan Status check page
+    ('Semakan Status',                ['SEMAKAN STATUS'],                         3, 'text'),
+    ('Status Permohonan Semasa',      ['STATUS PERMOHONAN SEMASA'],               2, 'text'),
+    ('Maklumat Pemohon',              ['MAKLUMAT PEMOHON'],                       1, 'text'),
+    ('No. MyKad',                     ['NO MYKAD'],                               1, 'text'),
+    ('Fasa Bayaran',                  ['FASA BAYARAN'],                           1, 'text'),
+    ('Sumbangan Asas Rumah',          ['SUMBANGAN ASAS RUMAH'],                   1, 'text'),
+    ('Status Pedalaman',              ['STATUS PEDALAMAN'],                       1, 'text'),
+]
+
 # A doc_type is scored against its FAMILY of candidate lists (best fit wins + names the type).
 # results_slip + certificate are scored together (auto-detect); birth_certificate is its own.
 _RESULTS_LISTS = {'results_slip': SLIP_SIGNATURES, 'certificate': CERT_SIGNATURES}
+_STR_LISTS = {'str_letter': STR_LETTER_SIGNATURES, 'str_dashboard': STR_DASHBOARD_SIGNATURES,
+              'str_semakan': STR_SEMAKAN_SIGNATURES}
 _OFFER_LISTS = {'stpm': STPM_OFFER_SIGNATURES, 'matriculation': MATRIC_OFFER_SIGNATURES,
                 'polytechnic': POLY_OFFER_SIGNATURES, 'pismp': PISMP_OFFER_SIGNATURES,
                 'ua_offer': UA_OFFER_SIGNATURES}
 _FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
              'birth_certificate': {'birth_certificate': BC_SIGNATURES},
              'epf': {'epf': EPF_SIGNATURES},
-             'offer_letter': _OFFER_LISTS}
+             'offer_letter': _OFFER_LISTS,
+             'str': _STR_LISTS}
 _LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
 
 # Issuer "identity" anchors per offer-letter family: presence of ANY means the document IS that
@@ -255,6 +291,13 @@ _IDENTITY = {'offer_letter': {
     'pismp':         ['INSTITUT PENDIDIKAN GURU', 'IJAZAH SARJANA MUDA PERGURUAN'],
     # Asasi / UA-Diploma / Degree — recognised iff the letter names one of the fixed 20 UAs.
     'ua_offer':      list(_UA_NAMES),
+}, 'str': {
+    # The DISTINCTIVE page marker per STR approval form (NOT the shared "Maklumat Pemohon" /
+    # "Sumbangan Tunai Rahmah" — those also sit on an LHDN SALINAN copy). A doc matching none
+    # (a SALINAN, a SARA letter) is 'unrecognised' → holistic, never a genuine STR.
+    'str_letter':    ['KEMENTERIAN KEWANGAN MALAYSIA'],
+    'str_dashboard': ['STATUS PERMOHONAN STR'],
+    'str_semakan':   ['SEMAKAN STATUS'],
 }}
 
 
