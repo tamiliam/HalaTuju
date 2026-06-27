@@ -16,8 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matches** but the **IC number** differs, the row shows an amber **"Name matches — check the IC number"** instead of
   red. Red is reserved for a genuine NAME mismatch (a different person) or an IC clash with no name to vouch for it.
   New `income_engine._combine_relationship`; amber `check` pill in the student docs view + officer cockpit
-  (`factStatus`); i18n `scholarship.docs.relCheck.checkNumber` (en/ms/ta). SOFT signal throughout — never blocked
-  submission, this only corrects misleading wording. +1 backend test (POVIENTHIRAN case). No migration.
+  (`factStatus`); i18n `scholarship.docs.relCheck.checkNumber` (en/ms/ta). When the clash is **exactly one digit**
+  (`vision.nric_close`, a Levenshtein-≤1 OCR slip), the amber is the more precise **"IC number differs by one digit
+  (likely a scan misread)"** (`relCheck.checkNumberOneDigit` / status `check_near`); a larger clash keeps the plainer
+  "check the IC number". SOFT signal throughout — never blocked submission, this only corrects misleading wording.
+  +backend tests (`nric_close` units + POVIENTHIRAN one-digit + far-clash). No migration.
 
 ### Security
 - **One active privileged scope per Google identity (except super admins).** A single Google identity may now hold

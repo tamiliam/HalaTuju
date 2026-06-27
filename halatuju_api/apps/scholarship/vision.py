@@ -78,6 +78,36 @@ def nric_match(extracted: str, profile_nric: str) -> bool:
     return bool(a) and bool(b) and a == b
 
 
+def nric_close(extracted: str, reference: str) -> bool:
+    """True iff two NRICs are a SINGLE-digit edit apart (one substitution, or one inserted
+    /dropped digit) after canonicalisation — i.e. a likely OCR slip on a security-printed
+    document (e.g. 76-08 read as 76-09 over the green JPN guilloche), NOT a different number.
+    False when either is blank, when they're equal (that's an exact match — use nric_match),
+    or when they differ by more than one digit. RELATIONSHIP context only — used to phrase a
+    soft 'check the number' nudge more precisely; it never relaxes the strict identity gate."""
+    a, b = _canonical_nric(extracted), _canonical_nric(reference)
+    if not a or not b or a == b:
+        return False
+    la, lb = len(a), len(b)
+    if abs(la - lb) > 1:
+        return False
+    if la == lb:                                   # one substitution
+        return sum(1 for x, y in zip(a, b) if x != y) == 1
+    short, long = (a, b) if la < lb else (b, a)    # one inserted/dropped digit
+    i = j = 0
+    skipped = False
+    while i < len(short) and j < len(long):
+        if short[i] == long[j]:
+            i += 1
+            j += 1
+        elif skipped:
+            return False
+        else:
+            skipped = True
+            j += 1
+    return True
+
+
 def name_match(extracted: str, profile_name: str) -> str:
     """
     'match' if the token sets are equal after stripping MyKad parentage tokens;

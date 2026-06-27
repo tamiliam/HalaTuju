@@ -1444,6 +1444,7 @@
         "confirmed": "Disahkan",
         "mismatch": "Tidak sepadan — semak semula",
         "checkNumber": "Nama sepadan — semak nombor KP",
+        "checkNumberOneDigit": "Nama sepadan — nombor KP berbeza satu digit (mungkin salah baca imbasan)",
         "reviewing": "Kami akan semak ini"
       },
       "strCheck": {
