@@ -729,31 +729,24 @@ pathway work; commits `4446c2e` bug+aliran, `4589a6a` req_disability; courses mi
   to "book your interview" (the assignment email `STUDENT_ASSIGNMENT_EMAIL_ENABLED` is now **ON** in prod — 2026-06-21).
   TD-124 (contact inbox UI), TD-125 (Meet key → Secret Manager). Other thread: genuineness branch (unmerged).
 
-**▶ DONE — NOT MERGED/DEPLOYED (branch `feature/doc-eval-harness`, 2 sprint-closes this session: `f57f343`→`c788c8e`
-then `45d23e0`→`cf1d905`, NO migration; retros `docs/retrospective-genuineness-signatures.md` +
-`docs/retrospective-2026-06-16-genuineness-canonical-enum-bc-epf.md`). Document genuineness: package +
-probabilistic SIGNATURE scorer (slip/cert/BC/EPF) + canonical outcome enum (BE+FE) + academic/name fixes.**
-- **`genuineness/` package** = one home for every check (`ic`, `supporting_doc`, `results_doc`, shared `bands`,
-  `assess()`); `ic_genuineness`/`doc_genuineness` moved out of `vision.py` (re-exported).
-- **Signature scorer** (slip/cert/BC/EPF) — per-type signature lists (mostly fixed printed strings matched
-  DETERMINISTICALLY in OCR text + a visual crest/QR/logo flag) → probability → **band suspect<0.35 / review
-  0.35–0.70 / genuine≥0.70**, calibrated per type (48 slips, 28 BCs, 13 EPFs; zero false positives). EPF doubles
-  as the **wrong-type backstop** (tax form / withdrawal form / mis-filed STR → not_epf; closes TD-117).
-- **Canonical outcome enum `genuine` / `suspect` / `not_<type>`** across ALL doc types (BE + FE). Signature docs map
-  the bands 1:1; IC/STR/EPF map their holistic verdict. `bands.canonical_status()` folds every legacy value (no
-  backfill); uniform treatment (genuine → pass; else soft cap + officer flag). **Live for results_slip only** — BC/EPF
-  signatures built+calibrated but still holistic in prod (TD-122 wires them).
-- **Academic fix #1** (undeclared slip subject = soft `/profile` nudge, not a block) + **name fix #2** (strip `NAMA :`).
-- **Issue-2 extraction contracts FINALISED** (slip/BC/EPF) in `docs/scholarship/genuineness-verification-architecture.md`
-  — incl. the EPF reverse-engineered salary `max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))` + `No. Majikan==000000000 ⇒
-  unemployed`. Extraction-code change is TD-123 (Issue-2 build pass).
-- Eval tooling: `eval/capture_ocr.py` (Cloud Vision OCR via gcloud ADC, any doc-type) + `eval/calibrate_signatures.py`.
-  Backend suite **2477 passed**. Local-only deps cv2/numpy/google-cloud-vision NOT in `requirements.txt` (gcv already a
-  prod dep; the scorer is pure text).
-- **▶ NEXT:** STR signatures (MySTR-screenshot vs MOF-letter split); **TD-122** (wire BC/EPF onto the live signature
-  path); **TD-123** (Issue-2 extraction build pass); then Layer-2 matching fixes (parent-IC **TD-119**, the deferred
-  cross-doc thread) + **TD-121** (harness genuineness cap) + **TD-124**. (`main` re-merged 2026-06-16 — drift cleared;
-  reconciled the TD-120 collision: `main`'s shipped i18n cleanup keeps TD-120, this branch's `_GENUINENESS_DOCS` tidy → TD-124.)
+**▶ MERGED + LIVE 2026-06-27 (`4cb26111` → main; api rev …00533) — Layer-1 document-recognition model, `MODEL_VERSION=1.0`
+(retro `docs/retrospective-2026-06-27-doc-recognition-layer1-golive.md` + earlier doc-eval retros).** The deterministic
+SIGNATURE genuineness scorer (`genuineness/results_doc.py`) for ALL standard docs, behind the already-ON
+`DOC_GENUINENESS_CHECK_ENABLED`.
+- **`genuineness/` package** (`ic`, `supporting_doc`, `results_doc`, `bands`, `assess()`). Signature scorer over OCR text
+  → **band suspect<0.35 / review 0.35–0.70 / genuine≥0.70**; canonical `genuine/suspect/not_<type>` enum.
+- **LIVE for every standard doc:** results_slip/cert, **BC** (text-only — visual signatures dropped, fix-a), **EPF**
+  (+ wrong-type backstop, TD-117), **offer_letter** families (stpm/matric/poly/pismp/**ua_offer**=20 fixed public unis,
+  identity-anchor gated), **STR** (MOF letter/dashboard/Semakan, identity gated; SALINAN+SARA → unrecognised → holistic).
+- **`MODEL_VERSION` stamped on every result + persisted in `vision_fields.authenticity`** — **BUMP on ANY signature/
+  weight/gate change** (History comment in results_doc.py + feedback memory + a guard test enforce it).
+- Rode along: IC-anchored offer NRIC, EPF salary reverse-engineer (`max(ΣMajikan/(n·0.13), ΣAhli/(n·0.11))`), SPM slip
+  2-column bounce-to-Gemini, hand-written salary ringgit\|sen decimal read, Asasi-at-Politeknik pathway.
+- **Validated** on local corpus + held-out 90 unseen prod docs across 5 models = **0 false rejections**. 1610 scholarship
+  pytest. Eval tooling: `eval/capture_ocr.py` + `eval/heldout_eval.py` + `eval/calibrate_signatures.py` (PII gitignored).
+- **Decisions:** UPU/MOHE semakan stays `suspect` (official offer letters only); see `docs/decisions.md`.
+- **▶ NEXT (deferred):** Layer-2 cross-doc matching (parent-IC **TD-119**, via `courses.pismp_taxonomy.aliran_of`),
+  **TD-121** (harness genuineness cap), **TD-143** (header-cropped BC → not_type, owner's call).
 
 **▶ JUST SHIPPED & LIVE 2026-06-16 — Live-review round (10 commits `c6bc963`→`611e6b1`; migration `scholarship/0058`
 migrate-first via MCP; retro `docs/retrospective-2026-06-16-livereview-round.md`).**
