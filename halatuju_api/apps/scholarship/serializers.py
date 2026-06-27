@@ -463,6 +463,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     spm_a_count = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
     # The address decision/comms emails are actually sent to (resolved at submit).
     notify_email = serializers.EmailField(read_only=True)
 
@@ -505,6 +506,15 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'funding_need', 'completeness', 'notify_email',
             'form_data', 'intake_snapshot',
         ]
+
+    def get_status(self, obj):
+        # Immediate-rejection model: the decision flips to 'rejected' at once, but the student
+        # email is EMBARGOED for the cool-off to soften the news. Until that email goes (the
+        # pending marker is still set), the STUDENT sees the in-review state, not the rejection.
+        # (The admin cockpit uses a different serializer and always sees the real status.)
+        if obj.status == 'rejected' and (obj.pending_rejection_category or ''):
+            return 'interviewed'
+        return obj.status
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades

@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Decline cool-off is now "immediate decision, embargoed email".** Previously a cool-off decline held the whole
+  decision silently (status unflipped) until release. Now the rejection is **immediate** — the application flips to
+  `rejected` (status + bucket + when/who) the moment the admin declines, so the cockpit and records reflect it at once —
+  and **only the student EMAIL is embargoed** for the window (`decline_due_at`), sent by the release cron to soften the
+  news. The **student does not see the rejection** during the embargo: `ApplicationReadSerializer.status` masks an
+  email-embargoed rejection as `interviewed`. `cancel_pending_decline` (within the window) now *reverses* the rejection
+  back to in-review and cancels the email; `release_pending_declines` only lifts the email embargo (status is already
+  rejected). `services.admin_reject` + new `_record_reject`/`_send_decline_for`. +tests (cool-off + masking).
 - **Reopen now returns an accepted case to the decision point, so a post-accept decline is bucketed correctly.**
   Reopening an `accepted` application moves its status back to `interviewed` (the pre-decision state) — not just a
   side-flag — and clears any pending cool-off decline; cancel-reopen restores `accepted`. Consequences: declining a
