@@ -96,6 +96,14 @@ class TestDeclineEmailDispatch(TestCase):
             emails.send_decline_email('x@y.com', 'A', 'B40', category='interview', lang=lang)
         self.assertEqual(len(mail.outbox), 3)
 
+    def test_decline_email_is_html(self):
+        emails.send_decline_email('x@y.com', 'Priya', 'B40', category='interview', lang='en')
+        msg = mail.outbox[-1]
+        html = next((c for c, ct in msg.alternatives if ct == 'text/html'), None)
+        self.assertIsNotNone(html)                 # HTML alternative present
+        self.assertIn('<p', html)                  # rendered as paragraphs
+        self.assertIn('documents', html.lower())   # thanks-for-documents survives into the HTML
+
 
 class TestAdminRejectService(TestCase):
     @classmethod

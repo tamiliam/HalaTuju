@@ -776,7 +776,10 @@ def admin_reject(application, admin, category):
         if application.status not in INTERVIEW_REJECT_FROM:
             raise ValueError('bad_status')
     elif category == 'contractual':
-        if application.status != 'accepted':
+        # 'contractual' is a genuinely post-award decline. The UI offers it only from
+        # 'sponsored' (funded); 'accepted' stays permitted for back-compat, but the normal
+        # way to decline an accepted case is now reopen → 'interviewed' → 'interview'.
+        if application.status not in ('accepted', 'sponsored'):
             raise ValueError('bad_status')
     else:
         raise ValueError('bad_category')
