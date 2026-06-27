@@ -264,7 +264,10 @@ STR_SEMAKAN_SIGNATURES = [         # MySTR Semakan Status check page
     ('Maklumat Pemohon',              ['MAKLUMAT PEMOHON'],                       1, 'text'),
     ('No. MyKad',                     ['NO MYKAD'],                               1, 'text'),
     ('Fasa Bayaran',                  ['FASA BAYARAN'],                           1, 'text'),
-    ('Sumbangan Asas Rumah',          ['SUMBANGAN ASAS RUMAH'],                   1, 'text'),
+    # The MySTR Semakan co-displays the SARA sub-section "Sumbangan Asas Rahmah" (SARA, the
+    # sibling scheme). A weight-1 corroborating signal only — NOT an identity anchor, so a
+    # SARA-only doc (no Semakan Status / Status Permohonan Semasa) still can't pass as STR.
+    ('Sumbangan Asas Rahmah',         ['SUMBANGAN ASAS RAHMAH'],                  1, 'text'),
     ('Status Pedalaman',              ['STATUS PEDALAMAN'],                       1, 'text'),
 ]
 
@@ -301,9 +304,13 @@ _IDENTITY = {'offer_letter': {
     # (a SALINAN, a SARA letter) is 'unrecognised' → holistic, never a genuine STR.
     'str_letter':    ['KEMENTERIAN KEWANGAN MALAYSIA'],
     'str_dashboard': ['STATUS PERMOHONAN STR'],
-    # The page title OR the status field — a genuine Semakan cropped above its title is still
-    # recognised by 'Status Permohonan Semasa' (which a SALINAN copy does not carry).
-    'str_semakan':   ['SEMAKAN STATUS', 'STATUS PERMOHONAN SEMASA'],
+    # Any of three anchors recognises a genuine Semakan — robust to crop AND OCR layout noise:
+    #  • 'Semakan Status' (page title) — lost when cropped above it;
+    #  • 'Status Permohonan Semasa' (status field) — can be OCR-split on the desktop layout, where
+    #    the label wraps and the value lands between ("Status Permohonan" / Lulus / "Semasa", a51);
+    #  • 'Status Pedalaman' (rural-status field) — present on EVERY Semakan (mobile + desktop),
+    #    absent on the letter / dashboard / SALINAN / SARA, and OCR-stable. The backstop anchor.
+    'str_semakan':   ['SEMAKAN STATUS', 'STATUS PERMOHONAN SEMASA', 'STATUS PEDALAMAN'],
 }}
 
 
