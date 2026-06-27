@@ -33,17 +33,28 @@ class TestDeclineCooloff(TestCase):
         return ScholarshipApplication.objects.create(
             cohort=self.cohort, profile=p, status=status, notify_email='stu@x.com')
 
-    def test_decline_is_scheduled_not_sent(self):
+    def test_decline_is_immediate_but_email_embargoed(self):
         app = self._app()
         n = len(mail.outbox)
         services.admin_reject(app, self.admin, 'interview')
         app.refresh_from_db()
-        self.assertEqual(app.status, 'interviewed')             # NOT flipped
-        self.assertEqual(app.rejection_category, '')            # not finalised
-        self.assertEqual(app.pending_rejection_category, 'interview')
+        self.assertEqual(app.status, 'rejected')                # decision is IMMEDIATE
+        self.assertEqual(app.rejection_category, 'interview')
+        self.assertEqual(app.rejected_by, 'admin@x.com')
+        self.assertIsNotNone(app.rejected_at)
+        self.assertEqual(app.pending_rejection_category, 'interview')  # email still pending
         self.assertIsNotNone(app.decline_due_at)
         self.assertEqual(app.pending_decline_by, 'admin@x.com')
-        self.assertEqual(len(mail.outbox), n)                   # no email yet
+        self.assertIsNone(app.decision_email_sent_at)
+        self.assertEqual(len(mail.outbox), n)                   # email EMBARGOED — not sent yet
+
+    def test_student_sees_in_review_while_email_embargoed(self):
+        from apps.scholarship.serializers import ApplicationReadSerializer
+        app = self._app()
+        services.admin_reject(app, self.admin, 'interview')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'rejected')                # real (admin) status
+        self.assertEqual(ApplicationReadSerializer(app).data['status'], 'interviewed')  # masked for student
 
     def test_cancel_pending_decline(self):
         app = self._app()
@@ -70,12 +81,13 @@ class TestDeclineCooloff(TestCase):
         self.assertEqual(len(mail.outbox), n + 1)               # decline email sent
         self.assertIn('documents', mail.outbox[-1].body.lower())
 
-    def test_not_yet_due_is_not_released(self):
+    def test_not_yet_due_email_not_sent(self):
         app = self._app()
-        services.admin_reject(app, self.admin, 'interview')      # due in 7 days
+        services.admin_reject(app, self.admin, 'interview')      # email due in 7 days
         self.assertEqual(services.release_pending_declines(), 0)
         app.refresh_from_db()
-        self.assertEqual(app.status, 'interviewed')
+        self.assertEqual(app.status, 'rejected')                # already rejected (immediate)
+        self.assertIsNone(app.decision_email_sent_at)           # but the email is still embargoed
 
     def test_cancelled_decline_never_releases(self):
         app = self._app()
