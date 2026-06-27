@@ -3420,3 +3420,17 @@ single-inbox.
 **Rationale:** the prior kick was an accident of shared-identity session handling with no carve-out, so a partner-admin-who-is-also-a-sponsor was bounced unpredictably (the Suresh report). Making it intentional + adding the super-admin exemption turns a confusing bug into a deliberate control with a clear "signed out elsewhere" message; supers legitimately need both surfaces.
 **Trade-offs:** a user with two genuine roles must re-authenticate to switch surfaces; the policy lives in the FE (local-session scope), not enforced server-side.
 **Revisit if:** server-side scope enforcement becomes necessary, or non-super users legitimately need both surfaces open at once.
+
+## UPU/MOHE "Semakan Kemasukan" screenshot stays `suspect` — official offer letters only — 2026-06-27
+**Decision:** The `ua_offer` family deliberately does NOT recognise the UPU/MOHE central-admission "Semakan Kemasukan" screenshot (`ou.mohe.gov.my`) as a genuine offer artifact. It floors at `suspect` (recognised UA name, no offer-letter structure), which is the desired outcome — it triggers the reviewer to request the institution's official offer letter (the request-owned-doc-slots flow then keeps both the original + the requested upload).
+**Alternatives considered:** add a UPU-semakan signature form (like STR's dashboard/semakan forms) so a student with only the UPU result scores genuine.
+**Rationale:** the owner wants the **official university offer letter** on file, not the UPU central-admission result page. The `suspect` flag is the mechanism that prompts the reviewer to ask for it; recognising the semakan as genuine would remove that prompt. Validated end-to-end on #50 (UPU semakan → suspect → reviewer requested `officer_2` → student uploaded the proper offer letter → genuine).
+**Trade-offs:** a student whose only proof is the UPU result gets a soft flag + a document request (one extra round trip); acceptable given the owner's preference for official letters.
+**Revisit if:** the owner later accepts the UPU semakan as sufficient proof (then add it as a recognised form, calibrating on more than one example).
+
+## Document-recognition model carries a `MODEL_VERSION` — 2026-06-27
+**Decision:** The deterministic doc-recognition model (signature families + weights + identity gates in `genuineness/results_doc.py`) carries a single `MODEL_VERSION` (`1.0` at 2026-06-27) stamped on every result (`model_version`) and persisted in `vision_fields['authenticity']`. It MUST be bumped on any calibration change, with a History line in the module.
+**Alternatives considered:** no versioning (the prior state — results untraceable to a model revision); per-family versions (more granular but harder to reason about).
+**Rationale:** the owner wants every stored genuineness verdict traceable to the exact model that produced it, so improvements can be compared and mis-recognitions tracked to a version. A single module-level version is simplest and matches the existing `PROMPT_VERSION` convention.
+**Trade-offs:** discipline-dependent — a guard test pins that the stamp is present, but a *forgotten bump* isn't auto-detected (captured as a feedback memory + a strong code comment).
+**Revisit if:** the model splits into independently-versioned components.

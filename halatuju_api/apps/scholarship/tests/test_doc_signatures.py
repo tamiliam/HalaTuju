@@ -6,6 +6,15 @@ Cloud Vision read; the real-corpus calibration lives in eval/calibrate_signature
 from apps.scholarship.doc_signatures import (
     score_signatures, signature_genuineness, band_for, GENUINE_MIN, SUSPECT_MAX,
 )
+from apps.scholarship.genuineness.results_doc import MODEL_VERSION
+
+
+def test_every_signature_result_carries_the_model_version():
+    # The document-recognition model stamps its version on every result, so a stored
+    # genuineness verdict can be traced to the model that produced it + performance compared
+    # across versions. If this fails after a model change, you ALSO forgot to bump MODEL_VERSION.
+    for kw in ({}, {'doc_type': 'epf'}, {'doc_type': 'offer_letter'}, {'doc_type': 'str'}):
+        assert signature_genuineness('anything', **kw)['model_version'] == MODEL_VERSION
 
 # A faithful genuine SPM results-slip OCR (every textual signature present).
 GENUINE_SLIP = """KEMENTERIAN PENDIDIKAN

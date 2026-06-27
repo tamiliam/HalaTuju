@@ -1454,6 +1454,7 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                 result['authenticity'] = {
                     'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['type'],
                     'probability': sg['probability'], 'present': sg['present'], 'missing': sg['missing'],
+                    'model_version': sg.get('model_version'),
                 }
         elif doc.doc_type == 'offer_letter':
             # SIGNATURE genuineness over the OCR text for the four standard issuers
@@ -1471,7 +1472,8 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                     'reason': auth.get('reason', ''),
                     'doc_seen': auth.get('type') or auth.get('doc_seen', ''),
                     **({'probability': auth['probability'], 'present': auth['present'],
-                        'missing': auth['missing']} if 'probability' in auth else {}),
+                        'missing': auth['missing'], 'model_version': auth.get('model_version')}
+                       if 'probability' in auth else {}),
                 }
         elif doc.doc_type in ('birth_certificate', 'epf'):
             # Probabilistic SIGNATURE genuineness over the OCR text (deterministic + auditable;
@@ -1487,6 +1489,7 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                 result['authenticity'] = {
                     'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['type'],
                     'probability': sg['probability'], 'present': sg['present'], 'missing': sg['missing'],
+                    'model_version': sg.get('model_version'),
                 }
         elif doc.doc_type == 'str':
             # SIGNATURE genuineness over the OCR text for the three STR approval forms (MOF
@@ -1504,7 +1507,8 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                     'reason': auth.get('reason', ''),
                     'doc_seen': auth.get('type') or auth.get('doc_seen', ''),
                     **({'probability': auth['probability'], 'present': auth['present'],
-                        'missing': auth['missing']} if 'probability' in auth else {}),
+                        'missing': auth['missing'], 'model_version': auth.get('model_version')}
+                       if 'probability' in auth else {}),
                 }
         elif doc.doc_type in _GENUINENESS_DOCS:   # birth_certificate/epf holistic fallback (+ any other)
             gimg = _fetch_image_bytes(doc.storage_path)
