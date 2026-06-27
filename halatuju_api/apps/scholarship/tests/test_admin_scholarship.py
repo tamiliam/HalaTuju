@@ -49,6 +49,18 @@ class TestAdminScholarship(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
 
+    def test_bursary_agreement_enabled_flag_default_off(self):
+        # The cockpit gates the bursary-agreement panel on this flag; default OFF (dark).
+        self._auth(ADMIN)
+        body = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/').json()
+        self.assertFalse(body['bursary_agreement_enabled'])
+
+    @override_settings(BURSARY_AGREEMENT_ENABLED=True)
+    def test_bursary_agreement_enabled_flag_on(self):
+        self._auth(ADMIN)
+        body = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/').json()
+        self.assertTrue(body['bursary_agreement_enabled'])
+
     def test_non_admin_forbidden(self):
         self._auth(STUDENT)
         r = self.client.get('/api/v1/admin/scholarship/applications/')

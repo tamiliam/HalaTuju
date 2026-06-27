@@ -268,6 +268,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Decision-reopen state: when set, the decision panel is editable + the reviewer
     # dropdown unlocks + a "held from sponsors" banner shows. The open reason drives the banner.
     decision_reopen_reason = serializers.SerializerMethodField()
+    # Whether the (dark-by-default) Conditional Bursary Agreement feature is live — the cockpit
+    # only renders the agreement panel when this is on (otherwise its signing flow doesn't exist).
+    bursary_agreement_enabled = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -331,12 +334,16 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'verdict_decided_by', 'verdict_decided_at', 'verdict_decided_by_name',
             # Decision-reopen (reverse a recorded decision) state + assigned-reviewer corrections.
             'decision_reopened_at', 'decision_reopen_reason',
-            'assigned_to_corrections',
+            'assigned_to_corrections', 'bursary_agreement_enabled',
         ]
 
     def get_assigned_to_corrections(self, obj):
         from .reopen import reviewer_correction_count
         return reviewer_correction_count(obj.assigned_to)
+
+    def get_bursary_agreement_enabled(self, obj):
+        from django.conf import settings
+        return bool(getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False))
 
     def get_decision_reopen_reason(self, obj):
         if obj.decision_reopened_at is None:

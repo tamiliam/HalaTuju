@@ -2044,9 +2044,13 @@ export default function AdminScholarshipDetailPage() {
           signed in-session). The Foundation countersignature + the partner-org
           witness are recorded here. The admin detail GET doesn't carry the
           agreement, so the four states resolve from the action responses. */}
-      {(app.status === 'accepted' || app.status === 'sponsored') && (() => {
+      {app.bursary_agreement_enabled && (app.status === 'accepted' || app.status === 'sponsored') && (() => {
         // Signed-by-now is implied once accepted (the in-session signing is the gate);
         // the action responses confirm the Foundation/Witness columns + the PDF link.
+        // NOTE (TD): the student/guarantor "implied signed" default is only sound once the
+        // feature is LIVE and signing is wired into award-accept; until the agreement is also
+        // loaded into the detail GET it can over-state an accepted-but-not-yet-signed case.
+        // The panel is gated on bursary_agreement_enabled so it never shows while dark.
         const studentDone = bursary ? !!bursary.student_signed_at : true
         const guarantorDone = bursary ? !!bursary.guarantor_signed_at : true
         const foundationDone = !!bursary?.foundation_signed_at

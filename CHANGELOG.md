@@ -45,6 +45,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   routes through the shared HTML shell (`_send_html`). +1 test.
 
 ### Fixed
+- **Bursary-agreement cockpit panel no longer shows (with false "signed" ticks) while the feature is dark.** The
+  Conditional Bursary Agreement is `BURSARY_AGREEMENT_ENABLED`-OFF, but the cockpit rendered its panel for any
+  accepted/sponsored applicant and **defaulted Student + Guarantor to ✓** (`bursary ? … : true`) even though no
+  agreement exists (`bursary_agreements` table empty, no comms sent). The panel is now gated on a new
+  `bursary_agreement_enabled` flag exposed on `AdminApplicationDetailSerializer`, so it stays truly dark until the
+  feature is live. (Noted for the other agent finishing the feature: when enabled, base all four ticks on the real
+  loaded agreement — default —, not ✓ — and include the agreement in the admin detail GET; the "implied signed once
+  accepted" default over-states an accepted-but-not-yet-signed case.) +2 backend tests. No migration.
 - **Hand-written salary vouchers no longer read 100× too high (ringgit|sen columns).** A hand-written
   voucher rules ringgit and sen into two columns separated by a vertical line; the AI was concatenating
   them (RM326.00 → "32600") and sometimes grabbing a deduction cell as the gross — on #66 that made
