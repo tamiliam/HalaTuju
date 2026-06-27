@@ -67,8 +67,14 @@ CERT_SIGNATURES = [
 # Birth certificate (JPN Sijil Kelahiran) — standard document, so same signature approach.
 # Mostly fixed printed strings; the JATA NEGARA crest + the barcode (which encodes the child's
 # IC) are the two visual markers (the barcode is the BC's machine token, ~ the slip's QR).
+# NOTE: the BC genuineness path is scored TEXT-ONLY (no image read is wired for the BC, unlike
+# the results-slip). So the visual signatures (JATA NEGARA crest + barcode) could never be
+# credited — they only ever dragged a genuine plain BC toward 'suspect' (3/13 unseen BCs dipped
+# to 0.63–0.67 in held-out testing) while catching zero fakes. They are DROPPED here so the
+# text signatures alone score the doc honestly. (To escalate to a visual read later — "option b"
+# — re-add `('JATA NEGARA', ['__crest__'], 2, 'visual')` + `('barcode', ['__barcode__'], 3,
+# 'visual')` AND fetch `results_visual_markers` for the BC in vision.run_field_extraction.)
 BC_SIGNATURES = [
-    ('JATA NEGARA',                   ['__crest__'],                                    2, 'visual'),
     ('KERAJAAN MALAYSIA',             ['KERAJAAN MALAYSIA'],                            1, 'text'),
     ('SIJIL KELAHIRAN',               ['SIJIL KELAHIRAN'],                              2, 'text'),
     ('Akta Pendaftaran 1957',         ['PENDAFTARAN KELAHIRAN DAN KEMATIAN'],           3, 'text'),
@@ -84,7 +90,6 @@ BC_SIGNATURES = [
     ('PENDAFTAR BESAR',               ['PENDAFTAR BESAR'],                              2, 'text'),
     ('Kelahiran & Kematian Malaysia', ['KELAHIRAN DAN KEMATIAN MALAYSIA',
                                        'KELAHIRAN KEMATIAN MALAYSIA'],                  1, 'text'),
-    ('barcode',                       ['__barcode__'],                                  3, 'visual'),
 ]
 
 # EPF (KWSP Penyata Ahli) — standard statement. No Jata Negara crest / no QR; the visual anchor
