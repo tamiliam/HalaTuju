@@ -1711,8 +1711,6 @@
       "emailNote": "We'll send any updates about your application to {email}. Please check that inbox (including the spam folder) from time to time.",
       "browseCta": "Browse courses while you wait",
       "homeCta": "Back to home",
-      "acceptedTitle": "You've been accepted",
-      "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award.",
       "interview": {
         "title": "Your interview",
         "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about 30 minutes).",

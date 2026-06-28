@@ -56,6 +56,16 @@ class TestDeclineCooloff(TestCase):
         self.assertEqual(app.status, 'rejected')                # real (admin) status
         self.assertEqual(ApplicationReadSerializer(app).data['status'], 'interviewed')  # masked for student
 
+    def test_student_does_not_see_accepted_status(self):
+        # 'accepted' is an internal verification decision a super-admin can still reverse
+        # (reopen -> interviewed -> possibly declined), so the student must keep seeing the
+        # in-review state. The admin cockpit uses a different serializer and sees the real
+        # 'accepted'. Good news reaches the student only via a concrete award offer.
+        from apps.scholarship.serializers import ApplicationReadSerializer
+        app = self._app(status='accepted')
+        self.assertEqual(app.status, 'accepted')                # real (admin) status
+        self.assertEqual(ApplicationReadSerializer(app).data['status'], 'interviewed')  # masked for student
+
     def test_cancel_pending_decline(self):
         app = self._app()
         services.admin_reject(app, self.admin, 'interview')

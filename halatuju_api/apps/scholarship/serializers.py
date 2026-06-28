@@ -508,11 +508,21 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
         ]
 
     def get_status(self, obj):
-        # Immediate-rejection model: the decision flips to 'rejected' at once, but the student
-        # email is EMBARGOED for the cool-off to soften the news. Until that email goes (the
-        # pending marker is still set), the STUDENT sees the in-review state, not the rejection.
-        # (The admin cockpit uses a different serializer and always sees the real status.)
+        # The student-facing status is deliberately masked at two points (the admin cockpit uses
+        # a different serializer and always sees the real status):
+        #
+        # 1. Immediate-rejection model: the decision flips to 'rejected' at once, but the student
+        #    email is EMBARGOED for the cool-off to soften the news. Until that email goes (the
+        #    pending marker is still set), the STUDENT sees the in-review state, not the rejection.
+        # 2. 'accepted' is an INTERNAL verification decision that a super-admin can still reverse
+        #    (reopen -> interviewed -> possibly declined). So the student must NOT perceive the
+        #    jump to accepted — a reversal would otherwise be visible (and embarrassing). They see
+        #    the in-review state; real good news reaches them only via a concrete, non-reversible
+        #    AWARD OFFER (the award panel keys off the award object, not this status). Once they
+        #    accept an award the app becomes 'sponsored' (a real commitment, not masked).
         if obj.status == 'rejected' and (obj.pending_rejection_category or ''):
+            return 'interviewed'
+        if obj.status == 'accepted':
             return 'interviewed'
         return obj.status
 
