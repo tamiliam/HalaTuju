@@ -51,29 +51,25 @@ recommended → awarded → active → maintenance ─────────�
 - Sprint 1 **supersedes the unmerged `feat/mask-accepted-status` branch** — the student-masking change
   folds in here, retargeted `accepted → recommended`.
 
-## Sprints
+## Sprints — ALL SHIPPED (S1–S6, 2026-06-28)
 
-### Sprint 1 — Rename `accepted` → `recommended` (+ fold in masking)
-Behaviour-neutral rename + data migration. Scope: STATUS_CHOICES; sweep all `accepted` refs
-(services/views `AdminVerifyAcceptView`/serializers mask/reopen/pool/frontend page+banner+cockpit/i18n);
-`UPDATE status='accepted'→'recommended'`; verify-&-recommend copy. Complexity: Medium.
+The full `recommended → awarded → active → maintenance → closed` arc is live (dark). Per-sprint
+detail lives in the retrospectives (`docs/retrospective-2026-06-28-post-award-s{1..6}-*.md`); the
+migrations are `0073`–`0078`. Summary:
 
-### Sprint 2 — New-status scaffolding + re-gate consumers
-Add awarded/active/maintenance/closed + `closure_reason`; migrate existing `sponsored` rows
-(expected 0 — verify) → maintenance, retire `sponsored` (expand-contract); re-gate
-`pool.is_pool_eligible` / `derive_progress_state` / `in_programme._require_in_programme`; status
-labels + masking confirm. Complexity: Medium-high.
+- **S1** — rename `accepted → recommended` (+ student masking). Migration `0073`.
+- **S2** — new statuses `awarded`/`active`/`maintenance`/`closed` + `closure_reason`; re-gate pool /
+  progress / in-programme; retire `sponsored` groundwork. Migration `0074`.
+- **S3** — `awarded` + 4-step bursary signing (dark, flag-gated) → `active`; `sponsored` retired.
+  Migration `0075`.
+- **S4** — disbursement/tranche ledger; first release flips `active → maintenance`. Migration `0076`.
+- **S5** — maintenance sub-states (on_track/probation/on_hold/ready_to_close); `on_hold` pauses
+  releases. Migration `0077`.
+- **S6** — manual closure + `closure_reason` + audit stamp; thank-you relay survives closure.
+  Migration `0078`.
 
-### Sprint 3 — `awarded` + 4-step signing (dark, flag-gated)
-Funder-commit → awarded; signing sub-states (student→guarantor→witness→Foundation) derived from the
-existing bursary timestamps; enforce order; Foundation execution → active; cockpit progress card.
-Behind `BURSARY_AGREEMENT_ENABLED`. Complexity: Medium.
-
-### Sprint 6 — Manual closure + reasons + thank-you re-gating
-Admin close (manual) → closed + closure_reason + offboarding checklist; graduated-vs-completed copy;
-re-gate the graduation/thank-you relay to allow during ready-to-close and after closed. Complexity: Low-medium.
-
-## Sequence & rationale
-Dependency then risk: 1 (rename, de-risk) → 2 (status model everything needs) → 3 → 4 → 5 → 6 walk the
-lifecycle forward, each a vertical demonstrable slice. Money sits at 4 (maintenance needs a disbursement
-state to loop over) but defers the real gateway.
+## Go-live (still gated — building was always decoupled from launching)
+- **TD-140** — bursary lawyer-vet + Foundation entity → gates `BURSARY_AGREEMENT_ENABLED`.
+- **TD-075** — real money / toyyibPay → gates real disbursement (the ledger is a mock until then).
+- **TD-147** — retire the recurring `scholarshipcohort.name` migration drift (a standalone state-only
+  migration), so future `makemigrations` is clean.

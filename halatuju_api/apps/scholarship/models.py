@@ -402,6 +402,10 @@ class ScholarshipApplication(models.Model):
         max_length=20, choices=CLOSURE_REASONS, blank=True, default='',
         help_text="Why the application reached status='closed'; blank unless status='closed'",
     )
+    # Post-award S6: the manual-close audit stamp (mirrors rejected_at/rejected_by). Set when
+    # an admin closes a funded application; null/blank otherwise.
+    closed_at = models.DateTimeField(null=True, blank=True)
+    closed_by = models.CharField(max_length=254, blank=True, default='')
 
     # Post-award S5: the operational sub-state WITHIN status='maintenance' (the funded
     # recurring loop). An admin lifecycle overlay, distinct from the sponsor-facing

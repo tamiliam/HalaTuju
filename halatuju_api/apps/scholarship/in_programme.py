@@ -35,6 +35,17 @@ def _require_in_programme(application):
         raise InProgrammeError('not_in_programme')
 
 
+# S6: the graduation thank-you relay stays open AFTER closure — a graduated/completed
+# student can still write to their sponsor once the file is closed. So the thank-you path
+# accepts 'closed' too (but NOT semester results / promo consent, which are funded-only).
+_THANK_YOU_STATES = ('active', 'maintenance', 'closed')
+
+
+def _require_can_thank(application):
+    if application is None or application.status not in _THANK_YOU_STATES:
+        raise InProgrammeError('not_in_programme')
+
+
 # ── Latest-semester results → progress signal ────────────────────────────────
 
 _CGPA_MIN, _CGPA_MAX = Decimal('0'), Decimal('4')
@@ -115,8 +126,11 @@ def submit_graduation_message(application, *, raw_text):
     tokens (name/school/city/NRIC/phone/email), the row is saved ``blocked`` with
     the leaked fields in ``scan_result`` and the student must edit and resubmit. A
     clean message is ``pending`` (awaiting myNADI staff approval). Each submit
-    appends a row; the relay surfaces only the ``approved`` ones. Returns the row."""
-    _require_in_programme(application)
+    appends a row; the relay surfaces only the ``approved`` ones. Returns the row.
+
+    S6: allowed during the funded states AND after closure (a graduated/completed student
+    can still thank their sponsor once the file is closed) — see ``_require_can_thank``."""
+    _require_can_thank(application)
     text = (raw_text or '').strip()
     if not text:
         raise InProgrammeError('empty_message')

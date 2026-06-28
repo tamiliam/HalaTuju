@@ -494,6 +494,9 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             # S5: the student's own maintenance sub-state (e.g. on_hold) — only meaningful
             # while status='maintenance'; lets the in-programme page show "support paused".
             'maintenance_substate',
+            # S6: closure bucket — lets the in-programme page show the right "programme
+            # complete" (graduated/completed) vs neutral closed copy.
+            'closure_reason',
             'acknowledged_at', 'submitted_at', 'updated_at',
             # Phase C: confirm-submit timestamp + the admin's request-more-docs note
             'profile_completed_at', 'info_request_note', 'info_requested_at',

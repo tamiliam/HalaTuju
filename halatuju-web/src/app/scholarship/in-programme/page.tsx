@@ -84,7 +84,10 @@ export default function InProgrammePage() {
     getMyScholarshipApplications({ token })
       .then(async (res) => {
         if (!active) return
-        const sponsored = res.applications.find((a) => a.status === 'active' || a.status === 'maintenance') ?? null
+        // S6: a 'closed' student still reaches this page so they can write a graduation
+        // thank-you (the relay stays open after closure); the results form is hidden when closed.
+        const sponsored = res.applications.find(
+          (a) => a.status === 'active' || a.status === 'maintenance' || a.status === 'closed') ?? null
         if (!sponsored) { setNotInProgramme(true); setLoading(false); return }
         setApp(sponsored)
         await loadAll(sponsored.id, token)
@@ -183,12 +186,29 @@ export default function InProgrammePage() {
         </div>
 
         {/* S5: a paused (on-hold) student sees a clear, non-alarming notice. */}
-        {app?.maintenance_substate === 'on_hold' && (
+        {app?.status !== 'closed' && app?.maintenance_substate === 'on_hold' && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm font-medium text-amber-900">{t('scholarship.inProgramme.onHold.title')}</p>
             <p className="mt-1 text-sm text-amber-800">{t('scholarship.inProgramme.onHold.body')}</p>
           </div>
         )}
+
+        {/* S6: once closed, a warm "programme complete" note (graduated/completed) or a
+            neutral closed note. The thank-you section below stays available. */}
+        {app?.status === 'closed' && (() => {
+          const positive = app.closure_reason === 'graduated' || app.closure_reason === 'completed'
+          const key = positive ? app.closure_reason : 'neutral'
+          return (
+            <div className={`rounded-2xl border p-4 ${positive ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+              <p className={`text-sm font-medium ${positive ? 'text-green-900' : 'text-gray-800'}`}>
+                {t(`scholarship.inProgramme.closed.${key}.title`)}
+              </p>
+              <p className={`mt-1 text-sm ${positive ? 'text-green-800' : 'text-gray-600'}`}>
+                {t(`scholarship.inProgramme.closed.${key}.body`)}
+              </p>
+            </div>
+          )
+        })()}
 
         {/* ── Semester results ─────────────────────────────────────────── */}
         <section className="rounded-2xl bg-white p-5 shadow-sm">
@@ -216,7 +236,7 @@ export default function InProgrammePage() {
             <p className="mt-3 text-sm text-gray-400">{t('scholarship.inProgramme.results.empty')}</p>
           )}
 
-          {!showForm ? (
+          {app?.status === 'closed' ? null : !showForm ? (
             <button onClick={() => setShowForm(true)}
               className="mt-3 w-full rounded-xl border border-primary-500 py-2.5 text-sm font-medium text-primary-600">
               + {t('scholarship.inProgramme.results.add')}

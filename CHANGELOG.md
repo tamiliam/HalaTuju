@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Post-award lifecycle — Sprint 6 (FINAL): manual closure + reasons + thank-you re-gating.**
+  Completes the lifecycle (`recommended → awarded → active → maintenance → closed`). An admin
+  manually CLOSES a funded file (`closure.close_application`, gated to active/maintenance) with a
+  `closure_reason` (graduated/completed/withdrawn/lapsed/terminated — column from S2) + a new
+  `closed_at`/`closed_by` audit stamp. Closure is terminal. `disbursement.release_tranche` now
+  also requires a funded state, so a closed file's leftover tranche is un-releasable. The
+  graduation thank-you relay is re-gated (`_require_can_thank` = active/maintenance/**closed**) so a
+  graduated/completed student can still write to their sponsor after the file closes (semester
+  results / promo consent stay funded-only). Surfaces: cockpit closure panel (reason selector +
+  offboarding checklist + closed summary); the student in-programme page reached by a closed student
+  with a warm graduated/completed (or neutral) banner + the thank-you kept open. Reviewer-gated
+  `POST …/applications/<pk>/close/ {closure_reason}`. Migration `0078_closure_stamp` (additive,
+  **migrate-first**). +11 pytest. i18n parity 2943×3.
 - **Post-award lifecycle — Sprint 5: `maintenance` loop + operational sub-states.** A funded student
   (`status='maintenance'`) now carries a `maintenance_substate` an admin manages —
   `on_track` (default) / `probation` / `on_hold` / `ready_to_close` — distinct from the

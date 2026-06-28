@@ -305,7 +305,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # Rejection bucket (merit/need/ineligible/interview/contractual) + stamps
             'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
             # Closure bucket (post-award lifecycle): graduated/completed/withdrawn/lapsed/terminated
-            'closure_reason',
+            'closure_reason', 'closed_at', 'closed_by',
             # S5: operational maintenance sub-state (on_track/probation/on_hold/ready_to_close)
             'maintenance_substate',
             # Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation +

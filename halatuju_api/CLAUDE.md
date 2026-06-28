@@ -558,15 +558,22 @@ student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
   in-programme ("support paused" banner), sponsor card (coarse `support_status` paused/completing —
   probation hidden). i18n `admin.maintenance.*` + `scholarship.inProgramme.onHold.*` +
   `sponsorPortal.myStudents.support.*`. Retro `docs/retrospective-2026-06-28-post-award-s5-maintenance.md`.
-- **▶ NEXT — S6 (manual closure + reasons + thank-you re-gating).** Admin manual CLOSE (from maintenance,
-  esp. `ready_to_close`) → `status='closed'` + set `closure_reason` (graduated/completed/withdrawn/lapsed/
-  terminated — field already exists from S2) + an offboarding checklist; graduated-vs-completed copy. Re-gate
-  the graduation/thank-you relay (`in_programme.submit_graduation_message`) so it's allowed during
-  `ready_to_close` AND after `closed` (today it requires `active`/`maintenance` via `_require_in_programme`).
-  Likely additive (a closed_at stamp / closed_by) or state-only; `closure_reason` column already present.
-- **Known recurring chore (TD-147):** `makemigrations scholarship` re-proposes a stray `scholarshipcohort.name`
-  `AlterField` every sprint — hand-write the migration to omit it (reflex). Retire it for good via a standalone
-  state-only migration (see TD-147), NOT folded into a feature sprint.
+- **S6 SHIPPED 2026-06-28 — FINAL sprint; the post-award lifecycle is COMPLETE** (migration
+  `0078_closure_stamp`: additive `closed_at`/`closed_by`, **migrate-first**). Manual CLOSE via
+  `closure.close_application` (gated active/maintenance) → `status='closed'` + `closure_reason` +
+  audit stamp; terminal. `disbursement.release_tranche` now also requires a funded state (a closed
+  file's leftover tranche is un-releasable). Thank-you relay re-gated: `in_programme.submit_graduation_message`
+  uses `_require_can_thank` (active/maintenance/**closed**) so a graduated student can still write
+  post-closure (results/promo stay funded-only). Surfaces: cockpit closure panel (reason + offboarding
+  checklist + closed summary), student in-programme closed banner (graduated/completed/neutral) with the
+  thank-you kept open. Reviewer-gated `POST …/applications/<pk>/close/`. i18n `admin.closure.*` +
+  `scholarship.inProgramme.closed.*`. Retro `docs/retrospective-2026-06-28-post-award-s6-closure.md`.
+- **▶ POST-AWARD LIFECYCLE COMPLETE (S1–S6, all LIVE + dark).** `recommended → awarded → active →
+  maintenance → closed` end-to-end. **Go-live still gated** on bursary Phase-0 (TD-140) + real disbursement
+  / toyyibPay (TD-075). **NEXT engineering = TD-147** (retire the recurring `scholarshipcohort.name`
+  migration drift via ONE standalone state-only migration — `makemigrations scholarship` re-proposes the
+  stray `AlterField` every sprint; hand-drop it as a reflex until then). After that, no post-award work is
+  queued; resume bursary go-live / disbursement rails when the external gates clear.
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,

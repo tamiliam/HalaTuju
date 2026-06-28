@@ -34,9 +34,11 @@ import {
   scheduleTranche,
   actOnDisbursement,
   setMaintenanceSubstate,
+  closeApplication,
   type AdminDisbursement,
   type DisbursementAction,
   type MaintenanceSubstate,
+  type ClosureReason,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
   type AdminApplicantDocument,
@@ -289,6 +291,21 @@ export default function AdminScholarshipDetailPage() {
       setApp(await setMaintenanceSubstate(id, substate, { token }))
     } catch (e) {
       setDisbMsg(disbError(e))
+    } finally { setBusy('') }
+  }
+
+  // Post-award S6: manual closure.
+  const [closeReason, setCloseReason] = useState<ClosureReason | ''>('')
+  const [closeMsg, setCloseMsg] = useState('')
+  const doClose = async () => {
+    if (!token || !closeReason) return
+    setBusy('close'); setCloseMsg('')
+    try {
+      setApp(await closeApplication(id, closeReason, { token }))
+      setCloseReason('')
+    } catch (e) {
+      const code = (e as Error)?.message
+      setCloseMsg(t(`admin.closure.error.${code === 'bad_reason' || code === 'not_closeable' ? code : 'generic'}`))
     } finally { setBusy('') }
   }
 
@@ -2323,6 +2340,61 @@ export default function AdminScholarshipDetailPage() {
           </div>
         )
       })()}
+
+      {/* ── Post-award S6: manual closure ──
+          Close a funded student's file with a reason. Terminal. Shows the closed summary
+          once closed (the graduation thank-you relay stays open after closure). */}
+      {(app.status === 'active' || app.status === 'maintenance' || app.status === 'closed') && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+            {t('admin.closure.title')}
+          </h2>
+          {app.status === 'closed' ? (
+            <div className="space-y-1">
+              <p className="flex items-center gap-1.5 text-sm text-gray-700">
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  app.closure_reason === 'graduated' || app.closure_reason === 'completed'
+                    ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                  {t(`admin.closure.reason.${app.closure_reason}`)}
+                </span>
+              </p>
+              <p className="text-xs text-gray-500">
+                {t('admin.closure.closedBy')} {app.closed_by || '—'}
+                {app.closed_at ? ` · ${new Date(app.closed_at).toLocaleDateString()}` : ''}
+              </p>
+            </div>
+          ) : canWrite ? (
+            <>
+              <p className="text-xs text-gray-500">{t('admin.closure.note')}</p>
+              {/* Offboarding checklist — informational guidance before closing. */}
+              <ul className="list-disc ml-5 text-xs text-gray-500 space-y-0.5">
+                {(['finalDisbursement', 'thankYou', 'records'] as const).map((k) => (
+                  <li key={k}>{t(`admin.closure.checklist.${k}`)}</li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap items-end gap-2">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-600 mb-1">{t('admin.closure.reasonLabel')}</label>
+                  <select value={closeReason}
+                    onChange={(e) => setCloseReason(e.target.value as ClosureReason | '')}
+                    className="rounded-lg border px-3 py-1.5 text-sm">
+                    <option value="">{t('admin.closure.reasonUnset')}</option>
+                    {(['graduated', 'completed', 'withdrawn', 'lapsed', 'terminated'] as const).map((r) => (
+                      <option key={r} value={r}>{t(`admin.closure.reason.${r}`)}</option>
+                    ))}
+                  </select>
+                </div>
+                <button type="button" onClick={doClose}
+                  disabled={busy === 'close' || !closeReason}
+                  className="rounded-lg border border-red-300 px-4 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50">
+                  {busy === 'close' ? t('common.loading') : t('admin.closure.close')}
+                </button>
+              </div>
+              {closeMsg && <p className="text-xs text-amber-600">{closeMsg}</p>}
+            </>
+          ) : null}
+        </div>
+      )}
       </>)}
     </div>
   )
