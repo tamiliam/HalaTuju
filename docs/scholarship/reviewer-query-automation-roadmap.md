@@ -41,10 +41,12 @@ that parent's salary slip / EPF (kind=`doc`, uncapped); (b) a parent with no occ
 New deterministic gap codes + `check2_queries` specs + Action-Centre rendering + i18n en/ms/ta.
 Tightens B40 correctness (full household income). **Complexity: Medium-high. Highest value.**
 
-### Sprint 2 — Three more deterministic clarifies
-(c) income doc older than ~3 months → ask current; (d) `siblings_in_tertiary>0` → ask institution +
-on-aid; (e) utility amount above a threshold → consumption/household probe. Reuses Sprint-1 plumbing.
-**Complexity: Medium.**
+### Sprint 2 — Stale income doc + sibling-in-tertiary funding ✅ SHIPPED 2026-06-29
+(c) income doc older than ~3 months → ask current (`income_doc_stale`, doc); (d) `siblings_in_tertiary>0`
+→ ask institution + funding (`sibling_tertiary_funding`, clarify). Retro
+`docs/retrospective-2026-06-29-reviewer-query-s2-stale-sibling.md`.
+**(e) the high-utility probe MOVED to S4** — the codebase treats high utility as an officer-only
+signal, never a student query (`income_engine.utility_reasonable`); aligns with decisions #2/#3.
 
 ### Sprint 3 — Offer reporting-date: capture + persist
 Auto-ask when the offer carries no reporting date; persist a normalised `reporting_date` column on the
@@ -54,7 +56,8 @@ application (sortable, not re-parsed each read); SPM subject-count data-quality 
 A reviewer guide mapped to the sponsor's three buckets (subjects-vs-results, help-seeking/tuition,
 bursary-priority, resilience read; housing as optional judgement aid per decision #2); seed the Gemini
 gap-spotter with the sponsor's canonical question set so it targets only unanswered gaps; capture
-structured answers. **Complexity: Medium-high.**
+structured answers. **Plus the high-utility-bill probe (moved from S2)** as a reviewer-facing signal.
+**Complexity: Medium-high.**
 
 ### Sprint 5 — Final-profile prompt restructure
 Re-shape the draft + Pro-refine prompts to organise output around Academic resilience / Financial need /

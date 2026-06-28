@@ -1311,3 +1311,52 @@ def parent_income_gaps(application):
         elif status == 'need_status':
             gaps.append({'member': member, 'need': 'status'})
     return gaps
+
+
+# ── Stale income document (reviewer-query automation S2) ─────────────────────
+# A salary slip is monthly; reviewers routinely ask "this slip is from December — do you
+# have one from the last three months?". Deterministic: if a salary slip is on file but the
+# MOST RECENT one is older than ~3 months, ask for a current one. (STR staleness is already
+# handled by _str_currency → 'stale'; EPF statements are often annual, so this targets
+# salary slips only — exactly the reviewer behaviour.)
+_INCOME_DOC_CURRENT_MONTHS = 3
+
+
+def _salary_period_age_months(f, today):
+    """Months between *today* and a salary slip's pay period (from its OCR'd 'period'),
+    or None when the period can't be read. Reuses the tolerant month-year parser."""
+    ym = _parse_billing_month(f.get('period'))
+    if not ym:
+        return None
+    year, month = ym
+    return (today.year - year) * 12 + (today.month - month)
+
+
+def stale_income_proof(application, today=None):
+    """True when a salary slip is on file but NONE is current (every readable one is older
+    than ~3 months) — the student should upload a recent slip. False when there is a current
+    slip, no salary slip at all, or no slip period could be read (never guess from an
+    unreadable date). Pure; tolerant of a test double without `.documents`."""
+    if today is None:
+        today = datetime.date.today()
+    docs = getattr(application, 'documents', None)
+    if docs is None:
+        return False
+    slips = list(docs.filter(doc_type='salary_slip'))
+    if not slips:
+        return False
+    ages = []
+    for s in slips:
+        age = _salary_period_age_months(_doc_fields(s), today)
+        if age is not None:
+            ages.append(age)
+    if not ages:                                   # no readable period → don't guess
+        return False
+    return min(ages) > _INCOME_DOC_CURRENT_MONTHS  # the freshest slip is still stale
+
+
+def sibling_tertiary_funding_unknown(application):
+    """True when the student has a sibling in tertiary education — the reviewer's recurring
+    "which institution is your sibling at, and how are they funded / are they on aid?" query
+    (household burden + the not-double-funded picture). A one-line, non-sensitive question."""
+    return (getattr(application, 'siblings_in_tertiary', None) or 0) > 0

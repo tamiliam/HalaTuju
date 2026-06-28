@@ -1959,6 +1959,14 @@
         "mother_status_unknown": {
           "title": "Tell us about your mother",
           "desc": "We don't have your mother's details. Is she working (and where), or is she a homemaker, retired, unemployed, passed away, or not in contact? This helps us understand your full household income."
+        },
+        "income_doc_stale": {
+          "title": "Upload a recent salary slip",
+          "desc": "The salary slip on file is more than three months old. Please upload a current one (within the last three months) so we have an up-to-date picture of the household income."
+        },
+        "sibling_tertiary_funding": {
+          "title": "How is your sibling's study funded?",
+          "desc": "You have a sibling in college or university. Which institution are they at, and how is their study funded — a scholarship, a PTPTN loan, family support, or something else?"
         }
       }
     },
@@ -3166,7 +3174,9 @@
           "father_income_proof_missing": "Father works but no income document on file — the student has been asked to upload his salary slip / EPF.",
           "mother_income_proof_missing": "Mother works but no income document on file — the student has been asked to upload her salary slip / EPF.",
           "father_status_unknown": "Father's work/status not provided — the student has been asked whether he works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
-          "mother_status_unknown": "Mother's work/status not provided — the student has been asked whether she works (and where) or is a homemaker/retired/unemployed/passed away/not in contact."
+          "mother_status_unknown": "Mother's work/status not provided — the student has been asked whether she works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
+          "income_doc_stale": "Salary slip on file is over 3 months old — the student has been asked to upload a current one.",
+          "sibling_tertiary_funding": "Sibling in tertiary — the student has been asked which institution and how it's funded (scholarship / PTPTN / family / other)."
         }
       },
       "decision": {
