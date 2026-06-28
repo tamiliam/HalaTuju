@@ -57,7 +57,7 @@ const STATUS_LABELS: Record<string, string> = {
   submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Completed',
   interviewing: 'Interviewing', interviewed: 'Interviewed',
   recommended: 'Recommended', awarded: 'Awarded', active: 'Active', maintenance: 'Maintenance', closed: 'Closed',
-  sponsored: 'Sponsored', rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
+  rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
   reopened: 'Reopened',
 }
 const statusLabel = (s: string) =>

@@ -456,7 +456,7 @@ describe('isClearAccept', () => {
     expect(isClearAccept(ok, false, 'interviewing')).toBe(false)
   })
   it('false when status is not a live state', () => {
-    expect(isClearAccept(ok, true, 'sponsored')).toBe(false)
+    expect(isClearAccept(ok, true, 'active')).toBe(false)
   })
   it('treats a review/unsure (non-fail) academic as still acceptable', () => {
     expect(isClearAccept({ ...ok, academic: '' }, true, 'shortlisted')).toBe(true)

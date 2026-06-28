@@ -972,6 +972,9 @@
 **Fix:** in `_declared_pathway`, when `chosen_programme['course_id']` is set, resolve `course_id → course_institutions → institutions.institution_name` and use it as the declared institution so `offer_pathway_match` can raise a real clash → `pathway_confirm`. Mind the KM/KMK/SMK/KTE convention — the place token already bridges abbreviation↔expansion, so canonicalise on the place name, not the prefix. (Logged 2026-06-27, offer-validity gate go-live.)
 
 ### [TD-146] Retire the legacy `sponsored` status once the award-accept flow is rewired
-**Status:** Open (deferred from post-award lifecycle S2, 2026-06-28).
+**Status:** RESOLVED in post-award lifecycle S3 (2026-06-28). `respond_to_award`/`fund_student` rewired
+(`fund_student → awarded`, acceptance → `active` via cool-off or Foundation counter-sign); `sponsored`
+removed from STATUS_CHOICES, all status sets, the onboarding/finalising gates, admin maps + i18n; 0 prod
+rows to migrate. Migration `0075`. See `docs/retrospective-2026-06-28-post-award-s3-awarded-signing.md`.
 **Context:** The post-award lifecycle replaces `sponsored` (award accepted, in-programme) with `active` (executed) → `maintenance` (funded). S2 added the new statuses but **kept `sponsored` valid** because `sponsorship.respond_to_award` still flips the app to `sponsored` on award acceptance, and the in-programme/pool/progress gates still accept it (`pool.FUNDED_STATES`/`IN_PROGRAMME_OR_BEYOND` include it). Prod has 0 `sponsored` rows.
 **Fix (S3):** rewire `respond_to_award` to set `active` (then `maintenance` on first disbursement, S4); migrate any `sponsored` rows → `maintenance`; remove `sponsored` from STATUS_CHOICES + the `FUNDED_STATES`/`IN_PROGRAMME_OR_BEYOND`/DECIDED_STATUSES/QUERYING_LOCKED/_TERMINAL sets + the admin status maps + i18n. (Logged 2026-06-28, post-award S2.)

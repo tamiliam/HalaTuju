@@ -787,10 +787,10 @@ def admin_reject(application, admin, category):
         if application.status not in INTERVIEW_REJECT_FROM:
             raise ValueError('bad_status')
     elif category == 'contractual':
-        # 'contractual' is a genuinely post-award decline — from the funded states
-        # (sponsored/active/maintenance). 'recommended' stays permitted for back-compat, but the
-        # normal way to decline a recommended case is now reopen → 'interviewed' → 'interview'.
-        if application.status not in ('recommended', 'sponsored', 'active', 'maintenance'):
+        # 'contractual' is a genuinely post-award decline — from the funded states (active/
+        # maintenance). 'recommended' stays permitted for back-compat, but the normal way to
+        # decline a recommended case is now reopen → 'interviewed' → 'interview'.
+        if application.status not in ('recommended', 'active', 'maintenance'):
             raise ValueError('bad_status')
     else:
         raise ValueError('bad_category')
@@ -1037,7 +1037,7 @@ def revert_if_profile_incomplete(application):
 
 
 # S4: querying (officer queries + doc requests) closes once the interview is concluded.
-QUERYING_LOCKED_STATUSES = ('interviewed', 'recommended', 'awarded', 'active', 'maintenance', 'sponsored', 'closed', 'rejected', 'withdrawn', 'expired')
+QUERYING_LOCKED_STATUSES = ('interviewed', 'recommended', 'awarded', 'active', 'maintenance', 'closed', 'rejected', 'withdrawn', 'expired')
 
 
 def querying_locked(application):
@@ -1731,10 +1731,10 @@ def complete_onboarding(application, *, answers=None, locale='en', ip=None):
     ``onboarded_at`` — the hard gate the disbursement flow checks. Re-running updates
     the answers and re-stamps (idempotent enough for a "save" button).
 
-    Onboarding only makes sense once the award is accepted, so it requires the
-    application to be 'sponsored'; otherwise raises ``OnboardingError('not_awarded')``.
+    Onboarding only makes sense once the award is accepted + executed, so it requires the
+    application to be funded ('active' or 'maintenance'); else raises ``OnboardingError('not_awarded')``.
     """
-    if application.status != 'sponsored':
+    if application.status not in ('active', 'maintenance'):
         raise OnboardingError('not_awarded')
     consent = record_consent(
         application, consent_type=ONBOARDING_CONSENT_TYPE, locale=locale,

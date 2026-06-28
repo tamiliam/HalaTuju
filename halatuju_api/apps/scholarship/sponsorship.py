@@ -111,7 +111,7 @@ def is_fundable(application):
         return False
     if application.award_amount is None or application.award_amount <= 0:
         return False
-    if application.status == 'sponsored':
+    if application.status in pool.IN_PROGRAMME_OR_BEYOND:  # already awarded / funded / closed
         return False
     if application.sponsorships.filter(status__in=Sponsorship.HOLDING).exists():
         return False
@@ -128,10 +128,15 @@ def fund_student(sponsor, application):
     amount = application.award_amount
     if sponsor_balance(sponsor) < amount:
         raise SponsorshipError('insufficient_balance')
-    return Sponsorship.objects.create(
+    sp = Sponsorship.objects.create(
         sponsor=sponsor, application=application, amount=amount, status='offered',
         accept_deadline=timezone.now() + timezone.timedelta(days=ACCEPT_DEADLINE_DAYS),
     )
+    # Post-award lifecycle: a funder has committed → the application enters 'awarded' (the offer is
+    # out + the tri-partite agreement signing begins) and leaves the discovery pool.
+    application.status = 'awarded'
+    application.save(update_fields=['status'])
+    return sp
 
 
 def current_offer(application):
@@ -166,6 +171,7 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
         sponsorship.status = 'lapsed'
         sponsorship.decided_at = timezone.now()
         sponsorship.save(update_fields=['status', 'decided_at', 'updated_at'])
+        _revert_to_pool(application)   # offer declined → back to 'recommended', re-enters the pool
         return sponsorship
 
     if action != 'accept':
@@ -218,10 +224,15 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
     sponsorship.decided_at = timezone.now()
     sponsorship.save(update_fields=['status', 'consent', 'decided_at', 'updated_at'])
 
-    # Cool-off (#14): the acceptance + money hold are recorded now, but the 'sponsored' flip +
-    # the funding-confirmed email + onboarding wait AWARD_COOLOFF_DAYS so we can reconsider /
+    # Flag-ON (bursary signing) path: the app stays 'awarded' until the Foundation counter-signs
+    # (the binding, last signature) — bursary.countersign_foundation flips 'awarded' → 'active'.
+    # The student + guarantor have just signed; the witness + Foundation follow via admin endpoints.
+    if getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False):
+        return sponsorship
+
+    # Flag-OFF path: no signing step — acceptance + the #14 cool-off confirms the award → 'active'.
+    # The flip + funding-confirmed email + onboarding wait AWARD_COOLOFF_DAYS so we can reconsider /
     # hold within the window (hold_pending_award reverts it; the student never saw confirmation).
-    from django.conf import settings as _settings
     days = getattr(_settings, 'AWARD_COOLOFF_DAYS', 2)
     if days and days > 0:
         from datetime import timedelta
@@ -232,11 +243,27 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
     return sponsorship
 
 
+def _revert_to_pool(application):
+    """An offer was declined / held / expired BEFORE it became active → the application returns to
+    'recommended' (re-enters the discovery pool) and any award cool-off marker clears. No-op if the
+    app already moved on (e.g. it was finalised to 'active')."""
+    fields = []
+    if application.status == 'awarded':
+        application.status = 'recommended'
+        fields.append('status')
+    if application.award_due_at is not None:
+        application.award_due_at = None
+        fields.append('award_due_at')
+    if fields:
+        application.save(update_fields=fields)
+
+
 def _finalise_award(application, locale='en'):
-    """The actual effect of an accepted award: flip to 'sponsored' + send the funding-confirmed
-    email (no sponsor identity, B4) + clear the cool-off marker. Shared by the immediate path
-    (cool-off disabled) and the release cron (cool-off elapsed). Best-effort email."""
-    application.status = 'sponsored'
+    """The actual effect of an accepted award (flag-OFF path): flip to 'active' + send the
+    funding-confirmed email (no sponsor identity, B4) + clear the cool-off marker. Shared by the
+    immediate path (cool-off disabled) and the release cron (cool-off elapsed). Best-effort email.
+    ('active' = executed/funded; the first disbursement later flips it to 'maintenance' — S4.)"""
+    application.status = 'active'
     application.award_due_at = None
     application.save(update_fields=['status', 'award_due_at'])
     name = getattr(application.profile, 'name', '') if application.profile else ''
@@ -248,9 +275,9 @@ def _finalise_award(application, locale='en'):
 
 def hold_pending_award(application):
     """Reverse an accepted-but-unconfirmed award within the cool-off so the org can reconsider:
-    the active sponsorship lapses (its amount returns to the sponsor's balance) and the cool-off
-    marker clears. The app stays 'recommended' (it was never flipped to 'sponsored'); the student
-    never saw a confirmation. Returns True if there was a pending award to hold."""
+    the active sponsorship lapses (its amount returns to the sponsor's balance) and the app reverts
+    'awarded' → 'recommended' (re-enters the pool); it was never flipped to a funded state and the
+    student never saw a confirmation. Returns True if there was a pending award to hold."""
     if not application.award_due_at:
         return False
     sp = application.sponsorships.filter(status='active').order_by('-decided_at').first()
@@ -258,8 +285,7 @@ def hold_pending_award(application):
         sp.status = 'lapsed'
         sp.decided_at = timezone.now()
         sp.save(update_fields=['status', 'decided_at', 'updated_at'])
-    application.award_due_at = None
-    application.save(update_fields=['award_due_at'])
+    _revert_to_pool(application)
     return True
 
 
@@ -270,13 +296,12 @@ def release_pending_awards(now=None):
     now = now or timezone.now()
     qs = (ScholarshipApplication.objects
           .filter(award_due_at__isnull=False, award_due_at__lte=now)
-          .exclude(status='sponsored').select_related('cohort', 'profile'))
+          .exclude(status='active').select_related('cohort', 'profile'))
     released = 0
     for app in qs:
         # Only finalise if the acceptance still holds (not held/lapsed in the window).
         if not app.sponsorships.filter(status='active').exists():
-            app.award_due_at = None
-            app.save(update_fields=['award_due_at'])
+            _revert_to_pool(app)
             continue
         _finalise_award(app, app.locale)
         released += 1
@@ -287,5 +312,12 @@ def lapse_expired_offers():
     """Mark every 'offered' award past its accept_deadline as 'lapsed' (the amount
     returns to the sponsor's balance). Intended for a scheduled job; returns the
     count lapsed."""
-    qs = Sponsorship.objects.filter(status='offered', accept_deadline__lt=timezone.now())
-    return qs.update(status='lapsed', decided_at=timezone.now())
+    now = timezone.now()
+    expired = list(Sponsorship.objects.filter(status='offered', accept_deadline__lt=now)
+                   .select_related('application'))
+    for sp in expired:
+        sp.status = 'lapsed'
+        sp.decided_at = now
+        sp.save(update_fields=['status', 'decided_at', 'updated_at'])
+        _revert_to_pool(sp.application)   # offer expired unaccepted → back in the pool
+    return len(expired)

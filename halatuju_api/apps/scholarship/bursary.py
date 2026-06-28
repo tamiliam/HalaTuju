@@ -501,16 +501,33 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
     return agreement
 
 
+def _maybe_activate(agreement):
+    """Post-award lifecycle: once the agreement is EXECUTED — the three parties (student + guarantor
+    + Foundation) have signed — the application moves 'awarded' → 'active' (executed; awaiting first
+    payout — S4 flips it to 'maintenance' on the first disbursement). The partner-org witness is
+    NON-BLOCKING (an attestation, not a party), so it is not required here. Idempotent; only advances
+    from 'awarded', so it never disturbs another state."""
+    if not (agreement.student_signed_at and agreement.guarantor_signed_at
+            and agreement.foundation_signed_at):
+        return
+    app = agreement.application
+    if app.status == 'awarded':
+        app.status = 'active'
+        app.save(update_fields=['status'])
+
+
 def countersign_foundation(agreement, *, by_name):
-    """Stamp the Foundation's countersignature and re-render/regenerate the PDF so
-    the countersignature appears in the artefact. Best-effort on the PDF: a render
-    failure still stamps the fields (the signature record is what binds)."""
+    """Stamp the Foundation's countersignature and re-render/regenerate the PDF so the
+    countersignature appears in the artefact. Best-effort on the PDF: a render failure still stamps
+    the fields (the signature record is what binds). The Foundation signs LAST, so this normally
+    fully executes the agreement → the application moves 'awarded' → 'active' (see _maybe_activate)."""
     now = timezone.now()
     agreement.foundation_signed_by = by_name or agreement.foundation_signatory_name
     agreement.foundation_signed_at = now
     fields = ['foundation_signed_by', 'foundation_signed_at', 'updated_at']
     _regenerate_artefact(agreement, fields)
     agreement.save(update_fields=fields)
+    _maybe_activate(agreement)
     return agreement
 
 
@@ -526,6 +543,7 @@ def record_witness(agreement, *, org, by_name, witness_name=''):
               'updated_at']
     _regenerate_artefact(agreement, fields)
     agreement.save(update_fields=fields)
+    _maybe_activate(agreement)   # in case the witness is the last of the four to sign
     return agreement
 
 

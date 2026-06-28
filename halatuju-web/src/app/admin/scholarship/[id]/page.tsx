@@ -100,7 +100,6 @@ const STATUS_TONE: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
   maintenance: 'bg-green-100 text-green-700',
   closed: 'bg-gray-100 text-gray-600',
-  sponsored: 'bg-green-100 text-green-700',
   rejected: 'bg-red-100 text-red-700',
   withdrawn: 'bg-gray-100 text-gray-600',
   expired: 'bg-gray-100 text-gray-600',
@@ -1847,7 +1846,7 @@ export default function AdminScholarshipDetailPage() {
                 {app.verdict_decided_at ? ` · ${new Date(app.verdict_decided_at).toLocaleDateString()}` : ''}
               </p>
             )}
-            {app.status === 'sponsored' && canWrite && (
+            {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
                 className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
                 {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
@@ -1956,7 +1955,7 @@ export default function AdminScholarshipDetailPage() {
         </div>
 
         {/* Decision actions — pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. */}
-        {(app.status === 'recommended' || app.status === 'sponsored') && !decisionReopened ? (
+        {(app.status === 'recommended' || app.status === 'active' || app.status === 'maintenance') && !decisionReopened ? (
           /* Committed acceptance → read-only summary. A post-accept decline goes through
              Reopen (→ interviewed → declined as 'interview'); the direct 'contractual'
              decline is reserved for a genuinely post-award (sponsored) case. */
@@ -1966,7 +1965,7 @@ export default function AdminScholarshipDetailPage() {
               {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
               {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
             </p>
-            {app.status === 'sponsored' && canWrite && (
+            {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
                 className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
                 {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
@@ -2076,7 +2075,7 @@ export default function AdminScholarshipDetailPage() {
           signed in-session). The Foundation countersignature + the partner-org
           witness are recorded here. The admin detail GET doesn't carry the
           agreement, so the four states resolve from the action responses. */}
-      {app.bursary_agreement_enabled && (app.status === 'recommended' || app.status === 'sponsored') && (() => {
+      {app.bursary_agreement_enabled && (app.status === 'awarded' || app.status === 'active' || app.status === 'maintenance') && (() => {
         // Signed-by-now is implied once accepted (the in-session signing is the gate);
         // the action responses confirm the Foundation/Witness columns + the PDF link.
         // NOTE (TD): the student/guarantor "implied signed" default is only sound once the

@@ -116,8 +116,6 @@ class ScholarshipApplication(models.Model):
         ('awarded', 'Awarded'),          # a funder committed; offer out + tri-partite agreement being signed
         ('active', 'Active'),            # agreement fully executed (Foundation signs last); awaiting first payout
         ('maintenance', 'Maintenance'),  # first tranche disbursed; recurring per-semester support loop
-        ('sponsored', 'Sponsored'),      # LEGACY in-programme (award accepted) — superseded by active/maintenance;
-        #                                  still written by sponsorship.respond_to_award until S3 rewires the award flow
         ('closed', 'Closed'),            # terminal archive (manual close); see closure_reason
         ('rejected', 'Rejected'),
         ('withdrawn', 'Withdrawn'),

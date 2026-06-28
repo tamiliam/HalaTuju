@@ -30,8 +30,8 @@ class InProgrammeError(Exception):
 
 # A student only has an in-programme lifecycle once their award is accepted.
 def _require_in_programme(application):
-    # In-programme = funded: active (executed/pre-payout), maintenance (funded), or legacy 'sponsored'.
-    if application is None or application.status not in ('active', 'maintenance', 'sponsored'):
+    # In-programme = funded: active (executed/pre-payout) or maintenance (funded).
+    if application is None or application.status not in ('active', 'maintenance'):
         raise InProgrammeError('not_in_programme')
 
 

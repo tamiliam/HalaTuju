@@ -97,9 +97,9 @@ class TestSponsorshipService(TestCase):
         self.assertEqual(sp.status, 'active')
         self.assertIsNotNone(sp.consent)
         app.refresh_from_db()
-        self.assertEqual(app.status, 'sponsored')
+        self.assertEqual(app.status, 'active')
         self.assertTrue(app.consents.filter(consent_type='consent_to_sponsorship', is_active=True).exists())
-        # …and a sponsored student is out of the pool.
+        # …and a funded student is out of the pool.
         self.assertFalse(pool.is_pool_eligible(app))
 
     def test_accept_minor_requires_guardian(self):
@@ -290,7 +290,7 @@ class TestStudentAward(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(r.json()['status'], 'active')
         self.app.refresh_from_db()
-        self.assertEqual(self.app.status, 'sponsored')
+        self.assertEqual(self.app.status, 'active')
 
     def test_decline_lapses(self):
         self._auth()
