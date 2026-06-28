@@ -107,15 +107,18 @@ class ScholarshipApplication(models.Model):
     STATUS_CHOICES = [
         ('submitted', 'Submitted'),
         ('shortlisted', 'Shortlisted'),
-        # Phase C post-shortlist funnel (between shortlisted and accepted):
+        # Phase C post-shortlist funnel (between shortlisted and recommended):
         ('profile_complete', 'Profile complete'),  # student confirmed a complete Step-4 profile
         ('interviewing', 'Interviewing'),           # an interview session has been started
         ('interviewed', 'Interviewed'),             # interview captured + submitted
         ('recommended', 'Recommended'),  # reviewer verified & recommended — provisional, masked from the student
-        # LEGACY alias of 'recommended' (post-award lifecycle Sprint 1, 2026-06-28). Code writes
-        # 'recommended'; both read as the same state. Remove in Sprint 2 once the prod rows migrate.
-        ('accepted', 'Accepted'),
-        ('sponsored', 'Sponsored'),    # Phase E3: a sponsor's award was accepted — student leaves the pool
+        # Post-award lifecycle (roadmap docs/scholarship/post-award-lifecycle-plan.md):
+        ('awarded', 'Awarded'),          # a funder committed; offer out + tri-partite agreement being signed
+        ('active', 'Active'),            # agreement fully executed (Foundation signs last); awaiting first payout
+        ('maintenance', 'Maintenance'),  # first tranche disbursed; recurring per-semester support loop
+        ('sponsored', 'Sponsored'),      # LEGACY in-programme (award accepted) — superseded by active/maintenance;
+        #                                  still written by sponsorship.respond_to_award until S3 rewires the award flow
+        ('closed', 'Closed'),            # terminal archive (manual close); see closure_reason
         ('rejected', 'Rejected'),
         ('withdrawn', 'Withdrawn'),
         # Auto-closed: shortlisted but never completed after the full reminder
@@ -385,6 +388,21 @@ class ScholarshipApplication(models.Model):
     rejected_by = models.CharField(
         max_length=254, blank=True, default='',
         help_text="Email of the PartnerAdmin who rejected (post-shortlist buckets only); blank for engine rejections",
+    )
+
+    # Closure bucket — WHY a funded application reached status='closed' (post-award lifecycle).
+    # 'graduated'/'completed' are positive (programme finished vs contractual support period fulfilled);
+    # 'withdrawn'/'lapsed'/'terminated' are negative. Set at the MANUAL close (Sprint 6). Blank otherwise.
+    CLOSURE_REASONS = [
+        ('graduated', 'Graduated — completed the programme'),
+        ('completed', 'Completed the contractual support period'),
+        ('withdrawn', 'Withdrawn by the student'),
+        ('lapsed', 'Lapsed — support stopped (fell away)'),
+        ('terminated', 'Terminated for cause'),
+    ]
+    closure_reason = models.CharField(
+        max_length=20, choices=CLOSURE_REASONS, blank=True, default='',
+        help_text="Why the application reached status='closed'; blank unless status='closed'",
     )
 
     # 7-day DECLINE cool-off (#13): an admin decline is recorded SILENTLY here (bucket + due

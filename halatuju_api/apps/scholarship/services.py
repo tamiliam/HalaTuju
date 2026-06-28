@@ -787,10 +787,10 @@ def admin_reject(application, admin, category):
         if application.status not in INTERVIEW_REJECT_FROM:
             raise ValueError('bad_status')
     elif category == 'contractual':
-        # 'contractual' is a genuinely post-award decline. The UI offers it only from
-        # 'sponsored' (funded); 'recommended' stays permitted for back-compat, but the normal
-        # way to decline a recommended case is now reopen → 'interviewed' → 'interview'.
-        if application.status not in ('recommended', 'accepted', 'sponsored'):
+        # 'contractual' is a genuinely post-award decline — from the funded states
+        # (sponsored/active/maintenance). 'recommended' stays permitted for back-compat, but the
+        # normal way to decline a recommended case is now reopen → 'interviewed' → 'interview'.
+        if application.status not in ('recommended', 'sponsored', 'active', 'maintenance'):
             raise ValueError('bad_status')
     else:
         raise ValueError('bad_category')
@@ -1037,7 +1037,7 @@ def revert_if_profile_incomplete(application):
 
 
 # S4: querying (officer queries + doc requests) closes once the interview is concluded.
-QUERYING_LOCKED_STATUSES = ('interviewed', 'recommended', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired')
+QUERYING_LOCKED_STATUSES = ('interviewed', 'recommended', 'awarded', 'active', 'maintenance', 'sponsored', 'closed', 'rejected', 'withdrawn', 'expired')
 
 
 def querying_locked(application):

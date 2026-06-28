@@ -469,7 +469,8 @@ describe('isQueryingLocked', () => {
   })
   it('locks on a terminal/decided status', () => {
     expect(isQueryingLocked('rejected', undefined)).toBe(true)
-    expect(isQueryingLocked('accepted', 'draft')).toBe(true)
+    expect(isQueryingLocked('recommended', 'draft')).toBe(true)
+    expect(isQueryingLocked('maintenance', 'draft')).toBe(true)
   })
   it('open while still shortlisted with a draft (or no) interview', () => {
     expect(isQueryingLocked('shortlisted', 'draft')).toBe(false)
