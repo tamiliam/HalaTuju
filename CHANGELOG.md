@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Post-award lifecycle — Sprint 5: `maintenance` loop + operational sub-states.** A funded student
+  (`status='maintenance'`) now carries a `maintenance_substate` an admin manages —
+  `on_track` (default) / `probation` / `on_hold` / `ready_to_close` — distinct from the
+  sponsor-facing academic band (`derive_progress_state`). `maintenance.py` core
+  (`set_substate` + transitions + `sponsor_support_status` + `ready_to_close_queryset`).
+  **`on_hold` pauses the money:** `disbursement.release_tranche` refuses to release a tranche
+  for an on-hold student (withhold/return still allowed). Surfaces: cockpit (sub-state badge +
+  transition buttons, in the disbursement panel), the student in-programme page (a calm
+  "support paused" banner), and the sponsor card (a coarse `support_status` = `paused`/
+  `completing` only — **probation is never shown to a sponsor**). Reviewer-gated admin endpoint
+  `POST …/applications/<pk>/maintenance/ {substate}`. Migration `0077_maintenance_substate`
+  (additive column, **migrate-first**). +16 pytest. i18n parity 2920×3 (+17).
 - **Post-award lifecycle — Sprint 4: disbursement/tranche ledger + `active → maintenance`.** The money-OUT
   ledger for a funded award. New `Disbursement` model (`disbursements`): a tranche scheduled against a
   funded application, with states `scheduled → due → released | withheld | returned`. An admin schedules

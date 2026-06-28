@@ -546,7 +546,11 @@ export interface AdminScholarshipDetail {
   bursary_agreement_enabled?: boolean
   /** Post-award S4: the money-out tranche ledger (oldest sequence first). */
   disbursements: AdminDisbursement[]
+  /** Post-award S5: operational sub-state within status='maintenance'. */
+  maintenance_substate: MaintenanceSubstate
 }
+
+export type MaintenanceSubstate = 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'
 
 /** Post-award S4: one disbursement tranche. Admin-facing — funder link by id only,
  *  never a sponsor identity (anonymity holds). */
@@ -1116,6 +1120,20 @@ export async function actOnDisbursement(
     `/api/v1/admin/scholarship/disbursements/${disbursementId}/${action}/`,
     'POST',
     payload ?? {},
+    options,
+  )
+}
+
+// ── Post-award S5: maintenance sub-state ──
+export async function setMaintenanceSubstate(
+  id: number,
+  substate: MaintenanceSubstate,
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/maintenance/`,
+    'POST',
+    { substate },
     options,
   )
 }

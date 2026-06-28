@@ -33,8 +33,10 @@ import {
   adminWitnessBursary,
   scheduleTranche,
   actOnDisbursement,
+  setMaintenanceSubstate,
   type AdminDisbursement,
   type DisbursementAction,
+  type MaintenanceSubstate,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
   type AdminApplicantDocument,
@@ -249,7 +251,7 @@ export default function AdminScholarshipDetailPage() {
   const [disbMsg, setDisbMsg] = useState('')
 
   // The backend raises a machine code as the Error message (adminMutate throws new Error(body.error)).
-  const DISB_CODES = new Set(['bad_amount', 'not_in_programme', 'bad_state', 'bad_action', 'bad_sequence'])
+  const DISB_CODES = new Set(['bad_amount', 'not_in_programme', 'bad_state', 'bad_action', 'bad_sequence', 'on_hold', 'not_in_maintenance', 'bad_substate'])
   const disbError = (e: unknown) => {
     const code = (e as Error)?.message
     return t(`admin.disbursement.error.${code && DISB_CODES.has(code) ? code : 'generic'}`)
@@ -274,6 +276,17 @@ export default function AdminScholarshipDetailPage() {
     setBusy('disbursement'); setDisbMsg('')
     try {
       setApp(await actOnDisbursement(disbursementId, action, undefined, { token }))
+    } catch (e) {
+      setDisbMsg(disbError(e))
+    } finally { setBusy('') }
+  }
+
+  // Post-award S5: maintenance sub-state (on_track / probation / on_hold / ready_to_close).
+  const doSetSubstate = async (substate: MaintenanceSubstate) => {
+    if (!token) return
+    setBusy('disbursement'); setDisbMsg('')
+    try {
+      setApp(await setMaintenanceSubstate(id, substate, { token }))
     } catch (e) {
       setDisbMsg(disbError(e))
     } finally { setBusy('') }
@@ -2209,6 +2222,39 @@ export default function AdminScholarshipDetailPage() {
               )}
             </div>
             <p className="text-xs text-gray-400">{t('admin.disbursement.note')}</p>
+
+            {/* S5: maintenance sub-state — only once funded into the recurring loop. */}
+            {app.status === 'maintenance' && (
+              <div className="rounded-lg border border-gray-100 bg-gray-50/60 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-gray-600">{t('admin.maintenance.title')}</span>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    app.maintenance_substate === 'on_track' ? 'bg-green-100 text-green-700'
+                    : app.maintenance_substate === 'probation' ? 'bg-amber-100 text-amber-700'
+                    : app.maintenance_substate === 'on_hold' ? 'bg-red-100 text-red-700'
+                    : 'bg-blue-100 text-blue-700'}`}>
+                    {t(`admin.maintenance.substate.${app.maintenance_substate}`)}
+                  </span>
+                </div>
+                {canWrite && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(['on_track', 'probation', 'on_hold', 'ready_to_close'] as const)
+                      .filter((s) => s !== app.maintenance_substate)
+                      .map((s) => (
+                        <button key={s} type="button"
+                          onClick={() => doSetSubstate(s)}
+                          disabled={busy === 'disbursement'}
+                          className="rounded-lg border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50">
+                          {t(`admin.maintenance.action.${s}`)}
+                        </button>
+                      ))}
+                  </div>
+                )}
+                {app.maintenance_substate === 'on_hold' && (
+                  <p className="text-[11px] text-red-600">{t('admin.maintenance.onHoldHint')}</p>
+                )}
+              </div>
+            )}
 
             {rows.length === 0 ? (
               <p className="text-sm text-gray-400">{t('admin.disbursement.empty')}</p>

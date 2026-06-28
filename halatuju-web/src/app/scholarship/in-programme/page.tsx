@@ -182,6 +182,14 @@ export default function InProgrammePage() {
           <h1 className="text-2xl font-bold text-gray-900">{t('scholarship.inProgramme.title')}</h1>
         </div>
 
+        {/* S5: a paused (on-hold) student sees a clear, non-alarming notice. */}
+        {app?.maintenance_substate === 'on_hold' && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm font-medium text-amber-900">{t('scholarship.inProgramme.onHold.title')}</p>
+            <p className="mt-1 text-sm text-amber-800">{t('scholarship.inProgramme.onHold.body')}</p>
+          </div>
+        )}
+
         {/* ── Semester results ─────────────────────────────────────────── */}
         <section className="rounded-2xl bg-white p-5 shadow-sm">
           <div className="flex items-start justify-between gap-3">

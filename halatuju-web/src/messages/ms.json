@@ -148,6 +148,10 @@
       "months": "bulan",
       "awaiting": "Menunggu penerimaan",
       "none": "Anda belum membantu mana-mana pelajar lagi.",
+      "support": {
+        "paused": "Sokongan ditangguhkan",
+        "completing": "Hampir selesai"
+      },
       "progress": {
         "on_track": "Atas landasan",
         "semester_completed": "Semester selesai",
@@ -2148,6 +2152,10 @@
       "back": "Kembali",
       "notInProgramme": "Halaman ini untuk pelajar yang sudah berada dalam program. Setelah tajaan anda diterima, kemajuan anda akan dipaparkan di sini.",
       "backToApplication": "Kembali ke permohonan saya",
+      "onHold": {
+        "title": "Sokongan anda kini ditangguhkan",
+        "body": "Pembayaran anda yang seterusnya ditangguhkan buat masa ini. Sila hubungi kami supaya kami boleh menyelesaikannya bersama."
+      },
       "results": {
         "title": "Keputusan semester",
         "subtitle": "Tambah keputusan terkini anda setiap semester supaya kami dapat menyokong anda.",
@@ -2645,7 +2653,26 @@
         "bad_state": "Tindakan itu tidak dibenarkan untuk ansuran ini.",
         "bad_action": "Tindakan tidak dikenali.",
         "bad_sequence": "Nombor ansuran tidak sah.",
+        "on_hold": "Sokongan pelajar ini ditangguhkan — sambung semula sebelum melepaskan ansuran.",
+        "not_in_maintenance": "Sub-status hanya untuk pelajar dalam peringkat penyelenggaraan.",
+        "bad_substate": "Sub-status tidak dikenali.",
         "generic": "Tidak dapat mengemas kini pembayaran. Anda mungkin tiada kebenaran."
+      }
+    },
+    "maintenance": {
+      "title": "Status penyelenggaraan",
+      "onHoldHint": "Sokongan ditangguhkan — pelepasan ansuran disekat sehingga anda menyambung semula.",
+      "substate": {
+        "on_track": "Atas landasan",
+        "probation": "Percubaan",
+        "on_hold": "Ditangguhkan",
+        "ready_to_close": "Sedia untuk ditutup"
+      },
+      "action": {
+        "on_track": "Sambung semula (atas landasan)",
+        "probation": "Letak dalam percubaan",
+        "on_hold": "Tangguhkan",
+        "ready_to_close": "Tanda sedia ditutup"
       }
     },
     "scholarship": {

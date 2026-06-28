@@ -403,6 +403,25 @@ class ScholarshipApplication(models.Model):
         help_text="Why the application reached status='closed'; blank unless status='closed'",
     )
 
+    # Post-award S5: the operational sub-state WITHIN status='maintenance' (the funded
+    # recurring loop). An admin lifecycle overlay, distinct from the sponsor-facing
+    # ACADEMIC band (`pool.derive_progress_state`, derived from semester results):
+    #   on_track       — funded, in good standing (default)
+    #   probation      — at-risk (poor result / concern); support continues but flagged
+    #   on_hold        — paused (a tranche release is BLOCKED until resumed)
+    #   ready_to_close — support fulfilled / final result in; the S6 manual close reads this
+    # Only meaningful while status='maintenance'; 'on_track' otherwise.
+    MAINTENANCE_SUBSTATES = [
+        ('on_track', 'On track'),
+        ('probation', 'Probation (at-risk)'),
+        ('on_hold', 'On hold (paused)'),
+        ('ready_to_close', 'Ready to close'),
+    ]
+    maintenance_substate = models.CharField(
+        max_length=20, choices=MAINTENANCE_SUBSTATES, blank=True, default='on_track',
+        help_text="Operational sub-state within status='maintenance'; 'on_track' otherwise",
+    )
+
     # 7-day DECLINE cool-off (#13): an admin decline is recorded SILENTLY here (bucket + due
     # date) instead of flipping status immediately. The release cron reveals it (status →
     # rejected + bucket decline email) once decline_due_at passes; an admin can Cancel before

@@ -978,3 +978,15 @@ removed from STATUS_CHOICES, all status sets, the onboarding/finalising gates, a
 rows to migrate. Migration `0075`. See `docs/retrospective-2026-06-28-post-award-s3-awarded-signing.md`.
 **Context:** The post-award lifecycle replaces `sponsored` (award accepted, in-programme) with `active` (executed) → `maintenance` (funded). S2 added the new statuses but **kept `sponsored` valid** because `sponsorship.respond_to_award` still flips the app to `sponsored` on award acceptance, and the in-programme/pool/progress gates still accept it (`pool.FUNDED_STATES`/`IN_PROGRAMME_OR_BEYOND` include it). Prod has 0 `sponsored` rows.
 **Fix (S3):** rewire `respond_to_award` to set `active` (then `maintenance` on first disbursement, S4); migrate any `sponsored` rows → `maintenance`; remove `sponsored` from STATUS_CHOICES + the `FUNDED_STATES`/`IN_PROGRAMME_OR_BEYOND`/DECIDED_STATUSES/QUERYING_LOCKED/_TERMINAL sets + the admin status maps + i18n. (Logged 2026-06-28, post-award S2.)
+
+### [TD-147] Retire the recurring `ScholarshipCohort.name` migration drift for good
+**Status:** Open (logged 2026-06-28, post-award S5). **Low risk, recurring friction.**
+**Context:** Every post-award sprint (S1–S5), `makemigrations scholarship` re-proposes an
+`AlterField` on `scholarshipcohort.name` (a `help_text` drift between the model and migration
+state that no sprint authored). Each sprint hand-writes its migration to omit the stray op — a
+reliable but repeated chore (now a documented reflex). **Fix:** add ONE state-only migration that
+records the `scholarshipcohort.name` `AlterField` (no DDL — `help_text` is not a column change), so
+`makemigrations --check` is clean thereafter and future sprints stop having to drop the op. Do it as
+a standalone small-change / in the next consolidation review, NOT folded into a feature sprint (keep
+it isolated so it's obviously a no-op DDL). Verify with `makemigrations scholarship --check` returning
+"No changes" afterwards.

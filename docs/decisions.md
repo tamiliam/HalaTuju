@@ -3511,3 +3511,23 @@ acceptable (history is preserved; attribution is best-effort). The maintenance s
 `active → maintenance` transition.
 **Revisit if:** real disbursement (toyyibPay, TD-075) lands and tranches need a payment-gateway state
 machine of their own, or partial/multi-sponsor funding makes the 1:1 sponsorship link insufficient.
+
+## Maintenance sub-state: a stored admin overlay, separate from the academic band — Post-award S5, 2026-06-28
+**Decision:** Add `ScholarshipApplication.maintenance_substate` (on_track/probation/on_hold/
+ready_to_close, default on_track) as an admin-set field, kept DISTINCT from the sponsor-facing
+academic band (`pool.derive_progress_state`, derived from semester results). `on_hold` is a hard
+invariant — `disbursement.release_tranche` refuses to pay an on-hold student. The sponsor sees only a
+coarse `sponsor_support_status` (`paused`/`completing`); `probation` is never surfaced to a sponsor.
+**Alternatives considered:** (a) derive the sub-state from results (no column) — rejected: on_hold,
+ready_to_close and (the admin judgement of) probation can't come from a CGPA; (b) replace the academic
+band with the sub-state — rejected: they answer different questions ("how is the student doing"
+vs "what is the foundation's operational status"); (c) surface the full sub-state to the sponsor —
+rejected: probation is an internal at-risk flag, not the funder's business, and shaming risk.
+**Rationale:** One authoritative admin field for operational control; the results-derived band stays
+the sponsor's progress view; a deliberate one-way coarsening (`sponsor_support_status`) gives the
+sponsor the two states they legitimately need (paused / wrapping up) without leaking probation.
+**Trade-offs:** Two "how's it going" signals to hold in mind (documented in `maintenance.py` +
+`pool.derive_progress_state`). An admin must actively set probation (it isn't auto-derived from a poor
+CGPA — the cockpit shows the result so they can decide).
+**Revisit if:** probation should auto-suggest from a CGPA threshold (a cockpit hint, not an auto-flip),
+or the sponsor should see a richer (still non-identifying) status.

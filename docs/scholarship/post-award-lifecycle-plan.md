@@ -69,10 +69,6 @@ Funder-commit → awarded; signing sub-states (student→guarantor→witness→F
 existing bursary timestamps; enforce order; Foundation execution → active; cockpit progress card.
 Behind `BURSARY_AGREEMENT_ENABLED`. Complexity: Medium.
 
-### Sprint 5 — `maintenance` loop + sub-states
-Result → review → release/withhold next tranche; on_track / probation / on_hold / ready-to-close;
-admin hold/resume + withhold/release; student + sponsor + cockpit surfaces. Complexity: Medium.
-
 ### Sprint 6 — Manual closure + reasons + thank-you re-gating
 Admin close (manual) → closed + closure_reason + offboarding checklist; graduated-vs-completed copy;
 re-gate the graduation/thank-you relay to allow during ready-to-close and after closed. Complexity: Low-medium.
