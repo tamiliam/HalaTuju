@@ -1687,6 +1687,7 @@ export interface AcademicCheck {
   candidate_name: string
   exam: string
   exam_year: string
+  exam_year_status?: '' | 'current' | 'off'   // vs cohort year−1: current→green, off→amber
   missing: string[]
   mismatched: { subject: string; typed: string; slip: string }[]
   uncertain: { subject: string; typed: string; slip: string; band: string }[]
@@ -1703,6 +1704,9 @@ export interface PathwayCheck {
   issuer: string
   offer_date: string
   intake: string
+  reporting_date?: string                 // report/registration date = course start
+  intake_year?: string                    // parsed course-start year
+  intake_year_status?: '' | 'current' | 'off'   // vs cohort year: current→green, off→amber
   address: string
   // Offer-vs-declared reconciliation (Check-1 pathway): does the offer match the
   // college/programme the student declared at apply time?

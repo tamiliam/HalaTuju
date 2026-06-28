@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Year-currency colouring + course-start date in the cockpit.** The results-slip chip's **SPM year**
+  and a new **offer intake (course-start) year** chip are now coloured by currency vs the application's
+  cohort: green when current (SPM = cohort − 1; intake = cohort year), amber otherwise. The offer's
+  **reporting/registration date** (course start) is surfaced both via `pathway_check` and as a
+  **"Reporting date"** field in the Academic card. New `academic_check.exam_year_status`,
+  `pathway_check.{reporting_date,intake_year,intake_year_status}`. en/ms/ta. +8 tests.
 - **Results-slip chip shows the SPM exam year.** The drawer now surfaces the OCR'd exam year as a
   muted data point after Results (e.g. "Name · Subjects · Results · SPM 2025"), so the officer can
   see which year's slip it is. Already extracted (`academic_check.exam_year`); now displayed.

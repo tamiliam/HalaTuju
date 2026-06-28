@@ -13,10 +13,11 @@ from apps.scholarship.pathway_engine import (
 
 
 def _offer_doc(fields, *, pname='Elanjelian Venugopal', pnric='710829-02-5709',
-               student_verdict='ok', declared=None):
+               student_verdict='ok', declared=None, cohort_year=None):
     """``declared`` (optional) is the application's declared pathway — either a
     ``{'course_name','institution'}`` dict (chosen_programme) OR a
-    ``{'pre_u_track','pre_u_institution'}`` pair, mirrored onto the app namespace."""
+    ``{'pre_u_track','pre_u_institution'}`` pair, mirrored onto the app namespace.
+    ``cohort_year`` (optional) sets the application's cohort year for intake-currency tests."""
     declared = declared or {}
     app = SimpleNamespace(
         profile=SimpleNamespace(name=pname, nric=pnric),
@@ -24,6 +25,7 @@ def _offer_doc(fields, *, pname='Elanjelian Venugopal', pnric='710829-02-5709',
                           'institution': declared.get('institution', '')},
         pre_u_track=declared.get('pre_u_track', ''),
         pre_u_institution=declared.get('pre_u_institution', ''),
+        cohort=SimpleNamespace(year=cohort_year) if cohort_year else None,
     )
     return SimpleNamespace(
         doc_type='offer_letter',
@@ -201,6 +203,32 @@ class TestStudentOfferCheckPathway(SimpleTestCase):
         # Offer is "Diploma Kejuruteraan Elektrik" — a different field → mismatch.
         self.assertEqual(chk['pathway'], 'mismatch')
         self.assertEqual(chk['declared_programme'], 'Diploma Senibina')
+
+
+class TestOfferIntakeYear(SimpleTestCase):
+    """Course-start (intake) year + currency vs the cohort: 'current' (==cohort year) → green,
+    'off' → amber, '' → no signal."""
+
+    def test_intake_year_matching_cohort_is_current(self):
+        chk = student_offer_check(_offer_doc({'intake': 'Sesi 2026/2027'}, cohort_year=2026))
+        self.assertEqual(chk['intake_year'], '2026')
+        self.assertEqual(chk['intake_year_status'], 'current')
+
+    def test_intake_year_off_cohort_is_off(self):
+        chk = student_offer_check(_offer_doc({'intake': 'Sesi 2025/2026'}, cohort_year=2026))
+        self.assertEqual(chk['intake_year'], '2025')
+        self.assertEqual(chk['intake_year_status'], 'off')
+
+    def test_reporting_date_surfaced_and_feeds_intake_year(self):
+        chk = student_offer_check(_offer_doc({'reporting_date': '15 Mei 2026'}, cohort_year=2026))
+        self.assertEqual(chk['reporting_date'], '15 Mei 2026')
+        self.assertEqual(chk['intake_year'], '2026')           # falls back to the reporting year
+        self.assertEqual(chk['intake_year_status'], 'current')
+
+    def test_no_cohort_means_no_status(self):
+        chk = student_offer_check(_offer_doc({'intake': 'Sesi 2026/2027'}))   # cohort_year=None
+        self.assertEqual(chk['intake_year'], '2026')
+        self.assertEqual(chk['intake_year_status'], '')
 
 
 # ── Offer-validity signal (owner policy: only genuine official PUBLIC offers qualify) ──
