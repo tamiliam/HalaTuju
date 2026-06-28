@@ -2616,6 +2616,38 @@
         "suspend": "Gantung"
       }
     },
+    "disbursement": {
+      "title": "Pembayaran",
+      "note": "Wang yang dibayar kepada pelajar, secara ansuran. Menandakan ansuran pertama sebagai dibayar akan memindahkan pelajar ke peringkat penyelenggaraan. Direkod sahaja — tiada bayaran sebenar dihantar lagi.",
+      "empty": "Tiada ansuran dijadualkan lagi.",
+      "tranche": "Ansuran",
+      "totalReleased": "Dibayar:",
+      "amountLabel": "Jumlah (RM)",
+      "labelLabel": "Label",
+      "labelPlaceholder": "cth. Semester 1",
+      "schedule": "Jadualkan ansuran",
+      "status": {
+        "scheduled": "Dijadualkan",
+        "due": "Perlu dibayar",
+        "released": "Dibayar",
+        "withheld": "Ditahan",
+        "returned": "Dikembalikan"
+      },
+      "action": {
+        "release": "Tanda dibayar",
+        "withhold": "Tahan",
+        "return": "Tanda dikembalikan",
+        "mark_due": "Tanda perlu dibayar"
+      },
+      "error": {
+        "bad_amount": "Masukkan jumlah yang sah.",
+        "not_in_programme": "Pelajar mesti dibiayai (aktif atau penyelenggaraan).",
+        "bad_state": "Tindakan itu tidak dibenarkan untuk ansuran ini.",
+        "bad_action": "Tindakan tidak dikenali.",
+        "bad_sequence": "Nombor ansuran tidak sah.",
+        "generic": "Tidak dapat mengemas kini pembayaran. Anda mungkin tiada kebenaran."
+      }
+    },
     "scholarship": {
       "nav": "Permohonan B40",
       "title": "Pemohon Bursari BrightPath",

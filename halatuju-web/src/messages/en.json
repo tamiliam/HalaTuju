@@ -2616,6 +2616,38 @@
         "suspend": "Suspend"
       }
     },
+    "disbursement": {
+      "title": "Disbursements",
+      "note": "Money paid to the student, in tranches. Marking the first tranche disbursed moves the student into maintenance. Recorded only — no real payment is sent yet.",
+      "empty": "No tranches scheduled yet.",
+      "tranche": "Tranche",
+      "totalReleased": "Released:",
+      "amountLabel": "Amount (RM)",
+      "labelLabel": "Label",
+      "labelPlaceholder": "e.g. Semester 1",
+      "schedule": "Schedule tranche",
+      "status": {
+        "scheduled": "Scheduled",
+        "due": "Due",
+        "released": "Released",
+        "withheld": "Withheld",
+        "returned": "Returned"
+      },
+      "action": {
+        "release": "Mark disbursed",
+        "withhold": "Withhold",
+        "return": "Mark returned",
+        "mark_due": "Mark due"
+      },
+      "error": {
+        "bad_amount": "Enter a valid amount.",
+        "not_in_programme": "The student must be funded (active or maintenance).",
+        "bad_state": "That action isn't allowed for this tranche.",
+        "bad_action": "Unknown action.",
+        "bad_sequence": "Invalid tranche number.",
+        "generic": "Could not update the disbursement. You may not have permission."
+      }
+    },
     "scholarship": {
       "nav": "B40 Applications",
       "title": "BrightPath Bursary Applicants",

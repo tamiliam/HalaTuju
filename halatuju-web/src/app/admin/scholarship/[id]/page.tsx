@@ -31,6 +31,10 @@ import {
   actionResolutionItem,
   adminCountersignBursary,
   adminWitnessBursary,
+  scheduleTranche,
+  actOnDisbursement,
+  type AdminDisbursement,
+  type DisbursementAction,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
   type AdminApplicantDocument,
@@ -58,6 +62,7 @@ import {
 } from '@/lib/officerCockpit'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
+import { isFunded, disbursementTone, actionsFor, nextSequence, totalReleased } from '@/lib/disbursement'
 import type { BursaryAgreement } from '@/lib/api'
 
 const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done', 'family_done'] as const
@@ -235,6 +240,42 @@ export default function AdminScholarshipDetailPage() {
       setBursaryMsg(status === 403
         ? t('admin.scholarship.bursary.witnessForbidden')
         : t('admin.scholarship.bursary.actionError'))
+    } finally { setBusy('') }
+  }
+
+  // Post-award S4: disbursement (tranche) ledger.
+  const [disbAmount, setDisbAmount] = useState('')
+  const [disbLabel, setDisbLabel] = useState('')
+  const [disbMsg, setDisbMsg] = useState('')
+
+  // The backend raises a machine code as the Error message (adminMutate throws new Error(body.error)).
+  const DISB_CODES = new Set(['bad_amount', 'not_in_programme', 'bad_state', 'bad_action', 'bad_sequence'])
+  const disbError = (e: unknown) => {
+    const code = (e as Error)?.message
+    return t(`admin.disbursement.error.${code && DISB_CODES.has(code) ? code : 'generic'}`)
+  }
+
+  const doScheduleTranche = async () => {
+    if (!token) return
+    const amount = parseFloat(disbAmount)
+    if (!amount || amount <= 0) { setDisbMsg(t('admin.disbursement.error.bad_amount')); return }
+    setBusy('disbursement'); setDisbMsg('')
+    try {
+      const seq = nextSequence(app?.disbursements ?? [])
+      setApp(await scheduleTranche(id, { amount, sequence: seq, label: disbLabel.trim() }, { token }))
+      setDisbAmount(''); setDisbLabel('')
+    } catch (e) {
+      setDisbMsg(disbError(e))
+    } finally { setBusy('') }
+  }
+
+  const doDisbursementAction = async (disbursementId: number, action: DisbursementAction) => {
+    if (!token) return
+    setBusy('disbursement'); setDisbMsg('')
+    try {
+      setApp(await actOnDisbursement(disbursementId, action, undefined, { token }))
+    } catch (e) {
+      setDisbMsg(disbError(e))
     } finally { setBusy('') }
   }
 
@@ -2144,6 +2185,95 @@ export default function AdminScholarshipDetailPage() {
               )}
             </div>
             <p className="text-xs text-gray-400">{t('admin.scholarship.bursary.note')}</p>
+          </div>
+        )
+      })()}
+
+      {/* ── Post-award S4: disbursement (tranche) ledger ──
+          Money OUT to the student, paid in tranches. Shown once the student is funded
+          (active / maintenance). Marking the FIRST tranche disbursed flips the
+          application active → maintenance. Mock ledger — real toyyibPay is deferred (TD-075). */}
+      {isFunded(app.status) && (() => {
+        const rows = app.disbursements ?? []
+        const released = totalReleased(rows)
+        return (
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold tracking-tight text-gray-900">
+                {t('admin.disbursement.title')}
+              </h2>
+              {released > 0 && (
+                <span className="rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                  {t('admin.disbursement.totalReleased')} RM{released.toLocaleString()}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-400">{t('admin.disbursement.note')}</p>
+
+            {rows.length === 0 ? (
+              <p className="text-sm text-gray-400">{t('admin.disbursement.empty')}</p>
+            ) : (
+              <div className="space-y-2">
+                {rows.map((d: AdminDisbursement) => {
+                  const tone = disbursementTone(d.status)
+                  const toneClass = tone === 'green' ? 'bg-green-100 text-green-700'
+                    : tone === 'amber' ? 'bg-amber-100 text-amber-700'
+                    : tone === 'red' ? 'bg-red-100 text-red-700'
+                    : tone === 'grey' ? 'bg-gray-100 text-gray-600'
+                    : 'bg-blue-100 text-blue-700'
+                  return (
+                    <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          {d.label || `${t('admin.disbursement.tranche')} ${d.sequence}`}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900">RM{Math.round(Number(d.amount)).toLocaleString()}</span>
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${toneClass}`}>
+                          {t(`admin.disbursement.status.${d.status}`)}
+                        </span>
+                      </div>
+                      {canWrite && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {actionsFor(d.status).map((action) => (
+                            <button key={action} type="button"
+                              onClick={() => doDisbursementAction(d.id, action)}
+                              disabled={busy === 'disbursement'}
+                              className="rounded-lg border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50">
+                              {t(`admin.disbursement.action.${action}`)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {canWrite && (
+              <div className="flex flex-wrap items-end gap-2 border-t pt-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-600 mb-1">{t('admin.disbursement.amountLabel')}</label>
+                  <input type="number" min={1} step={50} value={disbAmount}
+                    onChange={(e) => setDisbAmount(e.target.value)}
+                    placeholder="500"
+                    className="w-28 rounded-lg border px-3 py-1.5 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-600 mb-1">{t('admin.disbursement.labelLabel')}</label>
+                  <input type="text" value={disbLabel} maxLength={100}
+                    onChange={(e) => setDisbLabel(e.target.value)}
+                    placeholder={t('admin.disbursement.labelPlaceholder')}
+                    className="w-40 rounded-lg border px-3 py-1.5 text-sm" />
+                </div>
+                <button type="button" onClick={doScheduleTranche}
+                  disabled={busy === 'disbursement'}
+                  className="rounded-lg bg-primary-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
+                  {t('admin.disbursement.schedule')}
+                </button>
+              </div>
+            )}
+            {disbMsg && <p className="text-xs text-amber-600">{disbMsg}</p>}
           </div>
         )
       })()}

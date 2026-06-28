@@ -69,10 +69,6 @@ Funder-commit → awarded; signing sub-states (student→guarantor→witness→F
 existing bursary timestamps; enforce order; Foundation execution → active; cockpit progress card.
 Behind `BURSARY_AGREEMENT_ENABLED`. Complexity: Medium.
 
-### Sprint 4 — Disbursement/tranche ledger + active→maintenance (manual disburse)
-New Disbursement/Tranche model (scheduled→due→released|withheld|returned; migration + RLS); admin
-"mark disbursed" (real toyyibPay deferred TD-075); first release → maintenance. Complexity: Medium-high.
-
 ### Sprint 5 — `maintenance` loop + sub-states
 Result → review → release/withhold next tranche; on_track / probation / on_hold / ready-to-close;
 admin hold/resume + withhold/release; student + sponsor + cockpit surfaces. Complexity: Medium.

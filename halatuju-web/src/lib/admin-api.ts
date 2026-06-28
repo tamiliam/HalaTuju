@@ -544,7 +544,28 @@ export interface AdminScholarshipDetail {
   /** Whether the dark-by-default Conditional Bursary Agreement feature is live; the cockpit
    *  only renders the agreement panel when true. */
   bursary_agreement_enabled?: boolean
+  /** Post-award S4: the money-out tranche ledger (oldest sequence first). */
+  disbursements: AdminDisbursement[]
 }
+
+/** Post-award S4: one disbursement tranche. Admin-facing — funder link by id only,
+ *  never a sponsor identity (anonymity holds). */
+export interface AdminDisbursement {
+  id: number
+  sequence: number
+  amount: string
+  status: 'scheduled' | 'due' | 'released' | 'withheld' | 'returned'
+  label: string
+  scheduled_for: string | null
+  released_at: string | null
+  actioned_by: string
+  reference: string
+  note: string
+  sponsorship_id: number | null
+  created_at: string
+}
+
+export type DisbursementAction = 'release' | 'withhold' | 'return' | 'mark_due'
 
 /** One proposed interview time. `start` is ISO (UTC); render in MYT on the client. */
 export interface InterviewSlot {
@@ -1067,6 +1088,34 @@ export async function setAwardAmount(
     `/api/v1/admin/scholarship/applications/${id}/award-amount/`,
     'POST',
     { amount },
+    options,
+  )
+}
+
+// ── Post-award S4: disbursement/tranche ledger ──
+export async function scheduleTranche(
+  id: number,
+  payload: { amount: number | string; sequence?: number; label?: string; scheduled_for?: string | null },
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/disbursements/`,
+    'POST',
+    payload,
+    options,
+  )
+}
+
+export async function actOnDisbursement(
+  disbursementId: number,
+  action: DisbursementAction,
+  payload?: { note?: string },
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/disbursements/${disbursementId}/${action}/`,
+    'POST',
+    payload ?? {},
     options,
   )
 }

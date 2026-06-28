@@ -3491,3 +3491,23 @@ The cool-off (#14) applies only on the flag-off path; the flag-on path's binding
 counter-sign instead.
 **Revisit if:** the cool-off should also gate the flag-on (signing) path, or the witness becomes a required
 party (a lawyer call at bursary go-live).
+
+## Disbursement ledger: tranche linked to BOTH application and sponsorship — Post-award S4, 2026-06-28
+**Decision:** The `Disbursement` (tranche) row has a required FK to the application (CASCADE, the
+lifecycle owner) AND a nullable FK to the sponsorship (SET_NULL, the funder). The first `released`
+tranche flips the application `active → maintenance`, implemented inside `release_tranche` gated on
+`if status == 'active'` (idempotent — no separate first-release bookkeeping).
+**Alternatives considered:** (a) link the tranche only to the sponsorship — but a future
+Foundation-direct award has no Sponsorship row, and a Sponsorship delete would orphan the ledger;
+(b) link only to the application — loses the funder attribution the back office needs; (c) a separate
+`first_disbursed_at` marker on the application to drive the flip — redundant state that can desync from
+the ledger.
+**Rationale:** The application owns the lifecycle; the sponsorship is metadata about who paid. Nullable
+sponsorship keeps Foundation-direct funding and history-survival working. Deriving the flip from the
+ledger (first release) keeps a single source of truth.
+**Trade-offs:** A released tranche whose sponsorship is later deleted shows `sponsorship_id: null` —
+acceptable (history is preserved; attribution is best-effort). The maintenance sub-state LOOP
+(result→review→release/withhold next tranche) is deferred to S5 — S4 ships only the ledger + the one
+`active → maintenance` transition.
+**Revisit if:** real disbursement (toyyibPay, TD-075) lands and tranches need a payment-gateway state
+machine of their own, or partial/multi-sponsor funding makes the 1:1 sponsorship link insufficient.
