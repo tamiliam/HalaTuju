@@ -236,3 +236,74 @@ def student_offer_check(doc) -> dict:
         'declared_programme': decl_prog,
         'declared_institution': decl_inst,
     }
+
+
+# ── Reporting-date normalisation (reviewer-query S3) ─────────────────────────
+# The offer letter's "report/registration" date is OCR'd as free text in many forms
+# ("8 JUN 2026", "08 Jun 2026 (Isnin)", "8 HINGGA 9 JUN 2026", "20 JULAI 2026",
+# "10 OGOS 2026", "28 JULAI 2024 2:30 PETANG"). This turns it into a real, sortable
+# date so it can be stored on the application (a DateField) instead of re-parsed on read.
+import datetime as _dt
+
+_RD_MONTHS = {
+    'januari': 1, 'jan': 1, 'february': 2, 'februari': 2, 'feb': 2,
+    'march': 3, 'mac': 3, 'mar': 3, 'april': 4, 'apr': 4, 'mei': 5, 'may': 5,
+    'june': 6, 'jun': 6, 'july': 7, 'julai': 7, 'jul': 7,
+    'august': 8, 'ogos': 8, 'ogo': 8, 'aug': 8,
+    'september': 9, 'septembar': 9, 'sept': 9, 'sep': 9,
+    'october': 10, 'oktober': 10, 'okt': 10, 'oct': 10,
+    'november': 11, 'novembar': 11, 'nov': 11,
+    'december': 12, 'disember': 12, 'dis': 12, 'dec': 12,
+}
+# Longest names first so 'julai' wins over 'jul', 'jun' doesn't pre-empt 'june', etc.
+_RD_MONTH_RE = re.compile('|'.join(sorted(_RD_MONTHS, key=len, reverse=True)))
+
+
+def parse_reporting_date(raw):
+    """Best-effort normalise an offer-letter reporting date to a ``datetime.date``, or None
+    when no day/month/year can be read. Tolerant of Malay/English month names, a leading
+    day range ('8 HINGGA 9 JUN 2026' → the 8th), and trailing time/day-of-week noise."""
+    s = (raw or '').strip().lower()
+    if not s:
+        return None
+    s = re.sub(r'hingga\s*\d{1,2}', ' ', s)        # date range → keep the first day
+    ym = re.search(r'\b(20\d{2})\b', s)
+    mm = _RD_MONTH_RE.search(s)
+    if not ym or not mm:
+        return None
+    year, month = int(ym.group(1)), _RD_MONTHS[mm.group()]
+    days = re.findall(r'\d{1,2}', s[:mm.start()])  # the day sits before the month token
+    if not days:
+        return None
+    try:
+        return _dt.date(year, month, int(days[-1]))
+    except ValueError:
+        return None
+
+
+def _latest_offer(application):
+    from .models import ApplicantDocument
+    return (ApplicantDocument.objects.filter(application=application, doc_type='offer_letter')
+            .order_by('-uploaded_at').first())
+
+
+def offer_reporting_date(application):
+    """The normalised reporting date from the application's latest offer letter, or None."""
+    offer = _latest_offer(application)
+    if offer is None:
+        return None
+    return parse_reporting_date(student_offer_check(offer).get('reporting_date'))
+
+
+def offer_reporting_date_unknown(application):
+    """True when an EXTRACTED offer letter is on file but it carries NO parseable reporting
+    date — the reviewer's recurring "do you know when/where to report?" query. False when
+    there's no offer, the offer wasn't read/extracted yet (a different gap), or a date is present."""
+    offer = _latest_offer(application)
+    if offer is None:
+        return False
+    vf = offer.vision_fields if isinstance(getattr(offer, 'vision_fields', None), dict) else {}
+    sv = vf.get('student_verdict')
+    if not sv or sv == 'review_manually':          # not extracted yet → not this gap
+        return False
+    return parse_reporting_date(student_offer_check(offer).get('reporting_date')) is None

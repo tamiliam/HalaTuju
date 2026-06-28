@@ -46,6 +46,9 @@ CLARIFY_SPECS = {
     # S2 — a sibling in tertiary → which institution + how funded / on aid (household burden +
     # the not-double-funded picture). One-line, non-sensitive → a fair student clarify.
     'sibling_tertiary_funding': {'fact': 'income'},
+    # S3 — the offer letter carries no readable reporting/registration date → ask when (and
+    # where) the student must report. One-line, non-sensitive, pathway-fact.
+    'reporting_date_unknown': {'fact': 'pathway'},
     # 'motivation_missing' is intentionally NOT here — motivation is reviewer texture
     # (§7), not a one-line factual answer.
 }
@@ -69,6 +72,7 @@ _CLARIFY_ORDER = [
     # Household-income completeness first — the most material to a fundable B40 profile.
     'father_status_unknown', 'mother_status_unknown',
     'course_unspecified', 'sibling_level_unknown', 'sibling_tertiary_funding',
+    'reporting_date_unknown',
     'device_status_unknown', 'transport_cost_unknown',
     'utility_holder_unknown', 'utility_address_mismatch',
 ]
@@ -108,6 +112,10 @@ def sync_check2_queries(application):
     # S2 — a sibling in tertiary → the funding clarify (capped, with the other clarifies).
     if sibling_tertiary_funding_unknown(application):
         gaps.add('sibling_tertiary_funding')
+    # S3 — a readable offer with no parseable reporting date → ask when/where to report.
+    from .pathway_engine import offer_reporting_date_unknown
+    if offer_reporting_date_unknown(application):
+        gaps.add('reporting_date_unknown')
     # Full-household-income completeness (S1). A blank-slot parent → a status CLARIFY (folded
     # into the capped gap set below); an earning parent with no payslip → a PROOF doc request
     # (reconciled separately, uncapped). Collect the wanted proof/doc codes here.

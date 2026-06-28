@@ -48,9 +48,12 @@ Tightens B40 correctness (full household income). **Complexity: Medium-high. Hig
 **(e) the high-utility probe MOVED to S4** — the codebase treats high utility as an officer-only
 signal, never a student query (`income_engine.utility_reasonable`); aligns with decisions #2/#3.
 
-### Sprint 3 — Offer reporting-date: capture + persist
-Auto-ask when the offer carries no reporting date; persist a normalised `reporting_date` column on the
-application (sortable, not re-parsed each read); SPM subject-count data-quality nudge. **Complexity: Medium.**
+### Sprint 3 — Offer reporting-date: capture + persist ✅ SHIPPED 2026-06-29
+Normalised `reporting_date` DateField (migration `0080`) populated by `autofill_pathway_from_offer` +
+`backfill_reporting_dates` cmd; `reporting_date_unknown` clarify when an extracted offer has no date.
+Retro `docs/retrospective-2026-06-29-reviewer-query-s3-reporting-date.md`.
+**SPM subject-count nudge DROPPED** — not cleanly deterministic (reviewer eyeballs an odd grade count);
+needs a clearer signal before automating.
 
 ### Sprint 4 — Interview (Check 3): structured guide + AI gap-spotter seeding
 A reviewer guide mapped to the sponsor's three buckets (subjects-vs-results, help-seeking/tuition,

@@ -952,7 +952,7 @@ def autofill_pathway_from_offer(application):
     NOT a genuine clash with an already-specific declared programme (that stays the
     ``pathway_confirm`` query's job). No-op (returns False) otherwise. Idempotent."""
     from .models import ApplicantDocument
-    from .pathway_engine import student_offer_check
+    from .pathway_engine import student_offer_check, parse_reporting_date
     from . import offer_pathway as op
 
     offer = (ApplicantDocument.objects.filter(application=application, doc_type='offer_letter')
@@ -1011,6 +1011,12 @@ def autofill_pathway_from_offer(application):
     if application.pathway_certainty != 'sure':
         application.pathway_certainty = 'sure'
         fields.append('pathway_certainty')
+
+    # Reviewer-query S3: persist the normalised, sortable reporting date from the offer.
+    rd = parse_reporting_date(chk.get('reporting_date'))
+    if rd is not None and application.reporting_date != rd:
+        application.reporting_date = rd
+        fields.append('reporting_date')
 
     if not fields:
         return False

@@ -221,6 +221,11 @@ class ScholarshipApplication(models.Model):
     chosen_programme = models.JSONField(
         default=dict, blank=True,
         help_text="Single chosen programme when sure: {course_id, course_name, institution, source}.")
+    # Reviewer-query S3: the normalised (sortable) date the student must report to their
+    # institution, parsed from the offer letter's free-text reporting date by
+    # pathway_engine.parse_reporting_date + stored by autofill_pathway_from_offer. Null when
+    # the offer carries no readable date (then a reporting_date_unknown clarify is raised).
+    reporting_date = models.DateField(null=True, blank=True)
     uncertainty_reasons = models.JSONField(
         default=list, blank=True,
         help_text="When uncertain: reason keys ['waiting','guidance','financial','family','appeal','other'].")
