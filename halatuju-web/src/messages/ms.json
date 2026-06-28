@@ -3236,6 +3236,7 @@
           "name": "Nama",
           "ic_no": "No. IC",
           "relationship": "Hubungan",
+          "wrong_card": "Kad salah",
           "subjects": "Subjek",
           "results": "Keputusan",
           "pathway": "Laluan",

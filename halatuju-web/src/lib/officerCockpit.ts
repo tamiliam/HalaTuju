@@ -268,7 +268,11 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
       { key: 'name', status: read },
       { key: 'ic_no', status: read },
     ]
-    if (_PATRONYMIC_MEMBER.has(c.member)) {
+    if (c.wrong_card) {
+      // The IC-number chain verified the earner from the BC + income proof, but the card in THIS
+      // slot is a different family member's — a soft caveat (amber), never a block.
+      facts.push({ key: 'wrong_card', status: 'partial' })
+    } else if (_PATRONYMIC_MEMBER.has(c.member)) {
       facts.push({ key: 'relationship', status: factStatus(c.name_status) })
     }
     return facts
@@ -314,6 +318,9 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     if (!c) return []
     const has = (k: string) => (c.points || []).some((p) => p.key === k && (p.value || '').trim())
     const facts: DocumentFactLabel[] = [{ key: 'name', status: factStatus(c.name_status) }]
+    // IC No: an EPF statement always carries the member's number; a salary slip only sometimes
+    // (hide it there when absent). Mirrors the STR chip — the number is the strong earner key.
+    if ((c.nric || '').trim()) facts.push({ key: 'ic_no', status: factStatus(c.nric_status) })
     if (dt === 'salary_slip') {
       if (has('amount') || has('gross_income') || has('net_income')) facts.push({ key: 'amount', status: 'verified' })
       if (has('period')) facts.push({ key: 'period', status: 'verified' })

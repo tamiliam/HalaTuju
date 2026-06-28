@@ -263,6 +263,70 @@ def _cluster_proof_identity(application, member):
     return '', '', ''
 
 
+# ── IC-NUMBER chain: verify an earner from the BC's printed parent IC number ──────
+# The Birth Certificate carries the PARENTS' IC NUMBERS, and every income proof (STR recipient /
+# salary slip / EPF) carries the recipient's NRIC. The NUMBER is the strong cross-document join
+# key — it doesn't transliterate the way a romanised name does — so when the BC's parent number
+# matches the proof's number, the earner is confirmed as that parent EVEN IF the IC physically
+# uploaded in their slot is the wrong card or absent (#9: father's IC in the mother slot, but the
+# BC-mother / STR / EPF all carry the mother's 750721-04-5130). The chain only ever turns a would-be
+# red into a verified green; it never asserts a mismatch.
+
+def _bc_doc(application):
+    return (application.documents.filter(doc_type='birth_certificate')
+            .order_by('-uploaded_at').first())
+
+
+def _bc_anchorable(bc) -> bool:
+    """A birth certificate may anchor the IC-number chain UNLESS Layer-1 genuineness has positively
+    flagged it ('suspect' / 'not_birth_certificate') — a doc that failed Layer 1 can't vouch for a
+    number. A BC with no genuineness signal yet is *indeterminate* and may still anchor: the chain
+    only ever DEMOTES a red to a verified-green (never asserts a mismatch), so leaning on the strong
+    number corroboration is safe and the reviewer stays the authority."""
+    from .genuineness.bands import canonical_status
+    vf = getattr(bc, 'vision_fields', None)
+    raw = (vf.get('authenticity') or {}).get('status', '') if isinstance(vf, dict) else ''
+    return canonical_status(raw, 'birth_certificate') in ('genuine', '')
+
+
+def _bc_parent_identity(application, member):
+    """The (name, nric) the birth certificate carries for this PARENT — 'mother' → bc_mother_*,
+    'father' → bc_father_* — but only when the BC genuinely ties to the student (its child = the
+    student) and is anchorable (Layer-1). ('', '') otherwise. This is the EARNER IDENTITY the income
+    proof is verified against when the physically-uploaded parent_ic is the wrong card or absent."""
+    if member not in ('mother', 'father'):
+        return '', ''
+    bc = _bc_doc(application)
+    if bc is None or not _bc_anchorable(bc):
+        return '', ''
+    f = _doc_fields(bc)
+    bc_child = (f.get('bc_child_name', '') or '').strip()
+    student = getattr(getattr(application, 'profile', None), 'name', '') or ''
+    if not bc_child or not student or name_match(bc_child, student) == 'mismatch':
+        return '', ''
+    pre = 'bc_mother' if member == 'mother' else 'bc_father'
+    return (f.get(pre + '_name', '') or '').strip(), (f.get(pre + '_nric', '') or '').strip()
+
+
+def chain_verified_earner(application, member) -> bool:
+    """True when the IC-NUMBER chain confirms this earner independent of the physical parent_ic card:
+    a Layer-1 birth certificate (child = student) carries this parent's IC NUMBER, and that number
+    matches the income proof's recipient NRIC (STR recipient / salary slip / EPF). A one-digit number
+    drift (OCR over the JPN guilloche) still chains WHEN the parent NAME corroborates. Mother/father
+    only — a normal father chains via the patronymic, which needs no number."""
+    bc_name, bc_nric = _bc_parent_identity(application, member)
+    if not bc_nric:
+        return False
+    _, p_name, p_nric = _cluster_proof_identity(application, member)
+    if not p_nric:
+        return False
+    from .vision import nric_match
+    if nric_match(bc_nric, p_nric):
+        return True
+    # One-digit drift is acceptable ONLY when the parent NAME corroborates the near-miss number.
+    return nric_close(bc_nric, p_nric) and _name_bucket(bc_name, p_name) == 'match'
+
+
 def student_income_ic_check(doc):
     """For an income earner's IC (``parent_ic``): the OCR'd IC No / Name / Address, the
     RELATIONSHIP verdict (``name_status`` — does this earner link to the student's family,
@@ -299,6 +363,17 @@ def student_income_ic_check(doc):
     proof_name_status = _name_bucket(name, p_name)
     proof_nric_status = _nric_bucket(nric, p_nric)
 
+    # IC-NUMBER chain: the earner can also be confirmed by the BC's printed parent IC number
+    # matching the income proof's number (#9) — which verifies e.g. the mother even when the card
+    # uploaded in her slot is a DIFFERENT family member's. When the chain holds the relationship is
+    # confirmed; a card whose own name/number then disagree with the proof is a soft WRONG-CARD note
+    # (the earner is verified another way), never a red block (doc_match_verdict skips it).
+    chain_verified = bool(member) and chain_verified_earner(app, member)
+    wrong_card = False
+    if chain_verified:
+        wrong_card = 'mismatch' in (name_status, proof_name_status, proof_nric_status)
+        name_status = 'match'
+
     return {
         'nric': getattr(doc, 'vision_nric', '') or '',
         'name': getattr(doc, 'vision_name', '') or '',
@@ -309,6 +384,8 @@ def student_income_ic_check(doc):
         'proof_kind': proof_kind,
         'proof_name_status': proof_name_status,
         'proof_nric_status': proof_nric_status,
+        'chain_verified': chain_verified,
+        'wrong_card': wrong_card,
     }
 
 
@@ -396,6 +473,12 @@ def student_income_proof_check(doc):
 
     name_status = _name_bucket(name, ic_name)
     nric_status = _nric_bucket(nric, ic_nric)
+    # IC-NUMBER chain (#9): the earner is confirmed by the BC↔proof IC-number match, so this
+    # slip/EPF belongs to the verified earner — it is NOT red against a wrong card in the slot
+    # (father's IC in the mother slot, but the EPF is the mother's). The number already settled
+    # identity, so trust it over an exact name/number re-compare (which a one-digit OCR drift fails).
+    if chain_verified_earner(doc.application, member):
+        name_status = nric_status = 'match'
 
     return {
         'name': name, 'nric': nric, 'points': points,
@@ -480,6 +563,11 @@ def student_str_check(doc):
 
     name_status = _name_bucket(name, ic_name)
     nric_status = _nric_bucket(nric, ic_nric)
+    # IC-NUMBER chain (#9): the STR recipient is confirmed by the BC↔STR IC-number match → the
+    # benefit is the verified earner's, regardless of a wrong card uploaded in the slot. (Currency
+    # below is a separate test — a confirmed recipient can still hold a stale/rejected STR.)
+    if member and chain_verified_earner(app, member):
+        name_status = nric_status = 'match'
 
     cohort_year = getattr(getattr(app, 'cohort', None), 'year', None)
     return {
@@ -712,6 +800,11 @@ def student_bc_check(doc):
     mother_status = _combine_relationship(_name_bucket(mother_name, mic_name),
                                           _nric_bucket(mother_nric, mic_nric),
                                           nric_close(mother_nric, mic_nric))
+    # IC-NUMBER chain (#9): the mother's IC NUMBER appears on the income proof → she is the
+    # confirmed earner, regardless of a wrong card uploaded in her slot. The BC mother row is
+    # exactly what the chain is built on, so it is verified (never red on the wrong card).
+    if mother_status != 'match' and chain_verified_earner(app, 'mother'):
+        mother_status = 'match'
     father_name = (f.get('bc_father_name', '') or '').strip()
     father_status = _name_bucket(father_name, father_name_from_ic(student))
     return {

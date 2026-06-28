@@ -266,7 +266,7 @@ def _verdict_income(application):
 
     The SALARY route delegates to ``_verdict_income_salary`` (multi-earner)."""
     from .income_engine import (father_link, mother_relationship,
-                                guardian_relationship)
+                                guardian_relationship, chain_verified_earner)
     evidence, gap, review = _utility_context(application), [], []
     present = _present_doc_types(application)
     student_name = getattr(application.profile, 'name', '') or ''
@@ -317,6 +317,10 @@ def _verdict_income(application):
         else:
             g = _latest_doc(application, 'guardianship_letter')
             rel = guardian_relationship(getattr(g, 'vision_name', '') or '', earner_ic_name)
+    # IC-number chain: the BC's parent number matching the income proof's number confirms a
+    # mother/father earner even when the IC uploaded in their slot is the wrong card (#9).
+    if rel != 'match' and earner in ('mother', 'father') and chain_verified_earner(application, earner):
+        rel = 'match'
     if rel == 'match':
         evidence.append(_item('relationship_confirmed'))
     elif rel == 'mismatch':
@@ -374,7 +378,7 @@ def _verdict_income_salary(application, student_name, present):
         unprovable relationship (e.g. a Chinese-style name with no patronymic) →
         'recommend' + `income_unverified_needs_interview`, for the officer to place."""
     from .income_engine import (effective_working_members, member_relationship_status,
-                                relationship_doc_for)
+                                relationship_doc_for, chain_verified_earner)
     members = effective_working_members(application)
     if not members:
         # No working member declared → no income information yet → red (see STR route).
@@ -423,6 +427,10 @@ def _verdict_income_salary(application, student_name, present):
         # the #55 BC fallback for a mononym student).
         rel = member_relationship_status(m, student_name, ic_name, bc_child, bc_mother,
                                          letter_name, bc_father)
+        # IC-number chain: BC parent number == income-proof number confirms a mother/father earner
+        # even when the IC uploaded in their slot is the wrong card or absent (#9).
+        if rel != 'match' and m in ('mother', 'father') and chain_verified_earner(application, m):
+            rel = 'match'
         if rel == 'match':
             evidence.append(_item('relationship_confirmed', member=m))
         elif rel == 'mismatch':

@@ -260,7 +260,9 @@ def doc_match_verdict(doc):
             return 'pending'          # not read yet — hold the task
     elif dt == 'parent_ic':
         chk = income_engine.student_income_ic_check(doc) or {}
-        if red(chk, 'name_status', 'proof_name_status', 'proof_nric_status'):
+        # IC-number chain verified the earner from the BC↔proof number match (#9) — a card that's
+        # the wrong family member's is then a soft note, not a red block.
+        if not chk.get('chain_verified') and red(chk, 'name_status', 'proof_name_status', 'proof_nric_status'):
             return 'mismatch'
         ran = bool(getattr(doc, 'vision_run_at', None))
         err = getattr(doc, 'vision_error', '') or ''
