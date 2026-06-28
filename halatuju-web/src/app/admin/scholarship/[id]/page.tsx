@@ -494,10 +494,9 @@ export default function AdminScholarshipDetailPage() {
   // Decision = pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. The
   // chosen outcome lives in officerVerdict.overall ('' | 'accept' | 'decline').
   const selectApprove = () => setOfficerVerdict((v) => ({ ...v, overall: 'accept' }))
-  const selectDecline = () => {
-    setOfficerVerdict((v) => ({ ...v, overall: 'decline' }))
-    if (recAmount != null || app?.award_amount != null) doSetAwardAmount(null)  // Decline clears the amount
-  }
+  // The amount is now managed backend-side by record-verdict (accept → auto-apply the
+  // pathway-standard amount; decline → clear), so the UI no longer pokes the award endpoint.
+  const selectDecline = () => setOfficerVerdict((v) => ({ ...v, overall: 'decline' }))
   const doSave = async () => {
     const outcome = officerVerdict.overall
     if (outcome === 'accept') {
@@ -655,7 +654,9 @@ export default function AdminScholarshipDetailPage() {
   // (Approve's actual accept is still backend-gated on a complete profile + identity.)
   const decisionReady = isDecisionReady(app.interview_session?.status, officerVerdict, verdictReason)
   // Approve also requires a recommended assistance amount (the slider, or an already-saved one).
-  const hasAssistance = recAmount != null || app.award_amount != null
+  // Assistance is now pathway-standard and always available (proposed_award_amount), so an
+  // approve is never blocked on "set an amount" — record-verdict persists it on save.
+  const hasAssistance = recAmount != null || app.award_amount != null || app.proposed_award_amount != null
   const approveReady = isApproveReady(decisionReady, hasAssistance)
   // Save (the commit) is enabled once a reversible outcome is chosen AND its preconditions hold:
   // Approve → all of approveReady (incl. amount); Decline → decisionReady (no amount needed).
@@ -1985,27 +1986,28 @@ export default function AdminScholarshipDetailPage() {
           )
         })()}
 
-        {/* #4: recommended assistance — 4-stop slider (RM1,500 / 2,000 / 2,500 / 3,000) */}
+        {/* #4: assistance — standardised by pathway (RM3,000 STPM / RM2,000 otherwise),
+            auto-applied on approve. The slider is READ-ONLY for reviewers; only a super may
+            adjust it (5-stop: RM1,000 / 1,500 / 2,000 / 2,500 / 3,000). */}
         {canWrite && (() => {
-          const cur = recAmount ?? (app.award_amount != null ? Math.round(Number(app.award_amount)) : null)
+          // Show the persisted amount if set, else the pathway-standard proposed value.
+          const cur = recAmount
+            ?? (app.award_amount != null ? Math.round(Number(app.award_amount))
+              : app.proposed_award_amount != null ? Math.round(Number(app.proposed_award_amount)) : 2000)
           return (
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 {t('admin.scholarship.recordVerdict.assistanceLabel')}
-                {cur != null
-                  ? <span className="ml-1 font-semibold text-gray-800">RM{cur.toLocaleString()}</span>
-                  : <span className="ml-1 text-gray-400">{t('admin.scholarship.recordVerdict.assistanceUnset')}</span>}
+                <span className="ml-1 font-semibold text-gray-800">RM{cur.toLocaleString()}</span>
               </label>
-              {/* No default value: the slider reads "not set" (dimmed) until the reviewer chooses;
-                  Decline clears it back to this state. */}
-              <input type="range" min={1500} max={3000} step={500}
-                value={cur ?? 1500} disabled={!!busy}
+              <input type="range" min={1000} max={3000} step={500}
+                value={cur} disabled={!isSuper || !!busy}
                 onChange={(e) => doSetAwardAmount(Number(e.target.value))}
-                className={`w-full accent-primary-500 ${cur == null ? 'opacity-40' : ''}`} />
+                className={`w-full accent-primary-500 ${!isSuper ? 'opacity-60 cursor-not-allowed' : ''}`} />
               <div className="flex justify-between text-[11px] text-gray-400">
-                <span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
+                <span>RM1,000</span><span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
               </div>
-              {cur == null && <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.scholarship.recordVerdict.assistanceNone')}</p>}
+              {!isSuper && <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.scholarship.recordVerdict.assistanceFixed')}</p>}
             </div>
           )
         })()}

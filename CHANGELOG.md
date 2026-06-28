@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Standardised the assistance amount (pathway-fixed, super-overridable).** The award is no
+  longer a free reviewer choice on the slider — it's fixed by the pre-U pathway (STPM/Form 6 →
+  RM3,000; Matrikulasi / UA Diploma / Poly Diploma / Asasi / PISMP / other → RM2,000) and
+  auto-applied when a reviewer records an **Approve** verdict (cleared on Decline). New
+  `apps.scholarship.award` is the single source of truth (`proposed_award_amount` +
+  `ALLOWED_AMOUNTS`). The set-award endpoint is now **super-only** and accepts only the allowed
+  slider stops; the cockpit slider (range RM1,000–3,000, RM500 steps) is **read-only for reviewers,
+  draggable only by a super**, always shows the amount, and Approve is no longer gated on manually
+  setting one. `proposed_award_amount` is exposed on the admin serializer. No migration; the 24
+  recommended students are re-priced to the rule on deploy (RM62,000 → RM54,000). +10 pytest.
+
 ### Fixed
 - **Retired the recurring `ScholarshipCohort.name` migration drift (TD-147).** Added the standalone
   state-only migration `0079_alter_scholarshipcohort_name` (help_text-only `AlterField`; `sqlmigrate`

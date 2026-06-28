@@ -532,6 +532,9 @@ export interface AdminScholarshipDetail {
   resolution_items: AdminResolutionItem[]
   /** Recommended assistance amount (RM, Decimal serialised as string) or null. */
   award_amount: string | null
+  /** Standardised pathway-derived assistance (RM3,000 STPM / RM2,000 otherwise). Always
+   *  present; auto-applied on approve. award_amount is the persisted (super-overridable) value. */
+  proposed_award_amount: string | null
   /** Interview scheduling: booking state + proposed slots (dark behind the flag). */
   interview_schedule: InterviewSchedule
   /** Decision-reopen state: when set, the decision panel is editable + the reviewer
