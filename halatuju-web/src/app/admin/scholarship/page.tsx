@@ -26,6 +26,7 @@ const statusBadge = (s: string) =>
       : s === 'profile_complete' ? 'bg-emerald-100 text-emerald-700'
         : s === 'interviewing' ? 'bg-violet-100 text-violet-700'
           : s === 'interviewed' ? 'bg-indigo-100 text-indigo-700'
+            : s === 'recommended' ? 'bg-green-100 text-green-700'
             : s === 'accepted' ? 'bg-green-100 text-green-700'
               : s === 'rejected' ? 'bg-red-100 text-red-600'
                 : 'bg-gray-100 text-gray-600'
@@ -45,13 +46,14 @@ function orderReviewersFor(reviewers: Reviewer[], lang: string): Array<{ rv: Rev
 }
 
 const STATUS_OPTIONS = [
-  'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'accepted', 'rejected',
+  'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'recommended', 'accepted', 'rejected',
 ]
 
 // Human, Sentence-case status labels (the raw keys like 'profile_complete' aren't for display).
 const STATUS_LABELS: Record<string, string> = {
   submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Completed',
-  interviewing: 'Interviewing', interviewed: 'Interviewed', accepted: 'Accepted',
+  interviewing: 'Interviewing', interviewed: 'Interviewed',
+  recommended: 'Recommended', accepted: 'Accepted',
   sponsored: 'Sponsored', rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
   reopened: 'Reopened',
 }

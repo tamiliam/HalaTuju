@@ -8,8 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **A student never perceives the `accepted` status — it is an internal, reversible decision.**
-  `accepted` is the reviewer's verification decision, which a super-admin can still reverse (reopen →
+- **Post-award lifecycle — Sprint 1: renamed application status `accepted` → `recommended`.** First slice
+  of the post-award roadmap (`docs/scholarship/post-award-lifecycle-plan.md`). `recommended` better
+  reflects the state: the reviewer has *recommended* the candidate, but no award is guaranteed until a
+  funder commits (`awarded`, a later sprint). Behaviour-neutral. Expand-contract: `recommended` is now
+  canonical (verify-&-accept, reopen-restore, all status sets/labels/colours write it) while legacy
+  `accepted` is still **tolerated** for one release (mask, choices, gates) so the deploy is
+  order-independent for the 23 live rows; Sprint 2 drops the `accepted` alias. Migration
+  `scholarship/0073` is **state-only** (choices are app-level — no DDL); the data move
+  (`UPDATE status='accepted'→'recommended'`, ~23 rows) + recording the migration row are deploy steps.
+  Folds in the student-masking change below (retargeted to `recommended`). Tests updated to canonical;
+  full scholarship suite green.
+- **A student never perceives the `recommended` status — it is an internal, reversible decision.**
+  `recommended` (formerly `accepted`) is the reviewer's verification decision, which a super-admin can still reverse (reopen →
   `interviewed` → possibly declined). To avoid showing — and then embarrassingly retracting — a
   "you're accepted" message, `ApplicationReadSerializer.get_status` now masks `accepted` → `interviewed`
   for the student (the same chokepoint that already masks an email-embargoed rejection; the admin

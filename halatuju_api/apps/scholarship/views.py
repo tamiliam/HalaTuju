@@ -1216,7 +1216,7 @@ class CronRunView(APIView):
 
 def _award_application(user_id):
     """The caller's application that currently has an OFFERED award (independent of
-    the editable-funnel scoping — an awardable student may be at 'accepted')."""
+    the editable-funnel scoping — an awardable student may be at 'recommended')."""
     return (
         ScholarshipApplication.objects
         .filter(profile_id=user_id, sponsorships__status='offered')

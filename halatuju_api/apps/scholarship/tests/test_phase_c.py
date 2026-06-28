@@ -173,7 +173,7 @@ class TestAcceptGate(PhaseCBase):
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/verify-accept/')
         self.assertEqual(r.status_code, 200)
         app.refresh_from_db()
-        self.assertEqual(app.status, 'accepted')
+        self.assertEqual(app.status, 'recommended')
 
     def test_viewer_cannot_accept(self):
         app = self._complete(self._assigned_app(status='profile_complete'))

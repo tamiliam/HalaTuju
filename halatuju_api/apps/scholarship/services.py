@@ -781,16 +781,16 @@ def admin_reject(application, admin, category):
     rejection as 'interviewed'), and ``cancel_pending_decline`` can undo it before the student is
     ever told. With the cool-off disabled (0) the email goes immediately.
       - 'interview'   (reviewed but not selected) — from a post-shortlist, not-yet-accepted status.
-      - 'contractual' (failed post-award steps) — from 'accepted'/'sponsored'.
+      - 'contractual' (failed post-award steps) — from 'recommended'/'sponsored'.
     Raises ValueError on a bad category/status combination. Returns True."""
     if category == 'interview':
         if application.status not in INTERVIEW_REJECT_FROM:
             raise ValueError('bad_status')
     elif category == 'contractual':
         # 'contractual' is a genuinely post-award decline. The UI offers it only from
-        # 'sponsored' (funded); 'accepted' stays permitted for back-compat, but the normal
-        # way to decline an accepted case is now reopen → 'interviewed' → 'interview'.
-        if application.status not in ('accepted', 'sponsored'):
+        # 'sponsored' (funded); 'recommended' stays permitted for back-compat, but the normal
+        # way to decline a recommended case is now reopen → 'interviewed' → 'interview'.
+        if application.status not in ('recommended', 'accepted', 'sponsored'):
             raise ValueError('bad_status')
     else:
         raise ValueError('bad_category')
@@ -1037,7 +1037,7 @@ def revert_if_profile_incomplete(application):
 
 
 # S4: querying (officer queries + doc requests) closes once the interview is concluded.
-QUERYING_LOCKED_STATUSES = ('interviewed', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired')
+QUERYING_LOCKED_STATUSES = ('interviewed', 'recommended', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired')
 
 
 def querying_locked(application):

@@ -74,7 +74,7 @@ class TestStorySaveMirrorsToProfile(TestCase):
         self.assertEqual(prof.other_family_members, [{'role': 'brother', 'occupation': 'factory'}])
 
     def test_decided_app_story_save_does_not_touch_profile(self):
-        app, prof = self._app('accepted')          # frozen
+        app, prof = self._app('recommended')          # frozen
         save_application_details(app, dict(_ROSTER))
         prof.refresh_from_db()
         self.assertEqual(prof.father_name, '')     # profile left untouched
@@ -188,7 +188,7 @@ class TestPathwayProfileLink(TestCase):
 
     def test_profile_pathway_edit_does_not_touch_decided_app(self):
         app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='accepted',
+            cohort=self.cohort, profile=self.profile, status='recommended',
             chosen_pathway='stpm', pre_u_track='sains_sosial')
         r = self.client.put('/api/v1/profile/', _PATHWAY, format='json')
         self.assertEqual(r.status_code, 200, r.content)

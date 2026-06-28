@@ -36,7 +36,7 @@ def _fundable_app(cohort, *, suffix='1', award=Decimal('3000'), state='Kedah', f
         preferred_state=state, exam_type='spm', grades={'bm': 'A'},
         contact_email='student@secret.example', contact_phone='012-7776666')
     app = ScholarshipApplication.objects.create(
-        cohort=cohort, profile=profile, status='accepted', award_amount=award,
+        cohort=cohort, profile=profile, status='recommended', award_amount=award,
         field_of_study=field, notify_email='student@secret.example')
     SponsorProfile.objects.create(application=app, anon_markdown='Determined.', anon_published=True)
     Consent.objects.create(application=app, consent_type='share_with_sponsors', version='e', is_active=True)

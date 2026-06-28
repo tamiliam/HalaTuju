@@ -94,13 +94,13 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(app.status, 'interviewing')
 
     def test_propose_never_pulls_a_decided_case_back(self):
-        # Re-proposing (e.g. a reschedule) on an accepted case must NOT revert it to interviewing.
+        # Re-proposing (e.g. a reschedule) on a recommended case must NOT revert it to interviewing.
         app = self._pc_app(uid='stud-acc')
-        app.status = 'accepted'
+        app.status = 'recommended'
         app.save(update_fields=['status'])
         scheduling.propose_slots(app, reviewer=self.reviewer, starts=[self._future(days=3)])
         app.refresh_from_db()
-        self.assertEqual(app.status, 'accepted')
+        self.assertEqual(app.status, 'recommended')
 
     # ── WhatsApp "times proposed — please pick one" nudge (roadmap S2 / TD-138) ──
     _SANDBOX = 'whatsapp:+14155238886'

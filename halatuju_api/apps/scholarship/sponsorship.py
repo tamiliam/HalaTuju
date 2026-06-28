@@ -249,7 +249,7 @@ def _finalise_award(application, locale='en'):
 def hold_pending_award(application):
     """Reverse an accepted-but-unconfirmed award within the cool-off so the org can reconsider:
     the active sponsorship lapses (its amount returns to the sponsor's balance) and the cool-off
-    marker clears. The app stays 'accepted' (it was never flipped to 'sponsored'); the student
+    marker clears. The app stays 'recommended' (it was never flipped to 'sponsored'); the student
     never saw a confirmation. Returns True if there was a pending award to hold."""
     if not application.award_due_at:
         return False

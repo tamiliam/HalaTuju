@@ -95,6 +95,7 @@ const STATUS_TONE: Record<string, string> = {
   profile_complete: 'bg-amber-100 text-amber-700',
   interviewing: 'bg-amber-100 text-amber-700',
   interviewed: 'bg-amber-100 text-amber-700',
+  recommended: 'bg-green-100 text-green-700',
   accepted: 'bg-green-100 text-green-700',
   sponsored: 'bg-green-100 text-green-700',
   rejected: 'bg-red-100 text-red-700',
@@ -430,7 +431,7 @@ export default function AdminScholarshipDetailPage() {
       await doRecordVerdict(true, true)                 // record (overall=accept) + finalise + accept + publish
     } else if (outcome === 'decline') {
       await doRecordVerdict(false, false)               // record the verdict (overall=decline), no profile gen
-      await doReject(app?.status === 'accepted' ? 'contractual' : 'interview')
+      await doReject((app?.status === 'recommended' || app?.status === 'accepted') ? 'contractual' : 'interview')
     }
   }
 
@@ -1826,7 +1827,7 @@ export default function AdminScholarshipDetailPage() {
                 </div>
               </div>
             )}
-            {app.status === 'accepted' ? (
+            {(app.status === 'recommended' || app.status === 'accepted') ? (
               <p className="flex items-center gap-1.5 text-sm text-green-700">
                 <span aria-hidden>✓</span>
                 {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
@@ -1952,7 +1953,7 @@ export default function AdminScholarshipDetailPage() {
         </div>
 
         {/* Decision actions — pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. */}
-        {(app.status === 'accepted' || app.status === 'sponsored') && !decisionReopened ? (
+        {(app.status === 'recommended' || app.status === 'accepted' || app.status === 'sponsored') && !decisionReopened ? (
           /* Committed acceptance → read-only summary. A post-accept decline goes through
              Reopen (→ interviewed → declined as 'interview'); the direct 'contractual'
              decline is reserved for a genuinely post-award (sponsored) case. */
@@ -2072,7 +2073,7 @@ export default function AdminScholarshipDetailPage() {
           signed in-session). The Foundation countersignature + the partner-org
           witness are recorded here. The admin detail GET doesn't carry the
           agreement, so the four states resolve from the action responses. */}
-      {app.bursary_agreement_enabled && (app.status === 'accepted' || app.status === 'sponsored') && (() => {
+      {app.bursary_agreement_enabled && (app.status === 'recommended' || app.status === 'accepted' || app.status === 'sponsored') && (() => {
         // Signed-by-now is implied once accepted (the in-session signing is the gate);
         // the action responses confirm the Foundation/Witness columns + the PDF link.
         // NOTE (TD): the student/guarantor "implied signed" default is only sound once the

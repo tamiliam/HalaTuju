@@ -492,7 +492,7 @@ type OfficerVerdict = Record<string, string>
 // Application states where a "save verdict = accept" can still apply (case still live).
 export const LIVE_STATES = ['shortlisted', 'profile_complete', 'interviewing', 'interviewed']
 // States (or a submitted interview) after which querying is closed and Outstanding is read-only.
-export const QUERYING_LOCKED_STATES = ['interviewed', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired']
+export const QUERYING_LOCKED_STATES = ['interviewed', 'recommended', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired']
 // The four facts the officer rules on.
 export const DECISION_FACTS = ['identity', 'academic', 'pathway', 'income'] as const
 

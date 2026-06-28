@@ -41,7 +41,7 @@ def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'))
         contact_email='student@secret.example', contact_phone='012-7776666',
     )
     app = ScholarshipApplication.objects.create(
-        cohort=cohort, profile=profile, status='accepted', award_amount=award,
+        cohort=cohort, profile=profile, status='recommended', award_amount=award,
         notify_email='student@secret.example')
     SponsorProfile.objects.create(application=app, anon_markdown='The student is determined.', anon_published=True)
     Consent.objects.create(application=app, consent_type='share_with_sponsors', version='e', is_active=True)
@@ -171,7 +171,7 @@ class TestSponsorshipService(TestCase):
         self.assertEqual(OnboardingResponse.objects.filter(application=app).count(), 1)
 
     def test_onboarding_blocked_before_award_accepted(self):
-        app = _fundable_app(self.cohort)   # status 'accepted', not yet 'sponsored'
+        app = _fundable_app(self.cohort)   # status 'recommended', not yet 'sponsored'
         with self.assertRaises(services.OnboardingError) as e:
             services.complete_onboarding(app)
         self.assertEqual(e.exception.code, 'not_awarded')

@@ -543,7 +543,7 @@ class TestAdminScholarship(TestCase):
         )
         self.assertEqual(r.status_code, 200)
         body = r.json()
-        self.assertEqual(body['status'], 'accepted')
+        self.assertEqual(body['status'], 'recommended')
         self.assertTrue(body['nric_verified'])
         self.assertEqual(body['verified_by'], 'admin@example.com')
         self.assertIsNotNone(body['verified_at'])
