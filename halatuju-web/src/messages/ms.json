@@ -1967,6 +1967,10 @@
         "sibling_tertiary_funding": {
           "title": "Bagaimana pengajian adik-beradik anda dibiayai?",
           "desc": "Anda mempunyai adik-beradik di kolej atau universiti. Di institusi mana mereka belajar, dan bagaimana pengajian mereka dibiayai — biasiswa, pinjaman PTPTN, sokongan keluarga, atau lain-lain?"
+        },
+        "reporting_date_unknown": {
+          "title": "Bila anda perlu melapor diri ke institusi anda?",
+          "desc": "Surat tawaran anda tidak menyatakan tarikh lapor diri / pendaftaran yang jelas. Bila (tarikh) dan di mana anda perlu melapor diri untuk memulakan pengajian?"
         }
       }
     },
@@ -3176,7 +3180,8 @@
           "father_status_unknown": "Pekerjaan/status bapa tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
           "mother_status_unknown": "Pekerjaan/status ibu tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
           "income_doc_stale": "Slip gaji dalam fail berusia lebih 3 bulan — pelajar diminta memuat naik slip terkini.",
-          "sibling_tertiary_funding": "Adik-beradik di pengajian tinggi — pelajar ditanya institusi mana dan cara pembiayaan (biasiswa / PTPTN / keluarga / lain-lain)."
+          "sibling_tertiary_funding": "Adik-beradik di pengajian tinggi — pelajar ditanya institusi mana dan cara pembiayaan (biasiswa / PTPTN / keluarga / lain-lain).",
+          "reporting_date_unknown": "Surat tawaran tiada tarikh lapor diri yang jelas — pelajar ditanya bila dan di mana mereka melapor diri."
         }
       },
       "decision": {

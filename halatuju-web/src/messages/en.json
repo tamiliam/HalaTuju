@@ -1967,6 +1967,10 @@
         "sibling_tertiary_funding": {
           "title": "How is your sibling's study funded?",
           "desc": "You have a sibling in college or university. Which institution are they at, and how is their study funded — a scholarship, a PTPTN loan, family support, or something else?"
+        },
+        "reporting_date_unknown": {
+          "title": "When do you report to your institution?",
+          "desc": "Your offer letter doesn't state a clear reporting / registration date. When (the date) and where do you need to report to start your studies?"
         }
       }
     },
@@ -3176,7 +3180,8 @@
           "father_status_unknown": "Father's work/status not provided — the student has been asked whether he works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
           "mother_status_unknown": "Mother's work/status not provided — the student has been asked whether she works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
           "income_doc_stale": "Salary slip on file is over 3 months old — the student has been asked to upload a current one.",
-          "sibling_tertiary_funding": "Sibling in tertiary — the student has been asked which institution and how it's funded (scholarship / PTPTN / family / other)."
+          "sibling_tertiary_funding": "Sibling in tertiary — the student has been asked which institution and how it's funded (scholarship / PTPTN / family / other).",
+          "reporting_date_unknown": "Offer letter has no clear reporting date — the student has been asked when and where they report."
         }
       },
       "decision": {

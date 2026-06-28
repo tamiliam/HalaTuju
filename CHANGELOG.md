@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reviewer-query automation S3 — offer reporting-date (capture + persist).** Normalises the
+  offer letter's free-text reporting date into a real, sortable `ScholarshipApplication.reporting_date`
+  (DateField, migration `0080`, migrate-first) via `pathway_engine.parse_reporting_date` + the existing
+  post-extraction hook (`autofill_pathway_from_offer`); a `backfill_reporting_dates` command (cron job
+  `backfill-reporting-dates`) seeds existing rows. Plus a `reporting_date_unknown` clarify when an
+  extracted offer carries no parseable date → asks the student when/where they report. Admin serializer
+  exposes the column. +10 pytest. (The SPM subject-count nudge planned for S3 was dropped — not cleanly
+  deterministic.)
 - **Reviewer-query automation S2 — stale income doc + sibling-in-tertiary funding.** Two more
   deterministic auto-queries on the S1 plumbing: `income_doc_stale` (uncapped doc-request) when
   every salary slip on file is older than ~3 months → ask for a current one; `sibling_tertiary_funding`

@@ -123,6 +123,8 @@ export const KNOWN_CODES = [
   // S2 — stale salary slip (doc) + sibling-in-tertiary funding (clarify).
   'income_doc_stale',
   'sibling_tertiary_funding',
+  // S3 — offer carries no readable reporting date → ask when/where to report (clarify).
+  'reporting_date_unknown',
 ] as const
 
 export type KnownCode = (typeof KNOWN_CODES)[number]
