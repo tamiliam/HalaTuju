@@ -55,7 +55,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deterministically** (both versions, clean), 7 defer to the gated fallback, 0 errors; #10 `TAANUSIYA`,
   #9 child IC `080115-05-0132`, #84 bilingual all correct. Existing BC records need a re-scan to pick up
   the corrected read. +5 parser tests. No migration. (Supersedes the image-Gemini stopgap as the primary
-  path; that read now serves only as the fallback.)
+  path; that read now serves only as the fallback.) **Hardening (from the prod re-scan of all 41 BCs):**
+  the name now stops at the first DIGIT-bearing row (OCR routinely interleaves the DOB value into the
+  `Tarikh dan Waktu Kelahiran` label, which would let the child name run into the date + place); and a
+  glued letterhead blob across a PDF page break (`RANEGARAMALAYSIAJABATANPE…`) is rejected by an
+  institutional-substring check. **Backfill:** the 27 deterministically-read BC records were re-scanned
+  and corrected in prod (child IC populated; #10 fixed; child-IC == student-NRIC verified for all). +6
+  parser tests.
 - **Retired the recurring `ScholarshipCohort.name` migration drift (TD-147).** Added the standalone
   state-only migration `0079_alter_scholarshipcohort_name` (help_text-only `AlterField`; `sqlmigrate`
   = `-- (no-op)`, no DDL). `makemigrations scholarship --check` is now clean — sprints no longer have
