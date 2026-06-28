@@ -286,7 +286,13 @@ class TestCheck2QueriesInStudentQueue(TestCase):
             profile_completed_at=timezone.now(),
             aspirations='I want to teach.', field_of_study='Education',
             siblings_in_tertiary=0,
-            chosen_pathway='stpm', pathway_certainty='sure')  # STPM → transport asked
+            chosen_pathway='stpm', pathway_certainty='sure',  # STPM → transport asked
+            # Household-income complete (S1) so the parent-income clarifies don't displace
+            # the device/transport ones these tests assert on.
+            father_occupation='gov', mother_occupation='homemaker')
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='father',
+            storage_path='x/slip')
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("c2-stu")}')
 
     def test_clarify_query_shows_but_human_hidden(self):

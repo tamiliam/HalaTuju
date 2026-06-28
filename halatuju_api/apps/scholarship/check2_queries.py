@@ -37,13 +37,32 @@ CLARIFY_SPECS = {
     # in `sync_check2_queries`). One-line, non-sensitive, factual → a fair student query.
     'utility_holder_unknown':   {'fact': 'income'},
     'utility_address_mismatch': {'fact': 'income'},
+    # Full-household-income completeness (reviewer-query automation S1): a parent whose slot
+    # is BLANK → ask their work/status (the "why one earner" question). Sourced from the income
+    # engine (parent_income_gaps), not a completeness gap. The PROOF case (earning parent, no
+    # payslip) is a DOC request handled separately below — uncapped (design decision #1).
+    'father_status_unknown':    {'fact': 'income'},
+    'mother_status_unknown':    {'fact': 'income'},
     # 'motivation_missing' is intentionally NOT here — motivation is reviewer texture
     # (§7), not a one-line factual answer.
 }
 
+# Full-household-income PROOF requests (kind='doc') — an earning parent with no income
+# document on file. Doc requests sit OUTSIDE MAX_CLARIFY (design decision #1, 2026-06-29):
+# uploading a payslip is not a "question", so it never suppresses the clarify queue.
+# code → {member, doc_type}. The gap clears when ANY income evidence for that parent appears.
+DOC_SPECS = {
+    'father_income_proof_missing': {'member': 'father', 'doc_type': 'salary_slip'},
+    'mother_income_proof_missing': {'member': 'mother', 'doc_type': 'salary_slip'},
+}
+_PARENT_PROOF_CODE = {'father': 'father_income_proof_missing', 'mother': 'mother_income_proof_missing'}
+_PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_status_unknown'}
+
 # Priority order when capping — most material to a fundable profile first. The utility
 # consistency queries sit LAST (a completeness gap matters more to a fundable profile).
 _CLARIFY_ORDER = [
+    # Household-income completeness first — the most material to a fundable B40 profile.
+    'father_status_unknown', 'mother_status_unknown',
     'course_unspecified', 'sibling_level_unknown',
     'device_status_unknown', 'transport_cost_unknown',
     'utility_holder_unknown', 'utility_address_mismatch',
@@ -73,13 +92,40 @@ def sync_check2_queries(application):
     # #8 — fold in the utility-bill consistency checks (same income-engine helpers the
     # officer pre-interview flags use), so a 'whose bill is this?' / 'address differs'
     # query is raised + auto-resolved on the same reconcile loop as the completeness gaps.
-    from .income_engine import utility_holder_unknown, utility_address_mismatch
+    from .income_engine import utility_holder_unknown, utility_address_mismatch, parent_income_gaps
     if utility_holder_unknown(application):
         gaps.add('utility_holder_unknown')
     if utility_address_mismatch(application):
         gaps.add('utility_address_mismatch')
+    # Full-household-income completeness (S1). A blank-slot parent → a status CLARIFY (folded
+    # into the capped gap set below); an earning parent with no payslip → a PROOF doc request
+    # (reconciled separately, uncapped). Collect the wanted proof codes here.
+    proof_wanted = set()
+    for g in parent_income_gaps(application):
+        if g['need'] == 'status':
+            gaps.add(_PARENT_STATUS_CODE[g['member']])
+        else:  # 'proof'
+            proof_wanted.add(_PARENT_PROOF_CODE[g['member']])
+
     existing = {r.code: r for r in application.resolution_items.filter(source='check2')}
     now = timezone.now()
+
+    # Uncapped PROOF doc-requests (design decision #1): create when wanted + absent,
+    # auto-resolve when the parent's income gap clears.
+    for code, spec in DOC_SPECS.items():
+        if code in proof_wanted and code not in existing:
+            try:
+                ResolutionItem.objects.create(
+                    application=application, source='check2', code=code,
+                    fact='income', kind='doc', doc_type=spec['doc_type'])
+            except IntegrityError:
+                pass
+        item = existing.get(code)
+        if item is not None and item.status == 'open' and code not in proof_wanted:
+            item.status = 'resolved'
+            item.resolved_by = 'system'
+            item.resolved_at = now
+            item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
 
     raised = sum(1 for r in existing.values() if r.kind == 'clarify')
     for code in _CLARIFY_ORDER:

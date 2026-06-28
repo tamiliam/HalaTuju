@@ -178,13 +178,20 @@ class TestDueQueryEmails(_Base):
 
     @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
     def test_no_email_when_no_questions(self, mock_email):
-        # No clarify gaps: course set, sibling known, device ticked, residential pathway.
+        # No clarify gaps: course set, sibling known, device ticked, residential pathway,
+        # AND household income complete (father earns + payslip, mother homemaker — S1).
         self.app.profile_completed_at = timezone.now() - timedelta(hours=3)
         self.app.field_of_study = 'Education'
         self.app.siblings_in_tertiary = 0
         self.app.chosen_pathway = 'matric'
         self.app.pathway_certainty = 'sure'
+        self.app.father_occupation = 'gov'
+        self.app.mother_occupation = 'homemaker'
         self.app.save()
+        from apps.scholarship.models import ApplicantDocument
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='father',
+            storage_path='x/slip')
         FundingNeed.objects.create(application=self.app, categories=['device'])
         self.assertEqual(send_due_query_emails()['sent'], 0)
         self.assertFalse(mock_email.called)

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Reviewer-query automation S1 — full-household-income capture.** The most-repeated manual
+  reviewer query (chasing the *second* parent's income, or a blank parent's status) is now
+  auto-raised. New `income_engine.parent_income_status`/`parent_income_gaps`: every parent must
+  be EITHER marked non-earning (homemaker/deceased/… — already in the occupation code) OR have
+  income evidence on file, else the system asks. An earning parent with no payslip → an **uncapped
+  doc-request** (`{father,mother}_income_proof_missing`); a blank parent slot → a **capped status
+  clarify** (`{father,mother}_status_unknown`, prioritised first). Both auto-resolve when the gap
+  clears. Surfaced in the student Action Centre + the admin cockpit (en/ms/ta). No migration.
+  +10 pytest. Roadmap `docs/scholarship/reviewer-query-automation-roadmap.md`.
+
 ### Changed
 - **Standardised the assistance amount (pathway-fixed, super-overridable).** The award is no
   longer a free reviewer choice on the slider — it's fixed by the pre-U pathway (STPM/Form 6 →
