@@ -152,7 +152,7 @@ class TestAwardCooloff(TestCase):
         sp = svc.respond_to_award(app, action='accept')
         app.refresh_from_db()
         self.assertEqual(sp.status, 'active')                   # money committed
-        self.assertEqual(app.status, 'recommended')             # NOT 'sponsored' yet
+        self.assertEqual(app.status, 'awarded')                 # still 'awarded' — not finalised to 'active' yet
         self.assertIsNotNone(app.award_due_at)
         self.assertEqual(len(mail.outbox), n)                   # no confirmed email yet
         self.assertEqual(svc.sponsor_balance(s), Decimal('0'))  # held
@@ -175,7 +175,7 @@ class TestAwardCooloff(TestCase):
         n = len(mail.outbox)
         self.assertEqual(svc.release_pending_awards(), 1)
         app.refresh_from_db()
-        self.assertEqual(app.status, 'sponsored')
+        self.assertEqual(app.status, 'active')
         self.assertIsNone(app.award_due_at)
         self.assertEqual(len(mail.outbox), n + 1)
         self.assertIn('confirmed', mail.outbox[-1].subject.lower())

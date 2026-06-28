@@ -226,14 +226,14 @@ class TestProgressState(TestCase):
 
     def test_on_track_when_sponsored(self):
         app = _make_eligible_app(self.cohort)
-        app.status = 'sponsored'
+        app.status = 'active'
         app.save(update_fields=['status'])
         self.assertEqual(pool.derive_progress_state(app), 'on_track')
         self.assertEqual(SponsorPoolCardSerializer(app).data['progress_state'], 'on_track')
 
     def test_progress_state_not_an_identifier(self):
         app = _make_eligible_app(self.cohort)
-        app.status = 'sponsored'
+        app.status = 'active'
         app.save(update_fields=['status'])
         blob = json.dumps(SponsorPoolCardSerializer(app).data)
         for label, value in IDENTIFIERS.items():
@@ -242,7 +242,7 @@ class TestProgressState(TestCase):
     # F9a — the real band derived from the latest SemesterResult.
     def _sponsored(self):
         app = _make_eligible_app(self.cohort, suffix='ps')
-        app.status = 'sponsored'
+        app.status = 'active'
         app.save(update_fields=['status'])
         return app
 

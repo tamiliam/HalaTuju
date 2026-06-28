@@ -52,7 +52,7 @@ def _profile(suffix, *, nric=IDENT['nric']):
     )
 
 
-def _app(cohort, suffix, *, status='sponsored', nric=IDENT['nric']):
+def _app(cohort, suffix, *, status='active', nric=IDENT['nric']):
     return ScholarshipApplication.objects.create(
         cohort=cohort, profile=_profile(suffix, nric=nric), status=status,
         field_of_study='engineering',

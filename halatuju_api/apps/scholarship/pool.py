@@ -62,12 +62,11 @@ _NEEDS_ATTENTION_CGPA = 2.0
 
 # Post-award lifecycle (roadmap docs/scholarship/post-award-lifecycle-plan.md):
 # A funder has committed (or the student is in-programme / closed) → no longer in the sponsor
-# DISCOVERY pool. A 'recommended' student is still poolable, awaiting a funder. ('sponsored' is the
-# legacy in-programme value, superseded by active/maintenance but still produced until S3.)
-IN_PROGRAMME_OR_BEYOND = ('awarded', 'active', 'maintenance', 'sponsored', 'closed')
-# The funded in-programme states a progress band applies to (active = executed/pre-payout,
-# maintenance = funded; 'sponsored' = legacy in-programme).
-FUNDED_STATES = ('active', 'maintenance', 'sponsored')
+# DISCOVERY pool. A 'recommended' student is still poolable, awaiting a funder.
+IN_PROGRAMME_OR_BEYOND = ('awarded', 'active', 'maintenance', 'closed')
+# The funded in-programme states a progress band applies to (active = executed/pre-payout;
+# maintenance = funded).
+FUNDED_STATES = ('active', 'maintenance')
 
 
 def derive_progress_state(application):

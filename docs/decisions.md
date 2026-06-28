@@ -3469,3 +3469,25 @@ single-inbox.
 **Rationale:** Once a funder has committed, the student is no longer available for others to pick, so they must leave discovery at `awarded`. `closed`+reason matches the established rejection pattern and keeps reporting sliceable without multiplying statuses. Deferring `sponsored`'s retirement to S3 keeps the award-accept path working while the lifecycle is built incrementally.
 **Trade-offs:** `awarded`/`active`/`maintenance`/`closed` exist before their transitions are wired (S3–S6) — forward-prep that's inert until then. `sponsored` lingers as a legacy in-programme value for one more sprint.
 **Revisit if:** S3 rewires `respond_to_award` → then retire `sponsored` (TD-146).
+
+## Award state machine: `awarded` + dual-path activation + non-blocking witness — Sprint 3, 2026-06-28
+**Decision:** `fund_student` moves the app to `awarded` (funder committed). `awarded → active` happens by
+**two paths**: flag-OFF → acceptance + the #14 cool-off finalises (`_finalise_award`); flag-ON
+(`BURSARY_AGREEMENT_ENABLED`) → the **Foundation counter-signature** executes the agreement
+(`bursary._maybe_activate`). An offer declined / held / expired before activation reverts the app
+`awarded → recommended` (`_revert_to_pool`), re-entering the pool. The partner-org **witness is
+NON-BLOCKING** — execution needs the three parties (student + guarantor + Foundation) only. `sponsored`
+is retired.
+**Alternatives considered:** A single activation path (only cool-off, or only signing) — breaks the
+other deploy state, since bursary is dark in prod but live later. Requiring the witness for execution —
+contradicts the bursary code's documented "non-blocking" witness and would strand an executed agreement
+on a missing attestation. Leaving the app `awarded` on a declined/expired offer — would orphan it out of
+the pool with no live offer.
+**Rationale:** Dual-path keeps today's live (flag-off) award flow working while wiring the signing-driven
+activation for when bursary goes live; revert-to-pool keeps discovery correct; witness-optional honours
+the existing contract.
+**Trade-offs:** Two activation paths to hold in mind (documented in `respond_to_award` + `_maybe_activate`).
+The cool-off (#14) applies only on the flag-off path; the flag-on path's binding moment is the Foundation
+counter-sign instead.
+**Revisit if:** the cool-off should also gate the flag-on (signing) path, or the witness becomes a required
+party (a lawyer call at bursary go-live).

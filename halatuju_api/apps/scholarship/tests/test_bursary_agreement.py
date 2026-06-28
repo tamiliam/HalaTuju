@@ -108,7 +108,7 @@ class TestBursaryService(TestCase):
             guarantor_relationship='mother')
         self.assertEqual(sp.status, 'active')
         app.refresh_from_db()
-        self.assertEqual(app.status, 'sponsored')
+        self.assertEqual(app.status, 'awarded')   # student + guarantor signed; Foundation counter-sign pending
         ag = app.bursary_agreement
         self.assertEqual(ag.status, 'binds')
         self.assertTrue(ag.binds)
@@ -129,7 +129,7 @@ class TestBursaryService(TestCase):
                 guarantor_relationship='mother')
         self.assertEqual(e.exception.code, 'parent_ic_nric_mismatch')
         app.refresh_from_db()
-        self.assertEqual(app.status, 'recommended')   # rolled back, NOT sponsored
+        self.assertEqual(app.status, 'awarded')   # accept rolled back; the offer (fund → 'awarded') still stands
         self.assertFalse(BursaryAgreement.objects.filter(application=app).exists())
         self.assertFalse(app.sponsorships.filter(status='active').exists())
 
@@ -240,7 +240,7 @@ class TestBursaryFlagOff(TestCase):
         sp = svc.respond_to_award(app, action='accept')
         self.assertEqual(sp.status, 'active')
         app.refresh_from_db()
-        self.assertEqual(app.status, 'sponsored')
+        self.assertEqual(app.status, 'active')   # flag OFF: no signing step → cool-off (0) finalises to 'active'
         self.assertFalse(BursaryAgreement.objects.filter(application=app).exists())
 
 
@@ -317,9 +317,13 @@ class TestBursaryEndpoints(TestCase):
             f'/api/v1/admin/scholarship/applications/{app.id}/bursary-agreement/witness/')
         self.assertEqual(resp.status_code, 403)
 
-    def test_missing_witness_does_not_block_sponsored(self):
-        # No witness recorded — the application still reached 'sponsored' on acceptance.
-        app = self._signed_app(suffix='nowit')
+    def test_missing_witness_does_not_block_activation(self):
+        # The witness is non-blocking: student + guarantor + Foundation is enough to execute the
+        # agreement → the application reaches 'active' even with no witness recorded.
+        app = self._signed_app(suffix='nowit')   # student + guarantor signed → 'awarded'
         app.refresh_from_db()
-        self.assertEqual(app.status, 'sponsored')
+        self.assertEqual(app.status, 'awarded')   # not active yet — Foundation hasn't counter-signed
+        bursary.countersign_foundation(app.bursary_agreement, by_name='The Foundation')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'active')     # executed without a witness
         self.assertIsNone(app.bursary_agreement.witness_signed_at)

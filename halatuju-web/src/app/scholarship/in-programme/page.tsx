@@ -84,7 +84,7 @@ export default function InProgrammePage() {
     getMyScholarshipApplications({ token })
       .then(async (res) => {
         if (!active) return
-        const sponsored = res.applications.find((a) => a.status === 'sponsored') ?? null
+        const sponsored = res.applications.find((a) => a.status === 'active' || a.status === 'maintenance') ?? null
         if (!sponsored) { setNotInProgramme(true); setLoading(false); return }
         setApp(sponsored)
         await loadAll(sponsored.id, token)

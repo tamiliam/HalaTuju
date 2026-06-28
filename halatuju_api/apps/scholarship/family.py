@@ -88,7 +88,7 @@ PROFILE_FAMILY_FIELDS = (
 
 #: Application statuses where the scholarship decision is settled → the application's
 #: family copy FREEZES (a later /profile edit no longer syncs into it).
-DECIDED_STATUSES = frozenset({'recommended', 'awarded', 'active', 'maintenance', 'sponsored', 'closed', 'rejected', 'withdrawn', 'expired'})
+DECIDED_STATUSES = frozenset({'recommended', 'awarded', 'active', 'maintenance', 'closed', 'rejected', 'withdrawn', 'expired'})
 
 
 def copy_family_roster(src, dst):

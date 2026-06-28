@@ -38,7 +38,7 @@ class TestPoolExitOnFunderCommit(TestCase):
         self.assertIn(app, list(pool.eligible_pool_queryset(ScholarshipApplication)))
 
     def test_funder_commit_leaves_the_pool(self):
-        for i, status in enumerate(['awarded', 'active', 'maintenance', 'sponsored', 'closed']):
+        for i, status in enumerate(['awarded', 'active', 'maintenance', 'closed']):
             app = _poolable(self.cohort, status=status, suffix=f's{i}')
             self.assertFalse(pool.is_pool_eligible(app), status)
             self.assertNotIn(app, list(pool.eligible_pool_queryset(ScholarshipApplication)))
@@ -53,7 +53,7 @@ class TestInProgrammeGate(TestCase):
         return ScholarshipApplication.objects.create(cohort=self.cohort, profile=p, status=status)
 
     def test_funded_states_are_in_programme(self):
-        for i, status in enumerate(['active', 'maintenance', 'sponsored']):
+        for i, status in enumerate(['active', 'maintenance']):
             app = self._app(status, suffix=f'f{i}')
             r = record_semester_result(app, semester='Sem 1', cgpa='3.5')  # must not raise
             self.assertEqual(r.application_id, app.id)
@@ -74,7 +74,7 @@ class TestProgressBand(TestCase):
         return ScholarshipApplication.objects.create(cohort=self.cohort, profile=p, status=status)
 
     def test_band_for_funded_states(self):
-        for i, status in enumerate(['active', 'maintenance', 'sponsored']):
+        for i, status in enumerate(['active', 'maintenance']):
             app = self._app(status, suffix=f'b{i}')
             self.assertIn(pool.derive_progress_state(app), pool.PROGRESS_STATES)
 

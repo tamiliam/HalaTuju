@@ -534,11 +534,16 @@ student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
   `accepted` alias; re-gated the pool (`pool.IN_PROGRAMME_OR_BEYOND` — a student leaves the discovery pool at
   funder-commit), the in-programme gate + progress band (`pool.FUNDED_STATES` = active/maintenance/sponsored).
   `sponsored` kept VALID until S3 (TD-146). Retro `docs/retrospective-2026-06-28-post-award-s2-statuses.md`.
-- **▶ NEXT — S3 (`awarded` + the 4-step signing, dark behind `BURSARY_AGREEMENT_ENABLED`).** Funder-commit
-  (sponsor selects / Foundation allocates) → `awarded`; surface the signing sub-states (student → guarantor →
-  witness → Foundation, derived from the existing bursary timestamps); Foundation's last signature → `active`.
-  **Rewire `sponsorship.respond_to_award` to set `active`** (not `sponsored`) + retire `sponsored` (TD-146);
-  migrate any `sponsored` rows → `maintenance` (expect 0).
+- **S3 SHIPPED 2026-06-28** (migration `0075`, status choices state-only). `fund_student → awarded`;
+  `awarded → active` via the dual path (flag-OFF: acceptance + #14 cool-off `_finalise_award`; flag-ON:
+  Foundation counter-sign `bursary._maybe_activate`, witness NON-BLOCKING); declined/held/expired offer
+  reverts `awarded → recommended` (`_revert_to_pool`). **`sponsored` retired** (TD-146) from choices + all
+  status sets + onboarding/finalising gates + admin maps + i18n (0 prod rows). Retro
+  `docs/retrospective-2026-06-28-post-award-s3-awarded-signing.md`.
+- **▶ NEXT — S4 (Disbursement/Tranche ledger + `active → maintenance`).** New Disbursement/Tranche model
+  (`scheduled → due → released | withheld | returned`; migration + RLS, migrate-first); admin "mark tranche
+  disbursed" (real toyyibPay deferred = TD-075); the **first release flips `active → maintenance`**. Cockpit
+  disbursement panel. Dark/no real money rails.
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,
