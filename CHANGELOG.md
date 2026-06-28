@@ -38,18 +38,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   setting one. `proposed_award_amount` is exposed on the admin serializer. No migration; the 24
   recommended students are re-priced to the rule on deploy (RM62,000 → RM54,000). +10 pytest.
 
-### Fixed
-- **Birth certificates are now read from the IMAGE when the deterministic parser defers — fixes the
-  #10-class child/parent name cross-wire.** The BC's KANAK-KANAK / BAPA / IBU blocks place the child's
-  "Nama" far from the parents', so flattening the form to a linear OCR stream cross-wires them and the
-  Gemini-on-text fallback returned the father's fuller name as the child (#10 Taanusiya: child read as
-  `MUGINDRAN A/L ATHIAH` instead of the mononym `TAANUSIYA`, and the father slot left blank — which then
-  red-flagged both the BC and the mother's IC). The conservative deterministic parser (`doc_parse._parse_bc`)
-  already defers to Gemini when it can't lock onto both parents; that fallback in
-  `run_field_extraction_for_document` now reads the document IMAGE (so Gemini sees the real 2-D section
-  layout) instead of the scrambled OCR text — mirroring the offer-letter path. Validated locally on #10's
-  actual certificate (reads `TAANUSIYA` / father / mother correctly). Existing BC records need a re-scan to
-  pick up the corrected read. +2 extraction tests. No migration.
+### Added
+- **Deterministic, geometry-based birth-certificate reader (`bc_parse.parse_bc`) — the proper fix for
+  the #10-class child/parent cross-wire.** Mirrors the results-slip approach: read Google-Vision WORD
+  BOXES, re-linearise by position into clean rows, **classify the version** (bilingual `KANAK-KANAK /
+  CHILD` + `Nama Penuh` vs monolingual `KANAK-KANAK` + `Nama`), then read each field from the gap between
+  its KNOWN adjacent labels — anchoring sections on the Malay `KANAK-KANAK`/`BAPA`/`IBU` tokens (common to
+  both versions) and the distinctive `PENGENALAN` token (which survives the bilingual label being
+  OCR-jumbled with its English co-label). Bounds the mother band before the informant block (`PEMAKLUM`
+  **or** `PEMBERITAHU`), so a repeated parent-as-informant never bleeds in. Now also reads the **child IC**
+  from the top-right corner (born-date-encoded, distinct from the letter-prefixed `No. Daftar`) — so
+  `student_bc_check` verifies **child IC == student NRIC**, a number-based child↔student match stronger
+  than the romanised (often mononym) name. Wired into `run_field_extraction_for_document` as a dedicated
+  branch: deterministic first → on `None` (cropped/odd layout, so it never invents a missing section, #27)
+  the gated Gemini-image fallback → OCR-text last. Validated on the 27-cert local corpus: **19 read
+  deterministically** (both versions, clean), 7 defer to the gated fallback, 0 errors; #10 `TAANUSIYA`,
+  #9 child IC `080115-05-0132`, #84 bilingual all correct. Existing BC records need a re-scan to pick up
+  the corrected read. +5 parser tests. No migration. (Supersedes the image-Gemini stopgap as the primary
+  path; that read now serves only as the fallback.)
 - **Retired the recurring `ScholarshipCohort.name` migration drift (TD-147).** Added the standalone
   state-only migration `0079_alter_scholarshipcohort_name` (help_text-only `AlterField`; `sqlmigrate`
   = `-- (no-op)`, no DDL). `makemigrations scholarship --check` is now clean — sprints no longer have
