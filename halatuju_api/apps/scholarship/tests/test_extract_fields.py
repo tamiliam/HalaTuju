@@ -174,6 +174,42 @@ class TestRunFieldExtraction(TestCase):
         vision.run_field_extraction_for_document(doc, names=['Sharmila'])
         mock_gemini.assert_called_once()
 
+    @patch('apps.scholarship.vision.extract_document_fields')
+    @patch('apps.scholarship.vision._fetch_image_bytes')
+    @patch('apps.scholarship.doc_parse.parse_by_labels')
+    def test_birth_certificate_reads_image_when_deterministic_defers(self, mock_parse, mock_img, mock_gemini):
+        # When the conservative deterministic BC parser can't lock on, the Gemini fallback must read
+        # the IMAGE (not the OCR-flattened text, which cross-wires the child's far-off "Nama" with the
+        # father's fuller name — #10: child read as 'MUGINDRAN A/L ATHIAH' instead of 'TAANUSIYA').
+        mock_parse.return_value = None
+        mock_img.return_value = b'fake-bc-image'
+        mock_gemini.return_value = {'fields': {'bc_child_name': 'TAANUSIYA',
+                                               'bc_father_name': 'MUGINDRAN A/L ATHIAH',
+                                               'bc_mother_name': 'THAVAMALAR A/P VIJAYAN'},
+                                    'warnings': [], 'error': ''}
+        doc = self._doc('birth_certificate')
+        vision.run_field_extraction_for_document(
+            doc, names=['Muthu Raman'],
+            ocr={'text': 'SIJIL KELAHIRAN KANAK-KANAK Nama TAANUSIYA No. Kad Pengenalan', 'error': None})
+        self.assertEqual(mock_gemini.call_count, 1)
+        # the IMAGE was passed (image=...), NOT the scrambled OCR text
+        self.assertEqual(mock_gemini.call_args.kwargs.get('image'), b'fake-bc-image')
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_fields['fields']['bc_child_name'], 'TAANUSIYA')
+
+    @patch('apps.scholarship.vision.extract_document_fields')
+    @patch('apps.scholarship.vision._fetch_image_bytes')
+    @patch('apps.scholarship.doc_parse.parse_by_labels')
+    def test_birth_certificate_image_fallback_uses_text_if_no_image(self, mock_parse, mock_img, mock_gemini):
+        # If the image can't be fetched, the BC fallback still degrades to the OCR-text read.
+        mock_parse.return_value = None
+        mock_img.return_value = None
+        mock_gemini.return_value = {'fields': {'bc_child_name': 'X'}, 'warnings': [], 'error': ''}
+        doc = self._doc('birth_certificate')
+        vision.run_field_extraction_for_document(
+            doc, names=['Muthu Raman'], ocr={'text': 'SIJIL KELAHIRAN ...', 'error': None})
+        self.assertIsNone(mock_gemini.call_args.kwargs.get('image'))   # text path, no image
+
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestUploadGuardrails(TestCase):

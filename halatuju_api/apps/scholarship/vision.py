@@ -1465,6 +1465,17 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
             parsed = parse_by_labels(doc.doc_type, r['text'])
             if parsed is not None:
                 ex = {'fields': parsed, 'warnings': [], 'error': '', 'capture': 'deterministic'}
+            elif doc.doc_type == 'birth_certificate':
+                # The BC's KANAK-KANAK / BAPA / IBU blocks place the child's "Nama" far from the
+                # parents'; flattened OCR cross-wires them, so Gemini-on-text reads the father's
+                # fuller name as the child (#10: child='MUGINDRAN A/L ATHIAH'). When the
+                # deterministic parser can't lock on, read the IMAGE so Gemini sees the real 2-D
+                # section layout (validated: reads the mononym child 'TAANUSIYA' correctly). Fall
+                # back to OCR text only if the image can't be fetched.
+                img = _fetch_image_bytes(doc.storage_path)
+                ex = (extract_document_fields('', doc.doc_type, image=img, content_type=doc.content_type)
+                      if img is not None else extract_document_fields(r['text'], doc.doc_type))
+                ex['capture'] = 'ai'
             else:
                 ex = extract_document_fields(r['text'], doc.doc_type)
                 ex['capture'] = 'ai'
