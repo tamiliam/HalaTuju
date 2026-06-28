@@ -3552,3 +3552,30 @@ in-programme gates to keep straight (`_require_in_programme` funded-only vs `_re
 incl. closed) — both documented in `in_programme.py`.
 **Revisit if:** closure needs an audited reopen flow, or auto-close-on-graduation is wanted with a
 confirm step (a suggestion, not an auto-flip).
+
+## The IC NUMBER is the Layer-2 cross-document join key — L2-1, 2026-06-29
+**Decision:** Verify an income earner by chaining the **IC number** across documents
+(`income_engine.chain_verified_earner`): a Layer-1-genuine Birth Certificate whose child = the
+student carries the parent's IC number; the income proof (STR recipient / salary slip / EPF) carries
+the recipient's NRIC; when the two numbers match (exact, or one digit apart WITH name corroboration),
+the earner is confirmed as that parent — even when the IC physically uploaded in their slot is the
+wrong card or absent. The chain only ever demotes a would-be red to a verified green; it never asserts
+a mismatch.
+**Alternatives considered:** (a) match the income proof against the *uploaded* parent_ic card only
+(status quo) — rejected: a student who uploads the wrong family member's card (e.g. father's IC in the
+mother slot, #9) is hard-blocked even though the BC + STR + EPF all carry the mother's number; (b)
+match on NAME across documents — rejected: romanised Malaysian names transliterate too many ways to be
+a reliable join key; (c) soften single-field gaps generally — rejected (earlier in design): would
+weaken correct reds like #5 (a mother's BC uploaded for a different student).
+**Rationale:** The IC number is the one field that does NOT transliterate, so it's the strong join key.
+The BC is the bridge document — it ties the student to a parent AND prints that parent's number.
+Number-matching across genuine documents is a stronger identity proof than the physical card, which is
+the thing most often uploaded wrong.
+**Trade-offs:** Gated only on a *positively*-suspect BC (an unscored BC may still anchor) — accepted
+because the chain only greens, never reds, and the BC's own genuineness cap catches forgeries
+independently. Force `match` on chain rather than re-comparing (a number-verified earner must not be
+re-litigated by an exact name/number compare that the same OCR drift fails). Kept the four checks +
+verdict in lockstep via one shared helper rather than deduping the red logic (TD-110 stays open).
+**Revisit if:** forged BC+proof pairs with coordinated matching numbers appear in the wild (tighten the
+gate to require positive BC genuineness), or the one-digit near-match path produces false greens
+(drop it and require an exact number match).
