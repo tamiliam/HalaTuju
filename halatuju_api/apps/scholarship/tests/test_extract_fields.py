@@ -233,3 +233,37 @@ class TestUploadGuardrails(TestCase):
             r = self._post(doc_type='salary_slip')
             self.assertEqual(r.status_code, 201)          # upload still succeeds
             mock_run.assert_called_once()                 # forced read past the cap
+
+
+class TestExtractionSanitizer(TestCase):
+    """Item B — deterministic guards so a header/label or a wrong-section name can't pass
+    through as a person's name (the BC child / slip name misreads)."""
+
+    def test_looks_like_non_name(self):
+        self.assertTrue(vision._looks_like_non_name('KERAJAAN MALAYSIA'))
+        self.assertTrue(vision._looks_like_non_name('KANAK-KANAK'))
+        self.assertFalse(vision._looks_like_non_name('TAANUSIYA A/P MUGINDRAN'))
+
+    def test_slip_candidate_name_label_stripped(self):
+        out = vision._sanitize_extracted_fields(
+            'results_slip', {'candidate_name': 'NAMA : SANJANA A / P KALIANA KUMAR'})
+        self.assertEqual(out['candidate_name'], 'SANJANA A / P KALIANA KUMAR')
+
+    def test_bc_child_equal_to_father_is_blanked(self):
+        # #10: the BAPA 'Nama' was pulled into the child slot → blank it (soft 'unread'),
+        # never a wrong-person child mismatch.
+        out = vision._sanitize_extracted_fields('birth_certificate', {
+            'bc_child_name': 'MUGINDRAN A/L ATHIAH', 'bc_father_name': 'MUGINDRAN A/L ATHIAH',
+            'bc_mother_name': 'THAVAMALAR A/P VIJAYAN'})
+        self.assertEqual(out['bc_child_name'], '')
+
+    def test_bc_child_header_is_blanked(self):
+        out = vision._sanitize_extracted_fields('birth_certificate', {
+            'bc_child_name': 'KERAJAAN MALAYSIA', 'bc_father_name': 'X A/L Y', 'bc_mother_name': 'Z A/P W'})
+        self.assertEqual(out['bc_child_name'], '')
+
+    def test_bc_genuine_child_kept(self):
+        out = vision._sanitize_extracted_fields('birth_certificate', {
+            'bc_child_name': 'TAANUSIYA A/P MUGINDRAN', 'bc_father_name': 'MUGINDRAN A/L ATHIAH',
+            'bc_mother_name': 'THAVAMALAR A/P VIJAYAN'})
+        self.assertEqual(out['bc_child_name'], 'TAANUSIYA A/P MUGINDRAN')

@@ -1196,18 +1196,24 @@ _DOC_HINTS = {
                          'is the TOTAL including arrears; "unpaid_balance" = the arrears '
                          '("Tunggakan" / "Baki Tertunggak", RM) — empty if none; '
                          '"billing_period" = the bill month. Leave empty if absent.'),
-    'birth_certificate': (' This is a Malaysian birth certificate (Sijil Kelahiran, JPN). It '
-                          'has three labelled sections: "KANAK-KANAK / CHILD", "BAPA / FATHER" '
-                          'and "IBU / MOTHER". Return: "bc_child_name" = the child\'s "Nama '
-                          'Penuh / Full Name" in the CHILD section; "bc_child_nric" = the '
-                          'child\'s IC number if shown; "bc_father_name" + "bc_father_nric" = '
-                          'the "Nama" and "No. Kad Pengenalan" in the FATHER section; '
-                          '"bc_mother_name" + "bc_mother_nric" = the "Nama" and "No. Kad '
-                          'Pengenalan" in the MOTHER section (keep all 12 NRIC digits). '
-                          'Use names EXACTLY as printed (keep bin/binti/a/l/a/p). Leave a field empty if absent. '
-                          'NOTE: a birth certificate normally shows NO IC number for the child '
-                          '(only the parents have "No. Kad Pengenalan") — leave "bc_child_nric" '
-                          'empty and do NOT add any warning about a missing/unlabelled child IC.'),
+    'birth_certificate': (' This is a Malaysian birth certificate (Sijil Kelahiran, JPN). It has '
+                          'three labelled sections IN ORDER: "KANAK-KANAK / CHILD", then "BAPA / '
+                          'FATHER", then "IBU / MOTHER". Read each name from WITHIN its section, '
+                          'anchored on the SECTION HEADER — NOT on the field label: the name field '
+                          'is labelled "Nama" on some certificates and "Nama Penuh" on others, so '
+                          'accept EITHER. Return: "bc_child_name" = the name in the KANAK-KANAK / '
+                          'CHILD block (the lines between the "KANAK-KANAK" header and the "BAPA" '
+                          'header); "bc_child_nric" = the child IC if shown; "bc_father_name" + '
+                          '"bc_father_nric" = the "Nama"/"Nama Penuh" and "No. Kad Pengenalan" in the '
+                          'BAPA / FATHER block; "bc_mother_name" + "bc_mother_nric" = the "Nama"/'
+                          '"Nama Penuh" and "No. Kad Pengenalan" in the IBU / MOTHER block (keep all '
+                          '12 NRIC digits). IGNORE the "PEMBERITAHU / INFORMANT" block at the bottom '
+                          'entirely — its "Nama" is the informant (often a grandparent), NOT the '
+                          'child or a parent. Use names EXACTLY as printed (keep bin/binti/a/l/a/p). '
+                          'Leave a field empty if absent. NOTE: a birth certificate normally shows NO '
+                          'IC number for the child (only the parents have "No. Kad Pengenalan") — '
+                          'leave "bc_child_nric" empty and do NOT add any warning about a missing/'
+                          'unlabelled child IC.'),
     'guardianship_letter': (' This is EITHER a Malaysian court-issued guardianship order OR a '
                             'written authorisation letter from a parent placing the applicant '
                             '(the "ward") under someone\'s care. Return: "guardian_name" = the '
@@ -1286,7 +1292,45 @@ def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[byt
     if '_error' in data:
         return {'fields': {}, 'warnings': [], 'error': data['_error']}
     warnings = _drop_expected_warnings(doc_type, data.pop('warnings', []) or [])
+    data = _sanitize_extracted_fields(doc_type, data)
     return {'fields': data, 'warnings': warnings, 'error': ''}
+
+
+# Headings / labels that are never a person's name. If the AI sweeps one into a NAME field
+# (a cropped/skewed photo, a section mis-read), we must not let it masquerade as a real name
+# and trigger a wrong-person mismatch downstream.
+_NON_NAME_MARKERS = ('KERAJAAN MALAYSIA', 'SIJIL KELAHIRAN', 'KANAK-KANAK', 'KANAK KANAK',
+                     'PEMBERITAHU', 'PENDAFTAR', 'MAKLUMAT')
+# NB: leading field-label stripping ('NAMA :' …) is handled by the existing `_strip_name_label`
+# (defined below, used by doc_student_verdict) — reused here, not re-implemented.
+
+
+def _looks_like_non_name(value: str) -> bool:
+    s = (value or '').strip().upper()
+    return bool(s) and any(s == m or s.startswith(m + ' ') or s == m.replace('-', ' ')
+                           for m in _NON_NAME_MARKERS)
+
+
+def _sanitize_extracted_fields(doc_type: str, data: dict) -> dict:
+    """Deterministic post-extraction guards (item B): stop a header/label or a wrong-section
+    name passing through as a person's name. Blanking a bad value yields 'unread' (SOFT)
+    downstream — never a confident wrong-person mismatch. Pure; never raises."""
+    if not isinstance(data, dict):
+        return data
+    if doc_type == 'results_slip' and data.get('candidate_name'):
+        data['candidate_name'] = _strip_name_label(data['candidate_name'])
+    elif doc_type == 'birth_certificate':
+        child = _strip_name_label(data.get('bc_child_name') or '')
+        # The child name must come from the KANAK-KANAK block: never a heading, and never
+        # identical to a parent's name (the classic section mis-read — BAPA's 'Nama' pulled
+        # into the child slot, e.g. #10). Either case → blank ('couldn't read the child'),
+        # which is soft, not a wrong-person red.
+        if child and (_looks_like_non_name(child)
+                      or name_match(child, data.get('bc_father_name') or '') == 'match'
+                      or name_match(child, data.get('bc_mother_name') or '') == 'match'):
+            child = ''
+        data['bc_child_name'] = child
+    return data
 
 
 def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
