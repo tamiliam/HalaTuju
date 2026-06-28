@@ -2918,6 +2918,7 @@
       "siblingsLegacyNote": "பழைய மொத்தம் — பிரிவு தெரியவில்லை, நேர்காணலில் உறுதிப்படுத்தவும்",
       "chosenPathway": "தேர்ந்த பாதை",
       "chosenProgramme": "தேர்ந்த நிரல்",
+      "reportingDate": "சேரும் தேதி",
       "preUTrack": "Pre-U பிரிவு",
       "preUInstitution": "Pre-U நிறுவனம்",
       "pathwaysConsidered": "பரிசீலித்த பாதைகள்",
@@ -3120,6 +3121,7 @@
         "view": "பார்க்கவும்",
         "rerun": "மீண்டும் இயக்கு",
         "examYear": "SPM {year}",
+        "intakeYear": "சேர்க்கை {year}",
         "viewer": {
           "newTab": "புதிய தாவலில் திற",
           "close": "மூடு",

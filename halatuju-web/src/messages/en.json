@@ -2918,6 +2918,7 @@
       "siblingsLegacyNote": "legacy total — split unknown, confirm at interview",
       "chosenPathway": "Chosen pathway",
       "chosenProgramme": "Chosen programme",
+      "reportingDate": "Reporting date",
       "preUTrack": "Pre-U track",
       "preUInstitution": "Pre-U institution",
       "pathwaysConsidered": "Pathways considered",
@@ -3120,6 +3121,7 @@
         "view": "View",
         "rerun": "Re-run",
         "examYear": "SPM {year}",
+        "intakeYear": "Intake {year}",
         "viewer": {
           "newTab": "Open in new tab",
           "close": "Close",

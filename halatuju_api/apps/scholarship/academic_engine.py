@@ -475,6 +475,10 @@ def student_slip_check(doc) -> dict:
     exam = (f.get('exam') or '').strip()              # e.g. "SIJIL PELAJARAN MALAYSIA TAHUN 2025"
     em = re.search(r'\b(20\d{2})\b', exam)
     exam_year = em.group(1) if em else ''             # soft data point — surfaced, not gated
+    # Currency vs the application's cohort: the expected SPM for an intake-year cohort was sat the
+    # YEAR BEFORE (cohort − 1). 'current' → green, 'off' → amber, '' → no signal (no year / no cohort).
+    _cy = getattr(getattr(getattr(doc, 'application', None), 'cohort', None), 'year', None)
+    exam_year_status = ('current' if exam_year == str(_cy - 1) else 'off') if (exam_year and _cy) else ''
     skew = f.get('skew_angle')                        # the photo's measured tilt (deterministic read only)
     was_skewed = isinstance(skew, (int, float)) and abs(skew) >= 25.0
 
@@ -487,7 +491,7 @@ def student_slip_check(doc) -> dict:
         s = 'pending' if pending else 'unreadable'
         return {'name': name, 'subjects': s, 'results': s,
                 'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
-                'was_skewed': was_skewed,
+                'exam_year_status': exam_year_status, 'was_skewed': was_skewed,
                 'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0}
 
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
@@ -504,7 +508,7 @@ def student_slip_check(doc) -> dict:
     return {
         'name': name, 'subjects': subjects, 'results': results,
         'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
-        'was_skewed': was_skewed,
+        'exam_year_status': exam_year_status, 'was_skewed': was_skewed,
         'missing': cmp['missing'], 'mismatched': cmp['mismatched'],
         'uncertain': cmp['uncertain'], 'slip_count': cmp['slip_count'],
     }

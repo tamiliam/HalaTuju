@@ -19,14 +19,16 @@ def _doc(fields):
 
 def _slip_doc(results, grades, *, candidate='YESWINDRAN A/L MURALY',
               exam='SIJIL PELAJARAN MALAYSIA TAHUN 2025',
-              student_verdict='ok', name_match='found'):
-    """A results-slip doc stand-in for student_slip_check (no DB)."""
+              student_verdict='ok', name_match='found', cohort_year=None):
+    """A results-slip doc stand-in for student_slip_check (no DB). ``cohort_year`` sets the
+    application's cohort year for exam-currency tests (expected SPM = cohort − 1)."""
     return SimpleNamespace(
         doc_type='results_slip',
         vision_name_match=name_match,
         vision_fields={'fields': {'results': results, 'candidate_name': candidate, 'exam': exam},
                        'student_verdict': student_verdict},
-        application=SimpleNamespace(profile=SimpleNamespace(grades=grades)),
+        application=SimpleNamespace(profile=SimpleNamespace(grades=grades),
+                                    cohort=SimpleNamespace(year=cohort_year) if cohort_year else None),
     )
 
 
@@ -135,6 +137,18 @@ class TestStudentSlipCheck(SimpleTestCase):
         chk = student_slip_check(_slip_doc(YESWINDRAN_BAND_RESULTS, ELANJELIAN_GRADES))
         self.assertEqual(chk['exam_year'], '2025')
         self.assertIn('SIJIL PELAJARAN MALAYSIA', chk['exam'])
+        self.assertEqual(chk['exam_year_status'], '')          # no cohort → no currency signal
+
+    def test_exam_year_current_for_cohort_minus_one(self):
+        # SPM 2025 is the expected exam for a 2026 intake cohort → 'current' (green).
+        chk = student_slip_check(_slip_doc(YESWINDRAN_BAND_RESULTS, ELANJELIAN_GRADES, cohort_year=2026))
+        self.assertEqual(chk['exam_year_status'], 'current')
+
+    def test_exam_year_off_when_stale(self):
+        # An SPM 2023 slip against a 2026 cohort → 'off' (amber).
+        chk = student_slip_check(_slip_doc(YESWINDRAN_BAND_RESULTS, ELANJELIAN_GRADES,
+                                           exam='SIJIL PELAJARAN MALAYSIA TAHUN 2023', cohort_year=2026))
+        self.assertEqual((chk['exam_year'], chk['exam_year_status']), ('2023', 'off'))
 
 
 # Theresa's 8 entered subjects (grade key → grade).

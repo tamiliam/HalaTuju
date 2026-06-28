@@ -743,7 +743,13 @@ export default function AdminScholarshipDetailPage() {
             ? <a href={href} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">{name}</a>
             : name
         }
-        const hasPlans = !!(app.chosen_pathway || app.chosen_programme?.course_name
+        // Course start: the offer letter's report/registration date — surfaced in the Academic card
+        // so the officer sees when the student must report. Prefer the offer that actually carries a
+        // reporting date; fall back to the first offer.
+        const _offers = (app.documents || []).filter((d) => d.doc_type === 'offer_letter')
+        const _offer = _offers.find((d) => d.pathway_check?.reporting_date) || _offers[0]
+        const reportingDate = _offer?.pathway_check?.reporting_date || ''
+        const hasPlans = !!(app.chosen_pathway || app.chosen_programme?.course_name || reportingDate
           || app.top_choices?.length || app.pathways_considered?.length || app.uncertainty_reasons?.length)
         const addr = formatAddress([
           app.address,
@@ -837,6 +843,7 @@ export default function AdminScholarshipDetailPage() {
                             : pathwayLabel(app.chosen_pathway)}
                         />
                       )}
+                      {reportingDate && <Field label={t('admin.scholarship.reportingDate')} value={reportingDate} />}
                     </dl>
                     {app.top_choices?.length > 0 && (
                       <div className="mt-3">
@@ -1512,13 +1519,25 @@ export default function AdminScholarshipDetailPage() {
             s === 'verified' ? 'text-green-600' : s === 'partial' ? 'text-amber-600'
               : s === 'not' ? 'text-red-600' : 'text-gray-400'
           const subLabel = 'text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5'
-          // Line 2: the coloured fact-labels — only the facts THIS document provides. A results
-          // slip also surfaces the SPM exam YEAR (a muted data point, not a pass/fail check) after
-          // Results, so the officer can see which year's slip this is.
+          // Line 2: the coloured fact-labels — only the facts THIS document provides. A results slip
+          // also surfaces the SPM exam YEAR, an offer letter its intake (course-start) YEAR — coloured
+          // by currency vs the cohort (green = current, amber = off), so the officer sees at a glance
+          // whether the slip/offer belongs to this round.
+          const yearChip = (d: AdminApplicantDocument): { text: string; status: string } | null => {
+            if (d.doc_type === 'results_slip' && d.academic_check?.exam_year)
+              return { text: t('admin.scholarship.docsDrawer.examYear', { year: d.academic_check.exam_year }),
+                       status: d.academic_check.exam_year_status || '' }
+            if (d.doc_type === 'offer_letter' && d.pathway_check?.intake_year)
+              return { text: t('admin.scholarship.docsDrawer.intakeYear', { year: d.pathway_check.intake_year }),
+                       status: d.pathway_check.intake_year_status || '' }
+            return null
+          }
+          const yearClass = (s: string) =>
+            s === 'current' ? 'text-green-600' : s === 'off' ? 'text-amber-600' : 'text-gray-500'
           const factLine = (d: AdminApplicantDocument) => {
             const facts = documentFacts(d)
-            const examYear = d.doc_type === 'results_slip' ? (d.academic_check?.exam_year || '') : ''
-            if (facts.length === 0 && !examYear) return null
+            const yc = yearChip(d)
+            if (facts.length === 0 && !yc) return null
             return (
               <p className="mt-0.5 flex flex-wrap items-center text-[11px]">
                 {facts.map((f, i) => (
@@ -1529,12 +1548,10 @@ export default function AdminScholarshipDetailPage() {
                     </span>
                   </span>
                 ))}
-                {examYear && (
+                {yc && (
                   <span className="flex items-center">
                     {facts.length > 0 && <span className="text-gray-300 mx-1.5">·</span>}
-                    <span className="font-medium text-gray-500">
-                      {t('admin.scholarship.docsDrawer.examYear', { year: examYear })}
-                    </span>
+                    <span className={`font-medium ${yearClass(yc.status)}`}>{yc.text}</span>
                   </span>
                 )}
               </p>

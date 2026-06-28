@@ -2918,6 +2918,7 @@
       "siblingsLegacyNote": "jumlah lama — pecahan tidak diketahui, sahkan semasa temu duga",
       "chosenPathway": "Laluan dipilih",
       "chosenProgramme": "Program dipilih",
+      "reportingDate": "Tarikh lapor diri",
       "preUTrack": "Trek Pra-U",
       "preUInstitution": "Institusi Pra-U",
       "pathwaysConsidered": "Laluan dipertimbang",
@@ -3120,6 +3121,7 @@
         "view": "Lihat",
         "rerun": "Jalankan semula",
         "examYear": "SPM {year}",
+        "intakeYear": "Ambilan {year}",
         "viewer": {
           "newTab": "Buka dalam tab baharu",
           "close": "Tutup",

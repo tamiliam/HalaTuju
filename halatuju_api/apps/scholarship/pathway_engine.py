@@ -207,6 +207,16 @@ def student_offer_check(doc) -> dict:
     decl_prog, decl_inst = _declared_pathway(application) if application is not None else ('', '')
     pathway = offer_pathway_match(decl_prog, decl_inst, programme, institution)
 
+    intake = (f.get('intake') or '').strip()
+    reporting_date = (f.get('reporting_date') or '').strip()   # report/registration = course start
+    # Course-start year: prefer the intake/session year, fall back to the reporting date's year.
+    iym = re.search(r'\b(20\d{2})\b', intake) or re.search(r'\b(20\d{2})\b', reporting_date)
+    intake_year = iym.group(1) if iym else ''
+    # Currency vs the cohort: a current intake matches the cohort's OWN year. 'current'→green / 'off'→amber
+    # / '' → no signal (no year / no cohort).
+    _cy = getattr(getattr(application, 'cohort', None), 'year', None) if application is not None else None
+    intake_year_status = ('current' if intake_year == str(_cy) else 'off') if (intake_year and _cy) else ''
+
     return {
         'name': _name_status(cn, pname, extracted),
         'ic': _ic_status(cnric, pnric, extracted),
@@ -216,7 +226,10 @@ def student_offer_check(doc) -> dict:
         'institution': institution,
         'issuer': (f.get('issuer') or '').strip(),
         'offer_date': (f.get('offer_date') or '').strip(),
-        'intake': (f.get('intake') or '').strip(),
+        'intake': intake,
+        'reporting_date': reporting_date,         # report/registration = course start (data point)
+        'intake_year': intake_year,               # parsed course-start year
+        'intake_year_status': intake_year_status, # 'current' | 'off' | '' (vs cohort year)
         'address': (f.get('candidate_address') or '').strip(),
         # Offer-vs-declared reconciliation (Check-1 pathway).
         'pathway': pathway,                       # 'match' | 'mismatch' | 'unknown'
