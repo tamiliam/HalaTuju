@@ -1647,6 +1647,12 @@ export interface IncomeIcCheck {
   proof_kind?: 'str' | 'salary_slip' | 'epf' | ''
   proof_name_status?: 'match' | 'mismatch' | 'no_ref'
   proof_nric_status?: 'match' | 'mismatch' | 'no_ref'
+  // IC-NUMBER chain: the earner was confirmed by the BC's printed parent IC number matching the
+  // income proof's number — so the earner is verified even when this card is the wrong family
+  // member's. `wrong_card` = the chain held BUT the card here disagrees with the proof (a soft
+  // caveat: "looks like a different family member's IC; we verified the earner another way").
+  chain_verified?: boolean
+  wrong_card?: boolean
   // The CLUSTER coach verdict for this member (relationship + coherence across their IC +
   // income proofs); '' when the cluster is consistent. Drives the single per-member coach.
   cluster_status?: string

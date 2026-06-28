@@ -3236,6 +3236,7 @@
           "name": "Name",
           "ic_no": "IC No",
           "relationship": "Relationship",
+          "wrong_card": "Wrong card",
           "subjects": "Subjects",
           "results": "Results",
           "pathway": "Pathway",

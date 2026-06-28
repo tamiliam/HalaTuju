@@ -15,6 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   row recorded via MCP; no schema change).
 
 ### Added
+- **Layer-2 cross-document matching — L2-1: the IC-NUMBER chain + extraction robustness.**
+  The Birth Certificate carries the parents' IC NUMBERS, and every income proof (STR recipient /
+  salary slip / EPF) carries the recipient's NRIC — so the NUMBER is the strong cross-document join
+  key (it doesn't transliterate like a romanised name). New `income_engine.chain_verified_earner`:
+  when a Layer-1-genuine BC (child = the student) carries a parent's IC number that matches the
+  income proof's number (exact, or one-digit OCR drift WITH name corroboration), the earner is
+  confirmed as that parent — **even when the IC physically uploaded in their slot is the wrong card
+  or absent** (#9: the father's IC sat in the mother slot, but the BC-mother / STR / EPF all carried
+  the mother's number). The chain only ever turns a would-be red into a verified green; it never
+  asserts a mismatch, and a positively-suspect BC cannot anchor it. Wired in lockstep through every
+  status producer (`student_income_ic_check` / `_proof_check` / `_str_check` / `_bc_check`),
+  `resolution.doc_match_verdict`, and both `verdict_engine` income paths, so the cockpit chips, the
+  Action-Centre verdict, and the submission gate never disagree. The one hard block survives: a proof
+  whose name AND number contradict with no chain corroboration still blocks. Officer cockpit: EPF/
+  salary chips now show **IC No** (the strong earner key) besides Name; the parent-IC chip shows a
+  soft amber **"Wrong card"** caveat when the chain verified the earner but the uploaded card is a
+  different family member's. Also folds in the L2-1 *extraction* robustness (BC section-anchored
+  names + `_sanitize_extracted_fields`). +10 backend chain tests, +4 cockpit chip tests; suite green
+  (1691 pytest). No migration. Owner-gated — DARK until deployed.
 - **Post-award lifecycle — Sprint 6 (FINAL): manual closure + reasons + thank-you re-gating.**
   Completes the lifecycle (`recommended → awarded → active → maintenance → closed`). An admin
   manually CLOSES a funded file (`closure.close_application`, gated to active/maintenance) with a

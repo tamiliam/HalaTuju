@@ -3236,6 +3236,7 @@
           "name": "பெயர்",
           "ic_no": "IC எண்",
           "relationship": "உறவு",
+          "wrong_card": "தவறான அட்டை",
           "subjects": "பாடங்கள்",
           "results": "முடிவுகள்",
           "pathway": "பாதை",

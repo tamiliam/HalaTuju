@@ -303,6 +303,42 @@ describe('documentFacts', () => {
     expect(facts.find((f) => f.key === 'official')?.status).toBe('not')
     expect(documentPill(d)).toBe('check')   // never 'verified'
   })
+
+  // ── IC-NUMBER chain (Item D): a wrong card in the slot, but the earner verified elsewhere ──
+  it('parent_ic: wrong_card surfaces an amber caveat instead of the relationship label', () => {
+    // #9: father's IC in the mother slot, but the chain verified the mother from the BC + STR.
+    const facts = documentFacts(doc({ doc_type: 'parent_ic',
+      income_ic_check: icCheck({ member: 'mother', readable: true, name_status: 'match',
+                                 chain_verified: true, wrong_card: true }) }))
+    expect(facts).toEqual([
+      { key: 'name', status: 'verified' },     // the card is still legible
+      { key: 'ic_no', status: 'verified' },
+      { key: 'wrong_card', status: 'partial' },  // …but it's a different family member's
+    ])
+  })
+
+  it('parent_ic: chain-verified with the RIGHT card shows no wrong-card caveat', () => {
+    expect(documentFacts(doc({ doc_type: 'parent_ic',
+      income_ic_check: icCheck({ member: 'mother', readable: true, name_status: 'match',
+                                 chain_verified: true, wrong_card: false }) })).map((f) => f.key))
+      .toEqual(['name', 'ic_no'])
+  })
+
+  // ── Proof chips (Item C): EPF/salary show IC No when the proof carries one ──
+  it('epf chip shows Name + IC No + Contribution', () => {
+    expect(documentFacts(doc({ doc_type: 'epf',
+      income_proof_check: { name: 'X', nric: '750721-04-5130', name_status: 'match', nric_status: 'match',
+        member: 'mother', ic_present: true, points: [{ key: 'monthlyContribution', value: '300.00' }] } })))
+      .toEqual([{ key: 'name', status: 'verified' }, { key: 'ic_no', status: 'verified' },
+                { key: 'contribution', status: 'verified' }])
+  })
+
+  it('salary slip hides IC No when the slip carries none', () => {
+    expect(documentFacts(doc({ doc_type: 'salary_slip',
+      income_proof_check: { name: 'X', nric: '', name_status: 'match', nric_status: 'no_ref',
+        member: 'father', ic_present: true, points: [{ key: 'amount', value: '2000' }] } })).map((f) => f.key))
+      .toEqual(['name', 'amount'])
+  })
 })
 
 // ── incomeDocLayout ───────────────────────────────────────────────────────────

@@ -825,3 +825,162 @@ class TestEffectiveWorkingMembers(SimpleTestCase):
         self.assertEqual([b['member'] for b in req['members']], ['mother'])
         compulsory = {dt for dt, _ in req['members'][0]['compulsory']}
         self.assertEqual(compulsory, {'parent_ic', 'salary_slip', 'birth_certificate'})
+
+
+# ── IC-NUMBER chain (Item A) ───────────────────────────────────────────────────
+# The Birth Certificate carries the parents' IC NUMBERS; the income proof (STR / salary / EPF)
+# carries the recipient's NRIC. When the two NUMBERS match, the earner is confirmed as that parent
+# even when the IC physically uploaded in their slot is the wrong card or absent (#9: father's IC
+# in the mother slot, but BC-mother / STR / EPF all carry the mother's number).
+from apps.scholarship.income_engine import (  # noqa: E402
+    chain_verified_earner, student_str_check, student_bc_check, student_income_proof_check,
+)
+from apps.scholarship.resolution import doc_match_verdict  # noqa: E402
+
+_STUDENT = 'THERESA D/O RAJAN'
+_MOTHER = 'MARY THOMAS'
+_FATHER = 'RAJAN KUMAR'
+_MOTHER_NRIC = '750721-04-5130'
+_FATHER_NRIC = '720314-04-1122'
+
+
+class _ChainQS(list):
+    def order_by(self, *a, **k):
+        return self
+
+    def first(self):
+        return self[0] if self else None
+
+
+class _ChainDocs:
+    def __init__(self, docs):
+        self._docs = docs
+
+    def filter(self, doc_type=None, household_member=None, household_member__in=None, **kw):
+        out = []
+        for d in self._docs:
+            if doc_type is not None and d.doc_type != doc_type:
+                continue
+            hm = getattr(d, 'household_member', '')
+            if household_member is not None and hm != household_member:
+                continue
+            if household_member__in is not None and hm not in household_member__in:
+                continue
+            out.append(d)
+        return _ChainQS(out)
+
+
+def _bc_doc(*, child=_STUDENT, mother_nric=_MOTHER_NRIC, status='genuine'):
+    return SimpleNamespace(
+        doc_type='birth_certificate', household_member='', vision_run_at=object(), vision_error='',
+        vision_fields={'fields': {'bc_child_name': child, 'bc_mother_name': _MOTHER,
+                                  'bc_mother_nric': mother_nric, 'bc_father_name': _FATHER,
+                                  'bc_father_nric': _FATHER_NRIC},
+                       'authenticity': {'status': status}})
+
+
+def _wrong_card_ic():
+    """The father's IC physically uploaded in the MOTHER slot (#9)."""
+    return SimpleNamespace(doc_type='parent_ic', household_member='mother', vision_name=_FATHER,
+                           vision_nric=_FATHER_NRIC, vision_address='KL',
+                           vision_run_at=object(), vision_error='')
+
+
+def _str_doc(*, nric=_MOTHER_NRIC, name=_MOTHER):
+    return SimpleNamespace(doc_type='str', household_member='',
+                           vision_fields={'fields': {'recipient_name': name, 'recipient_nric': nric,
+                                                      'status': 'lulus', 'year': '2026'}})
+
+
+def _epf_doc(*, nric=_MOTHER_NRIC, name=_MOTHER):
+    return SimpleNamespace(doc_type='epf', household_member='mother',
+                           vision_fields={'fields': {'name': name, 'nric': nric,
+                                                      'monthly_contribution': '300.00'}})
+
+
+def _chain_app(docs, *, route='str', earner='mother'):
+    app = SimpleNamespace(income_route=route, income_earner=earner,
+                          income_working_members=['mother'] if route == 'salary' else [],
+                          profile=SimpleNamespace(name=_STUDENT, nric='050101-04-9999'),
+                          cohort=SimpleNamespace(year=2026))
+    app.documents = _ChainDocs(docs)
+    for d in docs:
+        d.application = app
+    return app
+
+
+class TestIcNumberChain(SimpleTestCase):
+    # ── The chain fires (STR route) ──────────────────────────────────────────
+    def test_chain_verified_when_bc_mother_nric_matches_str(self):
+        app = _chain_app([_wrong_card_ic(), _bc_doc(), _str_doc()])
+        self.assertTrue(chain_verified_earner(app, 'mother'))
+
+    def test_wrong_card_ic_no_longer_blocks(self):
+        ic = _wrong_card_ic()
+        _chain_app([ic, _bc_doc(), _str_doc()])
+        chk = student_income_ic_check(ic)
+        self.assertTrue(chk['chain_verified'])
+        self.assertTrue(chk['wrong_card'])             # the card IS a different person's
+        self.assertEqual(chk['name_status'], 'match')  # but the earner relationship is confirmed
+        self.assertEqual(doc_match_verdict(ic), 'ok')  # so it does NOT red-block
+
+    def test_str_recipient_reanchored_to_bc_mother(self):
+        str_doc = _str_doc()
+        _chain_app([_wrong_card_ic(), _bc_doc(), str_doc])
+        sc = student_str_check(str_doc)
+        self.assertEqual(sc['name_status'], 'match')
+        self.assertEqual(sc['nric_status'], 'match')
+
+    def test_bc_mother_row_reanchored_to_proof(self):
+        bc = _bc_doc()
+        _chain_app([_wrong_card_ic(), bc, _str_doc()])
+        bcc = student_bc_check(bc)
+        self.assertEqual(bcc['mother_status'], 'match')
+        self.assertEqual(doc_match_verdict(bc), 'ok')
+
+    # ── The chain fires (salary route, EPF) ───────────────────────────────────
+    def test_epf_reanchored_to_bc_mother_on_salary_route(self):
+        epf = _epf_doc()
+        _chain_app([_wrong_card_ic(), _bc_doc(), epf], route='salary')
+        pc = student_income_proof_check(epf)
+        self.assertEqual(pc['name_status'], 'match')
+        self.assertEqual(pc['nric_status'], 'match')
+        self.assertEqual(doc_match_verdict(epf), 'ok')
+
+    # ── One-digit OCR drift still chains WHEN the name corroborates ────────────
+    def test_one_digit_drift_with_name_corroboration_chains(self):
+        app = _chain_app([_wrong_card_ic(), _bc_doc(mother_nric='750721-04-5131'), _str_doc()])
+        self.assertTrue(chain_verified_earner(app, 'mother'))
+
+    # ── The chain does NOT fire — reds preserved ──────────────────────────────
+    def test_suspect_bc_cannot_anchor(self):
+        ic = _wrong_card_ic()
+        _chain_app([ic, _bc_doc(status='suspect'), _str_doc()])
+        chk = student_income_ic_check(ic)
+        self.assertFalse(chk['chain_verified'])
+        self.assertEqual(chk['name_status'], 'mismatch')
+        self.assertEqual(doc_match_verdict(ic), 'mismatch')   # hard block preserved
+
+    def test_bc_for_a_different_child_cannot_anchor(self):
+        # #5-style true catch: the BC is genuine but its child is NOT this student.
+        app = _chain_app([_wrong_card_ic(), _bc_doc(child='SOMEONE ELSE'), _str_doc()])
+        self.assertFalse(chain_verified_earner(app, 'mother'))
+
+    def test_different_number_no_corroboration_stays_blocked(self):
+        # Wrong person entirely: BC mother number != STR number, and the card disagrees too.
+        ic = _wrong_card_ic()
+        _chain_app([ic, _bc_doc(mother_nric='990101-14-7777'), _str_doc()])
+        chk = student_income_ic_check(ic)
+        self.assertFalse(chk['chain_verified'])
+        self.assertEqual(doc_match_verdict(ic), 'mismatch')
+
+    def test_genuine_mother_card_is_unaffected(self):
+        # A CORRECT mother IC (right card) still verifies the ordinary way — chain is a bonus path.
+        ic = SimpleNamespace(doc_type='parent_ic', household_member='mother', vision_name=_MOTHER,
+                             vision_nric=_MOTHER_NRIC, vision_address='KL',
+                             vision_run_at=object(), vision_error='')
+        _chain_app([ic, _bc_doc(), _str_doc()])
+        chk = student_income_ic_check(ic)
+        self.assertEqual(chk['name_status'], 'match')
+        self.assertFalse(chk['wrong_card'])            # the right card -> no wrong-card note
+        self.assertEqual(doc_match_verdict(ic), 'ok')
