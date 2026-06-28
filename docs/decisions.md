@@ -3531,3 +3531,24 @@ sponsor the two states they legitimately need (paused / wrapping up) without lea
 CGPA — the cockpit shows the result so they can decide).
 **Revisit if:** probation should auto-suggest from a CGPA threshold (a cockpit hint, not an auto-flip),
 or the sponsor should see a richer (still non-identifying) status.
+
+## Manual, terminal closure with a thank-you that outlives it — Post-award S6, 2026-06-28
+**Decision:** Closing a funded file is a MANUAL admin action (`closure.close_application`) gated to
+active/maintenance, recording a `closure_reason` + `closed_at`/`closed_by`. It is terminal (no
+reopen path in this module). The graduation thank-you relay is re-gated (`_require_can_thank` =
+active/maintenance/closed) to stay open AFTER closure, while semester-results / promo-consent writes
+stay funded-only. `disbursement.release_tranche` gains a funded-state guard so a closed file's
+leftover tranche can't be paid.
+**Alternatives considered:** (a) auto-close on graduation / last tranche — rejected: loses the human
+judgement of "the relationship has ended and why"; (b) a self-serve reopen — rejected: a mistaken
+close is rare and better handled by a deliberate admin DB action than a routine reverse flow;
+(c) block the thank-you after close (keep the funded-only gate) — rejected: a graduated student
+writing to their sponsor is exactly when the thank-you matters most.
+**Rationale:** Manual close keeps closure_reason honest (it's a human call); the separate thank-you
+gate lets gratitude flow post-closure without reopening the funded-only writes; the release guard
+makes "closed = no more money" an invariant in the writer, not just the UI.
+**Trade-offs:** No in-app undo for a wrong close (accepted — rare; fix via audited DB action). Two
+in-programme gates to keep straight (`_require_in_programme` funded-only vs `_require_can_thank`
+incl. closed) — both documented in `in_programme.py`.
+**Revisit if:** closure needs an audited reopen flow, or auto-close-on-graduation is wanted with a
+confirm step (a suggestion, not an auto-flip).

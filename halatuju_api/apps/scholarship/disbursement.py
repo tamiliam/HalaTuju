@@ -95,6 +95,9 @@ def release_tranche(disbursement, *, by_email='', reference='mock', note=''):
     on the first release**. Returns the row."""
     if disbursement.status not in ('scheduled', 'due'):
         raise DisbursementError('bad_state')
+    # S6: never release money to a non-funded (e.g. closed) student — closure leaves any
+    # leftover scheduled tranche un-releasable.
+    _require_funded(disbursement.application)
     # S5: an on-hold student's support is paused — no money goes out until resumed.
     from . import maintenance
     if maintenance.is_on_hold(disbursement.application):

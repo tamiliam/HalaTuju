@@ -23,6 +23,7 @@ from . import pool
 from . import reopen as reopen_service
 from . import disbursement as disbursement_service
 from . import maintenance as maintenance_service
+from . import closure as closure_service
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
@@ -849,6 +850,25 @@ class AdminDisbursementActionView(_AdminBase):
         except disbursement_service.DisbursementError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(disb.application).data)
+
+
+class AdminCloseApplicationView(_AdminBase):
+    """Post-award S6: POST .../applications/<pk>/close/ {closure_reason} — manually close a
+    funded application (active/maintenance) with a reason (graduated/completed/withdrawn/
+    lapsed/terminated). Reviewer-gated + access-scoped. Terminal. Returns the refreshed detail."""
+    def post(self, request, pk):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        try:
+            closure_service.close_application(
+                app, closure_reason=request.data.get('closure_reason'), by_email=admin.email)
+        except closure_service.ClosureError as e:
+            return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(app).data)
 
 
 class AdminMaintenanceSubstateView(_AdminBase):

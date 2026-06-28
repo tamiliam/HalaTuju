@@ -2156,6 +2156,20 @@
         "title": "Sokongan anda kini ditangguhkan",
         "body": "Pembayaran anda yang seterusnya ditangguhkan buat masa ini. Sila hubungi kami supaya kami boleh menyelesaikannya bersama."
       },
+      "closed": {
+        "graduated": {
+          "title": "Tahniah, graduan! 🎓",
+          "body": "Perjalanan anda bersama kami telah lengkap. Kami amat bangga dengan anda. Jika mahu, anda masih boleh menghantar nota penghargaan kepada penaja anda di bawah."
+        },
+        "completed": {
+          "title": "Sokongan anda telah lengkap 🎉",
+          "body": "Sokongan yang kami janjikan telah disediakan sepenuhnya. Kami mendoakan kejayaan anda. Anda masih boleh menghantar nota penghargaan kepada penaja anda di bawah."
+        },
+        "neutral": {
+          "title": "Fail anda kini ditutup",
+          "body": "Bab ini bersama kami telah berakhir. Jika ada sebarang pertanyaan, sila hubungi kami."
+        }
+      },
       "results": {
         "title": "Keputusan semester",
         "subtitle": "Tambah keputusan terkini anda setiap semester supaya kami dapat menyokong anda.",
@@ -2673,6 +2687,31 @@
         "probation": "Letak dalam percubaan",
         "on_hold": "Tangguhkan",
         "ready_to_close": "Tanda sedia ditutup"
+      }
+    },
+    "closure": {
+      "title": "Tutup fail",
+      "note": "Penutupan adalah muktamad. Pilih sebab yang paling sesuai dengan cara sokongan berakhir.",
+      "reasonLabel": "Sebab penutupan",
+      "reasonUnset": "Pilih sebab…",
+      "close": "Tutup fail",
+      "closedBy": "Ditutup oleh",
+      "reason": {
+        "graduated": "Bergraduat",
+        "completed": "Sokongan selesai",
+        "withdrawn": "Ditarik balik",
+        "lapsed": "Luput",
+        "terminated": "Ditamatkan"
+      },
+      "checklist": {
+        "finalDisbursement": "Pembayaran akhir telah diselesaikan (tiada ansuran tertunggak).",
+        "thankYou": "Pelajar dijemput menulis nota penghargaan (masih boleh selepas penutupan).",
+        "records": "Rekod dan dokumen telah diarkibkan."
+      },
+      "error": {
+        "bad_reason": "Pilih sebab penutupan yang sah.",
+        "not_closeable": "Hanya pelajar yang dibiayai (aktif atau penyelenggaraan) boleh ditutup.",
+        "generic": "Tidak dapat menutup fail. Anda mungkin tiada kebenaran."
       }
     },
     "scholarship": {

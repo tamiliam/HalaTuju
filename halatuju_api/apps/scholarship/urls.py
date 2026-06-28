@@ -54,6 +54,7 @@ from .views_admin import (
     AdminApplicationListView,
     AdminBursaryCountersignView,
     AdminBursaryWitnessView,
+    AdminCloseApplicationView,
     AdminDisbursementActionView,
     AdminDisbursementScheduleView,
     AdminMaintenanceSubstateView,
@@ -167,6 +168,9 @@ urlpatterns = [
     # Post-award S5: maintenance sub-state (on_track/probation/on_hold/ready_to_close)
     path('admin/scholarship/applications/<int:pk>/maintenance/',
          AdminMaintenanceSubstateView.as_view()),
+    # Post-award S6: manual closure (status='closed' + closure_reason)
+    path('admin/scholarship/applications/<int:pk>/close/',
+         AdminCloseApplicationView.as_view()),
     path('admin/scholarship/assignable-admins/', AdminAssignableAdminsView.as_view()),
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),

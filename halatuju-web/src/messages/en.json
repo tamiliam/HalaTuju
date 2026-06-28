@@ -2156,6 +2156,20 @@
         "title": "Your support is currently paused",
         "body": "Your next payment is on hold for now. Please get in touch with us so we can sort it out together."
       },
+      "closed": {
+        "graduated": {
+          "title": "Congratulations, graduate! 🎓",
+          "body": "Your journey with us is complete. We're so proud of you. If you'd like, you can still send a thank-you note to your sponsor below."
+        },
+        "completed": {
+          "title": "Your support is complete 🎉",
+          "body": "The support we promised has been fully provided. We wish you every success ahead. You can still send a thank-you note to your sponsor below."
+        },
+        "neutral": {
+          "title": "Your file is now closed",
+          "body": "This chapter with us has come to a close. If you have any questions, please get in touch."
+        }
+      },
       "results": {
         "title": "Semester results",
         "subtitle": "Add your latest results each semester so we can support you.",
@@ -2673,6 +2687,31 @@
         "probation": "Place on probation",
         "on_hold": "Put on hold",
         "ready_to_close": "Mark ready to close"
+      }
+    },
+    "closure": {
+      "title": "Close the file",
+      "note": "Closing is final. Choose the reason that best fits how the support ended.",
+      "reasonLabel": "Closure reason",
+      "reasonUnset": "Choose a reason…",
+      "close": "Close the file",
+      "closedBy": "Closed by",
+      "reason": {
+        "graduated": "Graduated",
+        "completed": "Support completed",
+        "withdrawn": "Withdrawn",
+        "lapsed": "Lapsed",
+        "terminated": "Terminated"
+      },
+      "checklist": {
+        "finalDisbursement": "Final disbursement settled (no tranche left pending).",
+        "thankYou": "Student invited to write a thank-you note (still possible after closing).",
+        "records": "Records and documents archived."
+      },
+      "error": {
+        "bad_reason": "Choose a valid closure reason.",
+        "not_closeable": "Only a funded student (active or maintenance) can be closed.",
+        "generic": "Could not close the file. You may not have permission."
       }
     },
     "scholarship": {

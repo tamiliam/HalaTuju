@@ -548,9 +548,13 @@ export interface AdminScholarshipDetail {
   disbursements: AdminDisbursement[]
   /** Post-award S5: operational sub-state within status='maintenance'. */
   maintenance_substate: MaintenanceSubstate
+  /** Post-award S6: manual-close audit (set when status='closed'). */
+  closed_at: string | null
+  closed_by: string
 }
 
 export type MaintenanceSubstate = 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'
+export type ClosureReason = 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
 
 /** Post-award S4: one disbursement tranche. Admin-facing — funder link by id only,
  *  never a sponsor identity (anonymity holds). */
@@ -1134,6 +1138,20 @@ export async function setMaintenanceSubstate(
     `/api/v1/admin/scholarship/applications/${id}/maintenance/`,
     'POST',
     { substate },
+    options,
+  )
+}
+
+// ── Post-award S6: manual closure ──
+export async function closeApplication(
+  id: number,
+  closureReason: ClosureReason,
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/close/`,
+    'POST',
+    { closure_reason: closureReason },
     options,
   )
 }

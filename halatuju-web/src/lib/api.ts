@@ -1353,6 +1353,8 @@ export interface ScholarshipApplication {
   shortlist_reason: string
   /** Post-award S5: operational sub-state within status='maintenance' (e.g. 'on_hold'). */
   maintenance_substate: 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'
+  /** Post-award S6: closure bucket — '' unless status='closed'. */
+  closure_reason: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
   acknowledged_at: string | null
   submitted_at: string
   updated_at: string
