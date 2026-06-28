@@ -114,6 +114,12 @@ export const KNOWN_CODES = [
   // #8 — utility-bill consistency clarify queries (dark until CHECK2_STUDENT_QUERIES_ENABLED).
   'utility_holder_unknown',
   'utility_address_mismatch',
+  // Full-household-income completeness (reviewer-query automation S1): a parent's income
+  // proof (kind='doc') or their work/status when the slot is blank (kind='clarify').
+  'father_income_proof_missing',
+  'mother_income_proof_missing',
+  'father_status_unknown',
+  'mother_status_unknown',
 ] as const
 
 export type KnownCode = (typeof KNOWN_CODES)[number]

@@ -6,7 +6,7 @@ from apps.courses.models import StudentProfile
 
 from apps.scholarship.check2_queries import MAX_CLARIFY, sync_check2_queries
 from apps.scholarship.models import (
-    FundingNeed, ResolutionItem, ScholarshipApplication, ScholarshipCohort,
+    ApplicantDocument, FundingNeed, ResolutionItem, ScholarshipApplication, ScholarshipCohort,
 )
 
 
@@ -26,7 +26,14 @@ class _Base(TestCase):
             aspirations='I want to teach.', field_of_study='Education',
             siblings_in_tertiary=0,  # sibling level known
             chosen_pathway='stpm', pathway_certainty='sure',  # STPM → transport asked
+            # Household-income completeness satisfied by default (S1): father earns + has a
+            # payslip on file, mother is a homemaker (status known) — so the parent-income
+            # gaps don't fire in tests focused on the OTHER clarify gaps.
+            father_occupation='gov', mother_occupation='homemaker',
         )
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='father',
+            storage_path='x/slip')
 
     def _codes(self, qs=None):
         qs = qs if qs is not None else self.app.resolution_items.filter(source='check2', status='open')

@@ -1943,6 +1943,22 @@
         "utility_address_mismatch": {
           "title": "Adakah bil utiliti anda untuk rumah semasa anda?",
           "desc": "Alamat pada bil utiliti anda kelihatan berbeza daripada alamat rumah anda. Beritahu kami yang mana satu rumah semasa anda."
+        },
+        "father_income_proof_missing": {
+          "title": "Muat naik bukti pendapatan bapa anda",
+          "desc": "Bapa anda bekerja, tetapi kami belum ada dokumen pendapatannya. Sila muat naik slip gaji terkini atau penyata KWSP (EPF) beliau — kami mengira pendapatan seluruh isi rumah."
+        },
+        "mother_income_proof_missing": {
+          "title": "Muat naik bukti pendapatan ibu anda",
+          "desc": "Ibu anda bekerja, tetapi kami belum ada dokumen pendapatannya. Sila muat naik slip gaji terkini atau penyata KWSP (EPF) beliau — kami mengira pendapatan seluruh isi rumah."
+        },
+        "father_status_unknown": {
+          "title": "Beritahu kami tentang bapa anda",
+          "desc": "Kami tiada maklumat bapa anda. Adakah dia bekerja (dan di mana), atau seorang suri rumah, pesara, menganggur, telah meninggal dunia, atau tiada dalam hubungan? Ini membantu kami memahami jumlah penuh pendapatan isi rumah anda."
+        },
+        "mother_status_unknown": {
+          "title": "Beritahu kami tentang ibu anda",
+          "desc": "Kami tiada maklumat ibu anda. Adakah dia bekerja (dan di mana), atau seorang suri rumah, pesara, menganggur, telah meninggal dunia, atau tiada dalam hubungan? Ini membantu kami memahami jumlah penuh pendapatan isi rumah anda."
         }
       }
     },
@@ -3146,7 +3162,11 @@
           "device_status_unknown": "Keperluan peranti tidak diketahui — pelajar telah ditanya sama ada mereka mempunyai komputer riba/tablet.",
           "transport_cost_unknown": "Kos pengangkutan tidak diketahui — pelajar telah ditanya cara mereka pergi dan anggaran kos bulanan.",
           "utility_holder_unknown": "Bil utiliti atas nama orang lain — pelajar telah ditanya siapa mereka dan hubungannya.",
-          "utility_address_mismatch": "Alamat bil utiliti berbeza daripada alamat rumah — pelajar telah ditanya yang mana rumah semasa mereka."
+          "utility_address_mismatch": "Alamat bil utiliti berbeza daripada alamat rumah — pelajar telah ditanya yang mana rumah semasa mereka.",
+          "father_income_proof_missing": "Bapa bekerja tetapi tiada dokumen pendapatan dalam fail — pelajar diminta memuat naik slip gaji / KWSP beliau.",
+          "mother_income_proof_missing": "Ibu bekerja tetapi tiada dokumen pendapatan dalam fail — pelajar diminta memuat naik slip gaji / KWSP beliau.",
+          "father_status_unknown": "Pekerjaan/status bapa tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
+          "mother_status_unknown": "Pekerjaan/status ibu tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan."
         }
       },
       "decision": {

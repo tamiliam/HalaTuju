@@ -1254,3 +1254,60 @@ def income_requirements(application) -> dict:
     seen = set(compulsory)
     optional = [d for d in optional if not (d in seen or seen.add(d))]
     return {'route': route, 'members': [], 'compulsory': compulsory, 'optional': optional}
+
+
+# ── Full-household-income completeness (reviewer-query automation S1) ─────────
+# The sponsor counts the FULL household income, but apply only collects the ONE declared
+# earner's documents — so reviewers repeatedly ask, by hand, for the OTHER parent's payslip
+# (when they work) or their status (when their slot is blank). This is deterministic: every
+# parent must be EITHER marked non-earning (status known) OR have income evidence on file.
+
+def _parent_has_income_evidence(application, member):
+    """True when an income DOCUMENT covers this parent: a salary slip / EPF tagged to them,
+    or — on the STR route — they are the single STR earner with an STR doc, or the IC-number
+    chain confirms them. (Roster-only 'they earn' is NOT evidence — that's the gap.)"""
+    if (_cluster_docs(application, member, 'salary_slip').exists()
+            or _cluster_docs(application, member, 'epf').exists()):
+        return True
+    route = (getattr(application, 'income_route', '') or '').strip()
+    if (route == 'str'
+            and (getattr(application, 'income_earner', '') or '').strip() == member
+            and application.documents.filter(doc_type='str').exists()):
+        return True
+    if member in ('mother', 'father') and chain_verified_earner(application, member):
+        return True
+    return False
+
+
+def parent_income_status(application, member):
+    """One parent's income-completeness verdict (member = 'father' | 'mother'):
+      'satisfied'  — non-earning status is recorded (homemaker/deceased/…), OR income
+                     evidence is on file;
+      'need_proof' — an EARNING occupation is recorded but NO income document covers them
+                     (ask for that parent's salary slip / EPF);
+      'need_status'— the parent's slot is blank (no occupation), so we don't know whether
+                     they earn (ask their work/status — the "why one earner" question).
+    Tolerant of a test double missing the roster columns."""
+    from .family import NON_EARNING
+    occ = (getattr(application, f'{member}_occupation', '') or '').strip()
+    if occ in NON_EARNING:
+        return 'satisfied'                       # status known, non-earning → answered
+    if _parent_has_income_evidence(application, member):
+        return 'satisfied'                       # documented income on file
+    if occ:
+        return 'need_proof'                      # earning occupation, no income doc
+    return 'need_status'                         # blank slot → ask their work/status
+
+
+def parent_income_gaps(application):
+    """The household-income completeness gaps across BOTH parents, as
+    ``[{'member': 'father'|'mother', 'need': 'proof'|'status'}, …]`` (empty when both are
+    satisfied). Drives the auto-raised reviewer queries that today are typed by hand."""
+    gaps = []
+    for member in ('father', 'mother'):
+        status = parent_income_status(application, member)
+        if status == 'need_proof':
+            gaps.append({'member': member, 'need': 'proof'})
+        elif status == 'need_status':
+            gaps.append({'member': member, 'need': 'status'})
+    return gaps

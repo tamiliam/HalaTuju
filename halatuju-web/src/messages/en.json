@@ -1943,6 +1943,22 @@
         "utility_address_mismatch": {
           "title": "Is your utility bill for your current home?",
           "desc": "The address on your utility bill looks different from your home address. Let us know which one is your current home."
+        },
+        "father_income_proof_missing": {
+          "title": "Upload your father's income proof",
+          "desc": "Your father is working, but we don't have his income document yet. Please upload his latest salary slip or EPF (KWSP) statement — we count the whole household's income."
+        },
+        "mother_income_proof_missing": {
+          "title": "Upload your mother's income proof",
+          "desc": "Your mother is working, but we don't have her income document yet. Please upload her latest salary slip or EPF (KWSP) statement — we count the whole household's income."
+        },
+        "father_status_unknown": {
+          "title": "Tell us about your father",
+          "desc": "We don't have your father's details. Is he working (and where), or is he a homemaker, retired, unemployed, passed away, or not in contact? This helps us understand your full household income."
+        },
+        "mother_status_unknown": {
+          "title": "Tell us about your mother",
+          "desc": "We don't have your mother's details. Is she working (and where), or is she a homemaker, retired, unemployed, passed away, or not in contact? This helps us understand your full household income."
         }
       }
     },
@@ -3146,7 +3162,11 @@
           "device_status_unknown": "Device need unknown — the student has been asked whether they have a laptop/tablet.",
           "transport_cost_unknown": "Transport cost unknown — the student has been asked how they travel and the rough monthly cost.",
           "utility_holder_unknown": "Utility bill is in another person's name — the student has been asked who they are and the relationship.",
-          "utility_address_mismatch": "Utility-bill address differs from the home address — the student has been asked which is their current home."
+          "utility_address_mismatch": "Utility-bill address differs from the home address — the student has been asked which is their current home.",
+          "father_income_proof_missing": "Father works but no income document on file — the student has been asked to upload his salary slip / EPF.",
+          "mother_income_proof_missing": "Mother works but no income document on file — the student has been asked to upload her salary slip / EPF.",
+          "father_status_unknown": "Father's work/status not provided — the student has been asked whether he works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
+          "mother_status_unknown": "Mother's work/status not provided — the student has been asked whether she works (and where) or is a homemaker/retired/unemployed/passed away/not in contact."
         }
       },
       "decision": {

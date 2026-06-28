@@ -3600,3 +3600,27 @@ escape hatch within a fixed band.
 override survives; a decline resets it. Reviewers lose the ability to size assistance (by design).
 **Revisit if:** the band/steps change, more pathway tiers are needed, or non-super roles should be
 allowed to propose within limits.
+
+## Full-household-income completeness: a parent is non-earning OR income-evidenced, else ask — Reviewer-query S1, 2026-06-29
+**Decision:** Auto-raise the second-parent income gap deterministically. For each parent
+(father/mother): if the occupation code is non-earning (`family.NON_EARNING` — homemaker/retired/
+unemployed/unable/deceased/no_contact) → satisfied (status known); else if an income document
+covers them (salary slip/EPF tagged to them, or they're the STR earner, or the IC-number chain
+confirms them) → satisfied; else if they have an earning occupation but no income doc → an
+uncapped DOC request for their payslip/EPF; else (blank slot) → a capped STATUS clarify asking
+their work/status. Lives in `income_engine.parent_income_*`; surfaced via `check2_queries`.
+**Alternatives considered:** (a) require BOTH parents' income at apply — rejected: heavier apply
+form, and many B40 households genuinely have one earner (the occupation code already says so);
+(b) leave it to reviewers (status quo) — rejected: it's the single most-repeated manual query
+(~14/29 students), and fully deterministic; (c) make the proof request a capped clarify — rejected:
+it's a document upload, not a question (decision #1 keeps docs uncapped so the clarify queue isn't
+suppressed).
+**Rationale:** The sponsor counts the FULL household income; the occupation roster already encodes
+who is a non-earner, so the only real gaps are an earning parent with no proof (ask for the doc) or
+a blank parent (ask their status). Both are detectable with no schema change.
+**Trade-offs:** A genuinely single-parent household with a blank second slot is asked a status
+question — acceptable, because the answer (passed away / not in contact / homemaker) closes it and
+is exactly what reviewers ask today. Asking is student-facing (document gaps are hard to game,
+decision #3).
+**Revisit if:** the apply form starts collecting both parents' occupations as mandatory (the blank
+case would disappear), or a per-parent income breakdown is wanted in the profile.
