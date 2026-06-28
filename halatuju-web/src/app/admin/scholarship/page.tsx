@@ -27,7 +27,10 @@ const statusBadge = (s: string) =>
         : s === 'interviewing' ? 'bg-violet-100 text-violet-700'
           : s === 'interviewed' ? 'bg-indigo-100 text-indigo-700'
             : s === 'recommended' ? 'bg-green-100 text-green-700'
-            : s === 'accepted' ? 'bg-green-100 text-green-700'
+            : s === 'awarded' ? 'bg-green-100 text-green-700'
+            : s === 'active' ? 'bg-green-100 text-green-700'
+            : s === 'maintenance' ? 'bg-green-100 text-green-700'
+            : s === 'closed' ? 'bg-gray-100 text-gray-600'
               : s === 'rejected' ? 'bg-red-100 text-red-600'
                 : 'bg-gray-100 text-gray-600'
 
@@ -46,14 +49,14 @@ function orderReviewersFor(reviewers: Reviewer[], lang: string): Array<{ rv: Rev
 }
 
 const STATUS_OPTIONS = [
-  'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'recommended', 'accepted', 'rejected',
+  'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'recommended', 'awarded', 'active', 'maintenance', 'closed', 'rejected',
 ]
 
 // Human, Sentence-case status labels (the raw keys like 'profile_complete' aren't for display).
 const STATUS_LABELS: Record<string, string> = {
   submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Completed',
   interviewing: 'Interviewing', interviewed: 'Interviewed',
-  recommended: 'Recommended', accepted: 'Accepted',
+  recommended: 'Recommended', awarded: 'Awarded', active: 'Active', maintenance: 'Maintenance', closed: 'Closed',
   sponsored: 'Sponsored', rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
   reopened: 'Reopened',
 }

@@ -529,12 +529,16 @@ student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
   (admin_reject gate + QUERYING_LOCKED), `family.DECIDED_STATUSES`, `send_review_nudges._TERMINAL`,
   `reopen`, and the web admin status maps/`officerCockpit.QUERYING_LOCKED_STATES`. Student-masking folded
   in (now masks `recommended`). Retro `docs/retrospective-2026-06-28-post-award-s1-rename.md`.
-- **▶ NEXT — S2 (new-status scaffolding + re-gate + DROP the `accepted` alias).** Add `awarded`/`active`/
-  `maintenance`/`closed` + `closure_reason`; re-gate `pool.is_pool_eligible` / `derive_progress_state` /
-  `in_programme._require_in_programme` (currently keyed on `sponsored`); status labels. **The 23 rows are
-  already migrated, so S2 can safely REMOVE every legacy `accepted` token** added in S1 (grep `'accepted'`
-  — leave only the sponsor-feed event type + frozen migration snapshots). Expected 0 `sponsored` rows on
-  prod (verify) → migrate any to `maintenance`, retire `sponsored`.
+- **S2 SHIPPED 2026-06-28** (migration `0074`: additive `closure_reason` column **migrate-first** + status
+  choices state-only). Added `awarded`/`active`/`maintenance`/`closed` + `closure_reason`; dropped the
+  `accepted` alias; re-gated the pool (`pool.IN_PROGRAMME_OR_BEYOND` — a student leaves the discovery pool at
+  funder-commit), the in-programme gate + progress band (`pool.FUNDED_STATES` = active/maintenance/sponsored).
+  `sponsored` kept VALID until S3 (TD-146). Retro `docs/retrospective-2026-06-28-post-award-s2-statuses.md`.
+- **▶ NEXT — S3 (`awarded` + the 4-step signing, dark behind `BURSARY_AGREEMENT_ENABLED`).** Funder-commit
+  (sponsor selects / Foundation allocates) → `awarded`; surface the signing sub-states (student → guarantor →
+  witness → Foundation, derived from the existing bursary timestamps); Foundation's last signature → `active`.
+  **Rewire `sponsorship.respond_to_award` to set `active`** (not `sponsored`) + retire `sponsored` (TD-146);
+  migrate any `sponsored` rows → `maintenance` (expect 0).
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,

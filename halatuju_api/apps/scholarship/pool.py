@@ -60,14 +60,23 @@ PROGRESS_STATES = ('on_track', 'semester_completed', 'needs_attention', 'graduat
 # scale; 2.00 is the usual minimum good-standing line).
 _NEEDS_ATTENTION_CGPA = 2.0
 
+# Post-award lifecycle (roadmap docs/scholarship/post-award-lifecycle-plan.md):
+# A funder has committed (or the student is in-programme / closed) → no longer in the sponsor
+# DISCOVERY pool. A 'recommended' student is still poolable, awaiting a funder. ('sponsored' is the
+# legacy in-programme value, superseded by active/maintenance but still produced until S3.)
+IN_PROGRAMME_OR_BEYOND = ('awarded', 'active', 'maintenance', 'sponsored', 'closed')
+# The funded in-programme states a progress band applies to (active = executed/pre-payout,
+# maintenance = funded; 'sponsored' = legacy in-programme).
+FUNDED_STATES = ('active', 'maintenance', 'sponsored')
+
 
 def derive_progress_state(application):
     """The student's progress band, or None when there's nothing to report yet
-    (not sponsored). Bands (from the latest SemesterResult, non-identifying):
+    (not in-programme). Bands (from the latest SemesterResult, non-identifying):
     ``graduated`` (the result marks graduation) > ``needs_attention`` (CGPA at/below
-    2.00) > ``semester_completed`` (a CGPA is recorded) > ``on_track`` (sponsored,
+    2.00) > ``semester_completed`` (a CGPA is recorded) > ``on_track`` (in-programme,
     no result yet, or a result with no CGPA)."""
-    if application is None or application.status != 'sponsored':
+    if application is None or application.status not in FUNDED_STATES:
         return None
     latest = application.semester_results.order_by('-created_at').first()
     if latest is None:
@@ -87,7 +96,7 @@ def is_pool_eligible(application):
     sp = getattr(application, 'sponsor_profile', None)
     if sp is None or not sp.anon_published:
         return False
-    if application.status == 'sponsored':  # E3: sponsored students leave the pool
+    if application.status in IN_PROGRAMME_OR_BEYOND:  # a funder committed → leaves the pool
         return False
     return has_active_share_consent(application)
 
@@ -191,7 +200,7 @@ def eligible_pool_queryset(model):
             consents__consent_type=SHARE_CONSENT_TYPE,
             consents__is_active=True,
         )
-        .exclude(status='sponsored')  # E3: a sponsored student leaves the pool
+        .exclude(status__in=IN_PROGRAMME_OR_BEYOND)  # a funder committed → leaves the pool
         .select_related('sponsor_profile', 'profile')
         .distinct()
     )

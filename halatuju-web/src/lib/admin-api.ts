@@ -476,6 +476,8 @@ export interface AdminScholarshipDetail {
   rejection_category: string
   rejected_at: string | null
   rejected_by: string
+  // Closure bucket: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
+  closure_reason: string
   // Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation + its reveal date.
   pending_rejection_category: string
   decline_due_at: string | null

@@ -522,7 +522,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
         #    accept an award the app becomes 'sponsored' (a real commitment, not masked).
         if obj.status == 'rejected' and (obj.pending_rejection_category or ''):
             return 'interviewed'
-        if obj.status in ('recommended', 'accepted'):  # 'accepted' = legacy alias (Sprint 2 drops it)
+        if obj.status == 'recommended':
             return 'interviewed'
         return obj.status
 

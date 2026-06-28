@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Post-award lifecycle — Sprint 2: new statuses `awarded`/`active`/`maintenance`/`closed` + `closure_reason`; legacy `accepted` alias dropped; pool/progress/in-programme re-gated.** Adds the four post-award statuses + a `closure_reason` bucket (graduated/completed/withdrawn/lapsed/terminated, mirroring `rejection_category`). Removes the one-release `accepted` tolerance from S1 (the 23 rows were migrated, so the alias is gone everywhere bar the unrelated sponsor-feed event type). A student now **leaves the sponsor discovery pool the moment a funder commits** (`awarded`/`active`/`maintenance`/`closed`; was only `sponsored`) via `pool.IN_PROGRAMME_OR_BEYOND`; the in-programme gate (semester results / promo consent / graduation relay) now spans the funded states (`active`/`maintenance`/`sponsored`) via `pool.FUNDED_STATES`; the progress band derives for those too. `sponsored` is kept VALID (still written by `sponsorship.respond_to_award` until S3 rewires the award flow → `active`). Migration `0074`: additive `closure_reason` column (**migrate-first**) + status choices (state-only). +8 tests.
 - **Post-award lifecycle — Sprint 1: renamed application status `accepted` → `recommended`.** First slice
   of the post-award roadmap (`docs/scholarship/post-award-lifecycle-plan.md`). `recommended` better
   reflects the state: the reviewer has *recommended* the candidate, but no award is guaranteed until a

@@ -56,7 +56,7 @@ class TestDeclineCooloff(TestCase):
         self.assertEqual(app.status, 'rejected')                # real (admin) status
         self.assertEqual(ApplicationReadSerializer(app).data['status'], 'interviewed')  # masked for student
 
-    def test_student_does_not_see_accepted_status(self):
+    def test_student_does_not_see_recommended_status(self):
         # 'recommended' is an internal verification decision a super-admin can still reverse
         # (reopen -> interviewed -> possibly declined), so the student must keep seeing the
         # in-review state. The admin cockpit uses a different serializer and sees the real
@@ -65,9 +65,6 @@ class TestDeclineCooloff(TestCase):
         app = self._app(status='recommended')
         self.assertEqual(app.status, 'recommended')             # real (admin) status
         self.assertEqual(ApplicationReadSerializer(app).data['status'], 'interviewed')  # masked for student
-        # Legacy 'accepted' must still mask too (code tolerates the old value).
-        legacy = self._app(status='accepted')
-        self.assertEqual(ApplicationReadSerializer(legacy).data['status'], 'interviewed')
 
     def test_cancel_pending_decline(self):
         app = self._app()

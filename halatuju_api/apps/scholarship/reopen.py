@@ -68,7 +68,7 @@ def reopen_decision(app, *, by_admin, reason):
         # bucketed as 'interview' (reviewed-but-not-selected, NOT 'contractual'), and a
         # re-approve flows through verify-accept again. A 'sponsored' (funded) case is genuinely
         # post-award and stays put (its decline path IS 'contractual').
-        if app.status in ('recommended', 'accepted'):  # 'accepted' = legacy alias (Sprint 2 drops it)
+        if app.status == 'recommended':
             app.status = 'interviewed'
             fields.append('status')
         # A pending (cool-off) decline is part of the decision being reversed — clear it so the
