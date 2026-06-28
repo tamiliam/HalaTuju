@@ -516,7 +516,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-27)
+## Next Sprint (as of 2026-06-28)
+
+**▶ POST-AWARD STUDENT LIFECYCLE — multi-sprint roadmap `docs/scholarship/post-award-lifecycle-plan.md`
+(approved 2026-06-28). Target state machine: `recommended → awarded → active → maintenance → closed`
+(+ `closure_reason`; maintenance sub-states on_track/probation/on_hold/ready-to-close; signing order
+student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
+- **S1 SHIPPED + LIVE 2026-06-28** (commits `76a7ae06` mask + `6a9ddc58` rename; migration `0073`
+  STATE-ONLY, recorded on prod; 23 rows migrated `accepted`→`recommended`, verified 0/23). Renamed the
+  application status `accepted` → `recommended` via **expand-contract**: `recommended` is canonical,
+  legacy `accepted` is **still TOLERATED** in `models` STATUS_CHOICES, `serializers` mask, `services`
+  (admin_reject gate + QUERYING_LOCKED), `family.DECIDED_STATUSES`, `send_review_nudges._TERMINAL`,
+  `reopen`, and the web admin status maps/`officerCockpit.QUERYING_LOCKED_STATES`. Student-masking folded
+  in (now masks `recommended`). Retro `docs/retrospective-2026-06-28-post-award-s1-rename.md`.
+- **▶ NEXT — S2 (new-status scaffolding + re-gate + DROP the `accepted` alias).** Add `awarded`/`active`/
+  `maintenance`/`closed` + `closure_reason`; re-gate `pool.is_pool_eligible` / `derive_progress_state` /
+  `in_programme._require_in_programme` (currently keyed on `sponsored`); status labels. **The 23 rows are
+  already migrated, so S2 can safely REMOVE every legacy `accepted` token** added in S1 (grep `'accepted'`
+  — leave only the sponsor-feed event type + frozen migration snapshots). Expected 0 `sponsored` rows on
+  prod (verify) → migrate any to `maintenance`, retire `sponsored`.
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,

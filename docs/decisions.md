@@ -3455,3 +3455,10 @@ single-inbox.
 **Rationale:** The side-flag left the status at `accepted` through a reopen, so the only decline available was `contractual` (wrong bucket for an interviewed-then-declined case) and re-approve couldn't flow through verify-accept. Moving the status fixes the bucket, the re-approve path, and the cockpit display in one change; the existing frontend (`doSave`/`decisionLocked`/cancel-reopen) needed no category logic.
 **Trade-offs:** A reopened-then-declined case sits at `interviewed` during the email embargo (correct: in-review, pending reveal). `contractual` is effectively dormant until the funded (`sponsored`) flow is live.
 **Revisit if:** a post-award (sponsored) contractual-decline flow goes live and needs its own UI path.
+
+## Rename application status `accepted` → `recommended` (post-award lifecycle S1) — Sprint 1, 2026-06-28
+**Decision:** Rename the application status *value* `accepted` to `recommended`, as the first slice of the post-award lifecycle (`recommended → awarded → active → maintenance → closed`). Done via expand-contract: `recommended` is canonical; legacy `accepted` is tolerated for one release; Sprint 2 drops the alias.
+**Alternatives considered:** (a) Keep the value `accepted` and only relabel the display text to "Recommended" (zero migration). (b) A naive migrate-first value-rename (no tolerance).
+**Rationale:** `recommended` is honest — the reviewer recommends the candidate but no award is guaranteed until a funder commits at `awarded`; it also pairs with the student-masking (a recommended student is provisional → masked). Renaming the value (not just the label) keeps the code reading truthfully. Expand-contract makes the live deploy of 23 rows safe regardless of order.
+**Trade-offs:** A one-release window where the code carries a legacy `accepted` alias in several sets/choices (extra tokens, removed in Sprint 2). Renaming a live value cost a data migration + a wide (but mechanical) call-site sweep vs a label-only change.
+**Revisit if:** never — the alias is removed in Sprint 2; the canonical value is `recommended`.
