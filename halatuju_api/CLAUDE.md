@@ -516,7 +516,22 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-28)
+## Next Sprint (as of 2026-06-29)
+
+**▶ DOC-RECOGNITION LAYER 2 (cross-document matching) — L2-1 SHIPPED + LIVE 2026-06-29** (commits
+`c1fa3066` extraction robustness + `63a56a61` chain/chips; `halatuju-api-00548` + `halatuju-web-00502`;
+no migration). The **IC NUMBER is the cross-document join key**: `income_engine.chain_verified_earner`
+confirms an earner when a Layer-1-genuine BC (child = student) carries a parent IC number matching the
+income proof's NRIC (STR/salary/EPF) — exact, or one-digit OCR drift WITH name corroboration — so the
+mother is verified EVEN when the wrong card sits in her slot or it's absent (#9). It only ever demotes a
+red to a verified green (never asserts a mismatch); a positively-suspect BC can't anchor it; the one hard
+block survives (proof name AND number both contradict, no corroboration). Wired in lockstep across the
+four checks (`student_income_ic_check`/`_proof_check`/`_str_check`/`_bc_check`), `resolution.doc_match_verdict`,
+and both `verdict_engine` income paths. Cockpit: EPF/salary chips show IC No; parent-IC chip shows a soft
+amber "Wrong card" caveat. Verified on cached eval: #9 all-green, #5 stays red. Retro
+`docs/retrospective-2026-06-29-l2-ic-number-chain.md`. **NEXT (L2-2, not yet planned):** the remaining
+Layer-2 issues + reconcile the stale eval-corpus labels (move str_a9/a23 → fixtures, a5 → counter_examples)
++ re-capture the a10/a86 BC snapshots (Item-B extraction fix is live, so they clear on real re-upload).
 
 **▶ POST-AWARD STUDENT LIFECYCLE — multi-sprint roadmap `docs/scholarship/post-award-lifecycle-plan.md`
 (approved 2026-06-28). Target state machine: `recommended → awarded → active → maintenance → closed`
@@ -570,10 +585,10 @@ student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
   `scholarship.inProgramme.closed.*`. Retro `docs/retrospective-2026-06-28-post-award-s6-closure.md`.
 - **▶ POST-AWARD LIFECYCLE COMPLETE (S1–S6, all LIVE + dark).** `recommended → awarded → active →
   maintenance → closed` end-to-end. **Go-live still gated** on bursary Phase-0 (TD-140) + real disbursement
-  / toyyibPay (TD-075). **NEXT engineering = TD-147** (retire the recurring `scholarshipcohort.name`
-  migration drift via ONE standalone state-only migration — `makemigrations scholarship` re-proposes the
-  stray `AlterField` every sprint; hand-drop it as a reflex until then). After that, no post-award work is
-  queued; resume bursary go-live / disbursement rails when the external gates clear.
+  / toyyibPay (TD-075). **TD-147 DONE** (`f8094760` — migration `0079_alter_scholarshipcohort_name`
+  retired the recurring `scholarshipcohort.name` drift; `makemigrations scholarship --check` is now clean).
+  No post-award work is queued; resume bursary go-live / disbursement rails when the external gates clear.
+  **NEXT engineering = doc-recognition Layer 2 (L2-2)** — see the top of this section.
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,
