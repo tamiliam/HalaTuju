@@ -56,6 +56,7 @@ from .views_admin import (
     AdminBursaryWitnessView,
     AdminDisbursementActionView,
     AdminDisbursementScheduleView,
+    AdminMaintenanceSubstateView,
     AdminGraduationMessageListView,
     AdminGraduationMessageReviewView,
     AdminSetAwardAmountView,
@@ -163,6 +164,9 @@ urlpatterns = [
          AdminDisbursementScheduleView.as_view()),
     path('admin/scholarship/disbursements/<int:pk>/<str:action>/',
          AdminDisbursementActionView.as_view()),
+    # Post-award S5: maintenance sub-state (on_track/probation/on_hold/ready_to_close)
+    path('admin/scholarship/applications/<int:pk>/maintenance/',
+         AdminMaintenanceSubstateView.as_view()),
     path('admin/scholarship/assignable-admins/', AdminAssignableAdminsView.as_view()),
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),

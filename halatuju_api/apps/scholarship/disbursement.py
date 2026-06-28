@@ -90,10 +90,15 @@ def _flip_to_maintenance(application):
 @transaction.atomic
 def release_tranche(disbursement, *, by_email='', reference='mock', note=''):
     """Mark a tranche disbursed (mock — TD-075). Only a 'scheduled' or 'due' tranche can
-    be released. Records who/when + the (mock) payment reference, and **flips the
-    application ``active`` → ``maintenance`` on the first release**. Returns the row."""
+    be released, and NOT while the student's support is on hold (S5). Records who/when +
+    the (mock) payment reference, and **flips the application ``active`` → ``maintenance``
+    on the first release**. Returns the row."""
     if disbursement.status not in ('scheduled', 'due'):
         raise DisbursementError('bad_state')
+    # S5: an on-hold student's support is paused — no money goes out until resumed.
+    from . import maintenance
+    if maintenance.is_on_hold(disbursement.application):
+        raise DisbursementError('on_hold')
     disbursement.status = 'released'
     disbursement.released_at = timezone.now()
     disbursement.actioned_by = (by_email or '')[:254]

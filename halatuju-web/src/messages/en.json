@@ -148,6 +148,10 @@
       "months": "months",
       "awaiting": "Awaiting acceptance",
       "none": "You're not supporting any students yet.",
+      "support": {
+        "paused": "Support paused",
+        "completing": "Completing"
+      },
       "progress": {
         "on_track": "On track",
         "semester_completed": "Semester completed",
@@ -2148,6 +2152,10 @@
       "back": "Back",
       "notInProgramme": "This page is for students already in the programme. Once your award is accepted, you'll find your progress here.",
       "backToApplication": "Back to my application",
+      "onHold": {
+        "title": "Your support is currently paused",
+        "body": "Your next payment is on hold for now. Please get in touch with us so we can sort it out together."
+      },
       "results": {
         "title": "Semester results",
         "subtitle": "Add your latest results each semester so we can support you.",
@@ -2645,7 +2653,26 @@
         "bad_state": "That action isn't allowed for this tranche.",
         "bad_action": "Unknown action.",
         "bad_sequence": "Invalid tranche number.",
+        "on_hold": "This student's support is on hold — resume it before releasing a tranche.",
+        "not_in_maintenance": "Sub-states apply only to a student in maintenance.",
+        "bad_substate": "Unknown sub-state.",
         "generic": "Could not update the disbursement. You may not have permission."
+      }
+    },
+    "maintenance": {
+      "title": "Maintenance status",
+      "onHoldHint": "Support is paused — tranche releases are blocked until you resume.",
+      "substate": {
+        "on_track": "On track",
+        "probation": "Probation",
+        "on_hold": "On hold",
+        "ready_to_close": "Ready to close"
+      },
+      "action": {
+        "on_track": "Resume (on track)",
+        "probation": "Place on probation",
+        "on_hold": "Put on hold",
+        "ready_to_close": "Mark ready to close"
       }
     },
     "scholarship": {

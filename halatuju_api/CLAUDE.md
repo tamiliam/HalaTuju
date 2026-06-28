@@ -548,11 +548,25 @@ student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
   (`POST …/applications/<pk>/disbursements/` + `POST …/disbursements/<pk>/<action>/`); cockpit panel
   (funded-state gated) + `lib/disbursement.ts` + `admin.disbursement.*` i18n. Mock ledger (real toyyibPay
   = TD-075). Retro `docs/retrospective-2026-06-28-post-award-s4-disbursement.md`.
-- **▶ NEXT — S5 (`maintenance` loop + sub-states).** Result → review → release/withhold the next tranche;
-  maintenance sub-states on_track / probation / on_hold / ready-to-close; admin hold/resume + withhold/
-  release; student + sponsor + cockpit surfaces. S4 left `withhold_tranche`/`return_tranche` built but the
-  recurring decision LOOP (tie a SemesterResult to the next tranche's release/withhold) is S5's core. No
-  migration expected unless sub-states need a column (consider deriving from existing signals first).
+- **S5 SHIPPED 2026-06-28** (migration `0077_maintenance_substate`: additive column, **migrate-first**).
+  `ScholarshipApplication.maintenance_substate` (on_track/probation/on_hold/ready_to_close, default
+  on_track) — an admin operational overlay within `maintenance`, distinct from the sponsor-facing academic
+  band (`pool.derive_progress_state`). `maintenance.py` core (`set_substate` + `is_on_hold` +
+  `sponsor_support_status` + `ready_to_close_queryset`). **`on_hold` blocks `disbursement.release_tranche`**
+  (`DisbursementError('on_hold')`; withhold/return still allowed). Reviewer-gated `POST …/applications/<pk>/
+  maintenance/ {substate}`. Surfaces: cockpit (badge + transitions in the disbursement panel), student
+  in-programme ("support paused" banner), sponsor card (coarse `support_status` paused/completing —
+  probation hidden). i18n `admin.maintenance.*` + `scholarship.inProgramme.onHold.*` +
+  `sponsorPortal.myStudents.support.*`. Retro `docs/retrospective-2026-06-28-post-award-s5-maintenance.md`.
+- **▶ NEXT — S6 (manual closure + reasons + thank-you re-gating).** Admin manual CLOSE (from maintenance,
+  esp. `ready_to_close`) → `status='closed'` + set `closure_reason` (graduated/completed/withdrawn/lapsed/
+  terminated — field already exists from S2) + an offboarding checklist; graduated-vs-completed copy. Re-gate
+  the graduation/thank-you relay (`in_programme.submit_graduation_message`) so it's allowed during
+  `ready_to_close` AND after `closed` (today it requires `active`/`maintenance` via `_require_in_programme`).
+  Likely additive (a closed_at stamp / closed_by) or state-only; `closure_reason` column already present.
+- **Known recurring chore (TD-147):** `makemigrations scholarship` re-proposes a stray `scholarshipcohort.name`
+  `AlterField` every sprint — hand-write the migration to omit it (reflex). Retire it for good via a standalone
+  state-only migration (see TD-147), NOT folded into a feature sprint.
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,

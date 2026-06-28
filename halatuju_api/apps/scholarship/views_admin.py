@@ -22,6 +22,7 @@ from apps.courses.views_admin import PartnerAdminMixin
 from . import pool
 from . import reopen as reopen_service
 from . import disbursement as disbursement_service
+from . import maintenance as maintenance_service
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
@@ -848,6 +849,25 @@ class AdminDisbursementActionView(_AdminBase):
         except disbursement_service.DisbursementError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(disb.application).data)
+
+
+class AdminMaintenanceSubstateView(_AdminBase):
+    """Post-award S5: POST .../applications/<pk>/maintenance/ {substate} — set the
+    operational maintenance sub-state (on_track | probation | on_hold | ready_to_close).
+    Reviewer-gated + access-scoped. `on_hold` pauses tranche releases. Returns the
+    refreshed application detail."""
+    def post(self, request, pk):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        try:
+            maintenance_service.set_substate(app, request.data.get('substate'))
+        except maintenance_service.MaintenanceError as e:
+            return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(app).data)
 
 
 class AdminAssignableAdminsView(_AdminBase):

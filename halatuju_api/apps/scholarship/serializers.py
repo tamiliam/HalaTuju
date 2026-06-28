@@ -64,6 +64,7 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     programme_months = serializers.SerializerMethodField()
     award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
     progress_state = serializers.SerializerMethodField()  # F2: coarse, non-identifying
+    support_status = serializers.SerializerMethodField()  # S5: coarse operational signal
     enrolment_verified = serializers.SerializerMethodField()  # R5: bare boolean badge
 
     def get_ref(self, app):
@@ -78,6 +79,13 @@ class SponsorPoolCardSerializer(serializers.Serializer):
         # F2: null until the student is sponsored; on_track thereafter (stub — F9a
         # computes the real band from semester results). Non-identifying.
         return pool.derive_progress_state(app)
+
+    def get_support_status(self, app):
+        # S5: a coarse operational signal distinct from the academic band — only
+        # 'paused' (on_hold) / 'completing' (ready_to_close) are surfaced; probation is
+        # never shown to a sponsor. Null in good standing. Allowlist-safe (no identity).
+        from . import maintenance
+        return maintenance.sponsor_support_status(app)
 
     def get_award_amount(self, app):
         return str(app.award_amount) if app.award_amount is not None else None
@@ -483,6 +491,9 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
             'declaration_name', 'declared_at',
             'status', 'bucket', 'shortlist_reason',
+            # S5: the student's own maintenance sub-state (e.g. on_hold) — only meaningful
+            # while status='maintenance'; lets the in-programme page show "support paused".
+            'maintenance_substate',
             'acknowledged_at', 'submitted_at', 'updated_at',
             # Phase C: confirm-submit timestamp + the admin's request-more-docs note
             'profile_completed_at', 'info_request_note', 'info_requested_at',

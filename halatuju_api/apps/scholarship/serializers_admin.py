@@ -306,6 +306,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
             # Closure bucket (post-award lifecycle): graduated/completed/withdrawn/lapsed/terminated
             'closure_reason',
+            # S5: operational maintenance sub-state (on_track/probation/on_hold/ready_to_close)
+            'maintenance_substate',
             # Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation +
             # its reveal date — drives the cockpit "scheduled — cancel/hold" banners.
             'pending_rejection_category', 'decline_due_at', 'award_due_at',

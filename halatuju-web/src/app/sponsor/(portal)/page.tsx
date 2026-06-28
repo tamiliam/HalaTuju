@@ -146,7 +146,15 @@ export default function MyGivingPage() {
                     <span className="font-mono text-sm font-semibold text-gray-900">{st.ref}</span>
                     {offered
                       ? <span className="text-xs rounded-full bg-gray-200 text-gray-600 px-2 py-0.5">⏳ {t('sponsorPortal.myStudents.awaiting')}</span>
-                      : <ProgressBadge state={st.progress_state} t={t} />}
+                      : <div className="flex items-center gap-1.5">
+                          {st.support_status && (
+                            <span className={`text-xs rounded-full px-2 py-0.5 ${
+                              st.support_status === 'paused' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {t(`sponsorPortal.myStudents.support.${st.support_status}`)}
+                            </span>
+                          )}
+                          <ProgressBadge state={st.progress_state} t={t} />
+                        </div>}
                   </div>
                   <p className="text-sm text-gray-800 mt-2">{st.field || '—'}</p>
                   <p className="text-xs text-gray-500 mt-0.5">

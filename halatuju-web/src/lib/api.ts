@@ -716,6 +716,9 @@ export interface SponsorPoolCard {
   award_amount: string | null   // E3: admin-set; non-identifying
   // F2: coarse, non-identifying progress band — null until the student is sponsored.
   progress_state: 'on_track' | 'semester_completed' | 'needs_attention' | 'graduated' | null
+  // S5: coarse operational signal, distinct from the academic band — 'paused' (on hold)
+  // or 'completing' (wrapping up). null in good standing; probation is never surfaced.
+  support_status: 'paused' | 'completing' | null
   // R5: a bare boolean — an independent party confirmed enrolment with the institution.
   enrolment_verified: boolean
 }
@@ -1348,6 +1351,8 @@ export interface ScholarshipApplication {
   status: string
   bucket: string
   shortlist_reason: string
+  /** Post-award S5: operational sub-state within status='maintenance' (e.g. 'on_hold'). */
+  maintenance_substate: 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'
   acknowledged_at: string | null
   submitted_at: string
   updated_at: string
