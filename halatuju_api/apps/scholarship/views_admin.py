@@ -21,11 +21,12 @@ from apps.courses.views_admin import PartnerAdminMixin
 
 from . import pool
 from . import reopen as reopen_service
+from . import disbursement as disbursement_service
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
-    ApplicantDocument, GraduationMessage, InterviewSession, InterviewSlot, Referee,
-    ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
+    ApplicantDocument, Disbursement, GraduationMessage, InterviewSession, InterviewSlot,
+    Referee, ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
 from . import scheduling
 from .profile_engine import generate_anon_blurb, refine_sponsor_profile
@@ -789,6 +790,64 @@ class AdminSponsorshipListView(_AdminBase):
         if st:
             qs = qs.filter(status=st)
         return Response({'sponsorships': [_sponsorship_dict(s) for s in qs]})
+
+
+class AdminDisbursementScheduleView(_AdminBase):
+    """Post-award S4: POST .../applications/<pk>/disbursements/ {amount, sequence?, label?,
+    scheduled_for?} — schedule one tranche against a funded application. Reviewer-gated.
+    Returns the refreshed application detail (the cockpit re-renders its disbursement panel)."""
+    def post(self, request, pk):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
+        seq = request.data.get('sequence')
+        try:
+            seq = int(seq) if seq not in (None, '') else None
+        except (TypeError, ValueError):
+            return Response({'error': 'bad_sequence'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            disbursement_service.schedule_tranche(
+                app,
+                amount=request.data.get('amount'),
+                sequence=seq,
+                label=request.data.get('label', ''),
+                scheduled_for=request.data.get('scheduled_for') or None,
+            )
+        except disbursement_service.DisbursementError as e:
+            return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminDisbursementActionView(_AdminBase):
+    """Post-award S4: POST .../disbursements/<pk>/<action>/ where action ∈
+    release | withhold | return | mark_due. Reviewer-gated + access-scoped via the
+    tranche's application. A 'release' (the first one) flips the app active → maintenance.
+    Returns the refreshed application detail."""
+    def post(self, request, pk, action):
+        admin, err = self._require_reviewer(request)
+        if err:
+            return err
+        writer = disbursement_service.ACTIONS.get(action)
+        if writer is None:
+            return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
+        disb = (Disbursement.objects.select_related('application', 'application__profile',
+                                                    'application__cohort')
+                .filter(pk=pk).first())
+        if disb is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Scope on the tranche's application (reviewer assignment-scoped).
+        _app, _err = self._scoped_application(request, disb.application_id)
+        if _err:
+            return _err
+        try:
+            writer(disb, by_email=admin.email,
+                   note=request.data.get('note', ''))
+        except disbursement_service.DisbursementError as e:
+            return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(disb.application).data)
 
 
 class AdminAssignableAdminsView(_AdminBase):

@@ -54,6 +54,8 @@ from .views_admin import (
     AdminApplicationListView,
     AdminBursaryCountersignView,
     AdminBursaryWitnessView,
+    AdminDisbursementActionView,
+    AdminDisbursementScheduleView,
     AdminGraduationMessageListView,
     AdminGraduationMessageReviewView,
     AdminSetAwardAmountView,
@@ -156,6 +158,11 @@ urlpatterns = [
     # Phase E3: match oversight + set the award amount
     path('admin/sponsorships/', AdminSponsorshipListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/award-amount/', AdminSetAwardAmountView.as_view()),
+    # Post-award S4: disbursement/tranche ledger (schedule + release/withhold/return)
+    path('admin/scholarship/applications/<int:pk>/disbursements/',
+         AdminDisbursementScheduleView.as_view()),
+    path('admin/scholarship/disbursements/<int:pk>/<str:action>/',
+         AdminDisbursementActionView.as_view()),
     path('admin/scholarship/assignable-admins/', AdminAssignableAdminsView.as_view()),
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),

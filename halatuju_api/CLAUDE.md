@@ -540,10 +540,19 @@ student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
   reverts `awarded → recommended` (`_revert_to_pool`). **`sponsored` retired** (TD-146) from choices + all
   status sets + onboarding/finalising gates + admin maps + i18n (0 prod rows). Retro
   `docs/retrospective-2026-06-28-post-award-s3-awarded-signing.md`.
-- **▶ NEXT — S4 (Disbursement/Tranche ledger + `active → maintenance`).** New Disbursement/Tranche model
-  (`scheduled → due → released | withheld | returned`; migration + RLS, migrate-first); admin "mark tranche
-  disbursed" (real toyyibPay deferred = TD-075); the **first release flips `active → maintenance`**. Cockpit
-  disbursement panel. Dark/no real money rails.
+- **S4 SHIPPED 2026-06-28** (migration `0076_disbursement`: CreateModel + RLS, **migrate-first**). New
+  `Disbursement` model (table `disbursements`; `scheduled → due → released | withheld | returned`; FK
+  application + nullable FK sponsorship). `disbursement.py` core: `schedule_tranche`/`release_tranche`/
+  `withhold_tranche`/`return_tranche`/`mark_due`; **the first `released` tranche flips the app `active →
+  maintenance`** (`_flip_to_maintenance`, idempotent). Reviewer-gated admin endpoints
+  (`POST …/applications/<pk>/disbursements/` + `POST …/disbursements/<pk>/<action>/`); cockpit panel
+  (funded-state gated) + `lib/disbursement.ts` + `admin.disbursement.*` i18n. Mock ledger (real toyyibPay
+  = TD-075). Retro `docs/retrospective-2026-06-28-post-award-s4-disbursement.md`.
+- **▶ NEXT — S5 (`maintenance` loop + sub-states).** Result → review → release/withhold the next tranche;
+  maintenance sub-states on_track / probation / on_hold / ready-to-close; admin hold/resume + withhold/
+  release; student + sponsor + cockpit surfaces. S4 left `withhold_tranche`/`return_tranche` built but the
+  recurring decision LOOP (tie a SemesterResult to the next tranche's release/withhold) is S5's core. No
+  migration expected unless sub-states need a column (consider deriving from existing signals first).
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,

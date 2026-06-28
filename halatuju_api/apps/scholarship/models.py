@@ -1217,6 +1217,65 @@ class Sponsorship(models.Model):
         return f'Sponsorship #{self.id} sponsor={self.sponsor_id} app={self.application_id} {self.amount} ({self.status})'
 
 
+class Disbursement(models.Model):
+    """Post-award lifecycle S4: the money-OUT ledger — a single tranche of a funded
+    award, paid (eventually) to the student.
+
+    This is a LEDGER, not custody: real disbursement via toyyibPay is deferred
+    (TD-075), so ``release_tranche`` records a 'released' row with a mock reference
+    rather than moving real money. A tranche is scheduled against a funded
+    application; an admin marks it disbursed. **The first ``released`` tranche flips
+    the application ``active`` → ``maintenance``** (it enters the recurring funded
+    loop — see ``disbursement.release_tranche``).
+
+    ``sponsorship`` is the allocation that funds the tranche (nullable + SET_NULL so a
+    future Foundation-direct award with no Sponsorship row still works, and deleting a
+    Sponsorship never erases the disbursement history). Anonymity is unaffected: this
+    row never crosses to a sponsor surface, and the student's award view never names a
+    sponsor."""
+    STATUS = [
+        ('scheduled', 'Scheduled'),  # planned tranche, not yet payable
+        ('due', 'Due'),              # payable now (admin/cron) — awaiting release
+        ('released', 'Released'),    # marked disbursed (mock until TD-075)
+        ('withheld', 'Withheld'),    # admin held it back (probation / failed results — S5)
+        ('returned', 'Returned'),    # money returned (withdrawal / termination)
+    ]
+    # Tranches that represent money actually paid out (for "has any release happened").
+    PAID = ('released',)
+
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='disbursements',
+    )
+    # The allocation funding this tranche. Nullable for a future Foundation-direct
+    # award; SET_NULL so disbursement history survives a Sponsorship delete.
+    sponsorship = models.ForeignKey(
+        Sponsorship, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='disbursements',
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS, default='scheduled')
+    # 1-based tranche number within the award (Semester 1, 2, …) — drives ordering and
+    # the "first release" flip.
+    sequence = models.PositiveSmallIntegerField(default=1)
+    label = models.CharField(max_length=100, blank=True, default='')
+    scheduled_for = models.DateField(null=True, blank=True)
+    released_at = models.DateTimeField(null=True, blank=True)
+    # Admin email who released/withheld/returned it — audit (mirrors verified_by etc.).
+    actioned_by = models.CharField(max_length=254, blank=True, default='')
+    # toyyibPay billCode/ref once real; 'mock' for the dark ledger.
+    reference = models.CharField(max_length=100, blank=True, default='mock')
+    note = models.CharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'disbursements'
+        ordering = ['sequence', 'id']
+
+    def __str__(self):
+        return f'Disbursement #{self.id} app={self.application_id} seq={self.sequence} {self.amount} ({self.status})'
+
+
 class ResolutionItem(models.Model):
     """A discrete, independently-resolvable action raised against an application
     (the IBKR model — see docs/scholarship/verification-verdict-plan.md, S3).

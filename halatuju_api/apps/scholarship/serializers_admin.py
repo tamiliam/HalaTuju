@@ -271,6 +271,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Whether the (dark-by-default) Conditional Bursary Agreement feature is live — the cockpit
     # only renders the agreement panel when this is on (otherwise its signing flow doesn't exist).
     bursary_agreement_enabled = serializers.SerializerMethodField()
+    # Post-award S4: the money-out tranche ledger (admin-facing; no sponsor identity).
+    disbursements = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -337,7 +339,13 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # Decision-reopen (reverse a recorded decision) state + assigned-reviewer corrections.
             'decision_reopened_at', 'decision_reopen_reason',
             'assigned_to_corrections', 'bursary_agreement_enabled',
+            # Post-award S4: the disbursement/tranche ledger (cockpit money-out panel).
+            'disbursements',
         ]
+
+    def get_disbursements(self, obj):
+        from .disbursement import disbursement_dict
+        return [disbursement_dict(d) for d in obj.disbursements.all()]
 
     def get_assigned_to_corrections(self, obj):
         from .reopen import reviewer_correction_count

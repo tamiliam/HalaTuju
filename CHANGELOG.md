@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Post-award lifecycle — Sprint 4: disbursement/tranche ledger + `active → maintenance`.** The money-OUT
+  ledger for a funded award. New `Disbursement` model (`disbursements`): a tranche scheduled against a
+  funded application, with states `scheduled → due → released | withheld | returned`. An admin schedules
+  tranches and marks them disbursed; **the first `released` tranche flips the application `active →
+  maintenance`** (enters the recurring funded loop). It is a LEDGER, not custody — real toyyibPay is
+  deferred (TD-075), so a release records a mock reference. Reviewer-gated, access-scoped admin endpoints
+  (`POST …/applications/<pk>/disbursements/` + `POST …/disbursements/<pk>/<action>/`); a cockpit panel
+  (gated to funded states) lists tranches with per-row actions + a schedule form; `admin.disbursement.*`
+  i18n en/ms/ta. Migration `0076_disbursement` (CreateModel + RLS, **migrate-first**). +13 pytest, +10 jest.
+
 ### Changed
 - **Post-award lifecycle — Sprint 3: `awarded` + the bursary signing flow → `active`; `sponsored` retired.**
   Wires the award state machine onto the new statuses. `fund_student` now moves the app to **`awarded`**
