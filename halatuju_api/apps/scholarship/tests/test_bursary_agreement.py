@@ -47,7 +47,7 @@ def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'),
         referred_by_org=org,
     )
     app = ScholarshipApplication.objects.create(
-        cohort=cohort, profile=profile, status='accepted', award_amount=award,
+        cohort=cohort, profile=profile, status='recommended', award_amount=award,
         notify_email='student@secret.example',
         chosen_programme={'course_name': 'Diploma in Nursing', 'institution': 'Politeknik KL'})
     SponsorProfile.objects.create(application=app, anon_markdown='Determined.', anon_published=True)
@@ -129,7 +129,7 @@ class TestBursaryService(TestCase):
                 guarantor_relationship='mother')
         self.assertEqual(e.exception.code, 'parent_ic_nric_mismatch')
         app.refresh_from_db()
-        self.assertEqual(app.status, 'accepted')   # rolled back, NOT sponsored
+        self.assertEqual(app.status, 'recommended')   # rolled back, NOT sponsored
         self.assertFalse(BursaryAgreement.objects.filter(application=app).exists())
         self.assertFalse(app.sponsorships.filter(status='active').exists())
 

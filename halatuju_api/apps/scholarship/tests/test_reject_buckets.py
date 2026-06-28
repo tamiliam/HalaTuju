@@ -129,10 +129,10 @@ class TestAdminRejectService(TestCase):
 
     def test_interview_reject_blocked_when_accepted(self):
         with self.assertRaises(ValueError):
-            admin_reject(self._app('accepted'), self.admin, 'interview')
+            admin_reject(self._app('recommended'), self.admin, 'interview')
 
     def test_contractual_reject_from_accepted(self):
-        app = self._app('accepted')
+        app = self._app('recommended')
         admin_reject(app, self.admin, 'contractual')
         app.refresh_from_db()
         self.assertEqual((app.status, app.rejection_category), ('rejected', 'contractual'))
@@ -183,14 +183,14 @@ class TestAdminRejectEndpoint(TestCase):
         self.assertEqual(self.client.post(self._url(app), {'category': 'interview'}, format='json').status_code, 403)
 
     def test_interview_on_accepted_400(self):
-        app = self._app('accepted')
+        app = self._app('recommended')
         self._auth(REVIEWER)
         r = self.client.post(self._url(app), {'category': 'interview'}, format='json')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'bad_status')
 
     def test_contractual_on_accepted_ok(self):
-        app = self._app('accepted')
+        app = self._app('recommended')
         self._auth(REVIEWER)
         r = self.client.post(self._url(app), {'category': 'contractual'}, format='json')
         self.assertEqual(r.status_code, 200)

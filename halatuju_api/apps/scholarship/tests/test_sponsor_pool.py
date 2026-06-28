@@ -66,7 +66,7 @@ def _make_eligible_app(cohort, *, suffix='1', anon_published=True, consent=True)
                     'relationship': 'mother'}],
     )
     app = ScholarshipApplication.objects.create(
-        cohort=cohort, profile=profile, status='accepted',
+        cohort=cohort, profile=profile, status='recommended',
         field_of_study='engineering', first_in_family=True,
         chosen_programme={'course_name': 'Diploma Test Engineering', 'field_key': 'engineering',
                           'institution': 'Politeknik Test'},

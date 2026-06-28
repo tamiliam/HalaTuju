@@ -285,7 +285,7 @@ class AdminVerifyAcceptView(_AdminBase):
             if not profile.nric_verified:
                 profile.nric_verified = True
                 profile.save(update_fields=['nric_verified'])
-            app.status = 'accepted'
+            app.status = 'recommended'
             app.verified_at = timezone.now()
             app.verified_by = admin.email
             app.verify_checklist = request.data.get('checklist', {}) or {}
@@ -297,7 +297,7 @@ class AdminRejectView(_AdminBase):
     """POST .../<pk>/reject/ {category} — post-shortlist admin rejection (buckets 3 & 4).
     'interview'  = reviewed but not selected (allowed from shortlisted/profile_complete/
                    interviewing/interviewed) → extra-thankful email.
-    'contractual' = failed post-award steps (allowed only from 'accepted') → generic email.
+    'contractual' = failed post-award steps (allowed from 'recommended'/'sponsored') → generic email.
     Reviewer-gated. The engine buckets (merit/need/ineligible) are NOT settable here."""
     def post(self, request, pk):
         admin, err = self._require_reviewer(request)

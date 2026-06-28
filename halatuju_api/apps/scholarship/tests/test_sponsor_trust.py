@@ -38,7 +38,7 @@ def _eligible_app(cohort, *, suffix='1', verified=False):
         school='SMK Rahsia', contact_email='student@secret.example',
         contact_phone='012-7776666')
     app = ScholarshipApplication.objects.create(
-        cohort=cohort, profile=profile, status='accepted', award_amount=Decimal('3000'),
+        cohort=cohort, profile=profile, status='recommended', award_amount=Decimal('3000'),
         enrolment_verified=verified, notify_email='student@secret.example')
     SponsorProfile.objects.create(application=app, anon_markdown='Determined.', anon_published=True)
     Consent.objects.create(application=app, consent_type='share_with_sponsors', version='e', is_active=True)

@@ -111,7 +111,10 @@ class ScholarshipApplication(models.Model):
         ('profile_complete', 'Profile complete'),  # student confirmed a complete Step-4 profile
         ('interviewing', 'Interviewing'),           # an interview session has been started
         ('interviewed', 'Interviewed'),             # interview captured + submitted
-        ('accepted', 'Accepted'),      # admin verified & accepted (S11a) — confirmed for award
+        ('recommended', 'Recommended'),  # reviewer verified & recommended — provisional, masked from the student
+        # LEGACY alias of 'recommended' (post-award lifecycle Sprint 1, 2026-06-28). Code writes
+        # 'recommended'; both read as the same state. Remove in Sprint 2 once the prod rows migrate.
+        ('accepted', 'Accepted'),
         ('sponsored', 'Sponsored'),    # Phase E3: a sponsor's award was accepted — student leaves the pool
         ('rejected', 'Rejected'),
         ('withdrawn', 'Withdrawn'),
@@ -345,7 +348,7 @@ class ScholarshipApplication(models.Model):
 
     # Admin verify-&-accept (S11a): a PartnerAdmin confirms NRIC/name/results against
     # the uploaded MyKad, which sets profile.nric_verified (locks the NRIC) and
-    # advances status → 'accepted'. These capture who/when/what was confirmed.
+    # advances status → 'recommended'. These capture who/when/what was confirmed.
     verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.CharField(
         max_length=254, blank=True, default='',

@@ -25,7 +25,7 @@ from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.pool import pool_ref
 
 # Statuses where a verdict is no longer expected (terminal / already-decided).
-_TERMINAL = {'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired'}
+_TERMINAL = {'recommended', 'accepted', 'sponsored', 'rejected', 'withdrawn', 'expired'}
 
 
 class Command(BaseCommand):

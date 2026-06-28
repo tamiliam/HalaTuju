@@ -65,7 +65,7 @@ class TestSemesterResults(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
 
     def test_record_requires_in_programme(self):
-        app = _app(self.cohort, 'r1', status='accepted')  # not yet sponsored
+        app = _app(self.cohort, 'r1', status='recommended')  # not yet sponsored
         with self.assertRaises(in_programme.InProgrammeError) as ctx:
             in_programme.record_semester_result(app, semester='2026 S1', cgpa='3.4')
         self.assertEqual(ctx.exception.code, 'not_in_programme')

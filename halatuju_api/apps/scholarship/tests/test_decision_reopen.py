@@ -40,7 +40,7 @@ class TestDecisionReopen(TestCase):
             supabase_user_id=SUPER, is_super_admin=True, is_active=True, name='Boss', email='s@x.com')
         # A decided, accepted application with a PUBLISHED sponsor profile.
         self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='accepted',
+            cohort=self.cohort, profile=self.profile, status='recommended',
             assigned_to=self.reviewer, verdict_decided_at=timezone.now(),
             officer_verdict={'identity': 'pass', 'academic': 'pass',
                              'income': 'pass', 'pathway': 'pass', 'overall': 'accept'})
@@ -118,7 +118,7 @@ class TestDecisionReopen(TestCase):
         reopen_service.reopen_decision(self.app, by_admin=self.superadmin, reason='check')
         reopen_service.cancel_reopen(self.app)
         self.app.refresh_from_db()
-        self.assertEqual(self.app.status, 'accepted')
+        self.assertEqual(self.app.status, 'recommended')
 
     def test_reopen_clears_pending_decline(self):
         from datetime import timedelta

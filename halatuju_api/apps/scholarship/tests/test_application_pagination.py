@@ -79,7 +79,7 @@ class ApplicationListPaginationTest(TestCase):
         self.assertEqual(len(body['applications']), 10)
 
     def test_empty_filter_result(self):
-        body = self.client.get('/api/v1/admin/scholarship/applications/?status=accepted').json()
+        body = self.client.get('/api/v1/admin/scholarship/applications/?status=recommended').json()
         self.assertEqual(body['count'], 0)
         self.assertEqual(body['total_count'], 0)
         self.assertEqual(body['applications'], [])

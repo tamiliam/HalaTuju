@@ -135,8 +135,8 @@ class TestAuthAndGate(_Base):
         self.assertEqual(r.status_code, 404)
 
     def test_blocked_outside_editable_funnel(self):
-        # An accepted/sponsored application is past the editable funnel → 403.
-        self.app.status = 'accepted'
+        # A recommended/sponsored application is past the editable funnel → 403.
+        self.app.status = 'recommended'
         self.app.save(update_fields=['status'])
         r = self._post({'income_route': 'salary', 'income_working_members': ['father']})
         self.assertEqual(r.status_code, 403)

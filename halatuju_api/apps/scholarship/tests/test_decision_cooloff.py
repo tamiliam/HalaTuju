@@ -57,14 +57,17 @@ class TestDeclineCooloff(TestCase):
         self.assertEqual(ApplicationReadSerializer(app).data['status'], 'interviewed')  # masked for student
 
     def test_student_does_not_see_accepted_status(self):
-        # 'accepted' is an internal verification decision a super-admin can still reverse
+        # 'recommended' is an internal verification decision a super-admin can still reverse
         # (reopen -> interviewed -> possibly declined), so the student must keep seeing the
         # in-review state. The admin cockpit uses a different serializer and sees the real
-        # 'accepted'. Good news reaches the student only via a concrete award offer.
+        # 'recommended'. Good news reaches the student only via a concrete award offer.
         from apps.scholarship.serializers import ApplicationReadSerializer
-        app = self._app(status='accepted')
-        self.assertEqual(app.status, 'accepted')                # real (admin) status
+        app = self._app(status='recommended')
+        self.assertEqual(app.status, 'recommended')             # real (admin) status
         self.assertEqual(ApplicationReadSerializer(app).data['status'], 'interviewed')  # masked for student
+        # Legacy 'accepted' must still mask too (code tolerates the old value).
+        legacy = self._app(status='accepted')
+        self.assertEqual(ApplicationReadSerializer(legacy).data['status'], 'interviewed')
 
     def test_cancel_pending_decline(self):
         app = self._app()
@@ -135,7 +138,7 @@ class TestAwardCooloff(TestCase):
             supabase_user_id=f'a{n}', name='Zxq', nric='000101-10-1233',
             grades={'bm': 'A'}, contact_email='s@x.com')
         app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status='accepted', award_amount=Decimal('3000'),
+            cohort=self.cohort, profile=p, status='recommended', award_amount=Decimal('3000'),
             notify_email='s@x.com')
         SponsorProfile.objects.create(application=app, anon_markdown='x', anon_published=True)
         Consent.objects.create(application=app, consent_type='share_with_sponsors', version='e', is_active=True)
@@ -152,7 +155,7 @@ class TestAwardCooloff(TestCase):
         sp = svc.respond_to_award(app, action='accept')
         app.refresh_from_db()
         self.assertEqual(sp.status, 'active')                   # money committed
-        self.assertEqual(app.status, 'accepted')                # NOT 'sponsored' yet
+        self.assertEqual(app.status, 'recommended')             # NOT 'sponsored' yet
         self.assertIsNotNone(app.award_due_at)
         self.assertEqual(len(mail.outbox), n)                   # no confirmed email yet
         self.assertEqual(svc.sponsor_balance(s), Decimal('0'))  # held
@@ -163,7 +166,7 @@ class TestAwardCooloff(TestCase):
         self.assertTrue(svc.hold_pending_award(app))
         app.refresh_from_db()
         self.assertIsNone(app.award_due_at)
-        self.assertEqual(app.status, 'accepted')
+        self.assertEqual(app.status, 'recommended')
         self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))   # returned to sponsor
         self.assertFalse(app.sponsorships.filter(status='active').exists())
 
