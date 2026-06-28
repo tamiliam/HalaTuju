@@ -68,6 +68,26 @@ _BILINGUAL = _words([
     (1720, 'PENDAFTAR BESAR'),
 ])
 
+# Interleaved DOB-in-label (the OCR scrambles 'Tarikh dan Waktu Kelahiran' with the date, app36)
+# + a letterhead blob glued onto the mother name across a page break (app64). Both must be bounded.
+_INTERLEAVED = _words([
+    (100, 'SIJIL KELAHIRAN'),
+    (140, '080620-10-1578'),                       # child IC, top
+    (240, 'KANAK - KANAK'),
+    (300, 'Nama'),
+    (360, 'THAVASRI'),                             # child — must NOT absorb the date/place below
+    (420, 'Tarikh 20 dan JUN 2008 Waktu Kelahiran 02:31 PM Jantina PEREMPUAN'),   # interleaved DOB
+    (480, 'Tempat Kelahiran Taraf Kewarganegaraan'),
+    (540, 'HOSPITAL BESAR TENGKU AMPUAN KLANG WARGANEGARA'),                       # all-caps place
+    (640, 'BAPA'),
+    (700, 'RUMARASAMY A / L NARAYANAN'),
+    (760, 'No. Kad Pengenalan 740111-08-5195 Umur 40 TAHUN'),
+    (860, 'IBU'),
+    (920, 'RANEGARAMALAYSIAJABATANPE RADHA A / P KRISHNA SAMY'),                   # glued letterhead blob
+    (980, 'No. Kad Pengenalan 791230-05-5116 Umur 38 TAHUN'),
+    (1080, 'PENDAFTAR BESAR'),
+])
+
 # Cropped: a BC missing its KANAK-KANAK + BAPA blocks (#27 shape) — only the mother survives.
 _CROPPED = _words([
     (120, 'SIJIL KELAHIRAN'),
@@ -102,6 +122,16 @@ class TestBcParse(SimpleTestCase):
         # The decisive case: the mother is DEVI — NOT the address, NOT the father-as-informant.
         self.assertEqual(r['bc_mother_name'], 'DEVI A/P RAMAN')
         self.assertEqual(r['bc_mother_nric'], '750404-10-4444')
+
+    def test_interleaved_dob_and_letterhead_blob_are_bounded(self):
+        r = parse_bc(_INTERLEAVED)
+        # The child name stops at the DOB digit row — not 'THAVASRI JUN PM ... KLANG'.
+        self.assertEqual(r['bc_child_name'], 'THAVASRI')
+        self.assertEqual(r['bc_child_nric'], '080620-10-1578')
+        self.assertEqual(r['bc_father_name'], 'RUMARASAMY A/L NARAYANAN')
+        # The glued 'RANEGARAMALAYSIAJABATANPE' blob is rejected (contains MALAYSIA/JABATAN).
+        self.assertEqual(r['bc_mother_name'], 'RADHA A/P KRISHNA SAMY')
+        self.assertEqual(r['bc_mother_nric'], '791230-05-5116')
 
     def test_cropped_returns_none_never_invents(self):
         # No KANAK-KANAK / BAPA → can't resolve child+father → None (defer to gated Gemini).

@@ -35,6 +35,10 @@ _STOP_CAPS = {
     'HOSPITAL', 'KLINIK', 'PUSAT', 'KESIHATAN',  # place-of-birth words can edge a name band
 }
 _PATRONYMIC = {'A', 'L', 'P', 'S', 'O', 'D', 'BIN', 'BINTI', 'N.', 'A/L', 'A/P', 'S/O', 'D/O'}
+# Letterhead words that may glue into ONE all-caps blob across a PDF page break
+# (e.g. 'RANEGARAMALAYSIAJABATANPE') — reject any token CONTAINING one, not just an exact match.
+_STOP_SUBSTR = ('MALAYSIA', 'KERAJAAN', 'JABATAN', 'PENDAFTARAN', 'KELAHIRAN', 'KEMATIAN',
+                'REGISTRATION', 'GOVERNMENT', 'CERTIFICATE')
 
 
 def _rows(words):
@@ -80,13 +84,23 @@ def _is_name_tok(t):
         return True
     if not re.match(r'^[A-Z][A-Z.]*$', t):     # all-caps (values); Title-case labels are dropped
         return False
+    if any(s in t for s in _STOP_SUBSTR):      # glued letterhead blob (a name never contains these)
+        return False
     return t in _PATRONYMIC or t not in _STOP_CAPS
 
 
 def _name_in_span(rows, start_i, end_i):
-    """The personal name in rows (start_i, end_i): the all-caps tokens, patronymic joined."""
+    """The personal name in rows (start_i, end_i): the all-caps tokens, patronymic joined.
+
+    Stops at the first row containing a DIGIT — a name is always immediately followed by a field
+    that carries digits (the child's date of birth, a parent's IC/age), so the digit row marks the
+    end of the name. This is what bounds the name when the end LABEL is unreliable: OCR routinely
+    interleaves the DOB value into the 'Tarikh dan Waktu Kelahiran' label (e.g. 'Tarikh 20 dan JUN
+    2008 Waktu Kelahiran'), which would otherwise let the name run on into the date + place of birth."""
     toks = []
     for r in rows[start_i + 1:end_i]:
+        if any(c.isdigit() for c in r['text']):
+            break
         toks += [t for t in r['tokens'] if _is_name_tok(t)]
     name = ' '.join(toks)
     name = re.sub(r'\bA\s*/\s*([LP])\b', r'A/\1', name)        # A / L → A/L
