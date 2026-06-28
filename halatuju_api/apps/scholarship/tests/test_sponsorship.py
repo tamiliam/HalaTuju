@@ -308,6 +308,7 @@ class TestAdminSponsorship(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         PartnerAdmin.objects.create(supabase_user_id='rev', role='reviewer', is_active=True, name='Rev', email='r@x.com')
         PartnerAdmin.objects.create(supabase_user_id='vie', role='admin', is_active=True, name='Vie', email='v@x.com')
+        PartnerAdmin.objects.create(supabase_user_id='sup', role='super', is_active=True, name='Sup', email='s@x.com', is_super_admin=True)
 
     def setUp(self):
         self.client = APIClient()
@@ -319,13 +320,27 @@ class TestAdminSponsorship(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, "x@x.com")}')
 
-    def test_reviewer_sets_award_amount(self):
-        self._auth('rev')
+    def test_super_sets_award_amount(self):
+        # Override is SUPER-ONLY (2026-06-29) and must land on an allowed slider stop.
+        self._auth('sup')
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/award-amount/',
                              {'amount': '2500'}, format='json')
         self.assertEqual(r.status_code, 200, r.content)
         self.app.refresh_from_db()
         self.assertEqual(self.app.award_amount, Decimal('2500'))
+
+    def test_super_rejects_off_step_amount(self):
+        self._auth('sup')
+        r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/award-amount/',
+                             {'amount': '2300'}, format='json')
+        self.assertEqual(r.status_code, 400)
+
+    def test_reviewer_cannot_set_amount(self):
+        # Reviewers may no longer set the amount — it's pathway-standard + super-overridable.
+        self._auth('rev')
+        r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/award-amount/',
+                             {'amount': '2500'}, format='json')
+        self.assertEqual(r.status_code, 403)
 
     def test_viewer_cannot_set_amount(self):
         self._auth('vie')

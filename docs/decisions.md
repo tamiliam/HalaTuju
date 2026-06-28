@@ -3579,3 +3579,24 @@ verdict in lockstep via one shared helper rather than deduping the red logic (TD
 **Revisit if:** forged BC+proof pairs with coordinated matching numbers appear in the wild (tighten the
 gate to require positive BC genuineness), or the one-digit near-match path produces false greens
 (drop it and require an exact number match).
+
+## Standardised assistance amount: pathway-fixed, super-overridable — 2026-06-29
+**Decision:** The assistance amount is no longer a free reviewer choice. It is fixed by the pre-U
+pathway — RM3,000 for STPM (Form 6, `chosen_pathway=='stpm'`), RM2,000 otherwise — auto-applied
+when a reviewer records an APPROVE verdict (cleared on decline). Only a SUPER admin may override it,
+via the (now super-only) set-award endpoint, constrained to the slider stops RM1,000–3,000 in RM500
+steps. The rule lives in `apps.scholarship.award` (single source of truth); the cockpit slider is
+read-only for reviewers.
+**Alternatives considered:** (a) keep the reviewer slider but cap/snap values — rejected: still lets
+amounts drift from policy and puts a money decision in the reviewer's hands; (b) a UI-only default
+with the slider still writing — rejected: duplicates the rule client-side and the amount could be
+left unset; (c) compute the amount purely at display time without persisting — rejected: `award_amount`
+is load-bearing (fundability, the sum a sponsor funds, the bursary-contract amount), so it must be a
+real stored value.
+**Rationale:** A money figure should be deterministic, auditable, and policy-driven, not per-reviewer.
+Backend auto-apply on approve keeps one source of truth; super-only override preserves a sanctioned
+escape hatch within a fixed band.
+**Trade-offs:** A re-record on approve won't change an existing (super-set) amount — intentional, so an
+override survives; a decline resets it. Reviewers lose the ability to size assistance (by design).
+**Revisit if:** the band/steps change, more pathway tiers are needed, or non-super roles should be
+allowed to propose within limits.

@@ -742,23 +742,29 @@ class AdminSponsorReviewView(_AdminBase):
 
 
 class AdminSetAwardAmountView(_AdminBase):
-    """Phase E3: POST .../applications/<pk>/award-amount/ {amount} — set (or clear,
-    with null/blank) the admin-approved award amount a sponsor funds in full.
-    Reviewer-gated. Gates fundability + shows on the anonymised pool card."""
+    """POST .../applications/<pk>/award-amount/ {amount} — OVERRIDE the standardised
+    assistance amount. SUPER-ONLY (owner decision 2026-06-29: reviewers no longer set the
+    amount; it's fixed by pathway via the award rule and auto-applied on approve). A super
+    may adjust it to one of the allowed slider stops (RM1,000–3,000 in RM500 steps), or
+    clear it with null/blank. Gates fundability + shows on the anonymised pool card."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
-        if err:
-            return err
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
         app, _err = self._scoped_application(request, pk)
         if _err:
             return _err
         from decimal import Decimal, InvalidOperation
+        from . import award as award_rule
         raw = request.data.get('amount')
         try:
             amount = Decimal(str(raw)) if raw not in (None, '') else None
         except (InvalidOperation, TypeError):
             return Response({'error': 'invalid_amount'}, status=status.HTTP_400_BAD_REQUEST)
-        if amount is not None and amount <= 0:
+        # A set value must be one of the permitted slider stops (clearing is allowed).
+        if amount is not None and not award_rule.is_allowed_amount(amount):
             return Response({'error': 'invalid_amount'}, status=status.HTTP_400_BAD_REQUEST)
         app.award_amount = amount
         app.save(update_fields=['award_amount'])
@@ -1084,6 +1090,20 @@ class AdminRecordVerdictView(_AdminBase):
             'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
             'verdict_decided_by', 'verdict_decided_at',
         ]
+
+        # Standardised assistance (owner decision 2026-06-29): the amount is fixed by the
+        # pathway, not chosen by the reviewer. On APPROVE, auto-apply the proposed amount —
+        # but only when unset, so a SUPER's manual override (set-award endpoint) survives a
+        # re-record. On DECLINE, clear it. See apps.scholarship.award.
+        from . import award as award_rule
+        if overall == 'accept':
+            if app.award_amount is None:
+                app.award_amount = award_rule.proposed_award_amount(app)
+                verdict_fields.append('award_amount')
+        else:
+            if app.award_amount is not None:
+                app.award_amount = None
+                verdict_fields.append('award_amount')
 
         # Optionally finalise the sponsor profile from the interview. The Gemini refine call runs
         # OUTSIDE the transaction (never hold a DB lock across a network call); its writes are then

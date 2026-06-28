@@ -273,6 +273,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     bursary_agreement_enabled = serializers.SerializerMethodField()
     # Post-award S4: the money-out tranche ledger (admin-facing; no sponsor identity).
     disbursements = serializers.SerializerMethodField()
+    # Standardised assistance (2026-06-29): the pathway-derived proposed amount the cockpit
+    # shows + auto-applies on approve. award_amount is the persisted value (super-overridable).
+    proposed_award_amount = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -302,6 +305,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
             # Phase E3: admin-set award amount (gates fundability; shown on the pool card)
             'award_amount',
+            # Standardised assistance (2026-06-29): pathway-derived proposed amount.
+            'proposed_award_amount',
             # Rejection bucket (merit/need/ineligible/interview/contractual) + stamps
             'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
             # Closure bucket (post-award lifecycle): graduated/completed/withdrawn/lapsed/terminated
@@ -348,6 +353,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     def get_disbursements(self, obj):
         from .disbursement import disbursement_dict
         return [disbursement_dict(d) for d in obj.disbursements.all()]
+
+    def get_proposed_award_amount(self, obj):
+        from .award import proposed_award_amount
+        return str(proposed_award_amount(obj))
 
     def get_assigned_to_corrections(self, obj):
         from .reopen import reviewer_correction_count
