@@ -980,7 +980,12 @@ rows to migrate. Migration `0075`. See `docs/retrospective-2026-06-28-post-award
 **Fix (S3):** rewire `respond_to_award` to set `active` (then `maintenance` on first disbursement, S4); migrate any `sponsored` rows → `maintenance`; remove `sponsored` from STATUS_CHOICES + the `FUNDED_STATES`/`IN_PROGRAMME_OR_BEYOND`/DECIDED_STATUSES/QUERYING_LOCKED/_TERMINAL sets + the admin status maps + i18n. (Logged 2026-06-28, post-award S2.)
 
 ### [TD-147] Retire the recurring `ScholarshipCohort.name` migration drift for good
-**Status:** Open (logged 2026-06-28, post-award S5). **Low risk, recurring friction.**
+**Status:** RESOLVED 2026-06-28 (small-change lane, branch `chore/retire-cohort-name-drift`). Added the
+standalone state-only migration `0079_alter_scholarshipcohort_name` (a help_text-only `AlterField` —
+`sqlmigrate` confirms `-- (no-op)`, no DDL). `makemigrations scholarship --check` now reports "No
+changes detected"; future sprints no longer have to hand-drop the stray op. Deployed state-only (the
+`django_migrations` row recorded on prod via Supabase MCP; no schema change).
+**Original (logged 2026-06-28, post-award S5). Low risk, recurring friction.**
 **Context:** Every post-award sprint (S1–S5), `makemigrations scholarship` re-proposes an
 `AlterField` on `scholarshipcohort.name` (a `help_text` drift between the model and migration
 state that no sprint authored). Each sprint hand-writes its migration to omit the stray op — a

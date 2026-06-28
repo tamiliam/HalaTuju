@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Retired the recurring `ScholarshipCohort.name` migration drift (TD-147).** Added the standalone
+  state-only migration `0079_alter_scholarshipcohort_name` (help_text-only `AlterField`; `sqlmigrate`
+  = `-- (no-op)`, no DDL). `makemigrations scholarship --check` is now clean — sprints no longer have
+  to hand-drop a stray cohort.name op from every generated migration. Deployed state-only (migration
+  row recorded via MCP; no schema change).
+
 ### Added
 - **Post-award lifecycle — Sprint 6 (FINAL): manual closure + reasons + thank-you re-gating.**
   Completes the lifecycle (`recommended → awarded → active → maintenance → closed`). An admin
