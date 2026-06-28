@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reviewer-query automation S2 — stale income doc + sibling-in-tertiary funding.** Two more
+  deterministic auto-queries on the S1 plumbing: `income_doc_stale` (uncapped doc-request) when
+  every salary slip on file is older than ~3 months → ask for a current one; `sibling_tertiary_funding`
+  (capped clarify) when `siblings_in_tertiary > 0` → ask which institution + how it's funded.
+  `income_engine.stale_income_proof` / `sibling_tertiary_funding_unknown`; both auto-resolve when
+  the gap clears / on answer. Action Centre + admin cockpit copy en/ms/ta. No migration. +11 pytest.
+  (The high-utility probe planned for S2 moved to S4 — the codebase treats high utility as an
+  officer-only signal, never a student query.)
 - **Reviewer-query automation S1 — full-household-income capture.** The most-repeated manual
   reviewer query (chasing the *second* parent's income, or a blank parent's status) is now
   auto-raised. New `income_engine.parent_income_status`/`parent_income_gaps`: every parent must

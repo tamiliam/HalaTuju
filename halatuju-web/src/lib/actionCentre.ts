@@ -120,6 +120,9 @@ export const KNOWN_CODES = [
   'mother_income_proof_missing',
   'father_status_unknown',
   'mother_status_unknown',
+  // S2 — stale salary slip (doc) + sibling-in-tertiary funding (clarify).
+  'income_doc_stale',
+  'sibling_tertiary_funding',
 ] as const
 
 export type KnownCode = (typeof KNOWN_CODES)[number]

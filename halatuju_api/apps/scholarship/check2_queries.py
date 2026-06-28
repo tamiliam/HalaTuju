@@ -43,6 +43,9 @@ CLARIFY_SPECS = {
     # payslip) is a DOC request handled separately below — uncapped (design decision #1).
     'father_status_unknown':    {'fact': 'income'},
     'mother_status_unknown':    {'fact': 'income'},
+    # S2 — a sibling in tertiary → which institution + how funded / on aid (household burden +
+    # the not-double-funded picture). One-line, non-sensitive → a fair student clarify.
+    'sibling_tertiary_funding': {'fact': 'income'},
     # 'motivation_missing' is intentionally NOT here — motivation is reviewer texture
     # (§7), not a one-line factual answer.
 }
@@ -54,6 +57,8 @@ CLARIFY_SPECS = {
 DOC_SPECS = {
     'father_income_proof_missing': {'member': 'father', 'doc_type': 'salary_slip'},
     'mother_income_proof_missing': {'member': 'mother', 'doc_type': 'salary_slip'},
+    # S2 — every salary slip on file is older than ~3 months → ask for a current one.
+    'income_doc_stale': {'doc_type': 'salary_slip'},
 }
 _PARENT_PROOF_CODE = {'father': 'father_income_proof_missing', 'mother': 'mother_income_proof_missing'}
 _PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_status_unknown'}
@@ -63,7 +68,7 @@ _PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_stat
 _CLARIFY_ORDER = [
     # Household-income completeness first — the most material to a fundable B40 profile.
     'father_status_unknown', 'mother_status_unknown',
-    'course_unspecified', 'sibling_level_unknown',
+    'course_unspecified', 'sibling_level_unknown', 'sibling_tertiary_funding',
     'device_status_unknown', 'transport_cost_unknown',
     'utility_holder_unknown', 'utility_address_mismatch',
 ]
@@ -92,20 +97,29 @@ def sync_check2_queries(application):
     # #8 — fold in the utility-bill consistency checks (same income-engine helpers the
     # officer pre-interview flags use), so a 'whose bill is this?' / 'address differs'
     # query is raised + auto-resolved on the same reconcile loop as the completeness gaps.
-    from .income_engine import utility_holder_unknown, utility_address_mismatch, parent_income_gaps
+    from .income_engine import (
+        utility_holder_unknown, utility_address_mismatch, parent_income_gaps,
+        stale_income_proof, sibling_tertiary_funding_unknown,
+    )
     if utility_holder_unknown(application):
         gaps.add('utility_holder_unknown')
     if utility_address_mismatch(application):
         gaps.add('utility_address_mismatch')
+    # S2 — a sibling in tertiary → the funding clarify (capped, with the other clarifies).
+    if sibling_tertiary_funding_unknown(application):
+        gaps.add('sibling_tertiary_funding')
     # Full-household-income completeness (S1). A blank-slot parent → a status CLARIFY (folded
     # into the capped gap set below); an earning parent with no payslip → a PROOF doc request
-    # (reconciled separately, uncapped). Collect the wanted proof codes here.
+    # (reconciled separately, uncapped). Collect the wanted proof/doc codes here.
     proof_wanted = set()
     for g in parent_income_gaps(application):
         if g['need'] == 'status':
             gaps.add(_PARENT_STATUS_CODE[g['member']])
         else:  # 'proof'
             proof_wanted.add(_PARENT_PROOF_CODE[g['member']])
+    # S2 — every salary slip is stale → an uncapped doc-request for a current one.
+    if stale_income_proof(application):
+        proof_wanted.add('income_doc_stale')
 
     existing = {r.code: r for r in application.resolution_items.filter(source='check2')}
     now = timezone.now()

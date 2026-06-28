@@ -1959,6 +1959,14 @@
         "mother_status_unknown": {
           "title": "Beritahu kami tentang ibu anda",
           "desc": "Kami tiada maklumat ibu anda. Adakah dia bekerja (dan di mana), atau seorang suri rumah, pesara, menganggur, telah meninggal dunia, atau tiada dalam hubungan? Ini membantu kami memahami jumlah penuh pendapatan isi rumah anda."
+        },
+        "income_doc_stale": {
+          "title": "Muat naik slip gaji terkini",
+          "desc": "Slip gaji dalam fail berusia lebih tiga bulan. Sila muat naik slip terkini (dalam tempoh tiga bulan lepas) supaya kami ada gambaran pendapatan isi rumah yang terkini."
+        },
+        "sibling_tertiary_funding": {
+          "title": "Bagaimana pengajian adik-beradik anda dibiayai?",
+          "desc": "Anda mempunyai adik-beradik di kolej atau universiti. Di institusi mana mereka belajar, dan bagaimana pengajian mereka dibiayai — biasiswa, pinjaman PTPTN, sokongan keluarga, atau lain-lain?"
         }
       }
     },
@@ -3166,7 +3174,9 @@
           "father_income_proof_missing": "Bapa bekerja tetapi tiada dokumen pendapatan dalam fail — pelajar diminta memuat naik slip gaji / KWSP beliau.",
           "mother_income_proof_missing": "Ibu bekerja tetapi tiada dokumen pendapatan dalam fail — pelajar diminta memuat naik slip gaji / KWSP beliau.",
           "father_status_unknown": "Pekerjaan/status bapa tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
-          "mother_status_unknown": "Pekerjaan/status ibu tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan."
+          "mother_status_unknown": "Pekerjaan/status ibu tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
+          "income_doc_stale": "Slip gaji dalam fail berusia lebih 3 bulan — pelajar diminta memuat naik slip terkini.",
+          "sibling_tertiary_funding": "Adik-beradik di pengajian tinggi — pelajar ditanya institusi mana dan cara pembiayaan (biasiswa / PTPTN / keluarga / lain-lain)."
         }
       },
       "decision": {
