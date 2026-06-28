@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **A student never perceives the `accepted` status — it is an internal, reversible decision.**
+  `accepted` is the reviewer's verification decision, which a super-admin can still reverse (reopen →
+  `interviewed` → possibly declined). To avoid showing — and then embarrassingly retracting — a
+  "you're accepted" message, `ApplicationReadSerializer.get_status` now masks `accepted` → `interviewed`
+  for the student (the same chokepoint that already masks an email-embargoed rejection; the admin
+  cockpit uses a different serializer and still sees the true `accepted`). Effect: an accepted student
+  keeps the in-review surface — **the Action Centre stays open** so they can still answer reviewer
+  requests — and the dashboard "accepted" banner no longer appears. Real good news reaches them only
+  via a concrete, non-reversible **award offer** (the award panel keys off the award object, not this
+  status); accepting an award moves them to `sponsored`, which is not masked. Removed the now-dead
+  celebratory "accepted" card on `/scholarship/application` (a stray `accepted` falls through to the
+  neutral "received" card — defence-in-depth) and its orphaned i18n keys. No migration. +1 test.
+
 ### Added
 - **Year-currency colouring + course-start date in the cockpit.** The results-slip chip's **SPM year**
   and a new **offer intake (course-start) year** chip are now coloured by currency vs the application's

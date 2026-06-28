@@ -195,21 +195,10 @@ export default function ScholarshipApplicationPage() {
     )
   }
 
-  // accepted — the admin has verified & confirmed this applicant.
-  if (app.status === 'accepted') {
-    return wrap(
-      <div className="rounded-2xl border border-primary-200 bg-primary-50 p-6">
-        <div className="mb-2 flex items-center gap-2">
-          <svg className="h-6 w-6 shrink-0 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h2 className="font-semibold text-gray-900">{t('scholarship.application.acceptedTitle')}</h2>
-        </div>
-        <p className="text-gray-700">{t('scholarship.application.acceptedBody')}</p>
-        {nav()}
-      </div>
-    )
-  }
+  // NB: 'accepted' is masked to 'interviewed' by ApplicationReadSerializer.get_status
+  // (an internal decision the super-admin can still reverse — the student must not
+  // perceive it), so it renders the Action Centre above, never a celebratory card.
+  // Real good news reaches the student only via a concrete award offer (awardPanel).
 
   // submitted / profile_complete / rejected / withdrawn — keep it neutral (the
   // decision email is sent separately; we don't expose a raw "rejected" status here).
