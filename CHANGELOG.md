@@ -20,6 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recommended students are re-priced to the rule on deploy (RM62,000 → RM54,000). +10 pytest.
 
 ### Fixed
+- **Birth certificates are now read from the IMAGE when the deterministic parser defers — fixes the
+  #10-class child/parent name cross-wire.** The BC's KANAK-KANAK / BAPA / IBU blocks place the child's
+  "Nama" far from the parents', so flattening the form to a linear OCR stream cross-wires them and the
+  Gemini-on-text fallback returned the father's fuller name as the child (#10 Taanusiya: child read as
+  `MUGINDRAN A/L ATHIAH` instead of the mononym `TAANUSIYA`, and the father slot left blank — which then
+  red-flagged both the BC and the mother's IC). The conservative deterministic parser (`doc_parse._parse_bc`)
+  already defers to Gemini when it can't lock onto both parents; that fallback in
+  `run_field_extraction_for_document` now reads the document IMAGE (so Gemini sees the real 2-D section
+  layout) instead of the scrambled OCR text — mirroring the offer-letter path. Validated locally on #10's
+  actual certificate (reads `TAANUSIYA` / father / mother correctly). Existing BC records need a re-scan to
+  pick up the corrected read. +2 extraction tests. No migration.
 - **Retired the recurring `ScholarshipCohort.name` migration drift (TD-147).** Added the standalone
   state-only migration `0079_alter_scholarshipcohort_name` (help_text-only `AlterField`; `sqlmigrate`
   = `-- (no-op)`, no DDL). `makemigrations scholarship --check` is now clean — sprints no longer have
