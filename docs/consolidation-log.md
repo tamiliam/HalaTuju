@@ -4,22 +4,8 @@ Tracks one-off small-lane changes between full sprints. Every ~10 pending entrie
 Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
-- 2026-06-16 fix(web): fold the two interview-question buttons into one (append-only, adaptive label; drops the destructive replace) (halatuju-web: admin/scholarship/[id]/page.tsx)
-- 2026-06-16 copy(web): profile card heading "Sponsor profile (draft)" → "Student profile (draft)" (halatuju-web: messages/{en,ms,ta}.json)
-- 2026-06-16 feat(web): reviewer Guide + FAQ pages + nav items (English content, redacted screenshots; BM/Tamil content to follow) (halatuju-web: app/admin/guide, app/admin/faq, layout.tsx, messages/* nav labels, public/reviewer-guide/*; docs/reviewer-guide-content.md)
-- 2026-06-17 feat: reviewer language fluency (EN/BM/Tamil, None/Conversational/Fluent) + assignment matching (annotate + sort by student call_language) — migration scholarship/0059 migrate-first (halatuju_api: models, serializers_admin, views_admin, migration + tests; halatuju-web: admin/profile, admin/scholarship/page.tsx, admin-api.ts, messages/*)
-- 2026-06-17 feat: advance-notice email to student on reviewer assignment (bilingual EN+BM; flag STUDENT_ASSIGNMENT_EMAIL_ENABLED off by default; reviewer phone opt-out share_phone_with_students default on; migration scholarship/0060 migrate-first) (halatuju_api: emails.py, services.py assign_reviewer, models, serializers_admin, settings/base.py, migration + tests; halatuju-web: admin/profile toggle, admin-api.ts, messages/*)
-- 2026-06-21 fix(check2): reviewer-raised Action-Centre requests now notify the student (reset query_raised_notified_at on raise; send_due_query_emails counts source='officer' items; no per-item email) (halatuju_api: views_admin.py, services.py + tests)
-- 2026-06-21 fix(income): salary-route earner shown Optional/undeclared when pre-ticked-but-not-toggled (#90+4); effective_working_members fallback (tagged docs→roster) wired into income_requirements+verdict; FE persists roster seed on mount; backfilled 5 apps (halatuju_api: income_engine.py, verdict_engine.py + tests; halatuju-web: ScholarshipDocuments.tsx)
-- 2026-06-21 fix(income): document_unreadable_blockers passed a list (not the app) to working_members → always [] on salary route → unreadable salary-route earner IC/rel doc skipped the submission gate; now effective_working_members(application) + a regression test (halatuju_api: services.py, tests/test_family.py)
-- 2026-06-23 fix(scheduling): advance profile_complete->interviewing when interview times are proposed (status was stuck at Complete through booked/concluded interviews); propose_slots flip + 6-app backfill (halatuju_api: scheduling.py + tests)
-- 2026-06-23 fix(check2): surface system 'couldn't read your doc' upload requests to the form-locked student (unreadable/no-identity/stale-STR added to STUDENT_DOC_REQUEST_CODES; name-mismatch class stays reviewer-mediated); un-hides 5 live requests (halatuju_api: resolution.py + tests)
-- 2026-06-23 fix(vision): self-heal IC/parent_ic stuck unprocessed (vision_run_at NULL from silent upload OCR failures) → false 'ic_service_down' consent block; reprocess_unread_ic command + cron job + sweep fn (halatuju_api: services.py, views.py JOBS, mgmt command + tests)
-- 2026-06-27 fix(scholarship): SPM slip parser bounces 2-column under-reads to Gemini — reads declared JUMLAH MATA PELAJARAN total, returns None when it recovers fewer (was dropping 6/10 subjects + mis-grading 3 of 4 as 'ok'); #66 (halatuju_api: academic_engine.py + tests + PII-scrubbed slip fixture)
-- 2026-06-27 fix(scholarship): read hand-written salary-voucher ringgit|sen columns as a decimal (was concatenating RM326.00→32600 → false per-capita RM8150 over B40 line); +net>gross backstop in income_engine; #66 (halatuju_api: vision.py prompt, income_engine.py + tests)
-- 2026-06-29 fix(scholarship): ALL-CAPS offer programme leaked to sponsor pool via confirm_pathway (raw offer text, bypassing the cased catalogue); title_case_programme rescues shouty names (acronym/connector/punctuation-safe, idempotent); #107 backfilled (halatuju_api: offer_pathway.py, services.py + tests)
 
-_(previous batch cleared at the 2026-06-16 review below)_
+_(cleared at the 2026-06-29 review below)_
 
 ## Reviews
 
@@ -47,4 +33,42 @@ Most were genuine fixes; the profile ones were additive improvements, not sympto
 
 **Close out.** Pending cleared (counter reset). Guardrails landed in the same round. Folded into the 2026-06-16
 sprint-close (retrospective `docs/retrospective-2026-06-16-livereview-round.md`).
-- 2026-06-17 docs(web): add FAQ entries for reviewer languages + phone-sharing toggle (keep reviewer FAQ current with recent features) (halatuju-web: app/admin/faq/page.tsx)
+
+### 2026-06-29 — Consolidation review (15 small changes)
+Covers the 14 `## Pending` entries (2026-06-16 → 2026-06-29) plus one reviewer-FAQ-docs entry that had been
+misfiled under this section.
+
+**Reflect.** The 15 changes touched five areas:
+- **Document extraction & income computation (5)** — SPM 2-column slip under-read; handwritten salary-voucher
+  `ringgit|sen` mis-read; salary-route earner Optional/undeclared (#90); `document_unreadable_blockers` list-vs-app
+  bug; IC/parent_ic silent-OCR self-heal. All genuine fixes — but all the *same shape*: a document reads wrong and a
+  B40 decision turns on the bad read.
+- **Reviewer features (4)** — Guide + FAQ pages; language fluency (migration 0059); advance-notice email (migration
+  0060); a follow-up FAQ-content update. These were **features with migrations**, not small changes.
+- **Check-2 / Action-Centre student visibility (2)** — reviewer-raised requests now notify the student; system
+  "couldn't read your doc" requests surfaced to the form-locked student.
+- **Interview/status flow (2)** — fold the two interview-question buttons into one; advance `profile_complete →
+  interviewing` when slots are proposed.
+- **Copy + display casing (2)** — "Sponsor profile (draft)" → "Student profile (draft)"; ALL-CAPS offer programme
+  name leaking to the sponsor pool (#107).
+
+**Cohere — clusters promoted:**
+- **Document-extraction & income robustness (5) → [TD-151].** The dominant cluster, and the one that keeps
+  regenerating: five isolated point-fixes that are really one hardening pass (a scrubbed extraction-regression
+  corpus + an income read-sanity gate + a generalised silent-OCR self-heal). Promoted to `technical-debt.md`
+  TD-151 as a 1-sprint pass, not an N+1th point fix.
+- **Reviewer features rode the small lane (4) → process drift.** Per `small-change-lane.md` step 1, a feature or a
+  migration is a **sprint**, not a small change — these four (two with migrations) should have been one
+  "reviewer-onboarding & comms" sprint. Shipped fine, but the boundary slipped four times; this is the recurring
+  *process* class, addressed by the guardrail below.
+
+**Anticipate — guardrail landed this round:**
+- **`wat_lint` now flags a misclassified small-lane entry** — any `## Pending` line containing `feat:` or
+  `migration` is reported as "should have been a SPRINT" (`small-change-lane.md` step 1). Converts the recurring
+  feature-rode-the-lane drift from a thing-we-notice-in-hindsight into a mechanical catch at the next lint.
+- **Display-value leak via a non-canonical write path** (the #107 casing leak) was already converted to prevention
+  in the same hotfix (idempotent `title_case_programme` guard + a `docs/lessons.md` rule to grep every writer of a
+  normalised field). No further action.
+
+**Close out.** Pending cleared (counter reset). Guardrail (`wat_lint` misclassification check) and the casing guard
+landed in-cycle; the extraction cluster is parked as TD-151 for a dedicated sprint.
