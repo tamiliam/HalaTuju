@@ -8,6 +8,7 @@ import { useT } from '@/lib/i18n'
 import { getMyScholarshipApplications, getStudentAward, getBursaryAgreement, type ScholarshipApplication, type StudentAward, type BursaryAgreement } from '@/lib/api'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import ActionCentre from '@/components/ActionCentre'
+import { showsActionCentre, isFundedStatus } from '@/lib/scholarship'
 import InterviewBookingPanel from '@/components/scholarship/InterviewBookingPanel'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
@@ -180,10 +181,18 @@ export default function ScholarshipApplicationPage() {
   // see or edit the 5-step form. Their only surface is the Action Centre, where
   // they respond to queries and upload requested documents (in place). When nothing
   // is pending it shows a calm "all set — we'll be in touch" message.
-  if (app.status === 'profile_complete' || app.status === 'interviewing' || app.status === 'interviewed') {
+  //
+  // This MUST include the funded post-award states (awarded/active/maintenance) — a
+  // funded student still uses the Action Centre, e.g. to upload their bank details
+  // (the bank-details task is created + served for them by the backend). Gating this on
+  // a hand-listed subset previously left awarded students with the task in the API but
+  // no surface to act on it. `showsActionCentre` is the single tested source of truth.
+  if (showsActionCentre(app.status)) {
+    const funded = isFundedStatus(app.status)
     return wrap(
       <>
-        <InterviewBookingPanel applicationId={app.id} token={token} />
+        {/* The interview booking panel is for the pre-award review states only. */}
+        {!funded && <InterviewBookingPanel applicationId={app.id} token={token} />}
         <ActionCentre
           token={token}
           studentName={profile?.name}
