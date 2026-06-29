@@ -395,7 +395,7 @@ class SponsorFundView(_PoolBase):
         if app is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         try:
-            sponsorship = sponsorship_service.fund_student(sponsor, app)
+            sponsorship = sponsorship_service.award_and_notify(sponsor, app)
         except sponsorship_service.SponsorshipError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(SponsorSponsorshipSerializer(sponsorship).data, status=status.HTTP_201_CREATED)
