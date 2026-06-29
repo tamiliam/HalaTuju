@@ -4,7 +4,7 @@ from rest_framework import serializers
 from . import pool
 from .family import PROFESSION_CODES
 from .models import (
-    ApplicantDocument, Consent, FundingNeed, GraduationMessage, Referee,
+    ApplicantDocument, BankAccount, Consent, FundingNeed, GraduationMessage, Referee,
     ResolutionItem, ScholarshipApplication, SemesterResult, Sponsor,
     SponsorReferral, StandingGift,
 )
@@ -750,6 +750,32 @@ class ResolutionItemSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+
+
+class BankAccountSerializer(serializers.ModelSerializer):
+    """The student's confirmed payout account (read). Stored only — surfaced to the
+    student so they can see/replace what they saved; no admin/sponsor surface yet."""
+    class Meta:
+        model = BankAccount
+        fields = ['bank_name', 'account_number', 'account_holder',
+                  'holder_verdict', 'confirmed_at', 'updated_at']
+        read_only_fields = fields
+
+
+class BankAccountConfirmSerializer(serializers.Serializer):
+    """The three confirmed fields the student reviews/corrects before saving. The
+    holder==student gate runs in the view (it needs the application)."""
+    bank_name = serializers.CharField(max_length=120, trim_whitespace=True)
+    account_number = serializers.CharField(max_length=40, trim_whitespace=True)
+    account_holder = serializers.CharField(max_length=200, trim_whitespace=True)
+
+    def validate_account_number(self, v):
+        digits = ''.join(ch for ch in v if ch.isdigit())
+        if len(digits) < 5:
+            # A real Malaysian account number is well over 5 digits — guard a fat-finger
+            # / OCR fragment from being saved as a payout target.
+            raise serializers.ValidationError('account_number_invalid')
+        return v.strip()
 
 
 class SignUploadSerializer(serializers.Serializer):

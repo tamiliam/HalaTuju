@@ -1245,7 +1245,9 @@
           "income_rel_doc_needed": "The earner's IC is in and matches the income document. The last required step is the document that links them to you — a birth certificate for a mother, or a guardianship letter for a guardian. Please upload it to complete your application.",
           "income_rel_doc_unreadable": "You've uploaded your birth certificate (or guardianship letter), but we couldn't read the names on it that link the earner to you — it may be unclear, or the wrong document. Please check it's a clear photo or PDF of the actual document and upload it again to complete your application.",
           "str_not_current": "We couldn't confirm this STR shows it was approved. To prove your family qualifies, upload your STR showing “Lulus” — a MySTR “Semakan Status” or Dashboard screenshot showing the status “Lulus” (with your parent's name and IC), or your official STR approval letter. A plain screenshot that shows “Lulus” is enough. Please make sure it's your STR (Sumbangan Tunai Rahmah) — a SARA letter is a different aid and isn't accepted on its own. No current STR? You can show your family's income with a salary slip / EPF instead.",
-          "generic": "Something didn't look right with this upload. Have another look, then try uploading again."
+          "generic": "Something didn't look right with this upload. Have another look, then try uploading again.",
+          "bank_holder_mismatch": "The account holder on this statement is not you. The bursary can only be paid into a bank account in your own name — please upload a statement for your own account.",
+          "bank_details_unclear": "We could not clearly read all three details (bank name, account number, and account holder). Please upload a clearer photo or PDF where all three are visible."
         }
       },
       "income": {
@@ -1972,6 +1974,22 @@
           "title": "When do you report to your institution?",
           "desc": "Your offer letter doesn't state a clear reporting / registration date. When (the date) and where do you need to report to start your studies?"
         }
+      },
+      "bank": {
+        "title": "Add your bank account for payment",
+        "intro": "So we can pay your bursary, upload a bank statement or passbook for your own bank account, then check the details below.",
+        "upload": "Upload bank statement",
+        "reupload": "Upload a different statement",
+        "checkPrompt": "Please check these match your bank account, and correct anything we read wrongly:",
+        "bankName": "Bank name",
+        "accountNumber": "Account number",
+        "numberHint": "Double-check this carefully — your bursary is paid into this exact number.",
+        "accountHolder": "Account holder name",
+        "holderHint": "This must be your own account — the name must be yours.",
+        "save": "Save my bank details",
+        "saving": "Saving…",
+        "saveError": "Sorry, we could not save your bank details. Please try again.",
+        "holderMismatch": "This account is not in your name. The bursary can only be paid into a bank account that belongs to you."
       }
     },
     "summary": {

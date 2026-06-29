@@ -77,6 +77,12 @@ VERDICT_GUIDANCE = {
     'income_rel_doc_unreadable': "the document that should link the earner to the student (a birth certificate for a mother, or a guardianship letter for a guardian) has been uploaded, but we could not read the names on it that prove the link — either the photo was unclear or it was the wrong document — so it must be re-uploaded as a clear copy of the correct document before the application can be completed",
     # The STR document is for an older year, or its status is not 'approved' — STR is
     # awarded annually, so an out-of-date STR no longer proves the family's current need.
+    # Bank statement (post-award payout): the account holder we read is not the student —
+    # the bursary can only be paid into an account in the student's OWN name.
+    'bank_holder_mismatch': "the account-holder name on this bank statement is not the applicant's own name — the bursary can only be paid into a bank account that belongs to the student themselves, not a parent's or anyone else's account",
+    # Bank statement: one or more of the three details (bank name, account number, account
+    # holder) could not be read clearly from the document.
+    'bank_details_unclear': "we could not clearly read all three details we need from this bank statement — the bank name, the account number, and the account-holder name — one or more was missing or too blurry to read",
     'str_not_current': "the STR uploaded does not positively show it was APPROVED — it may be an application record/printout (a SALINAN) with no approval status, an out-of-date (prior-year) STR, a document about a DIFFERENT aid (a SARA / Sumbangan Asas Rahmah letter is NOT the same as STR), or one whose status couldn't be read; an STR proves B40 when it clearly shows 'Lulus'/'Diluluskan'",
 }
 
@@ -220,6 +226,22 @@ VERDICT_FIX_HINT = {
         'find a particular date or page. If they have no current STR, reassure them it is fine: '
         'they can instead show the family\'s income with a salary slip / EPF (the other route). '
         'Nothing is rejected and a person will review — do NOT imply they did anything wrong.'
+    ),
+    'bank_holder_mismatch': (
+        'Explain warmly but clearly that the bursary can only be paid into a bank account in '
+        'THEIR OWN name — not a parent\'s, sibling\'s, or shared account. The statement they '
+        'uploaded shows a different account-holder name. Ask them to upload a statement / '
+        'passbook for THEIR OWN bank account. If they do not have one yet, gently suggest they '
+        'open a basic savings account in their own name (most Malaysian banks let an 18-year-old '
+        'open one with their MyKad) and come back. Do NOT tell them to change their profile name.'
+    ),
+    'bank_details_unclear': (
+        'Reassure them nothing is wrong — we just could not clearly read all three details we '
+        'need: the bank name, the account number, and the account-holder name. Kindly ask them '
+        'to upload a clearer photo or PDF where ALL THREE are visible and sharp (the top of a '
+        'bank statement or the inside page of a passbook usually shows them). Remind them to '
+        'double-check the account NUMBER carefully when they confirm it, since the money is sent '
+        'to that exact number.'
     ),
 }
 
@@ -426,6 +448,19 @@ def verdict_for_document(doc):
     # don't link to the family) is voiced by the earner-IC cluster coach, and the per-row
     # checklist shows the detail. So the doc itself stays quiet (no wrong generic nudge).
     if doc.doc_type in ('birth_certificate', 'guardianship_letter'):
+        return ''
+    # Bank statement (post-award payout) — the doc-assist verdict checks all three fields are
+    # present AND the holder is the student. 'name_mismatch' = not the student's account (a
+    # hard problem); 'incomplete'/'wrong_doc'/'unreadable' = a field couldn't be read clearly.
+    if doc.doc_type == 'bank_statement':
+        fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+        sv = fields.get('student_verdict')
+        if not sv:
+            return ''
+        if sv == 'name_mismatch':
+            return 'bank_holder_mismatch'
+        if sv in ('incomplete', 'wrong_doc', 'unreadable', 'review_manually'):
+            return 'bank_details_unclear'
         return ''
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
     # chip the frontend shows); fall back to the older soft full-text checks when it never ran.

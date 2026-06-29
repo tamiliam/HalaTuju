@@ -22,6 +22,7 @@ import {
   signUploadDocument,
   uploadFileToSignedUrl,
   recordDocument,
+  confirmBankAccount,
   type ResolutionItem,
   type ApplicantDocument,
 } from '@/lib/api'
@@ -304,6 +305,143 @@ function ActionCard({
   )
 }
 
+// ── Bank-details task (post-award payout account) ─────────────────────────
+// A two-step card: (1) upload a bank statement → Gemini pre-fills the three fields;
+// (2) the student reviews/corrects them and saves. The holder MUST be the student —
+// the save re-checks server-side and refuses a mismatch (Gopal coaches). Account
+// numbers are high-stakes, so the confirm step is deliberate.
+
+function BankDetailsTask({
+  item, token, onResolved,
+}: {
+  item: ResolutionItem
+  token: string | null
+  onResolved: () => void
+}) {
+  const { t, locale } = useT()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [uploaded, setUploaded] = useState(false)
+  const [coachDoc, setCoachDoc] = useState<ApplicantDocument | null>(null)
+  const [bankName, setBankName] = useState('')
+  const [accountNumber, setAccountNumber] = useState('')
+  const [accountHolder, setAccountHolder] = useState('')
+
+  // Upload the bank statement → pre-fill the three fields from the extraction.
+  const onFile = async (file: File) => {
+    if (!token) return
+    setBusy(true)
+    setError(null)
+    try {
+      const { upload_url, storage_path } = await signUploadDocument('bank_statement', { token })
+      await uploadFileToSignedUrl(upload_url, file)
+      const doc = await recordDocument(
+        { doc_type: 'bank_statement', storage_path, original_filename: file.name, content_type: file.type, size: file.size },
+        { token },
+      )
+      const f = (doc.vision_fields?.fields || {}) as Record<string, string>
+      setBankName(f.bank_name || '')
+      setAccountNumber(f.account_number || '')
+      setAccountHolder(f.account_holder || '')
+      setUploaded(true)
+      // A weak read (holder isn't the student / a field unclear) → Gopal advises; the
+      // student can still correct the fields below. 'pending'/'ok' → no coach.
+      setCoachDoc(doc.match_verdict && doc.match_verdict !== 'ok' && doc.match_verdict !== 'pending' ? doc : null)
+    } catch {
+      setError(t('scholarship.actionCentre.uploadError'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onSave = async () => {
+    if (!token) return
+    setBusy(true)
+    setError(null)
+    try {
+      await confirmBankAccount(
+        { bank_name: bankName.trim(), account_number: accountNumber.trim(), account_holder: accountHolder.trim() },
+        { token },
+      )
+      onResolved()   // task resolves server-side → the card clears on refresh
+    } catch (e) {
+      const code = (e as Error & { code?: string }).code || ''
+      setError(code === 'bank_holder_mismatch'
+        ? t('scholarship.actionCentre.bank.holderMismatch')
+        : t('scholarship.actionCentre.bank.saveError'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const canSave = !busy && bankName.trim() && accountNumber.trim() && accountHolder.trim()
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-500">
+          <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 10l9-6 9 6M5 10v8a2 2 0 002 2h10a2 2 0 002-2v-8" />
+          </svg>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="font-semibold text-gray-900">{t('scholarship.actionCentre.bank.title')}</h3>
+            <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-800">
+              {t('scholarship.actionCentre.toDo')}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">{t('scholarship.actionCentre.bank.intro')}</p>
+
+          <div className="mt-4 space-y-4">
+            {/* Step 1: upload the statement */}
+            <label className={`block w-full cursor-pointer rounded-xl bg-primary-500 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-600 ${busy ? 'opacity-50' : ''}`}>
+              {busy && !uploaded ? t('scholarship.actionCentre.uploading')
+                : uploaded ? t('scholarship.actionCentre.bank.reupload')
+                : t('scholarship.actionCentre.bank.upload')}
+              <input
+                type="file" accept="image/*,.pdf" className="hidden" disabled={busy}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }}
+              />
+            </label>
+
+            {coachDoc && <DocumentHelpCoach doc={coachDoc} token={token} t={t} lang={locale} />}
+
+            {/* Step 2: confirm/correct the three fields (shown after an upload) */}
+            {uploaded && (
+              <div className="space-y-3 rounded-xl bg-gray-50 p-4">
+                <p className="text-xs font-medium text-gray-500">{t('scholarship.actionCentre.bank.checkPrompt')}</p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">{t('scholarship.actionCentre.bank.bankName')}</label>
+                  <input className="input mt-1" value={bankName} onChange={(e) => setBankName(e.target.value)} disabled={busy} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">{t('scholarship.actionCentre.bank.accountNumber')}</label>
+                  <input className="input mt-1 font-mono" inputMode="numeric" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} disabled={busy} />
+                  <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.bank.numberHint')}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">{t('scholarship.actionCentre.bank.accountHolder')}</label>
+                  <input className="input mt-1" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} disabled={busy} />
+                  <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.bank.holderHint')}</p>
+                </div>
+                <button
+                  type="button" onClick={onSave} disabled={!canSave}
+                  className="w-full rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+                >
+                  {busy ? t('scholarship.actionCentre.bank.saving') : t('scholarship.actionCentre.bank.save')}
+                </button>
+              </div>
+            )}
+
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────
 
 export default function ActionCentre({
@@ -418,14 +556,19 @@ export default function ActionCentre({
       {open.length > 0 && (
         <div className="mt-4 space-y-4">
           {sortByWeight(open).map((item) => (
-            <ActionCard
-              key={item.id}
-              item={item}
-              token={token}
-              onResolved={fetchItems}
-              onConfirm={(target) => onConfirm?.(target)}
-              formLocked={formLocked}
-            />
+            // The post-award bank-details task is a bespoke upload-then-confirm card.
+            item.code === 'bank_details_missing' ? (
+              <BankDetailsTask key={item.id} item={item} token={token} onResolved={fetchItems} />
+            ) : (
+              <ActionCard
+                key={item.id}
+                item={item}
+                token={token}
+                onResolved={fetchItems}
+                onConfirm={(target) => onConfirm?.(target)}
+                formLocked={formLocked}
+              />
+            )
           ))}
         </div>
       )}

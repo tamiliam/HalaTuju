@@ -748,6 +748,10 @@ class ApplicantDocument(models.Model):
         # Income Check-1: links the income earner to the student when the earner is the
         # MOTHER (the student-IC patronymic only names the father). OCR: child/mother/father.
         ('birth_certificate', 'Birth Certificate'),
+        # Post-award: the student's bank statement / passbook proving the account the
+        # bursary will be paid into. Gemini-extracts bank name + account number +
+        # account holder; the holder MUST be the student (hard rule).
+        ('bank_statement', 'Bank Statement'),
         # Catch-all for a reviewer-requested document not in the fixed list (e.g. the
         # current-semester results for a student already studying). Lands under "Other".
         ('other', 'Other Document'),
@@ -1302,6 +1306,48 @@ class Disbursement(models.Model):
 
     def __str__(self):
         return f'Disbursement #{self.id} app={self.application_id} seq={self.sequence} {self.amount} ({self.status})'
+
+
+class BankAccount(models.Model):
+    """The student's bank account for the bursary payout — captured post-award via the
+    Action Centre (upload a bank statement → Gemini pre-fills → the student confirms).
+
+    The three CONFIRMED fields are authoritative (the student reviews/corrects the
+    Gemini read before saving, because a misread account digit would misdirect money).
+    The HOLDER MUST BE THE STUDENT — a hard rule (no parent/joint accounts); the save
+    endpoint re-checks ``account_holder`` against the application name and refuses a
+    mismatch. ``source_doc`` links the bank statement the data came from (SET_NULL so
+    a re-upload of the proof never erases the confirmed account).
+
+    Financial PII → its own table + RLS (service-role only), not stuffed in
+    ``OnboardingResponse.answers``. Stored only; not shown on any surface yet — an
+    officer payout view is a later step (real disbursement = TD-075)."""
+    HOLDER_VERDICTS = [('ok', 'Holder matches the student')]
+
+    application = models.OneToOneField(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='bank_account',
+    )
+    bank_name = models.CharField(max_length=120)
+    account_number = models.CharField(max_length=40)
+    account_holder = models.CharField(max_length=200)
+    # The bank statement the fields were read from. Nullable + SET_NULL so the account
+    # survives a re-upload/removal of the proof document.
+    source_doc = models.ForeignKey(
+        ApplicantDocument, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='bank_accounts',
+    )
+    # Recorded at confirm time — only 'ok' ever persists (the holder==student gate is
+    # hard), kept for an audit trail + future tolerance changes.
+    holder_verdict = models.CharField(max_length=20, choices=HOLDER_VERDICTS, default='ok')
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'bank_accounts'
+
+    def __str__(self):
+        return f'BankAccount app={self.application_id} {self.bank_name} ****{self.account_number[-4:]}'
 
 
 class ResolutionItem(models.Model):

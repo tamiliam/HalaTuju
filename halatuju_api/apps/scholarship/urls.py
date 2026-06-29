@@ -7,6 +7,7 @@ from .views import (
     ApplicationDetailView,
     ApplicationListCreateView,
     BursaryAgreementView,
+    BankAccountView,
     ConsentView,
     CronRunView,
     DocumentDetailView,
@@ -126,6 +127,7 @@ urlpatterns = [
     # S3: the student's resolution queue (IBKR Action Centre)
     path('scholarship/resolution-items/', ResolutionItemListView.as_view()),
     path('scholarship/resolution-items/<int:pk>/resolve/', ResolutionItemResolveView.as_view()),
+    path('scholarship/bank-account/', BankAccountView.as_view()),
 
     # Phase E: sponsor accounts (authenticated self-registration + own status)
     path('sponsor/register/', SponsorRegisterView.as_view()),
