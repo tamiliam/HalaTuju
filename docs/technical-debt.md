@@ -1014,3 +1014,25 @@ already does `update_or_create` (a re-POST would update in place) — only the F
 **Fix:** a small "Update my bank details" surface (e.g. re-open the task, or a thin panel on the
 award/in-programme page) that re-uses `POST /scholarship/bank-account/` (same hard holder gate). Low risk;
 do when the payout surface (TD-148) lands, since that's when a wrong account starts to matter.
+
+### [TD-150] Course matcher assigns a wrong public `course_id` (poly-IT synthetic majors; private programmes)
+**Status:** Open (logged 2026-06-29, bursary↔recommender alignment). **Context:** the catalogue course
+matcher (apply-form pick / `offer_pathway.resolve_catalogue_course`) sometimes binds a student's
+`chosen_programme.course_id` to the WRONG catalogue course, surfaced by the institution-alignment work
+(institution derived from `course_id` conflicts with the institution on the actual offer):
+- **Poly IT (#95 Gokulleshan):** the recommender models several **synthetic "majors"** for a single
+  Politeknik IT diploma (e.g. Data Management, Software & App Dev) and each major row is attached to a
+  *specific* campus, so a student's IT offer can match a major hosted at a *different* polytechnic
+  (`POLY-DIP-077` → Politeknik Seberang Perai vs his actual Politeknik Ungku Omar). The split majors don't
+  reflect the real single-course/campus reality. **Fix:** reconcile the poly-IT synthetic majors with the
+  real catalogue (one course, campus from the offer), or make the matcher campus-aware.
+- **Private programmes (#31 Dhurvaashrii):** a private offer (no public-catalogue equivalent) was force-
+  matched to an unrelated public `course_id` (`UL0010002` → UMK). A private/IPTS programme should stay
+  **label-only (no `course_id`)** rather than be bound to the nearest public course. (#31's spurious id was
+  cleared by hand 2026-06-29; the matcher should not create them.) **Fix:** the matcher must return no id
+  when confidence is low / the issuer is private, rather than forcing the nearest match.
+
+The institution-alignment guard (`offer_pathway.catalogue_institution`) already *refuses to act* on these
+conflicts (it never swaps one institution for a different one) and surfaces them instead — so live data is
+safe; this TD is about stopping the wrong `course_id` being assigned at the source. Low urgency (display +
+funding both key off `chosen_pathway`, not `course_id`, for these pre-U/poly rows).
