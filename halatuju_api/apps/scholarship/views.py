@@ -1175,6 +1175,7 @@ class CronRunView(APIView):
         'query-reminders': 'send_query_reminders',
         'autogenerate-profiles': 'autogenerate_profiles',
         'backfill-assigned-profiles': 'backfill_assigned_profiles',  # one-off: drafts for already-assigned
+        'refresh-profiles': 'refresh_sponsor_profiles',  # roll a prompt bump across draft+final (scope via PROFILE_REFRESH_APP_IDS)
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly
         'sponsor-digests': 'send_sponsor_digests',     # F3: weekly
         'auto-sponsor': 'auto_sponsor',                # R6: hourly AutoSponsor allocation
