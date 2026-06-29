@@ -82,6 +82,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rows; backfilled 2 unresolved STPM applicants on prod (#63 → `sains`, #25 → `sains_sosial`). +6 tests.
 
 ### Fixed
+- **The Action Centre (and so the bank-details task) now renders for funded students.** The post-award
+  bank-details capture created + served the upload task for an `awarded`/`active` student, but
+  `/scholarship/application` only mounted `<ActionCentre>` for `profile_complete`/`interviewing`/
+  `interviewed` — so a funded student fell through to the neutral "received" card and **never saw the bank
+  upload** (the task existed in the API with no surface to act on it). The render gate now uses a single
+  tested predicate `showsActionCentre()` (`lib/scholarship.ts`) that includes the funded states
+  (`awarded`/`active`/`maintenance`); the interview-booking panel stays pre-award-only. +3 jest guard the
+  predicate so this "a status falls through the render switch" class can't silently recur. FE-only.
 - **Offer reporting date now persists for confirmed-pathway students.** `autofill_pathway_from_offer`
   gated the normalised `reporting_date` write behind the `if locked: return False` early-return, so any
   student who had already locked a precise pathway (`chosen_programme.course_id` + `pathway_certainty=
