@@ -149,7 +149,12 @@ def sync_resolution_items(application):
             pass  # created concurrently by another request — fine
 
     for code, item in existing.items():
-        if item.status == 'open' and code not in wanted:
+        # ONLY verdict-derived tickets (codes in CODE_TO_TICKET) auto-resolve when their gap
+        # clears. Other source='system' items — notably the post-award bank-details task,
+        # which is owned by sync_bank_details_item and is NOT a verdict gap — must never be
+        # swept here, or every Action-Centre reload would silently mark the bank task "done"
+        # (it isn't in `wanted`, which only holds CODE_TO_TICKET codes). (Bug fix 2026-06-29.)
+        if item.status == 'open' and code in CODE_TO_TICKET and code not in wanted:
             item.status = 'resolved'
             item.resolved_by = 'system'
             item.resolved_at = now
@@ -374,6 +379,14 @@ def sync_bank_details_item(application):
             )
         except IntegrityError:
             pass  # created concurrently — fine
+    elif wanted and existing is not None and existing.status != 'open':
+        # Self-heal: the task is still needed (awarded/active, no account) but was resolved —
+        # e.g. wrongly swept by a verdict sync, or the status bounced. RE-OPEN it so an
+        # un-uploaded bank task can never silently read as "done". (Bug fix 2026-06-29.)
+        existing.status = 'open'
+        existing.resolved_by = ''
+        existing.resolved_at = None
+        existing.save(update_fields=['status', 'resolved_by', 'resolved_at'])
     elif existing is not None and existing.status == 'open' and not wanted:
         existing.status = 'resolved'
         existing.resolved_by = 'system'
