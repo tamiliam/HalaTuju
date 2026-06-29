@@ -1749,7 +1749,8 @@
         "tooLateNote": "It's close to your interview time — please contact us if you need to change it.",
         "slotPassed": "That time has already passed — please pick another one.",
         "allPassed": "These proposed times have all passed. Please ask for other times below.",
-        "error": "Something went wrong. Please try again."
+        "error": "Something went wrong. Please try again.",
+        "completedNote": "This interview has taken place — thank you. There's nothing more to do; we'll be in touch by email."
       },
       "awardPanel": {
         "title": "One more step",

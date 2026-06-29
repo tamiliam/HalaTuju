@@ -1749,7 +1749,8 @@
         "tooLateNote": "Sudah hampir dengan masa temu duga anda — sila hubungi kami jika anda perlu menukarnya.",
         "slotPassed": "Masa itu telah pun berlalu — sila pilih masa lain.",
         "allPassed": "Masa-masa yang dicadangkan ini semuanya telah berlalu. Sila minta masa lain di bawah.",
-        "error": "Sesuatu tidak kena. Sila cuba lagi."
+        "error": "Sesuatu tidak kena. Sila cuba lagi.",
+        "completedNote": "Temu duga ini telah berlangsung — terima kasih. Tiada apa-apa lagi yang perlu dilakukan; kami akan menghubungi anda melalui e-mel."
       },
       "awardPanel": {
         "title": "Satu langkah lagi",
