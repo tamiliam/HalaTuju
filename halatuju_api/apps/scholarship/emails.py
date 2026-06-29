@@ -590,14 +590,20 @@ def send_sponsor_digest_email(to_email, cards, lang='en'):
 
 def _decline_html(text_body):
     """Render a plain-text decline body as a branded HTML card: blank-line-separated
-    paragraphs become <p>, single newlines (the sign-off) become <br>. Escaped."""
+    paragraphs become <p>, single newlines (the sign-off) become <br>. Escaped. The
+    sign-off team name (the line after the salutation in the final paragraph) is bolded
+    in the HTML only — the plain-text fallback stays clean."""
     import html as _h
     paras = [p.strip() for p in (text_body or '').split('\n\n') if p.strip()]
-    blocks = ''.join(
-        '<p style="margin:0 0 14px;">%s</p>' % _h.escape(p).replace('\n', '<br>')
-        for p in paras
-    )
-    return _html_email_shell(blocks)
+    blocks = []
+    for i, p in enumerate(paras):
+        esc = _h.escape(p)
+        # Final paragraph + a salutation/team split → bold the team-name line.
+        if i == len(paras) - 1 and '\n' in p:
+            head, _sep, team = esc.rpartition('\n')
+            esc = '%s\n<strong>%s</strong>' % (head, team)
+        blocks.append('<p style="margin:0 0 14px;">%s</p>' % esc.replace('\n', '<br>'))
+    return _html_email_shell(''.join(blocks))
 
 
 def send_decline_email(to_email, applicant_name, programme_name, category='', lang='en'):

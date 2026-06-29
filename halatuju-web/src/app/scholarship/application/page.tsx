@@ -27,6 +27,10 @@ export default function ScholarshipApplicationPage() {
   const router = useRouter()
   const [app, setApp] = useState<ScholarshipApplication | null>(null)
   const [award, setAward] = useState<StudentAward | null>(null)
+  // Gates the award/onboarding panel. Default false: the accept→onboarding flow
+  // isn't exposed yet (students are invited by a later email), so the panel stays
+  // hidden until the backend flag AWARD_ACCEPTANCE_ENABLED is turned on.
+  const [acceptanceEnabled, setAcceptanceEnabled] = useState(false)
   const [bursary, setBursary] = useState<BursaryAgreement | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -45,7 +49,11 @@ export default function ScholarshipApplicationPage() {
     // award / complete onboarding" panel can show. No offer → endpoint returns
     // { offer: null }; on any error we simply hide the panel.
     getStudentAward({ token })
-      .then((res) => { if (active) setAward(res.offer) })
+      .then((res) => {
+        if (!active) return
+        setAward(res.offer)
+        setAcceptanceEnabled(!!res.acceptance_enabled)
+      })
       .catch(() => { if (active) setAward(null) })
     // Bursary agreement (flag-gated): a signed student gets a small "your agreement"
     // panel with a PDF download. 404s while the flag is off / unsigned → hide it.
@@ -83,7 +91,9 @@ export default function ScholarshipApplicationPage() {
   // to the award page; an accepted-but-not-yet-onboarded award points to
   // onboarding. Once onboarded (onboarded_at set) the panel disappears.
   function awardPanel() {
-    if (!award) return null
+    // Embargoed for now: the accept→onboarding flow isn't tested end-to-end, so we
+    // keep the panel hidden until AWARD_ACCEPTANCE_ENABLED is turned on (no deploy).
+    if (!award || !acceptanceEnabled) return null
     const accepted = award.status !== 'offered'   // active / sponsored / etc.
     if (accepted && app?.onboarded_at) return null
     const href = accepted ? '/scholarship/onboarding' : '/scholarship/award'
@@ -199,6 +209,7 @@ export default function ScholarshipApplicationPage() {
           email={commsEmail || app.notify_email || ''}
           applicationId={app.id}
           formLocked
+          funded={funded}
         />
       </>,
     )

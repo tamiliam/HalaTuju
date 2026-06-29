@@ -292,6 +292,12 @@ IC_GEMINI_FALLBACK_ENABLED = os.environ.get('IC_GEMINI_FALLBACK_ENABLED', '1') !
 # the Foundation (signatory configured below) is the named counterparty.
 BURSARY_AGREEMENT_ENABLED = os.environ.get('BURSARY_AGREEMENT_ENABLED', '').lower() in ('1', 'true', 'yes')
 BURSARY_AGREEMENT_VERSION = '2026-v1'
+
+# Award acceptance / onboarding entry point. DEFAULT OFF: the "View my award" panel on
+# /scholarship/application (→ the accept + onboarding flow) stays hidden until that flow is
+# tested end-to-end. Awarded students are instead invited into it by a separate email later;
+# until then they only see the bank-details task. Flip to 1 to expose the panel.
+AWARD_ACCEPTANCE_ENABLED = os.environ.get('AWARD_ACCEPTANCE_ENABLED', '').lower() in ('1', 'true', 'yes')
 # The Foundation's interim signatory (placeholder "Suresh" until the real officer is set
 # via env var). The donor is never named — this is the FOUNDATION counterparty only.
 FOUNDATION_SIGNATORY_NAME = os.environ.get('FOUNDATION_SIGNATORY_NAME', 'Suresh')

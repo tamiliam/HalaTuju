@@ -1343,10 +1343,14 @@ class StudentAwardView(APIView):
             if pend is not None:
                 finalising = True
                 app = app or pend
+        from django.conf import settings as _award_settings
         payload = {
             'offer': StudentAwardSerializer(offer).data if offer else None,
             'finalising': finalising,
             'is_minor': is_minor(app.profile) if (app and app.profile) else False,
+            # Gates the "View my award" panel on /scholarship/application. OFF = the accept +
+            # onboarding flow isn't exposed yet (the student is invited by email later).
+            'acceptance_enabled': getattr(_award_settings, 'AWARD_ACCEPTANCE_ENABLED', False),
         }
         # Bursary agreement (flag-gated): surface the contract the student is about to
         # sign (particulars + rendered body) when an offer/active award exists, and — if

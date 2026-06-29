@@ -2023,6 +2023,8 @@ export async function getStudentAward(
   is_minor: boolean
   bursary_preview?: BursaryPreview
   bursary_agreement?: BursaryAgreement
+  // Gates the "View my award" panel — OFF while the accept/onboarding flow isn't exposed yet.
+  acceptance_enabled?: boolean
 }> {
   return apiRequest('/api/v1/scholarship/award/', options)
 }

@@ -1800,6 +1800,8 @@
       "intro": "A few quick things and your application is complete.",
       "lockedTitle": "A few things we need from you, {name}",
       "lockedIntro": "We're reviewing your application and need a little more from you. Please respond to each item below — it only takes a few minutes.",
+      "fundedTitle": "Almost there, {name} — one step to receive your bursary",
+      "fundedIntro": "Congratulations on your award! To set up your bursary payment, please add your bank account details below.",
       "awaitTitle": "You're all set",
       "awaitBody": "Your application is complete and with our team for review. There's nothing more for you to do right now — we'll be in touch by email. Please keep an eye on {email} (including the spam folder).",
       "progressDone": "{done} of {total} done",
