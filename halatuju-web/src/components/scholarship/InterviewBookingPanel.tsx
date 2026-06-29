@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
-import { formatMyt, withinCutoff } from '@/lib/interviewTime'
+import { formatMyt, withinCutoff, interviewGracePassed, INTERVIEW_GRACE_HOURS } from '@/lib/interviewTime'
 import {
   getInterview, bookInterviewSlot, cancelInterview, requestInterviewAlternatives,
   type InterviewSchedule,
@@ -76,6 +76,9 @@ export default function InterviewBookingPanel({
 
   const cutoffH = sched.reschedule_cutoff_hours
   const locked = sched.status === 'booked' && withinCutoff(sched.start, cutoffH)
+  // Once we're past the interview + the grace window, the interview is over: retire the
+  // Join/reschedule/cancel card so a past interview stops looking upcoming.
+  const over = sched.status === 'booked' && interviewGracePassed(sched.start, INTERVIEW_GRACE_HOURS)
 
   // Only offer slots whose time hasn't already passed — a past slot can't be booked
   // (book_slot → 'past_slot'), so it must never appear as a choice.
@@ -89,7 +92,13 @@ export default function InterviewBookingPanel({
     <section className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/40 p-5">
       <h2 className="text-lg font-semibold text-gray-900">{t('scholarship.application.interview.title')}</h2>
 
-      {sched.status === 'booked' ? (
+      {sched.status === 'booked' && over ? (
+        <div className="mt-2">
+          <p className="text-sm text-gray-700">{t('scholarship.application.interview.booked')}:</p>
+          <p className="mt-1 text-base font-semibold text-gray-900">{formatMyt(sched.start)}</p>
+          <p className="mt-3 text-sm text-gray-700">{t('scholarship.application.interview.completedNote')}</p>
+        </div>
+      ) : sched.status === 'booked' ? (
         <div className="mt-2">
           <p className="text-sm text-gray-700">{t('scholarship.application.interview.booked')}:</p>
           <p className="mt-1 text-base font-semibold text-gray-900">{formatMyt(sched.start)}</p>

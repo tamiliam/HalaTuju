@@ -1,4 +1,4 @@
-import { formatMyt, withinCutoff } from '@/lib/interviewTime'
+import { formatMyt, withinCutoff, interviewGracePassed } from '@/lib/interviewTime'
 
 describe('formatMyt', () => {
   it('renders a UTC ISO time in Malaysia time with the (MYT) tag', () => {
@@ -31,5 +31,25 @@ describe('withinCutoff', () => {
 
   it('is false for missing input', () => {
     expect(withinCutoff(null, 12)).toBe(false)
+  })
+})
+
+describe('interviewGracePassed', () => {
+  it('is false during the interview and within the grace window', () => {
+    const justStarted = new Date(Date.now() - 1 * 3600 * 1000).toISOString()  // 1h ago
+    expect(interviewGracePassed(justStarted, 6)).toBe(false)
+  })
+
+  it('is true once past the start + grace window', () => {
+    const longAgo = new Date(Date.now() - 7 * 3600 * 1000).toISOString()      // 7h ago
+    expect(interviewGracePassed(longAgo, 6)).toBe(true)
+    const daysAgo = new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString() // 5d ago (the #16 bug)
+    expect(interviewGracePassed(daysAgo, 6)).toBe(true)
+  })
+
+  it('is false for a future interview and for missing input', () => {
+    const future = new Date(Date.now() + 3 * 3600 * 1000).toISOString()
+    expect(interviewGracePassed(future, 6)).toBe(false)
+    expect(interviewGracePassed(null, 6)).toBe(false)
   })
 })

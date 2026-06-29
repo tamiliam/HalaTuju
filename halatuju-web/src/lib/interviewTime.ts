@@ -26,3 +26,18 @@ export function withinCutoff(iso: string | null | undefined, hours: number): boo
   if (isNaN(start)) return false
   return start - Date.now() < hours * 3600 * 1000
 }
+
+/** Grace window (hours) after a booked interview's start before the booked card
+ *  retires its Join/reschedule/cancel actions. Errs long on purpose: it keeps the
+ *  Join link live through a late start or an overrun. */
+export const INTERVIEW_GRACE_HOURS = 6
+
+/** True once we're more than `graceHours` past the interview start — i.e. the interview
+ *  is over and the booked card should stop looking upcoming (show a "completed" note
+ *  instead of Join/reschedule/cancel). False for a missing/invalid date. */
+export function interviewGracePassed(iso: string | null | undefined, graceHours: number): boolean {
+  if (!iso) return false
+  const start = new Date(iso).getTime()
+  if (isNaN(start)) return false
+  return Date.now() > start + graceHours * 3600 * 1000
+}
