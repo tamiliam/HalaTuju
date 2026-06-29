@@ -982,9 +982,9 @@ def autofill_pathway_from_offer(application):
     # is settled regardless: it's a fact off the offer, independent of the chosen pathway,
     # so a locked student must still get it persisted — this was the gap that left
     # reporting_date NULL for confirmed applicants.)
-    if not locked:
-        ptype = op.detect_pathway_type(prog, inst)
+    ptype = op.detect_pathway_type(prog, inst)
 
+    if not locked:
         if op.is_pre_u(ptype):
             # Pre-U: structured pathway + school (apply-form parity). Fill blanks only —
             # never clobber something the student deliberately typed.
@@ -994,11 +994,6 @@ def autofill_pathway_from_offer(application):
             if not (application.pre_u_institution or '').strip():
                 application.pre_u_institution = inst
                 fields.append('pre_u_institution')
-            if ptype == 'stpm':
-                stream = op.parse_stpm_stream(prog)
-                if stream and not (application.pre_u_track or '').strip():
-                    application.pre_u_track = stream
-                    fields.append('pre_u_track')
 
         # Display programme: a canonical course_id for a confident tertiary match, else labels.
         new_cp = {'course_name': prog, 'institution': inst, 'source': 'offer_letter_auto'}
@@ -1016,6 +1011,24 @@ def autofill_pathway_from_offer(application):
         if application.pathway_certainty != 'sure':
             application.pathway_certainty = 'sure'
             fields.append('pathway_certainty')
+
+    # Standardise the pre-U TRACK into the canonical vocabulary (Matrikulasi:
+    # sains/kejuruteraan/sains_komputer/perakaunan; STPM: sains/sains_sosial). Fill a blank
+    # or 'not_sure' only — never overwrite a deliberate pick — and run regardless of lock
+    # state (the track is a property of the student, not of the chosen-programme record).
+    pw = (application.chosen_pathway or '').strip().lower() or ptype
+    track = ''
+    if pw == 'matric':
+        track = op.parse_matric_track(prog)
+    elif pw == 'stpm':
+        track = op.parse_stpm_stream(prog)
+        if not track:
+            profile = getattr(application, 'profile', None)
+            track = op.infer_stpm_bidang(getattr(profile, 'grades', None),
+                                         getattr(profile, 'stream_subjects', None))
+    if track and (application.pre_u_track or '').strip().lower() in ('', 'not_sure'):
+        application.pre_u_track = track
+        fields.append('pre_u_track')
 
     # Reviewer-query S3: persist the normalised, sortable reporting date from the offer.
     # Always evaluated — a locked pathway doesn't change when the student reports.

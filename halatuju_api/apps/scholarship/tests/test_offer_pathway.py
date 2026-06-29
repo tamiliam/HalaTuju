@@ -40,6 +40,28 @@ class TestDetectors(SimpleTestCase):
         # No stream printed → '' (never guess).
         self.assertEqual(op.parse_stpm_stream('Tingkatan Enam Semester 1'), '')
 
+    def test_parse_matric_track(self):
+        cases = {
+            'Program Matrikulasi (Sains)': 'sains',
+            'Program Matrikulasi Jurusan PERAKAUNAN': 'perakaunan',
+            'Matriculation (Accounting)': 'perakaunan',
+            'Program Matrikulasi Kejuruteraan': 'kejuruteraan',
+            'Matriculation Engineering': 'kejuruteraan',
+            'Program Matrikulasi Sains Komputer': 'sains_komputer',
+            'Modul Computer Science': 'sains_komputer',
+            # generic letter with no jurusan → '' (leave to the apply form / grades)
+            'Program Matrikulasi Kementerian Pendidikan': '',
+        }
+        for raw, want in cases.items():
+            self.assertEqual(op.parse_matric_track(raw), want, raw)
+
+    def test_infer_stpm_bidang(self):
+        # Science electives present → sains; none → sains_sosial.
+        self.assertEqual(op.infer_stpm_bidang({'math': 'A'}, ['phy', 'chem', 'bio', 'addmath']), 'sains')
+        self.assertEqual(op.infer_stpm_bidang({'bm': 'A', 'eng': 'A', 'geo': 'A', 'sci': 'A'}, []),
+                         'sains_sosial')
+        self.assertEqual(op.infer_stpm_bidang(None, None), 'sains_sosial')
+
     def test_name_aligns_subset_either_direction(self):
         # Catalogue ⊆ offer (offer carries a code prefix) → aligns.
         self.assertTrue(op._name_aligns({'dac', 'perakaunan'}, {'perakaunan'}))
@@ -124,7 +146,8 @@ class TestAutofillPathwayFromOffer(_Base):
         app.refresh_from_db()
         self.assertEqual(app.chosen_pathway, 'stpm')
         self.assertEqual(app.pre_u_institution, 'SEKOLAH MENENGAH KEBANGSAAN TUN HUSSEIN ONN')
-        self.assertEqual(app.pre_u_track, '')   # no stream printed → left open
+        # No stream on the offer + no science electives on the SPM record → default bidang.
+        self.assertEqual(app.pre_u_track, 'sains_sosial')
         self.assertEqual(app.chosen_programme['course_name'], 'Tingkatan Enam Semester 1')
         self.assertEqual(app.chosen_programme['source'], 'offer_letter_auto')
         self.assertNotIn('course_id', app.chosen_programme)   # pre-U: no catalogue id
@@ -198,3 +221,32 @@ class TestAutofillPathwayFromOffer(_Base):
         self.assertFalse(autofill_pathway_from_offer(app))
         app.refresh_from_db()
         self.assertEqual(app.chosen_programme['course_id'], 'DAC')
+
+    def test_matric_track_parsed_from_offer(self):
+        app = self._app(pathways_considered=['matric'])
+        self._offer(app, 'Program Matrikulasi Jurusan PERAKAUNAN', 'KOLEJ MATRIKULASI SELANGOR')
+        self.assertTrue(autofill_pathway_from_offer(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'matric')
+        self.assertEqual(app.pre_u_track, 'perakaunan')
+
+    def test_stpm_bidang_inferred_from_science_grades(self):
+        app = self._app()
+        app.profile.grades = {'phy': 'B', 'chem': 'B', 'bio': 'C', 'addmath': 'C', 'math': 'A'}
+        app.profile.save(update_fields=['grades'])
+        self._offer(app, 'Tingkatan Enam Semester 1', 'SMK X')   # no stream on the letter
+        autofill_pathway_from_offer(app)
+        app.refresh_from_db()
+        self.assertEqual(app.pre_u_track, 'sains')
+
+    def test_locked_pre_u_still_gets_track_standardised(self):
+        # A locked STPM pick with a blank track still gets the track filled (the track is a
+        # property of the student, not of the locked chosen-programme record).
+        app = self._app(chosen_pathway='stpm', pathway_certainty='sure', pre_u_track='',
+                        chosen_programme={'course_id': 'STPM-X', 'course_name': 'Tingkatan Enam',
+                                          'institution': 'SMK X'})
+        self._offer(app, 'Tingkatan Enam Semester 1 (Sains Sosial)', 'SMK X')
+        self.assertTrue(autofill_pathway_from_offer(app))
+        app.refresh_from_db()
+        self.assertEqual(app.pre_u_track, 'sains_sosial')
+        self.assertEqual(app.chosen_programme['course_id'], 'STPM-X')   # locked pick untouched

@@ -64,6 +64,40 @@ def parse_stpm_stream(programme: str) -> str:
     return ''
 
 
+def parse_matric_track(programme: str) -> str:
+    """Map a Matrikulasi offer's programme text to one of the four KPM tracks
+    (``sains`` | ``kejuruteraan`` | ``sains_komputer`` | ``perakaunan``), or '' if the
+    letter doesn't state it (many just say "Program Matrikulasi Kementerian Pendidikan").
+    Order matters — the specific tracks are checked before the generic 'sains'."""
+    t = (programme or '').lower()
+    if any(k in t for k in ('perakaunan', 'akaun', 'accounting', 'accountancy')):
+        return 'perakaunan'
+    if any(k in t for k in ('sains komputer', 'computer science', 'computing', 'komputer')):
+        return 'sains_komputer'
+    if any(k in t for k in ('kejuruteraan', 'engineering')):
+        return 'kejuruteraan'
+    if 'sains' in t or 'science' in t:
+        return 'sains'
+    return ''
+
+
+# SPM elective subjects that mark a science stream (backend grade keys).
+_SCIENCE_ELECTIVES = {'phy', 'chem', 'bio', 'addmath', 'add_math'}
+
+
+def infer_stpm_bidang(grades, stream_subjects) -> str:
+    """Default STPM bidang from the SPM subject profile when neither the offer nor the
+    apply form stated it: a science-elective cluster (physics/chemistry/biology/add-maths)
+    → ``'sains'``, otherwise ``'sains_sosial'``. A sensible, reviewer-overridable default —
+    never authoritative (the bidang is ultimately the student's choice)."""
+    subs = set()
+    if isinstance(stream_subjects, (list, tuple)):
+        subs |= {str(s).lower() for s in stream_subjects}
+    if isinstance(grades, dict):
+        subs |= {str(k).lower() for k in grades}
+    return 'sains' if subs & _SCIENCE_ELECTIVES else 'sains_sosial'
+
+
 def _name_aligns(a: set, b: set) -> bool:
     """True when one name's distinctive tokens are a SUBSET of the other's — i.e. one
     name contains the other. Stricter than a bare intersection, so a single shared

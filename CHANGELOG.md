@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Pre-U track standardisation (Matrikulasi 4 / STPM 2) — automatic from the offer.** The pre-U
+  `pre_u_track` is now kept in the canonical vocabulary the eligibility engine uses — Matrikulasi:
+  `sains` / `kejuruteraan` / `sains_komputer` / `perakaunan`; STPM: `sains` / `sains_sosial`. New
+  `offer_pathway.parse_matric_track` reads the Matrikulasi jurusan off the offer; `infer_stpm_bidang`
+  defaults an unstated STPM bidang from the SPM subject profile (science-elective cluster → `sains`,
+  else `sains_sosial`, reviewer-overridable). `autofill_pathway_from_offer` now fills `pre_u_track`
+  (blank / `not_sure` only, never overwriting a deliberate pick) on every offer extraction, regardless
+  of pathway-lock — mirroring the reporting-date fix. New `backfill_pre_u_track` command seeds existing
+  rows; backfilled 2 unresolved STPM applicants on prod (#63 → `sains`, #25 → `sains_sosial`). +6 tests.
+
 ### Fixed
 - **Offer reporting date now persists for confirmed-pathway students.** `autofill_pathway_from_offer`
   gated the normalised `reporting_date` write behind the `if locked: return False` early-return, so any
