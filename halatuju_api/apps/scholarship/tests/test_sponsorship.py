@@ -419,6 +419,18 @@ class TestAwardOfferEmail(TestCase):
         self.assertFalse(send_award_offer_email('', 'Nobody'))
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_award_offer_email_html_has_button_and_bold(self):
+        from apps.scholarship.emails import send_award_offer_email
+        mail.outbox = []
+        send_award_offer_email('x@y.example', 'Aisyah', lang='en')
+        html = mail.outbox[0].alternatives[0][0]   # (html_body, 'text/html')
+        self.assertIn('<strong>your bank account details</strong>', html)      # bolded phrase
+        self.assertIn('Add your bank details', html)                           # button label
+        self.assertIn('/scholarship/application"', html)                       # button href
+        self.assertIn('<a href=', html)                                        # rendered as a button/link
+        # plain-text fallback still carries the raw link
+        self.assertIn('/scholarship/application', mail.outbox[0].body)
+
 
 from django.core.management import call_command  # noqa: E402
 
