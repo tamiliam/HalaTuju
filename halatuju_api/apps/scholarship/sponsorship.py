@@ -140,20 +140,27 @@ def fund_student(sponsor, application):
 
 
 def award_and_notify(sponsor, application):
-    """fund_student + the good-news AWARD-OFFER email (best-effort, AFTER the award commits).
-    The single entry point both the sponsor 'Support' button and the admin batch use, so a
-    student is notified identically however they were awarded. The email states no amount and
-    no sponsor identity; it asks the student to add bank details and await the formal offer."""
+    """fund_student + (optionally) the good-news AWARD-OFFER email. The single entry point both
+    the sponsor 'Support' button and the admin batch use, so an award behaves identically however
+    it was triggered.
+
+    The email is gated behind the TEMPORARY ``AWARD_OFFER_EMAIL_ENABLED`` flag (default OFF): the
+    owner wants to decouple awarding from the student email for now and send the emails on purpose
+    via the ``send_award_offer_emails`` command. When OFF, this funds + flips to 'awarded' and
+    sends NOTHING. When ON, it also sends (best-effort, after the award commits) — no amount, no
+    sponsor identity."""
     sp = fund_student(sponsor, application)   # atomic; raises SponsorshipError on a bad state
-    name = getattr(application.profile, 'name', '') if application.profile else ''
-    try:
-        send_award_offer_email(
-            to_email=application.notify_email, applicant_name=name,
-            lang=application.locale or 'en')
-    except Exception:   # noqa: BLE001 — email is best-effort; the award already committed
-        import logging
-        logging.getLogger(__name__).warning(
-            'award-offer email failed for app %s', application.id, exc_info=True)
+    from django.conf import settings as _settings
+    if getattr(_settings, 'AWARD_OFFER_EMAIL_ENABLED', False):
+        name = getattr(application.profile, 'name', '') if application.profile else ''
+        try:
+            send_award_offer_email(
+                to_email=application.notify_email, applicant_name=name,
+                lang=application.locale or 'en')
+        except Exception:   # noqa: BLE001 — email is best-effort; the award already committed
+            import logging
+            logging.getLogger(__name__).warning(
+                'award-offer email failed for app %s', application.id, exc_info=True)
     return sp
 
 

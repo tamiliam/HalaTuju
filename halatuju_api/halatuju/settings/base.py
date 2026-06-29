@@ -198,6 +198,14 @@ PROFILE_REFRESH_APP_IDS = os.environ.get('PROFILE_REFRESH_APP_IDS', '')
 SEED_SPONSOR_ID = os.environ.get('SEED_SPONSOR_ID', '')
 SEED_AWARD_APP_IDS = os.environ.get('SEED_AWARD_APP_IDS', '')
 
+# TEMPORARY safety gate (owner, 2026-06-29): decouple the award good-news email from the
+# award action. When OFF (default), a sponsor pressing "Support" — or the batch — funds the
+# student + sets 'awarded' as normal but sends NO email; the owner sends the emails on purpose
+# via the `send_award_offer_emails` command (scoped to AWARD_EMAIL_APP_IDS). Flip ON later to
+# restore automatic notify-on-award and the temporary command can be retired.
+AWARD_OFFER_EMAIL_ENABLED = os.environ.get('AWARD_OFFER_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
+AWARD_EMAIL_APP_IDS = os.environ.get('AWARD_EMAIL_APP_IDS', '')
+
 # F7: when a reviewer is assigned, also email the STUDENT an advance notice (who will
 # contact them + the interviewer's name/phone/email). OFF by default — switch on only after
 # reviewers have given non-objection to sharing their contact. Per-reviewer opt-out lives on
