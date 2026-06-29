@@ -81,6 +81,18 @@ def parse_matric_track(programme: str) -> str:
     return ''
 
 
+# Canonical pre-U course label — the specific stream/jurusan lives in pre_u_track, so the
+# course name itself is uniform across all matric / all STPM rows.
+_CANONICAL_PRE_U_COURSE = {'matric': 'Program Matrikulasi', 'stpm': 'Tingkatan Enam'}
+
+
+def canonical_pre_u_course(pathway_type: str) -> str:
+    """The standardised display course name for a pre-U pathway — 'Program Matrikulasi'
+    (matric) / 'Tingkatan Enam' (STPM), or '' for anything else. The specific stream/jurusan
+    is carried by pre_u_track, so the course name itself is uniform."""
+    return _CANONICAL_PRE_U_COURSE.get((pathway_type or '').strip().lower(), '')
+
+
 # SPM elective subjects that mark a science stream (backend grade keys).
 _SCIENCE_ELECTIVES = {'phy', 'chem', 'bio', 'addmath', 'add_math'}
 

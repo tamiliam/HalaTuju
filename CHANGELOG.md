@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pre-U course-name standardisation — "Program Matrikulasi" / "Tingkatan Enam".** The pre-U
+  `chosen_programme.course_name` is now a single canonical string per pathway (Matrikulasi →
+  "Program Matrikulasi", STPM → "Tingkatan Enam") — the specific stream/jurusan lives in
+  `pre_u_track`, so the course label is uniform. `offer_pathway.canonical_pre_u_course`;
+  `autofill_pathway_from_offer` writes the canonical name on every offer extraction (so a
+  re-run never reintroduces raw wording like "TINGKATAN ENAM SEMESTER 1 TAHUN 2025"). New
+  `standardise_pre_u_course` command backfilled 52 prod rows. Verified non-breaking: funding
+  classification keys off `chosen_pathway` (and its keyword fallback still matches), and the
+  eligibility/pathway tree reads `chosen_pathway`/`pre_u_track`/grades — never the course string.
+  +2 tests.
 - **Pre-U track standardisation (Matrikulasi 4 / STPM 2) — automatic from the offer.** The pre-U
   `pre_u_track` is now kept in the canonical vocabulary the eligibility engine uses — Matrikulasi:
   `sains` / `kejuruteraan` / `sains_komputer` / `perakaunan`; STPM: `sains` / `sains_sosial`. New
