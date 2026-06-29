@@ -2943,6 +2943,28 @@
         "error": "Tidak dapat menjana cadangan. Sila cuba lagi.",
         "aiBadge": "AI"
       },
+      "interviewGuide": {
+        "title": "Panduan penemuduga — apa yang penaja perlu tahu",
+        "academic": {
+          "title": "1. Komitmen akademik & daya tahan",
+          "q0": "Apakah subjek kegemaran dan tersukar anda? (Adakah ia padan dengan keputusan?)",
+          "q1": "Apabila sesuatu subjek sukar, adakah anda mendapatkan bantuan atau tuisyen? Bagaimana anda mengharunginya?",
+          "q2": "Apakah yang membuatkan anda yakin akan menamatkan keseluruhan program?"
+        },
+        "financial": {
+          "title": "2. Keperluan kewangan (seluruh isi rumah)",
+          "q0": "Apakah pekerjaan kedua-dua ibu bapa, dan berapa jumlah pendapatan isi rumah?",
+          "q1": "Bagaimana anda akan menampung yuran, sara hidup dan pengangkutan yang tidak ditampung sepenuhnya oleh bursari?",
+          "q2": "Sanggupkah anda bekerja sambilan, dan adakah apa-apa tentang keadaan anda yang perlu kami fahami?"
+        },
+        "pathway": {
+          "title": "3. Keyakinan laluan & pendaftaran",
+          "q0": "Apa yang anda mohon, apakah pilihan pertama anda, dan apa yang ditawarkan?",
+          "q1": "Bila dan di mana anda melapor diri — ada halangan untuk mendaftar tepat masa?",
+          "q2": "Perlukah anda bantuan (bimbingan, peranti) untuk mengambil tempat itu?"
+        },
+        "note": "Siasat bidang yang masih terbuka; soalan AI di atas sudah menyasarkannya. Bersikap mesra — tahniah atas keputusan mereka, tunjukkan empati tentang kewangan."
+      },
       "anomaly": {
         "title": "Penanda pra-temubual",
         "intro": "Percanggahan data yang dikesan enjin. Gunakannya untuk mengarah temubual — penanda adalah soalan yang patut ditanya, bukan keputusan.",

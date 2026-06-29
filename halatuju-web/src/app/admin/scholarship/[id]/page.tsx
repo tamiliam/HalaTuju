@@ -1422,6 +1422,32 @@ export default function AdminScholarshipDetailPage() {
               ))}
         </div>
 
+        {/* S4: the sponsor's interviewer guide — the three "what we need to know" buckets +
+            their key probes, as a collapsible reference. The AI gaps above target whichever
+            buckets the record leaves unanswered; this is the human checklist behind them. */}
+        {canWrite && !interviewLocked && (
+          <details className="rounded-lg border border-gray-100 bg-gray-50/60 p-3">
+            <summary className="cursor-pointer text-xs font-medium text-gray-600">
+              {t('admin.scholarship.interviewGuide.title')}
+            </summary>
+            <div className="mt-2 space-y-2">
+              {(['academic', 'financial', 'pathway'] as const).map((b) => (
+                <div key={b}>
+                  <p className="text-xs font-semibold text-gray-700">{t(`admin.scholarship.interviewGuide.${b}.title`)}</p>
+                  <ul className="ml-4 list-disc text-[11px] text-gray-500">
+                    {[0, 1, 2].map((i) => {
+                      const key = `admin.scholarship.interviewGuide.${b}.q${i}`
+                      const txt = t(key)
+                      return txt === key ? null : <li key={i}>{txt}</li>
+                    })}
+                  </ul>
+                </div>
+              ))}
+              <p className="text-[11px] text-gray-400">{t('admin.scholarship.interviewGuide.note')}</p>
+            </div>
+          </details>
+        )}
+
         {interviewLocked ? (
           /* Submitted → read-only record (Check-2 style blue boxes). Questions with no
              answer are dropped; the open-ended findings show in their own box. */

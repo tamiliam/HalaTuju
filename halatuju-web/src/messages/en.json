@@ -2943,6 +2943,28 @@
         "error": "Couldn't generate gaps. Please try again.",
         "aiBadge": "AI"
       },
+      "interviewGuide": {
+        "title": "Interviewer guide — what the sponsor needs to know",
+        "academic": {
+          "title": "1. Academic commitment & resilience",
+          "q0": "What were your favourite and hardest subjects? (Does it fit the results?)",
+          "q1": "When a subject was hard, did you seek help or have tuition? How did you push through?",
+          "q2": "What makes you confident you'll complete the full programme?"
+        },
+        "financial": {
+          "title": "2. Financial need (the full household)",
+          "q0": "What do both parents do, and what does the household earn in total?",
+          "q1": "How will you cover fees, living and transport the bursary won't fully meet?",
+          "q2": "Would you take part-time work, and is there anything about your situation we should understand?"
+        },
+        "pathway": {
+          "title": "3. Pathway & enrolment confidence",
+          "q0": "What did you apply for, what was your first choice, and what were you offered?",
+          "q1": "When and where do you report — any obstacle to enrolling on time?",
+          "q2": "Do you need any help (guidance, a device) to take up the place?"
+        },
+        "note": "Probe the areas the record leaves open; the AI questions above already target those. Be warm — congratulate them on their results, show empathy on money."
+      },
       "anomaly": {
         "title": "Pre-interview flags",
         "intro": "Data inconsistencies the engine spotted. Use them to direct the interview — a flag is a question worth asking, not a verdict.",

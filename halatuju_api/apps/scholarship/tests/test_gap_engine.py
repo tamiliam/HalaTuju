@@ -69,6 +69,26 @@ class TestGapEngine(TestCase):
         self.assertIn('ALREADY SUGGESTED', prompt)
         self.assertIn('Already asked?', prompt)
 
+    # ── S4: sponsor 3-bucket framework ───────────────────────────────────────
+    def test_prompt_carries_the_three_buckets(self):
+        prompt = gap_engine._build_gap_prompt(self.app)
+        for token in ('ACADEMIC COMMITMENT', 'FINANCIAL NEED', 'PATHWAY & ENROLMENT',
+                      'academic_resilience', 'financial_need', 'pathway_confidence'):
+            self.assertIn(token, prompt)
+
+    @patch('apps.scholarship.vision._call_gemini_json')
+    def test_bucket_normalised(self, mock_call):
+        mock_call.return_value = {'gaps': [
+            {'code': 'a', 'bucket': 'financial_need', 'question': 'How will you afford it?', 'why': 'w'},
+            {'code': 'b', 'bucket': 'NONSENSE', 'question': 'Tell me more?', 'why': 'w'},   # invalid → other
+            {'code': 'c', 'question': 'No bucket given?', 'why': 'w'},                       # missing → other
+        ]}
+        gaps = gap_engine.generate_interview_gaps(self.app)['gaps']
+        by_code = {g['code']: g['bucket'] for g in gaps}
+        self.assertEqual(by_code['a'], 'financial_need')
+        self.assertEqual(by_code['b'], 'other')
+        self.assertEqual(by_code['c'], 'other')
+
     def test_prompt_includes_verdict_flags_and_answered(self):
         prompt = gap_engine._build_gap_prompt(self.app)
         self.assertIn('VERIFICATION VERDICT', prompt)

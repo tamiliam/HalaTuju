@@ -31,6 +31,7 @@ GAP_SCHEMA = {
                 'type': 'object',
                 'properties': {
                     'code': {'type': 'string'},
+                    'bucket': {'type': 'string'},
                     'question': {'type': 'string'},
                     'why': {'type': 'string'},
                 },
@@ -47,18 +48,34 @@ whether any date the applicant mentions is in the past or the future; NEVER desc
 earlier than today as being "in the future". Read EVERYTHING below — the applicant's own words (which \
 may be in Malay, English, or Tamil), their academic record, the automated \
 verification verdict, the pre-interview flags, and any questions they have already \
-answered — and identify the THREE most important things still worth probing in the \
-interview: vague or unexplained plans, an unclear funding need, resilience or \
-support-network signals, quiet contradictions, or anything the verification flags \
-raise that a conversation should settle. Prefer questions the verdict/flags show are \
-genuinely unresolved, and do NOT re-ask anything already answered below. Do NOT \
-invent facts. If the student's INTEREST-QUIZ signals clearly diverge from their chosen \
-pathway, you MAY include ONE exploratory question to understand how they arrived at that \
-pathway given those interests — the student has already chosen and holds an offer letter, \
-so frame it as genuine curiosity ("help me understand…"), NEVER as doubt, criticism, or a \
-suggestion they chose wrongly. If little is left to probe, return fewer than three (even zero). For \
-EACH gap return: a short snake_case "code" (a slug you invent, e.g. \
-unclear_funding_plan), a "question" (the actual interview question, written in \
+answered.
+
+The sponsor funds the most DESERVING and RESILIENT students, and judges every interview \
+against THREE things it needs to know. Target your questions at whichever of these the \
+record leaves genuinely UNANSWERED (skip a bucket the data already settles):
+
+  1. ACADEMIC COMMITMENT & RESILIENCE — does this student have the determination to \
+     finish a degree? Good probes when unevidenced: their favourite vs hardest subject \
+     (does it fit their results?), whether they sought help / had tuition when a subject \
+     was hard, and how they pushed through setbacks. (Frame as warm curiosity, never a test.)
+  2. FINANCIAL NEED (the FULL household) — is the family genuinely B40, and how will they \
+     cover fees / living / transport? Good probes when unevidenced: how they will afford \
+     the costs the bursary won't cover, willingness to work part-time, and any household \
+     circumstance behind the numbers. (Show empathy; never interrogate.)
+  3. PATHWAY & ENROLMENT CONFIDENCE — will they actually enrol in and complete the \
+     government programme they hold an offer for? Good probes when unevidenced: their \
+     first choice vs what they were offered, and any practical obstacle to reporting.
+
+Identify the THREE most important things still worth probing — prefer the buckets the \
+verdict/flags/answers show are genuinely unresolved, and do NOT re-ask anything already \
+answered below. Do NOT invent facts. If the student's INTEREST-QUIZ signals clearly diverge \
+from their chosen pathway, you MAY include ONE exploratory question to understand how they \
+arrived at that pathway given those interests — the student has already chosen and holds an \
+offer letter, so frame it as genuine curiosity ("help me understand…"), NEVER as doubt, \
+criticism, or a suggestion they chose wrongly. If little is left to probe, return fewer than \
+three (even zero). For EACH gap return: a short snake_case "code" (a slug you invent, e.g. \
+unclear_funding_plan), a "bucket" (one of: academic_resilience, financial_need, \
+pathway_confidence, other), a "question" (the actual interview question, written in \
 {target_language}), and a "why" (one short line of rationale for the interviewer, \
 in {target_language}). Return at most 3. Return JSON only.
 
@@ -223,7 +240,11 @@ def _normalise_gaps(raw, seen_codes=None, seen_questions=None):
             code = f'{code}_{i + 1}'
         seen.add(code)
         seen_q.add(question.lower())
-        out.append({'code': code, 'question': question, 'why': (g.get('why') or '').strip()})
+        bucket = (g.get('bucket') or '').strip().lower()
+        if bucket not in ('academic_resilience', 'financial_need', 'pathway_confidence'):
+            bucket = 'other'
+        out.append({'code': code, 'bucket': bucket, 'question': question,
+                    'why': (g.get('why') or '').strip()})
     return out
 
 

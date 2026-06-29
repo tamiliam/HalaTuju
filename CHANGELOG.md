@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reviewer-query automation S4 — interview guide + gap-spotter seeding.** The Check-3 gap-spotter
+  (`gap_engine.GAP_PROMPT`) now organises its suggested interview questions around the sponsor's three
+  "what we need to know" buckets — academic_resilience / financial_need / pathway_confidence — naming
+  the canonical probes and targeting whichever buckets the record leaves unanswered; each gap returns a
+  validated `bucket`. A collapsible **interviewer-guide card** in the cockpit shows the three buckets +
+  their key questions (en/ms/ta). The high-utility reviewer probe was already covered
+  (`anomaly_engine._detect_utility_high_vs_income` → gap-spotter). No new structured-capture fields
+  (the gap-spotter + `InterviewSession` already cover it); no migration. +2 pytest.
 - **Reviewer-query automation S3 — offer reporting-date (capture + persist).** Normalises the
   offer letter's free-text reporting date into a real, sortable `ScholarshipApplication.reporting_date`
   (DateField, migration `0080`, migrate-first) via `pathway_engine.parse_reporting_date` + the existing
