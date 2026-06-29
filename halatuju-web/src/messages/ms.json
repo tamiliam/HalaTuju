@@ -1800,6 +1800,8 @@
       "intro": "Beberapa perkara cepat lagi dan permohonan anda lengkap.",
       "lockedTitle": "Beberapa perkara yang kami perlukan daripada anda, {name}",
       "lockedIntro": "Kami sedang menyemak permohonan anda dan memerlukan sedikit maklumat tambahan. Sila jawab setiap perkara di bawah — ia hanya mengambil beberapa minit.",
+      "fundedTitle": "Hampir selesai, {name} — satu langkah untuk menerima biasiswa anda",
+      "fundedIntro": "Tahniah atas anugerah anda! Untuk menyediakan pembayaran biasiswa, sila tambah butiran akaun bank anda di bawah.",
       "awaitTitle": "Semuanya sudah lengkap",
       "awaitBody": "Permohonan anda telah lengkap dan sedang disemak oleh pasukan kami. Tiada apa-apa lagi yang perlu anda lakukan buat masa ini — kami akan menghubungi anda melalui e-mel. Sila semak {email} (termasuk folder spam) dari semasa ke semasa.",
       "progressDone": "{done} daripada {total} selesai",

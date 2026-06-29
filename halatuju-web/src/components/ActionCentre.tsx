@@ -480,6 +480,7 @@ export default function ActionCentre({
   studentName,
   onConfirm,
   formLocked = false,
+  funded = false,
   email = '',
   applicationId,
 }: {
@@ -491,6 +492,10 @@ export default function ActionCentre({
    *  typed replies, and the empty state shows a calm "all set, we'll be in touch"
    *  message instead of rendering nothing. */
   formLocked?: boolean
+  /** Funded student (awarded/active/maintenance). Switches the header to a warm,
+   *  congratulatory tone matching the bank-details invitation email, rather than the
+   *  "we're reviewing your application" copy used during the review phase. */
+  funded?: boolean
   /** The address updates are sent to — shown in the locked empty-state message. */
   email?: string
   /** Post-submit only: enables the in-place income route switch on an income task
@@ -580,10 +585,19 @@ export default function ActionCentre({
     <section className="mb-8">
       {/* Header */}
       <h2 className="text-xl font-bold text-gray-900">
-        {t(formLocked ? 'scholarship.actionCentre.lockedTitle' : 'scholarship.actionCentre.title', { name: firstName })}
+        {t(
+          funded
+            ? 'scholarship.actionCentre.fundedTitle'
+            : formLocked ? 'scholarship.actionCentre.lockedTitle' : 'scholarship.actionCentre.title',
+          { name: firstName },
+        )}
       </h2>
       <p className="mt-1 text-sm text-gray-600">
-        {t(formLocked ? 'scholarship.actionCentre.lockedIntro' : 'scholarship.actionCentre.intro')}
+        {t(
+          funded
+            ? 'scholarship.actionCentre.fundedIntro'
+            : formLocked ? 'scholarship.actionCentre.lockedIntro' : 'scholarship.actionCentre.intro',
+        )}
       </p>
 
       {/* Progress */}
