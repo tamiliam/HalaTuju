@@ -94,7 +94,7 @@ export default function InterviewBookingPanel({
 
       {sched.status === 'booked' && over ? (
         <div className="mt-2">
-          <p className="text-sm text-gray-700">{t('scholarship.application.interview.booked')}:</p>
+          <p className="text-sm text-gray-700">{t('scholarship.application.interview.bookedPast')}:</p>
           <p className="mt-1 text-base font-semibold text-gray-900">{formatMyt(sched.start)}</p>
           <p className="mt-3 text-sm text-gray-700">{t('scholarship.application.interview.completedNote')}</p>
         </div>
