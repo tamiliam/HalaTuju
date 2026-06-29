@@ -463,20 +463,60 @@ AWARD_OFFER_BODIES = {
 }
 
 
+# The "add your bank account details" phrase (BOLD in the HTML) + the Action-Centre BUTTON
+# label, per language. Each bank phrase must be an exact substring of the body above.
+_BANK_PHRASE = {
+    'en': 'your bank account details',
+    'ms': 'butiran akaun bank anda',
+    'ta': 'உங்கள் வங்கிக் கணக்கு விவரங்களை',
+}
+_BTN_LABEL = {
+    'en': 'Add your bank details',
+    'ms': 'Tambah butiran bank anda',
+    'ta': 'வங்கி விவரங்களைச் சேர்க்கவும்',
+}
+
+
+def _award_offer_html(text_body, link, lang):
+    """HTML for the award good-news email: paragraphs, with the bank-details phrase in BOLD
+    and the Action-Centre URL rendered as a button (not a raw link). Falls back gracefully:
+    a missing phrase just isn't bolded; a missing link just adds no button."""
+    import html as _h
+    bank = _BANK_PHRASE.get(lang, '')
+    btn = _BTN_LABEL.get(lang) or 'Add your bank details'
+
+    def _emphasise(escaped):
+        if bank:
+            return escaped.replace(_h.escape(bank), f'<strong>{_h.escape(bank)}</strong>')
+        return escaped
+
+    blocks = []
+    for para in [p.strip() for p in (text_body or '').split('\n\n') if p.strip()]:
+        if link and link in para:
+            lead = para.replace(link, '').strip()          # drop the raw URL line
+            blocks.append(f'<p style="margin:0 0 10px;">{_emphasise(_h.escape(lead)).replace(chr(10), "<br>")}</p>')
+            blocks.append(f'<p style="margin:0 0 14px;">{_email_button(link, btn)}</p>')
+        else:
+            blocks.append(f'<p style="margin:0 0 14px;">{_emphasise(_h.escape(para)).replace(chr(10), "<br>")}</p>')
+    return _html_email_shell(''.join(blocks))
+
+
 def send_award_offer_email(to_email, applicant_name, lang='en'):
     """Award good-news email: a sponsor has committed (status 'awarded'). Tells the student
     the application succeeded, to add their bank details (Action Centre), and to await the
-    formal offer. NO amount, NO sponsor identity. HTML + plain-text, from info@, reply-to help@."""
+    formal offer. NO amount, NO sponsor identity. HTML (bank-details BOLD + Action-Centre
+    BUTTON) + plain-text fallback, from info@, reply-to help@."""
     if not to_email:
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
-    fmt = {'name': name, 'link': f'{frontend}/scholarship/application', 'support': SUPPORT_EMAIL}
+    link = f'{frontend}/scholarship/application'
+    fmt = {'name': name, 'link': link, 'support': SUPPORT_EMAIL}
     subject = AWARD_OFFER_SUBJECTS[lang]
     text_body = AWARD_OFFER_BODIES[lang].format(**fmt)
     return _send_html(
-        to_email, subject, text_body, _decline_html(text_body),
+        to_email, subject, text_body, _award_offer_html(text_body, link, lang),
         from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
         reply_to=[SUPPORT_EMAIL],
     )
