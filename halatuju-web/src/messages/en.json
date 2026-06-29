@@ -1750,7 +1750,8 @@
         "slotPassed": "That time has already passed — please pick another one.",
         "allPassed": "These proposed times have all passed. Please ask for other times below.",
         "error": "Something went wrong. Please try again.",
-        "completedNote": "This interview has taken place — thank you. There's nothing more to do; we'll be in touch by email."
+        "completedNote": "This interview has taken place — thank you. There's nothing more to do; we'll be in touch by email.",
+        "bookedPast": "Your interview was booked for"
       },
       "awardPanel": {
         "title": "One more step",

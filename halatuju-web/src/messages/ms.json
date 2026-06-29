@@ -1750,7 +1750,8 @@
         "slotPassed": "Masa itu telah pun berlalu — sila pilih masa lain.",
         "allPassed": "Masa-masa yang dicadangkan ini semuanya telah berlalu. Sila minta masa lain di bawah.",
         "error": "Sesuatu tidak kena. Sila cuba lagi.",
-        "completedNote": "Temu duga ini telah berlangsung — terima kasih. Tiada apa-apa lagi yang perlu dilakukan; kami akan menghubungi anda melalui e-mel."
+        "completedNote": "Temu duga ini telah berlangsung — terima kasih. Tiada apa-apa lagi yang perlu dilakukan; kami akan menghubungi anda melalui e-mel.",
+        "bookedPast": "Temu duga anda telah ditempah pada"
       },
       "awardPanel": {
         "title": "Satu langkah lagi",
