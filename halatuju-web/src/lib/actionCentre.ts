@@ -125,6 +125,11 @@ export const KNOWN_CODES = [
   'sibling_tertiary_funding',
   // S3 — offer carries no readable reporting date → ask when/where to report (clarify).
   'reporting_date_unknown',
+  // Post-award payout — the bank-details task. The OPEN state renders via the dedicated
+  // BankDetailsTask component (special-cased in ActionCentre), but the RESOLVED state falls
+  // through to the generic Done card, so it must be a KNOWN code — otherwise it's mistaken
+  // for a free-text officer ticket ("From your reviewer" + a blank title).
+  'bank_details_missing',
 ] as const
 
 export type KnownCode = (typeof KNOWN_CODES)[number]
@@ -164,6 +169,16 @@ export function titleSourceFor(
 ):
   | { kind: 'raw'; text: string }
   | { kind: 'i18n'; titleKey: string; descKey: string } {
+  // The bank-details task has no `item.<code>` copy block (its OPEN card is the dedicated
+  // BankDetailsTask component); reuse the bank card's own title so the RESOLVED Done card
+  // reads "Add your bank account for payment" (struck-through) instead of a blank line.
+  if (item.code === 'bank_details_missing') {
+    return {
+      kind: 'i18n',
+      titleKey: 'scholarship.actionCentre.bank.title',
+      descKey: 'scholarship.actionCentre.bank.intro',
+    }
+  }
   if (isOfficerItem(item)) {
     return { kind: 'raw', text: item.prompt || '' }
   }

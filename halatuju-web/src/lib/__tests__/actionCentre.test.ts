@@ -133,6 +133,24 @@ describe('titleSourceFor', () => {
       descKey: 'scholarship.actionCentre.item.nric_mismatch.desc',
     })
   })
+
+  it('reuses the bank card title for the resolved bank-details task (not a raw blank prompt)', () => {
+    const src = titleSourceFor({ source: 'system', code: 'bank_details_missing', prompt: '' })
+    expect(src).toEqual({
+      kind: 'i18n',
+      titleKey: 'scholarship.actionCentre.bank.title',
+      descKey: 'scholarship.actionCentre.bank.intro',
+    })
+  })
+})
+
+describe('bank-details task attribution', () => {
+  it('is the review assistant, never "from your reviewer"', () => {
+    // Regression: bank_details_missing was missing from KNOWN_CODES, so the resolved
+    // Done card was mislabelled as a free-text officer ticket ("From your reviewer").
+    expect(isOfficerItem({ source: 'system', code: 'bank_details_missing' })).toBe(false)
+    expect(attributionFor({ source: 'system', code: 'bank_details_missing' })).toBe('assistant')
+  })
 })
 
 describe('confirmTargetFor', () => {
