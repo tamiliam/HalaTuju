@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Award good-news email → 24h cool-off auto-send (replaces the temporary OFF gate).** A sponsor
+  award no longer emails inline; the new hourly cron `release-award-offer-emails` sends the email
+  once the award is `AWARD_OFFER_EMAIL_COOLOFF_HOURS` old (default 24), leaving a window to
+  reconsider — cancelling the award before then stops it. Idempotent via new
+  `Sponsorship.offer_emailed_at` (migration `0082`, migrate-first); the 9 live awards were
+  backfilled as handled so none re-send. `award_and_notify` is now fund-only; the manual
+  `send_award_offer_emails` override stamps the marker too. Hourly Cloud Scheduler
+  `halatuju-release-award-offer-emails` (`0 * * * *` Asia/KL). +6 pytest.
+
 ### Added
 - **Award-panel embargo flag `AWARD_ACCEPTANCE_ENABLED` (default OFF).** The "View my award / one more
   step" panel on `/scholarship/application` (→ the accept + onboarding flow, not yet tested end-to-end) is
