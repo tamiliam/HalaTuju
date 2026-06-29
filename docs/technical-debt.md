@@ -1026,6 +1026,11 @@ matcher (apply-form pick / `offer_pathway.resolve_catalogue_course`) sometimes b
   (`POLY-DIP-077` → Politeknik Seberang Perai vs his actual Politeknik Ungku Omar). The split majors don't
   reflect the real single-course/campus reality. **Fix:** reconcile the poly-IT synthetic majors with the
   real catalogue (one course, campus from the offer), or make the matcher campus-aware.
+  **#95 stop-gap (2026-06-29, owner's call):** his offer is a GENERIC "Diploma Teknologi Maklumat" at
+  Politeknik Ungku Omar (no specialisation), and Ungku Omar's catalogue IT diplomas are only the three
+  specialisations (Software/Networking/Security) — none generic. He was assigned a PLACEHOLDER
+  (`POLY-DIP-072`, Software & App Development at Ungku Omar, `source='placeholder_pending_specialisation'`)
+  so the campus is right; the specialisation is arbitrary and must be corrected once known.
 - **Private programmes (#31 Dhurvaashrii):** a private offer (no public-catalogue equivalent) was force-
   matched to an unrelated public `course_id` (`UL0010002` → UMK). A private/IPTS programme should stay
   **label-only (no `course_id`)** rather than be bound to the nearest public course. (#31's spurious id was
