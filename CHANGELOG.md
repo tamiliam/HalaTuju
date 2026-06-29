@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `send_award_offer_emails` override stamps the marker too. Hourly Cloud Scheduler
   `halatuju-release-award-offer-emails` (`0 * * * *` Asia/KL). +6 pytest.
 
+### Fixed
+- **Resolved bank-details task now shows a proper "Done" card** in the Action Centre. After a student
+  added their bank account, the resolved task rendered as a confusing green card labelled "From your
+  reviewer" with a blank title (reported on #16). Root cause: `bank_details_missing` was absent from
+  `KNOWN_CODES`, so `titleSourceFor` treated the resolved item as a free-text officer ticket (attribution
+  "From your reviewer" + title = empty `prompt`); the open state was unaffected because it has a dedicated
+  component. Registered the code as a known system task (attribution → "review assistant") and pointed
+  `titleSourceFor` at the bank card's own title, so the Done card reads a struck-through "Add your bank
+  account for payment" + DONE. Web-only, no migration; +2 jest regressions.
+
 ### Added
 - **Award-panel embargo flag `AWARD_ACCEPTANCE_ENABLED` (default OFF).** The "View my award / one more
   step" panel on `/scholarship/application` (→ the accept + onboarding flow, not yet tested end-to-end) is
