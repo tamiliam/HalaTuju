@@ -21,7 +21,17 @@ All functions here are read-only (no model writes). The orchestration + writes l
 """
 from __future__ import annotations
 
+import re
+
 from .pathway_engine import distinctive_tokens
+
+
+def _norm_inst_name(s: str) -> str:
+    """Lower-case, drop trailing/inner parentheticals (e.g. an "(UKM)" acronym) and collapse
+    whitespace — so two spellings of the SAME institution compare equal even when the name
+    has no distinctive tokens (every word generic, e.g. 'Universiti Kebangsaan Malaysia')."""
+    s = re.sub(r'\([^)]*\)', ' ', s or '')
+    return ' '.join(s.split()).strip().lower()
 
 
 def detect_pathway_type(programme: str, institution: str) -> str:
@@ -130,13 +140,17 @@ def catalogue_institution(course_id: str, hint: str = '') -> str:
     recorded institution signals a wrong/imprecise course_id (a data-integrity issue to
     surface), not an OCR variant to silently overwrite. With no hint it can't verify → ''."""
     from apps.courses.models import CourseInstitution
-    hj = distinctive_tokens(hint)
-    if not hj:
-        return ''
     names = [n for n in CourseInstitution.objects.filter(course_id=course_id)
              .values_list('institution__institution_name', flat=True) if n]
+    if not names:
+        return ''
+    hj = distinctive_tokens(hint)
+    hn = _norm_inst_name(hint)
     for n in names:
-        if _name_aligns(hj, distinctive_tokens(n)):
+        # Either the distinctive tokens align (same place, cleaner) OR the names are identical
+        # modulo a parenthetical/casing (handles generic-only names like UKM that have no
+        # distinctive tokens). Both are "same institution"; a genuine conflict matches neither.
+        if (hj and _name_aligns(hj, distinctive_tokens(n))) or (hn and _norm_inst_name(n) == hn):
             return n
     return ''
 

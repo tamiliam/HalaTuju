@@ -168,6 +168,17 @@ class TestCatalogueInstitution(_Base):
         # (a wrong/imprecise course_id to surface, not an OCR variant to iron out).
         self.assertEqual(op.catalogue_institution('DAC', 'Universiti Malaya'), '')
 
+    def test_generic_name_acronym_strips(self):
+        # Catalogue name has no distinctive tokens (all generic) → normalised-equality fallback
+        # still irons out a "(UKM)"-style acronym to the canonical form.
+        ukm = Institution.objects.create(institution_id='ukm', institution_name='Universiti Kebangsaan Malaysia',
+                                         type='University', state='Selangor')
+        c = Course.objects.create(course_id='UK1', course='Asasi Sains', level='Asasi',
+                                  department='Sci', field='Science', field_key=self.ft)
+        CourseInstitution.objects.create(course=c, institution=ukm)
+        self.assertEqual(op.catalogue_institution('UK1', 'Universiti Kebangsaan Malaysia (UKM)'),
+                         'Universiti Kebangsaan Malaysia')
+
     def test_ambiguous_resolved_by_hint_else_blank(self):
         kuc = Institution.objects.create(
             institution_id='pks', institution_name='Politeknik Kuching Sarawak',
