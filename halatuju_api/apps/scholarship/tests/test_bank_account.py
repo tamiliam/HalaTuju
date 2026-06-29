@@ -138,6 +138,28 @@ class TestSyncBankItem(_Base):
         sync_bank_details_item(app)
         self.assertEqual(app.resolution_items.get(code=BANK_DETAILS_CODE).status, 'resolved')
 
+    def test_survives_verdict_sync_on_reload(self):
+        # Regression (2026-06-29): sync_resolution_items must NOT sweep the bank task — it's
+        # a system item but NOT a verdict gap. A reload (which syncs the verdict first) used
+        # to silently mark the un-uploaded bank task "done" and vanish it.
+        from apps.scholarship.resolution import sync_resolution_items
+        app = self._make('bank-survive', status='awarded')
+        sync_bank_details_item(app)
+        sync_resolution_items(app)   # first sync on a reload
+        sync_resolution_items(app)   # and again — still must not touch it
+        self.assertEqual(app.resolution_items.get(code=BANK_DETAILS_CODE).status, 'open')
+
+    def test_reopens_if_wrongly_resolved_while_still_wanted(self):
+        # Self-heal: if anything resolves the bank task while it's still needed (awarded, no
+        # account), the next sync re-opens it — an un-uploaded task can't read as "done".
+        app = self._make('bank-reopen', status='awarded')
+        sync_bank_details_item(app)
+        item = app.resolution_items.get(code=BANK_DETAILS_CODE)
+        item.status = 'resolved'
+        item.save(update_fields=['status'])
+        sync_bank_details_item(app)
+        self.assertEqual(app.resolution_items.get(code=BANK_DETAILS_CODE).status, 'open')
+
 
 # ── Visibility: always shown for an awarded student, even with Check-2 OFF ────
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET,
