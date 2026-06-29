@@ -557,7 +557,9 @@ class TestPathway(_Base):
         self.assertTrue(services.confirm_pathway(self.app))
         self.app.refresh_from_db()
         self.assertIsNotNone(self.app.pathway_confirmed_at)
-        self.assertEqual(self.app.chosen_programme.get('course_name'), 'PROGRAM MATRIKULASI')
+        # A shouty offer programme ("PROGRAM MATRIKULASI") is re-cased to Title Case so it never
+        # reaches the sponsor pool shouting; the institution is written as-is (its own canon path).
+        self.assertEqual(self.app.chosen_programme.get('course_name'), 'Program Matrikulasi')
         self.assertEqual(self.app.chosen_programme.get('institution'), 'KOLEJ MATRIKULASI MELAKA')
         self.assertEqual(self.app.chosen_programme.get('source'), 'offer_letter_confirmed')
         # The verdict now reads verified.

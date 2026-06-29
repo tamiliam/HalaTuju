@@ -87,6 +87,27 @@ class TestDetectors(SimpleTestCase):
                          'Kolej Tingkatan Enam Sri Istana')
         self.assertEqual(op.clean_school_name('', ''), '')
 
+    def test_title_case_programme(self):
+        # The live bug: a shouty offer programme → Title Case, with "(PISMP)" kept as an acronym.
+        self.assertEqual(
+            op.title_case_programme('PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP)'),
+            'Program Ijazah Sarjana Muda Perguruan (PISMP)')
+        # Connectors lower-cased (never the first word); short parenthetical acronym kept upper.
+        self.assertEqual(
+            op.title_case_programme('DIPLOMA PENGURUSAN LOGISTIK DAN RANTAIAN BEKALAN'),
+            'Diploma Pengurusan Logistik dan Rantaian Bekalan')
+        self.assertEqual(
+            op.title_case_programme('DIPLOMA KEJURUTERAAN ELEKTRONIK (KOMUNIKASI)'),
+            'Diploma Kejuruteraan Elektronik (Komunikasi)')
+        # An ALREADY mixed-case name is returned byte-for-byte — we never re-case a styled name.
+        for already in ('Diploma Teknologi Maklumat (Software & App Development)',
+                        'Bachelor of Computer Science', 'Asasipintar UKM #'):
+            self.assertEqual(op.title_case_programme(already), already)
+        # Idempotent + empty-safe.
+        once = op.title_case_programme('PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP)')
+        self.assertEqual(op.title_case_programme(once), once)
+        self.assertEqual(op.title_case_programme(''), '')
+
     def test_name_aligns_subset_either_direction(self):
         # Catalogue ⊆ offer (offer carries a code prefix) → aligns.
         self.assertTrue(op._name_aligns({'dac', 'perakaunan'}, {'perakaunan'}))
