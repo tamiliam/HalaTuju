@@ -3710,3 +3710,19 @@ case would disappear), or a per-parent income breakdown is wanted in the profile
 **Rationale:** they have ~one year of support left, not two. `reporting_date.year < cohort.year` is a stable, explainable signal (vs a drifting "months from today").
 **Trade-offs:** needs a reporting date + cohort year; unknown date → defaults to the full RM3,000 (a reviewer can adjust).
 **Revisit if:** STPM funding becomes per-semester, or the cohort model changes.
+
+## Embargo the award accept/onboarding flow behind a runtime flag — 2026-06-29
+**Decision:** Hide the "View my award / one more step" panel on `/scholarship/application` behind
+`AWARD_ACCEPTANCE_ENABLED` (default OFF), exposed on the student award payload as `acceptance_enabled` and
+gated FE-side in `awardPanel()`.
+**Alternatives considered:** (a) An `NEXT_PUBLIC_*` FE env constant — rejected: bakes at build time, needs a
+redeploy to flip. (b) Delete/comment the panel — rejected: not reversible without a code change + deploy.
+(c) Gate on application status — rejected: an awarded student legitimately has an offer; the thing not ready
+is the onboarding flow, not the award state.
+**Rationale:** The accept→onboarding flow isn't tested end-to-end; the owner wants to invite awarded students
+into it by a later email instead. A backend flag on the API payload flips with one `--update-env-vars` and no
+build, matching the owner-gated, deploy-free re-enable we want.
+**Trade-offs:** Flipping the flag un-hides the panel for ALL funded students simultaneously (no per-student
+rollout) — onboarding must be verified before flip-on.
+**Revisit if:** onboarding is tested end-to-end (then set `AWARD_ACCEPTANCE_ENABLED=1`), or we need a staged
+rollout (would need a per-cohort/per-student gate instead of a global flag).

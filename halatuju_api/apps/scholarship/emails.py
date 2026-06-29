@@ -478,8 +478,9 @@ _BTN_LABEL = {
 
 
 def _award_offer_html(text_body, link, lang):
-    """HTML for the award good-news email: paragraphs, with the bank-details phrase in BOLD
-    and the Action-Centre URL rendered as a button (not a raw link). Falls back gracefully:
+    """HTML for the award good-news email: paragraphs, with the bank-details phrase in BOLD,
+    the Action-Centre URL rendered as a button (not a raw link), and the sign-off team name
+    (the line after the salutation in the final paragraph) bolded. Falls back gracefully:
     a missing phrase just isn't bolded; a missing link just adds no button."""
     import html as _h
     bank = _BANK_PHRASE.get(lang, '')
@@ -490,14 +491,23 @@ def _award_offer_html(text_body, link, lang):
             return escaped.replace(_h.escape(bank), f'<strong>{_h.escape(bank)}</strong>')
         return escaped
 
+    def _bold_team(escaped):
+        # Bold the team-name line (after the salutation) of the sign-off paragraph.
+        head, sep, team = escaped.rpartition('\n')
+        return f'{head}\n<strong>{team}</strong>' if sep else f'<strong>{escaped}</strong>'
+
+    paras = [p.strip() for p in (text_body or '').split('\n\n') if p.strip()]
     blocks = []
-    for para in [p.strip() for p in (text_body or '').split('\n\n') if p.strip()]:
+    for idx, para in enumerate(paras):
         if link and link in para:
             lead = para.replace(link, '').strip()          # drop the raw URL line
             blocks.append(f'<p style="margin:0 0 10px;">{_emphasise(_h.escape(lead)).replace(chr(10), "<br>")}</p>')
             blocks.append(f'<p style="margin:0 0 14px;">{_email_button(link, btn)}</p>')
         else:
-            blocks.append(f'<p style="margin:0 0 14px;">{_emphasise(_h.escape(para)).replace(chr(10), "<br>")}</p>')
+            esc = _emphasise(_h.escape(para))
+            if idx == len(paras) - 1 and '\n' in para:   # final paragraph = the sign-off
+                esc = _bold_team(esc)
+            blocks.append(f'<p style="margin:0 0 14px;">{esc.replace(chr(10), "<br>")}</p>')
     return _html_email_shell(''.join(blocks))
 
 
