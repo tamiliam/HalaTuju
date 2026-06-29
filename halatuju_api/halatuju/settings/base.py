@@ -191,6 +191,13 @@ CHECK2_AUTO_GENERATE = os.environ.get('CHECK2_AUTO_GENERATE', '').lower() in ('1
 # single profile on a new prompt without re-running the whole fleet. Empty = full stale sweep.
 PROFILE_REFRESH_APP_IDS = os.environ.get('PROFILE_REFRESH_APP_IDS', '')
 
+# Scope for the `award_students_batch` admin tool (run via the argless cron endpoint):
+# award the listed applications to the given sponsor via the real award_and_notify path
+# (offered Sponsorship + status 'awarded' + the good-news email). Set both to act; clear
+# after. SEED_SPONSOR_ID = a Sponsor.id; SEED_AWARD_APP_IDS = csv of application IDs.
+SEED_SPONSOR_ID = os.environ.get('SEED_SPONSOR_ID', '')
+SEED_AWARD_APP_IDS = os.environ.get('SEED_AWARD_APP_IDS', '')
+
 # F7: when a reviewer is assigned, also email the STUDENT an advance notice (who will
 # contact them + the interviewer's name/phone/email). OFF by default — switch on only after
 # reviewers have given non-objection to sharing their contact. Per-reviewer opt-out lives on

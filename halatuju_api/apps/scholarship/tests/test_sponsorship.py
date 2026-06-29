@@ -410,3 +410,53 @@ class TestAwardOfferEmail(TestCase):
         mail.outbox = []
         self.assertFalse(send_award_offer_email('', 'Nobody'))
         self.assertEqual(len(mail.outbox), 0)
+
+
+from django.core.management import call_command  # noqa: E402
+
+
+class TestAwardStudentsBatch(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def test_batch_awards_listed_apps_and_emails(self):
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('100000'))
+        a1 = _fundable_app(self.cohort, suffix='b1', award=Decimal('2000'))
+        a2 = _fundable_app(self.cohort, suffix='b2', award=Decimal('3000'))
+        mail.outbox = []
+        with override_settings(SEED_SPONSOR_ID=str(s.id),
+                               SEED_AWARD_APP_IDS=f'{a1.id}, {a2.id}'):
+            call_command('award_students_batch')
+        a1.refresh_from_db(); a2.refresh_from_db()
+        self.assertEqual(a1.status, 'awarded')
+        self.assertEqual(a2.status, 'awarded')
+        self.assertEqual(Sponsorship.objects.filter(sponsor=s, status='offered').count(), 2)
+        self.assertEqual(svc.sponsor_balance(s), Decimal('95000'))   # 100000 - 2000 - 3000
+        self.assertEqual(len(mail.outbox), 2)                        # one good-news email each
+
+    def test_batch_noop_without_env(self):
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('100000'))
+        a1 = _fundable_app(self.cohort, suffix='n1')
+        mail.outbox = []
+        call_command('award_students_batch')   # no SEED_* set
+        a1.refresh_from_db()
+        self.assertEqual(a1.status, 'recommended')
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_batch_skips_not_fundable(self):
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('100000'))
+        a1 = _fundable_app(self.cohort, suffix='s1', award=Decimal('2000'))
+        a2 = _fundable_app(self.cohort, suffix='s2', award=None)   # not fundable (no amount)
+        ScholarshipApplication.objects.filter(id=a2.id).update(award_amount=None)
+        mail.outbox = []
+        with override_settings(SEED_SPONSOR_ID=str(s.id),
+                               SEED_AWARD_APP_IDS=f'{a1.id},{a2.id}'):
+            call_command('award_students_batch')
+        a1.refresh_from_db(); a2.refresh_from_db()
+        self.assertEqual(a1.status, 'awarded')          # the fundable one went through
+        self.assertEqual(a2.status, 'recommended')      # the other skipped, untouched
+        self.assertEqual(len(mail.outbox), 1)
