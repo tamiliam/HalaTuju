@@ -917,6 +917,7 @@ def confirm_pathway(application):
     ``chosen_programme`` and stamps ``pathway_confirmed_at`` so the Pathway verdict
     reads 'verified'. Idempotent-ish (re-confirming just refreshes the snapshot).
     Returns False when there's no offer letter to confirm."""
+    from . import offer_pathway as op
     from .models import ApplicantDocument
     from .pathway_engine import student_offer_check
     offer = (ApplicantDocument.objects.filter(application=application, doc_type='offer_letter')
@@ -924,8 +925,12 @@ def confirm_pathway(application):
     if offer is None:
         return False
     chk = student_offer_check(offer)
+    # Offer letters are often ALL-CAPS; re-case a shouty programme name to Title Case so it
+    # never reaches the sponsor pool / profile shouting (catalogue names are already cased — this
+    # is the one path that writes raw offer text). Already-cased names pass through untouched.
     cp = dict(application.chosen_programme) if isinstance(application.chosen_programme, dict) else {}
-    cp.update({'course_name': chk['programme'], 'institution': chk['institution'],
+    cp.update({'course_name': op.title_case_programme(chk['programme']),
+               'institution': chk['institution'],
                'source': 'offer_letter_confirmed'})
     application.chosen_programme = cp
     application.pathway_confirmed_at = timezone.now()

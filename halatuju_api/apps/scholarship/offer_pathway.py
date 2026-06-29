@@ -200,6 +200,51 @@ def clean_school_name(*candidates: str) -> str:
     return best.title()
 
 
+# Acronyms in a programme name that must stay UPPER-CASE when a shouty (all-caps) offer
+# programme is re-cased. (Parenthesised short tokens like "(PISMP)" are also kept upper by the
+# length heuristic below, so this is just the un-parenthesised / borderline set.)
+_PROGRAMME_ACRONYMS = {
+    'PISMP', 'SJKT', 'SJKC', 'SK', 'SR', 'IT', 'ICT', 'TVET', 'STEM',
+    'UKM', 'UM', 'USM', 'UPM', 'UTM', 'UIA', 'UPSI', 'UMS', 'UNIMAS', 'IPG', 'UiTM',
+}
+# Connectors that stay lower-case in a Malay/English programme title (never the first word).
+_PROGRAMME_CONNECTORS = {
+    'dan', 'dengan', 'dari', 'untuk', 'di', 'ke', 'dalam', 'serta',
+    'of', 'and', 'the', 'in', 'for', 'with',
+}
+
+
+def _recase_programme_token(tok: str, *, first: bool) -> str:
+    """Re-case ONE whitespace token of a shouty programme name, preserving acronyms, short
+    parentheticals and punctuation. A pure-punctuation token (``#``, ``&``) passes through."""
+    core = tok.strip('()[].,#/-')  # the alphabetic heart, minus surrounding punctuation
+    if not core:
+        return tok
+    if core.upper() in _PROGRAMME_ACRONYMS:
+        new = core.upper()
+    elif tok[:1] == '(' and tok[-1:] == ')' and len(core) <= 6:
+        new = core.upper()  # a short parenthesised token is an acronym, e.g. "(PISMP)", "(SK)"
+    elif (not first) and core.lower() in _PROGRAMME_CONNECTORS:
+        new = core.lower()
+    else:
+        new = core[:1].upper() + core[1:].lower()
+    return tok.replace(core, new, 1)  # keep the original surrounding punctuation
+
+
+def title_case_programme(name: str) -> str:
+    """Rescue a programme name that arrived SHOUTY (fully upper-case) from an offer letter —
+    e.g. "PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP)" → "Program Ijazah Sarjana Muda
+    Perguruan (PISMP)". Preserves acronyms ((PISMP)/SJKT/UKM…), connectors (dan/of…) and
+    punctuation (#, &). A name that is ALREADY mixed-case is returned UNCHANGED byte-for-byte:
+    we only rescue a fully-uppercase string, never re-case a deliberately-styled one (e.g.
+    "Diploma Teknologi Maklumat (Software & App Development)"). Idempotent."""
+    s = (name or '').strip()
+    letters = [c for c in s if c.isalpha()]
+    if not letters or any(c.islower() for c in letters):
+        return s
+    return ' '.join(_recase_programme_token(t, first=(i == 0)) for i, t in enumerate(s.split()))
+
+
 def resolve_catalogue_course(programme: str, institution: str):
     """Best-effort canonical match for a TERTIARY offer. Returns
     ``{course_id, course_name, institution}`` ONLY when exactly one catalogue course —

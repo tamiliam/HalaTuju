@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `halatuju-release-award-offer-emails` (`0 * * * *` Asia/KL). +6 pytest.
 
 ### Fixed
+- **Shouty (ALL-CAPS) programme name no longer leaks to the sponsor pool / profile.** An offer letter in
+  capitals confirmed via the Action Centre wrote its programme name verbatim into `chosen_programme`
+  (`confirm_pathway`), so #107 showed "PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP)" on its pool card —
+  the one path that bypassed the (already-cased) recommender catalogue. Added
+  `offer_pathway.title_case_programme` (rescues a fully-uppercase name to Title Case, preserving acronyms
+  like `(PISMP)`, connectors `dan`/`of`, and punctuation `#`/`&`; an already-cased name is returned
+  byte-for-byte, so it's idempotent) and applied it in `confirm_pathway`. Backfilled the one live row (#107
+  → "Program Ijazah Sarjana Muda Perguruan (PISMP)"); audited all 100+ apps + the catalogue — no others.
+  Backend-only, no migration; +1 pytest (and the confirm-pathway test now asserts Title Case).
 - **Resolved bank-details task now shows a proper "Done" card** in the Action Centre. After a student
   added their bank account, the resolved task rendered as a confusing green card labelled "From your
   reviewer" with a blank title (reported on #16). Root cause: `bank_details_missing` was absent from
