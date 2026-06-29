@@ -55,12 +55,14 @@ Retro `docs/retrospective-2026-06-29-reviewer-query-s3-reporting-date.md`.
 **SPM subject-count nudge DROPPED** — not cleanly deterministic (reviewer eyeballs an odd grade count);
 needs a clearer signal before automating.
 
-### Sprint 4 — Interview (Check 3): structured guide + AI gap-spotter seeding
-A reviewer guide mapped to the sponsor's three buckets (subjects-vs-results, help-seeking/tuition,
-bursary-priority, resilience read; housing as optional judgement aid per decision #2); seed the Gemini
-gap-spotter with the sponsor's canonical question set so it targets only unanswered gaps; capture
-structured answers. **Plus the high-utility-bill probe (moved from S2)** as a reviewer-facing signal.
-**Complexity: Medium-high.**
+### Sprint 4 — Interview (Check 3): guide + gap-spotter seeding ✅ SHIPPED 2026-06-29
+Seeded `gap_engine.GAP_PROMPT` with the sponsor's 3 buckets (academic_resilience/financial_need/
+pathway_confidence) + canonical probes; each gap returns a `bucket`. Collapsible interviewer-guide
+card in the cockpit (en/ms/ta). High-utility probe already covered by
+`anomaly_engine._detect_utility_high_vs_income` → gap-spotter. Retro
+`docs/retrospective-2026-06-29-reviewer-query-s4-interview.md`.
+**Structured per-bucket capture fields deliberately NOT built** — the gap-spotter + `InterviewSession`
+already cover it; a clean follow-up if the owner wants per-bucket structured answers.
 
 ### Sprint 5 — Final-profile prompt restructure
 Re-shape the draft + Pro-refine prompts to organise output around Academic resilience / Financial need /
