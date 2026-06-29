@@ -303,3 +303,33 @@ class TestExtractionSanitizer(TestCase):
             'bc_child_name': 'TAANUSIYA A/P MUGINDRAN', 'bc_father_name': 'MUGINDRAN A/L ATHIAH',
             'bc_mother_name': 'THAVAMALAR A/P VIJAYAN'})
         self.assertEqual(out['bc_child_name'], 'TAANUSIYA A/P MUGINDRAN')
+
+
+class TestReportingDateNormalisation(TestCase):
+    """Offer reporting_date → clean 'D Mon YYYY' (strip weekday/time/parenthetical; range→start)."""
+    def test_variants(self):
+        from apps.scholarship.vision import _normalise_reporting_date as N
+        cases = {
+            '22/06/2026': '22 Jun 2026',
+            '13 JUN 2026 (SABTU)': '13 Jun 2026',
+            '20 Julai 2026 Isnin': '20 Jul 2026',
+            '08 Jun 2026 (Isnin)': '8 Jun 2026',
+            '20 JUN 2026 (2.30 PETANG - 4.00 PETANG)': '20 Jun 2026',
+            '8 HINGGA 9 JUN 2026': '8 Jun 2026',                 # range → start
+            '13 MEI HINGGA 06 JUN 2026': '13 May 2026',          # range, year only at end
+            '2 September 2025': '2 Sep 2025',
+            '26 OGOS 2024': '26 Aug 2024',
+            '28 JULAI 2024 2:30 PETANG - 4:30 PETANG': '28 Jul 2024',
+        }
+        for raw, want in cases.items():
+            self.assertEqual(N(raw), want, raw)
+
+    def test_unparseable_is_kept(self):
+        from apps.scholarship.vision import _normalise_reporting_date as N
+        self.assertEqual(N('TBA'), 'TBA')
+        self.assertEqual(N(''), '')
+
+    def test_wired_into_sanitizer(self):
+        from apps.scholarship.vision import _sanitize_extracted_fields
+        out = _sanitize_extracted_fields('offer_letter', {'reporting_date': '20 JUN 2026 (SABTU)'})
+        self.assertEqual(out['reporting_date'], '20 Jun 2026')
