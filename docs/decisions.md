@@ -1,5 +1,21 @@
 # Architectural Decisions — HalaTuju
 
+## Award good-news email is a 24h cool-off auto-send, not inline / not a manual gate — 2026-06-29
+**Decision:** A sponsor award (button or batch) funds silently; the good-news email is sent by an
+hourly cron (`release_award_offer_emails`) once the award is `AWARD_OFFER_EMAIL_COOLOFF_HOURS` (24)
+old. Idempotent via `Sponsorship.offer_emailed_at`. Reconsidering = cancel the award within the
+window (only offered/active awards email). Replaces the earlier temporary `AWARD_OFFER_EMAIL_ENABLED`
+OFF gate; the manual `send_award_offer_emails` (env-scoped) remains as a force-send override and also
+stamps the marker.
+**Alternatives considered:** (1) inline send on award (no reconsideration window); (2) the temporary
+manual-only gate (no automation); (3) a per-award scheduled job.
+**Rationale:** mirrors the decline cool-off pattern — automatic, with a grace window. The clock is
+derived from `offered_at` (no scheduling state); one `offer_emailed_at` marker makes the cron + manual
+override mutually idempotent.
+**Trade-offs:** email fires within ~1h of the 24h mark (hourly cron). Stamping `offer_emailed_at` even
+on a failed send avoids re-flood but skips retry on a transient SMTP failure (rare; manual override exists).
+**Revisit if:** acceptance/offer moves fully in-system, or the cool-off needs to be per-cohort.
+
 ## Award good-news email fires on AWARD, states no amount / no sponsor — sponsor self-funding, 2026-06-29
 **Decision:** When a student becomes `awarded` (a sponsor funds them — via the Support button or the
 `award_students_batch` tool), they get `emails.send_award_offer_email`: success + "add your bank
