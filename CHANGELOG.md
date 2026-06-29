@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Offer reporting date now persists for confirmed-pathway students.** `autofill_pathway_from_offer`
+  gated the normalised `reporting_date` write behind the `if locked: return False` early-return, so any
+  student who had already locked a precise pathway (`chosen_programme.course_id` + `pathway_certainty=
+  'sure'`) never got the column written on offer (re-)extraction — the cockpit still showed the raw date
+  (read live off `pathway_check.reporting_date`), masking that the DB column was NULL. The reporting date
+  is a fact off the offer, independent of the chosen pathway, so it's now written regardless of lock state
+  (pathway *adoption* is still skipped when locked). Backfilled 5 affected prod rows via
+  `backfill_reporting_dates`. +1 regression test.
+
 ### Changed
 - **Reviewer-query automation S5 (FINAL) — final-profile prompt restructure.** The profile a sponsor
   reads is now organised around the sponsor's three "need to know" areas — Financial need / Academic

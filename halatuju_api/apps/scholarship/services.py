@@ -974,45 +974,51 @@ def autofill_pathway_from_offer(application):
 
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     locked = bool(cp.get('course_id')) and application.pathway_certainty == 'sure'
-    if locked:
-        return False  # the student already locked a precise, non-clashing pick
 
-    ptype = op.detect_pathway_type(prog, inst)
     fields = []
 
-    if op.is_pre_u(ptype):
-        # Pre-U: structured pathway + school (apply-form parity). Fill blanks only —
-        # never clobber something the student deliberately typed.
-        if not (application.chosen_pathway or '').strip():
-            application.chosen_pathway = ptype
-            fields.append('chosen_pathway')
-        if not (application.pre_u_institution or '').strip():
-            application.pre_u_institution = inst
-            fields.append('pre_u_institution')
-        if ptype == 'stpm':
-            stream = op.parse_stpm_stream(prog)
-            if stream and not (application.pre_u_track or '').strip():
-                application.pre_u_track = stream
-                fields.append('pre_u_track')
+    # Pathway ADOPTION only runs when the student hasn't already locked a precise pick —
+    # we never silently overwrite a deliberate, confirmed choice. (The reporting date below
+    # is settled regardless: it's a fact off the offer, independent of the chosen pathway,
+    # so a locked student must still get it persisted — this was the gap that left
+    # reporting_date NULL for confirmed applicants.)
+    if not locked:
+        ptype = op.detect_pathway_type(prog, inst)
 
-    # Display programme: a canonical course_id for a confident tertiary match, else labels.
-    new_cp = {'course_name': prog, 'institution': inst, 'source': 'offer_letter_auto'}
-    if not op.is_pre_u(ptype):
-        match = op.resolve_catalogue_course(prog, inst)
-        if match:
-            new_cp = {**match, 'source': 'offer_letter_auto'}
-    # Only overwrite when there's no precise existing pick to protect, and only when the
-    # value actually changes (keeps re-runs idempotent).
-    if not cp.get('course_id') and cp != new_cp:
-        application.chosen_programme = new_cp
-        fields.append('chosen_programme')
+        if op.is_pre_u(ptype):
+            # Pre-U: structured pathway + school (apply-form parity). Fill blanks only —
+            # never clobber something the student deliberately typed.
+            if not (application.chosen_pathway or '').strip():
+                application.chosen_pathway = ptype
+                fields.append('chosen_pathway')
+            if not (application.pre_u_institution or '').strip():
+                application.pre_u_institution = inst
+                fields.append('pre_u_institution')
+            if ptype == 'stpm':
+                stream = op.parse_stpm_stream(prog)
+                if stream and not (application.pre_u_track or '').strip():
+                    application.pre_u_track = stream
+                    fields.append('pre_u_track')
 
-    # The place is confirmed — drop the "still deciding" framing.
-    if application.pathway_certainty != 'sure':
-        application.pathway_certainty = 'sure'
-        fields.append('pathway_certainty')
+        # Display programme: a canonical course_id for a confident tertiary match, else labels.
+        new_cp = {'course_name': prog, 'institution': inst, 'source': 'offer_letter_auto'}
+        if not op.is_pre_u(ptype):
+            match = op.resolve_catalogue_course(prog, inst)
+            if match:
+                new_cp = {**match, 'source': 'offer_letter_auto'}
+        # Only overwrite when there's no precise existing pick to protect, and only when the
+        # value actually changes (keeps re-runs idempotent).
+        if not cp.get('course_id') and cp != new_cp:
+            application.chosen_programme = new_cp
+            fields.append('chosen_programme')
+
+        # The place is confirmed — drop the "still deciding" framing.
+        if application.pathway_certainty != 'sure':
+            application.pathway_certainty = 'sure'
+            fields.append('pathway_certainty')
 
     # Reviewer-query S3: persist the normalised, sortable reporting date from the offer.
+    # Always evaluated — a locked pathway doesn't change when the student reports.
     rd = parse_reporting_date(chk.get('reporting_date'))
     if rd is not None and application.reporting_date != rd:
         application.reporting_date = rd

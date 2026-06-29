@@ -93,6 +93,24 @@ class TestAutofillStoresDate(_OfferBase):
         app.refresh_from_db()
         self.assertEqual(app.reporting_date, datetime.date(2026, 6, 22))
 
+    def test_autofill_persists_date_even_when_pathway_locked(self):
+        # Regression: a student who has LOCKED a precise pathway (course_id + certainty
+        # 'sure') must still get reporting_date persisted — the date is a fact off the
+        # offer, independent of the chosen pathway. Previously the locked early-return
+        # skipped the reporting_date write, leaving the column NULL for confirmed students.
+        from apps.scholarship.services import autofill_pathway_from_offer
+        app = self._app('locked',
+                        chosen_programme={'course_id': 'DKM-001', 'course_name': 'Diploma',
+                                          'institution': 'Politeknik Test'},
+                        pathway_certainty='sure')
+        self._offer(app, '13 JUN 2026')
+        changed = autofill_pathway_from_offer(app)
+        app.refresh_from_db()
+        self.assertTrue(changed)
+        self.assertEqual(app.reporting_date, datetime.date(2026, 6, 13))
+        # The locked pick is untouched.
+        self.assertEqual(app.chosen_programme.get('course_id'), 'DKM-001')
+
 
 class TestCheck2Clarify(_OfferBase):
     def _codes(self, app):
