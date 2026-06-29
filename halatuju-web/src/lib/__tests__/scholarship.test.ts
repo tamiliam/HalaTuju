@@ -45,6 +45,8 @@ import {
   NEXT_STEP_ORDER,
   defaultNextTab,
   firstTooLongField,
+  showsActionCentre,
+  isFundedStatus,
   type ApplyFormState,
 } from '@/lib/scholarship'
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
@@ -1146,5 +1148,28 @@ describe('firstTooLongField', () => {
   it('returns null for non-object input', () => {
     expect(firstTooLongField(null)).toBeNull()
     expect(firstTooLongField('API error: 400')).toBeNull()
+  })
+})
+
+describe('showsActionCentre / isFundedStatus', () => {
+  // Regression for the 2026-06-29 bank-details bug: an awarded student's page never
+  // mounted <ActionCentre>, so the bank-details task (served by the backend) was
+  // unreachable. The funded states MUST show the Action Centre.
+  it('shows the Action Centre for the post-submit review states', () => {
+    for (const s of ['profile_complete', 'interviewing', 'interviewed']) {
+      expect(showsActionCentre(s)).toBe(true)
+    }
+  })
+  it('shows the Action Centre for the FUNDED post-award states (the bug fix)', () => {
+    for (const s of ['awarded', 'active', 'maintenance']) {
+      expect(showsActionCentre(s)).toBe(true)
+      expect(isFundedStatus(s)).toBe(true)
+    }
+  })
+  it('does NOT show the Action Centre for pre-submit / terminal states', () => {
+    for (const s of ['shortlisted', 'submitted', 'recommended', 'rejected', 'withdrawn', 'closed', 'expired']) {
+      expect(showsActionCentre(s)).toBe(false)
+    }
+    expect(isFundedStatus('shortlisted')).toBe(false)
   })
 })

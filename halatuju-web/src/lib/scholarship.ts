@@ -1008,3 +1008,25 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+// The funded post-award states. A funded student still has a working surface (the Action
+// Centre) — e.g. to upload their bank details — so these must be recognised on the
+// /scholarship/application page, not just in the backend lookup.
+export const FUNDED_STATUSES = ['awarded', 'active', 'maintenance'] as const
+
+// The statuses whose student surface IS the (form-locked) Action Centre: the post-submit
+// review states PLUS the funded post-award states. The /scholarship/application page MUST
+// mount <ActionCentre> for every one of these — a funded student silently missing it (the
+// bank-details task existed in the API but the page never rendered it) was the 2026-06-29
+// bug. Single source of truth for "does this status show the Action Centre"; tested.
+export const ACTION_CENTRE_STATUSES = [
+  'profile_complete', 'interviewing', 'interviewed', ...FUNDED_STATUSES,
+] as const
+
+export function isFundedStatus(status: string): boolean {
+  return (FUNDED_STATUSES as readonly string[]).includes(status)
+}
+
+export function showsActionCentre(status: string): boolean {
+  return (ACTION_CENTRE_STATUSES as readonly string[]).includes(status)
+}
