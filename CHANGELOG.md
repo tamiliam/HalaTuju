@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sponsor self-funding: Support button + award good-news email + batch tool.** The pool
+  student-detail **"Support" button** (was a "Funding opens shortly" stub) now funds a student in
+  full for their award amount via `POST /sponsor/pool/<id>/fund/` — shows the sponsor's BrightPath
+  balance, a confirm step, then an `offered` Sponsorship + app → `awarded` (errors mapped). New
+  **`send_award_offer_email`** (EN/BM/TA; from info@, reply-to help@) fires on award with the
+  owner-cleared "you've been selected → add bank details (Action Centre) → await the formal offer"
+  message — **no amount, no sponsor identity**. New **`sponsorship.award_and_notify`** is the single
+  award entry point (button + batch). New admin **`award_students_batch`** command (cron
+  `award-students-batch`, env-scoped via `SEED_SPONSOR_ID` + `SEED_AWARD_APP_IDS`) batch-awards a
+  list to a sponsor through the same path. No migration. +9 pytest. (The 7-student batch run is
+  held pending owner decision; the batch tool ships when that's approved.)
 - **Bursary ↔ recommender institution alignment (single source of truth).** A catalogue-linked
   (`course_id`) programme's institution name is now taken from the recommender catalogue
   (`offer_pathway.catalogue_institution`: `course_id → Institution`) so offer-letter OCR variants
