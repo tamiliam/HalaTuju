@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `award-students-batch`, env-scoped via `SEED_SPONSOR_ID` + `SEED_AWARD_APP_IDS`) batch-awards a
   list to a sponsor through the same path. No migration. +9 pytest. (The 7-student batch run is
   held pending owner decision; the batch tool ships when that's approved.)
+- **TEMPORARY award-email safety gate.** Flag `AWARD_OFFER_EMAIL_ENABLED` (default OFF) decouples
+  the award good-news email from awarding: with it off, the Support button / batch fund + flip a
+  student to `awarded` but send NO email; the owner sends emails deliberately via the new
+  `send_award_offer_emails` command (cron, scoped to explicit `AWARD_EMAIL_APP_IDS`). Flip the flag
+  on later to restore notify-on-award and retire the command. No migration. +tests.
 - **Bursary ↔ recommender institution alignment (single source of truth).** A catalogue-linked
   (`course_id`) programme's institution name is now taken from the recommender catalogue
   (`offer_pathway.catalogue_institution`: `course_id → Institution`) so offer-letter OCR variants

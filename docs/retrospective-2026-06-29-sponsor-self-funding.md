@@ -67,3 +67,12 @@ DIVASHINI 18, PAVALAHARASI 15, TAANUSIYA 10, HARISH 6, THEEPICAA 4 = RM16,000.)
 ## Next
 Owner to decide the 7-award deploy+run after the other agent's work lands. Then the same tool is
 the standing way to batch-award; the Support button is the per-student "going forward" path.
+
+## Follow-on (same day) — temporary email safety gate
+Owner asked to control the award email by hand for now ("temporary measure"). Added flag
+`AWARD_OFFER_EMAIL_ENABLED` (default OFF) so `award_and_notify` funds + awards but sends nothing;
+the owner sends deliberately via the new `send_award_offer_emails` command (cron, scoped to
+explicit `AWARD_EMAIL_APP_IDS`, only emails apps that hold an award, no sent-tracking). Chose a
+flag + command over a cockpit UI button precisely because it's temporary. No migration (also
+sidesteps colliding with the other agent's unpushed `0081`). ⚠️ The deployed S2 still auto-emails
+until this gate is pushed. 1808 scholarship pytest.
