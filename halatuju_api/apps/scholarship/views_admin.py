@@ -1094,12 +1094,17 @@ class AdminRecordVerdictView(_AdminBase):
         # Standardised assistance (owner decision 2026-06-29): the amount is fixed by the
         # pathway, not chosen by the reviewer. On APPROVE, auto-apply the proposed amount —
         # but only when unset, so a SUPER's manual override (set-award endpoint) survives a
-        # re-record. On DECLINE, clear it. See apps.scholarship.award.
+        # re-record. When the verdict confidently disqualifies (offer_not_official /
+        # income_above_b40_line) the proposal is None, so award_amount STAYS unset — a super
+        # may set a value if the system has erred. On DECLINE, clear it. See
+        # apps.scholarship.award; reuse the verdict just snapshotted, don't recompute.
         from . import award as award_rule
         if overall == 'accept':
             if app.award_amount is None:
-                app.award_amount = award_rule.proposed_award_amount(app)
-                verdict_fields.append('award_amount')
+                proposed = award_rule.proposed_award_amount(app, verdict=app.ai_verdict_snapshot)
+                if proposed is not None:
+                    app.award_amount = proposed
+                    verdict_fields.append('award_amount')
         else:
             if app.award_amount is not None:
                 app.award_amount = None

@@ -532,9 +532,13 @@ export interface AdminScholarshipDetail {
   resolution_items: AdminResolutionItem[]
   /** Recommended assistance amount (RM, Decimal serialised as string) or null. */
   award_amount: string | null
-  /** Standardised pathway-derived assistance (RM3,000 STPM / RM2,000 otherwise). Always
-   *  present; auto-applied on approve. award_amount is the persisted (super-overridable) value. */
+  /** Standardised pathway-derived assistance (RM3,000 STPM / RM2,000 otherwise), auto-applied
+   *  on approve. NULL when the verdict confidently disqualifies (see award_disqualifier);
+   *  award_amount is the persisted (super-overridable) value. */
   proposed_award_amount: string | null
+  /** When non-null, the confident-disqualifier verdict code that zeroed the proposal
+   *  ('offer_not_official' | 'income_above_b40_line') — drives the cockpit "no amount" reason. */
+  award_disqualifier: string | null
   /** Interview scheduling: booking state + proposed slots (dark behind the flag). */
   interview_schedule: InterviewSchedule
   /** Decision-reopen state: when set, the decision panel is editable + the reviewer
