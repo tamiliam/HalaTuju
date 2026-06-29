@@ -1915,6 +1915,37 @@ export async function resolveResolutionItem(
   })
 }
 
+// ── Post-award: bank-details capture (payout account) ────────────────────
+// An awarded/active student uploads a bank statement (field-extracted), then
+// confirms the three fields. The holder MUST be the student (server hard-gate;
+// a mismatch throws err.code='bank_holder_mismatch'). Stored only — not displayed.
+
+export interface BankAccount {
+  bank_name: string
+  account_number: string
+  account_holder: string
+  holder_verdict: string
+  confirmed_at: string | null
+  updated_at: string
+}
+
+export async function getBankAccount(
+  options?: ApiOptions
+): Promise<{ bank_account: BankAccount | null }> {
+  return apiRequest('/api/v1/scholarship/bank-account/', options)
+}
+
+export async function confirmBankAccount(
+  body: { bank_name: string; account_number: string; account_holder: string },
+  options?: ApiOptions,
+): Promise<BankAccount> {
+  return apiRequest('/api/v1/scholarship/bank-account/', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    ...options,
+  })
+}
+
 // ── Phase E/F: student award + onboarding (F8b) ──────────────────────────
 // The student's funded-studies offer. The sponsor's identity is never exposed
 // (allowlist serializer): the student only ever sees the amount + deadline.

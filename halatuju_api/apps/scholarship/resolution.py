@@ -284,6 +284,18 @@ def doc_match_verdict(doc):
     elif dt == 'guardianship_letter':
         if red(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):
             return 'mismatch'
+    elif dt == 'bank_statement':
+        # Reads the doc-assist verdict (holder==student + all 3 fields present), computed
+        # deterministically from the Gemini-extracted fields. 'name_mismatch' = the account
+        # is in someone else's name (a HARD problem → mismatch); 'incomplete'/'wrong_doc' =
+        # a field couldn't be read clearly (re-upload → unreadable). Not yet scanned → hold.
+        sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')
+        if sv in ('', 'read', 'review_manually'):
+            return 'pending'
+        if sv == 'name_mismatch':
+            return 'mismatch'
+        if sv in ('incomplete', 'wrong_doc', 'unreadable'):
+            return 'unreadable'
     elif dt == 'ic':
         ran = bool(getattr(doc, 'vision_run_at', None))
         if not ran:
@@ -317,6 +329,12 @@ def resolve_doc_items_for_upload(application, doc):
     so the student re-uploads (the caller surfaces Cikgu Gopal's advice). Returns the
     verdict so the caller can tell the frontend.
     """
+    # The bank-details task is upload-THEN-CONFIRM: the upload only pre-fills the three
+    # fields (account numbers are high-stakes — the student reviews/corrects before saving),
+    # so it never auto-resolves here. ``sync_bank_details_item`` closes it once a BankAccount
+    # is confirmed. Still return the verdict so the FE can surface Gopal's advice on a weak read.
+    if doc.doc_type == 'bank_statement':
+        return doc_match_verdict(doc)
     verdict = doc_match_verdict(doc)
     if verdict == 'ok':
         qs = application.resolution_items.filter(status='open', kind='doc')
@@ -328,3 +346,36 @@ def resolve_doc_items_for_upload(application, doc):
         for item in qs:
             resolve_item(item, doc=doc, by='student')
     return verdict
+
+
+# Post-award bank-details capture. A dedicated task (NOT verdict-derived — it's a
+# post-award operational step, not a verification gap), so it lives outside CODE_TO_TICKET
+# and is ALWAYS visible to the student (see views.ResolutionItemListView._student_visible),
+# independent of the Check-2 query flag.
+BANK_DETAILS_CODE = 'bank_details_missing'
+# The student needs a payout account while AWARDED (signing) or ACTIVE (executed, awaiting
+# the first payout). It leaves the Action Centre once they confirm one, or the award ends.
+BANK_CAPTURE_STATES = frozenset({'awarded', 'active'})
+
+
+def sync_bank_details_item(application):
+    """Reconcile the post-award bank-details task: ensure ONE open ``bank_details_missing``
+    item while the student is awarded/active with no confirmed payout account, and resolve
+    it once a ``BankAccount`` is confirmed (or the award leaves those states). Idempotent."""
+    from .models import BankAccount, ResolutionItem
+    has_account = BankAccount.objects.filter(application=application).exists()
+    wanted = application.status in BANK_CAPTURE_STATES and not has_account
+    existing = application.resolution_items.filter(code=BANK_DETAILS_CODE).first()
+    if wanted and existing is None:
+        try:
+            ResolutionItem.objects.create(
+                application=application, source='system', code=BANK_DETAILS_CODE,
+                fact='other', kind='doc', doc_type='bank_statement', params={},
+            )
+        except IntegrityError:
+            pass  # created concurrently — fine
+    elif existing is not None and existing.status == 'open' and not wanted:
+        existing.status = 'resolved'
+        existing.resolved_by = 'system'
+        existing.resolved_at = timezone.now()
+        existing.save(update_fields=['status', 'resolved_by', 'resolved_at'])

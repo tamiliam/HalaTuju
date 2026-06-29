@@ -491,16 +491,24 @@ class GraduationMessageView(_OwnInProgrammeView):
                         status=status.HTTP_201_CREATED)
 
 
+# The funded post-award states. A funded student must still reach the document-upload +
+# Action Centre surface — e.g. to upload their bank statement (post-award bank-details
+# capture). This is SAFE on the shared surface: revert_if_profile_incomplete only acts on
+# 'profile_complete', and switch_income_route never un-submits, so a funded student touching
+# these endpoints can't fall out of their funded status.
+_FUNDED_STATES = ('awarded', 'active', 'maintenance')
+
+
 def _current_application(user_id):
     """The caller's current post-shortlist application (one per cohort; latest wins).
 
-    Spans the whole editable funnel (POST_SHORTLIST_EDITABLE), not just
-    'shortlisted', so the student can keep uploading documents after confirming
-    their profile and while an interview is in progress.
+    Spans the whole editable funnel (POST_SHORTLIST_EDITABLE) PLUS the funded post-award
+    states, so the student can keep uploading documents after confirming their profile,
+    while an interview is in progress, AND once funded (to upload bank details etc.).
     """
     return (
         ScholarshipApplication.objects
-        .filter(profile_id=user_id, status__in=POST_SHORTLIST_EDITABLE)
+        .filter(profile_id=user_id, status__in=POST_SHORTLIST_EDITABLE + _FUNDED_STATES)
         .select_related('profile')
         .order_by('-submitted_at')
         .first()
@@ -540,6 +548,9 @@ BILL_DOC_TYPES = frozenset({'water_bill', 'electricity_bill'})
 RELATIONSHIP_DOC_TYPES = frozenset({'birth_certificate'})
 SUPPORTING_NAME_CHECK_TYPES = frozenset({
     'results_slip', 'str', 'salary_slip', 'epf', 'offer_letter',
+    # Post-award: the bank statement field-extracts (bank name / account no / holder) so
+    # the student's confirm form pre-fills and Gopal can coach a weak read.
+    'bank_statement',
 } | BILL_DOC_TYPES | RELATIONSHIP_DOC_TYPES)
 # Free-text docs (the letter of intent) that get OCR'd into vision_fields['text'] so
 # Check-2's submission review can read the student's motivation in her own words. No
@@ -811,6 +822,10 @@ class ResolutionItemListView(APIView):
             return Response({'open': [], 'resolved': []})
         from django.conf import settings as _settings
         sync_resolution_items(app)
+        # Post-award: surface (or clear) the bank-details task for an awarded/active student.
+        # Independent of the Check-2 flag — it's a payout step, not a verification query.
+        from .resolution import sync_bank_details_item
+        sync_bank_details_item(app)
         # Check 2 STEP 2: the AI clarify queries are held behind a flag until the
         # questions have been reviewed — while OFF, students are asked nothing new
         # (officers still review them in the cockpit).
@@ -824,11 +839,15 @@ class ResolutionItemListView(APIView):
         # The uploaded-but-bad system tickets (*_unreadable / *_name_mismatch /
         # str_not_current) stay HIDDEN — those are reviewer-raised re-uploads, coached inline
         # by Gopal (the 2026-06-10 duplicate-noise fix). 'human' = reviewer-only.
-        from .resolution import STUDENT_DOC_REQUEST_CODES
+        from .resolution import STUDENT_DOC_REQUEST_CODES, BANK_DETAILS_CODE
 
         def _student_visible(i):
             if i.kind == 'human':
                 return False
+            # The post-award bank-details task always shows for an awarded/active student —
+            # it's a payout step, not a Check-2 query, so it's not behind the queries flag.
+            if i.code == BANK_DETAILS_CODE:
+                return True
             if i.source == 'system':
                 return queries_live and i.code in STUDENT_DOC_REQUEST_CODES
             if i.source == 'check2':
@@ -889,6 +908,61 @@ class ResolutionItemResolveView(APIView):
             from .services import confirm_pathway
             confirm_pathway(item.application)
         return Response(ResolutionItemSerializer(item).data)
+
+
+class BankAccountView(APIView):
+    """The student's bursary payout account (post-award).
+
+    GET  → the confirmed account, or null.
+    POST → confirm the three fields the student reviewed/corrected after uploading a
+           bank statement. The HOLDER MUST BE THE STUDENT — a hard rule re-checked here
+           against the application name (never trusting the AI read). Saving links the
+           uploaded bank statement and resolves the Action-Centre task. Awarded/active only.
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        from .models import BankAccount
+        from .serializers import BankAccountSerializer
+        app = _current_application(request.user_id)
+        acct = BankAccount.objects.filter(application=app).first() if app else None
+        return Response({'bank_account': BankAccountSerializer(acct).data if acct else None})
+
+    def post(self, request):
+        from .models import BankAccount
+        from .serializers import BankAccountConfirmSerializer, BankAccountSerializer
+        from .resolution import BANK_CAPTURE_STATES, sync_bank_details_item
+        app = _current_application(request.user_id)
+        if app is None:
+            return Response({'error': 'no_application', 'code': 'no_application'},
+                            status=status.HTTP_403_FORBIDDEN)
+        if app.status not in BANK_CAPTURE_STATES:
+            return Response({'error': 'not_awarded', 'code': 'not_awarded'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        ser = BankAccountConfirmSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        holder = ser.validated_data['account_holder']
+        # Hard rule: the payout account must be in the STUDENT's name. Tolerant of
+        # spelling/romanisation (name_match != 'mismatch'), like the IC identity gate, but
+        # a genuinely different person is refused. Gopal coaches this on the FE.
+        from .vision import name_match
+        student_name = getattr(getattr(app, 'profile', None), 'name', '') or ''
+        if name_match(holder, student_name) == 'mismatch':
+            return Response({'error': 'bank_holder_mismatch', 'code': 'bank_holder_mismatch'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        source_doc = ApplicantDocument.objects.filter(
+            application=app, doc_type='bank_statement').order_by('-uploaded_at').first()
+        from django.utils import timezone
+        acct, _created = BankAccount.objects.update_or_create(
+            application=app,
+            defaults=dict(
+                bank_name=ser.validated_data['bank_name'],
+                account_number=ser.validated_data['account_number'],
+                account_holder=holder, source_doc=source_doc,
+                holder_verdict='ok', confirmed_at=timezone.now()),
+        )
+        sync_bank_details_item(app)   # the account exists now → close the task
+        return Response(BankAccountSerializer(acct).data, status=status.HTTP_200_OK)
 
 
 class DocumentHelpView(APIView):

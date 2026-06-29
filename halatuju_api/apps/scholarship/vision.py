@@ -1006,7 +1006,7 @@ def run_vision_match_for_document(doc, *, names, postcode='', city='', street=''
 
 GEMINI_EXTRACT_DOC_TYPES = frozenset({
     'salary_slip', 'epf', 'water_bill', 'electricity_bill', 'results_slip', 'offer_letter',
-    'str', 'guardianship_letter', 'birth_certificate',
+    'str', 'guardianship_letter', 'birth_certificate', 'bank_statement',
 })
 
 _STR = {'type': 'string'}
@@ -1075,12 +1075,18 @@ _FIELD_SCHEMAS = {
     # to the student (the ward). Read the guardian + ward names + the guardian's NRIC.
     'guardianship_letter': _doc_schema({'guardian_name': _STR, 'guardian_nric': _STR,
                                         'ward_name': _STR, 'doc_kind': _STR}),
+    # Post-award bursary payout: the student's bank statement / passbook. Read the bank
+    # name, the account number, and the account-holder name as printed — the holder MUST
+    # be the student (checked deterministically, never by the AI).
+    'bank_statement': _doc_schema({'bank_name': _STR, 'account_number': _STR,
+                                   'account_holder': _STR}),
 }
 
 # Which extracted field holds the person's name (for the deterministic verdict).
 _NAME_FIELD = {
     'salary_slip': 'name', 'epf': 'name', 'water_bill': 'name', 'electricity_bill': 'name',
     'results_slip': 'candidate_name', 'offer_letter': 'candidate_name', 'str': 'recipient_name',
+    'bank_statement': 'account_holder',
 }
 
 # Optional per-doc-type instruction appended to the extraction prompt.
@@ -1418,9 +1424,29 @@ def _strip_name_label(s: str) -> str:
     return _DOC_NAME_LABEL_RE.sub('', s or '').strip()
 
 
+def _bank_verdict(fields, student_name) -> str:
+    """Deterministic verdict for a bank statement (never hallucinated):
+    'ok' | 'name_mismatch' (holder isn't the student) | 'incomplete' (a required field
+    couldn't be read) | 'wrong_doc' (nothing bank-shaped). The holder MUST be the STUDENT
+    — a hard rule — so the name is matched ONLY against the student, never a guardian."""
+    bank = _strip_name_label(fields.get('bank_name') or '').strip()
+    acct = (fields.get('account_number') or '').strip()
+    holder = _strip_name_label(fields.get('account_holder') or '').strip()
+    if not (bank or acct or holder):
+        return 'wrong_doc'
+    if not (bank and acct and holder):
+        return 'incomplete'   # a bank statement, but a required field couldn't be read
+    if name_match(holder, student_name or '') == 'mismatch':
+        return 'name_mismatch'   # the account is in someone else's name
+    return 'ok'
+
+
 def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street='', check_address=False) -> str:
     """Deterministic verdict from the Gemini-extracted fields (never hallucinated):
-    'ok' | 'name_mismatch' | 'address_mismatch' | 'wrong_doc'."""
+    'ok' | 'name_mismatch' | 'address_mismatch' | 'incomplete' | 'wrong_doc'."""
+    if doc_type == 'bank_statement':
+        # The holder must be the STUDENT only — names[0] is the applicant (guardians follow).
+        return _bank_verdict(fields, names[0] if names else '')
     if not _any_field_filled(fields):
         return 'wrong_doc'   # nothing of the expected shape was found
     extracted_name = _strip_name_label(fields.get(_NAME_FIELD.get(doc_type, 'name')) or '')
