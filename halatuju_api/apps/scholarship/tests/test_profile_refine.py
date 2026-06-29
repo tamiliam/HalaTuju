@@ -104,7 +104,7 @@ class TestRefineEngine(TestCase):
         self.assertIn('PTPTN top-up', prompt)
 
     @patch('apps.scholarship.profile_engine._call_gemini_text')
-    def test_refine_includes_verdict_conclusion_and_assistance(self, mock_call):
+    def test_refine_includes_verdict_and_conclusion_but_not_amount(self, mock_call):
         mock_call.return_value = {'markdown': 'x', 'model_used': 'gemini-2.5-pro'}
         self.app.officer_verdict = {'identity': 'pass', 'academic': 'pass',
                                     'pathway': 'fail', 'income': 'pass', 'overall': 'accept'}
@@ -115,8 +115,12 @@ class TestRefineEngine(TestCase):
         profile_engine.refine_sponsor_profile(self.app, 'draft', session, language='en')
         prompt = mock_call.call_args.args[0]
         self.assertIn('offer letter still pending', prompt)      # conclusion folded in
-        self.assertIn('RM2500', prompt)                          # recommended assistance
         self.assertIn('Pathway / offer: fail', prompt)           # four-fact verdict
+        # Owner decision 2026-06-29.2: the amount is NOT fed and the prompt forbids stating it.
+        self.assertNotIn('RM2500', prompt)
+        self.assertNotIn('Recommended assistance', prompt)
+        self.assertIn('Do NOT state any monetary amount', prompt)
+        self.assertIn('Do NOT advocate', prompt)
         # the final profile runs on the Pro cascade
         self.assertEqual(mock_call.call_args.kwargs.get('models'), profile_engine.PRO_CASCADE)
 
