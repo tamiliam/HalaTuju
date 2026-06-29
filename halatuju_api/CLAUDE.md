@@ -619,9 +619,25 @@ student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
   `resolution.sync_bank_details_item`; upload-THEN-confirm (never auto-resolves). `_current_application`
   broadened to the funded states so the funded student reaches the upload/Action-Centre surface (safe —
   revert-on-incomplete only acts on `profile_complete`). **Stored only — no admin/officer view yet** (the
-  payout view is later, with TD-075). FE `BankDetailsTask` in `ActionCentre.tsx`. **Built on the branch but
-  the deploy is owner-gated — push `feat/bank-details` to ship** (table already on prod via migrate-first).
-  Deferred: TD-148 (officer payout/verify view), TD-149 (replacing a confirmed account post-save).
+  payout view is later, with TD-075). FE `BankDetailsTask` in `ActionCentre.tsx`. **SHIPPED + LIVE** (table on
+  prod via migrate-first; verified live on #16). Deferred: TD-148 (officer payout/verify view), TD-149
+  (replacing a confirmed account post-save).
+
+- **▶ POST-AWARD S7 follow-up SHIPPED + LIVE 2026-06-29 — award-panel embargo + funded Action-Centre copy +
+  email sign-off bold (commit `6d968975`; NO migration; retro
+  `docs/retrospective-2026-06-29-award-panel-embargo-funded-copy.md`).** Live-testing the awarded flow on #16:
+  (1) the 🎉 "View my award / one more step" panel on `/scholarship/application` is now **embargoed behind
+  `AWARD_ACCEPTANCE_ENABLED` (default OFF)** — it leads to the accept→onboarding flow which isn't tested
+  end-to-end; exposed on the student award payload as `acceptance_enabled`, FE gates `awardPanel()` on it.
+  **Re-enable with `AWARD_ACCEPTANCE_ENABLED=1` on `halatuju-api` — env var only, no deploy** (the owner will
+  instead invite awarded students into onboarding by a later email). NB: flipping it un-hides the panel for ALL
+  funded students at once — test onboarding end-to-end first. (2) The funded Action-Centre header was reworded
+  to the warm bank-invitation tone (new `funded` prop on `ActionCentre` + `fundedTitle`/`fundedIntro`, en/ms/ta),
+  replacing the review-phase "we're reviewing your application" copy. (3) The sign-off team name ("The BrightPath
+  Bursary Team") is now bolded in the rendered HTML of the branded card emails — in both `_decline_html` (declines)
+  and `_award_offer_html` (the award/bank email has its own builder as of `4e44962b`; the team-name bold there is
+  additive to the owner's bank-phrase bold + Action-Centre button). Plain-text unchanged. 41 scholarship pytest +
+  next build clean + i18n parity 3012×3.
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,
@@ -647,7 +663,9 @@ its own serializer and sees the real `rejected`. `cancel_pending_decline` now RE
 `services.admin_reject` + `_record_reject`/`_send_decline_for`. Decline emails are now HTML (interview bucket thanks for
 time + documents). `AWARD_COOLOFF_DAYS=2` (accept side) is UNCHANGED (still defers status until release). Set
 `DECLINE_COOLOFF_DAYS=0` to email immediately. Migration `scholarship/0069` (4 additive fields).
-DARK/unset: `SHOW_REFEREES=false`, **`BURSARY_AGREEMENT_ENABLED=false`** (the tri-partite conditional bursary agreement —
+DARK/unset: `SHOW_REFEREES=false`, **`AWARD_ACCEPTANCE_ENABLED=false`** (embargoes the "View my award" panel →
+accept/onboarding flow on `/scholarship/application`; flip to `1` only after onboarding is tested end-to-end — it
+un-hides for ALL funded students at once), **`BURSARY_AGREEMENT_ENABLED=false`** (the tri-partite conditional bursary agreement —
 code shipped 2026-06-26 but OFF; the cockpit panel is now **gated on this flag** (2026-06-27) so it stays hidden while
 OFF — `bursary_agreement_enabled` on `AdminApplicationDetailSerializer`). Flip only AFTER the two Phase-0 gates:
 lawyer-vet the `bursary.py` template wording, and finalise the Foundation entity via

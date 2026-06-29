@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Award-panel embargo flag `AWARD_ACCEPTANCE_ENABLED` (default OFF).** The "View my award / one more
+  step" panel on `/scholarship/application` (→ the accept + onboarding flow, not yet tested end-to-end) is
+  now hidden until the flag is on. Exposed on the student award payload as `acceptance_enabled`; the FE
+  gates `awardPanel()` on it. Re-enable at runtime with one env var (`AWARD_ACCEPTANCE_ENABLED=1`), no
+  deploy — awarded students otherwise reach only their bank-details task.
+
+### Changed
+- **Funded Action Centre header reworded** to match the bank-details invitation email's tone — a warm
+  "Almost there, {name} — one step to receive your bursary / Congratulations on your award! To set up your
+  bursary payment, please add your bank account details below." (en/ms/ta), replacing the review-phase
+  "we're reviewing your application" copy. New `funded` prop on `ActionCentre` + `fundedTitle`/`fundedIntro`.
+- **Branded card emails bold the sign-off team name** ("The BrightPath Bursary Team") in the rendered HTML
+  — the team-name line of the final sign-off paragraph, in both `_decline_html` (the decline buckets) and
+  `_award_offer_html` (the award/bank-invitation email, which renders via its own builder); plain-text
+  unchanged. (On the award email this is additive to the owner's bank-details-phrase bold + Action-Centre
+  button from `4e44962b`.)
+
+### Added (data-quality, earlier 2026-06-29)
 - **Continuing-STPM award = RM1,000 (one year left).** `award.proposed_award_amount` now returns
   RM1,000 (not RM3,000) for an STPM student who started in an intake year BEFORE the cohort's — their
   offer reporting date predates `cohort.year`, so they have already completed a year. Automatic
