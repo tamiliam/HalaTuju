@@ -74,6 +74,19 @@ class TestDetectors(SimpleTestCase):
         self.assertEqual(op.preu_course_id('stpm', 'sains_sosial'), 'stpm-sains-sosial')
         self.assertEqual(op.preu_course_id('poly', 'whatever'), '')
 
+    def test_clean_school_name(self):
+        # ALL-CAPS full form → Title Case, identity unchanged.
+        self.assertEqual(op.clean_school_name('SEKOLAH MENENGAH KEBANGSAAN MAXWELL', ''),
+                         'Sekolah Menengah Kebangsaan Maxwell')
+        # Picks the address-free value over the address blob, then expands the acronym to full.
+        self.assertEqual(
+            op.clean_school_name('SEKOLAH MENENGAH KEBANGSAAN SEBERANG JAYA, 13700 PERAI', 'SMK SEBERANG JAYA'),
+            'Sekolah Menengah Kebangsaan Seberang Jaya')
+        # Prefers the fuller form when both are address-free (full > abbreviation).
+        self.assertEqual(op.clean_school_name('KOLEJ TINGKATAN ENAM SRI ISTANA', 'KTE SRI ISTANA'),
+                         'Kolej Tingkatan Enam Sri Istana')
+        self.assertEqual(op.clean_school_name('', ''), '')
+
     def test_name_aligns_subset_either_direction(self):
         # Catalogue ⊆ offer (offer carries a code prefix) → aligns.
         self.assertTrue(op._name_aligns({'dac', 'perakaunan'}, {'perakaunan'}))
