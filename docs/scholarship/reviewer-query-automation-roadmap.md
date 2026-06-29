@@ -64,7 +64,7 @@ card in the cockpit (en/ms/ta). High-utility probe already covered by
 **Structured per-bucket capture fields deliberately NOT built** — the gap-spotter + `InterviewSession`
 already cover it; a clean follow-up if the owner wants per-bucket structured answers.
 
-### Sprint 5 — Final-profile prompt restructure ✅ BUILT 2026-06-29 (pending deploy)
+### Sprint 5 — Final-profile prompt restructure ✅ SHIPPED + LIVE 2026-06-29 (commit `a67dfa96`, api rev …00559)
 Re-shaped the draft (`PROFILE_PROMPT`/`_STYLE`) + Pro-refine (`REFINE_PROMPT`) prompts to organise output around the
 sponsor's three areas (Financial need / Academic commitment & resilience / Pathway & enrolment confidence) via a shared
 `_COVERAGE` instruction — woven into the warm prose, still no headings/lists. `_render_interview` groups interview
