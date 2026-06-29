@@ -43,6 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   +10 pytest. Roadmap `docs/scholarship/reviewer-query-automation-roadmap.md`.
 
 ### Changed
+- **Standardised the offer-letter reporting date to `D Mon YYYY` (e.g. `22 Jun 2026`).** Offers
+  print it a dozen ways — `22/06/2026`, `20 JUN 2026 (SABTU)`, `20 Julai 2026 Isnin`, `8 HINGGA 9
+  JUN 2026`, `22 JUN 2026 (9.00 PAGI - 2.00 PETANG)`. New deterministic `vision._normalise_reporting_date`
+  strips the weekday + time/parenthetical, takes a range's START date, and maps Malay/English months
+  to a 3-letter form (Mei→May, Ogos→Aug, Julai→Jul). Wired into `_sanitize_extracted_fields` (offer
+  branch) so every extraction is clean; an unparseable value is kept as-is (never destroyed). +3
+  tests. Backfilled all 50 existing offer reporting dates in prod (45 normalised, 5 already canonical).
 - **Standardised the assistance amount (pathway-fixed, super-overridable).** The award is no
   longer a free reviewer choice on the slider — it's fixed by the pre-U pathway (STPM/Form 6 →
   RM3,000; Matrikulasi / UA Diploma / Poly Diploma / Asasi / PISMP / other → RM2,000) and

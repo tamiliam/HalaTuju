@@ -1311,6 +1311,54 @@ def _looks_like_non_name(value: str) -> bool:
                            for m in _NON_NAME_MARKERS)
 
 
+# ── Reporting-date normalisation (offer letter) ───────────────────────────────
+# Offers print the report/registration date a dozen ways — "22/06/2026", "20 JUN 2026 (SABTU)",
+# "20 Julai 2026 Isnin", "8 HINGGA 9 JUN 2026", "22 JUN 2026 (9.00 PAGI - 2.00 PETANG)". Normalise
+# to one clean "D Mon YYYY" (e.g. "22 Jun 2026"): strip the weekday + time/parenthetical, take a
+# range's START date, accept DD/MM/YYYY or "D Month YYYY" (Malay or English month).
+_RD_MONTHS = {
+    'JANUARI': 'Jan', 'JANUARY': 'Jan', 'JAN': 'Jan', 'FEBRUARI': 'Feb', 'FEBRUARY': 'Feb', 'FEB': 'Feb',
+    'MAC': 'Mar', 'MARCH': 'Mar', 'MAR': 'Mar', 'APRIL': 'Apr', 'APR': 'Apr', 'MEI': 'May', 'MAY': 'May',
+    'JUN': 'Jun', 'JUNE': 'Jun', 'JULAI': 'Jul', 'JULY': 'Jul', 'JUL': 'Jul',
+    'OGOS': 'Aug', 'OGO': 'Aug', 'AUGUST': 'Aug', 'AUG': 'Aug', 'SEPTEMBER': 'Sep', 'SEPT': 'Sep', 'SEP': 'Sep',
+    'OKTOBER': 'Oct', 'OCTOBER': 'Oct', 'OKT': 'Oct', 'OCT': 'Oct', 'NOVEMBER': 'Nov', 'NOV': 'Nov',
+    'DISEMBER': 'Dec', 'DECEMBER': 'Dec', 'DIS': 'Dec', 'DEC': 'Dec',
+}
+_RD_MONTH_NUM = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+                 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+_RD_WEEKDAY = re.compile(r'\b(ISNIN|SELASA|RABU|KHAMIS|JUMAAT|SABTU|AHAD|'
+                         r'MON(?:DAY)?|TUE(?:SDAY)?|WED(?:NESDAY)?|THU(?:RSDAY)?|FRI(?:DAY)?|SAT(?:URDAY)?|SUN(?:DAY)?)\b')
+_RD_TIME = re.compile(r'\d{1,2}[.:]\d{2}\s*(?:PAGI|PETANG|TENGAH HARI|MALAM|AM|PM)?')
+
+
+def _normalise_reporting_date(raw: str) -> str:
+    """An offer reporting date → 'D Mon YYYY' (e.g. '22 Jun 2026'). Returns the ORIGINAL string
+    if it can't confidently parse a day + month + year (never destroys an unparseable value)."""
+    s = (raw or '').strip()
+    if not s:
+        return s
+    up = s.upper()
+    m = re.search(r'\b(\d{1,2})\s*[/\-.]\s*(\d{1,2})\s*[/\-.]\s*(20\d{2})\b', up)   # DD/MM/YYYY
+    if m:
+        d, mo = int(m.group(1)), int(m.group(2))
+        if 1 <= mo <= 12 and 1 <= d <= 31:
+            return f'{d} {_RD_MONTH_NUM[mo]} {m.group(3)}'
+    cleaned = re.sub(r'\([^)]*\)', ' ', up)        # drop (SABTU) / (9.00 PAGI - ...)
+    cleaned = _RD_TIME.sub(' ', cleaned)           # drop bare times (2:30 PETANG)
+    cleaned = _RD_WEEKDAY.sub(' ', cleaned)        # drop weekday words
+    mon = None                                     # first month token, by position
+    for name, eng in _RD_MONTHS.items():
+        hit = re.search(r'\b' + name + r'\b', cleaned)
+        if hit and (mon is None or hit.start() < mon[0]):
+            mon = (hit.start(), eng)
+    ym = re.search(r'\b(20\d{2})\b', cleaned)
+    if not mon or not ym:
+        return s
+    day = next((int(g.group(1)) for g in re.finditer(r'\b(\d{1,2})\b', cleaned)
+                if 1 <= int(g.group(1)) <= 31), None)
+    return f'{day} {mon[1]} {ym.group(1)}' if day else s
+
+
 def _sanitize_extracted_fields(doc_type: str, data: dict) -> dict:
     """Deterministic post-extraction guards (item B): stop a header/label or a wrong-section
     name passing through as a person's name. Blanking a bad value yields 'unread' (SOFT)
@@ -1319,6 +1367,8 @@ def _sanitize_extracted_fields(doc_type: str, data: dict) -> dict:
         return data
     if doc_type == 'results_slip' and data.get('candidate_name'):
         data['candidate_name'] = _strip_name_label(data['candidate_name'])
+    elif doc_type == 'offer_letter' and data.get('reporting_date'):
+        data['reporting_date'] = _normalise_reporting_date(data['reporting_date'])
     elif doc_type == 'birth_certificate':
         child = _strip_name_label(data.get('bc_child_name') or '')
         # The child name must come from the KANAK-KANAK block: never a heading, and never
