@@ -983,6 +983,38 @@ def autofill_pathway_from_offer(application):
     # so a locked student must still get it persisted — this was the gap that left
     # reporting_date NULL for confirmed applicants.)
     ptype = op.detect_pathway_type(prog, inst)
+    pw = (application.chosen_pathway or '').strip().lower() or ptype
+
+    # Standardise the pre-U TRACK first (it's needed below to reach the matric catalogue
+    # college). Canonical vocabulary (Matrikulasi: sains/kejuruteraan/sains_komputer/
+    # perakaunan; STPM: sains/sains_sosial); fill a blank/'not_sure' only — never clobber a
+    # deliberate pick — regardless of lock state.
+    track = ''
+    if pw == 'matric':
+        track = op.parse_matric_track(prog)
+    elif pw == 'stpm':
+        track = op.parse_stpm_stream(prog)
+        if not track:
+            profile = getattr(application, 'profile', None)
+            track = op.infer_stpm_bidang(getattr(profile, 'grades', None),
+                                         getattr(profile, 'stream_subjects', None))
+    if track and (application.pre_u_track or '').strip().lower() in ('', 'not_sure'):
+        application.pre_u_track = track
+        fields.append('pre_u_track')
+    effective_track = (application.pre_u_track or track or '').strip().lower()
+
+    def _canonical_preu_institution():
+        # Matric → the catalogue college for the student's STATE (via the matric-<track> virtual
+        # course; 12 state-unique colleges → safe). STPM → casing-only clean of the recorded
+        # school (NO catalogue match: ~250 near-identical names, SMK vs SMJK indistinguishable —
+        # would change which school the student attends). '' when nothing resolves.
+        if pw == 'matric':
+            vc = op.preu_course_id('matric', effective_track)
+            hint = (inst or '').strip() or (application.pre_u_institution or '').strip()
+            return op.catalogue_institution(vc, hint) if vc else ''
+        if pw == 'stpm':
+            return op.clean_school_name(inst, application.pre_u_institution or '')
+        return ''
 
     if not locked:
         if op.is_pre_u(ptype):
@@ -996,14 +1028,18 @@ def autofill_pathway_from_offer(application):
                 fields.append('pre_u_institution')
 
         # Display programme: a canonical course_id for a confident tertiary match, else labels.
-        # Pre-U course names are STANDARDISED ("Program Matrikulasi" / "Tingkatan Enam") — the
-        # specific stream/jurusan lives in pre_u_track — so a re-run doesn't reintroduce the
-        # raw offer wording (e.g. "TINGKATAN ENAM SEMESTER 1 TAHUN 2025").
+        # Pre-U course names are STANDARDISED ("Program Matrikulasi" / "Tingkatan Enam"; the
+        # stream/jurusan lives in pre_u_track) AND the institution is canonicalised here too
+        # (matric → catalogue college; STPM → casing-only), so a re-run is idempotent and never
+        # reintroduces raw offer wording (e.g. "TINGKATAN ENAM SEMESTER 1 TAHUN 2025").
         new_cp = {'course_name': prog, 'institution': inst, 'source': 'offer_letter_auto'}
         if op.is_pre_u(ptype):
             canon = op.canonical_pre_u_course(ptype)
             if canon:
                 new_cp['course_name'] = canon
+            canon_inst = _canonical_preu_institution()
+            if canon_inst:
+                new_cp['institution'] = canon_inst
         else:
             match = op.resolve_catalogue_course(prog, inst)
             if match:
@@ -1018,24 +1054,6 @@ def autofill_pathway_from_offer(application):
         if application.pathway_certainty != 'sure':
             application.pathway_certainty = 'sure'
             fields.append('pathway_certainty')
-
-    # Standardise the pre-U TRACK into the canonical vocabulary (Matrikulasi:
-    # sains/kejuruteraan/sains_komputer/perakaunan; STPM: sains/sains_sosial). Fill a blank
-    # or 'not_sure' only — never overwrite a deliberate pick — and run regardless of lock
-    # state (the track is a property of the student, not of the chosen-programme record).
-    pw = (application.chosen_pathway or '').strip().lower() or ptype
-    track = ''
-    if pw == 'matric':
-        track = op.parse_matric_track(prog)
-    elif pw == 'stpm':
-        track = op.parse_stpm_stream(prog)
-        if not track:
-            profile = getattr(application, 'profile', None)
-            track = op.infer_stpm_bidang(getattr(profile, 'grades', None),
-                                         getattr(profile, 'stream_subjects', None))
-    if track and (application.pre_u_track or '').strip().lower() in ('', 'not_sure'):
-        application.pre_u_track = track
-        fields.append('pre_u_track')
 
     # Single-source-of-truth: a catalogue-linked programme's institution name comes from the
     # recommender CATALOGUE (course_id → Institution), not the offer letter — so OCR variants

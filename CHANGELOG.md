@@ -17,8 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Kolej Matrikulasi <State>`). **STPM schools are deliberately NOT catalogue-matched** — a bidang has ~250
   near-identically-named schools and token-matching can't tell `SMK` from `SMJK` or "Tun Hussein Onn" from
   "Bandar Tun Hussein Onn 2", so it would change which school a student attends; the recorded school stays
-  authoritative (casing-only standardisation is a separate safe step — TD). `catalogue_institution` now
-  requires a UNIQUE match (ambiguous → '' rather than a wrong campus). +4 tests.
+  authoritative — instead a **casing-only** standardisation (`offer_pathway.clean_school_name` +
+  `standardise_stpm_institution`, 30 rows) Title-cases the recorded school, expands a leading acronym
+  (`SMK`/`KTE`→full) and drops a trailing address by preferring the clean field — the school IDENTITY
+  never changes. `catalogue_institution` now requires a UNIQUE match (ambiguous → '' rather than a wrong
+  campus). **All of this is automatic going forward:** `autofill_pathway_from_offer` canonicalises the
+  pre-U institution (matric → catalogue, STPM → casing) + course name + track on every offer extraction
+  (idempotent); the `*` backfill commands only seed existing rows. +7 tests.
 - **Sponsor self-funding: Support button + award good-news email + batch tool.** The pool
   student-detail **"Support" button** (was a "Funding opens shortly" stub) now funds a student in
   full for their award amount via `POST /sponsor/pool/<id>/fund/` — shows the sponsor's BrightPath
