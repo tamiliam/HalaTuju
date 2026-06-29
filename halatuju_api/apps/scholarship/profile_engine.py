@@ -55,15 +55,23 @@ DEFAULT_LANGUAGE = 'English'
 #                  doc; see _gated_str / _gated_jkm). (b) A DOCUMENTED salary (payslip/EPF) MUST be
 #                  stated as documented, not buried behind the softer reported figure — fixes #10
 #                  (payslip gross RM3,049 ignored in favour of the reported RM1,700).
-PROMPT_VERSION = '2026-06-18.1'
+#   2026-06-29.1 — Sponsor-framework restructure (reviewer-query automation S5). Both the draft and
+#                  the refine now organise the prose around the sponsor's three "need to know" areas —
+#                  FINANCIAL NEED / ACADEMIC COMMITMENT & RESILIENCE / PATHWAY & ENROLMENT CONFIDENCE
+#                  (the same buckets gap_engine tags interview gaps with) — woven into the narrative,
+#                  still no headings/lists. The refine groups the interview findings by their bucket
+#                  so each lands in the matching area, so the profile a sponsor reads checks the boxes.
+PROMPT_VERSION = '2026-06-29.1'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
     "Write warm, factual, flowing prose: about three short paragraphs, roughly 220-320 "
     "words, with NO section headings and NO bullet lists. Tell the story so a reader "
-    "understands, in turn, who the student is and the family's situation; the student's "
-    "academic standing and pathway; and what the student is worried about and how the "
-    "support would help. Refer to the student as 'he' or 'she' using the pronouns given "
+    "understands, in turn: the family's situation and why the assistance is genuinely "
+    "needed; the student's academic standing and the commitment and resilience behind it; "
+    "and the pathway ahead, including the confirmed place, when the student is due to report, "
+    "and how ready and committed they are to take it up. Refer to the student as 'he' or 'she' "
+    "using the pronouns given "
     "below; NEVER use 'they' for the student (most people write he/she). Use em-dashes very "
     "sparingly, at most one in the whole profile; prefer commas, full stops or brackets. Let "
     "the facts carry the case: do NOT use fundraising clichés such as 'breaking the cycle', "
@@ -89,6 +97,34 @@ _REDACTION = (
     "without the ethnic label."
 )
 
+# The sponsor's three "need to know" areas — the same buckets gap_engine tags interview gaps
+# with. The profile must answer all three; the refine groups interview findings under these so
+# each lands in the matching part of the narrative. Output stays prose (no headings/lists) — this
+# is a COVERAGE instruction, not a layout one.
+_BUCKET_LABELS = {
+    'financial_need': 'Financial need',
+    'academic_resilience': 'Academic commitment & resilience',
+    'pathway_confidence': 'Pathway & enrolment confidence',
+    'other': 'Other points raised',
+}
+_BUCKET_ORDER = ['financial_need', 'academic_resilience', 'pathway_confidence', 'other']
+
+_COVERAGE = (
+    "WHAT A SPONSOR NEEDS TO KNOW — this profile must answer, across its flowing paragraphs "
+    "(still NO headings and NO lists), the three things a sponsor weighs. Give EACH its due and "
+    "weave it into the story rather than labelling it:\n"
+    "1. FINANCIAL NEED — the family's circumstances and why the assistance genuinely matters: who "
+    "earns and who does not, the reported and any documented household income, the dependants, and "
+    "the specific costs the support would meet.\n"
+    "2. ACADEMIC COMMITMENT & RESILIENCE — how the student has performed and persevered: the "
+    "results, the effort and obstacles behind them, and the drive they show.\n"
+    "3. PATHWAY & ENROLMENT CONFIDENCE — that the next step is clear and within reach: the "
+    "programme and institution, whether a place is held, the reporting date if known, and how ready "
+    "and committed the student is to take it up.\n"
+    "Where the inputs leave one area thin, state honestly what IS known and do not invent — but do "
+    "not silently drop a whole area the sponsor is counting on."
+)
+
 PROFILE_PROMPT = """You are writing the profile of a B40 student applying for education \
 financial assistance in Malaysia. It is read first by the reviewer assessing the application, \
 and later by a prospective sponsor.
@@ -99,6 +135,8 @@ LANGUAGE — the student's own words below may be in Malay, English, or Tamil (o
 understand their meaning whichever language they are in, and write the profile in {target_language}.
 
 {style}
+
+{coverage}
 
 VERIFICATION — do not over-claim:
 - Some fields are marked "{do_not_claim}" — NOT verified. Do not assert them; omit them.
@@ -579,6 +617,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
     return PROFILE_PROMPT.format(
         redaction=_REDACTION.format(alias=alias),
         style=_STYLE,
+        coverage=_COVERAGE,
         target_language=target_language,
         do_not_claim=_DO_NOT_CLAIM,
         alias=alias,
@@ -631,6 +670,8 @@ and write the profile in {target_language}.
 
 {style}
 
+{coverage}
+
 Pronouns (use these for the student, never "they"): {pronouns}
 
 Rules:
@@ -641,7 +682,9 @@ otherwise present it as what the family reports, and never invent who earns what
 family receives STR/JKM unless the DRAFT or the officer's findings establish it from a document —
 never re-introduce a welfare claim the draft omitted.
 - Fold in what the student's answers and the interview CONFIRMED or CLARIFIED; reflect any NEW \
-CONCERN honestly and proportionately — do not hide it, do not exaggerate it.
+CONCERN honestly and proportionately — do not hide it, do not exaggerate it. The interview findings \
+below are grouped under the three sponsor areas (financial need / academic commitment & resilience / \
+pathway & enrolment confidence) — weave each finding into the matching part of the narrative.
 - The officer's decision is the considered outcome of a real review. Present each area with \
 confidence matching the four-fact verdict; weave the officer's written conclusion into the close. \
 If a recommended assistance amount is set, state it plainly (e.g. "a sponsorship of RM3,000 would \
@@ -673,13 +716,16 @@ _VERDICT_LABELS = {
 
 def _render_interview(application, session):
     """Render a submitted InterviewSession's findings/rubric/note as plain text for the
-    refine prompt. The interviewer's free-text rationale carries the meaning."""
-    gaps_by_code = {}
+    refine prompt, GROUPED under the sponsor's three areas (the S4 gap `bucket`) so each
+    finding lands in the matching part of the narrative. The interviewer's free-text
+    rationale carries the meaning; a finding whose gap has no bucket falls under 'other'."""
+    gaps_by_code, bucket_by_code = {}, {}
     for g in (application.interview_gaps or []):
         if isinstance(g, dict) and g.get('code'):
             gaps_by_code[g['code']] = g.get('question', '')
+            bucket_by_code[g['code']] = (g.get('bucket') or 'other')
 
-    lines = []
+    grouped = {}
     for code, val in (session.findings or {}).items():
         if not isinstance(val, dict):
             continue
@@ -687,8 +733,17 @@ def _render_interview(application, session):
         rationale = (val.get('rationale') or '').strip()
         context = gaps_by_code.get(code, '')
         prefix = f'On "{context}" — ' if context else ''
-        lines.append(f'- [{verdict}] {prefix}{rationale}'.rstrip())
-    findings_str = '\n'.join(lines) if lines else 'No specific findings recorded.'
+        bucket = bucket_by_code.get(code, 'other')
+        if bucket not in _BUCKET_LABELS:
+            bucket = 'other'
+        grouped.setdefault(bucket, []).append(f'- [{verdict}] {prefix}{rationale}'.rstrip())
+
+    if grouped:
+        sections = [f'{_BUCKET_LABELS[b]}:\n' + '\n'.join(grouped[b])
+                    for b in _BUCKET_ORDER if grouped.get(b)]
+        findings_str = '\n'.join(sections)
+    else:
+        findings_str = 'No specific findings recorded.'
 
     rubric = session.rubric if isinstance(session.rubric, dict) else {}
     rubric_str = ', '.join(f'{k}: {v}' for k, v in rubric.items()) or 'not scored'
@@ -751,6 +806,7 @@ def refine_sponsor_profile(application, draft, session, language=None):
     prompt = REFINE_PROMPT.format(
         redaction=_REDACTION.format(alias=_alias(application)),
         style=_STYLE,
+        coverage=_COVERAGE,
         pronouns=_pronouns(application),
         target_language=target_language,
         draft=(draft or '').strip() or 'not provided',

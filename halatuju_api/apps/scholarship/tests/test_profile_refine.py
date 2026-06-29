@@ -52,6 +52,34 @@ class TestRefineEngine(TestCase):
         self.assertIn('financial_need: 5', rubric)
         self.assertIn('motivated candidate', note)
 
+    def test_render_interview_groups_findings_by_bucket(self):
+        """S5: findings are grouped under the sponsor's three areas (the S4 gap bucket),
+        ordered financial → academic → pathway → other, so each lands in the right place."""
+        self.app.interview_gaps = [
+            {'code': 'afford', 'bucket': 'financial_need', 'question': 'How will you afford it?'},
+            {'code': 'grit', 'bucket': 'academic_resilience', 'question': 'How did you cope?'},
+            {'code': 'report', 'bucket': 'pathway_confidence', 'question': 'Ready to report?'},
+        ]
+        self.app.save(update_fields=['interview_gaps'])
+        session = _submitted_session(self.app, findings={
+            'afford': {'verdict': 'resolved', 'rationale': 'Sister will help with rent'},
+            'grit': {'verdict': 'resolved', 'rationale': 'Studied through illness'},
+            'report': {'verdict': 'new_concern', 'rationale': 'Worried about the bus fare'},
+            'loose': {'verdict': 'resolved', 'rationale': 'No matching gap'},   # → Other
+        })
+        findings, _rubric, _note = profile_engine._render_interview(self.app, session)
+        # bucket headers present and in canonical order
+        self.assertIn('Financial need:', findings)
+        self.assertIn('Academic commitment & resilience:', findings)
+        self.assertIn('Pathway & enrolment confidence:', findings)
+        self.assertIn('Other points raised:', findings)
+        self.assertLess(findings.index('Financial need:'), findings.index('Academic commitment'))
+        self.assertLess(findings.index('Academic commitment'), findings.index('Pathway & enrolment'))
+        self.assertLess(findings.index('Pathway & enrolment'), findings.index('Other points raised:'))
+        # rationale still carried under its bucket
+        self.assertIn('Sister will help with rent', findings)
+        self.assertIn('No matching gap', findings)
+
     def test_render_interview_empty_findings(self):
         session = _submitted_session(self.app, findings={}, rubric={}, overall_note='')
         findings, rubric, note = profile_engine._render_interview(self.app, session)
@@ -91,6 +119,19 @@ class TestRefineEngine(TestCase):
         self.assertIn('Pathway / offer: fail', prompt)           # four-fact verdict
         # the final profile runs on the Pro cascade
         self.assertEqual(mock_call.call_args.kwargs.get('models'), profile_engine.PRO_CASCADE)
+
+    @patch('apps.scholarship.profile_engine._call_gemini_text')
+    def test_refine_prompt_carries_the_three_sponsor_areas(self, mock_call):
+        """S5: the refine prompt also instructs the model to organise the final profile
+        around the sponsor's three areas, and tells it the findings are grouped by them."""
+        mock_call.return_value = {'markdown': 'x', 'model_used': 'gemini-2.5-pro'}
+        session = _submitted_session(self.app)
+        profile_engine.refine_sponsor_profile(self.app, 'draft', session, language='en')
+        prompt = mock_call.call_args.args[0]
+        for token in ('WHAT A SPONSOR NEEDS TO KNOW', 'FINANCIAL NEED',
+                      'ACADEMIC COMMITMENT & RESILIENCE', 'PATHWAY & ENROLMENT CONFIDENCE'):
+            self.assertIn(token, prompt)
+        self.assertIn('grouped under the three sponsor areas', prompt)
 
     @patch('apps.scholarship.profile_engine._call_gemini_text')
     def test_refine_propagates_engine_error(self, mock_call):
