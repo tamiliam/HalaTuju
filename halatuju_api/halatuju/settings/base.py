@@ -185,6 +185,12 @@ CHECK2_STUDENT_QUERIES_ENABLED = os.environ.get('CHECK2_STUDENT_QUERIES_ENABLED'
 # env var. (Was referenced in code but never defined here, so it was permanently off.)
 CHECK2_AUTO_GENERATE = os.environ.get('CHECK2_AUTO_GENERATE', '').lower() in ('1', 'true', 'yes')
 
+# Optional scoping for the `refresh_sponsor_profiles` command (run via the argless cron
+# endpoint): a comma-separated list of application IDs. When set, the refresh is FORCED for
+# exactly those applications (ignores the version-idempotency skip) — used to trial/repair a
+# single profile on a new prompt without re-running the whole fleet. Empty = full stale sweep.
+PROFILE_REFRESH_APP_IDS = os.environ.get('PROFILE_REFRESH_APP_IDS', '')
+
 # F7: when a reviewer is assigned, also email the STUDENT an advance notice (who will
 # contact them + the interviewer's name/phone/email). OFF by default — switch on only after
 # reviewers have given non-objection to sharing their contact. Per-reviewer opt-out lives on
