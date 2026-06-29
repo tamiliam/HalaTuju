@@ -334,6 +334,20 @@ witness; the donor is NEVER a party or named** (anonymity preserved in the rende
 (referring-org admin). Migration `0072` (new table + RLS, migrate-first). **Go-live blocked on two Phase-0 gates
 (TD-140); parent-phone link = TD-141; real disbursement = TD-142 / TD-075.**
 
+**Post-award bank-details capture (S7, 2026-06-29).** An `awarded`/`active` student's payout account, captured in the
+**Action Centre** via upload-THEN-confirm. New `BankAccount` model (`bank_accounts`, OneToOne→application, RLS — financial
+PII in its own table) + the `bank_statement` doc type, which rides the existing **document-assist** pipeline: Gemini
+field-extracts {bank_name, account_number, account_holder} (`vision._FIELD_SCHEMAS['bank_statement']`), and
+`vision._bank_verdict` decides deterministically — `ok` only if all three are present AND the **holder is the student**
+(matched against `names[0]` only, never a guardian). `resolution.sync_bank_details_item` raises/clears a
+`bank_details_missing` task (always student-visible, independent of the Check-2 flag); the upload never auto-resolves it
+(`resolve_doc_items_for_upload` skips `bank_statement`) — it resolves when the student saves. `BankAccountView`
+(`GET/POST /scholarship/bank-account/`) re-checks the **hard holder gate** server-side on the *confirmed* value (refuses
+`bank_holder_mismatch`); `help_engine` Gopal coaches `bank_holder_mismatch` / `bank_details_unclear`. `_current_application`
+spans the funded states so the funded student reaches the upload/Action-Centre surface. Migration `0081` (new table + RLS,
+migrate-first). **Stored only — no admin/officer surface yet** (payout view = TD-148, with TD-075). FE: `BankDetailsTask`
+in `ActionCentre.tsx`.
+
 **Three isolated Supabase clients + the PKCE invariant (v2.23.1):** student `getSupabase` (default storage key, mounted
 globally via `app/providers.tsx`), `getAdminSupabase` (`halatuju_admin_session`, mounted under `/admin/*`), and
 `getSponsorSupabase` (`halatuju_sponsor_session`, mounted under `/sponsor/*`). **All three set `flowType: 'pkce'` — this

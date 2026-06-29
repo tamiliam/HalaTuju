@@ -587,8 +587,20 @@ student→guarantor→witness→Foundation under `BURSARY_AGREEMENT_ENABLED`).**
   maintenance → closed` end-to-end. **Go-live still gated** on bursary Phase-0 (TD-140) + real disbursement
   / toyyibPay (TD-075). **TD-147 DONE** (`f8094760` — migration `0079_alter_scholarshipcohort_name`
   retired the recurring `scholarshipcohort.name` drift; `makemigrations scholarship --check` is now clean).
-  No post-award work is queued; resume bursary go-live / disbursement rails when the external gates clear.
   **NEXT engineering = doc-recognition Layer 2 (L2-2)** — see the top of this section.
+- **▶ POST-AWARD S7 SHIPPED 2026-06-29 — bank-details capture (retro
+  `docs/retrospective-2026-06-29-post-award-s7-bank-details.md`; migration `0081_bankaccount` applied
+  migrate-first + RLS).** An `awarded`/`active` student gets a `bank_details_missing` task in the Action
+  Centre: upload a bank statement → Gemini field-extracts (bank/account-no/holder) → the student
+  confirms/corrects → save. **Holder MUST be the student** (hard gate, `vision.name_match`, server-side);
+  mismatch/unclear → Cikgu Gopal coaches (`bank_holder_mismatch`/`bank_details_unclear`). New `BankAccount`
+  model (`bank_accounts`, OneToOne, RLS) + `bank_statement` doc type; `GET/POST /scholarship/bank-account/`;
+  `resolution.sync_bank_details_item`; upload-THEN-confirm (never auto-resolves). `_current_application`
+  broadened to the funded states so the funded student reaches the upload/Action-Centre surface (safe —
+  revert-on-incomplete only acts on `profile_complete`). **Stored only — no admin/officer view yet** (the
+  payout view is later, with TD-075). FE `BankDetailsTask` in `ActionCentre.tsx`. **Built on the branch but
+  the deploy is owner-gated — push `feat/bank-details` to ship** (table already on prod via migrate-first).
+  Deferred: TD-148 (officer payout/verify view), TD-149 (replacing a confirmed account post-save).
 
 **▶ LIVE FEATURE-FLAG STATE (prod `halatuju-api`, verified 2026-06-21 — env is the source of truth, not these notes).**
 ON: `WHATSAPP_ENABLED`, `INTERVIEW_SCHEDULING_ENABLED`, `INTERVIEW_MEET_ENABLED`, `REVIEW_NUDGES_ENABLED`,
