@@ -275,7 +275,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     disbursements = serializers.SerializerMethodField()
     # Standardised assistance (2026-06-29): the pathway-derived proposed amount the cockpit
     # shows + auto-applies on approve. award_amount is the persisted value (super-overridable).
+    # proposed_award_amount is null when the verdict confidently disqualifies the application
+    # (see award.py); award_disqualifier then names which marker fired so the slider can show it.
     proposed_award_amount = serializers.SerializerMethodField()
+    award_disqualifier = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -305,8 +308,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
             # Phase E3: admin-set award amount (gates fundability; shown on the pool card)
             'award_amount',
-            # Standardised assistance (2026-06-29): pathway-derived proposed amount.
-            'proposed_award_amount',
+            # Standardised assistance (2026-06-29): pathway-derived proposed amount + the
+            # confident-disqualifier code (null = none; drives the cockpit "no amount" reason).
+            'proposed_award_amount', 'award_disqualifier',
             # Rejection bucket (merit/need/ineligible/interview/contractual) + stamps
             'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
             # Closure bucket (post-award lifecycle): graduated/completed/withdrawn/lapsed/terminated
@@ -356,9 +360,24 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         from .disbursement import disbursement_dict
         return [disbursement_dict(d) for d in obj.disbursements.all()]
 
+    def _verdict(self, obj):
+        """Compute the four-fact verdict ONCE per serialised application — get_verdict,
+        get_proposed_award_amount and get_award_disqualifier all share it."""
+        cached = getattr(obj, '_cached_verdict', None)
+        if cached is None:
+            from .verdict_engine import build_verdict
+            cached = build_verdict(obj)
+            obj._cached_verdict = cached
+        return cached
+
     def get_proposed_award_amount(self, obj):
         from .award import proposed_award_amount
-        return str(proposed_award_amount(obj))
+        amount = proposed_award_amount(obj, verdict=self._verdict(obj))
+        return None if amount is None else str(amount)
+
+    def get_award_disqualifier(self, obj):
+        from .award import verdict_disqualifier
+        return verdict_disqualifier(self._verdict(obj)) or None
 
     def get_assigned_to_corrections(self, obj):
         from .reopen import reviewer_correction_count
@@ -430,8 +449,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         """S1 verification verdict: the four-fact rollup the coordinator audits
         (identity / academic / income / pathway). Pure deterministic engine, no
         LLM calls — mirrors get_anomalies."""
-        from .verdict_engine import build_verdict
-        return build_verdict(obj)
+        return self._verdict(obj)
 
     def get_submission_review(self, obj):
         """Check 2 STEP 1: the deterministic facts ledger + completeness gaps +

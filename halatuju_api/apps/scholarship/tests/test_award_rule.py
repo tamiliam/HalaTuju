@@ -11,9 +11,11 @@ from django.test import TestCase, override_settings
 
 from rest_framework.test import APIClient
 
+from django.utils import timezone
+
 from apps.courses.models import StudentProfile, PartnerAdmin
 from apps.scholarship import award
-from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort, ApplicantDocument
 from apps.scholarship.tests.test_sponsorship import _token, TEST_JWT_SECRET
 
 
@@ -25,6 +27,13 @@ def _app(cohort, *, pathway='matric', status='interviewed', suffix='1'):
     p = StudentProfile.objects.create(supabase_user_id=f'aw-{suffix}', grades={'bm': 'A'}, exam_type='spm')
     return ScholarshipApplication.objects.create(
         cohort=cohort, profile=p, status=status, chosen_pathway=pathway)
+
+
+def _add_not_genuine_offer(app):
+    """An offer letter the genuineness scorer judged suspect → pathway 'offer_not_official'."""
+    return ApplicantDocument.objects.create(
+        application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
+        vision_fields={'authenticity': {'status': 'suspect'}}, vision_run_at=timezone.now())
 
 
 class TestProposedAmountRule(TestCase):
@@ -45,6 +54,48 @@ class TestProposedAmountRule(TestCase):
             self.assertTrue(award.is_allowed_amount(Decimal(ok)), ok)
         for bad in ('900', '2300', '3500', 'abc'):
             self.assertFalse(award.is_allowed_amount(bad), bad)
+
+
+class TestVerdictDisqualifier(TestCase):
+    """The confident-disqualifier markers zero the proposed amount; the merely-uncertain
+    codes (a missing offer / income-needs-interview) keep the standard pathway amount."""
+    def setUp(self):
+        self.cohort = _cohort()
+
+    def test_disqualifier_detected(self):
+        for code in award.CONFIDENT_DISQUALIFIERS:
+            v = [{'fact': 'pathway', 'status': 'review', 'evidence': [],
+                  'unresolved': [{'code': code, 'params': {}}]}]
+            self.assertEqual(award.verdict_disqualifier(v), code, code)
+
+    def test_uncertain_codes_are_not_disqualifiers(self):
+        for code in ('offer_letter_missing', 'income_unverified_needs_interview',
+                     'offer_unreadable', 'pathway_confirm'):
+            v = [{'fact': 'pathway', 'status': 'gap', 'evidence': [],
+                  'unresolved': [{'code': code, 'params': {}}]}]
+            self.assertEqual(award.verdict_disqualifier(v), '', code)
+
+    def test_empty_or_none_verdict(self):
+        self.assertEqual(award.verdict_disqualifier(None), '')
+        self.assertEqual(award.verdict_disqualifier([]), '')
+
+    def test_proposed_amount_is_none_on_disqualifier(self):
+        app = _app(self.cohort, pathway='stpm', suffix='dq1')
+        v = [{'fact': 'pathway', 'status': 'review', 'evidence': [],
+              'unresolved': [{'code': 'offer_not_official', 'params': {}}]}]
+        self.assertIsNone(award.proposed_award_amount(app, verdict=v))
+
+    def test_proposed_amount_keeps_value_on_uncertain(self):
+        app = _app(self.cohort, pathway='stpm', suffix='dq2')
+        v = [{'fact': 'pathway', 'status': 'gap', 'evidence': [],
+              'unresolved': [{'code': 'offer_letter_missing', 'params': {}}]}]
+        self.assertEqual(award.proposed_award_amount(app, verdict=v), Decimal('3000'))
+
+    def test_proposed_amount_computes_verdict_when_omitted(self):
+        # A real not-genuine offer flows through build_verdict → no amount.
+        app = _app(self.cohort, pathway='matric', suffix='dq3')
+        _add_not_genuine_offer(app)
+        self.assertIsNone(award.proposed_award_amount(app))
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -101,8 +152,27 @@ class TestAutoApplyOnVerdict(TestCase):
         app.refresh_from_db()
         self.assertEqual(app.award_amount, Decimal('2500'))
 
+    def test_approve_skips_amount_when_disqualified(self):
+        # A confident disqualifier (not-genuine offer) → approve persists NO amount;
+        # a super may override it afterwards via the set-award endpoint.
+        app = self._app_assigned('matric', 'dq')
+        _add_not_genuine_offer(app)
+        r = self._record(app, 'accept')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertIsNone(app.award_amount)
+
     def test_serializer_exposes_proposed(self):
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
         app = _app(self.cohort, pathway='stpm', suffix='ser')
         data = AdminApplicationDetailSerializer(app).data
         self.assertEqual(data['proposed_award_amount'], '3000')
+        self.assertIsNone(data['award_disqualifier'])
+
+    def test_serializer_disqualified_is_null_with_reason(self):
+        from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
+        app = _app(self.cohort, pathway='matric', suffix='serdq')
+        _add_not_genuine_offer(app)
+        data = AdminApplicationDetailSerializer(app).data
+        self.assertIsNone(data['proposed_award_amount'])
+        self.assertEqual(data['award_disqualifier'], 'offer_not_official')

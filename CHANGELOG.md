@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pytest. **Completes the reviewer-query automation roadmap (S1–S5).**
 
 ### Added
+- **Verdict-aware recommended amount — no amount on a confident disqualifier.** `award.proposed_award_amount`
+  now returns `None` (no amount) when the live verification verdict carries a *confident disqualifier* —
+  the pathway is not a genuine official public-university offer (`offer_not_official`) or per-capita income
+  is at/above the B40 line (`income_above_b40_line`). The merely-uncertain codes (a missing offer,
+  `income_unverified_needs_interview`) keep the standard pathway amount and are settled at interview. On
+  APPROVE the disqualified amount stays unset; a SUPER may override it via the (super-only) set-award
+  endpoint if the system has erred, and the rule self-corrects (the standard amount returns the moment the
+  disqualifier clears). The admin serializer exposes the nulled `proposed_award_amount` + a new
+  `award_disqualifier` reason code (reusing the verdict computed once per request); the cockpit slider
+  renders a "No amount recommended" reason state for reviewers with a super-only override slider (no RM0
+  stop; `ALLOWED_AMOUNTS` unchanged). +9 pytest; i18n parity 2984×3. No migration.
 - **Reviewer-query automation S4 — interview guide + gap-spotter seeding.** The Check-3 gap-spotter
   (`gap_engine.GAP_PROMPT`) now organises its suggested interview questions around the sponsor's three
   "what we need to know" buckets — academic_resilience / financial_need / pathway_confidence — naming
