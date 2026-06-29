@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Reviewer-query automation S5 (FINAL) — final-profile prompt restructure.** The profile a sponsor
+  reads is now organised around the sponsor's three "need to know" areas — Financial need / Academic
+  commitment & resilience / Pathway & enrolment confidence (the same buckets `gap_engine` tags interview
+  gaps with) — via a shared `_COVERAGE` instruction injected into both the draft (`PROFILE_PROMPT`) and
+  the Pro-refine (`REFINE_PROMPT`) prompts, woven into the warm narrative (still no headings/lists).
+  `_render_interview` groups interview findings by their gap `bucket` so each lands in the matching part
+  of the prose; the S1–S3 household-income clarify answers already flow in via `_render_qa`.
+  `PROMPT_VERSION 2026-06-18.1 → 2026-06-29.1` (stale-draft detection). No migration / FE / i18n. +6
+  pytest. **Completes the reviewer-query automation roadmap (S1–S5).**
+
 ### Added
 - **Reviewer-query automation S4 — interview guide + gap-spotter seeding.** The Check-3 gap-spotter
   (`gap_engine.GAP_PROMPT`) now organises its suggested interview questions around the sponsor's three

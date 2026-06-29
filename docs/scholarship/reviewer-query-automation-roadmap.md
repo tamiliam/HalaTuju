@@ -64,9 +64,15 @@ card in the cockpit (en/ms/ta). High-utility probe already covered by
 **Structured per-bucket capture fields deliberately NOT built** — the gap-spotter + `InterviewSession`
 already cover it; a clean follow-up if the owner wants per-bucket structured answers.
 
-### Sprint 5 — Final-profile prompt restructure
-Re-shape the draft + Pro-refine prompts to organise output around Academic resilience / Financial need /
-Pathway & enrolment confidence, folding in the new clarify answers + interview guide. **Complexity: Medium.**
+### Sprint 5 — Final-profile prompt restructure ✅ BUILT 2026-06-29 (pending deploy)
+Re-shaped the draft (`PROFILE_PROMPT`/`_STYLE`) + Pro-refine (`REFINE_PROMPT`) prompts to organise output around the
+sponsor's three areas (Financial need / Academic commitment & resilience / Pathway & enrolment confidence) via a shared
+`_COVERAGE` instruction — woven into the warm prose, still no headings/lists. `_render_interview` groups interview
+findings by their S4 `bucket`; the new household-income clarify answers already flow in via `_render_qa`.
+`PROMPT_VERSION 2026-06-18.1 → 2026-06-29.1` (stale-draft detection). No migration / FE / i18n. Retro
+`docs/retrospective-2026-06-29-reviewer-query-s5-profile.md`. **THE ROADMAP IS COMPLETE (S1–S5).**
+**Deferred (owner's call):** a billable `backfill-assigned-profiles` cron run to regenerate existing drafts onto the new
+version (new generations after deploy already use it). Per-bucket structured interview-capture remains a clean follow-up.
 
 ## Sequence rationale
 Deterministic, high-precision, student-facing document gaps first (1→3 — low risk, immediate

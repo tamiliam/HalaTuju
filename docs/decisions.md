@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## Sponsor framework in the profile is a COVERAGE instruction, not headed sections — reviewer-query S5, 2026-06-29
+**Decision:** The final sponsor profile is organised around the sponsor's three "need to know" areas (Financial need /
+Academic commitment & resilience / Pathway & enrolment confidence — the same buckets `gap_engine` tags interview gaps
+with) via a shared `_COVERAGE` instruction injected into both the draft and the Pro-refine prompt. The model is told to
+ANSWER all three areas, woven into the flowing prose — it is NOT told to print headed sections or lists. `_render_interview`
+groups the interview findings by their gap `bucket` so each is fed under the matching area.
+**Alternatives considered:** (1) Mandate three headed sections (## Financial need, etc.) so coverage is structurally
+guaranteed. (2) Keep the prompt area-agnostic and rely on the model to cover everything from the inputs (status quo).
+(3) Add per-bucket structured capture fields and assemble the profile deterministically.
+**Rationale:** The owner's settled decision (2026-06-15) is ONE warm PII-redacted *narrative* profile — no section
+headers. Headed buckets (1) would reverse that. The status quo (2) doesn't reliably check the sponsor's boxes (the whole
+point of the reviewer-query roadmap). Deterministic assembly (3) is a heavier build the gap-spotter + InterviewSession
+already make unnecessary. A coverage instruction gets the sponsor's questions answered while keeping the narrative form.
+**Trade-offs:** Coverage is guaranteed by instruction, not layout — a weak model could still under-serve one area (the
+instruction tells it to state honestly what's known rather than invent, and not to silently drop an area). No structured
+per-area data to query later.
+**Revisit if:** sponsors ask for a scannable headed/temized format, or a model proves unreliable at covering all three —
+then add per-bucket structured capture (the deferred S4 follow-up) and assemble deterministically.
+
 ## Interview reminders gate on booking notice, not just the time-window — 2026-06-21
 **Decision:** Each interview reminder is gated on **how much notice the booking gave** (`interview_start −
 interview_booked_at`): the 24h reminder fires only if notice ≥ 24h, the 1h reminder only if notice ≥ 1h. Firing itself

@@ -81,6 +81,16 @@ class TestProfilePrompt(TestCase):
         self.assertIn('three short paragraphs', prompt)
         self.assertNotIn('## Background', prompt)
 
+    def test_prompt_carries_the_three_sponsor_areas(self):
+        """S5: the draft prompt must instruct the model to cover the sponsor's three
+        'need to know' areas, woven into the prose (no headings)."""
+        prompt = _build_prompt(self.app)
+        for token in ('WHAT A SPONSOR NEEDS TO KNOW', 'FINANCIAL NEED',
+                      'ACADEMIC COMMITMENT & RESILIENCE', 'PATHWAY & ENROLMENT CONFIDENCE'):
+            self.assertIn(token, prompt)
+        # still narrative, not a headed/listed layout
+        self.assertIn('NO headings and NO lists', prompt)
+
     def test_prompt_includes_answered_queries(self):
         from apps.scholarship.models import ResolutionItem
         ResolutionItem.objects.create(
