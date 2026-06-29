@@ -995,3 +995,22 @@ records the `scholarshipcohort.name` `AlterField` (no DDL — `help_text` is not
 a standalone small-change / in the next consolidation review, NOT folded into a feature sprint (keep
 it isolated so it's obviously a no-op DDL). Verify with `makemigrations scholarship --check` returning
 "No changes" afterwards.
+
+### [TD-148] Officer view of a student's bank details (the payout surface)
+**Status:** Open (logged 2026-06-29, post-award S7). **Context:** the bank-details capture (S7) stores the
+student's confirmed `BankAccount` (bank/account-no/holder) but surfaces it on **no admin/officer view** —
+the owner's explicit scope ("stored in the DB but not displayed anywhere"). To actually *pay* a student,
+an officer will need to see (and likely re-verify) the account. **Fix:** an officer-only Bank-details panel
+on the cockpit (read the `BankAccount` + the linked `source_doc` bank statement; show `holder_verdict`),
+gated like the other reviewer surfaces. **Folds into real disbursement (TD-075)** — build it alongside the
+payout rails, not before (there's nothing to do with the number until money can move). Anonymity note: this
+is a back-office surface only; the account never crosses to a sponsor view.
+
+### [TD-149] No path to change a bank account after it's confirmed
+**Status:** Open (logged 2026-06-29, post-award S7). **Context:** once the student saves their `BankAccount`,
+the `bank_details_missing` task resolves and leaves the Action Centre, so there is **no student-facing path
+to correct/replace the account** (wrong account saved, account later closed). The backend confirm endpoint
+already does `update_or_create` (a re-POST would update in place) — only the FE entry point is missing.
+**Fix:** a small "Update my bank details" surface (e.g. re-open the task, or a thin panel on the
+award/in-programme page) that re-uses `POST /scholarship/bank-account/` (same hard holder gate). Low risk;
+do when the payout surface (TD-148) lands, since that's when a wrong account starts to matter.

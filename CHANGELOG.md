@@ -18,6 +18,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `backfill_reporting_dates`. +1 regression test.
 
 ### Added
+- **Post-award bank-details capture — an awarded student uploads + confirms their payout account in the
+  Action Centre.** Once a student is `awarded` or `active`, a `bank_details_missing` task appears in their
+  Action Centre: they **upload a bank statement/passbook**, the system **field-extracts** Bank Name /
+  Account Number / Account Holder (Gemini, riding the existing document-assist pipeline), the three values
+  **pre-fill a confirm form**, and the student **reviews/corrects** them before saving (account numbers are
+  high-stakes — a misread digit misdirects money, so it's upload-THEN-confirm, never auto-save). **The
+  account holder MUST be the student** — a hard rule re-checked server-side against the application name
+  (`vision.name_match`); a different name is refused (`bank_holder_mismatch`) and **Cikgu Gopal** coaches it,
+  as he does a field we couldn't read clearly (`bank_details_unclear`). New `BankAccount` model (table
+  `bank_accounts`, OneToOne→application, financial PII in its own RLS'd table) + the `bank_statement`
+  doc type — **migration `scholarship/0081`** (CreateModel + additive choice; table + RLS applied
+  migrate-first). New `GET/POST /scholarship/bank-account/` (the confirm endpoint + hard holder gate);
+  `resolution.sync_bank_details_item` raises/clears the task; the upload never auto-resolves it. The funded
+  student now reaches the upload + Action Centre surface (`_current_application` spans the funded states —
+  safe: revert-on-incomplete only touches `profile_complete`). **Stored only — surfaced on no admin view
+  yet** (an officer payout view is a later step, with real disbursement / TD-075). FE: `BankDetailsTask`
+  card in `ActionCentre.tsx` + `getBankAccount`/`confirmBankAccount`; i18n en/ms/ta (Tamil first-draft).
+  +20 backend pytest; `next build` clean.
 - **`refresh_sponsor_profiles` command (cron job `refresh-profiles`).** Rolls a prompt-version bump
   across the fleet: re-drafts (Flash) and, for already-decided students with a submitted interview,
   re-finalises (Pro) each `SponsorProfile` onto the current `PROMPT_VERSION`. Version-idempotent on a

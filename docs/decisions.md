@@ -3643,3 +3643,31 @@ is exactly what reviewers ask today. Asking is student-facing (document gaps are
 decision #3).
 **Revisit if:** the apply form starts collecting both parents' occupations as mandatory (the blank
 case would disappear), or a per-parent income breakdown is wanted in the profile.
+
+## Bank details = a dedicated RLS'd model, not OnboardingResponse.answers — Post-award S7, 2026-06-29
+**Decision:** The student's payout account is a new `BankAccount` model (`bank_accounts`, OneToOne→application, RLS) holding bank_name / account_number / account_holder + a `source_doc` FK to the uploaded statement.
+**Alternatives considered:** stuff the three fields into the existing free-form `OnboardingResponse.answers` JSON (no migration); or onto the application row.
+**Rationale:** an account number is financial PII and a payout target — it deserves its own auditable, RLS'd row (own table, deny-by-default, `confirmed_at`/`holder_verdict` audit fields), not a JSON blob that no constraint or RLS boundary guards. A typed model also gives the future disbursement code a clean place to read from.
+**Trade-offs:** a new model + migration + the migrate-first/RLS ceremony, vs a zero-migration JSON write.
+**Revisit if:** the payout model grows to multiple accounts per student, or a regulator requires field-level encryption (then this row is the place to add it).
+
+## Upload-THEN-confirm for bank details (not auto-save the OCR) — Post-award S7, 2026-06-29
+**Decision:** The upload field-extracts the three values and PRE-FILLS them, but the task resolves only when the student reviews/corrects and SAVES. The upload never auto-resolves the Action-Centre task (`resolve_doc_items_for_upload` skips `bank_statement`); the confirm endpoint persists the account.
+**Alternatives considered:** auto-save the extracted fields on a clean read (like other doc tasks, which resolve on a clean upload).
+**Rationale:** money safety — a single misread account digit silently sends the bursary to the wrong account. A human (the student) must eyeball the number before it's committed; the serializer also rejects a too-short fragment. This is the one doc task where "clean read → done" is unsafe.
+**Trade-offs:** an extra step + a bespoke `BankDetailsTask` card instead of the generic upload card.
+**Revisit if:** a verified bank API (e.g. account-name-verification) makes the read trustworthy enough to skip the manual confirm.
+
+## Bank-account holder must be the student — a hard, server-side gate — Post-award S7, 2026-06-29
+**Decision:** The confirmed `account_holder` must match the student (tolerant of spelling/romanisation via `vision.name_match`, but a different person is refused `bank_holder_mismatch`). Matched against the STUDENT only (`names[0]`), never a guardian. No parent/joint-account exception.
+**Alternatives considered:** allow a flagged parent/guardian account (common for under-18s without their own account).
+**Rationale:** owner's explicit call — the bursary is paid to the student, full stop. Enforced on the *confirmed* value server-side (not just the AI read), so a corrected-to-wrong-name save is still caught; Gopal coaches the student to use their own account.
+**Trade-offs:** a student with no account of their own is blocked until they open one (a real-world friction the owner accepted).
+**Revisit if:** field experience shows a material share of awarded students genuinely cannot hold their own account → reconsider a flagged guardian-account path (TD candidate).
+
+## `_current_application` spans the funded states — Post-award S7, 2026-06-29
+**Decision:** The student-surface lookup `_current_application` now includes `awarded`/`active`/`maintenance` (the funded states), not just `POST_SHORTLIST_EDITABLE`.
+**Alternatives considered:** a dedicated funded-only lookup used solely by the bank endpoints (narrower blast radius).
+**Rationale:** the document-upload + Action Centre surfaces are the student's working surface; a funded student legitimately needs them (to upload a bank statement, see resolved tickets). One broadened helper is simpler than a parallel lookup. Verified safe: `revert_if_profile_incomplete` only acts on `profile_complete`, and `switch_income_route` never un-submits, so a funded student touching the shared surface can't fall out of funded status.
+**Trade-offs:** a funded student can now also re-upload other docs / hit the income-route-switch — harmless, but a wider surface than strictly needed for bank details.
+**Revisit if:** a future per-status surface rule needs funded students treated differently on one of those shared endpoints.
