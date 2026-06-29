@@ -121,6 +121,26 @@ def _name_aligns(a: set, b: set) -> bool:
     return a <= b or b <= a
 
 
+def catalogue_institution(course_id: str, hint: str = '') -> str:
+    """The recommender catalogue's canonical institution name for a course_id — used ONLY to
+    iron out OCR variants of the SAME institution ("…(POLITEKNIK PREMIER)", address tails,
+    casing). Returns a catalogue name only when it ALIGNS with ``hint`` (the currently
+    recorded institution) — i.e. it's the same place, just cleaner. It deliberately will NOT
+    swap one institution for a *different* one: a catalogue institution that conflicts with a
+    recorded institution signals a wrong/imprecise course_id (a data-integrity issue to
+    surface), not an OCR variant to silently overwrite. With no hint it can't verify → ''."""
+    from apps.courses.models import CourseInstitution
+    hj = distinctive_tokens(hint)
+    if not hj:
+        return ''
+    names = [n for n in CourseInstitution.objects.filter(course_id=course_id)
+             .values_list('institution__institution_name', flat=True) if n]
+    for n in names:
+        if _name_aligns(hj, distinctive_tokens(n)):
+            return n
+    return ''
+
+
 def resolve_catalogue_course(programme: str, institution: str):
     """Best-effort canonical match for a TERTIARY offer. Returns
     ``{course_id, course_name, institution}`` ONLY when exactly one catalogue course —

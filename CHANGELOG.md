@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Bursary ↔ recommender institution alignment (single source of truth).** A catalogue-linked
+  (`course_id`) programme's institution name is now taken from the recommender catalogue
+  (`offer_pathway.catalogue_institution`: `course_id → Institution`) so offer-letter OCR variants
+  ("…(POLITEKNIK PREMIER)", address tails, casing, hand-cleaned acronyms) are ironed out and the two
+  systems can't disagree. **Alignment is conservative — it only rewrites when the catalogue name is the
+  SAME institution as recorded; a catalogue institution that *conflicts* with the recorded one is left
+  untouched and surfaced as a wrong/imprecise-`course_id` integrity flag, never silently swapped.**
+  `autofill_pathway_from_offer` keeps it aligned on every offer extraction (any lock state); new
+  `align_institution_to_catalogue` command ironed out 12 prod rows. **Flagged for owner review (not
+  auto-changed):** #95 Gokulleshan (`POLY-DIP-077`→Seberang Perai vs recorded Ungku Omar) and #31
+  Dhurvaashrii (`UL0010002`→UMK vs recorded Universiti Malaya) — their stored `course_id` contradicts
+  the offer. +4 tests.
 - **Pre-U course-name standardisation — "Program Matrikulasi" / "Tingkatan Enam".** The pre-U
   `chosen_programme.course_name` is now a single canonical string per pathway (Matrikulasi →
   "Program Matrikulasi", STPM → "Tingkatan Enam") — the specific stream/jurusan lives in

@@ -144,6 +144,40 @@ class TestResolveCatalogueCourse(_Base):
             'DIPLOMA TEKNOLOGI MAKLUMAT', 'POLITEKNIK KUCHING SARAWAK'))
 
 
+class TestCatalogueInstitution(_Base):
+    def setUp(self):
+        self.psp = Institution.objects.create(
+            institution_id='psp', institution_name='Politeknik Seberang Perai',
+            type='Politeknik', state='Pulau Pinang')
+        self.c = Course.objects.create(
+            course_id='DAC', course='Diploma Perakaunan', level='Diploma',
+            department='Commerce', field='Accounting', field_key=self.ft)
+        CourseInstitution.objects.create(course=self.c, institution=self.psp)
+
+    def test_single_institution_canonical(self):
+        # Offer OCR variant → catalogue canonical name.
+        self.assertEqual(
+            op.catalogue_institution('DAC', 'POLITEKNIK SEBERANG PERAI (POLITEKNIK PREMIER)'),
+            'Politeknik Seberang Perai')
+
+    def test_unknown_course_id(self):
+        self.assertEqual(op.catalogue_institution('NOPE', 'x'), '')
+
+    def test_conflict_is_not_swapped(self):
+        # course_id's institution is a DIFFERENT place than recorded → never overwrite
+        # (a wrong/imprecise course_id to surface, not an OCR variant to iron out).
+        self.assertEqual(op.catalogue_institution('DAC', 'Universiti Malaya'), '')
+
+    def test_ambiguous_resolved_by_hint_else_blank(self):
+        kuc = Institution.objects.create(
+            institution_id='pks', institution_name='Politeknik Kuching Sarawak',
+            type='Politeknik', state='Sarawak')
+        CourseInstitution.objects.create(course=self.c, institution=kuc)
+        self.assertEqual(op.catalogue_institution('DAC', 'Politeknik Seberang Perai'),
+                         'Politeknik Seberang Perai')
+        self.assertEqual(op.catalogue_institution('DAC', ''), '')   # no hint → never guess
+
+
 class TestAutofillPathwayFromOffer(_Base):
     def test_pre_u_undecided_settles_silently(self):
         app = self._app()
@@ -259,3 +293,20 @@ class TestAutofillPathwayFromOffer(_Base):
         app.refresh_from_db()
         self.assertEqual(app.pre_u_track, 'sains_sosial')
         self.assertEqual(app.chosen_programme['course_id'], 'STPM-X')   # locked pick untouched
+
+    def test_institution_aligned_to_catalogue_even_when_locked(self):
+        # A locked, catalogue-linked tertiary pick whose institution drifted (offer OCR
+        # variant) is re-aligned to the recommender catalogue — single source of truth.
+        Institution.objects.create(institution_id='psp', institution_name='Politeknik Seberang Perai',
+                                   type='Politeknik', state='Pulau Pinang')
+        c = Course.objects.create(course_id='DAC', course='Diploma Perakaunan', level='Diploma',
+                                  department='Commerce', field='Accounting', field_key=self.ft)
+        CourseInstitution.objects.create(course=c, institution=Institution.objects.get(institution_id='psp'))
+        app = self._app(pathway_certainty='sure',
+                        chosen_programme={'course_id': 'DAC', 'course_name': 'Diploma Perakaunan',
+                                          'institution': 'POLITEKNIK SEBERANG PERAI (POLITEKNIK PREMIER)'})
+        self._offer(app, 'DAC - DIPLOMA PERAKAUNAN', 'POLITEKNIK SEBERANG PERAI')
+        self.assertTrue(autofill_pathway_from_offer(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['institution'], 'Politeknik Seberang Perai')
+        self.assertEqual(app.chosen_programme['course_id'], 'DAC')

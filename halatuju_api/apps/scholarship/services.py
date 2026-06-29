@@ -1037,6 +1037,21 @@ def autofill_pathway_from_offer(application):
         application.pre_u_track = track
         fields.append('pre_u_track')
 
+    # Single-source-of-truth: a catalogue-linked programme's institution name comes from the
+    # recommender CATALOGUE (course_id → Institution), not the offer letter — so OCR variants
+    # are ironed out and the bursary can't disagree with the recommender. Runs regardless of
+    # lock state; only the institution sub-key is touched (course_id / course_name preserved).
+    cp_now = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    cid_now = (cp_now.get('course_id') or '').strip()
+    if cid_now:
+        canon_inst = op.catalogue_institution(cid_now, cp_now.get('institution') or '')
+        if canon_inst and canon_inst != (cp_now.get('institution') or ''):
+            cp2 = dict(cp_now)
+            cp2['institution'] = canon_inst
+            application.chosen_programme = cp2
+            if 'chosen_programme' not in fields:
+                fields.append('chosen_programme')
+
     # Reviewer-query S3: persist the normalised, sortable reporting date from the offer.
     # Always evaluated — a locked pathway doesn't change when the student reports.
     rd = parse_reporting_date(chk.get('reporting_date'))
