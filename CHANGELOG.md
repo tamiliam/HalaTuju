@@ -17,7 +17,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (pathway *adoption* is still skipped when locked). Backfilled 5 affected prod rows via
   `backfill_reporting_dates`. +1 regression test.
 
+### Added
+- **`refresh_sponsor_profiles` command (cron job `refresh-profiles`).** Rolls a prompt-version bump
+  across the fleet: re-drafts (Flash) and, for already-decided students with a submitted interview,
+  re-finalises (Pro) each `SponsorProfile` onto the current `PROMPT_VERSION`. Version-idempotent on a
+  full sweep; scope to specific apps via `PROFILE_REFRESH_APP_IDS` (forced) for a single-profile
+  trial/repair. Never clobbers an officer-edited draft; never fabricates a final for an undecided
+  student. Closes the gap where `backfill_assigned_profiles` only re-drafted. Flag-gated
+  (`CHECK2_AUTO_GENERATE`), billable. +7 pytest.
+
 ### Changed
+- **Sponsor-profile polish (`PROMPT_VERSION 2026-06-29.2`).** Owner refinements on the sponsor-facing
+  read: (a) the offer's **reporting date** is now fed into the pathway block so it can appear in the
+  enrolment-confidence part; (b) the profile **no longer states any monetary amount** (the recommended
+  sum is shown separately as a header figure) and **no longer advocates** ("strongly recommended",
+  "deserving") — a sponsor skims many profiles, so it just describes factually what the support helps
+  with. Amount dropped from the refine inputs + instruction; no-amount/no-advocacy in the shared style.
+  All 33 existing profiles regenerated onto `.2`. +3 pytest.
 - **Reviewer-query automation S5 (FINAL) — final-profile prompt restructure.** The profile a sponsor
   reads is now organised around the sponsor's three "need to know" areas — Financial need / Academic
   commitment & resilience / Pathway & enrolment confidence (the same buckets `gap_engine` tags interview
