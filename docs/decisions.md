@@ -1,5 +1,23 @@
 # Architectural Decisions — HalaTuju
 
+## Award good-news email fires on AWARD, states no amount / no sponsor — sponsor self-funding, 2026-06-29
+**Decision:** When a student becomes `awarded` (a sponsor funds them — via the Support button or the
+`award_students_batch` tool), they get `emails.send_award_offer_email`: success + "add your bank
+details (Action Centre)" + "await the formal offer". It deliberately states **no monetary amount**
+(the formal offer carries the figure) and **no sponsor identity** (two-way anonymity). It fires from
+`sponsorship.award_and_notify` — the single award entry point both the button and the batch use — best
+effort, AFTER the award commits.
+**Alternatives considered:** (1) Send on acceptance only (the existing `send_award_confirmed_email`) —
+too late; the student needs to act (bank details) at award time. (2) State the amount in this email —
+the owner wants the figure reserved for the formal offer. (3) Award via raw SQL + a separate mailer —
+risks a trail that diverges from the button's.
+**Rationale:** One entry point (`award_and_notify`) guarantees a batch award and a click award produce
+the identical Sponsorship trail + email. Email-at-award gives the student the one action (bank details)
+while the formal offer/acceptance is handled separately (currently off-system).
+**Trade-offs:** The email implies success before the binding offer/acceptance; wording manages this
+("await the formal offer"). Best-effort send means a mail outage doesn't block the award.
+**Revisit if:** acceptance moves fully in-system, or real disbursement (TD-075) needs the amount earlier.
+
 ## Sponsor framework in the profile is a COVERAGE instruction, not headed sections — reviewer-query S5, 2026-06-29
 **Decision:** The final sponsor profile is organised around the sponsor's three "need to know" areas (Financial need /
 Academic commitment & resilience / Pathway & enrolment confidence — the same buckets `gap_engine` tags interview gaps
