@@ -64,6 +64,7 @@ function ActionCard({
   onConfirm,
   formLocked = false,
   done = false,
+  setAside = false,
 }: {
   item: ResolutionItem
   token: string | null
@@ -75,6 +76,9 @@ function ActionCard({
   /** A resolved item — stays on the page as a green "Done" card (no action), so the
    *  student sees what they've completed. */
   done?: boolean
+  /** A funded student's leftover review-phase query — shown struck-through (amber) as
+   *  "Set aside" (no longer needed now they're awarded); not actionable, not deleted. */
+  setAside?: boolean
 }) {
   const { t, locale } = useT()
   const src = titleSourceFor(item)
@@ -173,6 +177,33 @@ function ActionCard({
     } finally {
       setBusy(false)
     }
+  }
+
+  // A funded student's leftover review-phase query — shown struck-through in AMBER as
+  // "Set aside": it belonged to the review and is no longer needed now they're awarded.
+  // Not a to-do, not green/done, not deleted (the officer still sees it as unanswered).
+  if (setAside) {
+    return (
+      <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-5 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-400">
+            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-gray-400">{fromLabel}</p>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="font-semibold text-gray-500 line-through decoration-amber-300">{title}</h3>
+              <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-800">
+                {t('scholarship.actionCentre.setAside')}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-gray-500">{t('scholarship.actionCentre.setAsideNote')}</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // A completed item — stays on the page as a calm green "Done" card (no action),
@@ -469,6 +500,8 @@ export default function ActionCentre({
   const { t } = useT()
   const [open, setOpen] = useState<ResolutionItem[]>([])
   const [resolved, setResolved] = useState<ResolutionItem[]>([])
+  // Funded students: leftover review-phase queries shown struck-through amber ("set aside").
+  const [setAside, setSetAside] = useState<ResolutionItem[]>([])
   const [loaded, setLoaded] = useState(false)
 
   const fetchItems = useCallback(async () => {
@@ -477,11 +510,13 @@ export default function ActionCentre({
       const r = await getResolutionItems({ token })
       setOpen(r.open)
       setResolved(r.resolved)
+      setSetAside(r.set_aside ?? [])
     } catch {
       // Treat a fetch failure as "nothing to show" — the Action Centre is
       // additive; it must never block the rest of the page.
       setOpen([])
       setResolved([])
+      setSetAside([])
     } finally {
       setLoaded(true)
     }
@@ -518,16 +553,26 @@ export default function ActionCentre({
     </div>
   )
 
+  // Funded students' set-aside review queries (struck-through amber), beneath the rest.
+  const setAsideCards = setAside.length > 0 && (
+    <div className="mt-4 space-y-4">
+      {setAside.map((item) => (
+        <ActionCard key={item.id} item={item} token={token} onResolved={fetchItems}
+          onConfirm={(target) => onConfirm?.(target)} formLocked={formLocked} setAside />
+      ))}
+    </div>
+  )
+
   // Nothing at all: post-submit → the await card; shortlisted → invisible.
-  if (open.length === 0 && resolved.length === 0) {
+  if (open.length === 0 && resolved.length === 0 && setAside.length === 0) {
     return formLocked ? <section className="mb-8">{awaitCard}</section> : null
   }
 
   const { done, total, pct } = computeProgress(open, resolved)
 
-  // Post-submit, everything cleared: the await card + the completed Done cards.
+  // Post-submit, everything actionable cleared: the await card + set-aside + Done cards.
   if (formLocked && open.length === 0) {
-    return <section className="mb-8">{awaitCard}{doneCards}</section>
+    return <section className="mb-8">{awaitCard}{setAsideCards}{doneCards}</section>
   }
 
   // Pending tasks (or a shortlisted student with history).
@@ -580,6 +625,7 @@ export default function ActionCentre({
           <IncomeRouteSwitch token={token} applicationId={applicationId} onDone={fetchItems} />
         </div>
       )}
+      {setAsideCards}
       {doneCards}
       {/* Shortlisted (pre-submit) all-done banner. */}
       {!formLocked && open.length === 0 && (

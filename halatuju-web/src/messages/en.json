@@ -1998,7 +1998,9 @@
         "saving": "Saving…",
         "saveError": "Sorry, we could not save your bank details. Please try again.",
         "holderMismatch": "This account is not in your name. The bursary can only be paid into a bank account that belongs to you."
-      }
+      },
+      "setAside": "Set aside",
+      "setAsideNote": "This was part of reviewing your application. Now that you've been awarded, you don't need to answer it."
     },
     "summary": {
       "subtitle": "One last look — check everything is right, then scroll down and submit.",

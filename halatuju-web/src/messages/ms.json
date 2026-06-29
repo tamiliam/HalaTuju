@@ -1998,7 +1998,9 @@
         "saving": "Menyimpan…",
         "saveError": "Maaf, kami tidak dapat menyimpan butiran bank anda. Sila cuba lagi.",
         "holderMismatch": "Akaun ini bukan atas nama anda. Biasiswa hanya boleh dibayar ke akaun bank milik anda sendiri."
-      }
+      },
+      "setAside": "Diketepikan",
+      "setAsideNote": "Ini sebahagian daripada semakan permohonan anda. Kini setelah anda menerima bursari, anda tidak perlu menjawabnya."
     },
     "summary": {
       "subtitle": "Lihat sekali lagi — pastikan semuanya betul, kemudian tatal ke bawah dan hantar.",

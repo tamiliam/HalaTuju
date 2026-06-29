@@ -1905,7 +1905,7 @@ export interface ResolutionItem {
 
 export async function getResolutionItems(
   options?: ApiOptions
-): Promise<{ open: ResolutionItem[]; resolved: ResolutionItem[] }> {
+): Promise<{ open: ResolutionItem[]; resolved: ResolutionItem[]; set_aside?: ResolutionItem[] }> {
   return apiRequest('/api/v1/scholarship/resolution-items', options)
 }
 
