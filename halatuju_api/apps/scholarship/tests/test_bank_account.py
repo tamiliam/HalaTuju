@@ -207,3 +207,48 @@ class TestConfirmEndpoint(_Base):
         doc = self._add_bank_doc(app, verdict='ok')
         self._client('bank-c6').post(self.URL, _bank_fields(), format='json')
         self.assertEqual(BankAccount.objects.get(application=app).source_doc_id, doc.id)
+
+
+# ── Funded students: the auto review-phase queries are suppressed ─────────────
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET,
+                   CHECK2_STUDENT_QUERIES_ENABLED=True)
+class TestFundedSetsAsideReviewQueries(_Base):
+    """Owner decision 2026-06-29: the moment recommended → awarded, the auto review-phase
+    items (system verdict gaps + Check-2 clarify queries) are SET ASIDE in the student's
+    Action Centre — peeled out of the actionable queue into a `set_aside` bucket the FE shows
+    struck-through (amber): not deleted, not green/done. The bank-details task + anything an
+    officer/super-admin RAISES stays actionable. (The officer cockpit — a separate serializer —
+    still shows the queries as unanswered.)"""
+    URL = '/api/v1/scholarship/resolution-items/'
+
+    def test_funded_sets_aside_review_keeps_officer_and_bank_open(self):
+        from apps.scholarship.resolution import add_officer_item
+        # An awarded no-docs app → the verdict raises system review gaps (offer/ic/results…).
+        app = self._make('fund-aside', status='awarded')
+        add_officer_item(app, kind='explanation', prompt='Officer asks', admin_email='r@x')
+        c = APIClient()
+        c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("fund-aside")}')
+        body = c.get(self.URL).json()
+        open_codes = {i['code'] for i in body['open']}
+        # Actionable open = the bank task + the officer item ONLY.
+        self.assertIn('bank_details_missing', open_codes)
+        self.assertIn('officer_1', open_codes)
+        # NO review-phase auto item (system/check2) leaks into the actionable queue.
+        for i in body['open']:
+            self.assertFalse(i['source'] in ('system', 'check2') and i['code'] != 'bank_details_missing',
+                             f'review item leaked into open: {i}')
+        # The review-phase auto items are SET ASIDE (struck amber) — present, not deleted.
+        self.assertTrue(body['set_aside'], 'expected review items in set_aside')
+        for i in body['set_aside']:
+            self.assertIn(i['source'], ('system', 'check2'))
+            self.assertNotEqual(i['code'], 'bank_details_missing')
+
+    def test_pre_award_keeps_review_items_actionable(self):
+        # Contrast: an interviewed (pre-award) no-docs student with the flag on sees the
+        # review gaps as normal open to-dos — nothing is set aside before funding.
+        app = self._make('preaward-aside', status='interviewed')  # noqa: F841 (used via token)
+        c = APIClient()
+        c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("preaward-aside")}')
+        body = c.get(self.URL).json()
+        self.assertTrue(any(i['source'] in ('system', 'check2') for i in body['open']))
+        self.assertEqual(body['set_aside'], [])

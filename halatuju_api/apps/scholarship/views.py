@@ -841,6 +841,15 @@ class ResolutionItemListView(APIView):
         # by Gopal (the 2026-06-10 duplicate-noise fix). 'human' = reviewer-only.
         from .resolution import STUDENT_DOC_REQUEST_CODES, BANK_DETAILS_CODE
 
+        # Once a student is FUNDED (awarded onward), the AUTO review-phase items — verification
+        # gaps (source='system') + Check-2 clarify queries (source='check2') — are SET ASIDE,
+        # not deleted: they were the review's to-do list, valid up to 'recommended'. From
+        # awarded on, the still-OPEN ones are peeled out of the actionable queue and shown
+        # struck-through (amber) — NOT a to-do, NOT "done"/green — so the student sees they no
+        # longer need answering. The bank-details task + anything an officer/super-admin RAISES
+        # stays actionable; a super-admin can re-raise a specific query later. (Owner, 2026-06-29.)
+        funded = app.status in _FUNDED_STATES
+
         def _student_visible(i):
             if i.kind == 'human':
                 return False
@@ -854,12 +863,23 @@ class ResolutionItemListView(APIView):
                 return queries_live
             return True   # officer items always show
 
+        # A review-phase AUTO item (not the bank task): set aside for funded students.
+        def _is_review_auto(i):
+            return i.source in ('system', 'check2') and i.code != BANK_DETAILS_CODE
+
         items = [i for i in app.resolution_items.all() if _student_visible(i)]
         openq = [i for i in items if i.status == 'open']
         resolved = [i for i in items if i.status == 'resolved'][:10]
+        # Funded: lift the OPEN review-phase items out of the actionable queue into a SET-ASIDE
+        # bucket (the FE renders them struck-through amber). Resolved items stay as they are.
+        set_aside = []
+        if funded:
+            set_aside = [i for i in openq if _is_review_auto(i)]
+            openq = [i for i in openq if not _is_review_auto(i)]
         return Response({
             'open': ResolutionItemSerializer(openq, many=True).data,
             'resolved': ResolutionItemSerializer(resolved, many=True).data,
+            'set_aside': ResolutionItemSerializer(set_aside, many=True).data,
         })
 
 
