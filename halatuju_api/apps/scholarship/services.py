@@ -996,8 +996,15 @@ def autofill_pathway_from_offer(application):
                 fields.append('pre_u_institution')
 
         # Display programme: a canonical course_id for a confident tertiary match, else labels.
+        # Pre-U course names are STANDARDISED ("Program Matrikulasi" / "Tingkatan Enam") — the
+        # specific stream/jurusan lives in pre_u_track — so a re-run doesn't reintroduce the
+        # raw offer wording (e.g. "TINGKATAN ENAM SEMESTER 1 TAHUN 2025").
         new_cp = {'course_name': prog, 'institution': inst, 'source': 'offer_letter_auto'}
-        if not op.is_pre_u(ptype):
+        if op.is_pre_u(ptype):
+            canon = op.canonical_pre_u_course(ptype)
+            if canon:
+                new_cp['course_name'] = canon
+        else:
             match = op.resolve_catalogue_course(prog, inst)
             if match:
                 new_cp = {**match, 'source': 'offer_letter_auto'}

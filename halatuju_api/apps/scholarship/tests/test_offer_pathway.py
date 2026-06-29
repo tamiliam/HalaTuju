@@ -62,6 +62,12 @@ class TestDetectors(SimpleTestCase):
                          'sains_sosial')
         self.assertEqual(op.infer_stpm_bidang(None, None), 'sains_sosial')
 
+    def test_canonical_pre_u_course(self):
+        self.assertEqual(op.canonical_pre_u_course('matric'), 'Program Matrikulasi')
+        self.assertEqual(op.canonical_pre_u_course('stpm'), 'Tingkatan Enam')
+        for t in ('poly', 'asasi', 'pismp', 'university', '', None):
+            self.assertEqual(op.canonical_pre_u_course(t), '')
+
     def test_name_aligns_subset_either_direction(self):
         # Catalogue ⊆ offer (offer carries a code prefix) → aligns.
         self.assertTrue(op._name_aligns({'dac', 'perakaunan'}, {'perakaunan'}))
@@ -148,7 +154,8 @@ class TestAutofillPathwayFromOffer(_Base):
         self.assertEqual(app.pre_u_institution, 'SEKOLAH MENENGAH KEBANGSAAN TUN HUSSEIN ONN')
         # No stream on the offer + no science electives on the SPM record → default bidang.
         self.assertEqual(app.pre_u_track, 'sains_sosial')
-        self.assertEqual(app.chosen_programme['course_name'], 'Tingkatan Enam Semester 1')
+        # Course name is standardised (the raw "...Semester 1" is dropped; stream → track).
+        self.assertEqual(app.chosen_programme['course_name'], 'Tingkatan Enam')
         self.assertEqual(app.chosen_programme['source'], 'offer_letter_auto')
         self.assertNotIn('course_id', app.chosen_programme)   # pre-U: no catalogue id
         self.assertEqual(app.pathway_certainty, 'sure')        # "exploring" cleared
@@ -229,6 +236,8 @@ class TestAutofillPathwayFromOffer(_Base):
         app.refresh_from_db()
         self.assertEqual(app.chosen_pathway, 'matric')
         self.assertEqual(app.pre_u_track, 'perakaunan')
+        # Course name standardised (jurusan is carried by pre_u_track, not the course string).
+        self.assertEqual(app.chosen_programme['course_name'], 'Program Matrikulasi')
 
     def test_stpm_bidang_inferred_from_science_grades(self):
         app = self._app()
