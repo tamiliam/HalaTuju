@@ -31,15 +31,28 @@ class Command(BaseCommand):
         dry = opts['dry_run']
         updated = skipped = ambiguous = 0
         for app in ScholarshipApplication.objects.select_related('profile').all():
-            cp = app.chosen_programme if isinstance(app.chosen_programme, dict) else None
-            cid = (cp.get('course_id') or '').strip() if cp else ''
+            cp = app.chosen_programme if isinstance(app.chosen_programme, dict) else {}
+            cur = (cp.get('institution') or '').strip()
+            pw = (app.chosen_pathway or '').strip().lower()
+            if pw == 'matric':
+                # Matric colleges are 12 STATE-unique rows → catalogue-matching is safe.
+                cid = op.preu_course_id(pw, app.pre_u_track)
+                hint = cur or (app.pre_u_institution or '').strip() or _offer_institution(app)
+            elif pw == 'stpm':
+                # STPM schools are NOT catalogue-matched: ~250 near-identically-named schools per
+                # bidang, and token-matching can't distinguish SMK from SMJK or "Tun Hussein Onn"
+                # from "Bandar Tun Hussein Onn 2" — it would change which school a student attends.
+                # The recorded school is authoritative; standardise its CASING separately.
+                skipped += 1
+                continue
+            else:
+                # Tertiary: the stored catalogue course_id; disambiguate a multi-campus course
+                # against the OFFER's institution when the stored one is blank.
+                cid = (cp.get('course_id') or '').strip()
+                hint = cur or _offer_institution(app)
             if not cid:
                 skipped += 1
                 continue
-            cur = (cp.get('institution') or '').strip()
-            # When the stored institution is blank, disambiguate a multi-campus course against
-            # the OFFER's institution (authoritative). A genuine conflict still resolves to ''.
-            hint = cur or _offer_institution(app)
             canon = op.catalogue_institution(cid, hint)
             if not canon:
                 ambiguous += 1          # course offered at several / unknown — don't guess

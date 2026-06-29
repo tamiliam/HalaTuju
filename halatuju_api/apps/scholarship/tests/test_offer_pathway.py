@@ -68,6 +68,12 @@ class TestDetectors(SimpleTestCase):
         for t in ('poly', 'asasi', 'pismp', 'university', '', None):
             self.assertEqual(op.canonical_pre_u_course(t), '')
 
+    def test_preu_course_id(self):
+        self.assertEqual(op.preu_course_id('matric', 'perakaunan'), 'matric-perakaunan')
+        self.assertEqual(op.preu_course_id('matric', 'sains_komputer'), 'matric-sains-komputer')
+        self.assertEqual(op.preu_course_id('stpm', 'sains_sosial'), 'stpm-sains-sosial')
+        self.assertEqual(op.preu_course_id('poly', 'whatever'), '')
+
     def test_name_aligns_subset_either_direction(self):
         # Catalogue ⊆ offer (offer carries a code prefix) → aligns.
         self.assertTrue(op._name_aligns({'dac', 'perakaunan'}, {'perakaunan'}))
@@ -167,6 +173,18 @@ class TestCatalogueInstitution(_Base):
         # course_id's institution is a DIFFERENT place than recorded → never overwrite
         # (a wrong/imprecise course_id to surface, not an OCR variant to iron out).
         self.assertEqual(op.catalogue_institution('DAC', 'Universiti Malaya'), '')
+
+    def test_ambiguous_multiple_matches_returns_blank(self):
+        # A hint that aligns with >1 campus of the course is ambiguous → '' (never guess).
+        a = Institution.objects.create(institution_id='i1', institution_name='Kolej Tingkatan Enam Sri Istana',
+                                       type='School', state='Selangor')
+        b = Institution.objects.create(institution_id='i2', institution_name='Kolej Tingkatan Enam Sri Putera',
+                                       type='School', state='Perak')
+        c = Course.objects.create(course_id='stpm-x', course='T6', level='Pra-U',
+                                  department='x', field='x', field_key=self.ft)
+        CourseInstitution.objects.create(course=c, institution=a)
+        CourseInstitution.objects.create(course=c, institution=b)
+        self.assertEqual(op.catalogue_institution('stpm-x', 'Sekolah Sri'), '')   # {sri} ⊆ both
 
     def test_generic_name_acronym_strips(self):
         # Catalogue name has no distinctive tokens (all generic) → normalised-equality fallback
