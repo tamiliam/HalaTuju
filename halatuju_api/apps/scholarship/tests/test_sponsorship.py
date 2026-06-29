@@ -360,3 +360,53 @@ class TestAdminSponsorship(TestCase):
         row = r.json()['sponsorships'][0]
         self.assertEqual(row['sponsor']['name'], 'Jane Sponsor')   # admin sees the sponsor
         self.assertEqual(row['application']['name'], 'Zxq Student')  # …and the student
+
+
+# ─── award good-news email (sent when a student becomes 'awarded') ────────────
+
+from django.core import mail  # noqa: E402
+
+
+class TestAwardOfferEmail(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def test_award_and_notify_funds_and_emails(self):
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        app = _fundable_app(self.cohort)
+        mail.outbox = []
+        sp = svc.award_and_notify(s, app)
+        app.refresh_from_db()
+        # The award committed (offered sponsorship + app 'awarded')…
+        self.assertEqual(sp.status, 'offered')
+        self.assertEqual(app.status, 'awarded')
+        # …and exactly one good-news email went to the student.
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ['student@secret.example'])
+        self.assertIn('Good news', msg.subject)
+        self.assertEqual(msg.reply_to, ['help@halatuju.xyz'])
+        body = msg.body
+        self.assertIn('/scholarship/application', body)   # Action Centre link
+        self.assertIn('bank account details', body)
+        # Owner decision: NO amount, NO sponsor identity. (Don't assert the bare '3000' —
+        # the dev FRONTEND_URL is localhost:3000; the RM-label check covers "no amount".)
+        self.assertNotIn('RM', body)
+        self.assertNotIn('Jane Sponsor', body)
+
+    def test_award_offer_email_bm_has_no_amount(self):
+        from apps.scholarship.emails import send_award_offer_email
+        mail.outbox = []
+        ok = send_award_offer_email('x@y.example', 'Aisyah', lang='ms')
+        self.assertTrue(ok)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Berita baik', mail.outbox[0].subject)
+        self.assertNotIn('RM', mail.outbox[0].body)
+
+    def test_award_offer_email_no_recipient_noop(self):
+        from apps.scholarship.emails import send_award_offer_email
+        mail.outbox = []
+        self.assertFalse(send_award_offer_email('', 'Nobody'))
+        self.assertEqual(len(mail.outbox), 0)

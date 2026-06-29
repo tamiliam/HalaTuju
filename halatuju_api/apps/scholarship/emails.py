@@ -410,6 +410,78 @@ def send_award_confirmed_email(to_email, applicant_name, programme_name, lang='e
                  applicant_name, programme_name, lang)
 
 
+# Sent when a student is AWARDED (a sponsor committed → status 'awarded'), BEFORE the formal
+# offer/acceptance. Good news + add bank details (Action Centre) + await the formal offer.
+# Deliberately states NO amount (the formal offer carries the figure) and NO sponsor identity
+# (two-way anonymity). From info@, reply-to help@. Owner-cleared wording 2026-06-29.
+AWARD_OFFER_SUBJECTS = {
+    'en': 'Good news about your BrightPath Bursary application 🎓',
+    'ms': 'Berita baik tentang permohonan Biasiswa BrightPath anda 🎓',
+    'ta': 'உங்கள் BrightPath Bursary விண்ணப்பம் பற்றிய நல்ல செய்தி 🎓',
+}
+AWARD_OFFER_BODIES = {
+    'en': (
+        "Dear {name},\n\n"
+        "We're delighted to share some good news. Your application to the BrightPath Bursary "
+        "Programme has been successful — you have been selected to receive financial support for "
+        "your studies.\n\n"
+        "One thing to do now: please log in and add your bank account details, so we're ready to "
+        "process your support payments. You'll find this in your application's Action Centre:\n{link}\n\n"
+        "What happens next: we will contact you shortly with your formal offer and the simple steps "
+        "to accept it. There's nothing else you need to do for now — just add your bank details and "
+        "watch for our next message.\n\n"
+        "If you have any questions, reply to this email or contact us at {support}.\n\n"
+        "Warm congratulations,\nThe BrightPath Bursary Team"
+    ),
+    'ms': (
+        "Salam {name},\n\n"
+        "Kami gembira berkongsi berita baik. Permohonan anda ke Program Biasiswa BrightPath telah "
+        "berjaya — anda telah dipilih untuk menerima bantuan kewangan bagi pengajian anda.\n\n"
+        "Satu perkara untuk dilakukan sekarang: sila log masuk dan masukkan butiran akaun bank anda, "
+        "supaya kami bersedia memproses pembayaran bantuan anda. Anda boleh berbuat demikian di Pusat "
+        "Tindakan permohonan anda:\n{link}\n\n"
+        "Apa yang berlaku seterusnya: kami akan menghubungi anda tidak lama lagi dengan tawaran rasmi "
+        "dan langkah mudah untuk menerimanya. Tiada apa-apa lagi yang perlu anda lakukan buat masa ini "
+        "— hanya masukkan butiran bank dan tunggu mesej kami yang seterusnya.\n\n"
+        "Jika ada sebarang pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
+        "Tahniah,\nPasukan Biasiswa BrightPath"
+    ),
+    'ta': (
+        "அன்புள்ள {name},\n\n"
+        "ஒரு நல்ல செய்தியைப் பகிர்வதில் மகிழ்ச்சி அடைகிறோம். BrightPath Bursary திட்டத்திற்கான உங்கள் "
+        "விண்ணப்பம் வெற்றிபெற்றுள்ளது — உங்கள் படிப்பிற்கான நிதியுதவியைப் பெற நீங்கள் தேர்ந்தெடுக்கப்பட்டுள்ளீர்கள்.\n\n"
+        "இப்போது செய்ய வேண்டிய ஒரு விஷயம்: உள்நுழைந்து உங்கள் வங்கிக் கணக்கு விவரங்களைச் சேர்க்கவும், "
+        "அதனால் உங்கள் உதவிப் பணத்தைச் செயல்படுத்த நாங்கள் தயாராக இருப்போம். இதை உங்கள் விண்ணப்பத்தின் "
+        "செயல் மையத்தில் (Action Centre) காணலாம்:\n{link}\n\n"
+        "அடுத்து என்ன நடக்கும்: உங்கள் முறையான வழங்கல் (offer) மற்றும் அதை ஏற்கும் எளிய படிகளுடன் நாங்கள் "
+        "விரைவில் உங்களைத் தொடர்புகொள்வோம். இப்போதைக்கு வேறு எதுவும் செய்ய வேண்டியதில்லை — வங்கி "
+        "விவரங்களைச் சேர்த்து, எங்கள் அடுத்த செய்திக்காகக் காத்திருங்கள்.\n\n"
+        "ஏதேனும் கேள்விகள் இருந்தால், இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் "
+        "எங்களைத் தொடர்புகொள்ளவும்.\n\n"
+        "இதயப்பூர்வ வாழ்த்துகள்,\nBrightPath Bursary குழு"
+    ),
+}
+
+
+def send_award_offer_email(to_email, applicant_name, lang='en'):
+    """Award good-news email: a sponsor has committed (status 'awarded'). Tells the student
+    the application succeeded, to add their bank details (Action Centre), and to await the
+    formal offer. NO amount, NO sponsor identity. HTML + plain-text, from info@, reply-to help@."""
+    if not to_email:
+        return False
+    lang = normalise_lang(lang)
+    name = applicant_name or _DEFAULT_NAME[lang]
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    fmt = {'name': name, 'link': f'{frontend}/scholarship/application', 'support': SUPPORT_EMAIL}
+    subject = AWARD_OFFER_SUBJECTS[lang]
+    text_body = AWARD_OFFER_BODIES[lang].format(**fmt)
+    return _send_html(
+        to_email, subject, text_body, _decline_html(text_body),
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+        reply_to=[SUPPORT_EMAIL],
+    )
+
+
 # ── F3: sponsor notifications (real-time alert + weekly digest) ───────────────
 # The body is built ONLY from already-serialised SponsorPoolDetailSerializer dicts
 # (an allowlist), so it can never contain a student's identity by construction.
