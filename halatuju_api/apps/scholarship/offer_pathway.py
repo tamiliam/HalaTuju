@@ -146,13 +146,31 @@ def catalogue_institution(course_id: str, hint: str = '') -> str:
         return ''
     hj = distinctive_tokens(hint)
     hn = _norm_inst_name(hint)
-    for n in names:
-        # Either the distinctive tokens align (same place, cleaner) OR the names are identical
-        # modulo a parenthetical/casing (handles generic-only names like UKM that have no
-        # distinctive tokens). Both are "same institution"; a genuine conflict matches neither.
-        if (hj and _name_aligns(hj, distinctive_tokens(n))) or (hn and _norm_inst_name(n) == hn):
-            return n
-    return ''
+    # A match is: distinctive tokens align (same place, cleaner) OR names identical modulo a
+    # parenthetical/casing (generic-only names like UKM). Require a UNIQUE match — a course
+    # with many campuses (e.g. an STPM bidang has ~250 schools) must not return a wrong one
+    # on an ambiguous hint; 0 or >1 → '' (don't guess / surface as a conflict).
+    matches = {n for n in names
+               if (hj and _name_aligns(hj, distinctive_tokens(n))) or (hn and _norm_inst_name(n) == hn)}
+    return next(iter(matches)) if len(matches) == 1 else ''
+
+
+# Pre-U virtual course ids in the recommender catalogue (the /course/<slug> pages) — the
+# single source of truth for matric colleges / STPM schools (linked via CourseInstitution).
+PREU_COURSE_SLUG = {
+    ('matric', 'sains'): 'matric-sains',
+    ('matric', 'kejuruteraan'): 'matric-kejuruteraan',
+    ('matric', 'sains_komputer'): 'matric-sains-komputer',
+    ('matric', 'perakaunan'): 'matric-perakaunan',
+    ('stpm', 'sains'): 'stpm-sains',
+    ('stpm', 'sains_sosial'): 'stpm-sains-sosial',
+}
+
+
+def preu_course_id(pathway: str, track: str) -> str:
+    """The recommender virtual course_id for a pre-U pathway+track (e.g. matric + perakaunan →
+    'matric-perakaunan'), or '' — used to reach its catalogue institution list."""
+    return PREU_COURSE_SLUG.get(((pathway or '').strip().lower(), (track or '').strip().lower()), '')
 
 
 def resolve_catalogue_course(programme: str, institution: str):

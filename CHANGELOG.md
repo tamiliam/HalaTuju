@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Institution-name consistency (recommender catalogue + bursary).** The recommender `Institution`
+  catalogue is the source of truth and already Title Case; `normalise_institution_names` (courses cmd)
+  fixed the two remaining classes — **expanded matric abbreviations** (`KM <State>` → `Kolej Matrikulasi
+  <State>`, `KMK <State>` → `Kolej Matrikulasi Kejuruteraan <State>`) and **upper-cased mis-cased acronyms**
+  (`Kte`→`KTE`, leading `Smk`→`SMK`); 21 rows. The bursary then re-derives from it: `align_institution_to_catalogue`
+  now also aligns **Matric** students to their state college via the `matric-*` virtual course (27 rows →
+  `Kolej Matrikulasi <State>`). **STPM schools are deliberately NOT catalogue-matched** — a bidang has ~250
+  near-identically-named schools and token-matching can't tell `SMK` from `SMJK` or "Tun Hussein Onn" from
+  "Bandar Tun Hussein Onn 2", so it would change which school a student attends; the recorded school stays
+  authoritative (casing-only standardisation is a separate safe step — TD). `catalogue_institution` now
+  requires a UNIQUE match (ambiguous → '' rather than a wrong campus). +4 tests.
 - **Sponsor self-funding: Support button + award good-news email + batch tool.** The pool
   student-detail **"Support" button** (was a "Funding opens shortly" stub) now funds a student in
   full for their award amount via `POST /sponsor/pool/<id>/fund/` — shows the sponsor's BrightPath
