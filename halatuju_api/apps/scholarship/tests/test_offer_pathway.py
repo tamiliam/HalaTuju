@@ -321,3 +321,21 @@ class TestAutofillPathwayFromOffer(_Base):
         app.refresh_from_db()
         self.assertEqual(app.chosen_programme['institution'], 'Politeknik Seberang Perai')
         self.assertEqual(app.chosen_programme['course_id'], 'DAC')
+
+    def test_blank_institution_filled_from_offer_hint_multicampus(self):
+        # Multi-campus course + blank stored institution → disambiguate via the OFFER's
+        # institution (Velan #76 case: POLY-DIP-019 at 18 polys, offer names Ungku Omar).
+        puo = Institution.objects.create(institution_id='puo', institution_name='Politeknik Ungku Omar',
+                                         type='Politeknik', state='Perak')
+        psp = Institution.objects.create(institution_id='psp2', institution_name='Politeknik Seberang Perai',
+                                         type='Politeknik', state='Pulau Pinang')
+        c = Course.objects.create(course_id='POLY-X', course='Diploma Kejuruteraan Mekanikal', level='Diploma',
+                                  department='Eng', field='Eng', field_key=self.ft)
+        CourseInstitution.objects.create(course=c, institution=puo)
+        CourseInstitution.objects.create(course=c, institution=psp)
+        app = self._app(pathway_certainty='sure',
+                        chosen_programme={'course_id': 'POLY-X', 'course_name': 'Diploma Kejuruteraan Mekanikal'})
+        self._offer(app, 'DKM - DIPLOMA KEJURUTERAAN MEKANIKAL', 'POLITEKNIK UNGKU OMAR (POLITEKNIK PREMIER)')
+        self.assertTrue(autofill_pathway_from_offer(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['institution'], 'Politeknik Ungku Omar')
