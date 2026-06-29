@@ -140,28 +140,40 @@ def fund_student(sponsor, application):
 
 
 def award_and_notify(sponsor, application):
-    """fund_student + (optionally) the good-news AWARD-OFFER email. The single entry point both
-    the sponsor 'Support' button and the admin batch use, so an award behaves identically however
-    it was triggered.
+    """Award entry point for the sponsor 'Support' button AND the admin batch: fund the student
+    (an 'offered' Sponsorship + status 'awarded'). It does NOT email inline — the good-news email
+    is sent later by ``release_award_offer_emails`` once the award is
+    ``AWARD_OFFER_EMAIL_COOLOFF_HOURS`` old, leaving a window to reconsider (cancelling the award
+    before then stops the email). Kept as the named single entry point so the button and the batch
+    behave identically."""
+    return fund_student(sponsor, application)   # atomic; raises SponsorshipError on a bad state
 
-    The email is gated behind the TEMPORARY ``AWARD_OFFER_EMAIL_ENABLED`` flag (default OFF): the
-    owner wants to decouple awarding from the student email for now and send the emails on purpose
-    via the ``send_award_offer_emails`` command. When OFF, this funds + flips to 'awarded' and
-    sends NOTHING. When ON, it also sends (best-effort, after the award commits) — no amount, no
-    sponsor identity."""
-    sp = fund_student(sponsor, application)   # atomic; raises SponsorshipError on a bad state
+
+def release_award_offer_emails(now=None):
+    """Send the award good-news email for every HOLDING award whose cool-off has elapsed and that
+    hasn't been emailed yet (``offered_at + AWARD_OFFER_EMAIL_COOLOFF_HOURS <= now`` and
+    ``offer_emailed_at`` is NULL). Idempotent via ``offer_emailed_at`` — stamped whether or not the
+    best-effort send succeeds, so a transient mail failure never re-floods. A cancelled/lapsed award
+    (no longer offered/active) is skipped, so reconsidering within the window stops the email.
+    Intended for the hourly scheduler (job ``release-award-offer-emails``). Returns the count sent."""
     from django.conf import settings as _settings
-    if getattr(_settings, 'AWARD_OFFER_EMAIL_ENABLED', False):
-        name = getattr(application.profile, 'name', '') if application.profile else ''
-        try:
-            send_award_offer_email(
-                to_email=application.notify_email, applicant_name=name,
-                lang=application.locale or 'en')
-        except Exception:   # noqa: BLE001 — email is best-effort; the award already committed
-            import logging
-            logging.getLogger(__name__).warning(
-                'award-offer email failed for app %s', application.id, exc_info=True)
-    return sp
+    now = now or timezone.now()
+    hours = getattr(_settings, 'AWARD_OFFER_EMAIL_COOLOFF_HOURS', 24)
+    cutoff = now - timezone.timedelta(hours=hours)
+    qs = (Sponsorship.objects
+          .filter(status__in=Sponsorship.HOLDING, offer_emailed_at__isnull=True, offered_at__lte=cutoff)
+          .select_related('application', 'application__profile'))
+    sent = 0
+    for sp in qs:
+        app = sp.application
+        name = getattr(app.profile, 'name', '') if app.profile else ''
+        ok = send_award_offer_email(
+            to_email=app.notify_email, applicant_name=name, lang=getattr(app, 'locale', '') or 'en')
+        sp.offer_emailed_at = now
+        sp.save(update_fields=['offer_emailed_at', 'updated_at'])
+        if ok:
+            sent += 1
+    return sent
 
 
 def current_offer(application):

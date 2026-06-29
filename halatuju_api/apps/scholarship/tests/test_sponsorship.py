@@ -372,8 +372,8 @@ class TestAwardOfferEmail(TestCase):
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
 
-    def test_award_and_notify_default_funds_but_no_email(self):
-        # TEMPORARY safety gate: AWARD_OFFER_EMAIL_ENABLED defaults OFF → award, NO email.
+    def test_award_and_notify_funds_without_inline_email(self):
+        # Cool-off model: awarding never emails inline — the release cron sends it later.
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('3000'))
         app = _fundable_app(self.cohort)
@@ -382,27 +382,8 @@ class TestAwardOfferEmail(TestCase):
         app.refresh_from_db()
         self.assertEqual(sp.status, 'offered')
         self.assertEqual(app.status, 'awarded')
-        self.assertEqual(len(mail.outbox), 0)   # decoupled: no email on award
-
-    @override_settings(AWARD_OFFER_EMAIL_ENABLED=True)
-    def test_award_and_notify_emails_when_flag_on(self):
-        s = _sponsor()
-        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
-        app = _fundable_app(self.cohort)
-        mail.outbox = []
-        svc.award_and_notify(s, app)
-        self.assertEqual(len(mail.outbox), 1)
-        msg = mail.outbox[0]
-        self.assertEqual(msg.to, ['student@secret.example'])
-        self.assertIn('Good news', msg.subject)
-        self.assertEqual(msg.reply_to, ['help@halatuju.xyz'])
-        body = msg.body
-        self.assertIn('/scholarship/application', body)   # Action Centre link
-        self.assertIn('bank account details', body)
-        # NO amount, NO sponsor identity. (Don't assert the bare '3000' — the dev
-        # FRONTEND_URL is localhost:3000; the RM-label check covers "no amount".)
-        self.assertNotIn('RM', body)
-        self.assertNotIn('Jane Sponsor', body)
+        self.assertIsNone(sp.offer_emailed_at)   # nothing emailed yet
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_award_offer_email_bm_has_no_amount(self):
         from apps.scholarship.emails import send_award_offer_email
@@ -517,4 +498,58 @@ class TestSendAwardOfferEmails(TestCase):
         mail.outbox = []
         with override_settings(AWARD_EMAIL_APP_IDS=str(not_awarded.id)):
             call_command('send_award_offer_emails')
+        self.assertEqual(len(mail.outbox), 0)
+
+
+from datetime import timedelta  # noqa: E402
+
+
+class TestReleaseAwardOfferEmails(TestCase):
+    """Cool-off auto-release: award → email sent once it's COOLOFF hours old, idempotent,
+    and skipped if the award was cancelled within the window."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def _award(self, suffix, *, age_hours=0):
+        s = _sponsor(uid=f'rl-{suffix}')
+        Donation.objects.create(sponsor=s, amount=Decimal('5000'))
+        app = _fundable_app(self.cohort, suffix=suffix, award=Decimal('2000'))
+        sp = svc.fund_student(s, app)          # offered + 'awarded', no email
+        if age_hours:
+            Sponsorship.objects.filter(id=sp.id).update(
+                offered_at=timezone.now() - timedelta(hours=age_hours))
+        return sp
+
+    def test_sends_once_past_cooloff_and_is_idempotent(self):
+        sp = self._award('a', age_hours=25)    # older than the default 24h
+        mail.outbox = []
+        self.assertEqual(svc.release_award_offer_emails(), 1)
+        sp.refresh_from_db()
+        self.assertIsNotNone(sp.offer_emailed_at)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Good news', mail.outbox[0].subject)
+        # second run: already emailed → nothing
+        mail.outbox = []
+        self.assertEqual(svc.release_award_offer_emails(), 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_skips_within_cooloff(self):
+        self._award('b', age_hours=1)          # only 1h old, default cool-off 24h
+        mail.outbox = []
+        self.assertEqual(svc.release_award_offer_emails(), 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(AWARD_OFFER_EMAIL_COOLOFF_HOURS=0)
+    def test_cooloff_zero_sends_on_next_run(self):
+        self._award('c', age_hours=0)          # no cool-off → eligible immediately
+        mail.outbox = []
+        self.assertEqual(svc.release_award_offer_emails(), 1)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_skips_cancelled_award(self):
+        sp = self._award('d', age_hours=25)
+        Sponsorship.objects.filter(id=sp.id).update(status='cancelled')   # reconsidered in-window
+        mail.outbox = []
+        self.assertEqual(svc.release_award_offer_emails(), 0)
         self.assertEqual(len(mail.outbox), 0)

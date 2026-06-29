@@ -1228,6 +1228,10 @@ class Sponsorship(models.Model):
     accept_deadline = models.DateTimeField(null=True, blank=True)
     offered_at = models.DateTimeField(auto_now_add=True)
     decided_at = models.DateTimeField(null=True, blank=True)
+    # When the award good-news email was sent (or the award was handled without one, e.g.
+    # a pre-existing/embargoed award backfilled so the cool-off cron never re-emails it).
+    # NULL = still pending; the release cron emails once offered_at + the cool-off elapses.
+    offer_emailed_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -198,12 +198,16 @@ PROFILE_REFRESH_APP_IDS = os.environ.get('PROFILE_REFRESH_APP_IDS', '')
 SEED_SPONSOR_ID = os.environ.get('SEED_SPONSOR_ID', '')
 SEED_AWARD_APP_IDS = os.environ.get('SEED_AWARD_APP_IDS', '')
 
-# TEMPORARY safety gate (owner, 2026-06-29): decouple the award good-news email from the
-# award action. When OFF (default), a sponsor pressing "Support" — or the batch — funds the
-# student + sets 'awarded' as normal but sends NO email; the owner sends the emails on purpose
-# via the `send_award_offer_emails` command (scoped to AWARD_EMAIL_APP_IDS). Flip ON later to
-# restore automatic notify-on-award and the temporary command can be retired.
-AWARD_OFFER_EMAIL_ENABLED = os.environ.get('AWARD_OFFER_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
+# Award good-news email — COOL-OFF model (owner, 2026-06-29): a sponsor award does NOT email
+# inline. The release cron (`release-award-offer-emails`) sends the email once the award is this
+# many hours old, leaving a window to reconsider — cancelling the award before then stops the
+# email. 24h default; 0 = send on the next cron tick (no cool-off). The owner can still force a
+# send for explicit application IDs via the manual `send_award_offer_emails` command
+# (AWARD_EMAIL_APP_IDS); both paths stamp `Sponsorship.offer_emailed_at` so nothing double-sends.
+try:
+    AWARD_OFFER_EMAIL_COOLOFF_HOURS = int(os.environ.get('AWARD_OFFER_EMAIL_COOLOFF_HOURS', '24'))
+except (TypeError, ValueError):
+    AWARD_OFFER_EMAIL_COOLOFF_HOURS = 24
 AWARD_EMAIL_APP_IDS = os.environ.get('AWARD_EMAIL_APP_IDS', '')
 
 # F7: when a reviewer is assigned, also email the STUDENT an advance notice (who will
