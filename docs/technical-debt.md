@@ -8,8 +8,13 @@
 
 ## Executive Summary
 
-**Total issues found: 52** (High: 8, Medium: 22, Low: 22)
-**Resolved: 49/52** (as of 2026-03-16)
+**Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). ~42 resolved; ~10 low/medium
+hygiene items still open (see the index below). The register has since grown a running log to **TD-151**.
+
+> **Status is per-entry, not a master count.** Each entry carries its own `✅ RESOLVED` heading or
+> `**Status:**` line — those are authoritative (a single hand-maintained tally rots, as the old "49/52"
+> did). The **Open Items Index** immediately below is the curated at-a-glance list of what's still pending;
+> regenerate it at each consolidation review rather than trusting any fixed number.
 
 **Top 3 highest-risk items:**
 1. **[TD-001] STPM SPM prerequisite fields not checked** — `spm_pass_bi` and `spm_pass_math` exist in the model but are silently ignored by the eligibility engine. Students may qualify for programmes they shouldn't.
@@ -19,6 +24,46 @@
 **Category with most inconsistency:** Frontend-backend implicit contracts (11 items)
 
 **Estimated fix sprints:** 6-8 sprints if addressed systematically (grouped by risk, not by category)
+
+---
+
+## Open Items Index (curated, as of 2026-06-29)
+
+A single at-a-glance view of the **significant** pending TDs. The full detail lives in each entry below;
+the per-entry marker is authoritative. The register uses two formats by era — `### [TD-NNN]` headings for the
+2026-03 audit (TD-001–052) and the recent series (TD-144+), and a running **bullet log** (`- TD-NNN:`) for the
+post-audit work (TD-053–143). Both are searchable by id.
+
+**Go-live gates — legal / money (owner + lawyer + payment-gateway action, not just code):**
+- **TD-075** — real payment + disbursement rails (toyyibPay, funding tranches, lapse cron, award/decline
+  emails). The whole sponsorship money-flow is built **dark on mocked money** until these land.
+- **TD-140** — Conditional Bursary Agreement: two Phase-0 gates — (1) lawyer vets the EN/BM clause template,
+  (2) the Foundation entity + signatory are finalised (interim "Suresh") — before `BURSARY_AGREEMENT_ENABLED=1`.
+- **TD-141** — bursary parent/guarantor signs **in-session only**; no separate parent-phone signing link (Phase 2).
+- **TD-142** — the signed agreement *names* a payment schedule (RM500 + 10×RM250) it cannot yet honour;
+  disbursement + suspension are mocked (Phase 3, folds into TD-075).
+- **TD-148** — no officer/admin view of a student's bank details (the payout surface); folds into TD-075.
+
+**Bursary / scholarship — operational:**
+- **TD-144** — bursary-agreement panel ticks should derive from the real agreement once the feature is live.
+- **TD-145** — a wrong **public**-university offer isn't caught when the declared institution field is blank.
+- **TD-149** — no student path to change a bank account after they've confirmed it.
+- **TD-150** — course matcher binds the wrong public `course_id` (poly-IT synthetic "majors"; private
+  programmes force-matched); #95 sits on a placeholder pending his real specialisation.
+- **TD-151** — document-extraction & income-computation robustness (the recurring mis-read class promoted from
+  the 2026-06-29 consolidation review; a 1-sprint hardening pass).
+
+**Original 2026-03 audit — code-hygiene leftovers:**
+- **TD-050** — i18n key mismatch (quiz reads `halatuju_lang`, not `halatuju_locale` → may always load English) — *medium*.
+- **TD-043** — phone/OTP login still "coming soon" (ties to the WhatsApp-OTP plan) — *medium*.
+- **TD-018 / 019 / 020 / 021 / 024 / 041 / 047** — duplicate imports, a duplicate serializer key, inline PISMP
+  dedup, the `course` column name, the `settings/page.tsx` stub, all-or-nothing startup load — *low*.
+- **TD-003** — frontend test coverage (partially resolved) — *low*.
+
+**Long tail (bullet log TD-061–143) — lower priority, verify each entry's own marker:** predominantly
+**Tamil-copy first-drafts** (e.g. TD-091/094/096/097/105/108/132), **UI stubs / not-yet-click-tested surfaces**
+(TD-070/071/076/092/101/112), **doc-recognition edge cases** (TD-143), and small engine/cleanup items. Some of
+these are resolved in follow-up entries — always trust the entry's `✅ RESOLVED` / `Status:` line over this summary.
 
 ---
 
