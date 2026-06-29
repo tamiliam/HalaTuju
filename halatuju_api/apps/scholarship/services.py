@@ -1044,7 +1044,10 @@ def autofill_pathway_from_offer(application):
     cp_now = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     cid_now = (cp_now.get('course_id') or '').strip()
     if cid_now:
-        canon_inst = op.catalogue_institution(cid_now, cp_now.get('institution') or '')
+        # Disambiguate a multi-campus course against the OFFER's institution when the stored
+        # one is blank (the very case we want to fill) — the offer is the authoritative source.
+        hint = (cp_now.get('institution') or '').strip() or (chk.get('institution') or '').strip()
+        canon_inst = op.catalogue_institution(cid_now, hint)
         if canon_inst and canon_inst != (cp_now.get('institution') or ''):
             cp2 = dict(cp_now)
             cp2['institution'] = canon_inst

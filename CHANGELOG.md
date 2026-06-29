@@ -32,9 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SAME institution as recorded; a catalogue institution that *conflicts* with the recorded one is left
   untouched and surfaced as a wrong/imprecise-`course_id` integrity flag, never silently swapped.**
   `autofill_pathway_from_offer` keeps it aligned on every offer extraction (any lock state); new
-  `align_institution_to_catalogue` command ironed out 13 prod rows (incl. a normalised-equality
+  `align_institution_to_catalogue` command ironed out 16 prod rows (incl. a normalised-equality
   fallback so a generic-only catalogue name like "Universiti Kebangsaan Malaysia" still strips an
-  "(UKM)" acronym — it has no distinctive tokens to align on). **Flagged for owner review (not
+  "(UKM)" acronym — it has no distinctive tokens to align on; and an offer-institution hint so a
+  blank institution on a MULTI-campus course is disambiguated against the offer's stated campus —
+  e.g. Velan's `POLY-DIP-019` at 18 polys → "Politeknik Ungku Omar" from his offer). **Flagged for owner review (not
   auto-changed):** #95 Gokulleshan (`POLY-DIP-077`→Seberang Perai vs recorded Ungku Omar) and #31
   Dhurvaashrii (`UL0010002`→UMK vs recorded Universiti Malaya) — their stored `course_id` contradicts
   the offer. +4 tests.
