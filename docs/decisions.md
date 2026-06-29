@@ -3689,3 +3689,24 @@ case would disappear), or a per-parent income breakdown is wanted in the profile
 **Rationale:** the document-upload + Action Centre surfaces are the student's working surface; a funded student legitimately needs them (to upload a bank statement, see resolved tickets). One broadened helper is simpler than a parallel lookup. Verified safe: `revert_if_profile_incomplete` only acts on `profile_complete`, and `switch_income_route` never un-submits, so a funded student touching the shared surface can't fall out of funded status.
 **Trade-offs:** a funded student can now also re-upload other docs / hit the income-route-switch — harmless, but a wider surface than strictly needed for bank details.
 **Revisit if:** a future per-status surface rule needs funded students treated differently on one of those shared endpoints.
+
+## Verdict-aware recommended amount (no amount on a confident disqualifier) — Bursary data-quality, 2026-06-29
+**Decision:** `proposed_award_amount` returns `None` (no amount) when the live verdict carries a CONFIDENT disqualifier (`offer_not_official` / `income_above_b40_line`); the slider shows a "no amount + reason" state; a super may override; it self-corrects when the disqualifier clears.
+**Alternatives considered:** a hard RM0 stop; gating Approve on a manual decline; treating all unresolved verdict items as disqualifiers.
+**Rationale:** the reviewer's default for an out-of-criteria pathway/income should be "don't recommend a sum", but reversibly — settle the issue or a super overrides. Only the confident-negative codes qualify; uncertain "settle at interview" codes keep the standard amount.
+**Trade-offs:** the amount is verdict-derived (one extra build_verdict per serialise — shared/cached per request); a disqualified-but-genuine case needs a super touch.
+**Revisit if:** more confident-disqualifier codes appear, or the policy wants a non-null reduced amount instead of none.
+
+## Institution = the recommender catalogue (single source of truth); conservative alignment — 2026-06-29
+**Decision:** the bursary's `chosen_programme.institution` is derived from the recommender `Institution` catalogue (`offer_pathway.catalogue_institution`), which requires a UNIQUE match and never swaps one institution for a different one — a catalogue↔recorded conflict is SURFACED (TD-150), not overwritten. STPM schools are NOT catalogue-matched (casing-only).
+**Alternatives considered:** storing the offer-letter OCR text (drifts); hand-cleaning names (caused the `(UKM)`/`(UniMAP)` drift); catalogue-matching STPM schools too.
+**Rationale:** one source of truth so the bursary and the course-guide can't disagree; offer text is only a disambiguation hint. STPM matching is unsafe — ~250 near-identical school names, `SMK`/`SMJK` indistinguishable by tokens — so it would change which school a student attends.
+**Trade-offs:** STPM school names get casing-only fixes (not catalogue-canonical); a wrong `course_id` blocks alignment (by design — surfaced as a conflict).
+**Revisit if:** the recommender gains a reliable per-school identifier (then STPM could align safely).
+
+## Continuing-STPM award = RM1,000 — 2026-06-29
+**Decision:** an STPM student whose offer reporting date is in an intake YEAR before the cohort's (started a year ago) proposes RM1,000, not RM3,000.
+**Alternatives considered:** a manual per-student override; computing remaining months from the reporting date dynamically.
+**Rationale:** they have ~one year of support left, not two. `reporting_date.year < cohort.year` is a stable, explainable signal (vs a drifting "months from today").
+**Trade-offs:** needs a reporting date + cohort year; unknown date → defaults to the full RM3,000 (a reviewer can adjust).
+**Revisit if:** STPM funding becomes per-semester, or the cohort model changes.

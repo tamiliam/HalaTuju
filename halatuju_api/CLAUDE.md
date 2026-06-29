@@ -518,6 +518,27 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-29)
 
+**▶ SHIPPED & LIVE 2026-06-29 — Bursary data-quality sprint (worktree `.worktrees/data-quality`; 12
+commits `b16b5ecd`→`965b1b23`; NO migration; retro `docs/retrospective-2026-06-29-bursary-data-quality.md`).**
+- **Verdict-aware recommended amount:** `award.proposed_award_amount` → `None` (no amount) on a confident
+  disqualifier (`offer_not_official` / `income_above_b40_line`); cockpit shows a "no amount + reason" state,
+  super-overridable, self-correcting. **Continuing-STPM = RM1,000** (offer reporting year < cohort year →
+  one year left); fresh STPM stays RM3,000.
+- **Pre-U standardisation, AUTOMATIC in `autofill_pathway_from_offer` (idempotent):** track → canonical
+  vocab (Matrikulasi 4 / STPM 2); course name → "Program Matrikulasi" / "Tingkatan Enam"; institution →
+  matric catalogue college (STPM = casing-only). **Institution single-source-of-truth = the recommender
+  catalogue** (`offer_pathway.catalogue_institution`, UNIQUE-match, never swaps a conflicting institution).
+  `normalise_institution_names` (courses cmd) expanded matric (`KM`→`Kolej Matrikulasi`) + fixed mis-cased
+  acronyms (21 catalogue rows).
+- **Reporting-date persist fix** (was gated behind the locked early-return). New backfill commands:
+  `backfill_pre_u_track`, `standardise_pre_u_course`, `align_institution_to_catalogue`,
+  `standardise_stpm_institution`. ~100 prod rows standardised (all dry-run verified).
+- **GOTCHA (lesson):** NEVER re-extract documents from a local checkout (no Storage access → reads
+  "no text" → destroys `vision_fields`); use the cockpit "Re-run" / live service. See `docs/lessons.md`.
+- **▶ NEXT:** TD-150 (course matcher assigns wrong public `course_id` — poly-IT synthetic majors; #95 on a
+  placeholder Ungku Omar IT course pending real specialisation). STPM-school casing is intentionally
+  casing-only (not catalogue-matched). #16 is a test account.
+
 **▶ DOC-RECOGNITION LAYER 2 (cross-document matching) — L2-1 SHIPPED + LIVE 2026-06-29** (commits
 `c1fa3066` extraction robustness + `63a56a61` chain/chips; `halatuju-api-00548` + `halatuju-web-00502`;
 no migration). The **IC NUMBER is the cross-document join key**: `income_engine.chain_verified_earner`
