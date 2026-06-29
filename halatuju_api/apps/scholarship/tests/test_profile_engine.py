@@ -91,6 +91,30 @@ class TestProfilePrompt(TestCase):
         # still narrative, not a headed/listed layout
         self.assertIn('NO headings and NO lists', prompt)
 
+    def test_prompt_feeds_reporting_date(self):
+        """S5.2: the offer's reporting date is fed into the pathway block so it can appear
+        in the enrolment-confidence part of the profile."""
+        import datetime
+        self.app.reporting_date = datetime.date(2026, 5, 13)
+        self.app.save(update_fields=['reporting_date'])
+        prompt = _build_prompt(self.app)
+        self.assertIn('Reporting / enrolment date', prompt)
+        self.assertIn('13 May 2026', prompt)
+
+    def test_prompt_reporting_date_blank_when_unset(self):
+        self.app.reporting_date = None
+        self.app.save(update_fields=['reporting_date'])
+        prompt = _build_prompt(self.app)
+        self.assertIn('Reporting / enrolment date', prompt)   # the line is present
+        self.assertNotIn('13 May 2026', prompt)               # value renders as not-provided
+
+    def test_style_forbids_amount_and_advocacy(self):
+        """S5.2: the shared style bans stating a monetary amount (shown separately) and
+        any advocacy language — the sponsor skims many profiles."""
+        prompt = _build_prompt(self.app)
+        self.assertIn('Do NOT state any monetary amount', prompt)
+        self.assertIn('Do NOT advocate', prompt)
+
     def test_prompt_includes_answered_queries(self):
         from apps.scholarship.models import ResolutionItem
         ResolutionItem.objects.create(

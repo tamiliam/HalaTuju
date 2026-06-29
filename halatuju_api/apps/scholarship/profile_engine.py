@@ -61,7 +61,14 @@ DEFAULT_LANGUAGE = 'English'
 #                  (the same buckets gap_engine tags interview gaps with) — woven into the narrative,
 #                  still no headings/lists. The refine groups the interview findings by their bucket
 #                  so each lands in the matching area, so the profile a sponsor reads checks the boxes.
-PROMPT_VERSION = '2026-06-29.1'
+#   2026-06-29.2 — Owner polish on the sponsor-facing read: (a) feed the offer's REPORTING DATE into
+#                  the pathway block so it can appear in the enrolment-confidence part; (b) the profile
+#                  no longer states any monetary AMOUNT (the recommended sum is shown separately as a
+#                  header figure) and no longer ADVOCATES ("strongly recommended", "deserving") — a
+#                  sponsor skims many profiles, so it just describes factually what the support helps
+#                  with. Amount dropped from the refine inputs + instruction; no-amount/no-advocacy in
+#                  the shared style.
+PROMPT_VERSION = '2026-06-29.2'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
@@ -77,7 +84,12 @@ _STYLE = (
     "the facts carry the case: do NOT use fundraising clichés such as 'breaking the cycle', "
     "'ripple effect' or 'pioneering spirit', and do NOT invent specifics (an age, a "
     "relationship, a figure) not given below. Where a fact is missing, leave it out rather "
-    "than guess."
+    "than guess. "
+    "Do NOT state any monetary amount or recommended sum — that figure is shown separately to "
+    "the reader; instead describe concretely and factually what the support would help the "
+    "student with. Do NOT advocate or editorialise (no 'strongly recommended', 'a deserving "
+    "candidate', 'we urge you to support'); the reader reviews many profiles, so let the facts "
+    "speak for themselves."
 )
 
 _REDACTION = (
@@ -175,6 +187,7 @@ Parents'/guardians' occupation: {parents_occupation}
 Siblings currently studying: {siblings_studying}
 
 Pathway / programme (use the confirmed place when present): {pathway}
+Reporting / enrolment date (when the student must report to begin; state it if given): {reporting_date}
 Top course choices (student's ranking): {top_choices}
 While still deciding (student's words): {deliberation}
 Other scholarships applied for / held: {other_scholarships}
@@ -347,6 +360,19 @@ def _pathway(application):
     if not programme and isinstance(pc, list) and pc:
         bits.append('pathways considered: ' + ', '.join(str(x) for x in pc))
     return ' '.join(bits).strip() or 'not specified'
+
+
+def _reporting_date(application):
+    """The offer's normalised reporting/enrolment date (S3 `reporting_date`), as
+    '13 May 2026'. Lets the profile state when the student is due to report — part of the
+    pathway & enrolment-confidence picture a sponsor weighs. 'not provided' when unknown."""
+    d = getattr(application, 'reporting_date', None)
+    if not d:
+        return 'not provided'
+    try:
+        return f'{d.day} {d:%B %Y}'
+    except (AttributeError, ValueError):
+        return 'not provided'
 
 
 def _siblings_studying_display(application):
@@ -637,6 +663,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         parents_occupation=val(application.parents_occupation),
         siblings_studying=_siblings_studying_display(application),
         pathway=_pathway(application),
+        reporting_date=_reporting_date(application),
         top_choices=_top_choices(application),
         deliberation=_deliberation(application),
         other_scholarships=_other_scholarships(application),
@@ -687,8 +714,11 @@ below are grouped under the three sponsor areas (financial need / academic commi
 pathway & enrolment confidence) — weave each finding into the matching part of the narrative.
 - The officer's decision is the considered outcome of a real review. Present each area with \
 confidence matching the four-fact verdict; weave the officer's written conclusion into the close. \
-If a recommended assistance amount is set, state it plainly (e.g. "a sponsorship of RM3,000 would \
-cover…"). Do NOT print a raw pass/fail list and never contradict the verdict.
+Do NOT state any monetary amount or recommended sum — that figure is shown separately to the sponsor; \
+instead describe concretely what the support would help the student with. Do NOT advocate or use \
+recommendation language ("strongly recommended", "a deserving candidate"). Do NOT print a raw \
+pass/fail list and never contradict the verdict.
+- If the draft states a reporting / enrolment date, keep it in the pathway part of the narrative.
 - Use ONLY the inputs below; do not invent facts. It must read as one final profile, not a draft \
 with notes bolted on.
 
@@ -760,8 +790,10 @@ _OFFICER_FACT_LABELS = {
 
 
 def _render_officer_decision(application):
-    """Render the officer's four-fact verdict, written conclusion, and recommended
-    assistance amount as plain text — so the FINAL reflects the actual decision."""
+    """Render the officer's four-fact verdict and written conclusion as plain text — so the
+    FINAL reflects the actual decision. The monetary amount is deliberately NOT included: the
+    recommended sum is shown to the sponsor separately (a header figure), and the profile prose
+    must not state it or advocate (owner decision 2026-06-29)."""
     ov = application.officer_verdict if isinstance(application.officer_verdict, dict) else {}
     lines = []
     for fact in ('identity', 'academic', 'pathway', 'income'):
@@ -772,19 +804,9 @@ def _render_officer_decision(application):
 
     conclusion = (getattr(application, 'verdict_reason', '') or '').strip() or 'none recorded'
 
-    amount = getattr(application, 'award_amount', None)
-    if amount in (None, ''):
-        assistance = 'not set'
-    else:
-        try:
-            assistance = f'RM{int(round(float(amount)))}'
-        except (TypeError, ValueError):
-            assistance = str(amount)
-
     return (
         f'Four-fact verification verdict:\n{verdict_str}\n'
-        f'Officer\'s conclusion: {conclusion}\n'
-        f'Recommended assistance: {assistance}'
+        f"Officer's conclusion: {conclusion}"
     )
 
 
