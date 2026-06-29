@@ -252,7 +252,13 @@
       "shown": "{count} dipaparkan",
       "filteredEmpty": "Tiada pelajar sepadan dengan tapisan ini.",
       "support": "Sokong",
-      "fundingSoon": "Pembiayaan dibuka tidak lama lagi — kami sedang memuktamadkan alirannya dengan pasukan."
+      "balanceLabel": "Baki BrightPath anda",
+      "confirmBody": "Ini mengikat RM {amount} daripada baki anda dan mengeluarkan tawaran bantuan. Pelajar akan dimaklumkan untuk melengkapkan butiran mereka.",
+      "confirmAward": "Sahkan bantuan",
+      "funded": "Telah diberikan — RM {amount} dikomit. Pelajar akan dimaklumkan untuk melengkapkan butiran mereka.",
+      "errInsufficient": "Baki tidak mencukupi untuk memberi bantuan kepada pelajar ini.",
+      "errNotFundable": "Pelajar ini tidak tersedia untuk diberi bantuan sekarang.",
+      "errGeneric": "Tidak dapat menyelesaikan bantuan. Sila cuba lagi."
     },
     "account": {
       "title": "Akaun Saya",

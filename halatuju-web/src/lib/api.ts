@@ -763,6 +763,15 @@ export async function getSponsorWallet(options?: ApiOptions): Promise<SponsorWal
   return apiRequest('/api/v1/sponsor/wallet/', options)
 }
 
+/** E3 — fund a pooled student IN FULL for their admin-set award amount → an 'offered'
+ *  award (the student is then notified to accept). On a bad state the thrown Error's
+ *  `.code` is 'insufficient_balance' | 'not_fundable' | 'not_found'. */
+export async function fundStudent(id: number, options?: ApiOptions): Promise<SponsorSponsorship> {
+  return apiRequest(`/api/v1/sponsor/pool/${id}/fund/`, {
+    ...options, method: 'POST', body: JSON.stringify({}),
+  })
+}
+
 /** R2 — the My Giving dashboard aggregate: impact numbers + the giving-donut
  *  breakdown. Counts + money only (allowlist-safe, no student identity). 404s
  *  while the pool flag is off (callers treat that as "not available yet"). */

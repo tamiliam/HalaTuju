@@ -252,7 +252,13 @@
       "shown": "{count} shown",
       "filteredEmpty": "No students match these filters.",
       "support": "Support",
-      "fundingSoon": "Funding opens shortly — we're finalising the flow with the team."
+      "balanceLabel": "Your BrightPath balance",
+      "confirmBody": "This commits RM {amount} from your balance and issues an award offer. The student will be notified to complete their details.",
+      "confirmAward": "Confirm award",
+      "funded": "Awarded — RM {amount} committed. The student will be notified to complete their details.",
+      "errInsufficient": "Not enough balance to award this student.",
+      "errNotFundable": "This student isn't available to award right now.",
+      "errGeneric": "Couldn't complete the award. Please try again."
     },
     "account": {
       "title": "My Account",
