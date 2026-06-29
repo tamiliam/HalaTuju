@@ -38,14 +38,18 @@ class Command(BaseCommand):
             if app is None:
                 failed.append((aid, 'not_found'))
                 continue
-            has_award = app.sponsorships.filter(
-                status__in=Sponsorship.HOLDING).exists()
-            if not has_award:
+            award = app.sponsorships.filter(status__in=Sponsorship.HOLDING).first()
+            if award is None:
                 skipped_no_award.append(aid)
                 continue
             name = getattr(app.profile, 'name', '') if app.profile else ''
             ok = send_award_offer_email(
                 to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en')
+            # Stamp the award as emailed so the cool-off cron never re-sends it (idempotent
+            # across the manual force-send and the scheduled release).
+            from django.utils import timezone
+            award.offer_emailed_at = timezone.now()
+            award.save(update_fields=['offer_emailed_at', 'updated_at'])
             (sent if ok else failed).append(aid if ok else (aid, 'send_failed'))
         self.stdout.write(
             f'Award-offer emails. sent={sent} skipped_no_award={skipped_no_award} failed={failed}')
