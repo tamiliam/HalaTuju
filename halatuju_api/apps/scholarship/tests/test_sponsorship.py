@@ -372,17 +372,25 @@ class TestAwardOfferEmail(TestCase):
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
 
-    def test_award_and_notify_funds_and_emails(self):
+    def test_award_and_notify_default_funds_but_no_email(self):
+        # TEMPORARY safety gate: AWARD_OFFER_EMAIL_ENABLED defaults OFF → award, NO email.
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('3000'))
         app = _fundable_app(self.cohort)
         mail.outbox = []
         sp = svc.award_and_notify(s, app)
         app.refresh_from_db()
-        # The award committed (offered sponsorship + app 'awarded')…
         self.assertEqual(sp.status, 'offered')
         self.assertEqual(app.status, 'awarded')
-        # …and exactly one good-news email went to the student.
+        self.assertEqual(len(mail.outbox), 0)   # decoupled: no email on award
+
+    @override_settings(AWARD_OFFER_EMAIL_ENABLED=True)
+    def test_award_and_notify_emails_when_flag_on(self):
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        app = _fundable_app(self.cohort)
+        mail.outbox = []
+        svc.award_and_notify(s, app)
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]
         self.assertEqual(msg.to, ['student@secret.example'])
@@ -391,8 +399,8 @@ class TestAwardOfferEmail(TestCase):
         body = msg.body
         self.assertIn('/scholarship/application', body)   # Action Centre link
         self.assertIn('bank account details', body)
-        # Owner decision: NO amount, NO sponsor identity. (Don't assert the bare '3000' —
-        # the dev FRONTEND_URL is localhost:3000; the RM-label check covers "no amount".)
+        # NO amount, NO sponsor identity. (Don't assert the bare '3000' — the dev
+        # FRONTEND_URL is localhost:3000; the RM-label check covers "no amount".)
         self.assertNotIn('RM', body)
         self.assertNotIn('Jane Sponsor', body)
 
@@ -420,7 +428,8 @@ class TestAwardStudentsBatch(TestCase):
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
 
-    def test_batch_awards_listed_apps_and_emails(self):
+    def test_batch_awards_listed_apps_without_email(self):
+        # Default (flag OFF): the batch funds + awards but sends NO email (owner sends later).
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('100000'))
         a1 = _fundable_app(self.cohort, suffix='b1', award=Decimal('2000'))
@@ -434,7 +443,7 @@ class TestAwardStudentsBatch(TestCase):
         self.assertEqual(a2.status, 'awarded')
         self.assertEqual(Sponsorship.objects.filter(sponsor=s, status='offered').count(), 2)
         self.assertEqual(svc.sponsor_balance(s), Decimal('95000'))   # 100000 - 2000 - 3000
-        self.assertEqual(len(mail.outbox), 2)                        # one good-news email each
+        self.assertEqual(len(mail.outbox), 0)                        # decoupled — no emails
 
     def test_batch_noop_without_env(self):
         s = _sponsor()
@@ -459,4 +468,41 @@ class TestAwardStudentsBatch(TestCase):
         a1.refresh_from_db(); a2.refresh_from_db()
         self.assertEqual(a1.status, 'awarded')          # the fundable one went through
         self.assertEqual(a2.status, 'recommended')      # the other skipped, untouched
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(len(mail.outbox), 0)           # flag OFF — no emails
+
+
+class TestSendAwardOfferEmails(TestCase):
+    """The TEMPORARY owner-controlled award-email send (decoupled from awarding)."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def _awarded(self, suffix):
+        s = _sponsor(uid=f'sp-{suffix}')
+        Donation.objects.create(sponsor=s, amount=Decimal('5000'))
+        app = _fundable_app(self.cohort, suffix=suffix, award=Decimal('2000'))
+        svc.fund_student(s, app)   # → offered Sponsorship + 'awarded', no email (default)
+        return app
+
+    def test_sends_to_listed_awarded_apps(self):
+        a1 = self._awarded('e1')
+        a2 = self._awarded('e2')
+        mail.outbox = []
+        with override_settings(AWARD_EMAIL_APP_IDS=f'{a1.id},{a2.id}'):
+            call_command('send_award_offer_emails')
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn('Good news', mail.outbox[0].subject)
+
+    def test_noop_without_env(self):
+        self._awarded('e3')
+        mail.outbox = []
+        call_command('send_award_offer_emails')
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_skips_app_without_award(self):
+        # A recommended (not-yet-awarded) app in the list is skipped — no stray email.
+        not_awarded = _fundable_app(self.cohort, suffix='e4', award=Decimal('2000'))
+        mail.outbox = []
+        with override_settings(AWARD_EMAIL_APP_IDS=str(not_awarded.id)):
+            call_command('send_award_offer_emails')
+        self.assertEqual(len(mail.outbox), 0)
