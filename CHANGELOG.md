@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Continuing-STPM award = RM1,000 (one year left).** `award.proposed_award_amount` now returns
+  RM1,000 (not RM3,000) for an STPM student who started in an intake year BEFORE the cohort's — their
+  offer reporting date predates `cohort.year`, so they have already completed a year. Automatic
+  (proposal + auto-apply on approve); falls back to the full RM3,000 for a fresh entrant / unknown date.
+  Set the four affected funnel students (#57/#103/#63/#72) to RM1,000 (#99 already). +2 tests.
 - **Institution-name consistency (recommender catalogue + bursary).** The recommender `Institution`
   catalogue is the source of truth and already Title Case; `normalise_institution_names` (courses cmd)
   fixed the two remaining classes — **expanded matric abbreviations** (`KM <State>` → `Kolej Matrikulasi

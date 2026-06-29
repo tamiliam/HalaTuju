@@ -4,6 +4,9 @@ Owner decision (2026-06-29): the assistance is no longer a free reviewer choice.
 fixed by the student's pre-U PATHWAY and only a SUPER admin may override it:
 
     STPM (Form 6, ``chosen_pathway == 'stpm'``)            → RM3,000
+      …but a CONTINUING STPM student (already started a year ago — their offer's
+      reporting date is in an intake YEAR before the cohort's) has only one year left
+      → RM1,000.
     everything else (Matrikulasi / UA Diploma / Poly Diploma
     / Asasi / PISMP / university / unknown)                → RM2,000
 
@@ -32,7 +35,18 @@ ALLOWED_AMOUNTS = (
 )
 
 _STPM_AMOUNT = Decimal('3000')
+_STPM_CONTINUING_AMOUNT = Decimal('1000')   # started a year ago → one year of funding left
 _DEFAULT_AMOUNT = Decimal('2000')
+
+
+def _stpm_continuing(application):
+    """True iff an STPM student started in an intake YEAR before this cohort's — i.e. their
+    offer's reporting date predates the cohort year, so they have already completed a year
+    (one year of support remaining). Needs both a reporting date and a cohort year; unknown
+    → False (treat as a fresh entrant, the full amount)."""
+    rd = getattr(application, 'reporting_date', None)
+    cohort_year = getattr(getattr(application, 'cohort', None), 'year', None)
+    return bool(rd and cohort_year and rd.year < cohort_year)
 
 # Verdict codes that DEFAULT the proposal to "no amount". Confident negatives only —
 # a clear, evidence-backed reason this pathway/income is outside the accepted criteria.
@@ -62,7 +76,9 @@ def proposed_award_amount(application, verdict=None):
     if verdict_disqualifier(verdict):
         return None
     pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
-    return _STPM_AMOUNT if pathway == 'stpm' else _DEFAULT_AMOUNT
+    if pathway == 'stpm':
+        return _STPM_CONTINUING_AMOUNT if _stpm_continuing(application) else _STPM_AMOUNT
+    return _DEFAULT_AMOUNT
 
 
 def is_allowed_amount(value):

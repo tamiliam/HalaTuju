@@ -44,6 +44,21 @@ class TestProposedAmountRule(TestCase):
         app = _app(self.cohort, pathway='stpm', suffix='s')
         self.assertEqual(award.proposed_award_amount(app), Decimal('3000'))
 
+    def test_stpm_continuing_is_1000(self):
+        # Cohort year is 2026; a 2025 reporting date = started last year → one year left.
+        import datetime
+        app = _app(self.cohort, pathway='stpm', suffix='cont')
+        app.reporting_date = datetime.date(2025, 6, 10)
+        app.save(update_fields=['reporting_date'])
+        self.assertEqual(award.proposed_award_amount(app), Decimal('1000'))
+
+    def test_stpm_fresh_entrant_is_3000(self):
+        import datetime
+        app = _app(self.cohort, pathway='stpm', suffix='fresh')
+        app.reporting_date = datetime.date(2026, 6, 8)   # this intake year → full amount
+        app.save(update_fields=['reporting_date'])
+        self.assertEqual(award.proposed_award_amount(app), Decimal('3000'))
+
     def test_others_are_2000(self):
         for i, pw in enumerate(['matric', 'poly', 'university', 'asasi', 'pismp', '', 'unknown']):
             app = _app(self.cohort, pathway=pw, suffix=f'o{i}')
