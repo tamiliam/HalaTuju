@@ -1041,3 +1041,27 @@ The institution-alignment guard (`offer_pathway.catalogue_institution`) already 
 conflicts (it never swaps one institution for a different one) and surfaces them instead — so live data is
 safe; this TD is about stopping the wrong `course_id` being assigned at the source. Low urgency (display +
 funding both key off `chosen_pathway`, not `course_id`, for these pre-U/poly rows).
+
+### [TD-151] Document-extraction & income-computation robustness (a recurring class of fix)
+**Status:** Open (logged 2026-06-29, promoted from the small-change consolidation review). **Context:** five
+small-lane fixes in June clustered on one theme — our OCR/Gemini pipeline mis-reads a real-world document and
+the income engine then mis-gates the applicant:
+- SPM slip 2-column under-read → 6/10 subjects dropped, 3/4 mis-graded `ok` (#66; `academic_engine`).
+- Handwritten salary-voucher `ringgit|sen` columns concatenated (RM326.00 → 32600 → false per-capita RM8150
+  over the B40 line) (#66; `vision` prompt + `income_engine`).
+- Salary-route earner shown Optional/undeclared when pre-ticked-but-not-toggled; `effective_working_members`
+  fallback (#90; `income_engine`/`verdict_engine`).
+- `document_unreadable_blockers` passed a list (not the app) → `working_members` always `[]` → unreadable
+  salary-route doc skipped the submission gate (`services`).
+- IC/parent_ic stuck unprocessed (silent upload-OCR failure) → false `ic_service_down` consent block;
+  `reprocess_unread_ic` self-heal cron (`services`/mgmt command).
+
+Each was fixed in isolation, but the **class keeps regenerating**: a document reads wrong, nothing catches it,
+and a B40 decision turns on the bad read. **Fix (a focused hardening pass, not another point fix):**
+(1) a standing **PII-scrubbed extraction-regression corpus** — every doc that ever caused a mis-read fix gets a
+fixture + a test asserting the corrected parse (so a prompt/parser change can't silently re-break it; #66's
+scrubbed slip fixture is the seed); (2) a **read-confidence/sanity gate** on the income inputs (e.g. per-capita
+or total-vs-declared-subjects sanity bounds) that routes an implausible read to review instead of trusting it;
+(3) generalise the silent-OCR-failure self-heal (#11) so *any* doc with `vision_run_at` NULL is swept, not just
+IC. **Guardrail already landed this cycle:** `wat_lint` now flags a feature/migration that rode the small lane,
+so the *next* extraction change that's really a sprint gets caught at the lane boundary. Size: a 1-sprint pass.
