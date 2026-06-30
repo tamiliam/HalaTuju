@@ -326,6 +326,10 @@ FOUNDATION_NOTIFY_EMAIL = os.environ.get('FOUNDATION_NOTIFY_EMAIL', '')
 # application IDs to send to (the cron job 'send-sign-invitation-emails' reads this).
 SIGN_INVITE_APP_IDS = os.environ.get('SIGN_INVITE_APP_IDS', '')
 
+# Signing-chain SLA: how many days a pending witness/countersignature may sit before the
+# reminder cron ('bursary-signing-reminders') nudges the responsible party again.
+BURSARY_SIGN_REMINDER_DAYS = int(os.environ.get('BURSARY_SIGN_REMINDER_DAYS', '3'))
+
 # Logging configuration (structured JSON for Cloud Run)
 LOGGING = {
     'version': 1,
