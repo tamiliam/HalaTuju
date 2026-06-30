@@ -602,17 +602,28 @@ _NET_OVER_GROSS_TOL = 1.02
 
 
 def _salary_monthly_amount(f):
-    """A salary slip's monthly pay (gross preferred, else net) — but ONLY when the read is
-    internally consistent. A garbled OCR of a hand-written voucher can mis-read the ruled
-    ringgit|sen columns or grab the wrong cells; the tell is **net > gross**, impossible on
-    a real payslip. When that happens the amount is unreliable → return None, so income
-    falls to 'verify at interview' rather than asserting a false (often 100x-inflated)
-    figure. (#66: a voucher whose 'RM326.00' EPF deduction was read as gross '32600'.)"""
+    """A salary slip's representative MONTHLY pay — gross preferred, else net — but ONLY when the
+    read is internally consistent. A garbled OCR of a hand-written voucher can mis-read the ruled
+    ringgit|sen columns or grab the wrong cells; the tell is **net > gross**, impossible on a real
+    payslip. When that happens the amount is unreliable → return None, so income falls to 'verify at
+    interview' rather than asserting a false (often 100x-inflated) figure. (#66.)
+
+    Prefers the ANNUALISED figure when the slip carries a YEAR-TO-DATE gross (``gross_income_ytd``):
+    a single payslip month under-states a job with variable overtime (#13: basic RM3,800/mo but YTD
+    ÷ 12 ≈ RM7,064/mo). YTD ÷ 12 is the representative monthly (the YTD period is ambiguous — a
+    flagged interview item — so the headroom band routes a near-line annualised figure to 'unsure').
+    Never lets a mis-read YTD DEFLATE the figure below the single month."""
     gross = _parse_rm(f.get('gross_income'))
     net = _parse_rm(f.get('net_income'))
     if gross and net and net > gross * _NET_OVER_GROSS_TOL:
         return None
-    return gross or net
+    month = gross or net
+    ytd = _parse_rm(f.get('gross_income_ytd'))
+    if ytd:
+        annualised = round(ytd / 12.0, 2)
+        if month is None or annualised >= month:
+            return annualised
+    return month
 
 
 def _parse_rm(s):
@@ -740,6 +751,50 @@ def income_per_capita(application, members):
     if not all_known or not size:
         return None, all_known
     return total / size, all_known
+
+
+# A breach-room below this (RM/month) means one undeclared earner could plausibly push the
+# household over the B40 line — so an uncorroborated household size can't carry a confident pass.
+# Yardstick = the per-capita ceiling itself (≈ one more head at the line). (str-proof-spec.md §7.1.)
+_HEADROOM_THIN_RM = 1584.0
+
+
+def income_headroom(application, members):
+    """Margin-graded B40 confidence for the SALARY route (docs/scholarship/str-proof-spec.md §7.1).
+
+    Returns ``(band, ctx)`` where band is:
+      'unknown'  — income or household size couldn't be computed → assess at interview.
+      'over'     — household income clears BOTH the gross ceiling AND the per-capita safety net →
+                   above the B40 line (never auto-rejected; → interview).
+      'unsure'   — B40, but only thinly: an undeclared earner could plausibly breach the line
+                   (breach-room < one per-capita head), OR an earner's income couldn't be read.
+                   The household size isn't corroborated enough to bank the pass.
+      'probable' — B40 with large breach-room: an undeclared earner would need an implausibly high
+                   wage to breach → confident-enough for 🔵 (interview confirms; GREEN is reserved
+                   for a corroborated household, which the family roster will later supply).
+
+    B40 holds while gross ≤ max(gross_ceiling, per_capita_ceiling × size) — the gross ceiling is
+    primary, the per-capita ceiling a safety net above it. ``breach_room`` is how much more monthly
+    income would tip the household out; grading by it is what separates #13 (thin → unsure) from the
+    SARA case (large → probable). ``ctx`` carries the figures for the verdict copy / interview note."""
+    cohort = getattr(application, 'cohort', None)
+    gross_ceiling = getattr(cohort, 'income_ceiling', None)
+    pc_ceiling = getattr(cohort, 'per_capita_ceiling', None)
+    size = getattr(getattr(application, 'profile', None), 'household_size', None)
+    pc, all_known = income_per_capita(application, members)
+    if pc is None or not size or not gross_ceiling or not pc_ceiling:
+        return 'unknown', {'all_known': all_known}
+    gross = pc * size
+    ceiling = max(gross_ceiling, pc_ceiling * size)   # the more generous (binding) test
+    breach_room = ceiling - gross
+    ctx = {'gross': int(round(gross)), 'per_capita': int(round(pc)), 'size': size,
+           'breach_room': int(round(breach_room)), 'all_known': all_known,
+           'gross_ceiling': int(gross_ceiling), 'per_capita_ceiling': int(pc_ceiling)}
+    if breach_room < 0:
+        return 'over', ctx
+    if not all_known or breach_room < _HEADROOM_THIN_RM:
+        return 'unsure', ctx
+    return 'probable', ctx
 
 
 # ── Relationship-proof documents: birth certificate + guardianship letter ────
