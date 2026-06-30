@@ -8,6 +8,7 @@ from .views import (
     ApplicationListCreateView,
     BursaryAgreementView,
     BankAccountView,
+    StudentComprehensionView,
     ConsentView,
     CronRunView,
     DocumentDetailView,
@@ -124,6 +125,8 @@ urlpatterns = [
     path('scholarship/award/', StudentAwardView.as_view()),
     # Conditional Bursary Award Agreement — the student's own signed contract (flag-gated)
     path('scholarship/bursary-agreement/', BursaryAgreementView.as_view()),
+    # Post-award comprehension quiz pass ("Understand" step) — recorded for defensibility
+    path('scholarship/award/comprehension/', StudentComprehensionView.as_view()),
     # S3: the student's resolution queue (IBKR Action Centre)
     path('scholarship/resolution-items/', ResolutionItemListView.as_view()),
     path('scholarship/resolution-items/<int:pk>/resolve/', ResolutionItemResolveView.as_view()),

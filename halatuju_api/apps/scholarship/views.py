@@ -985,6 +985,24 @@ class BankAccountView(APIView):
         return Response(BankAccountSerializer(acct).data, status=status.HTTP_200_OK)
 
 
+class StudentComprehensionView(APIView):
+    """POST: the student passed the bursary-agreement comprehension quiz (the "Understand"
+    step on /scholarship/award). Stamp ``comprehension_passed_at`` (idempotent) for the
+    caller's AWARDED application — recorded for defensibility alongside the signed agreement."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        from django.utils import timezone
+        app = _current_application(request.user_id)
+        if app is None or app.status != 'awarded':
+            return Response({'error': 'no_application', 'code': 'no_application'},
+                            status=status.HTTP_403_FORBIDDEN)
+        if app.comprehension_passed_at is None:
+            app.comprehension_passed_at = timezone.now()
+            app.save(update_fields=['comprehension_passed_at'])
+        return Response({'ok': True})
+
+
 class DocumentHelpView(APIView):
     """GET a warm "Cikgu Gopal" helper message for one of the caller's documents.
 
