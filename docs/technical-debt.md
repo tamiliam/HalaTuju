@@ -1007,7 +1007,11 @@ these are resolved in follow-up entries — always trust the entry's `✅ RESOLV
   `not_type`. (Logged 2026-06-27, Layer-1 doc-recognition go-live.)
 
 ### [TD-144] Bursary-agreement panel: derive ticks from the real agreement when the feature goes live
-**Status:** Open (deferred to the agent finishing the Conditional Bursary Agreement).
+**Status:** RESOLVED in post-award signing S5 (2026-07-01, commit `5abae484`). `AdminApplicationDetailSerializer`
+now surfaces the real loaded agreement as `bursary_agreement` (signature timestamps + status + PDF; null when
+off / no agreement); the cockpit seeds `bursary` from the detail GET and bases all four ticks on it — the
+`: true` optimistic default is gone, so an accepted-but-unsigned case shows "–", not a false ✓. Countersign/
+witness buttons are disabled until an agreement exists. See `docs/retrospective-2026-07-01-post-award-signing.md`.
 **Context:** The cockpit panel is now gated on `bursary_agreement_enabled` (2026-06-27), so it stays dark while OFF. But the Student/Guarantor ticks still default to ✓ (`bursary ? !!… : true`) on the assumption "signed-by-now once accepted", and the admin detail GET does not load the agreement.
 **Fix when enabling:** include the `BursaryAgreement` (signed timestamps) in `AdminApplicationDetailSerializer`, initialise the panel's `bursary` state from it, and default all four ticks to **unsigned** (—) — so an accepted-but-not-yet-signed case isn't over-stated. Reuses the existing `BursaryAgreementSerializer`.
 

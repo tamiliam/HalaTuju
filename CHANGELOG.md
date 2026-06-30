@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Post-award contract-signing flow — wiring complete, DARK behind `BURSARY_AGREEMENT_ENABLED`
+  (5 sprints; `docs/retrospective-2026-07-01-post-award-signing.md`; migrations `0083`/`0084`/`0085`
+  additive, apply migrate-first at go-live).** The award follow-up email now lands a student in the
+  Action Centre → an 8-checkpoint **comprehension quiz** ("Understand") → **signing**. The
+  parent/guarantor signature is gated on an **SMS PIN to their pre-declared, locked phone** (Twilio
+  Verify; `guarantor_phone`/`guarantor_phone_verified_at` + a freshness TTL) — the student can't see or
+  edit the number. After both sign in-session, a **notify-and-sign chain** emails the right party in
+  order: referring **partner** to witness (graceful skip to the Foundation if no org) → **Foundation**
+  to countersign → agreement executed (app `awarded → active`) → **student** told it's in effect. A
+  daily SLA cron (`bursary-signing-reminders`, `BURSARY_SIGN_REMINDER_DAYS`) re-nudges a stalled signer.
+  The owner-sent "ready to sign" follow-up = `send_sign_invitation_emails` (scope `SIGN_INVITE_APP_IDS`).
+  The `/scholarship/application` panel no longer routes a signed-but-unexecuted student to the portal.
+  Cockpit **TD-144 fixed** — four-party ticks read from the real loaded agreement. In-house e-signature
+  only (no third-party); donor never named. A local E2E driver (`manage.py bursary_e2e`, all seams
+  mocked) walks the whole chain; go-live + signer-provisioning docs under `docs/scholarship/`.
+
 ### Changed
 - **STR-proof verification model rework (`MODEL_VERSION` 1.1 → 1.2; docs/scholarship/str-proof-spec.md).**
   `income_engine._str_currency` now returns **structured states** — `wrong_type` / `rejected` /

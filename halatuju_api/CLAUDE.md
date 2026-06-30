@@ -516,7 +516,29 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-30)
+## Next Sprint (as of 2026-07-01)
+
+**▶ POST-AWARD CONTRACT-SIGNING FLOW — COMPLETE & MERGED to `feat/award-comprehension` 2026-07-01,
+DARK behind `BURSARY_AGREEMENT_ENABLED` (5 sprints; commits `013effe3`→`f7cc7300`; migrations
+`0083`/`0084`/`0085` ALL ADDITIVE — apply migrate-first at go-live; retro
+`docs/retrospective-2026-07-01-post-award-signing.md`; go-live `docs/scholarship/bursary-go-live-playbook.md`).**
+- The wiring from the "ready to sign" email → Action Centre → **comprehension quiz** ("Understand", 8
+  checkpoints, `comprehension_passed_at`) → **signing**. The guarantor signature is gated on an **SMS PIN
+  to the parent's pre-declared LOCKED phone** (`profile.guardians`; `guarantor_phone`/`_verified_at` +
+  freshness TTL; Twilio Verify; `sign_agreement` raises `guarantor_phone_missing`/`_unverified`).
+- **Notify-and-sign chain** (`bursary.notify_after_guarantor_signed` / `record_witness` /
+  `countersign_foundation`): partner witness (if referring org w/ contact email) → else Foundation
+  directly (graceful) → executed (`awarded`→`active`) → student "in effect" email. `foundation_notify_emails()`
+  = `FOUNDATION_NOTIFY_EMAIL` → super admins → `ADMIN_NOTIFY_EMAIL`. Daily SLA cron
+  `bursary-signing-reminders` (`BURSARY_SIGN_REMINDER_DAYS`). Owner-sent "ready to sign" =
+  `send_sign_invitation_emails` (scope `SIGN_INVITE_APP_IDS`). Panel gated away from the portal until executed.
+- **TD-144 RESOLVED** — `AdminApplicationDetailSerializer.bursary_agreement` surfaces the real agreement;
+  cockpit ticks are accurate; buttons disabled until an agreement exists.
+- **Local E2E driver** `python manage.py bursary_e2e` (`--no-org`/`--keep`) walks the whole chain with all
+  seams mocked. In-house e-signature only (no third-party); donor never named. **Go-live owner-gated on
+  Phase-0** (lawyer-vet template + Foundation entity); see the playbook + `bursary-signer-provisioning.md`.
+- **▶ NEXT:** owner tests in prod (migrate-first `0083`/`0084`/`0085` → deploy → flip `BURSARY_AGREEMENT_ENABLED`
+  + send `SIGN_INVITE_APP_IDS`). The local browser walkthrough was skipped (owner will test in prod).
 
 **▶ STR-PROOF MODEL — Sprint 1 SHIPPED 2026-06-30 (worktree `.worktrees/str-model`; commits
 `8b4686b1` backend + `0f1e09ba` web; `MODEL_VERSION` 1.1 → 1.2; NO migration; spec
@@ -691,10 +713,11 @@ DARK/unset: `SHOW_REFEREES=false`, **`AWARD_ACCEPTANCE_ENABLED=false`** (embargo
 accept/onboarding flow on `/scholarship/application`; flip to `1` only after onboarding is tested end-to-end — it
 un-hides for ALL funded students at once), **`BURSARY_AGREEMENT_ENABLED=false`** (the tri-partite conditional bursary agreement —
 code shipped 2026-06-26 but OFF; the cockpit panel is now **gated on this flag** (2026-06-27) so it stays hidden while
-OFF — `bursary_agreement_enabled` on `AdminApplicationDetailSerializer`). Flip only AFTER the two Phase-0 gates:
-lawyer-vet the `bursary.py` template wording, and finalise the Foundation entity via
-`FOUNDATION_SIGNATORY_NAME/_TITLE/_NRIC`. **When flipping on, also do TD-144** (base the panel's signed-ticks on the real
-loaded agreement, not the `: true` default).
+OFF — `bursary_agreement_enabled` on `AdminApplicationDetailSerializer`). The **full signing FLOW is now wired**
+(comprehension quiz + parent PIN + notify-and-sign chain + SLA reminders + cockpit ticks, 2026-07-01, DARK) —
+**TD-144 RESOLVED**. Flip only AFTER the two Phase-0 gates: lawyer-vet the `bursary.py` template wording, and
+finalise the Foundation entity via `FOUNDATION_SIGNATORY_NAME/_TITLE/_NRIC`; then migrate-first `0083`/`0084`/`0085`.
+See `docs/scholarship/bursary-go-live-playbook.md`.
 Meet SA key **rotated 2026-06-21** (old key `692d49f8…` deleted after a transcript exposure; new `7ef25e69…` in
 `GOOGLE_MEET_SA_JSON` — still an env var, TD-125 to move it to Secret Manager).
 
