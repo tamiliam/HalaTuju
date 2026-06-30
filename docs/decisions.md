@@ -3754,3 +3754,10 @@ rollout (would need a per-cohort/per-student gate instead of a global flag).
 **Decision:** suppress the `document_not_genuine` ("may not be a genuine original") caveat for a `wrong_type` STR; the `str_not_current(wrong_type)` item already says "this is not an STR document". The same genuine file remains valid evidence on the salary route (Sprint 2).
 **Rationale:** a genuine payslip / SARA letter uploaded into the STR slot is the wrong document, not a fake — flagging it as a forgery is misleading and would forfeit using it for salary.
 **Revisit if:** we ever need to distinguish a *forged* STR from a wrong-kind one (the genuineness scorer still runs; only the income-fact caveat is suppressed).
+
+## STR-proof: income verdict is evidence-driven, not route-locked — 2026-07-01
+**Decision:** when the declared STR route's proof is `wrong_type`/`rejected`, the income fact falls through to assess the salary/benefit docs on file (`income_headroom`) rather than freezing on the failed STR. The band is graded by **breach-room** (margin to the binding ceiling): thin → Unsure, large → Probable.
+**Alternatives considered:** keep the route authoritative (status quo — froze #13's verdict on the STR problem, ignoring the payslip already uploaded); a blunt "uncorroborated household → Unsure" (too coarse — SARA's huge margin makes the unknown member irrelevant).
+**Rationale:** the evidence on file should drive the verdict; margin-grading is roster-independent and matches the human read (#13 near-line → Unsure; SARA far-under → Probable).
+**Trade-offs:** GREEN is reserved for a corroborated household (the family roster), so the salary route caps at Probable for now. unsure/over use `recommend` (amber) not `review`, because a `review` tile reads blue off the verified earner-IC greens — the band must track the income conclusion, not incidental identity evidence.
+**Revisit if:** the family roster lands (then a corroborated household can reach GREEN), or the full salary-track spec reworks the per-member aggregation.
