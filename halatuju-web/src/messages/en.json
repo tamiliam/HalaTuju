@@ -3203,6 +3203,8 @@
           "income_unverified_needs_interview": "Income can't be document-verified (informal / no payslip) — confirm during the interview via household size, dependents and lifestyle. Do NOT block.",
           "income_per_capita_ok": "Per-capita income RM{amount} is below the B40 line (RM{ceiling}) — within the threshold.",
           "income_above_b40_line": "Per-capita income RM{amount} is at/above the B40 line (RM{ceiling}) — the documents don't confirm B40 need. A human must decide at interview (circumstances may still apply). Do NOT auto-reject.",
+          "income_salary_probable": "Assessed on the salary documents: household income ~RM{amount}/month is comfortably under the B40 line — highly probable. Confirm the household at interview.",
+          "income_salary_unsure": "Assessed on the salary documents: household income ~RM{amount}/month sits near the B40 line for the declared household size — confirm the household composition and take-home at interview.",
           "utility_percapita_b40": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — consistent with a B40 household (soft, imperfect signal).",
           "utility_percapita_high": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — high (M40/T20 consumption pattern). Worth probing at interview (soft signal).",
           "utility_hardship": "Hardship signal: the utility bills carry meaningful arrears (unpaid balance) — supports financial need.",

@@ -336,9 +336,13 @@ def _verdict_income(application):
     # unreadable (cropped) / unconfirmed (approved, no date → confirm currency). Anything that isn't
     # a CURRENT approved STR keeps the income fact off green — a human looks (and, post Sprint-2, the
     # salary route is assessed when the STR is wrong_type/rejected).
-    from .income_engine import student_str_check
+    from .income_engine import student_str_check, income_headroom
     sc = student_str_check(str_doc) if str_doc is not None else None
     str_verified = False
+    # A wrong_type (not an STR at all) or rejected (Ditolak) STR is definitively NOT a current STR;
+    # the family may still be B40 on their salary/benefit docs, so we fall through to the salary
+    # route below rather than freezing on the failed STR (str-proof-spec.md §6).
+    str_failed = bool(sc and sc['current_status'] in ('wrong_type', 'rejected'))
     if str_doc is None:
         gap.append(_item('income_proof_missing'))
     elif sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed', 'wrong_type', 'unreadable'):
@@ -356,6 +360,22 @@ def _verdict_income(application):
     # ── Place the verdict ─────────────────────────────────────────────────────
     if gap:
         return _fact('income', 'gap', evidence, gap + review)
+    # Evidence-driven fall-through (§6): the STR isn't a current STR, but salary/benefit docs on file
+    # may still show B40 — assess the salary route and let the headroom band drive the income tile.
+    # NB unsure/over return 'recommend' (→ amber) rather than 'review': a review tile reads BLUE off
+    # the verified earner-IC/relationship greens, which would overstate an unsure income.
+    if str_failed:
+        band, ctx = income_headroom(application, [earner])
+        if band == 'over':
+            return _fact('income', 'recommend', evidence, review + [
+                _item('income_above_b40_line', amount=ctx['per_capita'], ceiling=ctx['per_capita_ceiling'])])
+        if band == 'unsure':
+            return _fact('income', 'recommend', evidence, review + [
+                _item('income_salary_unsure', amount=ctx['gross'])])
+        if band == 'probable':
+            evidence.append(_item('income_salary_probable', amount=ctx['gross']))
+            return _fact('income', 'review', evidence, review)
+        # 'unknown' — no usable salary evidence either → the str_not_current review stands.
     if review:
         return _fact('income', 'review', evidence, review)
     # Income GREEN only when the whole cluster adds up: a CURRENT STR whose recipient is
