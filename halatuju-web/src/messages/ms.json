@@ -2109,7 +2109,9 @@
         "parent_ic_missing": "Kami tidak menemui IC ibu bapa atau penjaga anda dalam rekod. Sila pastikan ia telah dimuat naik dahulu.",
         "parent_ic_required": "Kami tidak menemui IC ibu bapa atau penjaga anda dalam rekod. Sila pastikan ia telah dimuat naik dahulu.",
         "parent_ic_nric_mismatch": "Nama atau nombor IC ibu bapa tidak sepadan dengan IC dalam rekod. Sila semak kedua-duanya.",
-        "parent_ic_name_mismatch": "Nama atau nombor IC ibu bapa tidak sepadan dengan IC dalam rekod. Sila semak kedua-duanya."
+        "parent_ic_name_mismatch": "Nama atau nombor IC ibu bapa tidak sepadan dengan IC dalam rekod. Sila semak kedua-duanya.",
+        "guarantor_phone_missing": "Kami tiada nombor telefon ibu bapa atau penjaga anda dalam rekod. Sila hubungi kami sebelum menandatangani.",
+        "guarantor_phone_unverified": "Sila sahkan nombor telefon ibu bapa atau penjaga anda dengan PIN sebelum menandatangani."
       },
       "bursary": {
         "heading": "Tandatangani Perjanjian Pemberian Biasiswa Bersyarat anda",
@@ -2135,7 +2137,30 @@
           "namePlaceholder": "Seperti tertera pada IC mereka",
           "relationship": "Hubungan dengan anda",
           "nric": "Nombor IC ibu bapa atau penjaga",
-          "agree": "Saya bersetuju menjadi penjamin untuk biasiswa ini."
+          "agree": "Saya bersetuju menjadi penjamin untuk biasiswa ini.",
+          "pin": {
+            "title": "Sahkan nombor telefon ibu bapa atau penjaga anda",
+            "intro": "Kami akan menghantar PIN sekali guna ke nombor telefon ibu bapa atau penjaga anda dalam rekod. Masukkannya di sini untuk mengesahkan mereka menandatangani bersama anda.",
+            "send": "Hantar PIN",
+            "sending": "Menghantar…",
+            "sentTo": "Kami telah menghantar PIN ke telefon ibu bapa atau penjaga anda ({phone}). Minta kod itu daripada mereka.",
+            "codeLabel": "Masukkan PIN",
+            "verify": "Sahkan",
+            "verifying": "Menyemak…",
+            "verified": "Telefon disahkan",
+            "resend": "Hantar PIN baharu",
+            "error": {
+              "generic": "Kami tidak dapat menghantar PIN. Sila cuba lagi.",
+              "guarantor_phone_missing": "Kami tiada nombor telefon ibu bapa atau penjaga anda dalam rekod. Sila hubungi kami untuk menambahnya.",
+              "rate_limited": "Terlalu banyak percubaan. Sila tunggu sebentar sebelum mencuba lagi.",
+              "invalid_number": "Nombor telefon dalam rekod nampak tidak sah. Sila hubungi kami untuk mengemas kini.",
+              "unconfigured": "Pengesahan telefon tidak tersedia buat masa ini. Sila cuba lagi kemudian.",
+              "incorrect": "PIN itu tidak betul atau telah tamat tempoh. Sila semak dan cuba lagi, atau hantar PIN baharu.",
+              "code_required": "Sila masukkan PIN.",
+              "bursary_disabled": "Langkah ini belum tersedia.",
+              "no_offer": "Tiada tawaran untuk dijawab sekarang."
+            }
+          }
         },
         "signSubmit": "Tandatangan dan terima pemberian",
         "signing": "Menandatangani…",

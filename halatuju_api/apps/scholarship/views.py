@@ -1341,6 +1341,94 @@ def _award_application(user_id):
     )
 
 
+def _mask_phone(phone):
+    """Last 4 digits only, e.g. '•••• 2222' — never the full number on the wire/FE."""
+    digits = ''.join(ch for ch in (phone or '') if ch.isdigit())
+    return ('•••• ' + digits[-4:]) if len(digits) >= 4 else '••••'
+
+
+class GuarantorPhoneVerifyStartView(APIView):
+    """POST /api/v1/scholarship/award/guarantor/verify-phone/send/
+
+    Send a one-time PIN to the parent/guardian SURETY's pre-declared, LOCKED phone (read
+    from ``profile.guardians``, captured at apply) over ``settings.PHONE_VERIFY_CHANNEL``
+    — the same-session parent gate that precedes the in-session bursary signature. Scoped
+    to the caller's awarded application; the student/parent never supplies or edits the
+    number. Soft-rate-limited to 5 sends/hour per application. Only when the bursary flag
+    is on (no accidental SMS while the contract flow is dark)."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        from django.conf import settings as _s
+        from django.core.cache import cache
+        from . import bursary, whatsapp
+        if not getattr(_s, 'BURSARY_AGREEMENT_ENABLED', False):
+            return Response({'error': 'bursary_disabled', 'code': 'bursary_disabled'},
+                            status=status.HTTP_403_FORBIDDEN)
+        app = _award_application(request.user_id)
+        if app is None:
+            return Response({'error': 'no_offer', 'code': 'no_offer'},
+                            status=status.HTTP_403_FORBIDDEN)
+        phone = bursary.guarantor_phone_for(app)
+        if not phone:
+            return Response({'error': 'guarantor_phone_missing', 'code': 'guarantor_phone_missing'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        rl_key = f'guarantor_phoneverify:send:{app.pk}'
+        sent = cache.get(rl_key, 0)
+        if sent >= 5:
+            return Response({'error': 'rate_limited', 'code': 'rate_limited'},
+                            status=status.HTTP_429_TOO_MANY_REQUESTS)
+        channel = getattr(_s, 'PHONE_VERIFY_CHANNEL', 'sms')
+        ok, vstatus, _err = whatsapp.start_phone_verification(phone, channel=channel)
+        if not ok:
+            http = {'unconfigured': status.HTTP_503_SERVICE_UNAVAILABLE,
+                    'invalid_number': status.HTTP_400_BAD_REQUEST}.get(
+                        vstatus, status.HTTP_502_BAD_GATEWAY)
+            return Response({'error': vstatus or 'failed'}, status=http)
+        cache.set(rl_key, sent + 1, 3600)
+        return Response({'status': 'sent', 'phone_hint': _mask_phone(phone)})
+
+
+class GuarantorPhoneVerifyCheckView(APIView):
+    """POST /api/v1/scholarship/award/guarantor/verify-phone/check/  {code}
+
+    Confirm the PIN against Twilio Verify for the caller's awarded application; on success
+    stamp ``guarantor_phone_verified_at`` + ``guarantor_phone`` (the locked number). That
+    stamp is what ``bursary.sign_agreement`` requires to be FRESH. Wrong/expired code → 400."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        from django.conf import settings as _s
+        from django.utils import timezone
+        from . import bursary, whatsapp
+        if not getattr(_s, 'BURSARY_AGREEMENT_ENABLED', False):
+            return Response({'error': 'bursary_disabled', 'code': 'bursary_disabled'},
+                            status=status.HTTP_403_FORBIDDEN)
+        app = _award_application(request.user_id)
+        if app is None:
+            return Response({'error': 'no_offer', 'code': 'no_offer'},
+                            status=status.HTTP_403_FORBIDDEN)
+        phone = bursary.guarantor_phone_for(app)
+        if not phone:
+            return Response({'error': 'guarantor_phone_missing', 'code': 'guarantor_phone_missing'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        code = (request.data.get('code') or '').strip()
+        if not code:
+            return Response({'error': 'code_required', 'code': 'code_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        approved, err = whatsapp.check_phone_verification(phone, code)
+        if not approved:
+            if err == 'unconfigured':
+                return Response({'verified': False, 'error': 'unconfigured'},
+                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response({'verified': False, 'error': err or 'incorrect'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        app.guarantor_phone = phone
+        app.guarantor_phone_verified_at = timezone.now()
+        app.save(update_fields=['guarantor_phone', 'guarantor_phone_verified_at'])
+        return Response({'verified': True})
+
+
 class StudentAwardView(APIView):
     """Phase E3 — the student's award offer. GET the current offer; POST to accept
     or decline it. The sponsor's identity is never exposed (allowlist). For a minor,

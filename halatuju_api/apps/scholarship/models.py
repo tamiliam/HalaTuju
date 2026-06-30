@@ -297,6 +297,13 @@ class ScholarshipApplication(models.Model):
     # comprehension quiz ("Understand" step on /scholarship/award), recorded for
     # defensibility alongside the signed agreement.
     comprehension_passed_at = models.DateTimeField(null=True, blank=True)
+    # Post-award signing — the parent/guardian SURETY's phone-PIN verification, captured
+    # in-session just before the bursary signature. ``guarantor_phone`` is the locked
+    # number (read from profile.guardians at apply) the PIN was sent to; the stamp marks a
+    # successful check. ``bursary.sign_agreement`` requires a FRESH stamp (see
+    # GUARANTOR_PHONE_VERIFY_TTL_SECONDS) so a signature can't ride a stale verification.
+    guarantor_phone = models.CharField(max_length=32, blank=True, default='')
+    guarantor_phone_verified_at = models.DateTimeField(null=True, blank=True)
     # R5 (Trust & Assurance): an INDEPENDENT party has confirmed this student's
     # enrolment with their institution — the institution-confirmation layer of the
     # layered assurance stack. DISTINCT from identity (``profile.nric_verified``):
