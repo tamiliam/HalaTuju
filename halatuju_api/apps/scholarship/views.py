@@ -853,10 +853,12 @@ class ResolutionItemListView(APIView):
         def _student_visible(i):
             if i.kind == 'human':
                 return False
-            # The post-award bank-details task always shows for an awarded/active student —
-            # it's a payout step, not a Check-2 query, so it's not behind the queries flag.
+            # The post-award bank-details task (a payout step, not a Check-2 query) shows for an
+            # awarded/active student ONLY while the capture feature is enabled. It is being
+            # deprecated (an alternative monthly arrangement replaces it), so default OFF →
+            # never shown (sync_bank_details_item also sweeps any existing one to resolved).
             if i.code == BANK_DETAILS_CODE:
-                return True
+                return getattr(_settings, 'BANK_DETAILS_CAPTURE_ENABLED', False)
             if i.source == 'system':
                 return queries_live and i.code in STUDENT_DOC_REQUEST_CODES
             if i.source == 'check2':
@@ -952,6 +954,12 @@ class BankAccountView(APIView):
         from .models import BankAccount
         from .serializers import BankAccountConfirmSerializer, BankAccountSerializer
         from .resolution import BANK_CAPTURE_STATES, sync_bank_details_item
+        from django.conf import settings as _settings
+        # Feature being deprecated (default OFF): refuse new submissions so a stale client
+        # can't re-create the task. Already-captured accounts remain readable via GET.
+        if not getattr(_settings, 'BANK_DETAILS_CAPTURE_ENABLED', False):
+            return Response({'error': 'bank_capture_disabled', 'code': 'bank_capture_disabled'},
+                            status=status.HTTP_410_GONE)
         app = _current_application(request.user_id)
         if app is None:
             return Response({'error': 'no_application', 'code': 'no_application'},

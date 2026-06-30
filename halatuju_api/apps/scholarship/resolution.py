@@ -366,10 +366,16 @@ BANK_CAPTURE_STATES = frozenset({'awarded', 'active'})
 def sync_bank_details_item(application):
     """Reconcile the post-award bank-details task: ensure ONE open ``bank_details_missing``
     item while the student is awarded/active with no confirmed payout account, and resolve
-    it once a ``BankAccount`` is confirmed (or the award leaves those states). Idempotent."""
+    it once a ``BankAccount`` is confirmed (or the award leaves those states). Idempotent.
+
+    Gated by ``BANK_DETAILS_CAPTURE_ENABLED`` (default OFF — feature being deprecated): while
+    OFF, ``wanted`` is forced False, so no task is ever created and any existing open one is
+    swept to resolved (it drops out of the Action Centre)."""
+    from django.conf import settings
     from .models import BankAccount, ResolutionItem
+    enabled = getattr(settings, 'BANK_DETAILS_CAPTURE_ENABLED', False)
     has_account = BankAccount.objects.filter(application=application).exists()
-    wanted = application.status in BANK_CAPTURE_STATES and not has_account
+    wanted = enabled and application.status in BANK_CAPTURE_STATES and not has_account
     existing = application.resolution_items.filter(code=BANK_DETAILS_CODE).first()
     if wanted and existing is None:
         try:
