@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **STR-proof model Sprint 2 — salary spillover (docs/scholarship/str-proof-spec.md §6/§7).** The income
+  verdict is now **evidence-driven, not locked to the declared route**: a `wrong_type`/`rejected` STR no
+  longer freezes the income fact — `verdict_engine._verdict_income` **falls through to the salary docs on
+  file** and lets a new **`income_headroom`** band drive the tile. Headroom = `max(gross_ceiling,
+  per_capita_ceiling × size) − household income`; thin breach-room (or an unread earner) → **Unsure**
+  (`recommend` → amber, deliberately not a blue read off the verified earner-IC), large → **Probable**
+  (`review` + a green `income_salary_probable` → blue). This makes **#13 (payslip in STR slot) → Unsure**
+  and the **SARA/PERKESO case → Probable**. Income now also reads **annualised pay incl. O/T** (a new
+  `gross_income_ytd` ÷ 12 captures variable overtime a single month misses; #13 RM3,800 → ~RM7,064) and
+  **accepts a pension/benefit statement** (a PERKESO survivor's pension is household income). GREEN stays
+  reserved for a corroborated household (the family roster, later). Backend-only, no migration; the
+  annualisation + pension reads take effect on the next document re-run. 1836 pytest; web jest 394 + build
+  clean. _(Sprint 1 — the STR currency states + format gate — is the entry below.)_
 - **STR-proof verification model rework (`MODEL_VERSION` 1.1 → 1.2; docs/scholarship/str-proof-spec.md).**
   `income_engine._str_currency` now returns **structured states** — `wrong_type` / `rejected` /
   `unreadable` / `stale` / `unconfirmed` / `current` — instead of collapsing everything to

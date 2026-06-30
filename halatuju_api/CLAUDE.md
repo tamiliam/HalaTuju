@@ -516,7 +516,26 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-30)
+## Next Sprint (as of 2026-07-01)
+
+**▶ STR-PROOF MODEL — Sprint 2 (salary spillover) SHIPPED 2026-07-01 (worktree `.worktrees/str-salary`;
+commits `97b59918` income core + `7a7586e7` verdict/extraction/FE; NO migration; spec
+`docs/scholarship/str-proof-spec.md` §6/§7; retro `docs/retrospective-2026-07-01-str-proof-model-s2.md`).**
+- **Evidence-driven route fall-through:** `verdict_engine._verdict_income` — a `wrong_type`/`rejected` STR
+  no longer freezes the income fact; it assesses the salary/benefit docs on file via the new
+  **`income_engine.income_headroom`** band. unsure/over → `recommend` (amber — deliberately NOT a blue read
+  off the verified earner-IC greens); probable → `review` + a green `income_salary_probable` (→ blue).
+  **#13 (payslip-in-STR-slot) → Unsure; SARA/PERKESO → Probable.**
+- **Headroom** = `max(gross_ceiling, per_capita_ceiling×size) − household income`; thin breach-room (< one
+  per-capita head) or an unread earner → Unsure; large → Probable. Roster-independent; GREEN for the salary
+  route stays reserved for a corroborated household (the family roster, later).
+- **Annualised pay incl. O/T** (`gross_income_ytd ÷ 12`; #13 RM3,800 → ~RM7,064) + **pension/benefit as
+  income** (PERKESO survivor's pension), via the salary_slip extraction + reader.
+- 1836 pytest; jest 394 + build clean. **▶ Takes effect on RE-RUN:** the annualisation + pension reads only
+  populate on re-extraction — the owner is doing **one combined re-run pass** (the 6 S1 label-leak docs +
+  the salary/pension docs) post-S2 (`memory/halatuju.md`). The headroom band itself recomputes live on deploy.
+- **▶ NEXT:** the full **salary-track redesign** (per-member aggregation, GREEN via a corroborated family
+  roster) is a larger separate spec; the parked family-roster branch is its enabler.
 
 **▶ STR-PROOF MODEL — Sprint 1 SHIPPED 2026-06-30 (worktree `.worktrees/str-model`; commits
 `8b4686b1` backend + `0f1e09ba` web; `MODEL_VERSION` 1.1 → 1.2; NO migration; spec
