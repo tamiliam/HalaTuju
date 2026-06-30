@@ -634,3 +634,68 @@ class TestCockpitAgreementSurfacing(TestCase):
         data = self._detail(app)
         self.assertFalse(data['bursary_agreement_enabled'])
         self.assertIsNone(data['bursary_agreement'])
+
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=True, BURSARY_SIGN_REMINDER_DAYS=3,
+                   FOUNDATION_NOTIFY_EMAIL='foundation@h.org')
+class TestSigningReminders(TestCase):
+    """S6 SLA cron: a pending witness/countersignature is re-nudged after the interval, and
+    not before (the *_reminded_at stamps prevent daily spam)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def setUp(self):
+        from django.core import mail
+        self.mail = mail
+        self.pdf, self.upload, self.dl = _mock_seams()
+        self.pdf.start(); self.upload.start(); self.dl.start()
+        self.addCleanup(self.pdf.stop)
+        self.addCleanup(self.upload.stop)
+        self.addCleanup(self.dl.stop)
+
+    def _signed(self, *, suffix, org=None):
+        app = _fundable_app(self.cohort, suffix=suffix, org=org)
+        _add_parent_ic(app)
+        _fund(app)
+        _verify_guarantor_phone(app)
+        svc.respond_to_award(
+            app, action='accept', student_signed_name='Zxq Student',
+            guarantor_name=GUARANTOR_NAME, guarantor_nric=GUARANTOR_NRIC,
+            guarantor_relationship='mother')
+        return app
+
+    def test_no_reminder_before_interval(self):
+        self._signed(suffix='r1')   # just signed → within the interval
+        self.mail.outbox = []
+        out = bursary.send_signing_reminders()
+        self.assertEqual(out, {'witness': 0, 'countersign': 0})
+        self.assertEqual(len(self.mail.outbox), 0)
+
+    def test_countersign_reminder_after_interval_no_org(self):
+        app = self._signed(suffix='r2')   # no org → Foundation is the pending party
+        ag = app.bursary_agreement
+        ag.guarantor_signed_at = timezone.now() - timedelta(days=5)
+        ag.save(update_fields=['guarantor_signed_at'])
+        self.mail.outbox = []
+        out = bursary.send_signing_reminders()
+        self.assertEqual(out['countersign'], 1)
+        self.assertIn('foundation@h.org', [m.to[0] for m in self.mail.outbox])
+        ag.refresh_from_db()
+        self.assertIsNotNone(ag.countersign_reminded_at)
+        # A second run the same day does not re-send (stamp is fresh).
+        self.mail.outbox = []
+        self.assertEqual(bursary.send_signing_reminders()['countersign'], 0)
+
+    def test_witness_reminder_after_interval_with_org(self):
+        org = PartnerOrganisation.objects.create(
+            code='cumig', name='CUMIG', contact_email='partner@cumig.org')
+        app = self._signed(suffix='r3', org=org)
+        ag = app.bursary_agreement
+        ag.guarantor_signed_at = timezone.now() - timedelta(days=5)
+        ag.save(update_fields=['guarantor_signed_at'])
+        self.mail.outbox = []
+        out = bursary.send_signing_reminders()
+        self.assertEqual(out['witness'], 1)
+        self.assertIn('partner@cumig.org', [m.to[0] for m in self.mail.outbox])

@@ -1817,6 +1817,11 @@ class BursaryAgreement(models.Model):
     witness_name = models.CharField(max_length=200, blank=True, default='')
     witness_signed_at = models.DateTimeField(null=True, blank=True)
 
+    # ── Signing-chain reminder stamps (S6) — when the last nudge for a still-pending
+    # signature went out, so the cron doesn't re-send daily (it waits the interval).
+    witness_reminded_at = models.DateTimeField(null=True, blank=True)
+    countersign_reminded_at = models.DateTimeField(null=True, blank=True)
+
     # ── Artefact (immutable snapshot) ─────────────────────────────────────────
     rendered_html = models.TextField(blank=True, default='')
     agreement_sha256 = models.CharField(max_length=64, blank=True, default='')

@@ -718,3 +718,56 @@ def _notify_agreement_executed(application):
     except Exception:
         logger.exception('bursary: executed notify failed (app %s)',
                          getattr(application, 'id', '?'))
+
+
+def send_signing_reminders(now=None):
+    """SLA cron: nudge the party whose signature is still pending on a binding-but-not-yet-
+    executed agreement — the partner (witness) first if a referring org with a contact email
+    exists, else the Foundation (countersign). Re-nudges no more often than
+    ``BURSARY_SIGN_REMINDER_DAYS``. Best-effort; returns a summary. No-op when the feature is
+    off. Idempotent within the interval via the ``*_reminded_at`` stamps."""
+    summary = {'witness': 0, 'countersign': 0}
+    if not getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False):
+        return summary
+    from datetime import timedelta
+    from . import emails
+    from .models import BursaryAgreement
+    now = now or timezone.now()
+    interval = timedelta(days=getattr(settings, 'BURSARY_SIGN_REMINDER_DAYS', 3))
+    qs = (BursaryAgreement.objects
+          .filter(guarantor_signed_at__isnull=False, foundation_signed_at__isnull=True)
+          .select_related('application', 'application__profile', 'witness_org'))
+    for ag in qs:
+        app = ag.application
+        if getattr(app, 'status', '') != 'awarded':
+            continue   # only a still-pending (not declined/active) agreement is nudged
+        profile = getattr(app, 'profile', None)
+        org = getattr(profile, 'referred_by_org', None)
+        name = _applicant_name(app)
+        link = _cockpit_link(app)
+        witness_pending = bool(org and getattr(org, 'contact_email', '')
+                               and ag.witness_signed_at is None)
+        if witness_pending:
+            since = max(ag.guarantor_signed_at, ag.witness_reminded_at or ag.guarantor_signed_at)
+            if now - since < interval:
+                continue
+            if emails.send_witness_pending_email(
+                    org.contact_email, contact_person=getattr(org, 'contact_person', ''),
+                    applicant_name=name, org_name=getattr(org, 'name', ''), link=link):
+                ag.witness_reminded_at = now
+                ag.save(update_fields=['witness_reminded_at', 'updated_at'])
+                summary['witness'] += 1
+        else:
+            since = max(ag.guarantor_signed_at,
+                        ag.countersign_reminded_at or ag.guarantor_signed_at)
+            if now - since < interval:
+                continue
+            any_sent = False
+            for to in foundation_notify_emails():
+                any_sent = emails.send_countersign_pending_email(
+                    to, applicant_name=name, link=link) or any_sent
+            if any_sent:
+                ag.countersign_reminded_at = now
+                ag.save(update_fields=['countersign_reminded_at', 'updated_at'])
+                summary['countersign'] += 1
+    return summary
