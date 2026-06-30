@@ -293,6 +293,10 @@ class ScholarshipApplication(models.Model):
     # B40 Phase E/F (F8a): stamped when the student completes post-award onboarding
     # (acknowledgement + questionnaire). The hard gate before the first disbursement.
     onboarded_at = models.DateTimeField(null=True, blank=True)
+    # Post-award signing: stamped when the student passes the bursary-agreement
+    # comprehension quiz ("Understand" step on /scholarship/award), recorded for
+    # defensibility alongside the signed agreement.
+    comprehension_passed_at = models.DateTimeField(null=True, blank=True)
     # R5 (Trust & Assurance): an INDEPENDENT party has confirmed this student's
     # enrolment with their institution — the institution-confirmation layer of the
     # layered assurance stack. DISTINCT from identity (``profile.nric_verified``):

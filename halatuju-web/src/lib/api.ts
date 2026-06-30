@@ -1955,6 +1955,16 @@ export async function confirmBankAccount(
   })
 }
 
+/** Record that the student passed the bursary-agreement comprehension quiz (the
+ *  "Understand" step on /scholarship/award). Best-effort; stamps comprehension_passed_at. */
+export async function recordComprehensionPass(options?: ApiOptions): Promise<{ ok: boolean }> {
+  return apiRequest('/api/v1/scholarship/award/comprehension/', {
+    method: 'POST',
+    body: JSON.stringify({}),
+    ...options,
+  })
+}
+
 // ── Phase E/F: student award + onboarding (F8b) ──────────────────────────
 // The student's funded-studies offer. The sponsor's identity is never exposed
 // (allowlist serializer): the student only ever sees the amount + deadline.

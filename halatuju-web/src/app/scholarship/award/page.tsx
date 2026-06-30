@@ -9,8 +9,9 @@ import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import FieldLabel from '@/components/FieldLabel'
 import InfoBox from '@/components/InfoBox'
+import AwardComprehensionQuiz from '@/components/AwardComprehensionQuiz'
 import {
-  getStudentAward, respondToAward,
+  getStudentAward, respondToAward, recordComprehensionPass,
   type StudentAward, type BursaryPreview, type BursaryAgreement,
 } from '@/lib/api'
 import { formatNric, formatMoney2dp } from '@/lib/scholarship'
@@ -43,6 +44,8 @@ export default function ScholarshipAwardPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [justSigned, setJustSigned] = useState(false)
+  // The student must pass the comprehension quiz ("Understand" step) before the signing form.
+  const [comprehensionPassed, setComprehensionPassed] = useState(false)
 
   // Guardian modal (minors, plain flow only — used when there's no agreement)
   const [showGuardian, setShowGuardian] = useState(false)
@@ -265,6 +268,22 @@ export default function ScholarshipAwardPage() {
 
   // ── The bursary SIGNING page (agreement in play, not yet signed) ──
   if (preview) {
+    // STEP 1 — "Understand": the comprehension quiz gates the signing form. The student
+    // works through the 8 checkpoints; on completion we record the pass (best-effort) and
+    // reveal the signing form below.
+    if (!comprehensionPassed) {
+      return wrap(
+        <AwardComprehensionQuiz
+          onComplete={() => {
+            setComprehensionPassed(true)
+            if (token) recordComprehensionPass({ token }).catch(() => {})
+            window.scrollTo(0, 0)
+          }}
+        />,
+      )
+    }
+
+    // STEP 2 — "Read & sign".
     // Both toggles required; an adult must type their name; the guarantor block is
     // always required (the guardian is the surety for a minor too).
     const studentNameOk = isMinor || studentName.trim().length > 0
