@@ -516,7 +516,31 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-29)
+## Next Sprint (as of 2026-06-30)
+
+**▶ STR-PROOF MODEL — Sprint 1 SHIPPED 2026-06-30 (worktree `.worktrees/str-model`; commits
+`8b4686b1` backend + `0f1e09ba` web; `MODEL_VERSION` 1.1 → 1.2; NO migration; spec
+`docs/scholarship/str-proof-spec.md`; retro `docs/retrospective-2026-06-30-str-proof-model-s1.md`).**
+- **`income_engine._str_currency` → structured states** `wrong_type / rejected / unreadable / stale /
+  unconfirmed / current` (was: everything collapsed to `unconfirmed`). **Format gate first:** a non-STR
+  in the STR slot (`source_type='unknown'`: SALINAN / SARA / payslip) → `wrong_type` (RED), never
+  softened. A **dateless approved STR → `unconfirmed` (BLUE)**, no longer `current` (GREEN) — a year-old
+  screenshot also reads "Lulus", so undated can't confirm the cycle.
+- **verdict_engine:** the `str_not_current` item carries the state; the **`document_not_genuine` caveat
+  is suppressed for `wrong_type`** (`_str_wrong_type` — a genuine payslip is the wrong KIND, not a
+  forgery). **FE:** officer verdict line is an **ICU `select`** (one decisive sentence per state, EN/BM/TA);
+  STR doc-chip green/amber/red via `strCurrencyFactStatus`.
+- **vision.py extraction:** read the status VALUE not the "Status Permohonan STR" label (#112); dates only
+  from letter/Maklumat-Pembayaran (never the FAQ-nav "2026"); sharper dashboard-vs-semakan signatures.
+- Profile honesty: claim STR only on a confirmed-**current** (dated) STR. 1827 pytest; jest 395 + build clean.
+- **▶ ON DEPLOY:** the demotion re-bands existing dateless-approved STR income verdicts Certain→Probable
+  (visible to reviewers — intended). **Then RE-RUN the ~25 existing STR docs on the LIVE service** (cockpit
+  Re-run) so the extraction fixes (status-value, dates, classify) land — re-extraction must NOT run locally
+  (no Storage → corrupts `vision_fields`; see `memory/halatuju_never_reextract_locally.md`).
+- **▶ NEXT — Sprint 2 (the salary spillover):** evidence-driven **route fall-through** (a wrong_type/rejected
+  STR → assess the salary docs on file, don't freeze); **pension/benefit counts as income**; **annualised
+  income incl. O/T**; the **headroom-graded** household-corroboration rule (#13 → Unsure vs SARA → Probable).
+  The full salary-track redesign is a larger separate spec.
 
 **▶ SHIPPED & LIVE 2026-06-29 — Bursary data-quality sprint (worktree `.worktrees/data-quality`; 12
 commits `b16b5ecd`→`965b1b23`; NO migration; retro `docs/retrospective-2026-06-29-bursary-data-quality.md`).**
