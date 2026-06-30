@@ -551,6 +551,9 @@ export interface AdminScholarshipDetail {
   /** Whether the dark-by-default Conditional Bursary Agreement feature is live; the cockpit
    *  only renders the agreement panel when true. */
   bursary_agreement_enabled?: boolean
+  /** TD-144: the real loaded agreement (signature timestamps + status + PDF URL) so the
+   *  cockpit shows accurate four-party ticks. Null when off / no agreement yet. No donor. */
+  bursary_agreement?: BursaryAgreement | null
   /** Post-award S4: the money-out tranche ledger (oldest sequence first). */
   disbursements: AdminDisbursement[]
   /** Post-award S5: operational sub-state within status='maintenance'. */

@@ -3424,7 +3424,8 @@
         "download": "Muat turun (PDF)",
         "actionError": "Tindakan itu tidak dapat diselesaikan. Sila cuba lagi.",
         "witnessForbidden": "Hanya organisasi rakan kongsi yang merujuk (atau super admin) boleh menyaksikan perjanjian ini.",
-        "note": "Saksi adalah rekod sahaja dan tidak pernah menyekat pemberian. Penderma tidak pernah dinamakan dalam perjanjian ini."
+        "note": "Saksi adalah rekod sahaja dan tidak pernah menyekat pemberian. Penderma tidak pernah dinamakan dalam perjanjian ini.",
+        "awaitingSignature": "Menunggu pelajar dan penjamin mereka menandatangani — belum ada apa-apa untuk dikaunter-tandatangani atau disaksikan."
       }
     },
     "students": "Pelajar",
