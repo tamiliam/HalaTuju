@@ -3742,3 +3742,15 @@ build, matching the owner-gated, deploy-free re-enable we want.
 rollout) — onboarding must be verified before flip-on.
 **Revisit if:** onboarding is tested end-to-end (then set `AWARD_ACCEPTANCE_ENABLED=1`), or we need a staged
 rollout (would need a per-cohort/per-student gate instead of a global flag).
+
+## STR-proof: structured currency states + format-gate-first — 2026-06-30
+**Decision:** `_str_currency` returns structured states (`wrong_type`/`rejected`/`unreadable`/`stale`/`unconfirmed`/`current`), and the format gate runs first: a non-STR in the STR slot (`source_type='unknown'`: SALINAN / SARA / payslip) is `wrong_type` → RED, never softened to "probable". A dateless approved STR is `unconfirmed` (BLUE), not `current` (GREEN).
+**Alternatives considered:** keep the single `unconfirmed` bucket (status quo — but it conflated a rejected STR, a wrong document, and a real-but-undated STR into one word-salad); accept a dateless "Lulus" as current (the prior #5 rule — but a year-old screenshot also reads Lulus, so it can't confirm the cycle).
+**Rationale:** the four threats (never-approved / rejected / stale / wrong-document) are distinct and deserve distinct verdicts + copy + colour. A dateless approval is genuinely only *probable*-current.
+**Trade-offs:** the demotion re-bands existing dateless-approved STR verdicts Certain→Probable on deploy (visible to reviewers); a re-run is needed for the extraction fixes (status value, dates) to land on existing docs.
+**Revisit if:** the MySTR dashboard/Semakan starts printing a cycle date by default (then dateless would be rarer), or field experience shows the demotion creates too much review load.
+
+## STR-proof: a wrong_type doc is wrong-KIND, not a forgery — 2026-06-30
+**Decision:** suppress the `document_not_genuine` ("may not be a genuine original") caveat for a `wrong_type` STR; the `str_not_current(wrong_type)` item already says "this is not an STR document". The same genuine file remains valid evidence on the salary route (Sprint 2).
+**Rationale:** a genuine payslip / SARA letter uploaded into the STR slot is the wrong document, not a fake — flagging it as a forgery is misleading and would forfeit using it for salary.
+**Revisit if:** we ever need to distinguish a *forged* STR from a wrong-kind one (the genuineness scorer still runs; only the income-fact caveat is suppressed).

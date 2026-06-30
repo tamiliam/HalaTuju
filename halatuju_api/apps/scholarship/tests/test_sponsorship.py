@@ -400,17 +400,19 @@ class TestAwardOfferEmail(TestCase):
         self.assertFalse(send_award_offer_email('', 'Nobody'))
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_award_offer_email_html_has_button_and_bold(self):
+    def test_award_offer_email_html_bold_no_button_no_bank(self):
         from apps.scholarship.emails import send_award_offer_email
         mail.outbox = []
         send_award_offer_email('x@y.example', 'Aisyah', lang='en')
         html = mail.outbox[0].alternatives[0][0]   # (html_body, 'text/html')
-        self.assertIn('<strong>your bank account details</strong>', html)      # bolded phrase
-        self.assertIn('Add your bank details', html)                           # button label
-        self.assertIn('/scholarship/application"', html)                       # button href
-        self.assertIn('<a href=', html)                                        # rendered as a button/link
-        # plain-text fallback still carries the raw link
-        self.assertIn('/scholarship/application', mail.outbox[0].body)
+        # Key phrases bolded
+        self.assertIn('<strong>monthly payment arrangement</strong>', html)
+        self.assertIn('<strong>formal offer and bursary contract</strong>', html)
+        # No bank-details ask and no call-to-action button/link (HTML + plain-text)
+        self.assertNotIn('<a href=', html)
+        self.assertNotIn('bank account', html.lower())
+        self.assertNotIn('/scholarship/application', html)
+        self.assertNotIn('bank account', mail.outbox[0].body.lower())
 
 
 from django.core.management import call_command  # noqa: E402

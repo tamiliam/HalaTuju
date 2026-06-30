@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **STR-proof verification model rework (`MODEL_VERSION` 1.1 → 1.2; docs/scholarship/str-proof-spec.md).**
+  `income_engine._str_currency` now returns **structured states** — `wrong_type` / `rejected` /
+  `unreadable` / `stale` / `unconfirmed` / `current` — instead of collapsing everything to
+  `unconfirmed`. **Format gate first:** a non-STR in the STR slot (SALINAN / SARA letter / salary
+  slip; `source_type='unknown'`) is **`wrong_type` → RED**, never softened to "probable". A **dateless
+  approved STR** (dashboard / collapsed Semakan) is now **`unconfirmed` (BLUE)**, no longer `current`
+  (GREEN) — a year-old screenshot also reads "Lulus", so without a date the cycle can't be confirmed.
+  The officer verdict line is an **ICU select** — one state, one decisive sentence (a `wrong_type`
+  reads "This is not an STR document", replacing the SALINAN word-salad) — EN/BM/TA. The
+  **`document_not_genuine` caveat is suppressed for a `wrong_type` STR** (a genuine payslip is the
+  wrong KIND, not a forgery). Extraction reads the status **value** not the "Status Permohonan STR"
+  **label** (#112), dates only from the letter/payment (never the FAQ-nav "2026" chrome), and
+  classifies dashboard-vs-semakan by signature. STR doc-status chip: green/amber/red per state.
+  Profile honesty: claim STR only on a confirmed-**current** (dated) STR. Backend 1827 pytest; web
+  jest 395 + build clean. _(Sprint 1 of the STR-proof model; salary route-fall-through + the
+  headroom rule are Sprint 2.)_
+- **Award good-news email reworded — no bank-details ask.** The post-award email now tells the
+  student support is paid via a **monthly payment arrangement** and that a **formal offer and bursary
+  contract** will follow, with nothing for them to do yet (no Action-Centre button/link). An
+  alternative payment arrangement replaces bank capture. NO amount, NO sponsor identity retained.
+  EN/BM/TA. Owner-cleared 2026-06-30.
+- **Post-award bank-details capture HIDDEN (being deprecated).** New `BANK_DETAILS_CAPTURE_ENABLED`
+  flag, default OFF: the Action-Centre "add bank details" task is no longer surfaced, any existing
+  open one is swept to resolved on next sync, and the confirm endpoint returns **410 Gone**
+  (`bank_capture_disabled`). Already-captured `BankAccount` rows are untouched; capture logic is
+  retained behind the flag (tested with it ON) for a clean later removal. Backend-only, no migration.
+  +4 pytest.
 - **Award good-news email → 24h cool-off auto-send (replaces the temporary OFF gate).** A sponsor
   award no longer emails inline; the new hourly cron `release-award-offer-emails` sends the email
   once the award is `AWARD_OFFER_EMAIL_COOLOFF_HOURS` old (default 24), leaving a window to

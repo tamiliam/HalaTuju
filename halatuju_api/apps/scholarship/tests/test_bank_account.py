@@ -83,6 +83,7 @@ class TestHolderVerdict(_Base):
 
 
 # ── Upload verdict + no auto-resolve (upload-then-confirm) ────────────────────
+@override_settings(BANK_DETAILS_CAPTURE_ENABLED=True)
 class TestUploadVerdict(_Base):
     def test_doc_match_verdict_maps_states(self):
         app = self._make('bank-up')
@@ -107,6 +108,7 @@ class TestUploadVerdict(_Base):
 
 
 # ── The Action-Centre trigger ────────────────────────────────────────────────
+@override_settings(BANK_DETAILS_CAPTURE_ENABLED=True)
 class TestSyncBankItem(_Base):
     def test_creates_for_awarded_without_account(self):
         app = self._make('bank-sync1', status='awarded')
@@ -161,9 +163,9 @@ class TestSyncBankItem(_Base):
         self.assertEqual(app.resolution_items.get(code=BANK_DETAILS_CODE).status, 'open')
 
 
-# ── Visibility: always shown for an awarded student, even with Check-2 OFF ────
+# ── Visibility: shown for an awarded student (capture ON), even with Check-2 OFF ────
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET,
-                   CHECK2_STUDENT_QUERIES_ENABLED=False)
+                   CHECK2_STUDENT_QUERIES_ENABLED=False, BANK_DETAILS_CAPTURE_ENABLED=True)
 class TestVisibility(_Base):
     URL = '/api/v1/scholarship/resolution-items/'
 
@@ -176,7 +178,8 @@ class TestVisibility(_Base):
 
 
 # ── The confirm endpoint + the HARD holder gate ──────────────────────────────
-@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET)
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET,
+                   BANK_DETAILS_CAPTURE_ENABLED=True)
 class TestConfirmEndpoint(_Base):
     URL = '/api/v1/scholarship/bank-account/'
 
@@ -233,7 +236,7 @@ class TestConfirmEndpoint(_Base):
 
 # ── Funded students: the auto review-phase queries are suppressed ─────────────
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET,
-                   CHECK2_STUDENT_QUERIES_ENABLED=True)
+                   CHECK2_STUDENT_QUERIES_ENABLED=True, BANK_DETAILS_CAPTURE_ENABLED=True)
 class TestFundedSetsAsideReviewQueries(_Base):
     """Owner decision 2026-06-29: the moment recommended → awarded, the auto review-phase
     items (system verdict gaps + Check-2 clarify queries) are SET ASIDE in the student's
@@ -274,3 +277,46 @@ class TestFundedSetsAsideReviewQueries(_Base):
         body = c.get(self.URL).json()
         self.assertTrue(any(i['source'] in ('system', 'check2') for i in body['open']))
         self.assertEqual(body['set_aside'], [])
+
+
+# ── Deprecation: with BANK_DETAILS_CAPTURE_ENABLED OFF (the default) the feature is HIDDEN ──
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET,
+                   BANK_DETAILS_CAPTURE_ENABLED=False)
+class TestCaptureDisabledHidesFeature(_Base):
+    RES_URL = '/api/v1/scholarship/resolution-items/'
+    BANK_URL = '/api/v1/scholarship/bank-account/'
+
+    def test_sync_does_not_create_when_disabled(self):
+        app = self._make('bank-off1', status='awarded')
+        sync_bank_details_item(app)
+        self.assertFalse(app.resolution_items.filter(code=BANK_DETAILS_CODE).exists())
+
+    def test_sync_sweeps_existing_open_to_resolved_when_disabled(self):
+        # An item left open from when the feature was live is swept closed on the next sync.
+        app = self._make('bank-off2', status='awarded')
+        ResolutionItem.objects.create(
+            application=app, source='system', code=BANK_DETAILS_CODE,
+            fact='other', kind='doc', doc_type='bank_statement', params={},
+        )
+        sync_bank_details_item(app)
+        self.assertEqual(app.resolution_items.get(code=BANK_DETAILS_CODE).status, 'resolved')
+
+    def test_task_not_visible_in_action_centre_when_disabled(self):
+        app = self._make('bank-off3', status='awarded')
+        ResolutionItem.objects.create(
+            application=app, source='system', code=BANK_DETAILS_CODE,
+            fact='other', kind='doc', doc_type='bank_statement', params={},
+        )
+        c = APIClient()
+        c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("bank-off3")}')
+        body = c.get(self.RES_URL).json()
+        all_codes = [i['code'] for i in body['open']] + [i['code'] for i in body['resolved']]
+        self.assertNotIn(BANK_DETAILS_CODE, all_codes)
+
+    def test_confirm_endpoint_is_gone_when_disabled(self):
+        self._make('bank-off4', status='awarded')
+        c = APIClient()
+        c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("bank-off4")}')
+        r = c.post(self.BANK_URL, _bank_fields(), format='json')
+        self.assertEqual(r.status_code, 410)
+        self.assertEqual(r.json()['code'], 'bank_capture_disabled')

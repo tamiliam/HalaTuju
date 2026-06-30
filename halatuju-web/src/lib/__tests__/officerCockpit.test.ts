@@ -243,6 +243,18 @@ describe('documentFacts', () => {
       .toEqual([{ key: 'recipient', status: 'verified' }, { key: 'ic_no', status: 'not' }, { key: 'current', status: 'partial' }])
   })
 
+  it('str Current chip maps the structured currency states (str-proof-spec)', () => {
+    const cur = (s: string) =>
+      documentFacts(doc({ doc_type: 'str', str_check: strCheck({ current_status: s }) }))
+        .find((f) => f.key === 'current')!.status
+    expect(cur('current')).toBe('verified')      // 🟢 dated + approved
+    expect(cur('unconfirmed')).toBe('partial')   // 🟡-chip (🔵 lives on the verdict tile)
+    expect(cur('stale')).toBe('partial')         // 🟡 prior-year
+    expect(cur('unreadable')).toBe('partial')    // 🟡 cropped
+    expect(cur('rejected')).toBe('not')          // 🔴 Ditolak
+    expect(cur('wrong_type')).toBe('not')        // 🔴 not an STR (payslip / SARA / SALINAN)
+  })
+
   it('birth certificate → Child, Mother, Father (carries the mother relationship)', () => {
     expect(documentFacts(doc({ doc_type: 'birth_certificate', bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status: 'match', father_name: '', father_status: 'match', bc_number: '' } })).map((f) => f.key))
       .toEqual(['child', 'mother', 'father'])

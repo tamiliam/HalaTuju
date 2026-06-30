@@ -337,10 +337,21 @@ class TestWelfareClaimGating(TestCase):
         self.assertIn(f'do not claim): {_DO_NOT_CLAIM}', prompt)
 
     def test_str_with_current_document_is_claimed(self):
+        # A confirmed-CURRENT STR (approved + a current-cycle date) → claim. A dateless approved STR
+        # is only 'unconfirmed' (probable) now, so the profile no longer asserts B40 on it — the
+        # claim needs a date that pins the cycle (str-proof-spec.md; honesty: documented = certain).
+        app = self._app(receives_str=True, income_route='str')
+        self._add_str_doc(app, status='Lulus', year='2026')
+        prompt = _build_prompt(app)
+        self.assertIn('do not claim): yes', prompt)
+
+    def test_str_approved_but_dateless_is_not_claimed(self):
+        # Dateless approved STR → 'unconfirmed' (probable, not certain) → the profile must NOT
+        # assert B40 as fact (a year-old screenshot also reads "Lulus").
         app = self._app(receives_str=True, income_route='str')
         self._add_str_doc(app, status='Lulus')
         prompt = _build_prompt(app)
-        self.assertIn('do not claim): yes', prompt)
+        self.assertIn(f'do not claim): {_DO_NOT_CLAIM}', prompt)
 
     def test_str_with_stale_document_is_not_claimed(self):
         # Approved but a prior-year STR → stale → not current proof → don't claim.

@@ -411,9 +411,11 @@ def send_award_confirmed_email(to_email, applicant_name, programme_name, lang='e
 
 
 # Sent when a student is AWARDED (a sponsor committed → status 'awarded'), BEFORE the formal
-# offer/acceptance. Good news + add bank details (Action Centre) + await the formal offer.
-# Deliberately states NO amount (the formal offer carries the figure) and NO sponsor identity
-# (two-way anonymity). From info@, reply-to help@. Owner-cleared wording 2026-06-29.
+# offer/acceptance. Good news + how support is paid (a monthly payment arrangement) + a formal
+# offer & bursary contract to follow. NO bank-details ask (an alternative payment arrangement is
+# being worked out; documentation pending) — and therefore NO call-to-action button. Deliberately
+# states NO amount (the formal offer carries the figure) and NO sponsor identity (two-way
+# anonymity). From info@, reply-to help@. Owner-cleared wording 2026-06-30.
 AWARD_OFFER_SUBJECTS = {
     'en': 'Good news about your BrightPath Bursary application 🎓',
     'ms': 'Berita baik tentang permohonan Biasiswa BrightPath anda 🎓',
@@ -425,24 +427,21 @@ AWARD_OFFER_BODIES = {
         "We're delighted to share some good news. Your application to the BrightPath Bursary "
         "Programme has been successful — you have been selected to receive financial support for "
         "your studies.\n\n"
-        "One thing to do now: please log in and add your bank account details, so we're ready to "
-        "process your support payments. You'll find this in your application's Action Centre:\n{link}\n\n"
-        "What happens next: we will contact you shortly with your formal offer and the simple steps "
-        "to accept it. There's nothing else you need to do for now — just add your bank details and "
-        "watch for our next message.\n\n"
-        "If you have any questions, reply to this email or contact us at {support}.\n\n"
+        "Your support will be provided through a monthly payment arrangement. We're finalising the "
+        "details now, and we'll send you a formal offer and bursary contract very soon, along with "
+        "the simple steps to accept it.\n\n"
+        "There's nothing you need to do right now — please look out for our next message.\n\n"
+        "If you have any questions in the meantime, reply to this email or contact us at {support}.\n\n"
         "Warm congratulations,\nThe BrightPath Bursary Team"
     ),
     'ms': (
         "Salam {name},\n\n"
         "Kami gembira berkongsi berita baik. Permohonan anda ke Program Biasiswa BrightPath telah "
         "berjaya — anda telah dipilih untuk menerima bantuan kewangan bagi pengajian anda.\n\n"
-        "Satu perkara untuk dilakukan sekarang: sila log masuk dan masukkan butiran akaun bank anda, "
-        "supaya kami bersedia memproses pembayaran bantuan anda. Anda boleh berbuat demikian di Pusat "
-        "Tindakan permohonan anda:\n{link}\n\n"
-        "Apa yang berlaku seterusnya: kami akan menghubungi anda tidak lama lagi dengan tawaran rasmi "
-        "dan langkah mudah untuk menerimanya. Tiada apa-apa lagi yang perlu anda lakukan buat masa ini "
-        "— hanya masukkan butiran bank dan tunggu mesej kami yang seterusnya.\n\n"
+        "Bantuan anda akan disalurkan melalui aturan pembayaran bulanan. Kami sedang memuktamadkan "
+        "butirannya sekarang, dan kami akan menghantar tawaran rasmi dan kontrak biasiswa kepada anda "
+        "tidak lama lagi, berserta langkah mudah untuk menerimanya.\n\n"
+        "Tiada apa-apa yang perlu anda lakukan buat masa ini — sila tunggu mesej kami yang seterusnya.\n\n"
         "Jika ada sebarang pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
         "Tahniah,\nPasukan Biasiswa BrightPath"
     ),
@@ -450,12 +449,10 @@ AWARD_OFFER_BODIES = {
         "அன்புள்ள {name},\n\n"
         "ஒரு நல்ல செய்தியைப் பகிர்வதில் மகிழ்ச்சி அடைகிறோம். BrightPath Bursary திட்டத்திற்கான உங்கள் "
         "விண்ணப்பம் வெற்றிபெற்றுள்ளது — உங்கள் படிப்பிற்கான நிதியுதவியைப் பெற நீங்கள் தேர்ந்தெடுக்கப்பட்டுள்ளீர்கள்.\n\n"
-        "இப்போது செய்ய வேண்டிய ஒரு விஷயம்: உள்நுழைந்து உங்கள் வங்கிக் கணக்கு விவரங்களைச் சேர்க்கவும், "
-        "அதனால் உங்கள் உதவிப் பணத்தைச் செயல்படுத்த நாங்கள் தயாராக இருப்போம். இதை உங்கள் விண்ணப்பத்தின் "
-        "செயல் மையத்தில் (Action Centre) காணலாம்:\n{link}\n\n"
-        "அடுத்து என்ன நடக்கும்: உங்கள் முறையான வழங்கல் (offer) மற்றும் அதை ஏற்கும் எளிய படிகளுடன் நாங்கள் "
-        "விரைவில் உங்களைத் தொடர்புகொள்வோம். இப்போதைக்கு வேறு எதுவும் செய்ய வேண்டியதில்லை — வங்கி "
-        "விவரங்களைச் சேர்த்து, எங்கள் அடுத்த செய்திக்காகக் காத்திருங்கள்.\n\n"
+        "உங்கள் உதவி மாதாந்திரக் கட்டண முறையில் வழங்கப்படும். அதன் விவரங்களை நாங்கள் இப்போது இறுதி செய்து "
+        "வருகிறோம்; விரைவில் முறையான வழங்கல் (offer) மற்றும் உதவித்தொகை ஒப்பந்தத்தை (bursary contract), அதை "
+        "ஏற்கும் எளிய படிகளுடன் உங்களுக்கு அனுப்புவோம்.\n\n"
+        "இப்போதைக்கு நீங்கள் எதுவும் செய்ய வேண்டியதில்லை — எங்கள் அடுத்த செய்திக்காகக் காத்திருங்கள்.\n\n"
         "ஏதேனும் கேள்விகள் இருந்தால், இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் "
         "எங்களைத் தொடர்புகொள்ளவும்.\n\n"
         "இதயப்பூர்வ வாழ்த்துகள்,\nBrightPath Bursary குழு"
@@ -463,32 +460,29 @@ AWARD_OFFER_BODIES = {
 }
 
 
-# The "add your bank account details" phrase (BOLD in the HTML) + the Action-Centre BUTTON
-# label, per language. Each bank phrase must be an exact substring of the body above.
-_BANK_PHRASE = {
-    'en': 'your bank account details',
-    'ms': 'butiran akaun bank anda',
-    'ta': 'உங்கள் வங்கிக் கணக்கு விவரங்களை',
-}
-_BTN_LABEL = {
-    'en': 'Add your bank details',
-    'ms': 'Tambah butiran bank anda',
-    'ta': 'வங்கி விவரங்களைச் சேர்க்கவும்',
+# The key phrases rendered BOLD in the HTML (how support is paid + the offer/contract to
+# follow), per language. Each must be an exact substring of the body above. There is no
+# call-to-action button on this email — it asks nothing of the student yet.
+_BOLD_PHRASES = {
+    'en': ['monthly payment arrangement', 'formal offer and bursary contract'],
+    'ms': ['aturan pembayaran bulanan', 'tawaran rasmi dan kontrak biasiswa'],
+    'ta': ['மாதாந்திரக் கட்டண முறையில்',
+           'முறையான வழங்கல் (offer) மற்றும் உதவித்தொகை ஒப்பந்தத்தை (bursary contract)'],
 }
 
 
-def _award_offer_html(text_body, link, lang):
-    """HTML for the award good-news email: paragraphs, with the bank-details phrase in BOLD,
-    the Action-Centre URL rendered as a button (not a raw link), and the sign-off team name
-    (the line after the salutation in the final paragraph) bolded. Falls back gracefully:
-    a missing phrase just isn't bolded; a missing link just adds no button."""
+def _award_offer_html(text_body, lang):
+    """HTML for the award good-news email: paragraphs, with the key phrases (how support is
+    paid + the offer/contract to follow) in BOLD and the sign-off team name (the line after the
+    salutation in the final paragraph) bolded. No call-to-action button — the email asks nothing
+    of the student yet. Falls back gracefully: a phrase that isn't found is left un-bolded."""
     import html as _h
-    bank = _BANK_PHRASE.get(lang, '')
-    btn = _BTN_LABEL.get(lang) or 'Add your bank details'
+    phrases = _BOLD_PHRASES.get(lang, [])
 
     def _emphasise(escaped):
-        if bank:
-            return escaped.replace(_h.escape(bank), f'<strong>{_h.escape(bank)}</strong>')
+        for ph in phrases:
+            if ph:
+                escaped = escaped.replace(_h.escape(ph), f'<strong>{_h.escape(ph)}</strong>')
         return escaped
 
     def _bold_team(escaped):
@@ -499,34 +493,27 @@ def _award_offer_html(text_body, link, lang):
     paras = [p.strip() for p in (text_body or '').split('\n\n') if p.strip()]
     blocks = []
     for idx, para in enumerate(paras):
-        if link and link in para:
-            lead = para.replace(link, '').strip()          # drop the raw URL line
-            blocks.append(f'<p style="margin:0 0 10px;">{_emphasise(_h.escape(lead)).replace(chr(10), "<br>")}</p>')
-            blocks.append(f'<p style="margin:0 0 14px;">{_email_button(link, btn)}</p>')
-        else:
-            esc = _emphasise(_h.escape(para))
-            if idx == len(paras) - 1 and '\n' in para:   # final paragraph = the sign-off
-                esc = _bold_team(esc)
-            blocks.append(f'<p style="margin:0 0 14px;">{esc.replace(chr(10), "<br>")}</p>')
+        esc = _emphasise(_h.escape(para))
+        if idx == len(paras) - 1 and '\n' in para:   # final paragraph = the sign-off
+            esc = _bold_team(esc)
+        blocks.append(f'<p style="margin:0 0 14px;">{esc.replace(chr(10), "<br>")}</p>')
     return _html_email_shell(''.join(blocks))
 
 
 def send_award_offer_email(to_email, applicant_name, lang='en'):
-    """Award good-news email: a sponsor has committed (status 'awarded'). Tells the student
-    the application succeeded, to add their bank details (Action Centre), and to await the
-    formal offer. NO amount, NO sponsor identity. HTML (bank-details BOLD + Action-Centre
-    BUTTON) + plain-text fallback, from info@, reply-to help@."""
+    """Award good-news email: a sponsor has committed (status 'awarded'). Tells the student the
+    application succeeded, that support is paid as a monthly arrangement, and that a formal offer
+    + bursary contract will follow. NO bank-details ask, NO call-to-action, NO amount, NO sponsor
+    identity. HTML (key phrases BOLD) + plain-text fallback, from info@, reply-to help@."""
     if not to_email:
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
-    link = f'{frontend}/scholarship/application'
-    fmt = {'name': name, 'link': link, 'support': SUPPORT_EMAIL}
+    fmt = {'name': name, 'support': SUPPORT_EMAIL}
     subject = AWARD_OFFER_SUBJECTS[lang]
     text_body = AWARD_OFFER_BODIES[lang].format(**fmt)
     return _send_html(
-        to_email, subject, text_body, _award_offer_html(text_body, link, lang),
+        to_email, subject, text_body, _award_offer_html(text_body, lang),
         from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
         reply_to=[SUPPORT_EMAIL],
     )
