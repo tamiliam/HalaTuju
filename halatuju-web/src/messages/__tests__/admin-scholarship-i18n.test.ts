@@ -62,6 +62,13 @@ const dynPrefixes: string[] = []
 captureGroup1(/admin\.scholarship\.((?:\w+\.)+)(?=['"`]|\$\{)/g, blob).forEach((p) => {
   if (dynPrefixes.indexOf(p) < 0) dynPrefixes.push(p)
 })
+// Also capture a prefix that ends just before `${` even when it ends in a NON-dot word char
+// (e.g. `recordVerdict.noAmountReason_${disqualifier}` — the verdict-aware no-amount reason codes).
+// The first regex only matches `.`-terminated prefixes, so an underscore-suffixed dynamic key
+// would otherwise read as an orphan.
+captureGroup1(/admin\.scholarship\.([\w.]+?)(?=\$\{)/g, blob).forEach((p) => {
+  if (dynPrefixes.indexOf(p) < 0) dynPrefixes.push(p)
+})
 const topLevelDynamic = /admin\.scholarship\.(?=['"`]|\$\{)/.test(blob)
 
 // Statically-used full paths: `admin.scholarship.<path>` ending right at a closing quote.
