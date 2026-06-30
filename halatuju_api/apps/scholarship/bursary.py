@@ -18,6 +18,7 @@ behind ``BURSARY_AGREEMENT_ENABLED`` (default OFF).
 """
 import hashlib
 import io
+import logging
 from decimal import Decimal
 
 from django.conf import settings
@@ -25,6 +26,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from .vision import name_match, nric_match
+
+logger = logging.getLogger(__name__)
 
 
 class BursaryError(Exception):
@@ -561,6 +564,10 @@ def countersign_foundation(agreement, *, by_name):
     _regenerate_artefact(agreement, fields)
     agreement.save(update_fields=fields)
     _maybe_activate(agreement)
+    # The Foundation signs last → if this executed the agreement (app now 'active'),
+    # tell the student their bursary is in effect.
+    if agreement.application.status == 'active':
+        _notify_agreement_executed(agreement.application)
     return agreement
 
 
@@ -577,6 +584,11 @@ def record_witness(agreement, *, org, by_name, witness_name=''):
     _regenerate_artefact(agreement, fields)
     agreement.save(update_fields=fields)
     _maybe_activate(agreement)   # in case the witness is the last of the four to sign
+    # Witness done → the Foundation is next in the chain (unless it already signed).
+    if agreement.foundation_signed_at is None:
+        _notify_foundation_countersign_pending(agreement.application)
+    elif agreement.application.status == 'active':
+        _notify_agreement_executed(agreement.application)
     return agreement
 
 
@@ -621,3 +633,88 @@ def _regenerate_artefact(agreement, fields):
         storage.upload_object(agreement.pdf_storage_path, pdf_bytes, 'application/pdf')
     except BursaryError:
         pass  # keep the prior PDF; the signature fields still stamp
+
+
+# ── Signing-chain notifications (best-effort; a mail failure never breaks signing) ──
+
+def _cockpit_link(application):
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    return f'{frontend}/admin/scholarship/{application.id}'
+
+
+def foundation_notify_emails():
+    """Recipients for a "please countersign" nudge: the ``FOUNDATION_NOTIFY_EMAIL`` override
+    (comma-separated) if set, else every active super admin (the people who can countersign),
+    else ``ADMIN_NOTIFY_EMAIL``. Returns a de-duplicated list (possibly empty)."""
+    env = getattr(settings, 'FOUNDATION_NOTIFY_EMAIL', '') or ''
+    explicit = [e.strip() for e in env.split(',') if e.strip()]
+    if explicit:
+        return list(dict.fromkeys(explicit))
+    from django.db.models import Q
+    from apps.courses.models import PartnerAdmin
+    supers = list(
+        PartnerAdmin.objects.filter(is_active=True)
+        .filter(Q(role='super') | Q(is_super_admin=True))
+        .exclude(email='').values_list('email', flat=True)
+    )
+    if supers:
+        return sorted(set(supers))
+    fallback = getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or ''
+    return [fallback] if fallback else []
+
+
+def _applicant_name(application):
+    return getattr(getattr(application, 'profile', None), 'name', '') or ''
+
+
+def notify_after_guarantor_signed(application):
+    """Student + guarantor have signed → email the NEXT party in the chain. If a referring
+    partner organisation with a contact email exists, ask them to witness (sequenced first);
+    otherwise email the Foundation directly to countersign (graceful — no org / no contact
+    must never stall the student). Best-effort: any failure is logged, never raised."""
+    try:
+        from . import emails
+        profile = getattr(application, 'profile', None)
+        org = getattr(profile, 'referred_by_org', None)
+        name = _applicant_name(application)
+        link = _cockpit_link(application)
+        if org and getattr(org, 'contact_email', ''):
+            emails.send_witness_pending_email(
+                org.contact_email, contact_person=getattr(org, 'contact_person', ''),
+                applicant_name=name, org_name=getattr(org, 'name', ''), link=link)
+        else:
+            for to in foundation_notify_emails():
+                emails.send_countersign_pending_email(to, applicant_name=name, link=link)
+    except Exception:
+        logger.exception('bursary: notify_after_guarantor_signed failed (app %s)',
+                         getattr(application, 'id', '?'))
+
+
+def _notify_foundation_countersign_pending(application):
+    """Ask the Foundation to countersign (used after a partner witnesses). Best-effort."""
+    try:
+        from . import emails
+        name = _applicant_name(application)
+        link = _cockpit_link(application)
+        for to in foundation_notify_emails():
+            emails.send_countersign_pending_email(to, applicant_name=name, link=link)
+    except Exception:
+        logger.exception('bursary: countersign-pending notify failed (app %s)',
+                         getattr(application, 'id', '?'))
+
+
+def _notify_agreement_executed(application):
+    """Tell the student their agreement is fully executed (→ 'active'). Best-effort.
+    (The parent/guarantor has no email on file — only a phone — so this is student-only.)"""
+    try:
+        from . import emails
+        profile = getattr(application, 'profile', None)
+        to = (getattr(application, 'notify_email', '') or ''
+              or getattr(profile, 'contact_email', '') or '')
+        cp = getattr(application, 'chosen_programme', None) or {}
+        programme = cp.get('course_name', '') if isinstance(cp, dict) else ''
+        emails.send_agreement_executed_email(
+            to, _applicant_name(application), programme, lang=getattr(application, 'locale', 'en') or 'en')
+    except Exception:
+        logger.exception('bursary: executed notify failed (app %s)',
+                         getattr(application, 'id', '?'))

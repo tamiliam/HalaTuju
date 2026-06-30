@@ -1758,7 +1758,9 @@
         "acceptBody": "A supporter has chosen to fund your studies. Accept your award to continue.",
         "acceptCta": "View my award",
         "onboardingBody": "You've accepted your award — just a few quick questions to finish setting up.",
-        "onboardingCta": "Complete onboarding"
+        "onboardingCta": "Complete onboarding",
+        "awaitingTitle": "Thank you — your part is done",
+        "awaitingBody": "You and your parent or guardian have signed your bursary agreement. We're now collecting the remaining signatures, and we'll email you as soon as everything is complete."
       },
       "bursaryPanel": {
         "title": "Your bursary agreement",

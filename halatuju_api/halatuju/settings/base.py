@@ -317,6 +317,14 @@ FOUNDATION_SIGNATORY_NAME = os.environ.get('FOUNDATION_SIGNATORY_NAME', 'Suresh'
 FOUNDATION_SIGNATORY_TITLE = os.environ.get(
     'FOUNDATION_SIGNATORY_TITLE', 'For and on behalf of the Foundation (interim signatory)')
 FOUNDATION_SIGNATORY_NRIC = os.environ.get('FOUNDATION_SIGNATORY_NRIC', '')
+# Who gets the "a bursary agreement is awaiting the Foundation's countersignature" nudge.
+# Comma-separated override; if unset, the chain falls back to the active super admins,
+# then to ADMIN_NOTIFY_EMAIL. (See bursary.foundation_notify_emails.)
+FOUNDATION_NOTIFY_EMAIL = os.environ.get('FOUNDATION_NOTIFY_EMAIL', '')
+
+# Owner-controlled "your agreement is ready to sign" follow-up email — explicit
+# application IDs to send to (the cron job 'send-sign-invitation-emails' reads this).
+SIGN_INVITE_APP_IDS = os.environ.get('SIGN_INVITE_APP_IDS', '')
 
 # Logging configuration (structured JSON for Cloud Run)
 LOGGING = {

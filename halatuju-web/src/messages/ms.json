@@ -1758,7 +1758,9 @@
         "acceptBody": "Seorang penyokong telah memilih untuk membiayai pengajian anda. Terima anugerah anda untuk meneruskan.",
         "acceptCta": "Lihat anugerah saya",
         "onboardingBody": "Anda telah menerima anugerah anda — hanya beberapa soalan ringkas untuk melengkapkan persediaan.",
-        "onboardingCta": "Lengkapkan pendaftaran"
+        "onboardingCta": "Lengkapkan pendaftaran",
+        "awaitingTitle": "Terima kasih — bahagian anda telah selesai",
+        "awaitingBody": "Anda dan ibu bapa atau penjaga anda telah menandatangani perjanjian biasiswa anda. Kami sedang mengumpulkan tandatangan yang selebihnya, dan kami akan menghantar e-mel kepada anda sebaik sahaja semuanya selesai."
       },
       "bursaryPanel": {
         "title": "Perjanjian biasiswa anda",
