@@ -271,6 +271,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Whether the (dark-by-default) Conditional Bursary Agreement feature is live — the cockpit
     # only renders the agreement panel when this is on (otherwise its signing flow doesn't exist).
     bursary_agreement_enabled = serializers.SerializerMethodField()
+    # TD-144: the real loaded agreement (signature timestamps + derived status + signed PDF
+    # URL) so the cockpit panel shows ACCURATE four-party ticks instead of an optimistic
+    # default. None when the flag is off or no agreement exists yet. No donor field.
+    bursary_agreement = serializers.SerializerMethodField()
     # Post-award S4: the money-out tranche ledger (admin-facing; no sponsor identity).
     disbursements = serializers.SerializerMethodField()
     # Standardised assistance (2026-06-29): the pathway-derived proposed amount the cockpit
@@ -351,7 +355,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'verdict_decided_by', 'verdict_decided_at', 'verdict_decided_by_name',
             # Decision-reopen (reverse a recorded decision) state + assigned-reviewer corrections.
             'decision_reopened_at', 'decision_reopen_reason',
-            'assigned_to_corrections', 'bursary_agreement_enabled',
+            'assigned_to_corrections', 'bursary_agreement_enabled', 'bursary_agreement',
             # Post-award S4: the disbursement/tranche ledger (cockpit money-out panel).
             'disbursements',
         ]
@@ -386,6 +390,16 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     def get_bursary_agreement_enabled(self, obj):
         from django.conf import settings
         return bool(getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False))
+
+    def get_bursary_agreement(self, obj):
+        from django.conf import settings
+        if not getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False):
+            return None
+        agreement = getattr(obj, 'bursary_agreement', None)
+        if agreement is None:
+            return None
+        from .serializers import BursaryAgreementSerializer
+        return BursaryAgreementSerializer(agreement).data
 
     def get_decision_reopen_reason(self, obj):
         if obj.decision_reopened_at is None:

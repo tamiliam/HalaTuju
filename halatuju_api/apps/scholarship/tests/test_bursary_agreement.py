@@ -581,3 +581,56 @@ class TestSigningChainNotifications(TestCase):
         sent = [m for m in self.mail.outbox if m.to[0] == 'student@secret.example']
         self.assertTrue(sent)
         self.assertTrue(any('sign' in m.subject.lower() for m in sent))
+
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=True)
+class TestCockpitAgreementSurfacing(TestCase):
+    """TD-144: the admin detail serializer carries the REAL agreement so the cockpit shows
+    accurate four-party ticks (no optimistic default)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def setUp(self):
+        self.pdf, self.upload, self.dl = _mock_seams()
+        self.pdf.start(); self.upload.start(); self.dl.start()
+        self.addCleanup(self.pdf.stop)
+        self.addCleanup(self.upload.stop)
+        self.addCleanup(self.dl.stop)
+
+    def _detail(self, app):
+        from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
+        return AdminApplicationDetailSerializer(app).data
+
+    def test_no_agreement_is_none(self):
+        app = _fundable_app(self.cohort, suffix='td1')
+        _fund(app)   # awarded, but not signed yet
+        data = self._detail(app)
+        self.assertTrue(data['bursary_agreement_enabled'])
+        self.assertIsNone(data['bursary_agreement'])   # ticks render as "–", not a false ✓
+
+    def test_signed_agreement_surfaced_with_accurate_ticks(self):
+        app = _fundable_app(self.cohort, suffix='td2')
+        _add_parent_ic(app)
+        _fund(app)
+        _verify_guarantor_phone(app)
+        svc.respond_to_award(
+            app, action='accept', student_signed_name='Zxq Student',
+            guarantor_name=GUARANTOR_NAME, guarantor_nric=GUARANTOR_NRIC,
+            guarantor_relationship='mother')
+        data = self._detail(app)
+        ag = data['bursary_agreement']
+        self.assertIsNotNone(ag)
+        self.assertIsNotNone(ag['student_signed_at'])     # student ✓
+        self.assertIsNotNone(ag['guarantor_signed_at'])   # guarantor ✓
+        self.assertIsNone(ag['foundation_signed_at'])     # Foundation – (not yet)
+        self.assertIsNone(ag['witness_signed_at'])        # witness –
+
+    @override_settings(BURSARY_AGREEMENT_ENABLED=False)
+    def test_dark_flag_hides_agreement(self):
+        app = _fundable_app(self.cohort, suffix='td3')
+        _fund(app)
+        data = self._detail(app)
+        self.assertFalse(data['bursary_agreement_enabled'])
+        self.assertIsNone(data['bursary_agreement'])

@@ -3424,7 +3424,8 @@
         "download": "Download (PDF)",
         "actionError": "That action could not be completed. Please try again.",
         "witnessForbidden": "Only the referring partner organisation (or a super admin) can witness this agreement.",
-        "note": "The witness is a record only and never blocks the award. The donor is never named on this agreement."
+        "note": "The witness is a record only and never blocks the award. The donor is never named on this agreement.",
+        "awaitingSignature": "Waiting for the student and their guarantor to sign — nothing to counter-sign or witness yet."
       }
     },
     "students": "Students",

@@ -336,6 +336,9 @@ export default function AdminScholarshipDetailPage() {
         setProfile(d.sponsor_profile)
         loadInterviewState(d)
         loadVerdictState(d)
+        // TD-144: seed the bursary panel from the real loaded agreement so the four-party
+        // ticks are accurate on first paint (the action responses refresh it after a sign).
+        setBursary(d.bursary_agreement ?? null)
       })
       .catch(() => setError(t('admin.scholarship.loadFailed')))
     getAssignableAdmins({ token }).then((r) => setAdmins(r.admins)).catch(() => {})
@@ -2211,14 +2214,12 @@ export default function AdminScholarshipDetailPage() {
           witness are recorded here. The admin detail GET doesn't carry the
           agreement, so the four states resolve from the action responses. */}
       {app.bursary_agreement_enabled && (app.status === 'awarded' || app.status === 'active' || app.status === 'maintenance') && (() => {
-        // Signed-by-now is implied once accepted (the in-session signing is the gate);
-        // the action responses confirm the Foundation/Witness columns + the PDF link.
-        // NOTE (TD): the student/guarantor "implied signed" default is only sound once the
-        // feature is LIVE and signing is wired into award-accept; until the agreement is also
-        // loaded into the detail GET it can over-state an accepted-but-not-yet-signed case.
-        // The panel is gated on bursary_agreement_enabled so it never shows while dark.
-        const studentDone = bursary ? !!bursary.student_signed_at : true
-        const guarantorDone = bursary ? !!bursary.guarantor_signed_at : true
+        // TD-144 FIXED: all four states come from the REAL loaded agreement (seeded from the
+        // detail GET, refreshed by the action responses) — no optimistic default. No agreement
+        // yet (awarded but the student hasn't signed) → every tick is correctly "–".
+        const hasAgreement = !!bursary
+        const studentDone = !!bursary?.student_signed_at
+        const guarantorDone = !!bursary?.guarantor_signed_at
         const foundationDone = !!bursary?.foundation_signed_at
         const witnessDone = !!bursary?.witness_signed_at
         const stateRow = (label: string, done: boolean) => (
@@ -2247,13 +2248,16 @@ export default function AdminScholarshipDetailPage() {
               {stateRow(t('admin.scholarship.bursary.foundation'), foundationDone)}
               {stateRow(t('admin.scholarship.bursary.witness'), witnessDone)}
             </div>
+            {!hasAgreement && (
+              <p className="text-xs text-gray-500">{t('admin.scholarship.bursary.awaitingSignature')}</p>
+            )}
             {bursaryMsg && <p className="text-xs text-amber-600">{bursaryMsg}</p>}
             <div className="flex flex-wrap items-center gap-2">
               {isSuper && (
                 <button
                   type="button"
                   onClick={doCountersignBursary}
-                  disabled={busy === 'bursary' || foundationDone}
+                  disabled={busy === 'bursary' || !hasAgreement || foundationDone}
                   className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                 >
                   {t('admin.scholarship.bursary.countersign')}
@@ -2262,7 +2266,7 @@ export default function AdminScholarshipDetailPage() {
               <button
                 type="button"
                 onClick={doWitnessBursary}
-                disabled={busy === 'bursary' || witnessDone}
+                disabled={busy === 'bursary' || !hasAgreement || witnessDone}
                 className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
               >
                 {t('admin.scholarship.bursary.witnessAction')}
