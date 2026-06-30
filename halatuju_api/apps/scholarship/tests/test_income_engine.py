@@ -423,6 +423,7 @@ from apps.scholarship.income_engine import (  # noqa: E402
     _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
     slip_epf_divergence, _reconciled_holder_name, _arrears_amount,
     earner_monthly_income, _epf_monthly_salary, _salary_monthly_amount,
+    income_headroom,
 )
 
 
@@ -504,6 +505,18 @@ class TestSalaryMonthlyAmount(SimpleTestCase):
     def test_net_only_when_no_gross(self):
         self.assertEqual(_salary_monthly_amount({'net_income': 'RM2400'}), 2400.0)
 
+    def test_ytd_annualised_preferred_over_single_month(self):
+        # #13: a single month (RM3,800) under-states a job with variable O/T — YTD ÷ 12 is the
+        # representative monthly (84,774.59 ÷ 12 ≈ 7,064.55).
+        self.assertAlmostEqual(
+            _salary_monthly_amount({'gross_income': 'RM3,800', 'gross_income_ytd': 'RM84,774.59'}),
+            round(84774.59 / 12, 2), places=2)
+
+    def test_ytd_not_used_when_it_would_deflate(self):
+        # A mis-read / partial YTD lower than the single month must NOT deflate the figure.
+        self.assertEqual(
+            _salary_monthly_amount({'gross_income': 'RM3000', 'gross_income_ytd': 'RM12000'}), 3000.0)
+
     def test_net_over_gross_is_rejected(self):
         # #66: a hand-written voucher whose ruled ringgit|sen columns were concatenated —
         # the RM326.00 EPF deduction read as gross '32600', RM343.25 deductions as net
@@ -517,6 +530,47 @@ class TestSalaryMonthlyAmount(SimpleTestCase):
         amt, src = earner_monthly_income(app, 'father')
         self.assertIsNone(amt)
         self.assertEqual(src, 'unknown')
+
+
+class TestIncomeHeadroom(SimpleTestCase):
+    """Margin-graded B40 confidence for the salary route (str-proof-spec.md §7.1)."""
+    def _hh(self, *, gross=None, ytd=None, size=4, members=('father',)):
+        f = {}
+        if gross is not None:
+            f['gross_income'] = str(gross)
+        if ytd is not None:
+            f['gross_income_ytd'] = str(ytd)
+        app = _app([_bill('salary_slip', f)], household_size=size)
+        app.cohort = SimpleNamespace(income_ceiling=5860, per_capita_ceiling=1584)
+        return income_headroom(app, list(members))
+
+    def test_far_under_line_is_probable(self):
+        # SARA-like: RM687.50/mo pension, household 6 → breach-room ≈ RM8,816 (an undeclared earner
+        # would need an implausible wage to breach) → highly probable B40.
+        band, ctx = self._hh(gross=687.50, size=6)
+        self.assertEqual(band, 'probable')
+        self.assertGreater(ctx['breach_room'], 1584)
+
+    def test_near_line_thin_headroom_is_unsure(self):
+        # #13-like: annualised ~RM7,064 (YTD 84,774.59 ÷ 12), household 5 → per-capita ~1,413 (under
+        # the line) but breach-room ≈ RM856 — an undeclared earner could plausibly breach → unsure.
+        band, ctx = self._hh(gross=3800, ytd=84774.59, size=5)
+        self.assertEqual(band, 'unsure')
+        self.assertEqual(ctx['per_capita'], round(84774.59 / 12 / 5))  # annualised drove it
+        self.assertLess(ctx['breach_room'], 1584)
+
+    def test_over_line_is_over(self):
+        # per-capita 3,000 > 1,584 AND gross 12,000 > 5,860 → above B40 (never auto-rejected).
+        band, _ = self._hh(gross=12000, size=4)
+        self.assertEqual(band, 'over')
+
+    def test_income_unreadable_is_unknown(self):
+        band, _ = self._hh(gross=None, size=4)
+        self.assertEqual(band, 'unknown')
+
+    def test_no_household_size_is_unknown(self):
+        band, _ = self._hh(gross=2000, size=None)
+        self.assertEqual(band, 'unknown')
 
 
 class TestBillingMonthParse(SimpleTestCase):
