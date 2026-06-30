@@ -250,6 +250,23 @@ function strCurrencyFactStatus(s: string | undefined | null): FactStatus {
 }
 
 /**
+ * Tone for the STR APPROVAL status chip — the third required STR variable (after recipient
+ * name + IC), distinct from the currency/date dimension above. Was it approved (Lulus)?
+ *   current / stale / unconfirmed → all carry an approved status → green (Lulus).
+ *   rejected (Ditolak) / wrong_type (not an STR at all) → red — no valid approval.
+ *   unreadable (cropped page, status line not visible) → amber — couldn't read it, NOT a
+ *     "not approved" (don't brand a cropped upload as rejected).
+ */
+function strStatusFactStatus(s: string | undefined | null): FactStatus {
+  switch (s) {
+    case 'current': case 'stale': case 'unconfirmed': return 'verified'
+    case 'rejected': case 'wrong_type': return 'not'
+    case 'unreadable': return 'partial'
+    default: return 'unknown'
+  }
+}
+
+/**
  * Tone for a utility-bill ADDRESS check. Mirrors the backend's weighted matcher + officer-flag
  * logic: only a genuine 'mismatch' (a different home) is red; 'unconfirmed'/'unreadable' (and the
  * legacy 'not_found') mean "couldn't confirm" — amber, eyeball at interview, never a hard miss.
@@ -338,9 +355,12 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   if (dt === 'str') {
     const c = doc.str_check
     if (!c) return []
+    // The three REQUIRED STR variables — recipient name, IC, and approval Status (Lulus) —
+    // then Current (the date/cycle dimension, separate from approval).
     return [
       { key: 'recipient', status: factStatus(c.name_status) },
       { key: 'ic_no', status: factStatus(c.nric_status) },
+      { key: 'status', status: strStatusFactStatus(c.current_status) },
       { key: 'current', status: strCurrencyFactStatus(c.current_status) },
     ]
   }
