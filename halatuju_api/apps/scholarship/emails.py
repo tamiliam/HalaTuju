@@ -532,6 +532,184 @@ def send_award_offer_email(to_email, applicant_name, lang='en'):
     )
 
 
+# ── Bursary signing chain (BURSARY_AGREEMENT_ENABLED) ─────────────────────────
+# Two student-facing trilingual emails (the "now sign" follow-up + the executed
+# confirmation) + two internal English notifications (partner witness-pending +
+# Foundation countersign-pending). No donor is ever named in any of them.
+
+SIGN_INVITE_SUBJECTS = {
+    'en': 'Your BrightPath Bursary agreement is ready to sign ✍️',
+    'ms': 'Perjanjian Biasiswa BrightPath anda sedia untuk ditandatangani ✍️',
+    'ta': 'உங்கள் BrightPath Bursary ஒப்பந்தம் கையொப்பமிடத் தயாராக உள்ளது ✍️',
+}
+SIGN_INVITE_BODIES = {
+    'en': (
+        "Dear {name},\n\n"
+        "The next step in your bursary is ready: your bursary agreement. Please log in and "
+        "open your Action Centre, where you'll first go through a short, friendly check to "
+        "make sure the terms are clear, and then sign the agreement together with your parent "
+        "or guardian — all on the same device.\n{link}\n\n"
+        "Please have your parent or guardian with you when you sign: they sign as your "
+        "guarantor, and we'll send a one-time PIN to their phone to confirm it's them.\n\n"
+        "If you have any questions, reply to this email or contact us at {support}.\n\n"
+        "Warm wishes,\nThe BrightPath Bursary Team"
+    ),
+    'ms': (
+        "Salam {name},\n\n"
+        "Langkah seterusnya dalam biasiswa anda sudah sedia: perjanjian biasiswa anda. Sila "
+        "log masuk dan buka Pusat Tindakan anda. Anda akan melalui semakan ringkas dan mesra "
+        "dahulu untuk memastikan terma jelas, kemudian menandatangani perjanjian bersama ibu "
+        "bapa atau penjaga anda — semuanya pada peranti yang sama.\n{link}\n\n"
+        "Sila pastikan ibu bapa atau penjaga anda bersama anda semasa menandatangani: mereka "
+        "menandatangani sebagai penjamin anda, dan kami akan menghantar PIN sekali guna ke "
+        "telefon mereka untuk mengesahkannya.\n\n"
+        "Jika ada sebarang pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
+        "Salam mesra,\nPasukan Biasiswa BrightPath"
+    ),
+    'ta': (
+        "அன்புள்ள {name},\n\n"
+        "உங்கள் உதவித்தொகையின் அடுத்த படி தயாராக உள்ளது: உங்கள் உதவித்தொகை ஒப்பந்தம். உள்நுழைந்து "
+        "உங்கள் செயல் மையத்தைத் (Action Centre) திறக்கவும். முதலில் விதிமுறைகள் தெளிவாக இருப்பதை "
+        "உறுதிசெய்ய ஒரு சிறிய, நட்பான சரிபார்ப்பின் வழியாகச் செல்வீர்கள், பின்னர் உங்கள் பெற்றோர் "
+        "அல்லது பாதுகாவலருடன் சேர்ந்து — ஒரே சாதனத்தில் — ஒப்பந்தத்தில் கையொப்பமிடுவீர்கள்.\n{link}\n\n"
+        "கையொப்பமிடும்போது உங்கள் பெற்றோர் அல்லது பாதுகாவலர் உங்களுடன் இருப்பதை உறுதிசெய்யவும்: "
+        "அவர்கள் உங்கள் பிணையாளராகக் கையொப்பமிடுகிறார்கள், அவர்கள்தான் என்பதை உறுதிப்படுத்த அவர்களின் "
+        "தொலைபேசிக்கு ஒரு முறை PIN அனுப்புவோம்.\n\n"
+        "ஏதேனும் கேள்விகள் இருந்தால், இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் "
+        "எங்களைத் தொடர்புகொள்ளவும்.\n\n"
+        "அன்புடன்,\nBrightPath Bursary குழு"
+    ),
+}
+
+
+def send_sign_invitation_email(to_email, applicant_name, lang='en'):
+    """The follow-up "your agreement is ready to sign" email (owner-sent, after the
+    bank-details email). Points to /scholarship/application → Action Centre → the
+    comprehension quiz → signing. NO amount, NO sponsor identity. Plain text + info@."""
+    if not to_email:
+        return False
+    lang = normalise_lang(lang)
+    name = applicant_name or _DEFAULT_NAME[lang]
+    return _send(to_email, SIGN_INVITE_SUBJECTS, SIGN_INVITE_BODIES, name, '', lang,
+                 extra={'support': SUPPORT_EMAIL})
+
+
+AGREEMENT_EXECUTED_SUBJECTS = {
+    'en': 'Your BrightPath Bursary agreement is now in effect 🎓',
+    'ms': 'Perjanjian Biasiswa BrightPath anda kini berkuat kuasa 🎓',
+    'ta': 'உங்கள் BrightPath Bursary ஒப்பந்தம் இப்போது அமலுக்கு வந்துள்ளது 🎓',
+}
+AGREEMENT_EXECUTED_BODIES = {
+    'en': (
+        "Dear {name},\n\n"
+        "Good news — your bursary agreement is now fully signed and in effect. Everyone who "
+        "needed to sign has done so, and your bursary is confirmed.\n\n"
+        "You can view your application and your signed agreement here:\n{link}\n\n"
+        "We'll be in touch with the next steps. If you have any questions, reply to this email "
+        "or contact us at {support}.\n\n"
+        "Warm congratulations,\nThe BrightPath Bursary Team"
+    ),
+    'ms': (
+        "Salam {name},\n\n"
+        "Berita baik — perjanjian biasiswa anda kini ditandatangani sepenuhnya dan berkuat "
+        "kuasa. Semua pihak yang perlu menandatangani telah berbuat demikian, dan biasiswa anda "
+        "telah disahkan.\n\n"
+        "Anda boleh melihat permohonan dan perjanjian anda yang ditandatangani di sini:\n{link}\n\n"
+        "Kami akan menghubungi anda dengan langkah seterusnya. Jika ada sebarang pertanyaan, "
+        "balas e-mel ini atau hubungi kami di {support}.\n\n"
+        "Tahniah,\nPasukan Biasiswa BrightPath"
+    ),
+    'ta': (
+        "அன்புள்ள {name},\n\n"
+        "நல்ல செய்தி — உங்கள் உதவித்தொகை ஒப்பந்தம் இப்போது முழுமையாகக் கையொப்பமிடப்பட்டு அமலுக்கு "
+        "வந்துள்ளது. கையொப்பமிட வேண்டிய அனைவரும் கையொப்பமிட்டுவிட்டனர், உங்கள் உதவித்தொகை "
+        "உறுதிப்படுத்தப்பட்டுள்ளது.\n\n"
+        "உங்கள் விண்ணப்பத்தையும் கையொப்பமிடப்பட்ட ஒப்பந்தத்தையும் இங்கே காணலாம்:\n{link}\n\n"
+        "அடுத்த படிகளுடன் நாங்கள் உங்களைத் தொடர்புகொள்வோம். ஏதேனும் கேள்விகள் இருந்தால், இந்த "
+        "மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் எங்களைத் தொடர்புகொள்ளவும்.\n\n"
+        "இதயப்பூர்வ வாழ்த்துகள்,\nBrightPath Bursary குழு"
+    ),
+}
+
+
+def send_agreement_executed_email(to_email, applicant_name, programme_name='', lang='en'):
+    """Sent when the bursary agreement is fully executed (student + guarantor + Foundation
+    signed → application 'active'). Confirms the bursary is in effect. NO sponsor identity.
+    Plain text + info@."""
+    if not to_email:
+        return False
+    lang = normalise_lang(lang)
+    name = applicant_name or _DEFAULT_NAME[lang]
+    return _send(to_email, AGREEMENT_EXECUTED_SUBJECTS, AGREEMENT_EXECUTED_BODIES,
+                 name, programme_name, lang, extra={'support': SUPPORT_EMAIL})
+
+
+def send_witness_pending_email(to_email, *, contact_person='', applicant_name='',
+                               org_name='', link=''):
+    """Internal (English) nudge to the referring partner organisation: a bursary agreement
+    for a student they referred is awaiting their WITNESS signature. Best-effort. The donor
+    is never named; the partner already knows the student (they referred them)."""
+    if not to_email:
+        return False
+    greeting = f'Dear {contact_person},' if contact_person else 'Hello,'
+    who = f'<strong>{applicant_name}</strong>' if applicant_name else 'a student you referred'
+    text = (
+        f"{greeting}\n\n"
+        f"A BrightPath Bursary agreement for {applicant_name or 'a student you referred'} is "
+        f"ready for your organisation's witness signature. The student and their parent/guardian "
+        f"have signed; you are recorded as the witnessing partner.\n\n"
+        f"Please log in to the partner console to review and add your witness signature:\n{link}\n\n"
+        f"Thank you,\nThe BrightPath Bursary Team"
+    )
+    html = _html_email_shell(
+        f'<p style="margin:0 0 14px;">{greeting}</p>'
+        f'<p style="margin:0 0 14px;">A BrightPath Bursary agreement for {who} is ready for '
+        f'your organisation’s <strong>witness signature</strong>. The student and their '
+        f'parent or guardian have signed; you are recorded as the witnessing partner'
+        f'{(" for " + org_name) if org_name else ""}.</p>'
+        f'<p style="margin:0 0 18px;">Please log in to the partner console to review and add '
+        f'your witness signature.</p>'
+        f'<p style="margin:0 0 6px;">{_email_button(link, "Open the partner console")}</p>'
+        f'<p style="margin:18px 0 0;">Thank you,<br><strong>The BrightPath Bursary Team</strong></p>'
+    )
+    return _send_html(
+        to_email, 'A bursary agreement is awaiting your witness signature', text, html,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+        reply_to=[SUPPORT_EMAIL],
+    )
+
+
+def send_countersign_pending_email(to_email, *, applicant_name='', link=''):
+    """Internal (English) nudge to the Foundation officer / super admins: a bursary agreement
+    is awaiting the Foundation's COUNTERSIGNATURE (the binding, final signature that activates
+    the bursary). Best-effort. No donor named."""
+    if not to_email:
+        return False
+    who = f'<strong>{applicant_name}</strong>' if applicant_name else 'a student'
+    text = (
+        "Hello,\n\n"
+        f"A BrightPath Bursary agreement for {applicant_name or 'a student'} is awaiting the "
+        f"Foundation's countersignature. The student, their guarantor"
+        f"{' and the witnessing partner' if link else ''} have signed; the Foundation's "
+        f"signature is the final, binding step that activates the bursary.\n\n"
+        f"Please log in to the console to review and countersign:\n{link}\n\n"
+        f"Thank you,\nThe BrightPath Bursary Team"
+    )
+    html = _html_email_shell(
+        f'<p style="margin:0 0 14px;">Hello,</p>'
+        f'<p style="margin:0 0 14px;">A BrightPath Bursary agreement for {who} is awaiting the '
+        f'<strong>Foundation’s countersignature</strong> — the final, binding step '
+        f'that activates the bursary.</p>'
+        f'<p style="margin:0 0 6px;">{_email_button(link, "Open the console")}</p>'
+        f'<p style="margin:18px 0 0;">Thank you,<br><strong>The BrightPath Bursary Team</strong></p>'
+    )
+    return _send_html(
+        to_email, 'A bursary agreement is awaiting the Foundation countersignature', text, html,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+        reply_to=[SUPPORT_EMAIL],
+    )
+
+
 # ── F3: sponsor notifications (real-time alert + weekly digest) ───────────────
 # The body is built ONLY from already-serialised SponsorPoolDetailSerializer dicts
 # (an allowlist), so it can never contain a student's identity by construction.

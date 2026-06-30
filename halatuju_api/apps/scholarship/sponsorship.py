@@ -263,8 +263,11 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
 
     # Flag-ON (bursary signing) path: the app stays 'awarded' until the Foundation counter-signs
     # (the binding, last signature) — bursary.countersign_foundation flips 'awarded' → 'active'.
-    # The student + guarantor have just signed; the witness + Foundation follow via admin endpoints.
+    # The student + guarantor have just signed; notify the next party in the chain (partner
+    # witness if a referring org exists, else the Foundation directly). Best-effort.
     if getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False):
+        from . import bursary
+        bursary.notify_after_guarantor_signed(application)
         return sponsorship
 
     # Flag-OFF path: no signing step — acceptance + the #14 cool-off confirms the award → 'active'.

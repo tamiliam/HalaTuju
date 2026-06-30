@@ -1290,6 +1290,7 @@ class CronRunView(APIView):
         'refresh-profiles': 'refresh_sponsor_profiles',  # roll a prompt bump across draft+final (scope via PROFILE_REFRESH_APP_IDS)
         'award-students-batch': 'award_students_batch',  # admin batch-award to a sponsor (scope via SEED_SPONSOR_ID + SEED_AWARD_APP_IDS)
         'send-award-offer-emails': 'send_award_offer_emails',  # owner-forced award email send (scope via AWARD_EMAIL_APP_IDS)
+        'send-sign-invitation-emails': 'send_sign_invitation_emails',  # owner-forced "ready to sign" follow-up (scope via SIGN_INVITE_APP_IDS)
         'release-award-offer-emails': 'release_award_offer_emails',  # hourly: send award emails past the cool-off window
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly
         'sponsor-digests': 'send_sponsor_digests',     # F3: weekly

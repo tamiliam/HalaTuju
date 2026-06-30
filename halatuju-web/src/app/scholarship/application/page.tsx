@@ -94,6 +94,27 @@ export default function ScholarshipApplicationPage() {
     // Embargoed for now: the accept→onboarding flow isn't tested end-to-end, so we
     // keep the panel hidden until AWARD_ACCEPTANCE_ENABLED is turned on (no deploy).
     if (!award || !acceptanceEnabled) return null
+
+    // Bursary flow: once the student has SIGNED (a bursary agreement exists) but the
+    // agreement isn't yet fully executed — the application only reaches a funded state
+    // (active/maintenance) when the Foundation has counter-signed — we do NOT route them
+    // to the portal yet. "We do not land them in the portal until everyone has signed."
+    const signedAgreement = !!bursary
+    const fullyExecuted = isFundedStatus(app?.status || '')
+    if (signedAgreement && !fullyExecuted) {
+      return (
+        <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="shrink-0 text-blue-600" aria-hidden>✅</span>
+            <div className="flex-1">
+              <h2 className="font-semibold text-gray-900">{t('scholarship.application.awardPanel.awaitingTitle')}</h2>
+              <p className="mt-1 text-sm text-gray-700">{t('scholarship.application.awardPanel.awaitingBody')}</p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     const accepted = award.status !== 'offered'   // active / sponsored / etc.
     if (accepted && app?.onboarded_at) return null
     const href = accepted ? '/scholarship/onboarding' : '/scholarship/award'

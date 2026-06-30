@@ -477,3 +477,107 @@ class TestGuarantorPhoneEndpoints(TestCase):
         resp = self.client.post('/api/v1/scholarship/award/guarantor/verify-phone/send/')
         self.assertEqual(resp.status_code, 403)
         self.assertEqual(resp.data['code'], 'bursary_disabled')
+
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=True)
+class TestSigningChainNotifications(TestCase):
+    """S4: after each signature the right party is emailed, in order — partner witness →
+    Foundation countersign → student executed. The no-org path skips straight to the
+    Foundation; emails are best-effort and never break signing."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def setUp(self):
+        from django.core import mail
+        self.mail = mail
+        self.pdf, self.upload, self.dl = _mock_seams()
+        self.pdf.start(); self.upload.start(); self.dl.start()
+        self.addCleanup(self.pdf.stop)
+        self.addCleanup(self.upload.stop)
+        self.addCleanup(self.dl.stop)
+
+    def _super(self, email='foundation@h.org'):
+        return PartnerAdmin.objects.create(
+            supabase_user_id=f'sup-{email}', name='The Foundation', email=email,
+            is_super_admin=True, role='super', is_active=True)
+
+    def _accept(self, app):
+        _verify_guarantor_phone(app)
+        return svc.respond_to_award(
+            app, action='accept', student_signed_name='Zxq Student',
+            guarantor_name=GUARANTOR_NAME, guarantor_nric=GUARANTOR_NRIC,
+            guarantor_relationship='mother')
+
+    def test_no_org_guarantor_signed_emails_foundation(self):
+        self._super('foundation@h.org')
+        app = _fundable_app(self.cohort, suffix='n1')   # no referring org
+        _add_parent_ic(app)
+        _fund(app)
+        self.mail.outbox = []
+        self._accept(app)
+        bodies = [m.to[0] for m in self.mail.outbox]
+        self.assertIn('foundation@h.org', bodies)
+        self.assertTrue(any('countersignature' in m.subject.lower() for m in self.mail.outbox))
+
+    def test_org_guarantor_signed_emails_partner_witness(self):
+        org = PartnerOrganisation.objects.create(
+            code='cumig', name='CUMIG', contact_email='partner@cumig.org',
+            contact_person='Cik Partner')
+        self._super('foundation@h.org')
+        app = _fundable_app(self.cohort, suffix='o1', org=org)
+        _add_parent_ic(app)
+        _fund(app)
+        self.mail.outbox = []
+        self._accept(app)
+        # Partner is emailed (witness pending); the Foundation is NOT yet (sequenced).
+        recipients = [m.to[0] for m in self.mail.outbox]
+        self.assertIn('partner@cumig.org', recipients)
+        self.assertNotIn('foundation@h.org', recipients)
+        self.assertTrue(any('witness' in m.subject.lower() for m in self.mail.outbox))
+
+    def test_witness_then_foundation_then_executed_chain(self):
+        org = PartnerOrganisation.objects.create(
+            code='cumig', name='CUMIG', contact_email='partner@cumig.org')
+        self._super('foundation@h.org')
+        app = _fundable_app(self.cohort, suffix='ch', org=org)
+        _add_parent_ic(app)
+        _fund(app)
+        ag = app.bursary_agreement if hasattr(app, 'bursary_agreement') else None
+        self._accept(app)
+        ag = app.bursary_agreement
+
+        # Partner witnesses → Foundation is nudged to countersign.
+        self.mail.outbox = []
+        bursary.record_witness(ag, org=org, by_name='Partner Admin', witness_name='CUMIG')
+        self.assertIn('foundation@h.org', [m.to[0] for m in self.mail.outbox])
+
+        # Foundation countersigns → executes → student emailed; app 'active'.
+        self.mail.outbox = []
+        bursary.countersign_foundation(ag, by_name='The Foundation')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'active')
+        student_mail = [m for m in self.mail.outbox if m.to[0] == 'student@secret.example']
+        self.assertTrue(student_mail)
+        self.assertTrue(any('in effect' in m.subject.lower() or 'effect' in m.subject.lower()
+                            for m in student_mail))
+
+    def test_foundation_notify_emails_prefers_env_override(self):
+        from django.test import override_settings as _os
+        self._super('super@h.org')
+        with _os(FOUNDATION_NOTIFY_EMAIL='a@x.org, b@x.org'):
+            self.assertEqual(bursary.foundation_notify_emails(), ['a@x.org', 'b@x.org'])
+        # No override → falls back to active super admins.
+        self.assertIn('super@h.org', bursary.foundation_notify_emails())
+
+    def test_sign_invitation_command(self):
+        from django.core.management import call_command
+        app = _fundable_app(self.cohort, suffix='inv')
+        _fund(app)
+        self.mail.outbox = []
+        with override_settings(SIGN_INVITE_APP_IDS=str(app.id)):
+            call_command('send_sign_invitation_emails')
+        sent = [m for m in self.mail.outbox if m.to[0] == 'student@secret.example']
+        self.assertTrue(sent)
+        self.assertTrue(any('sign' in m.subject.lower() for m in sent))
