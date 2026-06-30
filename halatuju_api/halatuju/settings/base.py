@@ -297,6 +297,15 @@ IC_GEMINI_FALLBACK_ENABLED = os.environ.get('IC_GEMINI_FALLBACK_ENABLED', '1') !
 BURSARY_AGREEMENT_ENABLED = os.environ.get('BURSARY_AGREEMENT_ENABLED', '').lower() in ('1', 'true', 'yes')
 BURSARY_AGREEMENT_VERSION = '2026-v1'
 
+# Guarantor (parent/guardian surety) phone-PIN verification — the same-session parent
+# gate that runs before the in-session bursary signature (only when the agreement flag
+# above is on). An SMS PIN is sent to the guardian's PRE-DECLARED, LOCKED phone (from
+# profile.guardians, captured at apply); a successful check stamps the application. The
+# signature requires that stamp to be FRESH — within this TTL — so a signature can't ride
+# a days-old verification, and (because the phone is not editable at signing) a dishonest
+# student can't self-verify in the parent's place.
+GUARANTOR_PHONE_VERIFY_TTL_SECONDS = int(os.environ.get('GUARANTOR_PHONE_VERIFY_TTL_SECONDS', '1800'))
+
 # Award acceptance / onboarding entry point. DEFAULT OFF: the "View my award" panel on
 # /scholarship/application (→ the accept + onboarding flow) stays hidden until that flow is
 # tested end-to-end. Awarded students are instead invited into it by a separate email later;

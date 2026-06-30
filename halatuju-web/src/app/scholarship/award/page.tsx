@@ -12,6 +12,7 @@ import InfoBox from '@/components/InfoBox'
 import AwardComprehensionQuiz from '@/components/AwardComprehensionQuiz'
 import {
   getStudentAward, respondToAward, recordComprehensionPass,
+  sendGuarantorPin, checkGuarantorPin,
   type StudentAward, type BursaryPreview, type BursaryAgreement,
 } from '@/lib/api'
 import { formatNric, formatMoney2dp } from '@/lib/scholarship'
@@ -63,6 +64,15 @@ export default function ScholarshipAwardPage() {
   const [guarantorNric, setGuarantorNric] = useState('')
   const [guarantorRel, setGuarantorRel] = useState<GuardianRelationship | ''>('')
   const [guarantorAgreed, setGuarantorAgreed] = useState(false)
+  // Parent PIN (same-session gate): a one-time SMS code to the guarantor's PRE-DECLARED,
+  // LOCKED phone must be confirmed before the surety signature is accepted. The student
+  // never sees or edits the number — that's what makes the parent check meaningful.
+  const [phoneVerified, setPhoneVerified] = useState(false)
+  const [pinSent, setPinSent] = useState(false)
+  const [pinCode, setPinCode] = useState('')
+  const [phoneHint, setPhoneHint] = useState('')
+  const [pinBusy, setPinBusy] = useState(false)
+  const [pinError, setPinError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -105,10 +115,52 @@ export default function ScholarshipAwardPage() {
       'student_signature_required', 'guarantor_required',
       'parent_ic_missing', 'parent_ic_required',
       'parent_ic_nric_mismatch', 'parent_ic_name_mismatch',
+      'guarantor_phone_missing', 'guarantor_phone_unverified',
     ]
     return known.includes(code)
       ? t(`scholarship.award.error.${code}`)
       : t('scholarship.award.error.generic')
+  }
+
+  /** Friendly message for a parent-PIN error code; falls back to a generic line. */
+  function pinMessage(code: string): string {
+    const known = [
+      'guarantor_phone_missing', 'rate_limited', 'invalid_number',
+      'unconfigured', 'incorrect', 'code_required', 'bursary_disabled', 'no_offer',
+    ]
+    return known.includes(code)
+      ? t(`scholarship.award.bursary.guarantor.pin.error.${code}`)
+      : t('scholarship.award.bursary.guarantor.pin.error.generic')
+  }
+
+  async function sendPin() {
+    if (!token) return
+    setPinBusy(true)
+    setPinError(null)
+    try {
+      const res = await sendGuarantorPin({ token })
+      setPhoneHint(res.phone_hint || '')
+      setPinSent(true)
+    } catch (e) {
+      setPinError(pinMessage((e as Error & { code?: string }).code || ''))
+    } finally {
+      setPinBusy(false)
+    }
+  }
+
+  async function verifyPin() {
+    if (!token || !pinCode.trim()) return
+    setPinBusy(true)
+    setPinError(null)
+    try {
+      const res = await checkGuarantorPin(pinCode.trim(), { token })
+      if (res.verified) setPhoneVerified(true)
+      else setPinError(pinMessage('incorrect'))
+    } catch (e) {
+      setPinError(pinMessage((e as Error & { code?: string }).code || 'incorrect'))
+    } finally {
+      setPinBusy(false)
+    }
   }
 
   // The plain (flag-off) acceptance — unchanged behaviour.
@@ -288,7 +340,7 @@ export default function ScholarshipAwardPage() {
     // always required (the guardian is the surety for a minor too).
     const studentNameOk = isMinor || studentName.trim().length > 0
     const guarantorOk = guarantorName.trim().length > 0 && guarantorNric.trim().length > 0 && !!guarantorRel
-    const canSubmit = studentAgreed && guarantorAgreed && studentNameOk && guarantorOk && !submitting
+    const canSubmit = studentAgreed && guarantorAgreed && studentNameOk && guarantorOk && phoneVerified && !submitting
 
     return wrap(
       <form onSubmit={signAndAccept} className="space-y-6">
@@ -421,6 +473,72 @@ export default function ScholarshipAwardPage() {
                 onChange={(e) => setGuarantorNric(formatNric(e.target.value))}
               />
             </div>
+          </div>
+
+          {/* Same-session parent verification — a one-time PIN to the parent's phone on
+              file (read server-side, never editable here). Required before signing. */}
+          <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <p className="text-sm font-semibold text-gray-800">
+              {t('scholarship.award.bursary.guarantor.pin.title')}
+            </p>
+            <p className="mt-1 text-sm text-gray-600">
+              {t('scholarship.award.bursary.guarantor.pin.intro')}
+            </p>
+
+            {phoneVerified ? (
+              <p className="mt-3 flex items-center gap-2 text-sm font-medium text-green-700">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {t('scholarship.award.bursary.guarantor.pin.verified')}
+              </p>
+            ) : !pinSent ? (
+              <button
+                type="button"
+                onClick={sendPin}
+                disabled={pinBusy}
+                className="btn-primary mt-3 disabled:opacity-50"
+              >
+                {pinBusy ? t('scholarship.award.bursary.guarantor.pin.sending') : t('scholarship.award.bursary.guarantor.pin.send')}
+              </button>
+            ) : (
+              <div className="mt-3 space-y-3">
+                <p className="text-sm text-gray-700">
+                  {t('scholarship.award.bursary.guarantor.pin.sentTo', { phone: phoneHint })}
+                </p>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="min-w-[10rem] flex-1">
+                    <FieldLabel>{t('scholarship.award.bursary.guarantor.pin.codeLabel')}</FieldLabel>
+                    <input
+                      className="input font-mono tracking-widest"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      placeholder="••••••"
+                      value={pinCode}
+                      onChange={(e) => setPinCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={verifyPin}
+                    disabled={pinBusy || !pinCode.trim()}
+                    className="btn-primary disabled:opacity-50"
+                  >
+                    {pinBusy ? t('scholarship.award.bursary.guarantor.pin.verifying') : t('scholarship.award.bursary.guarantor.pin.verify')}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={sendPin}
+                  disabled={pinBusy}
+                  className="text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                >
+                  {t('scholarship.award.bursary.guarantor.pin.resend')}
+                </button>
+              </div>
+            )}
+
+            {pinError && <p className="mt-2 text-sm text-red-600">{pinError}</p>}
           </div>
 
           <label className="mt-4 flex items-start gap-3">

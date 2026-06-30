@@ -2109,7 +2109,9 @@
         "parent_ic_missing": "We couldn't find your parent or guardian's IC on file. Please make sure it has been uploaded first.",
         "parent_ic_required": "We couldn't find your parent or guardian's IC on file. Please make sure it has been uploaded first.",
         "parent_ic_nric_mismatch": "The parent name or IC number doesn't match the IC on file. Please check both.",
-        "parent_ic_name_mismatch": "The parent name or IC number doesn't match the IC on file. Please check both."
+        "parent_ic_name_mismatch": "The parent name or IC number doesn't match the IC on file. Please check both.",
+        "guarantor_phone_missing": "We don't have your parent or guardian's phone number on file. Please contact us so we can add it before signing.",
+        "guarantor_phone_unverified": "Please verify your parent or guardian's phone with the PIN before signing."
       },
       "bursary": {
         "heading": "Sign your Conditional Bursary Award Agreement",
@@ -2135,7 +2137,30 @@
           "namePlaceholder": "As shown on their IC",
           "relationship": "Relationship to you",
           "nric": "Parent or guardian's IC number",
-          "agree": "I agree to stand as guarantor for this bursary."
+          "agree": "I agree to stand as guarantor for this bursary.",
+          "pin": {
+            "title": "Verify your parent or guardian's phone",
+            "intro": "We'll send a one-time PIN to your parent or guardian's phone number on file. Enter it here to confirm they are signing with you.",
+            "send": "Send PIN",
+            "sending": "Sending…",
+            "sentTo": "We've sent a PIN to your parent or guardian's phone ({phone}). Ask them for the code.",
+            "codeLabel": "Enter the PIN",
+            "verify": "Verify",
+            "verifying": "Checking…",
+            "verified": "Phone verified",
+            "resend": "Send a new PIN",
+            "error": {
+              "generic": "We couldn't send the PIN. Please try again.",
+              "guarantor_phone_missing": "We don't have your parent or guardian's phone number on file. Please contact us so we can add it.",
+              "rate_limited": "Too many attempts. Please wait a little while before trying again.",
+              "invalid_number": "The phone number on file doesn't look valid. Please contact us to update it.",
+              "unconfigured": "Phone verification isn't available right now. Please try again later.",
+              "incorrect": "That PIN isn't right or has expired. Please check and try again, or send a new PIN.",
+              "code_required": "Please enter the PIN.",
+              "bursary_disabled": "This step isn't available yet.",
+              "no_offer": "There's no award available to respond to right now."
+            }
+          }
         },
         "signSubmit": "Sign and accept the award",
         "signing": "Signing…",

@@ -1965,6 +1965,33 @@ export async function recordComprehensionPass(options?: ApiOptions): Promise<{ o
   })
 }
 
+/** Send a one-time PIN to the parent/guardian SURETY's pre-declared, LOCKED phone
+ *  (read server-side from the student's guardians list) — the same-session parent gate
+ *  before the bursary signature. Returns a masked hint ("•••• 2222") only; never the
+ *  full number. The student cannot supply or edit the number. */
+export async function sendGuarantorPin(
+  options?: ApiOptions,
+): Promise<{ status: string; phone_hint: string }> {
+  return apiRequest('/api/v1/scholarship/award/guarantor/verify-phone/send/', {
+    method: 'POST',
+    body: JSON.stringify({}),
+    ...options,
+  })
+}
+
+/** Confirm the parent PIN. On success the server stamps the application so the
+ *  guarantor signature is unlocked; a wrong/expired code → a 400 (thrown). */
+export async function checkGuarantorPin(
+  code: string,
+  options?: ApiOptions,
+): Promise<{ verified: boolean }> {
+  return apiRequest('/api/v1/scholarship/award/guarantor/verify-phone/check/', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+    ...options,
+  })
+}
+
 // ── Phase E/F: student award + onboarding (F8b) ──────────────────────────
 // The student's funded-studies offer. The sponsor's identity is never exposed
 // (allowlist serializer): the student only ever sees the amount + deadline.

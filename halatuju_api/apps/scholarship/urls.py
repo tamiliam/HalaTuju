@@ -9,6 +9,8 @@ from .views import (
     BursaryAgreementView,
     BankAccountView,
     StudentComprehensionView,
+    GuarantorPhoneVerifyStartView,
+    GuarantorPhoneVerifyCheckView,
     ConsentView,
     CronRunView,
     DocumentDetailView,
@@ -127,6 +129,9 @@ urlpatterns = [
     path('scholarship/bursary-agreement/', BursaryAgreementView.as_view()),
     # Post-award comprehension quiz pass ("Understand" step) — recorded for defensibility
     path('scholarship/award/comprehension/', StudentComprehensionView.as_view()),
+    # Post-award parent gate — SMS PIN to the guarantor's locked phone before signing
+    path('scholarship/award/guarantor/verify-phone/send/', GuarantorPhoneVerifyStartView.as_view()),
+    path('scholarship/award/guarantor/verify-phone/check/', GuarantorPhoneVerifyCheckView.as_view()),
     # S3: the student's resolution queue (IBKR Action Centre)
     path('scholarship/resolution-items/', ResolutionItemListView.as_view()),
     path('scholarship/resolution-items/<int:pk>/resolve/', ResolutionItemResolveView.as_view()),

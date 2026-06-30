@@ -9,6 +9,7 @@ match the guarantor we pass, so the identity gate passes deterministically (no l
 Vision). The flag is forced ON where the agreement is exercised; the OFF path asserts
 the old behaviour is untouched.
 """
+from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -30,6 +31,7 @@ ADULT_NRIC = '000101-10-1233'   # born 2000 → adult
 MINOR_NRIC = '100101-10-1234'   # born 2010 → minor
 GUARANTOR_NRIC = '700101-10-5555'
 GUARANTOR_NAME = 'Rahmah Binti Ahmad'
+GUARANTOR_PHONE = '013-1112222'
 
 
 def _token(uid, email='x@x.com'):
@@ -44,6 +46,7 @@ def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'),
         supabase_user_id=f'stu-{suffix}', name='Zxq Student', nric=nric,
         preferred_state='Kedah', exam_type='spm', grades={'bm': 'A'},
         contact_email='student@secret.example', contact_phone='012-7776666',
+        guardians=[{'name': GUARANTOR_NAME, 'phone': GUARANTOR_PHONE}],
         referred_by_org=org,
     )
     app = ScholarshipApplication.objects.create(
@@ -60,6 +63,14 @@ def _add_parent_ic(app, *, name=GUARANTOR_NAME, nric=GUARANTOR_NRIC):
     return ApplicantDocument.objects.create(
         application=app, doc_type='parent_ic', storage_path=f'{app.id}/parent_ic.jpg',
         vision_run_at=timezone.now(), vision_name=name, vision_nric=nric, vision_error='')
+
+
+def _verify_guarantor_phone(app, *, when=None):
+    """Stamp a (by default FRESH) guarantor phone-PIN verification — the same-session
+    parent gate sign_agreement requires before recording the surety signature."""
+    app.guarantor_phone = GUARANTOR_PHONE
+    app.guarantor_phone_verified_at = when or timezone.now()
+    app.save(update_fields=['guarantor_phone', 'guarantor_phone_verified_at'])
 
 
 def _sponsor(uid='spon-1'):
@@ -102,6 +113,7 @@ class TestBursaryService(TestCase):
         app = _fundable_app(self.cohort)
         _add_parent_ic(app)
         _fund(app)
+        _verify_guarantor_phone(app)
         sp = svc.respond_to_award(
             app, action='accept', student_signed_name='Zxq Student',
             guarantor_name=GUARANTOR_NAME, guarantor_nric=GUARANTOR_NRIC,
@@ -171,6 +183,7 @@ class TestBursaryService(TestCase):
         app = _fundable_app(self.cohort, suffix='m', nric=MINOR_NRIC)
         _add_parent_ic(app)
         _fund(app)
+        _verify_guarantor_phone(app)
         sp = svc.respond_to_award(
             app, action='accept', granted_by='guardian',
             guardian_name=GUARANTOR_NAME, guardian_relationship='mother',
@@ -192,6 +205,7 @@ class TestBursaryService(TestCase):
         app = _fundable_app(self.cohort, suffix='cw', org=org)
         _add_parent_ic(app)
         _fund(app)
+        _verify_guarantor_phone(app)
         svc.respond_to_award(
             app, action='accept', student_signed_name='Zxq Student',
             guarantor_name=GUARANTOR_NAME, guarantor_nric=GUARANTOR_NRIC,
@@ -211,6 +225,7 @@ class TestBursaryService(TestCase):
         app = _fundable_app(self.cohort, suffix='anon')
         _add_parent_ic(app)
         _fund(app)
+        _verify_guarantor_phone(app)
         svc.respond_to_award(
             app, action='accept', student_signed_name='Zxq Student',
             guarantor_name=GUARANTOR_NAME, guarantor_nric=GUARANTOR_NRIC,
@@ -266,6 +281,7 @@ class TestBursaryEndpoints(TestCase):
         app = _fundable_app(self.cohort, suffix=suffix, org=org)
         _add_parent_ic(app)
         _fund(app)
+        _verify_guarantor_phone(app)
         svc.respond_to_award(
             app, action='accept', student_signed_name='Zxq Student',
             guarantor_name=GUARANTOR_NAME, guarantor_nric=GUARANTOR_NRIC,
@@ -327,3 +343,137 @@ class TestBursaryEndpoints(TestCase):
         app.refresh_from_db()
         self.assertEqual(app.status, 'active')     # executed without a witness
         self.assertIsNone(app.bursary_agreement.witness_signed_at)
+
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=True)
+class TestGuarantorPhoneGate(TestCase):
+    """Same-session parent gate: sign_agreement requires a FRESH guarantor phone-PIN
+    verification AND a phone on file — neither a stale stamp nor a missing number passes."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def setUp(self):
+        self.pdf, self.upload, self.dl = _mock_seams()
+        self.pdf.start(); self.upload.start(); self.dl.start()
+        self.addCleanup(self.pdf.stop)
+        self.addCleanup(self.upload.stop)
+        self.addCleanup(self.dl.stop)
+
+    def _accept(self, app):
+        return svc.respond_to_award(
+            app, action='accept', student_signed_name='Zxq Student',
+            guarantor_name=GUARANTOR_NAME, guarantor_nric=GUARANTOR_NRIC,
+            guarantor_relationship='mother')
+
+    def test_unverified_phone_blocks_signing(self):
+        app = _fundable_app(self.cohort, suffix='gp1')   # phone on file, no PIN stamp
+        _add_parent_ic(app)
+        _fund(app)
+        with self.assertRaises(svc.SponsorshipError) as e:
+            self._accept(app)
+        self.assertEqual(e.exception.code, 'guarantor_phone_unverified')
+        self.assertFalse(BursaryAgreement.objects.filter(application=app).exists())
+
+    def test_no_guardian_phone_blocks_signing(self):
+        app = _fundable_app(self.cohort, suffix='gp2')
+        app.profile.guardians = []
+        app.profile.save(update_fields=['guardians'])
+        _add_parent_ic(app)
+        _fund(app)
+        _verify_guarantor_phone(app)   # stamp present but no number on file → still blocked
+        with self.assertRaises(svc.SponsorshipError) as e:
+            self._accept(app)
+        self.assertEqual(e.exception.code, 'guarantor_phone_missing')
+
+    def test_stale_verification_refused(self):
+        app = _fundable_app(self.cohort, suffix='gp3')
+        _add_parent_ic(app)
+        _fund(app)
+        _verify_guarantor_phone(app, when=timezone.now() - timedelta(hours=2))
+        with self.assertRaises(svc.SponsorshipError) as e:
+            self._accept(app)
+        self.assertEqual(e.exception.code, 'guarantor_phone_unverified')
+
+    def test_fresh_verification_allows_signing(self):
+        app = _fundable_app(self.cohort, suffix='gp4')
+        _add_parent_ic(app)
+        _fund(app)
+        _verify_guarantor_phone(app)
+        sp = self._accept(app)
+        self.assertEqual(sp.status, 'active')
+        self.assertTrue(BursaryAgreement.objects.filter(application=app).exists())
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   BURSARY_AGREEMENT_ENABLED=True, PHONE_VERIFY_CHANNEL='sms',
+                   TWILIO_ACCOUNT_SID='sid', TWILIO_AUTH_TOKEN='tok',
+                   TWILIO_VERIFY_SERVICE_SID='VA-test')
+class TestGuarantorPhoneEndpoints(TestCase):
+    """The send/check verify endpoints. The Twilio HTTP seam (``_post_to_verify``) is
+    mocked — never a live call."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.client = APIClient()
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
+
+    def _offered_app(self, suffix):
+        app = _fundable_app(self.cohort, suffix=suffix)
+        _add_parent_ic(app)
+        _fund(app)   # offered sponsorship → app 'awarded'; _award_application finds it
+        return app
+
+    @patch('apps.scholarship.whatsapp._post_to_verify', return_value={'status': 'pending'})
+    def test_send_pin_to_locked_phone(self, mock_post):
+        self._offered_app('e1')
+        self._auth('stu-e1')
+        resp = self.client.post('/api/v1/scholarship/award/guarantor/verify-phone/send/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['status'], 'sent')
+        self.assertTrue(resp.data['phone_hint'].endswith('2222'))
+        # The number handed to Twilio is the LOCKED guardian phone, normalised to E.164.
+        self.assertIn('+60131112222', str(mock_post.call_args))
+
+    @patch('apps.scholarship.whatsapp._post_to_verify', return_value={'status': 'approved'})
+    def test_check_pin_stamps_verification(self, mock_post):
+        app = self._offered_app('e2')
+        self._auth('stu-e2')
+        resp = self.client.post('/api/v1/scholarship/award/guarantor/verify-phone/check/',
+                                {'code': '123456'}, format='json')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.data['verified'])
+        app.refresh_from_db()
+        self.assertIsNotNone(app.guarantor_phone_verified_at)
+        self.assertEqual(app.guarantor_phone, GUARANTOR_PHONE)
+
+    @patch('apps.scholarship.whatsapp._post_to_verify', return_value={'status': 'pending'})
+    def test_wrong_pin_rejected_no_stamp(self, mock_post):
+        app = self._offered_app('e3')
+        self._auth('stu-e3')
+        resp = self.client.post('/api/v1/scholarship/award/guarantor/verify-phone/check/',
+                                {'code': '000000'}, format='json')
+        self.assertEqual(resp.status_code, 400)
+        app.refresh_from_db()
+        self.assertIsNone(app.guarantor_phone_verified_at)
+
+    def test_send_requires_an_offer(self):
+        self._auth('nobody')   # authenticated but no offered award
+        resp = self.client.post('/api/v1/scholarship/award/guarantor/verify-phone/send/')
+        self.assertEqual(resp.status_code, 403)
+
+    @override_settings(BURSARY_AGREEMENT_ENABLED=False)
+    def test_send_blocked_while_bursary_dark(self):
+        self._offered_app('e5')
+        self._auth('stu-e5')
+        resp = self.client.post('/api/v1/scholarship/award/guarantor/verify-phone/send/')
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.data['code'], 'bursary_disabled')

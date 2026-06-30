@@ -392,6 +392,31 @@ def guarantor_identity_check(application, name, nric):
     return 'ok'
 
 
+def guarantor_phone_for(application):
+    """The parent/guardian SURETY's pre-declared phone — read (locked) from the student's
+    ``profile.guardians`` list captured at apply. Returns the first non-blank phone, or ''.
+
+    This is the ONLY number a PIN is ever sent to: the student cannot edit it at signing,
+    which is what makes the same-session parent check meaningful. An editable phone would
+    let a dishonest student self-verify in the parent's place, defeating the gate."""
+    profile = getattr(application, 'profile', None)
+    for g in (getattr(profile, 'guardians', None) or []):
+        phone = ((g or {}).get('phone') or '').strip()
+        if phone:
+            return phone
+    return ''
+
+
+def guarantor_phone_verification_fresh(application):
+    """True when the guarantor's phone-PIN check was stamped within the freshness TTL.
+    The window stops a signature riding a days-old verification."""
+    ts = application.guarantor_phone_verified_at
+    if ts is None:
+        return False
+    ttl = getattr(settings, 'GUARANTOR_PHONE_VERIFY_TTL_SECONDS', 1800)
+    return (timezone.now() - ts).total_seconds() <= ttl
+
+
 def generate_pdf(html):
     """Render the agreement HTML to PDF bytes via xhtml2pdf (pure-Python, no system
     libs). Raises ``BursaryError('pdf_failed')`` on any failure. This is a mockable
@@ -435,6 +460,14 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
     check = guarantor_identity_check(application, guarantor_name, guarantor_nric)
     if check != 'ok':
         raise BursaryError(check)
+
+    # Same-session parent gate: the guarantor's phone PIN must have been verified, FRESH,
+    # in this signing session. No phone on file → block (an admin must capture it) rather
+    # than silently skip the gate — "no number" is never a bypass.
+    if not guarantor_phone_for(application):
+        raise BursaryError('guarantor_phone_missing')
+    if not guarantor_phone_verification_fresh(application):
+        raise BursaryError('guarantor_phone_unverified')
 
     now = timezone.now()
     version = getattr(settings, 'BURSARY_AGREEMENT_VERSION', '2026-v1')
