@@ -1031,7 +1031,8 @@ _FIELD_SCHEMAS = {
     'str': _doc_schema({'recipient_name': _STR, 'recipient_nric': _STR, 'status': _STR,
                         'year': _STR, 'amount': _STR, 'source_type': _STR_SOURCE}),
     'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
-                                'gross_income': _STR, 'net_income': _STR, 'period': _STR}),
+                                'gross_income': _STR, 'net_income': _STR,
+                                'gross_income_ytd': _STR, 'period': _STR}),
     'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR, 'employer_number': _STR,
                         'latest_balance': _STR, 'last_contribution': _STR,
                         'monthly_contribution': _STR, 'months_counted': _STR,
@@ -1163,11 +1164,18 @@ _DOC_HINTS = {
             '2026" menu item is NOT the STR year); if no such date is shown, leave it EMPTY. '
             '"amount" = the total STR in RM ("jumlah … STR … RM1,200" / "Jumlah Bayaran Keseluruhan '
             'STR"). Leave a field empty if it is not present.'),
-    'salary_slip': (' This is a Malaysian salary slip / payslip. "name" = the EMPLOYEE\'s '
-                    'full name; "nric" = their IC number ("No. K/P" / "No. Kad Pengenalan", '
-                    'keep the 12 digits) if printed; "employer" = the company; "gross_income" '
-                    '= the gross/basic monthly pay (with the RM figure); "net_income" = the '
-                    'net/take-home pay; "period" = the pay month/year (e.g. "March 2026"). '
+    'salary_slip': (' This is a Malaysian salary slip / payslip — OR a government benefit / pension '
+                    'payment statement (e.g. a PERKESO/SOCSO "Penyata Bayaran Faedah" survivor\'s '
+                    'pension "Pencen Penakat"), which counts as household income too. "name" = the '
+                    'EMPLOYEE\'s / recipient\'s full name; "nric" = their IC number ("No. K/P" / '
+                    '"No. Kad Pengenalan", keep the 12 digits) if printed; "employer" = the company '
+                    '(leave empty for a benefit/pension statement); "gross_income" = the gross/basic '
+                    'monthly pay — for a benefit/pension statement, the regular MONTHLY benefit '
+                    'amount (e.g. "Amaun Bayaran" RM687.50); "net_income" = the net/take-home pay; '
+                    '"gross_income_ytd" = the YEAR-TO-DATE gross total when the slip shows a "Year '
+                    'To Date" / "Jumlah Terkumpul" gross column (e.g. RM84,774.59) — this captures '
+                    'variable overtime a single month misses; leave empty if not shown; "period" = '
+                    'the pay month/year (e.g. "March 2026"). '
                     'IMPORTANT for money fields: on a HAND-WRITTEN voucher the amount is often '
                     'ruled into TWO columns — ringgit (RM) and sen (cents) — separated by a '
                     'vertical line. Read that line as a DECIMAL POINT: "326 | 00" is RM326.00, '

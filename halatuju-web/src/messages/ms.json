@@ -3230,6 +3230,8 @@
           "income_unverified_needs_interview": "Pendapatan tidak dapat disahkan melalui dokumen (tidak formal / tiada slip gaji) — sahkan semasa temu duga melalui saiz isi rumah, tanggungan dan gaya hidup. JANGAN sekat.",
           "income_per_capita_ok": "Pendapatan per kapita RM{amount} di bawah garis B40 (RM{ceiling}) — dalam ambang.",
           "income_above_b40_line": "Pendapatan per kapita RM{amount} pada/melebihi garis B40 (RM{ceiling}) — dokumen tidak mengesahkan keperluan B40. Manusia mesti putuskan semasa temu duga (keadaan mungkin masih terpakai). JANGAN auto-tolak.",
+          "income_salary_probable": "Dinilai berdasarkan dokumen gaji: pendapatan isi rumah ~RM{amount}/bulan jauh di bawah garis B40 — sangat berkemungkinan. Sahkan isi rumah semasa temu duga.",
+          "income_salary_unsure": "Dinilai berdasarkan dokumen gaji: pendapatan isi rumah ~RM{amount}/bulan hampir dengan garis B40 bagi saiz isi rumah yang diisytihar — sahkan komposisi isi rumah dan gaji bersih semasa temu duga.",
           "utility_percapita_b40": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — konsisten dengan isi rumah B40 (isyarat lembut, tidak sempurna).",
           "utility_percapita_high": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — tinggi (corak penggunaan M40/T20). Wajar disiasat semasa temu duga (isyarat lembut).",
           "utility_hardship": "Isyarat kesusahan: bil utiliti mempunyai tunggakan yang ketara (baki belum dibayar) — menyokong keperluan kewangan.",

@@ -313,6 +313,42 @@ class TestIncome(_Base):
         self.assertIn('str_not_current', codes)
         self.assertNotIn('document_not_genuine', codes)
 
+    def _str_route_with_ceiling(self, size):
+        # STR route, father earner (IC present + patronymic match via _wizard's name), cohort gross
+        # ceiling set, household size given — the setup the salary fall-through reads.
+        self._wizard(route='str', earner='father')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        self.cohort.income_ceiling = 5860
+        self.cohort.save()
+        self.profile.household_size = size
+        self.profile.save()
+
+    def test_wrong_type_str_falls_through_to_salary_unsure(self):
+        # #13: a payslip in the STR slot (wrong_type) → assess salary. Annualised ~RM7,064 (YTD ÷ 12)
+        # for household 5 sits near the line (thin breach-room) → Unsure (recommend), NOT a blue read
+        # off the verified earner IC. The verdict still says "not an STR" too.
+        self._str_route_with_ceiling(5)
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'status': 'approved', 'source_type': 'unknown'})
+        _add_doc(self.app, 'salary_slip', member='father',
+                 fields={'gross_income': 'RM3,800', 'gross_income_ytd': 'RM84,774.59'})
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'recommend')                 # amber / Unsure
+        codes = _codes(f['unresolved'])
+        self.assertIn('str_not_current', codes)
+        self.assertIn('income_salary_unsure', codes)
+
+    def test_wrong_type_str_falls_through_to_salary_probable(self):
+        # SARA-like: a pension RM687.50 in the STR slot (wrong_type) → assess salary. Far under the
+        # line for a large household (big breach-room) → Probable (review + green salary evidence).
+        self._str_route_with_ceiling(6)
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'status': 'approved', 'source_type': 'unknown'})
+        _add_doc(self.app, 'salary_slip', member='father', fields={'gross_income': 'RM687.50'})
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('income_salary_probable', _codes(f['evidence']))
+
     def test_str_recipient_not_earner_is_review(self):
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
