@@ -14,66 +14,63 @@ from apps.scholarship.vision import relationship_name_match, name_match
 
 
 class TestStrCurrency(SimpleTestCase):
-    def test_unread_str_is_unconfirmed(self):
-        # No status AND no readable year → 'unconfirmed' (no approval shown → NOT proof).
-        self.assertEqual(_str_currency('', '', 2026), 'unconfirmed')
+    # Structured STR currency states (docs/scholarship/str-proof-spec.md): the format gate runs
+    # first (not-a-recognised-STR → wrong_type), then status/date decide the rest.
 
-    def test_salinan_record_no_status_is_unconfirmed(self):
-        # The STR "SALINAN" application printout has a year but NO approval status — it is an
-        # applicant-filled record, not proof it was approved. Must NOT badge Current/Verified.
-        self.assertEqual(_str_currency('', '2026', 2026), 'unconfirmed')
+    # ── wrong_type: NOT a genuine STR proof at all (→ RED, falls through to salary) ──
+    def test_unknown_source_is_wrong_type(self):
+        # A salary slip / SARA letter / SALINAN in the STR slot is classified source_type='unknown'
+        # → wrong_type, EVEN if the AI read an "approved" word off it (#13 payslip, #63 SARA).
+        self.assertEqual(_str_currency('approved', '2026', 2026, 'unknown'), 'wrong_type')
+        self.assertEqual(_str_currency('', '', 2026, 'unknown'), 'wrong_type')
 
-    def test_approved_current_year_is_current(self):
-        self.assertEqual(_str_currency('diluluskan', '2026', 2026), 'current')
-
-    def test_portal_lulus_is_current(self):
-        self.assertEqual(_str_currency('Lulus', '2026', 2026), 'current')
-
-    def test_sara_layak_is_not_str_approval(self):
-        # #5b: SARA 'Layak' is NOT STR approval — SARA (Sumbangan Asas Rahmah) is a different
-        # programme; the STR status on the MySTR portal is 'Lulus', never 'Layak'.
-        self.assertEqual(_str_currency('Layak', '2026', 2026), 'unconfirmed')
-
-    def test_unknown_source_type_is_unconfirmed_even_if_status_approved(self):
-        # #5b: a SARA-only Perdana Menteri letter is classified source_type='unknown' — not a
-        # recognised STR proof — so it does NOT pass even though the AI read 'approved' + a year
-        # (app #63's SELVI A/P VELLAYAN SARA letter).
-        self.assertEqual(_str_currency('approved', '2026', 2026, 'unknown'), 'unconfirmed')
-
-    def test_recognised_source_with_approval_is_current(self):
-        self.assertEqual(_str_currency('Lulus', '', 2026, 'semakan_status'), 'current')
-        self.assertEqual(_str_currency('diluluskan', '2026', 2026, 'letter'), 'current')
-
-    def test_legacy_blank_source_type_falls_through_to_status(self):
-        # Docs extracted before source_type existed (null/'') must NOT be retro-broken.
-        self.assertEqual(_str_currency('Lulus', '2026', 2026, ''), 'current')
-
-    def test_older_year_is_stale(self):
-        self.assertEqual(_str_currency('diluluskan', '2024', 2026), 'stale')
-
+    # ── rejected: a recognised format showing Ditolak / Tidak Layak (→ RED) ──
     def test_rejected_status(self):
-        self.assertEqual(_str_currency('permohonan ditolak', '2026', 2026), 'rejected')
+        self.assertEqual(_str_currency('permohonan ditolak', '2026', 2026, 'semakan_status'), 'rejected')
 
     def test_tidak_layak_is_rejected_not_approved(self):
         # 'layak' is an approval word, but 'tidak layak' (not eligible) is a REJECTION — the
         # rejection check runs first, so this must be 'rejected', never 'current'.
-        self.assertEqual(_str_currency('Tidak Layak', '2026', 2026), 'rejected')
+        self.assertEqual(_str_currency('Tidak Layak', '2026', 2026, 'semakan_status'), 'rejected')
 
-    def test_approved_but_no_year_is_current(self):
-        # #5 (2026-06-11): the MySTR 'Semakan Status' / Dashboard page shows "Status Permohonan
-        # SEMASA: Lulus" with NO printed year — an approval there is CURRENT even without a year
-        # (the live portal reflects this cycle). Previously this was a false 'unconfirmed' nag
-        # for 5 of 14 submitted STR students who uploaded a valid Lulus status screenshot.
-        self.assertEqual(_str_currency('diluluskan', '', 2026), 'current')
-        self.assertEqual(_str_currency('Lulus', '', 2026), 'current')
+    def test_rejected_beats_wrong_type(self):
+        # A clear negative status wins even on an 'unknown' source.
+        self.assertEqual(_str_currency('Ditolak', '', 2026, 'unknown'), 'rejected')
+
+    # ── unreadable: a recognised format but NO readable approval status (cropped) → AMBER ──
+    def test_recognised_no_status_is_unreadable(self):
+        self.assertEqual(_str_currency('', '', 2026, 'semakan_status'), 'unreadable')
+        self.assertEqual(_str_currency('', '2026', 2026, 'dashboard'), 'unreadable')
+
+    def test_sara_layak_is_not_str_approval(self):
+        # SARA 'Layak' is NOT an STR approval word; on a recognised format with only 'Layak' read,
+        # the approval status didn't read → unreadable (a recognised STR slot, no STR approval).
+        self.assertEqual(_str_currency('Layak', '2026', 2026, 'semakan_status'), 'unreadable')
+
+    # ── unconfirmed: recognised + approved + NO date → BLUE (probably current) ──
+    def test_approved_no_date_is_unconfirmed(self):
+        # A dateless approved STR (dashboard / collapsed Semakan) can no longer be GREEN — a
+        # year-old screenshot also reads "Lulus", so without a date we can't confirm the cycle.
+        self.assertEqual(_str_currency('diluluskan', '', 2026, 'semakan_status'), 'unconfirmed')
+        self.assertEqual(_str_currency('Lulus', '', 2026, 'dashboard'), 'unconfirmed')
+        self.assertEqual(_str_currency('Lulus', '', 2026), 'unconfirmed')  # blank source falls through
+
+    # ── current: recognised + approved + DATED current → GREEN ──
+    def test_approved_dated_current_is_current(self):
+        self.assertEqual(_str_currency('diluluskan', '2026', 2026, 'letter'), 'current')
+        self.assertEqual(_str_currency('Lulus', '2026', 2026, 'semakan_status'), 'current')
+
+    def test_legacy_blank_source_with_date_is_current(self):
+        # Docs extracted before source_type existed (null/'') are tolerated — a dated approval
+        # falls through to current rather than being forced to wrong_type.
+        self.assertEqual(_str_currency('Lulus', '2026', 2026, ''), 'current')
+
+    # ── stale: approved but a readable PRIOR-year date → AMBER ──
+    def test_older_year_is_stale(self):
+        self.assertEqual(_str_currency('diluluskan', '2024', 2026, 'letter'), 'stale')
 
     def test_approved_prior_year_still_stale(self):
-        # A year is still a bonus: a readable PRIOR-year approval is stale (Nitya #53, 2025).
-        self.assertEqual(_str_currency('diluluskan', '2025', 2026), 'stale')
-
-    def test_no_status_with_old_year_is_unconfirmed_not_stale(self):
-        # No approval word → unconfirmed regardless of the year (a record, not a proof).
-        self.assertEqual(_str_currency('', '2024', 2026), 'unconfirmed')
+        self.assertEqual(_str_currency('diluluskan', '2025', 2026, 'letter'), 'stale')
 
 
 class TestFatherNameFromIc(SimpleTestCase):

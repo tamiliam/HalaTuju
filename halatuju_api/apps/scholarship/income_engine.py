@@ -493,44 +493,47 @@ _STR_REJECTED_WORDS = ('tolak', 'tidak layak', 'gagal', 'reject')
 # STR status on the MySTR portal is 'Lulus', never 'Layak'. (#5b SARA≠STR, 2026-06-11)
 _STR_APPROVED_WORDS = ('lulus', 'approve')
 _STR_YEAR_RE = re.compile(r'(20\d{2})')
+# The three genuine MySTR proof formats (docs/scholarship/str-proof-spec.md). Anything else — a
+# SALINAN / application copy, a SARA letter, a salary slip, a random doc — is classified 'unknown'
+# by the extractor and is NOT an STR proof at all.
+_STR_RECOGNISED_SOURCES = ('letter', 'semakan_status', 'dashboard')
 
 
 def _str_currency(status_raw, year_str, cohort_year, source_type=''):
-    """Whether an STR positively PROVES current B40. It proves B40 when the document is a
-    RECOGNISED STR proof AND shows an APPROVED status ('Lulus' / 'Diluluskan' / SARA 'Layak');
-    the MySTR 'Semakan Status' / Dashboard pages show that status as CURRENT ("Semasa") and print
-    NO cohort year, so an approval is accepted even without a readable year (a year only adds the
-    ability to catch a stale prior-year STR).
-      'rejected'    — a clear negative status (Ditolak / Tidak Layak / Gagal);
-      'stale'       — APPROVED but a readable year OLDER than the cohort year (STR is annual);
-      'current'     — a recognised STR proof with an approval word (current year, or no year);
-      'unconfirmed' — NO approval status (a SALINAN / application printout, or a status we
-                      couldn't read), OR the document is not a recognised STR proof at all
-                      (``source_type='unknown'`` — e.g. a SARA-only Perdana Menteri letter; SARA
-                      (Sumbangan Asas Rahmah) is a DIFFERENT programme from STR). NOT proof — the
-                      student is asked for the MySTR page showing 'Lulus' or the STR approval letter.
-    Earlier this returned 'current' by default (benefit of the doubt), which wrongly accepted
-    unapproved application records as B40 proof."""
+    """Structured STR currency state for the verdict (docs/scholarship/str-proof-spec.md). The
+    FORMAT GATE runs first: a document that is not one of the three genuine MySTR proofs is
+    ``wrong_type`` — never softened to ``unconfirmed``.
+
+      'rejected'    — a clear negative status (Ditolak / Tidak Layak / Gagal) → RED.
+      'wrong_type'  — NOT a recognised STR proof (``source_type='unknown'``: a SALINAN / SARA
+                      letter / salary slip / other). NOT an STR at all → RED; the income verdict
+                      falls through to the salary route.
+      'unreadable'  — a recognised format but NO readable approval status (cropped / partial) → AMBER.
+      'stale'       — approved, but a readable year OLDER than the cohort year (STR is annual) → AMBER.
+      'unconfirmed' — a recognised format, approved (Lulus), but NO date to pin the cycle
+                      (dashboard / collapsed Semakan) → BLUE (probably current).
+      'current'     — a recognised format, approved, DATED current (letter date / Semakan payment
+                      date ≥ cohort year) → GREEN.
+
+    A dateless approved STR no longer counts as GREEN: a year-old dashboard/Semakan screenshot also
+    shows "Lulus", so without a date we can't confirm the cycle (→ BLUE, confirm at interview /
+    open Maklumat Pembayaran). A blank/legacy ``source_type`` (extracted before classification) is
+    TOLERATED — it falls through to the status assessment rather than being forced to wrong_type;
+    a re-run repopulates it."""
     s = (status_raw or '').lower()
+    st = (source_type or '').strip().lower()
     if any(w in s for w in _STR_REJECTED_WORDS):
         return 'rejected'
-    # The document must be a RECOGNISED STR proof (official STR letter / MySTR 'Semakan Status' /
-    # Dashboard). A positively-classified 'unknown' source — e.g. a SARA-only Perdana Menteri
-    # letter (SARA ≠ STR) — is NOT STR proof, whatever status text was read off it. A blank/legacy
-    # source_type (extracted before classification existed) falls through to the status check so
-    # existing approvals are not retro-broken. (#5b SARA≠STR, 2026-06-11)
-    if (source_type or '').strip().lower() == 'unknown':
-        return 'unconfirmed'
+    if st == 'unknown':
+        return 'wrong_type'          # not a genuine STR proof at all (SALINAN / SARA / payslip / …)
     if not any(w in s for w in _STR_APPROVED_WORDS):
-        return 'unconfirmed'    # no approval status shown (a SALINAN / application printout, or
-                                # a status we couldn't read) → still NOT proof of approval.
-    # Approved. A readable PRIOR-year STR is stale (STR is annual); but the MySTR 'Semakan
-    # Status' / Dashboard page shows "Status Permohonan SEMASA: Lulus" with NO printed year —
-    # "Semasa" (current) IS the currency signal — so an approval WITHOUT a year is accepted as
-    # current (the live portal reflects this cycle). The year is a bonus that only ADDS the
-    # ability to catch a stale prior-year STR; its absence no longer demotes a valid Lulus. (#5)
+        return 'unreadable'          # recognised format but the approval status didn't read (cropped)
+    # Approved. A DATE pins the cycle: prior-year → stale; current-or-later → current; NO date
+    # (dashboard / collapsed Semakan) can't be confirmed current → unconfirmed (BLUE).
     m = _STR_YEAR_RE.search(year_str or '')
-    if m and cohort_year and int(m.group(1)) < int(cohort_year):
+    if not m:
+        return 'unconfirmed'
+    if cohort_year and int(m.group(1)) < int(cohort_year):
         return 'stale'
     return 'current'
 

@@ -34,7 +34,14 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       Kemasukan" / "Surat Tawaran") only; a "Pemakluman Kemasukan" admission notification
 #       (UM SATU / UPU-rayuan pre-offer, #31) no longer matches → floors at suspect. Owner policy:
 #       official offer letters only. (Only a31 used the dropped 'PEMAKLUMAN KEMASUKAN' anchor.)
-MODEL_VERSION = '1.1'
+#   1.2 (2026-06-29) — STR-proof model rework (docs/scholarship/str-proof-spec.md): structured STR
+#       currency states (wrong_type / rejected / unreadable / stale / unconfirmed / current); a
+#       non-STR in the STR slot (SALINAN / SARA / payslip) is wrong_type (→ RED, not "unconfirmed");
+#       a dateless approved STR is no longer "current" (→ unconfirmed/BLUE); extraction reads the
+#       status VALUE not the "Status Permohonan STR" label, dates only from letter/payment (not nav
+#       chrome), and sharper dashboard-vs-semakan classification. No signature-family/weight change
+#       here, but the STR verdict pipeline it feeds changed → bump for traceability.
+MODEL_VERSION = '1.2'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

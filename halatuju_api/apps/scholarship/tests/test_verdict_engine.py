@@ -296,6 +296,23 @@ class TestIncome(_Base):
         self.assertEqual(f['status'], 'review')
         self.assertIn('str_not_current', _codes(f['unresolved']))
 
+    def test_str_wrong_type_is_review_not_double_flagged_genuine(self):
+        # A genuine payslip / SARA letter in the STR slot (source_type='unknown') → wrong_type. The
+        # income fact raises str_not_current(wrong_type) but NOT document_not_genuine — it's the
+        # wrong KIND of document, not a forgery (#13 payslip, SARA case). str-proof-spec.md §4.
+        self._wizard(route='str', earner='father')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        d = _add_doc(self.app, 'str', student_verdict='ok',
+                     fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'status': 'approved',
+                             'source_type': 'unknown'})
+        d.vision_fields['authenticity'] = {'status': 'suspect', 'reason': 'no STR signatures'}
+        d.save(update_fields=['vision_fields'])
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'review')
+        codes = _codes(f['unresolved'])
+        self.assertIn('str_not_current', codes)
+        self.assertNotIn('document_not_genuine', codes)
+
     def test_str_recipient_not_earner_is_review(self):
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')

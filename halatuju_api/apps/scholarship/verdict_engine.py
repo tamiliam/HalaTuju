@@ -331,14 +331,17 @@ def _verdict_income(application):
     # 'unknown' (no patronymic — e.g. a Chinese name) / 'pending' → no claim; officer eyeballs.
 
     # ── Income evidence — the STR document (recipient = the earner, and CURRENT) ──
-    # STR is annual/rolling: a stale or rejected STR no longer proves B40 (review). Its
-    # recipient must be the earner (matched to the earner IC) — not just a name present.
+    # The STR currency state (docs/scholarship/str-proof-spec.md) carries its own decisive copy via
+    # the `status` param: wrong_type (not an STR at all) / rejected (Ditolak) / stale (prior-year) /
+    # unreadable (cropped) / unconfirmed (approved, no date → confirm currency). Anything that isn't
+    # a CURRENT approved STR keeps the income fact off green — a human looks (and, post Sprint-2, the
+    # salary route is assessed when the STR is wrong_type/rejected).
     from .income_engine import student_str_check
     sc = student_str_check(str_doc) if str_doc is not None else None
     str_verified = False
     if str_doc is None:
         gap.append(_item('income_proof_missing'))
-    elif sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed'):
+    elif sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed', 'wrong_type', 'unreadable'):
         review.append(_item('str_not_current', status=sc['current_status']))
     elif sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
         review.append(_item('str_recipient_mismatch', members=[earner]))
@@ -615,6 +618,18 @@ def _suspect_genuineness(application, doc_types):
     return ''
 
 
+def _str_wrong_type(application):
+    """True when the latest STR doc is a GENUINE document of the WRONG kind in the STR slot (a
+    payslip / SARA letter / SALINAN) — its currency state is 'wrong_type'. Used to suppress the
+    misleading "not a genuine original" genuineness caveat (str-proof-spec.md §4)."""
+    from .income_engine import student_str_check
+    d = _latest_doc(application, 'str')
+    if d is None:
+        return False
+    sc = student_str_check(d)
+    return bool(sc and sc.get('current_status') == 'wrong_type')
+
+
 def _apply_genuineness_caps(application, facts):
     """Soft post-cap (Sprint 2): a suspect/wrong-type feeding document lowers a fact from
     'verified' to 'review' and adds a `document_not_genuine` caveat — the AI is less certain
@@ -622,6 +637,12 @@ def _apply_genuineness_caps(application, facts):
     never upgrades. Only bites when the (flag-gated) genuineness check has run."""
     for fact in facts:
         dts = _fact_genuineness_docs(application, fact['fact'])
+        # A wrong_type STR — a GENUINE non-STR document in the STR slot (a payslip, a SARA letter) —
+        # is already explained by the str_not_current('wrong_type') item; the genuineness "may not be
+        # a genuine original" caveat is misleading (the doc IS genuine, just the wrong KIND), so don't
+        # double-flag it. (str-proof-spec.md §4.)
+        if 'str' in dts and _str_wrong_type(application):
+            dts = [d for d in dts if d != 'str']
         if not dts or any(i['code'] == 'document_not_genuine' for i in fact['unresolved']):
             continue
         st = _suspect_genuineness(application, dts)
