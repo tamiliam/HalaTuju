@@ -219,6 +219,22 @@ function factStatus(s: string | undefined | null): FactStatus {
 }
 
 /**
+ * STR currency state → doc-chip tone (str-proof-spec.md): a CURRENT approved STR is green; a
+ * REJECTED (Ditolak) or WRONG_TYPE (a non-STR — payslip / SARA / SALINAN — in the STR slot) is
+ * red; everything in between (unconfirmed = approved-but-undated, stale, unreadable/cropped) is
+ * amber "confirm". NB the doc chip has no blue — 🔵 Probable is a verdict-TILE concept (the income
+ * tile derives it from the review state + green evidence), not a per-document chip.
+ */
+function strCurrencyFactStatus(s: string | undefined | null): FactStatus {
+  switch (s) {
+    case 'current': return 'verified'
+    case 'rejected': case 'wrong_type': return 'not'
+    case 'unconfirmed': case 'stale': case 'unreadable': return 'partial'
+    default: return 'unknown'
+  }
+}
+
+/**
  * Tone for a utility-bill ADDRESS check. Mirrors the backend's weighted matcher + officer-flag
  * logic: only a genuine 'mismatch' (a different home) is red; 'unconfirmed'/'unreadable' (and the
  * legacy 'not_found') mean "couldn't confirm" — amber, eyeball at interview, never a hard miss.
@@ -310,7 +326,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     return [
       { key: 'recipient', status: factStatus(c.name_status) },
       { key: 'ic_no', status: factStatus(c.nric_status) },
-      { key: 'current', status: factStatus(c.current_status) },
+      { key: 'current', status: strCurrencyFactStatus(c.current_status) },
     ]
   }
   if (dt === 'salary_slip' || dt === 'epf') {

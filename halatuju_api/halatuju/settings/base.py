@@ -180,6 +180,14 @@ PHONE_VERIFY_CHANNEL = os.environ.get('PHONE_VERIFY_CHANNEL', 'sms')
 # per student before any applicant is asked. Flip to true (env var) to go live.
 CHECK2_STUDENT_QUERIES_ENABLED = os.environ.get('CHECK2_STUDENT_QUERIES_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# Post-award bank-details capture (the student's Action-Centre "add bank details" task +
+# the confirm endpoint). HIDDEN by default — an alternative monthly payment arrangement
+# replaces it (the award email no longer asks for bank details), and this feature is being
+# DEPRECATED. While OFF the task is never surfaced and any existing open one is swept to
+# resolved; already-captured BankAccount rows are left untouched. Flip on via the env var
+# only to restore the old flow.
+BANK_DETAILS_CAPTURE_ENABLED = os.environ.get('BANK_DETAILS_CAPTURE_ENABLED', '').lower() in ('1', 'true', 'yes')
+
 # Check 2 STEP 3: auto-draft the sponsor profile at the reviewer handoff (and the
 # backfill/sweep that share this gate). Billable Gemini, so off by default; flip via the
 # env var. (Was referenced in code but never defined here, so it was permanently off.)
