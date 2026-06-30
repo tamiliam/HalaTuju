@@ -61,6 +61,7 @@ import {
   isQueryingLocked,
   isDecisionReady,
   isApproveReady,
+  verdictItemKey,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
@@ -1009,7 +1010,7 @@ export default function AdminScholarshipDetailPage() {
             }[tone]
             // Subtitle: first evidence item text, or first unresolved item text.
             const resolve = (it: AdminVerdictItem) =>
-              t(`admin.scholarship.verdict.item.${it.code}`,
+              t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                 localiseParams(it.params, t))
             const subtitle = f.unresolved.length > 0
               ? resolve(f.unresolved[0])
@@ -1062,7 +1063,7 @@ export default function AdminScholarshipDetailPage() {
           <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
             {(app.verdict || []).map((f) => {
               const resolve = (it: AdminVerdictItem) =>
-                t(`admin.scholarship.verdict.item.${it.code}`,
+                t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                   localiseParams(it.params, t))
               if (factTileTone(f) === 'green' || (f.evidence.length <= 1 && f.unresolved.length === 0)) return null
               return (
