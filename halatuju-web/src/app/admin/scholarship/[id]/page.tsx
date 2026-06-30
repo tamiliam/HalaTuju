@@ -1071,15 +1071,17 @@ export default function AdminScholarshipDetailPage() {
                   <span className="font-medium text-gray-500 uppercase text-[10px] tracking-wide">
                     {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
-                  {f.evidence.slice(1).map((it, i) => (
-                    <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
-                      <span className="text-green-600 shrink-0">✓</span>
-                      <span>{resolve(it)}</span>
-                    </div>
-                  ))}
+                  {/* Findings first (the active reasoning — e.g. the STR verdict leads the
+                      income story), then the supporting confirmations. */}
                   {f.unresolved.map((it, i) => (
                     <div key={`u${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
                       <span className="text-amber-600 shrink-0">•</span>
+                      <span>{resolve(it)}</span>
+                    </div>
+                  ))}
+                  {f.evidence.slice(1).map((it, i) => (
+                    <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
+                      <span className="text-green-600 shrink-0">✓</span>
                       <span>{resolve(it)}</span>
                     </div>
                   ))}

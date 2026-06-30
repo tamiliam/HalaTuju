@@ -239,9 +239,14 @@ describe('documentFacts', () => {
       .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'partial' }, { key: 'results', status: 'verified' }])
   })
 
-  it('str → Recipient, IC No, Current', () => {
+  it('str → Recipient, IC No, Status, Current (Status is the 3rd required variable)', () => {
     expect(documentFacts(doc({ doc_type: 'str', str_check: strCheck({ name_status: 'match', nric_status: 'mismatch', current_status: 'stale' }) })))
-      .toEqual([{ key: 'recipient', status: 'verified' }, { key: 'ic_no', status: 'not' }, { key: 'current', status: 'partial' }])
+      .toEqual([
+        { key: 'recipient', status: 'verified' },
+        { key: 'ic_no', status: 'not' },
+        { key: 'status', status: 'verified' },   // 'stale' is still approved (Lulus) → green
+        { key: 'current', status: 'partial' },   // …but a prior-year cycle → amber
+      ])
   })
 
   it('str Current chip maps the structured currency states (str-proof-spec)', () => {
@@ -254,6 +259,18 @@ describe('documentFacts', () => {
     expect(cur('unreadable')).toBe('partial')    // 🟡 cropped
     expect(cur('rejected')).toBe('not')          // 🔴 Ditolak
     expect(cur('wrong_type')).toBe('not')        // 🔴 not an STR (payslip / SARA / SALINAN)
+  })
+
+  it('str Status chip = approval (Lulus), distinct from currency/date', () => {
+    const stat = (s: string) =>
+      documentFacts(doc({ doc_type: 'str', str_check: strCheck({ current_status: s }) }))
+        .find((f) => f.key === 'status')!.status
+    expect(stat('current')).toBe('verified')     // 🟢 Lulus
+    expect(stat('stale')).toBe('verified')       // 🟢 Lulus (just an old cycle)
+    expect(stat('unconfirmed')).toBe('verified') // 🟢 Lulus (just no date)
+    expect(stat('rejected')).toBe('not')         // 🔴 Ditolak
+    expect(stat('wrong_type')).toBe('not')       // 🔴 not an STR — no approval to show
+    expect(stat('unreadable')).toBe('partial')   // 🟡 cropped — couldn't read the status line
   })
 
   it('birth certificate → Child, Mother, Father (carries the mother relationship)', () => {
