@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Award good-news email reworded — no bank-details ask.** The post-award email now tells the
+  student support is paid via a **monthly payment arrangement** and that a **formal offer and bursary
+  contract** will follow, with nothing for them to do yet (no Action-Centre button/link). An
+  alternative payment arrangement replaces bank capture. NO amount, NO sponsor identity retained.
+  EN/BM/TA. Owner-cleared 2026-06-30.
+- **Post-award bank-details capture HIDDEN (being deprecated).** New `BANK_DETAILS_CAPTURE_ENABLED`
+  flag, default OFF: the Action-Centre "add bank details" task is no longer surfaced, any existing
+  open one is swept to resolved on next sync, and the confirm endpoint returns **410 Gone**
+  (`bank_capture_disabled`). Already-captured `BankAccount` rows are untouched; capture logic is
+  retained behind the flag (tested with it ON) for a clean later removal. Backend-only, no migration.
+  +4 pytest.
 - **Award good-news email → 24h cool-off auto-send (replaces the temporary OFF gate).** A sponsor
   award no longer emails inline; the new hourly cron `release-award-offer-emails` sends the email
   once the award is `AWARD_OFFER_EMAIL_COOLOFF_HOURS` old (default 24), leaving a window to
