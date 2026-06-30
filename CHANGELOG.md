@@ -75,6 +75,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `halatuju-release-award-offer-emails` (`0 * * * *` Asia/KL). +6 pytest.
 
 ### Fixed
+- **STR-not-current verdict copy rendered raw on the officer cockpit.** The STR-proof S1 copy used an ICU
+  `{status, select, …}` message, but the app's custom i18n `t` (`lib/i18n.tsx`) does flat `{var}` substitution
+  only — no ICU MessageFormat — so the whole template printed verbatim on #13/#102. Replaced the single ICU key
+  with flat per-status keys (`str_not_current_{wrong_type,rejected,stale,unreadable,unconfirmed}`, en/ms/ta) and
+  a `verdictItemKey()` helper that resolves the right one from `params.status` (default `unconfirmed`). The
+  backend item code stays `str_not_current` (resolution/help engines key off that literal). FE-only; +4 jest.
 - **Shouty (ALL-CAPS) programme name no longer leaks to the sponsor pool / profile.** An offer letter in
   capitals confirmed via the Action Centre wrote its programme name verbatim into `chosen_programme`
   (`confirm_pathway`), so #107 showed "PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP)" on its pool card —

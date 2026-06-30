@@ -6,7 +6,22 @@
  * re-implements them.
  */
 
-import type { AdminVerdictFact, AdminApplicantDocument, VerdictMetrics } from '@/lib/admin-api'
+import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument, VerdictMetrics } from '@/lib/admin-api'
+
+// ── Verdict item i18n key ─────────────────────────────────────────────────────
+
+// STR-not-current copy is per-status (decisive, no word-salad). The backend keeps a
+// single item code `str_not_current` (resolution/help engines key off that literal),
+// and tags the reason in params.status. The custom i18n `t` has NO ICU MessageFormat —
+// only flat `{var}` interpolation — so an ICU `select` would render raw. Resolve to a
+// flat per-status key here instead: str_not_current_{wrong_type,rejected,stale,
+// unreadable,unconfirmed}. Default to 'unconfirmed' (the approved-but-dateless case).
+export function verdictItemKey(it: AdminVerdictItem): string {
+  if (it.code === 'str_not_current') {
+    return `str_not_current_${String(it.params?.status || 'unconfirmed')}`
+  }
+  return it.code
+}
 
 // ── Fact tile tone ───────────────────────────────────────────────────────────
 

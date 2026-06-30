@@ -5,7 +5,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
 
-_(cleared at the 2026-06-29 review below)_
+- 2026-07-01 fix(web): STR-not-current verdict copy rendered raw ICU `select` — replaced with flat per-status keys (`halatuju-web` messages en/ms/ta, `officerCockpit.verdictItemKey`, cockpit `[id]/page.tsx`, +test)
 
 ## Reviews
 
