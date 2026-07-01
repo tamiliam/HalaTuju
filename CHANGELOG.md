@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Officer (Check-2) verdict copy is now prescriptive, in a firm fiscal-steward voice — a lean + an
+  action, never "can't tell".** A human-in-the-loop system with two distinct personas: **Cikgu Gopal
+  (Check 1)** is the kind, tolerant student help agent (`help_engine.py`, untouched); **Check 2** is an
+  opinionated, firm officer guarding the donors' money (no pushover / bleeding heart) — it requires
+  proof before committing funds and takes firm positions both ways (decisive support-approval when the
+  evidence is clean, firm recommend-reject when it isn't; interview path always left open). Each
+  amber/red line states a defensible lean + the specific next step, and "Unsure" reads as "proof
+  required from the student" (the inconclusive states auto-raise a 5-day Action-Centre query). e.g.
+  stale → "Approved last cycle only — that's stale, not proof of current need; the current cycle's
+  status is required before this counts"; over-B40 → "recommend reject on income; override only if the
+  interview surfaces genuine qualifying circumstances" (drops the old "do NOT auto-reject" wording).
+  en/ms/ta + spec §4. Copy-only, officer-facing — the student never sees this register.
 - **STR-proof refinement — payment guard + band matrix + date-only Current chip (MODEL_VERSION → 1.2.1;
   docs/scholarship/str-proof-spec.md).** Three related changes to the STR income assessment:
   - **Payment guard** (`income_engine._str_currency`): approval is proven PRIMARILY by a readable
