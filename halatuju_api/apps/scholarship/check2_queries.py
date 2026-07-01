@@ -131,6 +131,9 @@ def sync_check2_queries(application):
 
     existing = {r.code: r for r in application.resolution_items.filter(source='check2')}
     now = timezone.now()
+    # Track whether a NEW student-visible check2 item is created this pass → re-notify (all
+    # source='check2' items are student-visible when the flag is on; see views._student_visible).
+    raised_student_visible = False
 
     # Uncapped PROOF doc-requests (design decision #1): create when wanted + absent,
     # auto-resolve when the parent's income gap clears.
@@ -140,6 +143,7 @@ def sync_check2_queries(application):
                 ResolutionItem.objects.create(
                     application=application, source='check2', code=code,
                     fact='income', kind='doc', doc_type=spec['doc_type'])
+                raised_student_visible = True
             except IntegrityError:
                 pass
         item = existing.get(code)
@@ -161,6 +165,7 @@ def sync_check2_queries(application):
                 fact=CLARIFY_SPECS[code]['fact'], kind='clarify',
             )
             raised += 1
+            raised_student_visible = True
         except IntegrityError:
             pass  # created concurrently — fine
 
@@ -173,7 +178,14 @@ def sync_check2_queries(application):
 
     # The one-tap pathway confirmation (offer differs from the declared course) — a
     # 'confirm', NOT a clarify, so it sits outside the MAX_CLARIFY cap and the gap loop.
-    _sync_pathway_confirm(application, existing, now)
+    if _sync_pathway_confirm(application, existing, now):
+        raised_student_visible = True
+
+    if raised_student_visible:
+        # A new student-visible query/doc-request appeared after the one-time notify →
+        # re-announce it via the batched hourly sweep (local import avoids a circular import).
+        from .services import bump_query_notify_on_new_item
+        bump_query_notify_on_new_item(application)
 
     return application.resolution_items.filter(source='check2', status='open')
 
@@ -204,6 +216,7 @@ def _sync_pathway_confirm(application, existing, now):
                 application=application, source='check2', code='pathway_confirm',
                 fact='pathway', kind='confirm', params=params,
             )
+            return True   # a new student-visible confirm was raised → caller re-notifies
         except IntegrityError:
             pass  # created concurrently — fine
     elif params is None and item is not None and item.status == 'open':
@@ -212,3 +225,4 @@ def _sync_pathway_confirm(application, existing, now):
         item.resolved_by = 'system'
         item.resolved_at = now
         item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
+    return False

@@ -135,6 +135,7 @@ def sync_resolution_items(application):
     existing = {r.code: r for r in application.resolution_items.filter(source='system')}
     now = timezone.now()
 
+    raised_student_visible = False
     for code, info in wanted.items():
         if code in existing:
             continue
@@ -145,6 +146,11 @@ def sync_resolution_items(application):
                 fact=info['fact'], params=info['params'],
                 kind=spec['kind'], doc_type=spec.get('doc_type', ''),
             )
+            # A system item is shown to the student only if it's a doc-request in
+            # STUDENT_DOC_REQUEST_CODES (see views.ResolutionItemListView._student_visible) —
+            # so only those should trigger a re-notify.
+            if code in STUDENT_DOC_REQUEST_CODES:
+                raised_student_visible = True
         except IntegrityError:
             pass  # created concurrently by another request — fine
 
@@ -159,6 +165,12 @@ def sync_resolution_items(application):
             item.resolved_by = 'system'
             item.resolved_at = now
             item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
+
+    if raised_student_visible:
+        # A new student-visible doc-request appeared after the one-time notify → re-announce it
+        # (local import: services imports this module, so avoid a circular import at module load).
+        from .services import bump_query_notify_on_new_item
+        bump_query_notify_on_new_item(application)
 
     return open_items(application)
 

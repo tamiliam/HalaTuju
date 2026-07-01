@@ -602,6 +602,25 @@ def switch_income_route(application, *, route, earner='', members=None, by='stud
 QUERY_EMAIL_DELAY_HOURS = 2
 
 
+def bump_query_notify_on_new_item(application):
+    """A NEW student-visible query / doc-request was just raised on an ALREADY-notified
+    application → clear the one-time notify stamp so the batched hourly `send_due_query_emails`
+    sweep announces it ONCE on its next run. Without this, a request raised AFTER the initial
+    email (by a Check-2 re-sync or a verdict recompute) never reaches the student — they sit on
+    it for days. Mirrors the officer-raise re-notify (views_admin.AdminRaiseItemView).
+
+    Guarded by CHECK2_STUDENT_QUERIES_ENABLED (the student-query channel). No-op if the student
+    hasn't been notified yet (the initial sweep will cover the new item anyway). Safe to call
+    whenever a genuinely new item is created — creation is once-per-code, so this can't spam."""
+    from django.conf import settings as _settings
+    if not getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False):
+        return
+    if application.query_raised_notified_at is None:
+        return
+    application.query_raised_notified_at = None
+    application.save(update_fields=['query_raised_notified_at'])
+
+
 def send_due_query_emails(now=None):
     """Frequent sweep (hourly): ~``QUERY_EMAIL_DELAY_HOURS`` after a student submits,
     email them ONCE that a few clarify questions are waiting in their Action Centre — but
