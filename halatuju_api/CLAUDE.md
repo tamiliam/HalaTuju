@@ -540,6 +540,30 @@ DARK behind `BURSARY_AGREEMENT_ENABLED` (5 sprints; commits `013effe3`→`f7cc73
 - **▶ NEXT:** owner tests in prod (migrate-first `0083`/`0084`/`0085` → deploy → flip `BURSARY_AGREEMENT_ENABLED`
   + send `SIGN_INVITE_APP_IDS`). The local browser walkthrough was skipped (owner will test in prod).
 
+**▶ STR-PROOF MODEL — Sprint 3 (officer-review refinement) SHIPPED 2026-07-01 (worktree `.worktrees/str-salary`;
+commits `9a349001` ICU-copy fix + `d82de368` Status chip/finding-first + `067dd008` payment guard/band
+matrix/Current chip + `a1ca9ade` prescriptive firm-steward copy; NO migration; `MODEL_VERSION` 1.2 → 1.2.1;
+spec `docs/scholarship/str-proof-spec.md` §2–§8; retro `docs/retrospective-2026-07-01-str-proof-model-s3.md`).**
+- **Payment guard** (`income_engine._str_currency`, new `amount_raw` param): "Lulus" is PRIMARY approval; a
+  positive PAID amount ("Jumlah Telah Dibayar") is an ADDITIVE rescue for a misread status (the #23 "STR"-label
+  leak). Zero/absent never downgrades; Ditolak/non-STR still win. **`current_status` is computed on read → the
+  whole #23 class self-corrects on deploy, NO re-run.**
+- **STR band matrix** (`verdict_engine._verdict_income`): Lulus+dated→Certain, Lulus+no-date→Probable,
+  stale/unreadable→**Unsure** (`recommend`, not a blue read off earner-IC greens), Ditolak/non-STR→salary route
+  (over-B40→**Fail/gap/RED**, no-salary→Unsure). **Revises S2 "over-B40 → amber, don't auto-reject" → red
+  income fact** (advisory; officer still decides; interview override stays).
+- **Officer chips split** (`officerCockpit`): Status (approval: `strStatusFactStatus`) + Current (date-only:
+  `strCurrencyFactStatus`, dateless/n-a → grey "we don't know"). Recipient·IC·**Status**·Current; verdict detail
+  leads with the finding. Fixed the S1 raw-ICU copy (custom `t` has NO ICU engine → flat per-status keys +
+  `verdictItemKey`; guardrail `no-icu-messageformat.test.ts`).
+- **Prescriptive, firm-steward Check-2 copy** (en/ms/ta): every officer line = a lean + an action, never "can't
+  tell"; "Unsure" = "proof required from the student" (auto-raised 5-day Action-Centre query;
+  `CHECK2_STUDENT_QUERIES_ENABLED`/`CHECK2_AUTO_GENERATE` both ON in prod). **Two personas:** Cikgu Gopal
+  (Check 1, `help_engine.py`) kind/tolerant for the student — UNTOUCHED; Check 2 firm donor-steward for the officer.
+- 1864 pytest + 403 jest green; 4 deploys (3× web, 1× api); web `…00523`, api `…00601`+.
+- **▶ NEXT:** owner's **salary/pension re-run** (the S2 `gross_income_ytd` annualisation + pension fields need
+  re-extraction — STR-currency fixes incl. #23 do NOT). Then the full salary-track redesign (below).
+
 **▶ STR-PROOF MODEL — Sprint 2 (salary spillover) SHIPPED 2026-07-01 (worktree `.worktrees/str-salary`;
 commits `97b59918` income core + `7a7586e7` verdict/extraction/FE; NO migration; spec
 `docs/scholarship/str-proof-spec.md` §6/§7; retro `docs/retrospective-2026-07-01-str-proof-model-s2.md`).**

@@ -3768,3 +3768,24 @@ rollout (would need a per-cohort/per-student gate instead of a global flag).
 **Rationale:** the evidence on file should drive the verdict; margin-grading is roster-independent and matches the human read (#13 near-line → Unsure; SARA far-under → Probable).
 **Trade-offs:** GREEN is reserved for a corroborated household (the family roster), so the salary route caps at Probable for now. unsure/over use `recommend` (amber) not `review`, because a `review` tile reads blue off the verified earner-IC greens — the band must track the income conclusion, not incidental identity evidence.
 **Revisit if:** the family roster lands (then a corroborated household can reach GREEN), or the full salary-track spec reworks the per-member aggregation.
+
+## STR-proof: a positive paid amount corroborates approval (payment guard) — 2026-07-01
+**Decision:** in `_str_currency`, approval is proven PRIMARILY by a readable "Lulus"/"diluluskan"; a positive PAID amount ("Jumlah Telah Dibayar RM…") is an ADDITIVE extra that also proves approval — you are not paid STR money unless Lulus — so it rescues a doc whose status token was misread (the #23 "STR"-label leak). Zero/absent amount never downgrades a Lulus doc; a Ditolak status or a non-STR (`source_type=unknown`) still overrides.
+**Alternatives considered:** keep tuning the extraction prompt to read "Lulus" (it already instructs this and the model still returned the label "STR" at v1.2); treat the misread as genuinely `unreadable` (correct-but-useless — it stranded a plainly-approved, paid dashboard at amber).
+**Rationale:** WAT in miniature — when the probabilistic read keeps failing on one safety-critical field, add a deterministic backstop off a hard signal the model *does* read. `current_status` is computed on read, so this fixes #23-type docs live with no re-extraction.
+**Trade-offs:** relies on the extracted `amount` being a real STR figure (rejected/wrong_type gates run first, so a SARA/Ditolak amount can't leak approval).
+**Revisit if:** the extraction becomes reliable enough to trust the status token alone, or MySTR stops showing a paid amount.
+
+## STR-proof: the Status × Current band matrix; over-B40 → red Fail — 2026-07-01
+**Decision:** the STR income band = approval Status × cycle Current — Lulus+dated → Certain, Lulus+no-date → Probable, Lulus+prior-year(stale)/approval-unread(unreadable) → Unsure, Ditolak/non-STR → salary route (over the B40 line → **Fail/red**, no salary docs → Unsure). stale/unreadable return `recommend` (amber), not `review` (blue), so they don't read blue off the verified earner-IC greens.
+**Alternatives considered:** stale → Probable (rejected — a prior-year approval isn't proof of *current* need; a human would want the current status = "more data" = Unsure); over-B40 → amber "do NOT auto-reject" (the earlier S2 rule).
+**Rationale:** **over-B40 revises the earlier S2 "amber, don't auto-reject" to a red income fact** — advisory only (tiles guide; the officer places the final verdict; interview override stays), matching the owner's "if salary fails, fail". The income tile must reflect the income conclusion, not incidental identity greens.
+**Trade-offs:** a red income fact is a stronger signal than before; mitigated by "advisory, officer decides" framing and the interview-override copy.
+**Revisit if:** officers report over-B40 reds suppressing genuine circumstance-based approvals.
+
+## STR-proof: prescriptive verdicts + two personas (Gopal vs Check 2) — 2026-07-01
+**Decision:** this is a human-in-the-loop system where the officer AUDITS the model, so the officer-facing (Check-2) verdict copy must be **prescriptive** — a lean + a specific action, never a bare "I don't know". "Unsure" is legitimate ONLY when a human, given the same docs, would also need more data — and even then it is not a dead-end: the inconclusive states auto-raise a 5-day Action-Centre student query (`CHECK2_STUDENT_QUERIES_ENABLED`/`CHECK2_AUTO_GENERATE`, both ON in prod). Two personas on two surfaces: **Cikgu Gopal (Check 1)** = kind/tolerant student help (`help_engine.py`); **Check 2** = firm, opinionated donor-steward (officer verdict tiles) that requires proof before committing funds.
+**Alternatives considered:** leave the copy narrating uncertainty ("couldn't determine") — reads as the model washing its hands; a single neutral voice for both surfaces — blurs the helpful-coach vs firm-auditor roles.
+**Rationale:** the officer shouldn't be handed a blank page; a firm steward voice protects the donors' money without being cruel (interview path always open), while Gopal keeps the student experience encouraging.
+**Trade-offs:** two registers to maintain; copy-only guardrail is the i18n parity/orphan/no-ICU tests (personas live on separate namespaces so they can't cross-contaminate).
+**Revisit if:** the two surfaces are ever merged, or the query auto-generation is disabled (then "Unsure" would need a different resolution path).
