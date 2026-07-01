@@ -57,16 +57,21 @@ All formats share one extraction schema, but the *meaning* and *requirement* dif
 | `status` | from "diluluskan" | "Status Permohonan **Semasa**" → value | value **under** "Status Permohonan STR" | **Required, decisive** — the approval word |
 | `date` (letter only) | letter date / "STR 2026" | — | — | **Currency** — pins the cycle |
 | `payment_date` | — | "Maklumat Pembayaran" → Tarikh Bayaran (if open) | — | **Currency** — pins the cycle when present |
-| ~~`amount`~~ | "Jumlah … STR" | "Jumlah Bayaran Keseluruhan STR" | "Jumlah Bayaran Keseluruhan STR" | **NOT a variable — it is a signature** (used to recognise the format, never read as data) |
+| `amount` (paid) | "Jumlah … STR" | "Jumlah Telah Dibayar" | "Jumlah Telah Dibayar" | **Extra approval corroborator** — a positive PAID amount proves the STR is Lulus (see payment guard below); still doubles as a format signature |
 
 Notes:
 - **Only the letter self-dates.** Semakan can pin the cycle *only* if the student opens "Maklumat
   Pembayaran" (the dated payment phases); collapsed, it has no date. Dashboard never has a date.
 - **`status` is the value, never the label.** "Status Permohonan STR" is a *label*; the status is the
   word on the next line (Lulus / Ditolak / Dalam proses). Returning the label fragment `"STR"` as the
-  status is the #112 bug — forbidden.
-- The "Jumlah …" lines and "Fasa Bayaran" are **signatures** that identify the format, not values to
-  capture.
+  status is the #112 / #23 bug — forbidden.
+- **Payment guard (the extra approval path).** `status` (a readable "Lulus"/"diluluskan") is the
+  PRIMARY proof of approval. A **positive paid amount** ("Jumlah Telah Dibayar RM…") is an EXTRA,
+  corroborating proof — you are not paid STR money unless the application is Lulus — so it rescues a
+  doc whose status token was **misread** (the #23 "STR"-label leak). It is **additive only**: a
+  zero/absent amount NEVER downgrades a Lulus doc (a genuine STR printed early in the cycle can show
+  RM0 paid). Precedence: a Ditolak status or a non-STR (`source_type=unknown`) still wins over any
+  amount. The "Fasa Bayaran" table remains a pure format signature.
 
 ---
 
@@ -89,6 +94,13 @@ still not an STR).
 A SARA-only document (e.g. a Perdana Menteri congratulation letter) is `unknown` → 🔴 as STR proof.
 SARA "Layak" is NOT an STR approval word.
 
+**The officer card splits this into TWO chips** (the single status above maps onto both):
+- **Status** = the 3rd required variable — *is it approved?* Lulus (incl. proven by a paid amount) →
+  🟢; Ditolak / not-an-STR → 🔴; approval couldn't be read → 🟡.
+- **Current** = the *optional* cycle date. Dated this cycle → 🟢; a prior-year date → 🟡; **no date /
+  can't tell / not-an-STR → ⚪ grey "we don't know"** (its absence is not a fault — a Dashboard simply
+  has no date). Recipient + IC No are the other two required chips.
+
 ---
 
 ## 4. Verdict copy — decisive, one state → one sentence
@@ -102,7 +114,7 @@ situations into one. Split it:
 | 🔴 wrong-type (salary slip) | "This is not an STR document — it's a salary slip. Assessing on the salary route." |
 | 🔴 wrong-type (SARA/SALINAN/other) | "This is not an STR document (it's a {SARA letter / application record / …}). Assessing on the salary route." |
 | 🔴 rejected | "The STR application was rejected (Ditolak) — not an approved STR." |
-| 🟡 unreadable (cropped) | "This MySTR page is cropped — the status line isn't visible. Re-upload the full page (open Maklumat Pembayaran to show the dated payments)." |
+| 🟡 unreadable (approval not confirmed) | "Couldn't confirm this STR was approved — the status line (Lulus/Ditolak) didn't read and no payment is shown. Ask for a clearer upload showing the status, or open Maklumat Pembayaran." (NB: do **not** assert "cropped" — a complete page can be *misread*; cropping is a genuineness judgment, not this state's claim.) |
 | 🟡 stale | "This STR is from a prior cycle ({year}). Upload the current cycle's status." |
 | 🔵 unconfirmed (real STR, no date) | "Approved (Lulus), but the page shows no payment date. Open Maklumat Pembayaran (Semakan) to confirm the current cycle, or it's accepted on the live-portal status." |
 | 🟢 current | (no caveat — green) |
@@ -120,16 +132,20 @@ is *the wrong document*, not a forgery.
 `unconfirmed`. The smarter document read already knows "this is a salary slip" — that insight must
 reach the decision layer as a state, not stay as prose.
 
-| State | Meaning | Doc status | Income-fact contribution |
+| State | Meaning | Status / Current chips | Income band |
 |---|---|---|---|
-| `current` | approved + dated current | 🟢 | proves B40 (→ Certain) |
-| `unconfirmed` | recognised format, approved, no date | 🔵 | probable B40 |
-| `stale` | approved, prior-year | 🟡 | needs current cycle |
-| `rejected` | Ditolak | 🔴 | STR fails — fall through to salary |
-| `wrong_type` | `source_type = unknown` (not an STR) | 🔴 | STR fails — fall through to salary |
+| `current` | approved + dated current | 🟢 / 🟢 | **Certain** |
+| `unconfirmed` | recognised format, approved (Lulus **or** paid amount), no date | 🟢 / ⚪ | **Probable** |
+| `stale` | approved, prior-year date | 🟢 / 🟡 | **Unsure** |
+| `unreadable` | recognised format, approval NOT read AND no payment | 🟡 / ⚪ | **Unsure** |
+| `rejected` | Ditolak | 🔴 / ⚪ | **Fail** — fall through to salary |
+| `wrong_type` | `source_type = unknown` (not an STR) | 🔴 / ⚪ | **Fail** — fall through to salary |
 
+Approval is set by a readable Lulus **or** (as a rescue) a positive paid amount (§2 payment guard).
 `rejected` and `wrong_type` are **terminal for the STR axis** and **trigger the route fall-through**
-(§6). `unconfirmed`/`stale` keep asking for a better STR while still allowing the salary route.
+(§6). `stale`/`unreadable` → **Unsure** (amber `recommend`), not a blue `review`: a review tile would
+read blue off the verified earner-IC greens, overstating a doc whose cycle is old or whose approval
+never read. `unconfirmed` stays `review` (🔵) because a green Status earns it.
 
 ---
 
@@ -139,12 +155,17 @@ The income verdict is **evidence-driven, not locked to the declared route.** Tod
 the verdict reporting the STR problem and silent on the salary docs already on file (the #13 / SARA
 cases). Required behaviour:
 
-1. If a valid **current** STR (recipient = earner) → B40 proven → 🟢.
-2. Else if STR is `rejected` / `wrong_type` / absent **and salary/benefit evidence is on file** →
-   **evaluate the salary route** on that evidence (§7) and report *that* band. Do not freeze.
-3. Else if STR is `unconfirmed`/`stale` (a real STR, just unpinned) → 🔵/🟡 with the §4 ask, salary
-   route still available.
-4. Else (no usable income evidence at all) → 🔴 Can't-verify.
+1. If a valid **current** STR (recipient = earner) → B40 proven → 🟢 Certain.
+2. Else if STR is `rejected` / `wrong_type` / absent → the STR **fails** → **evaluate the salary
+   route** (§7) and report *that* band:
+   - salary shows B40 with headroom → 🔵 Probable;
+   - salary near the line / thin → 🟡 Unsure;
+   - salary clearly **over** the B40 line → 🔴 **Fail** (advisory — the officer still places the final
+     verdict; not an auto-reject, circumstances may apply);
+   - **no usable salary docs** → 🟡 **Unsure** (can't confirm B40, a human looks — *not* a blue read
+     off incidental earner-IC greens).
+3. Else if STR is `unconfirmed` → 🔵 Probable; `stale` → 🟡 Unsure (a real STR, just unpinned/old),
+   with the §4 ask; salary route still available.
 
 ---
 
@@ -199,12 +220,15 @@ directly, shrinking the unknown.
 
 Combining the STR axis and the salary route:
 
+The STR axis follows the **Status × Current matrix** (§3/§5): Lulus+dated → Certain, Lulus+no-date →
+Probable, Lulus+prior-year(stale) / approval-unread → Unsure, Ditolak/non-STR → Fail (salary net below).
+
 | Band | Condition |
 |---|---|
-| 🟢 **Certain** | valid current STR (recipient = earner); OR salary clearly under the line with household corroborated |
-| 🔵 **Probable** | recognised-but-unconfirmed STR (no date); OR salary under the line with large headroom despite an uncorroborated member |
-| 🟡 **Unsure** | stale STR; OR salary near the line; OR per-capita passes only via an uncorroborated household with thin headroom; recipient ≠ earner |
-| 🔴 **Can't-verify** | rejected STR with no other evidence; OR no usable income evidence; OR income clearly over the line with no mitigation |
+| 🟢 **Certain** | valid current STR (recipient = earner, dated this cycle); OR salary clearly under the line with household corroborated |
+| 🔵 **Probable** | approved STR with no date (Lulus, or paid-amount rescue); OR salary under the line with large headroom despite an uncorroborated member |
+| 🟡 **Unsure** | stale STR (prior-year); OR approval unreadable; OR a failed STR with **no salary docs**; OR salary near the line / thin uncorroborated headroom; recipient ≠ earner |
+| 🔴 **Can't-verify / Fail** | no usable income evidence at all; OR a failed STR whose salary route shows income **clearly over** the B40 line (advisory — officer still decides) |
 
 "Blue needs a green" still holds (a tile reaches 🔵 only on ≥1 verified value; soft signals don't
 qualify it) — see `verdict-confidence-bands.md`.

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **STR-proof refinement — payment guard + band matrix + date-only Current chip (MODEL_VERSION → 1.2.1;
+  docs/scholarship/str-proof-spec.md).** Three related changes to the STR income assessment:
+  - **Payment guard** (`income_engine._str_currency`): approval is proven PRIMARILY by a readable
+    "Lulus"; a positive **paid amount** ("Jumlah Telah Dibayar RM…") now corroborates approval as an
+    *extra* rescue — so a doc whose "Lulus" token was misread as the label "STR" (the #23 leak) is
+    still read as approved. Additive only: a zero/absent amount never downgrades a Lulus doc. Ditolak /
+    non-STR still win. Recomputes live from stored fields → **no re-run needed** to fix #23-type docs.
+  - **Band matrix** (`verdict_engine._verdict_income`): Lulus+dated→Certain, Lulus+no-date→Probable,
+    Lulus+prior-year(stale) / approval-unread(unreadable)→**Unsure** (was a blue review off incidental
+    earner-IC greens). A failed STR (Ditolak/non-STR) → salary route: over the B40 line → **Fail (red)**;
+    **no salary docs → Unsure** (was blue). *(Revises the earlier "over-B40 → amber, don't auto-reject"
+    to a red income fact — advisory only; the officer still places the final verdict.)*
+  - **Current chip is date-only** (`officerCockpit.strCurrencyFactStatus`): dated→green, prior-year→amber,
+    **no-date / can't-tell / not-an-STR → grey "we don't know"** (the optional cycle date; approval now
+    lives entirely on the Status chip). So an approved Dashboard reads Recipient🟢·IC🟢·Status🟢·Current⚪.
+
+### Fixed
+- **STR verdict no longer asserts "cropped" for a complete-but-misread page.** The `unreadable` copy said
+  "This MySTR page is cropped — re-upload the full page", contradicting a doc that passed genuineness and
+  plainly showed Lulus (#23). Reworded to "couldn't confirm this STR was approved — the status line didn't
+  read and no payment is shown…" (en/ms/ta) — cropping is a genuineness judgment, not this state's claim.
+
 ### Added
 - **STR documents show a Status (Lulus) chip** — the third required STR variable (after Recipient + IC No),
   distinct from the existing Current chip. Approved (Lulus, incl. an old/dateless cycle) → green; rejected

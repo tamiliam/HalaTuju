@@ -274,32 +274,46 @@ class TestIncome(_Base):
         self.assertIn('relationship_confirmed', _codes(f['evidence']))
         self.assertIn('earner_ic_present', _codes(f['evidence']))
 
-    def test_str_salinan_without_approval_is_review_not_verified(self):
-        # A SALINAN / application record: recipient + current year read, but NO approval
-        # status ('Lulus'/'Diluluskan'). It is NOT proof the STR was granted, so income must
-        # NOT go verified — it raises the str_not_current caveat for a current STR showing Lulus.
+    def test_str_salinan_without_approval_is_unsure_not_verified(self):
+        # A SALINAN / application record: recipient + current year read, but NO approval status
+        # ('Lulus'/'Diluluskan') and no payment. Approval can't be confirmed → unreadable → the
+        # band matrix puts it at Unsure (recommend/amber), NOT verified and NOT a blue review.
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
         _add_doc(self.app, 'str', student_verdict='ok',
                  fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'year': '2026'})   # no status
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'recommend')
         self.assertIn('str_not_current', _codes(f['unresolved']))
         self.assertNotIn('str_verified', _codes(f['evidence']))
 
-    def test_str_stale_year_is_review(self):
+    def test_str_stale_year_is_unsure(self):
+        # Lulus but a PRIOR-year date (stale): Status green, Current amber → Unsure (recommend),
+        # not a blue review off the verified earner IC (str-proof-spec.md band matrix).
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
         _add_doc(self.app, 'str', student_verdict='ok',
                  fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'status': 'Lulus', 'year': '2023'})
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'recommend')
         self.assertIn('str_not_current', _codes(f['unresolved']))
 
-    def test_str_wrong_type_is_review_not_double_flagged_genuine(self):
-        # A genuine payslip / SARA letter in the STR slot (source_type='unknown') → wrong_type. The
-        # income fact raises str_not_current(wrong_type) but NOT document_not_genuine — it's the
-        # wrong KIND of document, not a forgery (#13 payslip, SARA case). str-proof-spec.md §4.
+    def test_str_approved_by_paid_amount_when_status_misread(self):
+        # #23: the model misread "Lulus" as the label "STR"; the RM850 paid it DID read proves
+        # approval → unconfirmed (no date) → Probable (review, blue off the verified earner IC).
+        self._wizard(route='str', earner='father')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'status': 'STR',
+                         'source_type': 'semakan_status', 'amount': 'RM850'})
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'review')                    # blue / Probable
+        self.assertIn('str_not_current', _codes(f['unresolved']))  # unconfirmed — confirm the cycle
+
+    def test_str_wrong_type_no_salary_is_unsure_not_double_flagged_genuine(self):
+        # A genuine payslip / SARA letter in the STR slot (source_type='unknown') → wrong_type. With
+        # NO salary docs to assess, the failed STR → Unsure (recommend/amber). The income fact raises
+        # str_not_current(wrong_type) but NOT document_not_genuine — wrong KIND, not a forgery (#13/SARA).
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
         d = _add_doc(self.app, 'str', student_verdict='ok',
@@ -308,7 +322,7 @@ class TestIncome(_Base):
         d.vision_fields['authenticity'] = {'status': 'suspect', 'reason': 'no STR signatures'}
         d.save(update_fields=['vision_fields'])
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'recommend')
         codes = _codes(f['unresolved'])
         self.assertIn('str_not_current', codes)
         self.assertNotIn('document_not_genuine', codes)
@@ -349,6 +363,19 @@ class TestIncome(_Base):
         self.assertEqual(f['status'], 'review')
         self.assertIn('income_salary_probable', _codes(f['evidence']))
 
+    def test_wrong_type_str_salary_over_b40_fails(self):
+        # STR fails → salary route → the salary clearly exceeds the B40 line → income fact FAILS
+        # (gap / RED). Advisory only (officer still places the verdict), but the tile is red.
+        self._str_route_with_ceiling(3)
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'status': 'approved', 'source_type': 'unknown'})
+        _add_doc(self.app, 'salary_slip', member='father', fields={'gross_income': 'RM12,000'})
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'gap')                       # red / Fail
+        codes = _codes(f['unresolved'])
+        self.assertIn('income_above_b40_line', codes)
+        self.assertIn('str_not_current', codes)
+
     def test_str_recipient_not_earner_is_review(self):
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
@@ -368,7 +395,11 @@ class TestIncome(_Base):
     def test_father_relationship_mismatch_is_review(self):
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'RAJU A/L SAMY')                   # not the student's father
-        _add_doc(self.app, 'str', name_match='found')
+        # A clean CURRENT STR whose recipient IS the earner, so the STR itself doesn't drive the
+        # band — the only concern is the father patronymic mismatch → review.
+        _add_doc(self.app, 'str', student_verdict='ok', name_match='found',
+                 fields={'recipient_name': 'RAJU A/L SAMY', 'status': 'Lulus',
+                         'year': '2026', 'source_type': 'letter'})
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'review')
         self.assertIn('father_patronymic_mismatch', _codes(f['unresolved']))

@@ -7,6 +7,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 - 2026-07-01 fix(web): STR-not-current verdict copy rendered raw ICU `select` — replaced with flat per-status keys (`halatuju-web` messages en/ms/ta, `officerCockpit.verdictItemKey`, cockpit `[id]/page.tsx`, +test)
 - 2026-07-01 feat/fix(web): STR Status (Lulus) chip + verdict detail leads with the finding (`officerCockpit` strStatusFactStatus, `docsDrawer.fact.status` en/ms/ta, cockpit `[id]/page.tsx` render order, +tests)
+- 2026-07-01 STR-proof refinement — **MEANS-TEST logic** (payment guard + band matrix + date-only Current chip; MODEL_VERSION→1.2.1; `income_engine`/`verdict_engine`/`officerCockpit`/spec/en·ms·ta; revises over-B40→red). Cluster of STR-proof changes (S1/S2 + copy fix + this) → **candidate to promote to a consolidated STR-proof sprint retro** at the next review.
 
 ## Reviews
 

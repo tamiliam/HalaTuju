@@ -72,6 +72,29 @@ class TestStrCurrency(SimpleTestCase):
     def test_approved_prior_year_still_stale(self):
         self.assertEqual(_str_currency('diluluskan', '2025', 2026, 'letter'), 'stale')
 
+    # ── payment guard: a positive PAID amount corroborates approval (extra, not primary) ──
+    def test_paid_amount_rescues_misread_status(self):
+        # #23: the model misread "Lulus" as the label "STR"; the RM850 it DID read proves approval
+        # (you're not paid STR money unless Lulus). No date → unconfirmed (BLUE), not unreadable.
+        self.assertEqual(_str_currency('STR', '', 2026, 'semakan_status', 'RM850'), 'unconfirmed')
+        # …and with a current date it's current (GREEN).
+        self.assertEqual(_str_currency('STR', '2026', 2026, 'dashboard', 'RM1,200.00'), 'current')
+
+    def test_lulus_alone_is_enough_zero_payment_never_downgrades(self):
+        # Approval is proven by "Lulus" on its own — a genuine STR printed early can show RM0 paid.
+        self.assertEqual(_str_currency('Lulus', '', 2026, 'dashboard', 'RM0'), 'unconfirmed')
+        self.assertEqual(_str_currency('Lulus', '', 2026, 'dashboard', ''), 'unconfirmed')
+
+    def test_no_status_and_no_payment_stays_unreadable(self):
+        # Neither a readable approval word NOR a payment → approval can't be confirmed → unreadable.
+        self.assertEqual(_str_currency('', '', 2026, 'semakan_status', ''), 'unreadable')
+        self.assertEqual(_str_currency('STR', '', 2026, 'semakan_status', 'RM0'), 'unreadable')
+
+    def test_rejected_and_wrong_type_beat_the_payment_guard(self):
+        # A Ditolak with a legacy amount is still rejected; a non-STR with an amount is still wrong_type.
+        self.assertEqual(_str_currency('Ditolak', '', 2026, 'semakan_status', 'RM850'), 'rejected')
+        self.assertEqual(_str_currency('', '', 2026, 'unknown', 'RM850'), 'wrong_type')
+
 
 class TestFatherNameFromIc(SimpleTestCase):
     def test_a_p_connector(self):
