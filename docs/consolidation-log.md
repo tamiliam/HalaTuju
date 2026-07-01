@@ -10,6 +10,8 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 - 2026-07-01 STR-proof refinement — **MEANS-TEST logic** (payment guard + band matrix + date-only Current chip; MODEL_VERSION→1.2.1; `income_engine`/`verdict_engine`/`officerCockpit`/spec/en·ms·ta; revises over-B40→red). Cluster of STR-proof changes (S1/S2 + copy fix + this) → **candidate to promote to a consolidated STR-proof sprint retro** at the next review.
 - 2026-07-01 feat(web): prescriptive Check-2 verdict copy — lean + action, never "can't tell"; "Unsure" reads as "asked the student" (Action-Centre query). Officer-only (verdict.item en·ms·ta + spec §4); Gopal/help_engine untouched (stays tolerant). Part of the STR-proof cluster above.
 
+_(Not logged here as a small change: the **Check-2 case summary** LLM feature — `verdict_narrative.py` + `AdminVerdictSummaryView` + FE lead paragraph, DARK behind `VERDICT_CASE_SUMMARY_ENABLED`. It's a feature, tracked as STR-proof S4 (dark) in CHANGELOG + halatuju.md + CLAUDE.md Next-Sprint; retro to follow after the owner live-validates the voice and flips the flag.)_
+
 ## Reviews
 
 ### 2026-06-16 — Live-review round (9 small changes)

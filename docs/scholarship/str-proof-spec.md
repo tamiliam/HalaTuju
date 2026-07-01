@@ -136,6 +136,14 @@ button; `CHECK2_STUDENT_QUERIES_ENABLED`), resolvable in the **5-day** window �
 **Delete the "may not be a genuine official original" caveat for a wrong-type document** — a genuine
 payslip/SARA letter in the STR slot is *the wrong document*, not a forgery.
 
+**Case summary (Check-2 "talks to the reviewer").** Above the checklist, `verdict_narrative.py`
+narrates the *already-decided* verdict as a 2–4 sentence case (opens with the verdict + decisive
+reason → threads the reasoning → states why it's this band and **not the next up** → ends with the
+action). The LLM only narrates the deterministic band + glossed items — it never invents or changes
+the band; the bullets remain the audit trail. Income is stated as **gross → per-capita** (never
+take-home); the earner is "confirmed as the student's parent/guardian" (not "a confirmed parent").
+Grounded + cached per (application, verdict-signature), dark behind `VERDICT_CASE_SUMMARY_ENABLED`.
+
 ---
 
 ## 5. Structured currency states (what the verdict consumes)

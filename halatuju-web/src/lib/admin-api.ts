@@ -758,6 +758,20 @@ export async function getScholarshipApplication(id: number, options?: ApiOptions
   return adminFetch<AdminScholarshipDetail>(`/api/v1/admin/scholarship/applications/${id}/`, options)
 }
 
+/** Check-2 case summary — the LLM briefing above the verdict checklist. `enabled:false` when the
+ *  feature flag is off (dark); `summary:''` when every fact is Certain (nothing to brief). */
+export interface VerdictCaseSummary {
+  enabled: boolean
+  summary?: string
+  cached?: boolean
+  model?: string
+  error?: string
+}
+export async function getVerdictCaseSummary(id: number, options?: ApiOptions) {
+  return adminFetch<VerdictCaseSummary>(
+    `/api/v1/admin/scholarship/applications/${id}/verdict-summary/`, options)
+}
+
 // ── Interview scheduling (reviewer proposes times) ────────────────────────────
 /** The assigned reviewer (or super) proposes interview times. `starts` are ISO
  *  strings. Returns the refreshed schedule (booking state + active slots). */

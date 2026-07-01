@@ -193,6 +193,10 @@ BANK_DETAILS_CAPTURE_ENABLED = os.environ.get('BANK_DETAILS_CAPTURE_ENABLED', ''
 # env var. (Was referenced in code but never defined here, so it was permanently off.)
 CHECK2_AUTO_GENERATE = os.environ.get('CHECK2_AUTO_GENERATE', '').lower() in ('1', 'true', 'yes')
 
+# Check-2 case summary: the LLM briefing that "talks to the reviewer" above the verdict checklist
+# (verdict_narrative.py). Dark by default — flip in Cloud Run after live-validating the voice.
+VERDICT_CASE_SUMMARY_ENABLED = os.environ.get('VERDICT_CASE_SUMMARY_ENABLED', '').lower() in ('1', 'true', 'yes')
+
 # Optional scoping for the `refresh_sponsor_profiles` command (run via the argless cron
 # endpoint): a comma-separated list of application IDs. When set, the refresh is FORCED for
 # exactly those applications (ignores the version-idempotency skip) — used to trial/repair a

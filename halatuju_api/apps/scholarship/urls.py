@@ -55,6 +55,7 @@ from .views_sponsor import (
 )
 from .views_admin import (
     AdminApplicationDetailView,
+    AdminVerdictSummaryView,
     AdminApplicationListView,
     AdminBursaryCountersignView,
     AdminBursaryWitnessView,
@@ -184,6 +185,7 @@ urlpatterns = [
     path('admin/scholarship/assignable-admins/', AdminAssignableAdminsView.as_view()),
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/verdict-summary/', AdminVerdictSummaryView.as_view()),
     path('admin/scholarship/applications/<int:pk>/verify-accept/', AdminVerifyAcceptView.as_view()),
     path('admin/scholarship/applications/<int:pk>/reject/', AdminRejectView.as_view()),
     # Conditional Bursary Award Agreement — Foundation countersignature (super-only) +
