@@ -6,7 +6,22 @@
  * re-implements them.
  */
 
-import type { AdminVerdictFact, AdminApplicantDocument, VerdictMetrics } from '@/lib/admin-api'
+import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument, VerdictMetrics } from '@/lib/admin-api'
+
+// ── Verdict item i18n key ─────────────────────────────────────────────────────
+
+// STR-not-current copy is per-status (decisive, no word-salad). The backend keeps a
+// single item code `str_not_current` (resolution/help engines key off that literal),
+// and tags the reason in params.status. The custom i18n `t` has NO ICU MessageFormat —
+// only flat `{var}` interpolation — so an ICU `select` would render raw. Resolve to a
+// flat per-status key here instead: str_not_current_{wrong_type,rejected,stale,
+// unreadable,unconfirmed}. Default to 'unconfirmed' (the approved-but-dateless case).
+export function verdictItemKey(it: AdminVerdictItem): string {
+  if (it.code === 'str_not_current') {
+    return `str_not_current_${String(it.params?.status || 'unconfirmed')}`
+  }
+  return it.code
+}
 
 // ── Fact tile tone ───────────────────────────────────────────────────────────
 
@@ -235,6 +250,23 @@ function strCurrencyFactStatus(s: string | undefined | null): FactStatus {
 }
 
 /**
+ * Tone for the STR APPROVAL status chip — the third required STR variable (after recipient
+ * name + IC), distinct from the currency/date dimension above. Was it approved (Lulus)?
+ *   current / stale / unconfirmed → all carry an approved status → green (Lulus).
+ *   rejected (Ditolak) / wrong_type (not an STR at all) → red — no valid approval.
+ *   unreadable (cropped page, status line not visible) → amber — couldn't read it, NOT a
+ *     "not approved" (don't brand a cropped upload as rejected).
+ */
+function strStatusFactStatus(s: string | undefined | null): FactStatus {
+  switch (s) {
+    case 'current': case 'stale': case 'unconfirmed': return 'verified'
+    case 'rejected': case 'wrong_type': return 'not'
+    case 'unreadable': return 'partial'
+    default: return 'unknown'
+  }
+}
+
+/**
  * Tone for a utility-bill ADDRESS check. Mirrors the backend's weighted matcher + officer-flag
  * logic: only a genuine 'mismatch' (a different home) is red; 'unconfirmed'/'unreadable' (and the
  * legacy 'not_found') mean "couldn't confirm" — amber, eyeball at interview, never a hard miss.
@@ -323,9 +355,12 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   if (dt === 'str') {
     const c = doc.str_check
     if (!c) return []
+    // The three REQUIRED STR variables — recipient name, IC, and approval Status (Lulus) —
+    // then Current (the date/cycle dimension, separate from approval).
     return [
       { key: 'recipient', status: factStatus(c.name_status) },
       { key: 'ic_no', status: factStatus(c.nric_status) },
+      { key: 'status', status: strStatusFactStatus(c.current_status) },
       { key: 'current', status: strCurrencyFactStatus(c.current_status) },
     ]
   }

@@ -13,8 +13,9 @@ import {
   isQueryingLocked,
   isDecisionReady,
   isApproveReady,
+  verdictItemKey,
 } from '@/lib/officerCockpit'
-import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
+import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument } from '@/lib/admin-api'
 
 // ── Factories ─────────────────────────────────────────────────────────────────
 
@@ -238,9 +239,14 @@ describe('documentFacts', () => {
       .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'partial' }, { key: 'results', status: 'verified' }])
   })
 
-  it('str → Recipient, IC No, Current', () => {
+  it('str → Recipient, IC No, Status, Current (Status is the 3rd required variable)', () => {
     expect(documentFacts(doc({ doc_type: 'str', str_check: strCheck({ name_status: 'match', nric_status: 'mismatch', current_status: 'stale' }) })))
-      .toEqual([{ key: 'recipient', status: 'verified' }, { key: 'ic_no', status: 'not' }, { key: 'current', status: 'partial' }])
+      .toEqual([
+        { key: 'recipient', status: 'verified' },
+        { key: 'ic_no', status: 'not' },
+        { key: 'status', status: 'verified' },   // 'stale' is still approved (Lulus) → green
+        { key: 'current', status: 'partial' },   // …but a prior-year cycle → amber
+      ])
   })
 
   it('str Current chip maps the structured currency states (str-proof-spec)', () => {
@@ -253,6 +259,18 @@ describe('documentFacts', () => {
     expect(cur('unreadable')).toBe('partial')    // 🟡 cropped
     expect(cur('rejected')).toBe('not')          // 🔴 Ditolak
     expect(cur('wrong_type')).toBe('not')        // 🔴 not an STR (payslip / SARA / SALINAN)
+  })
+
+  it('str Status chip = approval (Lulus), distinct from currency/date', () => {
+    const stat = (s: string) =>
+      documentFacts(doc({ doc_type: 'str', str_check: strCheck({ current_status: s }) }))
+        .find((f) => f.key === 'status')!.status
+    expect(stat('current')).toBe('verified')     // 🟢 Lulus
+    expect(stat('stale')).toBe('verified')       // 🟢 Lulus (just an old cycle)
+    expect(stat('unconfirmed')).toBe('verified') // 🟢 Lulus (just no date)
+    expect(stat('rejected')).toBe('not')         // 🔴 Ditolak
+    expect(stat('wrong_type')).toBe('not')       // 🔴 not an STR — no approval to show
+    expect(stat('unreadable')).toBe('partial')   // 🟡 cropped — couldn't read the status line
   })
 
   it('birth certificate → Child, Mother, Father (carries the mother relationship)', () => {
@@ -547,5 +565,24 @@ describe('isApproveReady', () => {
     expect(isApproveReady(true, true)).toBe(true)
     expect(isApproveReady(true, false)).toBe(false)
     expect(isApproveReady(false, true)).toBe(false)
+  })
+})
+
+describe('verdictItemKey — STR-not-current resolves to a flat per-status key', () => {
+  const item = (code: string, params: Record<string, string | number | string[]> = {}): AdminVerdictItem =>
+    ({ code, params })
+  it('maps str_not_current + status to the suffixed key (the custom t has no ICU select)', () => {
+    expect(verdictItemKey(item('str_not_current', { status: 'wrong_type' }))).toBe('str_not_current_wrong_type')
+    expect(verdictItemKey(item('str_not_current', { status: 'rejected' }))).toBe('str_not_current_rejected')
+    expect(verdictItemKey(item('str_not_current', { status: 'stale' }))).toBe('str_not_current_stale')
+    expect(verdictItemKey(item('str_not_current', { status: 'unreadable' }))).toBe('str_not_current_unreadable')
+    expect(verdictItemKey(item('str_not_current', { status: 'unconfirmed' }))).toBe('str_not_current_unconfirmed')
+  })
+  it('defaults a status-less str_not_current to the approved-but-dateless (unconfirmed) copy', () => {
+    expect(verdictItemKey(item('str_not_current'))).toBe('str_not_current_unconfirmed')
+  })
+  it('passes every other item code through unchanged', () => {
+    expect(verdictItemKey(item('income_salary_probable', { amount: 4200 }))).toBe('income_salary_probable')
+    expect(verdictItemKey(item('earner_ic_missing', { members: ['father'] }))).toBe('earner_ic_missing')
   })
 })

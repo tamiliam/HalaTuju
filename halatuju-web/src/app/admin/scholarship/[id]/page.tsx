@@ -61,6 +61,7 @@ import {
   isQueryingLocked,
   isDecisionReady,
   isApproveReady,
+  verdictItemKey,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
@@ -1009,7 +1010,7 @@ export default function AdminScholarshipDetailPage() {
             }[tone]
             // Subtitle: first evidence item text, or first unresolved item text.
             const resolve = (it: AdminVerdictItem) =>
-              t(`admin.scholarship.verdict.item.${it.code}`,
+              t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                 localiseParams(it.params, t))
             const subtitle = f.unresolved.length > 0
               ? resolve(f.unresolved[0])
@@ -1062,7 +1063,7 @@ export default function AdminScholarshipDetailPage() {
           <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
             {(app.verdict || []).map((f) => {
               const resolve = (it: AdminVerdictItem) =>
-                t(`admin.scholarship.verdict.item.${it.code}`,
+                t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                   localiseParams(it.params, t))
               if (factTileTone(f) === 'green' || (f.evidence.length <= 1 && f.unresolved.length === 0)) return null
               return (
@@ -1070,15 +1071,17 @@ export default function AdminScholarshipDetailPage() {
                   <span className="font-medium text-gray-500 uppercase text-[10px] tracking-wide">
                     {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
-                  {f.evidence.slice(1).map((it, i) => (
-                    <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
-                      <span className="text-green-600 shrink-0">✓</span>
-                      <span>{resolve(it)}</span>
-                    </div>
-                  ))}
+                  {/* Findings first (the active reasoning — e.g. the STR verdict leads the
+                      income story), then the supporting confirmations. */}
                   {f.unresolved.map((it, i) => (
                     <div key={`u${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
                       <span className="text-amber-600 shrink-0">•</span>
+                      <span>{resolve(it)}</span>
+                    </div>
+                  ))}
+                  {f.evidence.slice(1).map((it, i) => (
+                    <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
+                      <span className="text-green-600 shrink-0">✓</span>
                       <span>{resolve(it)}</span>
                     </div>
                   ))}
