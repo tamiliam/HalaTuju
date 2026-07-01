@@ -1322,7 +1322,8 @@
           "docsHeading": "Documents to upload",
           "footer": "Upload what you can — a reviewer will look at your situation personally.",
           "declared": {
-            "prompt": "No payslip for them? Tell us their average monthly income.",
+            "cantGet": "Can't get a payslip or EPF for them?",
+            "prompt": "Tell us their average monthly income and we'll ask for one supporting document.",
             "placeholder": "e.g. 1500",
             "perMonth": "per month",
             "needsDoc": "We'll ask for one supporting document below — any one of an employer/wage letter, recent bank statements, or a community (penghulu) letter is enough."

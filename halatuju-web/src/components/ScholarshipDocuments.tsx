@@ -1009,6 +1009,11 @@ function IncomeWizard({
   // respect their choice). Source of truth: the persisted income_working_members is non-empty
   // once they save, and `touchedMembers` covers the moment before that save round-trips.
   const [touchedMembers, setTouchedMembers] = useState(false)
+  // Phase 2A: the declared-income field is a FALLBACK (payslip/EPF is the primary proof), so it
+  // stays behind a "can't get a payslip?" opt-in per member — never shown eagerly beside the
+  // upload cards. Seeded open for a member who already has a saved declared figure (returning user).
+  const [openDeclared, setOpenDeclared] = useState<Set<string>>(
+    () => new Set(Object.keys(app.income_declared || {})))
 
   const save = async (patch: Record<string, unknown>) => {
     setAns((a) => ({ ...a, ...patch }))
@@ -1277,9 +1282,22 @@ function IncomeWizard({
                   {clusterDocKey(docType, member) === salAnchor && coach}
                 </div>
               ))}
-              {/* Phase 2A — no payslip/EPF for this member? Let them declare an average monthly
-                  income. A positive figure surfaces the flexible supporting-doc upload below. */}
-              {!memberHasProof(block.member) && (
+              {/* Phase 2A — declared income is a FALLBACK: keep the payslip/EPF cards above as the
+                  primary path, and only reveal the RM field on an explicit "can't get a payslip?"
+                  opt-in (or when a figure is already saved). A positive figure surfaces the
+                  flexible supporting-doc upload below. */}
+              {!memberHasProof(block.member) && !(openDeclared.has(block.member)
+                  || declaredAmount(ans.income_declared, block.member) > 0) && (
+                <button
+                  type="button"
+                  onClick={() => setOpenDeclared((s) => new Set(s).add(block.member))}
+                  className="text-xs text-primary-600 hover:underline"
+                >
+                  {iq('declared.cantGet')} →
+                </button>
+              )}
+              {!memberHasProof(block.member) && (openDeclared.has(block.member)
+                  || declaredAmount(ans.income_declared, block.member) > 0) && (
                 <div className="rounded-md bg-white ring-1 ring-gray-100 p-2.5 space-y-2">
                   <p className="text-xs font-medium text-gray-700">{iq('declared.prompt')}</p>
                   <div className="flex items-center gap-2">
