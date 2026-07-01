@@ -41,7 +41,15 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       status VALUE not the "Status Permohonan STR" label, dates only from letter/payment (not nav
 #       chrome), and sharper dashboard-vs-semakan classification. No signature-family/weight change
 #       here, but the STR verdict pipeline it feeds changed → bump for traceability.
-MODEL_VERSION = '1.2'
+#   1.2.1 (2026-07-01) — STR-proof refinement (docs/scholarship/str-proof-spec.md): (a) a positive
+#       PAID amount ("Jumlah … STR RM…") now corroborates approval, rescuing a doc whose "Lulus"
+#       token was misread as the "STR" label (payment is EXTRA — "Lulus" alone still suffices, a
+#       zero/absent amount never downgrades); (b) the STR band matrix — Lulus+dated→Certain,
+#       Lulus+no-date→Probable, Lulus+prior-year(stale)/approval-unread→Unsure, Ditolak/non-STR→Fail
+#       (salary route the net beneath); (c) the officer Status/Current chips split cleanly (Status =
+#       approval, Current = date-only, dateless → "we don't know" grey). No signature-family/weight
+#       change; the STR currency/verdict logic it feeds changed → bump for traceability.
+MODEL_VERSION = '1.2.1'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

@@ -3228,7 +3228,7 @@
           "str_not_current_wrong_type": "This is not an STR document. Assessing income from the salary documents instead.",
           "str_not_current_rejected": "The STR application was rejected (Ditolak) — not an approved STR.",
           "str_not_current_stale": "This STR is from a prior cycle — ask for the current cycle status.",
-          "str_not_current_unreadable": "This MySTR page is cropped — the status line is not visible. Re-upload the full page (open Maklumat Pembayaran to show the dated payments).",
+          "str_not_current_unreadable": "Couldn't confirm this STR was approved — the status line (Lulus/Ditolak) didn't read and no payment is shown. Ask for a clearer upload showing the status, or open Maklumat Pembayaran.",
           "str_not_current_unconfirmed": "Approved (Lulus), but no payment date to confirm the current cycle — open Maklumat Pembayaran (Semakan), or accept on the live-portal status.",
           "str_recipient_mismatch": "The STR recipient isn't the declared earner — the name/IC on the STR doesn't match the earner's IC. Confirm.",
           "income_unverified_needs_interview": "Income can't be document-verified (informal / no payslip) — confirm during the interview via household size, dependents and lifestyle. Do NOT block.",

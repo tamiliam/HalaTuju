@@ -249,16 +249,16 @@ describe('documentFacts', () => {
       ])
   })
 
-  it('str Current chip maps the structured currency states (str-proof-spec)', () => {
+  it('str Current chip is DATE-only — dated→green, prior-year→amber, else grey "we don\'t know"', () => {
     const cur = (s: string) =>
       documentFacts(doc({ doc_type: 'str', str_check: strCheck({ current_status: s }) }))
         .find((f) => f.key === 'current')!.status
-    expect(cur('current')).toBe('verified')      // 🟢 dated + approved
-    expect(cur('unconfirmed')).toBe('partial')   // 🟡-chip (🔵 lives on the verdict tile)
-    expect(cur('stale')).toBe('partial')         // 🟡 prior-year
-    expect(cur('unreadable')).toBe('partial')    // 🟡 cropped
-    expect(cur('rejected')).toBe('not')          // 🔴 Ditolak
-    expect(cur('wrong_type')).toBe('not')        // 🔴 not an STR (payslip / SARA / SALINAN)
+    expect(cur('current')).toBe('verified')      // 🟢 dated this cycle
+    expect(cur('stale')).toBe('partial')         // 🟡 prior-year (a real concern)
+    expect(cur('unconfirmed')).toBe('unknown')   // ⚪ approved but no date → we don't know
+    expect(cur('unreadable')).toBe('unknown')    // ⚪ couldn't tell
+    expect(cur('rejected')).toBe('unknown')      // ⚪ date n/a (Status chip carries the red)
+    expect(cur('wrong_type')).toBe('unknown')    // ⚪ date n/a (Status chip carries the red)
   })
 
   it('str Status chip = approval (Lulus), distinct from currency/date', () => {

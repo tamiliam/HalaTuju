@@ -241,11 +241,13 @@ function factStatus(s: string | undefined | null): FactStatus {
  * tile derives it from the review state + green evidence), not a per-document chip.
  */
 function strCurrencyFactStatus(s: string | undefined | null): FactStatus {
+  // The Current chip is the OPTIONAL variable — the cycle DATE only (approval lives on the Status
+  // chip). Dated this cycle → green; a prior-year date → amber (a real concern); no date / can't
+  // tell / not-an-STR → grey "we don't know" (its absence is not a fault).
   switch (s) {
     case 'current': return 'verified'
-    case 'rejected': case 'wrong_type': return 'not'
-    case 'unconfirmed': case 'stale': case 'unreadable': return 'partial'
-    default: return 'unknown'
+    case 'stale': return 'partial'
+    default: return 'unknown'   // unconfirmed / unreadable / rejected / wrong_type → date unknown or n/a
   }
 }
 

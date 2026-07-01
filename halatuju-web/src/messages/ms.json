@@ -3228,7 +3228,7 @@
           "str_not_current_wrong_type": "Ini bukan dokumen STR. Pendapatan akan dinilai daripada dokumen gaji sebaliknya.",
           "str_not_current_rejected": "Permohonan STR ditolak (Ditolak) — bukan STR yang diluluskan.",
           "str_not_current_stale": "STR ini daripada kitaran terdahulu — minta status kitaran semasa.",
-          "str_not_current_unreadable": "Halaman MySTR ini terpotong — baris status tidak kelihatan. Muat naik semula halaman penuh (buka Maklumat Pembayaran untuk menunjukkan tarikh bayaran).",
+          "str_not_current_unreadable": "Tidak dapat mengesahkan STR ini diluluskan — baris status (Lulus/Ditolak) tidak terbaca dan tiada bayaran ditunjukkan. Minta muat naik yang lebih jelas menunjukkan status, atau buka Maklumat Pembayaran.",
           "str_not_current_unconfirmed": "Diluluskan (Lulus), tetapi tiada tarikh bayaran untuk mengesahkan kitaran semasa — buka Maklumat Pembayaran (Semakan), atau terima berdasarkan status portal langsung.",
           "str_recipient_mismatch": "Penerima STR bukan pencari nafkah yang diisytiharkan — nama/KP pada STR tidak sepadan dengan KP pencari nafkah. Sahkan.",
           "income_unverified_needs_interview": "Pendapatan tidak dapat disahkan melalui dokumen (tidak formal / tiada slip gaji) — sahkan semasa temu duga melalui saiz isi rumah, tanggungan dan gaya hidup. JANGAN sekat.",

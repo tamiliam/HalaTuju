@@ -499,7 +499,20 @@ _STR_YEAR_RE = re.compile(r'(20\d{2})')
 _STR_RECOGNISED_SOURCES = ('letter', 'semakan_status', 'dashboard')
 
 
-def _str_currency(status_raw, year_str, cohort_year, source_type=''):
+def _positive_amount(raw):
+    """True if a currency string carries a POSITIVE RM figure (e.g. 'RM850', '1,200.00').
+    A blank / 'RM0' / unparseable value is False — a genuine STR printed early in the cycle can
+    legitimately show RM0 paid, so a zero/absent amount is never treated as a signal either way."""
+    m = re.search(r'\d[\d,]*\.?\d*', raw or '')
+    if not m:
+        return False
+    try:
+        return float(m.group(0).replace(',', '')) > 0
+    except ValueError:
+        return False
+
+
+def _str_currency(status_raw, year_str, cohort_year, source_type='', amount_raw=''):
     """Structured STR currency state for the verdict (docs/scholarship/str-proof-spec.md). The
     FORMAT GATE runs first: a document that is not one of the three genuine MySTR proofs is
     ``wrong_type`` — never softened to ``unconfirmed``.
@@ -508,12 +521,20 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
       'wrong_type'  — NOT a recognised STR proof (``source_type='unknown'``: a SALINAN / SARA
                       letter / salary slip / other). NOT an STR at all → RED; the income verdict
                       falls through to the salary route.
-      'unreadable'  — a recognised format but NO readable approval status (cropped / partial) → AMBER.
+      'unreadable'  — a recognised format but the approval status did NOT read AND no payment is
+                      shown, so approval can't be confirmed → AMBER (Unsure). NB not a claim the
+                      page is cropped — the status token may simply have been misread.
       'stale'       — approved, but a readable year OLDER than the cohort year (STR is annual) → AMBER.
       'unconfirmed' — a recognised format, approved (Lulus), but NO date to pin the cycle
                       (dashboard / collapsed Semakan) → BLUE (probably current).
       'current'     — a recognised format, approved, DATED current (letter date / Semakan payment
                       date ≥ cohort year) → GREEN.
+
+    APPROVAL is proven PRIMARILY by a readable "Lulus"/"diluluskan" status. A positive PAID amount
+    ("Jumlah … STR RM…") is an EXTRA, corroborating proof — you are not paid STR money unless the
+    application is Lulus — so it rescues a doc whose status token was misread (e.g. the MySTR label
+    "STR" grabbed instead of the "Lulus" beneath it). It is additive only: a zero/absent amount never
+    downgrades a Lulus doc (a genuine STR printed early can show RM0 paid).
 
     A dateless approved STR no longer counts as GREEN: a year-old dashboard/Semakan screenshot also
     shows "Lulus", so without a date we can't confirm the cycle (→ BLUE, confirm at interview /
@@ -526,10 +547,12 @@ def _str_currency(status_raw, year_str, cohort_year, source_type=''):
         return 'rejected'
     if st == 'unknown':
         return 'wrong_type'          # not a genuine STR proof at all (SALINAN / SARA / payslip / …)
-    if not any(w in s for w in _STR_APPROVED_WORDS):
-        return 'unreadable'          # recognised format but the approval status didn't read (cropped)
-    # Approved. A DATE pins the cycle: prior-year → stale; current-or-later → current; NO date
-    # (dashboard / collapsed Semakan) can't be confirmed current → unconfirmed (BLUE).
+    approved = any(w in s for w in _STR_APPROVED_WORDS)
+    if not approved and not _positive_amount(amount_raw):
+        return 'unreadable'          # no readable Lulus AND no payment → can't confirm approval
+    # Approved (by "Lulus" or, failing a readable status, by a positive paid amount). A DATE pins
+    # the cycle: prior-year → stale; current-or-later → current; NO date (dashboard / collapsed
+    # Semakan) can't be confirmed current → unconfirmed (BLUE).
     m = _STR_YEAR_RE.search(year_str or '')
     if not m:
         return 'unconfirmed'
@@ -576,7 +599,7 @@ def student_str_check(doc):
     return {
         'name': name, 'nric': nric, 'status': status, 'year': year, 'amount': amount,
         'member': member, 'name_status': name_status, 'nric_status': nric_status,
-        'current_status': _str_currency(status, year, cohort_year, f.get('source_type', '')),
+        'current_status': _str_currency(status, year, cohort_year, f.get('source_type', ''), amount),
         'ic_present': ic is not None,
     }
 
