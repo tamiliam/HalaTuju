@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **STR documents show a Status (Lulus) chip** — the third required STR variable (after Recipient + IC No),
+  distinct from the existing Current chip. Approved (Lulus, incl. an old/dateless cycle) → green; rejected
+  (Ditolak) or not-an-STR → red; cropped/unreadable status line → amber. Derived from the already-computed
+  `current_status`, FE-only (`officerCockpit.strStatusFactStatus`, `docsDrawer.fact.status` en/ms/ta, +tests).
 - **Post-award contract-signing flow — wiring complete, DARK behind `BURSARY_AGREEMENT_ENABLED`
   (5 sprints; `docs/retrospective-2026-07-01-post-award-signing.md`; migrations `0083`/`0084`/`0085`
   additive, apply migrate-first at go-live).** The award follow-up email now lands a student in the
@@ -75,6 +79,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `halatuju-release-award-offer-emails` (`0 * * * *` Asia/KL). +6 pytest.
 
 ### Fixed
+- **Officer verdict detail leads with the active finding, not the supporting greens.** The income detail
+  list rendered the ✓ confirmations first and buried the STR verdict (the primary income gate) last — so a
+  fallen-through STR read as a footnote. Findings (`unresolved`) now render before the supporting evidence,
+  matching the tile subtitle's lead. FE-only render-order swap; no items added or removed.
+- **STR-not-current verdict copy rendered raw on the officer cockpit.** The STR-proof S1 copy used an ICU
+  `{status, select, …}` message, but the app's custom i18n `t` (`lib/i18n.tsx`) does flat `{var}` substitution
+  only — no ICU MessageFormat — so the whole template printed verbatim on #13/#102. Replaced the single ICU key
+  with flat per-status keys (`str_not_current_{wrong_type,rejected,stale,unreadable,unconfirmed}`, en/ms/ta) and
+  a `verdictItemKey()` helper that resolves the right one from `params.status` (default `unconfirmed`). The
+  backend item code stays `str_not_current` (resolution/help engines key off that literal). FE-only; +4 jest.
 - **Shouty (ALL-CAPS) programme name no longer leaks to the sponsor pool / profile.** An offer letter in
   capitals confirmed via the Action Centre wrote its programme name verbatim into `chosen_programme`
   (`confirm_pathway`), so #107 showed "PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP)" on its pool card —
