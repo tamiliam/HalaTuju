@@ -1397,6 +1397,9 @@ export interface ScholarshipApplication {
   // Salary route: the working household members (multi-select). Replaces the single
   // earner + work-status + other-earner for that route.
   income_working_members: Array<'father' | 'mother' | 'guardian' | 'brother' | 'sister'>
+  // Phase 2A: declared informal income per working member ({member: RM/month}) — for a member
+  // with no payslip; accepted with a valid STR, else needs an income_support_doc.
+  income_declared?: Partial<Record<'father' | 'mother' | 'guardian' | 'brother' | 'sister', number>>
   earner_work_status: '' | 'payslip' | 'informal' | 'not_working' // deprecated (salary route)
   household_other_earners: number | null
   siblings_in_school: number | null

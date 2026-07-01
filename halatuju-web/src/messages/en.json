@@ -1209,7 +1209,8 @@
         "offer_letter": "Offer letter",
         "parent_ic": "Parent/guardian IC",
         "guardianship_letter": "Guardianship letter",
-        "birth_certificate": "Birth certificate"
+        "birth_certificate": "Birth certificate",
+        "income_support_doc": "Income support document"
       },
       "help": {
         "ic": "A photo of the front of your MyKad. We'll use it to verify your identity and confirm that your name and IC number match your application and supporting documents.",
@@ -1217,6 +1218,7 @@
         "str": "A MySTR app screenshot (Semakan Status or Dashboard) showing “Lulus”, or a photo/PDF of your STR approval letter — with the recipient's name and IC number.",
         "salary_slip": "A photo/PDF of your father/mother/guardian's latest salary slip.",
         "epf": "A photo/PDF of your father/mother/guardian's EPF (KWSP) statement.",
+        "income_support_doc": "Any ONE of these is enough: a letter from the employer stating the wage, recent bank statements showing the income, or a letter from your community leader (penghulu / ketua kampung).",
         "income": "If your family is an STR recipient, please upload a screenshot of your STR portal showing your parent's name and NRIC. We strongly encourage you to also upload the latest salary slip and/or EPF statement for every working member of the household.",
         "water_bill": "A recent bill helps us understand your household.",
         "electricity_bill": "A recent bill helps us understand your household.",
@@ -1319,6 +1321,12 @@
           "splitPrompt": "You told us one or more of your siblings are studying — please set how many are in school and how many are in college or university.",
           "docsHeading": "Documents to upload",
           "footer": "Upload what you can — a reviewer will look at your situation personally.",
+          "declared": {
+            "prompt": "No payslip for them? Tell us their average monthly income.",
+            "placeholder": "e.g. 1500",
+            "perMonth": "per month",
+            "needsDoc": "We'll ask for one supporting document below — any one of an employer/wage letter, recent bank statements, or a community (penghulu) letter is enough."
+          },
           "badge": {
             "required": "Required",
             "optional": "Optional"
@@ -1985,6 +1993,10 @@
         "reporting_date_unknown": {
           "title": "When do you report to your institution?",
           "desc": "Your offer letter doesn't state a clear reporting / registration date. When (the date) and where do you need to report to start your studies?"
+        },
+        "declared_income_evidence_missing": {
+          "title": "Upload proof of your family's income",
+          "desc": "You told us a family member earns an informal wage, but we don't have a payslip for them. To support what you shared, please upload any one of these: a letter from their employer stating the wage, recent bank statements showing the income, or a letter from your community leader (penghulu / ketua kampung). Any one is enough."
         }
       },
       "bank": {
@@ -3236,6 +3248,9 @@
           "income_above_b40_line": "Per-capita income RM{amount} is over the B40 line (RM{ceiling}) — recommend reject on income; override only if the interview surfaces genuine qualifying circumstances.",
           "income_salary_probable": "Salary documents put gross household income ~RM{amount}/month clearly under the B40 line — supports approval; confirm the household at interview.",
           "income_salary_unsure": "Gross household income ~RM{amount}/month sits near the B40 line — not a clear pass. Confirm the household composition (size, and whether another member is working) at interview to establish the true gross and per-capita before approving.",
+          "income_declared_accepted_str": "Declared income for {members} is accepted — a valid STR already establishes the household's B40 need, so the stated wage counts without a payslip. Included in the per-capita.",
+          "income_declared_accepted_evidenced": "Declared income for {members} is accepted — a supporting document (employer/wage letter, bank statements, or a community letter) backs the stated wage. Included in the per-capita.",
+          "income_declared_needs_evidence": "{members} declared a wage, but there's no payslip, no valid STR, and no supporting document — so it can't count yet. Proof is required from the student: any one of an employer/wage letter, bank statements showing income, or a community/penghulu letter. The request has been raised in the Action Centre.",
           "utility_percapita_b40": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — consistent with a B40 household (soft, imperfect signal).",
           "utility_percapita_high": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — high (M40/T20 consumption pattern). Worth probing at interview (soft signal).",
           "utility_hardship": "Hardship signal: the utility bills carry meaningful arrears (unpaid balance) — supports financial need.",
@@ -3266,7 +3281,8 @@
           "mother_status_unknown": "Mother's work/status not provided — the student has been asked whether she works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
           "income_doc_stale": "Salary slip on file is over 3 months old — the student has been asked to upload a current one.",
           "sibling_tertiary_funding": "Sibling in tertiary — the student has been asked which institution and how it's funded (scholarship / PTPTN / family / other).",
-          "reporting_date_unknown": "Offer letter has no clear reporting date — the student has been asked when and where they report."
+          "reporting_date_unknown": "Offer letter has no clear reporting date — the student has been asked when and where they report.",
+          "declared_income_evidence_missing": "A declared informal income has no payslip and no valid STR — the student has been asked to upload a supporting document (employer/wage letter, bank statements, or a community letter)."
         }
       },
       "decision": {

@@ -309,6 +309,20 @@ class TestDetailsApi(TestCase):
         self.assertEqual(body['family_context'], 'Father ill; mother is the sole earner.')
         self.assertEqual(body['daily_life'], 'Wake at 5am, help at home, then school.')
 
+    def test_patch_saves_income_declared_and_rejects_bad_member(self):
+        """Phase 2A: the declared-income map round-trips; an unknown member key is rejected."""
+        self._auth(USER_A)
+        ok = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'income_route': 'salary', 'income_working_members': ['father'],
+             'income_declared': {'father': 1500}}, format='json')
+        self.assertEqual(ok.status_code, 200)
+        self.assertEqual(ok.json()['income_declared'], {'father': 1500})
+        bad = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'income_declared': {'cousin': 900}}, format='json')
+        self.assertEqual(bad.status_code, 400)
+
     def test_patch_saves_long_parents_occupation(self):
         """Regression: parents_occupation is now a TextField, not varchar(255).
         A student's sentence-or-two answer (e.g. >255 chars) used to overflow the

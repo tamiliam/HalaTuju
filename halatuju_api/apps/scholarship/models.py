@@ -261,6 +261,15 @@ class ScholarshipApplication(models.Model):
         default=list, blank=True,
         help_text="Salary route: household members who work (subset of "
                   "father/mother/guardian/brother/sister). Drives per-member income docs.")
+    # DECLARED informal income (Phase 2A, P5b/P6): a working member with no payslip/EPF may
+    # declare an average MONTHLY salary. {member: amount_rm_per_month:int}. Whether that figure
+    # is ACCEPTED is computed, never stored: a valid-STR household → accepted; a non-STR family
+    # → needs a supporting doc (income_support_doc) before it counts. Additive, 0-row-safe.
+    income_declared = models.JSONField(
+        default=dict, blank=True,
+        help_text="Salary route: {member: declared avg monthly income (RM, int)} for a working "
+                  "member with no payslip/EPF. Accepted if a valid STR is on file, else needs an "
+                  "income_support_doc. Feeds earner_monthly_income → per-capita.")
     # DEPRECATED (salary route): Q3 work-status + Q4 other-earner are superseded by
     # income_working_members (informal is now inferred from 'IC present, no payslip/EPF').
     # Kept for the STR route's legacy reads + to avoid a destructive migration; drop later (tech debt).
@@ -747,6 +756,10 @@ class ApplicantDocument(models.Model):
         ('statement_of_intent', 'Statement of Intent'),
         ('reference_letter', 'Reference Letter'),
         ('salary_slip', 'Salary Slip'),
+        # Phase 2A (P5b/D1): supporting proof for a DECLARED informal income when the family
+        # has no valid STR — flexible, any ONE of an employer/wage letter, bank statements
+        # showing income, or a community/penghulu letter. Tagged to the household member.
+        ('income_support_doc', 'Income Support Document'),
         ('water_bill', 'Water Bill'),
         ('electricity_bill', 'Electricity Bill'),
         ('offer_letter', 'Offer Letter'),

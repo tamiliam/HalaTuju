@@ -999,6 +999,60 @@ class TestIncomePerCapita(TestCase):
         self.assertIn('income_unverified_needs_interview', _codes(f['unresolved']))
 
 
+class TestIncomeDeclared(TestCase):
+    """Phase 2A — a working member DECLARES an informal wage (no payslip). Accepted on a
+    valid STR (the means-test) or a supporting doc → feeds per-capita; otherwise the income
+    fact is Unsure (recommend) with a firm 'proof required' item + an Action-Centre request."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='dc', name='B40', year=2026,
+                                                      per_capita_ceiling=1584)
+
+    def setUp(self):
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id=f'decl-{self.id()}', name='DIVASHINI A/P MURUGAN',
+            nric='080115-05-0132', household_size=4)
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            income_route='salary', income_working_members=['father'],
+            income_declared={'father': 1500})
+        # A confirmed father earner (IC + patronymic) so the cluster otherwise adds up.
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+
+    def _str(self):   # a valid (approved, dateless → unconfirmed) STR document
+        _add_doc(self.app, 'str', fields={'status': 'Lulus', 'source_type': ''})
+
+    def test_unproven_declared_is_recommend_with_evidence_ask(self):
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('income_declared_needs_evidence', _codes(f['unresolved']))
+
+    def test_valid_str_accepts_declared_into_per_capita(self):
+        self._str()                              # 1500 / 4 = 375 < 1584
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('income_declared_accepted_str', _codes(f['evidence']))
+        self.assertIn('income_per_capita_ok', _codes(f['evidence']))
+
+    def test_support_doc_accepts_declared_when_no_str(self):
+        _add_doc(self.app, 'income_support_doc', member='father', fields={})
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('income_declared_accepted_evidenced', _codes(f['evidence']))
+
+    def test_declared_over_line_still_recommend(self):
+        # A declared figure accepted by STR but over the line → recommend (never auto-reject).
+        self.profile.household_size = 1
+        self.profile.save()
+        self.app.income_declared = {'father': 5000}   # 5000 / 1 = 5000 >= 1584
+        self.app.save()
+        self._str()
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('income_above_b40_line', _codes(f['unresolved']))
+
+
 class TestUtilityAndEpf(TestCase):
     """EPF shows the MONTHLY contribution (not the lifetime balance) as the income figure;
     utility bills are an address check + a soft per-capita / hardship signal."""

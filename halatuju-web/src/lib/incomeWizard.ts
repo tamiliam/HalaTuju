@@ -19,6 +19,17 @@ export interface IncomeAnswers {
   income_route?: IncomeRoute | null
   income_earner?: IncomeEarner | null // STR route only
   income_working_members?: WorkingMember[] | null // salary route
+  // Phase 2A: a salary-route working member's DECLARED average monthly income (RM) when they
+  // have no payslip. {member: amount}. Accepted with a valid STR, else needs a supporting doc.
+  income_declared?: Partial<Record<WorkingMember, number>> | null
+}
+
+/** A member's declared average monthly income (RM), or 0 when none/invalid. */
+export function declaredAmount(
+  declared: IncomeAnswers['income_declared'], member: WorkingMember,
+): number {
+  const v = declared?.[member]
+  return typeof v === 'number' && v > 0 ? v : 0
 }
 
 /** One required/optional document for a member block: the doc type + the member it

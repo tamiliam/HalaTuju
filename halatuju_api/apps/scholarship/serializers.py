@@ -418,6 +418,12 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     income_working_members = serializers.ListField(
         child=serializers.ChoiceField(choices=['father', 'mother', 'guardian', 'brother', 'sister']),
         required=False, allow_empty=True)
+    # Phase 2A: a working member's DECLARED average monthly income (RM), {member: amount}.
+    # Only for a member with no payslip/EPF. Accepted if a valid STR is on file, else needs
+    # an income_support_doc (see income_engine.earner_monthly_income).
+    income_declared = serializers.DictField(
+        child=serializers.IntegerField(min_value=0, max_value=100000),
+        required=False, allow_empty=True)
     earner_work_status = serializers.ChoiceField(
         choices=['', 'payslip', 'informal', 'not_working'], required=False, allow_blank=True)
     household_other_earners = serializers.IntegerField(
@@ -440,6 +446,13 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     # The optional pool — validated/normalised by family.clean_other_members on save.
     other_family_members = serializers.ListField(
         child=serializers.DictField(), required=False, allow_empty=True)
+
+    def validate_income_declared(self, value):
+        valid = {'father', 'mother', 'guardian', 'brother', 'sister'}
+        bad = sorted(set(value) - valid)
+        if bad:
+            raise serializers.ValidationError(f'Unknown household member(s): {bad}')
+        return value
 
 
 class ApplicationReadSerializer(serializers.ModelSerializer):
@@ -512,7 +525,8 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'mother_name', 'mother_occupation', 'mother_occupation_other',
             'other_family_members',
             # Income Check-1 wizard answers.
-            'income_route', 'income_earner', 'income_working_members', 'earner_work_status',
+            'income_route', 'income_earner', 'income_working_members', 'income_declared',
+            'earner_work_status',
             'household_other_earners', 'siblings_in_school', 'siblings_in_tertiary',
             # Address pre-fill (profile-derived, read-only here; written via
             # ApplicationDetailsUpdateSerializer + save_application_details).

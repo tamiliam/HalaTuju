@@ -62,6 +62,11 @@ DOC_SPECS = {
     'mother_income_proof_missing': {'member': 'mother', 'doc_type': 'salary_slip'},
     # S2 — every salary slip on file is older than ~3 months → ask for a current one.
     'income_doc_stale': {'doc_type': 'salary_slip'},
+    # Phase 2A (P5b/D1) — a working member declared an informal wage, but the household has no
+    # valid STR and no supporting doc yet → ask for ONE flexible proof (an income_support_doc:
+    # employer/wage letter, bank statements, or a community/penghulu letter). Household-level,
+    # uncapped — clears when declared_income_gaps() empties (a support doc arrives, or a valid STR).
+    'declared_income_evidence_missing': {'doc_type': 'income_support_doc'},
 }
 _PARENT_PROOF_CODE = {'father': 'father_income_proof_missing', 'mother': 'mother_income_proof_missing'}
 _PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_status_unknown'}
@@ -103,7 +108,7 @@ def sync_check2_queries(application):
     # query is raised + auto-resolved on the same reconcile loop as the completeness gaps.
     from .income_engine import (
         utility_holder_unknown, utility_address_mismatch, parent_income_gaps,
-        stale_income_proof, sibling_tertiary_funding_unknown,
+        stale_income_proof, sibling_tertiary_funding_unknown, declared_income_gaps,
     )
     if utility_holder_unknown(application):
         gaps.add('utility_holder_unknown')
@@ -128,6 +133,11 @@ def sync_check2_queries(application):
     # S2 — every salary slip is stale → an uncapped doc-request for a current one.
     if stale_income_proof(application):
         proof_wanted.add('income_doc_stale')
+    # Phase 2A — a declared informal income with no valid STR + no supporting doc → an uncapped
+    # doc-request for a supporting income document (D1: flexible evidence). Clears when a support
+    # doc arrives or a valid STR accepts the declared amount (declared_income_gaps() empties).
+    if declared_income_gaps(application):
+        proof_wanted.add('declared_income_evidence_missing')
 
     existing = {r.code: r for r in application.resolution_items.filter(source='check2')}
     now = timezone.now()
