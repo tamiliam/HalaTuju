@@ -1114,3 +1114,29 @@ or total-vs-declared-subjects sanity bounds) that routes an implausible read to 
 (3) generalise the silent-OCR-failure self-heal (#11) so *any* doc with `vision_run_at` NULL is swept, not just
 IC. **Guardrail already landed this cycle:** `wat_lint` now flags a feature/migration that rode the small lane,
 so the *next* extraction change that's really a sprint gets caught at the lane boundary. Size: a 1-sprint pass.
+
+### [TD-152] Bursary agreement is a NAMED-PERSONAL-DONOR contract until the org is incorporated (ACCEPTED interim; novate to the Foundation on incorporation)
+**Status:** ACCEPTED known issue / deferred (logged 2026-07-01, from the lawyer's contract v2 review). **This is an
+owner decision, not a defect to "fix" now.** The lawyer's `2026 June - Donor Student Conditional Agreement v2` recasts
+the deal as a **two-party contract between the individual donor (Suresh Thirugnanam, personally, with NRIC + home
+address) and the Student** — NOT the anonymised-Foundation model the code was built around. **Owner rationale:** Suresh
+is not merely the donor; he is the **co-founder of the organisation being set up**, and is signing **in his personal
+capacity** until that entity is incorporated. The contract's **Successor Company** clause (novation, cl. "Transfer of
+Rights and Obligations") is the mechanism: on incorporation the Donor novates all rights/obligations to the company, and
+`"Donor"` is thereafter read as the Foundation. So the personal-donor framing is a **temporary, intentional state**.
+**What this defers (all downstream of the same exception — treat as one item):**
+- The code's model is **Foundation-as-counterparty + two-way donor anonymity** (allowlist serializers, anonymised pool,
+  leak tests). The *signed contract* currently names an individual donor → the anonymity model and the agreement diverge
+  **on purpose** for now. `FOUNDATION_SIGNATORY_*` interim = "Suresh" already reflects this.
+- The `bursary.py` template names the **Foundation** as the counterparty; the lawyer's v2 names the **individual Donor**.
+  Until the entity exists, the *legal* instrument (v2) and the *rendered* template disagree — the owner is running on the
+  lawyer's v2 wording, not the code's template, for any real signing.
+- Personal exposure (Suresh's NRIC + home address to students) + personal liability are accepted for the interim.
+**To resolve (on incorporation — owner/legal, then a code pass):** execute the novation to the new entity; swap the
+agreement counterparty from the individual to the Foundation; reconcile `bursary.py` template wording + the comprehension
+quiz to the final (Foundation) party structure; restore/confirm the anonymity model against the signed instrument.
+Relates to **TD-140** (Phase-0: finalise the Foundation entity + signatory) — that gate and this item close together.
+**NOT covered here (separate open concerns from the same v2 review, still to discuss with the lawyer, NOT accepted):**
+30-day clawback/repayment; "no other bursary/aid" exclusivity; publicity-by-default vs our opt-in consent; wet-witnessed-
+signature blocks vs our digital SMS-PIN flow; CGPA 3.0 vs the engine's 2.0; unilateral obligation amendment; the
+referenced "Donor's Personal Data Notice" (must exist); mentor obligations made enforceable before mentoring is built.
