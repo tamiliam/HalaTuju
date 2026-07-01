@@ -540,6 +540,21 @@ DARK behind `BURSARY_AGREEMENT_ENABLED` (5 sprints; commits `013effe3`→`f7cc73
 - **▶ NEXT:** owner tests in prod (migrate-first `0083`/`0084`/`0085` → deploy → flip `BURSARY_AGREEMENT_ENABLED`
   + send `SIGN_INVITE_APP_IDS`). The local browser walkthrough was skipped (owner will test in prod).
 
+**▶ STR-PROOF MODEL — Sprint 4 (Check-2 case summary) SHIPPED DARK 2026-07-01 (worktree `.worktrees/str-salary`;
+`verdict_narrative.py` + `AdminVerdictSummaryView` (`GET …/verdict-summary/`) + FE lead paragraph; NO migration;
+dark behind `VERDICT_CASE_SUMMARY_ENABLED`).**
+- An **LLM briefing that "talks to the reviewer"** above the verdict checklist: for a non-Certain verdict it
+  narrates the *already-decided* verdict as a 2–4 sentence case (verdict + decisive reason → threaded reasoning
+  → why THIS band not the next up → action) in the firm fiscal-steward voice. The LLM only narrates the
+  deterministic band + glossed items (`_CODE_GLOSS`); forbidden to invent/change the band. Bullets stay as the
+  audit trail. Income framed **gross → per-capita** (never take-home); earner "confirmed as the student's parent".
+- **Grounded + cached** per (application, verdict-signature) via Django LocMemCache (runs at verdict-time, not
+  per-open); fetched **lazily** by the FE so the detail GET never blocks on Gemini. Band label is a Python port
+  of `officerCockpit.factTileTone` (keep in step). Reuses `profile_engine._call_gemini_text` (flash cascade).
+  +14 pytest (Gemini mocked). Also bundled: the "take-home"→gross/per-capita income copy fix (en/ms/ta).
+- **▶ NEXT (owner):** flip `VERDICT_CASE_SUMMARY_ENABLED=1` in Cloud Run (`halatuju-api`) to live-validate the
+  voice on #102/#83/#14/#13, then keep it on. Retro to follow after validation. Watch Gemini cost (cached, flash).
+
 **▶ STR-PROOF MODEL — Sprint 3 (officer-review refinement) SHIPPED 2026-07-01 (worktree `.worktrees/str-salary`;
 commits `9a349001` ICU-copy fix + `d82de368` Status chip/finding-first + `067dd008` payment guard/band
 matrix/Current chip + `a1ca9ade` prescriptive firm-steward copy; NO migration; `MODEL_VERSION` 1.2 → 1.2.1;

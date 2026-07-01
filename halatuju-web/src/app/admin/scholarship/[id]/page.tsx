@@ -9,6 +9,8 @@ import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
+  getVerdictCaseSummary,
+  type VerdictCaseSummary,
   suggestInterviewGaps,
   verifyAcceptApplication,
   rejectApplication,
@@ -178,6 +180,7 @@ export default function AdminScholarshipDetailPage() {
   const canWrite = effRole === 'super' || effRole === 'reviewer'
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
+  const [caseSummary, setCaseSummary] = useState<VerdictCaseSummary | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
@@ -343,6 +346,8 @@ export default function AdminScholarshipDetailPage() {
       })
       .catch(() => setError(t('admin.scholarship.loadFailed')))
     getAssignableAdmins({ token }).then((r) => setAdmins(r.admins)).catch(() => {})
+    // Check-2 case summary — fetched lazily (in parallel), server-cached; dark-flag aware.
+    getVerdictCaseSummary(id, { token }).then(setCaseSummary).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
 
@@ -1055,6 +1060,13 @@ export default function AdminScholarshipDetailPage() {
                 {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tn]}`)}
               </span>
             ))}
+          </div>
+        )}
+        {/* Check-2 case summary — the LLM briefing that "talks to the reviewer" (dark-flag aware;
+            empty when every fact is Certain). Sits above the checklist, which is the audit trail. */}
+        {caseSummary?.enabled && (caseSummary.summary || '').trim() && (
+          <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3 text-sm text-gray-700">
+            {caseSummary.summary}
           </div>
         )}
         {/* Expanded evidence / unresolved — shown ONLY for facts that still need attention.

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Check-2 case summary — an LLM briefing that "talks to the reviewer" above the verdict checklist
+  (DARK behind `VERDICT_CASE_SUMMARY_ENABLED`).** For a non-Certain verdict, `verdict_narrative.py`
+  narrates the *already-decided* verdict as a 2–4 sentence case in the firm fiscal-steward voice: it
+  opens with the verdict + the decisive reason, threads the reasoning, states **why it's this band and
+  not the next up** (the gap the bullet list never named), and ends with the action. The LLM only
+  narrates — it's fed the deterministic band + glossed items and forbidden to invent or change the
+  band; the checklist bullets remain the audit trail beneath it. Grounded, **cached per
+  (application, verdict-signature)** so it runs at verdict-time not per-open, fetched lazily by the FE
+  (`GET …/verdict-summary/`, `AdminVerdictSummaryView`) so the detail load never blocks on the model.
+  The band label is a Python port of `officerCockpit.factTileTone` (kept in step). +14 pytest (Gemini
+  mocked). Owner flips the flag in Cloud Run to live-validate the voice, then keeps it on.
+
+### Fixed
+- **Income verdict copy said "take-home" — corrected to gross / per-capita.** B40 is assessed on
+  **gross** household income and the resulting **per-capita** figure, never net/take-home. The
+  `income_salary_unsure` line now reads "gross household income … confirm the household composition
+  (size, and whether another member is working) … to establish the true gross and per-capita";
+  `income_salary_probable` clarified to "gross household income" (en/ms/ta).
+
 ### Changed
 - **Officer (Check-2) verdict copy is now prescriptive, in a firm fiscal-steward voice — a lean + an
   action, never "can't tell".** A human-in-the-loop system with two distinct personas: **Cikgu Gopal

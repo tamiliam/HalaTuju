@@ -221,6 +221,18 @@ class AdminApplicationDetailView(_AdminBase):
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
+class AdminVerdictSummaryView(_AdminBase):
+    """GET the Check-2 case summary — a short LLM briefing that narrates the (already-decided)
+    verdict for the reviewer. Read-only; dark behind VERDICT_CASE_SUMMARY_ENABLED. The FE fetches
+    it lazily so the detail GET is never blocked on the model call."""
+    def get(self, request, pk):
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
+        from .verdict_narrative import verdict_case_summary
+        return Response(verdict_case_summary(app))
+
+
 class AdminVerifyAcceptView(_AdminBase):
     """
     POST .../<pk>/verify-accept/ — the human verification gate.
