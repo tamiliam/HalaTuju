@@ -1,5 +1,5 @@
 """Tests for Check 2 STEP 2 — the AI clarify-query stream (``check2_queries.py``)."""
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.courses.models import StudentProfile
@@ -212,3 +212,39 @@ class TestPathwayConfirmQuery(_Base):
         sync_resolution_items(self.app)
         self.assertFalse(self.app.resolution_items.filter(
             source='system', code='pathway_confirm').exists())
+
+
+@override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
+class TestReNotifyOnNewCheck2Item(_Base):
+    """A query raised AFTER the one-time notify must re-announce (clear query_raised_notified_at),
+    so the student isn't left sitting on a silent new request for days. The _Base app has standing
+    device + transport clarify gaps."""
+    def test_new_query_clears_the_notify_stamp(self):
+        self.app.query_raised_notified_at = timezone.now()
+        self.app.save(update_fields=['query_raised_notified_at'])
+        sync_check2_queries(self.app)                 # creates device/transport clarifies (new)
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.query_raised_notified_at)   # re-notify armed
+
+    def test_no_new_item_leaves_the_stamp(self):
+        sync_check2_queries(self.app)                 # first pass creates the items
+        self.app.query_raised_notified_at = timezone.now()
+        self.app.save(update_fields=['query_raised_notified_at'])
+        sync_check2_queries(self.app)                 # second pass — nothing new created
+        self.app.refresh_from_db()
+        self.assertIsNotNone(self.app.query_raised_notified_at)   # NOT reset (no spam)
+
+    def test_flag_off_leaves_the_stamp(self):
+        with override_settings(CHECK2_STUDENT_QUERIES_ENABLED=False):
+            self.app.query_raised_notified_at = timezone.now()
+            self.app.save(update_fields=['query_raised_notified_at'])
+            sync_check2_queries(self.app)
+            self.app.refresh_from_db()
+            self.assertIsNotNone(self.app.query_raised_notified_at)
+
+    def test_never_notified_is_left_none(self):
+        # Not yet notified → the initial sweep will cover the new item; don't touch the stamp.
+        self.assertIsNone(self.app.query_raised_notified_at)
+        sync_check2_queries(self.app)
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.query_raised_notified_at)

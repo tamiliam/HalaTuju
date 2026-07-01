@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Students weren't notified of queries/doc-requests raised AFTER the initial email — they sat silent
+  for days.** The student was emailed only twice, both keyed to submission (`send_due_query_emails`
+  once + one SLA reminder). The officer-raise path reset the notify stamp to re-announce, but
+  `sync_check2_queries` / `sync_resolution_items` did NOT — so a Check-2 clarify/doc-request or a
+  verdict-driven system doc gap created later never reached the student. Live audit: **31 of 40**
+  submitted apps with open items carried a request raised after the one-time email (incl. officer
+  doc-requests sitting 11 & 14 days; `sibling_tertiary_funding`, `*_income_proof_missing`,
+  `income_doc_stale`…). Fix: a shared `services.bump_query_notify_on_new_item()` clears
+  `query_raised_notified_at` when a genuinely-new **student-visible** item is created (a
+  `STUDENT_DOC_REQUEST_CODE` system doc, or any `check2` clarify/doc/confirm), so the batched hourly
+  `send_due_query_emails` sweep re-announces it once. Flag-gated (`CHECK2_STUDENT_QUERIES_ENABLED`);
+  never for `human`/resolved items; can't spam (creation is once-per-code). +6 pytest.
+
 ### Added
 - **Check-2 case summary — an LLM briefing that "talks to the reviewer" above the verdict checklist
   (DARK behind `VERDICT_CASE_SUMMARY_ENABLED`).** For a non-Certain verdict, `verdict_narrative.py`

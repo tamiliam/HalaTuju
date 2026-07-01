@@ -178,6 +178,26 @@ class TestIdempotencyAndLifecycle(_Base):
         self.assertEqual(self.app.resolution_items.get(code='nric_mismatch').status, 'resolved')
 
 
+@override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
+class TestReNotifyOnNewSystemItem(_Base):
+    """A new student-visible doc-request (a *_missing code in STUDENT_DOC_REQUEST_CODES) raised
+    after the one-time notify must re-announce (clear query_raised_notified_at)."""
+    def test_new_doc_request_clears_the_notify_stamp(self):
+        self.app.query_raised_notified_at = timezone.now()
+        self.app.save(update_fields=['query_raised_notified_at'])
+        sync_resolution_items(self.app)      # creates ic_missing / results_slip_missing / … (doc)
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.query_raised_notified_at)
+
+    def test_no_new_item_leaves_the_stamp(self):
+        sync_resolution_items(self.app)      # first pass creates the doc-requests
+        self.app.query_raised_notified_at = timezone.now()
+        self.app.save(update_fields=['query_raised_notified_at'])
+        sync_resolution_items(self.app)      # nothing new created
+        self.app.refresh_from_db()
+        self.assertIsNotNone(self.app.query_raised_notified_at)
+
+
 class TestAssignmentReadiness(_Base):
     def test_open_student_task_blocks_assign_until_lapse(self):
         # #3: assignment is blocked until ALL student tasks are done OR the 5-day SLA
