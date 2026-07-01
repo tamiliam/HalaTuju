@@ -103,26 +103,38 @@ SARA "Layak" is NOT an STR approval word.
 
 ---
 
-## 4. Verdict copy — decisive, one state → one sentence
+## 4. Verdict copy — PRESCRIPTIVE, one state → one lean + one action
 
-The current word-salad ("…may be a SALINAN with no status, an out-of-date STR, or one we couldn't
-read…" + "may not be a genuine official original — confirm at interview") collapses five different
-situations into one. Split it:
+**Two personas, two surfaces — keep them distinct:**
+- **Cikgu Gopal (Check 1)** is a student-facing *help* agent (`help_engine.py`) — kind, tolerant,
+  coaching: gives the student the benefit of the doubt and shows them how to fix a doc.
+- **Check 2** is the officer-facing verdict (`admin.scholarship.verdict.item.*`) — an **opinionated,
+  firm fiscal steward** guarding the donors' money. It does not want to look like a pushover or a
+  bleeding heart, so it **requires proof before committing funds** and takes firm positions **both
+  ways** — a decisive *support-approval* when the evidence is clean, a firm *recommend-reject* when it
+  isn't. Firm, not cruel: the interview path is always left open for genuine circumstances.
 
-| State | Verdict line |
+**The Check-2 copy must be prescriptive, never hands-washing.** This is a human-in-the-loop system:
+the officer *audits* the model's call — the model reaches a defensible lean from the docs on file and
+says *what to do / what to fetch*, not narrate uncertainty. "Unsure" is legitimate ONLY when a human,
+given these same docs, would also need more data (see §5 rule). And it is never a dead-end: the
+inconclusive states auto-raise a **student query** in the Action Centre (a doc-request with an Upload
+button; `CHECK2_STUDENT_QUERIES_ENABLED`), resolvable in the **5-day** window — so "Unsure" reads as
+"proof required from the student", not "you decide." Every line = **a lean + the specific action**:
+
+| State | Check-2 verdict line (firm steward: lean + action) |
 |---|---|
-| 🔴 wrong-type (salary slip) | "This is not an STR document — it's a salary slip. Assessing on the salary route." |
-| 🔴 wrong-type (SARA/SALINAN/other) | "This is not an STR document (it's a {SARA letter / application record / …}). Assessing on the salary route." |
-| 🔴 rejected | "The STR application was rejected (Ditolak) — not an approved STR." |
-| 🟡 unreadable (approval not confirmed) | "Couldn't confirm this STR was approved — the status line (Lulus/Ditolak) didn't read and no payment is shown. Ask for a clearer upload showing the status, or open Maklumat Pembayaran." (NB: do **not** assert "cropped" — a complete page can be *misread*; cropping is a genuineness judgment, not this state's claim.) |
-| 🟡 stale | "This STR is from a prior cycle ({year}). Upload the current cycle's status." |
-| 🔵 unconfirmed (real STR, no date) | "Approved (Lulus), but the page shows no payment date. Open Maklumat Pembayaran (Semakan) to confirm the current cycle, or it's accepted on the live-portal status." |
-| 🟢 current | (no caveat — green) |
+| 🔴 wrong-type | "Not an STR document — it doesn't count as STR proof. Assessing the salary documents; a valid STR is required from the student." |
+| 🔴 rejected | "STR rejected (Ditolak) — it fails as STR proof. Assessing the salary documents for B40 instead." |
+| 🔴 salary over line | "Per-capita RM{amount} is over the B40 line (RM{ceiling}) — recommend reject on income; override only if the interview surfaces genuine qualifying circumstances." |
+| 🟡 stale | "Approved last cycle only — that's stale, not proof of current need. The current cycle's status is required from the student before this counts." |
+| 🟡 unreadable | "Recognised STR page, but the approval line didn't read and no payment is shown — don't assume Lulus. A clear status is required from the student before this counts." (Never assert "cropped" — a complete page can be *misread*; cropping is a genuineness judgment.) |
+| 🟡 salary near line | "Household income ~RM{amount}/mo sits near the B40 line — not a clear pass. Confirm household composition and take-home at interview before approving." |
+| 🔵 unconfirmed (real STR, no date) | "Approved (Lulus), no payment date — treat as probable, not confirmed; verify the current cycle (Maklumat Pembayaran / live portal) before relying on it." |
+| 🟢 current | "Approved and current — B40 confirmed." (decisive support, not a shrug) |
 
-The SALINAN / "ask for your Lulus" paragraph is **reserved strictly for the genuine
-recognised-but-unconfirmed case** — never for a wrong document. **Delete the "may not be a genuine
-official original" caveat for a wrong-type document** — a genuine payslip/SARA letter in the STR slot
-is *the wrong document*, not a forgery.
+**Delete the "may not be a genuine official original" caveat for a wrong-type document** — a genuine
+payslip/SARA letter in the STR slot is *the wrong document*, not a forgery.
 
 ---
 
