@@ -1671,7 +1671,8 @@ _DEEPER_FIELDS = (
     'siblings_studying_count',
     'family_context', 'daily_life',
     # Income Check-1 wizard answers (Documents → Household income).
-    'income_route', 'income_earner', 'income_working_members', 'earner_work_status',
+    'income_route', 'income_earner', 'income_working_members', 'income_declared',
+    'earner_work_status',
     'household_other_earners', 'siblings_in_school', 'siblings_in_tertiary',
     # Structured family roster (redesign 2026-06) — the new inputs. first_in_family
     # + parents_occupation above are DERIVED from these on save (see below).

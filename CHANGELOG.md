@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Declared informal income (income model, Phase 2A).** A salary-route working member with **no
+  payslip/EPF** may now declare an average monthly wage in the income wizard. It is ACCEPTED as a real
+  figure — feeding per-capita → the B40 headroom band — when the household has a **valid STR** (the STR
+  is the means-test, so the stated wage counts without a payslip) OR a **supporting document** backs it;
+  otherwise it is **unproven** and income stays *Unsure* until evidence lands (an unbacked self-report
+  never inflates income). Flexible evidence (owner D1): a new `income_support_doc` type accepts ANY ONE
+  of an employer/wage letter, bank statements showing income, or a community/penghulu letter. The single
+  income funnel `earner_monthly_income` gained a declared branch (`declared_str`/`declared_evidenced`/
+  `declared_unproven`); `_verdict_income_salary` surfaces honest items (`income_declared_accepted_str` /
+  `_accepted_evidenced` / `income_declared_needs_evidence`); Check 2 auto-raises an uncapped
+  `declared_income_evidence_missing` doc-request (firm-steward wording, clears when a support doc or a
+  valid STR arrives). Additive **migration `0086`** (`income_declared` JSONField, migrate-first). Wizard
+  UI: a per-member RM field + conditional supporting-doc card in the salary route. +19 pytest + 1 jest;
+  i18n en/ms/ta.
+
 ### Fixed
 - **Students weren't notified of queries/doc-requests raised AFTER the initial email — they sat silent
   for days.** The student was emailed only twice, both keyed to submission (`send_due_query_emails`

@@ -446,7 +446,8 @@ from apps.scholarship.income_engine import (  # noqa: E402
     _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
     slip_epf_divergence, _reconciled_holder_name, _arrears_amount,
     earner_monthly_income, _epf_monthly_salary, _salary_monthly_amount,
-    income_headroom,
+    income_headroom, declared_amount, has_valid_str, has_income_support_doc,
+    declared_income_gaps,
 )
 
 
@@ -456,6 +457,9 @@ class _FakeQS(list):
 
     def first(self):
         return self[0] if self else None
+
+    def exists(self):
+        return bool(self)
 
 
 class _FakeDocs:
@@ -594,6 +598,77 @@ class TestIncomeHeadroom(SimpleTestCase):
     def test_no_household_size_is_unknown(self):
         band, _ = self._hh(gross=2000, size=None)
         self.assertEqual(band, 'unknown')
+
+
+class TestDeclaredIncome(SimpleTestCase):
+    """Phase 2A — a working member's DECLARED informal income: accepted on a valid STR (the
+    means-test) or a supporting doc, else UNPROVEN → income stays Unsure until evidence lands."""
+
+    def _str_doc(self):
+        # A valid (approved, dateless → 'unconfirmed') STR — enough for has_valid_str.
+        return _bill('str', {'status': 'Lulus', 'recipient_name': '', 'recipient_nric': '',
+                             'year': '', 'amount': '', 'source_type': ''})
+
+    def _salary_app(self, *, declared=None, docs=(), earner=''):
+        app = _app(list(docs))
+        app.income_route = 'salary'
+        app.income_earner = earner
+        app.income_declared = declared or {}
+        app.income_working_members = list((declared or {}).keys())
+        app.cohort = SimpleNamespace(year=2026, income_ceiling=5860, per_capita_ceiling=1584)
+        return app
+
+    def test_declared_amount_reads_positive_int(self):
+        self.assertEqual(declared_amount(self._salary_app(declared={'father': 1500}), 'father'), 1500)
+
+    def test_declared_zero_or_garbage_is_none(self):
+        self.assertIsNone(declared_amount(self._salary_app(declared={'father': 0}), 'father'))
+        self.assertIsNone(declared_amount(self._salary_app(declared={'father': 'abc'}), 'father'))
+        self.assertIsNone(declared_amount(self._salary_app(declared={}), 'father'))
+
+    def test_valid_str_accepts_declared(self):
+        app = self._salary_app(declared={'father': 1500}, docs=[self._str_doc()])
+        self.assertTrue(has_valid_str(app))
+        self.assertEqual(earner_monthly_income(app, 'father'), (1500.0, 'declared_str'))
+
+    def test_support_doc_accepts_declared_when_no_str(self):
+        app = self._salary_app(declared={'father': 1500}, docs=[_bill('income_support_doc', {})])
+        self.assertFalse(has_valid_str(app))
+        self.assertEqual(earner_monthly_income(app, 'father'), (1500.0, 'declared_evidenced'))
+
+    def test_unproven_declared_returns_none(self):
+        amt, src = earner_monthly_income(self._salary_app(declared={'father': 1500}), 'father')
+        self.assertIsNone(amt)
+        self.assertEqual(src, 'declared_unproven')
+
+    def test_salary_slip_beats_declared(self):
+        app = self._salary_app(declared={'father': 1500},
+                               docs=[_bill('salary_slip', {'gross_income': 'RM3000'})])
+        self.assertEqual(earner_monthly_income(app, 'father'), (3000.0, 'salary'))
+
+    def test_rejected_str_is_not_valid_str(self):
+        # A rejected STR is not a means-test → a declared amount still needs its own evidence.
+        rejected = _bill('str', {'status': 'Ditolak', 'source_type': 'semakan_status', 'year': '2026'})
+        app = self._salary_app(declared={'father': 1500}, docs=[rejected])
+        self.assertFalse(has_valid_str(app))
+        self.assertEqual(earner_monthly_income(app, 'father')[1], 'declared_unproven')
+
+    def test_gaps_empty_when_str_valid(self):
+        app = self._salary_app(declared={'father': 1500}, docs=[self._str_doc()])
+        self.assertEqual(declared_income_gaps(app), [])
+
+    def test_gaps_list_unproven_member(self):
+        self.assertEqual(declared_income_gaps(self._salary_app(declared={'father': 1500})),
+                         [{'member': 'father'}])
+
+    def test_gaps_cleared_by_support_doc(self):
+        app = self._salary_app(declared={'father': 1500}, docs=[_bill('income_support_doc', {})])
+        self.assertEqual(declared_income_gaps(app), [])
+
+    def test_gaps_empty_off_salary_route(self):
+        app = self._salary_app(declared={'father': 1500})
+        app.income_route = 'str'
+        self.assertEqual(declared_income_gaps(app), [])
 
 
 class TestBillingMonthParse(SimpleTestCase):

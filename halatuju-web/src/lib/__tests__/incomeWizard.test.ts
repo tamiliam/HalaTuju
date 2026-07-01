@@ -5,7 +5,18 @@ import {
   workingMembers,
   salaryMemberBlocks,
   hasPatronymic,
+  declaredAmount,
 } from '@/lib/incomeWizard'
+
+describe('declaredAmount — Phase 2A declared informal income', () => {
+  it('reads a positive amount, else 0', () => {
+    expect(declaredAmount({ father: 1500 }, 'father')).toBe(1500)
+    expect(declaredAmount({ father: 0 }, 'father')).toBe(0)
+    expect(declaredAmount({ mother: 1200 }, 'father')).toBe(0)
+    expect(declaredAmount(null, 'father')).toBe(0)
+    expect(declaredAmount(undefined, 'father')).toBe(0)
+  })
+})
 
 describe('incomeRequirements — STR route + blank (mirror of income_engine)', () => {
   it('blank wizard → only the earner IC', () => {

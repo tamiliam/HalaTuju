@@ -417,7 +417,8 @@ def _verdict_income_salary(application, student_name, present):
         unprovable relationship (e.g. a Chinese-style name with no patronymic) →
         'recommend' + `income_unverified_needs_interview`, for the officer to place."""
     from .income_engine import (effective_working_members, member_relationship_status,
-                                relationship_doc_for, chain_verified_earner)
+                                relationship_doc_for, chain_verified_earner,
+                                earner_monthly_income, has_valid_str)
     members = effective_working_members(application)
     if not members:
         # No working member declared → no income information yet → red (see STR route).
@@ -425,8 +426,9 @@ def _verdict_income_salary(application, student_name, present):
                      [_item('income_earner_undeclared')])
 
     evidence = _utility_context(application)
-    any_financial = False          # at least one member supplied a payslip or EPF
+    any_financial = False          # at least one member supplied a payslip/EPF (or an ACCEPTED declared income)
     all_confirmed = True           # every member's relationship is a positive 'match'
+    declared_backed, declared_unproven = [], []   # Phase 2A: members carried by a declared amount
     # Per-member gaps are AGGREGATED by code into one item carrying a `members` list —
     # the resolution layer keys tickets by code (one per code per application), so
     # emitting the same code twice would collapse/collide. One ticket lists everyone.
@@ -484,6 +486,15 @@ def _verdict_income_salary(application, student_name, present):
         if (_latest_doc_for_member(application, 'salary_slip', m)
                 or _latest_doc_for_member(application, 'epf', m)):
             any_financial = True
+        else:
+            # Phase 2A: no payslip/EPF for this member — a DECLARED informal amount may still
+            # carry their income (accepted via a valid STR or a supporting doc), else it's unproven.
+            _amt, _src = earner_monthly_income(application, m)
+            if _src in ('declared_str', 'declared_evidenced'):
+                any_financial = True
+                declared_backed.append(m)
+            elif _src == 'declared_unproven':
+                declared_unproven.append(m)
 
     if any_financial:
         evidence.append(_item('income_proof_present'))
@@ -507,6 +518,18 @@ def _verdict_income_salary(application, student_name, present):
         return _fact('income', 'gap', evidence, gap + review)
     if review:
         return _fact('income', 'review', evidence, review)
+    # Phase 2A: an ACCEPTED declared income is honest evidence — surface it, and say WHY the
+    # self-report counts (a valid STR is the means-test, else a supporting doc backs it). Two
+    # distinct codes, not an ICU `select` param: the custom `t` has no MessageFormat engine.
+    if declared_backed:
+        code = 'income_declared_accepted_str' if has_valid_str(application) else 'income_declared_accepted_evidenced'
+        evidence.append(_item(code, members=declared_backed))
+    # A declared income with NO valid STR and NO supporting doc can't count yet. Firm-steward
+    # stance: Unsure = proof required from the student (Check 2 raises the income_support_doc
+    # request). Route to 'recommend' (amber) — never a blue read off the earner-IC/relationship greens.
+    if declared_unproven:
+        return _fact('income', 'recommend', evidence,
+                     review + [_item('income_declared_needs_evidence', members=declared_unproven)])
     # The cluster adds up (every IC + relationship confirmed, financial evidence present).
     # Income GREEN also needs the AMOUNT to clear the B40 line: sum the earners' pay from
     # the documents → per-capita vs the cohort ceiling (I4). Never blocks — anything we

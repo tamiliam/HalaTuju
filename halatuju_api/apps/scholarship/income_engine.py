@@ -714,11 +714,63 @@ def _epf_monthly_salary(f):
     return round(contrib / _EPF_CONTRIB_RATE, 2) if contrib else None
 
 
+def has_valid_str(application):
+    """True when the household has a VALID STR DOCUMENT on file — approved and at least
+    'unconfirmed' currency (a genuine, un-rejected STR), on either income route. A valid STR
+    is the household's own means-test, so it lets a working member's DECLARED informal income
+    be ACCEPTED without a payslip (the STR already establishes B40 need — P5b). Reads the STR
+    *document* via ``student_str_check``, never the ``receives_str`` self-tick."""
+    docs = getattr(application, 'documents', None)
+    if docs is None:
+        return False
+    str_doc = docs.filter(doc_type='str').order_by('-uploaded_at').first()
+    if str_doc is None:
+        return False
+    sc = student_str_check(str_doc)
+    return bool(sc and sc['current_status'] in ('current', 'unconfirmed'))
+
+
+def declared_amount(application, member):
+    """A working member's DECLARED average monthly income (RM, int > 0) from the income
+    wizard, or None. Stored in ``ScholarshipApplication.income_declared = {member: amount}``.
+    Tolerant of a blank/None/garbage value."""
+    raw = getattr(application, 'income_declared', None)
+    if not isinstance(raw, dict):
+        return None
+    try:
+        amt = int(raw.get(member))
+    except (TypeError, ValueError):
+        return None
+    return amt if amt > 0 else None
+
+
+def has_income_support_doc(application, member):
+    """True when a supporting income document is on file for this member — an
+    ``income_support_doc`` (an employer/wage letter, bank statements showing income, OR a
+    community/penghulu letter; D1 flexible evidence, any ONE suffices). Backs a DECLARED
+    amount for a non-STR household. Accepts a doc tagged to the member OR untagged
+    (household-level) — an Action-Centre request upload may land without a member tag, and
+    one family-level supporting letter is enough under the flexible-evidence rule."""
+    docs = getattr(application, 'documents', None)
+    if docs is None:
+        return False
+    return docs.filter(doc_type='income_support_doc',
+                       household_member__in=[member, '']).exists()
+
+
 def earner_monthly_income(application, member):
     """A working member's estimated MONTHLY income from their documents + the source.
     The salary slip's gross is primary; failing that, the EPF statement (the statutory-rate
-    salary reverse, or 0 when unemployed). Returns ``(amount: float | None, source)`` where
-    source is 'salary' | 'epf_estimate' | 'unknown'."""
+    salary reverse, or 0 when unemployed); failing that, a DECLARED informal amount.
+    Returns ``(amount: float | None, source)`` where source is
+    ``'salary' | 'epf_estimate' | 'declared_str' | 'declared_evidenced' | 'declared_unproven' | 'unknown'``.
+
+    Declared informal income (Phase 2A, P5b): a member with no payslip/EPF may declare an
+    average monthly wage. It is ACCEPTED as a real figure when the household has a valid STR
+    (``declared_str`` — the STR is the means-test) OR a supporting income document backs it
+    (``declared_evidenced``); otherwise it is UNPROVEN — returns ``(None, 'declared_unproven')``
+    so per-capita stays 'not all known' and the headroom band falls to Unsure until evidence
+    lands (never inflates income on an unbacked self-report)."""
     for slip in _cluster_docs(application, member, 'salary_slip'):
         amt = _salary_monthly_amount(_doc_fields(slip))
         if amt:
@@ -727,6 +779,13 @@ def earner_monthly_income(application, member):
         sal = _epf_monthly_salary(_doc_fields(epf))
         if sal is not None:
             return sal, 'epf_estimate'
+    declared = declared_amount(application, member)
+    if declared is not None:
+        if has_valid_str(application):
+            return float(declared), 'declared_str'
+        if has_income_support_doc(application, member):
+            return float(declared), 'declared_evidenced'
+        return None, 'declared_unproven'
     return None, 'unknown'
 
 
@@ -1391,6 +1450,25 @@ def parent_income_gaps(application):
             gaps.append({'member': member, 'need': 'proof'})
         elif status == 'need_status':
             gaps.append({'member': member, 'need': 'status'})
+    return gaps
+
+
+def declared_income_gaps(application):
+    """Working members who DECLARED an informal income (Phase 2A) that isn't yet accepted:
+    the household has NO valid STR and no supporting income document for them. Each →
+    a doc request for an ``income_support_doc`` (D1: flexible evidence). Returns
+    ``[{'member': m}, …]`` (empty when every declared amount is backed).
+
+    Salary route only. A valid STR accepts EVERY declared amount at once (no doc needed),
+    so it short-circuits to no gaps."""
+    if (getattr(application, 'income_route', '') or '').strip() != 'salary':
+        return []
+    if has_valid_str(application):
+        return []
+    gaps = []
+    for m in effective_working_members(application):
+        if declared_amount(application, m) is not None and not has_income_support_doc(application, m):
+            gaps.append({'member': m})
     return gaps
 
 

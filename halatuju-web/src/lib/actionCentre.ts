@@ -125,6 +125,8 @@ export const KNOWN_CODES = [
   'sibling_tertiary_funding',
   // S3 — offer carries no readable reporting date → ask when/where to report (clarify).
   'reporting_date_unknown',
+  // Phase 2A — a declared informal income needs a flexible supporting doc (kind='doc').
+  'declared_income_evidence_missing',
   // Post-award payout — the bank-details task. The OPEN state renders via the dedicated
   // BankDetailsTask component (special-cased in ActionCentre), but the RESOLVED state falls
   // through to the generic Done card, so it must be a KNOWN code — otherwise it's mistaken

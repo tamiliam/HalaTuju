@@ -1209,7 +1209,8 @@
         "offer_letter": "Surat tawaran",
         "parent_ic": "IC ibu bapa/penjaga",
         "guardianship_letter": "Surat penjagaan",
-        "birth_certificate": "Sijil kelahiran"
+        "birth_certificate": "Sijil kelahiran",
+        "income_support_doc": "Dokumen sokongan pendapatan"
       },
       "help": {
         "ic": "Gambar bahagian depan MyKad anda. Kami akan menggunakannya untuk mengesahkan identiti anda dan memastikan nama serta nombor KP anda sepadan dengan permohonan dan dokumen sokongan anda.",
@@ -1217,6 +1218,7 @@
         "str": "Tangkapan skrin aplikasi MySTR (Semakan Status atau Dashboard) yang menunjukkan “Lulus”, atau gambar/PDF surat kelulusan STR anda — dengan nama dan nombor KP penerima.",
         "salary_slip": "Gambar/PDF slip gaji terkini bapa/ibu/penjaga anda.",
         "epf": "Gambar/PDF penyata KWSP bapa/ibu/penjaga anda.",
+        "income_support_doc": "Mana-mana SATU daripada ini sudah memadai: surat daripada majikan menyatakan gaji, penyata bank terkini yang menunjukkan pendapatan, atau surat daripada ketua komuniti anda (penghulu / ketua kampung).",
         "income": "Jika keluarga anda penerima STR, sila muat naik tangkapan skrin portal STR yang memaparkan nama dan NRIC ibu bapa anda. Kami amat menggalakkan anda juga memuat naik slip gaji terkini dan/atau penyata KWSP bagi setiap ahli isi rumah yang bekerja.",
         "water_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
         "electricity_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
@@ -1319,6 +1321,12 @@
           "splitPrompt": "Anda memberitahu kami seorang atau lebih adik-beradik anda sedang belajar — sila tetapkan berapa orang di sekolah dan berapa orang di kolej atau universiti.",
           "docsHeading": "Dokumen untuk dimuat naik",
           "footer": "Muat naik apa yang anda boleh — seorang penyemak akan melihat situasi anda secara peribadi.",
+          "declared": {
+            "prompt": "Tiada slip gaji untuk mereka? Beritahu kami pendapatan bulanan purata mereka.",
+            "placeholder": "cth. 1500",
+            "perMonth": "sebulan",
+            "needsDoc": "Kami akan meminta satu dokumen sokongan di bawah — mana-mana satu daripada surat majikan/gaji, penyata bank terkini, atau surat komuniti (penghulu) sudah memadai."
+          },
           "badge": {
             "required": "Wajib",
             "optional": "Pilihan"
@@ -1985,6 +1993,10 @@
         "reporting_date_unknown": {
           "title": "Bila anda perlu melapor diri ke institusi anda?",
           "desc": "Surat tawaran anda tidak menyatakan tarikh lapor diri / pendaftaran yang jelas. Bila (tarikh) dan di mana anda perlu melapor diri untuk memulakan pengajian?"
+        },
+        "declared_income_evidence_missing": {
+          "title": "Muat naik bukti pendapatan keluarga anda",
+          "desc": "Anda memberitahu kami seorang ahli keluarga memperoleh gaji tidak formal, tetapi kami tiada slip gaji untuknya. Untuk menyokong apa yang anda kongsikan, sila muat naik mana-mana satu daripada ini: surat daripada majikan menyatakan gaji, penyata bank terkini yang menunjukkan pendapatan, atau surat daripada ketua komuniti anda (penghulu / ketua kampung). Mana-mana satu sudah memadai."
         }
       },
       "bank": {
@@ -3236,6 +3248,9 @@
           "income_above_b40_line": "Pendapatan per kapita RM{amount} melebihi garis B40 (RM{ceiling}) — disyorkan tolak atas pendapatan; batalkan hanya jika temu duga mendedahkan keadaan yang benar-benar melayakkan.",
           "income_salary_probable": "Dokumen gaji menunjukkan pendapatan kasar isi rumah ~RM{amount}/bulan jelas di bawah garis B40 — menyokong kelulusan; sahkan isi rumah semasa temu duga.",
           "income_salary_unsure": "Pendapatan kasar isi rumah ~RM{amount}/bulan hampir dengan garis B40 — bukan lulus yang jelas. Sahkan komposisi isi rumah (bilangan ahli, dan sama ada ada ahli lain yang bekerja) semasa temu duga untuk menentukan pendapatan kasar dan per kapita sebenar sebelum meluluskan.",
+          "income_declared_accepted_str": "Pendapatan yang diisytiharkan untuk {members} diterima — STR yang sah sudah mengesahkan keperluan B40 isi rumah, jadi gaji yang dinyatakan dikira tanpa slip gaji. Dimasukkan dalam per kapita.",
+          "income_declared_accepted_evidenced": "Pendapatan yang diisytiharkan untuk {members} diterima — dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti) menyokong gaji yang dinyatakan. Dimasukkan dalam per kapita.",
+          "income_declared_needs_evidence": "{members} mengisytiharkan gaji, tetapi tiada slip gaji, tiada STR yang sah, dan tiada dokumen sokongan — jadi ia belum boleh dikira. Bukti diperlukan daripada pelajar: mana-mana satu daripada surat majikan/gaji, penyata bank yang menunjukkan pendapatan, atau surat komuniti/penghulu. Permintaan telah dibangkitkan di Pusat Tindakan.",
           "utility_percapita_b40": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — konsisten dengan isi rumah B40 (isyarat lembut, tidak sempurna).",
           "utility_percapita_high": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — tinggi (corak penggunaan M40/T20). Wajar disiasat semasa temu duga (isyarat lembut).",
           "utility_hardship": "Isyarat kesusahan: bil utiliti mempunyai tunggakan yang ketara (baki belum dibayar) — menyokong keperluan kewangan.",
@@ -3266,7 +3281,8 @@
           "mother_status_unknown": "Pekerjaan/status ibu tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
           "income_doc_stale": "Slip gaji dalam fail berusia lebih 3 bulan — pelajar diminta memuat naik slip terkini.",
           "sibling_tertiary_funding": "Adik-beradik di pengajian tinggi — pelajar ditanya institusi mana dan cara pembiayaan (biasiswa / PTPTN / keluarga / lain-lain).",
-          "reporting_date_unknown": "Surat tawaran tiada tarikh lapor diri yang jelas — pelajar ditanya bila dan di mana mereka melapor diri."
+          "reporting_date_unknown": "Surat tawaran tiada tarikh lapor diri yang jelas — pelajar ditanya bila dan di mana mereka melapor diri.",
+          "declared_income_evidence_missing": "Pendapatan tidak formal yang diisytiharkan tiada slip gaji dan tiada STR yang sah — pelajar diminta memuat naik dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti)."
         }
       },
       "decision": {

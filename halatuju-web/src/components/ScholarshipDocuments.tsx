@@ -22,6 +22,7 @@ import {
   incomeRequirements,
   wizardComplete,
   hasPatronymic,
+  declaredAmount,
   type IncomeRoute,
   type IncomeEarner,
   type WorkingMember,
@@ -999,6 +1000,8 @@ function IncomeWizard({
     income_working_members: (app.income_working_members && app.income_working_members.length
       ? app.income_working_members
       : rosterEarners) as WorkingMember[],
+    // Phase 2A: declared informal income per member ({member: RM/month}).
+    income_declared: (app.income_declared || {}) as Partial<Record<WorkingMember, number>>,
   })
   // #1: the prefill above only runs on first mount (useState), so a roster filled or refetched
   // AFTER the income step initialised wouldn't flow through. Keep the salary-route "who works"
@@ -1098,7 +1101,21 @@ function IncomeWizard({
     income_route: ans.income_route as IncomeRoute,
     income_earner: ans.income_earner as IncomeEarner,
     income_working_members: ans.income_working_members,
+    income_declared: ans.income_declared,
   }
+
+  // Phase 2A: persist a member's declared average monthly income (0/blank → clear the entry).
+  const saveDeclared = (m: WorkingMember, raw: string) => {
+    const n = Math.max(0, Math.round(Number(raw) || 0))
+    const next = { ...(ans.income_declared || {}) } as Partial<Record<WorkingMember, number>>
+    if (n > 0) next[m] = n
+    else delete next[m]
+    save({ income_declared: next })
+  }
+  // Does this member already have a payslip / EPF on file? If so, no need to ask for a figure.
+  const memberHasProof = (m: WorkingMember) =>
+    docs.some((d) => (d.doc_type === 'salary_slip' || d.doc_type === 'epf')
+      && (d.household_member || '') === m)
   // The student's name comes off their OWN IC (the same name the patronymic match uses).
   // A mononym (no A/L·A/P·…) can't prove a father/sibling link by shared name → the wizard
   // surfaces the birth certificate instead (#55). Unknown until the IC is read → assume a
@@ -1260,6 +1277,31 @@ function IncomeWizard({
                   {clusterDocKey(docType, member) === salAnchor && coach}
                 </div>
               ))}
+              {/* Phase 2A — no payslip/EPF for this member? Let them declare an average monthly
+                  income. A positive figure surfaces the flexible supporting-doc upload below. */}
+              {!memberHasProof(block.member) && (
+                <div className="rounded-md bg-white ring-1 ring-gray-100 p-2.5 space-y-2">
+                  <p className="text-xs font-medium text-gray-700">{iq('declared.prompt')}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">RM</span>
+                    <input
+                      type="number" inputMode="numeric" min={0} step={50}
+                      defaultValue={declaredAmount(ans.income_declared, block.member) || ''}
+                      placeholder={iq('declared.placeholder')}
+                      onBlur={(e) => saveDeclared(block.member, e.target.value)}
+                      className="w-28 text-sm rounded border border-gray-300 px-2 py-1
+                                 focus:border-primary-400 focus:outline-none"
+                    />
+                    <span className="text-xs text-gray-400">{iq('declared.perMonth')}</span>
+                  </div>
+                  {declaredAmount(ans.income_declared, block.member) > 0 && (
+                    <>
+                      <p className="text-xs text-amber-700">{iq('declared.needsDoc')}</p>
+                      {renderCard('income_support_doc', { required: false, member: block.member })}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )})}
           {/* Household-level optional credibility docs (utility bills). */}

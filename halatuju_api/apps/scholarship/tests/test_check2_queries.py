@@ -99,6 +99,54 @@ class TestSyncCheck2Queries(_Base):
         self.assertEqual(item.status, 'resolved')
 
 
+class TestDeclaredIncomeDocRequest(_Base):
+    """Phase 2A — a declared informal income with no valid STR + no supporting doc raises an
+    uncapped income_support_doc request; it clears when the support doc arrives."""
+
+    def setUp(self):
+        super().setUp()
+        # Salary route, father declares an informal wage, no payslip/EPF/STR on file.
+        self.app.documents.filter(doc_type='salary_slip').delete()
+        self.app.income_route = 'salary'
+        self.app.income_working_members = ['father']
+        self.app.income_declared = {'father': 1500}
+        self.app.father_occupation = 'informal'
+        self.app.save()
+
+    def test_raises_evidence_doc_request(self):
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='declared_income_evidence_missing')
+        self.assertEqual((item.source, item.kind, item.status), ('check2', 'doc', 'open'))
+        self.assertEqual(item.doc_type, 'income_support_doc')
+
+    def test_outside_the_clarify_cap(self):
+        # A doc-request never eats a clarify slot.
+        sync_check2_queries(self.app)
+        self.assertTrue(self.app.resolution_items.filter(
+            code='declared_income_evidence_missing', kind='doc').exists())
+
+    def test_auto_resolves_when_support_doc_uploaded(self):
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='declared_income_evidence_missing')
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='income_support_doc', household_member='father',
+            storage_path='x/support')
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+        self.assertEqual(item.resolved_by, 'system')
+
+    def test_not_raised_when_valid_str_on_file(self):
+        # A valid STR accepts the declared amount → no evidence request.
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='str', storage_path='x/str',
+            vision_fields={'fields': {'status': 'Lulus', 'source_type': ''}},
+            vision_run_at=timezone.now())
+        sync_check2_queries(self.app)
+        self.assertFalse(self.app.resolution_items.filter(
+            code='declared_income_evidence_missing').exists())
+
+
 class TestUtilityClarifyQueries(_Base):
     """#8: the utility holder/address consistency checks also surface as student
     clarify queries (dark until CHECK2_STUDENT_QUERIES_ENABLED gates the call sites)."""
