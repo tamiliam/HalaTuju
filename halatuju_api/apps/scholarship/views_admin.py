@@ -150,7 +150,11 @@ class _AdminBase(PartnerAdminMixin, APIView):
         """Auth prologue for the QC gate. Returns (app, admin, None) when the caller may QC this
         application — a `super` or a `qc`-role admin, and the app is in the AWAITING-QC stage
         (`interviewed`) — else (None, None, error_response). QC is deliberately NOT assignment-
-        scoped (it checks a reviewer's work across the queue) and is distinct from reviewer writes."""
+        scoped (it checks a reviewer's work across the queue) and is distinct from reviewer writes.
+
+        Self-QC guard: the senior `qc` role can also REVIEW its assigned cases, so a qc must NOT
+        QC a case it was the assigned reviewer of — that routes to another QC / super. (Super is
+        the owner override and is exempt.)"""
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
@@ -163,6 +167,10 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return None, None, Response(
                 {'error': 'This case is not awaiting QC.', 'code': 'not_awaiting_qc'},
                 status=status.HTTP_400_BAD_REQUEST)
+        if not self.has_role(admin, 'super') and app.assigned_to_id == admin.id:
+            return None, None, Response(
+                {'error': 'You reviewed this case — it must be QC-checked by someone else.',
+                 'code': 'self_qc_forbidden'}, status=status.HTTP_403_FORBIDDEN)
         return app, admin, None
 
 
@@ -916,15 +924,16 @@ class AdminMaintenanceSubstateView(_AdminBase):
 class AdminAssignableAdminsView(_AdminBase):
     """GET .../assignable-admins/ — active REVIEWERS, ADMINS (+ supers) for the assignment
     dropdown. Only roles that can be assigned an applicant appear (mirrors services._can_review):
-    a view-all 'admin' can now be assigned selective review work (assignment grants WRITE on the
-    assigned application while their read stays all), so admins are listed; 'partner' has no
-    review role and is excluded."""
+    a view-all 'admin' and the senior 'qc' role can be assigned selective review work (assignment
+    grants WRITE on the assigned application while their read stays all), so admins + qc are listed;
+    'partner' has no review role and is excluded. (A qc's own reviewed case is QC'd by someone else
+    — the self-QC guard in _require_qc.)"""
     def get(self, request):
         if not self.get_admin(request):
             return self._deny()
         from django.db.models import Q
         admins = (PartnerAdmin.objects.filter(is_active=True)
-                  .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super', 'admin']))
+                  .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super', 'admin', 'qc']))
                   .select_related('reviewer_profile').order_by('name'))
         # Internal-only "corrections" tally per reviewer (reopened decisions that led
         # to a real change). Never shown to sponsors/students — an internal quality

@@ -63,10 +63,12 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const guide = { href: '/admin/guide', label: t('admin.guideNav') }
   const faq = { href: '/admin/faq', label: t('admin.faqNav') }
   const navLinks =
-    r === 'partner' ? [dashboard, students, profile]
+    // BrightPath (bursary) roles — admin + qc + reviewer — see the scholarship side, NOT the
+    // HalaTuju course-selector pages (Dashboard/Students/Course Data), which only super retains.
+    r === 'partner' ? [dashboard, students, profile]        // HalaTuju org rep
     : r === 'reviewer' ? [scholarship, profile, guide, faq]
-    : r === 'qc' ? [scholarship, profile, guide, faq]
-    : [dashboard, students, scholarship, sponsors, courseData, ...(r === 'super' ? [invite] : []), profile, guide, faq]  // super + admin
+    : (r === 'qc' || r === 'admin') ? [scholarship, sponsors, profile, guide, faq]
+    : [dashboard, students, scholarship, sponsors, courseData, invite, profile, guide, faq]  // super (everything)
 
   return (
     <div className="min-h-screen bg-gray-50">

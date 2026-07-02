@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## `qc` is a senior role (review + QC) with a self-QC guard; admin menus split BrightPath vs HalaTuju — 2026-07-02
+**Decision:** The `qc` role is a **superset** — it reads all cases, can be **assigned** applicants and
+**review** them (like a view-all admin), AND QCs other reviewers' cases. To keep separation of duties, a
+**self-QC guard** (`_require_qc`) forbids a `qc` from QC-ing a case it was the assigned reviewer of (routes
+to another QC / super; the cockpit hides the QC box there too). Only the `qc` role gets these powers — plain
+`admin`s stay read-only, no QC. Separately, the admin portal is split by product: `admin`/`qc`/`reviewer`
+are **BrightPath (bursary)** roles and no longer see the **HalaTuju course-selector** pages
+(Dashboard/Students/Course-Data) — only `super` retains them; `partner` is the HalaTuju org rep and keeps
+Dashboard/Students.
+**Why:** the driver is Suresh — a co-founder who does QC but wants to *experience reviewing* to QC better,
+on one login, while still seeing the bursary pipeline. A single account can't hold two roles, so `qc` was
+made the senior superset rather than shuffling roles. The self-QC guard encodes the owner's own principle
+("I'll QC the student he's reviewing") so it isn't left to memory. The nav split reflects that these are two
+products sharing one admin shell — a bursary admin has no need for the course-selector's recruitment pages.
+**Alternatives considered:** (1) give every `admin` QC — rejected (over-broad; the owner wants only `qc`);
+(2) two accounts for Suresh (one admin, one qc) — messy, `get_admin` resolves one PartnerAdmin per Supabase
+user; (3) a brand-new combined role — unnecessary, `qc` already had the read scope. **Revisit if:** a
+BrightPath *partner* role is introduced (currently one unified `partner` = HalaTuju; see TD-154).
+
 ## QC gate reuses the `interviewed` stage (no new status); QC is a distinct role — 2026-07-02
 **Decision:** Formalise the owner's manual quality control into a lifecycle step **without a new status**.
 The `interviewed` stage is repurposed to mean **AWAITING QC**: (1) submitting interview *findings* no

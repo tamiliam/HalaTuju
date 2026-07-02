@@ -62,6 +62,8 @@ post-audit work (TD-053–143). Both are searchable by id.
   the Foundation then (ACCEPTED interim, ties to TD-140).
 - **TD-153** — partner-role least-privilege tidy-ups: (a) UI Delete-student button the backend refuses for partner,
   (b) a few oversight LIST endpoints readable via direct API by partner/reviewer though the UI hides them. (b) → sprint-lane.
+- **TD-155** — partner Scholarship view (future): org-scoped bursary applicants for a HalaTuju partner (their own
+  referred students, menu hidden when none). Roadmap, not yet built.
 
 **Original 2026-03 audit — code-hygiene leftovers:**
 - **TD-050** — i18n key mismatch (quiz reads `halatuju_lang`, not `halatuju_locale` → may always load English) — *medium*.
@@ -1167,3 +1169,17 @@ PII exposure beyond what the role already sees, but both should be tightened.
 **Risk if left:** Low. **Size:** small (a few UI conditionals + a handful of backend role checks + tests).
 (Renumbered from a draft TD-152 that collided with the bursary-donor entry when two branches numbered in parallel —
 see the lesson on checking `max(TD-NNN)` before numbering, mirroring the migration-number rule.)
+
+### [TD-155] Partner Scholarship view (org-scoped bursary students for a HalaTuju partner)
+**Status:** Open — roadmap/future (owner direction 2026-07-02, not yet built). **Context:** the single unified
+`partner` role (HalaTuju org rep, e.g. CUMIG) today sees Dashboard · Students · Profile (the course-selector
+side). The owner wants to add a **Scholarship** menu for a partner that shows **only the bursary applicants
+referred by their own org** (linked via `referral`/source → the partner's `org`), and **hides the menu when
+the partner has none**. **What it needs:** (1) an org-scoped scholarship-applications read endpoint (filter
+`referred_by_org == admin.org`, mirroring `get_partner_students` but for `ScholarshipApplication`); (2) a
+serializer that gives a partner only the non-sensitive view of *their* referred applicants (decide the field
+allowlist — a partner is not a reviewer/sponsor, so no verdict/QC internals, and mind two-way anonymity);
+(3) the partner nav gains a conditional `scholarship` item shown only when the count > 0; (4) the FE list
+page filtered to the partner's org. **Note:** "BrightPath Partner" as a *separate* role was considered and
+**dropped** — there is one unified `partner`. **Risk if left:** none (feature not promised to users yet).
+**Size:** small-to-medium (one scoped endpoint + serializer + nav conditional + a list view + tests).

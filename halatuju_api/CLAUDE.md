@@ -518,6 +518,16 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-02)
 
+**▶ JUST SHIPPED — Senior `qc` role + BrightPath/HalaTuju nav split (2026-07-02, follow-up to the QC gate).**
+`qc` is now a superset: assignable + reviews its assigned cases (like a view-all admin) AND QCs others — with
+a **self-QC guard** (`_require_qc` → 403 `self_qc_forbidden`; cockpit hides the QC box when the qc is the
+case's assigned reviewer). `services._can_review` + assignable list include `qc`. **Nav split:** `admin`+`qc`
+are BrightPath roles → `Scholarship · Sponsors · Profile · Guide · FAQ` (dropped HalaTuju Dashboard/Students/
+Course-Data, which only `super` keeps); BrightPath roles landing on `/admin` redirect to `/admin/scholarship`.
+No migration. +5 pytest. **Owner follow-up:** flip Suresh to `role='qc'` when his review experience on #66 is
+done (he's `admin` reviewing it now); one unified `partner` = HalaTuju org rep, a partner Scholarship view is
+future **TD-155**.
+
 **▶ JUST SHIPPED — QC gate (repurposed `interviewed` stage) (2026-07-02).** A quality-control step before
 `recommended`, no new status. Findings-submit no longer advances status (stays `interviewing`); the
 reviewer's verify-accept lands the case in `interviewed` = AWAITING QC. New **`qc` role** (or super) uses a
