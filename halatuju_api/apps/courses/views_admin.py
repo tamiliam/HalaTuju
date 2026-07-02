@@ -365,7 +365,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
 
         # The inviter chooses the new admin's role. Super is NOT invitable here
         # (there is one super admin — the owner); default to the safe workhorse.
-        INVITABLE_ROLES = {'admin', 'partner', 'reviewer'}
+        INVITABLE_ROLES = {'admin', 'partner', 'reviewer', 'qc'}
         role = request.data.get('role', 'reviewer')
         if role not in INVITABLE_ROLES:
             role = 'reviewer'

@@ -63,13 +63,18 @@ def reopen_decision(app, *, by_admin, reason):
                                    'realtime_notified_at', 'updated_at'])
         app.decision_reopened_at = timezone.now()
         fields = ['decision_reopened_at']
-        # Reopening returns the case to the decision point so the reviewer can re-decide.
-        # A RECOMMENDED case moves back to 'interviewed' — so a subsequent decline is correctly
-        # bucketed as 'interview' (reviewed-but-not-selected, NOT 'contractual'), and a
-        # re-approve flows through verify-accept again. A 'sponsored' (funded) case is genuinely
-        # post-award and stays put (its decline path IS 'contractual').
+        # Reopening returns the case one step toward the reviewer so it can be re-decided.
+        # QC (2026-07) two-step mapping (kept invertible by cancel_reopen — the current status
+        # uniquely identifies where it came from):
+        #   recommended  → interviewed   (super revisits a QC-cleared case → back to AWAITING QC)
+        #   interviewed  → interviewing  (QC 'reopen' sends the awaiting-QC case back to the reviewer)
+        # A subsequent decline is still bucketed as 'interview' (both interviewed & interviewing are
+        # in INTERVIEW_REJECT_FROM). A 'sponsored' (funded) case is post-award and stays put.
         if app.status == 'recommended':
             app.status = 'interviewed'
+            fields.append('status')
+        elif app.status == 'interviewed':
+            app.status = 'interviewing'
             fields.append('status')
         # A pending (cool-off) decline is part of the decision being reversed — clear it so the
         # reopened case is a clean slate (the reviewer re-decides from 'interviewed').
@@ -111,11 +116,14 @@ def cancel_reopen(app):
                                        'realtime_notified_at', 'updated_at'])
         app.decision_reopened_at = None
         restore = ['decision_reopened_at']
-        # Mirror of reopen: restore the status we moved. A decided case is never 'interviewed'
-        # before a reopen (it's recommended/rejected), so an 'interviewed' status here is one we
-        # set when reopening a recommended case → put it back to 'recommended'.
+        # Mirror of reopen (invert the two-step mapping by current status):
+        #   interviewed  → recommended  (undo a super reopen of a QC-cleared case)
+        #   interviewing → interviewed  (undo a QC 'reopen' — restore to AWAITING QC)
         if app.status == 'interviewed':
             app.status = 'recommended'
+            restore.append('status')
+        elif app.status == 'interviewing':
+            app.status = 'interviewed'
             restore.append('status')
         app.save(update_fields=restore)
         row.resulted_in_change = False

@@ -28,6 +28,7 @@ import {
   recordVerdict,
   reopenDecision,
   cancelReopen,
+  recordQcDecision,
   setAwardAmount,
   raiseResolutionItem,
   actionResolutionItem,
@@ -176,6 +177,8 @@ export default function AdminScholarshipDetailPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
+  // QC (2026-07): quality control acts on AWAITING-QC ('interviewed') cases — a `qc` role or super.
+  const canQc = isSuper || role?.role === 'qc'
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
   // Execute (verify/verdict/interview/etc.) is assignment-based: super acts on any application;
   // an admin/reviewer acts ONLY on applications assigned to them (mirrors backend
@@ -220,6 +223,9 @@ export default function AdminScholarshipDetailPage() {
   // (app.decision_reopened_at) so it survives a reload; these only drive the reason input.
   const [reopenOpen, setReopenOpen] = useState(false)    // the "why are you reopening?" box is showing
   const [reopenReason, setReopenReason] = useState('')
+  // QC gate (on an AWAITING-QC 'interviewed' case): Accept, or Reopen with a gaps note.
+  const [qcReopenOpen, setQcReopenOpen] = useState(false)
+  const [qcComments, setQcComments] = useState('')
   // Consolidation: the student's own words (note/story/funding) are collapsed by
   // default under the Sponsor profile — the reviewer checks the AI draft first.
   const [showOwnWords, setShowOwnWords] = useState(false)
@@ -547,6 +553,24 @@ export default function AdminScholarshipDetailPage() {
     } finally { setBusy('') }
   }
 
+  // QC gate on an AWAITING-QC ('interviewed') case. Accept → Recommended; Reopen → back to the
+  // reviewer at 'interviewing' with the gaps comments (emailed to the assigned reviewer).
+  const doQcDecision = async (decision: 'accept' | 'reopen') => {
+    if (!token) return
+    if (decision === 'reopen' && !qcComments.trim()) return
+    setBusy('qc'); setError(''); setVerdictMsg('')
+    try {
+      const result = await recordQcDecision(
+        id, { decision, comments: decision === 'reopen' ? qcComments.trim() : undefined }, { token })
+      setApp(result)
+      setProfile(result.sponsor_profile)
+      loadVerdictState(result)
+      setQcReopenOpen(false); setQcComments('')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('admin.scholarship.qcDecision.error'))
+    } finally { setBusy('') }
+  }
+
   const doSetAwardAmount = async (amount: number | null) => {
     if (!token) return
     setRecAmount(amount)  // optimistic; null clears it (e.g. on Decline)
@@ -731,8 +755,9 @@ export default function AdminScholarshipDetailPage() {
               </span>
             )
           })()}
-          {/* Primary action button — scrolls to the Record Verdict panel */}
-          {canWrite && ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) && (
+          {/* Primary action button — scrolls to the Record Verdict panel. Not shown once
+              'interviewed' (awaiting QC): the verdict is submitted, panel is read-only. */}
+          {canWrite && ['shortlisted', 'profile_complete', 'interviewing'].includes(app.status) && (
             <button
               onClick={() => document.getElementById('record-verdict-panel')?.scrollIntoView({ behavior: 'smooth' })}
               className="ml-auto rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-600"
@@ -2184,6 +2209,42 @@ export default function AdminScholarshipDetailPage() {
 
         {error && <p className="text-red-600 text-xs">{error}</p>}
       </div>
+
+      {/* ── Quality Control — the QC gate on an AWAITING-QC ('interviewed') case (a `qc` role or
+            super). Accept → Recommended; Reopen → back to the reviewer with a gaps note (emailed). ── */}
+      {app.status === 'interviewed' && canQc && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.qcDecision.title')}</h2>
+          <p className="text-xs text-gray-600">{t('admin.scholarship.qcDecision.hint')}</p>
+          {!qcReopenOpen ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => doQcDecision('accept')} disabled={!!busy}
+                className="rounded-lg border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
+                {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.accept')}
+              </button>
+              <button onClick={() => { setQcReopenOpen(true); setQcComments('') }} disabled={!!busy}
+                className="rounded-lg border border-amber-600 bg-white px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50">
+                {t('admin.scholarship.qcDecision.reopen')}
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+              <p className="text-xs font-medium text-amber-900">{t('admin.scholarship.qcDecision.reopenTitle')}</p>
+              <textarea value={qcComments} rows={3} onChange={(e) => setQcComments(e.target.value)}
+                placeholder={t('admin.scholarship.qcDecision.commentsPlaceholder')}
+                className="w-full rounded border border-amber-300 px-2 py-1.5 text-sm" />
+              <div className="flex items-center gap-2">
+                <button onClick={() => doQcDecision('reopen')} disabled={!!busy || !qcComments.trim()}
+                  className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50">
+                  {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.reopenConfirm')}
+                </button>
+                <button onClick={() => { setQcReopenOpen(false); setQcComments('') }}
+                  className="text-xs text-gray-500 hover:text-gray-700">{t('common.cancel')}</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Assign a reviewer (F7) — SUPER-ONLY + audited. First assignment is gated on
             readiness (no open queries OR the SLA lapsed); reassign is allowed any time. ─── */}

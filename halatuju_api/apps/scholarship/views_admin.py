@@ -87,13 +87,15 @@ class _AdminBase(PartnerAdminMixin, APIView):
 
     def _b40_scope(self, admin):
         """B40 Applications access by role:
-          'all'      — super + admin (see every application)
+          'all'      — super + admin + qc (see every application, read)
           'assigned' — reviewer (only the applicants assigned to them)
           'none'     — partner / anyone else (B40 is not their page)
+        (qc's only WRITE is the QC gate — see _require_qc; it has no reviewer-write via
+        _can_review_app since it isn't super and isn't assigned.)
         """
         if admin is None or admin.role == 'partner':
             return 'none'
-        if self.has_role(admin, 'admin'):   # super + admin
+        if self.has_role(admin, 'admin') or admin.role == 'qc':   # super + admin + qc
             return 'all'
         if admin.role == 'reviewer':
             return 'assigned'
@@ -142,6 +144,25 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         if not self._can_review_app(admin, app):
             return None, None, self._deny_role()
+        return app, admin, None
+
+    def _require_qc(self, request, pk):
+        """Auth prologue for the QC gate. Returns (app, admin, None) when the caller may QC this
+        application — a `super` or a `qc`-role admin, and the app is in the AWAITING-QC stage
+        (`interviewed`) — else (None, None, error_response). QC is deliberately NOT assignment-
+        scoped (it checks a reviewer's work across the queue) and is distinct from reviewer writes."""
+        admin = self.get_admin(request)
+        if not admin:
+            return None, None, self._deny()
+        if not (self.has_role(admin, 'super') or admin.role == 'qc'):
+            return None, None, self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if app.status != 'interviewed':
+            return None, None, Response(
+                {'error': 'This case is not awaiting QC.', 'code': 'not_awaiting_qc'},
+                status=status.HTTP_400_BAD_REQUEST)
         return app, admin, None
 
 
@@ -323,7 +344,11 @@ class AdminVerifyAcceptView(_AdminBase):
             if not profile.nric_verified:
                 profile.nric_verified = True
                 profile.save(update_fields=['nric_verified'])
-            app.status = 'recommended'
+            # QC (2026-07): the reviewer's verify-accept ("submit verdict") lands the case in
+            # 'interviewed' = AWAITING QC (was 'recommended'). QC then clears it to 'recommended'
+            # (qc-decision accept) or reopens it (qc-decision reopen). The reviewer still owns
+            # identity verification (nric_verified + checklist) here.
+            app.status = 'interviewed'
             app.verified_at = timezone.now()
             app.verified_by = admin.email
             app.verify_checklist = request.data.get('checklist', {}) or {}
@@ -1183,6 +1208,50 @@ class AdminReopenDecisionView(_AdminBase):
         except reopen_service.ReopenError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminQcDecisionView(_AdminBase):
+    """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen', comments?} — the QC gate on an
+    AWAITING-QC ('interviewed') case. QC = a `qc`-role admin or super (never the reviewer).
+      accept → 'interviewed' → 'recommended' (the case becomes pool-eligible).
+      reopen → require `comments` (what was missing/the gaps); reopen the decision back to the
+               reviewer ('interviewing', reopened banner + DecisionReopen audit) and email the
+               assigned reviewer the comments."""
+    def post(self, request, pk):
+        app, admin, err = self._require_qc(request, pk)
+        if err:
+            return err
+        decision = (request.data.get('decision') or '').strip()
+        if decision == 'accept':
+            app.status = 'recommended'
+            app.save(update_fields=['status'])
+            logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
+            return Response(AdminApplicationDetailSerializer(app).data)
+        if decision == 'reopen':
+            comments = (request.data.get('comments') or '').strip()
+            if not comments:
+                return Response(
+                    {'error': 'Say what was missing so the reviewer can fix it.',
+                     'code': 'comments_required'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                reopen_service.reopen_decision(app, by_admin=admin, reason=comments)
+            except reopen_service.ReopenError as e:
+                return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+            reviewer = app.assigned_to
+            if reviewer is not None and getattr(reviewer, 'email', ''):
+                from .emails import send_qc_returned_email
+                name = getattr(getattr(app, 'profile', None), 'name', '') or ''
+                send_qc_returned_email(
+                    to_email=reviewer.email,
+                    reviewer_name=getattr(reviewer, 'name', ''),
+                    ref=pool.pool_ref(app.id),
+                    applicant_name=name,
+                    qc_comments=comments,
+                )
+            logger.info('AUDIT qc_reopen admin_id=%s app_id=%s', admin.id, pk)
+            return Response(AdminApplicationDetailSerializer(app).data)
+        return Response({'error': 'bad_decision', 'code': 'bad_decision'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminCancelReopenView(_AdminBase):

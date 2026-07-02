@@ -84,6 +84,7 @@ from .views_admin import (
     AdminRecordVerdictView,
     AdminReopenDecisionView,
     AdminCancelReopenView,
+    AdminQcDecisionView,
     AdminRequestInfoView,
     AdminResolutionItemView,
     AdminAssignReviewerView,
@@ -225,6 +226,8 @@ urlpatterns = [
     # cancel-reopen restores it with no change.
     path('admin/scholarship/applications/<int:pk>/reopen-decision/', AdminReopenDecisionView.as_view()),
     path('admin/scholarship/applications/<int:pk>/cancel-reopen/', AdminCancelReopenView.as_view()),
+    # QC gate on an AWAITING-QC ('interviewed') case: accept → recommended, or reopen → back to reviewer.
+    path('admin/scholarship/applications/<int:pk>/qc-decision/', AdminQcDecisionView.as_view()),
     path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
     # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
     path('admin/reviewer-profile/', ReviewerProfileView.as_view()),

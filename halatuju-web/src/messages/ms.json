@@ -2862,7 +2862,7 @@
         "shortlisted": "Disenarai pendek",
         "profile_complete": "Profil lengkap",
         "interviewing": "Temu duga",
-        "interviewed": "Selesai temu duga",
+        "interviewed": "Menunggu QC",
         "recommended": "Disyorkan",
         "awarded": "Dianugerahkan",
         "active": "Aktif",
@@ -3364,6 +3364,16 @@
         "finaliseNoDraft": "Keputusan disimpan. Jana draf profil dahulu sebelum memuktamadkan.",
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
         "rateTitle": "Nilai pengesahan AI"
+      },
+      "qcDecision": {
+        "title": "Kawalan mutu",
+        "hint": "Kes ini menunggu kawalan mutu (QC). Terima untuk memindahkannya ke Disyorkan, atau Buka semula untuk menghantarnya kembali kepada penyemak dengan komen anda.",
+        "accept": "Terima",
+        "reopen": "Buka semula",
+        "reopenTitle": "Apa yang kurang? (dikongsi dengan penyemak)",
+        "commentsPlaceholder": "Nyatakan kekurangan / perkara yang perlu diperbaiki oleh penyemak",
+        "reopenConfirm": "Buka semula & maklum penyemak",
+        "error": "Tidak dapat menghantar keputusan QC."
       },
       "caveats": {
         "studentAnswer": "Jawapan pelajar",

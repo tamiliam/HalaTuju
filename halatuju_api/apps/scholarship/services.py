@@ -1173,9 +1173,14 @@ def _maybe_autofinalise(application, session):
 
 
 def submit_interview(session):
-    """Phase C: finalise an interview session. Marks it submitted and advances the
-    application profile_complete/interviewing → interviewed. Idempotent on the
+    """Phase C: finalise an interview session. Marks it submitted and moves the
+    application into the reviewer's working state ('interviewing'). Idempotent on the
     session status. Returns True if it advanced the application.
+
+    QC (2026-07): submitting FINDINGS no longer advances to 'interviewed'. 'interviewed'
+    is now the AWAITING-QC stage, reached only when the reviewer submits the full verdict
+    (verify-accept). A findings-submitted case sits in 'interviewing' until then — querying
+    still locks here via ``querying_locked``'s submitted-session check (no regression).
 
     S4: submitting also auto-finalises the polished profile from the findings (gated +
     best-effort — see _maybe_autofinalise) and is the point querying locks."""
@@ -1186,8 +1191,8 @@ def submit_interview(session):
         session.save(update_fields=['status', 'submitted_at'])
     app = session.application
     advanced = False
-    if app.status in ('profile_complete', 'interviewing'):
-        app.status = 'interviewed'
+    if app.status == 'profile_complete':
+        app.status = 'interviewing'
         app.save(update_fields=['status'])
         advanced = True
     _maybe_autofinalise(app, session)
