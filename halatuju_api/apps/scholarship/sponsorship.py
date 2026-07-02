@@ -111,7 +111,10 @@ def is_fundable(application):
         return False
     if application.award_amount is None or application.award_amount <= 0:
         return False
-    if application.status in pool.IN_PROGRAMME_OR_BEYOND:  # already awarded / funded / closed
+    # Fundable ONLY at the QC-cleared 'recommended' stage — not before QC clears them
+    # (under review / awaiting QC), not after a funder commits (awarded/active/…/closed).
+    # Mirrors pool.is_pool_eligible / eligible_pool_queryset exactly.
+    if application.status != 'recommended':
         return False
     if application.sponsorships.filter(status__in=Sponsorship.HOLDING).exists():
         return False

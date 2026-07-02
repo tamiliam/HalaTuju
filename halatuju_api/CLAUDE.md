@@ -518,6 +518,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-02)
 
+**▶ BUILT, AWAITING DEPLOY — Sponsor visibility bound to the QC-Accept transition (2026-07-02; worktree
+`.worktrees/mask-accepted`; NO migration; retro `docs/retrospective-2026-07-02-publish-at-qc.md`; decision in
+`docs/decisions.md`).** The clean state-machine fix for "a student was shown to sponsors before QC cleared them."
+- **Publish moved off the reviewer's verdict onto QC-Accept.** `AdminRecordVerdictView` finalise now only
+  PREPARES the profile (`final_markdown`/`anon_markdown` + card blurb) and leaves it unpublished;
+  `AdminQcDecisionView` accept calls the new **`pool.publish_profile_to_pool(app)`** (idempotent +
+  PII-backstopped) — the SINGLE point a student becomes sponsor-visible (entering `recommended`).
+- **Belt-and-suspenders read gate:** `pool.is_pool_eligible`, `pool.eligible_pool_queryset`, and
+  `sponsorship.is_fundable` now hard-require `status == 'recommended'` — an awaiting-QC case can't leak or be
+  funded even if a profile is (accidentally) published. Reopen/cancel-reopen unchanged.
+- State machine: `Under review —[Reviewer Accept]→ Awaiting QC —[QC Accept ⇒ PUBLISH]→ Recommended —[Sponsor
+  Support]→ Awarded`. No student-visible change (student view masks interviewed/recommended alike).
+- 1960 scholarship pytest (net; +5 `TestPublishBoundToQc`, 1 reopen test updated); NO FE change (reviewer
+  message stays accurate; pool is backend-gated); NO migration.
+- **▶ DEPLOY (owner-gated): push `main` — code only, NO migrate-first, NO data backfill.** The 12 legacy
+  awaiting-QC students still carry `anon_markdown`/`anon_blurb`/share-consent (verified), so when Suresh
+  QC-Accepts each, `publish_profile_to_pool` re-publishes it automatically → back in the pool, one at a time
+  (sponsors notified per acceptance, not a bulk blast). IDs: 20,21,33,35,51,53,62,72,75,76,95,104.
+
 **▶ JUST SHIPPED — Senior `qc` role + BrightPath/HalaTuju nav split (2026-07-02, follow-up to the QC gate).**
 `qc` is now a superset: assignable + reviews its assigned cases (like a view-all admin) AND QCs others — with
 a **self-QC guard** (`_require_qc` → 403 `self_qc_forbidden`; cockpit hides the QC box when the qc is the
