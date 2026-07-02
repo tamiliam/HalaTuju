@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Review permission is now assignment-based (view-all admin can review its assigned students).**
+  Decoupled "what you can SEE" (role) from "what you can ACT on" (assignment). A `role='admin'` keeps
+  full read-all visibility AND can now WRITE on ONLY the applications assigned to them; `reviewer`
+  unchanged (assigned-only); `super` acts on any; `partner` still blocked. A view-all admin can now be
+  **assigned** applicants (added to the assignable list + `services._can_review`). Implemented via one
+  shared gate — `_AdminBase._can_review_app` / `_require_app_write` — replacing the role-only
+  `_require_reviewer` across 25 per-application write endpoints (+2 special: disbursement / resolution
+  actions authorise via the tranche/item's application). Frontend cockpit `canWrite` is now
+  `super || assigned-to-me` (role endpoint returns `admin_id`). As a bonus this tightens three profile
+  writes (anon-publish / profile-edit / publish) that were previously role-only to assignment-scoped.
+  Backend-only auth change, **no migration**. +13 pytest (new `test_assignment_write_permission.py`),
+  2 tests updated (admin is now an assignable target).
+- **Partner admin nav trimmed** — Guide and FAQ removed from the `partner` role's menu (they remain for
+  admin/super/reviewer).
+
 ### Added
 - **Declared informal income (income model, Phase 2A).** A salary-route working member with **no
   payslip/EPF** may now declare an average monthly wage in the income wizard. It is ACCEPTED as a real

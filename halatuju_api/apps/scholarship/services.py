@@ -459,11 +459,13 @@ class AssignmentError(Exception):
 
 
 def _can_review(admin):
-    """A valid assignment target is an active reviewer (a super counts — they can
-    review too). A viewer cannot be assigned work."""
+    """A valid assignment target is an active reviewer, admin, or super. Assignment now
+    grants selective WRITE access even to a view-all 'admin' (2026-07): an admin sees every
+    application read-only but can only act on those assigned to them. A 'partner' (org rep)
+    cannot be assigned work."""
     if admin is None or not getattr(admin, 'is_active', False):
         return False
-    return bool(getattr(admin, 'is_super_admin', False)) or admin.role in ('reviewer', 'super')
+    return bool(getattr(admin, 'is_super_admin', False)) or admin.role in ('reviewer', 'super', 'admin')
 
 
 def assign_reviewer(application, *, reviewer, by_admin, now=None):

@@ -175,11 +175,12 @@ export default function AdminScholarshipDetailPage() {
   const id = Number(params?.id)
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  // Execute (verify/verdict/etc.) is for super + reviewer only; admin is read-only.
-  const effRole = role?.is_super_admin ? 'super' : (role?.role ?? 'reviewer')
-  const canWrite = effRole === 'super' || effRole === 'reviewer'
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
+  // Execute (verify/verdict/interview/etc.) is assignment-based: super acts on any application;
+  // an admin/reviewer acts ONLY on applications assigned to them (mirrors backend
+  // _can_review_app). A non-assigned admin still SEES everything, but read-only.
+  const canWrite = isSuper || (app?.assigned_to_id != null && app.assigned_to_id === (role?.admin_id ?? null))
   const [caseSummary, setCaseSummary] = useState<VerdictCaseSummary | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
   const [busy, setBusy] = useState('')

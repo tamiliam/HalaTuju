@@ -150,9 +150,22 @@ class TestReviewerAssignment(TestCase):
     def test_requires_auth(self):
         self.assertEqual(self._assign(self.reviewer.id).status_code, 401)
 
-    def test_cannot_assign_a_viewer(self):
+    def test_can_assign_an_admin(self):
+        # 2026-07: a view-all admin can now be assigned selective review work (assignment
+        # grants WRITE on the assigned application; their read scope stays all).
         self._auth('super-uid')
-        r = self._assign(self.viewer.id)
+        r = self._assign(self.viewer.id)   # self.viewer is role='admin'
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.assigned_to_id, self.viewer.id)
+
+    def test_cannot_assign_a_partner(self):
+        # A partner (org rep) has no review role and cannot be assigned work.
+        partner = PartnerAdmin.objects.create(
+            supabase_user_id='partner-assign-uid', role='partner', is_active=True,
+            name='Partner', email='partner-assign@example.com')
+        self._auth('super-uid')
+        r = self._assign(partner.id)
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'not_reviewer')
 
