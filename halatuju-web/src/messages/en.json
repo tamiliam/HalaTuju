@@ -1981,6 +1981,18 @@
           "title": "Upload your mother's income proof",
           "desc": "Your mother is working, but we don't have her income document yet. Please upload her latest salary slip or EPF (KWSP) statement — we count the whole household's income."
         },
+        "guardian_income_proof_missing": {
+          "title": "Upload your guardian's income proof",
+          "desc": "Your guardian is working, but we don't have their income document yet. Please upload their latest salary slip or EPF (KWSP) statement — we count the whole household's income."
+        },
+        "brother_income_proof_missing": {
+          "title": "Upload your elder brother's income proof",
+          "desc": "Your elder brother is working, but we don't have his income document yet. Please upload his latest salary slip or EPF (KWSP) statement — we count the whole household's income."
+        },
+        "sister_income_proof_missing": {
+          "title": "Upload your elder sister's income proof",
+          "desc": "Your elder sister is working, but we don't have her income document yet. Please upload her latest salary slip or EPF (KWSP) statement — we count the whole household's income."
+        },
         "father_status_unknown": {
           "title": "Tell us about your father",
           "desc": "We don't have your father's details. Is he working (and where), or is he a homemaker, retired, unemployed, passed away, or not in contact? This helps us understand your full household income."
@@ -3267,6 +3279,7 @@
           "income_declared_accepted_evidenced": "Declared income for {members} is accepted — a supporting document (employer/wage letter, bank statements, or a community letter) backs the stated wage. Included in the per-capita.",
           "income_declared_needs_evidence": "{members} declared a wage, but there's no payslip, no valid STR, and no supporting document — so it can't count yet. Proof is required from the student: any one of an employer/wage letter, bank statements showing income, or a community/penghulu letter. The request has been raised in the Action Centre.",
           "unemployment_epf_corroborated": "EPF corroborates that {members} isn't currently employed (no active employer / lapsed contributions) — supports the household's limited-income picture. Soft signal.",
+          "household_size_confirm": "The people described add up to {described}, but household size is entered as {size} — a smaller size overstates per-capita income. Confirm the true household size at interview. Soft signal.",
           "utility_percapita_b40": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — consistent with a B40 household (soft, imperfect signal).",
           "utility_percapita_high": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — high (M40/T20 consumption pattern). Worth probing at interview (soft signal).",
           "utility_hardship": "Hardship signal: the utility bills carry meaningful arrears (unpaid balance) — supports financial need.",
@@ -3293,6 +3306,9 @@
           "utility_address_mismatch": "Utility-bill address differs from the home address — the student has been asked which is their current home.",
           "father_income_proof_missing": "Father works but no income document on file — the student has been asked to upload his salary slip / EPF.",
           "mother_income_proof_missing": "Mother works but no income document on file — the student has been asked to upload her salary slip / EPF.",
+          "guardian_income_proof_missing": "Guardian works but no income document on file — the student has been asked to upload their salary slip / EPF.",
+          "brother_income_proof_missing": "Elder brother works but no income document on file — the student has been asked to upload his salary slip / EPF.",
+          "sister_income_proof_missing": "Elder sister works but no income document on file — the student has been asked to upload her salary slip / EPF.",
           "father_status_unknown": "Father's work/status not provided — the student has been asked whether he works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
           "mother_status_unknown": "Mother's work/status not provided — the student has been asked whether she works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
           "income_doc_stale": "Salary slip on file is over 3 months old — the student has been asked to upload a current one.",

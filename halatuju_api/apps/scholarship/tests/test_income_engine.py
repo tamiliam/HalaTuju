@@ -450,6 +450,8 @@ from apps.scholarship.income_engine import (  # noqa: E402
     declared_income_gaps,
     epf_confirms_unemployment, unemployment_status, unemployed_members,
     unemployment_detail_gap, unemployment_epf_gap, unemployment_corroborated_members,
+    household_status_gaps, member_income_status, household_size_shortfall,
+    _described_household_count,
 )
 import datetime as _dt
 
@@ -733,6 +735,74 @@ class TestUnemploymentDetail(SimpleTestCase):
         self.assertFalse(unemployment_detail_gap(app))
         self.assertFalse(unemployment_epf_gap(app))
         self.assertEqual(unemployment_corroborated_members(app), [])
+
+
+class TestHouseholdCompleteness(SimpleTestCase):
+    """Phase 2C — income-proof gaps generalised to all roster earners (P2) + the household-size
+    over-count consistency signal (P4) + the D4 guard (a studying sibling is never an earner)."""
+
+    def _roster(self, *, father='', mother='', others=None, docs=(), size=4,
+                siblings_school=0, siblings_tertiary=0):
+        app = _app(list(docs), household_size=size)
+        app.income_route = 'salary'
+        app.father_occupation = father
+        app.mother_occupation = mother
+        app.other_family_members = others or []
+        app.siblings_in_school = siblings_school
+        app.siblings_in_tertiary = siblings_tertiary
+        return app
+
+    # ── P2: proof gaps across the whole household ──
+    def test_working_guardian_surfaces_proof(self):
+        # No income docs on file (the fake QS can't tell members apart, so we avoid a shared slip):
+        # a working guardian with no evidence → a proof gap, alongside the earning parent's.
+        app = self._roster(father='gov', mother='homemaker',
+                           others=[{'role': 'guardian', 'occupation': 'driver'}])
+        gaps = household_status_gaps(app)
+        self.assertIn({'member': 'guardian', 'need': 'proof'}, gaps)
+        self.assertIn({'member': 'father', 'need': 'proof'}, gaps)
+
+    def test_non_earning_member_no_gap(self):
+        app = self._roster(father='gov', mother='homemaker',
+                           others=[{'role': 'guardian', 'occupation': 'retired'}],
+                           docs=[_bill('salary_slip', {'gross_income': 'RM1500'})])
+        self.assertEqual([g for g in household_status_gaps(app) if g['member'] == 'guardian'], [])
+
+    def test_blank_parent_is_status_gap_only_parents(self):
+        app = self._roster(father='', mother='homemaker',
+                           others=[{'role': 'brother', 'occupation': 'hawker'}])
+        gaps = household_status_gaps(app)
+        self.assertIn({'member': 'father', 'need': 'status'}, gaps)     # blank parent → status
+        self.assertIn({'member': 'brother', 'need': 'proof'}, gaps)     # other-member → proof only
+        self.assertEqual(member_income_status(app, 'brother'), 'need_proof')
+
+    # ── P4: household-size over-count signal ──
+    def test_overcount_flags(self):
+        app = self._roster(father='gov', mother='homemaker', size=4,
+                           siblings_school=1, siblings_tertiary=1)  # 1+1+1+1+1 = 5 described > 4
+        self.assertEqual(household_size_shortfall(app), {'described': 5, 'size': 4})
+
+    def test_match_or_larger_no_flag(self):
+        base = dict(father='gov', mother='homemaker', siblings_school=1, siblings_tertiary=1)  # 5
+        self.assertIsNone(household_size_shortfall(self._roster(size=5, **base)))
+        self.assertIsNone(household_size_shortfall(self._roster(size=8, **base)))  # bigger = benign
+
+    def test_deceased_not_counted(self):
+        # father deceased → not a household head; student+mother = 2, size 2 → no over-count.
+        self.assertIsNone(household_size_shortfall(
+            self._roster(father='deceased', mother='homemaker', size=2)))
+
+    def test_no_size_no_flag(self):
+        self.assertIsNone(household_size_shortfall(self._roster(father='gov', size=None)))
+
+    # ── D4: a studying sibling is never an earner, always a denominator head ──
+    def test_studying_sibling_never_earner(self):
+        from apps.scholarship.family import earning_members
+        app = self._roster(father='gov', siblings_tertiary=2)   # 2 siblings via the stepper
+        self.assertNotIn('brother', earning_members(app))
+        self.assertNotIn('sister', earning_members(app))
+        # …but they DO count toward the described household size (student + father + 2 siblings).
+        self.assertEqual(_described_household_count(app), 4)
 
 
 class TestBillingMonthParse(SimpleTestCase):

@@ -238,7 +238,7 @@ def _utility_context(application):
     combined water+electricity per-capita as a B40 proxy, + an arrears hardship signal.
     Imperfect — surfaced as evidence the coordinator weighs, not a verdict driver."""
     from .income_engine import (utility_per_capita, utility_hardship,
-                                unemployment_corroborated_members)
+                                unemployment_corroborated_members, household_size_shortfall)
     items = []
     pc = utility_per_capita(application)
     if pc and pc['signal'] == 'b40':
@@ -252,6 +252,11 @@ def _utility_context(application):
     corroborated = unemployment_corroborated_members(application)
     if corroborated:
         items.append(_item('unemployment_epf_corroborated', members=corroborated))
+    # Phase 2C (P4): the people described outnumber the stated household size → the per-capita
+    # denominator may be too small (income overstated). Soft reviewer flag to confirm; never a gate.
+    hs = household_size_shortfall(application)
+    if hs:
+        items.append(_item('household_size_confirm', described=hs['described'], size=hs['size']))
     return items
 
 def _verdict_income(application):

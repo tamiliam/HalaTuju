@@ -193,6 +193,35 @@ class TestUnemploymentQueries(_Base):
             code__in=('unemployment_detail_unknown', 'unemployment_epf_missing')).exists())
 
 
+class TestHouseholdProofQueries(_Base):
+    """Phase 2C (P2) — an income-proof request generalised to a working non-parent roster earner
+    (guardian/brother/sister), same pattern as the parents; clears when their payslip arrives."""
+
+    def setUp(self):
+        super().setUp()   # father='gov' + a father salary_slip on file → father satisfied
+        self.app.other_family_members = [{'role': 'guardian', 'occupation': 'driver'}]
+        self.app.save()
+
+    def test_working_guardian_proof_request_raised_and_clears(self):
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='guardian_income_proof_missing')
+        self.assertEqual((item.source, item.kind, item.doc_type), ('check2', 'doc', 'salary_slip'))
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='guardian',
+            storage_path='x/guardian')
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+        self.assertEqual(item.resolved_by, 'system')
+
+    def test_non_earning_member_no_request(self):
+        self.app.other_family_members = [{'role': 'brother', 'occupation': 'unemployed'}]
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertFalse(self.app.resolution_items.filter(
+            code__in=('brother_income_proof_missing', 'guardian_income_proof_missing')).exists())
+
+
 class TestUtilityClarifyQueries(_Base):
     """#8: the utility holder/address consistency checks also surface as student
     clarify queries (dark until CHECK2_STUDENT_QUERIES_ENABLED gates the call sites)."""
