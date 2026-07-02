@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Senior `qc` role + BrightPath/HalaTuju nav split.** The `qc` role is now a **senior QC**: it can be
+  **assigned** applicants and **review** them (like a view-all admin) AND QC other reviewers' cases —
+  with a **self-QC guard** (`_require_qc` returns 403 `self_qc_forbidden`, and the QC box is hidden in the
+  cockpit, when a `qc` is the assigned reviewer of the case). `services._can_review` + the assignable-admins
+  list now include `qc`. **Nav split:** `admin` and `qc` are BrightPath (bursary) roles → menu is
+  `Scholarship · Sponsors · Profile · Guide · FAQ` (dropped the HalaTuju course-selector pages
+  Dashboard/Students/Course-Data, which only `super` retains); `partner` (HalaTuju org rep) and `reviewer`
+  unchanged. BrightPath roles landing on `/admin` now redirect to `/admin/scholarship` (no HalaTuju
+  dashboard for them). No migration. +5 pytest.
+
 ### Added
 - **Household completeness (income model, Phase 2C).** Income-proof requests are now raised for
   **every working roster member**, not just the parents: `income_engine.household_status_gaps`

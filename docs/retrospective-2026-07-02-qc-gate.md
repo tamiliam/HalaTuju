@@ -52,3 +52,19 @@ as **AWAITING QC**:
 ## Verification
 3090 backend tests pass (scholarship + courses), incl. 11 new (`test_qc_gate.py`) + 5 updated. `next build`
 compiled successfully; app code type-clean at Next's target. Choices-only migration (no DDL).
+
+## Follow-up (same day) — senior `qc` role + BrightPath/HalaTuju nav split
+The owner refined the model live: Suresh (a co-founder) wants **one** account that (a) reviews his assigned
+students *and* (b) QCs others, plus (c) keeps a view-all admin surface — but only the **bursary** side.
+Delivered:
+- **`qc` = senior superset:** assignable (`services._can_review` + assignable list include `qc`) and can
+  review its assigned cases (the assignment-based `_can_review_app` already permits it); **self-QC guard**
+  in `_require_qc` (403 `self_qc_forbidden`) + the cockpit hides the QC box when the qc is the assigned
+  reviewer — encoding the owner's "I'll QC the student he's reviewing" rule in code.
+- **Nav split by product:** `admin`+`qc` (BrightPath) → `Scholarship · Sponsors · Profile · Guide · FAQ`;
+  the HalaTuju course-selector pages (Dashboard/Students/Course-Data) stay with `super` (+ `partner`, the
+  HalaTuju org rep). BrightPath roles landing on `/admin` now redirect to `/admin/scholarship`.
+- No migration. +5 pytest (3107 scholarship+courses green). `next build` exit 0.
+- **What went well:** the assignment-based permission from earlier the same day meant "qc can review its
+  assigned case" needed *zero* new write logic — only making `qc` an assignable target + the self-QC guard.
+- **Deferred:** partner Scholarship view → **TD-155**; the auto-default QC queue filter (cosmetic).

@@ -126,3 +126,43 @@ class TestQcGate(TestCase):
         self._auth('qc-uid')
         r = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/')
         self.assertEqual(r.status_code, 200)
+
+    # --- senior QC: assignable + reviews its own cases, but can't self-QC -------
+    def test_qc_is_assignable(self):
+        self._auth('super-uid')
+        r = self.client.get('/api/v1/admin/scholarship/assignable-admins/')
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(self.qc.id, {a['id'] for a in r.json()['admins']})   # qc is now assignable
+
+    def test_qc_can_review_its_assigned_case(self):
+        # A senior qc assigned a case can act on it (reviewer write) — e.g. the mentoring flag.
+        p = StudentProfile.objects.create(supabase_user_id='s-qc-rev', nric='030101-14-0007', name='Q')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='interviewing',
+            profile_completed_at=timezone.now(), assigned_to=self.qc)
+        self._auth('qc-uid')
+        r = self.client.patch(f'/api/v1/admin/scholarship/applications/{app.id}/',
+                              {'mentoring_candidate': True}, format='json')
+        self.assertEqual(r.status_code, 200)
+
+    def test_qc_cannot_qc_its_own_reviewed_case(self):
+        # An awaiting-QC case the qc themselves reviewed → self-QC guard blocks it (403).
+        p = StudentProfile.objects.create(supabase_user_id='s-qc-own', nric='030101-14-0008', name='O')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='interviewed',
+            profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
+            assigned_to=self.qc)
+        self._auth('qc-uid')
+        r = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/qc-decision/',
+                             {'decision': 'accept'}, format='json')
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.json()['code'], 'self_qc_forbidden')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewed')   # unchanged
+
+    def test_super_can_qc_a_case_it_is_assigned(self):
+        # Super is exempt from the self-QC guard (owner override).
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(assigned_to_id=self.superadmin.id)
+        self._auth('super-uid')
+        r = self._qc({'decision': 'accept'})
+        self.assertEqual(r.status_code, 200)

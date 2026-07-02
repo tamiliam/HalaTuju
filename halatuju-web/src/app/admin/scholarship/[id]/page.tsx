@@ -2211,8 +2211,10 @@ export default function AdminScholarshipDetailPage() {
       </div>
 
       {/* ── Quality Control — the QC gate on an AWAITING-QC ('interviewed') case (a `qc` role or
-            super). Accept → Recommended; Reopen → back to the reviewer with a gaps note (emailed). ── */}
-      {app.status === 'interviewed' && canQc && (
+            super). Accept → Recommended; Reopen → back to the reviewer with a gaps note (emailed).
+            Self-QC guard: a `qc` who reviewed this case cannot QC it (hidden here; backend blocks it too). ── */}
+      {app.status === 'interviewed' && canQc
+        && !(role?.role === 'qc' && app.assigned_to_id === (role?.admin_id ?? null)) && (
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.qcDecision.title')}</h2>
           <p className="text-xs text-gray-600">{t('admin.scholarship.qcDecision.hint')}</p>

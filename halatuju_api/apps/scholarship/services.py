@@ -459,13 +459,14 @@ class AssignmentError(Exception):
 
 
 def _can_review(admin):
-    """A valid assignment target is an active reviewer, admin, or super. Assignment now
-    grants selective WRITE access even to a view-all 'admin' (2026-07): an admin sees every
-    application read-only but can only act on those assigned to them. A 'partner' (org rep)
-    cannot be assigned work."""
+    """A valid assignment target is an active reviewer, admin, qc, or super. Assignment grants
+    selective WRITE access: a view-all 'admin' or the senior 'qc' role sees every application
+    read-only but can only ACT on those assigned to them (2026-07). The 'qc' role can ALSO review
+    its assigned cases (a senior QC who reviews + oversees); its own reviewed cases are then QC'd
+    by someone else (the self-QC guard in _require_qc). A 'partner' (org rep) cannot be assigned."""
     if admin is None or not getattr(admin, 'is_active', False):
         return False
-    return bool(getattr(admin, 'is_super_admin', False)) or admin.role in ('reviewer', 'super', 'admin')
+    return bool(getattr(admin, 'is_super_admin', False)) or admin.role in ('reviewer', 'super', 'admin', 'qc')
 
 
 def assign_reviewer(application, *, reviewer, by_admin, now=None):
