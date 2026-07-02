@@ -89,6 +89,32 @@ def _cutoff_ok(start, now):
     return now < (start - timedelta(hours=hours))
 
 
+def held_starts(reviewer, *, exclude_application=None):
+    """The start times this reviewer genuinely HOLDS — the single source of truth for
+    conflict-blocking (propose grid, propose guard, book guard, student re-pick menu).
+
+    Hold semantics (owner's design, 2026-07-02):
+      - an UNBOOKED application's active proposals all hold the reviewer's time (the
+        student may pick any of them);
+      - once an application is BOOKED, only its booked slot holds — the unpicked
+        siblings are RELEASED (they stay active as the student's re-pick menu, but no
+        longer block the reviewer offering those times to someone else; first to book
+        wins, and a released time re-offered elsewhere disappears from the original
+        student's re-pick menu).
+    """
+    if reviewer is None:
+        return set()
+    from django.db.models import F, Q
+    qs = InterviewSlot.objects.filter(reviewer=reviewer, is_active=True)
+    if exclude_application is not None:
+        qs = qs.exclude(application=exclude_application)
+    # Drop the released siblings: slots of a BOOKED application that are not its
+    # booked slot. Everything else (unbooked proposals + booked slots) holds.
+    qs = qs.exclude(Q(application__interview_status='booked')
+                    & ~Q(application__interview_slot_id=F('id')))
+    return set(qs.values_list('start', flat=True))
+
+
 # ── Reviewer side: propose / withdraw ─────────────────────────────────────────
 
 def _send_wa_proposed(application, student_name, reviewer=None):
@@ -162,14 +188,11 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
     if not future:
         raise SchedulingError('no_future_slots')
 
-    # Reviewer-wide conflict: never offer a time this reviewer already holds (proposed or
-    # booked) for ANOTHER applicant — keeps one reviewer from being double-booked. The UI
-    # greys these out; this is the server guard / race backstop.
-    held = set(
-        InterviewSlot.objects
-        .filter(reviewer=reviewer, is_active=True)
-        .exclude(application=application)
-        .values_list('start', flat=True))
+    # Reviewer-wide conflict: never offer a time this reviewer already HOLDS for ANOTHER
+    # applicant — keeps one reviewer from being double-booked. A booked application's
+    # released siblings no longer hold (see held_starts), so those times are re-offerable.
+    # The UI greys held times out; this is the server guard / race backstop.
+    held = held_starts(reviewer, exclude_application=application)
     if any(s in held for s in future):
         raise SchedulingError('reviewer_conflict')
 
@@ -296,15 +319,22 @@ def book_slot(application, *, slot_id, now=None):
 
     reviewer = slot.reviewer or application.assigned_to
 
-    # Race backstop: don't let two students land the same reviewer at the same time. (The
-    # propose grid already greys a reviewer's held times, but a concurrent book could slip
-    # through.) Self-reschedule is exempt via the exclude.
+    # Race backstop, in two strengths:
+    #  - FIRST booking: only a confirmed BOOKING elsewhere blocks (first to book wins —
+    #    a mere proposal to another student must not stop the student who acts first).
+    #  - RE-PICK (reschedule): anything the reviewer now HOLDS elsewhere blocks, incl.
+    #    a released time re-offered to another student — that option is hidden from the
+    #    re-pick menu, but a stale page could still POST it.
     if reviewer is not None:
-        from .models import ScholarshipApplication
-        clash = (ScholarshipApplication.objects
-                 .filter(assigned_to=reviewer, interview_status='booked', interview_start=slot.start)
-                 .exclude(id=application.id).exists())
-        if clash:
+        if rescheduling:
+            conflict = slot.start in held_starts(reviewer, exclude_application=application)
+        else:
+            from .models import ScholarshipApplication
+            conflict = (ScholarshipApplication.objects
+                        .filter(assigned_to=reviewer, interview_status='booked',
+                                interview_start=slot.start)
+                        .exclude(id=application.id).exists())
+        if conflict:
             raise SchedulingError('reviewer_conflict')
 
     student_email, student_name = _student_identity(application)
@@ -429,3 +459,45 @@ def request_alternatives(application, *, note='', now=None):
             applicant_name=student_name, note=application.interview_alternatives_note,
             ref=pool.pool_ref(application.id))
     return application
+
+
+# ── Student → reviewer message channel ────────────────────────────────────────
+
+MESSAGE_MAX_LEN = 1000
+MESSAGE_RATE_LIMIT_PER_HOUR = 5
+
+
+def send_student_message(application, *, text, now=None):
+    """The student sends a short free-text note to their assigned reviewer.
+
+    Deliberately available in EVERY interview state and with NO cutoff — this is the
+    pressure valve for "I'm running late" / "I'm sick" when reschedule/cancel are
+    already locked (inside the 12h window, even one hour before the call). Stored on
+    the application (cockpit thread + audit) and emailed to the assigned reviewer
+    best-effort; the student never sees the reviewer's contact details.
+    """
+    now = now or timezone.now()
+    text = (text or '').strip()
+    if not text:
+        raise SchedulingError('empty_message')
+    text = text[:MESSAGE_MAX_LEN]
+    reviewer = application.assigned_to
+    if reviewer is None:
+        raise SchedulingError('no_reviewer')
+
+    from .models import InterviewMessage
+    recent = (InterviewMessage.objects
+              .filter(application=application, created_at__gte=now - timedelta(hours=1))
+              .count())
+    if recent >= MESSAGE_RATE_LIMIT_PER_HOUR:
+        raise SchedulingError('rate_limited')
+
+    message = InterviewMessage.objects.create(application=application, text=text)
+    _student_email, student_name = _student_identity(application)
+    if getattr(reviewer, 'email', ''):
+        emails.send_reviewer_student_message_email(
+            reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
+            applicant_name=student_name, message=text,
+            ref=pool.pool_ref(application.id),
+            interview_start=application.interview_start)
+    return message

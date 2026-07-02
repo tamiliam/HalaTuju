@@ -1766,7 +1766,13 @@
         "allPassed": "Masa-masa yang dicadangkan ini semuanya telah berlalu. Sila minta masa lain di bawah.",
         "error": "Sesuatu tidak kena. Sila cuba lagi.",
         "completedNote": "Temu duga ini telah berlangsung — terima kasih. Tiada apa-apa lagi yang perlu dilakukan; kami akan menghubungi anda melalui e-mel.",
-        "bookedPast": "Temu duga anda telah ditempah pada"
+        "bookedPast": "Temu duga anda telah ditempah pada",
+        "msgAsk": "Hantar mesej kepada penemu duga anda",
+        "msgIntro": "Mesej anda terus sampai kepada penemu duga anda — gunakan jika ada perkara timbul (contohnya anda lewat atau kurang sihat).",
+        "msgPlaceholder": "cth. Saya lewat 10 minit — saya akan masuk secepat mungkin.",
+        "msgSend": "Hantar mesej",
+        "msgSent": "Mesej dihantar — penemu duga anda telah dimaklumkan melalui e-mel.",
+        "msgRateLimited": "Anda telah menghantar beberapa mesej dalam masa singkat. Sila tunggu sebentar sebelum menghantar lagi."
       },
       "awardPanel": {
         "title": "Satu langkah lagi",
@@ -2972,7 +2978,8 @@
           "rescheduleIntro": "Pilih masa baharu — tempahan semasa pelajar akan dilepaskan dan mereka diminta memilih semula.",
           "cancelEdit": "Batal",
           "removeSlot": "Buang masa",
-          "error": "Tidak dapat menyimpan. Sila cuba lagi."
+          "error": "Tidak dapat menyimpan. Sila cuba lagi.",
+          "messagesHeading": "Mesej daripada pelajar"
         }
       },
       "empty": "Tiada permohonan sepadan.",

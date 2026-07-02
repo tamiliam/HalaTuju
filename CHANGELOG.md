@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **"Message your interviewer" — an always-open student → reviewer channel (TD-152).** Available in every
+  interview state with NO cutoff (the pressure valve when reschedule/cancel are locked inside the 12h window,
+  e.g. "I'm running late" an hour before the call). Stored on the new `InterviewMessage` model (migration
+  `scholarship/0089`, RLS) for the cockpit thread + audit; the assigned reviewer is emailed best-effort
+  (students never see reviewer contact details). Rate-limited 5/hour, 1000-char cap; en/ms/ta.
+
 ### Changed
+- **Booked interviews release their unpicked sibling slots (TD-151).** A booked application now HOLDS only its
+  booked time; the two unpicked proposals are released — re-offerable to other students (first to book wins),
+  while remaining the original student's re-pick menu wherever still free. A released time re-offered elsewhere
+  disappears from the re-pick menu and is server-blocked on a stale page. One source of truth
+  (`scheduling.held_starts`) drives the propose guard, `reviewer_busy`, the student slot list, and the booking
+  race backstop — no more phantom holds on the reviewer's calendar.
 - **Sponsor visibility is now bound to the QC-Accept transition (the single publish point).** Previously a
   student's anonymous profile was **published to sponsors when the reviewer recorded the Accept verdict** —
   i.e. *before* QC. Now the reviewer's verdict only **prepares** the profile (generates `final_markdown`/

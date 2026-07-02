@@ -610,6 +610,8 @@ export interface InterviewSchedule {
   alternatives_requested?: boolean
   alternatives_note?: string
   cancel_reason?: string
+  /** The student's messages to their reviewer (the always-open channel), oldest first. */
+  messages?: { text: string; created_at: string }[]
 }
 
 /** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in

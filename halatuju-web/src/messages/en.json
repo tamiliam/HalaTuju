@@ -1766,7 +1766,13 @@
         "allPassed": "These proposed times have all passed. Please ask for other times below.",
         "error": "Something went wrong. Please try again.",
         "completedNote": "This interview has taken place — thank you. There's nothing more to do; we'll be in touch by email.",
-        "bookedPast": "Your interview was booked for"
+        "bookedPast": "Your interview was booked for",
+        "msgAsk": "Message your interviewer",
+        "msgIntro": "Your message goes straight to your interviewer — use this if something has come up (for example, you're running late or unwell).",
+        "msgPlaceholder": "e.g. I'm running 10 minutes late — I'll join as soon as I can.",
+        "msgSend": "Send message",
+        "msgSent": "Message sent — your interviewer has been notified by email.",
+        "msgRateLimited": "You've sent several messages in a short time. Please wait a while before sending another."
       },
       "awardPanel": {
         "title": "One more step",
@@ -2972,7 +2978,8 @@
           "rescheduleIntro": "Choose new times — the student's current booking will be released and they'll be asked to pick again.",
           "cancelEdit": "Cancel",
           "removeSlot": "Remove time",
-          "error": "Could not save. Please try again."
+          "error": "Could not save. Please try again.",
+          "messagesHeading": "Messages from the student"
         }
       },
       "empty": "No applications match.",

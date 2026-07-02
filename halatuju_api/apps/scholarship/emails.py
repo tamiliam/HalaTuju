@@ -2223,6 +2223,28 @@ def send_reviewer_alternatives_requested_email(to_email, *, reviewer_name, appli
     return _send_plain(to_email, _reviewer_subject('Applicant needs different interview times', ref), body)
 
 
+def send_reviewer_student_message_email(to_email, *, reviewer_name, applicant_name,
+                                        message, ref='', interview_start=None):
+    """Reviewer notice that the student sent them a message (the always-open channel —
+    fires in any interview state, INCLUDING inside the reschedule cutoff, e.g. "I'm
+    running late" an hour before the call). Plain EN; the booked interview time is
+    included when known so the reviewer can judge urgency from the email alone."""
+    when_line = ''
+    if interview_start is not None:
+        when_line = f'Their interview is booked for {_fmt_myt(interview_start)}.\n\n'
+    body = (
+        f'Dear {reviewer_name or "there"},\n\n'
+        f'{applicant_name or "An applicant"} sent you a message about their interview:\n\n'
+        f'  "{message}"\n\n'
+        f'{when_line}'
+        f'If it needs a reply, open their record — you can propose new times, reschedule, '
+        f'or reach them through the contact details there.\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject('Message from applicant', ref), body)
+
+
 def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name, ref='', reason=''):
     """Reviewer notice that a student cancelled. Plain EN. Includes the student's reason if given."""
     reason_line = f'Reason they gave: "{reason.strip()}"\n\n' if (reason or '').strip() else ''

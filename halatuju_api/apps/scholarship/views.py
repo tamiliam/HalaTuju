@@ -313,6 +313,23 @@ class StudentInterviewRequestAlternativesView(_StudentInterviewBase):
         return Response(interview_schedule_payload(app))
 
 
+class StudentInterviewMessageView(_StudentInterviewBase):
+    """POST /api/v1/scholarship/applications/<id>/interview/message/ {text} — the student
+    messages their assigned reviewer. Deliberately NO state gate and NO cutoff: this is
+    the pressure valve when reschedule/cancel are locked (e.g. running late an hour
+    before the call). Rate-limited server-side; the reviewer is emailed best-effort."""
+
+    def post(self, request, pk):
+        app, err = self._own_app(request, pk)
+        if err:
+            return err
+        try:
+            scheduling.send_student_message(app, text=request.data.get('text', ''))
+        except scheduling.SchedulingError as e:
+            return self._error(e)
+        return Response(interview_schedule_payload(app))
+
+
 class ApplicationConfirmView(APIView):
     """POST /api/v1/scholarship/applications/<id>/confirm/ — the student's explicit
     "I'm done" action. Flips shortlisted → profile_complete (Phase C) if the

@@ -5,6 +5,7 @@ import { useT } from '@/lib/i18n'
 import { formatMyt, withinCutoff, interviewGracePassed, INTERVIEW_GRACE_HOURS } from '@/lib/interviewTime'
 import {
   getInterview, bookInterviewSlot, cancelInterview, requestInterviewAlternatives,
+  sendInterviewMessage,
   type InterviewSchedule,
 } from '@/lib/api'
 
@@ -23,6 +24,9 @@ export default function InterviewBookingPanel({
   const [requesting, setRequesting] = useState(false)
   const [note, setNote] = useState('')
   const [cancelReason, setCancelReason] = useState('')
+  const [messaging, setMessaging] = useState(false)
+  const [msgText, setMsgText] = useState('')
+  const [msgSent, setMsgSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -72,6 +76,19 @@ export default function InterviewBookingPanel({
       setRequesting(false); setNote('')
     } catch { setError(t('scholarship.application.interview.error')) }
     finally { setBusy(false) }
+  }
+
+  const sendMsg = async () => {
+    if (!msgText.trim()) return
+    setBusy(true); setError('')
+    try {
+      setSched(await sendInterviewMessage(applicationId, msgText, { token }))
+      setMessaging(false); setMsgText(''); setMsgSent(true)
+    } catch (e) {
+      setError((e as Error & { code?: string }).code === 'rate_limited'
+        ? t('scholarship.application.interview.msgRateLimited')
+        : t('scholarship.application.interview.error'))
+    } finally { setBusy(false) }
   }
 
   const cutoffH = sched.reschedule_cutoff_hours
@@ -220,6 +237,41 @@ export default function InterviewBookingPanel({
           )}
         </div>
       )}
+
+      {/* Message your interviewer — the always-open channel. Deliberately rendered in
+          EVERY state (proposed / booked / locked-inside-cutoff / cancelled): when
+          reschedule and cancel are closed, this is how "I'm running late" or "I'm
+          sick" still reaches the interviewer — even an hour before the call. */}
+      <div className="mt-4 border-t border-blue-100 pt-3">
+        {msgSent && !messaging && (
+          <p className="mb-2 rounded-lg bg-white/70 px-3 py-2 text-xs text-gray-600">
+            {t('scholarship.application.interview.msgSent')}
+          </p>
+        )}
+        {messaging ? (
+          <div className="space-y-2">
+            <p className="text-xs text-gray-600">{t('scholarship.application.interview.msgIntro')}</p>
+            <textarea value={msgText} onChange={(e) => setMsgText(e.target.value)} rows={2} maxLength={1000}
+              placeholder={t('scholarship.application.interview.msgPlaceholder')}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={sendMsg} disabled={busy || !msgText.trim()}
+                className="rounded-lg bg-gray-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-900 disabled:opacity-50">
+                {t('scholarship.application.interview.msgSend')}
+              </button>
+              <button type="button" onClick={() => { setMessaging(false); setMsgText('') }}
+                className="text-sm text-gray-500 hover:text-gray-700">
+                {t('scholarship.application.interview.altCancel')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" onClick={() => { setError(''); setMessaging(true) }}
+            className="block text-sm text-blue-600 hover:underline">
+            {t('scholarship.application.interview.msgAsk')}
+          </button>
+        )}
+      </div>
 
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </section>

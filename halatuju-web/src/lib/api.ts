@@ -1459,6 +1459,11 @@ export interface InterviewSlot {
 }
 
 /** The student's interview booking state + proposed slots. */
+export interface InterviewMessage {
+  text: string
+  created_at: string
+}
+
 export interface InterviewSchedule {
   enabled: boolean
   status: '' | 'booked' | 'cancelled'
@@ -1470,6 +1475,7 @@ export interface InterviewSchedule {
   reschedule_cutoff_hours: number
   alternatives_requested?: boolean
   alternatives_note?: string
+  messages?: InterviewMessage[]
 }
 
 export async function getInterview(id: number, options?: ApiOptions): Promise<InterviewSchedule> {
@@ -1498,6 +1504,16 @@ export async function requestInterviewAlternatives(
 ): Promise<InterviewSchedule> {
   return apiRequest(`/api/v1/scholarship/applications/${id}/interview/request-alternatives/`, {
     method: 'POST', body: JSON.stringify({ note }), ...options,
+  })
+}
+
+/** Message the assigned interviewer — the always-open channel (works in every state,
+ *  even inside the reschedule cutoff, e.g. "I'm running late" before the call). */
+export async function sendInterviewMessage(
+  id: number, text: string, options?: ApiOptions,
+): Promise<InterviewSchedule> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/interview/message/`, {
+    method: 'POST', body: JSON.stringify({ text }), ...options,
   })
 }
 

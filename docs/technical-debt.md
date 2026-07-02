@@ -1183,3 +1183,24 @@ allowlist — a partner is not a reviewer/sponsor, so no verdict/QC internals, a
 page filtered to the partner's org. **Note:** "BrightPath Partner" as a *separate* role was considered and
 **dropped** — there is one unified `partner`. **Risk if left:** none (feature not promised to users yet).
 **Size:** small-to-medium (one scoped endpoint + serializer + nav conditional + a list view + tests).
+
+### [TD-151] Booked interviews kept "phantom holds" on the reviewer's calendar — RESOLVED 2026-07-03
+**Status:** RESOLVED (logged + implemented 2026-07-03, `feat/interview-comms`). **Context:** when a student
+booked one of the reviewer's 3 proposed times, the two unpicked sibling slots stayed `is_active=True` (they
+are the student's re-pick menu) AND kept counting as reviewer-busy — so every completed booking blocked two
+extra times on the reviewer's grid (seen live: Rohini's #80 siblings struck out Moven's #78 picker with only
+3.5 bookable evening hours in a day). **Fix (owner-specified model):** a booked application HOLDS only its
+booked slot; the unpicked siblings are RELEASED — re-offerable to other students, first to book wins, and a
+released time re-offered elsewhere disappears from the original student's re-pick menu (server-guarded on a
+stale page). Single source of truth `scheduling.held_starts()` used by the propose guard, the `reviewer_busy`
+payload, the student slot list, and the `book_slot` race backstop (first booking blocks only on a confirmed
+booking elsewhere; a re-pick blocks on anything held).
+
+### [TD-152] Student had NO channel to the reviewer inside the 12h cutoff — RESOLVED 2026-07-03
+**Status:** RESOLVED (logged + implemented 2026-07-03, `feat/interview-comms`). **Context:** once booked,
+reschedule/cancel lock 12h before the interview and "Ask for other times" refuses when booked — so a student
+falling sick one hour before the call had no way to tell anyone (email replies land in the shared interview@
+mailbox, and reviewer contact details are deliberately never shared). **Fix:** "Message your interviewer" —
+always-open (every state, NO cutoff), stored on `InterviewMessage` (migration `0089`, RLS) for the cockpit
+thread + audit, emailed to the assigned reviewer best-effort, rate-limited 5/hour, 1000-char cap. Student
+panel section + cockpit "Messages from the student" block; en/ms/ta (Tamil first-draft, refine queue).

@@ -1089,6 +1089,29 @@ class InterviewSlot(models.Model):
         return f'InterviewSlot #{self.application_id} @ {self.start:%Y-%m-%d %H:%M}'
 
 
+class InterviewMessage(models.Model):
+    """A short free-text note from the STUDENT to their assigned reviewer.
+
+    The always-open pressure valve around the scheduling flow: reschedule/cancel close
+    inside the 12h cutoff, but "I'm running late" / "I'm sick" must still reach the
+    reviewer — even one hour before the call. Stored for the cockpit thread + audit;
+    delivery is a best-effort email to the assigned reviewer (the student never sees
+    the reviewer's address). Rate-limited in scheduling.send_student_message.
+    """
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='interview_messages',
+    )
+    text = models.TextField(help_text="The student's message (capped at 1000 chars on write).")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'interview_messages'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'InterviewMessage #{self.application_id} @ {self.created_at:%Y-%m-%d %H:%M}'
+
+
 class DecisionReopen(models.Model):
     """Audit row for each time a superadmin REOPENS a recorded decision.
 

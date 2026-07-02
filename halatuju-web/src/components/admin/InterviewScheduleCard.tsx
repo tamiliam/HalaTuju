@@ -387,6 +387,24 @@ export default function InterviewScheduleCard({
           </div>
         </>
       )}
+
+      {/* Messages from the student (the always-open channel — can arrive in any state,
+          incl. inside the reschedule cutoff, e.g. "I'm running late"). Newest last. */}
+      {(schedule.messages?.length ?? 0) > 0 && (
+        <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50/60 p-3">
+          <div className="text-sm font-semibold text-gray-900">
+            {t('admin.scholarship.interview.schedule.messagesHeading')}
+          </div>
+          <ul className="mt-2 space-y-2">
+            {schedule.messages!.map((m, i) => (
+              <li key={i} className="text-sm text-gray-800">
+                <span className="italic">“{m.text}”</span>
+                <span className="ml-2 text-xs text-gray-500">{formatMyt(m.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   )
 }

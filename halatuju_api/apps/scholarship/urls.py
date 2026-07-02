@@ -29,6 +29,7 @@ from .views import (
     StudentInterviewView,
     StudentInterviewBookView,
     StudentInterviewCancelView,
+    StudentInterviewMessageView,
     StudentInterviewRequestAlternativesView,
     WhatsAppInboundView,
 )
@@ -118,6 +119,8 @@ urlpatterns = [
     path('scholarship/applications/<int:pk>/interview/cancel/', StudentInterviewCancelView.as_view()),
     path('scholarship/applications/<int:pk>/interview/request-alternatives/',
          StudentInterviewRequestAlternativesView.as_view()),
+    path('scholarship/applications/<int:pk>/interview/message/',
+         StudentInterviewMessageView.as_view()),
     path('scholarship/documents/sign-upload/', DocumentSignUploadView.as_view()),
     path('scholarship/documents/', DocumentListCreateView.as_view()),
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),

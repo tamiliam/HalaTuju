@@ -88,8 +88,19 @@ def interview_schedule_payload(application, *, include_reviewer_busy=False):
     reviewer already holds for OTHER applicants, so the propose grid can grey them out
     to avoid double-booking. Never sent to students (it would leak other interviews)."""
     from django.conf import settings
+
+    from . import scheduling
     active = [s for s in application.interview_slots.all() if s.is_active]
     active.sort(key=lambda s: s.start)
+    # A BOOKED application's unpicked siblings are RELEASED (scheduling.held_starts):
+    # the reviewer may re-offer those times to other students, first to book wins. So
+    # the re-pick menu must drop any released time the reviewer has since re-offered
+    # or re-booked elsewhere — otherwise the student books into a conflict.
+    if application.interview_status == 'booked' and application.assigned_to_id:
+        taken = scheduling.held_starts(application.assigned_to,
+                                       exclude_application=application)
+        active = [s for s in active
+                  if s.id == application.interview_slot_id or s.start not in taken]
     payload = {
         'enabled': bool(getattr(settings, 'INTERVIEW_SCHEDULING_ENABLED', False)),
         'status': application.interview_status or '',
@@ -104,18 +115,19 @@ def interview_schedule_payload(application, *, include_reviewer_busy=False):
         'alternatives_note': application.interview_alternatives_note or '',
         # Why the student cancelled their booked interview (if they gave a reason).
         'cancel_reason': application.interview_cancel_reason or '',
+        # The student's messages to their reviewer (always-open channel) — newest last,
+        # bounded so a chatty thread can't bloat the payload.
+        'messages': [
+            {'text': m.text, 'created_at': m.created_at}
+            for m in application.interview_messages.order_by('-created_at')[:20][::-1]
+        ],
     }
     if include_reviewer_busy:
-        reviewer = application.assigned_to
-        busy = []
-        if reviewer is not None:
-            from .models import InterviewSlot
-            busy = list(
-                InterviewSlot.objects
-                .filter(reviewer=reviewer, is_active=True)
-                .exclude(application=application)
-                .values_list('start', flat=True))
-        payload['reviewer_busy'] = busy
+        # Only the times the reviewer genuinely HOLDS (a booked application's released
+        # siblings no longer block) — see scheduling.held_starts for the semantics.
+        payload['reviewer_busy'] = sorted(
+            scheduling.held_starts(application.assigned_to,
+                                   exclude_application=application))
     return payload
 
 
