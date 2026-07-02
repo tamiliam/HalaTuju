@@ -518,6 +518,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-02)
 
+**▶ JUST SHIPPED — Income model, Part 2 COMPLETE (2A + 2B + 2C, 2026-07-02; worktree `.worktrees/str-salary`;
+commits `630c5528`/`c1aef662` 2A, `62816882` 2B, `3a45f850` 2C; migrations `0086_income_declared` +
+`0087_income_nonearning`, both additive/migrate-first; retro
+`docs/retrospective-2026-07-02-income-model-part2.md`).** The B40 income assessment now goes beyond parents'
+payslips, all through the single seam `income_engine.earner_monthly_income → income_per_capita →
+income_headroom`, and **never gates** (soft signals + Action-Centre requests; officer decides):
+- **2A declared informal income** — a working member with no payslip may declare a wage; counts only with a
+  valid STR (means-test) OR a supporting `income_support_doc` (flexible: employer/wage letter, bank statements,
+  or a community/penghulu letter), else Unsure. Wizard field behind a "can't get a payslip?" opt-in.
+- **2B unemployment detail** — for an `unemployed` roster member: why + since-when (`income_nonearning`) +
+  soft EPF corroboration (employer all-zeros, or lapsed `last_contribution`). Roster sub-panel, Stitch-approved.
+- **2C household completeness** — income-proof requests generalised to EVERY working roster member
+  (`household_status_gaps`, not just parents); soft reviewer `household_size_confirm` when described people
+  outnumber the stated household size (over-count direction only). D4 confirmed already-safe (guard test).
+- 1943 scholarship pytest + 404 jest; i18n en/ms/ta. **▶ NEXT (owner): the salary/pension RE-RUN** (S2
+  `gross_income_ytd` annualisation + pension-as-income only populate on re-extraction via the cockpit Re-run;
+  the STR-currency + these income-model bands recompute live). Then the full salary-track redesign (per-member
+  aggregation, GREEN via a corroborated family roster) — a larger separate spec.
+
 **▶ JUST SHIPPED — Assignment-based review permission (2026-07-02).** View (role) and act (assignment)
 are now decoupled: a `role='admin'` sees all read-only AND can WRITE only on applications assigned to
 them; reviewer=assigned-only; super=any; partner=none. A view-all admin is now an assignable target.
