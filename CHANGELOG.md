@@ -21,6 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   common and benign, so it stays silent. No migration (reads existing roster + docs). +14 pytest;
   i18n en/ms/ta. Confirmed by a guard test: a studying sibling (D4) is never counted as an earner,
   only ever a denominator head.
+- **Quality-control (QC) gate before "Recommended".** A reviewer's verdict no longer goes straight to
+  `recommended`. The existing `interviewed` stage is **repurposed as AWAITING QC**: submitting interview
+  *findings* no longer advances the status (stays `interviewing`); the reviewer's *verify-accept* ("submit
+  verdict") now lands the case in `interviewed` (awaiting QC). A new **`qc` role** (or super) then, from a
+  **Quality Control** box in the cockpit, either **Accepts** (→ `recommended`, pool-eligible) or **Reopens**
+  — a gaps/what-was-missing note that returns the case to the reviewer (`interviewing`, reopened banner) and
+  emails the assigned reviewer the comments (`send_qc_returned_email`). QC (`_require_qc`) is super-or-`qc`
+  only and read-all-but-QC-write-only (no reviewer writes). Endpoint `POST .../<pk>/qc-decision/`
+  `{decision, comments}`; reuses `reopen_decision`/`DecisionReopen` (a returned case that changes still
+  counts as a reviewer correction). Reopen mapping is now two-step & invertible: `recommended→interviewed`,
+  `interviewed→interviewing`. Choices-only migrations (`courses 0060` role, `scholarship 0088` status
+  relabel — no DDL). +11 pytest (`test_qc_gate.py`); 5 existing tests updated to the new transitions.
 
 ### Changed
 - **Review permission is now assignment-based (view-all admin can review its assigned students).**

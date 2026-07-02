@@ -754,6 +754,17 @@ export async function cancelReopen(id: number, options?: ApiOptions) {
     `/api/v1/admin/scholarship/applications/${id}/cancel-reopen/`, 'POST', {}, options)
 }
 
+/** QC gate on an AWAITING-QC ('interviewed') case: accept → recommended, or reopen → back to
+ *  the reviewer at 'interviewing' (comments emailed to the assigned reviewer). */
+export async function recordQcDecision(
+  id: number,
+  payload: { decision: 'accept' | 'reopen'; comments?: string },
+  options?: ApiOptions,
+) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/qc-decision/`, 'POST', payload, options)
+}
+
 export async function getScholarshipApplication(id: number, options?: ApiOptions) {
   return adminFetch<AdminScholarshipDetail>(`/api/v1/admin/scholarship/applications/${id}/`, options)
 }

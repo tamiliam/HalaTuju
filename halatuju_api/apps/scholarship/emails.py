@@ -1324,6 +1324,27 @@ def send_reviewer_assigned_email(to_email, reviewer_name, *, ref='', programme='
     return _send_plain(to_email, _reviewer_subject('New applicant assigned to you', ref), body)
 
 
+def send_qc_returned_email(to_email, reviewer_name, *, ref='', applicant_name='', qc_comments=''):
+    """QC (2026-07): notify a reviewer that quality control has RETURNED their case for revision,
+    carrying the QC's comments (what was missing / the gaps). English-only (internal staff), from
+    the monitored interview@ alias. Best-effort — a mail hiccup never breaks the QC action."""
+    if not to_email:
+        return False
+    reviewer = reviewer_name or 'there'
+    details = [f'Reference: {ref or "—"}', f'Applicant: {applicant_name or "—"}']
+    body = (
+        f'Dear {reviewer},\n\n'
+        f'Quality control has returned one of your cases for revision.\n\n'
+        + '\n'.join(details) + '\n\n'
+        f'What to address:\n{qc_comments}\n\n'
+        f'Please review the points above, update your findings/verdict, and resubmit. Everything '
+        f'you need is in your reviewer dashboard:\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject('Case returned by QC — action needed', ref), body)
+
+
 def send_student_assigned_reviewer_email(to_email, *, student_name, english_only=False,
                                          reviewer_name='', reviewer_email='', reviewer_phone=''):
     """Advance notice to the STUDENT once a reviewer is assigned: what happens next (an

@@ -423,13 +423,17 @@ class PartnerAdmin(models.Model):
     #   partner  — an organisation rep: Dashboard + Students + Profile, scoped to their
     #              OWN org's students only.
     #   reviewer — an individual volunteer: B40 Applications + Profile, scoped to the
-    #              applicants ASSIGNED to them only; makes the final accept/reject call.
+    #              applicants ASSIGNED to them only; records the verdict → 'interviewed' (awaiting QC).
+    #   qc       — quality control: reads every B40 application (like admin) but its only WRITE is
+    #              the QC gate on an 'interviewed' case — Accept (→ recommended) or Reopen (→ back to
+    #              the reviewer with comments). Cannot record verdicts / verify / interview.
     # ('viewer' retired 2026-06-09 → folded into 'admin'; 0 viewers existed on prod.)
     ROLE_CHOICES = [
         ('super', 'Super admin'),
         ('admin', 'Admin'),
         ('partner', 'Partner'),
         ('reviewer', 'Reviewer'),
+        ('qc', 'Quality control'),
     ]
     supabase_user_id = models.CharField(
         max_length=100, unique=True, null=True, blank=True,

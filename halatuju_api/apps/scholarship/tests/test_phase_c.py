@@ -173,7 +173,9 @@ class TestAcceptGate(PhaseCBase):
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/verify-accept/')
         self.assertEqual(r.status_code, 200)
         app.refresh_from_db()
-        self.assertEqual(app.status, 'recommended')
+        # QC (2026-07): the reviewer's verify-accept lands in 'interviewed' (awaiting QC), not
+        # 'recommended' — QC then clears it to recommended via qc-decision.
+        self.assertEqual(app.status, 'interviewed')
 
     def test_viewer_cannot_accept(self):
         app = self._complete(self._assigned_app(status='profile_complete'))
@@ -323,11 +325,12 @@ class TestInterview(PhaseCBase):
         self.assertEqual(r.status_code, 200)
         app.refresh_from_db()
         self.assertEqual(app.status, 'interviewing')
-        # Submit → status moves to interviewed.
+        # QC (2026-07): submitting FINDINGS no longer advances to 'interviewed' — the case stays
+        # 'interviewing' until the reviewer submits the full verdict (verify-accept).
         r2 = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/interview/submit/')
         self.assertEqual(r2.status_code, 200)
         app.refresh_from_db()
-        self.assertEqual(app.status, 'interviewed')
+        self.assertEqual(app.status, 'interviewing')
         self.assertEqual(InterviewSession.objects.filter(application=app, status='submitted').count(), 1)
 
     def test_reviewer_reopens_submitted_interview(self):

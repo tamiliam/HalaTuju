@@ -321,13 +321,14 @@ class TestAdminScholarship(TestCase):
         from apps.scholarship.services import submit_interview
         SponsorProfile.objects.create(
             application=self.app, draft_markdown='Draft.', generated_at=timezone.now())
-        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='interviewing')
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='profile_complete')
         self.app.refresh_from_db()
         sess = InterviewSession.objects.create(application=self.app, status='draft')
         advanced = submit_interview(sess)            # must still complete the submit
         self.assertTrue(advanced)
         self.app.refresh_from_db()
-        self.assertEqual(self.app.status, 'interviewed')
+        # QC (2026-07): findings-submit advances profile_complete → interviewing (not interviewed).
+        self.assertEqual(self.app.status, 'interviewing')
         self.assertFalse(SponsorProfile.objects.get(application=self.app).final_markdown.strip())
 
     @override_settings(CHECK2_AUTO_GENERATE=True)
@@ -338,13 +339,14 @@ class TestAdminScholarship(TestCase):
         from apps.scholarship.services import submit_interview
         SponsorProfile.objects.create(
             application=self.app, draft_markdown='Draft.', generated_at=timezone.now())
-        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='interviewing')
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='profile_complete')
         self.app.refresh_from_db()
         sess = InterviewSession.objects.create(application=self.app, status='draft')
         advanced = submit_interview(sess)            # must NOT raise
         self.assertTrue(advanced)
         self.app.refresh_from_db()
-        self.assertEqual(self.app.status, 'interviewed')
+        # QC (2026-07): findings-submit advances profile_complete → interviewing (not interviewed).
+        self.assertEqual(self.app.status, 'interviewing')
         self.assertFalse(SponsorProfile.objects.get(application=self.app).final_markdown.strip())
 
     def test_admin_list(self):
@@ -543,7 +545,8 @@ class TestAdminScholarship(TestCase):
         )
         self.assertEqual(r.status_code, 200)
         body = r.json()
-        self.assertEqual(body['status'], 'recommended')
+        # QC (2026-07): verify-accept lands in 'interviewed' (awaiting QC), not 'recommended'.
+        self.assertEqual(body['status'], 'interviewed')
         self.assertTrue(body['nric_verified'])
         self.assertEqual(body['verified_by'], 'admin@example.com')
         self.assertIsNotNone(body['verified_at'])

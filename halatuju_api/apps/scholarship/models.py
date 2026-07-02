@@ -109,9 +109,9 @@ class ScholarshipApplication(models.Model):
         ('shortlisted', 'Shortlisted'),
         # Phase C post-shortlist funnel (between shortlisted and recommended):
         ('profile_complete', 'Profile complete'),  # student confirmed a complete Step-4 profile
-        ('interviewing', 'Interviewing'),           # an interview session has been started
-        ('interviewed', 'Interviewed'),             # interview captured + submitted
-        ('recommended', 'Recommended'),  # reviewer verified & recommended — provisional, masked from the student
+        ('interviewing', 'Interviewing'),           # interview in progress OR findings in, verdict not yet submitted
+        ('interviewed', 'Interviewed — awaiting QC'),  # reviewer submitted the full verdict; awaiting quality control (QC)
+        ('recommended', 'Recommended'),  # QC-accepted — provisional, masked from the student
         # Post-award lifecycle (roadmap docs/scholarship/post-award-lifecycle-plan.md):
         ('awarded', 'Awarded'),          # a funder committed; offer out + tri-partite agreement being signed
         ('active', 'Active'),            # agreement fully executed (Foundation signs last); awaiting first payout

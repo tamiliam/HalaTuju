@@ -518,6 +518,19 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-02)
 
+**▶ JUST SHIPPED — QC gate (repurposed `interviewed` stage) (2026-07-02).** A quality-control step before
+`recommended`, no new status. Findings-submit no longer advances status (stays `interviewing`); the
+reviewer's verify-accept lands the case in `interviewed` = AWAITING QC. New **`qc` role** (or super) uses a
+Quality Control box in the cockpit: **Accept** → `recommended`; **Reopen** → gaps note → back to reviewer
+(`interviewing`, reopened banner) + reviewer emailed (`send_qc_returned_email`). `_require_qc` (super/qc,
+read-all/QC-write-only); endpoint `POST …/qc-decision/`. Reuses `reopen_decision`/`DecisionReopen`; reopen
+mapping now two-step invertible (`recommended↔interviewed`, `interviewed↔interviewing`). Choices-only
+migrations (courses 0060, scholarship 0088 — **no DDL**). Retro `docs/retrospective-2026-07-02-qc-gate.md`.
+- **Immediate follow-up (owner-gated):** grant the owner (or a dedicated account) the **`qc` role** —
+  `UPDATE partner_admins SET role='qc' WHERE email='<qc person>'` (invite-UI button deferred). Then
+  smoke-test: reviewer submits verdict → `interviewed` → QC Reopen (email + back to `interviewing`) →
+  reviewer redoes → QC Accept → `recommended`.
+
 **▶ JUST SHIPPED — Income model, Part 2 COMPLETE (2A + 2B + 2C, 2026-07-02; worktree `.worktrees/str-salary`;
 commits `630c5528`/`c1aef662` 2A, `62816882` 2B, `3a45f850` 2C; migrations `0086_income_declared` +
 `0087_income_nonearning`, both additive/migrate-first; retro
@@ -536,6 +549,9 @@ income_headroom`, and **never gates** (soft signals + Action-Centre requests; of
   `gross_income_ytd` annualisation + pension-as-income only populate on re-extraction via the cockpit Re-run;
   the STR-currency + these income-model bands recompute live). Then the full salary-track redesign (per-member
   aggregation, GREEN via a corroborated family roster) — a larger separate spec.
+- **QC-gate note:** `next build` type-check OOMs on the 8 GB dev box after a full pytest run (WorkerError
+  after "Compiled successfully") — it's memory, not code; verify types with `npx tsc --noEmit --target
+  es2018 --downlevelIteration` and trust Cloud Build.
 
 **▶ JUST SHIPPED — Assignment-based review permission (2026-07-02).** View (role) and act (assignment)
 are now decoupled: a `role='admin'` sees all read-only AND can WRITE only on applications assigned to

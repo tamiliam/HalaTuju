@@ -2862,7 +2862,7 @@
         "shortlisted": "Shortlisted",
         "profile_complete": "Profile complete",
         "interviewing": "Interviewing",
-        "interviewed": "Interviewed",
+        "interviewed": "Awaiting QC",
         "recommended": "Recommended",
         "awarded": "Awarded",
         "active": "Active",
@@ -3364,6 +3364,16 @@
         "finaliseNoDraft": "Verdict saved. Generate a draft profile first before finalising.",
         "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
         "rateTitle": "Rate AI verification"
+      },
+      "qcDecision": {
+        "title": "Quality control",
+        "hint": "This case is awaiting QC. Accept to move it to Recommended, or Reopen to send it back to the reviewer with your comments.",
+        "accept": "Accept",
+        "reopen": "Reopen",
+        "reopenTitle": "What was missing? (shared with the reviewer)",
+        "commentsPlaceholder": "Describe the gaps / what the reviewer must address",
+        "reopenConfirm": "Reopen & notify reviewer",
+        "error": "Could not submit the QC decision."
       },
       "caveats": {
         "studentAnswer": "Student's answer",

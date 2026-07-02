@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## QC gate reuses the `interviewed` stage (no new status); QC is a distinct role — 2026-07-02
+**Decision:** Formalise the owner's manual quality control into a lifecycle step **without a new status**.
+The `interviewed` stage is repurposed to mean **AWAITING QC**: (1) submitting interview *findings* no
+longer advances the status (a case sits in `interviewing` — the reviewer's working state — until the
+verdict is submitted); (2) the reviewer's *verify-accept* now lands the case in `interviewed`; (3) a new
+**`qc` role** (or super) Accepts → `recommended` or Reopens → back to the reviewer (`interviewing`) with an
+emailed gaps note. QC reads all cases but its only write is the QC gate (`_require_qc`); it is deliberately
+NOT assignment-scoped (it checks *other* reviewers' work).
+**Alternatives considered:** (1) a brand-new `awaiting_qc` status — rejected by the owner ("repurpose
+interviewed, don't add a stage"); (2) QC as super-only — rejected in favour of a delegable dedicated role;
+(3) a "Send to Sponsor" button distinct from Accept — dropped (Accept simply advances to `recommended`;
+publishing stays the existing separate step).
+**Why it's clean:** `recommended` was already the internal, super-reversible, student-masked checkpoint and
+the pool-eligibility gate, so interposing QC before it changes nothing student-facing (`interviewed` and
+`recommended` both mask to `interviewed`). QC-Reopen reuses `reopen_decision`/`DecisionReopen` verbatim
+(reason + audit + correction-count); the reopen status mapping became two-step and invertible
+(`recommended↔interviewed`, `interviewed↔interviewing`) so `cancel_reopen` stays unambiguous by current status.
+**Consequence:** the reviewer verdict-SLA nudge already keys on `verdict_decided_at IS NULL` (not
+`status=='interviewed'`), so a post-findings `interviewing` case still gets the record-your-verdict reminder —
+no re-keying needed. **Governance:** a `qc` account can't also be a reviewer (single role) → no self-QC; a
+super who also reviews should not QC their own case (not code-enforced in MVP). Scope: **accept path only** —
+reviewer rejections keep the existing 7-day decline cool-off.
+
 ## Review permission is assignment-based, decoupled from the view role — 2026-07-02
 **Decision:** What an admin can SEE stays role-based (`admin`/`super` = all, `reviewer` = assigned,
 `partner` = none); what they can ACT on is now assignment-based — a per-application WRITE is allowed iff

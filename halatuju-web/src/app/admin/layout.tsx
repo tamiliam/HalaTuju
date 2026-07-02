@@ -50,7 +50,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   // Role-driven menu (2026-06): super/admin see everything; partner sees only
-  // Dashboard + Students (own org) — no Guide/FAQ; reviewer sees only B40 Applications.
+  // Dashboard + Students (own org) — no Guide/FAQ; reviewer + qc see only B40 Applications
+  // (qc lands on the awaiting-QC queue).
   const r = role?.is_super_admin ? 'super' : (role?.role || 'reviewer')
   const dashboard = { href: '/admin', label: t('common.dashboard') }
   const students = { href: '/admin/students', label: t('admin.students') }
@@ -64,6 +65,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const navLinks =
     r === 'partner' ? [dashboard, students, profile]
     : r === 'reviewer' ? [scholarship, profile, guide, faq]
+    : r === 'qc' ? [scholarship, profile, guide, faq]
     : [dashboard, students, scholarship, sponsors, courseData, ...(r === 'super' ? [invite] : []), profile, guide, faq]  // super + admin
 
   return (
