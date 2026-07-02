@@ -1,5 +1,33 @@
 # Architectural Decisions — HalaTuju
 
+## Sponsor visibility is bound to the QC-Accept transition, not the reviewer's verdict — 2026-07-02
+**Decision:** A student becomes visible to sponsors at **exactly one point in the state machine — when QC
+presses Accept and the case enters `recommended`.** The reviewer's Accept (record-verdict + finalise) now
+only **prepares** the sponsor profile (generates `final_markdown`/`anon_markdown` + the ≤20-word card blurb)
+and leaves it **unpublished**; the publish is performed by `pool.publish_profile_to_pool(app)` from
+`AdminQcDecisionView`'s accept branch. As a second, independent guard, the pool READ gate hard-requires
+`status == 'recommended'` (`pool.is_pool_eligible` + `eligible_pool_queryset`), and funding does too
+(`sponsorship.is_fundable`) — so even a stray/ manual publish cannot leak a case that has not been cleared.
+**Why:** the previous code stapled the publish to the reviewer's verdict, which fires *before* QC. That put
+a student in front of sponsors (visible AND fundable) while still AWAITING QC — defeating the QC gate. The
+owner reframed the fix as a clean state machine: `Under review —[Reviewer Accept]→ Awaiting QC —[QC Accept]→
+Recommended —[Sponsor Support]→ Awarded`, with sponsor-visibility switching on only at the QC-Accept arrow.
+Moving the publish to that arrow makes the data model match the state machine (unpublished until cleared),
+and the status read-gate is the belt-and-suspenders the owner explicitly asked for.
+**Alternatives considered:** (1) hide `interviewed` from the pool via a status set but leave publishing at
+the reviewer's verdict — rejected: it fixes visibility only in the read layer while the *data* still says
+"published before QC" (a hidden inconsistency, and the earlier attempt the owner rightly called "not a
+solution — we need a clear transition"). (2) a new `was_published` column + republish bookkeeping — rejected
+(a migration and double-bookkeeping vs `DecisionReopen.was_published`). The chosen approach needs **no
+migration** and no new column. **`publish_profile_to_pool` is idempotent + PII-backstopped** (`scan_profile_pii`;
+no-op if there's no prepared profile, it's already published, or the redaction scan finds a leak) so it is
+safe to call on every QC-Accept.
+**Legacy fold-in — no data step needed:** the 12 pre-QC `recommended` students moved to Awaiting-QC earlier
+are `interviewed` + unpublished but still carry their `anon_markdown`/`anon_blurb`/share-consent (verified).
+So when Suresh QC-Accepts each one, `publish_profile_to_pool` re-publishes it automatically and it returns to
+the pool — organically, one at a time (so sponsors are notified per acceptance, not in a bulk blast). Deploy
+the code; nothing to backfill.
+
 ## `qc` is a senior role (review + QC) with a self-QC guard; admin menus split BrightPath vs HalaTuju — 2026-07-02
 **Decision:** The `qc` role is a **superset** — it reads all cases, can be **assigned** applicants and
 **review** them (like a view-all admin), AND QCs other reviewers' cases. To keep separation of duties, a

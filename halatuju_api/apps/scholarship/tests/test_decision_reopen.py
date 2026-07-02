@@ -168,27 +168,38 @@ class TestDecisionReopen(TestCase):
 
     # ── re-record (real change → correction counts) ──────────────────────────
     @patch('apps.scholarship.views_admin.refine_sponsor_profile')
-    def test_rerecord_counts_correction_and_republishes(self, mock_refine):
+    def test_rerecord_counts_correction_then_republishes_at_qc(self, mock_refine):
         mock_refine.return_value = {'markdown': '## Corrected', 'model_used': 'gemini-2.5-pro'}
         InterviewSession.objects.create(application=self.app, status='submitted', submitted_at=timezone.now())
         self._auth(SUPER)
         self.client.post(self._reopen_url(), {'reason': 'wrong income verdict'}, format='json')
-        self.sp.refresh_from_db()
+        self.app.refresh_from_db(); self.sp.refresh_from_db()
         self.assertFalse(self.sp.anon_published)                  # held during reopen
-        # Re-record the (corrected) decision with finalise → regenerate + republish.
+        self.assertEqual(self.app.status, 'interviewed')          # recommended → awaiting QC
+        # Re-record the (corrected) decision with finalise → regenerate the profile, but publishing
+        # is now bound to QC-Accept, so the case is NOT republished here (it re-enters AWAITING QC).
         r = self.client.post(self._record_url(), {
             'officer_verdict': {'identity': 'pass', 'academic': 'pass', 'income': 'pass',
                                 'pathway': 'pass', 'overall': 'accept'},
             'reason': 'corrected', 'finalise': True}, format='json')
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.json()['finalise_result']['ok'])
+        self.assertFalse(r.json()['finalise_result']['published'])   # verdict never publishes
         self.app.refresh_from_db(); self.sp.refresh_from_db()
         self.assertIsNone(self.app.decision_reopened_at)          # re-locked
-        self.assertTrue(self.sp.anon_published)                   # republished
+        self.assertFalse(self.sp.anon_published)                  # NOT yet republished — awaiting QC
         row = DecisionReopen.objects.get(application=self.app)
         self.assertTrue(row.resulted_in_change)                   # COUNTS
         self.assertIsNotNone(row.closed_at)
         self.assertEqual(self._corrections_for(self.reviewer.id), 1)
+        # QC clears the corrected case → NOW it publishes and returns to the pool.
+        qc = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
+            {'decision': 'accept'}, format='json')
+        self.assertEqual(qc.status_code, 200)
+        self.app.refresh_from_db(); self.sp.refresh_from_db()
+        self.assertEqual(self.app.status, 'recommended')
+        self.assertTrue(self.sp.anon_published)                   # republished at QC-Accept
 
     def test_reject_after_reopen_counts_correction_and_stays_unpublished(self):
         self._auth(SUPER)

@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Sponsor visibility is now bound to the QC-Accept transition (the single publish point).** Previously a
+  student's anonymous profile was **published to sponsors when the reviewer recorded the Accept verdict** —
+  i.e. *before* QC. Now the reviewer's verdict only **prepares** the profile (generates `final_markdown`/
+  `anon_markdown` + the card blurb); **publishing happens at QC-Accept** (`AdminQcDecisionView` accept →
+  `pool.publish_profile_to_pool`), the single moment a student enters `recommended` and becomes
+  sponsor-visible. A case AWAITING QC is therefore never shown to sponsors. Belt-and-suspenders: the pool
+  read gate now hard-requires `status == 'recommended'` (`pool.is_pool_eligible`, `eligible_pool_queryset`)
+  and funding likewise (`sponsorship.is_fundable`), so a stray publish can't leak a not-yet-cleared case.
+  Reopen/cancel-reopen unchanged (still restore prior published state). No migration; no student-visible
+  change. Fixes the leak where an awaiting-QC student could appear to (and be funded by) sponsors before QC
+  signed off. +5 pytest; 1 existing reopen test updated to the new timing.
 - **Senior `qc` role + BrightPath/HalaTuju nav split.** The `qc` role is now a **senior QC**: it can be
   **assigned** applicants and **review** them (like a view-all admin) AND QC other reviewers' cases —
   with a **self-QC guard** (`_require_qc` returns 403 `self_qc_forbidden`, and the QC box is hidden in the

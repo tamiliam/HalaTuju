@@ -90,14 +90,54 @@ def derive_progress_state(application):
 
 
 def is_pool_eligible(application):
-    """A single application is poolable iff its SponsorProfile is anon-published
-    AND it has an active share_with_sponsors consent."""
+    """A single application is poolable iff its SponsorProfile is anon-published, it is in
+    the QC-cleared ``recommended`` stage, AND it has an active share_with_sponsors consent.
+
+    A student is sponsor-visible ONLY at ``recommended`` — the single stage between QC
+    clearance and a funder committing. Before QC (under review / awaiting QC) they are held
+    back even if a profile was generated; once funded (awarded/active/maintenance/closed)
+    they have left the discovery pool. Publishing is bound to the QC-Accept transition
+    (``publish_profile_to_pool``); this status check is the belt-and-suspenders read gate so a
+    stray publish can never leak a not-yet-cleared case."""
     sp = getattr(application, 'sponsor_profile', None)
     if sp is None or not sp.anon_published:
         return False
-    if application.status in IN_PROGRAMME_OR_BEYOND:  # a funder committed → leaves the pool
+    if application.status != 'recommended':
         return False
     return has_active_share_consent(application)
+
+
+def publish_profile_to_pool(application):
+    """Make a QC-cleared student's already-generated anon profile visible to sponsors.
+
+    Publishing is bound to the QC-Accept transition (→ ``recommended``) — the SINGLE point a
+    student becomes sponsor-visible. The reviewer's verdict only PREPARES the profile
+    (``final_markdown``/``anon_markdown`` + the card blurb); it does NOT publish, so a case
+    AWAITING QC is never shown to sponsors.
+
+    Idempotent and PII-backstopped: a no-op when there is no profile, it is already published,
+    or the redaction scan finds a leak (left unpublished for a super to regenerate). The card
+    blurb is generated here only as a fallback (the reviewer's finalise usually made it).
+    Returns True iff it published now."""
+    from django.utils import timezone
+    from .models import SponsorProfile
+    from .profile_engine import generate_anon_blurb
+    sp = SponsorProfile.objects.filter(application=application).first()
+    if sp is None or not (sp.anon_markdown or '').strip() or sp.anon_published:
+        return False
+    if scan_profile_pii(sp.anon_markdown, getattr(application, 'profile', None)):
+        return False
+    fields = ['anon_published', 'anon_published_at', 'realtime_notified_at', 'updated_at']
+    sp.anon_published = True
+    sp.anon_published_at = timezone.now()
+    sp.realtime_notified_at = None
+    if not (sp.anon_blurb or '').strip():
+        blurb = generate_anon_blurb(application, sp.anon_markdown)
+        sp.anon_blurb = blurb if (blurb and not scan_anon_for_identifiers(
+            blurb, getattr(application, 'profile', None))) else ''
+        fields.append('anon_blurb')
+    sp.save(update_fields=fields)
+    return True
 
 
 # ── TD-074b: pre-publish identifier backstop ─────────────────────────────────
@@ -196,10 +236,10 @@ def eligible_pool_queryset(model):
         model.objects
         .filter(
             sponsor_profile__anon_published=True,
+            status='recommended',   # sponsor-visible ONLY at the QC-cleared stage (see is_pool_eligible)
             consents__consent_type=SHARE_CONSENT_TYPE,
             consents__is_active=True,
         )
-        .exclude(status__in=IN_PROGRAMME_OR_BEYOND)  # a funder committed → leaves the pool
         .select_related('sponsor_profile', 'profile')
         .distinct()
     )

@@ -1161,15 +1161,15 @@ class AdminRecordVerdictView(_AdminBase):
                         sp.anon_markdown = result['markdown']
                         sp.anon_model_used = result.get('model_used', '')
                         sp.anon_generated_at = timezone.now()
-                        # Publish to the pool only on APPROVE (overall='accept') AND when the
-                        # redaction backstop is clean — a declined/held student never appears.
+                        # PREPARE the pool card blurb now (ready for when QC clears the case)
+                        # but DO NOT publish here. Publishing — the single point a student
+                        # becomes sponsor-visible — is bound to the QC-Accept transition
+                        # (→ 'recommended', see AdminQcDecisionView + pool.publish_profile_to_pool);
+                        # a case AWAITING QC is never shown to sponsors. The blurb is still built
+                        # only for a clean APPROVE, so a declined/leaking profile builds nothing.
                         leaks = pool.scan_profile_pii(
                             result['markdown'], getattr(app, 'profile', None))
-                        published = (overall == 'accept' and not leaks)
-                        if published:
-                            sp.anon_published = True
-                            sp.anon_published_at = timezone.now()
-                            sp.realtime_notified_at = None
+                        if overall == 'accept' and not leaks:
                             # The ≤20-word CARD blurb (card-strict — stricter than the
                             # profile). Generated from the already-anonymous markdown, then
                             # backstopped by the STRICT identifier scan; on any leak/empty
@@ -1180,7 +1180,9 @@ class AdminRecordVerdictView(_AdminBase):
                                     blurb, getattr(app, 'profile', None))
                             ) else ''
                         sp_to_save = sp
-                        finalise_result = {'ok': True, 'published': published, 'leaks': leaks}
+                        # published:False ALWAYS here — QC-Accept publishes. Kept in the payload
+                        # so the FE messages "ready for QC", never "published to sponsors".
+                        finalise_result = {'ok': True, 'published': False, 'leaks': leaks}
 
         with transaction.atomic():
             app.save(update_fields=verdict_fields)
@@ -1188,7 +1190,8 @@ class AdminRecordVerdictView(_AdminBase):
                 sp_to_save.save()
             # If this re-records a REOPENED decision, that's a real correction
             # (counting model B) — close the audit row + clear the reopened flag.
-            # The (re)publish on accept already happened via the finalise path above.
+            # Publishing is NOT done here — it is bound to QC-Accept (the case re-enters
+            # AWAITING QC after verify-accept, and QC re-publishes on clearance).
             reopen_service.close_reopen_with_change(app)
 
         data = AdminApplicationDetailSerializer(app).data
@@ -1234,6 +1237,10 @@ class AdminQcDecisionView(_AdminBase):
         if decision == 'accept':
             app.status = 'recommended'
             app.save(update_fields=['status'])
+            # Publishing is bound HERE: a QC-cleared 'recommended' case is the SINGLE point a
+            # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).
+            # Idempotent + PII-backstopped; a no-op if there's nothing ready to publish.
+            pool.publish_profile_to_pool(app)
             logger.info('AUDIT qc_accept admin_id=%s app_id=%s', admin.id, pk)
             return Response(AdminApplicationDetailSerializer(app).data)
         if decision == 'reopen':
