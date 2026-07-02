@@ -52,6 +52,10 @@ post-audit work (TD-053–143). Both are searchable by id.
   programmes force-matched); #95 sits on a placeholder pending his real specialisation.
 - **TD-151** — document-extraction & income-computation robustness (the recurring mis-read class promoted from
   the 2026-06-29 consolidation review; a 1-sprint hardening pass).
+- **TD-154** — document-slot uniqueness is **sweep-enforced only** (create-first then sweep the stale row per
+  `(application, doc_type, household_member, request_code)`; TD-115), not a DB constraint. Optional hardening
+  (deferred from the income-model plan, 2026-07-02): add a DB `UniqueConstraint` on the slot key + an
+  orphan-`request_code`-doc cleanup. Behaviour is currently sound (no bug) — *low* risk.
 
 **Admin roles / permissions:**
 - **TD-152** — bursary is a named-personal-donor contract (Suresh, personally) until the org incorporates; novate to
