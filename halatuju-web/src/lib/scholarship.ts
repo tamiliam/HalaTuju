@@ -750,6 +750,8 @@ export interface DetailsFormState {
   motherOccupation: string
   motherOccupationOther: string
   otherFamilyMembers: OtherMember[]
+  // Phase 2B: unemployment detail per 'unemployed' roster member — {member: {reason, since}}.
+  nonEarning: Record<string, { reason?: string; since?: string }>
   // Sibling steppers — default 0 (a real "none" answer; no confusing "not set" state).
   siblingsInSchool: number
   siblingsInTertiary: number
@@ -783,6 +785,7 @@ export function emptyDetailsForm(): DetailsFormState {
     motherOccupation: '',
     motherOccupationOther: '',
     otherFamilyMembers: [],
+    nonEarning: {},
     siblingsInSchool: 0,
     siblingsInTertiary: 0,
     familyContext: '',
@@ -814,6 +817,8 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
     motherOccupation: app.mother_occupation || '',
     motherOccupationOther: app.mother_occupation_other || '',
     otherFamilyMembers: Array.isArray(app.other_family_members) ? app.other_family_members : [],
+    nonEarning: (app.income_nonearning && typeof app.income_nonearning === 'object'
+      ? app.income_nonearning : {}) as Record<string, { reason?: string; since?: string }>,
     siblingsInSchool: app.siblings_in_school ?? 0,
     siblingsInTertiary: app.siblings_in_tertiary ?? 0,
     familyContext: app.family_context || '',
@@ -834,6 +839,25 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
   }
 }
 
+/** Keep unemployment detail ONLY for members who are currently 'unemployed' in the roster,
+ *  so a member who changed occupation doesn't leave stale reason/since data behind. */
+function pruneNonEarning(f: DetailsFormState): Record<string, { reason?: string; since?: string }> {
+  const unemployed = new Set<string>()
+  if (f.fatherOccupation === 'unemployed') unemployed.add('father')
+  if (f.motherOccupation === 'unemployed') unemployed.add('mother')
+  for (const m of f.otherFamilyMembers) {
+    if (m.occupation === 'unemployed' && m.role) unemployed.add(m.role)
+  }
+  const out: Record<string, { reason?: string; since?: string }> = {}
+  for (const [member, detail] of Object.entries(f.nonEarning || {})) {
+    if (!unemployed.has(member) || !detail) continue
+    const reason = (detail.reason || '').trim()
+    const since = (detail.since || '').trim()
+    if (reason || since) out[member] = { ...(reason ? { reason } : {}), ...(since ? { since } : {}) }
+  }
+  return out
+}
+
 export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown> {
   // Convert programmeMonths string to int or null
   const pm = f.programmeMonths.trim()
@@ -849,6 +873,7 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
     mother_occupation: f.motherOccupation,
     mother_occupation_other: f.motherOccupation === 'other' ? f.motherOccupationOther.trim() : '',
     other_family_members: cleanOtherMembers(f.otherFamilyMembers),
+    income_nonearning: pruneNonEarning(f),
     siblings_in_school: f.siblingsInSchool,
     siblings_in_tertiary: f.siblingsInTertiary,
     family_context: f.familyContext.trim(),

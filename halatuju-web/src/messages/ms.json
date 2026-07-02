@@ -1041,6 +1041,12 @@
           "profession": "Pekerjaan",
           "professionPlaceholder": "Pilih…",
           "otherSpecify": "Sila nyatakan",
+          "unemployed": {
+            "since": "Sejak bila?",
+            "reason": "Apa yang berlaku?",
+            "reasonPlaceholder": "cth. diberhentikan kerja, kesihatan, menjaga keluarga",
+            "epfNudge": "Jika mereka mempunyai penyata KWSP, anda boleh memuat naiknya di bawah Pendapatan isi rumah — ia membantu mengesahkan mereka tidak berpendapatan. Pilihan."
+          },
           "addMember": "Tambah penjaga atau ahli keluarga yang bekerja",
           "relationship": "Hubungan",
           "remove": "Buang",
@@ -1998,6 +2004,14 @@
         "declared_income_evidence_missing": {
           "title": "Muat naik bukti pendapatan keluarga anda",
           "desc": "Anda memberitahu kami seorang ahli keluarga memperoleh gaji tidak formal, tetapi kami tiada slip gaji untuknya. Untuk menyokong apa yang anda kongsikan, sila muat naik mana-mana satu daripada ini: surat daripada majikan menyatakan gaji, penyata bank terkini yang menunjukkan pendapatan, atau surat daripada ketua komuniti anda (penghulu / ketua kampung). Mana-mana satu sudah memadai."
+        },
+        "unemployment_detail_unknown": {
+          "title": "Beritahu kami tentang ahli keluarga yang tidak bekerja",
+          "desc": "Anda memberitahu kami seorang ahli keluarga menganggur. Sila beritahu kami secara ringkas mengapa (contohnya: diberhentikan kerja, sebab kesihatan, atau menjaga keluarga) dan lebih kurang sejak bila. Ini membantu kami memahami pendapatan isi rumah anda."
+        },
+        "unemployment_epf_missing": {
+          "title": "Muat naik penyata KWSP mereka (pilihan)",
+          "desc": "Jika ahli keluarga yang tidak bekerja mempunyai penyata KWSP, memuat naiknya membantu mengesahkan mereka tidak berpendapatan sekarang. Ini pilihan — langkau jika mereka tiada."
         }
       },
       "bank": {
@@ -3252,6 +3266,7 @@
           "income_declared_accepted_str": "Pendapatan yang diisytiharkan untuk {members} diterima — STR yang sah sudah mengesahkan keperluan B40 isi rumah, jadi gaji yang dinyatakan dikira tanpa slip gaji. Dimasukkan dalam per kapita.",
           "income_declared_accepted_evidenced": "Pendapatan yang diisytiharkan untuk {members} diterima — dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti) menyokong gaji yang dinyatakan. Dimasukkan dalam per kapita.",
           "income_declared_needs_evidence": "{members} mengisytiharkan gaji, tetapi tiada slip gaji, tiada STR yang sah, dan tiada dokumen sokongan — jadi ia belum boleh dikira. Bukti diperlukan daripada pelajar: mana-mana satu daripada surat majikan/gaji, penyata bank yang menunjukkan pendapatan, atau surat komuniti/penghulu. Permintaan telah dibangkitkan di Pusat Tindakan.",
+          "unemployment_epf_corroborated": "KWSP mengesahkan {members} tidak bekerja sekarang (tiada majikan aktif / caruman terhenti) — menyokong gambaran pendapatan terhad isi rumah. Isyarat lembut.",
           "utility_percapita_b40": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — konsisten dengan isi rumah B40 (isyarat lembut, tidak sempurna).",
           "utility_percapita_high": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — tinggi (corak penggunaan M40/T20). Wajar disiasat semasa temu duga (isyarat lembut).",
           "utility_hardship": "Isyarat kesusahan: bil utiliti mempunyai tunggakan yang ketara (baki belum dibayar) — menyokong keperluan kewangan.",
@@ -3283,7 +3298,9 @@
           "income_doc_stale": "Slip gaji dalam fail berusia lebih 3 bulan — pelajar diminta memuat naik slip terkini.",
           "sibling_tertiary_funding": "Adik-beradik di pengajian tinggi — pelajar ditanya institusi mana dan cara pembiayaan (biasiswa / PTPTN / keluarga / lain-lain).",
           "reporting_date_unknown": "Surat tawaran tiada tarikh lapor diri yang jelas — pelajar ditanya bila dan di mana mereka melapor diri.",
-          "declared_income_evidence_missing": "Pendapatan tidak formal yang diisytiharkan tiada slip gaji dan tiada STR yang sah — pelajar diminta memuat naik dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti)."
+          "declared_income_evidence_missing": "Pendapatan tidak formal yang diisytiharkan tiada slip gaji dan tiada STR yang sah — pelajar diminta memuat naik dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti).",
+          "unemployment_detail_unknown": "Seorang ahli isi rumah menganggur — pelajar ditanya mengapa dan lebih kurang sejak bila.",
+          "unemployment_epf_missing": "Ahli yang menganggur tiada KWSP dalam fail — pelajar diminta memuat naik satu (pengesahan pilihan)."
         }
       },
       "decision": {

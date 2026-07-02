@@ -147,6 +147,52 @@ class TestDeclaredIncomeDocRequest(_Base):
             code='declared_income_evidence_missing').exists())
 
 
+class TestUnemploymentQueries(_Base):
+    """Phase 2B — an 'unemployed' roster member raises a reason/since clarify + a soft EPF
+    doc-request; both clear when the detail is captured / an EPF is uploaded."""
+
+    def setUp(self):
+        super().setUp()
+        self.app.father_occupation = 'unemployed'   # father now non-earning, status known
+        self.app.income_nonearning = {}
+        self.app.save()
+
+    def test_detail_clarify_raised_and_within_cap(self):
+        sync_check2_queries(self.app)
+        codes = self._codes()
+        self.assertIn('unemployment_detail_unknown', codes)
+        self.assertLessEqual(
+            self.app.resolution_items.filter(source='check2', kind='clarify', status='open').count(),
+            MAX_CLARIFY)
+
+    def test_detail_clarify_clears_when_captured(self):
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='unemployment_detail_unknown')
+        self.app.income_nonearning = {'father': {'reason': 'retrenched', 'since': '2025-03'}}
+        self.app.save()
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+        self.assertEqual(item.resolved_by, 'system')
+
+    def test_epf_doc_request_raised_and_clears(self):
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='unemployment_epf_missing')
+        self.assertEqual((item.source, item.kind, item.doc_type), ('check2', 'doc', 'epf'))
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='epf', household_member='father', storage_path='x/epf')
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+
+    def test_no_queries_when_member_employed(self):
+        self.app.father_occupation = 'gov'
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertFalse(self.app.resolution_items.filter(
+            code__in=('unemployment_detail_unknown', 'unemployment_epf_missing')).exists())
+
+
 class TestUtilityClarifyQueries(_Base):
     """#8: the utility holder/address consistency checks also surface as student
     clarify queries (dark until CHECK2_STUDENT_QUERIES_ENABLED gates the call sites)."""

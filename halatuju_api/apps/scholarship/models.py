@@ -270,6 +270,14 @@ class ScholarshipApplication(models.Model):
         help_text="Salary route: {member: declared avg monthly income (RM, int)} for a working "
                   "member with no payslip/EPF. Accepted if a valid STR is on file, else needs an "
                   "income_support_doc. Feeds earner_monthly_income → per-capita.")
+    # UNEMPLOYMENT detail (Phase 2B, P7): for a household member whose occupation is 'unemployed',
+    # WHY and SINCE WHEN — {member: {reason: str, since: 'YYYY-MM'}}. Reviewer texture for the
+    # "why little/no income" story; an EPF statement (employer no. all-zeros) can corroborate.
+    # Never a gate (P3: trust the student). Additive, 0-row-safe.
+    income_nonearning = models.JSONField(
+        default=dict, blank=True,
+        help_text="{member: {reason, since:'YYYY-MM'}} for an 'unemployed' roster member — why and "
+                  "since when. Reviewer texture; EPF (all-zeros employer) corroborates. Never a gate.")
     # DEPRECATED (salary route): Q3 work-status + Q4 other-earner are superseded by
     # income_working_members (informal is now inferred from 'IC present, no payslip/EPF').
     # Kept for the STR route's legacy reads + to avoid a destructive migration; drop later (tech debt).

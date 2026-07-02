@@ -237,7 +237,8 @@ def _utility_context(application):
     """Soft, officer-facing income context from the utility bills (never a gate): the
     combined water+electricity per-capita as a B40 proxy, + an arrears hardship signal.
     Imperfect — surfaced as evidence the coordinator weighs, not a verdict driver."""
-    from .income_engine import utility_per_capita, utility_hardship
+    from .income_engine import (utility_per_capita, utility_hardship,
+                                unemployment_corroborated_members)
     items = []
     pc = utility_per_capita(application)
     if pc and pc['signal'] == 'b40':
@@ -246,6 +247,11 @@ def _utility_context(application):
         items.append(_item('utility_percapita_high', amount=int(round(pc['per_capita']))))
     if utility_hardship(application):
         items.append(_item('utility_hardship'))
+    # Phase 2B (P7): an EPF (all-zeros / lapsed) corroborating a member's unemployment — soft
+    # reviewer evidence for the "why little income" story. Household context, both routes; never a gate.
+    corroborated = unemployment_corroborated_members(application)
+    if corroborated:
+        items.append(_item('unemployment_epf_corroborated', members=corroborated))
     return items
 
 def _verdict_income(application):

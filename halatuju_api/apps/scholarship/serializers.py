@@ -424,6 +424,9 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     income_declared = serializers.DictField(
         child=serializers.IntegerField(min_value=0, max_value=100000),
         required=False, allow_empty=True)
+    # Phase 2B: unemployment detail per 'unemployed' roster member, {member: {reason, since}}.
+    income_nonearning = serializers.DictField(
+        child=serializers.DictField(), required=False, allow_empty=True)
     earner_work_status = serializers.ChoiceField(
         choices=['', 'payslip', 'informal', 'not_working'], required=False, allow_blank=True)
     household_other_earners = serializers.IntegerField(
@@ -447,12 +450,26 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     other_family_members = serializers.ListField(
         child=serializers.DictField(), required=False, allow_empty=True)
 
+    _VALID_MEMBERS = {'father', 'mother', 'guardian', 'brother', 'sister'}
+
     def validate_income_declared(self, value):
-        valid = {'father', 'mother', 'guardian', 'brother', 'sister'}
-        bad = sorted(set(value) - valid)
+        bad = sorted(set(value) - self._VALID_MEMBERS)
         if bad:
             raise serializers.ValidationError(f'Unknown household member(s): {bad}')
         return value
+
+    def validate_income_nonearning(self, value):
+        bad = sorted(set(value) - self._VALID_MEMBERS)
+        if bad:
+            raise serializers.ValidationError(f'Unknown household member(s): {bad}')
+        # Keep only the two known keys per member; coerce to trimmed strings (reason free text,
+        # since 'YYYY-MM'). Defensive — the wizard sends exactly these, but never trust the client.
+        out = {}
+        for m, detail in value.items():
+            if isinstance(detail, dict):
+                out[m] = {k: (str(detail.get(k, '')) or '').strip()[:200]
+                          for k in ('reason', 'since') if detail.get(k)}
+        return out
 
 
 class ApplicationReadSerializer(serializers.ModelSerializer):
@@ -526,7 +543,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'other_family_members',
             # Income Check-1 wizard answers.
             'income_route', 'income_earner', 'income_working_members', 'income_declared',
-            'earner_work_status',
+            'income_nonearning', 'earner_work_status',
             'household_other_earners', 'siblings_in_school', 'siblings_in_tertiary',
             # Address pre-fill (profile-derived, read-only here; written via
             # ApplicationDetailsUpdateSerializer + save_application_details).
