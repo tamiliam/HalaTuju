@@ -323,6 +323,21 @@ class TestDetailsApi(TestCase):
             {'income_declared': {'cousin': 900}}, format='json')
         self.assertEqual(bad.status_code, 400)
 
+    def test_patch_saves_income_nonearning_and_rejects_bad_member(self):
+        """Phase 2B: unemployment detail {member:{reason,since}} round-trips; bad key rejected."""
+        self._auth(USER_A)
+        ok = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'income_nonearning': {'father': {'reason': 'retrenched', 'since': '2025-03'}}},
+            format='json')
+        self.assertEqual(ok.status_code, 200)
+        self.assertEqual(ok.json()['income_nonearning'],
+                         {'father': {'reason': 'retrenched', 'since': '2025-03'}})
+        bad = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'income_nonearning': {'cousin': {'reason': 'x'}}}, format='json')
+        self.assertEqual(bad.status_code, 400)
+
     def test_patch_saves_long_parents_occupation(self):
         """Regression: parents_occupation is now a TextField, not varchar(255).
         A student's sentence-or-two answer (e.g. >255 chars) used to overflow the

@@ -1041,6 +1041,12 @@
           "profession": "Profession",
           "professionPlaceholder": "Select…",
           "otherSpecify": "Please specify",
+          "unemployed": {
+            "since": "Since when?",
+            "reason": "What happened?",
+            "reasonPlaceholder": "e.g. retrenched, health, caring for family",
+            "epfNudge": "If they have an EPF (KWSP) statement, you can upload it under Household income — it helps confirm they aren't earning. Optional."
+          },
           "addMember": "Add guardian or working family member",
           "relationship": "Relationship",
           "remove": "Remove",
@@ -1998,6 +2004,14 @@
         "declared_income_evidence_missing": {
           "title": "Upload proof of your family's income",
           "desc": "You told us a family member earns an informal wage, but we don't have a payslip for them. To support what you shared, please upload any one of these: a letter from their employer stating the wage, recent bank statements showing the income, or a letter from your community leader (penghulu / ketua kampung). Any one is enough."
+        },
+        "unemployment_detail_unknown": {
+          "title": "Tell us about the family member who isn't working",
+          "desc": "You told us a family member is unemployed. Please tell us briefly why (for example: retrenched, health reasons, or caring for family) and roughly since when. It helps us understand your household's income."
+        },
+        "unemployment_epf_missing": {
+          "title": "Upload their EPF statement (optional)",
+          "desc": "If the family member who isn't working has an EPF (KWSP) statement, uploading it helps confirm they're not currently earning. This is optional — skip it if they don't have one."
         }
       },
       "bank": {
@@ -3252,6 +3266,7 @@
           "income_declared_accepted_str": "Declared income for {members} is accepted — a valid STR already establishes the household's B40 need, so the stated wage counts without a payslip. Included in the per-capita.",
           "income_declared_accepted_evidenced": "Declared income for {members} is accepted — a supporting document (employer/wage letter, bank statements, or a community letter) backs the stated wage. Included in the per-capita.",
           "income_declared_needs_evidence": "{members} declared a wage, but there's no payslip, no valid STR, and no supporting document — so it can't count yet. Proof is required from the student: any one of an employer/wage letter, bank statements showing income, or a community/penghulu letter. The request has been raised in the Action Centre.",
+          "unemployment_epf_corroborated": "EPF corroborates that {members} isn't currently employed (no active employer / lapsed contributions) — supports the household's limited-income picture. Soft signal.",
           "utility_percapita_b40": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — consistent with a B40 household (soft, imperfect signal).",
           "utility_percapita_high": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — high (M40/T20 consumption pattern). Worth probing at interview (soft signal).",
           "utility_hardship": "Hardship signal: the utility bills carry meaningful arrears (unpaid balance) — supports financial need.",
@@ -3283,7 +3298,9 @@
           "income_doc_stale": "Salary slip on file is over 3 months old — the student has been asked to upload a current one.",
           "sibling_tertiary_funding": "Sibling in tertiary — the student has been asked which institution and how it's funded (scholarship / PTPTN / family / other).",
           "reporting_date_unknown": "Offer letter has no clear reporting date — the student has been asked when and where they report.",
-          "declared_income_evidence_missing": "A declared informal income has no payslip and no valid STR — the student has been asked to upload a supporting document (employer/wage letter, bank statements, or a community letter)."
+          "declared_income_evidence_missing": "A declared informal income has no payslip and no valid STR — the student has been asked to upload a supporting document (employer/wage letter, bank statements, or a community letter).",
+          "unemployment_detail_unknown": "A household member is unemployed — the student has been asked why and roughly since when.",
+          "unemployment_epf_missing": "An unemployed member has no EPF on file — the student has been asked to upload one (optional corroboration)."
         }
       },
       "decision": {

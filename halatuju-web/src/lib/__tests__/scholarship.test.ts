@@ -409,6 +409,27 @@ describe('stpmDegreesToCourses', () => {
   })
 })
 
+describe('buildDetailsPayload — income_nonearning (Phase 2B)', () => {
+  it('keeps unemployment detail only for currently-unemployed members, trimmed', () => {
+    const f = {
+      ...emptyDetailsForm(),
+      fatherOccupation: 'unemployed',
+      motherOccupation: 'gov',   // employed → any stale detail must be dropped
+      nonEarning: {
+        father: { reason: '  retrenched  ', since: '2025-03' },
+        mother: { reason: 'stale', since: '2020-01' },
+      },
+    }
+    const p = buildDetailsPayload(f) as { income_nonearning: Record<string, unknown> }
+    expect(p.income_nonearning).toEqual({ father: { reason: 'retrenched', since: '2025-03' } })
+  })
+
+  it('drops empty detail and emits {} when nobody is unemployed', () => {
+    const f = { ...emptyDetailsForm(), fatherOccupation: 'gov', nonEarning: { father: { reason: '', since: '' } } }
+    expect((buildDetailsPayload(f) as { income_nonearning: unknown }).income_nonearning).toEqual({})
+  })
+})
+
 describe('UNCERTAINTY_REASONS', () => {
   it('lists the five "where are you right now?" reasons', () => {
     expect(UNCERTAINTY_REASONS).toEqual(['exploring', 'results', 'guidance', 'family', 'finance'])

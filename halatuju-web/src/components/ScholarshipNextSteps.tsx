@@ -138,6 +138,12 @@ export default function ScholarshipNextSteps({
     update('otherFamilyMembers', form.otherFamilyMembers.filter((_, j) => j !== i))
   const updateMember = (i: number, patch: Partial<OtherMember>) =>
     update('otherFamilyMembers', form.otherFamilyMembers.map((m, j) => (j === i ? { ...m, ...patch } : m)))
+  // Phase 2B — merge unemployment detail for a member (reason/since) into form.nonEarning.
+  const updateNonEarning = (member: string, patch: { reason?: string; since?: string }) =>
+    setForm((prev) => ({
+      ...prev,
+      nonEarning: { ...prev.nonEarning, [member]: { ...prev.nonEarning[member], ...patch } },
+    }))
 
   // Refresh status + completeness after a document/consent change (which can flip
   // status, e.g. deleting a compulsory doc un-confirms a profile_complete app).
@@ -286,6 +292,8 @@ export default function ScholarshipNextSteps({
             onUpdateMember={updateMember}
             onAddMember={addMember}
             onRemoveMember={removeMember}
+            nonEarning={form.nonEarning}
+            onUpdateNonEarning={updateNonEarning}
             t={t}
           />
 

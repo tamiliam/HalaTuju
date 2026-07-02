@@ -127,6 +127,9 @@ export const KNOWN_CODES = [
   'reporting_date_unknown',
   // Phase 2A — a declared informal income needs a flexible supporting doc (kind='doc').
   'declared_income_evidence_missing',
+  // Phase 2B — unemployment detail (clarify) + optional EPF corroboration (doc).
+  'unemployment_detail_unknown',
+  'unemployment_epf_missing',
   // Post-award payout — the bank-details task. The OPEN state renders via the dedicated
   // BankDetailsTask component (special-cased in ActionCentre), but the RESOLVED state falls
   // through to the generic Done card, so it must be a KNOWN code — otherwise it's mistaken

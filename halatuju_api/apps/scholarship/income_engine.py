@@ -1519,3 +1519,79 @@ def sibling_tertiary_funding_unknown(application):
     "which institution is your sibling at, and how are they funded / are they on aid?" query
     (household burden + the not-double-funded picture). A one-line, non-sensitive question."""
     return (getattr(application, 'siblings_in_tertiary', None) or 0) > 0
+
+
+# ── Unemployment detail (Phase 2B, P7) ───────────────────────────────────────
+def _member_occupation(application, member):
+    """The roster occupation CODE for a member: father/mother from their own column;
+    guardian/brother/sister from the first matching ``other_family_members`` entry. '' if
+    unknown. (Mirrors how family.earning_members reads the roster.)"""
+    if member == 'father':
+        return (getattr(application, 'father_occupation', '') or '').strip()
+    if member == 'mother':
+        return (getattr(application, 'mother_occupation', '') or '').strip()
+    for m in (getattr(application, 'other_family_members', None) or []):
+        if isinstance(m, dict) and m.get('role') == member:
+            return (m.get('occupation', '') or '').strip()
+    return ''
+
+
+def unemployed_members(application):
+    """Roster members (father/mother/guardian/brother/sister) whose occupation is 'unemployed'."""
+    return [m for m in _MEMBER_ORDER if _member_occupation(application, m) == 'unemployed']
+
+
+def epf_confirms_unemployment(application, member, today=None):
+    """True when an EPF statement on file for *member* corroborates unemployment: the employer
+    number is all-zeros ('No. Majikan 000000000' — the deterministic signal, same as
+    ``_epf_monthly_salary`` → 0.0), OR — best-effort, ONLY when a last-contribution date reads
+    — the last contribution is older than ~3 months (no recent employment). Soft; never a gate.
+    (``statement_date`` is deliberately NOT used for the age test — it's the issue date, not a
+    contribution date, so it would misfire.)"""
+    if today is None:
+        today = datetime.date.today()
+    for epf in _cluster_docs(application, member, 'epf'):
+        f = _doc_fields(epf)
+        if re.sub(r'\D', '', str(f.get('employer_number') or '')) == '000000000':
+            return True
+        ym = _parse_billing_month(f.get('last_contribution'))
+        if ym and (today.year - ym[0]) * 12 + (today.month - ym[1]) > _INCOME_DOC_CURRENT_MONTHS:
+            return True
+    return False
+
+
+def unemployment_status(application, member):
+    """The unemployment picture for a roster member, for Check-2 queries + the reviewer:
+    ``{unemployed, has_detail, has_epf, epf_corroborated}``. ``unemployed`` = the roster
+    occupation is 'unemployed'; ``has_detail`` = a reason or since-when is captured in
+    ``income_nonearning``. Soft throughout — never blocks (P3: trust the student)."""
+    unemployed = _member_occupation(application, member) == 'unemployed'
+    if not unemployed:
+        return {'unemployed': False, 'has_detail': False, 'has_epf': False, 'epf_corroborated': False}
+    detail = (getattr(application, 'income_nonearning', None) or {}).get(member) or {}
+    has_detail = bool(isinstance(detail, dict) and (detail.get('reason') or detail.get('since')))
+    return {
+        'unemployed': True,
+        'has_detail': has_detail,
+        'has_epf': _cluster_docs(application, member, 'epf').exists(),
+        'epf_corroborated': epf_confirms_unemployment(application, member),
+    }
+
+
+def unemployment_detail_gap(application):
+    """True when a roster member is 'unemployed' but no reason/since is captured for them —
+    the Check-2 clarify ("tell us why, and since when")."""
+    return any(not unemployment_status(application, m)['has_detail']
+               for m in unemployed_members(application))
+
+
+def unemployment_epf_gap(application):
+    """True when an 'unemployed' member has no EPF statement on file — the (soft, optional)
+    Check-2 doc-request to upload it for corroboration."""
+    return any(not _cluster_docs(application, m, 'epf').exists()
+               for m in unemployed_members(application))
+
+
+def unemployment_corroborated_members(application):
+    """Unemployed members whose EPF corroborates the unemployment — soft reviewer evidence."""
+    return [m for m in unemployed_members(application) if epf_confirms_unemployment(application, m)]

@@ -49,6 +49,9 @@ CLARIFY_SPECS = {
     # S3 — the offer letter carries no readable reporting/registration date → ask when (and
     # where) the student must report. One-line, non-sensitive, pathway-fact.
     'reporting_date_unknown': {'fact': 'pathway'},
+    # Phase 2B (P7) — a roster member is 'unemployed' but no reason/since-when is captured →
+    # ask why and since when (household-income texture). One clarify covers all such members.
+    'unemployment_detail_unknown': {'fact': 'income'},
     # 'motivation_missing' is intentionally NOT here — motivation is reviewer texture
     # (§7), not a one-line factual answer.
 }
@@ -67,6 +70,10 @@ DOC_SPECS = {
     # employer/wage letter, bank statements, or a community/penghulu letter). Household-level,
     # uncapped — clears when declared_income_gaps() empties (a support doc arrives, or a valid STR).
     'declared_income_evidence_missing': {'doc_type': 'income_support_doc'},
+    # Phase 2B (P7) — an 'unemployed' member has no EPF on file → a soft, OPTIONAL request to
+    # upload it (an all-zeros / lapsed EPF corroborates the unemployment). Uncapped; clears when
+    # every unemployed member has an EPF (or none are unemployed). Never a gate.
+    'unemployment_epf_missing': {'doc_type': 'epf'},
 }
 _PARENT_PROOF_CODE = {'father': 'father_income_proof_missing', 'mother': 'mother_income_proof_missing'}
 _PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_status_unknown'}
@@ -76,6 +83,7 @@ _PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_stat
 _CLARIFY_ORDER = [
     # Household-income completeness first — the most material to a fundable B40 profile.
     'father_status_unknown', 'mother_status_unknown',
+    'unemployment_detail_unknown',
     'course_unspecified', 'sibling_level_unknown', 'sibling_tertiary_funding',
     'reporting_date_unknown',
     'device_status_unknown', 'transport_cost_unknown',
@@ -109,6 +117,7 @@ def sync_check2_queries(application):
     from .income_engine import (
         utility_holder_unknown, utility_address_mismatch, parent_income_gaps,
         stale_income_proof, sibling_tertiary_funding_unknown, declared_income_gaps,
+        unemployment_detail_gap, unemployment_epf_gap,
     )
     if utility_holder_unknown(application):
         gaps.add('utility_holder_unknown')
@@ -121,6 +130,9 @@ def sync_check2_queries(application):
     from .pathway_engine import offer_reporting_date_unknown
     if offer_reporting_date_unknown(application):
         gaps.add('reporting_date_unknown')
+    # Phase 2B — an 'unemployed' member with no reason/since captured → one clarify covering all.
+    if unemployment_detail_gap(application):
+        gaps.add('unemployment_detail_unknown')
     # Full-household-income completeness (S1). A blank-slot parent → a status CLARIFY (folded
     # into the capped gap set below); an earning parent with no payslip → a PROOF doc request
     # (reconciled separately, uncapped). Collect the wanted proof/doc codes here.
@@ -138,6 +150,9 @@ def sync_check2_queries(application):
     # doc arrives or a valid STR accepts the declared amount (declared_income_gaps() empties).
     if declared_income_gaps(application):
         proof_wanted.add('declared_income_evidence_missing')
+    # Phase 2B — an 'unemployed' member with no EPF → a soft, optional request to upload it.
+    if unemployment_epf_gap(application):
+        proof_wanted.add('unemployment_epf_missing')
 
     existing = {r.code: r for r in application.resolution_items.filter(source='check2')}
     now = timezone.now()

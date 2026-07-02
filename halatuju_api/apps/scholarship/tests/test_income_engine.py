@@ -448,7 +448,10 @@ from apps.scholarship.income_engine import (  # noqa: E402
     earner_monthly_income, _epf_monthly_salary, _salary_monthly_amount,
     income_headroom, declared_amount, has_valid_str, has_income_support_doc,
     declared_income_gaps,
+    epf_confirms_unemployment, unemployment_status, unemployed_members,
+    unemployment_detail_gap, unemployment_epf_gap, unemployment_corroborated_members,
 )
+import datetime as _dt
 
 
 class _FakeQS(list):
@@ -669,6 +672,67 @@ class TestDeclaredIncome(SimpleTestCase):
         app = self._salary_app(declared={'father': 1500})
         app.income_route = 'str'
         self.assertEqual(declared_income_gaps(app), [])
+
+
+class TestUnemploymentDetail(SimpleTestCase):
+    """Phase 2B (P7) — unemployment corroboration (EPF) + reason/since detail gaps. Soft throughout."""
+
+    def _app_unemployed(self, *, member='father', occ='unemployed', epf=None, nonearning=None):
+        app = _app([_bill('epf', epf)] if epf is not None else [])
+        app.income_route = 'salary'
+        app.father_occupation = occ if member == 'father' else ''
+        app.mother_occupation = occ if member == 'mother' else ''
+        app.other_family_members = ([{'role': member, 'occupation': occ}]
+                                    if member in ('guardian', 'brother', 'sister') else [])
+        app.income_nonearning = nonearning or {}
+        return app
+
+    def test_all_zeros_employer_confirms(self):
+        self.assertTrue(epf_confirms_unemployment(
+            self._app_unemployed(epf={'employer_number': '000000000'}), 'father'))
+
+    def test_recent_contribution_not_confirmed(self):
+        app = self._app_unemployed(epf={'employer_number': '123456789', 'last_contribution': 'May 2026'})
+        self.assertFalse(epf_confirms_unemployment(app, 'father', today=_dt.date(2026, 6, 1)))
+
+    def test_lapsed_last_contribution_confirms(self):
+        app = self._app_unemployed(epf={'employer_number': '123456789', 'last_contribution': 'Jan 2026'})
+        self.assertTrue(epf_confirms_unemployment(app, 'father', today=_dt.date(2026, 6, 1)))
+
+    def test_statement_date_not_used_for_age(self):
+        # statement_date is the issue date, not a contribution date → must NOT confirm on its own.
+        app = self._app_unemployed(epf={'employer_number': '123456789', 'statement_date': 'Jan 2020'})
+        self.assertFalse(epf_confirms_unemployment(app, 'father', today=_dt.date(2026, 6, 1)))
+
+    def test_no_epf_not_confirmed(self):
+        self.assertFalse(epf_confirms_unemployment(self._app_unemployed(), 'father'))
+
+    def test_unemployed_members_reads_roster(self):
+        self.assertEqual(unemployed_members(self._app_unemployed(member='mother')), ['mother'])
+        self.assertEqual(unemployed_members(self._app_unemployed(member='brother')), ['brother'])
+        self.assertEqual(unemployed_members(self._app_unemployed(occ='gov')), [])
+
+    def test_detail_gap_and_status(self):
+        app = self._app_unemployed()
+        self.assertTrue(unemployment_detail_gap(app))
+        st = unemployment_status(app, 'father')
+        self.assertTrue(st['unemployed'])
+        self.assertFalse(st['has_detail'])
+        app.income_nonearning = {'father': {'reason': 'retrenched', 'since': '2025-03'}}
+        self.assertFalse(unemployment_detail_gap(app))
+        self.assertTrue(unemployment_status(app, 'father')['has_detail'])
+
+    def test_epf_gap_and_corroborated(self):
+        self.assertTrue(unemployment_epf_gap(self._app_unemployed()))          # unemployed, no EPF
+        app = self._app_unemployed(epf={'employer_number': '000000000'})
+        self.assertFalse(unemployment_epf_gap(app))
+        self.assertEqual(unemployment_corroborated_members(app), ['father'])
+
+    def test_employed_member_has_no_gaps(self):
+        app = self._app_unemployed(occ='gov')
+        self.assertFalse(unemployment_detail_gap(app))
+        self.assertFalse(unemployment_epf_gap(app))
+        self.assertEqual(unemployment_corroborated_members(app), [])
 
 
 class TestBillingMonthParse(SimpleTestCase):

@@ -24,6 +24,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   admin/super/reviewer).
 
 ### Added
+- **Unemployment detail (income model, Phase 2B).** For a household roster member whose occupation is
+  **`unemployed`**, the family can now record *why* and *since when*, and an EPF statement can corroborate
+  it — strengthening the "why the family has little/no income" story for the reviewer. Never a gate (P3:
+  trust the student). `income_engine.epf_confirms_unemployment` uses the deterministic employer-number
+  all-zeros signal (same as the EPF salary reverse → RM0), plus a best-effort "last contribution older than
+  ~3 months" check **only when that date actually reads** (`statement_date` is deliberately not used — it's
+  the issue date, not a contribution date). Check 2 auto-raises one `unemployment_detail_unknown` clarify
+  (why + since-when) and a soft, optional `unemployment_epf_missing` doc-request; the verdict surfaces a soft
+  `unemployment_epf_corroborated` evidence item (both income routes, via `_utility_context`). Capture: 2nd
+  additive JSON column `income_nonearning = {member: {reason, since}}` (**migration `0087`**, migrate-first).
+  Wizard UI: a contextual sub-panel under an unemployed roster member (since-when + reason + an EPF nudge),
+  Stitch-approved, shown only in the application (Story) context. +16 pytest; i18n en/ms/ta.
+
 - **Declared informal income (income model, Phase 2A).** A salary-route working member with **no
   payslip/EPF** may now declare an average monthly wage in the income wizard. It is ACCEPTED as a real
   figure — feeding per-capita → the B40 headroom band — when the household has a **valid STR** (the STR

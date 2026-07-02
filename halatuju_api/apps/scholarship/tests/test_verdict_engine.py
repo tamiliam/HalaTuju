@@ -1053,6 +1053,36 @@ class TestIncomeDeclared(TestCase):
         self.assertIn('income_above_b40_line', _codes(f['unresolved']))
 
 
+class TestUnemploymentEvidence(TestCase):
+    """Phase 2B — an EPF (all-zeros employer) corroborating an unemployed member surfaces as
+    soft income evidence (unemployment_epf_corroborated), on both routes; never a gate."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='ue2', name='B40', year=2026,
+                                                      per_capita_ceiling=1584)
+
+    def setUp(self):
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id=f'unemp-{self.id()}', name='DIVASHINI A/P MURUGAN',
+            nric='080115-05-0132', household_size=4)
+        # Salary route, mother works; father is unemployed with an all-zeros EPF.
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            income_route='salary', income_working_members=['mother'],
+            father_occupation='unemployed')
+        _add_doc(self.app, 'epf', member='father', fields={'employer_number': '000000000'})
+
+    def test_corroborated_evidence_present(self):
+        f = _facts(self.app)['income']
+        self.assertIn('unemployment_epf_corroborated', _codes(f['evidence']))
+
+    def test_absent_without_epf(self):
+        self.app.documents.filter(doc_type='epf').delete()
+        f = _facts(self.app)['income']
+        self.assertNotIn('unemployment_epf_corroborated', _codes(f['evidence']))
+
+
 class TestUtilityAndEpf(TestCase):
     """EPF shows the MONTHLY contribution (not the lifetime balance) as the income figure;
     utility bills are an address check + a soft per-capita / hardship signal."""

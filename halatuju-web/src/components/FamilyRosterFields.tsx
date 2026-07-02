@@ -42,6 +42,35 @@ function ProfessionSelect({ value, onChange, t }: { value: string; onChange: (v:
   )
 }
 
+/** Phase 2B — the contextual sub-panel shown when a roster member's occupation is
+ *  'unemployed': why + since-when + a soft EPF nudge. Reason/since save to income_nonearning
+ *  (application-scoped), so it only appears when the caller supplies the nonEarning props. */
+function UnemployedPanel({ member, detail, onChange, t }: {
+  member: string
+  detail?: { reason?: string; since?: string }
+  onChange: (member: string, patch: { reason?: string; since?: string }) => void
+  t: TFn
+}) {
+  const U = `${CA}.unemployed`
+  return (
+    <div className="rounded-md bg-blue-50 ring-1 ring-blue-100 p-3 space-y-2">
+      <div>
+        <FieldLabel>{t(`${U}.since`)}</FieldLabel>
+        <input type="month" className="input" value={detail?.since || ''}
+          onChange={(e) => onChange(member, { since: e.target.value })} />
+      </div>
+      <div>
+        <FieldLabel>{t(`${U}.reason`)}</FieldLabel>
+        <input className="input" maxLength={200} placeholder={t(`${U}.reasonPlaceholder`)}
+          value={detail?.reason || ''} onChange={(e) => onChange(member, { reason: e.target.value })} />
+      </div>
+      <p className="flex items-start gap-1.5 text-xs text-gray-500">
+        <span aria-hidden>ⓘ</span> {t(`${U}.epfNudge`)}
+      </p>
+    </div>
+  )
+}
+
 /** A +/− stepper for a sibling count. Defaults to 0 (a real "none" answer). */
 function CountStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const btn = 'h-9 w-9 rounded-full border border-gray-300 text-lg leading-none text-gray-600 hover:bg-gray-100 disabled:opacity-40'
@@ -58,8 +87,13 @@ function CountStepper({ value, onChange }: { value: number; onChange: (v: number
 
 export default function FamilyRosterFields({
   form, onUpdate, onUpdateMember, onAddMember, onRemoveMember, t, profileStyle = false,
+  nonEarning, onUpdateNonEarning,
 }: {
   form: FamilyRosterForm
+  // Phase 2B — unemployment detail {member: {reason, since}}, application-scoped. Supplied only
+  // by the /apply Story tab (has an application); omitted on /profile, so the sub-panel is dark there.
+  nonEarning?: Record<string, { reason?: string; since?: string }>
+  onUpdateNonEarning?: (member: string, patch: { reason?: string; since?: string }) => void
   // Non-generic so both callers' updaters (Story's wider DetailsFormState updater and
   // /profile's FamilyRosterForm updater) are assignable. The roster only updates string
   // (name/occupation) and number (sibling counts) fields via this; the member-pool
@@ -106,6 +140,10 @@ export default function FamilyRosterFields({
                   placeholder={t(`${CA}.otherSpecify`)}
                   value={form[otherKey]} onChange={(e) => onUpdate(otherKey, e.target.value)} />
               )}
+              {form[occKey] === 'unemployed' && onUpdateNonEarning && (
+                <UnemployedPanel member={who} detail={nonEarning?.[who]}
+                  onChange={onUpdateNonEarning} t={t} />
+              )}
             </div>
           )
         })}
@@ -133,6 +171,10 @@ export default function FamilyRosterFields({
                 placeholder={t(`${CA}.otherSpecify`)}
                 value={m.occupation_other || ''}
                 onChange={(e) => onUpdateMember(i, { occupation_other: e.target.value })} />
+            )}
+            {m.occupation === 'unemployed' && m.role && onUpdateNonEarning && (
+              <UnemployedPanel member={m.role} detail={nonEarning?.[m.role]}
+                onChange={onUpdateNonEarning} t={t} />
             )}
           </div>
         ))}
