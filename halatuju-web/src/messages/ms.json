@@ -1981,6 +1981,18 @@
           "title": "Muat naik bukti pendapatan ibu anda",
           "desc": "Ibu anda bekerja, tetapi kami belum ada dokumen pendapatannya. Sila muat naik slip gaji terkini atau penyata KWSP (EPF) beliau — kami mengira pendapatan seluruh isi rumah."
         },
+        "guardian_income_proof_missing": {
+          "title": "Muat naik bukti pendapatan penjaga anda",
+          "desc": "Penjaga anda bekerja, tetapi kami belum ada dokumen pendapatannya. Sila muat naik slip gaji terkini atau penyata KWSP (EPF) mereka — kami mengira pendapatan seluruh isi rumah."
+        },
+        "brother_income_proof_missing": {
+          "title": "Muat naik bukti pendapatan abang anda",
+          "desc": "Abang anda bekerja, tetapi kami belum ada dokumen pendapatannya. Sila muat naik slip gaji terkini atau penyata KWSP (EPF) beliau — kami mengira pendapatan seluruh isi rumah."
+        },
+        "sister_income_proof_missing": {
+          "title": "Muat naik bukti pendapatan kakak anda",
+          "desc": "Kakak anda bekerja, tetapi kami belum ada dokumen pendapatannya. Sila muat naik slip gaji terkini atau penyata KWSP (EPF) beliau — kami mengira pendapatan seluruh isi rumah."
+        },
         "father_status_unknown": {
           "title": "Beritahu kami tentang bapa anda",
           "desc": "Kami tiada maklumat bapa anda. Adakah dia bekerja (dan di mana), atau seorang suri rumah, pesara, menganggur, telah meninggal dunia, atau tiada dalam hubungan? Ini membantu kami memahami jumlah penuh pendapatan isi rumah anda."
@@ -3267,6 +3279,7 @@
           "income_declared_accepted_evidenced": "Pendapatan yang diisytiharkan untuk {members} diterima — dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti) menyokong gaji yang dinyatakan. Dimasukkan dalam per kapita.",
           "income_declared_needs_evidence": "{members} mengisytiharkan gaji, tetapi tiada slip gaji, tiada STR yang sah, dan tiada dokumen sokongan — jadi ia belum boleh dikira. Bukti diperlukan daripada pelajar: mana-mana satu daripada surat majikan/gaji, penyata bank yang menunjukkan pendapatan, atau surat komuniti/penghulu. Permintaan telah dibangkitkan di Pusat Tindakan.",
           "unemployment_epf_corroborated": "KWSP mengesahkan {members} tidak bekerja sekarang (tiada majikan aktif / caruman terhenti) — menyokong gambaran pendapatan terhad isi rumah. Isyarat lembut.",
+          "household_size_confirm": "Orang yang diterangkan berjumlah {described}, tetapi saiz isi rumah dimasukkan sebagai {size} — saiz yang lebih kecil membesarkan pendapatan per kapita. Sahkan saiz isi rumah sebenar semasa temu duga. Isyarat lembut.",
           "utility_percapita_b40": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — konsisten dengan isi rumah B40 (isyarat lembut, tidak sempurna).",
           "utility_percapita_high": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — tinggi (corak penggunaan M40/T20). Wajar disiasat semasa temu duga (isyarat lembut).",
           "utility_hardship": "Isyarat kesusahan: bil utiliti mempunyai tunggakan yang ketara (baki belum dibayar) — menyokong keperluan kewangan.",
@@ -3293,6 +3306,9 @@
           "utility_address_mismatch": "Alamat bil utiliti berbeza daripada alamat rumah — pelajar telah ditanya yang mana rumah semasa mereka.",
           "father_income_proof_missing": "Bapa bekerja tetapi tiada dokumen pendapatan dalam fail — pelajar diminta memuat naik slip gaji / KWSP beliau.",
           "mother_income_proof_missing": "Ibu bekerja tetapi tiada dokumen pendapatan dalam fail — pelajar diminta memuat naik slip gaji / KWSP beliau.",
+          "guardian_income_proof_missing": "Penjaga bekerja tetapi tiada dokumen pendapatan dalam fail — pelajar diminta memuat naik slip gaji / KWSP mereka.",
+          "brother_income_proof_missing": "Abang bekerja tetapi tiada dokumen pendapatan dalam fail — pelajar diminta memuat naik slip gaji / KWSP beliau.",
+          "sister_income_proof_missing": "Kakak bekerja tetapi tiada dokumen pendapatan dalam fail — pelajar diminta memuat naik slip gaji / KWSP beliau.",
           "father_status_unknown": "Pekerjaan/status bapa tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
           "mother_status_unknown": "Pekerjaan/status ibu tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
           "income_doc_stale": "Slip gaji dalam fail berusia lebih 3 bulan — pelajar diminta memuat naik slip terkini.",

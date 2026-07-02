@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Household completeness (income model, Phase 2C).** Income-proof requests are now raised for
+  **every working roster member**, not just the parents: `income_engine.household_status_gaps`
+  generalises `parent_income_gaps` to iterate father, mother, **and each `other_family_members`
+  earner** (guardian / elder brother / elder sister), so a working guardian or sibling with no
+  payslip/EPF is chased for proof too (the sponsor counts the whole household's income). Check 2
+  auto-raises the matching per-member doc-request (`guardian_/brother_/sister_income_proof_missing`);
+  never a gate. Also a soft **household-size consistency** signal: when the people the applicant
+  explicitly described **outnumber** the entered `household_size`, the verdict shows a reviewer-only
+  `household_size_confirm` flag (a too-small denominator overstates per-capita income) — only the
+  harmful over-count direction fires; an under-count (household larger than the itemised roster) is
+  common and benign, so it stays silent. No migration (reads existing roster + docs). +14 pytest;
+  i18n en/ms/ta. Confirmed by a guard test: a studying sibling (D4) is never counted as an earner,
+  only ever a denominator head.
+
 ### Changed
 - **Review permission is now assignment-based (view-all admin can review its assigned students).**
   Decoupled "what you can SEE" (role) from "what you can ACT on" (assignment). A `role='admin'` keeps

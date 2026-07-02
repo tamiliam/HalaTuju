@@ -63,6 +63,11 @@ CLARIFY_SPECS = {
 DOC_SPECS = {
     'father_income_proof_missing': {'member': 'father', 'doc_type': 'salary_slip'},
     'mother_income_proof_missing': {'member': 'mother', 'doc_type': 'salary_slip'},
+    # Phase 2C (P2) — the same PROOF request generalised to a working non-parent roster earner
+    # (guardian / elder brother / elder sister): the sponsor counts the FULL household income.
+    'guardian_income_proof_missing': {'member': 'guardian', 'doc_type': 'salary_slip'},
+    'brother_income_proof_missing': {'member': 'brother', 'doc_type': 'salary_slip'},
+    'sister_income_proof_missing': {'member': 'sister', 'doc_type': 'salary_slip'},
     # S2 — every salary slip on file is older than ~3 months → ask for a current one.
     'income_doc_stale': {'doc_type': 'salary_slip'},
     # Phase 2A (P5b/D1) — a working member declared an informal wage, but the household has no
@@ -75,7 +80,12 @@ DOC_SPECS = {
     # every unemployed member has an EPF (or none are unemployed). Never a gate.
     'unemployment_epf_missing': {'doc_type': 'epf'},
 }
-_PARENT_PROOF_CODE = {'father': 'father_income_proof_missing', 'mother': 'mother_income_proof_missing'}
+_MEMBER_PROOF_CODE = {
+    'father': 'father_income_proof_missing', 'mother': 'mother_income_proof_missing',
+    'guardian': 'guardian_income_proof_missing', 'brother': 'brother_income_proof_missing',
+    'sister': 'sister_income_proof_missing',
+}
+# Only a PARENT slot can be blank (→ a status clarify); other-members always carry an occupation.
 _PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_status_unknown'}
 
 # Priority order when capping — most material to a fundable profile first. The utility
@@ -115,7 +125,7 @@ def sync_check2_queries(application):
     # officer pre-interview flags use), so a 'whose bill is this?' / 'address differs'
     # query is raised + auto-resolved on the same reconcile loop as the completeness gaps.
     from .income_engine import (
-        utility_holder_unknown, utility_address_mismatch, parent_income_gaps,
+        utility_holder_unknown, utility_address_mismatch, household_status_gaps,
         stale_income_proof, sibling_tertiary_funding_unknown, declared_income_gaps,
         unemployment_detail_gap, unemployment_epf_gap,
     )
@@ -133,15 +143,15 @@ def sync_check2_queries(application):
     # Phase 2B — an 'unemployed' member with no reason/since captured → one clarify covering all.
     if unemployment_detail_gap(application):
         gaps.add('unemployment_detail_unknown')
-    # Full-household-income completeness (S1). A blank-slot parent → a status CLARIFY (folded
-    # into the capped gap set below); an earning parent with no payslip → a PROOF doc request
-    # (reconciled separately, uncapped). Collect the wanted proof/doc codes here.
+    # Full-household-income completeness (S1 + P2). A blank-slot PARENT → a status CLARIFY (folded
+    # into the capped gap set below); any earning roster member (parent OR guardian/brother/sister)
+    # with no income doc → a PROOF doc request (reconciled separately, uncapped). Collect the codes.
     proof_wanted = set()
-    for g in parent_income_gaps(application):
+    for g in household_status_gaps(application):
         if g['need'] == 'status':
-            gaps.add(_PARENT_STATUS_CODE[g['member']])
-        else:  # 'proof'
-            proof_wanted.add(_PARENT_PROOF_CODE[g['member']])
+            gaps.add(_PARENT_STATUS_CODE[g['member']])   # only father/mother reach 'status'
+        else:  # 'proof' — any roster earner
+            proof_wanted.add(_MEMBER_PROOF_CODE[g['member']])
     # S2 — every salary slip is stale → an uncapped doc-request for a current one.
     if stale_income_proof(application):
         proof_wanted.add('income_doc_stale')

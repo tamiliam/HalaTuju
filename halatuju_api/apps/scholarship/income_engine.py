@@ -1442,7 +1442,8 @@ def parent_income_status(application, member):
 def parent_income_gaps(application):
     """The household-income completeness gaps across BOTH parents, as
     ``[{'member': 'father'|'mother', 'need': 'proof'|'status'}, …]`` (empty when both are
-    satisfied). Drives the auto-raised reviewer queries that today are typed by hand."""
+    satisfied). Drives the auto-raised reviewer queries that today are typed by hand.
+    (Superseded by ``household_status_gaps``; kept for any parent-only callers.)"""
     gaps = []
     for member in ('father', 'mother'):
         status = parent_income_status(application, member)
@@ -1451,6 +1452,89 @@ def parent_income_gaps(application):
         elif status == 'need_status':
             gaps.append({'member': member, 'need': 'status'})
     return gaps
+
+
+def member_income_status(application, member):
+    """Income-completeness verdict for ANY roster member (father/mother/guardian/brother/sister),
+    from the roster occupation + income evidence. Same states as ``parent_income_status``:
+    'satisfied' | 'need_proof' | 'need_status'. Reads the occupation via ``_member_occupation``
+    (father/mother columns; guardian/brother/sister from ``other_family_members``). Only a parent
+    slot can be blank → 'need_status'; an other_family_members entry always carries a chosen
+    occupation, so it can only be 'satisfied' or 'need_proof'."""
+    from .family import NON_EARNING
+    occ = _member_occupation(application, member)
+    if occ in NON_EARNING:
+        return 'satisfied'
+    if _parent_has_income_evidence(application, member):
+        return 'satisfied'
+    if occ:
+        return 'need_proof'
+    return 'need_status'
+
+
+def household_status_gaps(application):
+    """P2 — income-completeness gaps across the WHOLE household, not just the parents: father,
+    mother, AND each ``other_family_members`` earner (guardian/brother/sister). Generalises
+    ``parent_income_gaps`` so a working guardian/sibling with no income document is chased for
+    proof too (the sponsor counts the full household income). ``[{'member','need'}]``, empty when
+    all satisfied. Other-members always carry an occupation → they only ever surface 'proof'."""
+    gaps = []
+    for member in ('father', 'mother'):
+        st = member_income_status(application, member)
+        if st == 'need_proof':
+            gaps.append({'member': member, 'need': 'proof'})
+        elif st == 'need_status':
+            gaps.append({'member': member, 'need': 'status'})
+    seen = set()
+    for m in (getattr(application, 'other_family_members', None) or []):
+        if not isinstance(m, dict):
+            continue
+        role = m.get('role', '')
+        if role in ('guardian', 'brother', 'sister') and role not in seen:
+            seen.add(role)
+            if member_income_status(application, role) == 'need_proof':
+                gaps.append({'member': role, 'need': 'proof'})
+    return gaps
+
+
+# ── Household-size consistency (P4 — soft reviewer signal) ───────────────────
+# Members a 'deceased' / 'not in contact' occupation marks as NOT part of the living household
+# (they're family history, not a per-capita head).
+_NOT_IN_HOUSEHOLD = frozenset({'deceased', 'no_contact'})
+
+
+def _described_household_count(application):
+    """A FLOOR on household size from what the applicant explicitly described: the student (+1),
+    each parent with an in-household occupation, each ``other_family_members`` entry (excluding
+    deceased / not-in-contact), plus the two sibling steppers. Not everyone is itemised, so this
+    is a floor, never an exact size."""
+    n = 1  # the student themselves
+    for member in ('father', 'mother'):
+        occ = _member_occupation(application, member)
+        if occ and occ not in _NOT_IN_HOUSEHOLD:
+            n += 1
+    for m in (getattr(application, 'other_family_members', None) or []):
+        if isinstance(m, dict) and m.get('role') \
+                and (m.get('occupation', '') or '').strip() not in _NOT_IN_HOUSEHOLD:
+            n += 1
+    n += (getattr(application, 'siblings_in_school', None) or 0)
+    n += (getattr(application, 'siblings_in_tertiary', None) or 0)
+    return n
+
+
+def household_size_shortfall(application):
+    """P4 soft check: when the people EXPLICITLY described OUTNUMBER the stated household size, the
+    per-capita denominator is too small → income is overstated and the student looks LESS needy
+    than they are. Returns ``{'described', 'size'}`` for the reviewer to confirm, else None.
+
+    Only the HARMFUL (over-count) direction flags — a household LARGER than the itemised roster is
+    common and benign (grandparents, relatives not listed one-by-one), so under-count never fires.
+    Advisory only; never a gate."""
+    size = getattr(getattr(application, 'profile', None), 'household_size', None)
+    if not size:
+        return None
+    described = _described_household_count(application)
+    return {'described': described, 'size': int(size)} if described > size else None
 
 
 def declared_income_gaps(application):

@@ -1083,6 +1083,35 @@ class TestUnemploymentEvidence(TestCase):
         self.assertNotIn('unemployment_epf_corroborated', _codes(f['evidence']))
 
 
+class TestHouseholdSizeConfirm(TestCase):
+    """Phase 2C (P4) — when the people described outnumber the stated household size, a soft
+    reviewer 'confirm household size' evidence item appears (over-count only; never a gate)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='hs', name='B40', year=2026)
+
+    def setUp(self):
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id=f'hs-{self.id()}', name='DIVASHINI A/P MURUGAN',
+            nric='080115-05-0132', household_size=2)
+        # Described = student + father + mother = 3, but household_size entered as 2 → over-count.
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            income_route='salary', income_working_members=['father'],
+            father_occupation='gov', mother_occupation='homemaker')
+
+    def test_overcount_flag_in_income_evidence(self):
+        f = _facts(self.app)['income']
+        self.assertIn('household_size_confirm', _codes(f['evidence']))
+
+    def test_no_flag_when_size_consistent(self):
+        self.profile.household_size = 4
+        self.profile.save()
+        f = _facts(self.app)['income']
+        self.assertNotIn('household_size_confirm', _codes(f['evidence']))
+
+
 class TestUtilityAndEpf(TestCase):
     """EPF shows the MONTHLY contribution (not the lifetime balance) as the income figure;
     utility bills are an address check + a soft per-capita / hardship signal."""

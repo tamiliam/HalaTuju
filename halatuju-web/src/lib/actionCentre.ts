@@ -118,6 +118,10 @@ export const KNOWN_CODES = [
   // proof (kind='doc') or their work/status when the slot is blank (kind='clarify').
   'father_income_proof_missing',
   'mother_income_proof_missing',
+  // Phase 2C (P2) — proof requests generalised to non-parent roster earners.
+  'guardian_income_proof_missing',
+  'brother_income_proof_missing',
+  'sister_income_proof_missing',
   'father_status_unknown',
   'mother_status_unknown',
   // S2 — stale salary slip (doc) + sibling-in-tertiary funding (clarify).
