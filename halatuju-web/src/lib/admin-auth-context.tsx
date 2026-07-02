@@ -15,6 +15,7 @@ interface AdminRole {
   is_admin: boolean
   is_super_admin: boolean
   role?: 'super' | 'admin' | 'partner' | 'reviewer'
+  admin_id?: number | null
   org_name: string | null
   admin_name: string
 }

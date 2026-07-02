@@ -115,6 +115,7 @@ class AdminRoleView(PartnerAdminMixin, APIView):
             'is_admin': True,
             'is_super_admin': admin.is_super_admin,
             'role': 'super' if admin.is_super else admin.role,
+            'admin_id': admin.id,
             'org_name': admin.org.name if admin.org else None,
             'admin_name': admin.name,
         })

@@ -516,7 +516,19 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-01)
+## Next Sprint (as of 2026-07-02)
+
+**▶ JUST SHIPPED — Assignment-based review permission (2026-07-02).** View (role) and act (assignment)
+are now decoupled: a `role='admin'` sees all read-only AND can WRITE only on applications assigned to
+them; reviewer=assigned-only; super=any; partner=none. A view-all admin is now an assignable target.
+One shared gate `_AdminBase._can_review_app`/`_require_app_write` (25 endpoints + 2 special). FE cockpit
+`canWrite = super || assigned-to-me` (role endpoint returns `admin_id`). Partner nav lost Guide/FAQ.
+No migration. Retro `docs/retrospective-2026-07-02-assignment-write-permission.md`.
+- **Immediate follow-up (owner-gated):** enable **Suresh** as a selective reviewer — he stays `role='admin'`
+  (no change); the super-admin just **assigns him the chosen students** and edit controls appear on those.
+  Assign only students he does **not** fund (conflict-of-interest guard). Optional: give him a
+  `reviewer_profile` if he'll conduct interviews (language matching / interviewer email).
+- **TD-153** logged — partner-role least-privilege tidy-ups (UI delete button + API-readable oversight lists).
 
 **▶ POST-AWARD CONTRACT-SIGNING FLOW — COMPLETE & MERGED to `feat/award-comprehension` 2026-07-01,
 DARK behind `BURSARY_AGREEMENT_ENABLED` (5 sprints; commits `013effe3`→`f7cc7300`; migrations

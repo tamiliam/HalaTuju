@@ -115,6 +115,35 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return None, self._deny_role()   # reviewer, not assigned to them
         return app, None
 
+    def _can_review_app(self, admin, app):
+        """True if this admin may WRITE (review-act) on this application: super acts on any;
+        admin/reviewer act ONLY on applications ASSIGNED to them; partner never. (Assignment-
+        based review permission, 2026-07 — an 'admin' has full READ scope via _b40_scope='all'
+        but assigned-only WRITE, so a view-all admin can be given a selective review remit.)"""
+        if admin is None or app is None:
+            return False
+        if self._b40_scope(admin) == 'none':          # partner / non-B40
+            return False
+        if self.has_role(admin, 'super'):
+            return True
+        return app.assigned_to_id == admin.id
+
+    def _require_app_write(self, request, pk):
+        """Auth prologue for a per-application WRITE. Returns (app, admin, None) when the caller
+        may act on this application (super, or the assigned admin/reviewer), else
+        (None, None, error_response). Replaces the old _require_reviewer + _scoped_application
+        pair for per-application mutations (the role-only _require_reviewer stays for the few
+        non-application writes: sponsor review, graduation review, reviewer profile)."""
+        admin = self.get_admin(request)
+        if not admin:
+            return None, None, self._deny()
+        app = self._get_application(pk)
+        if app is None:
+            return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not self._can_review_app(admin, app):
+            return None, None, self._deny_role()
+        return app, admin, None
+
 
 class AdminApplicationListView(_AdminBase):
     def get(self, request):
@@ -203,13 +232,10 @@ class AdminApplicationDetailView(_AdminBase):
         return Response(AdminApplicationDetailSerializer(app).data)
 
     def patch(self, request, pk):
-        """Admin-editable per-application flags: mentoring-candidate. Writes require
-        reviewer/super (admin is read-only). Reviewer assignment moved to the
-        super-only audited endpoint (F7: .../assign/)."""
-        admin, err = self._require_reviewer(request)
-        if err:
-            return err
-        app, err = self._scoped_application(request, pk)
+        """Admin-editable per-application flags: mentoring-candidate. Writes are
+        assignment-based (super, or the admin/reviewer this application is assigned to).
+        Reviewer assignment itself is the super-only audited endpoint (F7: .../assign/)."""
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
         fields = []
@@ -247,12 +273,9 @@ class AdminVerifyAcceptView(_AdminBase):
     for the admin to resolve rather than silently double-verifying. (Resolves TD-054.)
     """
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         # Must be a live pre-accept state (not already accepted/rejected/withdrawn).
         if app.status not in ('shortlisted', 'profile_complete', 'interviewing', 'interviewed'):
             return Response(
@@ -315,12 +338,9 @@ class AdminRejectView(_AdminBase):
     'contractual' = failed post-award steps (allowed from 'recommended'/'sponsored') → generic email.
     Reviewer-gated. The engine buckets (merit/need/ineligible) are NOT settable here."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         category = request.data.get('category')
         try:
             admin_reject(app, admin, category)
@@ -340,12 +360,9 @@ class AdminCancelDeclineView(_AdminBase):
     """POST .../<pk>/cancel-decline/ — abort a scheduled-but-unrevealed decline within the
     decline cool-off (the student never saw it). Reviewer-gated. Idempotent."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         cancel_pending_decline(app)
         return Response(AdminApplicationDetailSerializer(app).data)
 
@@ -355,12 +372,9 @@ class AdminHoldAwardView(_AdminBase):
     cool-off (the amount returns to the sponsor; the student never saw confirmation).
     Reviewer-gated. Idempotent."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         hold_pending_award(app)
         return Response(AdminApplicationDetailSerializer(app).data)
 
@@ -381,12 +395,9 @@ class AdminApplicationRefereeView(_AdminBase):
         return Response({'referees': RefereeSerializer(refs, many=True).data})
 
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         serializer = RefereeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ref = Referee.objects.create(application=app, **serializer.validated_data)
@@ -396,7 +407,7 @@ class AdminApplicationRefereeView(_AdminBase):
 class AdminRefereeDetailView(_AdminBase):
     """DELETE .../<pk>/referees/<ref_id>/ — remove a referee from the application."""
     def delete(self, request, pk, ref_id):
-        admin, err = self._require_reviewer(request)
+        _app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
         ref = Referee.objects.filter(pk=ref_id, application_id=pk).first()
@@ -419,12 +430,9 @@ class AdminRunVisionView(_AdminBase):
     def post(self, request, pk, doc_id):
         # Re-running a (billable) document read is a reviewer-gated WRITE action — it was
         # previously only scope-checked, letting a read-only admin trigger it (TD audit 2026-06-14).
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)   # reviewer assignment-scoped; partner none
-        if _err:
-            return _err
         doc = ApplicantDocument.objects.filter(pk=doc_id, application_id=pk).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -438,12 +446,9 @@ class AdminRunVisionView(_AdminBase):
 
 class AdminGenerateProfileView(_AdminBase):
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         # Optional output language ('en'/'ms'); defaults to the applicant's locale.
         # Shared store path (Check 2 STEP 3): same as the auto-trigger, with claim-gating.
         from .services import generate_ready_profile
@@ -458,12 +463,9 @@ class AdminFinaliseProfileView(_AdminBase):
     existing draft profile with the SUBMITTED interview's findings → ``final_markdown``.
     Reviewer-gated, admin-on-demand. Requires both a draft and a submitted interview."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         sp = SponsorProfile.objects.filter(application=app).first()
         if sp is None or not sp.current_markdown.strip():
             return Response({'error': 'Draft a profile first.', 'code': 'no_draft'},
@@ -490,7 +492,7 @@ class AdminPublishAnonProfileView(_AdminBase):
     human gate that makes the anonymous profile visible in the sponsor pool (with
     an active share consent). Reviewer-gated. Requires a generated anon profile."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        _app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
         sp = SponsorProfile.objects.filter(application_id=pk).first()
@@ -524,12 +526,9 @@ class AdminSuggestGapsView(_AdminBase):
     (not repeating the existing ones) and appends; otherwise it replaces with a
     fresh set of 3. Reviewer-gated (billable)."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         from .gap_engine import generate_interview_gaps
         append = bool(request.data.get('append'))
         existing = app.interview_gaps or []
@@ -546,7 +545,7 @@ class AdminSuggestGapsView(_AdminBase):
 
 class AdminProfileEditView(_AdminBase):
     def put(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        _app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
         sp = SponsorProfile.objects.filter(application_id=pk).first()
@@ -562,7 +561,7 @@ class AdminProfileEditView(_AdminBase):
 
 class AdminPublishProfileView(_AdminBase):
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        _app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
         sp = SponsorProfile.objects.filter(application_id=pk).first()
@@ -617,12 +616,9 @@ class AdminInterviewView(_AdminBase):
         return Response({'session': data, 'agenda': _interview_agenda(app)})
 
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         findings = request.data.get('findings', {}) or {}
         err = _validate_findings(findings)
         if err:
@@ -655,12 +651,9 @@ class AdminInterviewSubmitView(_AdminBase):
     """POST .../<pk>/interview/submit/ — finalise the draft session and advance the
     application → interviewed. Reviewer/super only."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         session = app.interview_sessions.filter(status='draft').first()
         if session is None:
             return Response({'error': 'No draft interview to submit.', 'code': 'no_draft'},
@@ -684,12 +677,9 @@ class AdminInterviewReopenView(_AdminBase):
     Only valid BEFORE a decision is recorded — once decided, use the Decision panel's
     Reopen (super-only, holds the profile from the pool)."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         if app.verdict_decided_at is not None:
             return Response(
                 {'error': 'A decision is recorded — reopen the decision instead.',
@@ -817,12 +807,9 @@ class AdminDisbursementScheduleView(_AdminBase):
     scheduled_for?} — schedule one tranche against a funded application. Reviewer-gated.
     Returns the refreshed application detail (the cockpit re-renders its disbursement panel)."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         seq = request.data.get('sequence')
         try:
             seq = int(seq) if seq not in (None, '') else None
@@ -847,9 +834,9 @@ class AdminDisbursementActionView(_AdminBase):
     tranche's application. A 'release' (the first one) flips the app active → maintenance.
     Returns the refreshed application detail."""
     def post(self, request, pk, action):
-        admin, err = self._require_reviewer(request)
-        if err:
-            return err
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
         writer = disbursement_service.ACTIONS.get(action)
         if writer is None:
             return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
@@ -858,10 +845,9 @@ class AdminDisbursementActionView(_AdminBase):
                 .filter(pk=pk).first())
         if disb is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        # Scope on the tranche's application (reviewer assignment-scoped).
-        _app, _err = self._scoped_application(request, disb.application_id)
-        if _err:
-            return _err
+        # Assignment-based write: super, or the admin/reviewer assigned to the tranche's application.
+        if not self._can_review_app(admin, disb.application):
+            return self._deny_role()
         try:
             writer(disb, by_email=admin.email,
                    note=request.data.get('note', ''))
@@ -875,12 +861,9 @@ class AdminCloseApplicationView(_AdminBase):
     funded application (active/maintenance) with a reason (graduated/completed/withdrawn/
     lapsed/terminated). Reviewer-gated + access-scoped. Terminal. Returns the refreshed detail."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         try:
             closure_service.close_application(
                 app, closure_reason=request.data.get('closure_reason'), by_email=admin.email)
@@ -895,12 +878,9 @@ class AdminMaintenanceSubstateView(_AdminBase):
     Reviewer-gated + access-scoped. `on_hold` pauses tranche releases. Returns the
     refreshed application detail."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         try:
             maintenance_service.set_substate(app, request.data.get('substate'))
         except maintenance_service.MaintenanceError as e:
@@ -909,16 +889,17 @@ class AdminMaintenanceSubstateView(_AdminBase):
 
 
 class AdminAssignableAdminsView(_AdminBase):
-    """GET .../assignable-admins/ — active REVIEWERS (+ supers) for the assignment
-    dropdown. Only roles that can actually be assigned an applicant appear (mirrors
-    services._can_review): a plain 'admin' is read-only, and 'partner'/'viewer' have
-    no review role, so none of them are listed."""
+    """GET .../assignable-admins/ — active REVIEWERS, ADMINS (+ supers) for the assignment
+    dropdown. Only roles that can be assigned an applicant appear (mirrors services._can_review):
+    a view-all 'admin' can now be assigned selective review work (assignment grants WRITE on the
+    assigned application while their read stays all), so admins are listed; 'partner' has no
+    review role and is excluded."""
     def get(self, request):
         if not self.get_admin(request):
             return self._deny()
         from django.db.models import Q
         admins = (PartnerAdmin.objects.filter(is_active=True)
-                  .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super']))
+                  .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super', 'admin']))
                   .select_related('reviewer_profile').order_by('name'))
         # Internal-only "corrections" tally per reviewer (reopened decisions that led
         # to a real change). Never shown to sponsors/students — an internal quality
@@ -949,12 +930,9 @@ class AdminRequestInfoView(_AdminBase):
     documentation. Records a note on the application + emails the student. Does
     NOT change status (the student keeps editing). Reviewer/super only."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         note = (request.data.get('note', '') or '').strip()
         if not note:
             return Response({'error': 'A note is required.', 'code': 'note_required'},
@@ -973,12 +951,9 @@ class AdminResolutionItemView(_AdminBase):
     (the structured successor to request-info). Body: {kind, prompt, doc_type?,
     fact?}. Reviewer/super only."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
         from .services import querying_locked
         if querying_locked(app):
             return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
@@ -1015,15 +990,18 @@ class AdminResolutionItemActionView(_AdminBase):
     """POST .../resolution-items/<item_id>/<action>/ — officer waives or resolves
     a ticket by hand. action ∈ {waive, resolve}. Reviewer/super only."""
     def post(self, request, item_id, action):
-        admin, err = self._require_reviewer(request)
-        if err:
-            return err
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
         if action not in ('waive', 'resolve', 'reopen'):
             return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
         from .models import ResolutionItem
         item = ResolutionItem.objects.filter(pk=item_id).select_related('application').first()
         if item is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Assignment-based write: super, or the admin/reviewer assigned to the item's application.
+        if not self._can_review_app(admin, item.application):
+            return self._deny_role()
         from .services import querying_locked
         if querying_locked(item.application):
             return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
@@ -1056,12 +1034,9 @@ class AdminRecordVerdictView(_AdminBase):
     refine to produce the final profile in the same action (reusing AdminFinaliseProfileView's
     preconditions; never duplicates the engine). Reviewer/super only."""
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        app, _err = self._scoped_application(request, pk)
-        if _err:
-            return _err
 
         raw = request.data.get('officer_verdict')
         if not isinstance(raw, dict):
@@ -1318,10 +1293,7 @@ class AdminInterviewSlotsView(_AdminBase):
     def post(self, request, pk):
         if not scheduling.scheduling_enabled():
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        admin, err = self._require_reviewer(request)
-        if err:
-            return err
-        app, err = self._scoped_application(request, pk)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
         starts = _parse_slot_starts(request.data.get('slots'))
@@ -1353,10 +1325,7 @@ class AdminInterviewSlotDetailView(_AdminBase):
     def delete(self, request, pk, slot_id):
         if not scheduling.scheduling_enabled():
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        admin, err = self._require_reviewer(request)
-        if err:
-            return err
-        app, err = self._scoped_application(request, pk)
+        app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
         slot = InterviewSlot.objects.filter(application=app, pk=slot_id).first()

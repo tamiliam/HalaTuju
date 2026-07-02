@@ -53,6 +53,12 @@ post-audit work (TD-053–143). Both are searchable by id.
 - **TD-151** — document-extraction & income-computation robustness (the recurring mis-read class promoted from
   the 2026-06-29 consolidation review; a 1-sprint hardening pass).
 
+**Admin roles / permissions:**
+- **TD-152** — bursary is a named-personal-donor contract (Suresh, personally) until the org incorporates; novate to
+  the Foundation then (ACCEPTED interim, ties to TD-140).
+- **TD-153** — partner-role least-privilege tidy-ups: (a) UI Delete-student button the backend refuses for partner,
+  (b) a few oversight LIST endpoints readable via direct API by partner/reviewer though the UI hides them. (b) → sprint-lane.
+
 **Original 2026-03 audit — code-hygiene leftovers:**
 - **TD-050** — i18n key mismatch (quiz reads `halatuju_lang`, not `halatuju_locale` → may always load English) — *medium*.
 - **TD-043** — phone/OTP login still "coming soon" (ties to the WhatsApp-OTP plan) — *medium*.
@@ -1140,3 +1146,20 @@ Relates to **TD-140** (Phase-0: finalise the Foundation entity + signatory) — 
 30-day clawback/repayment; "no other bursary/aid" exclusivity; publicity-by-default vs our opt-in consent; wet-witnessed-
 signature blocks vs our digital SMS-PIN flow; CGPA 3.0 vs the engine's 2.0; unilateral obligation amendment; the
 referenced "Donor's Personal Data Notice" (must exist); mentor obligations made enforceable before mentoring is built.
+
+### [TD-153] Partner-role least-privilege tidy-ups (UI delete-button mismatch + API-readable oversight lists)
+**Status:** Open (logged 2026-07-02, from a partner-role permission audit). Two low-risk mismatches; neither is a live
+PII exposure beyond what the role already sees, but both should be tightened.
+- **(a) UI/permission mismatch — partner Delete-student button.** The student-detail page
+  (`halatuju-web/src/app/admin/students/[id]/page.tsx`) renders a **Delete** button for the partner role, but the backend
+  restricts delete to super-admin (`PartnerStudentDetailView.delete` → `is_super_admin`, `apps/courses/views_admin.py`).
+  A partner clicking it is refused at the API — a confusing dead button. **Fix:** hide/disable Delete unless super.
+- **(b) Over-broad gate on read-only oversight LIST endpoints.** Several admin GET endpoints check only "is this *any*
+  authenticated admin?" (`get_admin()`), not the role — so a `partner`/`reviewer` could read them via **direct API**
+  though the admin nav hides the pages: sponsor list (`/admin/sponsors/`), sponsorships (`/admin/sponsorships/`),
+  graduation-message queue (`/admin/graduation-messages/`), verdict metrics (`/admin/scholarship/verdict-metrics/`),
+  course-data dashboard (`/admin/course-data/`). No writes, no per-student PII beyond aggregates. **Fix:** add an explicit
+  role gate (super/admin) per endpoint. **Note:** part (b) touches auth → sprint-lane, not small-change.
+**Risk if left:** Low. **Size:** small (a few UI conditionals + a handful of backend role checks + tests).
+(Renumbered from a draft TD-152 that collided with the bursary-donor entry when two branches numbered in parallel —
+see the lesson on checking `max(TD-NNN)` before numbering, mirroring the migration-number rule.)

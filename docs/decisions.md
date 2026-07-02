@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## Review permission is assignment-based, decoupled from the view role — 2026-07-02
+**Decision:** What an admin can SEE stays role-based (`admin`/`super` = all, `reviewer` = assigned,
+`partner` = none); what they can ACT on is now assignment-based — a per-application WRITE is allowed iff
+the caller is `super` OR the application is assigned to them. So a view-all `admin` keeps the full
+read-all overview but can only review (verify/interview/verdict/disburse/etc.) the students explicitly
+assigned to them. One shared gate (`_AdminBase._can_review_app` / `_require_app_write`) is the single
+enforcement point for all 25 per-application mutations; a view-all `admin` is now an assignable target.
+**Why:** the concrete driver was Suresh (a view-all admin **and** a funding sponsor) needing to review a
+selective set of students without being handed the whole programme. The old model forced an either/or —
+`admin` (see-all, no edit) XOR `reviewer` (assigned-only, edit) — with no "see-all + edit-selected". A
+single role can't be both, so the fix was to stop gating writes on role and gate them on assignment.
+**Alternatives considered:** (1) flip Suresh to `reviewer` — rejected, he'd lose the all-students
+overview; (2) a new combined role — more surface than needed; (3) a second admin account — messy, and
+`get_admin` resolves one PartnerAdmin per Supabase user. **Consequence / bonus:** reviewers are now
+uniformly assignment-scoped on writes (three profile writes that were role-only are tightened), and the
+single gate satisfies the "one enforcement point" lesson (TD audit). **Governance caveat:** because a
+funding sponsor can now also hold review-write, assign such a person only students they do **not** fund
+(conflict-of-interest guard — enforced by assignment choice, not code).
+
 ## Award good-news email is a 24h cool-off auto-send, not inline / not a manual gate — 2026-06-29
 **Decision:** A sponsor award (button or batch) funds silently; the good-news email is sent by an
 hourly cron (`release_award_offer_emails`) once the award is `AWARD_OFFER_EMAIL_COOLOFF_HOURS` (24)
