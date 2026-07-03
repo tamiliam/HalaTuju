@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HalaTuju — Assistance-Recipient Portal: Proposal &amp; Research</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-dark:#1e40af; --ink:#0f172a; --muted:#64748b;
+    --bg:#f8fafc; --card:#ffffff; --line:#e2e8f0;
+    --green:#16a34a; --amber:#d97706; --red:#dc2626; --indigo:#4f46e5;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.6;font-size:16px}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  header.hero{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:48px 24px}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+  header.hero .wrap{padding:0}
+  header.hero h1{margin:0 0 8px;font-size:30px;letter-spacing:-.02em}
+  header.hero p{margin:4px 0;opacity:.92}
+  .pill{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+    border-radius:999px;padding:3px 12px;font-size:13px;margin-top:10px}
+  nav.toc{position:sticky;top:0;background:rgba(248,250,252,.92);backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);z-index:10}
+  nav.toc .wrap{display:flex;gap:6px;flex-wrap:wrap;padding:10px 24px}
+  nav.toc a{font-size:13px;color:var(--muted);padding:5px 10px;border-radius:8px}
+  nav.toc a:hover{background:#eef2ff;color:var(--blue);text-decoration:none}
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-child{border-bottom:0}
+  h2{font-size:23px;margin:0 0 6px;letter-spacing:-.01em}
+  h2 .num{color:var(--blue);font-weight:800;margin-right:8px}
+  .lead{color:var(--muted);margin:0 0 20px}
+  h3{font-size:17px;margin:22px 0 8px}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:820px){.g2,.g3{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h4{margin:0 0 6px;font-size:16px}
+  .card p{margin:6px 0;font-size:14.5px}
+  .tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;text-transform:uppercase;letter-spacing:.03em}
+  .t-rec{background:#dcfce7;color:#166534}
+  .t-new{background:#e0e7ff;color:#3730a3}
+  .t-legal{background:#fee2e2;color:#991b1b}
+  .t-cost{background:#fef9c3;color:#854d0e}
+  .rec{border-left:4px solid var(--green);background:#f0fdf4;padding:10px 14px;border-radius:0 10px 10px 0;margin-top:10px;font-size:14px}
+  .warn{border-left:4px solid var(--red);background:#fef2f2;padding:10px 14px;border-radius:0 10px 10px 0;margin-top:10px;font-size:14px}
+  .note{border-left:4px solid var(--amber);background:#fffbeb;padding:10px 14px;border-radius:0 10px 10px 0;margin-top:10px;font-size:14px}
+  ul.tick{list-style:none;padding:0;margin:8px 0}
+  ul.tick li{padding-left:24px;position:relative;margin:6px 0;font-size:14.5px}
+  ul.tick li:before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:800}
+  ul.dot li{margin:5px 0;font-size:14.5px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f1f5f9;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#0f172a;color:#e2e8f0;
+    padding:14px;border-radius:10px;overflow:auto;white-space:pre;line-height:1.4}
+  .timeline{position:relative;margin-top:10px}
+  .step{display:flex;gap:14px;padding:12px 0;border-bottom:1px dashed var(--line)}
+  .step:last-child{border-bottom:0}
+  .step .dot{flex:0 0 32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+  .step .body h4{margin:0 0 2px}
+  .step .body p{margin:0;font-size:14px;color:var(--muted)}
+  .src{font-size:13px;color:var(--muted)}
+  .src a{font-size:13px}
+  .kbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .kbar .kpi{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .kbar .kpi b{display:block;font-size:22px;color:var(--blue)}
+  .kbar .kpi span{font-size:13px;color:var(--muted)}
+  footer{padding:28px 24px;color:var(--muted);font-size:13px;text-align:center}
+  .star{color:var(--indigo);font-weight:800}
+  @media print{nav.toc{display:none}header.hero{background:#1e3a8a !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Assistance-Recipient Portal</h1>
+    <p>Proposal &amp; research dossier — what the post-award student experience should be.</p>
+    <p>HalaTuju B40 · 19 June 2026 · prepared for tamiliam</p>
+    <span class="pill">Status: proposal for decision — nothing built yet beyond today's basic page</span>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#summary">Summary</a>
+  <a href="#decisions">Key decisions</a>
+  <a href="#ideas">Fresh ideas</a>
+  <a href="#ia">Architecture</a>
+  <a href="#features">Features</a>
+  <a href="#roadmap">Roadmap</a>
+  <a href="#legal">Compliance</a>
+  <a href="#research">Research</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- ============ SUMMARY ============ -->
+<section id="summary">
+  <h2><span class="num">1</span>Executive summary</h2>
+  <p class="lead">Where students who have been <em>awarded</em> assistance live after the application is over.</p>
+  <p>Today, a sponsored student lands on a single "My Progress" page with three things: log semester
+  results, an optional "share my story" toggle, and an anonymous thank-you to their sponsor. It works —
+  but it is <strong>orphaned</strong> (no menu links to it) and it stops well short of what running a
+  monthly-assistance programme actually requires: a signed agreement, bank details, payment history,
+  enrolment checks, and a light duty-of-care layer.</p>
+  <p>This proposes a <strong>role-aware "My Assistance" hub</strong> with four tabs — Overview, Money,
+  Progress, Support — that fits cleanly into the one-login app shared by course-explorers, applicants
+  and awardees. It is grounded in seven research streams (architecture, cards, payments,
+  student-success, onboarding/legal, navigation, duty-of-care).</p>
+  <div class="kbar">
+    <div class="kpi"><b>4</b><span>tabs (Overview · Money · Progress · Support)</span></div>
+    <div class="kpi"><b>5+1</b><span>decisions to make (see next section)</span></div>
+    <div class="kpi"><b>4</b><span>build sprints, money last</span></div>
+    <div class="kpi"><b>&lt;$10/mo</b><span>infra target preserved</span></div>
+  </div>
+  <p style="margin-top:18px">Two clickable prototypes are running locally while this is live:
+  <a href="http://localhost:3000/preview/in-programme">today's page</a> ·
+  <a href="http://localhost:3000/preview/recipient-hub">the proposed hub</a>.</p>
+</section>
+
+<!-- ============ DECISIONS ============ -->
+<section id="decisions">
+  <h2><span class="num">2</span>Key decision items</h2>
+  <p class="lead">The choices that shape everything else. My recommendation is flagged on each.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>① Disbursement rail <span class="tag t-cost">cost</span></h4>
+      <p>How recipients get paid monthly.</p>
+      <div class="rec"><strong>Recommend:</strong> <b>IBG bulk file</b> for the monthly run (cheapest,
+      payroll-style) + <b>DuitNow Name Enquiry</b> to verify the account at onboarding. A prepaid card
+      only later, only if recipients are unbanked or you need spend-control.</div>
+    </div>
+    <div class="card">
+      <h4>② Payments: now or later</h4>
+      <p>Automate the payout ledger soon, or start manual?</p>
+      <div class="rec"><strong>Recommend:</strong> capture bank details + show a <b>manual</b> payment
+      history first (you pay by normal transfer), automate disbursement in a later sprint behind the
+      existing flag. Lower risk, no live-money code early.</div>
+    </div>
+    <div class="card">
+      <h4>③ Agreement quiz: hard gate or soft</h4>
+      <p>Must the student pass to unlock payment?</p>
+      <div class="rec"><strong>Recommend:</strong> a <b>hard gate</b> — short, plain-language, and framed
+      as <em>evidence of informed consent</em> (valuable with a young cohort), not a test to fail.</div>
+    </div>
+    <div class="card">
+      <h4>④ Where bank details live</h4>
+      <p>Shared Profile vs the recipient hub.</p>
+      <div class="rec"><strong>Recommend:</strong> inside <b>My Assistance → Money</b> (recipient-only),
+      not the shared Profile — keeps the common profile clean and the financial data access-scoped.</div>
+    </div>
+    <div class="card">
+      <h4>⑤ Resources scope</h4>
+      <p>How much enrichment content to host.</p>
+      <div class="rec"><strong>Recommend:</strong> a <b>thin, curated link list</b> with review dates +
+      event-driven nudges — not a content library (the evidence says libraries get ignored and rot).</div>
+    </div>
+    <div class="card">
+      <h4>＋ Mobile navigation (whole app) <span class="tag t-new">bigger</span></h4>
+      <p>A separate, larger decision this surfaced.</p>
+      <div class="note">Evidence strongly favours a <b>bottom navigation bar</b> over the current top
+      hamburger (~30%+ better feature discovery). Affects the <em>whole</em> app, so decide it on its own
+      — not bundled into this work.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FRESH IDEAS ============ -->
+<section id="ideas">
+  <h2><span class="num">3</span>Fresh ideas &amp; unique features</h2>
+  <p class="lead">Beyond the baseline — the things that would make HalaTuju's programme distinctive.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4><span class="star">★</span> At-risk auto check-in <span class="tag t-new">unique</span></h4>
+      <p>Combine signals you <em>already</em> hold — a CGPA dip <strong>+</strong> a missed semester
+      report <strong>+ a skipped monthly claim</strong> — to trigger an automated, logged nudge offering
+      help. The skipped-claim signal is a disengagement flag most programmes never use.</p>
+    </div>
+    <div class="card">
+      <h4><span class="star">★</span> Privacy-preserving transparency</h4>
+      <p>The sponsor sees only a coarse band (on-track / needs-attention / graduated) — never the results
+      slip or identity. Trust without exposure; already the design DNA, worth keeping front-and-centre.</p>
+    </div>
+    <div class="card">
+      <h4><span class="star">★</span> Quiz-as-consent, not box-tick</h4>
+      <p>The T&amp;C "agree" step becomes a 3-question comprehension check. It doubles as <em>legal
+      evidence</em> the student understood — and gently teaches the conditions.</p>
+    </div>
+    <div class="card">
+      <h4><span class="star">★</span> DuitNow name-check trust badge</h4>
+      <p>Confirm the bank account name matches before the first payout, and show a "Verified ✓" badge.
+      Free via Malaysian rails; kills the #1 cause of misdirected payments.</p>
+    </div>
+    <div class="card">
+      <h4><span class="star">★</span> Pay-it-forward flywheel</h4>
+      <p>At graduation, invite recipients to opt in as a future <em>micro-sponsor</em> or peer mentor.
+      Turns beneficiaries into the next cohort's supporters — a community loop few aid programmes build.</p>
+    </div>
+    <div class="card">
+      <h4><span class="star">★</span> Milestone moments</h4>
+      <p>Celebrate semester completion, a CGPA jump, graduation — small, timely, human touches that the
+      retention evidence says actually move persistence.</p>
+    </div>
+    <div class="card">
+      <h4><span class="star">★</span> Behavioural-default money nudge</h4>
+      <p>For financial literacy, a sensible <em>default</em> (e.g. "set aside RM20/month") beats a course
+      — defaults move young, low-income savers most. Optional, opt-out.</p>
+    </div>
+    <div class="card">
+      <h4><span class="star">★</span> Guardian co-portal for minors</h4>
+      <p>For under-18s the guardian is the binding signer (legal necessity) — turn that into a clean
+      guardian acceptance + receipt-of-funds view, not just a name field.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ARCHITECTURE ============ -->
+<section id="ia">
+  <h2><span class="num">4</span>How it fits the menu (architecture)</h2>
+  <p class="lead">One login, three classes (explore → apply → receive) — stages of one journey, not personas.</p>
+  <ul class="tick">
+    <li><strong>Stable primary nav, content adapts by state</strong> — don't make users pick a role; the
+    home Dashboard re-prioritises itself (like StudentAid.gov).</li>
+    <li><strong>Primary destinations, not tabs</strong> for the big functions:
+    <span class="mono" style="display:inline;padding:2px 6px">Home · Courses · My Application · My Aid · More</span>.
+    "My Aid" lights up once sponsored.</li>
+    <li><strong>Tabs only within a destination</strong>, capped at 3–4 — inside My Aid: Overview · Money · Progress · Support.</li>
+    <li><strong>Keep the shared Profile single</strong>; recipient-only financial data sits in the hub, not the profile.</li>
+  </ul>
+  <h3>Desktop</h3>
+  <div class="mono">My Assistance
+[Overview] [Money] [Progress] [Support]
+┌ Award RM300/month ┐   ┌ Onboarding 3/4 ●●●○ ┐
+│ Until Dec 2027    │   │ Add bank details → │
+└───────────────────┘   └────────────────────┘
+Next payment: 1 Jul 2026 · RM300 · Scheduled ✓</div>
+  <h3>Mobile (phone-first)</h3>
+  <div class="mono">‹ My Assistance
+[Overview][Money][Progress][Support]   ← swipe
+┌ RM300/month ┐
+└─────────────┘
+Onboarding 3/4   ▸ Add bank details</div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section id="features">
+  <h2><span class="num">5</span>Feature catalogue by tab</h2>
+  <p class="lead">✓ = already built today.</p>
+  <table>
+    <tr><th>Tab</th><th>Contains</th></tr>
+    <tr>
+      <td><strong>Overview</strong></td>
+      <td>Award summary · onboarding checklist that gates first payment (accept ✓ · agree to terms+quiz ·
+      add bank · upload enrolment) · next payment · conditions at a glance · <em>agreement + quiz folds in here</em>.</td>
+    </tr>
+    <tr>
+      <td><strong>Money</strong></td>
+      <td>Bank details (encrypted, name-verified) · payment history (date · amount · status · reference ·
+      masked ****1234 · downloadable) · failed-payment alert + fix link · <em>card display only if ever adopted</em>.</td>
+    </tr>
+    <tr>
+      <td><strong>Progress</strong></td>
+      <td>Semester results ✓ · per-semester proof-of-enrolment re-upload · conditions tracker (green/amber).</td>
+    </tr>
+    <tr>
+      <td><strong>Support</strong></td>
+      <td>Thank-your-sponsor ✓ · share-my-story consent ✓ · thin curated resources + event nudges ·
+      contact/help · (later) light mentor check-in.</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section id="roadmap">
+  <h2><span class="num">6</span>Phased roadmap</h2>
+  <p class="lead">Money comes last; the legally load-bearing piece comes early.</p>
+  <div class="timeline">
+    <div class="step"><div class="dot">A</div><div class="body">
+      <h4>Navigation + hub shell</h4>
+      <p>Conditional "My Assistance" nav item, state-aware Dashboard card, tabbed shell wrapping what
+      already exists. Unblocks the orphan page. No money, low risk.</p></div></div>
+    <div class="step"><div class="dot">B</div><div class="body">
+      <h4>Agreement + quiz + guardian-as-signer <span class="tag t-legal">legal</span></h4>
+      <p>The load-bearing sprint — versioned T&amp;C, scrollwrap accept, comprehension quiz, guardian
+      binding for minors.</p></div></div>
+    <div class="step"><div class="dot">C</div><div class="body">
+      <h4>Bank details + payment history (manual first)</h4>
+      <p>Capture details with name-verification; show a statement you populate manually. No live money movement.</p></div></div>
+    <div class="step"><div class="dot">D</div><div class="body">
+      <h4>Automated disbursement (IBG + DuitNow) <span class="tag t-cost">money</span></h4>
+      <p>Real-money step behind the existing flag; enrolment-gated payments; failed-payment handling.</p></div></div>
+    <div class="step"><div class="dot">E</div><div class="body">
+      <h4>Later / optional</h4>
+      <p>Resources polish · at-risk check-in (with safeguarding groundwork) · card programme if ever justified ·
+      pay-it-forward flywheel.</p></div></div>
+  </div>
+</section>
+
+<!-- ============ COMPLIANCE ============ -->
+<section id="legal">
+  <h2><span class="num">7</span>Compliance &amp; risk highlights</h2>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Minors can't validly sign <span class="tag t-legal">must-fix</span></h4>
+      <p>As a private NGO you're outside the Contracts (Amendment) Act 1976, so a minor's direct
+      agreement is <strong>void</strong>.</p>
+      <div class="warn">The <strong>parent/guardian must be the binding signer</strong> for under-18s.
+      Have a Malaysian lawyer confirm the structure before launch.</div>
+    </div>
+    <div class="card">
+      <h4>Don't over-build for PCI</h4>
+      <p>PCI governs <em>card</em> data only — it does <strong>not</strong> apply to bank account numbers.</p>
+      <div class="note">But bank numbers are <em>more</em> sensitive (static): encrypt at rest, mask to
+      last-4, restrict access, never log. Spend effort on PDPA, not PCI.</div>
+    </div>
+    <div class="card">
+      <h4>PDPA 2024 amendment (in force Jan 2025)</h4>
+      <p>Mandatory breach notification, mandatory DPO, wellbeing data is sensitive (explicit consent),
+      penalties up to RM1m. Your SMS/WhatsApp vendor is a data processor → needs a DPA.</p>
+    </div>
+    <div class="card">
+      <h4>Safeguarding for minors</h4>
+      <p>No unmonitored 1:1 mentor↔minor contact — route all comms through monitored channels (in-app /
+      WhatsApp Business broadcast). Needs a policy + Designated Safeguarding Lead before any mentoring ships.</p>
+    </div>
+    <div class="card">
+      <h4>AML — proportionate, not bank-grade</h4>
+      <p>A grant-maker paying its own beneficiaries is generally not a "reporting institution". Sensible
+      controls: sanctions-screen against MOHA/UNSCR lists, verify identity + name match, keep audit trails.</p>
+    </div>
+    <div class="card">
+      <h4>Clawback fairness</h4>
+      <p>A heavy clawback/bond against a B40 minor risks unconscionability <em>and</em> reputational
+      blowback. Keep any penalties proportionate and plainly explained.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESEARCH ============ -->
+<section id="research">
+  <h2><span class="num">8</span>Research dossier</h2>
+  <p class="lead">Seven streams. Condensed findings + sources.</p>
+
+  <h3>R2 · Prepaid / disbursement cards</h3>
+  <ul class="dot">
+    <li><strong>Swipey is a B2B expense product</strong> (built on Fasspay, a BNM e-money issuer) — wrong tool for beneficiary payouts.</li>
+    <li>Cards fit only for the <strong>unbanked</strong> or when you need <strong>MCC spend-control</strong>; else DuitNow/e-wallet is cheaper.</li>
+    <li><strong>Dormancy/reload/ATM fees</strong> quietly erode small stipends.</li>
+    <li>Minors need a <strong>guardian-linked account</strong> (Hong Leong Junior, Maybank imteen-i, CIMB YOUth Savers).</li>
+    <li>If displayed: name + last-4 + balance + transactions only (PCI).</li>
+  </ul>
+  <p class="src">Sources:
+    <a href="https://swipey.co/faqs/">Swipey/Fasspay</a> ·
+    <a href="https://www.hlb.com.my/en/personal-banking/debit-cards/debit-card/junior-debit-card.html">HL Junior card</a> ·
+    <a href="https://pcidssguide.com/pci-dss-requirement-3/">PCI DSS Req 3</a> ·
+    <a href="https://www.unhcr.org/us/news/stories/cash-assistance-gives-refugees-power-choice">UNHCR cash-vs-card</a>
+  </p>
+
+  <h3>R3 · Disbursement / payments</h3>
+  <ul class="dot">
+    <li><strong>Two rails:</strong> IBG bulk file (cheap monthly batch) + DuitNow Name Enquiry (free, real-time name check).</li>
+    <li>Require a <strong>name match before first payout</strong>.</li>
+    <li>Failed payments: <strong>hard</strong> (closed/invalid/name-mismatch → don't retry) vs <strong>soft</strong> (timeout → retry next batch).</li>
+    <li>AML is proportionate for an NGO; bank account numbers are out of PCI scope but encrypt anyway.</li>
+  </ul>
+  <p class="src">Sources:
+    <a href="https://docs.developer.paynet.my/docs/duitnow-transfer/introduction/overview">PayNet DuitNow API</a> ·
+    <a href="https://wise.com/my/blog/ibg-vs-duitnow">IBG vs DuitNow</a> ·
+    <a href="https://www.moderntreasury.com/journal/what-is-the-pci-of-bank-payments">Bank-data sensitivity</a> ·
+    <a href="https://www.fatf-gafi.org/en/publications/Fatfrecommendations/protecting-non-profits-abuse-implementation-R8.html">FATF R8</a>
+  </p>
+
+  <h3>R4 · Student-success / enrichment</h3>
+  <ul class="dot">
+    <li><strong>Lead with cash certainty + a light human touch, not a content library.</strong></li>
+    <li>Unguided content gets ignored; broadcast nudges ≈ zero effect. Gains come from <strong>just-in-time, deadline-tied, trusted-source</strong> nudges to high-risk students.</li>
+    <li>Strongest programmes (Posse ~90% grad, Sutton Trust, QuestBridge) win on <strong>mentoring</strong>.</li>
+    <li>Financial literacy: experiential + <strong>behavioural defaults</strong> beat workshops.</li>
+  </ul>
+  <p class="src">Sources:
+    <a href="https://www.possefoundation.org/supporting-scholars/career-program">Posse</a> ·
+    <a href="https://edresearchforaction.org/research-briefs/helping-students-make-it-to-college-evidence-based-design-principles-for-reducing-summer-melt/">EdResearch — summer melt</a> ·
+    <a href="https://www.frontiersin.org/journals/education/articles/10.3389/feduc.2024.1397060/full">Youth financial literacy</a>
+  </p>
+
+  <h3>R5 · Onboarding &amp; acceptance (legal)</h3>
+  <ul class="dot">
+    <li><strong>Minor's agreement is void</strong> for a private NGO → guardian must be the binding party.</li>
+    <li>Clickwrap "I Agree" + audit record is valid (Electronic Commerce Act 2006 s.9) — no licensed digital signatures needed.</li>
+    <li>Use <strong>scrollwrap</strong>; store timestamp + ID + IP + exact T&amp;C version; version the T&amp;C.</li>
+    <li>Standard clauses: maintain CGPA · semester reports · stay enrolled · use of funds · code of conduct · proportionate clawback · guarantor.</li>
+  </ul>
+  <p class="src">Sources:
+    <a href="https://sign.dropbox.com/esignature-legality/malaysia">E-sign Malaysia</a> ·
+    <a href="https://www.lawyerment.com/library/legislation/acts/1976/A329/section/">Contracts (Amendment) Act 1976</a> ·
+    <a href="https://www.termsfeed.com/blog/clickwrap-browsewrap-scrollwrap/">Clickwrap/scrollwrap</a> ·
+    <a href="https://scholarship.sunway.edu.my/scholarship-terms-conditions">Sunway T&amp;C</a>
+  </p>
+
+  <h3>R6 · Information architecture</h3>
+  <ul class="dot">
+    <li>State-aware dashboard, not role-toggle; persistent destinations; tabs only for parallel views (cap 3–4).</li>
+    <li>GOV.UK task-list for the application journey; bottom-nav over hamburger on mobile.</li>
+  </ul>
+  <p class="src">Sources:
+    <a href="https://www.nngroup.com/articles/tabs-used-right/">NN/g Tabs</a> ·
+    <a href="https://www.nngroup.com/articles/mobile-navigation-patterns/">NN/g Mobile nav</a> ·
+    <a href="https://design-system.service.gov.uk/components/task-list/">GOV.UK Task list</a> ·
+    <a href="https://studentaid.gov/articles/key-facts-accounts/">StudentAid.gov</a>
+  </p>
+
+  <h3>R7 · Engagement &amp; duty of care</h3>
+  <ul class="dot">
+    <li>Two-way SMS nudges work (Georgia State "Pounce": melt 19%→9%) — point them at concrete support.</li>
+    <li>At-risk = <strong>multi-signal</strong> (CGPA + missed check-in + skipped claim); <strong>define the intervention before the detector</strong>.</li>
+    <li>Safeguarding + PDPA make mentoring a <strong>later, carefully-scoped</strong> sprint.</li>
+  </ul>
+  <p class="src">Sources:
+    <a href="https://mainstay.com/case-study/how-georgia-state-university-uses-behavioral-intelligence-to-improve-student-retention-and-persistence/">Georgia State "Pounce"</a> ·
+    <a href="https://eab.com/resources/blog/student-success-blog/3-reasons-why-your-early-alert-program-is-falling-short/">EAB early-alert</a> ·
+    <a href="https://www.mayerbrown.com/en/insights/publications/2025/07/from-legislative-reform-to-practical-guidance-key-amendments-to-malaysias-pdpa-and-the-launch-of-cross-border-transfer-guidelines">PDPA 2024 amendment</a> ·
+    <a href="https://learning.nspcc.org.uk/safeguarding-child-protection/voluntary-community-groups">NSPCC safeguarding</a>
+  </p>
+</section>
+
+</div>
+
+<footer>
+  HalaTuju · Assistance-Recipient Portal proposal · 19 June 2026 ·
+  companion to <span class="mono" style="display:inline;padding:1px 5px">docs/recipient-portal-proposal.md</span> ·
+  prepared for tamiliam
+</footer>
+
+</body>
+</html>

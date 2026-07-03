@@ -1,6 +1,11 @@
 # WhatsApp OTP Authentication — Design & Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> ⚠️ **SUPERSEDED / DEPRIORITISED (2026-06-20).** This plan targets phone *login*, which is low-ROI
+> (~600 students already sign in with Google, so few are actually blocked). Its steps are also stale
+> (the "superpowers" skill was disabled 2026-06-09; the path points at `Development/HalaTuju` not
+> `Production/`; `signInWithPhone()` is now a stub, not "ready"; and the per-message cost was ~9×
+> under-stated for Malaysia). The active direction is an **outbound WhatsApp comms channel** —
+> see `2026-06-20-whatsapp-comms-channel.md`. Keep this only as reference for the Supabase/Twilio wiring.
 
 **Goal:** Enable phone-based login via WhatsApp OTP alongside existing Google Sign-In, using Twilio as the SMS/WhatsApp provider through Supabase's custom SMS hook.
 

@@ -1204,3 +1204,21 @@ mailbox, and reviewer contact details are deliberately never shared). **Fix:** "
 always-open (every state, NO cutoff), stored on `InterviewMessage` (migration `0089`, RLS) for the cockpit
 thread + audit, emailed to the assigned reviewer best-effort, rate-limited 5/hour, 1000-char cap. Student
 panel section + cockpit "Messages from the student" block; en/ms/ta (Tamil first-draft, refine queue).
+### [TD-156] Interview Meet "waiting for host" — no host is ever present to admit joiners
+**Status:** Open (logged 2026-07-01). **Context:** interview Meets are created on the Workspace organiser
+`admin@halatuju.xyz` (via domain-wide delegation in `meeting.py`), but **no human is ever signed in as that
+account** during interviews. Reviewers and students join with their **personal Gmail** accounts as invited
+guests. Whenever Meet decides a joiner must be admitted — external guest, signed into a different account
+than the invited one, or org host-management requiring admission — it shows *"you'll be admitted when the
+host allows you"*, and because the host is never in the room the knock is **never answered** (stuck forever).
+Reported by reviewer **Kaneswaran Sinakalai** (`kaneswaran@gmail.com`, admin #6) on his #51 interview (since
+cancelled). Affects **reviewers AND students**, all interviews — not a per-user glitch. **Fix (owner-chosen,
+2026-07-01): enable Quick Access** on `admin@halatuju.xyz` (Google Admin console → Apps → Google Meet → Meet
+safety / host-management) so meetings run **without a host present** and guests join without knocking.
+**Trade-off accepted by owner:** loses the waiting-room privacy gate on sensitive interviews with minors /
+financial-hardship PII; mitigated by the **unique single-use Meet link per interview** (already the case) +
+private distribution + a standing "never forward the link" rule. **Optional eng hardening:** set the Meet
+space `accessType=OPEN` per-event via the **Google Meet REST API** at creation, so it never depends on the
+org-wide default (the Calendar API's `conferenceData` can't set quick access). Also brief reviewers to join
+signed into the **exact Gmail they were invited under** (a mismatched account forces a knock even with Quick
+Access edge cases).
