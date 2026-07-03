@@ -518,14 +518,22 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-03)
 
-**▶ NEXT — Code-health Sprint 2: document-pipeline safety** (roadmap
-`docs/plans/2026-07-03-code-health-review.md`, findings #5 + #22): the vision clobber guard (never
-overwrite non-empty `vision_fields` with an empty/error result — the known "local re-extract destroys
-data" incident mode, still procedural-only), `reextract_documents` must not stamp PASS on exception,
-cockpit Re-run must pass the profile street, and the duplicate billable Vision call per slip/BC upload
-(one `document_text_detection` response already carries both consumers' data). Then checkpoint report
-to owner before Sprint 3 (money & comms). Sprints 1–2 run under the owner's 2026-07-03 standing
-authorisation (approval gates waived; deploy at close).
+**▶ NEXT — OWNER CHECKPOINT, then Code-health Sprint 3: money & comms** (roadmap
+`docs/plans/2026-07-03-code-health-review.md`, findings #6-#11): sponsorship lapse on contractual
+reject, award-email stamp only on success, `offer_emailed_at` backfill VERIFY (lessons.md says the
+operational backfill was already done — check prod, don't re-blast), FE bank field-error mapping,
+quiz↔agreement reconciliation (owner reviews copy before any flag flip), sign-invitation flag guard.
+Owner pre-took the three S3 judgment calls on 2026-07-03 (see the roadmap's execution-authorisation
+block). Then S4 income/STR consistency, S5 infra & guardrails.
+
+**✅ SHIPPED 2026-07-03 — Code-health Sprint 2 (document-pipeline safety; branch
+`feat/code-health-s2`; NO migration; retro `docs/retrospective-2026-07-03-code-health-s2.md`).**
+Clobber guards on all three vision writers (a FAILED re-run can never wipe a stored good read —
+the "local re-extract destroys vision_fields" incident mode is now impossible in code);
+`reextract_documents` marks failures `'error'` + `--retry-errors` (never stamps them done);
+cockpit Re-run passes the profile street (no more false address-mismatch flips); and
+**one Vision call per upload instead of two** (`ocr_document_full` — text + word boxes + bytes from
+a single read; digital PDFs keep the free text-layer path). 3,196 backend tests.
 
 **✅ SHIPPED 2026-07-03 — Code-health Sprint 1 (decision & needs-gate integrity; branch
 `feat/code-health-s1`; migration `0090` additive, applied migrate-first + verified; retro

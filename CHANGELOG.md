@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Code-health Sprint 2 (2026-07-03) — document-pipeline safety (review findings #5 + #22).**
+  - **The pipeline can no longer destroy a good read.** All three `vision_fields`/verdict writers
+    (`run_field_extraction_for_document`, `read_text_document`, `run_vision_match_for_document`) now
+    carry a clobber guard: a run that fails (Storage fetch / OCR / model error) where the row already
+    holds a successful read of the same immutable blob keeps the stored data and reports the failure
+    (`stale_kept`) instead of wiping it — the "re-extraction without Storage access destroys
+    `vision_fields`" incident mode is now impossible in code, not just forbidden by a memory note.
+    A first-ever read that fails still records the honest `unreadable` state.
+  - **`reextract_documents` no longer stamps failures as done.** A raising or stale-kept re-run is
+    marked `'error'` (skipped by default so the pass never wedges; re-attempted with the new
+    `--retry-errors` flag) instead of being silently stuck on the weak read forever. The summary line
+    reports the running error total.
+  - **Cockpit Re-run now passes the profile street** — omitting it put the address matcher in
+    locality-only mode, so a re-run could flip a bill that matched at upload (house number + street)
+    to `mismatch` on identical data, raising a false `utility_address_mismatch` query.
+  - **One billable Vision call per upload instead of two.** A single `document_text_detection`
+    response already carries both the flattened text and the word boxes; the new
+    `ocr_document_full` shares one fetch + one Vision read across the name/address match, the
+    positional slip/BC parsers, and the genuineness image consumers (previously: two identical
+    Vision calls plus up to three blob downloads per slip/BC upload). Digital PDFs keep the free
+    text-layer path.
 - **Code-health Sprint 1 (2026-07-03) — three P1 findings from the full-codebase review
   (`docs/plans/2026-07-03-code-health-review.md`).**
   - **"Cancel decline" now actually cancels.** `cancel_pending_decline` keyed "was the student told?"
