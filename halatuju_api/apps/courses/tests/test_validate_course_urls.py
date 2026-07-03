@@ -45,9 +45,22 @@ class CheckUrlTest(SimpleTestCase):
         self.assertEqual(check_url('http://x'), ('dead', 404))
 
     @patch(f'{CMD}.urllib.request.urlopen')
-    def test_500_is_dead(self, uo):
+    def test_500_is_retryable_error_never_dead(self, uo):
+        # Code-health S5 #23: a 5xx is a SERVER-side fault (maintenance/overload) — the page
+        # may be perfectly fine, so it must never be classified 'dead' (--fix would then
+        # permanently clear a live URL). It is retried like a timeout, then reported as an
+        # unverified error.
         uo.side_effect = urllib.error.HTTPError('u', 500, 'err', {}, None)
-        self.assertEqual(check_url('http://x'), ('dead', 500))
+        self.assertEqual(check_url('http://x'), ('error', 'http5xx'))
+        self.assertGreaterEqual(uo.call_count, 2)   # the retry actually happened
+
+    @patch(f'{CMD}.urllib.request.urlopen')
+    def test_503_recovers_on_retry(self, uo):
+        ok = MagicMock()
+        ok.__enter__ = MagicMock(return_value=MagicMock(status=200))
+        ok.__exit__ = MagicMock(return_value=False)
+        uo.side_effect = [urllib.error.HTTPError('u', 503, 'maint', {}, None), ok]
+        self.assertEqual(check_url('http://x'), ('alive', 200))
 
     @patch(f'{CMD}.urllib.request.urlopen')
     def test_403_is_gated_not_silently_alive(self, uo):
@@ -240,3 +253,31 @@ class AuditLinkHealthTest(TestCase):
         self.assertIn('LINK HEALTH', s)
         self.assertIn('validate_course_urls', s)
         self.assertIn('distinct external URLs: 1', s)
+
+
+class FixMassChangeGuardTest(TestCase):
+    """Code-health S5 #23: --fix refuses a suspiciously large dead sweep (an outage must
+    not wipe the catalogue's URLs); --force overrides deliberately."""
+
+    def setUp(self):
+        ft = FieldTaxonomy.objects.create(
+            key='kg', name_en='K', name_ms='K', name_ta='K', image_slug='kg', sort_order=1)
+        for i in range(7):
+            Institution.objects.create(
+                institution_id=f'G{i}', institution_name=f'U{i}', type='IPTA',
+                state='Selangor', url=f'http://dead{i}.test')
+
+    @patch(f'{CMD}.check_url', side_effect=_fake_check)
+    def test_fix_refuses_mass_clear(self, _c):
+        out = StringIO()
+        call_command('validate_course_urls', '--fix', stdout=out)
+        self.assertIn('REFUSING --fix', out.getvalue())
+        self.assertEqual(Institution.objects.filter(institution_id__startswith='G')
+                         .exclude(url='').count(), 7)   # nothing cleared
+
+    @patch(f'{CMD}.check_url', side_effect=_fake_check)
+    def test_force_overrides_the_guard(self, _c):
+        out = StringIO()
+        call_command('validate_course_urls', '--fix', '--force', stdout=out)
+        self.assertEqual(Institution.objects.filter(institution_id__startswith='G')
+                         .exclude(url='').count(), 0)   # all cleared

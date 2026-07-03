@@ -1928,7 +1928,7 @@ export interface ResolutionItem {
 export async function getResolutionItems(
   options?: ApiOptions
 ): Promise<{ open: ResolutionItem[]; resolved: ResolutionItem[]; set_aside?: ResolutionItem[] }> {
-  return apiRequest('/api/v1/scholarship/resolution-items', options)
+  return apiRequest('/api/v1/scholarship/resolution-items/', options)   // trailing slash: no 301 on the hottest post-submit fetch
 }
 
 export async function resolveResolutionItem(

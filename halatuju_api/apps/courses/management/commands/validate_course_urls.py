@@ -73,7 +73,9 @@ def _check_once(url, timeout=10):
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):       # server responded but refused THIS page → AMBIGUOUS:
                 return ('gated', e.code)   # a login wall (fine) OR a wrong/old path (broken, e.g. PD)
-            return ('dead', e.code)        # 404/410/5xx → gone
+            if e.code >= 500:              # server-side fault (maintenance/overload) — the page may
+                return ('error', 'http5xx')  # be fine; retryable, NEVER 'dead' (code-health S5 #23)
+            return ('dead', e.code)        # 404/410/… → gone
         except Exception as e:             # URLError, timeout, SSL, …
             if _is_ssl_failure(e):
                 # Cert/TLS rejection on a host that may be perfectly alive → retry without verify.
@@ -83,6 +85,8 @@ def _check_once(url, timeout=10):
                 except urllib.error.HTTPError as e2:
                     if e2.code in (401, 403):
                         return ('gated', e2.code)
+                    if e2.code >= 500:
+                        return ('error', 'http5xx')
                     return ('dead', e2.code)
                 except Exception as e2:
                     return ('error', _error_kind(e2))
@@ -94,7 +98,7 @@ def _check_once(url, timeout=10):
 # A transient 'error' (slow / momentarily-unreachable host) is worth one retry before we report it:
 # MY gov/edu portals routinely take 10-20s to first-byte, so a single 10s attempt produces lots of
 # false "broken" flags. DNS/badurl are NOT retried (they won't change on a retry).
-_RETRYABLE = {'timeout', 'conn'}
+_RETRYABLE = {'timeout', 'conn', 'http5xx'}
 
 
 def check_url(url, timeout=10, retries=1):
@@ -134,6 +138,8 @@ class Command(BaseCommand):
     help = 'Reachability check for catalogue links (Institution.url + CourseInstitution.hyperlink).'
 
     def add_arguments(self, parser):
+        parser.add_argument('--force', action='store_true',
+                            help='Override the --fix mass-change guard (>10%% dead).')
         parser.add_argument('--fix', action='store_true',
                             help='Clear confirmed-dead (4xx/5xx) URLs from the DB. Transient errors are never cleared.')
         parser.add_argument('--limit', type=int, default=0, help='Check only the first N distinct URLs.')
@@ -257,6 +263,16 @@ class Command(BaseCommand):
                 self.stdout.write('  [%s] %s' % (f['kind'], f['url']))
 
         if fix and dead:
+            # Mass-change guard (code-health S5 #23, mirrors the sync commands): clearing a
+            # URL is destructive with no undo — a portal-wide outage must not mis-read as
+            # "everything died". Refuse a large sweep unless --force.
+            frac = len(dead) / max(1, len(urls))
+            if len(dead) > 5 and frac > 0.10 and not options.get('force'):
+                self.stdout.write(self.style.ERROR(
+                    '\nREFUSING --fix: %d of %d checked URLs (%d%%) read dead - that smells like '
+                    'an outage, not link rot. Re-run later, or pass --force to override.'
+                    % (len(dead), len(urls), round(frac * 100))))
+                return
             dead_urls = [u for u, _ in dead]
             ni = Institution.objects.filter(url__in=dead_urls).update(url='')
             no = CourseInstitution.objects.filter(hyperlink__in=dead_urls).update(hyperlink='')

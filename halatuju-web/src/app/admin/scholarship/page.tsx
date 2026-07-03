@@ -55,7 +55,7 @@ const STATUS_OPTIONS = [
 // Human, Sentence-case status labels (the raw keys like 'profile_complete' aren't for display).
 const STATUS_LABELS: Record<string, string> = {
   submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Completed',
-  interviewing: 'Interviewing', interviewed: 'Interviewed',
+  interviewing: 'Interviewing', interviewed: 'Awaiting QC',   // repurposed by the QC gate (2026-07-02)
   recommended: 'Recommended', awarded: 'Awarded', active: 'Active', maintenance: 'Maintenance', closed: 'Closed',
   rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
   reopened: 'Reopened',
