@@ -1,5 +1,12 @@
 # Architectural Decisions — HalaTuju
 
+## STR red-band membership + I4 green semantics under the shared headroom test — Code-health S4, 2026-07-03
+**Decision:** (a) STR_RED_STATES = (wrong_type, rejected, stale) — 'unreadable' stays AMBER (misread ≠ disproven, and a never-scanned legacy doc reads 'unreadable', so a red 'unreadable' would gate consent on our own extraction backlog); the student coach separately covers unreadable + unconfirmed. (b) Salary-route I4 adopts income_headroom's two-test CEILING (gross primary, per-capita safety net, boundary inclusive) but keeps its binary green — the fall-through's thin-margin 'unsure'→amber grading compensates for an UNverified household and does not apply where the cluster is fully confirmed. (c) The legacy blank-tag fallback attaches to the named earner only; blank-wizard apps keep the fully tolerant reading.
+**Alternatives considered:** red 'unreadable' (broke 18 tests for the reason above); full band adoption on I4 (demotes historically-green thin-margin verdicts — out of the finding's scope, deferred to the salary-track redesign); dropping the blank fallback entirely (breaks pre-slot-model consent).
+**Rationale:** unify what the finding showed was contradictory (the ceiling test, the red set), preserve what was deliberate (amber unreadable, legacy tolerance, confirmed-cluster green).
+**Trade-offs:** the two routes still grade thin margins differently — documented, revisit at the salary-track redesign.
+**Revisit if:** the family-roster corroboration lands (GREEN reserved for corroborated households), or extraction backlog reaches zero (red 'unreadable' becomes safe).
+
 ## Contractual reject auto-lapses the sponsorship; cancel reinstates balance-guarded — Code-health S3, 2026-07-03
 **Decision:** (owner, 2026-07-03) `admin_reject(category='contractual')` lapses every HOLDING sponsorship at decline time (balance returns immediately; sponsor surfaces stop counting the student). `cancel_pending_decline` reinstates the lapsed row best-effort — only when `sponsor_balance` still covers the amount; otherwise the case returns to its pre-decline status un-funded, with a logged warning.
 **Alternatives considered:** lapse only at email-release (leaves sponsor surfaces wrong during the 7-day embargo — the original bug, just shorter); blocking contractual reject of funded students and forcing the closure flow (stricter but adds an admin step; owner chose one-click).

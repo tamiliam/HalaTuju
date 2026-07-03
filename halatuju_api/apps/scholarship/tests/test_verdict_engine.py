@@ -1254,3 +1254,67 @@ class TestRelationshipChecklists(TestCase):
         self.assertEqual(chk['guardian_status'], 'match')   # guardian name+NRIC = the guardian IC
         self.assertEqual(chk['ward_status'], 'match')       # ward = the student
         self.assertEqual(chk['doc_kind'], 'court_order')
+
+
+class TestCodeHealthS4IncomeConsistency(TestCase):
+    """Code-health S4 regressions: #14 (the salary route uses the SAME two-test B40
+    ceiling as the STR fall-through — gross ceiling primary, per-capita a safety net,
+    boundary inclusive) and #20 (an unproven declared income forces amber even when an
+    unrelated review item exists — 'review' is blue and blue must never hide it)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(
+            code='s4c', name='B40', year=2026, per_capita_ceiling=1584, income_ceiling=5860)
+
+    def _app(self, size, working=('father',), declared=None):
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f's4-{self.id()}', name='DIVASHINI A/P MURUGAN',
+            nric='080115-05-0132', household_size=size)
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=profile, status='shortlisted',
+            income_route='salary', income_working_members=list(working),
+            income_declared=declared or {})
+
+    def _father(self, app, gross):
+        _parent_ic(app, 'MURUGAN A/L KESAVAN', member='father')
+        _add_doc(app, 'salary_slip', student_verdict='ok', member='father',
+                 fields={'name': 'MURUGAN A/L KESAVAN', 'gross_income': gross, 'period': 'May 2026'})
+
+    def test_gross_ceiling_rescues_high_per_capita_small_household(self):
+        # #14: household of 3, gross RM5,400 → per-capita RM1,800 (> 1,584) but gross
+        # ≤ RM5,860 — B40 HOLDS under spec §7's two-test rule. The old per-capita-only
+        # test called this "over the B40 line" while the STR fall-through said B40 holds.
+        app = self._app(size=3)
+        self._father(app, 'RM5,400')
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('income_per_capita_ok', _codes(f['evidence']))
+
+    def test_exactly_at_ceiling_is_not_over(self):
+        # #14 boundary: per-capita exactly RM1,584 (gross 6,336 > 5,860 so the safety net
+        # binds) — breach_room == 0 → still B40 (the old strict < called it over).
+        app = self._app(size=4)
+        self._father(app, 'RM6,336')
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'verified')
+
+    def test_clearly_over_both_ceilings_is_recommend(self):
+        app = self._app(size=2)
+        self._father(app, 'RM9,900')       # pc 4,950; gross 9,900 > 5,860 → over
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('income_above_b40_line', _codes(f['unresolved']))
+
+    def test_unproven_declared_forces_amber_over_unrelated_review(self):
+        # #20: father confirmed with a declared-unproven income; a working BROTHER's IC
+        # carries a clashing patronymic → an unrelated 'review' item exists (no gap — a
+        # sibling needs no rel doc). The old ordering returned blue 'review' and hid
+        # income_declared_needs_evidence behind it.
+        app = self._app(size=4, working=('father', 'brother'), declared={'father': 1500})
+        _parent_ic(app, 'MURUGAN A/L KESAVAN', member='father')
+        _parent_ic(app, 'RAJU A/L SAMY', member='brother')
+        f = _facts(app)['income']
+        self.assertIn('father_patronymic_mismatch', _codes(f['unresolved']))  # the review item
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('income_declared_needs_evidence', _codes(f['unresolved']))

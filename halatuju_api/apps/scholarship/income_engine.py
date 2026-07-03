@@ -403,7 +403,17 @@ def _cluster_docs(application, member, doc_type):
         qs = application.documents.filter(doc_type=doc_type, household_member=member)
     else:
         # STR route (single earner) or blank wizard: the earner's docs — tagged OR legacy-blank.
-        qs = application.documents.filter(doc_type=doc_type, household_member__in=[member, ''])
+        # Code-health S4 #15: when the wizard HAS named the earner, the legacy-blank fallback
+        # belongs to that earner only — reading a blank doc as "whichever member is asked
+        # about" let one untagged slip satisfy the income-evidence check for BOTH parents,
+        # suppressing the other parent's proof-missing query. A blank wizard (legacy app,
+        # no earner recorded) keeps the fully tolerant reading.
+        earner = (getattr(application, 'income_earner', '') or '').strip()
+        if earner and member != earner:
+            allowed = [member]
+        else:
+            allowed = [member, '']
+        qs = application.documents.filter(doc_type=doc_type, household_member__in=allowed)
     return qs.order_by('-uploaded_at')
 
 
@@ -510,6 +520,21 @@ def _positive_amount(raw):
         return float(m.group(0).replace(',', '')) > 0
     except ValueError:
         return False
+
+
+# The RED band of the STR-currency ladder — states where the doc on file positively fails
+# to prove a current STR (wrong kind of document, rejected, unreadable status, or a previous
+# year's). Code-health S4 #13: this tuple is THE shared source of truth — the 8b4686b1
+# state-split left three consumers (the cluster coach, the re-upload reconcile, the
+# submission blocker) each carrying its own stale subset, so the two WORST states
+# (wrong_type/unreadable) were silently treated as fine by some of them.
+# NB 'unreadable' is deliberately NOT here: it is AMBER per the spec (the status token
+# didn't read — misread ≠ disproven), and a never-scanned legacy doc also reads
+# 'unreadable', so blocking on it would gate consent on our own extraction backlog.
+STR_RED_STATES = ('wrong_type', 'rejected', 'stale')
+# The student coach nudges on the fixable non-green states too (an unreadable status →
+# re-upload cleanly; a dateless 'unconfirmed' approval → a dated proof confirms the cycle).
+STR_COACH_STATES = STR_RED_STATES + ('unreadable', 'unconfirmed')
 
 
 def _str_currency(status_raw, year_str, cohort_year, source_type='', amount_raw=''):
@@ -869,14 +894,17 @@ def income_headroom(application, members):
     pc_ceiling = getattr(cohort, 'per_capita_ceiling', None)
     size = getattr(getattr(application, 'profile', None), 'household_size', None)
     pc, all_known = income_per_capita(application, members)
-    if pc is None or not size or not gross_ceiling or not pc_ceiling:
+    if pc is None or not size or not pc_ceiling:
         return 'unknown', {'all_known': all_known}
     gross = pc * size
-    ceiling = max(gross_ceiling, pc_ceiling * size)   # the more generous (binding) test
+    # The more generous (binding) test. A cohort without a gross ceiling configured falls
+    # back to the per-capita safety net alone (code-health S4 #14 made this the shared
+    # B40 test for BOTH routes, so it must tolerate either ceiling being absent).
+    ceiling = max([c for c in (gross_ceiling, pc_ceiling * size) if c])
     breach_room = ceiling - gross
     ctx = {'gross': int(round(gross)), 'per_capita': int(round(pc)), 'size': size,
            'breach_room': int(round(breach_room)), 'all_known': all_known,
-           'gross_ceiling': int(gross_ceiling), 'per_capita_ceiling': int(pc_ceiling)}
+           'gross_ceiling': int(gross_ceiling or 0), 'per_capita_ceiling': int(pc_ceiling)}
     if breach_room < 0:
         return 'over', ctx
     if not all_known or breach_room < _HEADROOM_THIN_RM:
@@ -1279,7 +1307,7 @@ def income_cluster_advice(application, member):
         # proof was uploaded, nudge to add the earner's IC so we can confirm the person.
         if str_doc is not None:
             sc = student_str_check(str_doc)
-            if sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed'):
+            if sc and sc['current_status'] in STR_COACH_STATES:
                 return 'str_not_current'
         return 'income_ic_needed' if has_proof else ''
 
@@ -1292,7 +1320,7 @@ def income_cluster_advice(application, member):
             return 'unreadable'
     if str_doc is not None:
         sc = student_str_check(str_doc)
-        if sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed'):
+        if sc and sc['current_status'] in STR_COACH_STATES:
             return 'str_not_current'
     # Coherence — every proof (payslip / EPF, and the STR recipient) must be the SAME
     # person as the earner's IC.
@@ -1328,7 +1356,13 @@ def income_cluster_advice(application, member):
         rel_status = icc['name_status'] if icc else 'pending'
         rel_ran = (getattr(rel_obj, 'vision_fields_run_at', None)
                    or getattr(rel_obj, 'vision_run_at', None))
-        if rel_status == 'pending' and rel_ran:
+        # Code-health S4 #18: 'pending' can come from EITHER side of the comparison. Only
+        # blame the relationship doc when the EARNER IC has actually been read — an IC whose
+        # OCR is still pending (vision_run_at NULL, a known transient state the self-heal
+        # cron clears) used to surface as 'income_rel_doc_unreadable', telling the student
+        # to re-upload a perfectly fine birth certificate and blocking submission on it.
+        ic_ran = bool(getattr(ic, 'vision_run_at', None))
+        if rel_status == 'pending' and rel_ran and ic_ran:
             return 'income_rel_doc_unreadable'
     return ''
 

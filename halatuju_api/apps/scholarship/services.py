@@ -1653,7 +1653,7 @@ def document_red_blockers(application):
                   # person-mismatch on it never blocks submission — the cluster coach handles it.
         elif dt == 'str':
             chk = income_engine.student_str_check(doc)
-            if has(chk, 'name_status', 'nric_status') or chk.get('current_status') in ('rejected', 'stale'):
+            if has(chk, 'name_status', 'nric_status') or chk.get('current_status') in income_engine.STR_RED_STATES:
                 codes.add('str_person_mismatch')
         elif dt == 'birth_certificate':
             if has(income_engine.student_bc_check(doc), 'child_status', 'mother_status', 'father_status'):

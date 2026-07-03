@@ -293,7 +293,7 @@ def doc_match_verdict(doc):
             return 'mismatch'
     elif dt == 'str':
         chk = income_engine.student_str_check(doc) or {}
-        if red(chk, 'name_status', 'nric_status') or chk.get('current_status') in ('rejected', 'stale'):
+        if red(chk, 'name_status', 'nric_status') or chk.get('current_status') in income_engine.STR_RED_STATES:
             return 'mismatch'
     elif dt == 'birth_certificate':
         if red(income_engine.student_bc_check(doc), 'child_status', 'mother_status', 'father_status'):
