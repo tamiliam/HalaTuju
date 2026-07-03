@@ -237,7 +237,7 @@ def doc_match_verdict(doc):
     """
     from . import income_engine
     from .academic_engine import student_slip_check
-    from .pathway_engine import student_offer_check
+    from .pathway_engine import student_offer_check, offer_official_status
     from .services import is_ic_decode_error
 
     dt = doc.doc_type
@@ -271,6 +271,14 @@ def doc_match_verdict(doc):
         chk = student_offer_check(doc) or {}
         if red(chk, 'name', 'ic'):
             return 'mismatch'
+        # V2 (#3): a NON-OFFICIAL offer (conditional / private-IPTS / a pemakluman or UPU-semakan
+        # notification) must NOT resolve an "upload your official offer" request — the officer sees
+        # red, so the student can't be told "done". Gate only on a CONFIRMED not-official read;
+        # 'unknown' (genuineness not scored yet — flag off / AI outage / not re-run) defers to the
+        # reviewer and never gates on our own gap. Runs after the name/IC mismatch so an
+        # identity clash still wins.
+        if offer_official_status(doc) == 'not_genuine':
+            return 'mismatch'
         if chk.get('name') == 'unreadable':
             return 'unreadable'
         if chk.get('name') == 'pending':
@@ -291,6 +299,13 @@ def doc_match_verdict(doc):
     elif dt in ('salary_slip', 'epf'):
         if red(income_engine.student_income_proof_check(doc), 'name_status', 'nric_status'):
             return 'mismatch'
+        # V2 (#4): a Gemini error / blank read used to fall through to 'ok' and resolve the request
+        # UNVERIFIED. Hold instead: not scanned yet → 'pending'; read nothing/badly → 'unreadable'.
+        sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')
+        if sv in ('', 'review_manually'):
+            return 'pending'
+        if sv in ('wrong_doc', 'unreadable', 'incomplete'):
+            return 'unreadable'
     elif dt == 'str':
         chk = income_engine.student_str_check(doc) or {}
         if red(chk, 'name_status', 'nric_status') or chk.get('current_status') in income_engine.STR_RED_STATES:
@@ -298,6 +313,12 @@ def doc_match_verdict(doc):
     elif dt == 'birth_certificate':
         if red(income_engine.student_bc_check(doc), 'child_status', 'mother_status', 'father_status'):
             return 'mismatch'
+        # V2 (#4): same hold — an errored/blank BC extraction must not resolve the request as read.
+        sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')
+        if sv in ('', 'review_manually'):
+            return 'pending'
+        if sv in ('wrong_doc', 'unreadable', 'incomplete'):
+            return 'unreadable'
     elif dt == 'guardianship_letter':
         if red(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):
             return 'mismatch'
@@ -347,13 +368,13 @@ def doc_match_verdict(doc):
                 return 'mismatch'
             if name_match(doc.vision_name, getattr(prof, 'name', '') or '') == 'mismatch':
                 return 'mismatch'
-    # NB the mismatch-only income docs (str / salary_slip / epf / birth_certificate) have no
-    # 'pending' branch here: the interactive upload forces their read first
-    # (views._maybe_extract_fields force=True), so they're scanned by the time this runs.
-    # (guardianship_letter / income_support_doc DO carry a pending/unreadable branch above —
-    # their verdict now depends on a real field read, so an unread/blank file must hold.)
-    # water_bill / electricity_bill / statement_of_intent / photo, and every
-    # 'uncertain'/soft outcome above → accept.
+    # NB `str` is the only mismatch-only income doc with no pending/unreadable branch here (its
+    # currency states already cover the bad reads). salary_slip / epf / birth_certificate /
+    # guardianship_letter / income_support_doc now each HOLD an unread/blank file (V2 #4 + V1) —
+    # a Gemini error must not fall through to 'ok' and resolve the request unverified. The
+    # interactive upload forces the read first (views._maybe_extract_fields force=True), so
+    # 'pending' normally only persists on a genuine read failure. water_bill / electricity_bill /
+    # statement_of_intent / photo, and every 'uncertain'/soft outcome above → accept.
     return 'ok'
 
 
@@ -373,6 +394,7 @@ def resolve_doc_items_for_upload(application, doc):
     # is confirmed. Still return the verdict so the FE can surface Gopal's advice on a weak read.
     if doc.doc_type == 'bank_statement':
         return doc_match_verdict(doc)
+    from . import income_engine
     verdict = doc_match_verdict(doc)
     if verdict == 'ok':
         qs = application.resolution_items.filter(status='open', kind='doc')
@@ -381,7 +403,20 @@ def resolve_doc_items_for_upload(application, doc):
         # request by code — so two open 'other' requests don't BOTH clear on one upload.
         # A plain upload (no request_code) resolves by doc_type, as before.
         qs = qs.filter(code=rc) if rc else qs.filter(doc_type=doc.doc_type)
+        upload_member = (getattr(doc, 'household_member', '') or '').strip()
         for item in qs:
+            # V2 (#4): MEMBER-AWARE. A member-tagged request (V1.3 now writes
+            # params.household_member on the check2 per-member proof items) clears ONLY on an
+            # upload for THAT member — a mother's payslip no longer resolves the father's request.
+            # An untagged request (no member) or an untagged upload keeps the old doc_type match.
+            item_member = ((item.params or {}).get('household_member') or '').strip()
+            if item_member and upload_member and item_member != upload_member:
+                continue
+            # V2 (#4): CRITERION-AWARE for income_doc_stale — re-check recency before clearing, so a
+            # freshly-uploaded-but-STILL-stale salary slip can't silence the "send a current one"
+            # ask (the gap persists, so leave the task open).
+            if item.code == 'income_doc_stale' and income_engine.stale_income_proof(application):
+                continue
             resolve_item(item, doc=doc, by='student')
     return verdict
 

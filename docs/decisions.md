@@ -3959,3 +3959,29 @@ re-upload loop (acceptable — soft, never a gate).
 **Revisit if:** we add a reliable earner-identity source that income_support_doc could match
 against (then a soft person-check could supplement the read); or the volume of pre-V1 support docs
 turns out large (then backfill a `student_verdict` via a re-run pass).
+
+## Verification-model V2 — non-official offer holds but 'unknown' never gates; doc-kind queries re-raisable — 2026-07-03
+**Decision:** Two resolve-correctness rules. (1) In `doc_match_verdict`, a NON-OFFICIAL offer
+(`pathway_engine.offer_official_status == 'not_genuine'`: conditional / private-IPTS / a
+pemakluman or UPU-semakan notification) returns `mismatch` — it must not resolve an "upload your
+official offer" request. But `'unknown'` (genuineness not scored yet — flag off / AI outage / not
+re-run since the signature model shipped) does NOT gate: defer to the reviewer rather than block
+on our own missing signal. (2) Doc-kind Check-2 requests (`*_income_proof_missing`,
+`income_doc_stale`, `declared_income_evidence_missing`, `unemployment_epf_missing`) are
+RE-RAISABLE — `sync_check2_queries` re-opens a resolved doc-request when its gap re-fires (the
+proof was removed or replaced with a stale/bad one). CLARIFY queries stay once-ever.
+**Alternatives considered:** (a) gate the offer on `'unknown'` too (treat un-scored as unofficial)
+— rejected: it would block legitimate offers on our own un-run genuineness, penalising the student
+for an AI outage; the reviewer is the backstop. (b) Keep all Check-2 items once-ever (never
+re-ask) — rejected: that is finding #4 (a stale slip replaced by another stale one silently stays
+"resolved"); a document gap is a LIVE condition, unlike a typed answer. (c) Re-raise clarifies too
+— rejected: a typed explanation is a one-time fact; re-asking it nags without new information.
+**Rationale:** the accept/resolve path must verify what it resolves. An offer we can positively
+see is not-official shouldn't tell the student "done" while the officer sees red; but a gap in our
+OWN signal (unknown) is not the student's fault. A document request tracks a condition that can
+recur; a clarify tracks an answer that doesn't.
+**Trade-offs:** the re-raise adds a re-notify when a proof is churned (acceptable — it's the
+correct ask); `'unknown'` offers can still auto-resolve a request until genuineness is re-run
+(accepted — the reviewer sees the pathway verdict, and a re-run closes it).
+**Revisit if:** genuineness scoring becomes universal + reliable (then `'unknown'` shrinks to
+near-zero and could gate); or the re-raise proves noisy on real churn (then debounce it).

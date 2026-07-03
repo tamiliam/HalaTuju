@@ -141,6 +141,15 @@ describe('shouldShowCoach', () => {
     expect(shouldShowCoach(icDoc('income_relationship_mismatch'))).toBe(true)
   })
 
+  it('shows the STR coach for every currency coach-state (V2 #16), not just stale/rejected', () => {
+    const str = (current_status: string) =>
+      doc({ doc_type: 'str', str_check: { current_status, ic_present: true } } as Partial<ApplicantDocument>)
+    for (const s of ['wrong_type', 'unreadable', 'unconfirmed', 'stale', 'rejected']) {
+      expect(shouldShowCoach(str(s))).toBe(true)
+    }
+    expect(shouldShowCoach(str('current'))).toBe(false)   // fine currency + IC present → quiet
+  })
+
   it('income proof coaches ONLY when the member IC is missing (no second Gopal)', () => {
     const proof = (ic_present: boolean) =>
       doc({ doc_type: 'salary_slip',

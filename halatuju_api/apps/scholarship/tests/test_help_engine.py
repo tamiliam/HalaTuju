@@ -333,3 +333,31 @@ class TestGuardrails(TestCase):
         self.assertNotIn("the earner's MyKad has been CONFIRMED", help_engine._build_help_prompt(
             'income_cluster', 'income_relationship_mismatch', 'Elan', 'English',
             context={'member': 'mother', 'rel_doc': 'birth certificate'}))
+
+
+class TestStrCoachStates(TestCase):
+    """V2 (#16): verdict_for_document coaches on ALL income_engine.STR_COACH_STATES (the S4
+    unification), not just ('stale','rejected') — so a wrong_type/unreadable/unconfirmed STR
+    re-upload also gets the doc-anchored Gopal, not a silent red task."""
+
+    @staticmethod
+    def _str_doc():
+        return SimpleNamespace(
+            doc_type='str', vision_fields={'fields': {}},
+            application=SimpleNamespace(income_route='str', income_earner='mother',
+                                        profile=SimpleNamespace(name='X')))
+
+    def test_wrong_type_str_coaches(self):
+        with patch('apps.scholarship.income_engine.student_str_check',
+                   return_value={'current_status': 'wrong_type', 'name_status': 'match', 'nric_status': 'match'}):
+            self.assertEqual(help_engine.verdict_for_document(self._str_doc()), 'str_not_current')
+
+    def test_unreadable_str_coaches(self):
+        with patch('apps.scholarship.income_engine.student_str_check',
+                   return_value={'current_status': 'unreadable', 'name_status': 'match', 'nric_status': 'match'}):
+            self.assertEqual(help_engine.verdict_for_document(self._str_doc()), 'str_not_current')
+
+    def test_stale_str_still_coaches(self):
+        with patch('apps.scholarship.income_engine.student_str_check',
+                   return_value={'current_status': 'stale', 'name_status': 'match', 'nric_status': 'match'}):
+            self.assertEqual(help_engine.verdict_for_document(self._str_doc()), 'str_not_current')

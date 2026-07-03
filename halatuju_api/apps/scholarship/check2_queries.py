@@ -171,26 +171,41 @@ def sync_check2_queries(application):
     raised_student_visible = False
 
     # Uncapped PROOF doc-requests (design decision #1): create when wanted + absent,
-    # auto-resolve when the parent's income gap clears.
+    # auto-resolve when the parent's income gap clears. V2 (#4): these are DOC-KIND items and are
+    # RE-RAISABLE — a resolved doc-request whose gap RE-FIRES (a stale slip replaced by another
+    # stale one; the proof removed) is re-opened, not left silently closed. (Only doc-kind items;
+    # the CLARIFY queries below stay once-ever — a typed answer isn't re-asked.)
     for code, spec in DOC_SPECS.items():
-        if code in proof_wanted and code not in existing:
-            try:
-                # V1 (F2/F3): member-tag the doc request so the Action-Centre upload lands
-                # tagged to the RIGHT household member. Without this, a model doc-request stored
-                # no `household_member` (unlike officer requests), so on the SALARY route the
-                # upload landed BLANK-tagged — it could never count as that member's evidence
-                # (`_cluster_docs` is strict-tag on salary) yet auto-resolved by doc_type and was
-                # never re-asked (~29 blank-tagged prod docs, the "Earner's IC" mislabel root).
-                # The FE (ActionCentre.tsx onFile) already forwards item.params.household_member.
-                params = {'household_member': spec['member']} if spec.get('member') else {}
-                ResolutionItem.objects.create(
-                    application=application, source='check2', code=code,
-                    fact='income', kind='doc', doc_type=spec['doc_type'], params=params)
-                raised_student_visible = True
-            except IntegrityError:
-                pass
         item = existing.get(code)
-        if item is not None and item.status == 'open' and code not in proof_wanted:
+        if code in proof_wanted:
+            if item is None:
+                try:
+                    # V1 (F2/F3): member-tag the doc request so the Action-Centre upload lands
+                    # tagged to the RIGHT household member. Without this, a model doc-request stored
+                    # no `household_member` (unlike officer requests), so on the SALARY route the
+                    # upload landed BLANK-tagged — it could never count as that member's evidence
+                    # (`_cluster_docs` is strict-tag on salary) yet auto-resolved by doc_type and was
+                    # never re-asked (~29 blank-tagged prod docs, the "Earner's IC" mislabel root).
+                    # The FE (ActionCentre.tsx onFile) already forwards item.params.household_member.
+                    params = {'household_member': spec['member']} if spec.get('member') else {}
+                    ResolutionItem.objects.create(
+                        application=application, source='check2', code=code,
+                        fact='income', kind='doc', doc_type=spec['doc_type'], params=params)
+                    raised_student_visible = True
+                except IntegrityError:
+                    pass
+            elif item.status == 'resolved':
+                # V2 (#4): the gap re-fired after a resolve → RE-OPEN and re-notify. Clears the
+                # stale resolving doc/text so the student is asked for a fresh one.
+                item.status = 'open'
+                item.resolved_by = ''
+                item.resolved_at = None
+                item.resolution_text = ''
+                item.resolution_doc = None
+                item.save(update_fields=['status', 'resolved_by', 'resolved_at',
+                                         'resolution_text', 'resolution_doc'])
+                raised_student_visible = True
+        elif item is not None and item.status == 'open':
             item.status = 'resolved'
             item.resolved_by = 'system'
             item.resolved_at = now

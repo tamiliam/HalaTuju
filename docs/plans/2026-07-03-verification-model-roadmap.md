@@ -109,6 +109,11 @@ counts in `_cluster_docs`; prod blank-tag count reduced to the ambiguous remaind
 
 ## Sprint V2 — Resolution correctness (complexity: MEDIUM)
 
+> **✅ SHIPPED (code) 2026-07-03** — branch `feat/verify-v2`; NO migration; retro
+> `docs/retrospective-2026-07-03-verify-v2.md`. All three findings closed + tested (2040 pytest +
+> 412 jest). Built directly on V1's seam (member-aware resolve uses V1.3's `params.household_member`;
+> the pending/unreadable holds reuse V1's `student_verdict` pattern).
+
 The re-upload/resolve path must verify what it resolves. **Findings: #3, #4, #16.**
 
 Scope (all in `halatuju_api/apps/scholarship/resolution.py` + tests):
