@@ -1056,6 +1056,8 @@ def run_vision_match_for_document(doc, *, names, postcode='', city='', street=''
 GEMINI_EXTRACT_DOC_TYPES = frozenset({
     'salary_slip', 'epf', 'water_bill', 'electricity_bill', 'results_slip', 'offer_letter',
     'str', 'guardianship_letter', 'birth_certificate', 'bank_statement',
+    # V1: the declared-informal-income supporting doc must be READ, not merely present.
+    'income_support_doc',
 })
 
 _STR = {'type': 'string'}
@@ -1130,6 +1132,13 @@ _FIELD_SCHEMAS = {
     # be the student (checked deterministically, never by the AI).
     'bank_statement': _doc_schema({'bank_name': _STR, 'account_number': _STR,
                                    'account_holder': _STR}),
+    # V1 — the declared-informal-income supporting doc (Phase 2A D1: employer/wage letter,
+    # bank statements showing income, OR a community/penghulu letter). Read WHO it is for
+    # (the earner, not the student), the amount + period it evidences, and WHAT kind of
+    # letter it is. A blank/wrong image reads no fields → student_verdict 'wrong_doc' →
+    # does NOT clear the declared-income gap (see income_engine.has_income_support_doc).
+    'income_support_doc': _doc_schema({'name': _STR, 'nric': _STR, 'amount': _STR,
+                                       'period': _STR, 'issuer': _STR, 'kind': _STR}),
 }
 
 # Which extracted field holds the person's name (for the deterministic verdict).
@@ -1291,6 +1300,16 @@ _DOC_HINTS = {
                             'about (the applicant); "doc_kind" = "court_order" if it is a court '
                             'guardianship order, else "authorisation_letter". Leave a field '
                             'empty if it is not present or not legible.'),
+    'income_support_doc': (' This is a SUPPORTING document for a household member\'s informal '
+                           'or self-declared income — an employer/wage letter, a bank statement '
+                           'showing income, or a community/village-head (penghulu/JKKK) letter. '
+                           'Return: "name" = the person the document is about (a working household '
+                           'member, NOT necessarily the applicant); "nric" = their IC number if '
+                           'shown; "amount" = any monthly income / salary / payment figure stated '
+                           '(as printed, e.g. "RM1,200"); "period" = the month/period it covers if '
+                           'shown; "issuer" = who issued it (employer / bank / penghulu / JKKK); '
+                           '"kind" = one of "employer_letter", "bank_statement", "community_letter", '
+                           'else "other". Leave a field empty if it is not present or not legible.'),
 }
 
 
@@ -1510,6 +1529,14 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street
     if doc_type == 'bank_statement':
         # The holder must be the STUDENT only — names[0] is the applicant (guardians follow).
         return _bank_verdict(fields, names[0] if names else '')
+    if doc_type == 'income_support_doc':
+        # V1: a supporting income doc NAMES THE EARNER (a working household member), not the
+        # student — so we do NOT name-match it against the applicant (that would false-red a
+        # genuine employer letter for the father). It must simply READ as a real support
+        # document: some field (name / amount / issuer / kind) present. A blank/wrong image
+        # reads nothing → 'wrong_doc', which does NOT clear the declared-income gap. Whether
+        # the named person is the right earner is an officer/interview judgement, not a red.
+        return 'ok' if _any_field_filled(fields) else 'wrong_doc'
     if not _any_field_filled(fields):
         return 'wrong_doc'   # nothing of the expected shape was found
     extracted_name = _strip_name_label(fields.get(_NAME_FIELD.get(doc_type, 'name')) or '')

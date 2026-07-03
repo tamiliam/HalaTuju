@@ -59,6 +59,15 @@ file:line evidence and concrete failure scenarios) before coding each sprint.
 
 ## Sprint V1 — Slot & document integrity (complexity: HIGH; do first)
 
+> **✅ SHIPPED (code) 2026-07-03** — worktree `.worktrees/verify-model`, branch `feat/verify-v1`;
+> NO migration; retro `docs/retrospective-2026-07-03-verify-v1.md`. All four findings closed in
+> code + tested (2025 pytest + 412 jest). **V1.4 backfill DONE** (claude.ai Supabase MCP): 24/29
+> blank-tagged income docs attributed (19→mother, 5→father; request-keyed docs resolved from their
+> officer item); final tags 145 mother / 76 father / 2 brother / 5 blank. **CARRY:** 5 ambiguous
+> rows left for the owner — app 88 (×4, no earner/members) + app 16 (×1, guardian-vs-brother; test
+> account). NB much of V1 was already scaffolded: guardianship's verdict/resolution/chip existed —
+> only the extraction TRIGGER was missing; `income_support_doc` needed the schema + a read-requirement.
+
 Fixes the "boxes that tick themselves" + the slotting/labelling root cause.
 **Findings: audit #1, #2, F2, F3.**
 

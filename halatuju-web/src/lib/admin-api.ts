@@ -7,7 +7,7 @@
 
 import type {
   AcademicCheck, PathwayCheck, IncomeIcCheck, IncomeProofCheck,
-  StrCheck, UtilityCheck, BcCheck, GuardianshipCheck,
+  StrCheck, UtilityCheck, BcCheck, GuardianshipCheck, SupportDocCheck,
   BursaryAgreement,
 } from '@/lib/api'
 
@@ -1005,6 +1005,7 @@ export interface AdminApplicantDocument {
   utility_check?: UtilityCheck | null
   bc_check?: BcCheck | null
   guardianship_check?: GuardianshipCheck | null
+  support_doc_check?: SupportDocCheck | null
   // Genuineness fingerprint (soft, flag-gated) — for ic/parent_ic/str/results_slip/birth_certificate/
   // epf/offer_letter. Null when the check didn't run. The cockpit uses it to colour the doc chip.
   authenticity?: { status: 'genuine' | 'suspect' | `not_${string}`; reason: string; doc_seen?: string } | null

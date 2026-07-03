@@ -1648,6 +1648,16 @@ export interface GuardianshipCheck {
   doc_kind: string
 }
 
+// V1: the declared-income supporting doc — whether it READ as real evidence (officer chip).
+// It names the EARNER, not the student, so there is no student name-match; the read is the signal.
+export interface SupportDocCheck {
+  name: string
+  amount: string
+  issuer: string
+  kind: string
+  read_status: 'read' | 'unread'
+}
+
 export interface StrCheck {
   name: string
   nric: string

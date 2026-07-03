@@ -278,6 +278,17 @@ class TestBirthCertificateWiring(SimpleTestCase):
         self.assertIn('birth_certificate', views.SUPPORTING_NAME_CHECK_TYPES)   # gets OCR'd
         self.assertIn('birth_certificate', vision.GEMINI_EXTRACT_DOC_TYPES)     # gets field-extracted
         self.assertIn('birth_certificate', views.RELATIONSHIP_DOC_TYPES)        # always-extract (cost knob can't skip)
+        # V1 (#1): guardianship_letter was a DEAD LIMB — its schema/verdict/resolution branch
+        # existed but the upload never triggered extraction, so guardian names were always
+        # blank and the relationship could never confirm. Guard the wiring against regressing.
+        self.assertIn('guardianship_letter', views.SUPPORTING_NAME_CHECK_TYPES)
+        self.assertIn('guardianship_letter', vision.GEMINI_EXTRACT_DOC_TYPES)
+        self.assertIn('guardianship_letter', views.RELATIONSHIP_DOC_TYPES)
+        # V1 (#2): income_support_doc must be read (schema + extraction) so a blank image
+        # can't prove a declared informal income.
+        self.assertIn('income_support_doc', views.SUPPORTING_NAME_CHECK_TYPES)
+        self.assertIn('income_support_doc', vision.GEMINI_EXTRACT_DOC_TYPES)
+        self.assertIn('income_support_doc', vision._FIELD_SCHEMAS)
 
 
 class TestRelationshipDoc(SimpleTestCase):
@@ -475,8 +486,12 @@ class _FakeDocs:
         return _FakeQS([d for d in self._docs if d.doc_type == doc_type])
 
 
-def _bill(doc_type, fields=None, address_match='', name=''):
-    return SimpleNamespace(doc_type=doc_type, vision_fields={'fields': fields or {}},
+def _bill(doc_type, fields=None, address_match='', name='', verdict='ok'):
+    # `verdict` seeds vision_fields['student_verdict'] — V1: has_income_support_doc now
+    # requires a REAL read ('ok'), so a genuine support doc defaults to 'ok'; pass
+    # verdict='wrong_doc' to model a blank/unreadable image that must NOT clear the gap.
+    return SimpleNamespace(doc_type=doc_type,
+                           vision_fields={'fields': fields or {}, 'student_verdict': verdict},
                            vision_address_match=address_match, vision_name=name)
 
 
@@ -679,6 +694,21 @@ class TestDeclaredIncome(SimpleTestCase):
     def test_gaps_cleared_by_support_doc(self):
         app = self._salary_app(declared={'father': 1500}, docs=[_bill('income_support_doc', {})])
         self.assertEqual(declared_income_gaps(app), [])
+
+    def test_blank_support_doc_does_not_accept_declared(self):
+        # V1 (finding #2): a blank/wrong image uploaded as income_support_doc read nothing
+        # (student_verdict='wrong_doc') — it must NOT prove the declared informal income.
+        app = self._salary_app(declared={'father': 1500},
+                               docs=[_bill('income_support_doc', {}, verdict='wrong_doc')])
+        self.assertFalse(has_income_support_doc(app, 'father'))
+        self.assertEqual(earner_monthly_income(app, 'father'), (None, 'declared_unproven'))
+
+    def test_gaps_not_cleared_by_blank_support_doc(self):
+        # V1 (finding #2): the declared-income gap persists on a blank support doc, so Check 2
+        # keeps asking for real evidence instead of silently clearing.
+        app = self._salary_app(declared={'father': 1500},
+                               docs=[_bill('income_support_doc', {}, verdict='wrong_doc')])
+        self.assertEqual(declared_income_gaps(app), [{'member': 'father'}])
 
     def test_gaps_empty_off_salary_route(self):
         app = self._salary_app(declared={'father': 1500})

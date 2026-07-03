@@ -3932,3 +3932,30 @@ rollout (would need a per-cohort/per-student gate instead of a global flag).
 **Rationale:** the sponsor means-tests the WHOLE household, so every earner and every head must be accounted for; but the applicant is poor and the data is fuzzy, so each addition is advisory (soft evidence / a request), never a blocker. Funnelling through one seam kept the verdict logic unchanged across all three phases. The over-count-only rule targets exactly the direction that HARMS a genuine applicant (a too-small denominator overstates per-capita income and makes them look less needy).
 **Trade-offs:** declared income adds an evidence-chasing loop (a doc-request); the household-size heuristic can still miss an under-count (accepted — benign); per-member proof requests risk mild nagging (mitigated: soft, uncapped, never a gate).
 **Revisit if:** household_size becomes a structured per-member roster (then derive + reconcile it, and the over-count heuristic can tighten); or EPF extraction adds a reliable per-member last-contribution date (then the 3-month unemployment clause becomes primary, not best-effort).
+
+## Verification-model V1 — unread docs HOLD; income_support_doc names the earner, not the student — 2026-07-03
+**Decision:** Two document-integrity rules, both soft. (1) `income_support_doc` (declared-income
+evidence) has NO student name-match — it names the EARNER (a working household member), so its
+`doc_student_verdict` only checks that it READ as a real support document; a blank/wrong image is
+`wrong_doc` and does not clear `declared_income_gaps`, but a genuine employer letter for a parent
+is never false-red. (2) An unread/blank `guardianship_letter` or `income_support_doc` HOLDS its
+Action-Centre task (`pending` when not yet scanned, `unreadable` when it read nothing) rather than
+accepting it — mirroring the results-slip/IC hold branches.
+**Alternatives considered:** (a) name-match income_support_doc against the household names
+(student + guardians) — rejected: the earner (e.g. the father on an employer letter) is usually
+NOT in that list, so a genuine doc would false-red; (b) keep "mere presence clears the gap" and
+add only an officer flag — rejected: that is finding #2 (a blank image proves a wage); (c) accept
+an unread guardianship/support doc and let the reviewer catch it — rejected: that is finding #1
+(any file, even a selfie, resolves the request), and holding an unverified doc for re-upload is
+both safer and self-correcting.
+**Rationale:** the READ is the evidentiary signal for a doc whose subject isn't the student; a
+person-match there would either leak (needs the earner identity) or misfire. Holding on an unread
+doc keeps the "reviewer is the backstop, but don't greenlight the unverified" policy consistent
+across every doc type.
+**Trade-offs:** existing `income_support_doc` rows uploaded before V1 (no stored `student_verdict`)
+read as "not yet evidence" until re-run/re-uploaded — Check 2 re-asks, so it self-heals; expected
+~0–2 rows on prod. A genuinely-poor family whose support letter is blurry gets one more
+re-upload loop (acceptable — soft, never a gate).
+**Revisit if:** we add a reliable earner-identity source that income_support_doc could match
+against (then a soft person-check could supplement the read); or the volume of pre-V1 support docs
+turns out large (then backfill a `student_verdict` via a re-run pass).

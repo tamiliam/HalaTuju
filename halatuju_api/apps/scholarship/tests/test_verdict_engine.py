@@ -1036,10 +1036,20 @@ class TestIncomeDeclared(TestCase):
         self.assertIn('income_per_capita_ok', _codes(f['evidence']))
 
     def test_support_doc_accepts_declared_when_no_str(self):
-        _add_doc(self.app, 'income_support_doc', member='father', fields={})
+        # V1 (#2): a support doc backs the declared income only when it READ (student_verdict='ok').
+        _add_doc(self.app, 'income_support_doc', member='father',
+                 student_verdict='ok', fields={'name': 'ABU', 'amount': 'RM1,200'})
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'verified')
         self.assertIn('income_declared_accepted_evidenced', _codes(f['evidence']))
+
+    def test_blank_support_doc_does_not_accept_declared(self):
+        # V1 (#2): a blank support doc (student_verdict='wrong_doc') leaves the declared income
+        # UNPROVEN — the income fact must not read 'verified' off an unread image.
+        _add_doc(self.app, 'income_support_doc', member='father',
+                 student_verdict='wrong_doc', fields={})
+        f = _facts(self.app)['income']
+        self.assertNotIn('income_declared_accepted_evidenced', _codes(f['evidence']))
 
     def test_declared_over_line_still_recommend(self):
         # A declared figure accepted by STR but over the line → recommend (never auto-reject).
