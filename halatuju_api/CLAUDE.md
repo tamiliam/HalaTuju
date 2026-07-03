@@ -518,7 +518,16 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-03)
 
-**▶ NEXT — no engineering sprint queued. CODE-HEALTH ROADMAP COMPLETE (S1-S5, 2026-07-03).**
+**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP (V1-V6), owner-approved 2026-07-03, ready
+for handover.** Roadmap: `docs/plans/2026-07-03-verification-model-roadmap.md` (six sprints:
+V1 slot/document integrity → V2 resolution correctness → V3 query lifecycle + Check-3
+handoff → V4 promote the nine human asks → V5 verdict evenness + QC soft floor → V6 Gopal
+in the Action Centre + persona). Finding source of truth:
+`docs/plans/2026-07-03-check-model-audit.md`. Owner decisions are embedded in the roadmap —
+do not re-ask. Owner checkpoints: after V3 and at the end. Start with V1 via
+`Settings/_workflows/sprint-start.md`.
+
+**Previously: CODE-HEALTH ROADMAP COMPLETE (S1-S5, 2026-07-03).**
 Owner follow-ups: review the reconciled comprehension-quiz copy (esp. Tamil) before
 `BURSARY_AGREEMENT_ENABLED` ever flips; decide the WhatsApp opt-in default before go-live;
 optional GitHub-support request to scrub the purged PII objects. P3 leftovers feed the
