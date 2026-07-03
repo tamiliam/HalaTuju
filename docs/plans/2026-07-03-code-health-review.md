@@ -346,8 +346,11 @@ catalogue sync tooling guards, PISMP taxonomy derivation, reports-app scoping.
   `0090` migrate-first), #3 YTD-alone guard, #4 subject-map sync (64 keys, not ~25) +
   `test_subject_drift.py`. 3,185 backend tests green. Retro
   `docs/retrospective-2026-07-03-code-health-s1.md`.
-- **Sprint 2 — Document-pipeline safety:** #5 vision clobber guard + reextract fixes
-  (street pass-through, no PASS-stamp on error) + #22 duplicate Vision call.
+- **Sprint 2 — Document-pipeline safety: ✅ DONE 2026-07-03.** Clobber guards on all
+  three vision writers, reextract 'error' marking + `--retry-errors`, Re-run street
+  pass-through, `ocr_document_full` single Vision read (digital-PDF free path kept).
+  No migration. 3,196 backend tests. Retro
+  `docs/retrospective-2026-07-03-code-health-s2.md`. → OWNER CHECKPOINT next.
 - **Sprint 3 — Money & comms:** #6 sponsorship lapse on contractual reject, #7 email
   stamp only on success, #8 offer_emailed_at backfill, #9 FE bank field-error mapping,
   #10 quiz↔agreement reconciliation, #11 sign-invitation flag guard.

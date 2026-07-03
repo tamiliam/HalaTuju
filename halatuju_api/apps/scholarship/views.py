@@ -720,7 +720,7 @@ class DocumentListCreateView(APIView):
             city = getattr(profile, 'city', '') or ''
             street = getattr(profile, 'address', '') or ''   # #3: street line for the bill fallback
             check_address = doc.doc_type in BILL_DOC_TYPES
-            ocr = _vision.ocr_document(doc)   # OCR once, shared by both checks
+            ocr = _vision.ocr_document_full(doc)   # ONE fetch + ONE Vision call, shared by every consumer
             match = _vision.run_vision_match_for_document(
                 doc, names=names, postcode=postcode, city=city, street=street,
                 check_address=check_address, ocr=ocr)

@@ -27,13 +27,19 @@ def reextract_document(doc) -> bool:
         names = [n for n in names if n]
         postcode = getattr(profile, 'postal_code', '') or ''
         city = getattr(profile, 'city', '') or ''
+        # Code-health S2 #5c: the upload path passes the street line too — omitting it here
+        # put the matcher in locality-only mode, so a re-run could flip a bill that matched
+        # at upload (house number + street) to 'mismatch' on identical data.
+        street = getattr(profile, 'address', '') or ''
         check_address = doc.doc_type in BILL_DOC_TYPES
-        ocr = _vision.ocr_document(doc)                    # OCR once, shared by both checks
+        ocr = _vision.ocr_document_full(doc)               # ONE fetch + ONE Vision call, shared
         _vision.run_vision_match_for_document(
-            doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
+            doc, names=names, postcode=postcode, city=city, street=street,
+            check_address=check_address, ocr=ocr)
         if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
             _vision.run_field_extraction_for_document(
-                doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
+                doc, names=names, postcode=postcode, city=city, street=street,
+                check_address=check_address, ocr=ocr)
         if doc.doc_type == 'offer_letter':
             try:
                 from .services import autofill_pathway_from_offer

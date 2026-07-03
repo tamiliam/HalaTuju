@@ -1,5 +1,12 @@
 # Architectural Decisions — HalaTuju
 
+## Vision clobber guard semantics + honest reextract batching + single OCR read — Code-health S2, 2026-07-03
+**Decision:** (a) the three vision writers keep a stored SUCCESSFUL read when a re-run FAILS (fetch/OCR/model error) — guard keys on run-failure + prior-good-read, never on content; (b) `reextract_documents` marks failed/stale-kept docs `'error'` (pass advances; `--retry-errors` re-attempts) and detects stale-kept runs by unchanged read timestamps; (c) `ocr_document_full` = one fetch + at most one Vision call per upload/re-run, `words=None` meaning "not computed" (digital-PDF free path preserved), reused by match/slip/BC/genuineness consumers.
+**Alternatives considered:** content-based guards ("keep whichever read has more fields") — rejected, re-parses legitimately change content; leaving failed docs unmarked in the batch — rejected, one broken doc wedges the self-batching pass; always running Vision for text (dropping the PDF text-layer path) — rejected, adds cost to the currently-free digital-PDF reads.
+**Rationale:** the blob on a row is immutable, so "read nothing where we once read something" is by construction OUR failure; protections for a known incident mode belong in code, not in a memory note.
+**Trade-offs:** a stale-kept doc silently serves old data until someone retries (mitigated: the command reports an error total; the cockpit Re-run returns `stale_kept`); mocks in command tests must stamp the timestamp side-effect.
+**Revisit if:** blobs ever become mutable on a row (re-upload-in-place), or extraction gains its own retry queue.
+
 ## Cancel-decline restores the SNAPSHOT, and the decline email gets its own stamp — Code-health S1, 2026-07-03
 **Decision:** `_record_reject` snapshots the pre-decline status into `pre_decline_status`; `cancel_pending_decline` restores to it (legacy blank -> 'interviewed' fallback) and keys "was the student told" on a NEW `decline_email_sent_at` stamp. `_send_decline_for` stamps both the new field and the legacy `decision_email_sent_at`.
 **Alternatives considered:** (a) keep hardcoded restore-to-'interviewed' and only fix the stamp — rejected because 'interviewed' now means AWAITING QC, so a pre-verdict decline would land a verdict-less case in the QC queue on cancel; (b) infer the restore status from verdict/QC fields — fragile reverse-engineering when a one-column snapshot is exact; (c) repurpose decision_email_sent_at with a data migration — rewriting history on a live table for no gain.
