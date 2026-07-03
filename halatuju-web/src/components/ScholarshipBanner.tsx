@@ -8,9 +8,10 @@ import { getMyScholarshipApplications } from '@/lib/api'
 
 /**
  * Dashboard banner that surfaces a live B40 application when there's something
- * for the student to act on or celebrate — shortlisted (complete your follow-up)
- * or accepted (confirmed). Self-contained: it fetches the caller's application
- * and renders nothing for everyone else (no application, or still submitted).
+ * for the student to act on — shortlisted (complete your follow-up). Self-contained:
+ * it fetches the caller's application and renders nothing for everyone else (no
+ * application, still submitted, or already in the post-award flow — those students
+ * are reached by email + the award panel, not this banner).
  */
 export default function ScholarshipBanner() {
   const { status, token } = useAuth()
@@ -26,7 +27,10 @@ export default function ScholarshipBanner() {
     return () => { active = false }
   }, [status, token])
 
-  if (appStatus !== 'shortlisted' && appStatus !== 'accepted') return null
+  // Shortlisted-only by design: 'accepted' was retired (students see masked statuses),
+  // and awarded students are deliberately nudged by email + the embargoed award panel
+  // (AWARD_ACCEPTANCE_ENABLED), not this banner. (Code-health S5 dead-branch removal.)
+  if (appStatus !== 'shortlisted') return null
 
   return (
     <Link

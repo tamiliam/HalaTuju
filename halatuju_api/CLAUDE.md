@@ -518,11 +518,20 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-03)
 
-**▶ NEXT — Code-health Sprint 5 (FINAL): infra & guardrails** (roadmap findings #21/#23 + P3
-quick wins): a real CACHES backend so the upload/report rate limits actually limit (database
-cache — free tier); validate_course_urls treats 5xx as retryable + mass-change guard; HSTS
-header; QC queue "Awaiting QC" label; dead 'accepted' banner branch; resolution-items trailing
-slash. Then the FINAL REPORT (incl. the reconciled quiz copy for owner review).
+**▶ NEXT — no engineering sprint queued. CODE-HEALTH ROADMAP COMPLETE (S1-S5, 2026-07-03).**
+Owner follow-ups: review the reconciled comprehension-quiz copy (esp. Tamil) before
+`BURSARY_AGREEMENT_ENABLED` ever flips; decide the WhatsApp opt-in default before go-live;
+optional GitHub-support request to scrub the purged PII objects. P3 leftovers feed the
+small-change lane (see the roadmap's Backlog). Operational: Suresh QCs the 12 legacy
+awaiting-QC students; salary/pension re-run.
+
+**✅ SHIPPED 2026-07-03 — Code-health Sprint 5 (final; infra & guardrails; branch
+`feat/code-health-s5`; prod DDL `django_cache` migrate-first + RLS, NO Django migration;
+retro `docs/retrospective-2026-07-03-code-health-s5.md`).** Production rate limits now run on
+a shared persistent DatabaseCache (upload/report/anon throttles survive cold starts and count
+across instances); HSTS (30d); validate_course_urls: 5xx = retryable never-dead + a --fix
+mass-change guard (--force to override); queue label "Awaiting QC"; dead 'accepted' banner
+branch removed; resolution-items trailing slash. 3,218 backend + 412 jest.
 
 **✅ SHIPPED 2026-07-03 — Code-health Sprint 4 (income/STR consistency; branch
 `feat/code-health-s4`; NO migration; retro `docs/retrospective-2026-07-03-code-health-s4.md`).**

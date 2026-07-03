@@ -34,6 +34,24 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False  # Cloud Run handles this
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+# HSTS (code-health S5): browsers pin HTTPS for 30 days. Conservative — no preload, no
+# subdomain pinning (api/web live on their own hosts and are individually HTTPS-only).
+SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+
+# Rate limits need a SHARED, PERSISTENT cache (code-health S5 #21). The default
+# LocMemCache is per-gunicorn-worker, per-instance, and wiped on every cold start — so
+# the 40/hour upload throttle (each upload = a billable Vision call) and the 3
+# reports/day cap were effectively decorative on Cloud Run autoscale. The database cache
+# is free-tier-friendly; the `django_cache` table is created migrate-first via the
+# Supabase MCP (deploys don't run manage.py). Dev/test keep LocMemCache (no table needed).
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache',
+    }
+}
 
 # Database - Supabase PostgreSQL
 # Supports DATABASE_URL or individual DB_* env vars (avoids URL-encoding issues)

@@ -364,9 +364,12 @@ catalogue sync tooling guards, PISMP taxonomy derivation, reports-app scoping.
   no longer blames the rel doc (#18); fall-through counts all evidenced members (#19);
   declared-unproven amber ordering (#20). No migration. 3,215 backend tests. Retro
   `docs/retrospective-2026-07-03-code-health-s4.md`.
-- **Sprint 5 — Infra & guardrails:** #21 cache backend for rate limits, #23 URL
-  validator 5xx handling + mass-change guard, HSTS, quick P3 wins (QC queue label,
-  dead banner branch, trailing slash).
+- **Sprint 5 — Infra & guardrails: ✅ DONE 2026-07-03.** #21 prod database cache
+  (django_cache table migrate-first + RLS; throttles now shared/persistent); HSTS;
+  #23 validator 5xx→retryable-never-dead + --fix mass-change guard (--force override);
+  QC queue "Awaiting QC" label; dead 'accepted' banner branch removed; resolution-items
+  trailing slash. 3,218 backend + 412 jest. Retro
+  `docs/retrospective-2026-07-03-code-health-s5.md`. **ROADMAP COMPLETE.**
 - **Backlog:** remaining P3 → small-change lane. **Open decision (owner):** #12
   WhatsApp opt-in default (currently opt-out-shaped).
 
