@@ -336,10 +336,26 @@ catalogue sync tooling guards, PISMP taxonomy derivation, reports-app scoping.
 
 ---
 
-## Suggested order of attack
+## Approved fix roadmap (owner-approved 2026-07-03; supersedes the draft order of attack)
 
-1. **Today:** #1 (PII history rewrite).
-2. **Small-change lane or mini-sprint:** #2 + #3 (both small, both high-stakes).
-3. **Sprint "review hardening":** #4, #5, #13-#18 (engine/pipeline consistency cluster).
-4. **Sprint "money & comms":** #6-#11, #21, #22 (ledger, emails, cache backend, Vision cost).
-5. **Backlog:** P3 list; #12 (WhatsApp consent) is a decision, not code.
+- **Task A — PII purge: ✅ DONE 2026-07-03.** History rewritten with `git filter-repo`,
+  force-pushed, all local checkouts re-pointed, `.gitignore` guard added. Residue: old
+  objects unreachable on GitHub (optional support request) + local reflogs (~90-day expiry).
+- **Sprint 1 — Decision & needs-gate integrity:** #2 cancel-decline (own email stamp +
+  pre-decline status snapshot, model change + migration), #3 YTD÷12 guard, #4 SPM
+  subject-list sync + drift test. Regression test per bug.
+- **Sprint 2 — Document-pipeline safety:** #5 vision clobber guard + reextract fixes
+  (street pass-through, no PASS-stamp on error) + #22 duplicate Vision call.
+- **Sprint 3 — Money & comms:** #6 sponsorship lapse on contractual reject, #7 email
+  stamp only on success, #8 offer_emailed_at backfill, #9 FE bank field-error mapping,
+  #10 quiz↔agreement reconciliation, #11 sign-invitation flag guard.
+- **Sprint 4 — Income/STR consistency:** #13–#20 (shared red-states tuple, I4 via
+  headroom helper, member-tag fixes, IC-selector alignment, wrong-doc blame).
+- **Sprint 5 — Infra & guardrails:** #21 cache backend for rate limits, #23 URL
+  validator 5xx handling + mass-change guard, HSTS, quick P3 wins (QC queue label,
+  dead banner branch, trailing slash).
+- **Backlog:** remaining P3 → small-change lane. **Open decision (owner):** #12
+  WhatsApp opt-in default (currently opt-out-shaped).
+
+Detailed task breakdown happens per-sprint at sprint-start (`sprint-start.md`);
+re-plan the remaining sprints at each sprint-close if scope shifts.
