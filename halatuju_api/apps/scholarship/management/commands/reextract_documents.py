@@ -42,16 +42,24 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=20, help='Docs to process this run.')
+        parser.add_argument('--retry-errors', action='store_true',
+                            help="Also re-attempt docs whose last run FAILED (marked 'error'). "
+                                 "Default runs skip them so one broken doc can't wedge the pass.")
 
     def handle(self, *args, **opts):
         from apps.scholarship.views import SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
         types = sorted(SUPPORTING_NAME_CHECK_TYPES | TEXT_READ_DOC_TYPES)
         limit = max(1, opts['limit'])
+        retry_errors = opts['retry_errors']
 
         # Filter "not yet processed this pass" in Python — a JSON-key `.exclude()` mishandles
         # rows where the key (or the whole vision_fields) is absent (SQL NULL semantics).
+        # Code-health S2 #5b: an errored doc is marked 'error' (not True) — the pass advances
+        # past it (no wedge), but it stays visibly failed and a --retry-errors run picks it
+        # back up, instead of being silently stuck on the weak read forever.
         def unprocessed(doc):
-            return not (doc.vision_fields or {}).get(PASS_MARKER)
+            mark = (doc.vision_fields or {}).get(PASS_MARKER)
+            return not mark or (retry_errors and mark == 'error')
 
         all_docs = ApplicantDocument.objects.filter(doc_type__in=types).order_by('id')
         batch = []
@@ -67,23 +75,40 @@ class Command(BaseCommand):
         done = errors = 0
         for doc in batch:
             before = _summary(doc)   # snapshot the prior read BEFORE we overwrite it
+            stamps_before = (doc.vision_fields_run_at, doc.vision_run_at)
+            ok = True
             try:
                 reextract_document(doc)
                 doc.refresh_from_db()
                 after = _summary(doc)
+                # The clobber guard keeps a stored read (and skips the save) when the
+                # re-run itself failed — no timestamp advances. Treat that as an ERROR
+                # of THIS run (old data safely kept), not a completed re-extraction.
+                if (doc.vision_fields_run_at, doc.vision_run_at) == stamps_before:
+                    ok = False
+                    after = f'STALE-KEPT [{after}] (re-run failed; stored read preserved)'
             except Exception as e:  # noqa: BLE001 — mark + report so a broken doc never wedges the pass
-                errors += 1
+                ok = False
                 after = f'ERROR {str(e)[:55]}'
                 doc.refresh_from_db()
-            # Mark processed (on the freshly-written vision_fields) so the next run advances.
+            # Mark the doc so the next run advances: True = re-extracted on this pass;
+            # 'error' = attempted + failed (skipped by default, re-attempted with
+            # --retry-errors). Never stamp a failure as done (#5b).
             vf = doc.vision_fields or {}
-            vf[PASS_MARKER] = True
+            vf[PASS_MARKER] = True if ok else 'error'
             doc.vision_fields = vf
             doc.save(update_fields=['vision_fields'])
             done += 1
+            if not ok:
+                errors += 1
             self.stdout.write(f'app#{doc.application_id} doc{doc.id} {doc.doc_type}: [{before}] -> [{after}]')
 
         remaining = sum(
             1 for d in ApplicantDocument.objects.filter(doc_type__in=types).only('vision_fields', 'doc_type')
             if unprocessed(d))
-        self.stdout.write(f'reextract: processed {done} ({errors} errors), {remaining} remaining.')
+        error_total = sum(
+            1 for d in ApplicantDocument.objects.filter(doc_type__in=types).only('vision_fields', 'doc_type')
+            if (d.vision_fields or {}).get(PASS_MARKER) == 'error')
+        self.stdout.write(
+            f'reextract: processed {done} ({errors} errors this run), {remaining} remaining, '
+            f'{error_total} marked error total — re-attempt those with --retry-errors.')

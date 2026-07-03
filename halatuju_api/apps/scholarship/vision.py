@@ -591,18 +591,22 @@ def _vision_words(data: bytes, content_type: str = '') -> dict:
     ``_vision_document_text`` so tests can patch it independently.)"""
     img, _mime = _as_image_for_gemini(data, content_type)
     if img is None:
-        return {'words': [], 'error': 'no image'}
+        return {'words': [], 'text': '', 'error': 'no image'}
     try:
         from google.cloud import vision  # type: ignore
     except ImportError:
-        return {'words': [], 'error': 'AI module not installed'}
+        return {'words': [], 'text': '', 'error': 'AI module not installed'}
     api_key = getattr(settings, 'GOOGLE_CLOUD_VISION_API_KEY', '') or ''
     try:
         client = (vision.ImageAnnotatorClient(client_options={'api_key': api_key})
                   if api_key else vision.ImageAnnotatorClient())
         resp = client.document_text_detection(image=vision.Image(content=img))
         if resp.error and resp.error.message:
-            return {'words': [], 'error': resp.error.message[:200]}
+            return {'words': [], 'text': '', 'error': resp.error.message[:200]}
+        # The SAME response carries the flattened text (full_text_annotation) — return it
+        # too, so one billable call can serve both the positional parsers (words) and the
+        # text consumers (name/address match, label parsers). See ocr_document_full.
+        text = resp.full_text_annotation.text if resp.full_text_annotation else ''
         words = []
         # text_annotations[0] is the whole text; [1:] are individual words with boxes.
         for ann in resp.text_annotations[1:]:
@@ -620,10 +624,10 @@ def _vision_words(data: bytes, content_type: str = '') -> dict:
             words.append({'text': ann.description,
                           'cx': sum(xs) / len(xs), 'cy': sum(ys) / len(ys),
                           'h': max(ys) - min(ys), 'angle': angle})
-        return {'words': words, 'error': None}
+        return {'words': words, 'text': text, 'error': None}
     except Exception as e:  # noqa: BLE001 — graceful
         logger.warning('Vision word OCR failed: %s', e)
-        return {'words': [], 'error': str(e)[:200]}
+        return {'words': [], 'text': '', 'error': str(e)[:200]}
 
 
 def extract_mykad(data: bytes, content_type: str = '') -> dict:
@@ -963,13 +967,50 @@ def ocr_document(doc) -> dict:
     return {'text': '', 'error': 'could not fetch image'} if image is None else extract_text(image, doc.content_type)
 
 
+def ocr_document_full(doc) -> dict:
+    """Fetch + OCR a document ONCE for the whole upload/re-run pipeline: at most one
+    download and one billable Vision call serve every consumer. Returns
+    ``{'text', 'words', 'image', 'error'}``:
+
+    - ``text`` — flattened OCR text (name/address match, label parsers, genuineness).
+    - ``words`` — per-word boxes for the positional slip/BC parsers, or **None when not
+      computed** (digital-PDF text-layer path, or a pre-OCR failure) — a consumer that
+      needs words then makes its own read, exactly as before.
+    - ``image`` — the fetched bytes, so downstream never re-downloads the blob.
+
+    A DIGITAL PDF keeps the free text-layer path (no Vision call at all — the historic
+    behaviour of ``ocr_document``); one Vision ``document_text_detection`` response
+    otherwise carries both the text and the word boxes (previously two identical
+    billable calls per slip/BC upload — code-health S2 #22)."""
+    image = _fetch_image_bytes(doc.storage_path)
+    if image is None:
+        return {'text': '', 'words': None, 'image': None, 'error': 'could not fetch image'}
+    if _is_pdf(doc.content_type, image):
+        text = _pdf_text_layer(image)
+        if len(text) >= _MIN_PDF_TEXT:
+            return {'text': text, 'words': None, 'image': image, 'error': None}
+    r = _vision_words(image, doc.content_type)
+    return {'text': r.get('text') or '', 'words': r.get('words'), 'image': image,
+            'error': r.get('error')}
+
+
 def read_text_document(doc, *, ocr=None) -> dict:
     """OCR a FREE-TEXT document (e.g. the statement_of_intent / letter of intent) and store
     its plain text in ``vision_fields['text']`` for downstream analysis (Check 2 reads it for
-    motivation + clues the structured form doesn't capture). Soft — never blocks an upload."""
+    motivation + clues the structured form doesn't capture). Soft — never blocks an upload.
+
+    Clobber guard (code-health S2 #5): the blob on a row is immutable, so a run that reads
+    NOTHING where a previous run read text is OUR failure (Storage/OCR outage) — keep the
+    stored text instead of wiping it."""
     from django.utils import timezone
     ocr = ocr if ocr is not None else ocr_document(doc)
-    doc.vision_fields = {'text': (ocr.get('text') or '').strip(),
+    new_text = (ocr.get('text') or '').strip()
+    prior = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    if not new_text and (prior.get('text') or '').strip():
+        logger.warning('read_text_document: kept stored text for doc %s (re-run read nothing: %s)',
+                       doc.id, ocr.get('error') or 'empty read')
+        return prior
+    doc.vision_fields = {'text': new_text,
                          'student_verdict': 'read', 'error': ocr.get('error', '') or ''}
     doc.vision_fields_run_at = timezone.now()
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
@@ -983,6 +1024,14 @@ def run_vision_match_for_document(doc, *, names, postcode='', city='', street=''
     Never blocks, never raises. Pass ``ocr`` to reuse a prior OCR pass."""
     r = ocr if ocr is not None else ocr_document(doc)
     if r['error'] or not (r['text'] or '').strip():
+        # Clobber guard (code-health S2 #5): the blob is immutable — a no-text read where a
+        # previous run reached a real verdict is OUR failure (Storage/OCR outage). Keep the
+        # stored verdicts (a re-run must never downgrade 'found' to 'unreadable' on an outage).
+        if doc.vision_name_match not in ('', 'unreadable'):
+            logger.warning('run_vision_match: kept stored verdicts for doc %s (re-run failed: %s)',
+                           doc.id, r['error'] or 'no text read')
+            return {'name_match': doc.vision_name_match, 'address_match': doc.vision_address_match,
+                    'error': r['error'] or 'no text read', 'stale_kept': True}
         doc.vision_name_match = 'unreadable'
         doc.vision_address_match = 'unreadable' if check_address else ''
         doc.vision_error = r['error'] or 'no text read'
@@ -1477,19 +1526,21 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street
     return 'ok'
 
 
-def _extract_slip_deterministic(doc, image):
+def _extract_slip_deterministic(doc, image, words=None):
     """``(result|None, diag)``. Positional OCR parse of an SPM results slip →
     ``{fields, warnings, error}``, or None to fall back to Gemini (no image, an STPM
     slip, or the table didn't parse). SPM only for now. ``diag`` records WHY a parse was
     skipped/failed (incl. a sample of what Vision read) so a Gemini-fallback slip can be
     diagnosed from the stored record. Reading the table by Y/X geometry pairs each
-    subject with the grade on its own row, which Gemini mis-transposes on a watermark."""
+    subject with the grade on its own row, which Gemini mis-transposes on a watermark.
+    Pass ``words`` (from a prior ``_vision_words``/``ocr_document_full`` read of the SAME
+    blob) to skip the second billable Vision call; None = compute here."""
     if image is None:
         return None, {'reason': 'no_image'}
     exam_type = (getattr(getattr(doc.application, 'profile', None), 'exam_type', '') or '').lower()
     if exam_type and exam_type != 'spm':
         return None, {'reason': 'not_spm_exam', 'exam_type': exam_type}
-    wd = _vision_words(image, doc.content_type)
+    wd = {'words': words, 'error': None} if words is not None else _vision_words(image, doc.content_type)
     if wd.get('error'):
         return None, {'reason': 'vision_error', 'error': wd['error']}
     if not wd.get('words'):
@@ -1519,9 +1570,17 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
     that can't lock onto the table does it fall back to reading the IMAGE with Gemini.
     Every other supporting doc reads the OCR text."""
     from .doc_parse import parse_by_labels      # deterministic-first for standardised docs
+    # A full-pipeline ocr dict (ocr_document_full) may carry the fetched bytes + the word
+    # boxes from its single Vision call — reuse them instead of re-downloading / re-billing.
+    _o = ocr if isinstance(ocr, dict) else {}
+
+    def _image():
+        return _o['image'] if _o.get('image') is not None else _fetch_image_bytes(doc.storage_path)
+
+    pre_words = _o.get('words')                 # None = not computed (compute if needed)
     if doc.doc_type == 'results_slip':
-        image = _fetch_image_bytes(doc.storage_path)
-        ex, diag = _extract_slip_deterministic(doc, image)   # OCR-first (SPM); None → Gemini
+        image = _image()
+        ex, diag = _extract_slip_deterministic(doc, image, words=pre_words)   # OCR-first (SPM); None → Gemini
         if ex is None:
             if image is not None:
                 ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
@@ -1538,7 +1597,7 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
         # The offer's 2-D label/value layout doesn't survive flattened OCR (labels and values
         # land in separate blocks), so read the IMAGE with Gemini for the per-pathway fields;
         # fall back to OCR text only if the image can't be fetched.
-        image = _fetch_image_bytes(doc.storage_path)
+        image = _image()
         if image is not None:
             ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
         else:
@@ -1553,8 +1612,11 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
         # None for a cropped/odd doc (so it can't invent a missing section, #27). On None → the gated
         # Gemini-image fallback; OCR-text only if the image can't be fetched.
         from .bc_parse import parse_bc
-        image = _fetch_image_bytes(doc.storage_path)
-        wd = _vision_words(image, doc.content_type) if image is not None else {'words': [], 'error': 'no image'}
+        image = _image()
+        if pre_words is not None:
+            wd = {'words': pre_words, 'error': None}
+        else:
+            wd = _vision_words(image, doc.content_type) if image is not None else {'words': [], 'error': 'no image'}
         parsed = parse_bc(wd.get('words') or []) if not wd.get('error') else None
         if parsed is not None:
             ex = {'fields': parsed, 'warnings': [], 'error': '', 'capture': 'deterministic'}
@@ -1660,7 +1722,7 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
             from .genuineness import assess
             rr = ocr if ocr is not None else ocr_document(doc)
             text = (rr or {}).get('text', '') or ''
-            gimg = _fetch_image_bytes(doc.storage_path)   # str field-extraction is text-based; fetch for the holistic fallback
+            gimg = _image()   # str field-extraction is text-based; bytes for the holistic fallback
             auth = assess('str', image=gimg, content_type=doc.content_type, ocr_text=text)
             if auth and auth.get('status'):
                 result['authenticity'] = {
@@ -1672,11 +1734,22 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                        if 'probability' in auth else {}),
                 }
         elif doc.doc_type in _GENUINENESS_DOCS:   # birth_certificate/epf holistic fallback (+ any other)
-            gimg = _fetch_image_bytes(doc.storage_path)
+            gimg = _image()
             if gimg is not None:
                 auth = doc_genuineness(gimg, doc.content_type, doc.doc_type)
                 if auth:
                     result['authenticity'] = auth
+    # Clobber guard (code-health S2 #5): the blob on a row is immutable, so a FAILED run
+    # (fetch/OCR/model error → empty fields) where the row already holds a successful
+    # extraction is OUR failure — a Storage outage or a checkout without Storage access.
+    # Overwriting good fields with an empty error read is exactly the incident mode that
+    # destroyed vision_fields in the past (memory: halatuju_never_reextract_locally).
+    # Keep the stored read; report the failure to the caller without persisting it.
+    prior = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    if result['error'] and (prior.get('fields') or (prior.get('text') or '').strip()):
+        logger.warning('run_field_extraction: kept stored extraction for doc %s (re-run failed: %s)',
+                       doc.id, result['error'])
+        return {**result, 'stale_kept': True}
     doc.vision_fields = result
     doc.vision_fields_run_at = timezone.now()
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])

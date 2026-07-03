@@ -29,9 +29,18 @@ class ReextractCommandTests(TestCase):
     def _marked(self):
         return ApplicantDocument.objects.filter(**{f'vision_fields__{MARKER}': True}).count()
 
+    @staticmethod
+    def _stamped_read(doc):
+        # A REAL successful re-read advances vision_fields_run_at (the command uses the
+        # unchanged-stamps signal to detect a clobber-guard-kept failure) — mirror that.
+        from django.utils import timezone
+        doc.vision_fields_run_at = timezone.now()
+        doc.save(update_fields=['vision_fields_run_at'])
+        return True
+
     @patch('apps.scholarship.management.commands.reextract_documents.reextract_document')
     def test_batches_advance_and_skip_photos(self, mock_re):
-        mock_re.return_value = True
+        mock_re.side_effect = self._stamped_read
         # Batch 1 of 2 → 2 processed + marked.
         call_command('reextract_documents', '--limit', '2')
         self.assertEqual(mock_re.call_count, 2)
@@ -46,9 +55,38 @@ class ReextractCommandTests(TestCase):
         call_command('reextract_documents', '--limit', '2')
         self.assertEqual(mock_re.call_count, 3)
 
+    def _marked_error(self):
+        return ApplicantDocument.objects.filter(**{f'vision_fields__{MARKER}': 'error'}).count()
+
     @patch('apps.scholarship.management.commands.reextract_documents.reextract_document',
            side_effect=RuntimeError('boom'))
-    def test_error_still_marks_so_the_pass_never_wedges(self, _mock):
+    def test_error_marks_error_so_the_pass_never_wedges(self, _mock):
+        # Code-health S2 #5b: a raising read no longer stamps the doc as DONE — it is
+        # marked 'error' (skipped by default, so the pass still advances past it).
         call_command('reextract_documents', '--limit', '5')
-        # All 3 offer letters marked despite the read raising — the batch advances.
+        self.assertEqual(self._marked(), 0)
+        self.assertEqual(self._marked_error(), 3)
+        # A default re-run does NOT re-attempt errored docs (no wedge)...
+        call_command('reextract_documents', '--limit', '5')
+        self.assertEqual(self._marked_error(), 3)
+
+    @patch('apps.scholarship.management.commands.reextract_documents.reextract_document')
+    def test_retry_errors_reattempts_failed_docs(self, mock_re):
+        mock_re.side_effect = RuntimeError('boom')
+        call_command('reextract_documents', '--limit', '5')
+        self.assertEqual(self._marked_error(), 3)
+        # ...but --retry-errors picks them back up, and a now-working read flips them to done.
+        mock_re.side_effect = self._stamped_read
+        call_command('reextract_documents', '--limit', '5', '--retry-errors')
         self.assertEqual(self._marked(), 3)
+        self.assertEqual(self._marked_error(), 0)
+
+    @patch('apps.scholarship.management.commands.reextract_documents.reextract_document')
+    def test_stale_kept_run_is_marked_error(self, mock_re):
+        # The clobber guard keeps the stored read and skips the save on a failed re-run —
+        # no timestamp advances. The command must count that as an ERROR of this run
+        # (retryable), never as a completed re-extraction.
+        mock_re.return_value = True   # returns fine but nothing was written
+        call_command('reextract_documents', '--limit', '5')
+        self.assertEqual(self._marked(), 0)
+        self.assertEqual(self._marked_error(), 3)
