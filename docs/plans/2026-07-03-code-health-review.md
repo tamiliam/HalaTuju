@@ -351,9 +351,12 @@ catalogue sync tooling guards, PISMP taxonomy derivation, reports-app scoping.
   pass-through, `ocr_document_full` single Vision read (digital-PDF free path kept).
   No migration. 3,196 backend tests. Retro
   `docs/retrospective-2026-07-03-code-health-s2.md`. → OWNER CHECKPOINT next.
-- **Sprint 3 — Money & comms:** #6 sponsorship lapse on contractual reject, #7 email
-  stamp only on success, #8 offer_emailed_at backfill, #9 FE bank field-error mapping,
-  #10 quiz↔agreement reconciliation, #11 sign-invitation flag guard.
+- **Sprint 3 — Money & comms: ✅ DONE 2026-07-03.** #6 auto-lapse + balance-guarded
+  reinstate-on-cancel; #7 stamp-on-success; #8 VERIFIED on prod (all 18 stamped — zero
+  data change); #9 bank field-error mapping + countDigits inline hint (en/ms/ta); #10
+  quiz reconciled to AGREEMENT_CLAUSES + phantom-term guardrail test (⚠ OWNER REVIEW of
+  the copy, esp. ta, before the flag flips); #11 dark-chain gate. No migration.
+  3,617 tests. Retro `docs/retrospective-2026-07-03-code-health-s3.md`.
 - **Sprint 4 — Income/STR consistency:** #13–#20 (shared red-states tuple, I4 via
   headroom helper, member-tag fixes, IC-selector alignment, wrong-doc blame).
 - **Sprint 5 — Infra & guardrails:** #21 cache backend for rate limits, #23 URL

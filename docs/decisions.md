@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## Contractual reject auto-lapses the sponsorship; cancel reinstates balance-guarded — Code-health S3, 2026-07-03
+**Decision:** (owner, 2026-07-03) `admin_reject(category='contractual')` lapses every HOLDING sponsorship at decline time (balance returns immediately; sponsor surfaces stop counting the student). `cancel_pending_decline` reinstates the lapsed row best-effort — only when `sponsor_balance` still covers the amount; otherwise the case returns to its pre-decline status un-funded, with a logged warning.
+**Alternatives considered:** lapse only at email-release (leaves sponsor surfaces wrong during the 7-day embargo — the original bug, just shorter); blocking contractual reject of funded students and forcing the closure flow (stricter but adds an admin step; owner chose one-click).
+**Rationale:** the ledger must reflect the decision the moment the cockpit shows it; a 7-day-old lapse is almost always reinstatable, and the rare reallocated-balance case is surfaced, not silent.
+**Trade-offs:** a cancelled contractual decline can come back un-funded (needs re-funding by hand); accepted.
+**Revisit if:** partial funding / multi-sponsor arrives (TD-075 real-money work) — reinstatement then needs per-sponsor arbitration.
+
+## Quiz↔agreement fidelity = clause map + negative-space test + human review — Code-health S3, 2026-07-03
+**Decision:** the comprehension quiz paraphrases AGREEMENT_CLAUSES (map documented at the top of CHECKPOINTS); a jest test pins structure and BANS the phantom terms the old draft invented (a CGPA figure, a 7-day window, upload/suspension duties). Exact-string equality with bursary.py is deliberately NOT asserted.
+**Alternatives considered:** generating quiz text from bursary.py at build time (kills the plain-language paraphrase that makes the quiz useful); no test (how the drift shipped).
+**Rationale:** the quiz's value is simplification; the danger is teaching terms that don't exist — that negative space is mechanically testable even when paraphrase isn't.
+**Trade-offs:** a future clause CHANGE still needs a human to update the quiz (the header's lockstep note + owner review before flag-flip carry that).
+**Revisit if:** the lawyer-vetted template rewrites the clauses (Phase-0 gate) — re-reconcile then.
+
 ## Vision clobber guard semantics + honest reextract batching + single OCR read — Code-health S2, 2026-07-03
 **Decision:** (a) the three vision writers keep a stored SUCCESSFUL read when a re-run FAILS (fetch/OCR/model error) — guard keys on run-failure + prior-good-read, never on content; (b) `reextract_documents` marks failed/stale-kept docs `'error'` (pass advances; `--retry-errors` re-attempts) and detects stale-kept runs by unchanged read timestamps; (c) `ocr_document_full` = one fetch + at most one Vision call per upload/re-run, `words=None` meaning "not computed" (digital-PDF free path preserved), reused by match/slip/BC/genuineness consumers.
 **Alternatives considered:** content-based guards ("keep whichever read has more fields") — rejected, re-parses legitimately change content; leaving failed docs unmarked in the batch — rejected, one broken doc wedges the self-batching pass; always running Vision for text (dropping the PDF text-layer path) — rejected, adds cost to the currently-free digital-PDF reads.

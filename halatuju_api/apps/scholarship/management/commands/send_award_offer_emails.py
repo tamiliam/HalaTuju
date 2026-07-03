@@ -45,11 +45,17 @@ class Command(BaseCommand):
             name = getattr(app.profile, 'name', '') if app.profile else ''
             ok = send_award_offer_email(
                 to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en')
-            # Stamp the award as emailed so the cool-off cron never re-sends it (idempotent
-            # across the manual force-send and the scheduled release).
-            from django.utils import timezone
-            award.offer_emailed_at = timezone.now()
-            award.save(update_fields=['offer_emailed_at', 'updated_at'])
-            (sent if ok else failed).append(aid if ok else (aid, 'send_failed'))
+            if ok:
+                # Stamp the award as emailed so the cool-off cron never re-sends it (idempotent
+                # across the manual force-send and the scheduled release). Code-health S3 #7:
+                # stamp ONLY on success — a failed send used to be stamped too, and since the
+                # release cron filters offer_emailed_at__isnull=True, one transient failure
+                # permanently suppressed that student's good-news email.
+                from django.utils import timezone
+                award.offer_emailed_at = timezone.now()
+                award.save(update_fields=['offer_emailed_at', 'updated_at'])
+                sent.append(aid)
+            else:
+                failed.append((aid, 'send_failed'))
         self.stdout.write(
             f'Award-offer emails. sent={sent} skipped_no_award={skipped_no_award} failed={failed}')

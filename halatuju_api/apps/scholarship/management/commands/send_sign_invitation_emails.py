@@ -28,6 +28,13 @@ class Command(BaseCommand):
     help = 'Send the "ready to sign" follow-up email to explicit awarded application IDs (env SIGN_INVITE_APP_IDS).'
 
     def handle(self, *args, **options):
+        # Code-health S3 #11: this email points the student at the bursary preview + signing
+        # flow — while the chain is DARK those surfaces don't exist, so sending would invite
+        # students into a dead end. Mirror send_bursary_signing_reminders: no-op when off.
+        if not getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False):
+            self.stdout.write('BURSARY_AGREEMENT_ENABLED is off — the signing chain is dark; '
+                              'nothing sent.')
+            return
         app_ids = _ids(getattr(settings, 'SIGN_INVITE_APP_IDS', ''))
         if not app_ids:
             self.stdout.write('SIGN_INVITE_APP_IDS not set — nothing sent.')

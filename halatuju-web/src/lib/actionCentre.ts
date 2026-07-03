@@ -255,3 +255,11 @@ export function localiseParams(
   }
   return out
 }
+
+// Code-health S3 #9: the API refuses an account number with fewer than 5 digits
+// (a fat-finger / truncated-OCR fragment must never become a payout target). The
+// form mirrors that floor client-side so the student sees WHICH field is wrong
+// inline, before the round-trip.
+export function countDigits(s: string): number {
+  return (s.match(/\d/g) || []).length
+}

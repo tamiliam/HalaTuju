@@ -2046,6 +2046,7 @@
         "save": "Simpan butiran bank saya",
         "saving": "Menyimpan…",
         "saveError": "Maaf, kami tidak dapat menyimpan butiran bank anda. Sila cuba lagi.",
+        "accountNumberInvalid": "Nombor akaun ini nampak terlalu pendek. Sila semak penyata bank anda dan masukkan nombor akaun yang penuh.",
         "holderMismatch": "Akaun ini bukan atas nama anda. Biasiswa hanya boleh dibayar ke akaun bank milik anda sendiri."
       },
       "setAside": "Diketepikan",

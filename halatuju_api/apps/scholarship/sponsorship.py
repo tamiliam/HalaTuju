@@ -351,6 +351,43 @@ def release_pending_awards(now=None):
     return released
 
 
+def lapse_holding_sponsorships(application, *, now=None):
+    """Lapse EVERY holding (offered/active) sponsorship on this application — each held
+    amount returns to its sponsor's balance (balance = donations − holding allocations,
+    so a lapsed row simply stops being subtracted). For a student who leaves the
+    programme outside the normal offer-decline/closure flow — e.g. a contractual admin
+    reject of a funded student (code-health S3 #6): without this, the sponsorship sat
+    HOLDING forever, the sponsor's balance stayed reduced, and impact/statement surfaces
+    kept reporting the rejected student as actively supported. Returns the rows lapsed."""
+    now = now or timezone.now()
+    lapsed = []
+    for sp in application.sponsorships.filter(status__in=Sponsorship.HOLDING):
+        sp.status = 'lapsed'
+        sp.decided_at = now
+        sp.save(update_fields=['status', 'decided_at', 'updated_at'])
+        lapsed.append(sp)
+    return lapsed
+
+
+def reinstate_lapsed_sponsorship(application, *, since):
+    """Best-effort undo of ``lapse_holding_sponsorships`` for a CANCELLED contractual
+    decline: put the most recently lapsed sponsorship (lapsed at/after ``since``) back to
+    'active' — but only when the sponsor's balance still covers the amount (they may have
+    reallocated the returned money in the window). Returns the sponsorship on success,
+    None when there is nothing to reinstate or the balance no longer covers it (the case
+    then needs re-funding; the caller logs it)."""
+    sp = (application.sponsorships.filter(status='lapsed', decided_at__gte=since)
+          .order_by('-decided_at').select_related('sponsor').first())
+    if sp is None:
+        return None
+    if sponsor_balance(sp.sponsor) < sp.amount:
+        return None
+    sp.status = 'active'
+    sp.decided_at = timezone.now()
+    sp.save(update_fields=['status', 'decided_at', 'updated_at'])
+    return sp
+
+
 def lapse_expired_offers():
     """Mark every 'offered' award past its accept_deadline as 'lapsed' (the amount
     returns to the sponsor's balance). Intended for a scheduled job; returns the

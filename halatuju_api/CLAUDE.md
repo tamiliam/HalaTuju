@@ -518,7 +518,23 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-03)
 
-**▶ NEXT — OWNER CHECKPOINT, then Code-health Sprint 3: money & comms** (roadmap
+**▶ NEXT — Code-health Sprint 4: income/STR consistency** (roadmap findings #13-#20):
+shared red-STR-states tuple across income_engine/resolution/services consumers; salary-route
+I4 through the headroom helper (gross ceiling + boundary); blank-tagged-doc member checks;
+profile_engine effective_working_members; IC-selector alignment (verdict vs checklist);
+wrong-doc blame when an IC OCR is pending. Then S5 infra & guardrails, then the FINAL report
+(incl. quiz copy for owner review).
+
+**✅ SHIPPED 2026-07-03 — Code-health Sprint 3 (money & comms; branch `feat/code-health-s3`;
+NO migration; retro `docs/retrospective-2026-07-03-code-health-s3.md`).** Contractual reject
+auto-lapses the sponsorship (cancel reinstates, balance-guarded); award-offer email stamps only
+on success; offer_emailed_at backfill VERIFIED on prod (18/18 stamped, no change);
+sign-invitation command gated on BURSARY_AGREEMENT_ENABLED; bank-details save maps the
+account-number field error + inline countDigits hint (en/ms/ta); **comprehension quiz
+reconciled to AGREEMENT_CLAUSES** (dark; phantom-term guardrail test; ⚠ owner reviews the
+copy — esp. Tamil — before the flag ever flips). 2,006 scholarship pytest + 412 jest.
+
+**✅ SHIPPED 2026-07-03 — earlier the same day: OWNER CHECKPOINT passed after Code-health S1+S2** (roadmap
 `docs/plans/2026-07-03-code-health-review.md`, findings #6-#11): sponsorship lapse on contractual
 reject, award-email stamp only on success, `offer_emailed_at` backfill VERIFY (lessons.md says the
 operational backfill was already done — check prod, don't re-blast), FE bank field-error mapping,

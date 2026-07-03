@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Code-health Sprint 3 (2026-07-03) — money & comms (review findings #6-#11).**
+  - **A contractual reject of a funded student now auto-lapses their sponsorship** (owner decision):
+    the held amount returns to the sponsor's balance and impact/statement surfaces stop counting the
+    student. Cancelling that decline within the embargo window reinstates the sponsorship when the
+    sponsor's balance still covers it (logged for re-funding otherwise). The disbursement ledger
+    needed no change — `release_tranche` already refuses non-funded statuses.
+  - **A failed award-offer send is no longer stamped as emailed** — one transient failure used to
+    permanently suppress that student's good-news email (the release cron filters on the stamp).
+  - **`offer_emailed_at` backfill VERIFIED on prod** — all 18 sponsorships stamped (the 2026-06-29
+    operational backfill covered it); review finding #8 closed with no data change.
+  - **`send_sign_invitation_emails` is now gated on `BURSARY_AGREEMENT_ENABLED`** — it can no longer
+    email students into a dead-end signing flow while the chain is dark.
+  - **Bank-details save errors now name the field** — a short/truncated account number shows a specific
+    message (mapped from the DRF field error) plus an inline hint before submit (client mirrors the
+    API's ≥5-digit floor via `countDigits`); previously a generic "couldn't save" dead-end. en/ms/ta.
+  - **The award comprehension quiz now teaches the ACTUAL agreement** — reconciled to
+    `bursary.py` `AGREEMENT_CLAUSES` (still DARK): removed the invented 3.0-CGPA rule, 7-day notice,
+    per-semester upload/suspension duty and locked-programme claims; added the real clauses
+    (supportive review, reasonable-time notice, evidence on request, mentor communication, fair
+    opportunity to respond). A jest guardrail pins structure and blocks those phantom terms from
+    returning. en/ms final-draft, ta first-draft — **owner review required before the flag ever flips**.
 - **Code-health Sprint 2 (2026-07-03) — document-pipeline safety (review findings #5 + #22).**
   - **The pipeline can no longer destroy a good read.** All three `vision_fields`/verdict writers
     (`run_field_extraction_for_document`, `read_text_document`, `run_vision_match_for_document`) now
