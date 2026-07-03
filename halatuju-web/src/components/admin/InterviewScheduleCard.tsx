@@ -110,8 +110,13 @@ export default function InterviewScheduleCard({
       onChange(next)
       setEditing(false)        // back to the locked "Proposed times" view
       setRescheduling(false)
-    } catch {
-      setError(t('admin.scholarship.interview.schedule.error'))
+    } catch (e) {
+      // An unassigned application can't have times proposed (slots are the assigned
+      // reviewer's calendar) — surface the specific reason so the reviewer knows to assign first.
+      const code = e instanceof Error ? e.message : ''
+      setError(t(code === 'not_assigned'
+        ? 'admin.scholarship.interview.schedule.notAssigned'
+        : 'admin.scholarship.interview.schedule.error'))
     } finally { setBusy(false) }
   }
 

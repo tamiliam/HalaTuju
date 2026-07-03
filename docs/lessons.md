@@ -2,6 +2,8 @@
 
 Cross-cutting lessons from sprint retrospectives. Only items that affect future work regardless of feature area.
 
+- **A status/state-machine side-effect must fire from the event that MEANS the new state — not from incidental activity that merely co-occurs with it.** `profile_complete → interviewing` was advanced on any interview *draft save*; when V3 folded the agenda into the draft, early triage (even an agenda-item delete) started saving drafts, and four live apps silently flipped into the interview funnel with no accountable owner. The trigger was wrong, not just under-guarded. When a UI change makes an existing event fire more often (or in new contexts), audit every state-advancing side-effect keyed to that event and re-anchor it to the action that actually denotes the transition (here: proposing times / submitting — plus an assigned owner). Invariant-test the target state (`interviewing ⇒ assigned AND (slots OR submitted session)`) so an incidental writer can't satisfy it. (Interview-trigger hotfix, 2026-07-03)
+
 - **Multi-line source edits through a bash-heredoc-wrapped python string mangle escapes (`
 ` became a real newline → a SyntaxError written INTO the file). Write the edit script to a scratch file and run it, or use the editor tool — and always run the affected tests immediately after a scripted edit** (the collection error caught it in seconds). (Code-health S5, 2026-07-03)
 

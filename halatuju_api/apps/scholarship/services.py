@@ -1258,7 +1258,11 @@ def submit_interview(session):
         session.save(update_fields=['status', 'submitted_at'])
     app = session.application
     advanced = False
-    if app.status == 'profile_complete':
+    # Submitting the session is the OFFLINE-interview fallback trigger for 'interviewing'
+    # (when no times were proposed in-app). Same precondition as the propose trigger: an
+    # ACCOUNTABLE assigned reviewer must exist — never advance an unassigned case (keeps the
+    # invariant "interviewing ⇒ assigned_to set"). See docs/decisions.md.
+    if app.status == 'profile_complete' and app.assigned_to_id is not None:
         app.status = 'interviewing'
         app.save(update_fields=['status'])
         advanced = True

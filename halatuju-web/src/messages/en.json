@@ -3016,6 +3016,7 @@
           "cancelEdit": "Cancel",
           "removeSlot": "Remove time",
           "error": "Could not save. Please try again.",
+          "notAssigned": "Assign a reviewer to this application first — interview times go on the assigned reviewer's calendar.",
           "messagesHeading": "Messages from the student"
         }
       },

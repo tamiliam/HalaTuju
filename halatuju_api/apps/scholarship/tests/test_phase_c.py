@@ -313,10 +313,11 @@ class TestAssignment(PhaseCBase):
 
 
 class TestInterview(PhaseCBase):
-    def test_draft_then_submit_advances_status(self):
+    def test_draft_does_not_advance_but_submit_does(self):
         app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(REVIEWER)
-        # Create a draft → status moves to interviewing.
+        # Saving a DRAFT must NOT advance the funnel (hotfix 2026-07-03: the Phase-C draft-save
+        # advance was removed — it mis-fired on agenda edits/deletes once V3 folded the agenda in).
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/interview/',
             {'findings': {'household_size_one': {'verdict': 'resolved', 'rationale': 'ok'}},
@@ -324,14 +325,35 @@ class TestInterview(PhaseCBase):
         )
         self.assertEqual(r.status_code, 200)
         app.refresh_from_db()
-        self.assertEqual(app.status, 'interviewing')
-        # QC (2026-07): submitting FINDINGS no longer advances to 'interviewed' — the case stays
-        # 'interviewing' until the reviewer submits the full verdict (verify-accept).
+        self.assertEqual(app.status, 'profile_complete')     # draft save leaves status untouched
+        # SUBMIT is the offline-interview fallback trigger → interviewing (the case is assigned).
+        # (Findings-submit stops at 'interviewing'; 'interviewed' needs the full verify-accept.)
         r2 = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/interview/submit/')
         self.assertEqual(r2.status_code, 200)
         app.refresh_from_db()
         self.assertEqual(app.status, 'interviewing')
         self.assertEqual(InterviewSession.objects.filter(application=app, status='submitted').count(), 1)
+
+    def test_draft_save_on_unassigned_never_advances(self):
+        # The exact hotfix bug (2026-07-03): a super saving/editing an interview draft during
+        # early triage (before assignment) previously flipped profile_complete → interviewing
+        # with no accountable owner. A draft save must now never move the status.
+        app = self._complete(self._make_app(status='profile_complete'))   # UNASSIGNED
+        self._auth(SUPER)
+        url = f'/api/v1/admin/scholarship/applications/{app.id}/interview/'
+        r = self.client.post(
+            url, {'findings': {'household_size_one': {'verdict': 'resolved', 'rationale': 'ok'}}},
+            format='json')
+        self.assertEqual(r.status_code, 200)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'profile_complete')
+        # An "agenda edit/delete" is the SAME endpoint (re-save the draft) — still no advance.
+        r2 = self.client.post(
+            url, {'findings': {'household_size_one': {'verdict': 'resolved', 'rationale': 'revised'}}},
+            format='json')
+        self.assertEqual(r2.status_code, 200)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'profile_complete')
 
     def test_reviewer_reopens_submitted_interview(self):
         # Submit, then the reviewer reopens to add a forgotten finding → un-submits +

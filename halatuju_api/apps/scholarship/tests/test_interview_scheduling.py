@@ -102,6 +102,71 @@ class SchedulingServiceTests(TestCase):
         app.refresh_from_db()
         self.assertEqual(app.status, 'recommended')
 
+    # ── proposing requires an assignment (hotfix 2026-07-03; closes the super bypass) ─────────
+    def _unassigned_pc_app(self, uid='stud-unassigned'):
+        p = StudentProfile.objects.create(supabase_user_id=uid, nric='990202-14-8888', name='Nita')
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='profile_complete',
+            notify_email=f'{uid}@example.com')   # NO assigned_to
+
+    def test_propose_refused_on_unassigned_application(self):
+        # Slots are the assigned reviewer's calendar — an UNASSIGNED app can't have times
+        # proposed, and (being the forward trigger) must not flip it into the funnel with no
+        # accountable owner. Refused for EVERYONE, including a super (closes the bypass).
+        superadmin = PartnerAdmin.objects.create(
+            supabase_user_id='super-sched', is_super_admin=True, is_active=True,
+            name='Boss', email='boss-sched@example.com')
+        app = self._unassigned_pc_app()
+        for who in (superadmin, self.reviewer):
+            with self.assertRaises(scheduling.SchedulingError) as ctx:
+                scheduling.propose_slots(app, reviewer=who, starts=[self._future(days=3)])
+            self.assertEqual(str(ctx.exception), 'not_assigned')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'profile_complete')                 # never advanced
+        self.assertFalse(InterviewSlot.objects.filter(application=app).exists())
+
+    @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+    def test_propose_endpoint_returns_400_not_assigned_for_super(self):
+        # End-to-end: the super's propose POST on an unassigned app → 400 not_assigned, no change.
+        PartnerAdmin.objects.create(
+            supabase_user_id='super-ep', is_super_admin=True, is_active=True,
+            name='Boss', email='boss-ep@example.com')
+        app = self._unassigned_pc_app(uid='stud-ep')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("super-ep")}')
+        # A VALID slot (10:00 MYT, 30-min boundary, >24h out) so the endpoint's slot-window
+        # checks pass and we actually reach the assignment guard.
+        from datetime import timezone as _dtz
+        myt = _dtz(timedelta(hours=8))
+        slot = (timezone.now() + timedelta(days=3)).astimezone(myt).replace(
+            hour=10, minute=0, second=0, microsecond=0)
+        r = client.post(f'/api/v1/admin/scholarship/applications/{app.id}/interview-slots/',
+                        {'slots': [slot.isoformat()]}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'not_assigned')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'profile_complete')
+
+    def test_interviewing_invariant_holds_for_both_legit_paths(self):
+        # INVARIANT: status=='interviewing' ⇒ assigned_to set AND (active slots OR a submitted
+        # session). The two legit entry paths (propose; offline submit) must each satisfy it.
+        from apps.scholarship.models import InterviewSession
+        from apps.scholarship.services import submit_interview
+        # propose path
+        a1 = self._pc_app(uid='inv-propose')
+        scheduling.propose_slots(a1, reviewer=self.reviewer, starts=[self._future(days=3)])
+        a1.refresh_from_db()
+        self.assertEqual(a1.status, 'interviewing')
+        self.assertIsNotNone(a1.assigned_to_id)
+        self.assertTrue(InterviewSlot.objects.filter(application=a1, is_active=True).exists())
+        # offline-submit path
+        a2 = self._pc_app(uid='inv-submit')
+        submit_interview(InterviewSession.objects.create(application=a2, status='draft'))
+        a2.refresh_from_db()
+        self.assertEqual(a2.status, 'interviewing')
+        self.assertIsNotNone(a2.assigned_to_id)
+        self.assertTrue(a2.interview_sessions.filter(status='submitted').exists())
+
     # ── WhatsApp "times proposed — please pick one" nudge (roadmap S2 / TD-138) ──
     _SANDBOX = 'whatsapp:+14155238886'
     _REAL = 'whatsapp:+19162597009'

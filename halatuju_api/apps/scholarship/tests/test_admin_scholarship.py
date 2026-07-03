@@ -321,7 +321,9 @@ class TestAdminScholarship(TestCase):
         from apps.scholarship.services import submit_interview
         SponsorProfile.objects.create(
             application=self.app, draft_markdown='Draft.', generated_at=timezone.now())
-        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='profile_complete')
+        # An ASSIGNED reviewer is the precondition for the submit-advance (hotfix 2026-07-03).
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(
+            status='profile_complete', assigned_to=self.admin)
         self.app.refresh_from_db()
         sess = InterviewSession.objects.create(application=self.app, status='draft')
         advanced = submit_interview(sess)            # must still complete the submit
@@ -339,7 +341,9 @@ class TestAdminScholarship(TestCase):
         from apps.scholarship.services import submit_interview
         SponsorProfile.objects.create(
             application=self.app, draft_markdown='Draft.', generated_at=timezone.now())
-        ScholarshipApplication.objects.filter(pk=self.app.pk).update(status='profile_complete')
+        # An ASSIGNED reviewer is the precondition for the submit-advance (hotfix 2026-07-03).
+        ScholarshipApplication.objects.filter(pk=self.app.pk).update(
+            status='profile_complete', assigned_to=self.admin)
         self.app.refresh_from_db()
         sess = InterviewSession.objects.create(application=self.app, status='draft')
         advanced = submit_interview(sess)            # must NOT raise

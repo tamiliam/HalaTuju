@@ -26,6 +26,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tests: 2055 scholarship pytest (+9) + 413 jest; tsc clean.
 
 ### Fixed
+- **Hotfix (2026-07-03) — `interviewing` fired from the wrong trigger + needed an accountable owner.**
+  The Phase-C leftover in `AdminInterviewView` advanced `profile_complete → interviewing` on ANY interview
+  draft save (incl. agenda-item edits/deletes); once V3 folded the agenda into the draft, early triage
+  became common and four live apps flipped by accident (58/83/99/103 reverted by hand; 30 kept — it has
+  proposed slots). Owner-settled rule: **`profile_complete → interviewing` requires BOTH an assigned reviewer
+  AND the interview process actually starting.** Implemented as:
+  - **Removed** the advance from the draft-save path entirely (`AdminInterviewView.post`).
+  - **`scheduling.propose_slots` is the forward trigger** — and it now **refuses on an unassigned
+    application** (`SchedulingError('not_assigned')` → the propose endpoint returns 400; cockpit message +
+    i18n en/ms/ta). Slots are the assigned reviewer's calendar, so proposing without an assignment is
+    incoherent; this closes the super-admin bypass (plain reviewers were already assignment-scoped).
+  - **`services.submit_interview`** keeps its advance only as the **offline-interview fallback**, now gated on
+    the same assigned-reviewer precondition.
+  - Regression + invariant tests: draft save / agenda edit never changes status; propose on unassigned → 400,
+    no status change; propose on assigned → advances; and **`interviewing ⇒ assigned_to set AND (active slots
+    OR a submitted session)`**. No migration. See `docs/decisions.md`.
 - **Verification-model roadmap Sprint V3 (2026-07-03) — query lifecycle & Check-3 handoff (audit #6–#9 + owner decisions 3/4).**
   No migration. Check 2 stops asking the unanswerable + losing the asked; Check 3 inherits the full picture.
   - **#6 — no query or email fires after the answering window locks.** `sync_check2_queries` +

@@ -3016,6 +3016,7 @@
           "cancelEdit": "Batal",
           "removeSlot": "Buang masa",
           "error": "Tidak dapat menyimpan. Sila cuba lagi.",
+          "notAssigned": "Tugaskan penyemak kepada permohonan ini dahulu — masa temu duga masuk ke kalendar penyemak yang ditugaskan.",
           "messagesHeading": "Mesej daripada pelajar"
         }
       },

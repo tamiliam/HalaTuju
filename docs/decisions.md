@@ -1,5 +1,30 @@
 # Architectural Decisions — HalaTuju
 
+## `interviewing` means "the interview process is underway for an accountable reviewer" — Hotfix, 2026-07-03
+**Decision:** The application status tracks a **student-observable process with an accountable owner**, not
+incidental admin activity. So `profile_complete → interviewing` requires **BOTH (a) an assigned reviewer AND
+(b) the interview process genuinely starting** — which means **times proposed to the student**
+(`scheduling.propose_slots`, the forward trigger) or, as an **offline fallback**, the reviewer **submitting**
+the session (`services.submit_interview`) — with the same assigned-reviewer precondition. It is **NOT** driven
+by saving an interview DRAFT (agenda/findings edits), and **NOT** by the student booking a slot. `propose_slots`
+now refuses on an unassigned application (400 `not_assigned`), closing the super-admin bypass. Invariant:
+`interviewing ⇒ assigned_to set AND (active slots exist OR a submitted session)`.
+**Alternatives considered:** (1) keep the draft-save advance but guard it on assignment — rejected: a draft
+save is not student-observable and an "agenda-item delete" advancing the funnel is incoherent; the trigger
+itself is wrong, not just its precondition. (2) advance on the student BOOKING a slot — rejected: booking is
+the student's action; the process (and the accountable owner) begins when the reviewer proposes, and gating on
+booking would leave a proposed-but-unbooked case stuck at `profile_complete`. (3) let a super propose on an
+unassigned app — rejected: slots ARE the assigned reviewer's calendar; without an assignment there is no
+owner, which is exactly how the four apps flipped.
+**Rationale:** the bug (four live apps flipped to `interviewing` on early triage after V3 folded the agenda
+into the draft) was a Phase-C leftover firing from the wrong event. Binding the status to proposal/submit +
+assignment makes every `interviewing` case mean the same thing on the board and gives it an accountable owner.
+**Trade-offs:** a purely offline reviewer who neither proposes in-app nor submits leaves a case at
+`profile_complete` until they submit — acceptable (submit is the offline path). A super can no longer "start"
+a case without first assigning it — intended.
+**Revisit if:** a legitimate flow needs `interviewing` without either a proposal or a submitted session (none
+today), or if assignment stops being the accountability primitive.
+
 ## STR red-band membership + I4 green semantics under the shared headroom test — Code-health S4, 2026-07-03
 **Decision:** (a) STR_RED_STATES = (wrong_type, rejected, stale) — 'unreadable' stays AMBER (misread ≠ disproven, and a never-scanned legacy doc reads 'unreadable', so a red 'unreadable' would gate consent on our own extraction backlog); the student coach separately covers unreadable + unconfirmed. (b) Salary-route I4 adopts income_headroom's two-test CEILING (gross primary, per-capita safety net, boundary inclusive) but keeps its binary green — the fall-through's thin-margin 'unsure'→amber grading compensates for an UNverified household and does not apply where the cluster is fully confirmed. (c) The legacy blank-tag fallback attaches to the named earner only; blank-wizard apps keep the fully tolerant reading.
 **Alternatives considered:** red 'unreadable' (broke 18 tests for the reason above); full band adoption on I4 (demotes historically-green thin-margin verdicts — out of the finding's scope, deferred to the salary-track redesign); dropping the blank fallback entirely (breaks pre-slot-model consent).

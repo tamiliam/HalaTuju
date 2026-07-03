@@ -680,7 +680,9 @@ class AdminInterviewView(_AdminBase):
     GET  .../<pk>/interview/ — the latest interview session, or an empty scaffold
          (status null) carrying the agenda codes from the anomaly engine.
     POST .../<pk>/interview/ — create/update the DRAFT session (findings/rubric/
-         note). Creating the first draft advances profile_complete → interviewing.
+         note). Saving a draft does NOT change the application status — 'interviewing'
+         is reached only by proposing times (the forward trigger) or, for an offline
+         interview, by SUBMITTING the session; both require an assigned reviewer.
     Reviewer/super only.
     """
     def get(self, request, pk):
@@ -719,10 +721,12 @@ class AdminInterviewView(_AdminBase):
         if session.interviewer_id is None:
             session.interviewer = admin
         session.save()
-        # First interview activity moves the funnel forward.
-        if app.status == 'profile_complete':
-            app.status = 'interviewing'
-            app.save(update_fields=['status'])
+        # A draft save does NOT advance the funnel. 'interviewing' means the interview
+        # process is genuinely underway for an accountable reviewer — reached by proposing
+        # times (scheduling.propose_slots) or submitting the session (offline fallback),
+        # both assignment-gated. Advancing on ANY draft save (incl. an agenda-item delete)
+        # was a Phase-C leftover that mis-fired once V3 folded the agenda into the draft
+        # (four live apps flipped on early triage). See docs/decisions.md.
         return Response(InterviewSessionSerializer(session).data)
 
 
