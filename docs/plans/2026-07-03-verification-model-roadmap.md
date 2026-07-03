@@ -139,6 +139,13 @@ re-upload in the Action Centre shows a Gopal coach.
 
 ## Sprint V3 — Query lifecycle & the Check-3 handoff (complexity: MEDIUM/HIGH)
 
+> **✅ SHIPPED (code) 2026-07-03** — branch `feat/verify-v3`; NO migration; retro
+> `docs/retrospective-2026-07-03-verify-v3.md`. All four findings closed + tested (2046 pytest +
+> 413 jest). Two design forks were taken to the OWNER mid-sprint: (a) locked apps SHOW pre-existing
+> items but create none; (b) per-item SLA with a submit-window `is_ready` floor. **⚠ OWNER
+> CHECKPOINT is due here** — owner reviews the new reviewer-facing copy (agenda ambers + Motivation
+> + overflow note, Tamil first-draft) before the owner-visible V4.
+
 Check 2 stops asking the unanswerable and stops losing the asked. **Findings: #6-#9 +
 owner decisions 3 & 4.**
 

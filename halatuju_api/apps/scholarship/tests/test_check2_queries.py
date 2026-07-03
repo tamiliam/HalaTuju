@@ -98,6 +98,54 @@ class TestSyncCheck2Queries(_Base):
         item.refresh_from_db()
         self.assertEqual(item.status, 'resolved')
 
+    def test_no_new_query_when_locked(self):
+        # V3 (#6): once the interview is concluded (interviewed = querying_locked) NO new query is
+        # raised — no item, no notify email inviting an answer the resolve endpoint now refuses.
+        self.app.status = 'interviewed'
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertEqual(self.app.resolution_items.filter(source='check2').count(), 0)
+
+    def test_locked_still_auto_resolves_existing(self):
+        # V3 (#6): the reconcile still runs post-lock so an item raised while unlocked auto-resolves
+        # when its gap clears (housekeeping) — only CREATE/RE-OPEN is gated.
+        sync_check2_queries(self.app)                       # unlocked → device/transport raised
+        item = self.app.resolution_items.get(code='device_status_unknown')
+        self.app.status = 'interviewed'
+        self.app.save()
+        FundingNeed.objects.create(application=self.app, categories=['device'])   # gap clears
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+
+    def test_cap_counts_open_so_resolving_frees_a_slot(self):
+        # V3 (#7): the cap counts CONCURRENTLY-OPEN clarifies — resolving one frees a slot for a
+        # crowded-out gap (before V3 the lifetime count kept it permanently blocked).
+        self.app.field_of_study = ''
+        self.app.siblings_in_tertiary = None
+        self.app.siblings_studying_count = 2
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertEqual(
+            self.app.resolution_items.filter(kind='clarify', status='open').count(), MAX_CLARIFY)
+        first = self.app.resolution_items.filter(kind='clarify', status='open').first()
+        first.status = 'resolved'
+        first.resolved_by = 'student'
+        first.save()
+        sync_check2_queries(self.app)                       # a freed slot → a crowded-out gap fills it
+        self.assertEqual(
+            self.app.resolution_items.filter(kind='clarify', status='open').count(), MAX_CLARIFY)
+
+    def test_clarify_overflow_count(self):
+        from apps.scholarship.check2_queries import clarify_overflow_count
+        self.assertEqual(clarify_overflow_count(self.app), 0)   # 2 gaps < cap → nothing crowded out
+        self.app.field_of_study = ''
+        self.app.siblings_in_tertiary = None
+        self.app.siblings_studying_count = 2
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertGreater(clarify_overflow_count(self.app), 0)  # >3 gaps → some crowded out
+
 
 class TestDeclaredIncomeDocRequest(_Base):
     """Phase 2A — a declared informal income with no valid STR + no supporting doc raises an
@@ -341,13 +389,18 @@ class TestPathwayConfirmQuery(_Base):
         self.assertFalse(self.app.resolution_items.filter(code='pathway_confirm').exists())
 
     def test_confirm_is_outside_the_clarify_cap(self):
-        # All four clarify gaps PLUS a clash → the confirm is extra, never eats a slot.
+        # Several clarify gaps PLUS a clash → the confirm is extra, never eats a slot. V3 (#7):
+        # reporting_date_unknown is UNCAPPED (a sponsor-profile input of equal standing), so the
+        # CAPPED clarifies number MAX_CLARIFY and reporting_date rides alongside them.
         self.app.field_of_study = ''
         self.app.siblings_in_tertiary = None
         self.app.siblings_studying_count = 2
         self._clash()
         sync_check2_queries(self.app)
-        self.assertEqual(self.app.resolution_items.filter(kind='clarify').count(), MAX_CLARIFY)
+        capped = (self.app.resolution_items.filter(kind='clarify')
+                  .exclude(code='reporting_date_unknown').count())
+        self.assertEqual(capped, MAX_CLARIFY)
+        self.assertTrue(self.app.resolution_items.filter(code='reporting_date_unknown').exists())
         self.assertTrue(self.app.resolution_items.filter(
             code='pathway_confirm', kind='confirm').exists())
 

@@ -52,12 +52,25 @@ class TestQuerySla(_Base):
         self.assertFalse(sla['lapsed'])
 
     def test_ready_when_window_lapsed_even_with_open_query(self):
-        self._clarify()
+        item = self._clarify()
         self.app.profile_completed_at = timezone.now() - timedelta(days=6)
         self.app.save()
+        # V3 (#8): lapse is now PER-ITEM — back-date the query's own clock so its window has passed.
+        ResolutionItem.objects.filter(pk=item.pk).update(created_at=timezone.now() - timedelta(days=6))
         sla = query_sla(self.app)
         self.assertTrue(sla['lapsed'])
         self.assertTrue(is_ready_for_assignment(self.app))  # proceed-as-is
+
+    def test_late_query_not_born_lapsed_but_floor_ready(self):
+        # V3 (#8): a query raised LATE (submit was 6 days ago, query created just now) is NOT
+        # born-lapsed — it gets its own fresh 5-day window (per-item). But the reviewer can still
+        # proceed because the SUBMIT-window FLOOR (submit + SLA) has passed (owner decision).
+        self.app.profile_completed_at = timezone.now() - timedelta(days=6)
+        self.app.save()
+        self._clarify()                               # created now → fresh per-item window
+        sla = query_sla(self.app)
+        self.assertFalse(sla['lapsed'])               # per-item: not born-lapsed
+        self.assertTrue(is_ready_for_assignment(self.app))  # floor: submit+SLA passed → ready
 
     def test_ready_when_query_answered(self):
         item = self._clarify()
@@ -71,10 +84,12 @@ class TestQuerySla(_Base):
 class TestQueryReminders(_Base):
     @patch('apps.scholarship.emails.send_query_reminder_email', return_value=True)
     def test_reminds_near_deadline_once(self, mock_email):
-        self._clarify()
-        # 3 days in (sla 5 → nudge from day 3) → due.
+        item = self._clarify()
+        # 3 days into the query's OWN window (sla 5 → nudge from day 3) → due. V3 (#8): the reminder
+        # clock is per-item, so back-date the query's created_at, not just submit.
         self.app.profile_completed_at = timezone.now() - timedelta(days=3)
         self.app.save()
+        ResolutionItem.objects.filter(pk=item.pk).update(created_at=timezone.now() - timedelta(days=3))
         self.assertEqual(send_query_reminders()['reminded'], 1)
         self.assertTrue(mock_email.called)
         self.app.refresh_from_db()
@@ -92,9 +107,11 @@ class TestQueryReminders(_Base):
 
     @patch('apps.scholarship.emails.send_query_reminder_email', return_value=True)
     def test_no_reminder_when_lapsed(self, mock_email):
-        self._clarify()
+        item = self._clarify()
         self.app.profile_completed_at = timezone.now() - timedelta(days=7)
         self.app.save()
+        # V3 (#8): lapse is per-item — back-date the query's own clock so it's genuinely lapsed.
+        ResolutionItem.objects.filter(pk=item.pk).update(created_at=timezone.now() - timedelta(days=7))
         self.assertEqual(send_query_reminders()['reminded'], 0)
 
     @patch('apps.scholarship.emails.send_query_reminder_email', return_value=True)

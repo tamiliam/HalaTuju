@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Verification-model roadmap Sprint V3 (2026-07-03) — query lifecycle & Check-3 handoff (audit #6–#9 + owner decisions 3/4).**
+  No migration. Check 2 stops asking the unanswerable + losing the asked; Check 3 inherits the full picture.
+  - **#6 — no query or email fires after the answering window locks.** `sync_check2_queries` +
+    `sync_resolution_items` gate every create/re-open on `not querying_locked`;
+    `QUERY_SLA_ACTIVE_STATUSES` drops `interviewed`. Existing doc requests stay answerable post-lock
+    (uploads still resolve them); a locked app shows pre-existing items but creates none.
+  - **#7 — the clarify cap is fair.** `MAX_CLARIFY` counts only CONCURRENTLY-OPEN clarifies (a
+    waived/resolved one frees a slot), so soft queries can't permanently crowd out an income
+    question; `reporting_date_unknown` carved out of the cap; a cockpit "N more queries waiting"
+    note (`clarify_overflow_count`) keeps a capped-out gap visible.
+  - **#8 — per-item SLA.** each open query runs its own clock (`created_at + SLA`) so a late-raised
+    query isn't born already-lapsed; the reminder fires ~2 days before each query's own deadline.
+    `is_ready_for_assignment` keeps a submit-window floor (submit + SLA) so a late query can't delay
+    review forever.
+  - **#9 — the interview inherits everything.** `interview_agenda_full` folds open carried-over
+    queries + the four "confirm at interview" verdict ambers (over-the-line phrased interviewer-only)
+    + a standing Motivation & grit section (seeded rich when the statement of intent is thin) onto
+    the cockpit agenda; reviewer Guide + FAQ updated. Motivation stays a human judgement.
+  - Tests: 2046 scholarship pytest (+6) + 413 jest; tsc clean. New reviewer-facing copy en/ms/ta
+    (Tamil first-draft).
+
 - **Verification-model roadmap Sprint V2 (2026-07-03) — resolution correctness (audit findings #3, #4, #16).**
   No migration. The re-upload/resolve path now verifies what it resolves.
   - **#3 — a non-official offer no longer resolves an "upload your official offer" request.**

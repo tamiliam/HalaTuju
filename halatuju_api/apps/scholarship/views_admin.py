@@ -610,8 +610,54 @@ class AdminPublishProfileView(_AdminBase):
 
 def _interview_agenda(application):
     """The anomaly codes that form the interview agenda (same flags the admin
-    'Pre-interview flags' card shows)."""
+    'Pre-interview flags' card shows). Flat list — kept stable for the AdminInterviewView
+    scaffold + its FE. V3 (#9) adds the richer folded agenda in ``interview_agenda_full``."""
     return [a['code'] for a in detect_anomalies(application)]
+
+
+# V3 (#9): the four verdict AMBERS that explicitly say "confirm at interview" — folded onto the
+# agenda so they don't evaporate at Check 3. Over-the-line income is phrased for the INTERVIEWER
+# only (never a student message — owner decision 4).
+_NEEDS_INTERVIEW_AMBERS = ('income_unverified_needs_interview', 'income_above_b40_line',
+                           'academic_grade_uncertain', 'ic_service_down')
+
+
+def interview_agenda_full(application):
+    """V3 (#9): the interviewer's full talking-point agenda, so nothing raised at Check 1/2
+    evaporates at Check 3. Returns ``[{code, kind, params}]`` where kind is one of:
+      - ``anomaly``        — the deterministic pre-interview flags (as before);
+      - ``open_query``     — OPEN carried-over resolution items (queries / doc-requests the
+                             student never answered) — ask them verbally;
+      - ``needs_interview``— the verdict ambers that say "confirm at interview"
+                             (``_NEEDS_INTERVIEW_AMBERS``); over-the-line income is interviewer-only;
+      - ``motivation``     — a STANDING 'Motivation & grit' section, always present, ``seeded``
+                             rich when the statement of intent / aspirations is thin
+                             (``motivation_missing``). Motivation stays a human judgement
+                             (owner decision 3) — no student query, structured for Check 3.
+    Deduped across kinds by (kind, code). The FE resolves copy per (kind, code)."""
+    from .submission_review import completeness_gaps as _submission_gaps
+    from .verdict_engine import build_verdict
+    agenda = [{'code': a['code'], 'kind': 'anomaly', 'params': a.get('params', {})}
+              for a in detect_anomalies(application)]
+    seen = {(e['kind'], e['code']) for e in agenda}
+
+    def _add(kind, code, params):
+        if (kind, code) not in seen:
+            agenda.append({'code': code, 'kind': kind, 'params': params or {}})
+            seen.add((kind, code))
+
+    # (a) OPEN carried-over queries/doc-requests — never lost, asked verbally at the interview.
+    for it in application.resolution_items.filter(status='open').exclude(kind='human'):
+        _add('open_query', it.code, it.params or {})
+    # (b) the "needs interview" verdict ambers.
+    for fact in build_verdict(application):
+        for item in fact.get('unresolved', []):
+            if item['code'] in _NEEDS_INTERVIEW_AMBERS:
+                _add('needs_interview', item['code'], item.get('params', {}))
+    # (c) the standing Motivation & grit section (seeded rich when the statement of intent is thin).
+    thin = any(g['code'] == 'motivation_missing' for g in _submission_gaps(application))
+    _add('motivation', 'motivation_grit', {'seeded': thin})
+    return agenda
 
 
 def _validate_findings(findings):

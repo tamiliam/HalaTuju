@@ -406,6 +406,22 @@ class TestInterview(PhaseCBase):
         self.assertEqual(r.status_code, 200)
         self.assertIn('household_size_one', r.json()['agenda'])
 
+    def test_interview_agenda_full_folds_open_query_and_motivation(self):
+        """V3 (#9): the folded agenda includes open carried-over queries + a standing Motivation
+        section, so nothing raised at Check 1/2 evaporates at the interview."""
+        from apps.scholarship.views_admin import interview_agenda_full
+        from apps.scholarship.models import ResolutionItem
+        app = self._make_app()
+        ResolutionItem.objects.create(application=app, source='officer', code='officer_1',
+                                      kind='doc', doc_type='salary_slip', status='open')
+        agenda = interview_agenda_full(app)
+        kinds = {(e['kind'], e['code']) for e in agenda}
+        self.assertIn(('open_query', 'officer_1'), kinds)              # carried-over query folded in
+        self.assertTrue(any(e['kind'] == 'motivation' for e in agenda))  # standing motivation section
+        # every entry is a well-formed {code, kind, params}
+        for e in agenda:
+            self.assertEqual(set(e), {'code', 'kind', 'params'})
+
 
 class TestRequestInfo(PhaseCBase):
     @patch('apps.scholarship.views_admin.send_request_info_email')

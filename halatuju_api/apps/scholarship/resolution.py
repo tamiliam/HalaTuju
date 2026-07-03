@@ -131,13 +131,18 @@ def sync_resolution_items(application):
     """
     if application.profile_completed_at is None:
         return ResolutionItem.objects.none()
+    # V3 (#6): once the interview is concluded the case is LOCKED — no NEW system gap-ticket
+    # (or its re-notify email) may be raised. We still auto-resolve open tickets whose gap cleared
+    # (housekeeping) below; only the CREATE is gated. (Existing doc requests stay answerable.)
+    from .services import querying_locked
+    locked = querying_locked(application)
     wanted = _ticketable_unresolved(application)
     existing = {r.code: r for r in application.resolution_items.filter(source='system')}
     now = timezone.now()
 
     raised_student_visible = False
     for code, info in wanted.items():
-        if code in existing:
+        if code in existing or locked:
             continue
         spec = CODE_TO_TICKET[code]
         try:

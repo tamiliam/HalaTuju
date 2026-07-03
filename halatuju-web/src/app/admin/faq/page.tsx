@@ -134,6 +134,18 @@ const REVIEWING: QA[] = [
       questions too, and after each point jot <strong>one line</strong> on what you found before you submit.</>,
   },
   {
+    q: <>What&rsquo;s on the interview agenda, and why is there always a &ldquo;Motivation &amp; grit&rdquo; point?</>,
+    a: <>The agenda pulls together everything the earlier checks raised so none of it slips through:
+      the pre-interview flags, any <strong>queries the student didn&rsquo;t answer</strong> (ask them in the
+      conversation), the points the verdict marked <strong>&ldquo;confirm at interview&rdquo;</strong> (an
+      uncertain grade, an identity that couldn&rsquo;t be auto-checked, or income that needs a fuller picture),
+      and a standing <strong>Motivation &amp; grit</strong> point. Motivation is deliberately a human judgement —
+      the system never scores it — so it&rsquo;s always on the agenda, and it&rsquo;s flagged for extra attention
+      when the student&rsquo;s written statement of intent is thin. If a point notes income reading above the line,
+      treat it as <strong>your</strong> cue to explore the family&rsquo;s real circumstances — please don&rsquo;t
+      quote the figure back to the student.</>,
+  },
+  {
     q: <>How do I schedule the interview?</>,
     a: <>On the applicant&rsquo;s page, use <strong>Interview scheduling</strong> to propose two or three times.
       The student picks one, and a <strong>Google Meet</strong> link is created automatically — you and the
