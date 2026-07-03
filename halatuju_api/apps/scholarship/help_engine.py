@@ -424,12 +424,14 @@ def verdict_for_document(doc):
     # NO IC to anchor on: nudge the student to add this person's IC. (Skips the generic
     # "your name isn't on this" check below, which is wrong for an earner's document.)
     if doc.doc_type in ('salary_slip', 'epf', 'str'):
-        from .income_engine import _proof_member, _member_ic_doc, student_str_check
-        # An STR whose currency itself is the problem (stale / rejected) speaks here —
-        # the earner-IC cluster coach can't say "this STR is out of date".
+        from .income_engine import _proof_member, _member_ic_doc, student_str_check, STR_COACH_STATES
+        # An STR whose currency itself is the problem speaks here — the earner-IC cluster coach
+        # can't say "this STR is out of date". V2 (#16): use the SHARED STR_COACH_STATES (the S4
+        # unification), so a wrong_type/unreadable/unconfirmed STR re-upload also gets the
+        # doc-anchored coach — not just stale/rejected (which left the two worst states silent).
         if doc.doc_type == 'str':
             sc = student_str_check(doc)
-            if sc and sc['current_status'] in ('stale', 'rejected'):
+            if sc and sc['current_status'] in STR_COACH_STATES:
                 return 'str_not_current'
         member = _proof_member(doc) if doc.doc_type != 'str' else \
             ((doc.application.income_earner or '').strip()

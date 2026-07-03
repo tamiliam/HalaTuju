@@ -518,16 +518,27 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-03)
 
-**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP: V2 (resolution correctness).** Roadmap:
-`docs/plans/2026-07-03-verification-model-roadmap.md`; findings source
-`docs/plans/2026-07-03-check-model-audit.md`. V2 = the re-upload/resolve path must verify what
-it resolves (findings #3, #4, #16, all in `resolution.py`): a non-official offer must not
-resolve an official-offer request; salary_slip/epf/birth_certificate need a pending/unreadable
-hold like results_slip; `resolve_doc_items_for_upload` becomes member-aware +
-criterion-aware for `income_doc_stale`; the `*_income_proof_missing` + `income_doc_stale` codes
-re-raisable after a resolve; finish the S4 #13 STR-coach-states unification. Owner decisions are
-embedded in the roadmap — do not re-ask. Owner checkpoints: after V3 and at the end. Work each
-sprint via `Settings/_workflows/sprint-start.md`/`sprint-close.md`.
+**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP: V3 (query lifecycle & Check-3 handoff).**
+Roadmap: `docs/plans/2026-07-03-verification-model-roadmap.md`; findings
+`docs/plans/2026-07-03-check-model-audit.md` #6–#9 + owner decisions 3 & 4. V3 = Check 2 stops
+asking the unanswerable and stops losing the asked: gate sync creation on NOT
+`services.querying_locked` + drop `interviewed` from `QUERY_SLA_ACTIVE_STATUSES` (#6); clarify-cap
+redesign to 3 CONCURRENTLY-OPEN (+ a cockpit "N more waiting" note) (#7); per-item SLA off
+`ResolutionItem.created_at` not `profile_completed_at` (#8); interview-agenda folding of open
+resolution items + the four "needs interview" ambers (over-the-line phrased interviewer-only) + a
+standing **Motivation & grit** section (owner decisions 3/4), updating the reviewer Guide + FAQ in
+the same change (#9). **⚠ OWNER CHECKPOINT after V3** (before the owner-visible V4 growth sprint).
+Owner decisions embedded — do not re-ask. Work each sprint via `sprint-start.md`/`sprint-close.md`.
+
+**✅ SHIPPED (code) 2026-07-03 — Verification-model V2 (resolution correctness; branch
+`feat/verify-v2`; NO migration; retro `docs/retrospective-2026-07-03-verify-v2.md`).** Audit
+#3/#4/#16: a non-official offer no longer resolves an official-offer request (`offer_official_status
+== 'not_genuine'` → mismatch; `unknown` defers); salary_slip/epf/birth_certificate HOLD an
+unread/errored read (pending/unreadable, no more `ok` off a Gemini error);
+`resolve_doc_items_for_upload` member-aware (a mother's payslip won't resolve the father's request)
++ `income_doc_stale` recency-re-checked; doc-kind Check-2 requests re-raisable when the gap
+re-fires (clarifies stay once-ever); `help_engine` + `documentHelp.ts` STR coach now use the shared
+`STR_COACH_STATES` (wrong_type/unreadable also coach). 2040 scholarship pytest + 412 jest; tsc clean.
 
 **✅ SHIPPED (code) 2026-07-03 — Verification-model V1 (slot & document integrity; worktree
 `.worktrees/verify-model`, branch `feat/verify-v1`; NO migration; retro

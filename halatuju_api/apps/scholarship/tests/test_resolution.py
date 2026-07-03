@@ -543,9 +543,66 @@ class TestDocMatchVerdict(_Base):
             self.assertEqual(doc_match_verdict(doc), 'mismatch')
 
     def test_birth_certificate_clean_ok(self):
-        doc = self._doc('birth_certificate')
+        # A READ BC (student_verdict='ok') whose rows all match → accept. V2 (#4): a BC that
+        # didn't read (blank/errored) now holds instead — see the two tests below.
+        doc = self._doc('birth_certificate', vision_fields={'fields': {'bc_child_name': 'X'}, 'student_verdict': 'ok'})
         with patch('apps.scholarship.income_engine.student_bc_check',
                    return_value={'child_status': 'match', 'mother_status': 'match', 'father_status': 'match'}):
+            self.assertEqual(doc_match_verdict(doc), 'ok')
+
+    def test_birth_certificate_errored_read_holds(self):
+        # V2 (#4): a Gemini error → blank fields → must NOT fall through to 'ok' and resolve the
+        # request unverified; it holds for re-upload.
+        doc = self._doc('birth_certificate', vision_fields={'fields': {}, 'student_verdict': 'wrong_doc'})
+        with patch('apps.scholarship.income_engine.student_bc_check',
+                   return_value={'child_status': 'unreadable', 'mother_status': 'unreadable', 'father_status': 'unreadable'}):
+            self.assertEqual(doc_match_verdict(doc), 'unreadable')
+
+    def test_birth_certificate_not_scanned_is_pending(self):
+        doc = self._doc('birth_certificate', vision_fields={'fields': {}, 'student_verdict': ''})
+        with patch('apps.scholarship.income_engine.student_bc_check',
+                   return_value={'child_status': 'unknown', 'mother_status': 'unknown', 'father_status': 'unknown'}):
+            self.assertEqual(doc_match_verdict(doc), 'pending')
+
+    # V2 (#4): salary_slip / epf now HOLD an unread/errored read instead of resolving unverified.
+    def test_salary_slip_errored_read_holds(self):
+        doc = self._doc('salary_slip', vision_fields={'fields': {}, 'student_verdict': 'wrong_doc'})
+        with patch('apps.scholarship.income_engine.student_income_proof_check',
+                   return_value={'name_status': 'no_ref', 'nric_status': 'no_ref'}):
+            self.assertEqual(doc_match_verdict(doc), 'unreadable')
+
+    def test_salary_slip_not_scanned_is_pending(self):
+        doc = self._doc('salary_slip', vision_fields={'fields': {}, 'student_verdict': ''})
+        with patch('apps.scholarship.income_engine.student_income_proof_check',
+                   return_value={'name_status': 'no_ref', 'nric_status': 'no_ref'}):
+            self.assertEqual(doc_match_verdict(doc), 'pending')
+
+    def test_salary_slip_read_ok(self):
+        doc = self._doc('salary_slip', vision_fields={'fields': {'name': 'X'}, 'student_verdict': 'ok'})
+        with patch('apps.scholarship.income_engine.student_income_proof_check',
+                   return_value={'name_status': 'match', 'nric_status': 'match'}):
+            self.assertEqual(doc_match_verdict(doc), 'ok')
+
+    # V2 (#3): a NON-OFFICIAL offer must not resolve an official-offer request; 'unknown' defers.
+    def test_offer_non_official_holds_mismatch(self):
+        doc = self._doc('offer_letter',
+                        vision_fields={'fields': {}, 'student_verdict': 'ok', 'authenticity': {'status': 'suspect'}})
+        with patch('apps.scholarship.pathway_engine.student_offer_check',
+                   return_value={'name': 'match', 'ic': 'match'}):
+            self.assertEqual(doc_match_verdict(doc), 'mismatch')
+
+    def test_offer_genuine_ok(self):
+        doc = self._doc('offer_letter',
+                        vision_fields={'fields': {}, 'student_verdict': 'ok', 'authenticity': {'status': 'genuine'}})
+        with patch('apps.scholarship.pathway_engine.student_offer_check',
+                   return_value={'name': 'match', 'ic': 'match'}):
+            self.assertEqual(doc_match_verdict(doc), 'ok')
+
+    def test_offer_unknown_genuineness_not_gated(self):
+        # genuineness not scored yet (no authenticity) → defer to the reviewer, don't gate.
+        doc = self._doc('offer_letter', vision_fields={'fields': {}, 'student_verdict': 'ok'})
+        with patch('apps.scholarship.pathway_engine.student_offer_check',
+                   return_value={'name': 'match', 'ic': 'match'}):
             self.assertEqual(doc_match_verdict(doc), 'ok')
 
     def test_parent_ic_name_mismatch(self):
@@ -629,6 +686,46 @@ class TestResolveDocItemsForUpload(_Base):
             resolve_doc_items_for_upload(self.app, doc)
         q.refresh_from_db()
         self.assertEqual(q.status, 'open')
+
+    def test_member_aware_resolve_only_matching_member(self):
+        # V2 (#4): a member-tagged request clears ONLY on an upload for THAT member — a mother's
+        # payslip no longer resolves the father's request.
+        father = add_officer_item(self.app, kind='doc', prompt='Father slip', admin_email='o@x',
+                                  doc_type='salary_slip', household_member='father')
+        mother = add_officer_item(self.app, kind='doc', prompt='Mother slip', admin_email='o@x',
+                                  doc_type='salary_slip', household_member='mother')
+        doc = ApplicantDocument.objects.create(application=self.app, doc_type='salary_slip',
+                                               household_member='mother', storage_path='x/m')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
+            resolve_doc_items_for_upload(self.app, doc)
+        father.refresh_from_db(); mother.refresh_from_db()
+        self.assertEqual(mother.status, 'resolved')
+        self.assertEqual(father.status, 'open')
+
+    def test_income_doc_stale_not_cleared_by_still_stale_slip(self):
+        # V2 (#4): a re-uploaded but STILL-stale salary slip keeps income_doc_stale open.
+        item = ResolutionItem.objects.create(application=self.app, source='check2',
+                                             code='income_doc_stale', fact='income', kind='doc',
+                                             doc_type='salary_slip')
+        doc = ApplicantDocument.objects.create(application=self.app, doc_type='salary_slip',
+                                               storage_path='x/s1')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'), \
+             patch('apps.scholarship.income_engine.stale_income_proof', return_value=True):
+            resolve_doc_items_for_upload(self.app, doc)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')
+
+    def test_income_doc_stale_cleared_by_current_slip(self):
+        item = ResolutionItem.objects.create(application=self.app, source='check2',
+                                             code='income_doc_stale', fact='income', kind='doc',
+                                             doc_type='salary_slip')
+        doc = ApplicantDocument.objects.create(application=self.app, doc_type='salary_slip',
+                                               storage_path='x/s2')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'), \
+             patch('apps.scholarship.income_engine.stale_income_proof', return_value=False):
+            resolve_doc_items_for_upload(self.app, doc)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
 
 
 class TestJudgeAnswerRelevance(TestCase):

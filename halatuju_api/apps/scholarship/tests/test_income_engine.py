@@ -1199,6 +1199,7 @@ def _bc_doc(*, child=_STUDENT, mother_nric=_MOTHER_NRIC, status='genuine'):
         vision_fields={'fields': {'bc_child_name': child, 'bc_mother_name': _MOTHER,
                                   'bc_mother_nric': mother_nric, 'bc_father_name': _FATHER,
                                   'bc_father_nric': _FATHER_NRIC},
+                       'student_verdict': 'ok',   # a genuinely READ BC (V2: pending/unreadable holds otherwise)
                        'authenticity': {'status': status}})
 
 
@@ -1218,7 +1219,8 @@ def _str_doc(*, nric=_MOTHER_NRIC, name=_MOTHER):
 def _epf_doc(*, nric=_MOTHER_NRIC, name=_MOTHER):
     return SimpleNamespace(doc_type='epf', household_member='mother',
                            vision_fields={'fields': {'name': name, 'nric': nric,
-                                                      'monthly_contribution': '300.00'}})
+                                                      'monthly_contribution': '300.00'},
+                                          'student_verdict': 'ok'})   # a READ EPF (V2 hold otherwise)
 
 
 def _chain_app(docs, *, route='str', earner='mother'):

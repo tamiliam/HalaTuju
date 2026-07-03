@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Verification-model roadmap Sprint V2 (2026-07-03) — resolution correctness (audit findings #3, #4, #16).**
+  No migration. The re-upload/resolve path now verifies what it resolves.
+  - **#3 — a non-official offer no longer resolves an "upload your official offer" request.**
+    `doc_match_verdict`'s offer branch now returns `mismatch` when `offer_official_status` is
+    `not_genuine` (conditional / private-IPTS / pemakluman / UPU-semakan). `unknown` (not scored
+    yet — flag off / AI outage / not re-run) defers to the reviewer and never gates.
+  - **#4 — income docs HOLD an unread/errored read.** salary_slip / epf / birth_certificate gain
+    a pending/unreadable branch (mirroring results_slip + V1's guardianship/income_support): a
+    Gemini error → blank fields no longer falls through to `ok` and resolves the request
+    unverified.
+  - **#4 — `resolve_doc_items_for_upload` is member-aware + criterion-aware.** A member-tagged
+    request (V1.3's `params.household_member`) clears only on an upload for that member (a
+    mother's payslip no longer resolves the father's request); `income_doc_stale` re-checks
+    recency before clearing, so a still-stale re-upload can't silence the "send a current one" ask.
+  - **#4 — doc-kind Check-2 requests are re-raisable.** A resolved doc-request whose gap re-fires
+    (proof removed/replaced with a bad one) is re-opened + re-notified; clarifies stay once-ever.
+  - **#16 — finished the S4 STR-coach-states unification.** `help_engine.verdict_for_document`
+    and FE `documentHelp.shouldShowCoach` now use the shared `STR_COACH_STATES`
+    (`wrong_type/rejected/stale/unreadable/unconfirmed`), so a wrong_type/unreadable STR re-upload
+    gets the doc-anchored Gopal instead of a silent red task.
+  - Tests: 2040 scholarship pytest (+15) + 412 jest (+1 STR-states case); tsc clean.
+
 - **Verification-model roadmap Sprint V1 (2026-07-03) — slot & document integrity (audit findings #1, #2, F2, F3).**
   No migration (choices/schema already existed); all changes additive + soft.
   - **`guardianship_letter` was a dead limb — now wired into the pipeline (#1).** Its Gemini

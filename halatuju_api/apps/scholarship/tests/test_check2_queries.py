@@ -240,6 +240,24 @@ class TestHouseholdProofQueries(_Base):
         self.assertFalse(self.app.resolution_items.filter(
             code__in=('brother_income_proof_missing', 'guardian_income_proof_missing')).exists())
 
+    def test_resolved_proof_request_reraises_when_gap_refires(self):
+        # V2 (#4): a doc-request resolved by an upload, then the proof is REMOVED → the gap
+        # re-fires → the request is RE-OPENED (doc-kind items are re-raisable). Before V2 a
+        # resolved item stayed silently closed even though the proof was gone again.
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='guardian_income_proof_missing')
+        slip = ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='guardian',
+            storage_path='x/guardian2')
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+        slip.delete()                       # proof removed → the guardian's income gap re-fires
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')
+        self.assertIsNone(item.resolved_at)
+
 
 class TestUtilityClarifyQueries(_Base):
     """#8: the utility holder/address consistency checks also surface as student
