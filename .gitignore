@@ -57,3 +57,8 @@ docs/students_batch_1_clean.xlsx
 
 # Git worktrees for parallel-agent isolation (never committed)
 .worktrees/
+
+# Data dumps / table backups must NEVER be committed — a legacy student_profiles
+# backup with real PII was purged from history on 2026-07-03 (git filter-repo).
+**/docs/backups/
+*_backup_*.json
