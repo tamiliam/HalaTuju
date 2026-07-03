@@ -518,12 +518,20 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-03)
 
-**▶ NEXT — Code-health Sprint 4: income/STR consistency** (roadmap findings #13-#20):
-shared red-STR-states tuple across income_engine/resolution/services consumers; salary-route
-I4 through the headroom helper (gross ceiling + boundary); blank-tagged-doc member checks;
-profile_engine effective_working_members; IC-selector alignment (verdict vs checklist);
-wrong-doc blame when an IC OCR is pending. Then S5 infra & guardrails, then the FINAL report
-(incl. quiz copy for owner review).
+**▶ NEXT — Code-health Sprint 5 (FINAL): infra & guardrails** (roadmap findings #21/#23 + P3
+quick wins): a real CACHES backend so the upload/report rate limits actually limit (database
+cache — free tier); validate_course_urls treats 5xx as retryable + mass-change guard; HSTS
+header; QC queue "Awaiting QC" label; dead 'accepted' banner branch; resolution-items trailing
+slash. Then the FINAL REPORT (incl. the reconciled quiz copy for owner review).
+
+**✅ SHIPPED 2026-07-03 — Code-health Sprint 4 (income/STR consistency; branch
+`feat/code-health-s4`; NO migration; retro `docs/retrospective-2026-07-03-code-health-s4.md`).**
+Shared STR_RED_STATES/STR_COACH_STATES (coach now covers wrong_type/unreadable; blocker gains
+wrong_type); I4 through income_headroom (gross ceiling honoured, boundary inclusive — a small
+household under the gross ceiling no longer reads "over the line"); blank-tag docs attach to
+the named earner only; profile uses effective_working_members; STR-route verdict picks the
+member-tagged earner IC; a pending IC no longer blames the rel doc; fall-through counts all
+evidenced members; declared-unproven forces amber over blue. 2,016 scholarship pytest.
 
 **✅ SHIPPED 2026-07-03 — Code-health Sprint 3 (money & comms; branch `feat/code-health-s3`;
 NO migration; retro `docs/retrospective-2026-07-03-code-health-s3.md`).** Contractual reject

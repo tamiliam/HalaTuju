@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Code-health Sprint 4 (2026-07-03) — income/STR consistency (review findings #13-#20).**
+  - **One shared red-STR-states tuple** (`income_engine.STR_RED_STATES` / `STR_COACH_STATES`): the
+    student coach now nudges on `wrong_type`/`unreadable` (it was silent on the two worst states);
+    a re-uploaded equally-bad STR no longer auto-resolves its `str_not_current` ticket; the
+    submission blocker now blocks `wrong_type` like `rejected`/`stale` ('unreadable' deliberately
+    stays amber — a never-scanned legacy doc reads unreadable too).
+  - **The salary route's B40 test (I4) now runs through `income_headroom`** — the same two-test rule
+    as the STR fall-through (gross ceiling primary, per-capita a safety net, boundary inclusive).
+    A household of 3 on RM5,400 gross is no longer "over the line", and per-capita exactly at the
+    ceiling no longer reads as over.
+  - **A legacy blank-tagged income doc counts for THE EARNER only** — one untagged slip no longer
+    satisfies the income-evidence check for both parents (suppressing the other parent's
+    proof-missing query). Blank-wizard legacy apps keep the tolerant reading.
+  - **The sponsor/reviewer profile reads documented income via `effective_working_members`** — no
+    more "none on file" over a readable payslip when the prefilled member list was never persisted.
+  - **The STR-route verdict selects the EARNER'S IC (member-tagged)** — after a route switch with
+    several ICs on file, the verdict and the student checklist can no longer pick different cards
+    and contradict each other.
+  - **An earner IC whose OCR is still pending no longer blames the relationship doc** — the student
+    was told to re-upload a perfectly fine birth certificate (and blocked on it) during a known
+    transient state the self-heal cron clears.
+  - **The STR fall-through headroom counts every member with income evidence**, not just the single
+    earner; **an unproven declared income now forces amber even when an unrelated review item
+    exists** (ordering — blue must never hide the proof-required ask).
 - **Code-health Sprint 3 (2026-07-03) — money & comms (review findings #6-#11).**
   - **A contractual reject of a funded student now auto-lapses their sponsorship** (owner decision):
     the held amount returns to the sponsor's balance and impact/statement surfaces stop counting the

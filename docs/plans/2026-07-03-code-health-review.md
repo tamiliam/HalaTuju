@@ -357,8 +357,13 @@ catalogue sync tooling guards, PISMP taxonomy derivation, reports-app scoping.
   quiz reconciled to AGREEMENT_CLAUSES + phantom-term guardrail test (⚠ OWNER REVIEW of
   the copy, esp. ta, before the flag flips); #11 dark-chain gate. No migration.
   3,617 tests. Retro `docs/retrospective-2026-07-03-code-health-s3.md`.
-- **Sprint 4 — Income/STR consistency:** #13–#20 (shared red-states tuple, I4 via
-  headroom helper, member-tag fixes, IC-selector alignment, wrong-doc blame).
+- **Sprint 4 — Income/STR consistency: ✅ DONE 2026-07-03.** Shared STR_RED_STATES/
+  STR_COACH_STATES; I4 via income_headroom (gross ceiling + inclusive boundary; thin-margin
+  grading stays fall-through-only); blank-tag→earner-only (#15, legacy tolerant kept);
+  effective_working_members in profile (#16); member-tagged earner IC (#17); pending-IC
+  no longer blames the rel doc (#18); fall-through counts all evidenced members (#19);
+  declared-unproven amber ordering (#20). No migration. 3,215 backend tests. Retro
+  `docs/retrospective-2026-07-03-code-health-s4.md`.
 - **Sprint 5 — Infra & guardrails:** #21 cache backend for rate limits, #23 URL
   validator 5xx handling + mass-change guard, HSTS, quick P3 wins (QC queue label,
   dead banner branch, trailing slash).
