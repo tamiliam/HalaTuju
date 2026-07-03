@@ -399,6 +399,13 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
       { key: 'ward', status: factStatus(c.ward_status) },
     ]
   }
+  if (dt === 'school_leaving_cert' || dt === 'semester_result') {
+    // V4: soft academic-completeness docs. The read is the officer signal (a blank is held on
+    // upload, so a stored one that read is 'Evidence' verified); the officer opens it for the CGPA.
+    const vf = doc.vision_fields as { student_verdict?: string } | null | undefined
+    if (!vf?.student_verdict) return []
+    return [{ key: 'evidence', status: vf.student_verdict === 'ok' ? 'verified' : 'not' }]
+  }
   if (dt === 'income_support_doc') {
     // V1: the declared-income supporting doc. It NAMES THE EARNER, not the student, so there
     // is no student name-match — the READ is the signal (a blank image can't prove a wage).

@@ -176,6 +176,12 @@ appear on the interview agenda; motivation section always present; SLA tests on 
 
 ## Sprint V4 — Check-2 growth: promote the nine human asks (complexity: HIGH; owner-visible)
 
+> **✅ SHIPPED (code) 2026-07-03** — branch `feat/verify-v4`; migration `0091` (choices-only, owner
+> records via MCP at deploy); retro `docs/retrospective-2026-07-03-verify-v4.md`. All nine items +
+> two doc types built + tested (2055 pytest + 413 jest). Raise-conditions taken to the OWNER and set
+> CONSERVATIVE (under-ask, tune post-deploy) since they land on live students. **CARRY:** post-deploy
+> cohort verification + margin tuning (esp. `utility_bill_missing`, `household_roster_undercount`).
+
 **Findings: §E; owner decision 2 (all nine).** This is a feature sprint (new model
 surface): follow the full sprint rails; NO Stitch needed (no new pages — new items render
 in the existing Action Centre cards).

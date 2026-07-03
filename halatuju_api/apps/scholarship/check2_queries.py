@@ -52,6 +52,12 @@ CLARIFY_SPECS = {
     # Phase 2B (P7) — a roster member is 'unemployed' but no reason/since-when is captured →
     # ask why and since when (household-income texture). One clarify covers all such members.
     'unemployment_detail_unknown': {'fact': 'income'},
+    # V4 — promoted human ask-themes (audit §E). One-line, non-sensitive, factual clarifies.
+    'deceased_parent_detail':     {'fact': 'income'},   # a roster member is deceased
+    'informal_work_detail':       {'fact': 'income'},   # a declared informal wage — own-account/employer + avg
+    'household_roster_undercount':{'fact': 'income'},   # stated size > described (who else is at home?)
+    'other_scholarships_followup':{'fact': 'income'},   # other scholarships listed — status/amount
+    'high_utility_expense':       {'fact': 'income'},   # high per-capita utility spend — explain
     # 'motivation_missing' is intentionally NOT here — motivation is reviewer texture
     # (§7), not a one-line factual answer.
 }
@@ -79,6 +85,12 @@ DOC_SPECS = {
     # upload it (an all-zeros / lapsed EPF corroborates the unemployment). Uncapped; clears when
     # every unemployed member has an EPF (or none are unemployed). Never a gate.
     'unemployment_epf_missing': {'doc_type': 'epf'},
+    # V4 — promoted human ask-themes (audit §E). All soft doc-requests (uncapped), gap-detected in
+    # income_engine, auto-resolved when the gap clears.
+    'school_leaving_cert_missing': {'doc_type': 'school_leaving_cert', 'fact': 'academic'},  # SPM-track, no slip
+    'semester_result_missing':     {'doc_type': 'semester_result', 'fact': 'academic'},      # continuing student
+    'epf_statement_missing':        {'doc_type': 'epf'},                   # employed parent, optional
+    'utility_bill_missing':         {'doc_type': 'water_bill'},           # neither bill (either clears)
 }
 _MEMBER_PROOF_CODE = {
     'father': 'father_income_proof_missing', 'mother': 'mother_income_proof_missing',
@@ -94,10 +106,14 @@ _CLARIFY_ORDER = [
     # Household-income completeness first — the most material to a fundable B40 profile.
     'father_status_unknown', 'mother_status_unknown',
     'unemployment_detail_unknown',
+    # V4 — income-story texture (audit §E) sits high, above the comfort items.
+    'deceased_parent_detail', 'informal_work_detail', 'household_roster_undercount',
+    'other_scholarships_followup',
     'course_unspecified', 'sibling_level_unknown', 'sibling_tertiary_funding',
     'reporting_date_unknown',
     'device_status_unknown', 'transport_cost_unknown',
     'utility_holder_unknown', 'utility_address_mismatch',
+    'high_utility_expense',    # V4 — a comfort/consumption signal, lowest priority
 ]
 
 # The student is not the reviewer: a long list suppresses responses. Cap to the few
@@ -113,6 +129,10 @@ def _gap_sets(application):
         utility_holder_unknown, utility_address_mismatch, household_status_gaps,
         stale_income_proof, sibling_tertiary_funding_unknown, declared_income_gaps,
         unemployment_detail_gap, unemployment_epf_gap,
+        # V4 — promoted human ask-themes (audit §E).
+        school_leaving_cert_gap, semester_result_gap, employed_epf_gap, utility_bill_gap,
+        deceased_parent_detail_gap, informal_work_detail_gap, household_roster_undercount,
+        other_scholarships_followup_gap, high_utility_expense_gap,
     )
     from .pathway_engine import offer_reporting_date_unknown
     gaps = {g['code'] for g in completeness_gaps(application)}
@@ -127,6 +147,17 @@ def _gap_sets(application):
         gaps.add('reporting_date_unknown')
     if unemployment_detail_gap(application):            # 'unemployed' member, no reason/since
         gaps.add('unemployment_detail_unknown')
+    # V4 — the five promoted CLARIFY themes.
+    if deceased_parent_detail_gap(application):
+        gaps.add('deceased_parent_detail')
+    if informal_work_detail_gap(application):
+        gaps.add('informal_work_detail')
+    if household_roster_undercount(application):
+        gaps.add('household_roster_undercount')
+    if other_scholarships_followup_gap(application):
+        gaps.add('other_scholarships_followup')
+    if high_utility_expense_gap(application):
+        gaps.add('high_utility_expense')
     # Full-household-income completeness: a blank-slot PARENT → a status CLARIFY; any earning roster
     # member with no income doc → a PROOF doc request (uncapped).
     proof_wanted = set()
@@ -141,6 +172,15 @@ def _gap_sets(application):
         proof_wanted.add('declared_income_evidence_missing')
     if unemployment_epf_gap(application):                # 'unemployed' member, no EPF (optional)
         proof_wanted.add('unemployment_epf_missing')
+    # V4 — the four promoted DOC-REQUEST themes.
+    if school_leaving_cert_gap(application):
+        proof_wanted.add('school_leaving_cert_missing')
+    if semester_result_gap(application):
+        proof_wanted.add('semester_result_missing')
+    if employed_epf_gap(application):
+        proof_wanted.add('epf_statement_missing')
+    if utility_bill_gap(application):
+        proof_wanted.add('utility_bill_missing')
     return gaps, proof_wanted
 
 
@@ -214,7 +254,8 @@ def sync_check2_queries(application):
                     params = {'household_member': spec['member']} if spec.get('member') else {}
                     ResolutionItem.objects.create(
                         application=application, source='check2', code=code,
-                        fact='income', kind='doc', doc_type=spec['doc_type'], params=params)
+                        fact=spec.get('fact', 'income'), kind='doc',
+                        doc_type=spec['doc_type'], params=params)
                     raised_student_visible = True
                 except IntegrityError:
                     pass

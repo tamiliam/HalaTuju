@@ -2030,6 +2030,42 @@
         "unemployment_epf_missing": {
           "title": "Muat naik penyata KWSP mereka (pilihan)",
           "desc": "Jika ahli keluarga yang tidak bekerja mempunyai penyata KWSP, memuat naiknya membantu mengesahkan mereka tidak berpendapatan sekarang. Ini pilihan — langkau jika mereka tiada."
+        },
+        "school_leaving_cert_missing": {
+          "title": "Muat naik sijil berhenti sekolah anda",
+          "desc": "Kami tiada slip keputusan SPM anda dalam fail, jadi sila muat naik sijil berhenti sekolah (surat berhenti sekolah) atau testimonial dari sekolah anda. Ia mengesahkan sekolah dan tahun anda berhenti."
+        },
+        "semester_result_missing": {
+          "title": "Muat naik keputusan semester terkini anda",
+          "desc": "Oleh kerana anda sedang belajar, sila muat naik slip keputusan semester terkini anda yang menunjukkan PNGK semasa. Ia membantu kami melihat pencapaian anda sekarang."
+        },
+        "epf_statement_missing": {
+          "title": "Muat naik penyata KWSP ibu/bapa anda (pilihan)",
+          "desc": "Jika ibu/bapa anda yang bekerja mempunyai penyata KWSP, memuat naiknya bersama slip gaji membantu mengesahkan pendapatan mereka. Ini pilihan — langkau jika mereka tiada."
+        },
+        "utility_bill_missing": {
+          "title": "Muat naik bil utiliti",
+          "desc": "Sila muat naik bil air atau elektrik terkini untuk rumah anda. Ia mengesahkan alamat anda dan membantu kami memahami isi rumah anda. Mana-mana bil boleh."
+        },
+        "deceased_parent_detail": {
+          "title": "Beritahu kami tentang ibu/bapa anda yang telah meninggal",
+          "desc": "Anda memberitahu kami seorang ibu/bapa telah meninggal dunia. Jika anda selesa, sila beritahu kami secara ringkas bila, supaya kami memahami isi rumah anda. Kami bersimpati atas kehilangan anda."
+        },
+        "informal_work_detail": {
+          "title": "Beritahu kami tentang kerja tidak formal itu",
+          "desc": "Anda memberitahu kami seorang ahli keluarga memperoleh upah tidak formal. Sila beritahu kami secara ringkas sama ada mereka bekerja sendiri (akaun sendiri) atau untuk majikan, dan anggaran pendapatan bulanan purata mereka."
+        },
+        "household_roster_undercount": {
+          "title": "Siapa lagi yang tinggal dalam isi rumah anda?",
+          "desc": "Anda memberitahu kami isi rumah anda mempunyai lebih ramai orang daripada yang anda huraikan setakat ini. Sila beritahu kami secara ringkas siapa lagi yang tinggal bersama anda (contohnya: datuk/nenek, adik-beradik), supaya kami mendapat gambaran penuh."
+        },
+        "other_scholarships_followup": {
+          "title": "Beritahu kami tentang biasiswa anda yang lain",
+          "desc": "Anda menyebut biasiswa atau bantuan kewangan lain semasa memohon. Sila beritahu kami secara ringkas yang mana, jumlahnya, dan sama ada anda telah menerima atau ditawarkan — supaya bantuan tidak bertindih."
+        },
+        "high_utility_expense": {
+          "title": "Bantu kami memahami bil utiliti anda",
+          "desc": "Bil air dan elektrik anda kelihatan lebih tinggi sedikit daripada biasa untuk isi rumah sebesar anda. Jika ada sebabnya (contohnya: peralatan perubatan, perniagaan rumah, atau ramai orang), sila beritahu kami secara ringkas."
         }
       },
       "bank": {
@@ -3337,7 +3373,16 @@
           "reporting_date_unknown": "Surat tawaran tiada tarikh lapor diri yang jelas — pelajar ditanya bila dan di mana mereka melapor diri.",
           "declared_income_evidence_missing": "Pendapatan tidak formal yang diisytiharkan tiada slip gaji dan tiada STR yang sah — pelajar diminta memuat naik dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti).",
           "unemployment_detail_unknown": "Seorang ahli isi rumah menganggur — pelajar ditanya mengapa dan lebih kurang sejak bila.",
-          "unemployment_epf_missing": "Ahli yang menganggur tiada KWSP dalam fail — pelajar diminta memuat naik satu (pengesahan pilihan)."
+          "unemployment_epf_missing": "Ahli yang menganggur tiada KWSP dalam fail — pelajar diminta memuat naik satu (pengesahan pilihan).",
+          "school_leaving_cert_missing": "Tiada slip keputusan SPM dalam fail — pelajar diminta sijil berhenti sekolah / testimonial untuk menyokong rekod akademik.",
+          "semester_result_missing": "Pelajar yang sedang belajar tiada keputusan semester semasa dalam fail — pelajar diminta slip PNGK terkini.",
+          "epf_statement_missing": "Ibu/bapa yang bekerja mempunyai slip gaji tetapi tiada KWSP — pelajar diminta menambahnya sebagai sokongan (pilihan).",
+          "utility_bill_missing": "Tiada bil air atau elektrik dalam fail — pelajar diminta memuat naik satu (pengesahan alamat + isyarat penggunaan).",
+          "deceased_parent_detail": "Seorang ibu/bapa direkodkan sebagai meninggal dunia — pelajar diminta, dengan lembut, bila, untuk gambaran isi rumah.",
+          "informal_work_detail": "Upah tidak formal yang diisytiharkan — pelajar diminta akaun sendiri lawan majikan dan purata pendapatan bulanan.",
+          "household_roster_undercount": "Saiz isi rumah yang dinyatakan melebihi ahli yang dihuraikan — pelajar diminta siapa lagi dalam isi rumah.",
+          "other_scholarships_followup": "Biasiswa lain disenaraikan semasa memohon — pelajar diminta yang mana, jumlah, dan sama ada diterima/ditawarkan (elak pembiayaan berganda).",
+          "high_utility_expense": "Perbelanjaan utiliti setiap orang kelihatan tinggi untuk saiz isi rumah — pelajar diminta menjelaskan (kemungkinan pendapatan tidak diisytihar, atau sebab yang sah)."
         }
       },
       "decision": {
@@ -3473,6 +3518,8 @@
           "salary_slip": "Slip gaji",
           "epf": "Penyata KWSP",
           "income_support_doc": "Dokumen sokongan pendapatan",
+          "school_leaving_cert": "Sijil berhenti sekolah",
+          "semester_result": "Slip keputusan semester",
           "water_bill": "Bil air",
           "electricity_bill": "Bil elektrik",
           "birth_certificate": "Sijil kelahiran",

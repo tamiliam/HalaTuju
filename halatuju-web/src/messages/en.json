@@ -2030,6 +2030,42 @@
         "unemployment_epf_missing": {
           "title": "Upload their EPF statement (optional)",
           "desc": "If the family member who isn't working has an EPF (KWSP) statement, uploading it helps confirm they're not currently earning. This is optional — skip it if they don't have one."
+        },
+        "school_leaving_cert_missing": {
+          "title": "Upload your school-leaving certificate",
+          "desc": "We don't have your SPM results slip on file, so please upload your school-leaving certificate (surat berhenti sekolah) or a testimonial from your school. It confirms your school and the year you left."
+        },
+        "semester_result_missing": {
+          "title": "Upload your latest semester result",
+          "desc": "As you're already studying, please upload your most recent semester result slip showing your current CGPA. It helps us see how you're doing right now."
+        },
+        "epf_statement_missing": {
+          "title": "Upload your parent's EPF statement (optional)",
+          "desc": "If your working parent has an EPF (KWSP) statement, uploading it alongside their payslip helps confirm their income. This is optional — skip it if they don't have one."
+        },
+        "utility_bill_missing": {
+          "title": "Upload a utility bill",
+          "desc": "Please upload a recent water or electricity bill for your home. It confirms your address and helps us understand your household. Either bill is fine."
+        },
+        "deceased_parent_detail": {
+          "title": "Tell us about your late parent",
+          "desc": "You told us a parent has passed away. If you're comfortable, please tell us briefly when, so we understand your household. We're sorry for your loss."
+        },
+        "informal_work_detail": {
+          "title": "Tell us about the informal work",
+          "desc": "You told us a family member earns an informal wage. Please tell us briefly whether they work for themselves (own account) or for an employer, and roughly their average monthly earnings."
+        },
+        "household_roster_undercount": {
+          "title": "Who else lives in your household?",
+          "desc": "You told us your household has more people than you've described so far. Please tell us briefly who else lives with you (for example: grandparents, younger siblings), so we get the full picture."
+        },
+        "other_scholarships_followup": {
+          "title": "Tell us about your other scholarships",
+          "desc": "You mentioned other scholarships or financial aid when you applied. Please tell us briefly which ones, the amount, and whether you've received or been offered them — so support isn't doubled up."
+        },
+        "high_utility_expense": {
+          "title": "Help us understand your utility bills",
+          "desc": "Your water and electricity bills read a little higher than usual for a household your size. If there's a reason (for example: medical equipment, a home business, or several people), please tell us briefly."
         }
       },
       "bank": {
@@ -3337,7 +3373,16 @@
           "reporting_date_unknown": "Offer letter has no clear reporting date — the student has been asked when and where they report.",
           "declared_income_evidence_missing": "A declared informal income has no payslip and no valid STR — the student has been asked to upload a supporting document (employer/wage letter, bank statements, or a community letter).",
           "unemployment_detail_unknown": "A household member is unemployed — the student has been asked why and roughly since when.",
-          "unemployment_epf_missing": "An unemployed member has no EPF on file — the student has been asked to upload one (optional corroboration)."
+          "unemployment_epf_missing": "An unemployed member has no EPF on file — the student has been asked to upload one (optional corroboration).",
+          "school_leaving_cert_missing": "No SPM results slip on file — the student has been asked for a school-leaving certificate / testimonial to corroborate the academic record.",
+          "semester_result_missing": "Continuing student with no current-semester result on file — the student has been asked for their latest CGPA slip.",
+          "epf_statement_missing": "An employed parent has a payslip but no EPF — the student has been asked to add it as corroboration (optional).",
+          "utility_bill_missing": "No water or electricity bill on file — the student has been asked to upload one (address anchor + consumption signal).",
+          "deceased_parent_detail": "A parent is recorded as deceased — the student has been asked, gently, when, for the household picture.",
+          "informal_work_detail": "A declared informal wage — the student has been asked own-account vs employer and the average monthly earnings.",
+          "household_roster_undercount": "Stated household size exceeds the members described — the student has been asked who else is in the household.",
+          "other_scholarships_followup": "Other scholarships were listed at apply — the student has been asked which, the amount, and whether received/offered (avoid double-funding).",
+          "high_utility_expense": "Utility spend per person reads high for the household size — the student has been asked to explain (possible undeclared income, or a legitimate reason)."
         }
       },
       "decision": {
@@ -3473,6 +3518,8 @@
           "salary_slip": "Salary slip",
           "epf": "EPF statement",
           "income_support_doc": "Income support document",
+          "school_leaving_cert": "School-leaving certificate",
+          "semester_result": "Semester result slip",
           "water_bill": "Water bill",
           "electricity_bill": "Electricity bill",
           "birth_certificate": "Birth certificate",

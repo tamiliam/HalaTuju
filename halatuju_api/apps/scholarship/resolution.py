@@ -346,6 +346,14 @@ def doc_match_verdict(doc):
             return 'pending'
         if sv == 'wrong_doc':
             return 'unreadable'
+    elif dt in ('school_leaving_cert', 'semester_result'):
+        # V4: the promoted academic docs field-extract; a blank/wrong image is held for re-upload
+        # rather than silently resolving its request. A real read ('ok') accepts.
+        sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')
+        if sv in ('', 'review_manually'):
+            return 'pending'
+        if sv == 'wrong_doc':
+            return 'unreadable'
     elif dt == 'bank_statement':
         # Reads the doc-assist verdict (holder==student + all 3 fields present), computed
         # deterministically from the Gemini-extracted fields. 'name_mismatch' = the account

@@ -4018,3 +4018,30 @@ grade) belong — so the agenda must carry them, not drop them.
 (mitigated: the reviewer records one line per point and submits).
 **Revisit if:** the interview agenda grows unwieldy on real cases (then group by kind in the FE);
 or per-item reminders need to fire more than once per app (currently one reminder per application).
+
+## Verification-model V4 — promote the nine human asks with conservative, owner-confirmed raise-conditions — 2026-07-03
+**Decision:** Promote the nine recurring human ask-themes (audit §E) into auto-raised Check-2 items
++ two new doc types (`school_leaving_cert`, `semester_result`, choices-only migration 0091). Because
+these are STUDENT-FACING queries on a live system, the raise-conditions were taken to the owner and
+set CONSERVATIVE (under-ask, tune against the real cohort post-deploy): school-leaving cert only for
+an SPM-track applicant with NO results slip (not every post-SPM applicant); semester result only for
+a continuing STPM student; employed-parent EPF only when a payslip is on file but no EPF (optional);
+utility bill when NEITHER is uploaded; roster-undercount only at a margin ≥2 (an under-count of one is
+common/benign); the rest keyed to explicit data (deceased roster status, a declared informal wage,
+other scholarships listed, a high per-capita utility read). The two academic doc-requests require a
+doc that READ (`student_verdict='ok'`), not mere presence (V1's integrity principle). Owner decision 2
+promotes `utility_reasonable`'s previously officer-only 'high' signal to a student clarify.
+**Alternatives considered:** (a) fire school-leaving-cert for every post-SPM applicant (the literal
+audit wording) — rejected: ≈everyone, spams the cohort; gate on a missing results slip. (b) clear the
+academic doc-requests on mere presence — rejected: a blank upload would tick the box (the V1 dead-limb
+pattern); require a read. (c) roster-undercount at margin 1 (the officers' '6 vs 5' example) —
+rejected as too broad (every household has an un-itemised relative); margin 2 as a conservative start.
+(d) keep high-utility officer-only — overridden by owner decision 2.
+**Rationale:** the model should ask what the humans ask, but a broad auto-query on a live B40 cohort
+is worse than silence — so start narrow, measure, widen. The owner owns the targeting because it
+lands on real students.
+**Trade-offs:** some themes still fire broadly (utility bills are optional; rosters are often
+incomplete) — accepted as the post-deploy tuning the owner signed up for; the conservative margins
+may under-ask at first (preferred over over-asking).
+**Revisit if:** the post-deploy cohort check shows an item raising far more/less than the human items
+did — tune its margin/condition (esp. `utility_bill_missing`, `household_roster_undercount`).

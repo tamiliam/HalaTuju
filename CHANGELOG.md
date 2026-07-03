@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Verification-model roadmap Sprint V4 (2026-07-03) — promote the nine human ask-themes (audit §E, owner decision 2).**
+  Choices-only migration `0091` (no Postgres DDL; recorded on prod via MCP at deploy). Owner-visible
+  (new student-facing queries); conservative raise-conditions confirmed with the owner, tune post-deploy.
+  - **Two new doc types** `school_leaving_cert` + `semester_result` (promoted from the 'other'
+    catch-all): Gemini extraction schemas, read on upload with a blank-hold, cockpit label + soft
+    "Evidence" officer chip, KNOWN_CODES.
+  - **Four auto-raised doc-requests** (uncapped): `school_leaving_cert_missing` (SPM-track applicant
+    with no results slip), `semester_result_missing` (continuing STPM student), `epf_statement_missing`
+    (employed parent with a payslip but no EPF — optional), `utility_bill_missing` (neither bill).
+  - **Five auto-raised clarifies** (capped, income-story priority): `deceased_parent_detail`,
+    `informal_work_detail`, `household_roster_undercount` (the missing direction of 2C, margin 2),
+    `other_scholarships_followup`, `high_utility_expense` (promoted from an officer-only signal).
+  - Each is gap-detected in `income_engine`, wired through the V3 `_gap_sets` seam, auto-resolves on
+    gap-clear, dedupes by satisfied gap, and carries firm-steward student + officer copy en/ms/ta
+    (Tamil first-draft). The two academic doc-requests require a doc that READ (not mere presence).
+  - Tests: 2055 scholarship pytest (+9) + 413 jest; tsc clean.
+
 ### Fixed
 - **Verification-model roadmap Sprint V3 (2026-07-03) — query lifecycle & Check-3 handoff (audit #6–#9 + owner decisions 3/4).**
   No migration. Check 2 stops asking the unanswerable + losing the asked; Check 3 inherits the full picture.

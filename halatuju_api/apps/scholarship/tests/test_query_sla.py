@@ -209,6 +209,13 @@ class TestDueQueryEmails(_Base):
         ApplicantDocument.objects.create(
             application=self.app, doc_type='salary_slip', household_member='father',
             storage_path='x/slip')
+        # V4: satisfy the promoted doc-requests too, so this app is genuinely question-free — a
+        # results slip (no school-leaving-cert ask), a father EPF (no employed-EPF ask), and a
+        # utility bill (no utility-bill ask).
+        for dt in ('results_slip', 'water_bill'):
+            ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=f'x/{dt}')
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='epf', household_member='father', storage_path='x/epf')
         FundingNeed.objects.create(application=self.app, categories=['device'])
         self.assertEqual(send_due_query_emails()['sent'], 0)
         self.assertFalse(mock_email.called)

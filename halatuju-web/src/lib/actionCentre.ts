@@ -134,6 +134,17 @@ export const KNOWN_CODES = [
   // Phase 2B — unemployment detail (clarify) + optional EPF corroboration (doc).
   'unemployment_detail_unknown',
   'unemployment_epf_missing',
+  // V4 — the nine promoted human ask-themes (audit §E). Doc-requests:
+  'school_leaving_cert_missing',
+  'semester_result_missing',
+  'epf_statement_missing',
+  'utility_bill_missing',
+  // V4 — clarifies:
+  'deceased_parent_detail',
+  'informal_work_detail',
+  'household_roster_undercount',
+  'other_scholarships_followup',
+  'high_utility_expense',
   // Post-award payout — the bank-details task. The OPEN state renders via the dedicated
   // BankDetailsTask component (special-cased in ActionCentre), but the RESOLVED state falls
   // through to the generic Done card, so it must be a KNOWN code — otherwise it's mistaken

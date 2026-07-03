@@ -576,6 +576,9 @@ SUPPORTING_NAME_CHECK_TYPES = frozenset({
     # income gap, so a blank image "proved" a wage. Now it field-extracts on upload and the
     # gap only clears on a real read (see income_engine.has_income_support_doc).
     'income_support_doc',
+    # V4: the promoted academic-completeness docs — field-extract the CGPA / school on upload so
+    # the officer sees the read and a blank upload is held (see resolution.doc_match_verdict).
+    'school_leaving_cert', 'semester_result',
 } | BILL_DOC_TYPES | RELATIONSHIP_DOC_TYPES)
 # Free-text docs (the letter of intent) that get OCR'd into vision_fields['text'] so
 # Check-2's submission review can read the student's motivation in her own words. No
