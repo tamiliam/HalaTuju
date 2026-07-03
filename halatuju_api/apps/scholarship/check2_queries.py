@@ -105,6 +105,64 @@ _CLARIFY_ORDER = [
 MAX_CLARIFY = 3
 
 
+def _gap_sets(application):
+    """The current STEP-1 completeness gap set + the per-member proof-wanted set — the shared,
+    side-effect-free computation behind ``sync_check2_queries`` and ``clarify_overflow_count``.
+    ``gaps`` = clarify-able + status codes; ``proof_wanted`` = the (uncapped) doc-request codes."""
+    from .income_engine import (
+        utility_holder_unknown, utility_address_mismatch, household_status_gaps,
+        stale_income_proof, sibling_tertiary_funding_unknown, declared_income_gaps,
+        unemployment_detail_gap, unemployment_epf_gap,
+    )
+    from .pathway_engine import offer_reporting_date_unknown
+    gaps = {g['code'] for g in completeness_gaps(application)}
+    # Utility-bill consistency (whose bill / address differs) — same helpers the officer flags use.
+    if utility_holder_unknown(application):
+        gaps.add('utility_holder_unknown')
+    if utility_address_mismatch(application):
+        gaps.add('utility_address_mismatch')
+    if sibling_tertiary_funding_unknown(application):   # sibling in tertiary → funding clarify
+        gaps.add('sibling_tertiary_funding')
+    if offer_reporting_date_unknown(application):       # readable offer, no parseable report date
+        gaps.add('reporting_date_unknown')
+    if unemployment_detail_gap(application):            # 'unemployed' member, no reason/since
+        gaps.add('unemployment_detail_unknown')
+    # Full-household-income completeness: a blank-slot PARENT → a status CLARIFY; any earning roster
+    # member with no income doc → a PROOF doc request (uncapped).
+    proof_wanted = set()
+    for g in household_status_gaps(application):
+        if g['need'] == 'status':
+            gaps.add(_PARENT_STATUS_CODE[g['member']])   # only father/mother reach 'status'
+        else:                                            # 'proof' — any roster earner
+            proof_wanted.add(_MEMBER_PROOF_CODE[g['member']])
+    if stale_income_proof(application):
+        proof_wanted.add('income_doc_stale')
+    if declared_income_gaps(application):                # declared informal income, no STR + no doc
+        proof_wanted.add('declared_income_evidence_missing')
+    if unemployment_epf_gap(application):                # 'unemployed' member, no EPF (optional)
+        proof_wanted.add('unemployment_epf_missing')
+    return gaps, proof_wanted
+
+
+def clarify_overflow_count(application):
+    """V3 (#7): how many clarify-able gaps are currently CROWDED OUT by the ``MAX_CLARIFY`` cap
+    — surfaced as a cockpit note ("N more queries waiting") so a capped-out higher-priority query
+    is visible to the officer. 0 before submit, once querying is locked, or when nothing is
+    crowded out. ``reporting_date_unknown`` is uncapped, so it never counts as crowded out."""
+    from .services import querying_locked
+    if application.profile_completed_at is None or querying_locked(application):
+        return 0
+    gaps, _ = _gap_sets(application)
+    existing = {r.code: r for r in
+                application.resolution_items.filter(source='check2', kind='clarify')}
+    open_now = sum(1 for r in existing.values() if r.status == 'open')
+    slots = max(MAX_CLARIFY - open_now, 0)
+    pending = [c for c in _CLARIFY_ORDER
+               if c in gaps and c != 'reporting_date_unknown'
+               and (c not in existing or existing[c].status != 'open')]
+    return max(len(pending) - slots, 0)
+
+
 def sync_check2_queries(application):
     """Reconcile the Check-2 AI clarify queries with the live STEP-1 completeness gaps.
     Idempotent + race-safe, mirroring ``resolution.sync_resolution_items``:
@@ -120,49 +178,15 @@ def sync_check2_queries(application):
     if application.profile_completed_at is None:
         return ResolutionItem.objects.none()
 
-    gaps = {g['code'] for g in completeness_gaps(application)}
-    # #8 — fold in the utility-bill consistency checks (same income-engine helpers the
-    # officer pre-interview flags use), so a 'whose bill is this?' / 'address differs'
-    # query is raised + auto-resolved on the same reconcile loop as the completeness gaps.
-    from .income_engine import (
-        utility_holder_unknown, utility_address_mismatch, household_status_gaps,
-        stale_income_proof, sibling_tertiary_funding_unknown, declared_income_gaps,
-        unemployment_detail_gap, unemployment_epf_gap,
-    )
-    if utility_holder_unknown(application):
-        gaps.add('utility_holder_unknown')
-    if utility_address_mismatch(application):
-        gaps.add('utility_address_mismatch')
-    # S2 — a sibling in tertiary → the funding clarify (capped, with the other clarifies).
-    if sibling_tertiary_funding_unknown(application):
-        gaps.add('sibling_tertiary_funding')
-    # S3 — a readable offer with no parseable reporting date → ask when/where to report.
-    from .pathway_engine import offer_reporting_date_unknown
-    if offer_reporting_date_unknown(application):
-        gaps.add('reporting_date_unknown')
-    # Phase 2B — an 'unemployed' member with no reason/since captured → one clarify covering all.
-    if unemployment_detail_gap(application):
-        gaps.add('unemployment_detail_unknown')
-    # Full-household-income completeness (S1 + P2). A blank-slot PARENT → a status CLARIFY (folded
-    # into the capped gap set below); any earning roster member (parent OR guardian/brother/sister)
-    # with no income doc → a PROOF doc request (reconciled separately, uncapped). Collect the codes.
-    proof_wanted = set()
-    for g in household_status_gaps(application):
-        if g['need'] == 'status':
-            gaps.add(_PARENT_STATUS_CODE[g['member']])   # only father/mother reach 'status'
-        else:  # 'proof' — any roster earner
-            proof_wanted.add(_MEMBER_PROOF_CODE[g['member']])
-    # S2 — every salary slip is stale → an uncapped doc-request for a current one.
-    if stale_income_proof(application):
-        proof_wanted.add('income_doc_stale')
-    # Phase 2A — a declared informal income with no valid STR + no supporting doc → an uncapped
-    # doc-request for a supporting income document (D1: flexible evidence). Clears when a support
-    # doc arrives or a valid STR accepts the declared amount (declared_income_gaps() empties).
-    if declared_income_gaps(application):
-        proof_wanted.add('declared_income_evidence_missing')
-    # Phase 2B — an 'unemployed' member with no EPF → a soft, optional request to upload it.
-    if unemployment_epf_gap(application):
-        proof_wanted.add('unemployment_epf_missing')
+    # V3 (#6): once the interview is concluded the case is LOCKED — no NEW queries may be raised
+    # (and no notify email may invite an answer the resolve endpoint now refuses). We still run the
+    # reconcile so an already-open item whose gap cleared auto-resolves (housekeeping), but every
+    # CREATE / RE-OPEN below is gated on `not locked`. Existing doc requests stay answerable (an
+    # upload still resolves them); only clarifies close post-lock — see decisions.md.
+    from .services import querying_locked
+    locked = querying_locked(application)
+
+    gaps, proof_wanted = _gap_sets(application)
 
     existing = {r.code: r for r in application.resolution_items.filter(source='check2')}
     now = timezone.now()
@@ -178,7 +202,7 @@ def sync_check2_queries(application):
     for code, spec in DOC_SPECS.items():
         item = existing.get(code)
         if code in proof_wanted:
-            if item is None:
+            if item is None and not locked:      # V3 (#6): no NEW request post-lock
                 try:
                     # V1 (F2/F3): member-tag the doc request so the Action-Centre upload lands
                     # tagged to the RIGHT household member. Without this, a model doc-request stored
@@ -194,9 +218,10 @@ def sync_check2_queries(application):
                     raised_student_visible = True
                 except IntegrityError:
                     pass
-            elif item.status == 'resolved':
+            elif item is not None and item.status == 'resolved' and not locked:
                 # V2 (#4): the gap re-fired after a resolve → RE-OPEN and re-notify. Clears the
-                # stale resolving doc/text so the student is asked for a fresh one.
+                # stale resolving doc/text so the student is asked for a fresh one. V3 (#6): not
+                # post-lock — a concluded case doesn't re-ask.
                 item.status = 'open'
                 item.resolved_by = ''
                 item.resolved_at = None
@@ -206,26 +231,35 @@ def sync_check2_queries(application):
                                          'resolution_text', 'resolution_doc'])
                 raised_student_visible = True
         elif item is not None and item.status == 'open':
-            item.status = 'resolved'
+            item.status = 'resolved'                 # auto-resolve always (housekeeping, even locked)
             item.resolved_by = 'system'
             item.resolved_at = now
             item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
 
-    raised = sum(1 for r in existing.values() if r.kind == 'clarify')
-    for code in _CLARIFY_ORDER:
-        if code not in gaps or code in existing:
-            continue
-        if raised >= MAX_CLARIFY:
-            break
-        try:
-            ResolutionItem.objects.create(
-                application=application, source='check2', code=code,
-                fact=CLARIFY_SPECS[code]['fact'], kind='clarify',
-            )
-            raised += 1
-            raised_student_visible = True
-        except IntegrityError:
-            pass  # created concurrently — fine
+    # V3 (#7): the clarify cap now counts only CONCURRENTLY OPEN clarifies (a waived/resolved one
+    # frees a slot), so a few soft queries can't PERMANENTLY crowd out a higher-priority
+    # income-story question. reporting_date_unknown is carved OUT of the cap (a sponsor-profile
+    # input of equal standing). V3 (#6): no NEW clarify is raised once querying is locked. A
+    # crowded-out higher-priority gap is surfaced to the officer via clarify_overflow_count().
+    raised = sum(1 for r in existing.values() if r.kind == 'clarify' and r.status == 'open')
+    if not locked:
+        for code in _CLARIFY_ORDER:
+            if code not in gaps or code in existing:
+                continue
+            uncapped = (code == 'reporting_date_unknown')
+            if not uncapped and raised >= MAX_CLARIFY:
+                continue          # crowded out — the cockpit note flags it; keep scanning for the
+                                  # uncapped reporting_date_unknown, which must never be crowded out
+            try:
+                ResolutionItem.objects.create(
+                    application=application, source='check2', code=code,
+                    fact=CLARIFY_SPECS[code]['fact'], kind='clarify',
+                )
+                if not uncapped:
+                    raised += 1
+                raised_student_visible = True
+            except IntegrityError:
+                pass  # created concurrently — fine
 
     for code, item in existing.items():
         if item.status == 'open' and item.kind == 'clarify' and code not in gaps:

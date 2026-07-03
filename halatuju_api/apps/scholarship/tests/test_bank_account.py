@@ -247,9 +247,15 @@ class TestFundedSetsAsideReviewQueries(_Base):
     URL = '/api/v1/scholarship/resolution-items/'
 
     def test_funded_sets_aside_review_keeps_officer_and_bank_open(self):
-        from apps.scholarship.resolution import add_officer_item
+        from apps.scholarship.resolution import add_officer_item, sync_resolution_items
         # An awarded no-docs app → the verdict raises system review gaps (offer/ic/results…).
-        app = self._make('fund-aside', status='awarded')
+        # V3 (#6): those gaps are CREATED during the non-locked review phase (interviewing) and
+        # PERSIST once funded — post-lock sync no longer creates new ones (owner decision: show
+        # pre-existing, create none), so raise them before flipping to awarded.
+        app = self._make('fund-aside', status='interviewing')
+        sync_resolution_items(app)
+        app.status = 'awarded'
+        app.save(update_fields=['status'])
         add_officer_item(app, kind='explanation', prompt='Officer asks', admin_email='r@x')
         c = APIClient()
         c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("fund-aside")}')
@@ -270,8 +276,13 @@ class TestFundedSetsAsideReviewQueries(_Base):
 
     def test_pre_award_keeps_review_items_actionable(self):
         # Contrast: an interviewed (pre-award) no-docs student with the flag on sees the
-        # review gaps as normal open to-dos — nothing is set aside before funding.
-        app = self._make('preaward-aside', status='interviewed')  # noqa: F841 (used via token)
+        # review gaps as normal open to-dos — nothing is set aside before funding. V3 (#6): the
+        # gaps are raised while non-locked (interviewing) and persist into interviewed.
+        from apps.scholarship.resolution import sync_resolution_items
+        app = self._make('preaward-aside', status='interviewing')
+        sync_resolution_items(app)
+        app.status = 'interviewed'
+        app.save(update_fields=['status'])
         c = APIClient()
         c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("preaward-aside")}')
         body = c.get(self.URL).json()

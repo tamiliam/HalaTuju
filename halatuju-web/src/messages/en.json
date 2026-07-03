@@ -3069,6 +3069,19 @@
         },
         "note": "Probe the areas the record leaves open; the AI questions above already target those. Be warm — congratulate them on their results, show empathy on money."
       },
+      "agenda": {
+        "openQuery": "Carried-over query — confirm with the student at the interview.",
+        "needsInterview": {
+          "income_unverified_needs_interview": "Confirm the household's income sources and amounts (informal / no payslip) at the interview.",
+          "income_above_b40_line": "Household income reads above the B40 line (about RM {amount} vs RM {ceiling} per person) — explore the full financial picture at the interview. Interviewer note only: do not raise the figure with the student as a message.",
+          "academic_grade_uncertain": "A grade could not be verified against the results slip — confirm the student's actual results at the interview.",
+          "ic_service_down": "Identity could not be auto-verified (an ID-service issue) — confirm the student's MyKad at the interview."
+        },
+        "motivation": {
+          "standing": "Motivation & grit: explore why the student chose this course and how they cope with setbacks.",
+          "seeded": "Motivation & grit: the statement of intent is thin — probe motivation, resilience, and future plans in depth."
+        }
+      },
       "anomaly": {
         "title": "Pre-interview flags",
         "intro": "Data inconsistencies the engine spotted. Use them to direct the interview — a flag is a question worth asking, not a verdict.",
@@ -3395,6 +3408,7 @@
         "locked": "Querying closed — the interview is concluded. This is now a read-only record.",
         "itemOne": "item",
         "itemMany": "items",
+        "overflow": "{n} more higher-priority quer(y/ies) are waiting — they'll be asked automatically as the current ones are answered or waived.",
         "empty": "Nothing outstanding — all student tasks are clear."
       },
       "docsDrawer": {

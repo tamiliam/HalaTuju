@@ -3985,3 +3985,36 @@ correct ask); `'unknown'` offers can still auto-resolve a request until genuinen
 (accepted — the reviewer sees the pathway verdict, and a re-run closes it).
 **Revisit if:** genuineness scoring becomes universal + reliable (then `'unknown'` shrinks to
 near-zero and could gate); or the re-raise proves noisy on real churn (then debounce it).
+
+## Verification-model V3 — query lifecycle: lock-gate, per-item SLA with a submit floor, fair clarify cap, folded Check-3 agenda — 2026-07-03
+**Decision:** Four lifecycle rules (owner-confirmed 2026-07-03). (1) **Post-lock:** once
+`querying_locked` (interview concluded) the sync functions CREATE nothing new (no query, no notify
+email inviting an answer the resolve endpoint refuses) but STILL auto-resolve open items whose gap
+cleared, and a locked app still SHOWS its pre-existing items (uploads stay answerable — only new
+queries close). (2) **Per-item SLA:** each open clarify runs its own clock (`created_at + SLA`) so
+a late-raised query isn't born already-lapsed; BUT `is_ready_for_assignment` keeps a submit-window
+FLOOR (`profile_completed_at + SLA`), decoupled from the per-item clock, so a late query can't push
+the review start back forever (the per-item clock governs the student REMINDER, not the floor).
+(3) **Clarify cap:** `MAX_CLARIFY` counts CONCURRENTLY-OPEN clarifies (waived/resolved frees a
+slot), with `reporting_date_unknown` carved out (a sponsor-profile input of equal standing); a
+crowded-out gap is surfaced via `clarify_overflow_count`. (4) **Check-3 agenda:**
+`interview_agenda_full` folds the anomaly flags + OPEN carried-over queries + the four
+"needs interview" verdict ambers (over-the-line phrased for the interviewer ONLY) + a STANDING
+Motivation & grit section (motivation stays a human judgement; no student query — owner decisions
+3 & 4).
+**Alternatives considered:** (a) hide ALL items once locked — rejected (owner): the student loses
+sight of a doc they could still usefully provide; show pre-existing, create none. (b) is_ready
+waits for every per-item window — rejected (owner): a late query could delay review indefinitely;
+keep the submit-window floor. (c) cap counts lifetime (every status) — rejected: that IS finding #7
+(three soft queries permanently crowd out `father_status_unknown`). (d) a student-facing
+over-the-line message / an automated motivation score — rejected (owner decisions 4 & 3): both stay
+human interview judgements.
+**Rationale:** the process must not ask what it will refuse to hear, must not lose what it asked,
+and must give each question a fair window without letting late questions block the reviewer. The
+interview is where the un-automatable judgements (motivation, over-the-line income, an uncertain
+grade) belong — so the agenda must carry them, not drop them.
+**Trade-offs:** a late query gets its own 5 days but the reviewer may still proceed at the floor
+(the query then rides into the interview agenda — it isn't lost); the folded agenda is longer
+(mitigated: the reviewer records one line per point and submits).
+**Revisit if:** the interview agenda grows unwieldy on real cases (then group by kind in the FE);
+or per-item reminders need to fire more than once per app (currently one reminder per application).

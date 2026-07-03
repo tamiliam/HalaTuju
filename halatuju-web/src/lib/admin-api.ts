@@ -487,6 +487,9 @@ export interface AdminScholarshipDetail {
   // S16 Phase A: deterministic pre-interview flag list. {code, params}; the
   // frontend resolves human copy from its i18n bundle (no server-side copy).
   anomalies: AdminAnomaly[]
+  // V3 (#9): the interviewer's folded agenda (anomalies + open queries + needs-interview ambers
+  // + a standing Motivation & grit section) so nothing raised at Check 1/2 evaporates at Check 3.
+  interview_agenda: AdminAgendaEntry[]
   // S1 verification verdict: the four-fact rollup the coordinator audits.
   verdict: AdminVerdictFact[]
   // Check 2 STEP 1: the deterministic submission review — the facts ledger (claims +
@@ -906,6 +909,16 @@ export interface AdminAnomaly {
   params: Record<string, string | number>
 }
 
+/** V3 (#9): a folded interview-agenda entry. kind: anomaly (pre-interview flag) ·
+ *  open_query (a carried-over unanswered query, ask verbally) · needs_interview (a verdict
+ *  amber that says "confirm at interview") · motivation (the standing Motivation & grit
+ *  section; params.seeded=true when the statement of intent is thin). */
+export interface AdminAgendaEntry {
+  code: string
+  kind: 'anomaly' | 'open_query' | 'needs_interview' | 'motivation'
+  params: Record<string, string | number | boolean>
+}
+
 /** S1 verification verdict. One of four facts the coordinator AUDITS (does not
  *  assemble). Each evidence/unresolved item's `code` resolves to
  *  `admin.scholarship.verdict.item.{code}` in i18n (params interpolate).
@@ -959,6 +972,9 @@ export interface AdminQuerySla {
   // true when the app is proceeding to assignment WITH clarify queries still open
   // (the SLA lapsed) — the 'ready-with-open-queries' reviewer flag.
   proceeding_with_open_queries: boolean
+  // V3 (#7): higher-priority clarify gaps crowded out by the cap right now (0 = none) — the
+  // cockpit shows "N more queries waiting" so a capped-out query stays visible to the officer.
+  clarify_overflow: number
 }
 
 export interface AdminApplicantDocument {

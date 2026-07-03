@@ -144,10 +144,17 @@ const STEPS: { n?: number; title: string; body: React.ReactNode; img?: string; a
     n: 7,
     title: 'The interview stage',
     body: (
-      <>When you&rsquo;re ready to talk to the student, the <strong>Interview Stage</strong> offers suggested
-      questions (tap <strong>Suggest interview questions</strong>, or <strong>Generate more</strong> for
-      additional ones). Ask your own too. After each point, jot <strong>one line</strong> on what you found,
-      then <strong>Submit interview findings</strong>.</>
+      <>When you&rsquo;re ready to talk to the student, the <strong>Interview Stage</strong> gathers your agenda
+      in one place so nothing from the earlier checks is lost: the pre-interview flags, any
+      <strong> carried-over queries</strong> the student didn&rsquo;t answer (ask them in the conversation), the
+      points the verdict marks <strong>&ldquo;confirm at interview&rdquo;</strong> (an uncertain grade, an
+      identity that couldn&rsquo;t be auto-checked, or income that needs a fuller picture), and a standing
+      <strong> Motivation &amp; grit</strong> section — always worth exploring, and flagged for extra attention when
+      the statement of intent is thin. You can also tap <strong>Suggest interview questions</strong> (or
+      <strong> Generate more</strong>) and ask your own. After each point, jot <strong>one line</strong> on what you
+      found, then <strong>Submit interview findings</strong>. One note: if a point mentions income reading above the
+      line, that&rsquo;s for your judgement — explore the family&rsquo;s real situation, don&rsquo;t quote a figure at
+      the student.</>
     ),
     img: '/reviewer-guide/step7-interview.png',
     alt: 'The Interview Stage with suggested questions',

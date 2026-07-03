@@ -254,6 +254,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Pre-interview deterministic flag list (S16 Phase A). Each entry is
     # {code, params}; the frontend resolves human copy from its i18n bundle.
     anomalies = serializers.SerializerMethodField()
+    interview_agenda = serializers.SerializerMethodField()   # V3 (#9): folded Check-3 agenda
     verdict = serializers.SerializerMethodField()
     submission_review = serializers.SerializerMethodField()
     query_sla = serializers.SerializerMethodField()
@@ -356,6 +357,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'income_route', 'income_earner', 'income_working_members',
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'anomalies',
+            'interview_agenda',
             'verdict',
             'submission_review',
             'query_sla',
@@ -471,6 +473,13 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         return [a for a in detect_anomalies(obj)
                 if a['code'] not in self._DEDUPED_ANOMALIES]
 
+    def get_interview_agenda(self, obj):
+        """V3 (#9): the interviewer's full folded agenda — anomalies + open carried-over queries
+        + the 'needs interview' verdict ambers + a standing Motivation & grit section. So nothing
+        raised at Check 1/2 evaporates at the interview. ``[{code, kind, params}]``."""
+        from .views_admin import interview_agenda_full
+        return interview_agenda_full(obj)
+
     def get_verdict(self, obj):
         """S1 verification verdict: the four-fact rollup the coordinator audits
         (identity / academic / income / pathway). Pure deterministic engine, no
@@ -489,6 +498,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         assignment, and whether it's proceeding WITH queries still open (the
         'ready-with-open-queries' reviewer flag, design §5)."""
         from .services import is_ready_for_assignment, query_sla
+        from .check2_queries import clarify_overflow_count
         sla = query_sla(obj)
         ready = is_ready_for_assignment(obj)
         return {
@@ -498,6 +508,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'days_left': sla['days_left'],
             'ready_for_assignment': ready,
             'proceeding_with_open_queries': ready and sla['open_count'] > 0,
+            # V3 (#7): higher-priority clarify gaps crowded out by the cap right now — the cockpit
+            # shows "N more queries waiting" so a capped-out query is visible to the officer.
+            'clarify_overflow': clarify_overflow_count(obj),
         }
 
     def get_funding_estimate(self, obj):

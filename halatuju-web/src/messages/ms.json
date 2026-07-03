@@ -3069,6 +3069,19 @@
         },
         "note": "Siasat bidang yang masih terbuka; soalan AI di atas sudah menyasarkannya. Bersikap mesra — tahniah atas keputusan mereka, tunjukkan empati tentang kewangan."
       },
+      "agenda": {
+        "openQuery": "Pertanyaan terbawa — sahkan dengan pelajar semasa temubual.",
+        "needsInterview": {
+          "income_unverified_needs_interview": "Sahkan sumber dan jumlah pendapatan isi rumah (tidak formal / tiada slip gaji) semasa temubual.",
+          "income_above_b40_line": "Pendapatan isi rumah membaca melebihi garis B40 (kira-kira RM {amount} berbanding RM {ceiling} sekapita) — terokai gambaran kewangan penuh semasa temubual. Nota penemubual sahaja: jangan sebut angka ini kepada pelajar sebagai mesej.",
+          "academic_grade_uncertain": "Satu gred tidak dapat disahkan dengan slip keputusan — sahkan keputusan sebenar pelajar semasa temubual.",
+          "ic_service_down": "Identiti tidak dapat disahkan automatik (masalah perkhidmatan ID) — sahkan MyKad pelajar semasa temubual."
+        },
+        "motivation": {
+          "standing": "Motivasi & ketabahan: terokai sebab pelajar memilih kursus ini dan cara mereka menghadapi kesukaran.",
+          "seeded": "Motivasi & ketabahan: penyata hasrat adalah nipis — selidik motivasi, daya tahan, dan rancangan masa depan secara mendalam."
+        }
+      },
       "anomaly": {
         "title": "Penanda pra-temubual",
         "intro": "Percanggahan data yang dikesan enjin. Gunakannya untuk mengarah temubual — penanda adalah soalan yang patut ditanya, bukan keputusan.",
@@ -3395,6 +3408,7 @@
         "locked": "Pertanyaan ditutup — temu duga telah selesai. Ini kini rekod baca-sahaja.",
         "itemOne": "perkara",
         "itemMany": "perkara",
+        "overflow": "{n} lagi pertanyaan keutamaan tinggi sedang menunggu — ia akan ditanya secara automatik apabila yang semasa dijawab atau dikecualikan.",
         "empty": "Tiada yang belum selesai — semua tugasan pelajar telah jelas."
       },
       "docsDrawer": {

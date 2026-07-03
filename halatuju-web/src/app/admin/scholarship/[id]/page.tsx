@@ -48,6 +48,7 @@ import {
   type AdminInterviewSession,
   type AdminVerdictItem,
   type AdminResolutionItem,
+  type AdminAgendaEntry,
 } from '@/lib/admin-api'
 import {
   factTileTone,
@@ -710,6 +711,20 @@ export default function AdminScholarshipDetailPage() {
   // AI gaps. Computed once; the editable view drops 'deleted' items, the read-only view
   // shows only the answered ones.
   const check2Owned = new Set((app.resolution_items ?? []).map((i) => i.code))
+  // V3 (#9): the folded agenda entries (open carried-over queries + the needs-interview verdict
+  // ambers + a standing Motivation & grit section) — so nothing raised at Check 1/2 evaporates at
+  // the interview. Anomalies are still sourced from app.anomalies above (to keep the
+  // ANOMALY_CHECK2_OWNER suppression), so the folded list drops kind==='anomaly'.
+  const agendaEntryLabel = (e: AdminAgendaEntry): string => {
+    const p = Object.fromEntries(Object.entries(e.params).map(([k, v]) => [k, String(v)]))
+    if (e.kind === 'motivation') {
+      return e.params.seeded
+        ? t('admin.scholarship.agenda.motivation.seeded')
+        : t('admin.scholarship.agenda.motivation.standing')
+    }
+    if (e.kind === 'needs_interview') return t(`admin.scholarship.agenda.needsInterview.${e.code}`, p)
+    return t('admin.scholarship.agenda.openQuery')   // a carried-over query — confirm verbally
+  }
   const agendaItems = [
     ...app.anomalies
       .filter((a) => { const o = ANOMALY_CHECK2_OWNER[a.code]; return !(o && check2Owned.has(o)) })
@@ -718,6 +733,9 @@ export default function AdminScholarshipDetailPage() {
         label: t(`admin.scholarship.anomaly.${a.code}.question`,
           Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
       })),
+    ...(app.interview_agenda || [])
+      .filter((e) => e.kind !== 'anomaly')
+      .map((e) => ({ code: `${e.kind}:${e.code}`, ai: false, label: agendaEntryLabel(e) })),
     ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
   ]
   const editableAgenda = agendaItems.filter((it) => findings[it.code]?.verdict !== 'deleted')
@@ -1272,6 +1290,13 @@ export default function AdminScholarshipDetailPage() {
         {queryingLocked && (
           <p className="rounded-md bg-gray-100 px-3 py-2 text-xs text-gray-500">
             {t('admin.scholarship.outstanding.locked')}
+          </p>
+        )}
+        {/* V3 (#7): a higher-priority query crowded out by the clarify cap stays visible here,
+            so a capped-out gap isn't silently dropped. */}
+        {(app.query_sla?.clarify_overflow ?? 0) > 0 && (
+          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            {t('admin.scholarship.outstanding.overflow', { n: String(app.query_sla.clarify_overflow) })}
           </p>
         )}
         {(() => {

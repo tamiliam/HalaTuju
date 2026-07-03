@@ -518,17 +518,26 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-03)
 
-**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP: V3 (query lifecycle & Check-3 handoff).**
-Roadmap: `docs/plans/2026-07-03-verification-model-roadmap.md`; findings
-`docs/plans/2026-07-03-check-model-audit.md` #6–#9 + owner decisions 3 & 4. V3 = Check 2 stops
-asking the unanswerable and stops losing the asked: gate sync creation on NOT
-`services.querying_locked` + drop `interviewed` from `QUERY_SLA_ACTIVE_STATUSES` (#6); clarify-cap
-redesign to 3 CONCURRENTLY-OPEN (+ a cockpit "N more waiting" note) (#7); per-item SLA off
-`ResolutionItem.created_at` not `profile_completed_at` (#8); interview-agenda folding of open
-resolution items + the four "needs interview" ambers (over-the-line phrased interviewer-only) + a
-standing **Motivation & grit** section (owner decisions 3/4), updating the reviewer Guide + FAQ in
-the same change (#9). **⚠ OWNER CHECKPOINT after V3** (before the owner-visible V4 growth sprint).
-Owner decisions embedded — do not re-ask. Work each sprint via `sprint-start.md`/`sprint-close.md`.
+**⚠ OWNER CHECKPOINT REACHED (V1–V3 shipped 2026-07-03).** The roadmap's post-V3 checkpoint is due
+before the owner-visible V4 growth sprint. The owner should review the new reviewer-facing copy
+(V3's interview-agenda ambers + Motivation section + the "N more queries waiting" note, en/ms/ta —
+Tamil first-draft) and confirm the V5 verdict re-banding plan before V4/V5 proceed.
+
+**▶ NEXT (after checkpoint) — VERIFICATION-MODEL HARDENING ROADMAP: V4 (promote the nine human asks;
+owner-visible, HIGH).** Roadmap `docs/plans/2026-07-03-verification-model-roadmap.md` §V4 (audit §E,
+owner decision 2). Two new doc types (`school_leaving_cert`, `semester_result`) + nine auto-raised
+Check-2 items (doc requests + clarifies) templated from the officers' own best phrasings, wired into
+the sync gap-detectors + i18n cards + KNOWN_CODES, deduped by satisfied gap. Full sprint rails; NO
+Stitch (renders in existing Action Centre cards). Owner decisions embedded — do not re-ask.
+
+**✅ SHIPPED (code) 2026-07-03 — Verification-model V3 (query lifecycle & Check-3 handoff; branch
+`feat/verify-v3`; NO migration; retro `docs/retrospective-2026-07-03-verify-v3.md`).** Audit #6–#9:
+no query/email fires post-lock (create-gated on `querying_locked`; `interviewed` dropped from
+`QUERY_SLA_ACTIVE_STATUSES`; pre-existing items still shown); clarify cap counts CONCURRENTLY-OPEN +
+`reporting_date_unknown` carve-out + a cockpit "N waiting" note (`clarify_overflow_count`); per-item
+SLA (`created_at + SLA`) with a submit-window `is_ready_for_assignment` floor; `interview_agenda_full`
+folds open queries + the four needs-interview ambers (interviewer-only) + a standing Motivation & grit
+section onto the cockpit agenda; reviewer Guide + FAQ updated. 2046 scholarship pytest + 413 jest.
 
 **✅ SHIPPED (code) 2026-07-03 — Verification-model V2 (resolution correctness; branch
 `feat/verify-v2`; NO migration; retro `docs/retrospective-2026-07-03-verify-v2.md`).** Audit
