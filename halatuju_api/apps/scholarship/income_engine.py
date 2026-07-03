@@ -635,16 +635,21 @@ def _salary_monthly_amount(f):
     a single payslip month under-states a job with variable overtime (#13: basic RM3,800/mo but YTD
     ÷ 12 ≈ RM7,064/mo). YTD ÷ 12 is the representative monthly (the YTD period is ambiguous — a
     flagged interview item — so the headroom band routes a near-line annualised figure to 'unsure').
-    Never lets a mis-read YTD DEFLATE the figure below the single month."""
+    Never lets a mis-read YTD DEFLATE the figure below the single month — which also means a YTD
+    with NO readable monthly figure is unusable (the deflate guard can't run)."""
     gross = _parse_rm(f.get('gross_income'))
     net = _parse_rm(f.get('net_income'))
     if gross and net and net > gross * _NET_OVER_GROSS_TOL:
         return None
     month = gross or net
     ytd = _parse_rm(f.get('gross_income_ytd'))
-    if ytd:
+    # YTD is trustworthy only ALONGSIDE a readable monthly figure (the >= deflate guard).
+    # Alone, its period is unknowable: an early-year slip's YTD ÷ 12 understates income up
+    # to 12× (January: RM3,800 actual → RM317 "monthly" → a false B40 green). Unreadable
+    # monthly cells → None → 'verify at interview', same as the garbled-read rule above.
+    if ytd and month is not None:
         annualised = round(ytd / 12.0, 2)
-        if month is None or annualised >= month:
+        if annualised >= month:
             return annualised
     return month
 

@@ -549,6 +549,16 @@ class TestSalaryMonthlyAmount(SimpleTestCase):
         self.assertEqual(
             _salary_monthly_amount({'gross_income': 'RM3000', 'gross_income_ytd': 'RM12000'}), 3000.0)
 
+    def test_ytd_alone_is_unusable(self):
+        # Code-health S1 #3 regression: a YTD with NO readable monthly cell must return None
+        # ('verify at interview'), never YTD ÷ 12 — a January slip's YTD is ~1 month of pay,
+        # so dividing by 12 understates income up to 12× (RM3,800 actual → RM317 "monthly" →
+        # a false B40 green on the per-capita gate).
+        self.assertIsNone(_salary_monthly_amount({'gross_income_ytd': 'RM3,800'}))
+        # Same with an unparseable (not merely absent) monthly cell.
+        self.assertIsNone(_salary_monthly_amount(
+            {'gross_income': 'illegible', 'gross_income_ytd': 'RM3,800'}))
+
     def test_net_over_gross_is_rejected(self):
         # #66: a hand-written voucher whose ruled ringgit|sen columns were concatenated —
         # the RM326.00 EPF deduction read as gross '32600', RM343.25 deductions as net

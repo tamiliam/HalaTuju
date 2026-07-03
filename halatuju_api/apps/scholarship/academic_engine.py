@@ -50,6 +50,47 @@ _SUBJECT_BM = {
     'bahasa_perancis': 'Bahasa Perancis', 'bahasa_jepun': 'Bahasa Jepun',
     'bahasa_jerman': 'Bahasa Jerman', 'b_cina': 'Bahasa Cina', 'b_tamil': 'Bahasa Tamil',
     'pqs': 'Pendidikan Al-Quran & Al-Sunnah', 'psi': 'Pendidikan Syariah Islamiah',
+    # Islamic studies (extended) — code-health S1 #4: these blocks had drifted out of
+    # sync with subjects.ts (64 keys the grades form offers were unknown here, so a
+    # student's entered grade was dropped AND the slip row bounced — a permanent
+    # "missing subject" loop). test_subject_drift.py now pins the mirror.
+    'tasawwur_islam': 'Tasawwur Islam', 'usul_aldin': 'Usul Al-Din',
+    'al_syariah': 'Al-Syariah', 'manahij': 'Manahij', 'lughah_arabiah': 'Lughah Arabiah',
+    'adab_balaghah': 'Adab & Balaghah', 'hifz_alquran': 'Hifz Al-Quran',
+    'maharat_alquran': 'Maharat Al-Quran', 'turath_islamiah': 'Turath Islamiah',
+    'turath_quran_sunnah': 'Turath Quran & Sunnah', 'turath_bahasa_arab': 'Turath Bahasa Arab',
+    # Arts & performance
+    'reka_bentuk_grafik': 'Reka Bentuk Grafik', 'reka_bentuk_industri': 'Reka Bentuk Industri',
+    'reka_bentuk_kraf': 'Reka Bentuk Kraf', 'multimedia_kreatif': 'Multimedia Kreatif',
+    'produksi_reka_tanda': 'Produksi Reka Tanda', 'produksi_multimedia': 'Produksi Multimedia',
+    'produksi_seni': 'Produksi Seni Persembahan', 'seni_halus_2d': 'Seni Halus 2D',
+    'seni_halus_3d': 'Seni Halus 3D', 'aural_teori_muzik': 'Aural & Teori Muzik',
+    'alat_muzik': 'Alat Muzik Utama', 'muzik_komputer': 'Muzik Komputer',
+    'tarian': 'Tarian', 'koreografi': 'Koreografi Tari', 'apresiasi_tari': 'Apresiasi Tari',
+    'lakonan': 'Lakonan', 'sinografi': 'Sinografi', 'penulisan_skrip': 'Penulisan Skrip',
+    # Vocational / MPV
+    'hiasan_dalaman': 'Hiasan Dalaman', 'kerja_paip': 'Kerja Paip',
+    'pembinaan_domestik': 'Pembinaan Domestik', 'pembuatan_perabot': 'Pembuatan Perabot',
+    'katering': 'Katering', 'pemprosesan_makanan': 'Pemprosesan Makanan',
+    'rekaan_jahitan': 'Rekaan & Jahitan', 'penjagaan_muka': 'Penjagaan Muka & Badan',
+    'asuhan_kanak': 'Asuhan Kanak-Kanak', 'gerontologi': 'Gerontologi',
+    'pendawaian_domestik': 'Pendawaian Domestik', 'menservis_automobil': 'Menservis Automobil',
+    'kimpalan': 'Kimpalan', 'menservis_motosikal': 'Menservis Motosikal',
+    'penyejukan': 'Penyejukan & Penyamanan Udara', 'landskap_nurseri': 'Landskap & Nurseri',
+    'tanaman_makanan': 'Tanaman Makanan', 'akuakultur': 'Akuakultur',
+    'menservis_elektrik': 'Menservis Peralatan Elektrik',
+    'voc_food': 'Vokasional Makanan', 'voc_landscape': 'Vokasional Landskap',
+    'voc_construct': 'MPV Binaan Bangunan', 'voc_weld': 'MPV Kimpalan & Fabrikasi',
+    'voc_auto': 'MPV Automotif', 'voc_elec_serv': 'MPV Elektrik & Elektronik',
+    'voc_catering': 'MPV Katering & Penyajian', 'voc_tailoring': 'MPV Jahitan & Pakaian',
+    # Technical / vocational (SPM_CODE_MAP targets)
+    'teknologi_kej': 'Teknologi Kejuruteraan',
+    'prinsip_elektrik': 'Prinsip Elektrik & Elektronik',
+    'aplikasi_elektrik': 'Aplikasi Elektrik & Elektronik',
+    'pemesinan_berkomputer': 'Pemesinan Berkomputer',
+    'aplikasi_komputer': 'Aplikasi Komputer dlm Perniagaan',
+    'komunikasi_visual': 'Komunikasi Visual', 'bahan_binaan': 'Bahan Binaan',
+    'teknologi_binaan': 'Teknologi Binaan',
 }
 
 

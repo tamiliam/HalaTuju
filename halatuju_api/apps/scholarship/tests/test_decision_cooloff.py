@@ -75,6 +75,67 @@ class TestDeclineCooloff(TestCase):
         self.assertEqual(app.pending_rejection_category, '')
         self.assertEqual(app.status, 'interviewed')             # student never knew
 
+    def test_cancel_restores_after_shortlist_email_regression(self):
+        """Code-health S1 #2 regression: a normally-processed student has
+        decision_email_sent_at stamped by the shortlist PASS email at release. Cancelling
+        an embargoed decline must STILL reverse the rejection — the old code keyed the
+        restore on decision_email_sent_at being None, so it never ran for real students
+        (mask lifted, status stayed rejected, no decline email ever sent)."""
+        p = StudentProfile.objects.create(supabase_user_id='u-reg1')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='submitted', verdict='shortlisted',
+            notify_email='stu@x.com')
+        self.assertTrue(services.release_decision(app))          # the real shortlist path
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'shortlisted')
+        self.assertIsNotNone(app.decision_email_sent_at)         # PASS email stamped it
+        services.admin_reject(app, self.admin, 'interview')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'rejected')
+        self.assertTrue(services.cancel_pending_decline(app))
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'shortlisted')              # truly reversed, to the
+        self.assertEqual(app.rejection_category, '')             # status it came from
+        self.assertIsNone(app.rejected_at)
+        self.assertEqual(app.pre_decline_status, '')
+
+    def test_cancel_restores_snapshot_not_qc_queue(self):
+        """Code-health S1 #2b regression: 'interviewed' now means AWAITING QC. A decline
+        made from a pre-verdict status (here 'interviewing') must restore to THAT status on
+        cancel — not to 'interviewed', which would drop a verdict-less case into the QC
+        queue where QC-Accept could flip it to 'recommended' with no recorded verdict."""
+        app = self._app(status='interviewing')
+        services.admin_reject(app, self.admin, 'interview')
+        self.assertTrue(services.cancel_pending_decline(app))
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewing')
+
+    def test_cancel_legacy_row_without_snapshot_falls_back(self):
+        """A pre-migration pending decline has no snapshot — restore falls back to the old
+        'interviewed' behaviour rather than doing nothing."""
+        app = self._app()
+        services.admin_reject(app, self.admin, 'interview')
+        ScholarshipApplication.objects.filter(pk=app.pk).update(pre_decline_status='')
+        app.refresh_from_db()
+        self.assertTrue(services.cancel_pending_decline(app))
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewed')
+
+    def test_release_stamps_decline_email_sent_at(self):
+        """The decline email now has its own authoritative stamp, distinct from the
+        shortlist decision email's."""
+        app = self._app()
+        services.admin_reject(app, self.admin, 'interview')
+        ScholarshipApplication.objects.filter(pk=app.pk).update(
+            decline_due_at=timezone.now() - timedelta(minutes=1))
+        self.assertEqual(services.release_pending_declines(), 1)
+        app.refresh_from_db()
+        self.assertIsNotNone(app.decline_email_sent_at)
+        # And once the student has been told, cancel is a no-op (markers are cleared).
+        self.assertFalse(services.cancel_pending_decline(app))
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'rejected')
+
     def test_release_after_due_rejects_and_emails(self):
         app = self._app()
         services.admin_reject(app, self.admin, 'interview')
