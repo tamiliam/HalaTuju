@@ -516,9 +516,30 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-02)
+## Next Sprint (as of 2026-07-03)
 
-**▶ BUILT, AWAITING DEPLOY — Sponsor visibility bound to the QC-Accept transition (2026-07-02; worktree
+**▶ NEXT — Code-health Sprint 2: document-pipeline safety** (roadmap
+`docs/plans/2026-07-03-code-health-review.md`, findings #5 + #22): the vision clobber guard (never
+overwrite non-empty `vision_fields` with an empty/error result — the known "local re-extract destroys
+data" incident mode, still procedural-only), `reextract_documents` must not stamp PASS on exception,
+cockpit Re-run must pass the profile street, and the duplicate billable Vision call per slip/BC upload
+(one `document_text_detection` response already carries both consumers' data). Then checkpoint report
+to owner before Sprint 3 (money & comms). Sprints 1–2 run under the owner's 2026-07-03 standing
+authorisation (approval gates waived; deploy at close).
+
+**✅ SHIPPED 2026-07-03 — Code-health Sprint 1 (decision & needs-gate integrity; branch
+`feat/code-health-s1`; migration `0090` additive, applied migrate-first + verified; retro
+`docs/retrospective-2026-07-03-code-health-s1.md`).** Three P1 findings from the 2026-07-03
+full-codebase review: cancel-decline now truly reverses (own `decline_email_sent_at` stamp +
+`pre_decline_status` snapshot restore — no more silent stay-rejected, no verdict-less cases into the
+QC queue), YTD-alone payslips return None instead of YTD÷12 (up-to-12× income understatement → false
+B40 green), and the 64-key subject-map drift vs `subjects.ts` is synced + pinned by
+`test_subject_drift.py` (loud, never skips). 3,185 backend tests. **Same day: git history rewritten
+(PII purge — `docs/backups` legacy dump removed via filter-repo; all pre-2026-07-03 commit SHAs after
+2026-06-01 are dead — match old commits by subject line; `.gitignore` now blocks `**/docs/backups/` +
+`*_backup_*.json`).**
+
+**✅ DEPLOYED (was "awaiting deploy") — Sponsor visibility bound to the QC-Accept transition (2026-07-02; worktree
 `.worktrees/mask-accepted`; NO migration; retro `docs/retrospective-2026-07-02-publish-at-qc.md`; decision in
 `docs/decisions.md`).** The clean state-machine fix for "a student was shown to sponsors before QC cleared them."
 - **Publish moved off the reviewer's verdict onto QC-Accept.** `AdminRecordVerdictView` finalise now only

@@ -341,9 +341,11 @@ catalogue sync tooling guards, PISMP taxonomy derivation, reports-app scoping.
 - **Task A — PII purge: ✅ DONE 2026-07-03.** History rewritten with `git filter-repo`,
   force-pushed, all local checkouts re-pointed, `.gitignore` guard added. Residue: old
   objects unreachable on GitHub (optional support request) + local reflogs (~90-day expiry).
-- **Sprint 1 — Decision & needs-gate integrity:** #2 cancel-decline (own email stamp +
-  pre-decline status snapshot, model change + migration), #3 YTD÷12 guard, #4 SPM
-  subject-list sync + drift test. Regression test per bug.
+- **Sprint 1 — Decision & needs-gate integrity: ✅ DONE 2026-07-03.** #2 cancel-decline
+  (own `decline_email_sent_at` stamp + `pre_decline_status` snapshot restore, migration
+  `0090` migrate-first), #3 YTD-alone guard, #4 subject-map sync (64 keys, not ~25) +
+  `test_subject_drift.py`. 3,185 backend tests green. Retro
+  `docs/retrospective-2026-07-03-code-health-s1.md`.
 - **Sprint 2 — Document-pipeline safety:** #5 vision clobber guard + reextract fixes
   (street pass-through, no PASS-stamp on error) + #22 duplicate Vision call.
 - **Sprint 3 — Money & comms:** #6 sponsorship lapse on contractual reject, #7 email
@@ -359,3 +361,13 @@ catalogue sync tooling guards, PISMP taxonomy derivation, reports-app scoping.
 
 Detailed task breakdown happens per-sprint at sprint-start (`sprint-start.md`);
 re-plan the remaining sprints at each sprint-close if scope shifts.
+
+**Execution authorisation (owner, 2026-07-03):** Sprints 1–2 run fully autonomous
+(sprint-start/close approval gates waived; deploy at each close). One checkpoint
+report before Sprint 3, then 3–5 autonomous. Pre-taken owner decisions for Sprint 3:
+- #8 backfill: stamp ALL historical awarded students as already-emailed (no surprise
+  auto-emails; manual command remains for individual sends).
+- #6: contractual reject of a funded student AUTO-LAPSES the sponsorship (mirrors
+  closure semantics, releases held balance).
+- #10 quiz: rewrite strictly from bursary.py clauses (ta per style guide), ship dark,
+  owner reviews copy in the final report before the flag ever flips.

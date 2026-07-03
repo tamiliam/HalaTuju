@@ -475,6 +475,23 @@ class ScholarshipApplication(models.Model):
         max_length=254, blank=True, default='',
         help_text="Email of the admin who scheduled the pending decline",
     )
+    # Cancel-decline correctness (code-health S1): the decline email gets its OWN stamp —
+    # ``decision_email_sent_at`` is stamped by the shortlist PASS email at release, so reusing
+    # it made ``cancel_pending_decline`` believe every normally-processed student had already
+    # been told (the restore branch never ran). And the restore target is SNAPSHOTTED, not
+    # hardcoded 'interviewed' — 'interviewed' now means AWAITING QC, so a decline made from
+    # shortlisted/interviewing must not land there on cancel (it would enter the QC queue
+    # with no recorded verdict).
+    decline_email_sent_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the bucket decline email was actually sent (distinct from the "
+                  "shortlist decision email stamp)",
+    )
+    pre_decline_status = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="Status snapshot taken at admin_reject; cancel_pending_decline restores "
+                  "to it (blank = legacy row, falls back to 'interviewed')",
+    )
 
     # 2-day AWARD-confirmation cool-off (#14): on student/guardian accept we record the
     # acceptance + money hold immediately, but defer the 'sponsored' flip + the funding-confirmed

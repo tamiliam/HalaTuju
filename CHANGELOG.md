@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Code-health Sprint 1 (2026-07-03) — three P1 findings from the full-codebase review
+  (`docs/plans/2026-07-03-code-health-review.md`).**
+  - **"Cancel decline" now actually cancels.** `cancel_pending_decline` keyed "was the student told?"
+    off `decision_email_sent_at`, which the shortlist PASS email had already stamped for every
+    normally-processed applicant — so a cancelled decline silently stayed `rejected`, the student saw
+    the rejection in-app, and no decline email ever went. The decline email now has its own stamp
+    (`decline_email_sent_at`) and cancel restores the **snapshotted pre-decline status**
+    (`pre_decline_status`) instead of hardcoded `'interviewed'` — which, post-QC-gate, would have
+    dropped a verdict-less case into the QC queue. Migration `scholarship/0090` (2 additive columns,
+    applied migrate-first).
+  - **A year-to-date figure with no readable monthly cell no longer becomes YTD÷12.** An early-year
+    payslip's YTD is ~1 month of pay, so dividing by 12 understated income up to 12× — enough to turn
+    a non-B40 household verified-green. YTD now counts only alongside a readable monthly figure
+    (the deflate guard); alone it returns None → 'verify at interview'.
+  - **64 SPM subjects the grades form offers were unknown to the academic engine** (all arts/
+    performance electives, `voc_*` vocational subjects, Islamic-stream extras) — a student taking one
+    was told their slip was "missing" a subject they had already entered, an unfixable loop that
+    blocked `verified`. `_SUBJECT_BM` is synced with `subjects.ts` and a new drift test
+    (`test_subject_drift.py`) pins the mirror in both directions, failing loudly rather than skipping.
+
 ### Added
 - **"Message your interviewer" — an always-open student → reviewer channel (TD-152).** Available in every
   interview state with NO cutoff (the pressure valve when reschedule/cancel are locked inside the 12h window,

@@ -763,13 +763,16 @@ INTERVIEW_REJECT_FROM = ('shortlisted', 'profile_complete', 'interviewing', 'int
 
 def _record_reject(application, category, by_email, now=None):
     """Flip the application to rejected NOW (the decision is immediate) — status + bucket +
-    when/who. Does NOT send the student email (that may be embargoed; see admin_reject)."""
+    when/who. Does NOT send the student email (that may be embargoed; see admin_reject).
+    Snapshots the pre-decline status so cancel_pending_decline can restore it exactly."""
     now = now or timezone.now()
+    application.pre_decline_status = application.status
     application.status = 'rejected'
     application.rejection_category = category
     application.rejected_at = now
     application.rejected_by = by_email or ''
-    application.save(update_fields=['status', 'rejection_category', 'rejected_at', 'rejected_by'])
+    application.save(update_fields=['pre_decline_status', 'status', 'rejection_category',
+                                    'rejected_at', 'rejected_by'])
 
 
 def _send_decline_for(application):
@@ -782,8 +785,12 @@ def _send_decline_for(application):
         applicant_name=name, programme_name=application.cohort.name,
         category=application.rejection_category, lang=application.locale,
     ):
+        # Both stamps: decline_email_sent_at is the authoritative "the student was told of
+        # the DECLINE" marker (cancel_pending_decline keys off it); decision_email_sent_at
+        # keeps its broader "a decision email went out" meaning for back-compat.
+        application.decline_email_sent_at = now
         application.decision_email_sent_at = now
-        application.save(update_fields=['decision_email_sent_at'])
+        application.save(update_fields=['decline_email_sent_at', 'decision_email_sent_at'])
 
 
 def _finalise_reject(application, category, by_email):
@@ -835,22 +842,31 @@ def admin_reject(application, admin, category):
 
 def cancel_pending_decline(application):
     """Undo a rejection whose student email is still EMBARGOED (the student was never told):
-    clear the scheduled email AND reverse the rejection back to the in-review ('interviewed')
-    state. No-op (False) once the email has gone or nothing is pending. Returns True if cancelled.
-    (Restores to 'interviewed' — the in-review state these declines come from; the rare
-    shortlist-stage decline lands there too, which is harmless: still in review.)"""
+    clear the scheduled email AND reverse the rejection back to the status it was declined
+    FROM (snapshotted in ``pre_decline_status``; legacy rows without one fall back to
+    'interviewed'). No-op (False) once the decline email has gone or nothing is pending.
+    Returns True if cancelled.
+
+    Two past bugs guarded here: (a) the "was the student told?" check must read
+    ``decline_email_sent_at`` — NOT ``decision_email_sent_at``, which the shortlist PASS
+    email already stamped for every normally-processed applicant (the restore branch never
+    ran, so a "cancelled" decline stayed rejected and student-visible); (b) the restore
+    target must be the snapshot — a hardcoded 'interviewed' now means AWAITING QC, so a
+    decline made pre-verdict would land in the QC queue with no recorded verdict."""
     if not (application.decline_due_at or application.pending_rejection_category):
         return False
     application.pending_rejection_category = ''
     application.decline_due_at = None
     application.pending_decline_by = ''
     fields = ['pending_rejection_category', 'decline_due_at', 'pending_decline_by']
-    if application.status == 'rejected' and application.decision_email_sent_at is None:
-        application.status = 'interviewed'
+    if application.status == 'rejected' and application.decline_email_sent_at is None:
+        application.status = application.pre_decline_status or 'interviewed'
+        application.pre_decline_status = ''
         application.rejection_category = ''
         application.rejected_at = None
         application.rejected_by = ''
-        fields += ['status', 'rejection_category', 'rejected_at', 'rejected_by']
+        fields += ['status', 'pre_decline_status', 'rejection_category', 'rejected_at',
+                   'rejected_by']
     application.save(update_fields=fields)
     return True
 
