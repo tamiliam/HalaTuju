@@ -385,8 +385,12 @@ def _income_evidence(application):
     authoritatively even on the STR track (a student may submit payslips/EPF as extra
     proof). Covers the salary-route members AND the STR-route earner. 'none on file' when
     no readable income document exists, so the model falls back to the reported figure."""
-    from .income_engine import working_members, earner_monthly_income
-    members = list(working_members(application))
+    # Code-health S4 #16: use effective_working_members — the #90 fix (prefill accepted
+    # but never persisted leaves income_working_members empty while the docs exist) was
+    # applied to verdict_engine + the blockers but this call site was missed, so the
+    # sponsor/reviewer profile said "Documented income: none on file" over a readable slip.
+    from .income_engine import effective_working_members, earner_monthly_income
+    members = list(effective_working_members(application))
     earner = (getattr(application, 'income_earner', '') or '').strip()
     if earner and earner not in members:
         members.append(earner)

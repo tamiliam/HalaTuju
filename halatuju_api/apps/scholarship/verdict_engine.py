@@ -299,7 +299,12 @@ def _verdict_income(application):
     # ── Earner IC (the income docs are issued in their name) ──────────────────
     # `members=[earner]` keeps the IC/relationship reason-code copy uniform with the
     # salary route (which lists several) — both render "… for {members}".
-    ic_doc = _latest_doc(application, 'parent_ic')
+    # Code-health S4 #17: select the EARNER'S IC (member-tagged, with the earner-only
+    # legacy-blank fallback) — the member-agnostic latest parent_ic could pick another
+    # member's card after a route switch with several ICs on file, making this verdict
+    # contradict the student checklist (which uses _member_ic_doc) on identical data.
+    from .income_engine import _member_ic_doc
+    ic_doc = _member_ic_doc(application, earner)
     earner_ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
     if ic_doc is None:
         gap.append(_item('earner_ic_missing', members=[earner]))
@@ -384,7 +389,13 @@ def _verdict_income(application):
     # NB unsure/over return 'recommend' (→ amber) rather than 'review': a review tile reads BLUE off
     # the verified earner-IC/relationship greens, which would overstate an unsure income.
     if str_failed:
-        band, ctx = income_headroom(application, [earner])
+        # Code-health S4 #19: assess EVERY member with income evidence, not just the single
+        # STR-route earner — after a route switch, tagged payslips/EPF for other members can
+        # exist, and excluding them understates the household gross (a genuinely-over
+        # household could band 'probable' off one earner's slip).
+        from .income_engine import effective_working_members
+        hh_members = list(dict.fromkeys([earner] + list(effective_working_members(application))))
+        band, ctx = income_headroom(application, hh_members)
         if band == 'over':
             # Salary route FAILS — household income is over the B40 line → income fact FAILS (RED).
             # (Advisory only: the tiles guide, the officer still places the final verdict — not an
@@ -527,8 +538,6 @@ def _verdict_income_salary(application, student_name, present):
 
     if gap:
         return _fact('income', 'gap', evidence, gap + review)
-    if review:
-        return _fact('income', 'review', evidence, review)
     # Phase 2A: an ACCEPTED declared income is honest evidence — surface it, and say WHY the
     # self-report counts (a valid STR is the means-test, else a supporting doc backs it). Two
     # distinct codes, not an ICU `select` param: the custom `t` has no MessageFormat engine.
@@ -537,25 +546,38 @@ def _verdict_income_salary(application, student_name, present):
         evidence.append(_item(code, members=declared_backed))
     # A declared income with NO valid STR and NO supporting doc can't count yet. Firm-steward
     # stance: Unsure = proof required from the student (Check 2 raises the income_support_doc
-    # request). Route to 'recommend' (amber) — never a blue read off the earner-IC/relationship greens.
+    # request). Route to 'recommend' (amber) — never a blue read off the earner-IC/relationship
+    # greens. Code-health S4 #20: this must run BEFORE the 'review' return — 'review' is the
+    # BLUE band, so an unrelated review item (e.g. an unreadable IC) used to hide the unproven
+    # declaration behind blue, contradicting the amber rule above.
     if declared_unproven:
         return _fact('income', 'recommend', evidence,
                      review + [_item('income_declared_needs_evidence', members=declared_unproven)])
+    if review:
+        return _fact('income', 'review', evidence, review)
     # The cluster adds up (every IC + relationship confirmed, financial evidence present).
-    # Income GREEN also needs the AMOUNT to clear the B40 line: sum the earners' pay from
-    # the documents → per-capita vs the cohort ceiling (I4). Never blocks — anything we
-    # can't compute, or income above the line, goes to the officer/interview.
+    # Income GREEN also needs the AMOUNT to clear the B40 line (I4) — via the SAME
+    # ``income_headroom`` band the STR fall-through uses (code-health S4 #14: the old
+    # per-capita-only strict-< test here contradicted spec §7's two-test rule — gross
+    # ceiling primary, per-capita a safety net — so the two routes could give opposite
+    # answers for one household, and pc == ceiling read as "over"). Never blocks —
+    # over-the-line or uncomputable goes to the officer/interview.
     if any_financial and all_confirmed:
-        from .income_engine import income_per_capita
-        ceiling = getattr(getattr(application, 'cohort', None), 'per_capita_ceiling', None)
-        pc, _all_known = income_per_capita(application, members)
-        if pc is not None and ceiling:
-            if pc < ceiling:
-                evidence.append(_item('income_per_capita_ok', amount=int(round(pc)), ceiling=ceiling))
-                return _fact('income', 'verified', evidence, [])
+        from .income_engine import income_headroom
+        band, ctx = income_headroom(application, members)
+        pc = ctx.get('per_capita')
+        ceiling = ctx.get('per_capita_ceiling')
+        if band == 'over':
             return _fact('income', 'recommend', evidence,
-                         [_item('income_above_b40_line', amount=int(round(pc)), ceiling=ceiling)])
-        # Couldn't compute the per-capita (income unreadable / informal / no household size).
+                         [_item('income_above_b40_line', amount=pc, ceiling=ceiling)])
+        if band in ('probable', 'unsure'):
+            # Under the (two-test) line — I4 keeps its historical binary green here: the
+            # cluster is fully confirmed on this path, so the fall-through's thin-margin
+            # 'unsure' demotion deliberately does NOT apply (that grading compensates for
+            # an UNverified household; the salary-track redesign will revisit).
+            evidence.append(_item('income_per_capita_ok', amount=pc, ceiling=ceiling))
+            return _fact('income', 'verified', evidence, [])
+        # 'unknown' — couldn't compute (unreadable income / no household size).
         return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
     # Assembled but a human still places it: no payslip/EPF (informal) or a relationship
     # we couldn't machine-confirm. Never blocks.
