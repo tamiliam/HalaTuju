@@ -65,7 +65,11 @@ pathway.
 - 🔵 **Probable** — offer identity ✓ but the offer/declaration clash → "is this the final
   one?" (record realigns on the student's Yes).
 - 🟡 **Unsure** — an offer is present but its identity can't be read (`offer_no_identity` /
-  `offer_unreadable` / `offer_name_mismatch`) — nothing verified.
+  `offer_unreadable`) — nothing verified; **or the offer is in someone else's name**
+  (`offer_name_mismatch` — a POSITIVE mismatch, not a read failure; deliberately amber, not red,
+  see decisions.md 2026-07-04: the wrong-person letter is usually a family member's upload slip-up,
+  the pathway may still be settleable at interview, and the offer is not the identity anchor the IC
+  is — but nothing on it is verified, so a human owns it).
 - 🔴 **Can't verify** — **no offer letter.** The programme supports a *confirmed place*;
   without an offer there is nothing to fund (income can be settled at interview, a pathway
   cannot).
@@ -73,22 +77,29 @@ pathway.
   code, so a student cannot submit without one.
 
 ### Income — the cluster (STR or salary route) (`_verdict_income` / `_verdict_income_salary`)
-The only fact that uses **all four bands**, and the only one that can be 🟡 via `recommend`
-("evidence assembled, a human places the B40 call"). Checks: wizard walked · earner/member
-IC · relationship (father = patronymic, mother = birth cert, guardian = letter) · STR current
-+ recipient = earner **or** payslip/EPF · utility bills (soft).
+The most band-mobile fact (every fact can show all four bands — see the matrix below — but
+income is the one that routinely moves across them, and the main user of the `recommend`
+amber: "evidence assembled, a human places the B40 call"). Checks: wizard walked ·
+earner/member IC · relationship (father = patronymic, mother = birth cert, guardian =
+letter) · STR current + recipient = earner **or** payslip/EPF · utility bills (soft).
+
+> **The income band's single source of truth is the route-seam truth table in
+> `str-proof-spec.md` §8** (verification-model V5, 2026-07-04) — the bullets below are a
+> summary and defer to it wherever they might disagree.
 
 - 🟢 **Certain** — the whole cluster adds up: a current STR to the earner + earner IC +
-  relationship confirmed (STR route); or every IC + every relationship + ≥1 payslip/EPF
-  (salary route).
+  relationship confirmed (STR route); or every IC + every relationship + ≥1 payslip/EPF,
+  under the B40 line (salary route — keeps its documented binary green, spec §8 note 2).
 - 🔵 **Probable** — a check fails/unconfirmed *and* something is verified (e.g. earner IC in,
-  STR not current).
-- 🟡 **Unsure** — B40 can't be document-proven (informal/no-EPF, an unprovable
-  relationship, or a salary computed *above* the B40 line) → officer places it at interview
-  (`recommend`).
+  STR approved but undated).
+- 🟡 **Unsure** — B40 can't be document-proven (informal/no-EPF, an unprovable relationship,
+  a stale/unreadable STR, a declared income with no accepted proof, or the **STR recipient ≠
+  earner**) → officer places it at interview (`recommend`).
 - 🔴 **Can't verify** — **no income information at all** (wizard not walked / no member
-  declared — "nothing provided" is red, like a missing IC/slip/offer), or a compulsory
-  income doc missing (earner/member IC, birth cert, guardianship letter, or STR).
+  declared — "nothing provided" is red, like a missing IC/slip/offer), a compulsory
+  income doc missing (earner/member IC, birth cert, guardianship letter, or STR), **or
+  household income clearly OVER the B40 line — on either route** (spec §8 note 1; advisory,
+  never an auto-reject).
 
 ### Other — supporting documents
 The Documents-panel catch-all for any doc type that isn't one of the four facts. **No band,

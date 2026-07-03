@@ -376,13 +376,16 @@ class TestIncome(_Base):
         self.assertIn('income_above_b40_line', codes)
         self.assertIn('str_not_current', codes)
 
-    def test_str_recipient_not_earner_is_review(self):
+    def test_str_recipient_not_earner_is_recommend_amber(self):
+        # V5 (#10): a POSITIVE recipient mismatch bands Unsure (amber) per spec §8 — never a
+        # blue 'review' read off the verified earner-IC green (the STR provably belongs to
+        # someone else, so nothing about THIS household's income is probable).
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
         _add_doc(self.app, 'str', student_verdict='ok',
                  fields={'recipient_name': 'SOMEONE ELSE BIN OTHER', 'status': 'Lulus', 'year': '2026'})
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'recommend')
         self.assertIn('str_recipient_mismatch', _codes(f['unresolved']))
 
     def test_earner_ic_missing_is_gap(self):
@@ -596,20 +599,22 @@ class TestPathway(_Base):
         self.assertIn('pathway_confirmed', _codes(f['evidence']))
         self.assertEqual(f['unresolved'], [])
 
-    def test_offer_name_mismatch_is_review(self):
+    def test_offer_name_mismatch_is_recommend_amber(self):
+        # V5 (#12): a wrong-person letter is explicitly 'recommend' (amber/Unsure) — deliberate,
+        # not the old empty-evidence accident of a 'review' that happened to read amber.
         _add_doc(self.app, 'offer_letter', student_verdict='name_mismatch',
                  fields={'candidate_name': 'SOMEONE ELSE', 'candidate_nric': '080115-05-0132'})
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'recommend')
         self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
 
-    def test_offer_ic_mismatch_is_review(self):
+    def test_offer_ic_mismatch_is_recommend_amber(self):
         # IC is the strong identity check — a wrong NRIC flags even if the name is close.
         _add_doc(self.app, 'offer_letter', student_verdict='ok',
                  fields={'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',
                          'candidate_nric': '999999-99-9999'})
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'recommend')
         self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
 
     def test_offer_notice_without_identity_is_no_identity_not_unreadable(self):
@@ -978,12 +983,15 @@ class TestIncomePerCapita(TestCase):
         self.assertEqual(f['status'], 'verified')
         self.assertIn('income_per_capita_ok', _codes(f['evidence']))
 
-    def test_above_ceiling_is_recommend_interview(self):
+    def test_above_ceiling_is_gap_red(self):
+        # V5 (#10): over-the-line = RED on both routes (spec §8 rule 1) — the salary route now
+        # bands the same household economics the same colour as the STR fall-through. Advisory
+        # only; the officer still places the final verdict.
         self.profile.household_size = 2
         self.profile.save()
         self._father(gross='RM9,900.04')   # 9900 / 2 = 4950 >= 1584
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'gap')
         self.assertIn('income_above_b40_line', _codes(f['unresolved']))
 
     def test_epf_contribution_estimates_salary(self):
@@ -1051,15 +1059,16 @@ class TestIncomeDeclared(TestCase):
         f = _facts(self.app)['income']
         self.assertNotIn('income_declared_accepted_evidenced', _codes(f['evidence']))
 
-    def test_declared_over_line_still_recommend(self):
-        # A declared figure accepted by STR but over the line → recommend (never auto-reject).
+    def test_declared_over_line_is_gap_red(self):
+        # A declared figure accepted by STR but over the line → gap/RED (V5 #10: over = red on
+        # both routes; advisory — the tile is red but nothing auto-rejects).
         self.profile.household_size = 1
         self.profile.save()
         self.app.income_declared = {'father': 5000}   # 5000 / 1 = 5000 >= 1584
         self.app.save()
         self._str()
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'gap')
         self.assertIn('income_above_b40_line', _codes(f['unresolved']))
 
 
@@ -1309,11 +1318,11 @@ class TestCodeHealthS4IncomeConsistency(TestCase):
         f = _facts(app)['income']
         self.assertEqual(f['status'], 'verified')
 
-    def test_clearly_over_both_ceilings_is_recommend(self):
+    def test_clearly_over_both_ceilings_is_gap_red(self):
         app = self._app(size=2)
         self._father(app, 'RM9,900')       # pc 4,950; gross 9,900 > 5,860 → over
         f = _facts(app)['income']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'gap')                      # V5 #10: red on both routes
         self.assertIn('income_above_b40_line', _codes(f['unresolved']))
 
     def test_unproven_declared_forces_amber_over_unrelated_review(self):

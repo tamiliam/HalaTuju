@@ -30,11 +30,19 @@ export type FactTileTone = 'green' | 'amber' | 'blue' | 'red'
 // Evidence codes that are NOT a verified value — a self-declaration or a soft signal.
 // "Probable" (blue) must rest on at least one real verified value, so a fact backed
 // only by these (or by nothing) is "Unsure", not "Probable".
-const SOFT_EVIDENCE = new Set<string>([
-  'pathway_declared',        // the student's own declared pathway (unverified)
-  'utility_percapita_b40',   // soft income proxy from the utility bills
+//
+// PINNED to the backend: every code the verdict engine emits with a `# SOFT` marker
+// MUST appear here (and nothing here should be un-marked there). The jest guard
+// `__tests__/soft-evidence-drift.test.ts` reads verdict_engine.py and fails on any
+// drift — the denylist had rotted (Phase-2B/2C soft codes leaked a tile to blue,
+// audit #11) precisely because nothing enforced the mirror.
+export const SOFT_EVIDENCE = new Set<string>([
+  'pathway_declared',              // the student's own declared pathway (unverified)
+  'utility_percapita_b40',         // soft income proxy from the utility bills
   'utility_percapita_high',
   'utility_hardship',
+  'unemployment_epf_corroborated', // Phase 2B: EPF (all-zeros/lapsed) hinting unemployment — soft
+  'household_size_confirm',        // Phase 2C: described people > stated household size — soft
 ])
 
 /**

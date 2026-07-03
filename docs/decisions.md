@@ -1,5 +1,58 @@
 # Architectural Decisions — HalaTuju
 
+## Verification-model V5 — verdict evenness at the route seam + a QC soft floor — 2026-07-04
+**Decisions (four, taken together as the "verdict evenness" sprint; audit #5, #10–#14):**
+
+1. **One route-seam truth table (`str-proof-spec.md` §8 is the single source; #10).** The same
+   household economics must band the same colour regardless of which route (STR vs salary) produced
+   the evidence. Two rules anchor it:
+   - **Over-the-B40-line = RED (`gap`) on both routes.** Previously the STR fall-through banded a
+     clearly-over household 🔴 while the fully-assembled salary route banded the identical economics
+     🟡 amber. Now both → `gap`. **Advisory only** — it colours the tile red and zeroes the proposed
+     amount, but never auto-rejects; the officer still decides and interview circumstances may apply.
+   - **The salary-route thin-headroom GREEN stays (documented exception).** On the *fully-confirmed*
+     salary route (every member IC + every relationship + real financial evidence) an under-the-line
+     household keeps its binary green; the §7.1 headroom grading (probable/unsure) does NOT demote it.
+     That grading compensates for an *unverified* household on the STR fall-through; a corroborated
+     cluster has nothing left to hedge. (Reaffirms the code-health S4 decision; the salary-track
+     redesign will revisit.)
+   - A **positive STR recipient mismatch → 🟡 amber (`recommend`)**, never a blue `review` off the
+     verified earner-IC green: an approved STR provably in someone else's name proves nothing about
+     THIS household.
+
+2. **QC soft floor (#5, owner decision 1).** QC-Accept is **refused (`400 verdict_gap_floor`, naming
+   the red facts) while any verdict fact is 🔴 `gap`** — a red income/identity/pathway fact must not
+   reach `recommended` (and sponsor publication) unexamined. A **`super` may override**, and **only
+   with a recorded reason** (`qc_override_reason/_by/_at` on the application; migration 0092, additive,
+   migrate-first). It is a *soft* floor: amber/blue facts do not block; only red does. The override is
+   advisory-model-consistent (the human remains the authority) but leaves an audit trail.
+
+3. **Wrong-person offer → 🟡 amber (`recommend`), explicit (#12).** An offer letter whose name/IC is
+   not the applicant's now returns `recommend` explicitly, not the previous `review` that only read
+   amber by the accident of an empty evidence list (one added green would have silently turned a
+   wrong-person letter blue). **Amber, not red, and no submission block** — the wrong-person letter is
+   usually a family member's upload slip-up, the pathway may still be settleable at interview, and the
+   offer is not the identity anchor the IC is. (Owner has not asked for a submission block.)
+
+**Alternatives considered:** (a) demote the salary-route thin-headroom green to match the STR
+fall-through grading — rejected: it would penalise the *more*-corroborated route (see rule 1's second
+bullet). (b) make the QC floor a HARD block (no override) — rejected: this is a human-in-the-loop
+advisory system; a super must be able to proceed on genuine offline evidence, with a recorded reason.
+(c) block submission on a wrong-person offer — rejected: owner hasn't asked, and it's usually benign.
+(d) band recipient-mismatch blue `review` (it carries a verified earner IC) — rejected: "blue needs a
+green" about *this* household, and the mismatch proves the STR isn't about them.
+
+**Known limitation recorded (no code; #13).** Genuineness caps skew by household shape — an STR + BC
+(mother-earner) is fingerprint-cappable, but salary-route payslips and guardianship letters have no
+genuineness protection, so a suspect payslip can still drive green. Documented as a fairness gap for
+the future salary-track redesign; V5 does not change it.
+
+**Trade-offs:** the route-seam re-banding is **reviewer-visible on deploy** — some live income tiles
+move (salary-over amber→red; STR recipient-mismatch blue→amber; wrong-person offer review→recommend,
+colour unchanged). Captured in the sprint's re-banding summary to the owner before push.
+**Revisit if:** the salary-track redesign lands (revisit the thin-headroom exception + the #13
+genuineness gap); or the QC floor blocks too many genuine cases (loosen which fact statuses gate).
+
 ## `interviewing` means "the interview process is underway for an accountable reviewer" — Hotfix, 2026-07-03
 **Decision:** The application status tracks a **student-observable process with an accountable owner**, not
 incidental admin activity. So `profile_complete → interviewing` requires **BOTH (a) an assigned reviewer AND

@@ -29,11 +29,13 @@ Design rules encoded here (settled in the plan):
   - **Address is a coherence test** — only a state-level (major) divergence
     escalates; sub-state postcode drift is noise and never flags.
 
-Statuses:
-  verified  — green;  the AI asserts this fact.
-  review    — amber;  confirm / look — the under-claim default.
-  recommend — blue;   evidence assembled, a HUMAN must place the verdict (income).
-  gap       — red;    a required input is missing or unreadable; action needed.
+Statuses (colour = the cockpit's Kent band, `officerCockpit.factTileTone` +
+`docs/scholarship/verdict-confidence-bands.md`):
+  verified  — green (Certain);  the AI asserts this fact.
+  review    — blue (Probable) when ≥1 genuinely-verified value backs it, else
+              amber (Unsure) — "blue needs a green"; confirm the flagged item.
+  recommend — amber (Unsure);  evidence assembled, a HUMAN must place the verdict.
+  gap       — red (Can't verify); a required input is missing/unreadable/unusable.
 """
 from __future__ import annotations
 
@@ -239,24 +241,27 @@ def _utility_context(application):
     Imperfect — surfaced as evidence the coordinator weighs, not a verdict driver."""
     from .income_engine import (utility_per_capita, utility_hardship,
                                 unemployment_corroborated_members, household_size_shortfall)
+    # Every code emitted here is SOFT evidence — it must sit in officerCockpit.ts SOFT_EVIDENCE
+    # (blue needs a green). The `# SOFT` markers are machine-pinned by the jest guard test
+    # `soft-evidence-drift.test.ts`; tag any new soft code the same way.
     items = []
     pc = utility_per_capita(application)
     if pc and pc['signal'] == 'b40':
-        items.append(_item('utility_percapita_b40', amount=int(round(pc['per_capita']))))
+        items.append(_item('utility_percapita_b40', amount=int(round(pc['per_capita']))))  # SOFT
     elif pc and pc['signal'] == 'high':
-        items.append(_item('utility_percapita_high', amount=int(round(pc['per_capita']))))
+        items.append(_item('utility_percapita_high', amount=int(round(pc['per_capita']))))  # SOFT
     if utility_hardship(application):
-        items.append(_item('utility_hardship'))
+        items.append(_item('utility_hardship'))  # SOFT
     # Phase 2B (P7): an EPF (all-zeros / lapsed) corroborating a member's unemployment — soft
     # reviewer evidence for the "why little income" story. Household context, both routes; never a gate.
     corroborated = unemployment_corroborated_members(application)
     if corroborated:
-        items.append(_item('unemployment_epf_corroborated', members=corroborated))
+        items.append(_item('unemployment_epf_corroborated', members=corroborated))  # SOFT
     # Phase 2C (P4): the people described outnumber the stated household size → the per-capita
     # denominator may be too small (income overstated). Soft reviewer flag to confirm; never a gate.
     hs = household_size_shortfall(application)
     if hs:
-        items.append(_item('household_size_confirm', described=hs['described'], size=hs['size']))
+        items.append(_item('household_size_confirm', described=hs['described'], size=hs['size']))  # SOFT
     return items
 
 def _verdict_income(application):
@@ -367,11 +372,16 @@ def _verdict_income(application):
     # verified earner-IC/relationship greens, overstating a doc whose cycle is old or whose approval
     # never read. Same reasoning as the salary unsure/over bands below.
     str_unsure = bool(sc and sc['current_status'] in ('stale', 'unreadable'))
+    # V5 (#10): a POSITIVE recipient mismatch (the STR is in someone else's name) bands Unsure
+    # (amber) per str-proof-spec.md §8 — never a blue 'review' read off the earner-IC/relationship
+    # greens, which would overstate an STR that provably belongs to a different person.
+    str_mismatch = False
     if str_doc is None:
         gap.append(_item('income_proof_missing'))
     elif sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed', 'wrong_type', 'unreadable'):
         review.append(_item('str_not_current', status=sc['current_status']))
     elif sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
+        str_mismatch = True
         review.append(_item('str_recipient_mismatch', members=[earner]))
     elif sc and (sc['name_status'] == 'match' or sc['nric_status'] == 'match'):
         str_verified = True
@@ -413,6 +423,10 @@ def _verdict_income(application):
         return _fact('income', 'recommend', evidence, review)
     if str_unsure:
         # Lulus-but-stale or approval-unread → Unsure (amber), not a blue review off incidental greens.
+        return _fact('income', 'recommend', evidence, review)
+    if str_mismatch:
+        # Recipient ≠ earner → Unsure (amber) per spec §8: an approved STR provably in someone
+        # ELSE'S name proves nothing about this household; a human owns the call.
         return _fact('income', 'recommend', evidence, review)
     if review:
         return _fact('income', 'review', evidence, review)
@@ -568,7 +582,11 @@ def _verdict_income_salary(application, student_name, present):
         pc = ctx.get('per_capita')
         ceiling = ctx.get('per_capita_ceiling')
         if band == 'over':
-            return _fact('income', 'recommend', evidence,
+            # V5 (#10): over-the-line = RED on BOTH routes (spec §8 rule 1). The STR fall-through
+            # already banded the identical household economics 'gap'; the assembled salary route
+            # banding it amber was the three-way seam inconsistency. Advisory only — the officer
+            # still places the final verdict; circumstances may apply at interview.
+            return _fact('income', 'gap', evidence,
                          [_item('income_above_b40_line', amount=pc, ceiling=ceiling)])
         if band in ('probable', 'unsure'):
             # Under the (two-test) line — I4 keeps its historical binary green here: the
@@ -597,8 +615,10 @@ def _verdict_pathway(application):
         student to confirm which is final (an AI-raised query, no human officer);
         on Yes the record is realigned + stamped → 'verified'.
 
-    No offer is fine (many apply pre-offer) — the pathway is then merely declared
-    → 'review'."""
+    No offer letter → 'gap' (red) AND a submission blocker (`offer_letter_missing`
+    in consent_blockers): the programme funds a CONFIRMED place, so without an offer
+    there is nothing to fund. (An older design tolerated "declared-only → review";
+    that changed with the 2026-06-07 confidence-scale alignment.)"""
     from .pathway_engine import student_offer_check, offer_official_status
     evidence, unresolved = [], []
     offer = _latest_doc(application, 'offer_letter')
@@ -609,13 +629,17 @@ def _verdict_pathway(application):
         # without an offer there is nothing to fund (income can be settled at interview,
         # a pathway cannot). Red + submission blocker; the declared pathway rides along
         # as context when present.
-        decl = [_item('pathway_declared', pathway=chosen)] if chosen else []
+        decl = [_item('pathway_declared', pathway=chosen)] if chosen else []  # SOFT
         return _fact('pathway', 'gap', decl, [_item('offer_letter_missing')])
 
     chk = student_offer_check(offer)
-    # Identity guard: a wrong name OR IC means a wrong-person letter.
+    # Identity guard: a wrong name OR IC means a wrong-person letter. V5 (#12): explicitly
+    # 'recommend' (amber/Unsure) — previously 'review' that only read amber by the accident of an
+    # empty evidence list (one added green would have silently turned a wrong-person letter blue).
+    # Amber, not red, by decision (decisions.md 2026-07-04): usually a family upload slip-up, the
+    # offer is not the identity anchor the IC is, and no submission block is wanted.
     if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
-        return _fact('pathway', 'review', evidence, [_item('offer_name_mismatch')])
+        return _fact('pathway', 'recommend', evidence, [_item('offer_name_mismatch')])
     # Owner policy: only a genuine OFFICIAL public-issuer offer can settle the pathway. A CONDITIONAL
     # offer, a PRIVATE/IPTS offer, or a non-official notification (pemakluman / UPU-semakan) is not
     # support-able → the pathway can't verify on it; the student must provide the official offer. This

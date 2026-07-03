@@ -760,10 +760,11 @@ export async function cancelReopen(id: number, options?: ApiOptions) {
 }
 
 /** QC gate on an AWAITING-QC ('interviewed') case: accept → recommended, or reopen → back to
- *  the reviewer at 'interviewing' (comments emailed to the assigned reviewer). */
+ *  the reviewer at 'interviewing' (comments emailed to the assigned reviewer).
+ *  override_reason: super-only pass of the V5 verdict gap floor — recorded server-side. */
 export async function recordQcDecision(
   id: number,
-  payload: { decision: 'accept' | 'reopen'; comments?: string },
+  payload: { decision: 'accept' | 'reopen'; comments?: string; override_reason?: string },
   options?: ApiOptions,
 ) {
   return adminMutate<AdminScholarshipDetail>(

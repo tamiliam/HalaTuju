@@ -27,7 +27,9 @@ from .models import ResolutionItem
 from .submission_review import completeness_gaps
 
 # Completeness-gap code → clarify-query spec. The gap code IS the query code (the
-# frontend resolves the question copy from ``scholarship.check2.query.<code>``).
+# frontend resolves the question copy from ``scholarship.actionCentre.item.<code>``
+# — the shared Action-Centre item namespace, NOT a `check2.query` namespace (which does
+# not exist; corrected V5 #14).
 CLARIFY_SPECS = {
     'course_unspecified':     {'fact': 'pathway'},
     'sibling_level_unknown':  {'fact': 'income'},

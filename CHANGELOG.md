@@ -8,6 +8,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Verification-model roadmap Sprint V5 (2026-07-04) — verdict evenness + QC gap floor (audit #5, #10–#14).**
+  Migration `0092` (additive: `qc_override_reason`/`qc_override_by`/`qc_override_at` on
+  `scholarship_applications`; applied migrate-first via Supabase MCP, prod-verified).
+  **⚠ Reviewer-visible re-banding on deploy** — see the owner re-banding summary
+  (`docs/scholarship/v5-rebanding-summary.md`): current live impact is effectively nil (all carriers
+  of the affected codes are closed/resolved), the change is forward-looking consistency.
+  - **QC soft floor (#5, owner decision 1):** QC-Accept refuses (`400 verdict_gap_floor`, naming the
+    red facts) while any verdict fact is red/`gap`. A `super` may override, only with a recorded reason
+    (`qc_override_reason/_by/_at` + AUDIT log). Soft — amber/blue never block, only red. Cockpit: Accept
+    disabled with the red facts listed for non-super; super gets a record-reason override panel. i18n
+    en/ms/ta (Tamil first-draft).
+  - **SOFT_EVIDENCE guard (#11):** `unemployment_epf_corroborated` + `household_size_confirm` added to
+    the FE denylist; new jest guard `soft-evidence-drift.test.ts` reads `verdict_engine.py` and pins the
+    mirror both ways off `# SOFT` markers (like `test_subject_drift.py`, fails loudly, parse-sanity floor).
+  - Tests: 2064 scholarship pytest (+9) + 416 jest (+3); tsc clean; backend courses/reports 1202.
+
+### Changed
+- **Route-seam evenness (V5 #10):** `docs/scholarship/str-proof-spec.md` §8 is now THE single
+  route-seam truth table (bands-doc defers to it). `verdict_engine._verdict_income`:
+  - Salary-route over-the-B40-line → 🔴 `gap` (was 🟡 `recommend`) — **over-the-line is now RED on
+    both routes** (the STR fall-through already was); advisory, never an auto-reject.
+  - STR positive recipient-mismatch → 🟡 `recommend` (was 🔵 `review` off the earner-IC green).
+  - Salary-route thin-headroom binary green kept as a **documented deliberate exception** (annotated).
+- **Wrong-person offer (V5 #12):** `_verdict_pathway` bands `offer_name_mismatch` explicit 🟡
+  `recommend` (was an accidental-amber `review`); amber not red, no submission block (decisions.md).
+
+### Fixed
+- **Doc-rot (V5 #14):** `verdict_engine` status/colour-map docstring corrected (review=blue-with-green,
+  recommend=amber); `_verdict_pathway` docstring (no-offer → gap, not "declared→review");
+  bands-doc "only fact using all four bands" self-contradiction; `check2_queries` docstring i18n
+  namespace pointer (→ `scholarship.actionCentre.item.<code>`, the real namespace). #13 genuineness-skew
+  recorded as a known limitation (no code) in decisions.md.
+
 - **Verification-model roadmap Sprint V4 (2026-07-03) — promote the nine human ask-themes (audit §E, owner decision 2).**
   Choices-only migration `0091` (no Postgres DDL; recorded on prod via MCP at deploy). Owner-visible
   (new student-facing queries); conservative raise-conditions confirmed with the owner, tune post-deploy.

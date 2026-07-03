@@ -516,18 +516,33 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-03)
+## Next Sprint (as of 2026-07-04)
 
-**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP: V5 (verdict evenness + QC soft floor; changes LIVE
-verdicts).** Roadmap `docs/plans/2026-07-03-verification-model-roadmap.md` §V5 (audit #5, #10-#14;
-owner decision 1). FIRST write the single route-seam truth table into `docs/scholarship/str-proof-spec.md`
-(over-the-line = RED on both routes; thin-headroom = the documented salary exception;
-`str_recipient_mismatch` → amber), THEN align `verdict_engine._verdict_income` (:374-375, :417-418,
-salary `over` branch :570-572 → gap) + tests; QC soft floor (`AdminQcDecisionView.accept` refuses
-`400 verdict_gap_floor` while any fact is `gap`, super-override with a recorded reason); SOFT_EVIDENCE
-refresh + a jest guard test; wrong-person offer → amber; doc-rot fixes. **⚠ REVIEWER-VISIBLE
-RE-BANDING on deploy — the final report must include the re-banding summary.** Owner decisions
-embedded — do not re-ask. **⚠ OWNER FINAL CHECKPOINT after V6.**
+**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP: V6 (FINAL — Gopal in the Action Centre + persona
+polish; complexity MEDIUM).** Roadmap `docs/plans/2026-07-03-verification-model-roadmap.md` §V6
+(findings F1, #15, #17). Scope: persistent coach derived from FETCHED docs on Action-Centre load
+(`ActionCentre.tsx:139` — a reload keeps Gopal's advice on a held task); mount `IncomeClusterCoach`
+in the Action Centre for open income doc-tasks (kills the null-render dead end for wrong-person
+slips/EPF/BC); one telemetry log line in `DocumentHelpView`/`IncomeClusterHelpView`
+(`served source=ai|fallback|none`); persona-string polish (Action-Centre Gopal greeting → lean coach
+register; member-specific possessive instead of "the earner"; Tamil "சிக்கு கோபால்" → keep "Cikgu
+Gopal" in Latin + the grammar slip); document the Action Centre's neutral-helpful third register.
+**⚠ OWNER FINAL CHECKPOINT after V6** — the final report must gather all new/changed copy for review
+(esp. Tamil first-drafts). Owner decisions embedded — do not re-ask.
+
+**✅ SHIPPED (code) 2026-07-04 — Verification-model V5 (verdict evenness + QC gap floor; migration
+`0092` additive, migrate-first via MCP + prod-verified; retro `docs/retrospective-2026-07-04-verify-v5.md`;
+re-banding summary `docs/scholarship/v5-rebanding-summary.md`).** Audit #5, #10–#14 + owner decision 1:
+route-seam truth table (`str-proof-spec.md` §8 = single source; engine aligned — over-line RED on BOTH
+routes, STR recipient-mismatch amber, salary thin-headroom green kept as a documented exception);
+**QC soft floor** (QC-Accept refuses `400 verdict_gap_floor` while any fact is red; super overrides only
+with a recorded reason `qc_override_reason/_by/_at`); SOFT_EVIDENCE refresh + jest `# SOFT` mirror guard;
+wrong-person offer explicit amber; doc-rot fixes. **Reviewer-visible re-banding = nil live impact** (all
+affected carriers closed/resolved; forward-looking). 2064 scholarship pytest + 416 jest.
+- **▶ V5 CARRY (owner):** review the Tamil first-draft QC-floor strings
+  (`admin.scholarship.qcDecision.{gapFloor,gapFloorSuper,overrideTitle,overridePlaceholder,overrideConfirm}`).
+  Operational: the QC gap floor now gates the 10 awaiting-QC apps at their next Accept click — a red-fact
+  case needs the gap resolved or a super override with reason.
 
 **✅ SHIPPED (code) 2026-07-03 — Verification-model V4 (promote the nine human asks; branch
 `feat/verify-v4`; migration `0091` choices-only — owner records the row via MCP at deploy; retro

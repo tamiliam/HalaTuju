@@ -493,6 +493,20 @@ class ScholarshipApplication(models.Model):
                   "to it (blank = legacy row, falls back to 'interviewed')",
     )
 
+    # ── QC gap-floor override (verification-model V5 #5, owner decision 1) ─────
+    # QC-Accept refuses while any verdict fact is red/'gap' (400 verdict_gap_floor); only a
+    # `super` may override, and ONLY with a recorded reason. Mirrors the DecisionReopen
+    # attribution pattern (email string + stamp) so the audit survives admin-account churn.
+    qc_override_reason = models.TextField(
+        blank=True, default='',
+        help_text="The super-admin's recorded reason for accepting past the verdict gap floor.")
+    qc_override_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the super-admin who overrode the QC gap floor.")
+    qc_override_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the QC gap floor was overridden.")
+
     # 2-day AWARD-confirmation cool-off (#14): on student/guardian accept we record the
     # acceptance + money hold immediately, but defer the 'sponsored' flip + the funding-confirmed
     # email + onboarding until award_due_at. The release cron finalises it; an admin Hold reverts

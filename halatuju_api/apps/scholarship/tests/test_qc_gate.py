@@ -4,6 +4,8 @@ A reviewer's verify-accept lands a case in `interviewed` = AWAITING QC. A `qc`-r
 then Accepts (→ recommended) or Reopens (→ back to the reviewer at `interviewing`, with the gaps
 comments emailed to the assigned reviewer). Reviewers/admins/partners cannot QC.
 """
+from unittest import mock
+
 import jwt
 from django.core import mail
 from django.test import TestCase, override_settings
@@ -55,6 +57,12 @@ class TestQcGate(TestCase):
             cohort=self.cohort, profile=p, status='interviewed',
             profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
             assigned_to=self.reviewer)
+        # These fixtures carry no documents, so the REAL build_verdict would be all-gaps and the
+        # V5 gap floor would refuse every accept. This class tests the gate mechanics, not the
+        # floor — patch the seam to a clean verdict. The floor has its own class below.
+        patcher = mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[])
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
@@ -204,6 +212,10 @@ class TestPublishBoundToQc(TestCase):
             anon_blurb='A determined SPM leaver.', anon_published=False)
         Consent.objects.create(application=self.app, consent_type='share_with_sponsors',
                                version='e2', is_active=True)
+        # No documents on the fixture → patch the V5 gap floor's verdict seam (see TestQcGate).
+        patcher = mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[])
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
@@ -246,3 +258,86 @@ class TestPublishBoundToQc(TestCase):
         self.app.refresh_from_db(); self.sp.refresh_from_db()
         self.assertEqual(self.app.status, 'interviewing')
         self.assertFalse(self.sp.anon_published)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestQcGapFloor(TestCase):
+    """V5 #5 (owner decision 1): QC-Accept is blocked while any verdict fact is red/'gap' —
+    400 verdict_gap_floor naming the red facts. Only a `super` passes it, and only with a
+    recorded override reason (qc_override_reason/_by/_at). The fixture app deliberately has
+    NO documents, so the REAL build_verdict is all-gaps — no mocking on the refusal paths."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superadmin = PartnerAdmin.objects.create(
+            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            name='Super', email='super@example.com')
+        cls.qc = PartnerAdmin.objects.create(
+            supabase_user_id='qc-uid', role='qc', is_active=True,
+            name='Quality Control', email='qc@example.com')
+        cls.reviewer = PartnerAdmin.objects.create(
+            supabase_user_id='rev-uid', role='reviewer', is_active=True,
+            name='Reviewer', email='reviewer@example.com')
+        cls.cohort = ScholarshipCohort.objects.create(code='gf', name='B40', year=2026)
+
+    def setUp(self):
+        self.client = APIClient()
+        p = StudentProfile.objects.create(supabase_user_id='sgf', nric='030101-14-0005', name='Mala')
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='interviewed',
+            profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
+            assigned_to=self.reviewer)
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
+
+    def _qc(self, payload):
+        return self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
+            payload, format='json')
+
+    def test_accept_refused_while_a_fact_is_gap(self):
+        self._auth('qc-uid')
+        r = self._qc({'decision': 'accept'})
+        self.assertEqual(r.status_code, 400)
+        body = r.json()
+        self.assertEqual(body['code'], 'verdict_gap_floor')
+        self.assertIn('identity', body['facts'])                 # no IC on file → identity gap
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')         # unchanged
+
+    def test_qc_role_cannot_override(self):
+        # The override is super-only; a qc providing a reason is still refused.
+        self._auth('qc-uid')
+        r = self._qc({'decision': 'accept', 'override_reason': 'I checked it by hand.'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'verdict_gap_floor')
+
+    def test_super_without_reason_is_refused(self):
+        self._auth('super-uid')
+        r = self._qc({'decision': 'accept', 'override_reason': '   '})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'verdict_gap_floor')
+
+    def test_super_with_reason_overrides_and_is_recorded(self):
+        self._auth('super-uid')
+        r = self._qc({'decision': 'accept',
+                      'override_reason': 'Income verified offline with the school counsellor.'})
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'recommended')
+        self.assertIn('counsellor', self.app.qc_override_reason)
+        self.assertEqual(self.app.qc_override_by, 'super@example.com')
+        self.assertIsNotNone(self.app.qc_override_at)
+
+    def test_accept_passes_when_no_fact_is_gap(self):
+        # Amber/blue facts are NOT floor-blocked — the floor is gap-only (soft floor by design).
+        with mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[
+                {'fact': 'identity', 'status': 'verified', 'evidence': [], 'unresolved': []},
+                {'fact': 'income', 'status': 'recommend', 'evidence': [], 'unresolved': []}]):
+            self._auth('qc-uid')
+            r = self._qc({'decision': 'accept'})
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'recommended')
+        self.assertEqual(self.app.qc_override_reason, '')        # no override recorded

@@ -26,6 +26,7 @@ from . import maintenance as maintenance_service
 from . import closure as closure_service
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
+from .verdict_engine import build_verdict
 from .models import (
     ApplicantDocument, Disbursement, GraduationMessage, InterviewSession, InterviewSlot,
     Referee, ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
@@ -615,9 +616,11 @@ def _interview_agenda(application):
     return [a['code'] for a in detect_anomalies(application)]
 
 
-# V3 (#9): the four verdict AMBERS that explicitly say "confirm at interview" — folded onto the
-# agenda so they don't evaporate at Check 3. Over-the-line income is phrased for the INTERVIEWER
-# only (never a student message — owner decision 4).
+# V3 (#9): the verdict items that explicitly say "confirm at interview" — folded onto the agenda
+# by ITEM CODE (not fact status) so they don't evaporate at Check 3. NB since V5, `income_above_
+# b40_line` rides on a RED ('gap') income fact, not an amber one — the folding is code-keyed, so
+# it's still picked up; the historical name is kept. Over-the-line income is phrased for the
+# INTERVIEWER only (never a student message — owner decision 4).
 _NEEDS_INTERVIEW_AMBERS = ('income_unverified_needs_interview', 'income_above_b40_line',
                            'academic_grade_uncertain', 'ic_service_down')
 
@@ -1273,9 +1276,14 @@ class AdminReopenDecisionView(_AdminBase):
 
 
 class AdminQcDecisionView(_AdminBase):
-    """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen', comments?} — the QC gate on an
-    AWAITING-QC ('interviewed') case. QC = a `qc`-role admin or super (never the reviewer).
-      accept → 'interviewed' → 'recommended' (the case becomes pool-eligible).
+    """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen', comments?, override_reason?} —
+    the QC gate on an AWAITING-QC ('interviewed') case. QC = a `qc`-role admin or super (never
+    the reviewer).
+      accept → 'interviewed' → 'recommended' (the case becomes pool-eligible). SOFT FLOOR
+               (V5 #5, owner decision 1): refused (400 verdict_gap_floor + the red facts) while
+               any verdict fact is 'gap' — a red income fact must not reach sponsors unexamined.
+               A `super` may pass the floor by providing `override_reason`, which is RECORDED
+               (qc_override_reason/_by/_at) — advisory model, but the override leaves a trail.
       reopen → require `comments` (what was missing/the gaps); reopen the decision back to the
                reviewer ('interviewing', reopened banner + DecisionReopen audit) and email the
                assigned reviewer the comments."""
@@ -1285,8 +1293,24 @@ class AdminQcDecisionView(_AdminBase):
             return err
         decision = (request.data.get('decision') or '').strip()
         if decision == 'accept':
+            gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
+            update_fields = ['status']
+            if gap_facts:
+                override = (request.data.get('override_reason') or '').strip()
+                if not (self.has_role(admin, 'super') and override):
+                    return Response(
+                        {'error': 'A verdict fact is still red — resolve it or reopen to the '
+                                  'reviewer. A super admin may override with a recorded reason.',
+                         'code': 'verdict_gap_floor', 'facts': gap_facts},
+                        status=status.HTTP_400_BAD_REQUEST)
+                app.qc_override_reason = override
+                app.qc_override_by = getattr(admin, 'email', '') or ''
+                app.qc_override_at = timezone.now()
+                update_fields += ['qc_override_reason', 'qc_override_by', 'qc_override_at']
+                logger.info('AUDIT qc_gap_override admin_id=%s app_id=%s facts=%s',
+                            admin.id, pk, ','.join(gap_facts))
             app.status = 'recommended'
-            app.save(update_fields=['status'])
+            app.save(update_fields=update_fields)
             # Publishing is bound HERE: a QC-cleared 'recommended' case is the SINGLE point a
             # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).
             # Idempotent + PII-backstopped; a no-op if there's nothing ready to publish.

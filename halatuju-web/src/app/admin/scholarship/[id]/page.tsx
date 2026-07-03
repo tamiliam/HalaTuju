@@ -227,6 +227,9 @@ export default function AdminScholarshipDetailPage() {
   // QC gate (on an AWAITING-QC 'interviewed' case): Accept, or Reopen with a gaps note.
   const [qcReopenOpen, setQcReopenOpen] = useState(false)
   const [qcComments, setQcComments] = useState('')
+  // V5 gap floor: super-only override panel state (reason recorded server-side).
+  const [qcOverrideOpen, setQcOverrideOpen] = useState(false)
+  const [qcOverrideReason, setQcOverrideReason] = useState('')
   // Consolidation: the student's own words (note/story/funding) are collapsed by
   // default under the Sponsor profile — the reviewer checks the AI draft first.
   const [showOwnWords, setShowOwnWords] = useState(false)
@@ -556,17 +559,21 @@ export default function AdminScholarshipDetailPage() {
 
   // QC gate on an AWAITING-QC ('interviewed') case. Accept → Recommended; Reopen → back to the
   // reviewer at 'interviewing' with the gaps comments (emailed to the assigned reviewer).
-  const doQcDecision = async (decision: 'accept' | 'reopen') => {
+  // V5 gap floor: while a verdict fact is red the server refuses accept (verdict_gap_floor);
+  // a super passes it with overrideReason, which the server records.
+  const doQcDecision = async (decision: 'accept' | 'reopen', overrideReason?: string) => {
     if (!token) return
     if (decision === 'reopen' && !qcComments.trim()) return
     setBusy('qc'); setError(''); setVerdictMsg('')
     try {
       const result = await recordQcDecision(
-        id, { decision, comments: decision === 'reopen' ? qcComments.trim() : undefined }, { token })
+        id, { decision, comments: decision === 'reopen' ? qcComments.trim() : undefined,
+              override_reason: overrideReason?.trim() || undefined }, { token })
       setApp(result)
       setProfile(result.sponsor_profile)
       loadVerdictState(result)
       setQcReopenOpen(false); setQcComments('')
+      setQcOverrideOpen(false); setQcOverrideReason('')
     } catch (e) {
       setError(e instanceof Error ? e.message : t('admin.scholarship.qcDecision.error'))
     } finally { setBusy('') }
@@ -2240,13 +2247,30 @@ export default function AdminScholarshipDetailPage() {
             super). Accept → Recommended; Reopen → back to the reviewer with a gaps note (emailed).
             Self-QC guard: a `qc` who reviewed this case cannot QC it (hidden here; backend blocks it too). ── */}
       {app.status === 'interviewed' && canQc
-        && !(role?.role === 'qc' && app.assigned_to_id === (role?.admin_id ?? null)) && (
+        && !(role?.role === 'qc' && app.assigned_to_id === (role?.admin_id ?? null)) && (() => {
+        // V5 gap floor (#5): a red/'gap' verdict fact blocks Accept. A super sees an override
+        // affordance (reason recorded server-side); anyone else resolves the gap or reopens.
+        const qcGapFacts = (app.verdict || []).filter((f) => f.status === 'gap').map((f) => f.fact)
+        const qcGapLabels = qcGapFacts.map((f) => t(`admin.scholarship.verdict.fact.${f}`)).join(', ')
+        const floorBlocked = qcGapFacts.length > 0
+        return (
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.qcDecision.title')}</h2>
           <p className="text-xs text-gray-600">{t('admin.scholarship.qcDecision.hint')}</p>
-          {!qcReopenOpen ? (
+          {floorBlocked && (
+            <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-800">
+              {t('admin.scholarship.qcDecision.gapFloor', { facts: qcGapLabels })}
+              {isSuper && <> {t('admin.scholarship.qcDecision.gapFloorSuper')}</>}
+            </p>
+          )}
+          {!qcReopenOpen && !qcOverrideOpen ? (
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => doQcDecision('accept')} disabled={!!busy}
+              <button
+                onClick={() => {
+                  if (!floorBlocked) { doQcDecision('accept'); return }
+                  if (isSuper) { setQcOverrideOpen(true); setQcOverrideReason('') }
+                }}
+                disabled={!!busy || (floorBlocked && !isSuper)}
                 className="rounded-lg border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
                 {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.accept')}
               </button>
@@ -2254,6 +2278,22 @@ export default function AdminScholarshipDetailPage() {
                 className="rounded-lg border border-amber-600 bg-white px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50">
                 {t('admin.scholarship.qcDecision.reopen')}
               </button>
+            </div>
+          ) : qcOverrideOpen ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-2">
+              <p className="text-xs font-medium text-red-900">{t('admin.scholarship.qcDecision.overrideTitle')}</p>
+              <textarea value={qcOverrideReason} rows={3} onChange={(e) => setQcOverrideReason(e.target.value)}
+                placeholder={t('admin.scholarship.qcDecision.overridePlaceholder')}
+                className="w-full rounded border border-red-300 px-2 py-1.5 text-sm" />
+              <div className="flex items-center gap-2">
+                <button onClick={() => doQcDecision('accept', qcOverrideReason)}
+                  disabled={!!busy || !qcOverrideReason.trim()}
+                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+                  {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.overrideConfirm')}
+                </button>
+                <button onClick={() => { setQcOverrideOpen(false); setQcOverrideReason('') }}
+                  className="text-xs text-gray-500 hover:text-gray-700">{t('common.cancel')}</button>
+              </div>
             </div>
           ) : (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
@@ -2272,7 +2312,8 @@ export default function AdminScholarshipDetailPage() {
             </div>
           )}
         </div>
-      )}
+        )
+      })()}
 
       {/* ── Assign a reviewer (F7) — SUPER-ONLY + audited. First assignment is gated on
             readiness (no open queries OR the SLA lapsed); reassign is allowed any time. ─── */}

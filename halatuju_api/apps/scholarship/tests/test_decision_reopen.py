@@ -192,10 +192,13 @@ class TestDecisionReopen(TestCase):
         self.assertTrue(row.resulted_in_change)                   # COUNTS
         self.assertIsNotNone(row.closed_at)
         self.assertEqual(self._corrections_for(self.reviewer.id), 1)
-        # QC clears the corrected case → NOW it publishes and returns to the pool.
-        qc = self.client.post(
-            f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
-            {'decision': 'accept'}, format='json')
+        # QC clears the corrected case → NOW it publishes and returns to the pool. (This fixture
+        # carries no documents, so the V5 QC gap floor would refuse on an all-gaps verdict; patch
+        # the verdict seam to a clean read — the floor itself is covered in test_qc_gate.py.)
+        with patch('apps.scholarship.views_admin.build_verdict', return_value=[]):
+            qc = self.client.post(
+                f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/',
+                {'decision': 'accept'}, format='json')
         self.assertEqual(qc.status_code, 200)
         self.app.refresh_from_db(); self.sp.refresh_from_db()
         self.assertEqual(self.app.status, 'recommended')

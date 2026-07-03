@@ -236,19 +236,34 @@ directly, shrinking the unknown.
 
 ---
 
-## 8. Income (B40) overall verdict band
+## 8. Income (B40) overall verdict band — THE route-seam truth table
 
-Combining the STR axis and the salary route:
+**This table is the single source of truth for the income band across BOTH routes** (verification-model
+V5, 2026-07-04). It supersedes the income paragraph in `verdict-confidence-bands.md` (which now
+cross-links here) and any older phrasing in this spec. `verdict_engine._verdict_income` /
+`_verdict_income_salary` must match it; the regression tests in `test_verdict_engine.py` pin each row.
 
 The STR axis follows the **Status × Current matrix** (§3/§5): Lulus+dated → Certain, Lulus+no-date →
 Probable, Lulus+prior-year(stale) / approval-unread → Unsure, Ditolak/non-STR → Fail (salary net below).
 
 | Band | Condition |
 |---|---|
-| 🟢 **Certain** | valid current STR (recipient = earner, dated this cycle); OR salary clearly under the line with household corroborated |
-| 🔵 **Probable** | approved STR with no date (Lulus, or paid-amount rescue); OR salary under the line with large headroom despite an uncorroborated member |
-| 🟡 **Unsure** | stale STR (prior-year); OR approval unreadable; OR a failed STR with **no salary docs**; OR salary near the line / thin uncorroborated headroom; recipient ≠ earner |
-| 🔴 **Can't-verify / Fail** | no usable income evidence at all; OR a failed STR whose salary route shows income **clearly over** the B40 line (advisory — officer still decides) |
+| 🟢 **Certain** | valid current STR (recipient = earner, dated this cycle) + earner IC + relationship confirmed; OR the fully-confirmed salary route under the line (see the exception note below) |
+| 🔵 **Probable** | approved STR with no date (Lulus, or paid-amount rescue); OR the STR fall-through's salary evidence under the line with large headroom despite an uncorroborated member |
+| 🟡 **Unsure** | stale STR (prior-year); OR approval unreadable; OR a failed STR with **no salary docs**; OR the fall-through near the line / thin uncorroborated headroom; OR **recipient ≠ earner** (a positive name/NRIC mismatch on an otherwise-approved STR — never a blue read off the earner-IC greens); OR a declared income with no accepted proof |
+| 🔴 **Can't-verify / Fail** | no usable income evidence at all; OR a compulsory route doc missing; OR household income **clearly over** the B40 line — **on EITHER route** (the STR fall-through *and* the fully-assembled salary route band identically: same household economics, same colour). Advisory — the officer still places the final verdict; circumstances may apply at interview |
+
+**Two anchored evenness rules (V5, audit #10):**
+
+1. **Over-the-line = RED on both routes.** Before V5 the salary route banded a clearly-over household
+   🟡 amber while the STR fall-through banded the identical economics 🔴 red. One truth: `over` →
+   `gap` everywhere, advisory only (never an auto-reject).
+2. **Thin-headroom exception (documented, deliberate — decisions 2026-07-03, code-health S4).** On the
+   **fully-confirmed salary route** (every member IC present, every relationship confirmed, real
+   financial evidence) an under-the-line household keeps its **binary green** — the §7.1 headroom
+   grading (`probable`/`unsure`) deliberately does NOT demote it. That grading compensates for an
+   *unverified* household on the STR fall-through; a fully-corroborated cluster has nothing left for
+   it to hedge against. The salary-track redesign will revisit.
 
 "Blue needs a green" still holds (a tile reaches 🔵 only on ≥1 verified value; soft signals don't
 qualify it) — see `verdict-confidence-bands.md`.

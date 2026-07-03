@@ -3440,7 +3440,12 @@
         "reopenTitle": "Apa yang kurang? (dikongsi dengan penyemak)",
         "commentsPlaceholder": "Nyatakan kekurangan / perkara yang perlu diperbaiki oleh penyemak",
         "reopenConfirm": "Buka semula & maklum penyemak",
-        "error": "Tidak dapat menghantar keputusan QC."
+        "error": "Tidak dapat menghantar keputusan QC.",
+        "gapFloor": "Masih ada fakta verdik berstatus merah ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
+        "gapFloorSuper": "Sebagai pentadbir super, anda boleh mengatasi sekatan ini dengan sebab yang direkodkan.",
+        "overrideTitle": "Atasi sekatan fakta merah? Sebab anda akan direkodkan pada kes ini.",
+        "overridePlaceholder": "Mengapa selamat untuk mengesyorkan kes ini walaupun ada fakta merah?",
+        "overrideConfirm": "Rekod sebab & terima"
       },
       "caveats": {
         "studentAnswer": "Jawapan pelajar",

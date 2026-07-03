@@ -216,38 +216,14 @@ Acceptance: each new code has raise-condition + auto-resolve + i18n(3) + KNOWN_C
 regression tests; existing officer-raised duplicates are NOT re-raised on apps that
 already answered them (dedupe by satisfied gap, not by code existence alone).
 
-## Sprint V5 — Verdict evenness + QC floor (complexity: MEDIUM; changes live verdicts)
+## Sprint V5 — Verdict evenness + QC floor — ✅ SHIPPED 2026-07-04
 
-**Findings: #5, #10-#14; owner decision 1.**
-
-Scope:
-1. **Route-seam reconciliation** (#10): FIRST write the single truth table into
-   `docs/scholarship/str-proof-spec.md` (supersede the bands-doc paragraph; cross-link):
-   over-the-line = RED on both routes; thin-headroom = the documented S4 exception (green
-   on the fully-confirmed salary route) — annotate the spec with that exception;
-   `str_recipient_mismatch` → `recommend` (amber) per spec §8. Then align
-   `verdict_engine._verdict_income` (:374-375, :417-418, and the salary `over` branch
-   :570-572 → `gap`) and update tests. Reviewer-visible re-banding on deploy — say so in
-   the changelog.
-2. **QC soft floor** (#5, decision 1): `AdminQcDecisionView.accept` refuses
-   (`400 verdict_gap_floor`) while `build_verdict` has any fact at `gap`, unless the
-   caller is `super` AND provides an override reason (recorded — reuse the
-   `DecisionReopen`-style audit pattern or a field on the QC decision). Cockpit: disable
-   the Accept button with the reason listed; super sees an override affordance. i18n ×3.
-3. **SOFT_EVIDENCE refresh + guard** (#11): add `unemployment_epf_corroborated`,
-   `household_size_confirm` (officerCockpit.ts:33-38); add a jest guard test that fails
-   when a verdict-engine evidence code whose comment says soft is absent from the denylist
-   (mechanical mirror-test like `test_subject_drift.py` — parse verdict_engine.py for a
-   `# SOFT` marker convention and pin).
-4. **Wrong-person offer decision** (#12): band `offer_name_mismatch` amber WITH a
-   documented rationale in decisions.md + fix the bands-doc mislabel; no submission-block
-   change (owner has not asked for one).
-5. **Doc-rot fixes** (#14): verdict_engine.py:33-36 colour map; `_verdict_pathway`
-   docstring; bands-doc "only fact using all four bands"; check2_queries i18n-namespace
-   pointer; note #13's genuineness-skew as a recorded limitation (no code).
-
-Acceptance: spec table is the single source; engine matches it; QC floor enforced with
-super override; SOFT_EVIDENCE guard test in place; all cited docstrings corrected.
+All five items shipped (audit #5, #10–#14; owner decision 1): route-seam truth table
+(`str-proof-spec.md` §8, engine aligned — over-line RED both routes, STR recipient-mismatch
+amber, salary thin-headroom green kept as documented exception); QC soft floor (migration 0092
+migrate-first, super-override-with-reason); SOFT_EVIDENCE guard test; wrong-person offer explicit
+amber; doc-rot fixes. Re-banding summary `docs/scholarship/v5-rebanding-summary.md` (nil live
+impact — forward-looking). Retro `docs/retrospective-2026-07-04-verify-v5.md`.
 
 ## Sprint V6 — Gopal in the Action Centre + persona polish (complexity: MEDIUM)
 
