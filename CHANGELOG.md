@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Code-health Sprint 5 (2026-07-03) — infra & guardrails (review findings #21/#23 + quick wins).**
+  - **Rate limits now actually limit.** Production uses a shared, persistent database cache
+    (`django_cache` table, created migrate-first with RLS) instead of per-worker in-memory
+    LocMemCache — the 40/hour upload throttle (each upload = a billable Vision call), the anon
+    throttle and the 3-AI-reports/day cap no longer reset on every cold start or multiply per
+    autoscaled instance. Dev/test keep LocMemCache.
+  - **HSTS enabled in production** (30 days, no preload/subdomains).
+  - **`validate_course_urls` can no longer erase live URLs on an outage:** a 5xx now classifies as
+    a retryable server-side error (never `dead`), and `--fix` refuses a suspiciously large sweep
+    (>5 dead AND >10% of checked) unless `--force`.
+  - **Quick wins:** the applications queue now labels `interviewed` as "Awaiting QC" (the list page
+    had missed the QC-gate relabel); the dashboard banner's dead `accepted` branch is removed
+    (status was retired); the Action Centre's resolution-items fetch no longer pays a 301 redirect
+    on every load (trailing slash).
 - **Code-health Sprint 4 (2026-07-03) — income/STR consistency (review findings #13-#20).**
   - **One shared red-STR-states tuple** (`income_engine.STR_RED_STATES` / `STR_COACH_STATES`): the
     student coach now nudges on `wrong_type`/`unreadable` (it was silent on the two worst states);
