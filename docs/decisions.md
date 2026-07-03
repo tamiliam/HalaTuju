@@ -1,5 +1,19 @@
 # Architectural Decisions — HalaTuju
 
+## Cancel-decline restores the SNAPSHOT, and the decline email gets its own stamp — Code-health S1, 2026-07-03
+**Decision:** `_record_reject` snapshots the pre-decline status into `pre_decline_status`; `cancel_pending_decline` restores to it (legacy blank -> 'interviewed' fallback) and keys "was the student told" on a NEW `decline_email_sent_at` stamp. `_send_decline_for` stamps both the new field and the legacy `decision_email_sent_at`.
+**Alternatives considered:** (a) keep hardcoded restore-to-'interviewed' and only fix the stamp — rejected because 'interviewed' now means AWAITING QC, so a pre-verdict decline would land a verdict-less case in the QC queue on cancel; (b) infer the restore status from verdict/QC fields — fragile reverse-engineering when a one-column snapshot is exact; (c) repurpose decision_email_sent_at with a data migration — rewriting history on a live table for no gain.
+**Rationale:** one field per outward event; one column that records the truth at decline time.
+**Trade-offs:** two extra columns; the legacy fallback keeps the old (slightly wrong) behaviour for pre-migration pending declines — acceptable, the window is 7 days.
+**Revisit if:** the decline flow gains more entry statuses, or QC-gate semantics change again.
+
+## YTD-alone is unusable for the salary monthly figure — Code-health S1, 2026-07-03
+**Decision:** `_salary_monthly_amount` uses `gross_income_ytd` ONLY when a readable monthly figure exists (the >= deflate guard can then run); YTD with no monthly cell returns None ('verify at interview').
+**Alternatives considered:** dividing by months-elapsed inferred from the slip month — rejected: the slip month is itself an OCR field, and a wrong divisor asserts a confident wrong number where "unsure" is the honest answer.
+**Rationale:** an early-year YTD ÷ 12 understates income up to 12x and can green-light a non-B40 household on the per-capita gate; conservative None routes to the interview instead.
+**Trade-offs:** a December slip with a genuinely-annual YTD but unreadable monthly cell now needs an interview question it theoretically didn't.
+**Revisit if:** extraction gains a reliable slip-month read with its own confidence signal.
+
 ## Sponsor visibility is bound to the QC-Accept transition, not the reviewer's verdict — 2026-07-02
 **Decision:** A student becomes visible to sponsors at **exactly one point in the state machine — when QC
 presses Accept and the case enters `recommended`.** The reviewer's Accept (record-verdict + finalise) now
