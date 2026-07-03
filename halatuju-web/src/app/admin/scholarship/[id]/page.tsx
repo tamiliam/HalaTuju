@@ -1658,8 +1658,9 @@ export default function AdminScholarshipDetailPage() {
           // Standard, student-independent label per doc type (the actual filename is shown
           // muted in brackets below). parent_ic → "Mother's IC" etc. when the earner is known.
           const TYPE_KEYS = new Set(['ic', 'parent_ic', 'results_slip', 'offer_letter', 'str',
-            'salary_slip', 'epf', 'income_support_doc', 'water_bill', 'electricity_bill',
-            'birth_certificate', 'guardianship_letter', 'statement_of_intent', 'photo', 'other'])
+            'salary_slip', 'epf', 'income_support_doc', 'school_leaving_cert', 'semester_result',
+            'water_bill', 'electricity_bill', 'birth_certificate', 'guardianship_letter',
+            'statement_of_intent', 'photo', 'other'])
           // Income-earner docs are person-qualified from their slot ("Mother's STR proof",
           // "Father's salary slip"); the IC keeps its own possessive ("Mother's IC").
           const INCOME_MEMBER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf'])

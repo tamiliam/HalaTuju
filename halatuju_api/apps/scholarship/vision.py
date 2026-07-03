@@ -1058,6 +1058,8 @@ GEMINI_EXTRACT_DOC_TYPES = frozenset({
     'str', 'guardianship_letter', 'birth_certificate', 'bank_statement',
     # V1: the declared-informal-income supporting doc must be READ, not merely present.
     'income_support_doc',
+    # V4: promoted academic-completeness docs — read the CGPA / school so the officer sees it.
+    'school_leaving_cert', 'semester_result',
 })
 
 _STR = {'type': 'string'}
@@ -1139,6 +1141,13 @@ _FIELD_SCHEMAS = {
     # does NOT clear the declared-income gap (see income_engine.has_income_support_doc).
     'income_support_doc': _doc_schema({'name': _STR, 'nric': _STR, 'amount': _STR,
                                        'period': _STR, 'issuer': _STR, 'kind': _STR}),
+    # V4 — a school-leaving certificate / testimonial (surat berhenti sekolah): the student's name,
+    # the school, and the leaving year. The name is matched against the student (officer chip).
+    'school_leaving_cert': _doc_schema({'name': _STR, 'school': _STR, 'year': _STR}),
+    # V4 — a current-semester result slip for a continuing student: institution, programme, the
+    # semester label, and the CGPA (the officer's current-performance read).
+    'semester_result': _doc_schema({'institution': _STR, 'programme': _STR,
+                                    'semester': _STR, 'cgpa': _STR}),
 }
 
 # Which extracted field holds the person's name (for the deterministic verdict).
@@ -1146,6 +1155,9 @@ _NAME_FIELD = {
     'salary_slip': 'name', 'epf': 'name', 'water_bill': 'name', 'electricity_bill': 'name',
     'results_slip': 'candidate_name', 'offer_letter': 'candidate_name', 'str': 'recipient_name',
     'bank_statement': 'account_holder',
+    # V4 — a school-leaving cert names the STUDENT (matched against them). A semester_result has
+    # no student-name field (institution/programme/cgpa) → no name-match, the read is the signal.
+    'school_leaving_cert': 'name',
 }
 
 # Optional per-doc-type instruction appended to the extraction prompt.

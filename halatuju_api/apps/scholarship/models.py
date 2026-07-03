@@ -801,8 +801,14 @@ class ApplicantDocument(models.Model):
         # bursary will be paid into. Gemini-extracts bank name + account number +
         # account holder; the holder MUST be the student (hard rule).
         ('bank_statement', 'Bank Statement'),
-        # Catch-all for a reviewer-requested document not in the fixed list (e.g. the
-        # current-semester results for a student already studying). Lands under "Other".
+        # V4 — Check-2 academic-completeness docs promoted out of the 'other' catch-all (officers
+        # were hand-requesting both). A school-leaving certificate (surat berhenti sekolah /
+        # testimonial) for a post-SPM applicant; a current-semester result slip (latest CGPA) for
+        # a student ALREADY studying (continuing STPM / college) — the model had no pre-award
+        # current-performance box (SemesterResult is post-award only). Gemini-extracted; soft.
+        ('school_leaving_cert', 'School Leaving Certificate'),
+        ('semester_result', 'Semester Result Slip'),
+        # Catch-all for a reviewer-requested document not in the fixed list. Lands under "Other".
         ('other', 'Other Document'),
     ]
     VERIFICATION_CHOICES = [

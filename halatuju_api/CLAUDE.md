@@ -518,17 +518,28 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-03)
 
-**⚠ OWNER CHECKPOINT REACHED (V1–V3 shipped 2026-07-03).** The roadmap's post-V3 checkpoint is due
-before the owner-visible V4 growth sprint. The owner should review the new reviewer-facing copy
-(V3's interview-agenda ambers + Motivation section + the "N more queries waiting" note, en/ms/ta —
-Tamil first-draft) and confirm the V5 verdict re-banding plan before V4/V5 proceed.
+**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP: V5 (verdict evenness + QC soft floor; changes LIVE
+verdicts).** Roadmap `docs/plans/2026-07-03-verification-model-roadmap.md` §V5 (audit #5, #10-#14;
+owner decision 1). FIRST write the single route-seam truth table into `docs/scholarship/str-proof-spec.md`
+(over-the-line = RED on both routes; thin-headroom = the documented salary exception;
+`str_recipient_mismatch` → amber), THEN align `verdict_engine._verdict_income` (:374-375, :417-418,
+salary `over` branch :570-572 → gap) + tests; QC soft floor (`AdminQcDecisionView.accept` refuses
+`400 verdict_gap_floor` while any fact is `gap`, super-override with a recorded reason); SOFT_EVIDENCE
+refresh + a jest guard test; wrong-person offer → amber; doc-rot fixes. **⚠ REVIEWER-VISIBLE
+RE-BANDING on deploy — the final report must include the re-banding summary.** Owner decisions
+embedded — do not re-ask. **⚠ OWNER FINAL CHECKPOINT after V6.**
 
-**▶ NEXT (after checkpoint) — VERIFICATION-MODEL HARDENING ROADMAP: V4 (promote the nine human asks;
-owner-visible, HIGH).** Roadmap `docs/plans/2026-07-03-verification-model-roadmap.md` §V4 (audit §E,
-owner decision 2). Two new doc types (`school_leaving_cert`, `semester_result`) + nine auto-raised
-Check-2 items (doc requests + clarifies) templated from the officers' own best phrasings, wired into
-the sync gap-detectors + i18n cards + KNOWN_CODES, deduped by satisfied gap. Full sprint rails; NO
-Stitch (renders in existing Action Centre cards). Owner decisions embedded — do not re-ask.
+**✅ SHIPPED (code) 2026-07-03 — Verification-model V4 (promote the nine human asks; branch
+`feat/verify-v4`; migration `0091` choices-only — owner records the row via MCP at deploy; retro
+`docs/retrospective-2026-07-03-verify-v4.md`).** Audit §E + owner decision 2: two new doc types
+(`school_leaving_cert`, `semester_result`) + nine auto-raised Check-2 items (4 doc-requests + 5
+clarifies) with CONSERVATIVE owner-confirmed raise-conditions (under-ask, tune post-deploy), gap-
+detected in `income_engine`, wired through the V3 `_gap_sets` seam, auto-resolve on gap-clear, dedupe
+by satisfied gap, firm-steward copy en/ms/ta (Tamil first-draft). 2055 scholarship pytest + 413 jest.
+- **▶ V4 CARRY (owner):** (1) record migration 0091 via MCP (one-line INSERT, provided at deploy —
+  choices-only, no DDL); (2) post-deploy: sync one Complete-stage app + eyeball that the new items
+  raise only where the human theme showed; tune the conservative margins (esp. `utility_bill_missing`
+  breadth + `household_roster_undercount` margin) against the real cohort.
 
 **✅ SHIPPED (code) 2026-07-03 — Verification-model V3 (query lifecycle & Check-3 handoff; branch
 `feat/verify-v3`; NO migration; retro `docs/retrospective-2026-07-03-verify-v3.md`).** Audit #6–#9:

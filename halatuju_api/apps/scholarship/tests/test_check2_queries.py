@@ -25,6 +25,10 @@ class _Base(TestCase):
             profile_completed_at=timezone.now(),  # submitted
             aspirations='I want to teach.', field_of_study='Education',
             siblings_in_tertiary=0,  # sibling level known
+            # V4: 2 school siblings → described household (student + 2 parents + 2 siblings) = 5 =
+            # household_size, so the base app is roster-CONSISTENT (household_roster_undercount, a
+            # V4 clarify, does not fire by default and crowd out the gap a test is focused on).
+            siblings_in_school=2,
             chosen_pathway='stpm', pathway_certainty='sure',  # STPM → transport asked
             # Household-income completeness satisfied by default (S1): father earns + has a
             # payslip on file, mother is a homemaker (status known) — so the parent-income
@@ -53,7 +57,10 @@ class TestSyncCheck2Queries(_Base):
         codes = self._codes()
         self.assertIn('device_status_unknown', codes)
         self.assertIn('transport_cost_unknown', codes)
-        self.assertLessEqual(len(codes), MAX_CLARIFY)
+        # Only CLARIFIES are capped — V4 doc-requests (uncapped) don't count toward MAX_CLARIFY.
+        clarify_codes = self._codes(
+            self.app.resolution_items.filter(source='check2', kind='clarify', status='open'))
+        self.assertLessEqual(len(clarify_codes), MAX_CLARIFY)
 
     def test_cap_is_respected(self):
         # Force all four gaps: no course, legacy-only siblings, no funding device tick.
@@ -461,3 +468,78 @@ class TestReNotifyOnNewCheck2Item(_Base):
         sync_check2_queries(self.app)
         self.app.refresh_from_db()
         self.assertIsNone(self.app.query_raised_notified_at)
+
+
+class TestV4PromotedAsks(_Base):
+    """V4 — the nine promoted human ask-themes (audit §E). Raise-condition + auto-resolve.
+    The _Base app is roster-consistent, exam_type spm (default), father employed with a payslip
+    but no EPF, no results slip, no bills — so several V4 items fire by default."""
+
+    def test_school_leaving_cert_raised_and_clears(self):
+        sync_check2_queries(self.app)                       # spm, no results slip → raise
+        self.assertIn('school_leaving_cert_missing', self._codes())
+        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip',
+                                         storage_path='x/rs')
+        sync_check2_queries(self.app)
+        self.assertEqual(self.app.resolution_items.get(
+            code='school_leaving_cert_missing').status, 'resolved')
+
+    def test_semester_result_for_continuing_student_only(self):
+        self.profile.exam_type = 'stpm'
+        self.profile.save()
+        sync_check2_queries(self.app)
+        codes = self._codes()
+        self.assertIn('semester_result_missing', codes)
+        self.assertNotIn('school_leaving_cert_missing', codes)   # spm-only ask
+
+    def test_employed_epf_optional_raised_and_clears(self):
+        sync_check2_queries(self.app)                       # father gov + slip, no EPF → raise
+        self.assertIn('epf_statement_missing', self._codes())
+        ApplicantDocument.objects.create(application=self.app, doc_type='epf',
+                                         household_member='father', storage_path='x/epf')
+        sync_check2_queries(self.app)
+        self.assertEqual(self.app.resolution_items.get(
+            code='epf_statement_missing').status, 'resolved')
+
+    def test_utility_bill_missing_clears_on_either_bill(self):
+        sync_check2_queries(self.app)                       # no bills → raise
+        self.assertIn('utility_bill_missing', self._codes())
+        ApplicantDocument.objects.create(application=self.app, doc_type='electricity_bill',
+                                         storage_path='x/eb')
+        sync_check2_queries(self.app)
+        self.assertEqual(self.app.resolution_items.get(
+            code='utility_bill_missing').status, 'resolved')
+
+    def test_deceased_parent_detail(self):
+        self.app.father_occupation = 'deceased'
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertIn('deceased_parent_detail', self._codes())
+
+    def test_informal_work_detail(self):
+        self.app.income_declared = {'father': 1200}
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertIn('informal_work_detail', self._codes())
+
+    def test_household_roster_undercount(self):
+        self.profile.household_size = 8      # described = 5 (student + 2 parents + 2 school) → gap 3
+        self.profile.save()
+        sync_check2_queries(self.app)
+        self.assertIn('household_roster_undercount', self._codes())
+
+    def test_other_scholarships_followup(self):
+        self.app.other_scholarships = ['MARA loan']
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertIn('other_scholarships_followup', self._codes())
+
+    def test_high_utility_expense(self):
+        # Two bills in the student's name (no holder query), RM200 each → 400/5 = 80/head > 60 → high.
+        for dt in ('water_bill', 'electricity_bill'):
+            ApplicantDocument.objects.create(
+                application=self.app, doc_type=dt, storage_path=f'x/{dt}',
+                vision_fields={'fields': {'amount': 'RM200', 'name': 'Priya Devi'},
+                               'student_verdict': 'ok'})
+        sync_check2_queries(self.app)
+        self.assertIn('high_utility_expense', self._codes())

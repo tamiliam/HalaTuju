@@ -1746,3 +1746,131 @@ def unemployment_epf_gap(application):
 def unemployment_corroborated_members(application):
     """Unemployed members whose EPF corroborates the unemployment — soft reviewer evidence."""
     return [m for m in unemployed_members(application) if epf_confirms_unemployment(application, m)]
+
+
+# ── V4: promote the nine recurring HUMAN ask-themes into model queries (audit §E;
+#      owner decision 2 + conservative raise-conditions confirmed 2026-07-03). Each is soft:
+#      a doc-request (uncapped) or a one-line clarify (capped), never a gate. Conditions are
+#      deliberately CONSERVATIVE (under-ask) — tune against the prod cohort post-deploy. ─────
+_NON_EARNING_OCC = frozenset({'unemployed', 'homemaker', 'deceased', 'no_contact', ''})
+
+
+def _docs_or_none(application):
+    return getattr(application, 'documents', None)
+
+
+def _has_read_doc(docs, doc_type):
+    """A doc of this type that field-extracted OK (``student_verdict='ok'``) is on file — so a
+    blank/wrong upload doesn't clear a V4 academic request (consistency with V1's read-requirement:
+    a doc must READ to count, not merely be present)."""
+    for d in docs.filter(doc_type=doc_type):
+        if (getattr(d, 'vision_fields', None) or {}).get('student_verdict', '') == 'ok':
+            return True
+    return False
+
+
+def school_leaving_cert_gap(application):
+    """A post-SPM (SPM-track) applicant whose academic record can't be read from a results slip →
+    ask for a school-leaving certificate (surat berhenti sekolah / testimonial) to corroborate.
+    CONSERVATIVE: fires ONLY when there's no results slip on file (not for every post-SPM
+    applicant). Clears when a leaving cert that READ OR a results slip is present."""
+    prof = getattr(application, 'profile', None)
+    if (getattr(prof, 'exam_type', 'spm') or 'spm') != 'spm':
+        return False
+    docs = _docs_or_none(application)
+    if docs is None or _has_read_doc(docs, 'school_leaving_cert'):
+        return False
+    return not docs.filter(doc_type='results_slip').exists()
+
+
+def semester_result_gap(application):
+    """A continuing STPM/college student (``exam_type='stpm'``) with no current-semester result
+    slip that READ on file → ask for the latest CGPA. The model had no pre-award current-performance
+    box (``SemesterResult`` is post-award only). Clears when a ``semester_result`` field-extracts."""
+    prof = getattr(application, 'profile', None)
+    if (getattr(prof, 'exam_type', '') or '') != 'stpm':
+        return False
+    docs = _docs_or_none(application)
+    return docs is not None and not _has_read_doc(docs, 'semester_result')
+
+
+def employed_epf_gap(application):
+    """An EMPLOYED parent with a salary slip but no EPF on file → an OPTIONAL request for the EPF
+    as standard corroboration (mirrors ``unemployment_epf_gap`` for the unemployed). The payslip
+    gate keeps it to genuinely-employed parents, so a family with no formal employment is never
+    nagged. Soft; never a gate."""
+    docs = _docs_or_none(application)
+    if docs is None:
+        return False
+    for member in ('father', 'mother'):
+        occ = _member_occupation(application, member)
+        if occ and occ not in _NON_EARNING_OCC:
+            has_slip = docs.filter(doc_type='salary_slip', household_member__in=[member, '']).exists()
+            has_epf = docs.filter(doc_type='epf', household_member__in=[member, '']).exists()
+            if has_slip and not has_epf:
+                return True
+    return False
+
+
+def utility_bill_gap(application):
+    """NEITHER a water nor an electricity bill on file → ask for one (a home-address anchor + a
+    soft B40 consumption signal). Clears when either bill is uploaded."""
+    docs = _docs_or_none(application)
+    return docs is not None and not docs.filter(
+        doc_type__in=('water_bill', 'electricity_bill')).exists()
+
+
+def deceased_parent_members(application):
+    """Roster members marked 'deceased' — the officer's recurring 'when / what happened' texture
+    query. One clarify covers all such members."""
+    return [m for m in _MEMBER_ORDER if _member_occupation(application, m) == 'deceased']
+
+
+def deceased_parent_detail_gap(application):
+    return bool(deceased_parent_members(application))
+
+
+def informal_work_detail_gap(application):
+    """A member has a DECLARED informal wage (``income_declared``) → ask the own-account-vs-employer
+    + average-monthly-wage texture officers ask by hand. One clarify covers all such members.
+    (Distinct from ``unemployment_detail_gap`` — that's for the UNEMPLOYED.)"""
+    raw = getattr(application, 'income_declared', None)
+    if not isinstance(raw, dict):
+        return False
+    return any(declared_amount(application, m) is not None for m in _MEMBER_ORDER)
+
+
+_ROSTER_UNDERCOUNT_MARGIN = 2   # conservative: only a gap of ≥2 unlisted people (tune post-deploy)
+
+
+def household_roster_undercount(application):
+    """The MISSING direction of 2C: the stated household size is LARGER than the people explicitly
+    described → ask who else is in the household (the officers' '6 members, 5 listed' query).
+    Opposite of ``household_size_shortfall`` (the over-count). A gap of ≥2 (an under-count of one
+    is common/benign — grandparents, an un-itemised relative). Returns ``{'described','size'}`` or
+    None. Advisory only."""
+    size = getattr(getattr(application, 'profile', None), 'household_size', None)
+    if not size:
+        return None
+    described = _described_household_count(application)
+    return ({'described': described, 'size': int(size)}
+            if int(size) - described >= _ROSTER_UNDERCOUNT_MARGIN else None)
+
+
+def other_scholarships_followup_gap(application):
+    """The student listed other scholarships at apply → follow up on their status (the
+    not-double-funded picture). Fires when ``other_scholarships`` is non-empty."""
+    raw = getattr(application, 'other_scholarships', None)
+    if isinstance(raw, (list, tuple)):
+        return len(raw) > 0
+    if isinstance(raw, str):
+        return bool(raw.strip())
+    return bool(raw)
+
+
+def high_utility_expense_gap(application):
+    """Owner decision 2 (V4): promote ``utility_reasonable``'s 'high' officer signal to a student
+    clarify — a high per-capita utility spend, ask them to explain it (a possible undeclared income,
+    or a legitimate reason). Fires only when BOTH bills are on file AND per-capita is above the high
+    floor (so it can't fire on a partial/unknown read)."""
+    return utility_reasonable(application).get('status') == 'high'
