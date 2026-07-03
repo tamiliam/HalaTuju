@@ -560,14 +560,22 @@ class DocumentSignUploadView(APIView):
 # soft home-address check. IC / parent_ic use the dedicated MyKad pipeline instead.
 BILL_DOC_TYPES = frozenset({'water_bill', 'electricity_bill'})
 # Income relationship-proof docs whose VERDICT depends on the Gemini-extracted structured
-# fields (e.g. a birth certificate's child/mother names), so they must ALWAYS field-extract —
-# never gated by the "only when uncertain" cost knob, and never skipped at upload.
-RELATIONSHIP_DOC_TYPES = frozenset({'birth_certificate'})
+# fields (e.g. a birth certificate's child/mother names, or a guardianship letter's
+# guardian/ward names), so they must ALWAYS field-extract — never gated by the "only when
+# uncertain" cost knob, and never skipped at upload. (V1: guardianship_letter joined here —
+# its schema + verdict + resolution branch already existed but were never fed because the
+# upload never triggered its extraction; a genuine limb of the pipeline was dead.)
+RELATIONSHIP_DOC_TYPES = frozenset({'birth_certificate', 'guardianship_letter'})
 SUPPORTING_NAME_CHECK_TYPES = frozenset({
     'results_slip', 'str', 'salary_slip', 'epf', 'offer_letter',
     # Post-award: the bank statement field-extracts (bank name / account no / holder) so
     # the student's confirm form pre-fills and Gopal can coach a weak read.
     'bank_statement',
+    # V1: the declared-informal-income supporting doc (employer/wage letter, bank statements,
+    # community/penghulu letter). It must be READ — mere presence used to clear the declared-
+    # income gap, so a blank image "proved" a wage. Now it field-extracts on upload and the
+    # gap only clears on a real read (see income_engine.has_income_support_doc).
+    'income_support_doc',
 } | BILL_DOC_TYPES | RELATIONSHIP_DOC_TYPES)
 # Free-text docs (the letter of intent) that get OCR'd into vision_fields['text'] so
 # Check-2's submission review can read the student's motivation in her own words. No

@@ -399,6 +399,18 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
       { key: 'ward', status: factStatus(c.ward_status) },
     ]
   }
+  if (dt === 'income_support_doc') {
+    // V1: the declared-income supporting doc. It NAMES THE EARNER, not the student, so there
+    // is no student name-match — the READ is the signal (a blank image can't prove a wage).
+    // 'Evidence' = did it read as a real support document; 'Amount' when a figure was found.
+    const c = doc.support_doc_check
+    if (!c) return []
+    const facts: DocumentFactLabel[] = [
+      { key: 'evidence', status: c.read_status === 'read' ? 'verified' : 'not' },
+    ]
+    if ((c.amount || '').trim()) facts.push({ key: 'amount', status: 'verified' })
+    return facts
+  }
   if (dt === 'water_bill' || dt === 'electricity_bill') {
     const c = doc.utility_check
     if (!c) return []

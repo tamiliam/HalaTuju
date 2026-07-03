@@ -301,6 +301,25 @@ def doc_match_verdict(doc):
     elif dt == 'guardianship_letter':
         if red(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):
             return 'mismatch'
+        # V1 (#1): now that guardianship_letter actually field-extracts on upload, a file that
+        # read NOTHING guardianship-shaped (a selfie / wrong document) must be HELD for
+        # re-upload, not silently accepted. Before this wiring the extraction never ran, so
+        # ANY file resolved an officer's guardianship-letter request.
+        sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')
+        if sv in ('', 'review_manually'):
+            return 'pending'          # not read yet — hold, don't greenlight
+        if sv == 'wrong_doc':
+            return 'unreadable'       # nothing guardianship-shaped → re-upload
+    elif dt == 'income_support_doc':
+        # V1 (#2): the declared-informal-income supporting doc. A blank/wrong image reads no
+        # fields → 'wrong_doc' → hold the task (re-upload). Not scanned yet → hold. A real
+        # support document ('ok') accepts. (has_income_support_doc gates the verdict engine
+        # in lockstep — mere presence no longer clears the declared-income gap.)
+        sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')
+        if sv in ('', 'review_manually'):
+            return 'pending'
+        if sv == 'wrong_doc':
+            return 'unreadable'
     elif dt == 'bank_statement':
         # Reads the doc-assist verdict (holder==student + all 3 fields present), computed
         # deterministically from the Gemini-extracted fields. 'name_mismatch' = the account
@@ -328,9 +347,11 @@ def doc_match_verdict(doc):
                 return 'mismatch'
             if name_match(doc.vision_name, getattr(prof, 'name', '') or '') == 'mismatch':
                 return 'mismatch'
-    # NB income docs (str / salary_slip / epf / birth_certificate / guardianship_letter)
-    # have no 'pending' branch here: the interactive upload forces their read first
+    # NB the mismatch-only income docs (str / salary_slip / epf / birth_certificate) have no
+    # 'pending' branch here: the interactive upload forces their read first
     # (views._maybe_extract_fields force=True), so they're scanned by the time this runs.
+    # (guardianship_letter / income_support_doc DO carry a pending/unreadable branch above —
+    # their verdict now depends on a real field read, so an unread/blank file must hold.)
     # water_bill / electricity_bill / statement_of_intent / photo, and every
     # 'uncertain'/soft outcome above → accept.
     return 'ok'

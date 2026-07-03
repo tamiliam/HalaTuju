@@ -8,6 +8,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Verification-model roadmap Sprint V1 (2026-07-03) — slot & document integrity (audit findings #1, #2, F2, F3).**
+  No migration (choices/schema already existed); all changes additive + soft.
+  - **`guardianship_letter` was a dead limb — now wired into the pipeline (#1).** Its Gemini
+    schema, verdict branch (`verdict_engine._verdict_income`), resolution branch and officer chip
+    already existed, but the upload never triggered its extraction (it was absent from
+    `SUPPORTING_NAME_CHECK_TYPES`), so guardian names read blank forever and the guardian
+    relationship could never machine-confirm — and ANY file (even a selfie) resolved an officer's
+    guardianship-letter request. It now field-extracts on upload (joined `RELATIONSHIP_DOC_TYPES`,
+    always-extract); a file that reads nothing guardianship-shaped is HELD (`unreadable`) for
+    re-upload, not silently accepted.
+  - **`income_support_doc` now has a read + verdict (#2).** The one doc Check 2 explicitly requests
+    for a declared informal income used to clear the gap on mere PRESENCE — a blank image "proved" a
+    wage. It now field-extracts (new schema: name/nric/amount/period/issuer/kind) and
+    `income_engine.has_income_support_doc` requires a real read (`student_verdict == 'ok'`); a
+    blank/wrong image (`wrong_doc`) does NOT clear the declared-income gap, and the Action-Centre
+    upload of one is held for re-upload. New officer chip (`support_doc_check` → Evidence/Amount).
+    It names the EARNER (not the student), so there is no student name-match (no false red on a
+    genuine employer letter for a parent).
+  - **Model doc-requests are now member-tagged (F2/F3).** `check2_queries` per-member proof requests
+    (`father_/mother_/guardian_/brother_/sister_income_proof_missing`) now write
+    `params={'household_member': …}`, so the Action-Centre upload lands tagged to the right earner.
+    Before this, salary-route model requests landed BLANK-tagged — they could never count as that
+    member's evidence (`_cluster_docs` is strict-tag on salary) yet auto-resolved by doc_type and
+    were never re-asked (the ~29-doc prod residue + the "Earner's IC" mislabel root).
+  - **Label honesty (F3):** the cockpit's base `parent_ic` label is renamed "Earner's IC" →
+    "Family member's IC" (en/ms/ta) — the honest generic shown only when no member can be derived
+    (the derived member, e.g. "Mother's IC", still renders whenever the tag/route provides it).
+  - **V1.4 prod backfill (F3) DONE** (via the claude.ai Supabase MCP): 24/29 blank-tagged income
+    docs attributed (19 → mother, 5 → father; request-keyed docs excluded from the earner
+    auto-attribution and resolved from their officer item instead). Final tags: 145 mother / 76
+    father / 2 brother / 5 blank. **5 rows left blank as ambiguous for the owner:** app 88 (×4 —
+    no earner/working members) + app 16 (×1 — guardian-vs-brother; test account).
+  - Tests: 2025 scholarship pytest (+6 net regression tests per finding) + 412 jest; tsc clean.
+
 - **Code-health Sprint 5 (2026-07-03) — infra & guardrails (review findings #21/#23 + quick wins).**
   - **Rate limits now actually limit.** Production uses a shared, persistent database cache
     (`django_cache` table, created migrate-first with RLS) instead of per-worker in-memory

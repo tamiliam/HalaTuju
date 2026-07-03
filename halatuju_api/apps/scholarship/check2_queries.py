@@ -175,9 +175,17 @@ def sync_check2_queries(application):
     for code, spec in DOC_SPECS.items():
         if code in proof_wanted and code not in existing:
             try:
+                # V1 (F2/F3): member-tag the doc request so the Action-Centre upload lands
+                # tagged to the RIGHT household member. Without this, a model doc-request stored
+                # no `household_member` (unlike officer requests), so on the SALARY route the
+                # upload landed BLANK-tagged — it could never count as that member's evidence
+                # (`_cluster_docs` is strict-tag on salary) yet auto-resolved by doc_type and was
+                # never re-asked (~29 blank-tagged prod docs, the "Earner's IC" mislabel root).
+                # The FE (ActionCentre.tsx onFile) already forwards item.params.household_member.
+                params = {'household_member': spec['member']} if spec.get('member') else {}
                 ResolutionItem.objects.create(
                     application=application, source='check2', code=code,
-                    fact='income', kind='doc', doc_type=spec['doc_type'])
+                    fact='income', kind='doc', doc_type=spec['doc_type'], params=params)
                 raised_student_visible = True
             except IntegrityError:
                 pass

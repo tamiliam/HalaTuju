@@ -775,17 +775,26 @@ def declared_amount(application, member):
 
 
 def has_income_support_doc(application, member):
-    """True when a supporting income document is on file for this member — an
-    ``income_support_doc`` (an employer/wage letter, bank statements showing income, OR a
+    """True when a supporting income document is on file for this member AND IT READ —
+    an ``income_support_doc`` (an employer/wage letter, bank statements showing income, OR a
     community/penghulu letter; D1 flexible evidence, any ONE suffices). Backs a DECLARED
     amount for a non-STR household. Accepts a doc tagged to the member OR untagged
     (household-level) — an Action-Centre request upload may land without a member tag, and
-    one family-level supporting letter is enough under the flexible-evidence rule."""
+    one family-level supporting letter is enough under the flexible-evidence rule.
+
+    **V1 (finding #2):** mere PRESENCE no longer counts — a blank/wrong image used to "prove"
+    a declared informal income. The doc must have been READ: its stored ``student_verdict``
+    (from the field-extraction on upload) is ``'ok'`` (a real support document with at least
+    one field). A doc that read nothing (``'wrong_doc'``) or was never scanned does NOT clear
+    the gap, so Check 2 keeps asking for real evidence."""
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
-    return docs.filter(doc_type='income_support_doc',
-                       household_member__in=[member, '']).exists()
+    for d in docs.filter(doc_type='income_support_doc', household_member__in=[member, '']):
+        sv = (getattr(d, 'vision_fields', None) or {}).get('student_verdict', '')
+        if sv == 'ok':
+            return True
+    return False
 
 
 def earner_monthly_income(application, member):
@@ -1010,6 +1019,25 @@ def student_guardianship_check(doc):
         'guardian_name': g_name, 'guardian_nric': g_nric, 'guardian_status': guardian_status,
         'ward_name': ward_name, 'ward_status': _name_bucket(ward_name, student),
         'doc_kind': (f.get('doc_kind', '') or '').strip(),
+    }
+
+
+def student_income_support_check(doc):
+    """V1: a declared-income supporting document (employer/wage letter, bank statement, or
+    community/penghulu letter). Returns the read fields + whether it READ as a real support
+    document (``read_status``), or None for another doc type. It NAMES THE EARNER, not the
+    student, so there is no student name-match — the READ itself is the officer's signal
+    (#2: a blank image must not pass as evidence for a declared informal income)."""
+    if getattr(doc, 'doc_type', '') != 'income_support_doc':
+        return None
+    f = _doc_fields(doc)
+    sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')
+    return {
+        'name': (f.get('name', '') or '').strip(),
+        'amount': (f.get('amount', '') or '').strip(),
+        'issuer': (f.get('issuer', '') or '').strip(),
+        'kind': (f.get('kind', '') or '').strip(),
+        'read_status': 'read' if sv == 'ok' else 'unread',
     }
 
 

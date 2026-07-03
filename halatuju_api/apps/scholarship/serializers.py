@@ -613,6 +613,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     # Check-1 Income: relationship proof — birth certificate / guardianship letter.
     bc_check = serializers.SerializerMethodField()
     guardianship_check = serializers.SerializerMethodField()
+    # V1: the declared-income supporting doc — whether it READ (officer chip).
+    support_doc_check = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -642,6 +644,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'utility_check',
             # Check-1 Income: relationship proof checklists (BC / guardianship letter).
             'bc_check', 'guardianship_check',
+            # V1: declared-income supporting doc read-status (null unless income_support_doc).
+            'support_doc_check',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -767,6 +771,15 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return None
         from .income_engine import student_guardianship_check
         return student_guardianship_check(obj)
+
+    def get_support_doc_check(self, obj):
+        """{name/amount/issuer/kind + read_status} for a declared-income supporting doc.
+        Null for other doc types. V1: the officer sees whether the declared informal income
+        actually has a readable supporting document behind it."""
+        if obj.doc_type != 'income_support_doc':
+            return None
+        from .income_engine import student_income_support_check
+        return student_income_support_check(obj)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):

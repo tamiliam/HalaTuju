@@ -729,8 +729,9 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(loi.vision_fields.get('student_verdict'), 'read')
 
     def test_admin_rerun_vision_rejects_unsupported_type(self):
-        # A type with no automatic check (e.g. guardianship_letter) still 400s.
-        doc = ApplicantDocument.objects.create(application=self.app, doc_type='guardianship_letter', storage_path='g/abc')
+        # A type with no automatic check (e.g. photo) still 400s. (guardianship_letter USED to be
+        # the example here — V1 wired it into the extraction pipeline, so it now HAS a check.)
+        doc = ApplicantDocument.objects.create(application=self.app, doc_type='photo', storage_path='p/abc')
         self._auth(ADMIN)
         r = self.client.post(self._rerun_vision_url(doc.id))
         self.assertEqual(r.status_code, 400)

@@ -128,13 +128,28 @@ class TestDeclaredIncomeDocRequest(_Base):
     def test_auto_resolves_when_support_doc_uploaded(self):
         sync_check2_queries(self.app)
         item = self.app.resolution_items.get(code='declared_income_evidence_missing')
+        # V1 (#2): the request clears only on a support doc that READ (student_verdict='ok').
         ApplicantDocument.objects.create(
             application=self.app, doc_type='income_support_doc', household_member='father',
-            storage_path='x/support')
+            storage_path='x/support',
+            vision_fields={'fields': {'name': 'ABU', 'amount': 'RM1,200'}, 'student_verdict': 'ok'})
         sync_check2_queries(self.app)
         item.refresh_from_db()
         self.assertEqual(item.status, 'resolved')
         self.assertEqual(item.resolved_by, 'system')
+
+    def test_not_resolved_by_blank_support_doc(self):
+        # V1 (#2): a blank/wrong image (student_verdict='wrong_doc') read nothing → the request
+        # stays OPEN, so Check 2 keeps asking for real evidence instead of silently clearing.
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='declared_income_evidence_missing')
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='income_support_doc', household_member='father',
+            storage_path='x/blank',
+            vision_fields={'fields': {}, 'student_verdict': 'wrong_doc'})
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')
 
     def test_not_raised_when_valid_str_on_file(self):
         # A valid STR accepts the declared amount → no evidence request.
@@ -206,6 +221,10 @@ class TestHouseholdProofQueries(_Base):
         sync_check2_queries(self.app)
         item = self.app.resolution_items.get(code='guardian_income_proof_missing')
         self.assertEqual((item.source, item.kind, item.doc_type), ('check2', 'doc', 'salary_slip'))
+        # V1 (F2/F3): the request now carries the household_member so the Action-Centre upload
+        # lands tagged to the right earner (salary route was blank-tagging → the ~29-doc residue
+        # + the "Earner's IC" mislabel). Before V1 params was {}.
+        self.assertEqual(item.params.get('household_member'), 'guardian')
         ApplicantDocument.objects.create(
             application=self.app, doc_type='salary_slip', household_member='guardian',
             storage_path='x/guardian')

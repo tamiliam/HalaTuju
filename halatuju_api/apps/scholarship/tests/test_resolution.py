@@ -482,6 +482,40 @@ class TestDocMatchVerdict(_Base):
                    return_value={'name': 'pending', 'subjects': 'pending', 'results': 'pending'}):
             self.assertEqual(doc_match_verdict(doc), 'pending')
 
+    # V1 (#1) — guardianship_letter now field-extracts, so an unread/blank file is HELD,
+    # not silently accepted (before wiring, ANY file resolved the officer's request).
+    def test_guardianship_selfie_held_unreadable(self):
+        doc = self._doc('guardianship_letter',
+                        vision_fields={'fields': {}, 'student_verdict': 'wrong_doc'})
+        self.assertEqual(doc_match_verdict(doc), 'unreadable')
+
+    def test_guardianship_not_scanned_is_pending(self):
+        doc = self._doc('guardianship_letter',
+                        vision_fields={'fields': {}, 'student_verdict': ''})
+        self.assertEqual(doc_match_verdict(doc), 'pending')
+
+    def test_guardianship_read_ok(self):
+        # A read guardianship letter with no confirmed name-clash (no member IC on file to clash
+        # against; ward left blank) accepts. A genuine wrong-person clash is covered by the
+        # student_guardianship_check red branch above.
+        doc = self._doc('guardianship_letter',
+                        vision_fields={'fields': {'guardian_name': 'RAJ',
+                                                  'doc_kind': 'authorisation_letter'},
+                                       'student_verdict': 'ok'})
+        self.assertEqual(doc_match_verdict(doc), 'ok')
+
+    # V1 (#2) — income_support_doc: a blank/wrong image is HELD; a real read accepts.
+    def test_income_support_doc_blank_held(self):
+        doc = self._doc('income_support_doc',
+                        vision_fields={'fields': {}, 'student_verdict': 'wrong_doc'})
+        self.assertEqual(doc_match_verdict(doc), 'unreadable')
+
+    def test_income_support_doc_read_ok(self):
+        doc = self._doc('income_support_doc',
+                        vision_fields={'fields': {'name': 'ABU', 'amount': 'RM1,200'},
+                                       'student_verdict': 'ok'})
+        self.assertEqual(doc_match_verdict(doc), 'ok')
+
     def test_results_slip_no_grades_to_compare_still_ok(self):
         # results=='pending' because the profile has NO grades to compare against — the
         # slip itself read fine (name+subjects), so we still accept (not a 'pending' hold).

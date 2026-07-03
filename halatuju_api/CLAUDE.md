@@ -518,14 +518,32 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-03)
 
-**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP (V1-V6), owner-approved 2026-07-03, ready
-for handover.** Roadmap: `docs/plans/2026-07-03-verification-model-roadmap.md` (six sprints:
-V1 slot/document integrity → V2 resolution correctness → V3 query lifecycle + Check-3
-handoff → V4 promote the nine human asks → V5 verdict evenness + QC soft floor → V6 Gopal
-in the Action Centre + persona). Finding source of truth:
-`docs/plans/2026-07-03-check-model-audit.md`. Owner decisions are embedded in the roadmap —
-do not re-ask. Owner checkpoints: after V3 and at the end. Start with V1 via
-`Settings/_workflows/sprint-start.md`.
+**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP: V2 (resolution correctness).** Roadmap:
+`docs/plans/2026-07-03-verification-model-roadmap.md`; findings source
+`docs/plans/2026-07-03-check-model-audit.md`. V2 = the re-upload/resolve path must verify what
+it resolves (findings #3, #4, #16, all in `resolution.py`): a non-official offer must not
+resolve an official-offer request; salary_slip/epf/birth_certificate need a pending/unreadable
+hold like results_slip; `resolve_doc_items_for_upload` becomes member-aware +
+criterion-aware for `income_doc_stale`; the `*_income_proof_missing` + `income_doc_stale` codes
+re-raisable after a resolve; finish the S4 #13 STR-coach-states unification. Owner decisions are
+embedded in the roadmap — do not re-ask. Owner checkpoints: after V3 and at the end. Work each
+sprint via `Settings/_workflows/sprint-start.md`/`sprint-close.md`.
+
+**✅ SHIPPED (code) 2026-07-03 — Verification-model V1 (slot & document integrity; worktree
+`.worktrees/verify-model`, branch `feat/verify-v1`; NO migration; retro
+`docs/retrospective-2026-07-03-verify-v1.md`).** Audit #1/#2/F2/F3: `guardianship_letter` wired
+into the extraction pipeline (was a dead limb — a selfie used to resolve the request; now HELD);
+`income_support_doc` field-extracts + `has_income_support_doc` requires a real read (a blank image
+no longer proves a declared informal income); `check2_queries` per-member proof requests write
+`params.household_member` (salary-route blank-tagging closed); base `parent_ic` cockpit label
+"Earner's IC" → "Family member's IC" (en/ms/ta). New officer chip `support_doc_check`. 2025
+scholarship pytest + 412 jest; tsc clean.
+- **✅ V1.4 backfill DONE (claude.ai Supabase MCP, 2026-07-03):** 24/29 blank-tagged income docs
+  attributed (19→mother, 5→father; request-keyed docs excluded from earner auto-attribution,
+  resolved from their officer item). Final tags: 145 mother / 76 father / 2 brother / 5 blank.
+  **▶ V1 CARRY (owner):** 5 rows left blank as ambiguous — app 88 (×4, no earner/working members)
+  + app 16 (×1, guardian-vs-brother; test account). Also confirm the ~0–2 pre-V1
+  `income_support_doc` rows (no stored `student_verdict`) re-read on a re-run pass.
 
 **Previously: CODE-HEALTH ROADMAP COMPLETE (S1-S5, 2026-07-03).**
 Owner follow-ups: review the reconciled comprehension-quiz copy (esp. Tamil) before
