@@ -828,6 +828,15 @@ def admin_reject(application, admin, category):
     days = getattr(_settings, 'DECLINE_COOLOFF_DAYS', 7)
     by = getattr(admin, 'email', '') or ''
     _record_reject(application, category, by)        # the decision is immediate, either way
+    if category == 'contractual':
+        # Code-health S3 #6 (owner decision 2026-07-03): rejecting a funded/offered student
+        # AUTO-LAPSES their sponsorship(s) — the held amount returns to the sponsor's
+        # balance and impact/statement surfaces stop reporting the student as supported.
+        # (Without this the sponsorship sat HOLDING forever.) The disbursement ledger needs
+        # no touch: release_tranche already refuses any non-funded status (S6). Lazy import
+        # — the module dependency runs sponsorship → services.
+        from .sponsorship import lapse_holding_sponsorships
+        lapse_holding_sponsorships(application)
     if days and days > 0:
         # Embargo only the student email: schedule it; the student sees nothing until it goes.
         application.pending_rejection_category = category
@@ -860,7 +869,21 @@ def cancel_pending_decline(application):
     application.pending_decline_by = ''
     fields = ['pending_rejection_category', 'decline_due_at', 'pending_decline_by']
     if application.status == 'rejected' and application.decline_email_sent_at is None:
-        application.status = application.pre_decline_status or 'interviewed'
+        restore_to = application.pre_decline_status or 'interviewed'
+        # A cancelled CONTRACTUAL decline of a funded student: the reject auto-lapsed the
+        # sponsorship (#6), so try to reinstate it — best-effort, only when the sponsor's
+        # balance still covers the amount (they may have reallocated it in the window).
+        # If it can't be reinstated the case still returns to its pre-decline status but
+        # needs re-funding — logged for the officer.
+        if application.rejection_category == 'contractual' and restore_to in ('active', 'maintenance'):
+            from .sponsorship import reinstate_lapsed_sponsorship
+            since = application.rejected_at or timezone.now()
+            if reinstate_lapsed_sponsorship(application, since=since) is None:
+                logger.warning(
+                    'cancel_pending_decline: app %s restored to %r but its lapsed sponsorship '
+                    'could not be reinstated (balance reallocated?) — needs re-funding.',
+                    application.id, restore_to)
+        application.status = restore_to
         application.pre_decline_status = ''
         application.rejection_category = ''
         application.rejected_at = None

@@ -36,6 +36,7 @@ import {
   sortByWeight,
   type ActionIcon,
   type ConfirmTarget,
+  countDigits,
 } from '@/lib/actionCentre'
 import DocumentHelpCoach, { CoachCard } from '@/components/DocumentHelpCoach'
 import IncomeRouteSwitch from '@/components/IncomeRouteSwitch'
@@ -396,16 +397,28 @@ function BankDetailsTask({
       )
       onResolved()   // task resolves server-side → the card clears on refresh
     } catch (e) {
-      const code = (e as Error & { code?: string }).code || ''
-      setError(code === 'bank_holder_mismatch'
+      // DRF FIELD errors (400) carry no top-level code — map the account-number rule
+      // specifically so the student learns WHICH field to fix instead of a generic
+      // "couldn't save" dead-end (code-health S3 #9).
+      const err = e as Error & { code?: string; fieldErrors?: Record<string, unknown> }
+      const acctErrs = err.fieldErrors?.account_number
+      const acctInvalid = Array.isArray(acctErrs)
+        && acctErrs.some((m) => String(m).includes('account_number_invalid'))
+      setError(err.code === 'bank_holder_mismatch'
         ? t('scholarship.actionCentre.bank.holderMismatch')
-        : t('scholarship.actionCentre.bank.saveError'))
+        : acctInvalid
+          ? t('scholarship.actionCentre.bank.accountNumberInvalid')
+          : t('scholarship.actionCentre.bank.saveError'))
     } finally {
       setBusy(false)
     }
   }
 
+  // Mirror the API's account-number floor (≥5 digits) client-side so a truncated OCR
+  // fragment is flagged inline before the save round-trip ever happens.
+  const accountNumberTooShort = accountNumber.trim() !== '' && countDigits(accountNumber) < 5
   const canSave = !busy && bankName.trim() && accountNumber.trim() && accountHolder.trim()
+    && !accountNumberTooShort
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -449,7 +462,9 @@ function BankDetailsTask({
                 <div>
                   <label className="block text-sm font-medium text-gray-700">{t('scholarship.actionCentre.bank.accountNumber')}</label>
                   <input className="input mt-1 font-mono" inputMode="numeric" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} disabled={busy} />
-                  <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.bank.numberHint')}</p>
+                  {accountNumberTooShort
+                    ? <p className="mt-1 text-xs text-red-600">{t('scholarship.actionCentre.bank.accountNumberInvalid')}</p>
+                    : <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.bank.numberHint')}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">{t('scholarship.actionCentre.bank.accountHolder')}</label>

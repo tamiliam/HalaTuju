@@ -2046,6 +2046,7 @@
         "save": "Save my bank details",
         "saving": "Saving…",
         "saveError": "Sorry, we could not save your bank details. Please try again.",
+        "accountNumberInvalid": "The account number looks too short. Please check it against your bank statement and enter the full number.",
         "holderMismatch": "This account is not in your name. The bursary can only be paid into a bank account that belongs to you."
       },
       "setAside": "Set aside",

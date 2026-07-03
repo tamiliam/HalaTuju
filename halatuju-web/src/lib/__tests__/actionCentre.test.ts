@@ -10,6 +10,7 @@ import {
   localiseParams,
   sortByWeight,
   KNOWN_CODES,
+  countDigits,
 } from '@/lib/actionCentre'
 import type { ResolutionItem } from '@/lib/api'
 
@@ -209,5 +210,17 @@ describe('localiseParams', () => {
   it('handles null/undefined', () => {
     expect(localiseParams(undefined, t)).toEqual({})
     expect(localiseParams(null, t)).toEqual({})
+  })
+})
+
+describe('countDigits (bank account-number floor, code-health S3 #9)', () => {
+  it('counts digits across formatting', () => {
+    expect(countDigits('1234567890')).toBe(10)
+    expect(countDigits('12-3456 7890')).toBe(10)
+  })
+  it('flags a truncated OCR fragment (<5 digits) that the API would reject', () => {
+    expect(countDigits('123')).toBe(3)
+    expect(countDigits('12a4')).toBe(3)
+    expect(countDigits('')).toBe(0)
   })
 })
