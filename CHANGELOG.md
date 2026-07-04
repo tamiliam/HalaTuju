@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Officer Documents box — reorganisation Phase 1 (2026-07-04, FE-only, no migration).** The cockpit
+  "Documents" box is re-grouped into IDENTITY / ACADEMIC / PATHWAY / INCOME / ADDITIONAL / OTHER, with
+  INCOME split into three sub-sections:
+  - **STR ROUTE** (shown only on the STR route with an STR doc): STR proof + earner IC + applicant BC /
+    guardian letter (none for a father earner), with red "Missing" placeholders.
+  - **SALARY ROUTE** (always): salary-route per-member required slots (placeholders) on the salary route;
+    on the STR route, any supplementary salary/EPF/extra-member docs the family added (a household can
+    have an STR parent *and* a working earner — e.g. an STR mother who cleans + a security-guard father).
+  - **UTILITY** (always): TNB (electricity) + water bills.
+  ACADEMIC now also holds the continuing-student CGPA slip (`semester_result`); ADDITIONAL holds the
+  statement of intent, photo and school-leaving certificate; `bank_statement` gains a proper label. New
+  `incomeSubSections` layout fn in `lib/officerCockpit.ts` (reuses the `incomeDocLayout` slot builders;
+  the STR earner-IC lookup prefers the exact tag over a blank one). i18n en/ms/ta (Tamil first-draft).
+  432 jest (+6). Phases 2 (replaced-document history) + 3 (shared-IC / STR-overrides verdict) follow.
+
 - **Verification-model roadmap Sprint V6 (2026-07-04, FINAL) — Gopal in the Action Centre + persona
   polish (audit F1, #15, #17). No migration.** Completes the verification-model hardening roadmap
   (V1–V6).

@@ -57,7 +57,7 @@ import {
   aiSuggestionFor,
   documentPill,
   documentFacts,
-  incomeDocLayout,
+  incomeSubSections,
   docIconFor,
   earnerMemberFor,
   viewerKind,
@@ -1652,7 +1652,7 @@ export default function AdminScholarshipDetailPage() {
         </div>
         {(() => {
           const groups = groupDocumentsByFact(app.documents)
-          const sectionKeys = ['identity', 'academic', 'pathway', 'income', 'other'] as const
+          const sectionKeys = ['identity', 'academic', 'pathway', 'income', 'additional', 'other'] as const
           const pillClass = (p: 'verified' | 'check' | 'unread') => {
             if (p === 'verified') return 'bg-green-100 text-green-700'
             if (p === 'check') return 'bg-amber-100 text-amber-700'
@@ -1667,7 +1667,7 @@ export default function AdminScholarshipDetailPage() {
           const TYPE_KEYS = new Set(['ic', 'parent_ic', 'results_slip', 'offer_letter', 'str',
             'salary_slip', 'epf', 'income_support_doc', 'school_leaving_cert', 'semester_result',
             'water_bill', 'electricity_bill', 'birth_certificate', 'guardianship_letter',
-            'statement_of_intent', 'photo', 'other'])
+            'statement_of_intent', 'photo', 'bank_statement', 'other'])
           // Income-earner docs are person-qualified from their slot ("Mother's STR proof",
           // "Father's salary slip"); the IC keeps its own possessive ("Mother's IC").
           const INCOME_MEMBER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf'])
@@ -1831,31 +1831,28 @@ export default function AdminScholarshipDetailPage() {
               {sectionKeys.map((key) => {
                 const docs = groups[key]
                 if (key === 'income') {
-                  // Income: compulsory (route+selection aware) on top with placeholders for
-                  // anything missing, then the optional household docs.
-                  const layout = incomeDocLayout(app, docs)
-                  if (docs.length === 0 && layout.required.length === 0) return null
+                  // Income splits into STR ROUTE / SALARY ROUTE / UTILITY sub-sections. STR is
+                  // shown only on the STR route with an STR doc; SALARY + UTILITY always (when
+                  // they have content). A missing compulsory slot renders a "Missing" placeholder.
+                  const sub = incomeSubSections(app, docs)
+                  const subHead = 'text-[9px] font-semibold uppercase tracking-wider text-gray-300 mb-1 mt-2'
+                  const subSection = (headKey: string, slots: IncomeSlot[]) => (
+                    slots.length === 0 ? null : (
+                      <div key={headKey}>
+                        <p className={subHead}>{t(`admin.scholarship.docsDrawer.group.${headKey}`)}</p>
+                        <ul className="space-y-1.5">
+                          {slots.map((s) => (s.doc ? docRow(s.doc) : placeholderRow(s)))}
+                        </ul>
+                      </div>
+                    )
+                  )
+                  if (docs.length === 0 && !sub.str && sub.salary.length === 0 && sub.utility.length === 0) return null
                   return (
                     <div key={key}>
                       <p className={subLabel}>{t('admin.scholarship.docsDrawer.group.income')}</p>
-                      {layout.required.length > 0 && (
-                        <>
-                          <p className="text-[9px] font-semibold uppercase tracking-wider text-gray-300 mb-1">
-                            {t('admin.scholarship.docsDrawer.required')}
-                          </p>
-                          <ul className="space-y-1.5">
-                            {layout.required.map((s) => (s.doc ? docRow(s.doc) : placeholderRow(s)))}
-                          </ul>
-                        </>
-                      )}
-                      {layout.optional.length > 0 && (
-                        <>
-                          <p className="text-[9px] font-semibold uppercase tracking-wider text-gray-300 mb-1 mt-2">
-                            {t('admin.scholarship.docsDrawer.optional')}
-                          </p>
-                          <ul className="space-y-1.5">{layout.optional.map(docRow)}</ul>
-                        </>
-                      )}
+                      {sub.str && subSection('incomeStr', sub.str)}
+                      {subSection('incomeSalary', sub.salary)}
+                      {subSection('incomeUtility', sub.utility)}
                     </div>
                   )
                 }

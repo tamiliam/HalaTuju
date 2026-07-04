@@ -84,23 +84,24 @@ export const TONE_BAND_KEY: Record<FactTileTone, string> = {
 
 // ── Document grouping ────────────────────────────────────────────────────────
 
-export type DocFact = 'identity' | 'academic' | 'pathway' | 'income' | 'other'
+export type DocFact = 'identity' | 'academic' | 'pathway' | 'income' | 'additional' | 'other'
 
-/** Map a document's doc_type to the verification fact it belongs to. */
+/** Map a document's doc_type to the verification-fact section it belongs to. */
 function docTypeToFact(docType: string): DocFact {
   switch (docType) {
     case 'ic':
       return 'identity'
+    // Academic = the SPM slip AND the continuing-student current-CGPA slip.
     case 'results_slip':
+    case 'semester_result':
       return 'academic'
     case 'offer_letter':
       return 'pathway'
     // The parent/guardian IC sits with INCOME: the income docs (STR / salary slip /
     // EPF) are issued in a parent's name, and the parent IC is what confirms that
     // earner's identity. The relationship docs (birth cert / guardianship letter) link
-    // that earner to the student, so they belong to the income cluster too — without this
-    // the BC fell to 'other' and the income panel showed it as a missing placeholder.
-    // Utility bills lend credibility to the income claim.
+    // that earner to the student, so they belong to the income cluster too. Utility bills
+    // lend credibility to the income claim (rendered in the UTILITY sub-section).
     case 'parent_ic':
     case 'str':
     case 'epf':
@@ -110,6 +111,16 @@ function docTypeToFact(docType: string): DocFact {
     case 'water_bill':
     case 'electricity_bill':
       return 'income'
+    // Supporting context the student attaches to their case (not a verification fact).
+    case 'statement_of_intent':
+    case 'photo':
+    case 'school_leaving_cert':
+      return 'additional'
+    // Everything else — reviewer-requested extras, income-support/bank/reference docs.
+    case 'income_support_doc':
+    case 'bank_statement':
+    case 'reference_letter':
+    case 'other':
     default:
       return 'other'
   }
@@ -120,12 +131,13 @@ export interface GroupedDocuments {
   academic: AdminApplicantDocument[]
   pathway: AdminApplicantDocument[]
   income: AdminApplicantDocument[]
+  additional: AdminApplicantDocument[]
   other: AdminApplicantDocument[]
 }
 
 /**
- * Group a flat list of documents under the four verification facts plus an
- * "other" bucket for anything we do not recognise.
+ * Group a flat list of documents under the verification-fact sections plus the
+ * "additional" (supporting) and "other" (reviewer-requested extras) buckets.
  */
 export function groupDocumentsByFact(
   documents: AdminApplicantDocument[],
@@ -135,6 +147,7 @@ export function groupDocumentsByFact(
     academic: [],
     pathway: [],
     income: [],
+    additional: [],
     other: [],
   }
   for (const doc of documents) {
@@ -531,6 +544,83 @@ export function incomeDocLayout(app: IncomeAnswerSource, incomeDocs: AdminApplic
   const optional = incomeDocs.filter((d) => !usedIds.has(d.id))
     .sort((a, b) => rank(a.doc_type) - rank(b.doc_type))
   return { required, optional }
+}
+
+// ── Income sub-sections (STR ROUTE / SALARY ROUTE / UTILITY) ──────────────────────────
+// A household is not strictly one route: an STR mother may also work, and a father may earn
+// a salary — so the box shows the STR proof cluster AND a salary cluster AND utilities as
+// distinct sub-sections (owner decision, 2026-07-04). Visibility:
+//   UTILITY  — always (the uploaded water/electricity bills; optional, no placeholders).
+//   STR      — only when the family is on the STR route AND an STR document exists.
+//   SALARY   — always: on the salary route it shows the per-member REQUIRED slots (with
+//              "Missing" placeholders); on the STR route it shows any supplementary salary/EPF/
+//              extra-member docs the family added (present-only, no placeholders).
+export interface IncomeSubSections {
+  str: IncomeSlot[] | null    // null → hide the STR sub-section entirely
+  salary: IncomeSlot[]        // may be empty (then hidden by the renderer)
+  utility: IncomeSlot[]       // may be empty (then hidden by the renderer)
+}
+
+export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminApplicantDocument[]): IncomeSubSections {
+  const route = app.income_route || ''
+  const earner = app.income_earner || ''
+  const find = (dt: string, member: string) =>
+    incomeDocs.find((d) => d.doc_type === dt && (d.household_member || '') === member) || null
+  // The STR earner's docs may carry the earner tag OR a legacy blank tag; prefer the exact
+  // earner tag, fall back to blank — so a correctly-tagged earner IC wins over a blank one
+  // (which may actually belong to another member and belongs in the SALARY cluster).
+  const findE = (dt: string) =>
+    incomeDocs.find((d) => d.doc_type === dt && (d.household_member || '') === earner)
+    || incomeDocs.find((d) => d.doc_type === dt && (d.household_member || '') === '')
+    || null
+  const used = new Set<number>()
+  const mark = (slots: IncomeSlot[]) => slots.forEach((s) => { if (s.doc?.id != null) used.add(s.doc.id) })
+
+  // UTILITY — the uploaded bills, in a stable order.
+  const utility: IncomeSlot[] = incomeDocs
+    .filter((d) => d.doc_type === 'water_bill' || d.doc_type === 'electricity_bill')
+    .sort((a, b) => (a.doc_type === 'electricity_bill' ? -1 : 1) - (b.doc_type === 'electricity_bill' ? -1 : 1))
+    .map((d) => ({ docType: d.doc_type, member: d.household_member || '', doc: d }))
+  mark(utility)
+
+  // STR — only on the STR route with an STR doc present. STR proof → earner IC → earner rel doc.
+  let str: IncomeSlot[] | null = null
+  if (route === 'str' && incomeDocs.some((d) => d.doc_type === 'str')) {
+    const s: IncomeSlot[] = [
+      { docType: 'str', member: earner, doc: findE('str') },
+      { docType: 'parent_ic', member: earner, doc: findE('parent_ic') },
+    ]
+    const rel = relationshipDocFor(earner)
+    if (rel) s.push({ docType: rel, member: '', doc: findE(rel) })
+    mark(s)
+    str = s
+  }
+
+  // SALARY — the salary route's required per-member slots (with placeholders), then any
+  // remaining salary/EPF/IC/relationship docs (the STR route's supplementary salary docs,
+  // plus orphans) appended as present rows.
+  const salary: IncomeSlot[] = []
+  if (route === 'salary') {
+    for (const m of workingMembers(app.income_working_members as WorkingMember[] | null)) {
+      salary.push({ docType: 'parent_ic', member: m, doc: find('parent_ic', m) })
+      salary.push({ docType: 'salary_slip', member: m, doc: find('salary_slip', m) })
+      const epf = find('epf', m)
+      if (epf) salary.push({ docType: 'epf', member: m, doc: epf })
+      const rel = relationshipDocFor(m)
+      if (rel && !salary.some((s) => s.docType === rel)) {
+        salary.push({ docType: rel, member: '', doc: find(rel, '') })
+      }
+    }
+  }
+  mark(salary)
+  const SALARY_TAIL = ['salary_slip', 'epf', 'parent_ic', 'birth_certificate', 'guardianship_letter']
+  const tail = incomeDocs
+    .filter((d) => !used.has(d.id) && SALARY_TAIL.includes(d.doc_type))
+    .sort((a, b) => SALARY_TAIL.indexOf(a.doc_type) - SALARY_TAIL.indexOf(b.doc_type))
+    .map((d) => ({ docType: d.doc_type, member: d.household_member || '', doc: d }))
+  salary.push(...tail)
+
+  return { str, salary, utility }
 }
 
 // ── Document row presentation (cockpit Documents drawer) ─────────────────────────────

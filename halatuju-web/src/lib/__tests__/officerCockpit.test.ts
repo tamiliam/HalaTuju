@@ -5,6 +5,7 @@ import {
   documentPill,
   documentFacts,
   incomeDocLayout,
+  incomeSubSections,
   docIconFor,
   earnerMemberFor,
   viewerKind,
@@ -91,9 +92,24 @@ describe('groupDocumentsByFact', () => {
     expect(groups.income).toHaveLength(0)
   })
 
-  it('places results_slip in academic', () => {
-    const groups = groupDocumentsByFact([doc({ doc_type: 'results_slip' })])
-    expect(groups.academic).toHaveLength(1)
+  it('places results_slip AND semester_result in academic', () => {
+    const groups = groupDocumentsByFact([
+      doc({ id: 1, doc_type: 'results_slip' }), doc({ id: 2, doc_type: 'semester_result' })])
+    expect(groups.academic).toHaveLength(2)
+  })
+
+  it('places statement_of_intent / photo / school_leaving_cert in additional', () => {
+    const groups = groupDocumentsByFact(['statement_of_intent', 'photo', 'school_leaving_cert']
+      .map((t, i) => doc({ id: i, doc_type: t })))
+    expect(groups.additional).toHaveLength(3)
+    expect(groups.other).toHaveLength(0)
+  })
+
+  it('places income_support_doc / bank_statement / reference_letter / other in other', () => {
+    const groups = groupDocumentsByFact(['income_support_doc', 'bank_statement', 'reference_letter', 'other']
+      .map((t, i) => doc({ id: i, doc_type: t })))
+    expect(groups.other).toHaveLength(4)
+    expect(groups.additional).toHaveLength(0)
   })
 
   it('places income docs AND the parent ic in income', () => {
@@ -115,7 +131,7 @@ describe('groupDocumentsByFact', () => {
   })
 
   it('places unrecognised types in other', () => {
-    const groups = groupDocumentsByFact([doc({ doc_type: 'bank_statement' })])
+    const groups = groupDocumentsByFact([doc({ doc_type: 'some_future_type' })])
     expect(groups.other).toHaveLength(1)
   })
 
@@ -427,6 +443,71 @@ describe('incomeDocLayout', () => {
       [elec, epf, bc, salary, water])
     expect(layout.optional.map((d) => d.doc_type)).toEqual(
       ['salary_slip', 'epf', 'birth_certificate', 'water_bill', 'electricity_bill'])
+  })
+})
+
+// ── incomeSubSections (STR ROUTE / SALARY ROUTE / UTILITY) ─────────────────────
+describe('incomeSubSections', () => {
+  const ids = (slots: { doc: AdminApplicantDocument | null }[]) => slots.map((s) => s.doc?.id ?? null)
+
+  it('salary route: STR hidden; SALARY has per-member required slots (placeholders); UTILITY the bills', () => {
+    const fIc = doc({ id: 1, doc_type: 'parent_ic', household_member: 'father' })
+    const water = doc({ id: 9, doc_type: 'water_bill' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['father', 'mother'] }, [fIc, water])
+    expect(sub.str).toBeNull()
+    expect(sub.salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
+      ['parent_ic', 'father', 1],
+      ['salary_slip', 'father', null],   // missing → placeholder
+      ['parent_ic', 'mother', null],
+      ['salary_slip', 'mother', null],
+      ['birth_certificate', '', null],   // mother needs a BC
+    ])
+    expect(ids(sub.utility)).toEqual([9])
+  })
+
+  it('STR route with an STR doc: STR sub shows the cluster; SALARY holds supplementary salary docs', () => {
+    // Worked example: STR mother (also a cleaner) + a security-guard father. STR letter +
+    // mother IC + applicant BC → STR; the cleaner/guard payslips + father IC + EPFs → SALARY.
+    const str = doc({ id: 1, doc_type: 'str', household_member: 'mother' })
+    const mIc = doc({ id: 2, doc_type: 'parent_ic', household_member: 'mother' })
+    const bc = doc({ id: 3, doc_type: 'birth_certificate', household_member: '' })
+    const mSlip = doc({ id: 4, doc_type: 'salary_slip', household_member: 'mother' })
+    const fSlip = doc({ id: 5, doc_type: 'salary_slip', household_member: 'father' })
+    const fIc = doc({ id: 6, doc_type: 'parent_ic', household_member: 'father' })
+    const mEpf = doc({ id: 7, doc_type: 'epf', household_member: 'mother' })
+    const fEpf = doc({ id: 8, doc_type: 'epf', household_member: 'father' })
+    const sub = incomeSubSections(
+      { income_route: 'str', income_earner: 'mother' }, [str, mIc, bc, mSlip, fSlip, fIc, mEpf, fEpf])
+    // STR cluster: STR proof + mother's IC + applicant BC.
+    expect(sub.str?.map((s) => [s.docType, s.doc?.id ?? null])).toEqual([
+      ['str', 1], ['parent_ic', 2], ['birth_certificate', 3]])
+    // SALARY: everything else (both slips, father's IC, both EPFs) — the mother's IC + STR + BC
+    // are NOT duplicated here.
+    const salaryIds = ids(sub.salary)
+    expect(salaryIds).toEqual(expect.arrayContaining([4, 5, 6, 7, 8]))
+    expect(salaryIds).not.toContain(1)   // STR proof stays in STR
+    expect(salaryIds).not.toContain(2)   // mother's IC stays in STR
+    expect(salaryIds).not.toContain(3)   // applicant BC stays in STR
+  })
+
+  it('STR route without any STR doc → STR sub hidden (only salary/utility render)', () => {
+    const mSlip = doc({ id: 4, doc_type: 'salary_slip', household_member: 'mother' })
+    const sub = incomeSubSections({ income_route: 'str', income_earner: 'mother' }, [mSlip])
+    expect(sub.str).toBeNull()
+    expect(ids(sub.salary)).toEqual([4])
+  })
+
+  it('prefers the exactly-tagged earner IC over a blank-tagged one (blank goes to SALARY)', () => {
+    // #63 shape: mother is the STR earner (IC tagged 'mother'); a blank-tagged parent_ic is
+    // actually the father's — it must NOT be pulled into the STR earner slot.
+    const str = doc({ id: 1, doc_type: 'str', household_member: 'mother' })
+    const mIc = doc({ id: 2, doc_type: 'parent_ic', household_member: 'mother' })
+    const blankIc = doc({ id: 3, doc_type: 'parent_ic', household_member: '' })
+    const sub = incomeSubSections(
+      { income_route: 'str', income_earner: 'mother' }, [str, mIc, blankIc])
+    expect(sub.str?.find((s) => s.docType === 'parent_ic')?.doc?.id).toBe(2)  // exact earner IC
+    expect(ids(sub.salary)).toContain(3)                                      // blank IC → SALARY
   })
 })
 

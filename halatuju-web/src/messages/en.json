@@ -3470,10 +3470,12 @@
           "academic": "ACADEMIC",
           "income": "INCOME",
           "pathway": "PATHWAY",
-          "other": "OTHER"
+          "other": "OTHER",
+          "additional": "ADDITIONAL",
+          "incomeStr": "STR ROUTE",
+          "incomeSalary": "SALARY ROUTE",
+          "incomeUtility": "UTILITY"
         },
-        "required": "Required",
-        "optional": "Optional",
         "notUploaded": "not uploaded yet",
         "view": "View",
         "rerun": "Re-run",
@@ -3532,7 +3534,8 @@
           "guardianship_letter": "Guardianship letter",
           "statement_of_intent": "Statement of intent",
           "photo": "Photo",
-          "other": "Other document"
+          "other": "Other document",
+          "bank_statement": "Bank statement"
         },
         "parentIcOf": "{member}'s IC",
         "ofMember": "{member}'s {doc}",

@@ -3470,10 +3470,12 @@
           "academic": "கல்வி",
           "income": "வருமானம்",
           "pathway": "பாதை",
-          "other": "மற்றவை"
+          "other": "மற்றவை",
+          "additional": "கூடுதல்",
+          "incomeStr": "STR வழி",
+          "incomeSalary": "சம்பள வழி",
+          "incomeUtility": "பயன்பாடு"
         },
-        "required": "கட்டாயம்",
-        "optional": "விருப்பம்",
         "notUploaded": "இன்னும் பதிவேற்றப்படவில்லை",
         "view": "பார்க்கவும்",
         "rerun": "மீண்டும் இயக்கு",
@@ -3532,7 +3534,8 @@
           "guardianship_letter": "பாதுகாவலர் கடிதம்",
           "statement_of_intent": "நோக்க அறிக்கை",
           "photo": "புகைப்படம்",
-          "other": "பிற ஆவணம்"
+          "other": "பிற ஆவணம்",
+          "bank_statement": "வங்கி அறிக்கை"
         },
         "parentIcOf": "{member}-இன் IC",
         "ofMember": "{member}-இன் {doc}",

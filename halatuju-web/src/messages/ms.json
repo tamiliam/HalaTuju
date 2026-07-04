@@ -3470,10 +3470,12 @@
           "academic": "AKADEMIK",
           "income": "PENDAPATAN",
           "pathway": "LALUAN",
-          "other": "LAIN-LAIN"
+          "other": "LAIN-LAIN",
+          "additional": "TAMBAHAN",
+          "incomeStr": "LALUAN STR",
+          "incomeSalary": "LALUAN GAJI",
+          "incomeUtility": "UTILITI"
         },
-        "required": "Wajib",
-        "optional": "Pilihan",
         "notUploaded": "belum dimuat naik",
         "view": "Lihat",
         "rerun": "Jalankan semula",
@@ -3532,7 +3534,8 @@
           "guardianship_letter": "Surat penjagaan",
           "statement_of_intent": "Penyata hasrat",
           "photo": "Gambar",
-          "other": "Dokumen lain"
+          "other": "Dokumen lain",
+          "bank_statement": "Penyata bank"
         },
         "parentIcOf": "IC {member}",
         "ofMember": "{doc} {member}",
