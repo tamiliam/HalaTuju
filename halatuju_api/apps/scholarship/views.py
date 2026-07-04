@@ -659,16 +659,21 @@ class DocumentListCreateView(APIView):
         # or another request. '' = the student's own apply-form/route doc (shared slot).
         new_request_code = serializer.validated_data.get('request_code', '') or ''
         # Slot model (TD-115): income docs are tagged by the household member they belong to.
-        # The STR route has a single earner, so the backend AUTHORITATIVELY tags the earner's
-        # income docs (str/parent_ic/salary_slip/epf) regardless of what the client sent — this
-        # also slots Action-Centre / Check-2 uploads, which carry no member. The salary route
-        # keeps the client's per-block member. EXCEPTION: a request-keyed upload (e.g. a reviewer
-        # asking for the FATHER's IC on a mother-STR route) must NOT be force-tagged to the STR
-        # earner — that would overwrite the mother's IC. Honour the requested member instead.
+        # The STR route has a single earner, so PRE-CONSENT the backend AUTHORITATIVELY tags the
+        # earner's income docs (str/parent_ic/salary_slip/epf) to that earner — by design, the STR
+        # route clears on ONE parent's STR + IC (+ BC), so a blank-request income doc IS the earner's.
+        #
+        # AFTER consent (profile_completed_at set) that assumption is WRONG: we now collect EVERY
+        # working member's details, and tagging is driven by the Check-2 doc request (which carries
+        # the member). A father's payslip on a mother-STR household must NOT be force-tagged to the
+        # mother (#80: exactly this happened — a force-tag mis-attributed the father's slip). So the
+        # force-tag is GATED on pre-consent; post-consent a blank tag is left for the request member
+        # or the name-on-doc guard below to resolve. (A request-keyed upload was never force-tagged.)
         _INCOME_EARNER_DOCS = {'str', 'parent_ic', 'salary_slip', 'epf'}
         str_income = (new_doc_type in _INCOME_EARNER_DOCS
                       and (getattr(app, 'income_route', '') or '').strip() == 'str'
-                      and not new_request_code)
+                      and not new_request_code
+                      and app.profile_completed_at is None)   # pre-consent only
         if str_income:
             new_member = (getattr(app, 'income_earner', '') or '').strip()
             serializer.validated_data['household_member'] = new_member

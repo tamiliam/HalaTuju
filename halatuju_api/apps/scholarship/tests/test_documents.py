@@ -363,6 +363,27 @@ class TestDocumentApi(TestCase):
         self.assertEqual(live.count(), 1)
         self.assertEqual(live.first().id, resp.json()['id'])
 
+    @patch('apps.scholarship.vision.run_field_extraction_for_document', return_value=None)
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_str_route_force_tag_only_pre_consent(self, _del, _ext):
+        """The STR-route force-tag-to-earner applies ONLY pre-consent. Post-consent (profile
+        completed) we collect every working member, so a father's payslip on a mother-STR household
+        keeps its 'father' tag instead of being force-tagged to the mother (#80's root cause)."""
+        from django.utils import timezone
+        self.app_a.income_route = 'str'
+        self.app_a.income_earner = 'mother'
+        self.app_a.profile_completed_at = timezone.now()          # consent given → post-consent
+        self.app_a.save(update_fields=['income_route', 'income_earner', 'profile_completed_at'])
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'salary_slip', 'household_member': 'father',
+            'storage_path': f'{self.app_a.id}/salary_slip/father',
+            'original_filename': 'f.pdf', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        doc = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertEqual(doc.household_member, 'father')          # NOT force-tagged to the STR earner
+
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_delete_sweeps_storage(self, mock_storage_delete):
         """Explicit DELETE on a doc also sweeps its Storage blob."""
