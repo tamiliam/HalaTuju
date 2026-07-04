@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Officer Documents box — doc-driven income layout + blank-tag name resolution (2026-07-04, FE +
+  backend, no migration).** The income box now lets the DOCUMENT drive the space, not the declared
+  route (owner). The moment an STR-claiming doc exists, the **STR ROUTE** cluster shows on any route —
+  STR proof + that parent's IC + the applicant's BC (guardian letter for a guardian; none for a
+  father) — so a reviewer always sees an uploaded STR; currency/verification only colour the rows.
+  - **Blank-tagged income docs** are placed by the NAME on the doc, matched to the family roster
+    (`income_engine.resolved_member_for` → serializer `resolved_member`); the cockpit places a doc by
+    `resolved_member || household_member`. Unresolvable docs land in a SALARY catch-all — none hidden.
+  - **Shared-IC:** a member's IC shown under STR ROUTE is not repeated under SALARY ROUTE. SALARY
+    order per spec: salary slip → IC → EPF.
+  - **STR Recipient/IC cross-check** falls back to the STR's tagged parent when `income_earner` is
+    blank (salary route), so it greens against the parent IC sitting right there — display-only on the
+    salary route (no re-banding).
+  - **Officer-requested re-uploads** of the same `(doc_type, member)` now SUPERSEDE the apply-form
+    copy (→ OTHER Old/Replaced) instead of forming a parallel slot; scoped to the same person (TD-115).
+  - 2076 scholarship pytest + 436 jest. #63's older apply-form STR was superseded by its verified
+    officer-requested copy (data fix via MCP). Residual: #63 still carries one mis-tagged payslip
+    (father's, tagged mother) — a data-quality item, separate from the layout.
+
 - **Officer Documents box — reorganisation Phase 2: document version history (2026-07-04, migration
   `0093` additive, migrate-first).** A re-upload no longer HARD-deletes the replaced document — it stamps
   the old row `superseded_at` + points `superseded_by` at the replacement **and retains the Storage
