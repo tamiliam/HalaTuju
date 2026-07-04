@@ -554,6 +554,16 @@ describe('incomeSubSections', () => {
     expect(salaryPairs).toContainEqual(['salary_slip', 'mother', 1569])        // mother also works
   })
 
+  it('guardian STR earner: the guardianship letter sits directly below the guardian IC', () => {
+    const str = doc({ id: 1, doc_type: 'str', household_member: 'guardian' })
+    const gIc = doc({ id: 2, doc_type: 'parent_ic', household_member: 'guardian' })
+    const letter = doc({ id: 3, doc_type: 'guardianship_letter', household_member: '' })
+    const sub = incomeSubSections(
+      { income_route: 'str', income_earner: 'guardian' }, [str, gIc, letter])
+    // STR proof → guardian IC → guardianship letter (letter directly below the IC)
+    expect(sub.str?.map((s) => s.docType)).toEqual(['str', 'parent_ic', 'guardianship_letter'])
+  })
+
   it('guardian salary earner: the guardianship letter sits directly below the guardian IC', () => {
     const gIc = doc({ id: 1, doc_type: 'parent_ic', household_member: 'guardian' })
     const letter = doc({ id: 2, doc_type: 'guardianship_letter', household_member: '' })
