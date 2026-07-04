@@ -1950,15 +1950,89 @@ export default function AdminScholarshipDetailPage() {
       {/* ═══════════════════════ RIGHT COLUMN (sticky) ══════════════════════════ */}
       <div id="record-verdict-panel" className="space-y-4 lg:sticky lg:top-4">
 
-      {/* ── Estimated need — beside Decision (award-sizing input; NOT raw narrative, so
-           NOT hidden). Per-pathway estimated GAP after government coverage. ─────────── */}
+      {/* ── Rate AI verification — the officer's Pass/Fail over the AI's four-fact read +
+           the AI's suggested verdict. Split out of the old Decision card (2026-07-04) into its
+           own topmost box. Both modes: buttons while deciding, badges once recorded. ───────── */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+        <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.recordVerdict.rateTitle')}</h2>
+        <div className="space-y-2">
+          {(['identity', 'academic', 'pathway', 'income'] as const).map((fact) => (
+            decisionLocked ? (
+              <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
+                <span className="text-sm font-medium text-gray-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  officerVerdict[fact] === 'pass' ? 'bg-green-100 text-green-700'
+                  : officerVerdict[fact] === 'fail' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+                  {officerVerdict[fact] === 'pass' ? t('admin.scholarship.recordVerdict.factPass')
+                    : officerVerdict[fact] === 'fail' ? t('admin.scholarship.recordVerdict.factFail') : '—'}
+                </span>
+              </div>
+            ) : (
+              <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
+                <span className="text-sm font-medium text-gray-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'pass' ? '' : 'pass' }))}
+                    disabled={!canWrite}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                      officerVerdict[fact] === 'pass'
+                        ? 'border-green-500 bg-green-500 text-white'
+                        : 'border-gray-300 text-gray-600 hover:border-green-400'
+                    } disabled:opacity-50`}
+                  >
+                    {t('admin.scholarship.recordVerdict.factPass')}
+                  </button>
+                  <button
+                    onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'fail' ? '' : 'fail' }))}
+                    disabled={!canWrite}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                      officerVerdict[fact] === 'fail'
+                        ? 'border-red-500 bg-red-500 text-white'
+                        : 'border-gray-300 text-gray-600 hover:border-red-400'
+                    } disabled:opacity-50`}
+                  >
+                    {t('admin.scholarship.recordVerdict.factFail')}
+                  </button>
+                </div>
+              </div>
+            )
+          ))}
+        </div>
+        {/* AI's suggested verdict — the officer decides; this is the AI's read. */}
+        {(() => {
+          const sugg = aiSuggestionFor(app.verdict || [])
+          const facts = ['identity', 'academic', 'pathway', 'income'] as const
+          return (
+            <p className="text-[11px] text-gray-400">
+              {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
+              {facts.map((f, i) => (
+                <span key={f}>
+                  {i > 0 && ', '}
+                  {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
+                  <span className={
+                    sugg[f] === 'yes' ? 'text-green-600 font-medium'
+                    : sugg[f] === 'no' ? 'text-red-600 font-medium'
+                    : 'text-amber-600 font-medium'
+                  }>
+                    {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
+                  </span>
+                </span>
+              ))}{'.'}
+            </p>
+          )
+        })()}
+      </div>
+
+      {/* ── Estimated need & proposed bursary — per-pathway estimated GAP after government
+           coverage, PLUS the proposed bursary amount (moved out of the old Decision card). ── */}
       {(() => {
         const fe = app.funding_estimate
-        if (!fe) return null
+        const showBursary = canWrite || app.award_amount != null
+        if (!fe && !showBursary) return null
         return (
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="font-semibold mb-2">{t('admin.scholarship.estimate.title')}</h2>
-            {fe.known ? (
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+            <h2 className="font-semibold">{t('admin.scholarship.estimate.title')}</h2>
+            {fe ? (fe.known ? (
               <>
                 <p className="text-2xl font-semibold text-gray-900">
                   ≈ RM {fe.total.toLocaleString('en-US')}
@@ -1978,7 +2052,70 @@ export default function AdminScholarshipDetailPage() {
               </>
             ) : (
               <p className="text-sm text-gray-500">{t('admin.scholarship.estimate.none')}</p>
-            )}
+            )) : null}
+            {/* Proposed bursary — moved out of the Decision card. Slider while deciding (super
+                may adjust; reviewer read-only), or the recorded amount once locked. Same
+                award_amount / disqualifier logic as before. */}
+            {decisionLocked ? (
+              app.award_amount != null && (
+                <div className="border-t pt-3 text-sm text-gray-700">
+                  {t('admin.scholarship.recordVerdict.assistanceLabel')}{' '}
+                  <span className="font-semibold text-gray-900">RM{Math.round(Number(app.award_amount)).toLocaleString()}</span>
+                </div>
+              )
+            ) : canWrite ? (
+              <div className="border-t pt-3">
+                {(() => {
+                  const disq = app.award_disqualifier
+                  const override = recAmount
+                    ?? (app.award_amount != null ? Math.round(Number(app.award_amount)) : null)
+                  const proposed = app.proposed_award_amount != null ? Math.round(Number(app.proposed_award_amount)) : null
+                  const cur = override ?? proposed
+                  if (cur == null) {
+                    return (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1">
+                        <p className="text-sm font-medium text-amber-900">{t('admin.scholarship.recordVerdict.noAmountTitle')}</p>
+                        {disq && <p className="text-xs text-amber-800">{t(`admin.scholarship.recordVerdict.noAmountReason_${disq}`)}</p>}
+                        <p className="text-xs text-amber-800">{t('admin.scholarship.recordVerdict.noAmountReviewer')}</p>
+                        {isSuper && (
+                          <div className="pt-2">
+                            <p className="mb-1 text-[11px] text-amber-700">{t('admin.scholarship.recordVerdict.noAmountOverride')}</p>
+                            <input type="range" min={1000} max={3000} step={500}
+                              value={2000} disabled={!!busy}
+                              onChange={(e) => doSetAwardAmount(Number(e.target.value))}
+                              className="w-full accent-primary-500" />
+                            <div className="flex justify-between text-[11px] text-gray-400">
+                              <span>RM1,000</span><span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+                  return (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        {t('admin.scholarship.recordVerdict.assistanceLabel')}
+                        <span className="ml-1 font-semibold text-gray-800">RM{cur.toLocaleString()}</span>
+                      </label>
+                      <input type="range" min={1000} max={3000} step={500}
+                        value={cur} disabled={!isSuper || !!busy}
+                        onChange={(e) => doSetAwardAmount(Number(e.target.value))}
+                        className={`w-full accent-primary-500 ${!isSuper ? 'opacity-60 cursor-not-allowed' : ''}`} />
+                      <div className="flex justify-between text-[11px] text-gray-400">
+                        <span>RM1,000</span><span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
+                      </div>
+                      {disq && override != null && (
+                        <p className="mt-0.5 text-[11px] text-amber-600">
+                          {t('admin.scholarship.recordVerdict.noAmountTitle')} · {t(`admin.scholarship.recordVerdict.noAmountReason_${disq}`)}
+                        </p>
+                      )}
+                      {!isSuper && <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.scholarship.recordVerdict.assistanceFixed')}</p>}
+                    </div>
+                  )
+                })()}
+              </div>
+            ) : null}
           </div>
         )
       })()}
@@ -2045,28 +2182,8 @@ export default function AdminScholarshipDetailPage() {
              editable; a superadmin can reopen via Edit. The post-accept contractual
              decline stays (a deliberate later action, not part of the frozen verdict). */
           <div className="space-y-3">
-            <div className="space-y-2">
-              {(['identity', 'academic', 'pathway', 'income'] as const).map((fact) => {
-                const v = officerVerdict[fact]
-                return (
-                  <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
-                    <span className="text-sm font-medium text-gray-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      v === 'pass' ? 'bg-green-100 text-green-700'
-                      : v === 'fail' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {v === 'pass' ? t('admin.scholarship.recordVerdict.factPass')
-                        : v === 'fail' ? t('admin.scholarship.recordVerdict.factFail') : '—'}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-            {app.award_amount != null && (
-              <p className="text-sm text-gray-700">
-                {t('admin.scholarship.recordVerdict.assistanceLabel')}{' '}
-                <span className="font-semibold text-gray-900">RM{Math.round(Number(app.award_amount)).toLocaleString()}</span>
-              </p>
-            )}
+            {/* The recorded Pass/Fail + the bursary amount now live in the Rate-AI and
+                Estimated-need cards above; this card keeps the justification + who/when. */}
             {(verdictReason || '').trim() && (
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-1">{t('admin.scholarship.recordVerdict.reasonLabel')}</p>
@@ -2101,124 +2218,8 @@ export default function AdminScholarshipDetailPage() {
           </div>
         ) : (
         <>
-        <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.recordVerdict.rateTitle')}</p>
-
-        {/* Four fact rows — pass / fail toggle */}
-        <div className="space-y-2">
-          {(['identity', 'academic', 'pathway', 'income'] as const).map((fact) => (
-            <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
-              <span className="text-sm font-medium text-gray-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
-              <div className="flex gap-1.5">
-                <button
-                  onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'pass' ? '' : 'pass' }))}
-                  disabled={!canWrite}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                    officerVerdict[fact] === 'pass'
-                      ? 'border-green-500 bg-green-500 text-white'
-                      : 'border-gray-300 text-gray-600 hover:border-green-400'
-                  } disabled:opacity-50`}
-                >
-                  {t('admin.scholarship.recordVerdict.factPass')}
-                </button>
-                <button
-                  onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'fail' ? '' : 'fail' }))}
-                  disabled={!canWrite}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                    officerVerdict[fact] === 'fail'
-                      ? 'border-red-500 bg-red-500 text-white'
-                      : 'border-gray-300 text-gray-600 hover:border-red-400'
-                  } disabled:opacity-50`}
-                >
-                  {t('admin.scholarship.recordVerdict.factFail')}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* AI verdict — sits right under the four facts (the officer decides). */}
-        {(() => {
-          const sugg = aiSuggestionFor(app.verdict || [])
-          const facts = ['identity', 'academic', 'pathway', 'income'] as const
-          return (
-            <p className="text-[11px] text-gray-400">
-              {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
-              {facts.map((f, i) => (
-                <span key={f}>
-                  {i > 0 && ', '}
-                  {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
-                  <span className={
-                    sugg[f] === 'yes' ? 'text-green-600 font-medium'
-                    : sugg[f] === 'no' ? 'text-red-600 font-medium'
-                    : 'text-amber-600 font-medium'
-                  }>
-                    {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
-                  </span>
-                </span>
-              ))}{'.'}
-            </p>
-          )
-        })()}
-
-        {/* #4: assistance — standardised by pathway (RM3,000 STPM / RM2,000 otherwise),
-            auto-applied on approve. The slider is READ-ONLY for reviewers; only a super may
-            adjust it (5-stop: RM1,000 / 1,500 / 2,000 / 2,500 / 3,000). When the verdict
-            confidently disqualifies (offer_not_official / income_above_b40_line) the system
-            proposes NO amount: reviewers see the reason; a super may override it. */}
-        {canWrite && (() => {
-          const disq = app.award_disqualifier
-          // A super override / already-persisted value wins over the proposal.
-          const override = recAmount
-            ?? (app.award_amount != null ? Math.round(Number(app.award_amount)) : null)
-          const proposed = app.proposed_award_amount != null ? Math.round(Number(app.proposed_award_amount)) : null
-          const cur = override ?? proposed  // null = disqualified with no override → no amount
-
-          if (cur == null) {
-            // No amount recommended. Show the reason; a super gets an override slider.
-            return (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1">
-                <p className="text-sm font-medium text-amber-900">{t('admin.scholarship.recordVerdict.noAmountTitle')}</p>
-                {disq && <p className="text-xs text-amber-800">{t(`admin.scholarship.recordVerdict.noAmountReason_${disq}`)}</p>}
-                <p className="text-xs text-amber-800">{t('admin.scholarship.recordVerdict.noAmountReviewer')}</p>
-                {isSuper && (
-                  <div className="pt-2">
-                    <p className="mb-1 text-[11px] text-amber-700">{t('admin.scholarship.recordVerdict.noAmountOverride')}</p>
-                    <input type="range" min={1000} max={3000} step={500}
-                      value={2000} disabled={!!busy}
-                      onChange={(e) => doSetAwardAmount(Number(e.target.value))}
-                      className="w-full accent-primary-500" />
-                    <div className="flex justify-between text-[11px] text-gray-400">
-                      <span>RM1,000</span><span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          }
-
-          return (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                {t('admin.scholarship.recordVerdict.assistanceLabel')}
-                <span className="ml-1 font-semibold text-gray-800">RM{cur.toLocaleString()}</span>
-              </label>
-              <input type="range" min={1000} max={3000} step={500}
-                value={cur} disabled={!isSuper || !!busy}
-                onChange={(e) => doSetAwardAmount(Number(e.target.value))}
-                className={`w-full accent-primary-500 ${!isSuper ? 'opacity-60 cursor-not-allowed' : ''}`} />
-              <div className="flex justify-between text-[11px] text-gray-400">
-                <span>RM1,000</span><span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
-              </div>
-              {disq && override != null && (
-                <p className="mt-0.5 text-[11px] text-amber-600">
-                  {t('admin.scholarship.recordVerdict.noAmountTitle')} · {t(`admin.scholarship.recordVerdict.noAmountReason_${disq}`)}
-                </p>
-              )}
-              {!isSuper && <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.scholarship.recordVerdict.assistanceFixed')}</p>}
-            </div>
-          )
-        })()}
-
+        {/* Justification & conclusion — the officer's case. The AI-verification facts and the
+            proposed bursary now live in their own cards above this one. */}
         {/* Reason textarea */}
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">

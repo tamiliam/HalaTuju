@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Cockpit Decision box split into three cards (2026-07-04, frontend-only).** The single "Decision" card
+  is now three: **Rate AI verification** (the four Pass/Fail facts + the AI's suggested verdict, topmost) ·
+  **Estimated need & proposed bursary** (the funding estimate + the assistance-recommended slider moved in) ·
+  **Recommendation** (renamed from "Decision"; "Conclusion" → **Justification and conclusion** with a
+  make-your-case placeholder; "Save verdict & generate final profile" → **Save & generate final profile**).
+  Pure regroup + i18n rename (en/ms/ta) — no backend, no migration; the slider still drives `award_amount`
+  and the textarea still stores `verdict_reason`. Locked/read-only state distributes across the three cards.
+
 ### Added
 - **Backend tag guard — never persist a blank-tagged salary income doc (2026-07-04, backend, no
   migration).** The airtight last line for the tagging invariant: on upload, an income doc

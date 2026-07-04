@@ -3287,7 +3287,7 @@
       "programmeMonths": "Programme length (months)",
       "fundingNote": "Funding note",
       "estimate": {
-        "title": "Estimated need",
+        "title": "Estimated need & proposed bursary",
         "month": "month",
         "months": "months",
         "variableNote": "Varies by institution and field — confirm at interview.",
@@ -3438,14 +3438,14 @@
         }
       },
       "decision": {
-        "title": "Decision",
+        "title": "Recommendation",
         "savedAndAccepted": "Verdict saved — applicant accepted."
       },
       "recordVerdict": {
         "title": "Record your verdict",
         "factPass": "Pass",
         "factFail": "Fail",
-        "reasonLabel": "Conclusion",
+        "reasonLabel": "Justification and conclusion",
         "assistanceLabel": "Assistance recommended",
         "assistanceFixed": "Set by pathway — only a super admin can adjust.",
         "approveNeedsAmount": "Set a recommended assistance amount before approving.",
@@ -3457,8 +3457,8 @@
         "approveNeedsReview": "The system recommends no amount. Settle the pathway/income, or override the amount, before recommending.",
         "chooseOutcome": "Choose Recommend or Decline.",
         "saveNeedsReady": "Submit the interview, then rate the AI's check on all four facts (Pass/Fail) and add a conclusion.",
-        "reasonPlaceholder": "State your conclusions / reasons for your decision",
-        "save": "Save verdict & generate final profile",
+        "reasonPlaceholder": "Make your case: why this student deserves to be sponsored — or why they don't need sponsorship, or wouldn't benefit from the BrightPath bursary programme.",
+        "save": "Save & generate final profile",
         "approve": "Recommend",
         "decline": "Decline",
         "reopen": "Reopen",

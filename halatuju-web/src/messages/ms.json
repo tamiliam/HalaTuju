@@ -3287,7 +3287,7 @@
       "programmeMonths": "Tempoh program (bulan)",
       "fundingNote": "Nota pembiayaan",
       "estimate": {
-        "title": "Anggaran keperluan",
+        "title": "Anggaran keperluan & bursari yang dicadangkan",
         "month": "bulan",
         "months": "bulan",
         "variableNote": "Berbeza mengikut institusi dan bidang — sahkan semasa temu duga.",
@@ -3438,14 +3438,14 @@
         }
       },
       "decision": {
-        "title": "Keputusan",
+        "title": "Cadangan",
         "savedAndAccepted": "Keputusan disimpan — pemohon diterima."
       },
       "recordVerdict": {
         "title": "Rekod keputusan anda",
         "factPass": "Lulus",
         "factFail": "Gagal",
-        "reasonLabel": "Kesimpulan",
+        "reasonLabel": "Justifikasi dan kesimpulan",
         "assistanceLabel": "Bantuan yang disyorkan",
         "assistanceFixed": "Ditetapkan mengikut laluan — hanya super admin boleh ubah.",
         "approveNeedsAmount": "Tetapkan jumlah bantuan yang disyorkan sebelum meluluskan.",
@@ -3457,8 +3457,8 @@
         "approveNeedsReview": "Sistem mengesyorkan tiada jumlah. Selesaikan laluan/pendapatan, atau tetapkan jumlah ganti, sebelum mengesyorkan.",
         "chooseOutcome": "Pilih Syorkan atau Tolak.",
         "saveNeedsReady": "Hantar temu duga, kemudian nilai semakan AI bagi keempat-empat fakta (Lulus/Gagal) dan tambah kesimpulan.",
-        "reasonPlaceholder": "Nyatakan kesimpulan / sebab keputusan anda",
-        "save": "Simpan keputusan & jana profil akhir",
+        "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau mengapa mereka tidak memerlukan penajaan, atau tidak akan mendapat manfaat daripada program bursari BrightPath.",
+        "save": "Simpan & jana profil akhir",
         "approve": "Syorkan",
         "decline": "Tolak",
         "reopen": "Buka semula",
