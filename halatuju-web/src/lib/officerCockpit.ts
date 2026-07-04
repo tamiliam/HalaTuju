@@ -593,15 +593,25 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     .map((d) => ({ docType: d.doc_type, member: d.household_member || '', doc: d }))
   mark(utility)
 
-  // STR — only on the STR route with an STR doc present. STR proof → earner IC → earner rel doc.
+  // STR — show whenever an STR document is present, on ANY route. A salary-route or genuinely
+  // mixed household can still hold an STR (e.g. #63, a mother-STR family mis-switched to salary),
+  // and an officer must NEVER lose sight of an uploaded STR — it is often the decisive B40 proof.
+  // All STR docs are listed (the apply-form STR + any officer-requested copy). The earner IC +
+  // relationship companions are the STR route's compulsory partners, so they're appended only on
+  // the STR route (a salary-route STR holder isn't nagged for them).
   let str: IncomeSlot[] | null = null
-  if (route === 'str' && incomeDocs.some((d) => d.doc_type === 'str')) {
-    const s: IncomeSlot[] = [
-      { docType: 'str', member: earner, doc: findE('str') },
-      { docType: 'parent_ic', member: earner, doc: findE('parent_ic') },
+  const strDocs = incomeDocs.filter((d) => d.doc_type === 'str')
+  if (strDocs.length > 0) {
+    const ordered = [
+      ...strDocs.filter((d) => (d.household_member || '') === earner),   // earner-tagged first
+      ...strDocs.filter((d) => (d.household_member || '') !== earner),
     ]
-    const rel = relationshipDocFor(earner)
-    if (rel) s.push({ docType: rel, member: '', doc: findE(rel) })
+    const s: IncomeSlot[] = ordered.map((d) => ({ docType: 'str', member: d.household_member || '', doc: d }))
+    if (route === 'str') {
+      s.push({ docType: 'parent_ic', member: earner, doc: findE('parent_ic') })
+      const rel = relationshipDocFor(earner)
+      if (rel) s.push({ docType: rel, member: '', doc: findE(rel) })
+    }
     mark(s)
     str = s
   }
@@ -623,10 +633,14 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     }
   }
   mark(salary)
+  // Catch-all: EVERY income doc not already placed in STR / SALARY-required / UTILITY is appended
+  // here (known types ordered by SALARY_TAIL, anything else last) — an invisible-document guard so
+  // no uploaded income doc is ever dropped from the officer's view (the #63-class regression).
   const SALARY_TAIL = ['salary_slip', 'epf', 'parent_ic', 'birth_certificate', 'guardianship_letter']
+  const rankTail = (dt: string) => { const i = SALARY_TAIL.indexOf(dt); return i < 0 ? 99 : i }
   const tail = incomeDocs
-    .filter((d) => !used.has(d.id) && SALARY_TAIL.includes(d.doc_type))
-    .sort((a, b) => SALARY_TAIL.indexOf(a.doc_type) - SALARY_TAIL.indexOf(b.doc_type))
+    .filter((d) => !used.has(d.id))
+    .sort((a, b) => rankTail(a.doc_type) - rankTail(b.doc_type))
     .map((d) => ({ docType: d.doc_type, member: d.household_member || '', doc: d }))
   salary.push(...tail)
 

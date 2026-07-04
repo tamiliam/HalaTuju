@@ -509,6 +509,31 @@ describe('incomeSubSections', () => {
     expect(ids(sub.salary)).toEqual([4])
   })
 
+  it('#63 regression: a salary-route family WITH STR docs still shows them (never hidden)', () => {
+    // #63 was mis-switched to the salary route while holding a valid current STR (mother, Lulus)
+    // plus an officer-requested copy. The STR sub used to be gated to route==='str', and the
+    // SALARY tail didn't sweep `str`, so both STR docs rendered nowhere — invisible to the officer.
+    const str1 = doc({ id: 620, doc_type: 'str', household_member: 'mother' })
+    const str2 = doc({ id: 1253, doc_type: 'str', household_member: 'mother' })  // officer-requested copy
+    const mSlip = doc({ id: 1569, doc_type: 'salary_slip', household_member: 'mother' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['mother'] }, [str1, str2, mSlip])
+    // Both STR docs are visible under the STR sub-section…
+    expect(sub.str).not.toBeNull()
+    expect(sub.str!.filter((s) => s.docType === 'str').map((s) => s.doc?.id)).toEqual([620, 1253])
+    // …and NOT duplicated into SALARY; the salary slip still renders.
+    expect(ids(sub.salary)).not.toContain(620)
+    expect(ids(sub.salary)).not.toContain(1253)
+    expect(ids(sub.salary)).toContain(1569)
+  })
+
+  it('invisible-doc guard: any unplaced income doc still lands in the catch-all tail', () => {
+    // A guardianship letter with no matching working-member slot must not vanish.
+    const gl = doc({ id: 42, doc_type: 'guardianship_letter', household_member: '' })
+    const sub = incomeSubSections({ income_route: 'salary', income_working_members: [] }, [gl])
+    expect(ids(sub.salary)).toContain(42)
+  })
+
   it('prefers the exactly-tagged earner IC over a blank-tagged one (blank goes to SALARY)', () => {
     // #63 shape: mother is the STR earner (IC tagged 'mother'); a blank-tagged parent_ic is
     // actually the father's — it must NOT be pulled into the STR earner slot.
