@@ -105,6 +105,14 @@ describe('groupDocumentsByFact', () => {
     expect(groups.other).toHaveLength(0)
   })
 
+  it('orders additional: school-leaving cert → statement of intent → photo', () => {
+    // fed out of order, must come back in the fixed order
+    const groups = groupDocumentsByFact(['photo', 'statement_of_intent', 'school_leaving_cert']
+      .map((t, i) => doc({ id: i, doc_type: t })))
+    expect(groups.additional.map((d) => d.doc_type)).toEqual([
+      'school_leaving_cert', 'statement_of_intent', 'photo'])
+  })
+
   it('places income_support_doc / bank_statement / reference_letter / other in other', () => {
     const groups = groupDocumentsByFact(['income_support_doc', 'bank_statement', 'reference_letter', 'other']
       .map((t, i) => doc({ id: i, doc_type: t })))
@@ -544,6 +552,19 @@ describe('incomeSubSections', () => {
     expect(salaryPairs).toContainEqual(['parent_ic', 'father', 1571])          // blank IC resolved → father
     expect(salaryPairs).not.toContainEqual(['parent_ic', 'mother', 623])       // shared-IC: not repeated
     expect(salaryPairs).toContainEqual(['salary_slip', 'mother', 1569])        // mother also works
+  })
+
+  it('guardian salary earner: the guardianship letter sits directly below the guardian IC', () => {
+    const gIc = doc({ id: 1, doc_type: 'parent_ic', household_member: 'guardian' })
+    const letter = doc({ id: 2, doc_type: 'guardianship_letter', household_member: '' })
+    const gEpf = doc({ id: 3, doc_type: 'epf', household_member: 'guardian' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['guardian'] }, [gIc, letter, gEpf])
+    const types = sub.salary.map((s) => s.docType)
+    // salary slip (placeholder) → IC → guardianship letter → EPF
+    expect(types).toEqual(['salary_slip', 'parent_ic', 'guardianship_letter', 'epf'])
+    const icAt = types.indexOf('parent_ic')
+    expect(types[icAt + 1]).toBe('guardianship_letter')   // directly below the IC
   })
 
   it('invisible-doc guard: any unplaced income doc still lands in the catch-all tail', () => {

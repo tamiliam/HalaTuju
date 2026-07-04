@@ -164,6 +164,11 @@ export function groupDocumentsByFact(
     const fact = docTypeToFact(doc.doc_type)
     groups[fact].push(doc)
   }
+  // ADDITIONAL renders in a fixed order: school-leaving cert → statement of intent → photo
+  // (then anything else). "Any other document/photo" lives in OTHER, not here.
+  const ADDITIONAL_ORDER = ['school_leaving_cert', 'statement_of_intent', 'photo']
+  const addRank = (dt: string) => { const i = ADDITIONAL_ORDER.indexOf(dt); return i < 0 ? 99 : i }
+  groups.additional.sort((a, b) => addRank(a.doc_type) - addRank(b.doc_type))
   return groups
 }
 
@@ -616,15 +621,16 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     salary.push({ docType: 'salary_slip', member: m, doc: find('salary_slip', m) })
     if (m !== strParent) {
       salary.push({ docType: 'parent_ic', member: m, doc: find('parent_ic', m) })
+      // Relationship proof sits DIRECTLY BELOW the person's IC (guardian → guardianship letter,
+      // mother → BC; father none). Skip the STR parent's (already under STR) and never duplicate a
+      // single household doc.
+      const rel = relationshipDocFor(m)
+      if (rel && !salary.some((s) => s.docType === rel && s.member === '')) {
+        salary.push({ docType: rel, member: '', doc: find(rel, '') })
+      }
     }
     const epf = find('epf', m)
     if (epf) salary.push({ docType: 'epf', member: m, doc: epf })
-    // Relationship proof for a salary-only member (mother→BC / guardian→letter; father none);
-    // skip the STR parent's (already under STR) and never duplicate a single household doc.
-    const rel = relationshipDocFor(m)
-    if (rel && m !== strParent && !salary.some((s) => s.docType === rel && s.member === '')) {
-      salary.push({ docType: rel, member: '', doc: find(rel, '') })
-    }
   }
   mark(salary)
   // Catch-all: EVERY income doc not already placed is appended here (known types ordered, others
