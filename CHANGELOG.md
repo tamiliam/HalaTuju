@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Verification-model roadmap Sprint V6 (2026-07-04, FINAL) — Gopal in the Action Centre + persona
+  polish (audit F1, #15, #17). No migration.** Completes the verification-model hardening roadmap
+  (V1–V6).
+  - **Cluster coach in the Action Centre (#15b):** an open income doc-task now mounts the single
+    per-earner `IncomeClusterCoach` (keyed on the task's member — the salary-route request tag or the
+    STR-route declared earner), killing the null-render dead end where a wrong-person slip/EPF/BC
+    showed a red task with no explanation. One coach per earner (deduped across a member's tasks).
+  - **Reload-persistent coach (#15a):** the Action Centre now fetches the student's documents, so a
+    non-cluster held task (e.g. a results-slip mismatch) re-surfaces Gopal's advice after a page
+    reload — from the fetched docs, not just in-session upload state. Pure wiring logic
+    (`clusterMemberOf`, `latestDocFor`) lives in `lib/actionCentre.ts` (unit-tested, +10 jest).
+  - **Telemetry (#F1):** each Gopal serve logs one line (`AUDIT coach_serve kind=… app_id=… source=ai|fallback|none verdict=…`)
+    in `DocumentHelpView` + `IncomeClusterHelpView`, so his hit/fallback rate is measurable in Cloud
+    Run logs. Query: `resource.labels.service_name="halatuju-api" AND "AUDIT coach_serve"`.
+
+### Changed
+- **Persona strings (V6 #17, en/ms/ta — Tamil first-draft):** the Action-Centre Gopal greeting is
+  rewritten to the lean coach register (drops the cheerleading "no rush / every step brings you
+  closer / do your best"); the student income fallback strings + `str_recipient_mismatch.desc` say
+  "this family member('s)" instead of the officer jargon "the earner"; the officer `grades_unverified`
+  line is tightened. **Tamil "சிக்கு கோபால்" → "Cikgu Gopal" in Latin script** (the transliteration
+  reads as "Trouble Gopal"). The Action Centre's neutral third register is now documented in
+  `str-proof-spec.md` §4 alongside the two personas.
+
 - **Verification-model roadmap Sprint V5 (2026-07-04) — verdict evenness + QC gap floor (audit #5, #10–#14).**
   Migration `0092` (additive: `qc_override_reason`/`qc_override_by`/`qc_override_at` on
   `scholarship_applications`; applied migrate-first via Supabase MCP, prod-verified).

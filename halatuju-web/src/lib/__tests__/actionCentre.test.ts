@@ -9,6 +9,8 @@ import {
   paramsToStrings,
   localiseParams,
   sortByWeight,
+  clusterMemberOf,
+  latestDocFor,
   KNOWN_CODES,
   countDigits,
 } from '@/lib/actionCentre'
@@ -222,5 +224,66 @@ describe('countDigits (bank account-number floor, code-health S3 #9)', () => {
     expect(countDigits('123')).toBe(3)
     expect(countDigits('12a4')).toBe(3)
     expect(countDigits('')).toBe(0)
+  })
+})
+
+describe('clusterMemberOf (V6 income cluster coach key, audit #15)', () => {
+  it('salary route: uses the per-person request tag from params', () => {
+    expect(clusterMemberOf(
+      item({ kind: 'doc', doc_type: 'salary_slip', params: { household_member: 'father' } }),
+      'salary', '',
+    )).toBe('father')
+  })
+  it('STR route with no member tag: falls back to the declared earner', () => {
+    expect(clusterMemberOf(
+      item({ kind: 'doc', doc_type: 'str', params: {} }),
+      'str', 'mother',
+    )).toBe('mother')
+  })
+  it('a params member wins over the STR earner', () => {
+    expect(clusterMemberOf(
+      item({ kind: 'doc', doc_type: 'birth_certificate', params: { household_member: 'guardian' } }),
+      'str', 'mother',
+    )).toBe('guardian')
+  })
+  it('a non-cluster doc type is not a cluster task', () => {
+    expect(clusterMemberOf(
+      item({ kind: 'doc', doc_type: 'results_slip', params: { household_member: 'father' } }),
+      'salary', '',
+    )).toBe('')
+  })
+  it('a non-doc kind is never a cluster task', () => {
+    expect(clusterMemberOf(
+      item({ kind: 'explanation', doc_type: 'str', params: { household_member: 'father' } }),
+      'str', 'father',
+    )).toBe('')
+  })
+  it('an unknown member value is rejected', () => {
+    expect(clusterMemberOf(
+      item({ kind: 'doc', doc_type: 'epf', params: { household_member: 'cousin' } }),
+      'salary', '',
+    )).toBe('')
+  })
+  it('salary route with no member and no STR earner yields none', () => {
+    expect(clusterMemberOf(
+      item({ kind: 'doc', doc_type: 'salary_slip', params: {} }),
+      'salary', 'father',
+    )).toBe('')
+  })
+})
+
+describe('latestDocFor (V6 reload-persistent coach, audit #15a)', () => {
+  const doc = (id: number, doc_type: string, uploaded_at: string) =>
+    ({ id, doc_type, uploaded_at }) as unknown as import('@/lib/api').ApplicantDocument
+  it('returns the most recently uploaded doc of the type', () => {
+    const docs = [doc(1, 'results_slip', '2026-07-01T00:00:00Z'), doc(2, 'results_slip', '2026-07-03T00:00:00Z')]
+    expect(latestDocFor(docs, 'results_slip')?.id).toBe(2)
+  })
+  it('ignores other doc types', () => {
+    const docs = [doc(1, 'ic', '2026-07-05T00:00:00Z'), doc(2, 'results_slip', '2026-07-01T00:00:00Z')]
+    expect(latestDocFor(docs, 'results_slip')?.id).toBe(2)
+  })
+  it('returns null when nothing matches', () => {
+    expect(latestDocFor([doc(1, 'ic', '2026-07-01T00:00:00Z')], 'offer_letter')).toBeNull()
   })
 })

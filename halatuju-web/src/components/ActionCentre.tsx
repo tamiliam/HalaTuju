@@ -23,6 +23,7 @@ import {
   uploadFileToSignedUrl,
   recordDocument,
   confirmBankAccount,
+  listDocuments,
   type ResolutionItem,
   type ApplicantDocument,
 } from '@/lib/api'
@@ -34,11 +35,14 @@ import {
   confirmTargetFor,
   localiseParams,
   sortByWeight,
+  clusterMemberOf,
+  latestDocFor,
   type ActionIcon,
   type ConfirmTarget,
   countDigits,
 } from '@/lib/actionCentre'
 import DocumentHelpCoach, { CoachCard } from '@/components/DocumentHelpCoach'
+import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import IncomeRouteSwitch from '@/components/IncomeRouteSwitch'
 
 // ── Icons (inline SVG, blue circle bg set by the caller) ──────────────────
@@ -66,6 +70,10 @@ function ActionCard({
   formLocked = false,
   done = false,
   setAside = false,
+  docs = [],
+  incomeRoute = '',
+  incomeEarner = '',
+  showClusterCoach = true,
 }: {
   item: ResolutionItem
   token: string | null
@@ -80,6 +88,15 @@ function ActionCard({
   /** A funded student's leftover review-phase query — shown struck-through (amber) as
    *  "Set aside" (no longer needed now they're awarded); not actionable, not deleted. */
   setAside?: boolean
+  /** The student's fetched documents — lets Gopal's coach survive a reload (audit #15a)
+   *  and lets an income task mount the per-earner cluster coach (audit #15b). */
+  docs?: ApplicantDocument[]
+  /** Income route + STR-route earner, so an income doc-task can key the cluster coach. */
+  incomeRoute?: string
+  incomeEarner?: string
+  /** One cluster coach per earner: true only on the FIRST open income task of a member, so
+   *  two tasks for the same earner don't render duplicate coaches. */
+  showClusterCoach?: boolean
 }) {
   const { t, locale } = useT()
   const src = titleSourceFor(item)
@@ -106,6 +123,22 @@ function ActionCard({
   // Phase 2: when a typed answer comes back judged TOTALLY off-topic, Gopal's gentle
   // one-line steer; the task stays open. Cleared as soon as the student edits the text.
   const [nudge, setNudge] = useState<string | null>(null)
+
+  // Income tasks speak with the single per-earner cluster coach, not the per-document one
+  // (audit #15b). Membership is derived once (module helper); a member-less income task or a
+  // non-income doc uses the doc-anchored coach instead.
+  const clusterMember = clusterMemberOf(item, incomeRoute, incomeEarner)
+  const isClusterTask = !!clusterMember
+
+  // #15a: re-surface the doc-anchored coach for a NON-cluster held task from the fetched
+  // documents, so a page reload keeps Gopal's advice (not just the in-session upload).
+  // DocumentHelpCoach self-hides if the latest doc actually reads clean. Cluster tasks use
+  // the cluster coach instead, so clear any in-session coachDoc for them.
+  useEffect(() => {
+    if (isClusterTask) { setCoachDoc(null); return }
+    setCoachDoc((prev) => prev ?? latestDocFor(docs, item.doc_type))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docs, isClusterTask, item.doc_type])
 
   // doc: upload the named doc_type, run its scan, then re-fetch the tickets. A clean
   // scan resolves the task server-side (this card unmounts); a mismatch keeps it open
@@ -266,11 +299,26 @@ function ActionCard({
                     }}
                   />
                 </label>
-                {/* Contextual Cikgu Gopal — appears only when the just-uploaded document
-                    didn't pass its scan; advises the fix, then the student re-uploads. */}
-                {coachDoc && (
+                {/* Contextual Cikgu Gopal. Income cluster docs (wrong-person slip/EPF, a
+                    mismatching BC) speak through the single per-earner cluster coach — the
+                    per-document coach returns null for them (audit #15b). Everything else uses
+                    the doc-anchored coach, re-surfaced from the fetched docs on reload (#15a). */}
+                {isClusterTask ? (
+                  showClusterCoach && (
+                    <div className="mt-3">
+                      <IncomeClusterCoach
+                        member={clusterMember}
+                        route={incomeRoute || 'salary'}
+                        docs={docs}
+                        token={token}
+                        t={t}
+                        lang={locale}
+                      />
+                    </div>
+                  )
+                ) : coachDoc ? (
                   <DocumentHelpCoach doc={coachDoc} token={token} t={t} lang={locale} />
-                )}
+                ) : null}
                 {/* Rare: the upload landed but its scan hasn't finished yet — keep the task
                     open and reassure, rather than ticking it Done on an unchecked file. */}
                 {stillChecking && (
@@ -498,6 +546,8 @@ export default function ActionCentre({
   funded = false,
   email = '',
   applicationId,
+  incomeRoute = '',
+  incomeEarner = '',
 }: {
   token: string | null
   studentName?: string
@@ -516,27 +566,40 @@ export default function ActionCentre({
   /** Post-submit only: enables the in-place income route switch on an income task
    *  (the form/wizard is locked, so this is the student's only way to change route). */
   applicationId?: number
+  /** Income route + STR-route earner — let an income doc-task mount the per-earner
+   *  cluster coach (audit #15b). Sourced from the application. */
+  incomeRoute?: string
+  incomeEarner?: string
 }) {
   const { t } = useT()
   const [open, setOpen] = useState<ResolutionItem[]>([])
   const [resolved, setResolved] = useState<ResolutionItem[]>([])
   // Funded students: leftover review-phase queries shown struck-through amber ("set aside").
   const [setAside, setSetAside] = useState<ResolutionItem[]>([])
+  // The student's documents — so Gopal's coach survives a reload and the cluster coach can
+  // read the earner's cluster (audit #15). Fetched alongside the tickets; refreshed on every
+  // resolve so an upload re-reads the cluster.
+  const [docs, setDocs] = useState<ApplicantDocument[]>([])
   const [loaded, setLoaded] = useState(false)
 
   const fetchItems = useCallback(async () => {
     if (!token) return
     try {
-      const r = await getResolutionItems({ token })
+      const [r, d] = await Promise.all([
+        getResolutionItems({ token }),
+        listDocuments({ token }).catch(() => ({ documents: [] as ApplicantDocument[] })),
+      ])
       setOpen(r.open)
       setResolved(r.resolved)
       setSetAside(r.set_aside ?? [])
+      setDocs(d.documents)
     } catch {
       // Treat a fetch failure as "nothing to show" — the Action Centre is
       // additive; it must never block the rest of the page.
       setOpen([])
       setResolved([])
       setSetAside([])
+      setDocs([])
     } finally {
       setLoaded(true)
     }
@@ -627,9 +690,18 @@ export default function ActionCentre({
       </div>
 
       {/* Open tasks first, then the completed ones as green Done cards. */}
-      {open.length > 0 && (
+      {open.length > 0 && (() => {
+        // One cluster coach per earner: the FIRST open income task of each member is its
+        // anchor; later tasks for the same earner suppress the (duplicate) coach.
+        const sorted = sortByWeight(open)
+        const clusterAnchor = new Map<string, number>()
+        sorted.forEach((it) => {
+          const m = clusterMemberOf(it, incomeRoute, incomeEarner)
+          if (m && !clusterAnchor.has(m)) clusterAnchor.set(m, it.id)
+        })
+        return (
         <div className="mt-4 space-y-4">
-          {sortByWeight(open).map((item) => (
+          {sorted.map((item) => (
             // The post-award bank-details task is a bespoke upload-then-confirm card.
             item.code === 'bank_details_missing' ? (
               <BankDetailsTask key={item.id} item={item} token={token} onResolved={fetchItems} />
@@ -641,11 +713,18 @@ export default function ActionCentre({
                 onResolved={fetchItems}
                 onConfirm={(target) => onConfirm?.(target)}
                 formLocked={formLocked}
+                docs={docs}
+                incomeRoute={incomeRoute}
+                incomeEarner={incomeEarner}
+                showClusterCoach={
+                  clusterAnchor.get(clusterMemberOf(item, incomeRoute, incomeEarner)) === item.id
+                }
               />
             )
           ))}
         </div>
-      )}
+        )
+      })()}
       {/* Post-submit, when an income task is open, the student can change how they prove
           income (the form/wizard is locked, so this is their only route to switch). One
           entry for the whole income section, not per-ticket. */}

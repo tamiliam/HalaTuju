@@ -1,5 +1,20 @@
 # Architectural Decisions — HalaTuju
 
+## Verification-model V6 — member-neutral fallback copy over param-threading — 2026-07-04
+**Decision:** The student income-coach FALLBACK strings (shown only when the AI is down) say
+"this family member('s)" instead of the officer jargon "the earner", rather than threading the
+actual member name into the fallback via i18n params (the roadmap's suggested approach).
+**Alternatives considered:** thread `{member}` (a localised label) into the fallback `t()` call so
+it reads "your mother's IC" etc. — the member IS known in `IncomeClusterCoach`.
+**Rationale:** the defect the audit names is the *officer jargon* ("earner"), which "this family
+member" fixes cleanly. Fallbacks only render when the AI is throttled/down (rare); the AI message
+itself already names the member from the backend context. Param-threading the fallback adds a render
+path + three-locale interpolation for a rarely-seen string — cost > benefit.
+**Trade-offs:** the fallback is slightly less specific than the AI message (says "this family member"
+not "your mother"). Accepted; the AI path is the common one.
+**Revisit if:** fallbacks become common (e.g. a sustained AI outage) or user testing shows the
+generic phrasing confuses — then thread the member param.
+
 ## Verification-model V5 — verdict evenness at the route seam + a QC soft floor — 2026-07-04
 **Decisions (four, taken together as the "verdict evenness" sprint; audit #5, #10–#14):**
 

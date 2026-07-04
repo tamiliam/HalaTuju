@@ -53,6 +53,16 @@ from .services import (
     switch_income_route,
 )
 
+logger = logging.getLogger(__name__)
+
+
+def _log_coach_serve(kind, app_id, source, verdict):
+    """V6 (F1): one telemetry line per Gopal serve so his performance is measurable in Cloud
+    Run logs (``served``). `source` = ai | fallback | none. Query:
+    ``resource.labels.service_name="halatuju-api" AND "AUDIT coach_serve"``."""
+    logger.info('AUDIT coach_serve kind=%s app_id=%s source=%s verdict=%s',
+                kind, app_id, source, verdict or '-')
+
 
 def _get_profile(user_id):
     return StudentProfile.objects.filter(supabase_user_id=user_id).first()
@@ -1060,6 +1070,7 @@ class DocumentHelpView(APIView):
         from . import help_engine
         verdict = help_engine.verdict_for_document(doc)
         if not verdict:
+            _log_coach_serve('doc', doc.application_id, 'none', '')
             return Response({'message': '', 'source': 'none'})
 
         # Throttle the billable call (never block — decisions.md "throttle the AI").
@@ -1070,6 +1081,7 @@ class DocumentHelpView(APIView):
         cap = getattr(_settings, 'DOC_HELP_RATE_LIMIT_PER_HOUR', 20)
         key = f'help_coach:{doc.application_id}:{timezone.now():%Y%m%d%H}'
         if cache.get(key, 0) >= cap:
+            _log_coach_serve('doc', doc.application_id, 'fallback', verdict)
             return Response({'message': '', 'source': 'fallback', 'verdict': verdict})
         cache.set(key, cache.get(key, 0) + 1, 3600)
 
@@ -1080,6 +1092,7 @@ class DocumentHelpView(APIView):
             first_name=help_engine.first_name_of(doc), target_language=language,
         )
         result['verdict'] = verdict
+        _log_coach_serve('doc', doc.application_id, result.get('source', 'none'), verdict)
         return Response(result)
 
 
@@ -1106,6 +1119,7 @@ class IncomeClusterHelpView(APIView):
         from .income_engine import income_cluster_advice
         verdict = income_cluster_advice(app, member)
         if not verdict:
+            _log_coach_serve('income_cluster', app.id, 'none', '')
             return Response({'message': '', 'source': 'none'})
 
         from django.conf import settings as _settings
@@ -1114,6 +1128,7 @@ class IncomeClusterHelpView(APIView):
         cap = getattr(_settings, 'DOC_HELP_RATE_LIMIT_PER_HOUR', 20)
         key = f'help_coach:{app.id}:{timezone.now():%Y%m%d%H}'
         if cache.get(key, 0) >= cap:
+            _log_coach_serve('income_cluster', app.id, 'fallback', verdict)
             return Response({'message': '', 'source': 'fallback', 'verdict': verdict})
         cache.set(key, cache.get(key, 0) + 1, 3600)
 
@@ -1162,6 +1177,7 @@ class IncomeClusterHelpView(APIView):
             context=context,
         )
         result['verdict'] = verdict
+        _log_coach_serve('income_cluster', app.id, result.get('source', 'none'), verdict)
         return Response(result)
 
 

@@ -518,17 +518,23 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-04)
 
-**▶ NEXT — VERIFICATION-MODEL HARDENING ROADMAP: V6 (FINAL — Gopal in the Action Centre + persona
-polish; complexity MEDIUM).** Roadmap `docs/plans/2026-07-03-verification-model-roadmap.md` §V6
-(findings F1, #15, #17). Scope: persistent coach derived from FETCHED docs on Action-Centre load
-(`ActionCentre.tsx:139` — a reload keeps Gopal's advice on a held task); mount `IncomeClusterCoach`
-in the Action Centre for open income doc-tasks (kills the null-render dead end for wrong-person
-slips/EPF/BC); one telemetry log line in `DocumentHelpView`/`IncomeClusterHelpView`
-(`served source=ai|fallback|none`); persona-string polish (Action-Centre Gopal greeting → lean coach
-register; member-specific possessive instead of "the earner"; Tamil "சிக்கு கோபால்" → keep "Cikgu
-Gopal" in Latin + the grammar slip); document the Action Centre's neutral-helpful third register.
-**⚠ OWNER FINAL CHECKPOINT after V6** — the final report must gather all new/changed copy for review
-(esp. Tamil first-drafts). Owner decisions embedded — do not re-ask.
+**▶ NO ENGINEERING SPRINT QUEUED — the VERIFICATION-MODEL HARDENING ROADMAP (V1–V6) IS COMPLETE.**
+**⚠ OWNER FINAL CHECKPOINT DUE:** review all new/changed copy across V4–V6, **especially the Tamil
+first-drafts** — the V6 Action-Centre greeting + income fallbacks + "Cikgu Gopal" (Latin), the V5
+QC-floor strings (`admin.scholarship.qcDecision.gapFloor` + the four override keys), and the V4
+nine-ask templates. (One Tamil note: the audit-flagged STR-coach grammar slip "எனத் உறுதிசெய்யவும்"
+was NOT present in the current string — it reads grammatically now — so it was left as-is; confirm at
+review.) After the copy sign-off the roadmap is fully closed.
+
+**✅ SHIPPED 2026-07-04 — Verification-model V6 (FINAL — Gopal in the Action Centre + persona polish;
+NO migration; retro `docs/retrospective-2026-07-04-verify-v6.md`).** Audit F1, #15, #17: an open income
+doc-task mounts the per-earner `IncomeClusterCoach` (kills the #15b null-render dead end for
+wrong-person slips/EPF/BC), deduped one-per-earner; the Action Centre fetches documents so a non-cluster
+held task keeps Gopal's coach across a page reload (#15a); each Gopal serve logs `AUDIT coach_serve
+kind=… app_id=… source=ai|fallback|none verdict=…` (F1 telemetry); persona strings — lean greeting,
+"this family member" not "the earner", **Tamil "Cikgu Gopal" in Latin** — + the neutral third register
+documented in `str-proof-spec.md` §4. Pure wiring (`clusterMemberOf`/`latestDocFor`) in
+`lib/actionCentre.ts`. 2066 scholarship pytest + 426 jest; tsc clean.
 
 **✅ SHIPPED (code) 2026-07-04 — Verification-model V5 (verdict evenness + QC gap floor; migration
 `0092` additive, migrate-first via MCP + prod-verified; retro `docs/retrospective-2026-07-04-verify-v5.md`;

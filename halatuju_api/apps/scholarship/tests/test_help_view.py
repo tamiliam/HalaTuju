@@ -142,6 +142,19 @@ class TestDocumentHelpView(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()['source'], 'fallback')
 
+    # ── V6 (F1): one telemetry line per serve (source + verdict + app) ────────
+    def test_serve_emits_telemetry_line(self):
+        doc = self._doc(self.app_a, vision_fields={'student_verdict': 'name_mismatch'})
+        self._auth(USER_A)
+        with patch(SEAM, return_value={'markdown': 'x', 'model_used': 'gemini-2.5-flash'}), \
+                self.assertLogs('apps.scholarship.views', level='INFO') as cm:
+            self.client.get(self._url(doc))
+        line = next(m for m in cm.output if 'coach_serve' in m)
+        self.assertIn('kind=doc', line)
+        self.assertIn(f'app_id={self.app_a.id}', line)
+        self.assertIn('source=ai', line)
+        self.assertIn('verdict=name_mismatch', line)
+
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestIncomeClusterHelpView(TestCase):
@@ -184,3 +197,17 @@ class TestIncomeClusterHelpView(TestCase):
     def test_unknown_member_returns_none(self):
         resp = self.client.get(self._url('nobody'))
         self.assertEqual(resp.json()['source'], 'none')
+
+    def test_cluster_serve_emits_telemetry_line(self):
+        # V6 (F1): the income-cluster coach logs its serve too (kind=income_cluster).
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='father',
+            storage_path='x/salary/f2', vision_run_at=timezone.now(),
+            vision_fields={'fields': {'name': 'MURUGAN A/L KESAVAN'}, 'student_verdict': 'ok'})
+        with patch(SEAM, return_value={'markdown': 'y', 'model_used': 'gemini-2.5-flash'}), \
+                self.assertLogs('apps.scholarship.views', level='INFO') as cm:
+            self.client.get(self._url('father'))
+        line = next(m for m in cm.output if 'coach_serve' in m)
+        self.assertIn('kind=income_cluster', line)
+        self.assertIn(f'app_id={self.app.id}', line)
+        self.assertIn('verdict=income_ic_needed', line)

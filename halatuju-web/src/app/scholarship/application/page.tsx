@@ -229,6 +229,8 @@ export default function ScholarshipApplicationPage() {
           studentName={profile?.name}
           email={commsEmail || app.notify_email || ''}
           applicationId={app.id}
+          incomeRoute={app.income_route || ''}
+          incomeEarner={app.income_earner || ''}
           formLocked
           funded={funded}
         />

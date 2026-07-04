@@ -1254,10 +1254,10 @@
           "offer_pathway_mismatch": "The college or programme on this offer letter differs from the study choice you entered earlier. That's fine — plans change, and it doesn't block anything. You can update your pathway in your Profile to match this offer, or leave it and we'll ask you to confirm which one is final after you submit.",
           "income_relationship_mismatch": "The name on this IC doesn't link to your family the way we expected — for a parent or sibling we look for your father's name from your own IC; for a mother, your birth certificate. So either a different person's MyKad was uploaded here, or (for a mother) the birth certificate names someone else. Please check you uploaded the right MyKad for this person and, for a mother, your own birth certificate (showing you and her). Your application isn't blocked.",
           "income_proof_person_mismatch": "This salary slip / EPF isn't for the same person as the IC for that family member — it looks like someone else's document. If you're already showing your family's income another way (your STR), you don't need a salary slip here: just remove this file, and if that family member has none, don't upload one. Otherwise, upload that family member's own salary slip with their own IC, and remove the wrong file. Nothing is blocked.",
-          "income_proof_needed": "The earner's IC is in and matches. The next step is their salary slip — upload that family member's latest salary slip, which shows the household income (any relationship document, like a birth certificate, comes after). Nothing is blocked.",
+          "income_proof_needed": "This family member's IC is in and matches. The next step is their salary slip — upload their latest salary slip, which shows the household income (any relationship document, like a birth certificate, comes after). Nothing is blocked.",
           "income_ic_needed": "You've uploaded an income document for this family member, but not that person's MyKad yet. The IC is required — please add it to complete your application, so we can confirm the income document belongs to them.",
-          "income_rel_doc_needed": "The earner's IC is in and matches the income document. The last required step is the document that links them to you — a birth certificate for a mother, or a guardianship letter for a guardian. Please upload it to complete your application.",
-          "income_rel_doc_unreadable": "You've uploaded your birth certificate (or guardianship letter), but we couldn't read the names on it that link the earner to you — it may be unclear, or the wrong document. Please check it's a clear photo or PDF of the actual document and upload it again to complete your application.",
+          "income_rel_doc_needed": "This family member's IC is in and matches the income document. The last required step is the document that links them to you — a birth certificate for a mother, or a guardianship letter for a guardian. Please upload it to complete your application.",
+          "income_rel_doc_unreadable": "You've uploaded your birth certificate (or guardianship letter), but we couldn't read the names on it that link this family member to you — it may be unclear, or the wrong document. Please check it's a clear photo or PDF of the actual document and upload it again to complete your application.",
           "str_not_current": "We couldn't confirm this STR shows it was approved. To prove your family qualifies, upload your STR showing “Lulus” — a MySTR “Semakan Status” or Dashboard screenshot showing the status “Lulus” (with your parent's name and IC), or your official STR approval letter. A plain screenshot that shows “Lulus” is enough. Please make sure it's your STR (Sumbangan Tunai Rahmah) — a SARA letter is a different aid and isn't accepted on its own. No current STR? You can show your family's income with a salary slip / EPF instead.",
           "generic": "Something didn't look right with this upload. Have another look, then try uploading again.",
           "bank_holder_mismatch": "The account holder on this statement is not you. The bursary can only be paid into a bank account in your own name — please upload a statement for your own account.",
@@ -1845,7 +1845,7 @@
       "relevanceNudge": "That doesn't seem to answer the question — could you take another look at what's being asked?",
       "explanationPlaceholder": "Type your answer here…",
       "allDone": "All done — your application is complete!",
-      "coach": "Hi, I'm Cikgu Gopal. Finish the items above one by one — there's no rush, and every step brings you closer. If anything is unclear, just do your best; we're here to help.",
+      "coach": "I'm Cikgu Gopal, here to help you finish. Each card above is one thing to do — upload a document or answer a question. Work down the list; the note under a card tells you exactly what's needed.",
       "item": {
         "ic_missing": {
           "title": "Upload your IC",
@@ -1925,7 +1925,7 @@
         },
         "str_recipient_mismatch": {
           "title": "Check your STR document",
-          "desc": "The name or IC on this STR doesn't match the earner's IC you uploaded. Please check it's the right STR for the family member whose income you're showing."
+          "desc": "The name or IC on this STR doesn't match the family member's IC you uploaded. Please check it's the right STR for the family member whose income you're showing."
         },
         "offer_unreadable": {
           "title": "Your offer letter was hard to read",
@@ -3312,7 +3312,7 @@
           "results_slip_missing": "No results slip uploaded.",
           "results_slip_name_mismatch": "The results slip is in a different name. Confirm.",
           "results_slip_unreadable": "The results slip could not be read — ask for a clearer copy.",
-          "grades_unverified": "Grades not yet cross-checked against the slip — eyeball them (automated check coming).",
+          "grades_unverified": "Grades not yet auto-checked against the slip — confirm them by eye.",
           "str_present_unverified": "STR document present but not yet matched to the household — confirm.",
           "income_proof_missing": "No STR document uploaded — this household is on the STR route, so request the STR (a salary slip or EPF won't substitute).",
           "income_earner_undeclared": "The student hasn't said whose income they're showing (the income wizard is incomplete) — we can't check the documents until they do.",

@@ -225,35 +225,18 @@ migrate-first, super-override-with-reason); SOFT_EVIDENCE guard test; wrong-pers
 amber; doc-rot fixes. Re-banding summary `docs/scholarship/v5-rebanding-summary.md` (nil live
 impact — forward-looking). Retro `docs/retrospective-2026-07-04-verify-v5.md`.
 
-## Sprint V6 — Gopal in the Action Centre + persona polish (complexity: MEDIUM)
+## Sprint V6 — Gopal in the Action Centre + persona polish — ✅ SHIPPED 2026-07-04 (FINAL)
 
-**Findings: F1, #15, #17.**
+All five items shipped (audit F1, #15, #17): cluster coach mounted in the Action Centre (kills the
+#15b null-render dead end), reload-persistent doc coach (#15a, from fetched docs), telemetry line
+per serve (`AUDIT coach_serve`), lean persona strings + "Cikgu Gopal" Latin in Tamil + member-neutral
+fallbacks, third register documented in `str-proof-spec.md` §4. Pure wiring in `lib/actionCentre.ts`
+(+10 jest); 2066 scholarship pytest + 426 jest; no migration. Retro
+`docs/retrospective-2026-07-04-verify-v6.md`.
 
-Scope:
-1. **Persistent coach** (#15/F1): derive `coachDoc` from the FETCHED documents on
-   Action-Centre load (the API already returns docs + verdicts) instead of only in-session
-   upload state (`ActionCentre.tsx:139` + state init) — a reload keeps Gopal's advice on a
-   held task.
-2. **Cluster coach in the Action Centre** (F1): mount `IncomeClusterCoach` (from
-   `ScholarshipDocuments.tsx`) for open income doc-tasks whose member cluster has advice
-   (`IncomeClusterHelpView` already exists) — kills the null-render dead end for
-   wrong-person slips/EPF/BC.
-3. **Telemetry** (F1): one log line in `DocumentHelpView`/`IncomeClusterHelpView`
-   (`served source=ai|fallback|none verdict=<v> app=<id>`) so Gopal's performance becomes
-   measurable in Cloud Run logs; note the query in the retro.
-4. **Persona strings** (#17): rewrite the Action-Centre Gopal greeting to lean coach
-   register (name the next action, no cheerleading); replace "the earner" with the
-   member-specific possessive in the three fallback strings + `str_recipient_mismatch.desc`
-   (params carry the member — reuse `scholarship.docs.income.wizard.member.*`); fix ta
-   "சிக்கு கோபால்" → keep "Cikgu Gopal" in Latin script (flag for owner) and the
-   "எனத் உறுதிசெய்யவும்" grammar slip; polish `grades_unverified` officer line.
-5. **Document the third register**: one paragraph in
-   `docs/scholarship/str-proof-spec.md` §personas (or decisions.md) naming the Action
-   Centre's neutral-helpful register alongside the two personas.
-
-Acceptance: reload keeps the coach; wrong-person payslip re-upload shows cluster advice in
-the Action Centre; log lines visible; persona strings pass the register rules; Tamil
-changes marked first-draft for owner.
+**▶ THE VERIFICATION-MODEL HARDENING ROADMAP (V1–V6) IS COMPLETE.** Remaining: the OWNER FINAL
+CHECKPOINT — review all new/changed copy across V4–V6, especially the Tamil first-drafts (the QC-floor
+strings, the V6 greeting + fallbacks, and the V4 nine-ask templates).
 
 ## Execution & handover mechanics
 

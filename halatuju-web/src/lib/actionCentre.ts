@@ -6,7 +6,39 @@
  * helpers; it never re-implements them.
  */
 
-import type { ResolutionItem } from '@/lib/api'
+import type { ResolutionItem, ApplicantDocument } from '@/lib/api'
+
+// ── Income cluster coach wiring (V6 / audit #15) ──────────────────────────────
+
+// The income "cluster" doc types: their coherence is voiced by the single per-earner
+// IncomeClusterCoach (the earner's IC + STR / payslip + relationship doc), not the per-document
+// coach — which returns null for them (the audit #15 dead-end). In the Action Centre we mount the
+// cluster coach for these, keyed on the task's member.
+export const INCOME_CLUSTER_DOCS = new Set([
+  'parent_ic', 'str', 'salary_slip', 'epf', 'birth_certificate', 'guardianship_letter',
+])
+const CLUSTER_MEMBERS = new Set(['father', 'mother', 'guardian', 'brother', 'sister'])
+
+/** The household member an income doc-task belongs to (its cluster coach key), or '' when the
+ *  task is not an income cluster doc. Salary route → the per-person request tag; STR route → the
+ *  single declared earner. */
+export function clusterMemberOf(
+  item: ResolutionItem, incomeRoute: string, incomeEarner: string,
+): string {
+  if (item.kind !== 'doc' || !INCOME_CLUSTER_DOCS.has(item.doc_type)) return ''
+  const memberParam = typeof item.params?.household_member === 'string' ? item.params.household_member : ''
+  const m = memberParam || (incomeRoute === 'str' ? incomeEarner : '')
+  return CLUSTER_MEMBERS.has(m) ? m : ''
+}
+
+/** The most recently uploaded document of a given type (by uploaded_at), or null. Re-surfaces
+ *  Gopal's advice on a held task after a page reload (audit #15a), from the fetched documents
+ *  rather than in-session upload state. */
+export function latestDocFor(docs: ApplicantDocument[], docType: string): ApplicantDocument | null {
+  const matches = docs.filter((d) => d.doc_type === docType)
+  if (matches.length === 0) return null
+  return matches.reduce((a, b) => ((b.uploaded_at || '') > (a.uploaded_at || '') ? b : a))
+}
 
 // The icon family a ticket renders, derived purely from its `kind`.
 //   doc         → a document icon (upload something)

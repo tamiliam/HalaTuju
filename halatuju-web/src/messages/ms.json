@@ -1254,10 +1254,10 @@
           "offer_pathway_mismatch": "Kolej atau program pada surat tawaran ini berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Tidak mengapa — rancangan boleh berubah, dan ia tidak menyekat apa-apa. Anda boleh kemas kini hala tuju dalam Profil anda agar sepadan dengan tawaran ini, atau biarkan dan kami akan minta anda mengesahkan yang mana muktamad selepas anda menghantar.",
           "income_relationship_mismatch": "Nama pada IC ini tidak menghubungkan dengan keluarga anda seperti yang dijangka — untuk ibu/bapa atau adik-beradik kami cari nama bapa anda daripada IC anda sendiri; untuk ibu, sijil kelahiran anda. Jadi sama ada MyKad orang lain telah dimuat naik di sini, atau (untuk ibu) sijil kelahiran menamakan orang lain. Sila semak anda memuat naik MyKad yang betul untuk orang ini dan, untuk ibu, sijil kelahiran anda sendiri (yang menunjukkan anda dan dia). Permohonan anda tidak disekat.",
           "income_proof_person_mismatch": "Slip gaji / KWSP ini bukan untuk orang yang sama dengan IC ahli keluarga itu — nampaknya dokumen orang lain. Jika anda sudah menunjukkan pendapatan keluarga dengan cara lain (STR anda), anda tidak perlukan slip gaji di sini: buang sahaja fail ini, dan jika ahli keluarga itu tiada slip gaji, jangan muat naik apa-apa. Jika tidak, muat naik slip gaji ahli keluarga itu sendiri bersama IC mereka sendiri, dan buang fail yang salah. Tiada apa-apa disekat.",
-          "income_proof_needed": "IC penerima pendapatan telah dimuat naik dan sepadan. Langkah seterusnya ialah slip gaji mereka — muat naik slip gaji terkini ahli keluarga itu, yang menunjukkan pendapatan isi rumah (dokumen hubungan seperti sijil kelahiran datang kemudian). Tiada apa-apa yang disekat.",
+          "income_proof_needed": "IC ahli keluarga ini telah dimuat naik dan sepadan. Langkah seterusnya ialah slip gaji mereka — muat naik slip gaji terkini mereka, yang menunjukkan pendapatan isi rumah (dokumen hubungan seperti sijil kelahiran datang kemudian). Tiada apa-apa yang disekat.",
           "income_ic_needed": "Anda telah memuat naik dokumen pendapatan untuk ahli keluarga ini, tetapi belum MyKad orang itu. IC diperlukan — sila tambahkannya untuk melengkapkan permohonan anda, supaya kami dapat mengesahkan dokumen pendapatan itu milik mereka.",
-          "income_rel_doc_needed": "IC penerima pendapatan telah dimuat naik dan sepadan dengan dokumen pendapatan. Langkah terakhir yang diperlukan ialah dokumen yang menghubungkan mereka dengan anda — sijil kelahiran untuk ibu, atau surat penjagaan untuk penjaga. Sila muat naik untuk melengkapkan permohonan anda.",
-          "income_rel_doc_unreadable": "Anda telah memuat naik sijil kelahiran (atau surat penjagaan), tetapi kami tidak dapat membaca nama padanya yang menghubungkan penerima pendapatan dengan anda — mungkin tidak jelas, atau dokumen yang salah. Sila pastikan ia gambar atau PDF yang jelas bagi dokumen sebenar dan muat naik semula untuk melengkapkan permohonan anda.",
+          "income_rel_doc_needed": "IC ahli keluarga ini telah dimuat naik dan sepadan dengan dokumen pendapatan. Langkah terakhir yang diperlukan ialah dokumen yang menghubungkan mereka dengan anda — sijil kelahiran untuk ibu, atau surat penjagaan untuk penjaga. Sila muat naik untuk melengkapkan permohonan anda.",
+          "income_rel_doc_unreadable": "Anda telah memuat naik sijil kelahiran (atau surat penjagaan), tetapi kami tidak dapat membaca nama padanya yang menghubungkan ahli keluarga ini dengan anda — mungkin tidak jelas, atau dokumen yang salah. Sila pastikan ia gambar atau PDF yang jelas bagi dokumen sebenar dan muat naik semula untuk melengkapkan permohonan anda.",
           "str_not_current": "Kami tidak dapat mengesahkan STR ini menunjukkan ia telah diluluskan. Untuk membuktikan keluarga anda layak, muat naik STR yang menunjukkan “Lulus” — tangkapan skrin MySTR “Semakan Status” atau Dashboard yang menunjukkan status “Lulus” (dengan nama ibu bapa anda dan IC), atau surat kelulusan STR rasmi anda. Tangkapan skrin yang jelas menunjukkan “Lulus” sudah memadai. Pastikan ia STR (Sumbangan Tunai Rahmah) anda — surat SARA ialah bantuan berbeza dan tidak diterima dengan sendirinya. Tiada STR semasa? Anda boleh tunjukkan pendapatan keluarga dengan slip gaji / KWSP sebagai ganti.",
           "generic": "Ada sesuatu yang tidak kena dengan muat naik ini. Semak semula, kemudian cuba muat naik lagi.",
           "bank_holder_mismatch": "Pemegang akaun pada penyata ini bukan anda. Biasiswa hanya boleh dibayar ke akaun bank atas nama anda sendiri — sila muat naik penyata untuk akaun anda sendiri.",
@@ -1845,7 +1845,7 @@
       "relevanceNudge": "Itu nampaknya tidak menjawab soalan — boleh anda lihat semula apa yang ditanya?",
       "explanationPlaceholder": "Taip jawapan anda di sini…",
       "allDone": "Semua selesai — permohonan anda lengkap!",
-      "coach": "Hai, saya Cikgu Gopal. Selesaikan perkara di atas satu demi satu — tidak perlu tergesa-gesa, dan setiap langkah mendekatkan anda. Jika ada yang kurang jelas, buat sebaik mungkin; kami sedia membantu.",
+      "coach": "Saya Cikgu Gopal, di sini untuk membantu anda menyiapkannya. Setiap kad di atas ialah satu perkara untuk dilakukan — muat naik dokumen atau jawab soalan. Ikut senarai dari atas; nota di bawah setiap kad menerangkan dengan tepat apa yang diperlukan.",
       "item": {
         "ic_missing": {
           "title": "Muat naik IC anda",
@@ -1921,7 +1921,7 @@
         },
         "str_recipient_mismatch": {
           "title": "Semak dokumen STR anda",
-          "desc": "Nama atau KP pada STR ini tidak sepadan dengan KP pencari nafkah yang anda muat naik. Sila pastikan ia STR yang betul untuk ahli keluarga yang pendapatannya anda tunjukkan."
+          "desc": "Nama atau KP pada STR ini tidak sepadan dengan KP ahli keluarga yang anda muat naik. Sila pastikan ia STR yang betul untuk ahli keluarga yang pendapatannya anda tunjukkan."
         },
         "guardianship_letter_missing": {
           "title": "Muat naik surat penjagaan anda",
@@ -3312,7 +3312,7 @@
           "results_slip_missing": "Tiada slip keputusan dimuat naik.",
           "results_slip_name_mismatch": "Slip keputusan atas nama berbeza. Sahkan.",
           "results_slip_unreadable": "Slip keputusan tidak dapat dibaca — minta salinan yang lebih jelas.",
-          "grades_unverified": "Gred belum disemak silang dengan slip — semak sendiri (semakan automatik akan datang).",
+          "grades_unverified": "Gred belum disemak automatik dengan slip — sahkan secara visual.",
           "str_present_unverified": "Dokumen STR ada tetapi belum dipadankan dengan isi rumah — sahkan.",
           "income_proof_missing": "Tiada dokumen STR dimuat naik — isi rumah ini menggunakan laluan STR, jadi minta STR (slip gaji atau KWSP tidak boleh menggantikannya).",
           "income_earner_undeclared": "Pelajar belum memberitahu pendapatan siapa yang ditunjukkan (wizard pendapatan belum lengkap) — kami tidak dapat menyemak dokumen sehingga itu.",
