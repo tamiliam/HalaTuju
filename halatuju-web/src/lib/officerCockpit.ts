@@ -341,24 +341,35 @@ function reasonableStatus(s: string): FactStatus {
  */
 export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] {
   const dt = doc.doc_type
+  // Genuineness gate for the IC types: if the signature scorer says the upload is NOT a MyKad
+  // (`not_ic`) or is suspect, the card can't verify identity — the Name/IC reads are meaningless
+  // (they were lifted off whatever the document actually is, e.g. an EPF statement). Red the reads
+  // and add a red "Genuine" fact, mirroring the offer-letter 'Official' gate. (An EPF uploaded into
+  // the IC slot is exactly this — the scorer flags it `not_ic`; the chip must not read "Verified".)
+  const icAuth = doc.authenticity?.status
+  const icNotGenuine = !!icAuth && icAuth !== 'genuine'
   if (dt === 'ic') {
-    return [
-      { key: 'name', status: factStatus(doc.vision_name_verdict) },
-      { key: 'ic_no', status: factStatus(doc.vision_nric_verdict) },
-    ]
+    const nm: FactStatus = icNotGenuine ? 'not' : factStatus(doc.vision_name_verdict)
+    const icn: FactStatus = icNotGenuine ? 'not' : factStatus(doc.vision_nric_verdict)
+    const facts: DocumentFactLabel[] = [{ key: 'name', status: nm }, { key: 'ic_no', status: icn }]
+    if (icNotGenuine) facts.push({ key: 'genuine', status: 'not' })
+    return facts
   }
   if (dt === 'parent_ic') {
     const c = doc.income_ic_check
     if (!c) return []
-    // The earner IC PROVIDES Name + IC No (legible = verified). It provides the
-    // RELATIONSHIP only for a father/elder-sibling (patronymic); mother/guardian prove
-    // it via the BC / guardianship letter, so no relationship label here.
-    const read: FactStatus = c.readable ? 'verified' : 'not'
+    // The earner IC PROVIDES Name + IC No (legible = verified) — UNLESS genuineness says it isn't
+    // an IC (an EPF/other in the IC slot), in which case those reads are red and a "Genuine" fact
+    // fails. Relationship (patronymic) only for a father/elder-sibling; mother/guardian prove it
+    // via the BC / guardianship letter.
+    const read: FactStatus = icNotGenuine ? 'not' : (c.readable ? 'verified' : 'not')
     const facts: DocumentFactLabel[] = [
       { key: 'name', status: read },
       { key: 'ic_no', status: read },
     ]
-    if (c.wrong_card) {
+    if (icNotGenuine) {
+      facts.push({ key: 'genuine', status: 'not' })
+    } else if (c.wrong_card) {
       // The IC-number chain verified the earner from the BC + income proof, but the card in THIS
       // slot is a different family member's — a soft caveat (amber), never a block.
       facts.push({ key: 'wrong_card', status: 'partial' })
@@ -415,10 +426,17 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // (hide it there when absent). Mirrors the STR chip — the number is the strong earner key.
     if ((c.nric || '').trim()) facts.push({ key: 'ic_no', status: factStatus(c.nric_status) })
     if (dt === 'salary_slip') {
-      if (has('amount') || has('gross_income') || has('net_income')) facts.push({ key: 'amount', status: 'verified' })
-      if (has('period')) facts.push({ key: 'period', status: 'verified' })
-    } else if (has('monthlyContribution') || has('monthly_contribution')) {
-      facts.push({ key: 'contribution', status: 'verified' })
+      // CONSISTENT chip set for every salary slip: Amount + Period always present, grey ('unknown')
+      // when not read — never omitted, so two payslips don't show different numbers of chips.
+      facts.push({ key: 'amount', status: (has('amount') || has('gross_income') || has('net_income')) ? 'verified' : 'unknown' })
+      facts.push({ key: 'period', status: has('period') ? 'verified' : 'unknown' })
+    } else {
+      // EPF: surface what we already collect (the FE previously looked for a wrong key so NONE
+      // showed). Contribution = the income figure; Balance = JUMLAH SIMPANAN; Date = statement
+      // currency. Keys match income_engine.student_income_proof_check's EPF points.
+      facts.push({ key: 'contribution', status: has('avgContribution') ? 'verified' : 'unknown' })
+      facts.push({ key: 'balance', status: has('totalAccumulated') ? 'verified' : 'unknown' })
+      facts.push({ key: 'current', status: has('statementDate') ? 'verified' : 'unknown' })
     }
     return facts
   }

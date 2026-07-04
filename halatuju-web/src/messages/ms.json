@@ -3559,6 +3559,8 @@
           "amount": "Jumlah",
           "period": "Tempoh",
           "contribution": "Caruman",
+          "balance": "Baki",
+          "genuine": "Tulen",
           "child": "Anak",
           "mother": "Ibu",
           "father": "Bapa",

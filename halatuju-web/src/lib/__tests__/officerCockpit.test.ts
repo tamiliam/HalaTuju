@@ -396,19 +396,49 @@ describe('documentFacts', () => {
   })
 
   // ── Proof chips (Item C): EPF/salary show IC No when the proof carries one ──
-  it('epf chip shows Name + IC No + Contribution', () => {
+  it('epf chips: Name + IC No + Contribution + Balance + Current (from the EPF points)', () => {
     expect(documentFacts(doc({ doc_type: 'epf',
       income_proof_check: { name: 'X', nric: '750721-04-5130', name_status: 'match', nric_status: 'match',
-        member: 'mother', ic_present: true, points: [{ key: 'monthlyContribution', value: '300.00' }] } })))
+        member: 'mother', ic_present: true, points: [
+          { key: 'avgContribution', value: '300.00' },
+          { key: 'totalAccumulated', value: '98730.34' },
+          { key: 'statementDate', value: '2026' }] } })))
       .toEqual([{ key: 'name', status: 'verified' }, { key: 'ic_no', status: 'verified' },
-                { key: 'contribution', status: 'verified' }])
+                { key: 'contribution', status: 'verified' }, { key: 'balance', status: 'verified' },
+                { key: 'current', status: 'verified' }])
   })
 
-  it('salary slip hides IC No when the slip carries none', () => {
-    expect(documentFacts(doc({ doc_type: 'salary_slip',
+  it('epf chips stay present (grey) when a field was not read — consistent set', () => {
+    const facts = documentFacts(doc({ doc_type: 'epf',
+      income_proof_check: { name: 'X', nric: '750721-04-5130', name_status: 'match', nric_status: 'match',
+        member: 'mother', ic_present: true, points: [] } }))
+    expect(facts.map((f) => f.key)).toEqual(['name', 'ic_no', 'contribution', 'balance', 'current'])
+    expect(facts.filter((f) => ['contribution', 'balance', 'current'].includes(f.key))
+      .every((f) => f.status === 'unknown')).toBe(true)
+  })
+
+  it('salary slip: Amount + Period ALWAYS shown (grey when not read) — consistent 4-chip set', () => {
+    const facts = (pts: { key: string; value: string }[]) => documentFacts(doc({ doc_type: 'salary_slip',
       income_proof_check: { name: 'X', nric: '', name_status: 'match', nric_status: 'no_ref',
-        member: 'father', ic_present: true, points: [{ key: 'amount', value: '2000' }] } })).map((f) => f.key))
-      .toEqual(['name', 'amount'])
+        member: 'father', ic_present: true, points: pts } }))
+    expect(facts([{ key: 'amount', value: '2000' }, { key: 'period', value: 'Apr 2026' }]).map((f) => f.key))
+      .toEqual(['name', 'amount', 'period'])
+    const noAmt = facts([{ key: 'period', value: 'Apr 2026' }])   // an EPF-in-the-slot has no amount
+    expect(noAmt.map((f) => f.key)).toEqual(['name', 'amount', 'period'])  // amount not dropped
+    expect(noAmt.find((f) => f.key === 'amount')!.status).toBe('unknown')  // …shown grey instead
+  })
+
+  it('genuineness gate: an IC flagged not_ic reads RED with a failed Genuine chip', () => {
+    // an EPF uploaded into the IC slot — the scorer says not_ic; the chip must not read "Verified"
+    const icFacts = documentFacts(doc({ doc_type: 'ic', vision_name_verdict: 'match', vision_nric_verdict: 'match',
+      authenticity: { status: 'not_ic', reason: 'EPF statement, not a MyKad' } }))
+    expect(icFacts).toEqual([
+      { key: 'name', status: 'not' }, { key: 'ic_no', status: 'not' }, { key: 'genuine', status: 'not' }])
+    const parentFacts = documentFacts(doc({ doc_type: 'parent_ic',
+      income_ic_check: icCheck({ member: 'father', name_status: 'match', readable: true }),
+      authenticity: { status: 'not_ic', reason: 'EPF, not MyKad' } }))
+    expect(parentFacts.map((f) => f.key)).toEqual(['name', 'ic_no', 'genuine'])
+    expect(parentFacts.every((f) => f.status === 'not')).toBe(true)
   })
 })
 

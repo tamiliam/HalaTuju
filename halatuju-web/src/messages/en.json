@@ -3559,6 +3559,8 @@
           "amount": "Amount",
           "period": "Period",
           "contribution": "Contribution",
+          "balance": "Balance",
+          "genuine": "Genuine",
           "child": "Child",
           "mother": "Mother",
           "father": "Father",
