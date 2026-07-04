@@ -557,14 +557,18 @@ export function incomeDocLayout(app: IncomeAnswerSource, incomeDocs: AdminApplic
 }
 
 // ── Income sub-sections (STR ROUTE / SALARY ROUTE / UTILITY) ──────────────────────────
-// A household is not strictly one route: an STR mother may also work, and a father may earn
-// a salary — so the box shows the STR proof cluster AND a salary cluster AND utilities as
-// distinct sub-sections (owner decision, 2026-07-04). Visibility:
-//   UTILITY  — always (the uploaded water/electricity bills; optional, no placeholders).
-//   STR      — only when the family is on the STR route AND an STR document exists.
-//   SALARY   — always: on the salary route it shows the per-member REQUIRED slots (with
-//              "Missing" placeholders); on the STR route it shows any supplementary salary/EPF/
-//              extra-member docs the family added (present-only, no placeholders).
+// The DOCUMENT drives the space, not the declared route (owner, 2026-07-04): the moment an
+// STR-claiming doc exists, the STR cluster shows so the reviewer can eyeball it — currency /
+// verification only colour the rows, never whether they appear. A household is not one route:
+// an STR mother may also work; a father may earn a salary — so the box shows an STR cluster AND
+// a salary cluster AND utilities as distinct sub-sections. Docs are placed by their RESOLVED
+// member (stored tag, or the name on a blank-tagged doc matched to the roster). Visibility:
+//   STR      — whenever an STR document exists (any route). Cluster = STR proof(s) + that
+//              parent's IC + the applicant's BC (guardian letter for a guardian; none for a father).
+//   SALARY   — the working members' docs (salary slip → IC → EPF). The IC is SKIPPED for the STR
+//              parent (already shown under STR — the shared-IC rule).
+//   UTILITY  — the uploaded water/electricity bills.
+//   Any income doc not placed above falls into a SALARY catch-all — no doc is ever hidden.
 export interface IncomeSubSections {
   str: IncomeSlot[] | null    // null → hide the STR sub-section entirely
   salary: IncomeSlot[]        // may be empty (then hidden by the renderer)
@@ -572,76 +576,65 @@ export interface IncomeSubSections {
 }
 
 export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminApplicantDocument[]): IncomeSubSections {
-  const route = app.income_route || ''
   const earner = app.income_earner || ''
+  // Place a doc by its RESOLVED member: the stored tag, or (blank-tagged) the person resolved from
+  // the name on the doc against the family roster (backend `resolved_member`). Falls back to ''.
+  const memberOf = (d: AdminApplicantDocument) => d.resolved_member || d.household_member || ''
   const find = (dt: string, member: string) =>
-    incomeDocs.find((d) => d.doc_type === dt && (d.household_member || '') === member) || null
-  // The STR earner's docs may carry the earner tag OR a legacy blank tag; prefer the exact
-  // earner tag, fall back to blank — so a correctly-tagged earner IC wins over a blank one
-  // (which may actually belong to another member and belongs in the SALARY cluster).
-  const findE = (dt: string) =>
-    incomeDocs.find((d) => d.doc_type === dt && (d.household_member || '') === earner)
-    || incomeDocs.find((d) => d.doc_type === dt && (d.household_member || '') === '')
-    || null
+    incomeDocs.find((d) => d.doc_type === dt && memberOf(d) === member) || null
   const used = new Set<number>()
   const mark = (slots: IncomeSlot[]) => slots.forEach((s) => { if (s.doc?.id != null) used.add(s.doc.id) })
 
-  // UTILITY — the uploaded bills, in a stable order.
+  // UTILITY — the uploaded bills, electricity first.
   const utility: IncomeSlot[] = incomeDocs
     .filter((d) => d.doc_type === 'water_bill' || d.doc_type === 'electricity_bill')
     .sort((a, b) => (a.doc_type === 'electricity_bill' ? -1 : 1) - (b.doc_type === 'electricity_bill' ? -1 : 1))
-    .map((d) => ({ docType: d.doc_type, member: d.household_member || '', doc: d }))
+    .map((d) => ({ docType: d.doc_type, member: memberOf(d), doc: d }))
   mark(utility)
 
-  // STR — show whenever an STR document is present, on ANY route. A salary-route or genuinely
-  // mixed household can still hold an STR (e.g. #63, a mother-STR family mis-switched to salary),
-  // and an officer must NEVER lose sight of an uploaded STR — it is often the decisive B40 proof.
-  // All STR docs are listed (the apply-form STR + any officer-requested copy). The earner IC +
-  // relationship companions are the STR route's compulsory partners, so they're appended only on
-  // the STR route (a salary-route STR holder isn't nagged for them).
+  // STR ROUTE — shows whenever an STR-claiming doc exists. The STR parent = the STR route's earner,
+  // else the member the STR is tagged/resolved to. Cluster: STR proof(s) → parent IC → applicant BC
+  // (guardian letter for a guardian; none for a father earner).
   let str: IncomeSlot[] | null = null
+  let strParent = ''
   const strDocs = incomeDocs.filter((d) => d.doc_type === 'str')
   if (strDocs.length > 0) {
-    const ordered = [
-      ...strDocs.filter((d) => (d.household_member || '') === earner),   // earner-tagged first
-      ...strDocs.filter((d) => (d.household_member || '') !== earner),
-    ]
-    const s: IncomeSlot[] = ordered.map((d) => ({ docType: 'str', member: d.household_member || '', doc: d }))
-    if (route === 'str') {
-      s.push({ docType: 'parent_ic', member: earner, doc: findE('parent_ic') })
-      const rel = relationshipDocFor(earner)
-      if (rel) s.push({ docType: rel, member: '', doc: findE(rel) })
-    }
+    strParent = earner || memberOf(strDocs[0]) || ''
+    const s: IncomeSlot[] = strDocs.map((d) => ({ docType: 'str', member: memberOf(d) || strParent, doc: d }))
+    s.push({ docType: 'parent_ic', member: strParent, doc: find('parent_ic', strParent) })
+    const rel = relationshipDocFor(strParent)   // mother→BC, guardian→letter, father→none
+    if (rel) s.push({ docType: rel, member: '', doc: find(rel, '') })
     mark(s)
     str = s
   }
 
-  // SALARY — the salary route's required per-member slots (with placeholders), then any
-  // remaining salary/EPF/IC/relationship docs (the STR route's supplementary salary docs,
-  // plus orphans) appended as present rows.
+  // SALARY ROUTE — the working members' docs: salary slip → IC → EPF, per the spec order. The IC
+  // is SKIPPED for the STR parent (shared-IC: their IC is already under STR). Missing compulsory
+  // slots render as "Missing" placeholders; EPF is present-only (additional).
   const salary: IncomeSlot[] = []
-  if (route === 'salary') {
-    for (const m of workingMembers(app.income_working_members as WorkingMember[] | null)) {
+  for (const m of workingMembers(app.income_working_members as WorkingMember[] | null)) {
+    salary.push({ docType: 'salary_slip', member: m, doc: find('salary_slip', m) })
+    if (m !== strParent) {
       salary.push({ docType: 'parent_ic', member: m, doc: find('parent_ic', m) })
-      salary.push({ docType: 'salary_slip', member: m, doc: find('salary_slip', m) })
-      const epf = find('epf', m)
-      if (epf) salary.push({ docType: 'epf', member: m, doc: epf })
-      const rel = relationshipDocFor(m)
-      if (rel && !salary.some((s) => s.docType === rel)) {
-        salary.push({ docType: rel, member: '', doc: find(rel, '') })
-      }
+    }
+    const epf = find('epf', m)
+    if (epf) salary.push({ docType: 'epf', member: m, doc: epf })
+    // Relationship proof for a salary-only member (mother→BC / guardian→letter; father none);
+    // skip the STR parent's (already under STR) and never duplicate a single household doc.
+    const rel = relationshipDocFor(m)
+    if (rel && m !== strParent && !salary.some((s) => s.docType === rel && s.member === '')) {
+      salary.push({ docType: rel, member: '', doc: find(rel, '') })
     }
   }
   mark(salary)
-  // Catch-all: EVERY income doc not already placed in STR / SALARY-required / UTILITY is appended
-  // here (known types ordered by SALARY_TAIL, anything else last) — an invisible-document guard so
-  // no uploaded income doc is ever dropped from the officer's view (the #63-class regression).
+  // Catch-all: EVERY income doc not already placed is appended here (known types ordered, others
+  // last) — the invisible-document guard, so no uploaded income doc is ever dropped from view.
   const SALARY_TAIL = ['salary_slip', 'epf', 'parent_ic', 'birth_certificate', 'guardianship_letter']
   const rankTail = (dt: string) => { const i = SALARY_TAIL.indexOf(dt); return i < 0 ? 99 : i }
   const tail = incomeDocs
     .filter((d) => !used.has(d.id))
     .sort((a, b) => rankTail(a.doc_type) - rankTail(b.doc_type))
-    .map((d) => ({ docType: d.doc_type, member: d.household_member || '', doc: d }))
+    .map((d) => ({ docType: d.doc_type, member: memberOf(d), doc: d }))
   salary.push(...tail)
 
   return { str, salary, utility }

@@ -615,6 +615,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     guardianship_check = serializers.SerializerMethodField()
     # V1: the declared-income supporting doc — whether it READ (officer chip).
     support_doc_check = serializers.SerializerMethodField()
+    # Officer box: the household member this income doc belongs to — its stored tag, or (for a
+    # blank-tagged doc) resolved by the name on the doc against the family roster. Display-only.
+    resolved_member = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -646,6 +649,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'bc_check', 'guardianship_check',
             # V1: declared-income supporting doc read-status (null unless income_support_doc).
             'support_doc_check',
+            # Officer box: resolved household member (stored tag or name-resolved). Display-only.
+            'resolved_member',
             # Phase 2 version history: when this doc was replaced (null = live) + which
             # doc replaced it. The admin path returns superseded rows to show history;
             # the student GET filters them out.
@@ -785,6 +790,13 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return None
         from .income_engine import student_income_support_check
         return student_income_support_check(obj)
+
+    def get_resolved_member(self, obj):
+        """The household member this income doc belongs to — stored tag, or name-resolved for a
+        blank-tagged doc. '' for non-income docs / when unresolvable. The cockpit box uses it to
+        place a doc under the right person even when it was uploaded without a tag."""
+        from .income_engine import resolved_member_for
+        return resolved_member_for(obj.application, obj)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):

@@ -115,6 +115,27 @@ class TestStudentRemoveHardDeletesChain(TestCase):
         self.assertEqual({d.id for d in chain}, {a.id, b.id, c.id})
 
 
+class TestResolvedMember(TestCase):
+    def test_blank_income_doc_resolves_by_name(self):
+        app = _app()
+        app.father_name = 'RAVI A/L PERIAKARUPPAN'
+        app.mother_name = 'SELVI A/P VELLAYAN'
+        app.save(update_fields=['father_name', 'mother_name'])
+        from apps.scholarship.income_engine import resolved_member_for
+        # a blank-tagged father IC resolves to 'father' by the name on the card
+        blank_ic = _doc(app, 'parent_ic', member='', vision_name='RAVI A/L PERIAKARUPPAN')
+        self.assertEqual(resolved_member_for(app, blank_ic), 'father')
+        # a properly-tagged doc keeps its own tag (no name lookup)
+        tagged = _doc(app, 'parent_ic', member='mother')
+        self.assertEqual(resolved_member_for(app, tagged), 'mother')
+        # a blank doc whose name matches nobody → '' (shown in the SALARY catch-all)
+        mystery = _doc(app, 'parent_ic', member='', vision_name='SOMEONE ELSE ENTIRELY')
+        self.assertEqual(resolved_member_for(app, mystery), '')
+        # a non-income blank doc is never name-resolved
+        slip = _doc(app, 'results_slip', member='')
+        self.assertEqual(resolved_member_for(app, slip), '')
+
+
 class TestStaticReadGuard(TestCase):
     """Every documents-read in the pure verdict/income engine modules MUST exclude superseded
     rows. Mirrors the repo's no-icu-messageformat / subject-drift static guards: a new read that

@@ -983,6 +983,10 @@ export interface AdminApplicantDocument {
   doc_type: string
   // Salary-route income docs: whose IC/salary slip/EPF this is (father/mother/…); '' otherwise.
   household_member?: string
+  // Officer box placement: the stored tag, or (for a blank-tagged income doc) the member resolved
+  // from the name on the doc against the family roster. '' for non-income / unresolvable. The
+  // cockpit places a doc by `resolved_member || household_member`.
+  resolved_member?: string
   original_filename: string
   content_type: string
   size: number

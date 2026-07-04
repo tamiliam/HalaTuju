@@ -717,6 +717,16 @@ class DocumentListCreateView(APIView):
         if single:
             stale_ids = list(
                 ApplicantDocument.objects.filter(**slot_filter).values_list('id', flat=True))
+            # An OFFICER-REQUESTED re-upload (request_code set) also SUPERSEDES the student's
+            # apply-form copy of the SAME (doc_type, member): the officer asked for a fresh/better
+            # copy, so the old one is replaced (→ OTHER "Old / Replaced"), not kept as a parallel
+            # slot. Scoped to the same member, so a cross-person request (e.g. the father's IC on a
+            # mother-STR route) never clobbers another member's doc (TD-115).
+            if new_request_code:
+                apply_form_ids = ApplicantDocument.objects.filter(
+                    application=app, doc_type=new_doc_type, household_member__in=sweep_members,
+                    request_code='', superseded_at__isnull=True).values_list('id', flat=True)
+                stale_ids += [i for i in apply_form_ids if i not in stale_ids]
         with transaction.atomic():
             doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
             if stale_ids:

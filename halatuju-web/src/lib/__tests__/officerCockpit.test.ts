@@ -468,10 +468,10 @@ describe('incomeSubSections', () => {
       { income_route: 'salary', income_working_members: ['father', 'mother'] }, [fIc, water])
     expect(sub.str).toBeNull()
     expect(sub.salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
+      ['salary_slip', 'father', null],   // spec order: salary slip → IC → EPF
       ['parent_ic', 'father', 1],
-      ['salary_slip', 'father', null],   // missing → placeholder
-      ['parent_ic', 'mother', null],
       ['salary_slip', 'mother', null],
+      ['parent_ic', 'mother', null],
       ['birth_certificate', '', null],   // mother needs a BC
     ])
     expect(ids(sub.utility)).toEqual([9])
@@ -525,6 +525,25 @@ describe('incomeSubSections', () => {
     expect(ids(sub.salary)).not.toContain(620)
     expect(ids(sub.salary)).not.toContain(1253)
     expect(ids(sub.salary)).toContain(1569)
+  })
+
+  it('#63 doc-driven: STR cluster = STR + parent IC + applicant BC; blank father IC resolves under SALARY; mother IC not repeated', () => {
+    const str = doc({ id: 1253, doc_type: 'str', household_member: 'mother' })
+    const mIc = doc({ id: 623, doc_type: 'parent_ic', household_member: 'mother' })
+    const bc = doc({ id: 624, doc_type: 'birth_certificate', household_member: '' })
+    // the father's IC was uploaded with a BLANK tag; the backend resolved it by name → father
+    const fIc = doc({ id: 1571, doc_type: 'parent_ic', household_member: '', resolved_member: 'father' })
+    const mSlip = doc({ id: 1569, doc_type: 'salary_slip', household_member: 'mother' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['mother', 'father'] },
+      [str, mIc, bc, fIc, mSlip])
+    // STR cluster (doc-driven, even though route=salary): STR proof + mother's IC + applicant's BC
+    expect(sub.str?.map((s) => [s.docType, s.doc?.id ?? null])).toEqual([
+      ['str', 1253], ['parent_ic', 623], ['birth_certificate', 624]])
+    const salaryPairs = sub.salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])
+    expect(salaryPairs).toContainEqual(['parent_ic', 'father', 1571])          // blank IC resolved → father
+    expect(salaryPairs).not.toContainEqual(['parent_ic', 'mother', 623])       // shared-IC: not repeated
+    expect(salaryPairs).toContainEqual(['salary_slip', 'mother', 1569])        // mother also works
   })
 
   it('invisible-doc guard: any unplaced income doc still lands in the catch-all tail', () => {

@@ -573,6 +573,24 @@ class TestRequestOwnedSlots(TestCase):
             application=self.app, doc_type='parent_ic', request_code='officer_3')
         self.assertEqual(father.household_member, 'father')   # honoured, NOT forced to 'mother'
 
+    @patch('apps.scholarship.vision.run_field_extraction_for_document', return_value=None)
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_officer_request_supersedes_apply_form_same_person(self, _del, _ext):
+        """An officer-requested re-upload of the same (doc_type, member) SUPERSEDES the student's
+        apply-form copy (→ OTHER Old/Replaced), rather than sitting beside it as a parallel slot.
+        STR route earner=mother: the apply-form STR is force-tagged to mother; the officer copy
+        (request_code) replaces it."""
+        self._upload('str', 'apply')                                   # apply-form STR (→ mother)
+        apply_form = ApplicantDocument.objects.get(
+            application=self.app, doc_type='str', request_code='')
+        self._upload('str', 'officer', request_code='officer_2', household_member='mother')
+        apply_form.refresh_from_db()
+        self.assertIsNotNone(apply_form.superseded_at)                 # replaced, retained as history
+        live = ApplicantDocument.objects.filter(
+            application=self.app, doc_type='str', superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)                             # only the officer copy is live
+        self.assertEqual(live.first().request_code, 'officer_2')
+
     @override_settings(MAX_OTHER_DOCS=2)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_other_cap(self, _del):

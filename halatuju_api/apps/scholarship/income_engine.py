@@ -431,6 +431,62 @@ def _member_ic_doc(application, member):
     return _cluster_docs(application, member, 'parent_ic').first()
 
 
+# ── Blank-tag resolution (officer Documents box) ─────────────────────────────
+# Income docs SHOULD carry a household_member tag, but some arrive blank — an Action-Centre /
+# officer-requested upload lands without one (e.g. #63's father IC came in untagged). Rather than
+# strand them in an "unassigned" pile, resolve the person from the NAME printed on the document
+# against the family roster. Display-only (the cockpit box places them under the right person);
+# the verdict still reads the stored tags (changing that is the re-banding-gated P3 slice).
+_RESOLVABLE_INCOME_DOCS = ('parent_ic', 'salary_slip', 'epf')
+
+
+def _doc_person_name(doc):
+    """The person a (parent_ic / salary_slip / epf) document is about: the IC's OCR'd name, or the
+    payslip/EPF's extracted holder name. '' when nothing read."""
+    dt = getattr(doc, 'doc_type', '')
+    if dt == 'parent_ic':
+        return (getattr(doc, 'vision_name', '') or '').strip()
+    return (_doc_fields(doc).get('name', '') or '').strip()
+
+
+def _roster_candidates(application):
+    """(member, name) pairs from the structured family roster — father, mother, and any named
+    other-family members (siblings / guardian) — for resolving a blank-tagged doc to a person."""
+    out = []
+    fn = (getattr(application, 'father_name', '') or '').strip()
+    mn = (getattr(application, 'mother_name', '') or '').strip()
+    if fn:
+        out.append(('father', fn))
+    if mn:
+        out.append(('mother', mn))
+    for om in (getattr(application, 'other_family_members', None) or []):
+        if isinstance(om, dict) and (om.get('name') or '').strip():
+            rel = (om.get('relationship') or om.get('role') or '').strip().lower()
+            member = rel if rel in ('brother', 'sister', 'guardian') else 'guardian'
+            out.append((member, om['name'].strip()))
+    return out
+
+
+def resolved_member_for(application, doc):
+    """The household member an income document belongs to — its own tag if set, else resolved by
+    matching the NAME on the doc against the family roster (tolerant of Tamil/Indian romanisation).
+    '' when it can't be resolved (a blank doc with no readable name / no roster match) — the cockpit
+    then shows it in the SALARY 'unassigned' catch-all. Display helper; does not change the tag."""
+    tag = (getattr(doc, 'household_member', '') or '').strip()
+    if tag:
+        return tag
+    if getattr(doc, 'doc_type', '') not in _RESOLVABLE_INCOME_DOCS:
+        return ''
+    name = _doc_person_name(doc)
+    if not name:
+        return ''
+    from .vision import relationship_name_match
+    for member, cand in _roster_candidates(application):
+        if relationship_name_match(name, cand) in ('match', 'partial'):
+            return member
+    return ''
+
+
 def _proof_member(doc):
     """The earner a salary slip / EPF belongs to: its own household_member tag (salary
     route), or the application's single income_earner (STR route). '' if no income
@@ -604,7 +660,13 @@ def student_str_check(doc):
     if getattr(doc, 'doc_type', '') != 'str':
         return None
     app = doc.application
-    member = (getattr(app, 'income_earner', '') or '').strip()   # STR route single earner
+    # The STR earner: income_earner on the STR route; on the salary route (blank earner) fall back
+    # to the STR document's OWN member tag, so the recipient cross-checks against that parent's IC
+    # (e.g. #63 — a mother-STR family on the salary route: the mother's IC sits right there and the
+    # STR should read against it, not go 'no_ref'). Display-only on the salary route: the salary
+    # verdict never reads this name_status/nric_status (only has_valid_str's currency).
+    member = ((getattr(app, 'income_earner', '') or '').strip()
+              or (getattr(doc, 'household_member', '') or '').strip())
 
     vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
     f = vf.get('fields', {}) if isinstance(vf.get('fields', {}), dict) else {}
