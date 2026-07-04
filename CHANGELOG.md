@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Backend tag guard — never persist a blank-tagged salary income doc (2026-07-04, backend, no
+  migration).** The airtight last line for the tagging invariant: on upload, an income doc
+  (parent_ic / salary_slip / epf) that arrives UNTAGGED (a memberless request like `income_doc_stale`,
+  a reviewer mis-classify, a direct/legacy client) is attributed to the household member by the NAME
+  Vision/Gemini reads off it (`income_engine.resolved_member_for`), so a blank income doc is never
+  persisted where the person is determinable — and the verdict then reads it under the right member.
+  STR-route docs are already force-tagged to the earner. The guard also REPLACES: once the member is
+  known it supersedes the prior live copy in that person's slot, so a name-derived re-upload doesn't
+  duplicate (closes the `income_doc_stale`-reupload duplicate). A genuinely-unresolvable name stays
+  blank (the cockpit catch-all still shows it — never hidden). +2 pytest (2078 scholarship).
+
 - **Tag every document request at source — category+qualifier request UI + per-member EPF (2026-07-04,
   FE + backend, no migration).** Closes the blank-tag leak upstream: the reviewer "Request document"
   control is now a friendly CATEGORY + a mandatory QUALIFIER that resolves to a concrete

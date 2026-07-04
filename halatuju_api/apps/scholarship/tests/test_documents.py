@@ -302,6 +302,67 @@ class TestDocumentApi(TestCase):
         self.assertEqual(ics.count(), 1)                          # legacy blank superseded, no live dup
         self.assertEqual(ics.first().household_member, 'mother')  # auto-tagged to the earner
 
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_blank_income_doc_auto_tagged_by_name_on_upload(self, mock_vision, _dl):
+        """Backend tag guard (airtight last line): a salary-route income doc uploaded with NO member
+        is attributed to the household member by the NAME Vision reads off it — a blank-tagged income
+        doc is never persisted where the person is determinable."""
+        self.app_a.income_route = 'salary'
+        self.app_a.father_name = 'RAVI A/L PERIAKARUPPAN'
+        self.app_a.save(update_fields=['income_route', 'father_name'])
+
+        def _read(doc):
+            from django.utils import timezone as _tz
+            doc.vision_name = 'RAVI A/L PERIAKARUPPAN'
+            doc.vision_run_at = _tz.now()
+            doc.save(update_fields=['vision_name', 'vision_run_at'])
+        mock_vision.side_effect = _read
+
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'parent_ic',                       # NO household_member sent
+            'storage_path': f'{self.app_a.id}/parent_ic/blank',
+            'original_filename': 'ic.jpg', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        doc = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertEqual(doc.household_member, 'father')   # auto-tagged from the name on the card
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_name_derived_upload_supersedes_prior_slot(self, mock_vision, _dl):
+        """The guard also REPLACES: a name-derived income doc supersedes the prior live copy in that
+        person's slot, so a memberless re-upload (e.g. answering income_doc_stale) doesn't duplicate."""
+        self.app_a.income_route = 'salary'
+        self.app_a.father_name = 'RAVI A/L PERIAKARUPPAN'
+        self.app_a.save(update_fields=['income_route', 'father_name'])
+        old = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='parent_ic', household_member='father',
+            storage_path=f'{self.app_a.id}/parent_ic/old')
+
+        def _read(doc):
+            from django.utils import timezone as _tz
+            doc.vision_name = 'RAVI A/L PERIAKARUPPAN'
+            doc.vision_run_at = _tz.now()
+            doc.save(update_fields=['vision_name', 'vision_run_at'])
+        mock_vision.side_effect = _read
+
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'parent_ic',                       # blank member → derived to father
+            'storage_path': f'{self.app_a.id}/parent_ic/new',
+            'original_filename': 'ic.jpg', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        old.refresh_from_db()
+        self.assertIsNotNone(old.superseded_at)            # prior father IC replaced (retained)
+        live = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='parent_ic', household_member='father',
+            superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)
+        self.assertEqual(live.first().id, resp.json()['id'])
+
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_delete_sweeps_storage(self, mock_storage_delete):
         """Explicit DELETE on a doc also sweeps its Storage blob."""

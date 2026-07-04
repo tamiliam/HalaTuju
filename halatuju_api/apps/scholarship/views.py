@@ -772,6 +772,33 @@ class DocumentListCreateView(APIView):
         elif doc.doc_type in TEXT_READ_DOC_TYPES:
             from . import vision as _vision
             _vision.read_text_document(doc)
+        # ── Tag guard (the airtight last line): an income doc (parent_ic / salary_slip / epf) that
+        # arrived UNTAGGED — a memberless request (income_doc_stale), a reviewer mis-classify, a
+        # direct/legacy client — is attributed to the household member by the NAME now read off it
+        # (Vision/Gemini has run above). So a blank-tagged income doc is never PERSISTED where the
+        # person is determinable; the verdict then reads it under the right member. STR-route docs
+        # are already force-tagged to the earner above; only a genuinely-unresolvable name stays
+        # blank (the cockpit catch-all still shows it — never hidden). ``resolved_member_for`` is a
+        # no-op when the tag is already set, so this only ever fills a blank.
+        if doc.doc_type in ('parent_ic', 'salary_slip', 'epf') and not (doc.household_member or '').strip():
+            from .income_engine import resolved_member_for
+            derived = resolved_member_for(app, doc)
+            if derived:
+                doc.household_member = derived
+                doc.save(update_fields=['household_member'])
+                # The create-time replace ran with a BLANK member and couldn't match the person's
+                # slot, so now that the member is known, supersede any prior live copy in the
+                # (doc_type, member, request_code) slot — a name-derived re-upload (e.g. answering the
+                # memberless income_doc_stale) REPLACES that member's existing doc instead of
+                # duplicating it. Retained as history (Phase 2), never hard-deleted.
+                prior = list(ApplicantDocument.objects.filter(
+                    application=app, doc_type=doc.doc_type, household_member=derived,
+                    request_code=doc.request_code, superseded_at__isnull=True,
+                ).exclude(id=doc.id).values_list('id', flat=True))
+                if prior:
+                    from django.utils import timezone as _tz2
+                    ApplicantDocument.objects.filter(id__in=prior).update(
+                        superseded_at=_tz2.now(), superseded_by=doc)
         # S3: a new upload may clear a verdict gap → auto-resolve its ticket
         # (and link the doc), or surface a fresh ticket. Idempotent, never blocks.
         from .resolution import sync_resolution_items, resolve_doc_items_for_upload
