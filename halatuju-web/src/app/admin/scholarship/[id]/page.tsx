@@ -76,17 +76,58 @@ import type { BursaryAgreement } from '@/lib/api'
 
 const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done', 'family_done'] as const
 
-// Officer doc-request control (Check-2/Check-3 S2b): the 13 requestable slot types,
-// the income types that also need a person, and each type's verdict fact.
-const REQ_DOC_TYPES = ['ic', 'results_slip', 'offer_letter', 'parent_ic', 'str', 'salary_slip', 'epf', 'birth_certificate', 'guardianship_letter', 'water_bill', 'electricity_bill', 'statement_of_intent', 'photo', 'other'] as const
-const REQ_MEMBER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf'])
-const REQ_MEMBERS = ['father', 'mother', 'guardian', 'brother', 'sister'] as const
+// Officer doc-request control: a friendly CATEGORY + a mandatory QUALIFIER that resolves to a
+// concrete (doc_type, household_member). Every request is tagged at source — a "Whose?" category
+// (STR / IC / salary / EPF) requires a person; a "Which?" category (results slip / utility / other)
+// requires a sub-type. The Request button stays disabled until the qualifier is chosen.
+type ReqCategory = {
+  key: string
+  qualifier: 'whose' | 'which' | null
+  docType?: string                                          // 'whose' | null → fixed doc_type
+  members?: readonly string[]                               // 'whose' → the person options
+  options?: readonly { value: string; docType: string }[]  // 'which' → sub-type options
+}
+const REQUEST_CATEGORIES: readonly ReqCategory[] = [
+  { key: 'ic', qualifier: null, docType: 'ic' },                                   // Applicant's IC
+  { key: 'results_slip', qualifier: 'which', options: [
+      { value: 'spm', docType: 'results_slip' },
+      { value: 'cgpa', docType: 'semester_result' } ] },                            // SPM / current CGPA
+  { key: 'offer_letter', qualifier: null, docType: 'offer_letter' },
+  { key: 'str', qualifier: 'whose', docType: 'str', members: ['father', 'mother', 'guardian'] },
+  { key: 'parent_ic', qualifier: 'whose', docType: 'parent_ic',
+    members: ['father', 'mother', 'guardian', 'brother', 'sister'] },              // Family member's IC
+  { key: 'salary_slip', qualifier: 'whose', docType: 'salary_slip',
+    members: ['father', 'mother', 'guardian', 'brother', 'sister'] },
+  { key: 'epf', qualifier: 'whose', docType: 'epf',
+    members: ['father', 'mother', 'guardian', 'brother', 'sister'] },
+  { key: 'birth_certificate', qualifier: null, docType: 'birth_certificate' },
+  { key: 'utility', qualifier: 'which', options: [
+      { value: 'water_bill', docType: 'water_bill' },
+      { value: 'electricity_bill', docType: 'electricity_bill' } ] },
+  { key: 'other', qualifier: 'which', options: [
+      { value: 'school_leaving_cert', docType: 'school_leaving_cert' },
+      { value: 'guardianship_letter', docType: 'guardianship_letter' },
+      { value: 'statement_of_intent', docType: 'statement_of_intent' },
+      { value: 'photo', docType: 'photo' },
+      { value: 'other', docType: 'other' } ] },
+]
+const REQ_CAT = new Map(REQUEST_CATEGORIES.map((c) => [c.key, c]))
+// Resolve a (category, qualifier) pick to a concrete request, or null when the qualifier is
+// required but not yet chosen (→ keeps the Request button disabled).
+function resolveReq(catKey: string, qual: string): { docType: string; member: string } | null {
+  const c = REQ_CAT.get(catKey)
+  if (!c) return null
+  if (c.qualifier === null) return { docType: c.docType!, member: '' }
+  if (c.qualifier === 'whose') return qual ? { docType: c.docType!, member: qual } : null
+  const opt = c.options!.find((o) => o.value === qual)
+  return opt ? { docType: opt.docType, member: '' } : null
+}
 const DOC_FACT: Record<string, string> = {
-  ic: 'identity', results_slip: 'academic', offer_letter: 'pathway',
+  ic: 'identity', results_slip: 'academic', semester_result: 'academic', offer_letter: 'pathway',
   parent_ic: 'income', str: 'income', salary_slip: 'income', epf: 'income',
   birth_certificate: 'income', guardianship_letter: 'income',
   water_bill: 'income', electricity_bill: 'income',
-  statement_of_intent: 'other', photo: 'other', other: 'other',
+  school_leaving_cert: 'other', statement_of_intent: 'other', photo: 'other', other: 'other',
 }
 
 // #9 sync: an interview anomaly is SUPPRESSED from the agenda when the same concern is
@@ -210,8 +251,8 @@ export default function AdminScholarshipDetailPage() {
   const [rubric, setRubric] = useState<Record<string, number>>({})
   const [note, setNote] = useState('')
   const [infoNote, setInfoNote] = useState('')
-  const [reqDocType, setReqDocType] = useState('')
-  const [reqDocMember, setReqDocMember] = useState('')
+  const [reqCategory, setReqCategory] = useState('')
+  const [reqQualifier, setReqQualifier] = useState('')   // the 'whose' member OR the 'which' sub-value
   const [reqDocNote, setReqDocNote] = useState('')
   // Sprint 5 — Officer cockpit
   const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
@@ -611,26 +652,32 @@ export default function AdminScholarshipDetailPage() {
       ? t('admin.scholarship.requestDocPromptMember', { member: memberTxt, doc: docTxt })
       : t('admin.scholarship.requestDocPrompt', { doc: docTxt })
   }
-  const onReqDocType = (dt: string) => {
-    setReqDocType(dt)
-    setReqDocNote(stdDocRequest(dt, REQ_MEMBER_DOCS.has(dt) ? reqDocMember : ''))
+  // The concrete (doc_type, member) the current category+qualifier resolves to — null until a
+  // required qualifier is chosen (which keeps the Request button disabled).
+  const reqResolved = resolveReq(reqCategory, reqQualifier)
+  const onReqCategory = (key: string) => {
+    setReqCategory(key)
+    setReqQualifier('')                                  // reset the qualifier when the category changes
+    const r = resolveReq(key, '')                         // prefills only for a no-qualifier category
+    setReqDocNote(r ? stdDocRequest(r.docType, r.member) : '')
   }
-  const onReqDocMember = (m: string) => {
-    setReqDocMember(m)
-    setReqDocNote(stdDocRequest(reqDocType, m))
+  const onReqQualifier = (q: string) => {
+    setReqQualifier(q)
+    const r = resolveReq(reqCategory, q)
+    setReqDocNote(r ? stdDocRequest(r.docType, r.member) : '')
   }
   const doRequestDoc = async () => {
-    if (!token || !reqDocType) return
-    const member = REQ_MEMBER_DOCS.has(reqDocType) ? reqDocMember : ''
-    const prompt = reqDocNote.trim() || stdDocRequest(reqDocType, member)
+    if (!token || !reqResolved) return
+    const { docType, member } = reqResolved
+    const prompt = reqDocNote.trim() || stdDocRequest(docType, member)
     setBusy('reqdoc'); setError('')
     try {
       setApp(await raiseResolutionItem(
         id,
-        { kind: 'doc', doc_type: reqDocType, household_member: member, prompt, fact: DOC_FACT[reqDocType] || 'other' },
+        { kind: 'doc', doc_type: docType, household_member: member, prompt, fact: DOC_FACT[docType] || 'other' },
         { token },
       ))
-      setReqDocNote(''); setReqDocType(''); setReqDocMember('')
+      setReqDocNote(''); setReqCategory(''); setReqQualifier('')
     } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
   }
 
@@ -1389,30 +1436,48 @@ export default function AdminScholarshipDetailPage() {
             </div>
             <div className="space-y-1.5 border-t border-gray-100 pt-3">
               <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.requestDocTitle')}</p>
+              {(() => {
+                const cat = REQ_CAT.get(reqCategory)
+                return (
               <div className="flex flex-wrap items-center gap-2">
-                <select value={reqDocType} onChange={(e) => onReqDocType(e.target.value)}
+                <select value={reqCategory} onChange={(e) => onReqCategory(e.target.value)}
                   className="border rounded-lg px-2 py-1.5 text-sm">
                   <option value="">{t('admin.scholarship.requestDocAny')}</option>
-                  {REQ_DOC_TYPES.map((dt) => (
-                    <option key={dt} value={dt}>{t(`admin.scholarship.docsDrawer.type.${dt}`)}</option>
+                  {REQUEST_CATEGORIES.map((c) => (
+                    <option key={c.key} value={c.key}>{t(`admin.scholarship.requestCat.${c.key}`)}</option>
                   ))}
                 </select>
-                {REQ_MEMBER_DOCS.has(reqDocType) && (
-                  <select value={reqDocMember} onChange={(e) => onReqDocMember(e.target.value)}
+                {/* Context-aware qualifier: "Whose?" (person) or "Which?" (sub-type). Required. */}
+                {cat?.qualifier === 'whose' && (
+                  <select value={reqQualifier} onChange={(e) => onReqQualifier(e.target.value)}
                     className="border rounded-lg px-2 py-1.5 text-sm">
                     <option value="">{t('admin.scholarship.requestDocWhose')}</option>
-                    {REQ_MEMBERS.map((m) => (
+                    {cat.members!.map((m) => (
                       <option key={m} value={m}>{t(`scholarship.docs.income.wizard.member.${m}`)}</option>
                     ))}
                   </select>
                 )}
+                {cat?.qualifier === 'which' && (
+                  <select value={reqQualifier} onChange={(e) => onReqQualifier(e.target.value)}
+                    className="border rounded-lg px-2 py-1.5 text-sm">
+                    <option value="">{t('admin.scholarship.requestDocWhich')}</option>
+                    {cat.options!.map((o) => (
+                      <option key={o.value} value={o.value}>{t(`admin.scholarship.requestWhich.${o.value}`)}</option>
+                    ))}
+                  </select>
+                )}
               </div>
-              {reqDocType && (
+                )
+              })()}
+              {reqCategory && (
                 <>
                   <textarea value={reqDocNote} rows={2} onChange={(e) => setReqDocNote(e.target.value)}
                     placeholder={t('admin.scholarship.requestDocNotePlaceholder')}
                     className="w-full border rounded-lg px-3 py-2 text-sm" />
-                  <button onClick={doRequestDoc} disabled={!!busy || !reqDocType || (reqDocType === 'other' && !reqDocNote.trim())}
+                  {/* Enabled ONLY once the request resolves (qualifier chosen where required); a
+                      generic "Other" still needs a note describing exactly what's wanted. */}
+                  <button onClick={doRequestDoc}
+                    disabled={!!busy || !reqResolved || (reqResolved.docType === 'other' && !reqDocNote.trim())}
                     className="px-3 py-1.5 border border-primary-300 text-primary-700 rounded-lg text-sm disabled:opacity-50">
                     {busy === 'reqdoc' ? t('common.loading') : t('admin.scholarship.requestDocSend')}
                   </button>

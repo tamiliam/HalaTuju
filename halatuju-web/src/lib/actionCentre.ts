@@ -170,6 +170,12 @@ export const KNOWN_CODES = [
   'school_leaving_cert_missing',
   'semester_result_missing',
   'epf_statement_missing',
+  // Per-member EPF requests (replace the memberless epf_statement_missing; tagged to the person).
+  'father_epf_missing',
+  'mother_epf_missing',
+  'guardian_epf_missing',
+  'brother_epf_missing',
+  'sister_epf_missing',
   'utility_bill_missing',
   // V4 — clarifies:
   'deceased_parent_detail',

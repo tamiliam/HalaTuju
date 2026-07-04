@@ -1809,11 +1809,18 @@ def unemployment_detail_gap(application):
                for m in unemployed_members(application))
 
 
+def unemployment_epf_members(application):
+    """'unemployed' members with no EPF statement on file — the per-member (soft, optional) Check-2
+    doc-request to upload it for corroboration. Per-member so the request is TAGGED to that person
+    (an EPF belongs to a specific member; a memberless request lands blank-tagged)."""
+    return [m for m in unemployed_members(application)
+            if not _cluster_docs(application, m, 'epf').exists()]
+
+
 def unemployment_epf_gap(application):
-    """True when an 'unemployed' member has no EPF statement on file — the (soft, optional)
-    Check-2 doc-request to upload it for corroboration."""
-    return any(not _cluster_docs(application, m, 'epf').exists()
-               for m in unemployed_members(application))
+    """True when any 'unemployed' member has no EPF on file (boolean form of
+    ``unemployment_epf_members``)."""
+    return bool(unemployment_epf_members(application))
 
 
 def unemployment_corroborated_members(application):
@@ -1867,14 +1874,15 @@ def semester_result_gap(application):
     return docs is not None and not _has_read_doc(docs, 'semester_result')
 
 
-def employed_epf_gap(application):
-    """An EMPLOYED parent with a salary slip but no EPF on file → an OPTIONAL request for the EPF
-    as standard corroboration (mirrors ``unemployment_epf_gap`` for the unemployed). The payslip
-    gate keeps it to genuinely-employed parents, so a family with no formal employment is never
-    nagged. Soft; never a gate."""
+def employed_epf_members(application):
+    """EMPLOYED parents with a salary slip but no EPF on file → the per-member OPTIONAL request for
+    the EPF as standard corroboration (mirrors ``unemployment_epf_members``). The payslip gate keeps
+    it to genuinely-employed parents. Per-member so the request is TAGGED to that person (an EPF
+    belongs to a specific member; a memberless request lands blank-tagged). Soft; never a gate."""
     docs = _docs_or_none(application)
     if docs is None:
-        return False
+        return []
+    out = []
     for member in ('father', 'mother'):
         occ = _member_occupation(application, member)
         if occ and occ not in _NON_EARNING_OCC:
@@ -1883,8 +1891,14 @@ def employed_epf_gap(application):
             has_epf = docs.filter(doc_type='epf', household_member__in=[member, ''],
                                   superseded_at__isnull=True).exists()
             if has_slip and not has_epf:
-                return True
-    return False
+                out.append(member)
+    return out
+
+
+def employed_epf_gap(application):
+    """True when any employed parent has a salary slip but no EPF (boolean form of
+    ``employed_epf_members``)."""
+    return bool(employed_epf_members(application))
 
 
 def utility_bill_gap(application):

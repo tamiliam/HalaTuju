@@ -2043,6 +2043,26 @@
           "title": "Muat naik penyata KWSP ibu/bapa anda (pilihan)",
           "desc": "Jika ibu/bapa anda yang bekerja mempunyai penyata KWSP, memuat naiknya bersama slip gaji membantu mengesahkan pendapatan mereka. Ini pilihan — langkau jika mereka tiada."
         },
+        "father_epf_missing": {
+          "title": "Muat naik penyata KWSP bapa anda (pilihan)",
+          "desc": "Jika bapa anda mempunyai penyata KWSP, memuat naiknya bersama slip gajinya membantu mengesahkan pendapatannya. Pilihan — langkau jika tiada."
+        },
+        "mother_epf_missing": {
+          "title": "Muat naik penyata KWSP ibu anda (pilihan)",
+          "desc": "Jika ibu anda mempunyai penyata KWSP, memuat naiknya bersama slip gajinya membantu mengesahkan pendapatannya. Pilihan — langkau jika tiada."
+        },
+        "guardian_epf_missing": {
+          "title": "Muat naik penyata KWSP penjaga anda (pilihan)",
+          "desc": "Jika penjaga anda mempunyai penyata KWSP, memuat naiknya bersama slip gaji mereka membantu mengesahkan pendapatan mereka. Pilihan — langkau jika tiada."
+        },
+        "brother_epf_missing": {
+          "title": "Muat naik penyata KWSP abang anda (pilihan)",
+          "desc": "Jika abang anda mempunyai penyata KWSP, memuat naiknya bersama slip gajinya membantu mengesahkan pendapatannya. Pilihan — langkau jika tiada."
+        },
+        "sister_epf_missing": {
+          "title": "Muat naik penyata KWSP kakak anda (pilihan)",
+          "desc": "Jika kakak anda mempunyai penyata KWSP, memuat naiknya bersama slip gajinya membantu mengesahkan pendapatannya. Pilihan — langkau jika tiada."
+        },
         "utility_bill_missing": {
           "title": "Muat naik bil utiliti",
           "desc": "Sila muat naik bil air atau elektrik terkini untuk rumah anda. Ia mengesahkan alamat anda dan membantu kami memahami isi rumah anda. Mana-mana bil boleh."
@@ -2937,6 +2957,8 @@
         "ic": "Kad Pengenalan (MyKad) — pastikan nama dan nombor IC anda jelas kelihatan",
         "parent_ic": "Kad Pengenalan (MyKad) — nama dan nombor IC jelas kelihatan",
         "results_slip": "slip keputusan SPM — slip rasmi penuh dengan nama anda jelas kelihatan",
+        "semester_result": "slip keputusan semester kolej/universiti terkini — menunjukkan CGPA semasa anda",
+        "school_leaving_cert": "surat berhenti sekolah atau testimonial",
         "offer_letter": "surat tawaran — mesti dialamatkan kepada anda dan menunjukkan nama/IC anda",
         "str": "dokumen STR (Sumbangan Tunai Rahmah) — pastikan status 'Lulus' jelas kelihatan",
         "salary_slip": "slip gaji terkini — menunjukkan majikan, nama, dan gaji bulanan",
@@ -2955,6 +2977,30 @@
       "raiseQuerySend": "Kemukakan pertanyaan",
       "requestDocAny": "Pilih dokumen…",
       "requestDocWhose": "Milik siapa?",
+      "requestDocWhich": "Yang mana?",
+      "requestCat": {
+        "ic": "IC pemohon",
+        "results_slip": "Slip keputusan",
+        "offer_letter": "Surat tawaran",
+        "str": "Bukti STR",
+        "parent_ic": "IC ahli keluarga",
+        "salary_slip": "Slip gaji",
+        "epf": "Penyata EPF",
+        "birth_certificate": "Sijil kelahiran",
+        "utility": "Bil utiliti",
+        "other": "Dokumen lain"
+      },
+      "requestWhich": {
+        "spm": "SPM",
+        "cgpa": "CGPA kolej semasa",
+        "water_bill": "Air",
+        "electricity_bill": "Elektrik",
+        "school_leaving_cert": "Surat berhenti sekolah",
+        "guardianship_letter": "Surat penjagaan",
+        "statement_of_intent": "Pernyataan hasrat",
+        "photo": "Gambar",
+        "other": "Lain-lain"
+      },
       "requestDocSend": "Minta dokumen",
       "requestDocPrompt": "Sila muat naik {doc} anda.",
       "requestDocPromptMember": "Sila muat naik {doc} {member}.",
@@ -3378,6 +3424,11 @@
           "school_leaving_cert_missing": "Tiada slip keputusan SPM dalam fail — pelajar diminta sijil berhenti sekolah / testimonial untuk menyokong rekod akademik.",
           "semester_result_missing": "Pelajar yang sedang belajar tiada keputusan semester semasa dalam fail — pelajar diminta slip PNGK terkini.",
           "epf_statement_missing": "Ibu/bapa yang bekerja mempunyai slip gaji tetapi tiada KWSP — pelajar diminta menambahnya sebagai sokongan (pilihan).",
+          "father_epf_missing": "Bapa tiada KWSP dalam fail — pelajar diminta menambah KWSP-nya sebagai sokongan (pilihan).",
+          "mother_epf_missing": "Ibu tiada KWSP dalam fail — pelajar diminta menambah KWSP-nya sebagai sokongan (pilihan).",
+          "guardian_epf_missing": "Penjaga tiada KWSP dalam fail — pelajar diminta menambah KWSP mereka sebagai sokongan (pilihan).",
+          "brother_epf_missing": "Abang tiada KWSP dalam fail — pelajar diminta menambah KWSP-nya sebagai sokongan (pilihan).",
+          "sister_epf_missing": "Kakak tiada KWSP dalam fail — pelajar diminta menambah KWSP-nya sebagai sokongan (pilihan).",
           "utility_bill_missing": "Tiada bil air atau elektrik dalam fail — pelajar diminta memuat naik satu (pengesahan alamat + isyarat penggunaan).",
           "deceased_parent_detail": "Seorang ibu/bapa direkodkan sebagai meninggal dunia — pelajar diminta, dengan lembut, bila, untuk gambaran isi rumah.",
           "informal_work_detail": "Upah tidak formal yang diisytiharkan — pelajar diminta akaun sendiri lawan majikan dan purata pendapatan bulanan.",

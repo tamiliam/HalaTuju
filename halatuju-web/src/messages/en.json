@@ -2043,6 +2043,26 @@
           "title": "Upload your parent's EPF statement (optional)",
           "desc": "If your working parent has an EPF (KWSP) statement, uploading it alongside their payslip helps confirm their income. This is optional — skip it if they don't have one."
         },
+        "father_epf_missing": {
+          "title": "Upload your father's EPF statement (optional)",
+          "desc": "If your father has an EPF (KWSP) statement, uploading it alongside his payslip helps confirm his income. Optional — skip it if he doesn't have one."
+        },
+        "mother_epf_missing": {
+          "title": "Upload your mother's EPF statement (optional)",
+          "desc": "If your mother has an EPF (KWSP) statement, uploading it alongside her payslip helps confirm her income. Optional — skip it if she doesn't have one."
+        },
+        "guardian_epf_missing": {
+          "title": "Upload your guardian's EPF statement (optional)",
+          "desc": "If your guardian has an EPF (KWSP) statement, uploading it alongside their payslip helps confirm their income. Optional — skip it if they don't have one."
+        },
+        "brother_epf_missing": {
+          "title": "Upload your elder brother's EPF statement (optional)",
+          "desc": "If your elder brother has an EPF (KWSP) statement, uploading it alongside his payslip helps confirm his income. Optional — skip it if he doesn't have one."
+        },
+        "sister_epf_missing": {
+          "title": "Upload your elder sister's EPF statement (optional)",
+          "desc": "If your elder sister has an EPF (KWSP) statement, uploading it alongside her payslip helps confirm her income. Optional — skip it if she doesn't have one."
+        },
         "utility_bill_missing": {
           "title": "Upload a utility bill",
           "desc": "Please upload a recent water or electricity bill for your home. It confirms your address and helps us understand your household. Either bill is fine."
@@ -2937,6 +2957,8 @@
         "ic": "IC (MyKad) — make sure your name and IC number are clearly visible",
         "parent_ic": "IC (MyKad) — name and IC number clearly visible",
         "results_slip": "SPM results slip — the full official slip with your name clearly visible",
+        "semester_result": "latest college/university semester result slip — showing your current CGPA",
+        "school_leaving_cert": "school leaving certificate (surat berhenti sekolah) or a testimonial",
         "offer_letter": "offer letter — it must be addressed to you and show your name/IC",
         "str": "STR (Sumbangan Tunai Rahmah) document — make sure the 'Lulus' (approved) status is clearly visible",
         "salary_slip": "latest salary slip — showing the employer, the name, and the monthly pay",
@@ -2955,6 +2977,30 @@
       "raiseQuerySend": "Raise query",
       "requestDocAny": "Choose document…",
       "requestDocWhose": "Whose?",
+      "requestDocWhich": "Which?",
+      "requestCat": {
+        "ic": "Applicant's IC",
+        "results_slip": "Results slip",
+        "offer_letter": "Offer letter",
+        "str": "STR proof",
+        "parent_ic": "Family member's IC",
+        "salary_slip": "Salary slip",
+        "epf": "EPF statement",
+        "birth_certificate": "Birth certificate",
+        "utility": "Utility bill",
+        "other": "Other documents"
+      },
+      "requestWhich": {
+        "spm": "SPM",
+        "cgpa": "Current college CGPA",
+        "water_bill": "Water",
+        "electricity_bill": "Electricity",
+        "school_leaving_cert": "School leaving certificate",
+        "guardianship_letter": "Guardianship letter",
+        "statement_of_intent": "Statement of intent",
+        "photo": "Photo",
+        "other": "Other"
+      },
       "requestDocSend": "Request document",
       "requestDocPrompt": "Please upload your {doc}.",
       "requestDocPromptMember": "Please upload {member}'s {doc}.",
@@ -3378,6 +3424,11 @@
           "school_leaving_cert_missing": "No SPM results slip on file — the student has been asked for a school-leaving certificate / testimonial to corroborate the academic record.",
           "semester_result_missing": "Continuing student with no current-semester result on file — the student has been asked for their latest CGPA slip.",
           "epf_statement_missing": "An employed parent has a payslip but no EPF — the student has been asked to add it as corroboration (optional).",
+          "father_epf_missing": "The father has no EPF on file — the student has been asked to add his EPF as corroboration (optional).",
+          "mother_epf_missing": "The mother has no EPF on file — the student has been asked to add her EPF as corroboration (optional).",
+          "guardian_epf_missing": "The guardian has no EPF on file — the student has been asked to add their EPF as corroboration (optional).",
+          "brother_epf_missing": "The elder brother has no EPF on file — the student has been asked to add his EPF as corroboration (optional).",
+          "sister_epf_missing": "The elder sister has no EPF on file — the student has been asked to add her EPF as corroboration (optional).",
           "utility_bill_missing": "No water or electricity bill on file — the student has been asked to upload one (address anchor + consumption signal).",
           "deceased_parent_detail": "A parent is recorded as deceased — the student has been asked, gently, when, for the household picture.",
           "informal_work_detail": "A declared informal wage — the student has been asked own-account vs employer and the average monthly earnings.",

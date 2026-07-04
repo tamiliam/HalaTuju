@@ -247,8 +247,10 @@ class TestUnemploymentQueries(_Base):
 
     def test_epf_doc_request_raised_and_clears(self):
         sync_check2_queries(self.app)
-        item = self.app.resolution_items.get(code='unemployment_epf_missing')
-        self.assertEqual((item.source, item.kind, item.doc_type), ('check2', 'doc', 'epf'))
+        # Per-member (2026-07-04): the EPF request is TAGGED to the unemployed member (father here).
+        item = self.app.resolution_items.get(code='father_epf_missing')
+        self.assertEqual((item.source, item.kind, item.doc_type, (item.params or {}).get('household_member')),
+                         ('check2', 'doc', 'epf', 'father'))
         ApplicantDocument.objects.create(
             application=self.app, doc_type='epf', household_member='father', storage_path='x/epf')
         sync_check2_queries(self.app)
@@ -259,8 +261,11 @@ class TestUnemploymentQueries(_Base):
         self.app.father_occupation = 'gov'
         self.app.save()
         sync_check2_queries(self.app)
+        # Employed → the unemployment-SPECIFIC clarify doesn't fire. (The per-member EPF request is
+        # now shared across employed/unemployed — an employed father with a payslip but no EPF still
+        # gets a father_epf_missing corroboration ask; that's expected, not an unemployment query.)
         self.assertFalse(self.app.resolution_items.filter(
-            code__in=('unemployment_detail_unknown', 'unemployment_epf_missing')).exists())
+            code='unemployment_detail_unknown').exists())
 
 
 class TestHouseholdProofQueries(_Base):
@@ -494,12 +499,15 @@ class TestV4PromotedAsks(_Base):
 
     def test_employed_epf_optional_raised_and_clears(self):
         sync_check2_queries(self.app)                       # father gov + slip, no EPF → raise
-        self.assertIn('epf_statement_missing', self._codes())
+        # Per-member (2026-07-04): tagged to father, so the Action-Centre upload lands tagged.
+        self.assertIn('father_epf_missing', self._codes())
+        item = self.app.resolution_items.get(code='father_epf_missing')
+        self.assertEqual((item.params or {}).get('household_member'), 'father')
         ApplicantDocument.objects.create(application=self.app, doc_type='epf',
                                          household_member='father', storage_path='x/epf')
         sync_check2_queries(self.app)
         self.assertEqual(self.app.resolution_items.get(
-            code='epf_statement_missing').status, 'resolved')
+            code='father_epf_missing').status, 'resolved')
 
     def test_utility_bill_missing_clears_on_either_bill(self):
         sync_check2_queries(self.app)                       # no bills → raise

@@ -83,16 +83,28 @@ DOC_SPECS = {
     # employer/wage letter, bank statements, or a community/penghulu letter). Household-level,
     # uncapped — clears when declared_income_gaps() empties (a support doc arrives, or a valid STR).
     'declared_income_evidence_missing': {'doc_type': 'income_support_doc'},
-    # Phase 2B (P7) — an 'unemployed' member has no EPF on file → a soft, OPTIONAL request to
-    # upload it (an all-zeros / lapsed EPF corroborates the unemployment). Uncapped; clears when
-    # every unemployed member has an EPF (or none are unemployed). Never a gate.
+    # Per-member EPF request (soft, OPTIONAL) — a member (employed with a payslip but no EPF, OR
+    # 'unemployed' where an all-zeros/lapsed EPF corroborates it) has no EPF on file. Per-member so
+    # the request is TAGGED to that person: an EPF belongs to a specific member, and a memberless
+    # request landed the upload BLANK-tagged (the #63 leak). Clears when that member's EPF arrives.
+    'father_epf_missing':   {'member': 'father', 'doc_type': 'epf'},
+    'mother_epf_missing':   {'member': 'mother', 'doc_type': 'epf'},
+    'guardian_epf_missing': {'member': 'guardian', 'doc_type': 'epf'},
+    'brother_epf_missing':  {'member': 'brother', 'doc_type': 'epf'},
+    'sister_epf_missing':   {'member': 'sister', 'doc_type': 'epf'},
+    # DEPRECATED (2026-07-04) — the memberless EPF requests, replaced by the per-member codes above.
+    # Kept in DOC_SPECS ONLY so an existing OPEN item auto-resolves (never re-added to proof_wanted).
     'unemployment_epf_missing': {'doc_type': 'epf'},
+    'epf_statement_missing':    {'doc_type': 'epf'},
     # V4 — promoted human ask-themes (audit §E). All soft doc-requests (uncapped), gap-detected in
     # income_engine, auto-resolved when the gap clears.
     'school_leaving_cert_missing': {'doc_type': 'school_leaving_cert', 'fact': 'academic'},  # SPM-track, no slip
     'semester_result_missing':     {'doc_type': 'semester_result', 'fact': 'academic'},      # continuing student
-    'epf_statement_missing':        {'doc_type': 'epf'},                   # employed parent, optional
     'utility_bill_missing':         {'doc_type': 'water_bill'},           # neither bill (either clears)
+}
+_MEMBER_EPF_CODE = {
+    'father': 'father_epf_missing', 'mother': 'mother_epf_missing',
+    'guardian': 'guardian_epf_missing', 'brother': 'brother_epf_missing', 'sister': 'sister_epf_missing',
 }
 _MEMBER_PROOF_CODE = {
     'father': 'father_income_proof_missing', 'mother': 'mother_income_proof_missing',
@@ -130,9 +142,9 @@ def _gap_sets(application):
     from .income_engine import (
         utility_holder_unknown, utility_address_mismatch, household_status_gaps,
         stale_income_proof, sibling_tertiary_funding_unknown, declared_income_gaps,
-        unemployment_detail_gap, unemployment_epf_gap,
+        unemployment_detail_gap, unemployment_epf_members,
         # V4 — promoted human ask-themes (audit §E).
-        school_leaving_cert_gap, semester_result_gap, employed_epf_gap, utility_bill_gap,
+        school_leaving_cert_gap, semester_result_gap, employed_epf_members, utility_bill_gap,
         deceased_parent_detail_gap, informal_work_detail_gap, household_roster_undercount,
         other_scholarships_followup_gap, high_utility_expense_gap,
     )
@@ -172,15 +184,16 @@ def _gap_sets(application):
         proof_wanted.add('income_doc_stale')
     if declared_income_gaps(application):                # declared informal income, no STR + no doc
         proof_wanted.add('declared_income_evidence_missing')
-    if unemployment_epf_gap(application):                # 'unemployed' member, no EPF (optional)
-        proof_wanted.add('unemployment_epf_missing')
+    # Per-member EPF requests (employed-with-payslip OR unemployed) — union, one per member, TAGGED.
+    for m in set(employed_epf_members(application)) | set(unemployment_epf_members(application)):
+        code = _MEMBER_EPF_CODE.get(m)
+        if code:
+            proof_wanted.add(code)
     # V4 — the four promoted DOC-REQUEST themes.
     if school_leaving_cert_gap(application):
         proof_wanted.add('school_leaving_cert_missing')
     if semester_result_gap(application):
         proof_wanted.add('semester_result_missing')
-    if employed_epf_gap(application):
-        proof_wanted.add('epf_statement_missing')
     if utility_bill_gap(application):
         proof_wanted.add('utility_bill_missing')
     return gaps, proof_wanted
