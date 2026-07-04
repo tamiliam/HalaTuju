@@ -518,7 +518,26 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-04)
 
-**▶ NO ENGINEERING SPRINT QUEUED — the VERIFICATION-MODEL HARDENING ROADMAP (V1–V6) IS COMPLETE.**
+**▶ IN PROGRESS — Officer Documents-box reorg (3-phase plan, `.claude/plans/draw-up-the-roadmap-majestic-raccoon.md`).
+P1 (FE re-group) + P2 (document version history) SHIPPED 2026-07-04. NEXT = P3 (shared-IC + STR-overrides-route
+verdict — the #63 class), RE-BANDING-GATED (mandatory V5-style re-banding audit + owner sign-off before it ships,
+because it changes live income verdicts).**
+
+**✅ SHIPPED 2026-07-04 — Documents-box reorg Phase 2: document version history (migration `0093` ADDITIVE,
+applied migrate-first via MCP + prod-verified + Security Advisor clean; retro
+`docs/retrospective-2026-07-04-docs-box-reorg-p2.md`).** A re-upload no longer HARD-deletes the replaced doc — it
+stamps `superseded_at` + `superseded_by` and RETAINS the row + blob (audit trail). `ApplicantDocument` gains
+`superseded_at` (null=live) + self-FK `superseded_by`. Officer cockpit shows retained copies under a muted
+**OLD / REPLACED** list; student sees only the live copy; an explicit "Remove" hard-deletes the whole chain +
+sweeps blobs. **The load-bearing risk was the read-site audit** — every verdict/gate/completeness/student read now
+filters `superseded_at__isnull=True` (verdict_engine 3 funnels + income_engine `_cluster_docs`/`_member_ic_doc`/
+utility `_latest_doc` + the un-funnelled reads in services/anomaly/pathway/profile/submission_review/check2/bursary/
+views); write/ops/reprocess/admin-history paths left unfiltered; a **static guard test** fails if a future engine read
+omits the filter. **NIL live impact** — existing docs are all `superseded_at IS NULL` (no backfill), so every current
+verdict/QC/interview case reads identically; only a FUTURE re-upload starts retaining history (verdict outcome
+unchanged). 2074 scholarship pytest + 433 jest; golden masters intact; i18n `group.superseded` (Tamil first-draft).
+
+**▶ VERIFICATION-MODEL HARDENING ROADMAP (V1–V6) IS COMPLETE.**
 **⚠ OWNER FINAL CHECKPOINT DUE:** review all new/changed copy across V4–V6, **especially the Tamil
 first-drafts** — the V6 Action-Centre greeting + income fallbacks + "Cikgu Gopal" (Latin), the V5
 QC-floor strings (`admin.scholarship.qcDecision.gapFloor` + the four override keys), and the V4

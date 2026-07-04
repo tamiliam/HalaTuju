@@ -66,7 +66,7 @@ def _row(claim, value, source, verification):
 
 def _letter_of_intent_text(application) -> str:
     """The OCR'd plain text of the letter of intent (P1), or '' if not uploaded/read."""
-    doc = (application.documents.filter(doc_type='statement_of_intent')
+    doc = (application.documents.filter(doc_type='statement_of_intent', superseded_at__isnull=True)
            .order_by('-uploaded_at').first())
     if doc is None or not isinstance(getattr(doc, 'vision_fields', None), dict):
         return ''

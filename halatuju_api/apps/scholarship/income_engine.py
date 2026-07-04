@@ -228,7 +228,7 @@ def _relationship_inputs(application, member, member_ic_name):
     guardianship letter for a guardian)."""
     bc_child = bc_mother = bc_father = letter_name = ''
     if member in ('mother', 'father', 'brother', 'sister'):
-        bc = (application.documents.filter(doc_type='birth_certificate')
+        bc = (application.documents.filter(doc_type='birth_certificate', superseded_at__isnull=True)
               .order_by('-uploaded_at').first())
         vf = (getattr(bc, 'vision_fields', None) if bc else None) or {}
         f = vf.get('fields', {}) if isinstance(vf, dict) else {}
@@ -237,7 +237,7 @@ def _relationship_inputs(application, member, member_ic_name):
             bc_mother = f.get('bc_mother_name', '')
             bc_father = f.get('bc_father_name', '')
     elif member == 'guardian':
-        g = (application.documents.filter(doc_type='guardianship_letter')
+        g = (application.documents.filter(doc_type='guardianship_letter', superseded_at__isnull=True)
              .order_by('-uploaded_at').first())
         letter_name = (getattr(g, 'vision_name', '') or '') if g else ''
     return bc_child, bc_mother, bc_father, letter_name
@@ -250,7 +250,8 @@ def _cluster_proof_identity(application, member):
     income proof is present yet to compare against."""
     route = (getattr(application, 'income_route', '') or '').strip()
     if route == 'str':
-        p = application.documents.filter(doc_type='str').order_by('-uploaded_at').first()
+        p = (application.documents.filter(doc_type='str', superseded_at__isnull=True)
+             .order_by('-uploaded_at').first())
         if p:
             f = _doc_fields(p)
             return 'str', (f.get('recipient_name', '') or '').strip(), (f.get('recipient_nric', '') or '').strip()
@@ -273,7 +274,7 @@ def _cluster_proof_identity(application, member):
 # red into a verified green; it never asserts a mismatch.
 
 def _bc_doc(application):
-    return (application.documents.filter(doc_type='birth_certificate')
+    return (application.documents.filter(doc_type='birth_certificate', superseded_at__isnull=True)
             .order_by('-uploaded_at').first())
 
 
@@ -398,9 +399,12 @@ def _cluster_docs(application, member, doc_type):
     on the STR route a blank-member doc still counts as the (single) earner's, so the check
     works whether or not the backfill has run; once tightened it reads the member tag only.
     The salary route reads the member tag (a blank there is ambiguous, never attributed)."""
+    # Phase 2 (version history): every branch filters `superseded_at__isnull=True` so a
+    # replaced income doc can never re-enter the cluster verdict.
     route = (getattr(application, 'income_route', '') or '').strip()
     if route == 'salary':
-        qs = application.documents.filter(doc_type=doc_type, household_member=member)
+        qs = application.documents.filter(
+            doc_type=doc_type, household_member=member, superseded_at__isnull=True)
     else:
         # STR route (single earner) or blank wizard: the earner's docs — tagged OR legacy-blank.
         # Code-health S4 #15: when the wizard HAS named the earner, the legacy-blank fallback
@@ -413,7 +417,8 @@ def _cluster_docs(application, member, doc_type):
             allowed = [member]
         else:
             allowed = [member, '']
-        qs = application.documents.filter(doc_type=doc_type, household_member__in=allowed)
+        qs = application.documents.filter(
+            doc_type=doc_type, household_member__in=allowed, superseded_at__isnull=True)
     return qs.order_by('-uploaded_at')
 
 
@@ -1141,7 +1146,7 @@ def _utility_name_unrelated(application, bill_name):
     student = getattr(getattr(application, 'profile', None), 'name', '') or ''
     if student.strip():
         candidates.append(student)
-    for ic in application.documents.filter(doc_type='parent_ic'):
+    for ic in application.documents.filter(doc_type='parent_ic', superseded_at__isnull=True):
         nm = (getattr(ic, 'vision_name', '') or '').strip()
         if nm:
             candidates.append(nm)
@@ -1155,7 +1160,8 @@ def _utility_holder_names(application):
     bills (latest first)."""
     names = []
     for dt in ('water_bill', 'electricity_bill'):
-        for doc in application.documents.filter(doc_type=dt).order_by('-uploaded_at'):
+        for doc in application.documents.filter(
+                doc_type=dt, superseded_at__isnull=True).order_by('-uploaded_at'):
             nm = (_doc_fields(doc).get('name', '') or '').strip()
             if nm:
                 names.append(nm)
@@ -1238,7 +1244,8 @@ def utility_holder_unknown(application):
     the first such bill, or None. Bills routinely sit in a parent's name (fine — that
     matches the IC); this fires only when the holder is a stranger to the documents."""
     for dt in ('water_bill', 'electricity_bill'):
-        for doc in application.documents.filter(doc_type=dt).order_by('-uploaded_at'):
+        for doc in application.documents.filter(
+                doc_type=dt, superseded_at__isnull=True).order_by('-uploaded_at'):
             facts = utility_check(doc)
             if facts and facts.get('name_note') == 'unrelated' and facts.get('name'):
                 return facts['name']
@@ -1251,14 +1258,15 @@ def utility_address_mismatch(application):
     a 'partial' (a missing postcode or a shortened/abbreviated street) deliberately stays
     silent, so only a genuinely different address raises the query. Soft, never a gate."""
     for dt in ('water_bill', 'electricity_bill'):
-        for doc in application.documents.filter(doc_type=dt):
+        for doc in application.documents.filter(doc_type=dt, superseded_at__isnull=True):
             if (getattr(doc, 'vision_address_match', '') or '') == 'mismatch':
                 return True
     return False
 
 
 def _latest_doc(application, doc_type):
-    return application.documents.filter(doc_type=doc_type).order_by('-uploaded_at').first()
+    return (application.documents.filter(doc_type=doc_type, superseded_at__isnull=True)
+            .order_by('-uploaded_at').first())
 
 
 def utility_per_capita(application):
@@ -1324,7 +1332,8 @@ def income_cluster_advice(application, member):
     if not member:
         return ''
     route = (getattr(application, 'income_route', '') or '').strip()
-    str_doc = (application.documents.filter(doc_type='str').order_by('-uploaded_at').first()
+    str_doc = (application.documents.filter(doc_type='str', superseded_at__isnull=True)
+               .order_by('-uploaded_at').first()
                if route == 'str' else None)
     proofs = [p for dt in ('salary_slip', 'epf') for p in _cluster_docs(application, member, dt)]
     has_proof = bool(proofs) or str_doc is not None
@@ -1371,7 +1380,7 @@ def income_cluster_advice(application, member):
     # the shared patronymic on the IC proves it).
     rel_doc = relationship_doc_for(member)
     if rel_doc:
-        rel_obj = (application.documents.filter(doc_type=rel_doc)
+        rel_obj = (application.documents.filter(doc_type=rel_doc, superseded_at__isnull=True)
                    .order_by('-uploaded_at').first())
         if rel_obj is None:
             return 'income_rel_doc_needed'             # not uploaded yet → nudge for it
@@ -1479,7 +1488,7 @@ def _parent_has_income_evidence(application, member):
     route = (getattr(application, 'income_route', '') or '').strip()
     if (route == 'str'
             and (getattr(application, 'income_earner', '') or '').strip() == member
-            and application.documents.filter(doc_type='str').exists()):
+            and application.documents.filter(doc_type='str', superseded_at__isnull=True).exists()):
         return True
     if member in ('mother', 'father') and chain_verified_earner(application, member):
         return True

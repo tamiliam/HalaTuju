@@ -3474,7 +3474,8 @@
           "additional": "ADDITIONAL",
           "incomeStr": "STR ROUTE",
           "incomeSalary": "SALARY ROUTE",
-          "incomeUtility": "UTILITY"
+          "incomeUtility": "UTILITY",
+          "superseded": "OLD / REPLACED"
         },
         "notUploaded": "not uploaded yet",
         "view": "View",

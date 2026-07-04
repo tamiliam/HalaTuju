@@ -380,7 +380,7 @@ def guarantor_identity_check(application, name, nric):
       'parent_ic_nric_mismatch'    — typed NRIC doesn't match the IC
       'parent_ic_name_mismatch'    — typed name doesn't match the IC
     """
-    present_qs = application.documents.all()
+    present_qs = application.documents.filter(superseded_at__isnull=True)
     parent_ic = next(
         (d for d in present_qs
          if d.doc_type == 'parent_ic' and d.vision_run_at and not d.vision_error),

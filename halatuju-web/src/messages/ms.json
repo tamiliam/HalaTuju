@@ -3474,7 +3474,8 @@
           "additional": "TAMBAHAN",
           "incomeStr": "LALUAN STR",
           "incomeSalary": "LALUAN GAJI",
-          "incomeUtility": "UTILITI"
+          "incomeUtility": "UTILITI",
+          "superseded": "LAMA / DIGANTI"
         },
         "notUploaded": "belum dimuat naik",
         "view": "Lihat",

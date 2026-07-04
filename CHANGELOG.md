@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Officer Documents box — reorganisation Phase 2: document version history (2026-07-04, migration
+  `0093` additive, migrate-first).** A re-upload no longer HARD-deletes the replaced document — it stamps
+  the old row `superseded_at` + points `superseded_by` at the replacement **and retains the Storage
+  blob**, giving a durable audit trail of what was replaced. `ApplicantDocument` gains `superseded_at`
+  (null = live) + a self-FK `superseded_by`.
+  - **Officer cockpit** shows the retained copies under a muted **OLD / REPLACED** list
+    (`groupDocumentsByFact` diverts any `superseded_at` doc into a `superseded` bucket, out of every fact
+    group); the **student's** own listing shows only the live copy.
+  - **An explicit student "Remove"** is the one path that still truly deletes — it hard-deletes the live
+    row plus its whole superseded ancestor chain (transitive walk) and sweeps every blob.
+  - **Read-site audit (the load-bearing risk):** every verdict / gate / completeness / student-facing
+    read now filters `superseded_at__isnull=True` (verdict_engine's three funnels + income_engine
+    `_cluster_docs` / `_member_ic_doc` / utility `_latest_doc`, plus the un-funnelled reads in
+    services / anomaly_engine / pathway_engine / profile_engine / submission_review / check2_queries /
+    bursary / views). Write/upload/sweep paths, the ops outage monitor, the reprocess commands, and the
+    admin serializer (which shows history) are deliberately left unfiltered. A **static guard test**
+    fails if any future read in the pure engine modules omits the filter.
+  - 2074 scholarship pytest (new `test_superseded_documents.py` + a student-GET-exclusion API test; 5
+    replace tests updated to the soft-supersede contract). 433 jest (+1). i18n `group.superseded`
+    (Tamil first-draft). Retro `docs/retrospective-2026-07-04-docs-box-reorg-p2.md`. Phase 3
+    (shared-IC / STR-overrides verdict — the #63 class) follows, re-banding-gated.
+
 - **Officer Documents box — reorganisation Phase 1 (2026-07-04, FE-only, no migration).** The cockpit
   "Documents" box is re-grouped into IDENTITY / ACADEMIC / PATHWAY / INCOME / ADDITIONAL / OTHER, with
   INCOME split into three sub-sections:

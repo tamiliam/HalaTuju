@@ -140,6 +140,17 @@ describe('groupDocumentsByFact', () => {
     expect(groups.identity).toHaveLength(0)
     expect(groups.other).toHaveLength(0)
   })
+
+  it('diverts superseded docs to the superseded bucket, out of every fact group', () => {
+    const groups = groupDocumentsByFact([
+      doc({ id: 1, doc_type: 'ic' }),                                    // live
+      doc({ id: 2, doc_type: 'ic', superseded_at: '2026-07-04T00:00:00Z' }),  // replaced
+      doc({ id: 3, doc_type: 'str', superseded_at: '2026-07-04T00:00:00Z' }), // replaced income doc
+    ])
+    expect(groups.identity).toHaveLength(1)   // only the live IC
+    expect(groups.income).toHaveLength(0)     // the replaced STR is NOT a live income input
+    expect(groups.superseded.map((d) => d.id)).toEqual([2, 3])
+  })
 })
 
 // ── aiSuggestionFor ───────────────────────────────────────────────────────────

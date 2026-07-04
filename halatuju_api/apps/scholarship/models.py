@@ -893,10 +893,32 @@ class ApplicantDocument(models.Model):
     # student (corrective nudge) + the admin (extracted values). Additive, 0-row-safe.
     vision_fields = models.JSONField(default=dict, blank=True)
     vision_fields_run_at = models.DateTimeField(null=True, blank=True)
+    # ── Version history (Documents-box reorg Phase 2) ──────────────────────
+    # A re-upload no longer HARD-deletes the old copy — it stamps the old row
+    # `superseded_at` and points `superseded_by` at the replacement, keeping an
+    # audit trail of what was replaced (shown under the officer "Old / Replaced"
+    # sub-list). `superseded_at IS NULL` = the live row.
+    # CRITICAL: every verdict / gate / completeness / student-facing read MUST
+    # exclude superseded rows — funnel through `ApplicantDocument.live(qs)`
+    # below. The default manager is DELIBERATELY unfiltered so the admin
+    # serializer still returns superseded rows to show the history (a filtering
+    # default manager would hide them from `application.documents`).
+    superseded_at = models.DateTimeField(null=True, blank=True)
+    superseded_by = models.ForeignKey(
+        'self', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='supersedes',
+    )
 
     class Meta:
         db_table = 'applicant_documents'
         ordering = ['-uploaded_at']
+
+    @staticmethod
+    def live(qs):
+        """Filter a documents queryset (e.g. `application.documents`) to the
+        live rows only. The single helper every verdict/gate read funnels
+        through — `superseded_at IS NULL`."""
+        return qs.filter(superseded_at__isnull=True)
 
     def __str__(self):
         return f'{self.doc_type} for application #{self.application_id}'

@@ -283,7 +283,8 @@ def parse_reporting_date(raw):
 
 def _latest_offer(application):
     from .models import ApplicantDocument
-    return (ApplicantDocument.objects.filter(application=application, doc_type='offer_letter')
+    return (ApplicantDocument.objects.filter(
+                application=application, doc_type='offer_letter', superseded_at__isnull=True)
             .order_by('-uploaded_at').first())
 
 

@@ -337,7 +337,8 @@ def _sync_pathway_confirm(application, existing, now):
     # A clash can only exist when there's an offer letter — skip the verdict compute (and
     # its cost) otherwise. If a confirm lingers after the offer is gone, close it below.
     params = None
-    if ApplicantDocument.objects.filter(application=application, doc_type='offer_letter').exists():
+    if ApplicantDocument.objects.filter(
+            application=application, doc_type='offer_letter', superseded_at__isnull=True).exists():
         from .verdict_engine import build_verdict
         for fact in build_verdict(application):
             if fact['fact'] != 'pathway':

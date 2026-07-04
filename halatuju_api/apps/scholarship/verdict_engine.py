@@ -65,21 +65,25 @@ def _fact(name, status, evidence, unresolved):
 
 # ── document readers ─────────────────────────────────────────────────────────
 
+# Phase 2 (version history): these three are the MAIN verdict read funnel — every one
+# filters `superseded_at__isnull=True` so a replaced document can never count in a verdict.
 def _latest_doc(application, doc_type):
-    return (application.documents.filter(doc_type=doc_type)
+    return (application.documents.filter(doc_type=doc_type, superseded_at__isnull=True)
             .order_by('-uploaded_at').first())
 
 
 def _latest_doc_for_member(application, doc_type, member):
-    """The latest income document of *doc_type* tagged to a specific household
+    """The latest LIVE income document of *doc_type* tagged to a specific household
     *member* (salary route). The (doc_type, household_member) pair is the
     single-instance key, so this returns that member's current IC / payslip / EPF."""
-    return (application.documents.filter(doc_type=doc_type, household_member=member)
+    return (application.documents.filter(
+                doc_type=doc_type, household_member=member, superseded_at__isnull=True)
             .order_by('-uploaded_at').first())
 
 
 def _present_doc_types(application):
-    return set(application.documents.values_list('doc_type', flat=True))
+    return set(application.documents.filter(superseded_at__isnull=True)
+               .values_list('doc_type', flat=True))
 
 
 def _doc_assist_verdict(doc):

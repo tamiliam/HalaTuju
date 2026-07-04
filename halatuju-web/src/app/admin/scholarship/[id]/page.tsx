@@ -1864,6 +1864,14 @@ export default function AdminScholarshipDetailPage() {
                   </div>
                 )
               })}
+              {/* Phase 2: replaced documents — version history, muted, kept out of every fact
+                  group so a superseded doc never reads as a live verification input. */}
+              {groups.superseded.length > 0 && (
+                <div key="superseded" className="pt-2 mt-2 border-t border-gray-100">
+                  <p className={subLabel}>{t('admin.scholarship.docsDrawer.group.superseded')}</p>
+                  <ul className="space-y-1.5 opacity-60">{groups.superseded.map(docRow)}</ul>
+                </div>
+              )}
               {app.documents.length === 0 && (
                 <p className="text-sm text-gray-400">{t('admin.scholarship.none')}</p>
               )}

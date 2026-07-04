@@ -1008,7 +1008,8 @@ def confirm_pathway(application):
     from . import offer_pathway as op
     from .models import ApplicantDocument
     from .pathway_engine import student_offer_check
-    offer = (ApplicantDocument.objects.filter(application=application, doc_type='offer_letter')
+    offer = (ApplicantDocument.objects.filter(
+                application=application, doc_type='offer_letter', superseded_at__isnull=True)
              .order_by('-uploaded_at').first())
     if offer is None:
         return False
@@ -1048,7 +1049,8 @@ def autofill_pathway_from_offer(application):
     from .pathway_engine import student_offer_check, parse_reporting_date
     from . import offer_pathway as op
 
-    offer = (ApplicantDocument.objects.filter(application=application, doc_type='offer_letter')
+    offer = (ApplicantDocument.objects.filter(
+                application=application, doc_type='offer_letter', superseded_at__isnull=True)
              .order_by('-uploaded_at').first())
     if offer is None:
         return False
@@ -1308,7 +1310,8 @@ def application_completeness(application):
         funding_done = bool(fn.categories) and fn.programme_months is not None
     except FundingNeed.DoesNotExist:
         funding_done = False
-    present = set(application.documents.values_list('doc_type', flat=True))
+    present = set(application.documents.filter(superseded_at__isnull=True)
+                  .values_list('doc_type', flat=True))
     # Gate v2 (2026-06-05): the documents bar is route-aware and STRICT for a not-yet-
     # submitted application — ic + results_slip + offer_letter (now compulsory for all)
     # + the route's compulsory income docs (income_doc_blockers, sourced from the wizard
@@ -1322,7 +1325,7 @@ def application_completeness(application):
         # correct slip before submitting. 'pending'/'unreadable'/'match' all pass here;
         # only a positive name MISMATCH blocks.
         from .academic_engine import _slip_name_status
-        slip = (application.documents.filter(doc_type='results_slip')
+        slip = (application.documents.filter(doc_type='results_slip', superseded_at__isnull=True)
                 .order_by('-uploaded_at').first())
         slip_name_ok = slip is None or _slip_name_status(slip) != 'mismatch'
         documents_done = (
@@ -1419,7 +1422,8 @@ def ic_identity_blockers(application):
     are skipped (can't compare). Caller guarantees an 'ic' document exists.
     """
     from .vision import nric_match, name_match
-    ic = application.documents.filter(doc_type='ic').order_by('-uploaded_at').first()
+    ic = (application.documents.filter(doc_type='ic', superseded_at__isnull=True)
+          .order_by('-uploaded_at').first())
     if ic is None or not ic.vision_run_at:
         return ['ic_service_down']  # never processed — treat as a system issue
     if ic.vision_error:
@@ -1530,7 +1534,8 @@ def income_doc_blockers(application):
     route = (getattr(application, 'income_route', '') or '').strip()
     if not route:
         return ['income_incomplete']
-    present = set(application.documents.values_list('doc_type', flat=True))
+    present = set(application.documents.filter(superseded_at__isnull=True)
+                  .values_list('doc_type', flat=True))
     out = []
     if route == 'str':
         earner = (getattr(application, 'income_earner', '') or '').strip()
@@ -1576,7 +1581,7 @@ def _offer_not_official(application):
     UPU-semakan) by the signature scorer. 'unknown' (genuineness not computed / not re-run since the
     signature model shipped) is NOT a block — we never gate on our own gap."""
     from .pathway_engine import offer_official_status
-    offer = (application.documents.filter(doc_type='offer_letter')
+    offer = (application.documents.filter(doc_type='offer_letter', superseded_at__isnull=True)
              .order_by('-uploaded_at').first())
     return offer is not None and offer_official_status(offer) == 'not_genuine'
 
@@ -1603,7 +1608,8 @@ def consent_blockers(application):
         blockers.append('address_incomplete')
     if not c['funding_done']:
         blockers.append('funding_incomplete')
-    present = set(application.documents.values_list('doc_type', flat=True))
+    present = set(application.documents.filter(superseded_at__isnull=True)
+                  .values_list('doc_type', flat=True))
     if 'ic' not in present:
         blockers.append('ic_missing')
     if 'results_slip' not in present:
@@ -1655,7 +1661,7 @@ def document_red_blockers(application):
     def has(d, *keys):
         return any(d.get(k) == 'mismatch' for k in keys)
 
-    for doc in application.documents.all():
+    for doc in application.documents.filter(superseded_at__isnull=True):
         dt = doc.doc_type
         if dt == 'results_slip':
             chk = student_slip_check(doc)
@@ -1707,10 +1713,12 @@ def document_unreadable_blockers(application):
     from .income_engine import (income_cluster_advice, effective_working_members,
                                 _member_ic_doc, student_income_ic_check)
     codes = set()
-    slip = application.documents.filter(doc_type='results_slip').order_by('-uploaded_at').first()
+    slip = (application.documents.filter(doc_type='results_slip', superseded_at__isnull=True)
+            .order_by('-uploaded_at').first())
     if slip and student_slip_check(slip).get('name') == 'unreadable':
         codes.add('results_slip_unreadable')
-    offer = application.documents.filter(doc_type='offer_letter').order_by('-uploaded_at').first()
+    offer = (application.documents.filter(doc_type='offer_letter', superseded_at__isnull=True)
+             .order_by('-uploaded_at').first())
     if offer and student_offer_check(offer).get('name') == 'unreadable':
         codes.add('offer_letter_unreadable')
     # Income cluster — per earner.

@@ -133,11 +133,16 @@ export interface GroupedDocuments {
   income: AdminApplicantDocument[]
   additional: AdminApplicantDocument[]
   other: AdminApplicantDocument[]
+  // Phase 2: replaced (superseded) documents — version history, kept out of every fact
+  // group and shown under an "Old / Replaced" list so a superseded doc never reads as live.
+  superseded: AdminApplicantDocument[]
 }
 
 /**
  * Group a flat list of documents under the verification-fact sections plus the
- * "additional" (supporting) and "other" (reviewer-requested extras) buckets.
+ * "additional" (supporting) and "other" (reviewer-requested extras) buckets. Any
+ * superseded (replaced) document is diverted to the `superseded` bucket regardless of
+ * its doc_type, so the fact sections only ever show the live copy.
  */
 export function groupDocumentsByFact(
   documents: AdminApplicantDocument[],
@@ -149,8 +154,13 @@ export function groupDocumentsByFact(
     income: [],
     additional: [],
     other: [],
+    superseded: [],
   }
   for (const doc of documents) {
+    if (doc.superseded_at) {
+      groups.superseded.push(doc)
+      continue
+    }
     const fact = docTypeToFact(doc.doc_type)
     groups[fact].push(doc)
   }

@@ -12,7 +12,8 @@ from apps.scholarship.pathway_engine import student_offer_check
 
 
 def _offer_programme(app):
-    offer = (ApplicantDocument.objects.filter(application=app, doc_type='offer_letter')
+    offer = (ApplicantDocument.objects.filter(
+                application=app, doc_type='offer_letter', superseded_at__isnull=True)
              .order_by('-uploaded_at').first())
     if offer is None:
         return ''

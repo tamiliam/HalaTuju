@@ -646,12 +646,17 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'bc_check', 'guardianship_check',
             # V1: declared-income supporting doc read-status (null unless income_support_doc).
             'support_doc_check',
+            # Phase 2 version history: when this doc was replaced (null = live) + which
+            # doc replaced it. The admin path returns superseded rows to show history;
+            # the student GET filters them out.
+            'superseded_at', 'superseded_by',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
             'vision_run_at', 'vision_error',
             'vision_name_match', 'vision_address_match',
             'vision_fields', 'vision_fields_run_at',
+            'superseded_at', 'superseded_by',
         ]
 
     def get_download_url(self, obj):

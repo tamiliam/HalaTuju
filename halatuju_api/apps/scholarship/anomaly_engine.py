@@ -64,7 +64,7 @@ def _state_from_address(addr: str) -> Optional[str]:
 def _latest_ic_doc(application) -> Optional[ApplicantDocument]:
     return (
         application.documents
-        .filter(doc_type='ic')
+        .filter(doc_type='ic', superseded_at__isnull=True)
         .order_by('-uploaded_at')
         .first()
     )
@@ -73,7 +73,7 @@ def _latest_ic_doc(application) -> Optional[ApplicantDocument]:
 def _latest_parent_ic_doc(application) -> Optional[ApplicantDocument]:
     return (
         application.documents
-        .filter(doc_type='parent_ic')
+        .filter(doc_type='parent_ic', superseded_at__isnull=True)
         .order_by('-uploaded_at')
         .first()
     )
@@ -344,9 +344,9 @@ def _detect_payslip_epf_divergence(application) -> Optional[Anomaly]:
     the reviewer can confirm the regular income at interview. Never a gate."""
     from . import income_engine
     slip_members = {income_engine._proof_member(d)
-                    for d in application.documents.filter(doc_type='salary_slip')}
+                    for d in application.documents.filter(doc_type='salary_slip', superseded_at__isnull=True)}
     epf_members = {income_engine._proof_member(d)
-                   for d in application.documents.filter(doc_type='epf')}
+                   for d in application.documents.filter(doc_type='epf', superseded_at__isnull=True)}
     for member in sorted(m for m in (slip_members & epf_members) if m):
         d = income_engine.slip_epf_divergence(application, member)
         if d:
@@ -398,7 +398,8 @@ def _detect_document_not_genuine(application) -> Optional[Anomaly]:
     a human doc label, the status, and what the AI thought the document actually was."""
     from .genuineness.bands import canonical_status, needs_attention
     for dt, label in _GENUINENESS_DOC_LABELS.items():
-        doc = application.documents.filter(doc_type=dt).order_by('-uploaded_at').first()
+        doc = (application.documents.filter(doc_type=dt, superseded_at__isnull=True)
+               .order_by('-uploaded_at').first())
         raw = _ic_authenticity_status(doc)   # reads vision_fields['authenticity'].status
         if needs_attention(raw, dt):         # canonical 'suspect' / 'not_<type>' (folds legacy)
             vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}

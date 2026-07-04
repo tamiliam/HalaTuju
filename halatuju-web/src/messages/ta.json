@@ -3474,7 +3474,8 @@
           "additional": "கூடுதல்",
           "incomeStr": "STR வழி",
           "incomeSalary": "சம்பள வழி",
-          "incomeUtility": "பயன்பாடு"
+          "incomeUtility": "பயன்பாடு",
+          "superseded": "பழையது / மாற்றப்பட்டது"
         },
         "notUploaded": "இன்னும் பதிவேற்றப்படவில்லை",
         "view": "பார்க்கவும்",

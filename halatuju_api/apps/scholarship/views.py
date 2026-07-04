@@ -619,7 +619,10 @@ class DocumentListCreateView(APIView):
 
     def get(self, request):
         app = _current_application(request.user_id)
-        docs = ApplicantDocument.objects.filter(application=app) if app else ApplicantDocument.objects.none()
+        # Student-facing listing: LIVE docs only — a superseded (replaced) copy is
+        # version history for the officer view, never shown back to the student.
+        docs = (ApplicantDocument.objects.filter(application=app, superseded_at__isnull=True)
+                if app else ApplicantDocument.objects.none())
         return Response({'documents': ApplicantDocumentSerializer(docs, many=True).data})
 
     # EVERY document is single-instance: a re-upload REPLACES the existing copy in the
@@ -673,18 +676,23 @@ class DocumentListCreateView(APIView):
         # Slots this upload supersedes — the target (type, member, request_code), plus (STR income
         # docs) the legacy UNTAGGED copy. The request_code in the key is what lets multiple 'other'
         # docs (and cross-person income requests) coexist instead of overwriting each other.
+        # `superseded_at__isnull=True` keeps this scoped to the LIVE row in the slot — an already-
+        # superseded copy (version history) is never re-superseded and never counts toward a cap.
         sweep_members = [new_member, ''] if str_income else [new_member]
         slot_filter = dict(application=app, doc_type=new_doc_type,
-                           household_member__in=sweep_members, request_code=new_request_code)
+                           household_member__in=sweep_members, request_code=new_request_code,
+                           superseded_at__isnull=True)
         # Guardrail 2: per-application document cap. A single-instance re-upload
-        # replaces an existing doc, so it doesn't count toward growth.
+        # replaces an existing doc, so it doesn't count toward growth. All caps count
+        # LIVE docs only — superseded history rows are retained but must not fill the quota.
         replaces = single and ApplicantDocument.objects.filter(**slot_filter).exists()
         # 'other' (reviewer-requested extra) cap — a NEW 'other' slot beyond the cap is rejected.
         if new_doc_type == 'other' and not replaces and ApplicantDocument.objects.filter(
-                application=app, doc_type='other').count() >= _settings.MAX_OTHER_DOCS:
+                application=app, doc_type='other', superseded_at__isnull=True).count() >= _settings.MAX_OTHER_DOCS:
             return Response({'error': 'other_doc_limit_reached', 'max': _settings.MAX_OTHER_DOCS},
                             status=status.HTTP_400_BAD_REQUEST)
-        if not replaces and ApplicantDocument.objects.filter(application=app).count() >= _settings.MAX_DOCS_PER_APPLICATION:
+        if not replaces and ApplicantDocument.objects.filter(
+                application=app, superseded_at__isnull=True).count() >= _settings.MAX_DOCS_PER_APPLICATION:
             return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
                             status=status.HTTP_400_BAD_REQUEST)
         # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
@@ -698,26 +706,23 @@ class DocumentListCreateView(APIView):
         if object_exists(serializer.validated_data.get('storage_path')) is False:
             return Response({'error': 'upload_incomplete', 'code': 'upload_incomplete'},
                             status=status.HTTP_400_BAD_REQUEST)
-        # Single-instance re-upload REPLACES the existing copy. Order matters for data safety
-        # (TD audit 2026-06-14): create the replacement row FIRST (inside a transaction), and only
-        # sweep the superseded copies AFTER it is safely committed. The old order (delete blob +
-        # row, THEN create) could destroy a student's existing proof — an income slip, IC or STR —
-        # if the create then failed, leaving the application with no document and no recovery.
-        # Snapshot the stale ids/paths BEFORE the create so the new row (same slot) is never swept.
-        stale_ids, stale_paths = [], []
+        # Single-instance re-upload REPLACES the live copy in the slot. Phase 2 (version history):
+        # the old row is no longer HARD-deleted — it is stamped `superseded_at` and pointed at the
+        # replacement (`superseded_by`), retaining an audit trail shown under the officer "Old /
+        # Replaced" list; its Storage blob is deliberately KEPT (no sweep). Order still matters for
+        # data safety (TD audit 2026-06-14): create the replacement row FIRST inside a transaction,
+        # then supersede the prior copies — a failed create leaves the old live doc untouched.
+        # Snapshot the stale ids BEFORE the create so the new row (same slot) is never superseded.
+        stale_ids = []
         if single:
-            stale = list(ApplicantDocument.objects.filter(**slot_filter))
-            stale_ids = [d.id for d in stale]
-            stale_paths = [d.storage_path for d in stale if d.storage_path]
+            stale_ids = list(
+                ApplicantDocument.objects.filter(**slot_filter).values_list('id', flat=True))
         with transaction.atomic():
             doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
             if stale_ids:
-                ApplicantDocument.objects.filter(id__in=stale_ids).delete()
-        # New row committed → only now sweep the superseded Storage blobs (an irreversible delete).
-        # Best-effort: a failure here merely orphans an old blob (logged), never loses the live doc.
-        if stale_paths:
-            from .storage import delete_objects
-            delete_objects(stale_paths)
+                from django.utils import timezone as _tz
+                ApplicantDocument.objects.filter(id__in=stale_ids).update(
+                    superseded_at=_tz.now(), superseded_by=doc)
         # iPhone HEIC → JPEG, in place, BEFORE any Vision/extraction — so OCR can read it and the
         # cockpit viewer / download URL serve a browser-renderable image (soft; no-op otherwise).
         from .imaging import convert_heic_to_jpeg
@@ -819,17 +824,28 @@ class DocumentDetailView(APIView):
 
     def delete(self, request, pk):
         doc = ApplicantDocument.objects.filter(
-            pk=pk, application__profile_id=request.user_id,
+            pk=pk, application__profile_id=request.user_id, superseded_at__isnull=True,
         ).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        # Best-effort sweep the Storage blob before deleting the DB row, so
-        # an explicit "Remove" click doesn't leave an orphan object behind.
-        if doc.storage_path:
-            from .storage import delete_objects
-            delete_objects([doc.storage_path])
+        # An explicit "Remove" fully clears the slot INCLUDING its version history — this is a
+        # deliberate student action, not a replace. Hard-delete the live row AND every superseded
+        # ancestor it replaced (walk the `supersedes` chain transitively — a slot can have several
+        # generations A←B←C), sweeping every Storage blob. (A re-upload soft-supersedes and keeps
+        # the old blob; a Remove is the one path that truly deletes.)
+        chain, frontier = [doc], [doc]
+        while frontier:
+            parents = list(ApplicantDocument.objects.filter(
+                superseded_by__in=[d.id for d in frontier]))
+            chain.extend(parents)
+            frontier = parents
+        from .storage import delete_objects
+        paths = [d.storage_path for d in chain if d.storage_path]
+        if paths:
+            delete_objects(paths)
         application = doc.application
-        doc.delete()
+        # Self-referential FK is SET_NULL, so delete order is safe; one query clears the chain.
+        ApplicantDocument.objects.filter(id__in=[d.id for d in chain]).delete()
         # Removing a compulsory document can drop a confirmed profile below
         # complete — un-confirm it so the status reflects reality.
         revert_if_profile_incomplete(application)
@@ -1017,7 +1033,8 @@ class BankAccountView(APIView):
             return Response({'error': 'bank_holder_mismatch', 'code': 'bank_holder_mismatch'},
                             status=status.HTTP_400_BAD_REQUEST)
         source_doc = ApplicantDocument.objects.filter(
-            application=app, doc_type='bank_statement').order_by('-uploaded_at').first()
+            application=app, doc_type='bank_statement',
+            superseded_at__isnull=True).order_by('-uploaded_at').first()
         from django.utils import timezone
         acct, _created = BankAccount.objects.update_or_create(
             application=app,
@@ -1217,7 +1234,7 @@ class ConsentView(APIView):
         parent_ic = None
         if app:
             parent_ic = next(
-                (d for d in app.documents.all()
+                (d for d in app.documents.filter(superseded_at__isnull=True)
                  if d.doc_type == 'parent_ic' and d.vision_run_at and not d.vision_error),
                 None,
             )
@@ -1271,7 +1288,7 @@ class ConsentView(APIView):
                 )
             # S17: the guardian's IC must already be uploaded — without it the
             # attested identity is unverifiable. Block at consent submit time.
-            present_qs = app.documents.all()
+            present_qs = app.documents.filter(superseded_at__isnull=True)
             present = {d2.doc_type for d2 in present_qs}
             if 'parent_ic' not in present:
                 return Response(

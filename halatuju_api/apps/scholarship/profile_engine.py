@@ -320,7 +320,8 @@ def _gated_str(application):
     if not (profile and getattr(profile, 'receives_str', None)):
         return 'no'
     from .income_engine import student_str_check
-    doc = application.documents.filter(doc_type='str').order_by('-uploaded_at').first()
+    doc = (application.documents.filter(doc_type='str', superseded_at__isnull=True)
+           .order_by('-uploaded_at').first())
     if not doc:
         return _DO_NOT_CLAIM
     chk = student_str_check(doc)
@@ -536,7 +537,7 @@ def _statement_of_intent(application):
     """The OCR'd plain text of the student's uploaded Statement of Intent letter, if any
     (read on upload into vision_fields['text']). Capped so it informs the draft without
     dominating the prompt; normal PII redaction still applies. 'not provided' when none."""
-    doc = (application.documents.filter(doc_type='statement_of_intent')
+    doc = (application.documents.filter(doc_type='statement_of_intent', superseded_at__isnull=True)
            .order_by('-uploaded_at').first())
     text = ''
     if doc is not None and isinstance(getattr(doc, 'vision_fields', None), dict):

@@ -13,7 +13,8 @@ from apps.scholarship import offer_pathway as op
 
 
 def _offer_institution(app):
-    o = (ApplicantDocument.objects.filter(application=app, doc_type='offer_letter')
+    o = (ApplicantDocument.objects.filter(
+            application=app, doc_type='offer_letter', superseded_at__isnull=True)
          .order_by('-uploaded_at').first())
     if not o or not isinstance(o.vision_fields, dict):
         return ''

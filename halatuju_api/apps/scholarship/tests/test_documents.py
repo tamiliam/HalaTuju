@@ -118,7 +118,8 @@ class TestDocumentApi(TestCase):
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_single_instance_doctype_replaces_on_reupload(self, mock_storage_delete, _mock_vision):
-        """Post-S14: uploading a new IC sweeps the old one (DB + Storage)."""
+        """Post-S14 + Phase 2 (version history): uploading a new IC SUPERSEDES the old ones
+        (rows + blobs RETAINED as history) — a live read sees only the new one."""
         # Existing IC + an unrelated income-proof doc (multi-instance, must NOT be touched).
         old_ic = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='ic',
@@ -141,20 +142,41 @@ class TestDocumentApi(TestCase):
         }, format='json')
         self.assertEqual(resp.status_code, 201)
 
-        # Only the new IC remains; the income-proof doc is untouched.
-        ic_rows = ApplicantDocument.objects.filter(application=self.app_a, doc_type='ic')
-        self.assertEqual(ic_rows.count(), 1)
-        self.assertEqual(ic_rows.first().storage_path, f'{self.app_a.id}/ic/new')
-        self.assertFalse(ApplicantDocument.objects.filter(id=old_ic.id).exists())
-        self.assertFalse(ApplicantDocument.objects.filter(id=old_ic_2.id).exists())
+        # Only the new IC is LIVE; the old ICs are retained but superseded; income untouched.
+        live_ic = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='ic', superseded_at__isnull=True)
+        self.assertEqual(live_ic.count(), 1)
+        self.assertEqual(live_ic.first().storage_path, f'{self.app_a.id}/ic/new')
+        new_id = live_ic.first().id
+        for old in (old_ic, old_ic_2):
+            old.refresh_from_db()
+            self.assertIsNotNone(old.superseded_at)       # retained, not deleted
+            self.assertEqual(old.superseded_by_id, new_id)
         self.assertTrue(ApplicantDocument.objects.filter(id=income.id).exists())
 
-        # Storage was asked to sweep BOTH stale IC blobs in one call.
-        mock_storage_delete.assert_called_once()
-        swept = mock_storage_delete.call_args.args[0]
-        self.assertEqual(set(swept), {
-            f'{self.app_a.id}/ic/old-1', f'{self.app_a.id}/ic/old-2',
-        })
+        # Phase 2: the stale blobs are RETAINED as version history — no Storage sweep.
+        mock_storage_delete.assert_not_called()
+
+    @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_student_get_excludes_superseded_after_replace(self, _del, _dl, _vis):
+        """Phase 2: the student's documents listing shows only the LIVE copy after a re-upload —
+        a superseded (replaced) doc is version history for the officer view, never shown back."""
+        ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='ic', storage_path=f'{self.app_a.id}/ic/old')
+        self._auth(USER_A)
+        self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'ic', 'storage_path': f'{self.app_a.id}/ic/new',
+            'original_filename': 'ic.jpg', 'size': 1000,
+        }, format='json')
+        docs = self.client.get('/api/v1/scholarship/documents/').json()['documents']
+        ic_docs = [d for d in docs if d['doc_type'] == 'ic']
+        self.assertEqual(len(ic_docs), 1)                                       # only the live one
+        self.assertTrue(ic_docs[0]['download_url'])
+        # DB still holds both rows (the old one retained as history).
+        self.assertEqual(
+            ApplicantDocument.objects.filter(application=self.app_a, doc_type='ic').count(), 2)
 
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_failed_create_does_not_destroy_existing_document(self, mock_storage_delete):
@@ -200,12 +222,14 @@ class TestDocumentApi(TestCase):
         self.assertEqual(resp.status_code, 201)
         rows = ApplicantDocument.objects.filter(
             application=self.app_a, doc_type='salary_slip', household_member='',
+            superseded_at__isnull=True,
         )
         self.assertEqual(rows.count(), 1)
         self.assertEqual(rows.first().storage_path, f'{self.app_a.id}/salary_slip/feb')
-        self.assertFalse(ApplicantDocument.objects.filter(id=first.id).exists())
-        # The stale blob was swept.
-        mock_storage_delete.assert_called_once_with([f'{self.app_a.id}/salary_slip/jan'])
+        first.refresh_from_db()
+        self.assertIsNotNone(first.superseded_at)      # Phase 2: retained as history
+        # Phase 2: the stale blob is RETAINED — no Storage sweep.
+        mock_storage_delete.assert_not_called()
 
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
@@ -226,11 +250,14 @@ class TestDocumentApi(TestCase):
         }, format='json')
         self.assertEqual(resp.status_code, 201)
         father_rows = ApplicantDocument.objects.filter(
-            application=self.app_a, doc_type='salary_slip', household_member='father')
+            application=self.app_a, doc_type='salary_slip', household_member='father',
+            superseded_at__isnull=True)
         self.assertEqual(father_rows.count(), 1)
         self.assertEqual(father_rows.first().storage_path, f'{self.app_a.id}/salary_slip/father-new')
-        self.assertFalse(ApplicantDocument.objects.filter(id=fathers.id).exists())
-        self.assertTrue(ApplicantDocument.objects.filter(id=mothers.id).exists())  # untouched
+        fathers.refresh_from_db()
+        self.assertIsNotNone(fathers.superseded_at)     # father's old slip retained (superseded)
+        mothers.refresh_from_db()
+        self.assertIsNone(mothers.superseded_at)        # mother's untouched (still live)
 
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
@@ -253,10 +280,10 @@ class TestDocumentApi(TestCase):
 
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
-    def test_str_route_income_doc_auto_tagged_to_earner_and_sweeps_legacy_blank(self, mock_del, _mv):
-        """Slot model (TD-115): on the STR route the backend authoritatively tags the earner's
-        income docs, and a re-upload replaces the legacy UNTAGGED copy (no duplicate) — even
-        when the client (e.g. the Action Centre) sends no household_member."""
+    def test_str_route_income_doc_auto_tagged_to_earner_and_supersedes_legacy_blank(self, mock_del, _mv):
+        """Slot model (TD-115) + Phase 2: on the STR route the backend authoritatively tags the
+        earner's income docs, and a re-upload SUPERSEDES the legacy UNTAGGED copy (retained as
+        history, no live duplicate) — even when the client sends no household_member."""
         self.app_a.income_route = 'str'
         self.app_a.income_earner = 'mother'
         self.app_a.save(update_fields=['income_route', 'income_earner'])
@@ -270,8 +297,9 @@ class TestDocumentApi(TestCase):
             'original_filename': 'ic.png', 'size': 1000,
         }, format='json')
         self.assertEqual(resp.status_code, 201, resp.content)
-        ics = ApplicantDocument.objects.filter(application=self.app_a, doc_type='parent_ic')
-        self.assertEqual(ics.count(), 1)                          # legacy blank swept, no dup
+        ics = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='parent_ic', superseded_at__isnull=True)
+        self.assertEqual(ics.count(), 1)                          # legacy blank superseded, no live dup
         self.assertEqual(ics.first().household_member, 'mother')  # auto-tagged to the earner
 
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
@@ -522,8 +550,9 @@ class TestRequestOwnedSlots(TestCase):
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_same_request_replaces(self, _del):
         self._upload('other', 'a', request_code='officer_1')
-        self._upload('other', 'b', request_code='officer_1')   # same request → replace, not a 2nd doc
-        rows = ApplicantDocument.objects.filter(application=self.app, doc_type='other')
+        self._upload('other', 'b', request_code='officer_1')   # same request → replace, not a 2nd live doc
+        rows = ApplicantDocument.objects.filter(
+            application=self.app, doc_type='other', superseded_at__isnull=True)
         self.assertEqual(rows.count(), 1)
         self.assertTrue(rows.first().storage_path.endswith('/b'))
 
