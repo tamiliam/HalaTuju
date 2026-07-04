@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Tag every document request at source — category+qualifier request UI + per-member EPF (2026-07-04,
+  FE + backend, no migration).** Closes the blank-tag leak upstream: the reviewer "Request document"
+  control is now a friendly CATEGORY + a mandatory QUALIFIER that resolves to a concrete
+  `(doc_type, household_member)`. **"Whose?"** (STR proof / Family member's IC / Salary slip / EPF →
+  father/mother/guardian/brother/sister) and **"Which?"** (Results slip → SPM/current-CGPA, Utility →
+  water/electricity, Other → school-leaving-cert/guardianship/intent/photo/other). The **Request
+  button stays disabled until the qualifier is chosen**, so a request can't be raised untagged.
+  - **Model side adopts the same tagging:** the memberless EPF requests (`epf_statement_missing` /
+    `unemployment_epf_missing`) are replaced by **per-member codes** (`father_epf_missing` …
+    `sister_epf_missing`) that carry `params.household_member`, so an Action-Centre EPF upload lands
+    tagged to the right person (the #63 blank-EPF leak). `income_engine.employed_epf_members` /
+    `unemployment_epf_members` supply the members; the old aggregate codes stay in `DOC_SPECS` only so
+    already-open items auto-resolve.
+  - **Root cause (investigated):** the Action Centre tags an upload from `item.params.household_member`;
+    the EPF requests never set it and the backend salary route accepts a blank member — so uploads
+    landed untagged. Now fixed at the request source. 2076 scholarship pytest + 436 jest (i18n parity;
+    +5 EPF codes ×3, `requestCat`/`requestWhich`; Tamil first-draft). Remaining systemic layer noted:
+    a backend upload guard that never persists a blank-tagged salary-route income doc (covers reviewer
+    mistakes / direct uploads); `income_doc_stale` still memberless.
+
 - **Officer Documents box — doc-driven income layout + blank-tag name resolution (2026-07-04, FE +
   backend, no migration).** The income box now lets the DOCUMENT drive the space, not the declared
   route (owner). The moment an STR-claiming doc exists, the **STR ROUTE** cluster shows on any route —
