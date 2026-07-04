@@ -105,6 +105,12 @@ describe('groupDocumentsByFact', () => {
     expect(groups.other).toHaveLength(0)
   })
 
+  it('orders academic: SPM results slip on top, semester (CGPA) slip below', () => {
+    const groups = groupDocumentsByFact(['semester_result', 'results_slip']
+      .map((t, i) => doc({ id: i, doc_type: t })))
+    expect(groups.academic.map((d) => d.doc_type)).toEqual(['results_slip', 'semester_result'])
+  })
+
   it('orders additional: school-leaving cert → statement of intent → photo', () => {
     // fed out of order, must come back in the fixed order
     const groups = groupDocumentsByFact(['photo', 'statement_of_intent', 'school_leaving_cert']

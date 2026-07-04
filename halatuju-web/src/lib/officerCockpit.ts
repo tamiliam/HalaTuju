@@ -164,11 +164,15 @@ export function groupDocumentsByFact(
     const fact = docTypeToFact(doc.doc_type)
     groups[fact].push(doc)
   }
-  // ADDITIONAL renders in a fixed order: school-leaving cert → statement of intent → photo
-  // (then anything else). "Any other document/photo" lives in OTHER, not here.
-  const ADDITIONAL_ORDER = ['school_leaving_cert', 'statement_of_intent', 'photo']
-  const addRank = (dt: string) => { const i = ADDITIONAL_ORDER.indexOf(dt); return i < 0 ? 99 : i }
-  groups.additional.sort((a, b) => addRank(a.doc_type) - addRank(b.doc_type))
+  // Fixed within-section order. ACADEMIC: the SPM results slip first, the current-CGPA semester
+  // slip below. ADDITIONAL: school-leaving cert → statement of intent → photo (anything else last;
+  // "any other document/photo" lives in OTHER, not here).
+  const orderBy = (list: AdminApplicantDocument[], order: string[]) => {
+    const rank = (dt: string) => { const i = order.indexOf(dt); return i < 0 ? 99 : i }
+    list.sort((a, b) => rank(a.doc_type) - rank(b.doc_type))
+  }
+  orderBy(groups.academic, ['results_slip', 'semester_result'])
+  orderBy(groups.additional, ['school_leaving_cert', 'statement_of_intent', 'photo'])
   return groups
 }
 
