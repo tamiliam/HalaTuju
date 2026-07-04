@@ -125,9 +125,13 @@ class TestStaticReadGuard(TestCase):
         'verdict_engine.py', 'income_engine.py', 'anomaly_engine.py', 'pathway_engine.py',
         'profile_engine.py', 'submission_review.py', 'check2_queries.py',
     ]
-    # Tokens that open a documents READ.
+    # Tokens that open a documents READ — both the direct `.documents.` form and the aliased
+    # `docs.` form (`docs = getattr(application, 'documents', None)`), which the first audit's
+    # grep missed (has_valid_str et al. read a superseded STR without the filter).
     READ_TOKENS = ('.documents.filter(', '.documents.all(', '.documents.values_list(',
-                   '.documents.exists(', '.documents.count(')
+                   '.documents.exists(', '.documents.count(',
+                   'docs.filter(', 'docs.all(', 'docs.values_list(',
+                   'docs.exists(', 'docs.count(')
 
     def test_engine_reads_filter_superseded(self):
         base = os.path.join(os.path.dirname(os.path.dirname(__file__)))

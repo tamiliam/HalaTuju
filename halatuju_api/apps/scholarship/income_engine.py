@@ -188,7 +188,8 @@ def effective_working_members(application) -> list:
     docs = getattr(application, 'documents', None)
     if docs is not None:
         try:
-            tagged = (docs.filter(doc_type__in=('parent_ic', 'salary_slip', 'epf'))
+            tagged = (docs.filter(doc_type__in=('parent_ic', 'salary_slip', 'epf'),
+                                  superseded_at__isnull=True)
                       .exclude(household_member='')
                       .values_list('household_member', flat=True))
             found.update(m for m in tagged if m in _MEMBER_ORDER)
@@ -758,7 +759,7 @@ def has_valid_str(application):
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
-    str_doc = docs.filter(doc_type='str').order_by('-uploaded_at').first()
+    str_doc = docs.filter(doc_type='str', superseded_at__isnull=True).order_by('-uploaded_at').first()
     if str_doc is None:
         return False
     sc = student_str_check(str_doc)
@@ -795,7 +796,8 @@ def has_income_support_doc(application, member):
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
-    for d in docs.filter(doc_type='income_support_doc', household_member__in=[member, '']):
+    for d in docs.filter(doc_type='income_support_doc', household_member__in=[member, ''],
+                         superseded_at__isnull=True):
         sv = (getattr(d, 'vision_fields', None) or {}).get('student_verdict', '')
         if sv == 'ok':
             return True
@@ -1661,7 +1663,7 @@ def stale_income_proof(application, today=None):
     docs = getattr(application, 'documents', None)
     if docs is None:
         return False
-    slips = list(docs.filter(doc_type='salary_slip'))
+    slips = list(docs.filter(doc_type='salary_slip', superseded_at__isnull=True))
     if not slips:
         return False
     ages = []
@@ -1772,7 +1774,7 @@ def _has_read_doc(docs, doc_type):
     """A doc of this type that field-extracted OK (``student_verdict='ok'``) is on file — so a
     blank/wrong upload doesn't clear a V4 academic request (consistency with V1's read-requirement:
     a doc must READ to count, not merely be present)."""
-    for d in docs.filter(doc_type=doc_type):
+    for d in docs.filter(doc_type=doc_type, superseded_at__isnull=True):
         if (getattr(d, 'vision_fields', None) or {}).get('student_verdict', '') == 'ok':
             return True
     return False
@@ -1789,7 +1791,7 @@ def school_leaving_cert_gap(application):
     docs = _docs_or_none(application)
     if docs is None or _has_read_doc(docs, 'school_leaving_cert'):
         return False
-    return not docs.filter(doc_type='results_slip').exists()
+    return not docs.filter(doc_type='results_slip', superseded_at__isnull=True).exists()
 
 
 def semester_result_gap(application):
@@ -1814,8 +1816,10 @@ def employed_epf_gap(application):
     for member in ('father', 'mother'):
         occ = _member_occupation(application, member)
         if occ and occ not in _NON_EARNING_OCC:
-            has_slip = docs.filter(doc_type='salary_slip', household_member__in=[member, '']).exists()
-            has_epf = docs.filter(doc_type='epf', household_member__in=[member, '']).exists()
+            has_slip = docs.filter(doc_type='salary_slip', household_member__in=[member, ''],
+                                   superseded_at__isnull=True).exists()
+            has_epf = docs.filter(doc_type='epf', household_member__in=[member, ''],
+                                  superseded_at__isnull=True).exists()
             if has_slip and not has_epf:
                 return True
     return False
@@ -1826,7 +1830,7 @@ def utility_bill_gap(application):
     soft B40 consumption signal). Clears when either bill is uploaded."""
     docs = _docs_or_none(application)
     return docs is not None and not docs.filter(
-        doc_type__in=('water_bill', 'electricity_bill')).exists()
+        doc_type__in=('water_bill', 'electricity_bill'), superseded_at__isnull=True).exists()
 
 
 def deceased_parent_members(application):
