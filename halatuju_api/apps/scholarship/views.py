@@ -808,6 +808,14 @@ class DocumentListCreateView(APIView):
                     from django.utils import timezone as _tz2
                     ApplicantDocument.objects.filter(id__in=prior).update(
                         superseded_at=_tz2.now(), superseded_by=doc)
+        # One-live-copy dedup (owner 2026-07-05): a salary slip / STR is needed once — the most
+        # RECENT. The student re-uploads the same or older copies and each officer re-request adds a
+        # parallel slot, so several live copies of one person's proof pile up. Collapse this person's
+        # copies of THIS doc-type to the single newest (newest pay month / latest-dated STR); the
+        # rest drop to Old / Replaced (retained). Runs after the tag guard so the member is final.
+        from . import income_engine as _ie
+        if doc.doc_type in _ie._DEDUP_DOC_TYPES:
+            _ie.dedupe_income_proof(app, (doc.household_member or '').strip(), doc.doc_type)
         # S3: a new upload may clear a verdict gap → auto-resolve its ticket
         # (and link the doc), or surface a fresh ticket. Idempotent, never blocks.
         from .resolution import sync_resolution_items, resolve_doc_items_for_upload

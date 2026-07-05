@@ -476,6 +476,71 @@ class TestDocumentApi(TestCase):
         doc = ApplicantDocument.objects.get(id=resp.json()['id'])
         self.assertEqual(doc.household_member, 'father')           # tag stands (no unambiguous match)
 
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    def test_dedupe_keeps_newest_salary_slip_supersedes_older(self, _dl):
+        """One-live-copy dedup: a person's salary slips collapse to the newest pay month; older /
+        undated copies drop to Old/Replaced (retained). Runs across request_codes."""
+        from apps.scholarship.income_engine import dedupe_income_proof
+
+        def slip(rc, period):
+            d = ApplicantDocument.objects.create(
+                application=self.app_a, doc_type='salary_slip', household_member='father',
+                request_code=rc, storage_path=f'{self.app_a.id}/salary_slip/{rc or "a"}{period}')
+            d.vision_fields = {'fields': {'period': period}}
+            d.save(update_fields=['vision_fields'])
+            return d
+        may1 = slip('', 'May 2026')
+        may2 = slip('officer_10', 'MAY 2026')          # same month, different request → parallel slot
+        apr = slip('officer_11', 'Apr 2026')           # older month
+        blank = slip('officer_9', '')                  # unread period
+
+        superseded = dedupe_income_proof(self.app_a, 'father', 'salary_slip')
+        live = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='salary_slip', superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)              # only one live copy remains
+        self.assertEqual(live.first().id, may2.id)     # newest month, latest upload (highest id)
+        self.assertCountEqual(superseded, [may1.id, apr.id, blank.id])
+        for d in (may1, apr, blank):
+            d.refresh_from_db()
+            self.assertEqual(d.superseded_by_id, may2.id)   # retained, pointed at the keeper
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    def test_dedupe_str_prefers_the_dated_screenshot(self, _dl):
+        """STR dedup: the dated screenshot (a shown year) is kept; older undated copies → Old/Replaced."""
+        from apps.scholarship.income_engine import dedupe_income_proof
+
+        def str_doc(rc, year):
+            d = ApplicantDocument.objects.create(
+                application=self.app_a, doc_type='str', household_member='mother',
+                request_code=rc, storage_path=f'{self.app_a.id}/str/{rc or "a"}{year or "x"}')
+            d.vision_fields = {'fields': {'year': year, 'status': 'Lulus'}}
+            d.save(update_fields=['vision_fields'])
+            return d
+        undated1 = str_doc('', '')
+        dated = str_doc('officer_2', '2026')
+        undated2 = str_doc('officer_3', '')
+
+        superseded = dedupe_income_proof(self.app_a, 'mother', 'str')
+        live = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='str', superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)
+        self.assertEqual(live.first().id, dated.id)    # the dated one is kept
+        self.assertCountEqual(superseded, [undated1.id, undated2.id])
+
+    def test_dedupe_noop_for_single_or_non_dedup_type(self):
+        from apps.scholarship.income_engine import dedupe_income_proof
+        one = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='salary_slip', household_member='father', storage_path='x')
+        one.vision_fields = {'fields': {'period': 'May 2026'}}
+        one.save(update_fields=['vision_fields'])
+        self.assertEqual(dedupe_income_proof(self.app_a, 'father', 'salary_slip'), [])   # single → no-op
+        # a non-dedupable type is never touched even with duplicates
+        ApplicantDocument.objects.create(application=self.app_a, doc_type='parent_ic',
+                                         household_member='father', storage_path='y')
+        ApplicantDocument.objects.create(application=self.app_a, doc_type='parent_ic',
+                                         household_member='father', storage_path='z')
+        self.assertEqual(dedupe_income_proof(self.app_a, 'father', 'parent_ic'), [])
+
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_delete_sweeps_storage(self, mock_storage_delete):
         """Explicit DELETE on a doc also sweeps its Storage blob."""

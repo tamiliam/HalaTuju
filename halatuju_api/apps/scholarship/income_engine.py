@@ -1765,6 +1765,52 @@ def stale_income_proof(application, today=None):
     return min(ages) > _INCOME_DOC_CURRENT_MONTHS  # the freshest slip is still stale
 
 
+# ── One-live-copy dedup for income proof (owner 2026-07-05) ──────────────────────────────
+# The student re-uploads the same/older salary slip or STR screenshot repeatedly; each officer
+# re-request lands it in its own slot, so several LIVE copies of one person's proof pile up in the
+# cockpit. We only need ONE — the most recent. This collapses a person's copies to a single live
+# doc (the newest) and supersedes the rest into the Old / Replaced history. Recency:
+#   salary_slip → the pay period (newest month wins); str → the shown year (the dated one wins).
+# A copy whose date can't be read never outranks a dated one; ties fall to the latest upload (id).
+_DEDUP_DOC_TYPES = ('salary_slip', 'str')
+
+
+def _income_doc_recency(doc):
+    """A sortable recency value for a de-dupable income-proof doc (higher = keep), or None when no
+    date can be read. salary_slip → (year, month) pay period; str → (year, 0) of the shown year."""
+    dt = getattr(doc, 'doc_type', '')
+    f = _doc_fields(doc)
+    if dt == 'salary_slip':
+        return _parse_billing_month(f.get('period'))          # (y, m) or None
+    if dt == 'str':
+        m = re.search(r'(20\d{2})', str(f.get('year') or ''))
+        return (int(m.group(1)), 0) if m else None
+    return None
+
+
+def dedupe_income_proof(application, member, doc_type):
+    """Collapse a person's LIVE copies of ``doc_type`` (salary_slip / str) to a SINGLE most-recent
+    live doc, superseding the rest into Old / Replaced. Ranks by (has-a-date, recency, id) so the
+    newest pay month / latest-dated STR is kept and older or undated copies drop to history. Runs
+    across request_codes (an officer re-request no longer leaves a parallel live copy). Retains the
+    superseded rows + blobs (version history) — never a hard delete. Returns the superseded ids."""
+    if doc_type not in _DEDUP_DOC_TYPES:
+        return []
+    docs = getattr(application, 'documents', None)
+    if docs is None:
+        return []
+    live = list(docs.filter(doc_type=doc_type, household_member=member, superseded_at__isnull=True))
+    if len(live) < 2:
+        return []
+    live.sort(key=lambda d: (1 if _income_doc_recency(d) else 0,
+                             _income_doc_recency(d) or (0, 0), d.id), reverse=True)
+    keep, losers = live[0], live[1:]
+    ids = [d.id for d in losers]
+    from django.utils import timezone as _tz
+    docs.filter(id__in=ids).update(superseded_at=_tz.now(), superseded_by=keep)
+    return ids
+
+
 def sibling_tertiary_funding_unknown(application):
     """True when the student has a sibling in tertiary education — the reviewer's recurring
     "which institution is your sibling at, and how are they funded / are they on aid?" query
