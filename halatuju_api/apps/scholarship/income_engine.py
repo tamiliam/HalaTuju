@@ -906,15 +906,16 @@ _INCOME_CONVERT_STATUSES = frozenset({'submitted', 'shortlisted', 'profile_compl
 
 
 def _slip_is_sgd(fields):
-    """True when a salary slip's amounts are in Singapore dollars — from the read ``currency`` field,
-    else inferred from a Singaporean employer, so slips read before the currency field still convert."""
-    cur = (fields.get('currency') or '').strip().upper()
-    if 'SGD' in cur or cur in ('S$', 'S'):
-        return True
-    if cur in ('MYR', 'RM', 'RINGGIT'):
-        return False
+    """True when a salary slip's amounts are in Singapore dollars. The EMPLOYER is the primary anchor
+    (a 'Pte Ltd' / NTUC / FairPrice employer is definitively Singaporean, and its pay is in S$) — it
+    OVERRIDES the ``currency`` field, because Gemini often can't tell S$ from RM without a symbol and
+    may guess 'MYR', which would otherwise flip the verdict on a re-run. The read currency is only a
+    fallback when the employer isn't recognisably Singaporean."""
     emp = (fields.get('employer') or '').lower()
-    return any(m in emp for m in _SGD_EMPLOYER_MARKERS)
+    if any(m in emp for m in _SGD_EMPLOYER_MARKERS):
+        return True
+    cur = (fields.get('currency') or '').strip().upper()
+    return 'SGD' in cur or cur in ('S$', 'S')
 
 
 def sgd_to_myr_rate():

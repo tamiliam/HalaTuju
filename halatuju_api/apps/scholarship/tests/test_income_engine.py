@@ -1350,7 +1350,10 @@ class TestSgdSalaryConversion(SimpleTestCase):
         self.assertAlmostEqual(_to_myr(3114.32, sgd, review), 3114.32 * 3.15, places=2)  # convert
         self.assertEqual(_to_myr(3114.32, sgd, decided), 3114.32)          # grandfathered (decided)
         self.assertEqual(_to_myr(2000.0, myr, review), 2000.0)             # MYR employer → unchanged
-        # explicit currency field wins over the employer inference
-        self.assertEqual(_to_myr(2000.0, {'employer': 'X Pte Ltd', 'currency': 'MYR'}, review), 2000.0)
+        # the EMPLOYER anchors it and OVERRIDES a currency guess — a Pte Ltd payslip converts even if
+        # Gemini guessed 'MYR', so a re-run that misreads the currency can't flip the verdict back.
+        self.assertAlmostEqual(_to_myr(2000.0, {'employer': 'X Pte Ltd', 'currency': 'MYR'}, review),
+                               2000.0 * 3.15, places=2)
+        # currency is the fallback when the employer isn't recognisably Singaporean
         self.assertAlmostEqual(_to_myr(2000.0, {'currency': 'SGD'}, review), 2000.0 * 3.15, places=2)
         self.assertIsNone(_to_myr(None, sgd, review))                      # no amount → no-op
