@@ -1531,6 +1531,23 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
                                        'year to date', 'year-to-date', 'year to-date'))
             return nric or ytd
         return [w for w in warnings if not _is_optional_salary_noise(w)]
+    if doc_type == 'offer_letter':
+        # Supplementary DATA-POINT fields are OPTIONAL on an offer letter — not every issuer prints
+        # an offer/reporting date, intake, candidate address, or stream/specialisation. Their absence
+        # is not a problem (the chip just omits the data point); a "missing" note is noise. The CORE
+        # facts — candidate name / NRIC (Name·IC), programme/institution (Pathway), issuer +
+        # genuineness (Official) — are handled by the chip, NOT these warnings, so a warning about
+        # THEM is never suppressed here.
+        def _is_optional_offer_noise(w) -> bool:
+            s = (w or '').lower()
+            if not any(k in s for k in ('missing', 'not found', 'not present', 'not printed',
+                                        'not shown', 'not specified', 'not stated', 'not explicitly',
+                                        'not clearly', 'absent', 'unavailable', 'no ')):
+                return False
+            return any(k in s for k in ('offer_date', 'offer date', 'reporting_date', 'reporting date',
+                                        'intake', 'address', 'stream', 'bidang', 'elektif', 'aliran',
+                                        'specialis', 'specializ'))
+        return [w for w in warnings if not _is_optional_offer_noise(w)]
     if doc_type == 'semester_result':
         # CGPA is OPTIONAL — a single-semester slip (e.g. STPM Semester 1) shows only that
         # semester's grades with no cumulative figure. Don't flag its absence (grey chip, not a

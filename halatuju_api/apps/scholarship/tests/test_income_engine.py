@@ -283,6 +283,14 @@ class TestBirthCertificateWiring(SimpleTestCase):
                 'CGPA not found, this appears to be a semester-only result.',
                 'Document is not a results slip.']),
             ['Document is not a results slip.'])
+        # offer_letter: supplementary data-point fields are optional — drop their "missing" notes,
+        # but keep a CORE-field problem (a missing candidate name / programme).
+        kept_offer = _drop_expected_warnings('offer_letter', [
+            'offer_date is missing', 'intake is missing', 'candidate_address is missing',
+            'stream is missing', 'reporting_date is missing',
+            'offer_date is not explicitly stated in the document.',   # phrasing variant → dropped
+            'candidate_name not found'])
+        self.assertEqual(kept_offer, ['candidate_name not found'])
 
     def test_birth_certificate_is_in_the_upload_pipeline(self):
         # The schema existing is NOT enough — the upload handler only OCRs + field-extracts
