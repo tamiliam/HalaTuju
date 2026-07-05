@@ -100,3 +100,15 @@ export function cleanOtherMembers(raw: unknown): OtherMember[] {
   }
   return out
 }
+
+// A person's NAME may contain letters, spaces, and the connectors that appear in Malaysian names:
+// "/" (A/L, A/P, S/O, D/O), "@" (alias — "SITI @ AISHAH"), plus initials (.), apostrophes (D'CRUZ)
+// and hyphens (NUR-AIN). It must contain NO digits — an IC / phone typed into a name box is exactly
+// the error this guards against (a real case: a father_name stored as an IC number). Mirrors
+// family.is_valid_person_name in the backend — keep IN SYNC.
+const PERSON_NAME_RE = /^[A-Za-z][A-Za-z\s./@'-]*$/
+
+export function isValidPersonName(name: string | null | undefined): boolean {
+  const t = (name || '').trim()
+  return t === '' || PERSON_NAME_RE.test(t)   // empty is "not invalid" — required-ness is separate
+}

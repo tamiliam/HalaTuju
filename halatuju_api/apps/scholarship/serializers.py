@@ -452,6 +452,22 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
 
     _VALID_MEMBERS = {'father', 'mother', 'guardian', 'brother', 'sister'}
 
+    def _validate_person_name(self, value):
+        # Authoritative guard (the FE mirrors it): a parent name may not contain digits — an IC /
+        # phone number typed into the name box is rejected here, not silently stored (a real case:
+        # a father_name persisted as an IC number, which broke name-resolution).
+        from . import family
+        if not family.is_valid_person_name(value):
+            raise serializers.ValidationError(
+                'Enter the name as printed on the IC — letters only, not the IC number.')
+        return value
+
+    def validate_father_name(self, value):
+        return self._validate_person_name(value)
+
+    def validate_mother_name(self, value):
+        return self._validate_person_name(value)
+
     def validate_income_declared(self, value):
         bad = sorted(set(value) - self._VALID_MEMBERS)
         if bad:

@@ -1038,6 +1038,7 @@
           "father": "Father",
           "mother": "Mother",
           "name": "Name (as in IC)",
+          "nameInvalid": "Enter the name as printed on the IC — letters only, not the IC number.",
           "profession": "Profession",
           "professionPlaceholder": "Select…",
           "otherSpecify": "Please specify",

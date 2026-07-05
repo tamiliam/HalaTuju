@@ -1,4 +1,18 @@
-import { earningMembers, sameMemberSet } from '@/lib/familyRoster'
+import { earningMembers, sameMemberSet, isValidPersonName } from '@/lib/familyRoster'
+
+describe('isValidPersonName — guard a name field against numbers', () => {
+  it('accepts real Malaysian names + connectors', () => {
+    for (const n of ['JAYAKUMAR A/L ANNAMARI', 'THANGAM A/P RAMASAMY', 'Siti @ Aishah',
+      "D'CRUZ", 'S. Kumar', 'Nur-Ain', '']) {
+      expect(isValidPersonName(n)).toBe(true)
+    }
+  })
+  it('rejects an IC / phone number typed into the name box', () => {
+    for (const n of ['750819145383', '810122-10-5834', 'Kumar 123', '012-227 4556', '@#$']) {
+      expect(isValidPersonName(n)).toBe(false)
+    }
+  })
+})
 
 describe('earningMembers — roster professions → income earners', () => {
   it('both parents working → father + mother (the #1 default for the salary wizard)', () => {

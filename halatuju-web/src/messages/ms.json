@@ -1038,6 +1038,7 @@
           "father": "Bapa",
           "mother": "Ibu",
           "name": "Nama (seperti dalam IC)",
+          "nameInvalid": "Masukkan nama seperti tertera pada IC — huruf sahaja, bukan nombor IC.",
           "profession": "Pekerjaan",
           "professionPlaceholder": "Pilih…",
           "otherSpecify": "Sila nyatakan",

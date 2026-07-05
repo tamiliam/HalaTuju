@@ -278,3 +278,21 @@ class ConsentRedGateTests(TestCase):
                    return_value={'readable': False}), \
              patch('apps.scholarship.income_engine.income_cluster_advice', return_value=''):
             self.assertIn('income_document_unreadable', document_unreadable_blockers(app))
+
+
+class PersonNameValidatorTests(TestCase):
+    def test_is_valid_person_name_accepts_names_rejects_numbers(self):
+        from apps.scholarship import family
+        for good in ('JAYAKUMAR A/L ANNAMARI', 'THANGAM A/P RAMASAMY', 'Siti @ Aishah',
+                     "D'CRUZ", 'S. Kumar', 'Nur-Ain', ''):
+            self.assertTrue(family.is_valid_person_name(good), good)
+        for bad in ('750819145383', '810122-10-5834', 'Kumar 123', '012-227 4556', '@#$'):
+            self.assertFalse(family.is_valid_person_name(bad), bad)
+
+    def test_details_serializer_rejects_ic_in_name_field(self):
+        from apps.scholarship.serializers import ApplicationDetailsUpdateSerializer
+        s = ApplicationDetailsUpdateSerializer(data={'father_name': '750819145383'})
+        self.assertFalse(s.is_valid())
+        self.assertIn('father_name', s.errors)
+        ok = ApplicationDetailsUpdateSerializer(data={'father_name': 'JAYAKUMAR A/L ANNAMARI'})
+        self.assertTrue(ok.is_valid(), ok.errors)

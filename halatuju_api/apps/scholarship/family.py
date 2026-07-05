@@ -17,6 +17,21 @@ Profession codes are B40 / lower-M40 focused. The English label feeds the
 sponsor-profile prompt + the officer summary; the frontend carries its own
 en/ms/ta labels keyed by the same code (``lib/familyRoster.ts``).
 """
+import re
+
+# A person's NAME: letters + spaces + the connectors seen in Malaysian names — "/" (A/L, A/P, S/O,
+# D/O), "@" (alias), initials (.), apostrophe (D'CRUZ), hyphen (NUR-AIN). NO digits — an IC / phone
+# number typed into a name box is the exact error this guards (a father_name once stored as an IC).
+# Mirrors lib/familyRoster.ts isValidPersonName — keep IN SYNC.
+_PERSON_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z\s./@'-]*$")
+
+
+def is_valid_person_name(name):
+    """True when ``name`` is empty (required-ness is checked elsewhere) or a plausible person name
+    with no digits. Rejects a bare IC / phone number in a name field."""
+    t = (name or '').strip()
+    return t == '' or bool(_PERSON_NAME_RE.match(t))
+
 
 #: (code, English label). Grouped only by comment — Django choices are flat.
 PROFESSION_CHOICES = (

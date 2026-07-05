@@ -6,7 +6,7 @@
 // step AND the /profile Family & Background card, against the SAME field names, so
 // the two surfaces are identical and stay in sync. i18n reuses the existing
 // `scholarship.nextSteps.story.cardA.*` keys — no new strings.
-import { PROFESSION_GROUPS, FAMILY_ROLES, MAX_OTHER_MEMBERS, type FamilyRole, type OtherMember } from '@/lib/familyRoster'
+import { PROFESSION_GROUPS, FAMILY_ROLES, MAX_OTHER_MEMBERS, isValidPersonName, type FamilyRole, type OtherMember } from '@/lib/familyRoster'
 import FieldLabel from '@/components/FieldLabel'
 
 type TFn = (key: string) => string
@@ -129,6 +129,9 @@ export default function FamilyRosterFields({
                   <FieldLabel required={req}>{t(`${CA}.name`)}</FieldLabel>
                   <input className="input" maxLength={200}
                     value={form[nameKey]} onChange={(e) => onUpdate(nameKey, e.target.value)} />
+                  {!isValidPersonName(form[nameKey]) && (
+                    <p className="mt-1 text-xs text-red-600">{t(`${CA}.nameInvalid`)}</p>
+                  )}
                 </div>
                 <div>
                   <FieldLabel required={req}>{t(`${CA}.profession`)}</FieldLabel>
