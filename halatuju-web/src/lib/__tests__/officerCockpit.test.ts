@@ -662,6 +662,27 @@ describe('incomeSubSections', () => {
     ])
   })
 
+  it('#63: a VALID STR on the salary route makes salary docs supportive (no "Missing")', () => {
+    // #63 is on the salary route but holds a genuine approved (Lulus, undated→unconfirmed) STR — the
+    // STR proves B40, so the model must NOT demand the mother's salary slip with a red placeholder.
+    const str = doc({ id: 1, doc_type: 'str', household_member: 'mother',
+      str_check: strCheck({ current_status: 'unconfirmed' }), authenticity: { status: 'genuine', reason: '' } })
+    const mIc = doc({ id: 2, doc_type: 'parent_ic', household_member: 'mother' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['father', 'mother'] }, [str, mIc])
+    expect(sub.str).not.toBeNull()                                         // STR cluster still shows
+    expect(sub.salary.some((s) => s.docType === 'salary_slip' && s.doc === null)).toBe(false)  // no Missing
+  })
+
+  it('a BREACHED STR (wrong_type) on the salary route → salary docs ARE required (Missing kept)', () => {
+    // Contrast: a SALINAN/payslip in the STR slot is breached → the family falls into full salary docs.
+    const str = doc({ id: 1, doc_type: 'str', household_member: 'mother',
+      str_check: strCheck({ current_status: 'wrong_type' }) })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['father'] }, [str])
+    expect(sub.salary.some((s) => s.docType === 'salary_slip' && s.doc === null)).toBe(true)  // Missing kept
+  })
+
   it('#63 regression: a salary-route family WITH STR docs still shows them (never hidden)', () => {
     // #63 was mis-switched to the salary route while holding a valid current STR (mother, Lulus)
     // plus an officer-requested copy. The STR sub used to be gated to route==='str', and the

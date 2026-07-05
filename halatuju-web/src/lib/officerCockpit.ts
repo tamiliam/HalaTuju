@@ -704,8 +704,23 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     return (ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb)
   })
   const salary: IncomeSlot[] = []
-  // On the STR route salary docs are supportive → present-only (no compulsory "Missing" rows).
-  const salaryRequired = (app.income_route || '') !== 'str'
+  // Salary docs are SUPPORTIVE (present-only, no compulsory "Missing" rows) whenever the STR is the
+  // means-test — i.e. the declared STR route, OR a valid STR proof is on file that hasn't been
+  // BREACHED. Owner principle (2026-07-05): a genuine approved STR proves B40, so the family need not
+  // fall into full salary-route documentation regardless of the declared route (#63 was on the salary
+  // route while holding a valid Lulus STR, so a route-only check wrongly demanded the mother's slip).
+  // Check-2 may still SOFTLY ask about declared earners; it just isn't a hard requirement. A BREACHED
+  // STR (rejected / wrong-type / not-genuine) drops the family into full salary docs, as before.
+  const strNotBreached = strDocs.some((d) => {
+    // compared as strings: the backend emits current_status values ('wrong_type', 'unreadable') and
+    // authenticity states ('likely_genuine') that the narrower FE unions don't enumerate.
+    const cs = String(d.str_check?.current_status || '')
+    const auth = String(d.authenticity?.status || '')
+    if (!cs || cs === 'wrong_type' || cs === 'rejected') return false
+    if (auth && auth !== 'genuine' && auth !== 'likely_genuine') return false
+    return true
+  })
+  const salaryRequired = (app.income_route || '') !== 'str' && !strNotBreached
   const pushSlot = (docType: string, member: string, doc: AdminApplicantDocument | null) => {
     if (doc || salaryRequired) salary.push({ docType, member, doc })
   }
