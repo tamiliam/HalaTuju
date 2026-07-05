@@ -3505,7 +3505,7 @@
         "locked": "Querying closed — the interview is concluded. This is now a read-only record.",
         "itemOne": "item",
         "itemMany": "items",
-        "overflow": "{n} more higher-priority quer(y/ies) are waiting — they'll be asked automatically as the current ones are answered or waived.",
+        "overflow": "{n} more question(s) queued — asked automatically once the current ones are answered or waived.",
         "empty": "Nothing outstanding — all student tasks are clear."
       },
       "docsDrawer": {

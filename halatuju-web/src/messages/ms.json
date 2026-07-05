@@ -3505,7 +3505,7 @@
         "locked": "Pertanyaan ditutup — temu duga telah selesai. Ini kini rekod baca-sahaja.",
         "itemOne": "perkara",
         "itemMany": "perkara",
-        "overflow": "{n} lagi pertanyaan keutamaan tinggi sedang menunggu — ia akan ditanya secara automatik apabila yang semasa dijawab atau dikecualikan.",
+        "overflow": "{n} lagi soalan beratur — akan ditanya secara automatik sebaik yang semasa dijawab atau dikecualikan.",
         "empty": "Tiada yang belum selesai — semua tugasan pelajar telah jelas."
       },
       "docsDrawer": {

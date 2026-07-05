@@ -212,9 +212,13 @@ def clarify_overflow_count(application):
                 application.resolution_items.filter(source='check2', kind='clarify')}
     open_now = sum(1 for r in existing.values() if r.status == 'open')
     slots = max(MAX_CLARIFY - open_now, 0)
+    # "Waiting" = a clarify-able gap that could STILL be asked but is crowded out by the cap. A
+    # clarify is once-ever: once an item exists (open OR already answered / waived) it is NEVER
+    # re-raised (see sync_check2_queries: `code in existing → skip`). So only a gap with NO item yet
+    # can be waiting — counting an ANSWERED clarify whose gap persists as "waiting" was the bug that
+    # left a spurious "N more waiting" note on cases where every query was already answered (#36).
     pending = [c for c in _CLARIFY_ORDER
-               if c in gaps and c != 'reporting_date_unknown'
-               and (c not in existing or existing[c].status != 'open')]
+               if c in gaps and c != 'reporting_date_unknown' and c not in existing]
     return max(len(pending) - slots, 0)
 
 

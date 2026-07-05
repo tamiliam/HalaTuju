@@ -153,6 +153,27 @@ class TestSyncCheck2Queries(_Base):
         sync_check2_queries(self.app)
         self.assertGreater(clarify_overflow_count(self.app), 0)  # >3 gaps → some crowded out
 
+    def test_overflow_zero_once_every_clarify_answered(self):
+        """Regression (#36): when every clarify-able gap has already been raised AND answered
+        (resolved / waived) — the gaps persist, but a clarify is never re-asked — nothing is
+        'waiting', so the overflow note must be 0 (it used to count answered clarifies as waiting)."""
+        from apps.scholarship.check2_queries import (
+            clarify_overflow_count, _gap_sets, _CLARIFY_ORDER, CLARIFY_SPECS)
+        from apps.scholarship.models import ResolutionItem
+        self.app.field_of_study = ''
+        self.app.siblings_in_tertiary = None
+        self.app.siblings_studying_count = 2
+        self.app.save()
+        gaps, _ = _gap_sets(self.app)
+        clarify_gaps = [c for c in _CLARIFY_ORDER if c in gaps and c != 'reporting_date_unknown']
+        self.assertGreater(len(clarify_gaps), MAX_CLARIFY)   # enough to have crowded out originally
+        # every clarify-able gap has an ANSWERED item (mix of resolved + waived), gaps still present
+        for i, c in enumerate(clarify_gaps):
+            ResolutionItem.objects.create(
+                application=self.app, source='check2', code=c, kind='clarify',
+                fact=CLARIFY_SPECS[c]['fact'], status='waived' if i == 0 else 'resolved')
+        self.assertEqual(clarify_overflow_count(self.app), 0)
+
 
 class TestDeclaredIncomeDocRequest(_Base):
     """Phase 2A — a declared informal income with no valid STR + no supporting doc raises an
