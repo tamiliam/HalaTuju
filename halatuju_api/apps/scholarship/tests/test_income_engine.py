@@ -265,9 +265,14 @@ class TestBirthCertificateWiring(SimpleTestCase):
             "Mother's name was partially obscured.",
         ])
         self.assertEqual(kept, ["Mother's name was partially obscured."])
-        # Non-BC docs are untouched.
-        self.assertEqual(_drop_expected_warnings('salary_slip', ['child ic missing']),
-                         ['child ic missing'])
+        # salary_slip: the NRIC / YTD-gross are OPTIONAL — a valid SME payslip (employee number +
+        # name, current-month only) shows neither, so those "missing" notes are dropped; a REAL
+        # problem is kept.
+        kept_sal = _drop_expected_warnings('salary_slip', [
+            'nric is missing', 'Gross income YTD not found', 'net pay exceeds gross — re-read'])
+        self.assertEqual(kept_sal, ['net pay exceeds gross — re-read'])
+        # An unrelated doc type is untouched.
+        self.assertEqual(_drop_expected_warnings('epf', ['nric is missing']), ['nric is missing'])
 
     def test_birth_certificate_is_in_the_upload_pipeline(self):
         # The schema existing is NOT enough — the upload handler only OCRs + field-extracts

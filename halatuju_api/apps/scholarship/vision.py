@@ -1492,17 +1492,32 @@ def _sanitize_extracted_fields(doc_type: str, data: dict) -> dict:
 
 
 def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
-    """Strip warnings a document is EXPECTED to trip — noise that misleads the officer.
-    A Malaysian birth certificate carries NO IC number for the child (the child is issued
-    one later), so a 'child NRIC missing/unlabelled' note is normal, not a problem. Belt-and-
-    braces with the prompt hint, since Gemini's free-text warnings aren't fully steerable."""
-    if doc_type != 'birth_certificate':
-        return warnings
-    def _is_child_nric_noise(w) -> bool:
-        s = (w or '').lower()
-        return 'child' in s and any(k in s for k in
-                                    ('nric', 'kad pengenalan', 'ic number', 'identity card', 'no. kad'))
-    return [w for w in warnings if not _is_child_nric_noise(w)]
+    """Strip warnings a document is EXPECTED to trip — noise that misleads the officer. Belt-and-
+    braces with the prompt hint, since Gemini's free-text warnings aren't fully steerable.
+      * birth_certificate — the child carries NO IC (issued one later), so a 'child NRIC missing'
+        note is normal.
+      * salary_slip — the NRIC and the year-to-date GROSS are OPTIONAL: many Malaysian SME payslips
+        identify the employee by an employee number + name (no IC printed) and show only the current
+        month's earnings (no YTD column). Flagging them 'missing' makes a perfectly valid slip look
+        deficient (the earner is still cross-checked by NAME, and one month's gross still counts)."""
+    if doc_type == 'birth_certificate':
+        def _is_child_nric_noise(w) -> bool:
+            s = (w or '').lower()
+            return 'child' in s and any(k in s for k in
+                                        ('nric', 'kad pengenalan', 'ic number', 'identity card', 'no. kad'))
+        return [w for w in warnings if not _is_child_nric_noise(w)]
+    if doc_type == 'salary_slip':
+        def _is_optional_salary_noise(w) -> bool:
+            s = (w or '').lower()
+            if not any(k in s for k in ('missing', 'not found', 'not present', 'not printed',
+                                        'not shown', 'absent', 'unavailable', 'no ')):
+                return False
+            nric = any(k in s for k in ('nric', 'ic number', 'ic no', 'kad pengenalan', 'k/p', 'mykad'))
+            ytd = ('ytd' in s or 'gross_income_ytd' in s or 'terkumpul' in s
+                   or ('year' in s and 'date' in s))
+            return nric or ytd
+        return [w for w in warnings if not _is_optional_salary_noise(w)]
+    return warnings
 
 
 def _any_field_filled(fields: dict) -> bool:
