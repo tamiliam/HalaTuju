@@ -672,16 +672,15 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
   // or a working member wasn't declared. A member with only an IC is NOT pulled in this way (that's
   // usually the STR parent's IC, already under STR) — it would otherwise raise a false "Missing
   // salary" placeholder for a non-earner. (4a, owner 2026-07-05.)
-  const earnerDocMembers = new Set<string>()
+  const memberSet = new Set<string>(
+    workingMembers(app.income_working_members as WorkingMember[] | null) as string[])
   for (const d of incomeDocs) {
     if (d.doc_type === 'salary_slip' || d.doc_type === 'epf') {
       const m = memberOf(d)
-      if (m) earnerDocMembers.add(m)
+      if (m) memberSet.add(m)
     }
   }
-  const salaryMembers = Array.from(
-    new Set<string>([...workingMembers(app.income_working_members as WorkingMember[] | null), ...earnerDocMembers]),
-  ).sort((a, b) => {
+  const salaryMembers = Array.from(memberSet).sort((a, b) => {
     const ra = MEMBER_ORDER.indexOf(a as WorkingMember), rb = MEMBER_ORDER.indexOf(b as WorkingMember)
     return (ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb)
   })
