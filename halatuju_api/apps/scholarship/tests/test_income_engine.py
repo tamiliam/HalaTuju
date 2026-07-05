@@ -269,8 +269,11 @@ class TestBirthCertificateWiring(SimpleTestCase):
         # name, current-month only) shows neither, so those "missing" notes are dropped; a REAL
         # problem is kept.
         kept_sal = _drop_expected_warnings('salary_slip', [
-            'nric is missing', 'Gross income YTD not found', 'net pay exceeds gross — re-read'])
-        self.assertEqual(kept_sal, ['net pay exceeds gross — re-read'])
+            'nric is missing', 'Gross income YTD not found', 'net pay exceeds gross — re-read',
+            # a legit "pay period missing" note mentions month/year + pay date — must NOT be dropped
+            'Pay period (month/year) is missing; only a specific pay date is provided.'])
+        self.assertEqual(kept_sal, ['net pay exceeds gross — re-read',
+                                    'Pay period (month/year) is missing; only a specific pay date is provided.'])
         # An unrelated doc type is untouched.
         self.assertEqual(_drop_expected_warnings('epf', ['nric is missing']), ['nric is missing'])
 

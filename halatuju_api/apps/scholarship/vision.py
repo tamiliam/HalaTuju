@@ -1513,8 +1513,10 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
                                         'not shown', 'absent', 'unavailable', 'no ')):
                 return False
             nric = any(k in s for k in ('nric', 'ic number', 'ic no', 'kad pengenalan', 'k/p', 'mykad'))
-            ytd = ('ytd' in s or 'gross_income_ytd' in s or 'terkumpul' in s
-                   or ('year' in s and 'date' in s))
+            # Explicit year-to-date phrasing ONLY — a bare 'year' + 'date' anywhere over-matches a
+            # legit "pay period (month/year)… pay date" warning (which must be kept).
+            ytd = any(k in s for k in ('ytd', 'gross_income_ytd', 'terkumpul',
+                                       'year to date', 'year-to-date', 'year to-date'))
             return nric or ytd
         return [w for w in warnings if not _is_optional_salary_noise(w)]
     return warnings
