@@ -527,6 +527,29 @@ class TestDocumentApi(TestCase):
         self.assertEqual(live.first().id, dated.id)    # the dated one is kept
         self.assertCountEqual(superseded, [undated1.id, undated2.id])
 
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    def test_dedupe_keeps_genuine_over_a_newer_non_genuine_copy(self, _dl):
+        """Genuineness ranks first: a genuine STR is NEVER superseded by a newer non-genuine copy
+        (a SARA letter / wrong-type in the STR slot) — we keep the real document."""
+        from apps.scholarship.income_engine import dedupe_income_proof
+        genuine = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='str', household_member='mother',
+            storage_path=f'{self.app_a.id}/str/genuine')
+        genuine.vision_fields = {'fields': {'year': '2025'}, 'authenticity': {'status': 'genuine'}}
+        genuine.save(update_fields=['vision_fields'])
+        sara = ApplicantDocument.objects.create(                 # newer id, but not genuine
+            application=self.app_a, doc_type='str', household_member='mother', request_code='officer_4',
+            storage_path=f'{self.app_a.id}/str/sara')
+        sara.vision_fields = {'fields': {'year': '2026'}, 'authenticity': {'status': 'suspect'}}
+        sara.save(update_fields=['vision_fields'])
+
+        superseded = dedupe_income_proof(self.app_a, 'mother', 'str')
+        self.assertEqual(superseded, [sara.id])                  # the SARA drops, the genuine STR stays
+        live = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='str', superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)
+        self.assertEqual(live.first().id, genuine.id)
+
     def test_dedupe_noop_for_single_or_non_dedup_type(self):
         from apps.scholarship.income_engine import dedupe_income_proof
         one = ApplicantDocument.objects.create(

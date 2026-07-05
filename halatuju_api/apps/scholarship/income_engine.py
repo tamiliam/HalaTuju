@@ -1775,6 +1775,18 @@ def stale_income_proof(application, today=None):
 _DEDUP_DOC_TYPES = ('salary_slip', 'str')
 
 
+def _doc_genuine_rank(doc):
+    """1 when the doc is NOT flagged non-genuine (genuine / never-scored), 0 when its genuineness is
+    suspect / not_<type> / wrong-type / low-confidence. Dedup ranks this FIRST so a non-genuine copy
+    (a SARA letter in the STR slot, an EPF filed as a payslip) can NEVER supersede a genuine one — we
+    keep the real document even when a fake / wrong-type copy is newer."""
+    vf = getattr(doc, 'vision_fields', None)
+    st = ''
+    if isinstance(vf, dict) and isinstance(vf.get('authenticity'), dict):
+        st = (vf['authenticity'].get('status') or '').strip()
+    return 1 if st in ('', 'genuine', 'likely_genuine') else 0
+
+
 def _income_doc_recency(doc):
     """A sortable recency value for a de-dupable income-proof doc (higher = keep), or None when no
     date can be read. salary_slip → (year, month) pay period; str → (year, 0) of the shown year."""
@@ -1789,11 +1801,12 @@ def _income_doc_recency(doc):
 
 
 def dedupe_income_proof(application, member, doc_type):
-    """Collapse a person's LIVE copies of ``doc_type`` (salary_slip / str) to a SINGLE most-recent
-    live doc, superseding the rest into Old / Replaced. Ranks by (has-a-date, recency, id) so the
-    newest pay month / latest-dated STR is kept and older or undated copies drop to history. Runs
-    across request_codes (an officer re-request no longer leaves a parallel live copy). Retains the
-    superseded rows + blobs (version history) — never a hard delete. Returns the superseded ids."""
+    """Collapse a person's LIVE copies of ``doc_type`` (salary_slip / str) to a SINGLE best live doc,
+    superseding the rest into Old / Replaced. Ranks by (genuine, has-a-date, recency, id): a genuine
+    copy is never superseded by a non-genuine one, then the newest pay month / latest-dated STR wins,
+    then the latest upload. Runs across request_codes (an officer re-request no longer leaves a
+    parallel live copy). Retains the superseded rows + blobs — never a hard delete. Returns the
+    superseded ids."""
     if doc_type not in _DEDUP_DOC_TYPES:
         return []
     docs = getattr(application, 'documents', None)
@@ -1802,7 +1815,7 @@ def dedupe_income_proof(application, member, doc_type):
     live = list(docs.filter(doc_type=doc_type, household_member=member, superseded_at__isnull=True))
     if len(live) < 2:
         return []
-    live.sort(key=lambda d: (1 if _income_doc_recency(d) else 0,
+    live.sort(key=lambda d: (_doc_genuine_rank(d), 1 if _income_doc_recency(d) else 0,
                              _income_doc_recency(d) or (0, 0), d.id), reverse=True)
     keep, losers = live[0], live[1:]
     ids = [d.id for d in losers]
