@@ -2022,12 +2022,16 @@ export default function AdminScholarshipDetailPage() {
             <h2 className="font-semibold">{t('admin.scholarship.estimate.title')}</h2>
             {fe ? (fe.known ? (
               <>
-                <p className="text-2xl font-semibold text-gray-900">
-                  ≈ RM {fe.total.toLocaleString('en-US')}
-                </p>
-                <p className="text-xs text-gray-500 mb-2">
-                  ~RM {fe.monthly.toLocaleString('en-US')}/{t('admin.scholarship.estimate.month')} × {fe.months} {t('admin.scholarship.estimate.months')}
-                </p>
+                {/* Total + its monthly breakdown are one tight unit — grouped so the card's
+                    space-y doesn't push them apart. */}
+                <div>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    ≈ RM {fe.total.toLocaleString('en-US')}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    ~RM {fe.monthly.toLocaleString('en-US')}/{t('admin.scholarship.estimate.month')} × {fe.months} {t('admin.scholarship.estimate.months')}
+                  </p>
+                </div>
                 <p className="text-sm text-gray-600">
                   {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
                 </p>
