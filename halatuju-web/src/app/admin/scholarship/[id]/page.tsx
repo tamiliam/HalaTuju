@@ -29,7 +29,6 @@ import {
   reopenDecision,
   cancelReopen,
   recordQcDecision,
-  setAwardAmount,
   raiseResolutionItem,
   actionResolutionItem,
   adminCountersignBursary,
@@ -257,7 +256,6 @@ export default function AdminScholarshipDetailPage() {
   // Sprint 5 — Officer cockpit
   const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
   const [verdictReason, setVerdictReason] = useState('')
-  const [recAmount, setRecAmount] = useState<number | null>(null)  // recommended assistance (optimistic)
   const [verdictMsg, setVerdictMsg] = useState('')
   const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
   const [interviewMsg, setInterviewMsg] = useState('')   // transient "Saved ✓" confirmation
@@ -620,15 +618,6 @@ export default function AdminScholarshipDetailPage() {
     } finally { setBusy('') }
   }
 
-  const doSetAwardAmount = async (amount: number | null) => {
-    if (!token) return
-    setRecAmount(amount)  // optimistic; null clears it (e.g. on Decline)
-    setBusy('award'); setError('')
-    try { setApp(await setAwardAmount(id, amount, { token })) }
-    catch (e) { setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError')) }
-    finally { setBusy('') }
-  }
-
   const doRaiseQuery = async () => {
     if (!token || !infoNote.trim()) return
     setBusy('raise'); setError('')
@@ -742,11 +731,10 @@ export default function AdminScholarshipDetailPage() {
   // findings, (2) pressed Pass/Fail on all four facts, and (3) written a conclusion.
   // (Approve's actual accept is still backend-gated on a complete profile + identity.)
   const decisionReady = isDecisionReady(app.interview_session?.status, officerVerdict, verdictReason)
-  // Approve requires a recommended assistance amount (the slider, or an already-saved one).
-  // Assistance is pathway-standard (proposed_award_amount) UNLESS the verdict confidently
-  // disqualifies — then proposed_award_amount is null and approve is blocked until a super
-  // overrides the amount (or the disqualifier is settled and the standard amount returns).
-  const hasAssistance = recAmount != null || app.award_amount != null || app.proposed_award_amount != null
+  // The bursary is fixed by pathway type and always present (award.py) — so approve just needs a
+  // complete decision. hasAssistance stays in the gate for safety (award_amount or the by-type
+  // figure); it is effectively always true now.
+  const hasAssistance = app.award_amount != null || app.proposed_award_amount != null
   const approveReady = isApproveReady(decisionReady, hasAssistance)
   // Save (the commit) is enabled once a reversible outcome is chosen AND its preconditions hold:
   // Approve → all of approveReady (incl. amount); Decline → decisionReady (no amount needed).
@@ -2027,7 +2015,7 @@ export default function AdminScholarshipDetailPage() {
            coverage, PLUS the proposed bursary amount (moved out of the old Decision card). ── */}
       {(() => {
         const fe = app.funding_estimate
-        const showBursary = canWrite || app.award_amount != null
+        const showBursary = app.award_amount != null || app.proposed_award_amount != null
         if (!fe && !showBursary) return null
         return (
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
@@ -2053,69 +2041,23 @@ export default function AdminScholarshipDetailPage() {
             ) : (
               <p className="text-sm text-gray-500">{t('admin.scholarship.estimate.none')}</p>
             )) : null}
-            {/* Proposed bursary — moved out of the Decision card. Slider while deciding (super
-                may adjust; reviewer read-only), or the recorded amount once locked. Same
-                award_amount / disqualifier logic as before. */}
-            {decisionLocked ? (
-              app.award_amount != null && (
-                <div className="border-t pt-3 text-sm text-gray-700">
-                  {t('admin.scholarship.recordVerdict.assistanceLabel')}{' '}
-                  <span className="font-semibold text-gray-900">RM{Math.round(Number(app.award_amount)).toLocaleString()}</span>
+            {/* Standard bursary — FIXED by pathway type (RM2k · RM3k STPM · RM1k continuing STPM),
+                the same figure for everyone incl. a likely-declined student. No slider: the amount
+                is not a reviewer choice (award.py). Prefer the committed award_amount, else the
+                pathway figure. A confident disqualifier no longer zeroes it — it shows as a red
+                fact in Rate AI verification instead. */}
+            {(() => {
+              const amt = app.award_amount != null
+                ? Math.round(Number(app.award_amount))
+                : (app.proposed_award_amount != null ? Math.round(Number(app.proposed_award_amount)) : null)
+              if (amt == null) return null
+              return (
+                <div className="flex items-center justify-between border-t pt-3 text-sm">
+                  <span className="font-medium text-gray-600">{t('admin.scholarship.recordVerdict.assistanceLabel')}</span>
+                  <span className="font-semibold text-gray-900">RM{amt.toLocaleString()}</span>
                 </div>
               )
-            ) : canWrite ? (
-              <div className="border-t pt-3">
-                {(() => {
-                  const disq = app.award_disqualifier
-                  const override = recAmount
-                    ?? (app.award_amount != null ? Math.round(Number(app.award_amount)) : null)
-                  const proposed = app.proposed_award_amount != null ? Math.round(Number(app.proposed_award_amount)) : null
-                  const cur = override ?? proposed
-                  if (cur == null) {
-                    return (
-                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1">
-                        <p className="text-sm font-medium text-amber-900">{t('admin.scholarship.recordVerdict.noAmountTitle')}</p>
-                        {disq && <p className="text-xs text-amber-800">{t(`admin.scholarship.recordVerdict.noAmountReason_${disq}`)}</p>}
-                        <p className="text-xs text-amber-800">{t('admin.scholarship.recordVerdict.noAmountReviewer')}</p>
-                        {isSuper && (
-                          <div className="pt-2">
-                            <p className="mb-1 text-[11px] text-amber-700">{t('admin.scholarship.recordVerdict.noAmountOverride')}</p>
-                            <input type="range" min={1000} max={3000} step={500}
-                              value={2000} disabled={!!busy}
-                              onChange={(e) => doSetAwardAmount(Number(e.target.value))}
-                              className="w-full accent-primary-500" />
-                            <div className="flex justify-between text-[11px] text-gray-400">
-                              <span>RM1,000</span><span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  }
-                  return (
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        {t('admin.scholarship.recordVerdict.assistanceLabel')}
-                        <span className="ml-1 font-semibold text-gray-800">RM{cur.toLocaleString()}</span>
-                      </label>
-                      <input type="range" min={1000} max={3000} step={500}
-                        value={cur} disabled={!isSuper || !!busy}
-                        onChange={(e) => doSetAwardAmount(Number(e.target.value))}
-                        className={`w-full accent-primary-500 ${!isSuper ? 'opacity-60 cursor-not-allowed' : ''}`} />
-                      <div className="flex justify-between text-[11px] text-gray-400">
-                        <span>RM1,000</span><span>RM1,500</span><span>RM2,000</span><span>RM2,500</span><span>RM3,000</span>
-                      </div>
-                      {disq && override != null && (
-                        <p className="mt-0.5 text-[11px] text-amber-600">
-                          {t('admin.scholarship.recordVerdict.noAmountTitle')} · {t(`admin.scholarship.recordVerdict.noAmountReason_${disq}`)}
-                        </p>
-                      )}
-                      {!isSuper && <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.scholarship.recordVerdict.assistanceFixed')}</p>}
-                    </div>
-                  )
-                })()}
-              </div>
-            ) : null}
+            })()}
           </div>
         )
       })()}

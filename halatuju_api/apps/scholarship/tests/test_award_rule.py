@@ -94,11 +94,13 @@ class TestVerdictDisqualifier(TestCase):
         self.assertEqual(award.verdict_disqualifier(None), '')
         self.assertEqual(award.verdict_disqualifier([]), '')
 
-    def test_proposed_amount_is_none_on_disqualifier(self):
+    def test_proposed_amount_is_by_type_despite_disqualifier(self):
+        # 2026-07-04: the bursary is purely by-type — a confident disqualifier no longer
+        # zeroes it (it still shows as a red verdict fact for the officer to weigh).
         app = _app(self.cohort, pathway='stpm', suffix='dq1')
         v = [{'fact': 'pathway', 'status': 'review', 'evidence': [],
               'unresolved': [{'code': 'offer_not_official', 'params': {}}]}]
-        self.assertIsNone(award.proposed_award_amount(app, verdict=v))
+        self.assertEqual(award.proposed_award_amount(app, verdict=v), Decimal('3000'))
 
     def test_proposed_amount_keeps_value_on_uncertain(self):
         app = _app(self.cohort, pathway='stpm', suffix='dq2')
@@ -106,11 +108,11 @@ class TestVerdictDisqualifier(TestCase):
               'unresolved': [{'code': 'offer_letter_missing', 'params': {}}]}]
         self.assertEqual(award.proposed_award_amount(app, verdict=v), Decimal('3000'))
 
-    def test_proposed_amount_computes_verdict_when_omitted(self):
-        # A real not-genuine offer flows through build_verdict → no amount.
+    def test_proposed_amount_is_by_type_even_with_a_not_genuine_offer(self):
+        # A real not-genuine offer no longer affects the amount — matric → RM2,000 by type.
         app = _app(self.cohort, pathway='matric', suffix='dq3')
         _add_not_genuine_offer(app)
-        self.assertIsNone(award.proposed_award_amount(app))
+        self.assertEqual(award.proposed_award_amount(app), Decimal('2000'))
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -167,15 +169,15 @@ class TestAutoApplyOnVerdict(TestCase):
         app.refresh_from_db()
         self.assertEqual(app.award_amount, Decimal('2500'))
 
-    def test_approve_skips_amount_when_disqualified(self):
-        # A confident disqualifier (not-genuine offer) → approve persists NO amount;
-        # a super may override it afterwards via the set-award endpoint.
+    def test_approve_applies_by_type_amount_even_when_disqualified(self):
+        # 2026-07-04: the bursary is by-type regardless of a confident disqualifier — approve
+        # now persists the pathway amount (matric → RM2,000), not None.
         app = self._app_assigned('matric', 'dq')
         _add_not_genuine_offer(app)
         r = self._record(app, 'accept')
         self.assertEqual(r.status_code, 200, r.content)
         app.refresh_from_db()
-        self.assertIsNone(app.award_amount)
+        self.assertEqual(app.award_amount, Decimal('2000'))
 
     def test_serializer_exposes_proposed(self):
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
@@ -184,10 +186,12 @@ class TestAutoApplyOnVerdict(TestCase):
         self.assertEqual(data['proposed_award_amount'], '3000')
         self.assertIsNone(data['award_disqualifier'])
 
-    def test_serializer_disqualified_is_null_with_reason(self):
+    def test_serializer_disqualified_keeps_by_type_amount_and_flags_reason(self):
+        # The amount is by-type (matric → 2000) even when disqualified; award_disqualifier
+        # still names the marker so the cockpit can show it as a red fact.
         from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
         app = _app(self.cohort, pathway='matric', suffix='serdq')
         _add_not_genuine_offer(app)
         data = AdminApplicationDetailSerializer(app).data
-        self.assertIsNone(data['proposed_award_amount'])
+        self.assertEqual(data['proposed_award_amount'], '2000')
         self.assertEqual(data['award_disqualifier'], 'offer_not_official')

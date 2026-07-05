@@ -1,7 +1,7 @@
-"""Standardised assistance amount — the deterministic award-sizing rule.
+"""Standardised bursary amount — the deterministic award-sizing rule.
 
-Owner decision (2026-06-29): the assistance is no longer a free reviewer choice. It is
-fixed by the student's pre-U PATHWAY and only a SUPER admin may override it:
+Owner decision (2026-06-29): the bursary is not a free reviewer choice. It is FIXED by the
+student's pre-U PATHWAY:
 
     STPM (Form 6, ``chosen_pathway == 'stpm'``)            → RM3,000
       …but a CONTINUING STPM student (already started a year ago — their offer's
@@ -10,21 +10,18 @@ fixed by the student's pre-U PATHWAY and only a SUPER admin may override it:
     everything else (Matrikulasi / UA Diploma / Poly Diploma
     / Asasi / PISMP / university / unknown)                → RM2,000
 
-Owner decision (2026-06-29b): when the verification verdict carries a CONFIDENT
-DISQUALIFIER — the pathway is *not a genuine official public-university offer*
-(``offer_not_official``), or per-capita income is *at/above the B40 line*
-(``income_above_b40_line``) — the system proposes NO amount (``None``): the slider has
-no value and the cockpit shows the reason. This is a default, not a stop — a SUPER may
-override to a real amount via the set-award endpoint if the system has erred, and the
-rule self-corrects (the amount returns the moment the disqualifier clears). The merely
-*uncertain* codes (a missing offer, ``income_unverified_needs_interview``) are NOT
-disqualifiers: those keep the normal pathway amount and are settled at interview.
+Owner decision (2026-07-04, supersedes 2026-06-29b): the bursary is now PURELY a function of
+pathway TYPE — the same figure ("Standard bursary") is shown and committed for every student,
+including one the verdict flags for likely decline. A confident disqualifier
+(``offer_not_official`` / ``income_above_b40_line``) NO LONGER zeroes the amount (the old
+"no amount" state is gone, along with the super override slider). The disqualifier still
+surfaces as a red verdict fact so the officer weighs it in the Recommend/Decline decision.
 
 The amount is applied automatically when a reviewer records an APPROVE verdict (see
-``views_admin.AdminRecordVerdictView``); a super can adjust it via the (super-only)
-set-award endpoint, constrained to ``ALLOWED_AMOUNTS``. This module is the single source
-of truth for the rule + the allowed override values, so the cockpit slider and the backend
-can't drift.
+``views_admin.AdminRecordVerdictView``). ``verdict_disqualifier`` / ``CONFIDENT_DISQUALIFIERS``
+remain for the ``award_disqualifier`` cockpit flag; ``ALLOWED_AMOUNTS`` / ``is_allowed_amount``
+remain for the still-present (now UI-less) super set-award endpoint. This module is the single
+source of truth for the rule so the cockpit and the backend can't drift.
 """
 from decimal import Decimal
 
@@ -65,16 +62,16 @@ def verdict_disqualifier(verdict):
 
 
 def proposed_award_amount(application, verdict=None):
-    """The standardised assistance for this application — RM3,000 for STPM/Form 6,
-    RM2,000 otherwise (incl. a blank/unknown pathway) — UNLESS the verdict carries a
-    confident disqualifier, in which case it returns ``None`` (no amount). Pass the
-    already-computed ``verdict`` (a ``build_verdict`` list) to avoid recomputing it;
-    omit it and the rule computes the verdict itself."""
-    if verdict is None:
-        from .verdict_engine import build_verdict
-        verdict = build_verdict(application)
-    if verdict_disqualifier(verdict):
-        return None
+    """The standardised bursary for this application, fixed by the pre-U PATHWAY:
+    RM3,000 for STPM/Form 6 (RM1,000 for a CONTINUING STPM student with one year left),
+    RM2,000 otherwise (incl. a blank/unknown pathway).
+
+    Owner decision 2026-07-04 (supersedes 2026-06-29b): the bursary is now PURELY a
+    function of pathway type — the same figure is shown and committed for every student,
+    including one the verdict flags for likely decline. A confident disqualifier
+    (``offer_not_official`` / ``income_above_b40_line``) NO LONGER zeroes the amount; it
+    still surfaces as a red verdict fact for the officer to weigh in Recommend/Decline.
+    ``verdict`` is accepted for backward compatibility and ignored."""
     pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
     if pathway == 'stpm':
         return _STPM_CONTINUING_AMOUNT if _stpm_continuing(application) else _STPM_AMOUNT

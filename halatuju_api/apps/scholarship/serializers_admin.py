@@ -290,10 +290,11 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     bursary_agreement = serializers.SerializerMethodField()
     # Post-award S4: the money-out tranche ledger (admin-facing; no sponsor identity).
     disbursements = serializers.SerializerMethodField()
-    # Standardised assistance (2026-06-29): the pathway-derived proposed amount the cockpit
-    # shows + auto-applies on approve. award_amount is the persisted value (super-overridable).
-    # proposed_award_amount is null when the verdict confidently disqualifies the application
-    # (see award.py); award_disqualifier then names which marker fired so the slider can show it.
+    # Standardised bursary (2026-06-29; by-type-only 2026-07-04): the pathway-derived amount the
+    # cockpit shows + auto-applies on approve — always the STANDARD figure for the pathway type
+    # (RM2k/3k/1k), never null now. award_amount is the persisted value. award_disqualifier still
+    # names any confident marker (offer_not_official / income_above_b40_line) so the cockpit can
+    # show it as a red fact — it no longer zeroes the amount (see award.py).
     proposed_award_amount = serializers.SerializerMethodField()
     award_disqualifier = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
