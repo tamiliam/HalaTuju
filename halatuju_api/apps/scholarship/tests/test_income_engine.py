@@ -1341,19 +1341,25 @@ class TestSgdSalaryConversion(SimpleTestCase):
     from django.test import override_settings
 
     @override_settings(SGD_TO_MYR_RATE=3.15)
-    def test_sgd_converted_only_for_in_review(self):
+    def test_sgd_detected_structurally_and_converted_only_in_review(self):
         from apps.scholarship.income_engine import _to_myr
-        sgd = {'employer': 'NTUC FairPrice Co-operative Limited'}         # inferred SGD (no currency field)
-        myr = {'employer': 'Kilang ABC Sdn Bhd'}
+        pte = {'employer': 'Eezee Pte Ltd'}                    # STRUCTURAL Singapore suffix → SGD
         review = SimpleNamespace(status='profile_complete')
         decided = SimpleNamespace(status='recommended')
-        self.assertAlmostEqual(_to_myr(3114.32, sgd, review), 3114.32 * 3.15, places=2)  # convert
-        self.assertEqual(_to_myr(3114.32, sgd, decided), 3114.32)          # grandfathered (decided)
-        self.assertEqual(_to_myr(2000.0, myr, review), 2000.0)             # MYR employer → unchanged
-        # the EMPLOYER anchors it and OVERRIDES a currency guess — a Pte Ltd payslip converts even if
-        # Gemini guessed 'MYR', so a re-run that misreads the currency can't flip the verdict back.
-        self.assertAlmostEqual(_to_myr(2000.0, {'employer': 'X Pte Ltd', 'currency': 'MYR'}, review),
+        # a Pte Ltd employer converts (in review) and is grandfathered once decided
+        self.assertAlmostEqual(_to_myr(3114.32, pte, review), 3114.32 * 3.15, places=2)
+        self.assertEqual(_to_myr(3114.32, pte, decided), 3114.32)
+        # spacing / dot variants of the suffix still match ("PTE.LTD", "Pte. Ltd.")
+        self.assertAlmostEqual(_to_myr(2000.0, {'employer': 'SOSS ASIA PTE.LTD'}, review),
                                2000.0 * 3.15, places=2)
-        # currency is the fallback when the employer isn't recognisably Singaporean
-        self.assertAlmostEqual(_to_myr(2000.0, {'currency': 'SGD'}, review), 2000.0 * 3.15, places=2)
-        self.assertIsNone(_to_myr(None, sgd, review))                      # no amount → no-op
+        self.assertAlmostEqual(_to_myr(2000.0, {'employer': 'The Valspar (Singapore) Corp Pte. Ltd.'},
+                               review), 2000.0 * 3.15, places=2)
+        # a non-Pte-Ltd Singapore issuer (co-operative / statutory board) is caught via currency=SGD
+        self.assertAlmostEqual(_to_myr(3114.32, {'employer': 'NTUC FairPrice Co-operative Limited',
+                               'currency': 'SGD'}, review), 3114.32 * 3.15, places=2)
+        # a company NAME alone (no Pte Ltd, no SGD currency) is NOT enough — no hard-coded names
+        self.assertEqual(_to_myr(3114.32, {'employer': 'NTUC FairPrice Co-operative Limited'}, review),
+                         3114.32)
+        # a Malaysian Sdn Bhd is never converted
+        self.assertEqual(_to_myr(2000.0, {'employer': 'Kilang ABC Sdn Bhd'}, review), 2000.0)
+        self.assertIsNone(_to_myr(None, pte, review))          # no amount → no-op

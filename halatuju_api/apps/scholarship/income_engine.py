@@ -899,23 +899,27 @@ def has_income_support_doc(application, member):
 # configured rate — but ONLY while the application is still IN REVIEW; a case already decided
 # (recommended and beyond) keeps its as-recorded basis, so the correction never disturbs a made
 # decision (owner: "leave out #75").
-_SGD_EMPLOYER_MARKERS = ('pte ltd', 'pte. ltd', 'pte.ltd', 'private limited', 'singapore',
-                         "s'pore", 'ntuc', 'fairprice')
 _INCOME_CONVERT_STATUSES = frozenset({'submitted', 'shortlisted', 'profile_complete',
                                       'interviewing', 'interviewed'})
+# The STRUCTURAL Singapore-company suffix: every Singapore company is a "Pte Ltd" / "Private
+# Limited" (a Malaysian company is "Sdn Bhd"). This is the systemic anchor — NOT any particular
+# company name — so ANY Singapore employer's payslip is detected. Dots/spacing normalised.
+_SGD_EMPLOYER_RE = re.compile(r'\bpte\s*ltd\b|\bprivate\s+limited\b')
 
 
 def _slip_is_sgd(fields):
-    """True when a salary slip's amounts are in Singapore dollars. The EMPLOYER is the primary anchor
-    (a 'Pte Ltd' / NTUC / FairPrice employer is definitively Singaporean, and its pay is in S$) — it
-    OVERRIDES the ``currency`` field, because Gemini often can't tell S$ from RM without a symbol and
-    may guess 'MYR', which would otherwise flip the verdict on a re-run. The read currency is only a
-    fallback when the employer isn't recognisably Singaporean."""
-    emp = (fields.get('employer') or '').lower()
-    if any(m in emp for m in _SGD_EMPLOYER_MARKERS):
+    """True when a salary slip's amounts are in Singapore dollars, from two STRUCTURAL signals (no
+    hard-coded company names):
+      * the employer is a Singapore company — 'Pte Ltd' / 'Private Limited' (Malaysian = 'Sdn Bhd'),
+      * OR the read ``currency`` is SGD / S$ — which the extractor sets from any Singapore tell-tale
+        (an S$ sign, CPF / SDL deductions, a Singapore address / FIN), so a non-'Pte Ltd' issuer such
+        as a statutory board or co-operative is still caught.
+    The employer suffix is deterministic and stable across re-runs; the currency covers the rest."""
+    emp = re.sub(r'[.\s]+', ' ', (fields.get('employer') or '').lower())
+    if _SGD_EMPLOYER_RE.search(emp):
         return True
     cur = (fields.get('currency') or '').strip().upper()
-    return 'SGD' in cur or cur in ('S$', 'S')
+    return 'SGD' in cur or 'S$' in cur
 
 
 def sgd_to_myr_rate():
