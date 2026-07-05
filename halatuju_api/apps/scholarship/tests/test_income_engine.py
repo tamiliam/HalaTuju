@@ -1333,3 +1333,24 @@ class TestIcNumberChain(SimpleTestCase):
         self.assertEqual(chk['name_status'], 'match')
         self.assertFalse(chk['wrong_card'])            # the right card -> no wrong-card note
         self.assertEqual(doc_match_verdict(ic), 'ok')
+
+
+class TestSgdSalaryConversion(SimpleTestCase):
+    """A Singapore (SGD) payslip is converted to MYR for the B40 means-test — but only while the
+    application is still in review; a decided case keeps its as-recorded figure."""
+    from django.test import override_settings
+
+    @override_settings(SGD_TO_MYR_RATE=3.15)
+    def test_sgd_converted_only_for_in_review(self):
+        from apps.scholarship.income_engine import _to_myr
+        sgd = {'employer': 'NTUC FairPrice Co-operative Limited'}         # inferred SGD (no currency field)
+        myr = {'employer': 'Kilang ABC Sdn Bhd'}
+        review = SimpleNamespace(status='profile_complete')
+        decided = SimpleNamespace(status='recommended')
+        self.assertAlmostEqual(_to_myr(3114.32, sgd, review), 3114.32 * 3.15, places=2)  # convert
+        self.assertEqual(_to_myr(3114.32, sgd, decided), 3114.32)          # grandfathered (decided)
+        self.assertEqual(_to_myr(2000.0, myr, review), 2000.0)             # MYR employer → unchanged
+        # explicit currency field wins over the employer inference
+        self.assertEqual(_to_myr(2000.0, {'employer': 'X Pte Ltd', 'currency': 'MYR'}, review), 2000.0)
+        self.assertAlmostEqual(_to_myr(2000.0, {'currency': 'SGD'}, review), 2000.0 * 3.15, places=2)
+        self.assertIsNone(_to_myr(None, sgd, review))                      # no amount → no-op

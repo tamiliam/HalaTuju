@@ -1083,7 +1083,7 @@ _FIELD_SCHEMAS = {
     # longer proves B40. Covers both the MOF letter and the MySTR portal screenshot.
     'str': _doc_schema({'recipient_name': _STR, 'recipient_nric': _STR, 'status': _STR,
                         'year': _STR, 'amount': _STR, 'source_type': _STR_SOURCE}),
-    'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
+    'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR, 'currency': _STR,
                                 'gross_income': _STR, 'net_income': _STR,
                                 'gross_income_ytd': _STR, 'period': _STR}),
     'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR, 'employer_number': _STR,
@@ -1244,6 +1244,9 @@ _DOC_HINTS = {
                     'is UNLABELLED; keep the 12 digits. Do NOT use the employee / staff / payroll '
                     'number (usually shorter and often prefixed with a letter, e.g. "F01677") as the '
                     'IC. "employer" = the company (leave empty for a benefit/pension statement); '
+                    '"currency" = the currency of the pay amounts — "SGD" if Singapore dollars (an '
+                    '"S$" sign, or a Singaporean employer such as one ending "Pte Ltd", or NTUC / '
+                    'FairPrice), else "MYR" for Malaysian Ringgit (RM); '
                     '"gross_income" = the gross/basic monthly pay — for a benefit/pension statement, '
                     'the regular MONTHLY benefit amount (e.g. "Amaun Bayaran" RM687.50); "net_income" '
                     '= the net/take-home pay; "gross_income_ytd" = the YEAR-TO-DATE / cumulative '

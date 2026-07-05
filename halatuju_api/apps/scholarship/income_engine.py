@@ -893,6 +893,48 @@ def has_income_support_doc(application, member):
     return False
 
 
+# Foreign (Singapore) salary → MYR for the B40 means-test (owner 2026-07-05). A Malaysian working
+# in Singapore submits an S$ payslip; counting the S$ figure as ringgit understates income ~3× and
+# produces a FALSE B40 (e.g. #105: S$3,114 read as "RM3,114"). Convert an SGD slip to MYR at the
+# configured rate — but ONLY while the application is still IN REVIEW; a case already decided
+# (recommended and beyond) keeps its as-recorded basis, so the correction never disturbs a made
+# decision (owner: "leave out #75").
+_SGD_EMPLOYER_MARKERS = ('pte ltd', 'pte. ltd', 'pte.ltd', 'private limited', 'singapore',
+                         "s'pore", 'ntuc', 'fairprice')
+_INCOME_CONVERT_STATUSES = frozenset({'submitted', 'shortlisted', 'profile_complete',
+                                      'interviewing', 'interviewed'})
+
+
+def _slip_is_sgd(fields):
+    """True when a salary slip's amounts are in Singapore dollars — from the read ``currency`` field,
+    else inferred from a Singaporean employer, so slips read before the currency field still convert."""
+    cur = (fields.get('currency') or '').strip().upper()
+    if 'SGD' in cur or cur in ('S$', 'S'):
+        return True
+    if cur in ('MYR', 'RM', 'RINGGIT'):
+        return False
+    emp = (fields.get('employer') or '').lower()
+    return any(m in emp for m in _SGD_EMPLOYER_MARKERS)
+
+
+def sgd_to_myr_rate():
+    from django.conf import settings
+    try:
+        return float(getattr(settings, 'SGD_TO_MYR_RATE', 3.15) or 3.15)
+    except (TypeError, ValueError):
+        return 3.15
+
+
+def _to_myr(amt, fields, application):
+    """A foreign (SGD) salary expressed in MYR for the means-test, at the configured rate — but only
+    for an application still IN REVIEW. A decided case (recommended+) keeps its as-recorded figure."""
+    if amt is None or not _slip_is_sgd(fields):
+        return amt
+    if (getattr(application, 'status', '') or '') not in _INCOME_CONVERT_STATUSES:
+        return amt
+    return amt * sgd_to_myr_rate()
+
+
 def earner_monthly_income(application, member):
     """A working member's estimated MONTHLY income from their documents + the source.
     The salary slip's gross is primary; failing that, the EPF statement (the statutory-rate
@@ -907,9 +949,10 @@ def earner_monthly_income(application, member):
     so per-capita stays 'not all known' and the headroom band falls to Unsure until evidence
     lands (never inflates income on an unbacked self-report)."""
     for slip in _cluster_docs(application, member, 'salary_slip'):
-        amt = _salary_monthly_amount(_doc_fields(slip))
+        f = _doc_fields(slip)
+        amt = _salary_monthly_amount(f)
         if amt:
-            return amt, 'salary'
+            return _to_myr(amt, f, application), 'salary'   # SGD → MYR when the slip is Singaporean
     for epf in _cluster_docs(application, member, 'epf'):
         sal = _epf_monthly_salary(_doc_fields(epf))
         if sal is not None:

@@ -126,6 +126,11 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 # and every admin-notify email (sponsor interest, profile-complete, Vision-outage
 # alert) no-op'd. Reading it here makes those actually send.
 ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', '')
+# S$ → RM rate for the B40 means-test: a Singapore-employed parent's payslip is in Singapore
+# dollars, so income_engine converts it to ringgit before the B40 band. Env-overridable so the
+# rate can be updated without a deploy as FX drifts (spot ~3.15 at 2026-07). Applies only to
+# applications still in review — a decided case keeps its as-recorded figure.
+SGD_TO_MYR_RATE = float(os.environ.get('SGD_TO_MYR_RATE', '3.15'))
 # Shared secret guarding the internal cron endpoint (Cloud Scheduler → the running
 # api service runs scheduled management commands without a separate Cloud Run Job).
 CRON_SECRET = os.environ.get('CRON_SECRET', '')
