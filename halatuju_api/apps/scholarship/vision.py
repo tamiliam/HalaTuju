@@ -1549,17 +1549,23 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
                                         'specialis', 'specializ'))
         return [w for w in warnings if not _is_optional_offer_noise(w)]
     if doc_type == 'semester_result':
-        # CGPA is OPTIONAL — a single-semester slip (e.g. STPM Semester 1) shows only that
-        # semester's grades with no cumulative figure. Don't flag its absence (grey chip, not a
-        # warning). Real problems (wrong document, unreadable) are kept.
-        def _is_cgpa_noise(w) -> bool:
+        # Only Name / NRIC / CGPA matter on a semester slip (owner): Name·IC drive the red/green
+        # chip, CGPA is optional (a single-semester slip like STPM Sem 1 has no cumulative figure).
+        # So a "missing FIELD" note — CGPA, institution, programme, semester, and even name/NRIC
+        # (whose absence already reds the chip) — is noise. Keep only SUBSTANTIVE warnings (a wrong
+        # document / an unreadable slip), which carry no field-name keyword.
+        def _is_semester_field_noise(w) -> bool:
             s = (w or '').lower()
-            if not any(k in s for k in ('missing', 'not found', 'not present', 'not available',
-                                        'no ', 'absent', 'semester-only', 'semester only')):
+            if not any(k in s for k in ('missing', 'not found', 'not present', 'not printed',
+                                        'not shown', 'not specified', 'not stated', 'not explicitly',
+                                        'not clearly', 'not available', 'unclear', 'absent',
+                                        'unavailable', 'semester-only', 'semester only', 'no ')):
                 return False
-            return any(k in s for k in ('cgpa', 'pngk', 'hpnm', 'kumulatif', 'cumulative',
-                                        'semester-only', 'semester only'))
-        return [w for w in warnings if not _is_cgpa_noise(w)]
+            return any(k in s for k in ('name', 'nric', 'kad pengenalan', 'ic ', 'cgpa', 'pngk',
+                                        'hpnm', 'gpa', 'kumulatif', 'cumulative', 'semester',
+                                        'institution', 'college', 'university', 'programme',
+                                        'program', 'course'))
+        return [w for w in warnings if not _is_semester_field_noise(w)]
     return warnings
 
 

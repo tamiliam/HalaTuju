@@ -281,6 +281,7 @@ class TestBirthCertificateWiring(SimpleTestCase):
         self.assertEqual(
             _drop_expected_warnings('semester_result', [
                 'CGPA not found, this appears to be a semester-only result.',
+                'Institution name is missing or unclear.',   # only Name/NRIC/CGPA matter → noise
                 'Document is not a results slip.']),
             ['Document is not a results slip.'])
         # offer_letter: supplementary data-point fields are optional — drop their "missing" notes,
