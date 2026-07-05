@@ -1748,6 +1748,14 @@ export interface AcademicCheck {
   slip_count: number
 }
 
+export interface SemesterCheck {
+  name: string
+  nric: string
+  cgpa: string
+  name_status: 'match' | 'partial' | 'mismatch' | 'no_ref'
+  nric_status: 'match' | 'mismatch' | 'no_ref'
+}
+
 export interface PathwayCheck {
   name: SlipCheckStatus
   ic: SlipCheckStatus

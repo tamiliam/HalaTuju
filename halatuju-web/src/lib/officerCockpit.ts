@@ -484,9 +484,22 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
       { key: 'ward', status: factStatus(c.ward_status) },
     ]
   }
-  if (dt === 'school_leaving_cert' || dt === 'semester_result') {
-    // V4: soft academic-completeness docs. The read is the officer signal (a blank is held on
-    // upload, so a stored one that read is 'Evidence' verified); the officer opens it for the CGPA.
+  if (dt === 'semester_result') {
+    // Owner 2026-07-05: read a semester slip for exactly three things — Name + IC No (matched
+    // against the student: green on a match, red otherwise incl. not-found) and CGPA (green when a
+    // cumulative figure is read, GREY when it's a semester-only slip — never red, never flagged).
+    const c = doc.semester_check
+    if (!c) return []   // not read yet → the row shows "Unread"
+    const idMatch = (s: string): FactStatus => (s === 'match' || s === 'partial' ? 'verified' : 'not')
+    return [
+      { key: 'name', status: idMatch(c.name_status) },
+      { key: 'ic_no', status: idMatch(c.nric_status) },
+      { key: 'cgpa', status: (c.cgpa || '').trim() ? 'verified' : 'unknown' },
+    ]
+  }
+  if (dt === 'school_leaving_cert') {
+    // Soft academic-completeness doc. The read is the officer signal (a blank is held on upload,
+    // so a stored one that read is 'Evidence' verified); the officer opens it for the details.
     const vf = doc.vision_fields as { student_verdict?: string } | null | undefined
     if (!vf?.student_verdict) return []
     return [{ key: 'evidence', status: vf.student_verdict === 'ok' ? 'verified' : 'not' }]

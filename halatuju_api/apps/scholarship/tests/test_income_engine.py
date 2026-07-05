@@ -276,6 +276,13 @@ class TestBirthCertificateWiring(SimpleTestCase):
                                     'Pay period (month/year) is missing; only a specific pay date is provided.'])
         # An unrelated doc type is untouched.
         self.assertEqual(_drop_expected_warnings('epf', ['nric is missing']), ['nric is missing'])
+        # semester_result: CGPA is optional (a single-semester slip has none) — drop that note, keep
+        # a real problem.
+        self.assertEqual(
+            _drop_expected_warnings('semester_result', [
+                'CGPA not found, this appears to be a semester-only result.',
+                'Document is not a results slip.']),
+            ['Document is not a results slip.'])
 
     def test_birth_certificate_is_in_the_upload_pipeline(self):
         # The schema existing is NOT enough — the upload handler only OCRs + field-extracts

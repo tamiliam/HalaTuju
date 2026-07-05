@@ -631,6 +631,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     guardianship_check = serializers.SerializerMethodField()
     # V1: the declared-income supporting doc — whether it READ (officer chip).
     support_doc_check = serializers.SerializerMethodField()
+    # Academic: a post-SPM semester-result slip — name/NRIC (vs the student) + CGPA. Null otherwise.
+    semester_check = serializers.SerializerMethodField()
     # Officer box: the household member this income doc belongs to — its stored tag, or (for a
     # blank-tagged doc) resolved by the name on the doc against the family roster. Display-only.
     resolved_member = serializers.SerializerMethodField()
@@ -665,6 +667,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'bc_check', 'guardianship_check',
             # V1: declared-income supporting doc read-status (null unless income_support_doc).
             'support_doc_check',
+            # Academic: semester-result name/NRIC/CGPA (null unless semester_result).
+            'semester_check',
             # Officer box: resolved household member (stored tag or name-resolved). Display-only.
             'resolved_member',
             # Phase 2 version history: when this doc was replaced (null = live) + which
@@ -797,6 +801,13 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return None
         from .income_engine import student_guardianship_check
         return student_guardianship_check(obj)
+
+    def get_semester_check(self, obj):
+        """{name, nric, cgpa, name_status, nric_status} for a semester-result slip — null otherwise."""
+        if obj.doc_type != 'semester_result':
+            return None
+        from .academic_engine import semester_check
+        return semester_check(obj)
 
     def get_support_doc_check(self, obj):
         """{name/amount/issuer/kind + read_status} for a declared-income supporting doc.

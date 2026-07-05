@@ -553,3 +553,30 @@ def student_slip_check(doc) -> dict:
         'missing': cmp['missing'], 'mismatched': cmp['mismatched'],
         'uncertain': cmp['uncertain'], 'slip_count': cmp['slip_count'],
     }
+
+
+def semester_check(doc) -> dict:
+    """A post-SPM SEMESTER-result slip, read for just three things (owner 2026-07-05): the
+    student's NAME + NRIC (cross-checked against the student's own profile) and the CGPA.
+    Returns ``{name, nric, cgpa, name_status, nric_status}`` — name_status 'match'/'partial'/
+    'mismatch'/'no_ref', nric_status 'match'/'mismatch'/'no_ref'. None until the slip has been
+    read (the row then shows 'Unread'). CGPA is a plain value (optional — a single-semester slip
+    has none). Reads only the student's own document + profile."""
+    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
+    if not vf.get('student_verdict'):
+        return None
+    from . import vision
+    f = vf.get('fields', {}) if isinstance(vf.get('fields'), dict) else {}
+    name = (f.get('name') or '').strip()
+    nric = (f.get('nric') or '').strip()
+    cgpa = (f.get('cgpa') or '').strip()
+    profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    sname = (getattr(profile, 'name', '') or '').strip()
+    snric = (getattr(profile, 'nric', '') or '').strip()
+    name_status = vision.name_match(name, sname) if (name and sname) else 'no_ref'
+    if not nric or not snric:
+        nric_status = 'no_ref'
+    else:
+        nric_status = 'match' if vision.nric_match(nric, snric) else 'mismatch'
+    return {'name': name, 'nric': nric, 'cgpa': cgpa,
+            'name_status': name_status, 'nric_status': nric_status}

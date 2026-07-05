@@ -1146,8 +1146,8 @@ _FIELD_SCHEMAS = {
     'school_leaving_cert': _doc_schema({'name': _STR, 'school': _STR, 'year': _STR}),
     # V4 — a current-semester result slip for a continuing student: institution, programme, the
     # semester label, and the CGPA (the officer's current-performance read).
-    'semester_result': _doc_schema({'institution': _STR, 'programme': _STR,
-                                    'semester': _STR, 'cgpa': _STR}),
+    'semester_result': _doc_schema({'name': _STR, 'nric': _STR, 'institution': _STR,
+                                    'programme': _STR, 'semester': _STR, 'cgpa': _STR}),
 }
 
 # Which extracted field holds the person's name (for the deterministic verdict).
@@ -1330,6 +1330,18 @@ _DOC_HINTS = {
                            'shown; "issuer" = who issued it (employer / bank / penghulu / JKKK); '
                            '"kind" = one of "employer_letter", "bank_statement", "community_letter", '
                            'else "other". Leave a field empty if it is not present or not legible.'),
+    'semester_result': (' This is a post-SPM SEMESTER result — an STPM MPM slip ("Keputusan '
+                        'Peperiksaan Semester"), a Matriculation/Politeknik/university semester '
+                        'result slip, or a student-portal results screenshot. Return: "name" = the '
+                        'STUDENT\'s full name ("Nama") as printed; "nric" = the student\'s IC number '
+                        '("No. Kad Pengenalan", keep all 12 digits); "institution" = the '
+                        'college/university/board; "programme" = the course/programme; "semester" = '
+                        'the semester shown; "cgpa" = the CUMULATIVE grade point ONLY — labelled '
+                        '"PNGK" / "HPNM" / "CGPA" / "Himpunan PNGK" / "Kumulatif" (the running '
+                        'average across semesters). If the slip shows ONLY a single semester\'s '
+                        'grades with NO cumulative figure (e.g. an STPM Semester 1 slip), LEAVE '
+                        '"cgpa" EMPTY and add NO warning about it — a semester-only slip has no CGPA. '
+                        'Do NOT use a single-semester GPA ("PNM" / "GPA Semester") as the cgpa.'),
 }
 
 
@@ -1519,6 +1531,18 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
                                        'year to date', 'year-to-date', 'year to-date'))
             return nric or ytd
         return [w for w in warnings if not _is_optional_salary_noise(w)]
+    if doc_type == 'semester_result':
+        # CGPA is OPTIONAL — a single-semester slip (e.g. STPM Semester 1) shows only that
+        # semester's grades with no cumulative figure. Don't flag its absence (grey chip, not a
+        # warning). Real problems (wrong document, unreadable) are kept.
+        def _is_cgpa_noise(w) -> bool:
+            s = (w or '').lower()
+            if not any(k in s for k in ('missing', 'not found', 'not present', 'not available',
+                                        'no ', 'absent', 'semester-only', 'semester only')):
+                return False
+            return any(k in s for k in ('cgpa', 'pngk', 'hpnm', 'kumulatif', 'cumulative',
+                                        'semester-only', 'semester only'))
+        return [w for w in warnings if not _is_cgpa_noise(w)]
     return warnings
 
 

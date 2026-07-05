@@ -314,6 +314,21 @@ describe('documentFacts', () => {
     expect(stat('unreadable')).toBe('partial')   // 🟡 cropped — couldn't read the status line
   })
 
+  it('semester result → Name + IC No (green on match, red otherwise) + CGPA (green found / grey none)', () => {
+    // matched name + IC + a cumulative CGPA → all green
+    expect(documentFacts(doc({ doc_type: 'semester_result',
+      semester_check: { name: 'X', nric: 'Y', cgpa: '3.19', name_status: 'match', nric_status: 'match' } })))
+      .toEqual([{ key: 'name', status: 'verified' }, { key: 'ic_no', status: 'verified' },
+                { key: 'cgpa', status: 'verified' }])
+    // name mismatch + no NRIC on slip + semester-only (no CGPA) → name red, IC red, CGPA grey (never flagged)
+    expect(documentFacts(doc({ doc_type: 'semester_result',
+      semester_check: { name: 'X', nric: '', cgpa: '', name_status: 'mismatch', nric_status: 'no_ref' } })))
+      .toEqual([{ key: 'name', status: 'not' }, { key: 'ic_no', status: 'not' },
+                { key: 'cgpa', status: 'unknown' }])
+    // unread → no chips (row shows "Unread")
+    expect(documentFacts(doc({ doc_type: 'semester_result' }))).toEqual([])
+  })
+
   it('birth certificate → Child, Mother, Father (carries the mother relationship)', () => {
     expect(documentFacts(doc({ doc_type: 'birth_certificate', bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status: 'match', father_name: '', father_status: 'match', bc_number: '' } })).map((f) => f.key))
       .toEqual(['child', 'mother', 'father'])

@@ -589,6 +589,37 @@ class TestDocumentApi(TestCase):
                                          household_member='father', storage_path='z')
         self.assertEqual(dedupe_income_proof(self.app_a, 'father', 'parent_ic'), [])
 
+    def test_semester_check_name_nric_cgpa(self):
+        """A semester-result slip reads Name + NRIC (matched vs the student) + CGPA."""
+        from apps.scholarship.academic_engine import semester_check
+        self.profile_a.name = 'PRIYA A/P KUMAR'
+        self.profile_a.save(update_fields=['name'])
+        doc = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='semester_result', storage_path='sem-x')
+        doc.vision_fields = {'student_verdict': 'ok', 'fields': {
+            'name': 'PRIYA A/P KUMAR', 'nric': '030101-14-1234', 'cgpa': '3.50'}}
+        doc.save(update_fields=['vision_fields'])
+        c = semester_check(doc)
+        self.assertEqual(c['name_status'], 'match')
+        self.assertEqual(c['nric_status'], 'match')
+        self.assertEqual(c['cgpa'], '3.50')
+
+        # a semester-only slip: different name, no NRIC, no cumulative CGPA
+        doc2 = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='semester_result', storage_path='sem-y')
+        doc2.vision_fields = {'student_verdict': 'ok', 'fields': {
+            'name': 'SOMEONE ELSE BINTI OTHER', 'nric': '', 'cgpa': ''}}
+        doc2.save(update_fields=['vision_fields'])
+        c2 = semester_check(doc2)
+        self.assertEqual(c2['name_status'], 'mismatch')
+        self.assertEqual(c2['nric_status'], 'no_ref')     # no NRIC on the slip → grey/red in FE
+        self.assertEqual(c2['cgpa'], '')
+
+        # unread slip → None (the row shows "Unread", not all-red)
+        doc3 = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='semester_result', storage_path='sem-z')
+        self.assertIsNone(semester_check(doc3))
+
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_delete_sweeps_storage(self, mock_storage_delete):
         """Explicit DELETE on a doc also sweeps its Storage blob."""
