@@ -550,6 +550,31 @@ class TestDocumentApi(TestCase):
         self.assertEqual(live.count(), 1)
         self.assertEqual(live.first().id, genuine.id)
 
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    def test_dedupe_epf_keeps_genuine_over_wrong_type(self, _dl):
+        """EPF dedups too (#80): a genuine EPF statement is kept; a payslip-misfiled-as-EPF
+        (not_epf) drops to Old/Replaced, regardless of upload order."""
+        from apps.scholarship.income_engine import dedupe_income_proof
+        wrong = ApplicantDocument.objects.create(              # newer id, but wrong type
+            application=self.app_a, doc_type='epf', household_member='mother',
+            storage_path=f'{self.app_a.id}/epf/wrong')
+        wrong.vision_fields = {'fields': {'statement_date': 'Jun 2026'},
+                               'authenticity': {'status': 'not_epf'}}
+        wrong.save(update_fields=['vision_fields'])
+        genuine = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='epf', household_member='mother', request_code='officer_2',
+            storage_path=f'{self.app_a.id}/epf/genuine')
+        genuine.vision_fields = {'fields': {'statement_date': 'Jan 2026'},
+                                 'authenticity': {'status': 'genuine'}}
+        genuine.save(update_fields=['vision_fields'])
+
+        superseded = dedupe_income_proof(self.app_a, 'mother', 'epf')
+        self.assertEqual(superseded, [wrong.id])               # the wrong-type EPF drops
+        live = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='epf', superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)
+        self.assertEqual(live.first().id, genuine.id)          # genuine kept despite older date/id
+
     def test_dedupe_noop_for_single_or_non_dedup_type(self):
         from apps.scholarship.income_engine import dedupe_income_proof
         one = ApplicantDocument.objects.create(

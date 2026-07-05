@@ -1770,9 +1770,10 @@ def stale_income_proof(application, today=None):
 # re-request lands it in its own slot, so several LIVE copies of one person's proof pile up in the
 # cockpit. We only need ONE — the most recent. This collapses a person's copies to a single live
 # doc (the newest) and supersedes the rest into the Old / Replaced history. Recency:
-#   salary_slip → the pay period (newest month wins); str → the shown year (the dated one wins).
-# A copy whose date can't be read never outranks a dated one; ties fall to the latest upload (id).
-_DEDUP_DOC_TYPES = ('salary_slip', 'str')
+#   salary_slip → the pay period (newest month wins); str → the shown year; epf → the statement
+#   date (newest wins). A copy whose date can't be read never outranks a dated one; a non-genuine
+#   copy never outranks a genuine one; ties fall to the latest upload (id).
+_DEDUP_DOC_TYPES = ('salary_slip', 'str', 'epf')
 
 
 def _doc_genuine_rank(doc):
@@ -1789,11 +1790,18 @@ def _doc_genuine_rank(doc):
 
 def _income_doc_recency(doc):
     """A sortable recency value for a de-dupable income-proof doc (higher = keep), or None when no
-    date can be read. salary_slip → (year, month) pay period; str → (year, 0) of the shown year."""
+    date can be read. salary_slip → (year, month) pay period; str → (year, 0) of the shown year;
+    epf → (year, month) of the statement date (year-only if that's all that reads)."""
     dt = getattr(doc, 'doc_type', '')
     f = _doc_fields(doc)
     if dt == 'salary_slip':
         return _parse_billing_month(f.get('period'))          # (y, m) or None
+    if dt == 'epf':
+        ym = _parse_billing_month(f.get('statement_date'))
+        if ym:
+            return ym
+        m = re.search(r'(20\d{2})', str(f.get('year') or f.get('statement_date') or ''))
+        return (int(m.group(1)), 0) if m else None
     if dt == 'str':
         m = re.search(r'(20\d{2})', str(f.get('year') or ''))
         return (int(m.group(1)), 0) if m else None
