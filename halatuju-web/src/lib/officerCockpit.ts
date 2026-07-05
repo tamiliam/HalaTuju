@@ -666,6 +666,12 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
   // is SKIPPED for the STR parent (shared-IC: their IC is already under STR). Missing compulsory
   // slots render as "Missing" placeholders; EPF is present-only (additional).
   //
+  // …EXCEPT on the STR route: an STR family's salary docs are SUPPORTIVE, not required (the STR is
+  // the means-test). So we never nag for an absent salary-route doc with a red "Missing" placeholder
+  // — the section shows only what's actually on file (good-to-have evidence). If an officer wants a
+  // specific one, they raise a Check-2 request and it appears here once uploaded. On the SALARY route
+  // those docs ARE the proof, so the compulsory placeholders stay. (owner 2026-07-05.)
+  //
   // The member list is the UNION of the DECLARED working members and any member who ACTUALLY HAS an
   // earning doc on file (a salary_slip or EPF, by resolved member) — so a mixed household gets
   // structured Father/Mother groups even when the route is STR (which carries no working-member list)
@@ -685,16 +691,21 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
     return (ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb)
   })
   const salary: IncomeSlot[] = []
+  // On the STR route salary docs are supportive → present-only (no compulsory "Missing" rows).
+  const salaryRequired = (app.income_route || '') !== 'str'
+  const pushSlot = (docType: string, member: string, doc: AdminApplicantDocument | null) => {
+    if (doc || salaryRequired) salary.push({ docType, member, doc })
+  }
   for (const m of salaryMembers) {
-    salary.push({ docType: 'salary_slip', member: m, doc: find('salary_slip', m) })
+    pushSlot('salary_slip', m, find('salary_slip', m))
     if (m !== strParent) {
-      salary.push({ docType: 'parent_ic', member: m, doc: find('parent_ic', m) })
+      pushSlot('parent_ic', m, find('parent_ic', m))
       // Relationship proof sits DIRECTLY BELOW the person's IC (guardian → guardianship letter,
       // mother → BC; father none). Skip the STR parent's (already under STR) and never duplicate a
       // single household doc.
       const rel = relationshipDocFor(m as WorkingMember)
       if (rel && !salary.some((s) => s.docType === rel && s.member === '')) {
-        salary.push({ docType: rel, member: '', doc: find(rel, '') })
+        pushSlot(rel, '', find(rel, ''))
       }
     }
     const epf = find('epf', m)

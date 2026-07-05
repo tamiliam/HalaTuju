@@ -593,11 +593,11 @@ describe('incomeSubSections', () => {
     expect(salaryIds).not.toContain(3)   // applicant BC stays in STR
   })
 
-  it('4a: STR route derives salary members from the docs present (structured group, not a flat tail)', () => {
-    // #80/#112 shape: the STR mother is the earner; the FATHER also has payslips but was never
-    // listed as a working member (the STR route carries no income_working_members). His docs must
-    // form a STRUCTURED Father group — salary slip → IC (Missing placeholder) → EPF — instead of
-    // spilling into the flat catch-all tail (which never raises the Missing-IC placeholder).
+  it('4a: STR route derives salary members from the docs present, showing ONLY present docs (supportive)', () => {
+    // #80 shape: the STR mother is the earner; the FATHER also has payslips but was never listed as
+    // a working member. His docs form a structured Father group — but because this is the STR route
+    // his salary docs are SUPPORTIVE, so an absent Father's IC raises NO "Missing" placeholder; only
+    // the present salary slip + EPF show. (owner 2026-07-05.)
     const str = doc({ id: 1, doc_type: 'str', household_member: 'mother' })
     const mIc = doc({ id: 2, doc_type: 'parent_ic', household_member: 'mother' })
     const fSlip = doc({ id: 5, doc_type: 'salary_slip', household_member: 'father' })
@@ -607,8 +607,7 @@ describe('incomeSubSections', () => {
       [str, mIc, fSlip, fEpf])
     expect(sub.salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
       ['salary_slip', 'father', 5],
-      ['parent_ic', 'father', null],   // structured Missing placeholder (only the member loop makes this)
-      ['epf', 'father', 8],
+      ['epf', 'father', 8],             // no Father's-IC "Missing" row on the STR route
     ])
   })
 
@@ -626,16 +625,25 @@ describe('incomeSubSections', () => {
     expect(ids(sub.salary)).toContain(6)
   })
 
-  it('STR route without any STR doc → STR sub hidden; the payslip earner gets a structured salary group', () => {
-    // No STR doc → STR sub hidden. The mother has a payslip, so she is a derived salary earner (4a):
-    // her structured group renders (salary slip present → IC + BC as Missing placeholders).
+  it('STR route without any STR doc → STR sub hidden; the payslip earner shows present-only (supportive)', () => {
+    // No STR doc → STR sub hidden. The route is STR, so salary docs stay supportive: the mother's
+    // present payslip shows with NO compulsory IC/BC "Missing" placeholders.
     const mSlip = doc({ id: 4, doc_type: 'salary_slip', household_member: 'mother' })
     const sub = incomeSubSections({ income_route: 'str', income_earner: 'mother' }, [mSlip])
     expect(sub.str).toBeNull()
     expect(sub.salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
       ['salary_slip', 'mother', 4],
-      ['parent_ic', 'mother', null],
-      ['birth_certificate', '', null],
+    ])
+  })
+
+  it('SALARY route KEEPS compulsory "Missing" placeholders (salary docs ARE the proof there)', () => {
+    // Contrast: on the salary route the same absent Father's IC is required → red placeholder stays.
+    const fSlip = doc({ id: 5, doc_type: 'salary_slip', household_member: 'father' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['father'] }, [fSlip])
+    expect(sub.salary.map((s) => [s.docType, s.doc?.id ?? null])).toEqual([
+      ['salary_slip', 5],
+      ['parent_ic', null],   // required on the salary route → Missing placeholder kept
     ])
   })
 
