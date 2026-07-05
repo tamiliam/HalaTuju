@@ -440,6 +440,53 @@ describe('documentFacts', () => {
     expect(parentFacts.map((f) => f.key)).toEqual(['name', 'ic_no', 'genuine'])
     expect(parentFacts.every((f) => f.status === 'not')).toBe(true)
   })
+
+  // ── 6-extend: genuineness chip cap now covers str / salary_slip / epf / results_slip ──
+  it('6-extend: a salary slip the wrong-type backstop reads as an EPF → RED + Wrong type chip', () => {
+    const facts = documentFacts(doc({ doc_type: 'salary_slip',
+      income_proof_check: { name: 'X', nric: '', name_status: 'match', nric_status: 'no_ref',
+        member: 'father', ic_present: true, points: [{ key: 'amount', value: '300' }] },
+      authenticity: { status: 'not_salary_slip', reason: 'reads as an epf' } }))
+    expect(facts.find((f) => f.key === 'name')!.status).toBe('not')   // earner read is off the wrong paper
+    expect(facts).toContainEqual({ key: 'wrongType', status: 'not' })
+  })
+
+  it('6-extend: an EPF flagged not_epf → RED reads + Wrong type chip (even the value chips do not green)', () => {
+    const facts = documentFacts(doc({ doc_type: 'epf',
+      income_proof_check: { name: 'X', nric: '750721-04-5130', name_status: 'match', nric_status: 'match',
+        member: 'mother', ic_present: true, points: [] },
+      authenticity: { status: 'not_epf', reason: 'withdrawal form' } }))
+    expect(facts.find((f) => f.key === 'name')!.status).toBe('not')
+    expect(facts.find((f) => f.key === 'ic_no')!.status).toBe('not')
+    expect(facts).toContainEqual({ key: 'wrongType', status: 'not' })
+  })
+
+  it('6-extend: a suspect STR reds every variable + a Genuine chip (not a wrong-type)', () => {
+    const facts = documentFacts(doc({ doc_type: 'str',
+      str_check: strCheck({ name_status: 'match', nric_status: 'match', current_status: 'current' }),
+      authenticity: { status: 'suspect', reason: 'thin signatures' } }))
+    expect(facts.filter((f) => ['recipient', 'ic_no', 'status', 'current'].includes(f.key))
+      .every((f) => f.status === 'not')).toBe(true)
+    expect(facts).toContainEqual({ key: 'genuine', status: 'not' })
+  })
+
+  it('6-extend: a suspect results slip reds the academic reads + Genuine chip', () => {
+    const facts = documentFacts(doc({ doc_type: 'results_slip',
+      academic_check: acadCheck({ name: 'match', subjects: 'match', results: 'match' }),
+      authenticity: { status: 'suspect', reason: 'typed copy' } }))
+    expect(facts.filter((f) => ['name', 'subjects', 'results'].includes(f.key))
+      .every((f) => f.status === 'not')).toBe(true)
+    expect(facts).toContainEqual({ key: 'genuine', status: 'not' })
+  })
+
+  it('6-extend: a GENUINE authenticity adds no cap (normal chips stand)', () => {
+    const facts = documentFacts(doc({ doc_type: 'epf',
+      income_proof_check: { name: 'X', nric: '750721-04-5130', name_status: 'match', nric_status: 'match',
+        member: 'mother', ic_present: true, points: [{ key: 'avgContribution', value: '300' }] },
+      authenticity: { status: 'genuine', reason: '' } }))
+    expect(facts.find((f) => f.key === 'name')!.status).toBe('verified')
+    expect(facts.some((f) => f.key === 'wrongType' || f.key === 'genuine')).toBe(false)
+  })
 })
 
 // ── incomeDocLayout ───────────────────────────────────────────────────────────
@@ -546,11 +593,50 @@ describe('incomeSubSections', () => {
     expect(salaryIds).not.toContain(3)   // applicant BC stays in STR
   })
 
-  it('STR route without any STR doc → STR sub hidden (only salary/utility render)', () => {
+  it('4a: STR route derives salary members from the docs present (structured group, not a flat tail)', () => {
+    // #80/#112 shape: the STR mother is the earner; the FATHER also has payslips but was never
+    // listed as a working member (the STR route carries no income_working_members). His docs must
+    // form a STRUCTURED Father group — salary slip → IC (Missing placeholder) → EPF — instead of
+    // spilling into the flat catch-all tail (which never raises the Missing-IC placeholder).
+    const str = doc({ id: 1, doc_type: 'str', household_member: 'mother' })
+    const mIc = doc({ id: 2, doc_type: 'parent_ic', household_member: 'mother' })
+    const fSlip = doc({ id: 5, doc_type: 'salary_slip', household_member: 'father' })
+    const fEpf = doc({ id: 8, doc_type: 'epf', household_member: 'father' })
+    const sub = incomeSubSections(
+      { income_route: 'str', income_earner: 'mother', income_working_members: [] },
+      [str, mIc, fSlip, fEpf])
+    expect(sub.salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
+      ['salary_slip', 'father', 5],
+      ['parent_ic', 'father', null],   // structured Missing placeholder (only the member loop makes this)
+      ['epf', 'father', 8],
+    ])
+  })
+
+  it('4a: a member with ONLY an IC is not pulled into SALARY as a false earner', () => {
+    // A blank/father IC alone is not income evidence — it must NOT create a "Missing salary" group
+    // (usually it is the STR parent's IC). It still lands in the catch-all so it is never hidden.
+    const str = doc({ id: 1, doc_type: 'str', household_member: 'mother' })
+    const mIc = doc({ id: 2, doc_type: 'parent_ic', household_member: 'mother' })
+    const fIc = doc({ id: 6, doc_type: 'parent_ic', household_member: 'father' })
+    const sub = incomeSubSections(
+      { income_route: 'str', income_earner: 'mother', income_working_members: [] }, [str, mIc, fIc])
+    // no salary_slip placeholder was raised for the father…
+    expect(sub.salary.some((s) => s.docType === 'salary_slip')).toBe(false)
+    // …but his IC is still visible (catch-all), never dropped.
+    expect(ids(sub.salary)).toContain(6)
+  })
+
+  it('STR route without any STR doc → STR sub hidden; the payslip earner gets a structured salary group', () => {
+    // No STR doc → STR sub hidden. The mother has a payslip, so she is a derived salary earner (4a):
+    // her structured group renders (salary slip present → IC + BC as Missing placeholders).
     const mSlip = doc({ id: 4, doc_type: 'salary_slip', household_member: 'mother' })
     const sub = incomeSubSections({ income_route: 'str', income_earner: 'mother' }, [mSlip])
     expect(sub.str).toBeNull()
-    expect(ids(sub.salary)).toEqual([4])
+    expect(sub.salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
+      ['salary_slip', 'mother', 4],
+      ['parent_ic', 'mother', null],
+      ['birth_certificate', '', null],
+    ])
   })
 
   it('#63 regression: a salary-route family WITH STR docs still shows them (never hidden)', () => {

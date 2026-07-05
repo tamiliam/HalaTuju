@@ -79,7 +79,7 @@ export function hasPatronymic(name: string | null | undefined): boolean {
   return PATRONYMIC_RE.test((name || '').trim())
 }
 
-const MEMBER_ORDER: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
+export const MEMBER_ORDER: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
 
 /** The ticked salary-route members, de-duped and in display order. Tolerant of a
  *  blank/garbage value. */

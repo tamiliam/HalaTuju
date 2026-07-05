@@ -3561,6 +3561,7 @@
           "contribution": "Contribution",
           "balance": "Balance",
           "genuine": "Genuine",
+          "wrongType": "Wrong type",
           "child": "Child",
           "mother": "Mother",
           "father": "Father",

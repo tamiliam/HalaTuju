@@ -467,6 +467,23 @@ def _roster_candidates(application):
     return out
 
 
+def _name_matched_members(application, doc):
+    """The DISTINCT roster members whose name tolerant-matches the NAME read off this income doc,
+    in roster order. [] when the doc has no readable name / isn't a resolvable income doc / matches
+    nobody. Ignores the doc's own tag — this is purely 'who does the NAME on the paper point to'."""
+    if getattr(doc, 'doc_type', '') not in _RESOLVABLE_INCOME_DOCS:
+        return []
+    name = _doc_person_name(doc)
+    if not name:
+        return []
+    from .vision import relationship_name_match
+    out = []
+    for member, cand in _roster_candidates(application):
+        if relationship_name_match(name, cand) in ('match', 'partial') and member not in out:
+            out.append(member)
+    return out
+
+
 def resolved_member_for(application, doc):
     """The household member an income document belongs to — its own tag if set, else resolved by
     matching the NAME on the doc against the family roster (tolerant of Tamil/Indian romanisation).
@@ -475,15 +492,25 @@ def resolved_member_for(application, doc):
     tag = (getattr(doc, 'household_member', '') or '').strip()
     if tag:
         return tag
-    if getattr(doc, 'doc_type', '') not in _RESOLVABLE_INCOME_DOCS:
+    matched = _name_matched_members(application, doc)
+    return matched[0] if matched else ''
+
+
+def name_contradicts_tag(application, doc):
+    """The member this income doc UNAMBIGUOUSLY belongs to when that CONTRADICTS its current tag —
+    else ''. Fires only when: the doc is tagged, the name read off it is readable, and it matches
+    EXACTLY ONE roster member who is NOT the current tag. Deliberately strict: overriding an existing
+    tag (unlike filling a blank) demands zero ambiguity, so a name that matches nobody (e.g. a roster
+    with NRICs instead of names) or two members never triggers a correction — the tag stands.
+
+    This is the airtight backstop for the #80/#112 class: a father's payslip that a pre-consent
+    STR-route force-tag stamped onto the mother. The upload guard uses it to self-correct at source."""
+    tag = (getattr(doc, 'household_member', '') or '').strip()
+    if not tag:
         return ''
-    name = _doc_person_name(doc)
-    if not name:
-        return ''
-    from .vision import relationship_name_match
-    for member, cand in _roster_candidates(application):
-        if relationship_name_match(name, cand) in ('match', 'partial'):
-            return member
+    matched = _name_matched_members(application, doc)
+    if len(matched) == 1 and matched[0] != tag:
+        return matched[0]
     return ''
 
 

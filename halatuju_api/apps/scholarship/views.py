@@ -777,25 +777,29 @@ class DocumentListCreateView(APIView):
         elif doc.doc_type in TEXT_READ_DOC_TYPES:
             from . import vision as _vision
             _vision.read_text_document(doc)
-        # ── Tag guard (the airtight last line): an income doc (parent_ic / salary_slip / epf) that
-        # arrived UNTAGGED — a memberless request (income_doc_stale), a reviewer mis-classify, a
-        # direct/legacy client — is attributed to the household member by the NAME now read off it
-        # (Vision/Gemini has run above). So a blank-tagged income doc is never PERSISTED where the
-        # person is determinable; the verdict then reads it under the right member. STR-route docs
-        # are already force-tagged to the earner above; only a genuinely-unresolvable name stays
-        # blank (the cockpit catch-all still shows it — never hidden). ``resolved_member_for`` is a
-        # no-op when the tag is already set, so this only ever fills a blank.
-        if doc.doc_type in ('parent_ic', 'salary_slip', 'epf') and not (doc.household_member or '').strip():
-            from .income_engine import resolved_member_for
-            derived = resolved_member_for(app, doc)
-            if derived:
+        # ── Tag guard (the airtight last line): attribute an income doc (parent_ic / salary_slip /
+        # epf) to the household member by the NAME now read off it (Vision/Gemini has run above), in
+        # two cases:
+        #   (a) FILL a blank tag — a memberless request (income_doc_stale), a reviewer mis-classify,
+        #       a direct/legacy client left it untagged (lenient: first roster name-match wins).
+        #   (b) CORRECT a tag the NAME contradicts — the #80/#112 class, where a pre-consent STR-route
+        #       force-tag stamped the father's payslip onto the mother. Strict: only when the name
+        #       matches EXACTLY ONE member who isn't the current tag (see income_engine.name_contradicts_tag).
+        # Either way the doc is never PERSISTED under the wrong person where the name is determinable;
+        # the verdict then reads it under the right member. A genuinely-unresolvable name leaves the
+        # tag untouched (the cockpit catch-all still shows a blank — never hidden).
+        if doc.doc_type in ('parent_ic', 'salary_slip', 'epf'):
+            from .income_engine import resolved_member_for, name_contradicts_tag
+            has_tag = bool((doc.household_member or '').strip())
+            derived = name_contradicts_tag(app, doc) if has_tag else resolved_member_for(app, doc)
+            if derived and derived != (doc.household_member or '').strip():
                 doc.household_member = derived
                 doc.save(update_fields=['household_member'])
-                # The create-time replace ran with a BLANK member and couldn't match the person's
-                # slot, so now that the member is known, supersede any prior live copy in the
-                # (doc_type, member, request_code) slot — a name-derived re-upload (e.g. answering the
-                # memberless income_doc_stale) REPLACES that member's existing doc instead of
-                # duplicating it. Retained as history (Phase 2), never hard-deleted.
+                # The create-time replace ran with the OLD (blank or wrong) member and couldn't match
+                # this person's slot, so now that the correct member is known, supersede any prior live
+                # copy in the (doc_type, member, request_code) slot — the re-attributed doc REPLACES
+                # that member's existing doc instead of duplicating it. Retained as history (Phase 2),
+                # never hard-deleted.
                 prior = list(ApplicantDocument.objects.filter(
                     application=app, doc_type=doc.doc_type, household_member=derived,
                     request_code=doc.request_code, superseded_at__isnull=True,

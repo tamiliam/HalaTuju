@@ -335,6 +335,17 @@ function reasonableStatus(s: string): FactStatus {
   return 'unknown'                       // 'partial' (one bill) + 'unknown' (no data) → grey
 }
 
+// A genuineness verdict that isn't 'genuine' → a red fact for the document: 'wrongType' when the
+// scorer says it isn't that KIND of document at all (`not_<type>` — e.g. an EPF filed as a salary
+// slip), else 'genuine' (suspect — looks like the right type but the fingerprints are thin). null
+// when there is no signal or the doc is genuine. Shared by every genuineness-scored doc type so the
+// chip never reads "Verified" over a wrong-type / suspect upload. (6-extend, owner 2026-07-05.)
+function genuinenessFact(doc: AdminApplicantDocument): DocumentFactLabel | null {
+  const s = doc.authenticity?.status
+  if (!s || s === 'genuine') return null
+  return { key: s.startsWith('not_') ? 'wrongType' : 'genuine', status: 'not' }
+}
+
 /**
  * The coloured fact-labels for a document — only the facts that document provides.
  * Returns [] when the relevant check hasn't run (the row then renders as "unread").
@@ -381,11 +392,17 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   if (dt === 'results_slip') {
     const c = doc.academic_check
     if (!c) return []
-    return [
-      { key: 'name', status: factStatus(c.name) },
-      { key: 'subjects', status: factStatus(c.subjects) },
-      { key: 'results', status: factStatus(c.results) },
+    // Genuineness cap: a suspect/not-a-slip upload can't verify the academic reads (they were
+    // lifted off whatever the document actually is) — red them and add the wrong-type/genuine fact.
+    const gf = genuinenessFact(doc)
+    const st = (v: string | undefined | null): FactStatus => (gf ? 'not' : factStatus(v))
+    const facts: DocumentFactLabel[] = [
+      { key: 'name', status: st(c.name) },
+      { key: 'subjects', status: st(c.subjects) },
+      { key: 'results', status: st(c.results) },
     ]
+    if (gf) facts.push(gf)
+    return facts
   }
   if (dt === 'offer_letter') {
     const c = doc.pathway_check
@@ -407,24 +424,33 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   }
   if (dt === 'str') {
     const c = doc.str_check
-    if (!c) return []
-    // The three REQUIRED STR variables — recipient name, IC, and approval Status (Lulus) —
-    // then Current (the date/cycle dimension, separate from approval).
-    return [
-      { key: 'recipient', status: factStatus(c.name_status) },
-      { key: 'ic_no', status: factStatus(c.nric_status) },
-      { key: 'status', status: strStatusFactStatus(c.current_status) },
-      { key: 'current', status: strCurrencyFactStatus(c.current_status) },
+    if (!c) return genuinenessFact(doc) ? [genuinenessFact(doc)!] : []
+    // The three REQUIRED STR variables — recipient name, IC, and approval Status (Lulus) — then
+    // Current (the date/cycle dimension). Genuineness cap: a not-STR / suspect document (a SALINAN,
+    // a SARA letter, or the wrong document entirely) can't verify any of them — red them all + the
+    // wrong-type/genuine fact. (Currency vs approval stays in the Status/Current chips.)
+    const gf = genuinenessFact(doc)
+    const facts: DocumentFactLabel[] = [
+      { key: 'recipient', status: gf ? 'not' : factStatus(c.name_status) },
+      { key: 'ic_no', status: gf ? 'not' : factStatus(c.nric_status) },
+      { key: 'status', status: gf ? 'not' : strStatusFactStatus(c.current_status) },
+      { key: 'current', status: gf ? 'not' : strCurrencyFactStatus(c.current_status) },
     ]
+    if (gf) facts.push(gf)
+    return facts
   }
   if (dt === 'salary_slip' || dt === 'epf') {
     const c = doc.income_proof_check
-    if (!c) return []
+    // Genuineness cap: an EPF signature-scored `not_epf`, or a salary slip the light wrong-type
+    // backstop reads as another document (`not_salary_slip`) — the earner reads are then off the
+    // wrong paper, so red them + add the wrong-type/genuine fact. Fires even with no earner read.
+    const gf = genuinenessFact(doc)
+    if (!c) return gf ? [gf] : []
     const has = (k: string) => (c.points || []).some((p) => p.key === k && (p.value || '').trim())
-    const facts: DocumentFactLabel[] = [{ key: 'name', status: factStatus(c.name_status) }]
+    const facts: DocumentFactLabel[] = [{ key: 'name', status: gf ? 'not' : factStatus(c.name_status) }]
     // IC No: an EPF statement always carries the member's number; a salary slip only sometimes
     // (hide it there when absent). Mirrors the STR chip — the number is the strong earner key.
-    if ((c.nric || '').trim()) facts.push({ key: 'ic_no', status: factStatus(c.nric_status) })
+    if ((c.nric || '').trim()) facts.push({ key: 'ic_no', status: gf ? 'not' : factStatus(c.nric_status) })
     if (dt === 'salary_slip') {
       // CONSISTENT chip set for every salary slip: Amount + Period always present, grey ('unknown')
       // when not read — never omitted, so two payslips don't show different numbers of chips.
@@ -438,6 +464,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
       facts.push({ key: 'balance', status: has('totalAccumulated') ? 'verified' : 'unknown' })
       facts.push({ key: 'current', status: has('statementDate') ? 'verified' : 'unknown' })
     }
+    if (gf) facts.push(gf)
     return facts
   }
   if (dt === 'birth_certificate') {
@@ -520,7 +547,7 @@ export function documentPill(doc: AdminApplicantDocument): DocumentPill {
 // slots are derived the same way the gate/wizard derive them (workingMembers +
 // relationshipDocFor), so the cockpit can't disagree with what the student is asked for.
 
-import { workingMembers, relationshipDocFor, type WorkingMember } from '@/lib/incomeWizard'
+import { workingMembers, relationshipDocFor, MEMBER_ORDER, type WorkingMember } from '@/lib/incomeWizard'
 
 export interface IncomeSlot {
   docType: string
@@ -638,15 +665,35 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
   // SALARY ROUTE — the working members' docs: salary slip → IC → EPF, per the spec order. The IC
   // is SKIPPED for the STR parent (shared-IC: their IC is already under STR). Missing compulsory
   // slots render as "Missing" placeholders; EPF is present-only (additional).
+  //
+  // The member list is the UNION of the DECLARED working members and any member who ACTUALLY HAS an
+  // earning doc on file (a salary_slip or EPF, by resolved member) — so a mixed household gets
+  // structured Father/Mother groups even when the route is STR (which carries no working-member list)
+  // or a working member wasn't declared. A member with only an IC is NOT pulled in this way (that's
+  // usually the STR parent's IC, already under STR) — it would otherwise raise a false "Missing
+  // salary" placeholder for a non-earner. (4a, owner 2026-07-05.)
+  const earnerDocMembers = new Set<string>()
+  for (const d of incomeDocs) {
+    if (d.doc_type === 'salary_slip' || d.doc_type === 'epf') {
+      const m = memberOf(d)
+      if (m) earnerDocMembers.add(m)
+    }
+  }
+  const salaryMembers = Array.from(
+    new Set<string>([...workingMembers(app.income_working_members as WorkingMember[] | null), ...earnerDocMembers]),
+  ).sort((a, b) => {
+    const ra = MEMBER_ORDER.indexOf(a as WorkingMember), rb = MEMBER_ORDER.indexOf(b as WorkingMember)
+    return (ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb)
+  })
   const salary: IncomeSlot[] = []
-  for (const m of workingMembers(app.income_working_members as WorkingMember[] | null)) {
+  for (const m of salaryMembers) {
     salary.push({ docType: 'salary_slip', member: m, doc: find('salary_slip', m) })
     if (m !== strParent) {
       salary.push({ docType: 'parent_ic', member: m, doc: find('parent_ic', m) })
       // Relationship proof sits DIRECTLY BELOW the person's IC (guardian → guardianship letter,
       // mother → BC; father none). Skip the STR parent's (already under STR) and never duplicate a
       // single household doc.
-      const rel = relationshipDocFor(m)
+      const rel = relationshipDocFor(m as WorkingMember)
       if (rel && !salary.some((s) => s.docType === rel && s.member === '')) {
         salary.push({ docType: rel, member: '', doc: find(rel, '') })
       }

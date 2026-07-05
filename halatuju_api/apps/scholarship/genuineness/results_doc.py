@@ -49,7 +49,13 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       (salary route the net beneath); (c) the officer Status/Current chips split cleanly (Status =
 #       approval, Current = date-only, dateless → "we don't know" grey). No signature-family/weight
 #       change; the STR currency/verdict logic it feeds changed → bump for traceability.
-MODEL_VERSION = '1.2.1'
+#   1.3.0 (2026-07-05) — light NEGATIVE wrong-type backstop (`misfiled_as`) for document types we do
+#       not yet positively fingerprint (salary_slip now; utility bills / semester results later): a
+#       doc is flagged not_<declared> when its OCR text UNAMBIGUOUSLY clears the genuine band on a
+#       DIFFERENT known family (EPF / BC / results / STR). Catches an EPF filed as a salary slip. No
+#       change to any existing signature family/weight; a new recognition path → bump. When a full
+#       POSITIVE signature list is added for salary/utility/semester, bump again + register it here.
+MODEL_VERSION = '1.3.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -465,4 +471,48 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
               f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
     return {'status': status, 'probability': r['probability'], 'type': r['type'],
             'present': r['present'], 'missing': r['missing'], 'reason': reason[:300],
+            'model_version': MODEL_VERSION}
+
+
+# Families a misfiled document is checked AGAINST — each a self-recognising type (a high score on
+# its own signatures IS the recognition; no image / identity anchor needed). STR is handled
+# separately via `signature_genuineness` because its identity anchor guards the SALINAN/SARA copies.
+# Deliberately excludes the multi-issuer offer family (needs identity anchoring + an image) and IC
+# (multimodal). Extend this map as new self-recognising families are added.
+_MISFILE_FAMILIES = {
+    'epf': EPF_SIGNATURES,
+    'birth_certificate': BC_SIGNATURES,
+    'results_slip': SLIP_SIGNATURES,
+    'certificate': CERT_SIGNATURES,
+}
+
+
+def misfiled_as(declared_type: str, ocr_text: str) -> dict:
+    """LIGHT negative wrong-type backstop for a document type we don't yet POSITIVELY fingerprint
+    (salary_slip today; utility bills / semester results later). Returns
+    ``{status: 'not_<declared>', doc_seen, probability, reason, model_version}`` when the OCR text
+    UNAMBIGUOUSLY reads as a DIFFERENT known document (clears the genuine band on another family's
+    signatures — e.g. an EPF statement filed as a salary slip) — else ``{}`` (no signal). It does
+    NOT try to positively confirm the declared type (that's the future full signature list); it only
+    catches a clear misfile. Pure + deterministic; a real payslip matches no other family."""
+    tn = _norm(ocr_text)
+    if not tn:
+        return {}
+    best_type, best_p = '', 0.0
+    for cand, sig in _MISFILE_FAMILIES.items():
+        if cand == declared_type:
+            continue
+        p = _score_list(sig, tn, has_qr=False, has_crest=False)['probability']
+        if p >= GENUINE_MIN and p > best_p:
+            best_type, best_p = cand, p
+    # STR via the identity-anchored scorer, so an LHDN SALINAN / SARA copy never counts as an STR.
+    if declared_type != 'str':
+        s = signature_genuineness(ocr_text, doc_type='str')
+        if s.get('status') == 'genuine' and s['probability'] > best_p:
+            best_type, best_p = 'str', s['probability']
+    if not best_type:
+        return {}
+    return {'status': 'not_' + declared_type, 'doc_seen': best_type, 'probability': round(best_p, 3),
+            'reason': (f"reads as a {best_type.replace('_', ' ')} (p={best_p:.2f}), "
+                       f"not a {declared_type.replace('_', ' ')}")[:300],
             'model_version': MODEL_VERSION}

@@ -12,10 +12,10 @@ serializer. SOFT throughout — the reviewer is the authority. ``assess()`` is t
 from .bands import GENUINE_MIN, SUSPECT_MAX, band_for
 from .ic import ic_genuineness
 from .supporting_doc import doc_genuineness
-from .results_doc import score_signatures, signature_genuineness
+from .results_doc import score_signatures, signature_genuineness, misfiled_as
 
 __all__ = ['ic_genuineness', 'doc_genuineness', 'score_signatures', 'signature_genuineness',
-           'band_for', 'GENUINE_MIN', 'SUSPECT_MAX', 'assess']
+           'misfiled_as', 'band_for', 'GENUINE_MIN', 'SUSPECT_MAX', 'assess']
 
 
 def assess(doc_type, *, image=None, content_type='', ocr_text='', has_qr=False, has_crest=False):

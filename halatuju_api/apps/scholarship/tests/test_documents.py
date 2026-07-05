@@ -384,6 +384,98 @@ class TestDocumentApi(TestCase):
         doc = ApplicantDocument.objects.get(id=resp.json()['id'])
         self.assertEqual(doc.household_member, 'father')          # NOT force-tagged to the STR earner
 
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_post_consent_tag_corrected_when_name_contradicts(self, mock_vision, _dl):
+        """(3a) The tag guard CORRECTS, not just fills: a post-consent income doc whose read name
+        contradicts its tag (the #80/#112 class — a father's doc stamped onto the mother) is
+        re-attributed to the person the name points to, and supersedes the prior copy in that slot."""
+        from django.utils import timezone
+        self.app_a.income_route = 'str'
+        self.app_a.income_earner = 'mother'
+        self.app_a.father_name = 'RAVI A/L PERIAKARUPPAN'
+        self.app_a.mother_name = 'SELVI A/P VELLAYAN'
+        self.app_a.profile_completed_at = timezone.now()          # post-consent → no force-tag
+        self.app_a.save(update_fields=['income_route', 'income_earner', 'father_name',
+                                       'mother_name', 'profile_completed_at'])
+        old_father = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='parent_ic', household_member='father',
+            storage_path=f'{self.app_a.id}/parent_ic/old_f')
+
+        def _read(doc):
+            from django.utils import timezone as _tz
+            doc.vision_name = 'RAVI A/L PERIAKARUPPAN'             # the FATHER, though tagged mother
+            doc.vision_run_at = _tz.now()
+            doc.save(update_fields=['vision_name', 'vision_run_at'])
+        mock_vision.side_effect = _read
+
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'parent_ic', 'household_member': 'mother',   # WRONG tag
+            'storage_path': f'{self.app_a.id}/parent_ic/mis',
+            'original_filename': 'ic.jpg', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        doc = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertEqual(doc.household_member, 'father')            # corrected to the name on the doc
+        old_father.refresh_from_db()
+        self.assertIsNotNone(old_father.superseded_at)             # prior father slot replaced (retained)
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_tag_not_corrected_when_name_matches_tag(self, mock_vision, _dl):
+        """Guard is a no-op when the name agrees with the tag — the correct tag is never disturbed."""
+        from django.utils import timezone
+        self.app_a.father_name = 'RAVI A/L PERIAKARUPPAN'
+        self.app_a.mother_name = 'SELVI A/P VELLAYAN'
+        self.app_a.profile_completed_at = timezone.now()
+        self.app_a.save(update_fields=['father_name', 'mother_name', 'profile_completed_at'])
+
+        def _read(doc):
+            from django.utils import timezone as _tz
+            doc.vision_name = 'SELVI A/P VELLAYAN'                  # matches the 'mother' tag
+            doc.vision_run_at = _tz.now()
+            doc.save(update_fields=['vision_name', 'vision_run_at'])
+        mock_vision.side_effect = _read
+
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'parent_ic', 'household_member': 'mother',
+            'storage_path': f'{self.app_a.id}/parent_ic/ok',
+            'original_filename': 'ic.jpg', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        doc = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertEqual(doc.household_member, 'mother')           # unchanged
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_tag_not_corrected_when_name_matches_nobody(self, mock_vision, _dl):
+        """Strictness guard (app 66 class: roster fields hold NRICs, not names): a name that matches
+        NO roster member never overrides an existing tag — the request/earner-set tag stands."""
+        from django.utils import timezone
+        self.app_a.father_name = '750819145383'                    # NRIC in the name field
+        self.app_a.mother_name = '810122105834'
+        self.app_a.profile_completed_at = timezone.now()
+        self.app_a.save(update_fields=['father_name', 'mother_name', 'profile_completed_at'])
+
+        def _read(doc):
+            from django.utils import timezone as _tz
+            doc.vision_name = 'JAYAKUMAR A/L ANNAMARI'             # matches neither NRIC 'name'
+            doc.vision_run_at = _tz.now()
+            doc.save(update_fields=['vision_name', 'vision_run_at'])
+        mock_vision.side_effect = _read
+
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'parent_ic', 'household_member': 'father',
+            'storage_path': f'{self.app_a.id}/parent_ic/nric',
+            'original_filename': 'ic.jpg', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        doc = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertEqual(doc.household_member, 'father')           # tag stands (no unambiguous match)
+
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_delete_sweeps_storage(self, mock_storage_delete):
         """Explicit DELETE on a doc also sweeps its Storage blob."""

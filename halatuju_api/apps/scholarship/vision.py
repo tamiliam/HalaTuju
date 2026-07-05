@@ -1772,6 +1772,19 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                         'missing': auth['missing'], 'model_version': auth.get('model_version')}
                        if 'probability' in auth else {}),
                 }
+        elif doc.doc_type == 'salary_slip':
+            # No POSITIVE payslip fingerprint yet (layouts too varied — a full signature list is
+            # future work). LIGHT NEGATIVE backstop: if the doc in the salary-slip slot reads
+            # UNAMBIGUOUSLY as a DIFFERENT known document (an EPF statement, BC, results slip, STR),
+            # flag not_salary_slip so the officer gets a wrong-type chip. Text-only + deterministic;
+            # a genuine payslip matches no other family → no signal. A failed/empty OCR = no signal.
+            from .genuineness.results_doc import misfiled_as
+            rr = ocr if ocr is not None else ocr_document(doc)
+            text = (rr or {}).get('text', '') or ''
+            if text.strip() and not (rr or {}).get('error'):
+                mis = misfiled_as('salary_slip', text)
+                if mis:
+                    result['authenticity'] = mis
         elif doc.doc_type in _GENUINENESS_DOCS:   # birth_certificate/epf holistic fallback (+ any other)
             gimg = _image()
             if gimg is not None:

@@ -196,6 +196,47 @@ def test_wrong_type_kwsp_doc_is_not_epf():
     assert g['probability'] < SUSPECT_MAX
 
 
+# ── misfiled_as: light NEGATIVE wrong-type backstop for types we don't yet positively fingerprint ──
+from apps.scholarship.genuineness.results_doc import misfiled_as   # noqa: E402
+
+GENUINE_PAYSLIP = """SLIP GAJI BULAN JUN 2026
+NAMA : RAVI A/L PERIAKARUPPAN
+JAWATAN : PEMANDU LORI
+PENDAPATAN
+Gaji Pokok 1800.00
+Elaun Kerja 200.00
+POTONGAN
+KWSP 220.00
+JUMLAH PENDAPATAN BERSIH 1760.00
+"""
+
+
+def test_misfiled_epf_as_salary_slip_is_flagged():
+    # THE payslip-slot example: a real EPF statement uploaded where a salary slip was asked.
+    m = misfiled_as('salary_slip', GENUINE_EPF)
+    assert m['status'] == 'not_salary_slip'
+    assert m['doc_seen'] == 'epf'
+    assert m['model_version'] == MODEL_VERSION
+
+
+def test_misfiled_bc_as_salary_slip_is_flagged():
+    m = misfiled_as('salary_slip', GENUINE_BC)
+    assert m['status'] == 'not_salary_slip'
+    assert m['doc_seen'] == 'birth_certificate'
+
+
+def test_genuine_payslip_is_not_flagged():
+    # A real payslip matches no OTHER family (a lone "KWSP" deduction line is nowhere near the EPF
+    # band) → no signal, so the officer sees the normal salary chips, not a false wrong-type flag.
+    assert misfiled_as('salary_slip', GENUINE_PAYSLIP) == {}
+
+
+def test_misfiled_ignores_declared_family_and_blank_text():
+    assert misfiled_as('salary_slip', '') == {}
+    # A correctly-filed EPF is NOT "misfiled" — its own family is skipped and nothing else clears.
+    assert misfiled_as('epf', GENUINE_EPF) == {}
+
+
 # ── Offer letters — THREE standard issuers, scored by best fit; the heterogeneous tail
 #    (universities / IPG / private) is unrecognised → deferred to the holistic check. ──
 GENUINE_STPM_OFFER = """SURAT TAWARAN CETAKAN KOMPUTER
