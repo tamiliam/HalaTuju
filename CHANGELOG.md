@@ -16,10 +16,10 @@ Polishing the apply-form income wizard's STR route to match the salary route:
   mother/guardian) sits inside one bordered block; the supplementary docs (salary slip / EPF / utilities)
   render below, outside it. No box header — each card names the earner instead, and the STR card is titled
   "Father's STR document".
-- **Green border + "Complete" badge when done** — the box turns green (border only, no fill) with a "Complete"
-  badge top-right once every compulsory doc is genuinely in: presence is MEMBER-AWARE (an IC left tagged to
-  another member doesn't count as this earner's IC) and the STR must be an approved STR (a wrong-type /
-  rejected / stale one doesn't count as done).
+- **Green border + "Complete" badge when the cluster is VERIFIED** (not merely uploaded) — border only, no
+  fill, badge top-right. Presence is MEMBER-AWARE (an IC tagged to another member doesn't count as this
+  earner's IC); then the STR must be genuine + approved (current/unconfirmed) with its recipient name AND IC
+  both matching the earner's IC, and the IC must be genuine + readable.
 - **Fixed a raw i18n key leaking to the UI** — a `wrong_type` / `unreadable` STR status rendered the literal
   `scholarship.docs.strCheck.wrong_type`; added both labels (en/ms/ta).
 

@@ -1136,12 +1136,21 @@ function IncomeWizard({
   const studentHasPatronymic = !icName || hasPatronymic(icName)
   const reqs = incomeRequirements(answers, { studentHasPatronymic })
   const ready = wizardComplete(answers)
-  // Green-border / "Complete" cue: every COMPULSORY doc in the STR cluster is uploaded into THIS earner's
-  // slot AND isn't a clear problem. Presence is MEMBER-AWARE — it mirrors the card's own slot match
-  // (household_member === earner, or a legacy blank for STR-earner docs), so an IC left tagged to another
-  // member never counts as this earner's IC. The STR itself must be a genuine APPROVED STR (current or
-  // unconfirmed) — a wrong-type / rejected / stale / unreadable one is not "done". (Docs are live-only.)
+  // Green-border / "Complete" cue: the STR cluster is genuinely VERIFIED, not merely uploaded. Presence is
+  // MEMBER-AWARE (mirrors the card's own slot match: household_member === earner, or a legacy blank for
+  // STR-earner docs — so an IC left tagged to another member never counts as this earner's IC). Then, per
+  // owner spec:
+  //   • STR  — genuine + an APPROVED STR (current/unconfirmed) + recipient NAME and IC both match the
+  //            earner's IC (str_check.name_status / nric_status are that cross-check).
+  //   • IC   — genuine + readable (name + IC number read).
+  //   • relationship doc (mother/guardian) — present + not flagged non-genuine.
+  // "Genuine" = not positively flagged suspect/not-<type> (an unscored doc doesn't block — we never gate on
+  // our own missing scan).
   const strEarner = ans.income_earner
+  const notFlaggedFake = (d: ApplicantDocument) => {
+    const a = String(d.authenticity?.status || '')
+    return a === '' || a === 'genuine' || a === 'likely_genuine'
+  }
   const slotDone = (dt: string): boolean => {
     const isEarnerDoc = STR_EARNER_DOCS.has(dt)
     const slotMember = isEarnerDoc ? strEarner : ''
@@ -1149,10 +1158,13 @@ function IncomeWizard({
       && ((d.household_member || '') === slotMember || (isEarnerDoc && !(d.household_member || ''))))
     if (!inSlot.length) return false
     if (dt === 'str') return inSlot.some((d) => {
-      const cs = String(d.str_check?.current_status || '')
-      return cs === 'current' || cs === 'unconfirmed'
+      const c = d.str_check
+      const cs = String(c?.current_status || '')
+      return notFlaggedFake(d) && (cs === 'current' || cs === 'unconfirmed')
+        && c?.name_status === 'match' && c?.nric_status === 'match'
     })
-    return true
+    if (dt === 'parent_ic') return inSlot.some((d) => notFlaggedFake(d) && d.income_ic_check?.readable === true)
+    return inSlot.some(notFlaggedFake)   // birth certificate / guardianship letter
   }
   const strComplete = ans.income_route === 'str' && !!strEarner && reqs.compulsory.every(slotDone)
 
