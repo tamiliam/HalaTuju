@@ -1219,7 +1219,8 @@
         "parent_ic": "IC ibu bapa/penjaga",
         "guardianship_letter": "Surat penjagaan",
         "birth_certificate": "Sijil kelahiran",
-        "income_support_doc": "Dokumen sokongan pendapatan"
+        "income_support_doc": "Dokumen sokongan pendapatan",
+        "school_leaving_cert": "Sijil berhenti sekolah"
       },
       "help": {
         "ic": "Gambar bahagian depan MyKad anda. Kami akan menggunakannya untuk mengesahkan identiti anda dan memastikan nama serta nombor KP anda sepadan dengan permohonan dan dokumen sokongan anda.",
@@ -1265,7 +1266,8 @@
           "generic": "Ada sesuatu yang tidak kena dengan muat naik ini. Semak semula, kemudian cuba muat naik lagi.",
           "bank_holder_mismatch": "Pemegang akaun pada penyata ini bukan anda. Biasiswa hanya boleh dibayar ke akaun bank atas nama anda sendiri — sila muat naik penyata untuk akaun anda sendiri.",
           "bank_details_unclear": "Kami tidak dapat membaca ketiga-tiga butiran dengan jelas (nama bank, nombor akaun, dan pemegang akaun). Sila muat naik foto atau PDF yang lebih jelas di mana ketiga-tiganya kelihatan."
-        }
+        },
+        "school_leaving_cert": "Foto/PDF sijil berhenti sekolah (surat berhenti sekolah) atau testimonial anda."
       },
       "income": {
         "title": "Bukti pendapatan isi rumah",
@@ -1356,7 +1358,8 @@
             "guardian": "Penyata KWSP Penjaga",
             "brother": "Penyata KWSP Abang",
             "sister": "Penyata KWSP Kakak"
-          }
+          },
+          "utilities": "Utiliti"
         }
       },
       "requiredPill": "Wajib",
@@ -1386,7 +1389,7 @@
           "note": "Dokumen yang menunjukkan keperluan kewangan keluarga anda. Bil adalah pilihan tetapi membantu."
         },
         "other": {
-          "title": "Dokumen lain",
+          "title": "Dokumen tambahan",
           "note": "Tambahan yang berguna — muat naik apa yang anda ada."
         }
       },

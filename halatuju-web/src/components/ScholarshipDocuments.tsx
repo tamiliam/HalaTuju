@@ -1393,12 +1393,22 @@ function IncomeWizard({
               )}
             </div>
           )})}
-          {/* Household-level optional credibility docs (utility bills). */}
-          {reqs.optional.map((dt) => (
-            <div key={dt}>
-              {renderCard(dt, { required: false })}
-            </div>
-          ))}
+          {/* Utilities — household-level optional credibility docs, grouped under their own
+              subheader with Electricity first then Water; any other optional docs follow. */}
+          {(() => {
+            const UTIL_ORDER = ['electricity_bill', 'water_bill']
+            const utils = UTIL_ORDER.filter((dt) => reqs.optional.includes(dt))
+            const rest = reqs.optional.filter((dt) => !UTIL_ORDER.includes(dt))
+            return (
+              <>
+                {utils.length > 0 && (
+                  <h4 className="mt-2 text-sm font-semibold text-gray-700">{iq('utilities')}</h4>
+                )}
+                {utils.map((dt) => (<div key={dt}>{renderCard(dt, { required: false })}</div>))}
+                {rest.map((dt) => (<div key={dt}>{renderCard(dt, { required: false })}</div>))}
+              </>
+            )
+          })()}
           <p className="text-xs text-gray-400">{iq('footer')}</p>
         </div>
       )}
@@ -1596,6 +1606,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       <section>
         {sectionHead('other', null, true)}
         <div className="space-y-3">
+          {card('school_leaving_cert')}
           {card('statement_of_intent')}
           {card('photo')}
         </div>

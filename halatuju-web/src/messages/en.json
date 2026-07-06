@@ -1219,7 +1219,8 @@
         "parent_ic": "Parent/guardian IC",
         "guardianship_letter": "Guardianship letter",
         "birth_certificate": "Birth certificate",
-        "income_support_doc": "Income support document"
+        "income_support_doc": "Income support document",
+        "school_leaving_cert": "School-leaving certificate"
       },
       "help": {
         "ic": "A photo of the front of your MyKad. We'll use it to verify your identity and confirm that your name and IC number match your application and supporting documents.",
@@ -1265,7 +1266,8 @@
           "generic": "Something didn't look right with this upload. Have another look, then try uploading again.",
           "bank_holder_mismatch": "The account holder on this statement is not you. The bursary can only be paid into a bank account in your own name — please upload a statement for your own account.",
           "bank_details_unclear": "We could not clearly read all three details (bank name, account number, and account holder). Please upload a clearer photo or PDF where all three are visible."
-        }
+        },
+        "school_leaving_cert": "A photo/PDF of your school-leaving certificate (surat berhenti sekolah) or testimonial."
       },
       "income": {
         "title": "Proof of household income",
@@ -1356,7 +1358,8 @@
             "guardian": "Guardian's EPF statement",
             "brother": "Elder brother's EPF statement",
             "sister": "Elder sister's EPF statement"
-          }
+          },
+          "utilities": "Utilities"
         }
       },
       "requiredPill": "Required",
@@ -1386,7 +1389,7 @@
           "note": "Documents that show your family's financial need. Bills are optional but help."
         },
         "other": {
-          "title": "Other documents",
+          "title": "Additional documents",
           "note": "Helpful extras — add what you have."
         }
       },
