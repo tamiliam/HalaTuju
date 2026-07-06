@@ -1487,7 +1487,9 @@
         "stale": "Lapuk — perlukan STR tahun ini",
         "rejected": "Tidak diluluskan",
         "unknown": "Belum dibaca",
-        "unconfirmed": "Kelulusan tidak ditunjukkan"
+        "unconfirmed": "Kelulusan tidak ditunjukkan",
+        "wrong_type": "Bukan dokumen STR",
+        "unreadable": "Status tidak dapat dibaca"
       },
       "slipCheck": {
         "name": "Nama",

@@ -1487,7 +1487,9 @@
         "stale": "Out of date — needs this year's STR",
         "rejected": "Not approved",
         "unknown": "Not read yet",
-        "unconfirmed": "Approval not shown"
+        "unconfirmed": "Approval not shown",
+        "wrong_type": "Not an STR document",
+        "unreadable": "Status couldn't be read"
       },
       "slipCheck": {
         "name": "Name",

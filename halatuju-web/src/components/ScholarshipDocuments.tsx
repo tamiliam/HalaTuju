@@ -993,10 +993,15 @@ function IncomeWizard({
   // (the "About your family" professions) so the student doesn't re-name the same
   // people. UI prefill only — saved when the student confirms/changes a selection.
   const rosterEarners = earningMembers(app) as WorkingMember[]
+  // STR route needs ONE earner. Default to the roster's earning parent, else FATHER — so the
+  // "whose STR" pill is pre-selected and the grouped cluster (STR + that parent's IC) appears
+  // immediately. The student can switch to Mother / Legal guardian at any time.
+  const defaultEarner = (app.income_earner
+    || rosterEarners.find((r) => r === 'father' || r === 'mother' || r === 'guardian')
+    || 'father')
   const [ans, setAns] = useState({
     income_route: prefillRoute,
-    income_earner: app.income_earner
-      || (rosterEarners.find((r) => r === 'father' || r === 'mother' || r === 'guardian') || ''),
+    income_earner: defaultEarner,
     income_working_members: (app.income_working_members && app.income_working_members.length
       ? app.income_working_members
       : rosterEarners) as WorkingMember[],
@@ -1036,6 +1041,8 @@ function IncomeWizard({
     if (!token) return
     const patch: Record<string, unknown> = {}
     if (!app.income_route) patch.income_route = prefillRoute
+    // STR route: persist the defaulted earner so the backend agrees with the pre-selected pill.
+    if ((app.income_route || prefillRoute) === 'str' && !app.income_earner) patch.income_earner = defaultEarner
     const routeIsSalary = (app.income_route || prefillRoute) === 'salary'
     if (routeIsSalary && !(app.income_working_members && app.income_working_members.length)
         && rosterEarners.length) {
@@ -1129,6 +1136,12 @@ function IncomeWizard({
   const studentHasPatronymic = !icName || hasPatronymic(icName)
   const reqs = incomeRequirements(answers, { studentHasPatronymic })
   const ready = wizardComplete(answers)
+  // Green-border cue: every COMPULSORY doc in the cluster is on file. STR cluster (single earner):
+  // the STR proof + the earner's IC (+ a relationship doc for mother/guardian). The student's `docs`
+  // are already live-only (superseded copies are filtered server-side), so presence-by-type suffices.
+  const hasDocType = (dt: string) => docs.some((d) => d.doc_type === dt)
+  const strComplete = ans.income_route === 'str' && !!ans.income_earner
+    && reqs.compulsory.every(hasDocType)
 
   // Salary route — toggle a working household member in/out of the multi-select.
   const MEMBER_OPTIONS: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
@@ -1227,27 +1240,34 @@ function IncomeWizard({
           red * on the card title; optional docs carry no marker (the * is what distinguishes). */}
       {ready && ans.income_route === 'str' && (
         <div className="space-y-3 pt-1">
-          {ordered(reqs.compulsory).map((dt) => (
-            <div key={dt}>
-              {renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
-                ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
-                suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
-              {/* The single cluster coach rides directly under the most recently uploaded cluster doc. */}
-              {e && clusterDocKey(dt, '') === strAnchor && (
-                <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
-              )}
-            </div>
-          ))}
-          {ordered(reqs.optional).map((dt) => (
-            <div key={dt}>
-              {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
-                ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
-                suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
-              {e && clusterDocKey(dt, '') === strAnchor && (
-                <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
-              )}
-            </div>
-          ))}
+          {/* One grouped cluster box for the STR earner — mirrors the salary route's per-member
+              block. The border turns green once every compulsory doc (STR + IC, +BC/letter for
+              mother/guardian) is on file. */}
+          <div className={`rounded-lg border p-2.5 space-y-2 ${
+            strComplete ? 'border-green-300 bg-green-50/50' : 'border-gray-100 bg-gray-50/60'}`}>
+            {e && <p className="text-xs font-semibold text-gray-700">{iq(`member.${e}`)}</p>}
+            {ordered(reqs.compulsory).map((dt) => (
+              <div key={dt}>
+                {renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
+                  ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
+                  suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
+                {/* The single cluster coach rides directly under the most recently uploaded cluster doc. */}
+                {e && clusterDocKey(dt, '') === strAnchor && (
+                  <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
+                )}
+              </div>
+            ))}
+            {ordered(reqs.optional).map((dt) => (
+              <div key={dt}>
+                {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
+                  ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
+                  suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
+                {e && clusterDocKey(dt, '') === strAnchor && (
+                  <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
+                )}
+              </div>
+            ))}
+          </div>
           <p className="text-xs text-gray-400">{iq('footer')}</p>
         </div>
       )}

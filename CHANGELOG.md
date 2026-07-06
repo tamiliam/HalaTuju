@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-06 — Pre-submit STR cluster: default earner, grouped box, green-when-complete, key-leak fix (FE only)
+
+Polishing the apply-form income wizard's STR route to match the salary route:
+- **Default earner = Father** — the "Whose STR document?" pill is pre-selected (roster earner, else Father),
+  and persisted, so the grouped cluster appears immediately; switchable to Mother / Legal guardian.
+- **Grouped cluster box** — the STR proof + that parent's IC (+ BC/guardianship for mother/guardian) now
+  render inside one bordered block headed by the parent's name, exactly like the salary route's per-member
+  block, instead of a flat list.
+- **Green border when complete** — the box border turns green once every compulsory doc in the cluster is
+  on file (a done-cue for the student).
+- **Fixed a raw i18n key leaking to the UI** — a `wrong_type` / `unreadable` STR status rendered the literal
+  `scholarship.docs.strCheck.wrong_type`; added both labels (en/ms/ta).
+
+No backend, no migration; jest 465, type-check clean.
+
 ### 2026-07-06 — Action Centre gets strict about a still-not-current STR + Cikgu Guna persona (no migration)
 
 A student re-uploaded the SAME dateless STR against the "confirm your STR is approved and being paid"
