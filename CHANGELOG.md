@@ -12,11 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Polishing the apply-form income wizard's STR route to match the salary route:
 - **Default earner = Father** — the "Whose STR document?" pill is pre-selected (roster earner, else Father),
   and persisted, so the grouped cluster appears immediately; switchable to Mother / Legal guardian.
-- **Grouped cluster box** — the STR proof + that parent's IC (+ BC/guardianship for mother/guardian) now
-  render inside one bordered block headed by the parent's name, exactly like the salary route's per-member
-  block, instead of a flat list.
-- **Green border + "Complete" badge when done** — once every compulsory doc in the cluster is on file the
-  box border turns green and a "Complete" badge shows in the header (a clear done-cue for the student).
+- **Grouped cluster box** — ONLY the group (the STR proof + that parent's IC, + a relationship doc for
+  mother/guardian) sits inside one bordered block; the supplementary docs (salary slip / EPF / utilities)
+  render below, outside it. No box header — each card names the earner instead, and the STR card is titled
+  "Father's STR document".
+- **Green border + "Complete" badge when done** — once every compulsory doc in the group is on file the box
+  border turns green (border only, no fill) and a "Complete" badge shows top-right.
 - **Fixed a raw i18n key leaking to the UI** — a `wrong_type` / `unreadable` STR status rendered the literal
   `scholarship.docs.strCheck.wrong_type`; added both labels (en/ms/ta).
 

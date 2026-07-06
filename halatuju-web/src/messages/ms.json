@@ -1331,6 +1331,7 @@
           "docsHeading": "Dokumen untuk dimuat naik",
           "footer": "Muat naik apa yang anda boleh — seorang penyemak akan melihat situasi anda secara peribadi.",
           "clusterDone": "Lengkap",
+          "strTitle": { "father": "Dokumen STR Bapa", "mother": "Dokumen STR Ibu", "guardian": "Dokumen STR Penjaga" },
           "declared": {
             "cantGet": "Tidak dapat slip gaji atau KWSP untuk mereka?",
             "prompt": "Beritahu kami pendapatan bulanan purata mereka dan kami akan meminta satu dokumen sokongan.",

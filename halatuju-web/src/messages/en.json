@@ -1331,6 +1331,7 @@
           "docsHeading": "Documents to upload",
           "footer": "Upload what you can — a reviewer will look at your situation personally.",
           "clusterDone": "Complete",
+          "strTitle": { "father": "Father's STR document", "mother": "Mother's STR document", "guardian": "Guardian's STR document" },
           "declared": {
             "cantGet": "Can't get a payslip or EPF for them?",
             "prompt": "Tell us their average monthly income and we'll ask for one supporting document.",

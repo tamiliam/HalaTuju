@@ -1175,6 +1175,7 @@ function IncomeWizard({
   // "Father's EPF statement") — no confusion about whose document each slot is for.
   const titleFor = (dt: string): string | undefined => {
     if (!e) return undefined
+    if (dt === 'str') return iq(`strTitle.${e}`)          // "Father's STR document"
     if (dt === 'parent_ic') return iq(`icTitle.${e}`)
     if (dt === 'salary_slip') return iq(`salaryTitle.${e}`)
     if (dt === 'epf') return iq(`epfTitle.${e}`)
@@ -1240,22 +1241,20 @@ function IncomeWizard({
           red * on the card title; optional docs carry no marker (the * is what distinguishes). */}
       {ready && ans.income_route === 'str' && (
         <div className="space-y-3 pt-1">
-          {/* One grouped cluster box for the STR earner — mirrors the salary route's per-member
-              block. The border turns green once every compulsory doc (STR + IC, +BC/letter for
-              mother/guardian) is on file. */}
-          <div className={`rounded-lg border p-2.5 space-y-2 ${
-            strComplete ? 'border-green-300 bg-green-50/50' : 'border-gray-100 bg-gray-50/60'}`}>
-            {e && (
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-gray-700">{iq(`member.${e}`)}</p>
-                {strComplete && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
-                    <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 6 9 17l-5-5" />
-                    </svg>
-                    {iq('clusterDone')}
-                  </span>
-                )}
+          {/* THE GROUP: the STR proof + the earner's IC (+ a relationship doc for mother/guardian).
+              Each card names the earner ("Father's STR document", "Father's IC"), so the box needs no
+              header. Green BORDER (no fill) + a "Complete" badge once every compulsory doc is on file.
+              Supplementary income evidence (salary slip / EPF / utilities) renders BELOW, outside the box. */}
+          <div className={`rounded-lg border bg-gray-50/60 p-2.5 space-y-2 ${
+            strComplete ? 'border-green-300' : 'border-gray-100'}`}>
+            {strComplete && (
+              <div className="flex justify-end">
+                <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                  <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 6 9 17l-5-5" />
+                  </svg>
+                  {iq('clusterDone')}
+                </span>
               </div>
             )}
             {ordered(reqs.compulsory).map((dt) => (
@@ -1269,17 +1268,18 @@ function IncomeWizard({
                 )}
               </div>
             ))}
-            {ordered(reqs.optional).map((dt) => (
-              <div key={dt}>
-                {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
-                  ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
-                  suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
-                {e && clusterDocKey(dt, '') === strAnchor && (
-                  <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
-                )}
-              </div>
-            ))}
           </div>
+          {/* Supplementary income evidence — optional, outside the group box. */}
+          {ordered(reqs.optional).map((dt) => (
+            <div key={dt}>
+              {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
+                ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
+                suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
+              {e && clusterDocKey(dt, '') === strAnchor && (
+                <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
+              )}
+            </div>
+          ))}
           <p className="text-xs text-gray-400">{iq('footer')}</p>
         </div>
       )}
