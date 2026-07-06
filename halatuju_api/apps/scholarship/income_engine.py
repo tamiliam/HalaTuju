@@ -1857,23 +1857,40 @@ def _income_doc_recency(doc):
 
 
 def dedupe_income_proof(application, member, doc_type):
-    """Collapse a person's LIVE copies of ``doc_type`` (salary_slip / str) to a SINGLE best live doc,
-    superseding the rest into Old / Replaced. Ranks by (genuine, has-a-date, recency, id): a genuine
-    copy is never superseded by a non-genuine one, then the newest pay month / latest-dated STR wins,
-    then the latest upload. Runs across request_codes (an officer re-request no longer leaves a
-    parallel live copy). Retains the superseded rows + blobs — never a hard delete. Returns the
-    superseded ids."""
+    """Collapse LIVE copies of ``doc_type`` to a SINGLE best live doc, superseding the rest into
+    Old / Replaced. Ranks by (genuine, has-a-date, recency, id): a genuine copy is never superseded
+    by a non-genuine one, then the newest pay month / latest-dated STR wins, then the latest upload.
+    Runs across request_codes (an officer re-request no longer leaves a parallel live copy). Retains
+    the superseded rows + blobs — never a hard delete. Returns the superseded ids.
+
+    Scope differs by type: salary_slip / epf are PER-MEMBER (each earner has their own), so they
+    dedup within ``member``. STR is HOUSEHOLD-level — Sumbangan Tunai Rahmah pays ONE recipient per
+    household, and the same screenshot is re-uploaded / re-requested under an inconsistent member tag
+    ('mother' on the route slot, '' on a blank re-upload; #125) — so STR collapses across ALL members
+    of the application, ignoring the passed ``member``."""
     if doc_type not in _DEDUP_DOC_TYPES:
         return []
     docs = getattr(application, 'documents', None)
     if docs is None:
         return []
-    live = list(docs.filter(doc_type=doc_type, household_member=member, superseded_at__isnull=True))
+    q = docs.filter(doc_type=doc_type, superseded_at__isnull=True)
+    if doc_type != 'str':                       # salary/epf: per-member; STR: household-wide
+        q = q.filter(household_member=member)
+    live = list(q)
     if len(live) < 2:
         return []
     live.sort(key=lambda d: (_doc_genuine_rank(d), 1 if _income_doc_recency(d) else 0,
                              _income_doc_recency(d) or (0, 0), d.id), reverse=True)
     keep, losers = live[0], live[1:]
+    # Preserve recipient attribution: if the kept STR copy is blank-tagged but a superseded sibling
+    # names the recipient, inherit it so the cockpit still shows e.g. "Mother's STR proof".
+    if doc_type == 'str' and not (getattr(keep, 'household_member', '') or '').strip():
+        for d in losers:
+            m = (getattr(d, 'household_member', '') or '').strip()
+            if m:
+                keep.household_member = m
+                keep.save(update_fields=['household_member'])
+                break
     ids = [d.id for d in losers]
     from django.utils import timezone as _tz
     docs.filter(id__in=ids).update(superseded_at=_tz.now(), superseded_by=keep)

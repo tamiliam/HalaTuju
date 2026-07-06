@@ -528,6 +528,33 @@ class TestDocumentApi(TestCase):
         self.assertCountEqual(superseded, [undated1.id, undated2.id])
 
     @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    def test_dedupe_str_is_household_level_across_member_tags(self, _dl):
+        """#125: STR is a HOUSEHOLD proof — a copy tagged 'mother' and a blank-tagged re-upload of the
+        same screenshot must collapse to ONE live doc even though their member tags differ (the old
+        per-member dedup left both live). The kept copy inherits the recipient tag so the cockpit
+        still shows 'Mother's STR proof'."""
+        from apps.scholarship.income_engine import dedupe_income_proof
+
+        def genuine_str(member, tag):
+            d = ApplicantDocument.objects.create(
+                application=self.app_a, doc_type='str', household_member=member,
+                storage_path=f'{self.app_a.id}/str/{tag}')
+            d.vision_fields = {'authenticity': {'status': 'genuine'}}
+            d.save(update_fields=['vision_fields'])
+            return d
+        tagged = genuine_str('mother', 'tagged')
+        blank = genuine_str('', 'blank')                 # newer id, blank member (the re-upload)
+
+        # Called with '' (the blank re-upload's own member) — STR still collapses BOTH.
+        superseded = dedupe_income_proof(self.app_a, '', 'str')
+        live = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='str', superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)                # one live STR for the household
+        self.assertEqual(superseded, [tagged.id])        # newest id kept, older superseded
+        self.assertEqual((live.first().household_member or ''), 'mother')  # attribution inherited
+        self.assertEqual(live.first().id, blank.id)
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
     def test_dedupe_keeps_genuine_over_a_newer_non_genuine_copy(self, _dl):
         """Genuineness ranks first: a genuine STR is NEVER superseded by a newer non-genuine copy
         (a SARA letter / wrong-type in the STR slot) — we keep the real document."""

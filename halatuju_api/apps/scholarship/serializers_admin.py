@@ -478,9 +478,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
                 if a['code'] not in self._DEDUPED_ANOMALIES]
 
     def get_interview_agenda(self, obj):
-        """V3 (#9): the interviewer's full folded agenda — anomalies + open carried-over queries
-        + the 'needs interview' verdict ambers + a standing Motivation & grit section. So nothing
-        raised at Check 1/2 evaporates at the interview. ``[{code, kind, params}]``."""
+        """The interviewer's folded Check-3 agenda — anomalies + the 'needs interview' verdict
+        ambers + a standing Motivation & grit section. Open Check-2 queries / doc-requests are NOT
+        echoed here (owner 2026-07-06); they stay in Check-2 Outstanding. ``[{code, kind, params}]``."""
         from .views_admin import interview_agenda_full
         return interview_agenda_full(obj)
 

@@ -1919,8 +1919,8 @@
           "desc": "Nama pada KP tidak sepadan dengan nama bapa anda seperti ditunjukkan dalam KP anda sendiri — sila pastikan anda memuat naik yang betul."
         },
         "str_not_current": {
-          "title": "Tunjukkan STR anda diluluskan",
-          "desc": "Kami tidak dapat mengesahkan STR anda telah diluluskan. Muat naik tangkapan skrin MySTR “Semakan Status” atau Dashboard yang menunjukkan status “Lulus” (dengan nama ibu bapa anda dan IC) — atau surat kelulusan STR rasmi anda. Tangkapan skrin yang jelas menunjukkan “Lulus” sudah memadai. Tiada STR semasa? Anda boleh tunjukkan pendapatan dengan slip gaji / KWSP sebagai ganti."
+          "title": "Sahkan STR anda diluluskan dan sedang dibayar",
+          "desc": "Tangkapan skrin STR yang anda hantar tidak mengesahkan penerima sedang menerima bayaran STR sekarang. Sila muat naik tangkapan skrin MySTR *Semakan Status* yang menunjukkan: (1) Nama, No. MyKad dan Status Permohonan Semasa penerima bertanda *Lulus*; dan (2) tab *Maklumat Pembayaran*, dengan tarikh bayaran terkini kelihatan jelas. Tiada STR semasa? Anda boleh tunjukkan pendapatan dengan slip gaji / KWSP sebagai ganti."
         },
         "str_recipient_mismatch": {
           "title": "Semak dokumen STR anda",

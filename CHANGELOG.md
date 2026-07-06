@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-06 — Live-review batch #125: STR dedup (household-level), no interview echoes, detailed STR request (no migration)
+
+Three fixes off a live review of applicant #125.
+
+**Fixed**
+- **STR one-live-copy dedup is now household-level.** STR (Sumbangan Tunai Rahmah) is one recipient per
+  household, but the dedup keyed it *per member* — so the same screenshot re-uploaded under a different
+  member tag ('mother' vs blank, #125; 'mother' vs 'father', #45) escaped into two live copies.
+  `dedupe_income_proof` now collapses all live STR for the application regardless of member (salary/EPF
+  stay per-member), and the kept copy inherits the recipient tag if it was blank. Backfilled #45 + #125.
+- **Interview agenda no longer echoes open Check-2 items.** `interview_agenda_full` was folding every open
+  query / doc-request into a generic "Carried-over query — confirm with the student at the interview" line
+  (owner deleted them every time — a pending upload isn't an interview talking point). Removed; Check-2
+  Outstanding remains the home for open items. Agenda keeps anomalies + needs-interview ambers + Motivation.
+
+**Changed**
+- **Detailed STR doc-request copy.** The `str_not_current` request ("Show your STR was approved") now spells
+  out exactly what's needed (member-neutral): a MySTR *Semakan Status* screenshot with the recipient's Nama /
+  No. MyKad / Status Permohonan Semasa = *Lulus*, **and** the *Maklumat Pembayaran* tab with recent payment
+  dates — so a dateless "Lulus" screenshot no longer reads as sufficient. EN/MS/TA (Tamil first-draft).
+
+**Tests** — STR cross-member dedup + interview-agenda no-echo; jest 463, scholarship pytest 2103; golden masters intact.
+
 ### 2026-07-06 — Cockpit header: British dates site-wide + lifecycle timeline (migration 0094)
 
 Two owner requests off a live cockpit screenshot: dates were rendering American (`7/5/2026`), and the

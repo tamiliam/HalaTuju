@@ -428,9 +428,9 @@ class TestInterview(PhaseCBase):
         self.assertEqual(r.status_code, 200)
         self.assertIn('household_size_one', r.json()['agenda'])
 
-    def test_interview_agenda_full_folds_open_query_and_motivation(self):
-        """V3 (#9): the folded agenda includes open carried-over queries + a standing Motivation
-        section, so nothing raised at Check 1/2 evaporates at the interview."""
+    def test_interview_agenda_full_does_not_echo_open_check2_items(self):
+        """Owner 2026-07-06: open Check-2 queries / doc-requests are NOT echoed onto the interview
+        agenda as 'carried-over' items (they live in Check-2 Outstanding). Motivation still stands."""
         from apps.scholarship.views_admin import interview_agenda_full
         from apps.scholarship.models import ResolutionItem
         app = self._make_app()
@@ -438,7 +438,8 @@ class TestInterview(PhaseCBase):
                                       kind='doc', doc_type='salary_slip', status='open')
         agenda = interview_agenda_full(app)
         kinds = {(e['kind'], e['code']) for e in agenda}
-        self.assertIn(('open_query', 'officer_1'), kinds)              # carried-over query folded in
+        self.assertNotIn(('open_query', 'officer_1'), kinds)          # no carried-over echo
+        self.assertFalse(any(e['kind'] == 'open_query' for e in agenda))
         self.assertTrue(any(e['kind'] == 'motivation' for e in agenda))  # standing motivation section
         # every entry is a well-formed {code, kind, params}
         for e in agenda:

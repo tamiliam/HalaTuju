@@ -1923,8 +1923,8 @@
           "desc": "You're showing a guardian's income, so we need the guardianship letter or court order. This is an important one — we can't fully verify your application without it."
         },
         "str_not_current": {
-          "title": "Show your STR was approved",
-          "desc": "We couldn't confirm your STR was approved. Upload a MySTR “Semakan Status” or Dashboard screenshot showing the status “Lulus” (with your parent's name and IC) — or your official STR approval letter. A plain screenshot that shows “Lulus” is enough. No current STR? You can show income with a salary slip / EPF instead."
+          "title": "Confirm your STR is approved and being paid",
+          "desc": "The STR screenshot you sent doesn't confirm the recipient is currently receiving STR payments. Please upload a MySTR *Semakan Status* screenshot showing: (1) the recipient's Nama, No. MyKad and Status Permohonan Semasa marked *Lulus*; and (2) the *Maklumat Pembayaran* tab, with the recent payment dates clearly visible. No current STR? You can show income with a salary slip / EPF instead."
         },
         "str_recipient_mismatch": {
           "title": "Check your STR document",

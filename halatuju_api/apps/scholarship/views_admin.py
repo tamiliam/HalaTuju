@@ -626,18 +626,21 @@ _NEEDS_INTERVIEW_AMBERS = ('income_unverified_needs_interview', 'income_above_b4
 
 
 def interview_agenda_full(application):
-    """V3 (#9): the interviewer's full talking-point agenda, so nothing raised at Check 1/2
-    evaporates at Check 3. Returns ``[{code, kind, params}]`` where kind is one of:
+    """The interviewer's talking-point agenda for Check 3. Returns ``[{code, kind, params}]`` where
+    kind is one of:
       - ``anomaly``        — the deterministic pre-interview flags (as before);
-      - ``open_query``     — OPEN carried-over resolution items (queries / doc-requests the
-                             student never answered) — ask them verbally;
       - ``needs_interview``— the verdict ambers that say "confirm at interview"
                              (``_NEEDS_INTERVIEW_AMBERS``); over-the-line income is interviewer-only;
       - ``motivation``     — a STANDING 'Motivation & grit' section, always present, ``seeded``
                              rich when the statement of intent / aspirations is thin
                              (``motivation_missing``). Motivation stays a human judgement
                              (owner decision 3) — no student query, structured for Check 3.
-    Deduped across kinds by (kind, code). The FE resolves copy per (kind, code)."""
+    Deduped across kinds by (kind, code). The FE resolves copy per (kind, code).
+
+    NOTE (owner, 2026-07-06): open Check-2 queries / doc-requests are NO LONGER echoed here as
+    "carried-over" items. They stay in Check-2 Outstanding (a pending upload isn't an interview
+    talking point, and the generic echo was noise the reviewer deleted every time). V3 #9's "nothing
+    evaporates" is served by Check-2 remaining open — not by duplicating it onto the agenda."""
     from .submission_review import completeness_gaps as _submission_gaps
     from .verdict_engine import build_verdict
     agenda = [{'code': a['code'], 'kind': 'anomaly', 'params': a.get('params', {})}
@@ -649,10 +652,7 @@ def interview_agenda_full(application):
             agenda.append({'code': code, 'kind': kind, 'params': params or {}})
             seen.add((kind, code))
 
-    # (a) OPEN carried-over queries/doc-requests — never lost, asked verbally at the interview.
-    for it in application.resolution_items.filter(status='open').exclude(kind='human'):
-        _add('open_query', it.code, it.params or {})
-    # (b) the "needs interview" verdict ambers.
+    # the "needs interview" verdict ambers.
     for fact in build_verdict(application):
         for item in fact.get('unresolved', []):
             if item['code'] in _NEEDS_INTERVIEW_AMBERS:

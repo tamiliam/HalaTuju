@@ -535,6 +535,19 @@ circuits an over-line salary in the income FACT) still needs a re-banding audit 
 audit found **no live case** where it changes an outcome (the only salary-route apps with an STR carry an
 undated/unknown/wrong-type STR, so P3 wouldn't fire) — so it stays parked until a real case appears.
 
+**✅ SHIPPED 2026-07-06 — Live-review batch #125 (FE/BE, NO migration; prod backfill; retro
+`docs/retrospective-2026-07-06-livereview-125-str-dedup.md`).** Three fixes off applicant #125:
+- **STR dedup → household-level** — STR is one recipient per household, but `dedupe_income_proof` keyed it
+  per member, so the same screenshot re-uploaded under a different member tag ('mother' vs blank #125;
+  'mother' vs 'father' #45) survived as two live copies. Now STR collapses across all members (salary/EPF
+  stay per-member); kept copy inherits the recipient tag if blank. Backfilled #45 + #125 via MCP.
+- **Interview agenda no longer echoes open Check-2 items** — `interview_agenda_full` dropped the generic
+  "Carried-over query — confirm at interview" folding (owner deleted them every time); Check-2 Outstanding
+  stays the home for open queries/doc-requests.
+- **Detailed STR request copy** — `str_not_current` (en/ms/ta) now spells out both MySTR tabs (Semakan Status
+  Nama/MyKad/Lulus + Maklumat Pembayaran payment dates), member-neutral (Tamil first-draft). **2103 pytest +
+  463 jest; golden masters intact.**
+
 **✅ SHIPPED 2026-07-06 — Cockpit header: British dates site-wide + lifecycle timeline (migration `0094`,
 applied migrate-first via MCP + prod-verified; retro `docs/retrospective-2026-07-06-cockpit-header-dates-timeline.md`).**
 Two owner requests off a live screenshot:
