@@ -23,6 +23,7 @@ export default function IncomeClusterCoach({
   token,
   t,
   lang,
+  coachLabelKey,
 }: {
   member: string
   route: string
@@ -30,6 +31,7 @@ export default function IncomeClusterCoach({
   token: string | null
   t: (key: string) => string
   lang: string
+  coachLabelKey?: string
 }) {
   const clusterDocs = clusterDocsFor(docs, member, route)
   // Nothing uploaded for this earner yet → nothing to coach (no fetch).
@@ -80,5 +82,5 @@ export default function IncomeClusterCoach({
   if (!show || status === 'none') return null
 
   const body = status === 'ai' ? message : t(fallbackKeyFor(verdict))
-  return <CoachCard t={t} loading={status === 'loading'} body={body} />
+  return <CoachCard t={t} loading={status === 'loading'} body={body} coachLabelKey={coachLabelKey} />
 }

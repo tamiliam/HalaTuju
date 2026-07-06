@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-06 — Action Centre gets strict about a still-not-current STR + Cikgu Guna persona (no migration)
+
+A student re-uploaded the SAME dateless STR against the "confirm your STR is approved and being paid"
+request and it "came through" (marked done) while the verdict stayed Probable. Root cause: the request
+resolved on any `ok` STR scan without re-checking currency (unlike `income_doc_stale`, which is
+criterion-aware), and a valid-but-dateless STR isn't a red scan, so Gopal never flagged it.
+
+**Fixed**
+- **`str_not_current` is now criterion-aware in `resolve_doc_items_for_upload`** (mirrors `income_doc_stale`):
+  a re-uploaded but still not-current STR (dateless `unconfirmed`, unreadable) keeps the task OPEN and the
+  upload returns a new `insufficient` verdict, so the coach surfaces the detail advice. New
+  `income_engine.str_confirmed_current`. **Pre-consent stays tolerant by construction** — `str_not_current`
+  requests only exist post-submit — so the submission gate still accepts a dateless STR as Probable; only
+  the Action-Centre ask is strict.
+- **Removed the confusing tail** "No current STR? You can show income with a salary slip / EPF instead."
+  from the STR request copy (en/ms/ta) — the task is specific to getting a proper STR.
+
+**Added**
+- **Cikgu Guna** — a second coach persona for the Action Centre (a stickler for details), while Cikgu Gopal
+  stays the tolerant pre-consent helper. The coach label is now parameterised (`CoachCard` /
+  `DocumentHelpCoach` / `IncomeClusterCoach` take a `coachLabelKey`); the Action Centre passes the Guna label.
+
+**Tests** — criterion-aware resolve (dateless → open + `insufficient`; current → resolved) + i18n parity.
+Scholarship pytest 2114, jest 465. No migration.
+
 ### 2026-07-06 — Officer Check-2 Outstanding shows the FULL instruction the student saw (FE only)
 
 The officer list showed only an auto-request's concise title (e.g. "Confirm your STR is approved and being

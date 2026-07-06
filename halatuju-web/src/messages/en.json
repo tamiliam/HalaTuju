@@ -1849,6 +1849,7 @@
       "explanationPlaceholder": "Type your answer here…",
       "allDone": "All done — your application is complete!",
       "coach": "I'm Cikgu Gopal, here to help you finish. Each card above is one thing to do — upload a document or answer a question. Work down the list; the note under a card tells you exactly what's needed.",
+      "coachLabel": "Cikgu Guna · Details check",
       "item": {
         "ic_missing": {
           "title": "Upload your IC",
@@ -1924,7 +1925,7 @@
         },
         "str_not_current": {
           "title": "Confirm your STR is approved and being paid",
-          "desc": "The STR screenshot you sent doesn't confirm the recipient is currently receiving STR payments. Please upload a MySTR *Semakan Status* screenshot showing: (1) the recipient's Nama, No. MyKad and Status Permohonan Semasa marked *Lulus*; and (2) the *Maklumat Pembayaran* tab, with the recent payment dates clearly visible. No current STR? You can show income with a salary slip / EPF instead."
+          "desc": "The STR screenshot you sent doesn't confirm the recipient is currently receiving STR payments. Please upload a MySTR *Semakan Status* screenshot showing: (1) the recipient's Nama, No. MyKad and Status Permohonan Semasa marked *Lulus*; and (2) the *Maklumat Pembayaran* tab, with the recent payment dates clearly visible."
         },
         "str_recipient_mismatch": {
           "title": "Check your STR document",

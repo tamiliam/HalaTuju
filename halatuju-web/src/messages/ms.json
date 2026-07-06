@@ -1849,6 +1849,7 @@
       "explanationPlaceholder": "Taip jawapan anda di sini…",
       "allDone": "Semua selesai — permohonan anda lengkap!",
       "coach": "Saya Cikgu Gopal, di sini untuk membantu anda menyiapkannya. Setiap kad di atas ialah satu perkara untuk dilakukan — muat naik dokumen atau jawab soalan. Ikut senarai dari atas; nota di bawah setiap kad menerangkan dengan tepat apa yang diperlukan.",
+      "coachLabel": "Cikgu Guna · Semak butiran",
       "item": {
         "ic_missing": {
           "title": "Muat naik IC anda",
@@ -1920,7 +1921,7 @@
         },
         "str_not_current": {
           "title": "Sahkan STR anda diluluskan dan sedang dibayar",
-          "desc": "Tangkapan skrin STR yang anda hantar tidak mengesahkan penerima sedang menerima bayaran STR sekarang. Sila muat naik tangkapan skrin MySTR *Semakan Status* yang menunjukkan: (1) Nama, No. MyKad dan Status Permohonan Semasa penerima bertanda *Lulus*; dan (2) tab *Maklumat Pembayaran*, dengan tarikh bayaran terkini kelihatan jelas. Tiada STR semasa? Anda boleh tunjukkan pendapatan dengan slip gaji / KWSP sebagai ganti."
+          "desc": "Tangkapan skrin STR yang anda hantar tidak mengesahkan penerima sedang menerima bayaran STR sekarang. Sila muat naik tangkapan skrin MySTR *Semakan Status* yang menunjukkan: (1) Nama, No. MyKad dan Status Permohonan Semasa penerima bertanda *Lulus*; dan (2) tab *Maklumat Pembayaran*, dengan tarikh bayaran terkini kelihatan jelas."
         },
         "str_recipient_mismatch": {
           "title": "Semak dokumen STR anda",

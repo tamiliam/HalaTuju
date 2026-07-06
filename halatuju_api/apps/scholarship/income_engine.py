@@ -922,6 +922,22 @@ def str_not_breached(application):
     return not (auth and auth not in ('genuine', 'likely_genuine'))   # a positive non-genuine call → breached
 
 
+def str_confirmed_current(application):
+    """True when the household's latest live STR reads as CURRENT — approved AND showing a payment
+    this cycle. This is the exact criterion the Action-Centre ``str_not_current`` request asks the
+    student to satisfy ("confirm it's approved AND being paid"). An 'unconfirmed' (Lulus but no
+    payment date), 'unreadable', 'stale' or rejected STR is NOT current — so re-uploading one must not
+    silence that ask (the SUBMISSION gate still accepts it as Probable; only the request stays open)."""
+    docs = getattr(application, 'documents', None)
+    if docs is None:
+        return False
+    str_doc = docs.filter(doc_type='str', superseded_at__isnull=True).order_by('-uploaded_at').first()
+    if str_doc is None:
+        return False
+    sc = student_str_check(str_doc)
+    return bool(sc and sc['current_status'] == 'current')
+
+
 def declared_amount(application, member):
     """A working member's DECLARED average monthly income (RM, int > 0) from the income
     wizard, or None. Stored in ``ScholarshipApplication.income_declared = {member: amount}``.

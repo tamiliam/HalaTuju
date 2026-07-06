@@ -1840,7 +1840,7 @@ export async function uploadFileToSignedUrl(uploadUrl: string, file: File): Prom
 export async function recordDocument(
   payload: { doc_type: string; storage_path: string; household_member?: string; request_code?: string; original_filename?: string; content_type?: string; size?: number },
   options?: ApiOptions
-): Promise<ApplicantDocument & { match_verdict?: 'ok' | 'mismatch' | 'unreadable' | 'pending' }> {
+): Promise<ApplicantDocument & { match_verdict?: 'ok' | 'mismatch' | 'unreadable' | 'pending' | 'insufficient' }> {
   return apiRequest('/api/v1/scholarship/documents/', {
     method: 'POST',
     body: JSON.stringify(payload),

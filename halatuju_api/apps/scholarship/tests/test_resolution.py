@@ -807,3 +807,46 @@ class TestAnswerRelevanceNudgeView(TestCase):
         self.item.refresh_from_db()
         self.assertEqual(self.item.status, 'resolved')
         m.assert_not_called()
+
+
+class TestStrNotCurrentReupload(_Base):
+    """Action-Centre strictness (Cikgu Guna): the 'confirm your STR is approved AND being paid' ask
+    is criterion-aware. A re-uploaded but STILL not-current STR (dateless 'unconfirmed') scans 'ok'
+    (fine for SUBMISSION — the gate stays lenient) but must NOT resolve the request — it stays open
+    and the upload returns 'insufficient' so the coach fires. A CURRENT (dated/paid) STR resolves it."""
+
+    def _str_route(self):
+        self.app.income_route, self.app.income_earner = 'str', 'father'
+        self.app.save(update_fields=['income_route', 'income_earner'])
+
+    def _str_doc(self, *, status='Lulus', year='', amount=''):
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type='str', household_member='father',
+            storage_path=f'{self.app.id}/str/x',
+            vision_fields={'fields': {'recipient_name': 'RAJAKUMARI', 'status': status,
+                                      'year': year, 'amount': amount},
+                           'authenticity': {'status': 'genuine'}},
+            vision_run_at=timezone.now())
+
+    def _open_task(self):
+        return ResolutionItem.objects.create(
+            application=self.app, source='system', code='str_not_current',
+            fact='income', kind='doc', doc_type='str', status='open')
+
+    def test_dateless_reupload_keeps_task_open_and_coaches(self):
+        self._str_route()
+        task = self._open_task()
+        doc = self._str_doc(status='Lulus', year='')          # approved, NO payment date → unconfirmed
+        verdict = resolve_doc_items_for_upload(self.app, doc)
+        task.refresh_from_db()
+        self.assertEqual(task.status, 'open')                 # not silenced
+        self.assertEqual(verdict, 'insufficient')             # → the FE surfaces the coach's detail advice
+
+    def test_current_str_resolves_the_task(self):
+        self._str_route()
+        task = self._open_task()
+        doc = self._str_doc(status='Lulus', year='2026', amount='RM650')   # dated/paid → current
+        verdict = resolve_doc_items_for_upload(self.app, doc)
+        task.refresh_from_db()
+        self.assertEqual(task.status, 'resolved')
+        self.assertEqual(verdict, 'ok')

@@ -313,11 +313,12 @@ function ActionCard({
                         token={token}
                         t={t}
                         lang={locale}
+                        coachLabelKey="scholarship.actionCentre.coachLabel"
                       />
                     </div>
                   )
                 ) : coachDoc ? (
-                  <DocumentHelpCoach doc={coachDoc} token={token} t={t} lang={locale} />
+                  <DocumentHelpCoach doc={coachDoc} token={token} t={t} lang={locale} coachLabelKey="scholarship.actionCentre.coachLabel" />
                 ) : null}
                 {/* Rare: the upload landed but its scan hasn't finished yet — keep the task
                     open and reassure, rather than ticking it Done on an unchecked file. */}
@@ -350,7 +351,7 @@ function ActionCard({
                   {busy ? t('scholarship.actionCentre.sending') : t('scholarship.actionCentre.send')}
                 </button>
                 {/* Phase 2: Gopal's gentle steer when the answer was totally off-topic. */}
-                {nudge && <CoachCard t={t} loading={false} body={nudge} />}
+                {nudge && <CoachCard t={t} loading={false} body={nudge} coachLabelKey="scholarship.actionCentre.coachLabel" />}
               </div>
             )}
 
@@ -497,7 +498,7 @@ function BankDetailsTask({
               />
             </label>
 
-            {coachDoc && <DocumentHelpCoach doc={coachDoc} token={token} t={t} lang={locale} />}
+            {coachDoc && <DocumentHelpCoach doc={coachDoc} token={token} t={t} lang={locale} coachLabelKey="scholarship.actionCentre.coachLabel" />}
 
             {/* Step 2: confirm/correct the three fields (shown after an upload) */}
             {uploaded && (

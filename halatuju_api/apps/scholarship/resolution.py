@@ -417,6 +417,7 @@ def resolve_doc_items_for_upload(application, doc):
         # A plain upload (no request_code) resolves by doc_type, as before.
         qs = qs.filter(code=rc) if rc else qs.filter(doc_type=doc.doc_type)
         upload_member = (getattr(doc, 'household_member', '') or '').strip()
+        str_still_insufficient = False
         for item in qs:
             # V2 (#4): MEMBER-AWARE. A member-tagged request (V1.3 now writes
             # params.household_member on the check2 per-member proof items) clears ONLY on an
@@ -430,7 +431,20 @@ def resolve_doc_items_for_upload(application, doc):
             # ask (the gap persists, so leave the task open).
             if item.code == 'income_doc_stale' and income_engine.stale_income_proof(application):
                 continue
+            # CRITERION-AWARE for str_not_current: this Action-Centre ask is specifically "confirm the
+            # STR is approved AND being paid (current cycle)". A re-uploaded but STILL not-current STR
+            # (dateless 'unconfirmed', unreadable) scans 'ok' and is fine for SUBMISSION (the gate is
+            # deliberately lenient — Probable evidence), but must NOT satisfy the ask: keep it open and
+            # coach the student on the detail. Pre-consent has no str_not_current item, so this strictness
+            # is scoped to the Action Centre by construction (sync_resolution_items gates on submit).
+            if item.code == 'str_not_current' and not income_engine.str_confirmed_current(application):
+                str_still_insufficient = True
+                continue
             resolve_item(item, doc=doc, by='student')
+        if str_still_insufficient:
+            # A valid-but-still-not-current STR: non-'ok' so the FE surfaces the Action-Centre coach's
+            # detail advice, while the task stays open. NOT 'mismatch'/'unreadable' — the scan was fine.
+            return 'insufficient'
     return verdict
 
 

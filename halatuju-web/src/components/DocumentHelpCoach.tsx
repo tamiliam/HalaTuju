@@ -5,18 +5,23 @@ import Link from 'next/link'
 import { getDocumentHelp, type ApplicantDocument } from '@/lib/api'
 import { shouldShowCoach, fallbackKeyFor, helpSignal, readHelpCache, writeHelpCache } from '@/lib/documentHelp'
 
-// Shared presentational shell for "Cikgu Gopal" — the per-document coach and the
+// Shared presentational shell for the document coach — the per-document coach and the
 // per-earner income-cluster coach both render through this, so they look identical.
+// The PERSONA label is parameterised: pre-consent it's "Cikgu Gopal" (the default,
+// tolerant helper); the Action Centre passes the "Cikgu Guna" label (the details-check
+// persona), so the student sees who is speaking shifts with the stage.
 export function CoachCard({
   t,
   loading,
   body,
   children,
+  coachLabelKey = 'scholarship.docs.help.coachLabel',
 }: {
   t: (key: string) => string
   loading: boolean
   body: string
   children?: ReactNode
+  coachLabelKey?: string
 }) {
   return (
     <div className="mt-2 flex gap-2.5 rounded-xl bg-primary-50 ring-1 ring-primary-100 p-3">
@@ -32,7 +37,7 @@ export function CoachCard({
       </div>
       <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-700">
-          {t('scholarship.docs.help.coachLabel')}
+          {t(coachLabelKey)}
         </p>
         {loading ? (
           <div className="mt-1.5 space-y-1.5" aria-hidden>
@@ -56,11 +61,13 @@ export default function DocumentHelpCoach({
   token,
   t,
   lang,
+  coachLabelKey,
 }: {
   doc: ApplicantDocument
   token: string | null
   t: (key: string) => string
   lang: string
+  coachLabelKey?: string
 }) {
   const show = shouldShowCoach(doc)
   const [status, setStatus] = useState<'loading' | 'ai' | 'fallback' | 'none'>('loading')
@@ -113,7 +120,7 @@ export default function DocumentHelpCoach({
   const loading = status === 'loading'
 
   return (
-    <CoachCard t={t} loading={loading} body={body}>
+    <CoachCard t={t} loading={loading} body={body} coachLabelKey={coachLabelKey}>
       {/* Direct path to the profile when the fix lives there:
           - IC name mismatch → edit the typed NAME (it may be a typo).
           - Slip subjects/grades disagree → the slip is authoritative, so update the
