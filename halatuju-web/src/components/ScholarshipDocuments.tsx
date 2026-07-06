@@ -1136,12 +1136,25 @@ function IncomeWizard({
   const studentHasPatronymic = !icName || hasPatronymic(icName)
   const reqs = incomeRequirements(answers, { studentHasPatronymic })
   const ready = wizardComplete(answers)
-  // Green-border cue: every COMPULSORY doc in the cluster is on file. STR cluster (single earner):
-  // the STR proof + the earner's IC (+ a relationship doc for mother/guardian). The student's `docs`
-  // are already live-only (superseded copies are filtered server-side), so presence-by-type suffices.
-  const hasDocType = (dt: string) => docs.some((d) => d.doc_type === dt)
-  const strComplete = ans.income_route === 'str' && !!ans.income_earner
-    && reqs.compulsory.every(hasDocType)
+  // Green-border / "Complete" cue: every COMPULSORY doc in the STR cluster is uploaded into THIS earner's
+  // slot AND isn't a clear problem. Presence is MEMBER-AWARE — it mirrors the card's own slot match
+  // (household_member === earner, or a legacy blank for STR-earner docs), so an IC left tagged to another
+  // member never counts as this earner's IC. The STR itself must be a genuine APPROVED STR (current or
+  // unconfirmed) — a wrong-type / rejected / stale / unreadable one is not "done". (Docs are live-only.)
+  const strEarner = ans.income_earner
+  const slotDone = (dt: string): boolean => {
+    const isEarnerDoc = STR_EARNER_DOCS.has(dt)
+    const slotMember = isEarnerDoc ? strEarner : ''
+    const inSlot = docs.filter((d) => d.doc_type === dt
+      && ((d.household_member || '') === slotMember || (isEarnerDoc && !(d.household_member || ''))))
+    if (!inSlot.length) return false
+    if (dt === 'str') return inSlot.some((d) => {
+      const cs = String(d.str_check?.current_status || '')
+      return cs === 'current' || cs === 'unconfirmed'
+    })
+    return true
+  }
+  const strComplete = ans.income_route === 'str' && !!strEarner && reqs.compulsory.every(slotDone)
 
   // Salary route — toggle a working household member in/out of the multi-select.
   const MEMBER_OPTIONS: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
