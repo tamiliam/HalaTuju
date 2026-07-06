@@ -1330,6 +1330,7 @@
           "splitPrompt": "You told us one or more of your siblings are studying — please set how many are in school and how many are in college or university.",
           "docsHeading": "Documents to upload",
           "footer": "Upload what you can — a reviewer will look at your situation personally.",
+          "clusterDone": "Complete",
           "declared": {
             "cantGet": "Can't get a payslip or EPF for them?",
             "prompt": "Tell us their average monthly income and we'll ask for one supporting document.",

@@ -1245,7 +1245,19 @@ function IncomeWizard({
               mother/guardian) is on file. */}
           <div className={`rounded-lg border p-2.5 space-y-2 ${
             strComplete ? 'border-green-300 bg-green-50/50' : 'border-gray-100 bg-gray-50/60'}`}>
-            {e && <p className="text-xs font-semibold text-gray-700">{iq(`member.${e}`)}</p>}
+            {e && (
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-gray-700">{iq(`member.${e}`)}</p>
+                {strComplete && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                    <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 6 9 17l-5-5" />
+                    </svg>
+                    {iq('clusterDone')}
+                  </span>
+                )}
+              </div>
+            )}
             {ordered(reqs.compulsory).map((dt) => (
               <div key={dt}>
                 {renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt),

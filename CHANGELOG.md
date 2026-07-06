@@ -15,8 +15,8 @@ Polishing the apply-form income wizard's STR route to match the salary route:
 - **Grouped cluster box** — the STR proof + that parent's IC (+ BC/guardianship for mother/guardian) now
   render inside one bordered block headed by the parent's name, exactly like the salary route's per-member
   block, instead of a flat list.
-- **Green border when complete** — the box border turns green once every compulsory doc in the cluster is
-  on file (a done-cue for the student).
+- **Green border + "Complete" badge when done** — once every compulsory doc in the cluster is on file the
+  box border turns green and a "Complete" badge shows in the header (a clear done-cue for the student).
 - **Fixed a raw i18n key leaking to the UI** — a `wrong_type` / `unreadable` STR status rendered the literal
   `scholarship.docs.strCheck.wrong_type`; added both labels (en/ms/ta).
 
