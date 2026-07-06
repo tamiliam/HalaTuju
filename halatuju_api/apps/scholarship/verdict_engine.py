@@ -468,6 +468,7 @@ def _verdict_income_salary(application, student_name, present):
     evidence = _utility_context(application)
     any_financial = False          # at least one member supplied a payslip/EPF (or an ACCEPTED declared income)
     all_confirmed = True           # every member's relationship is a positive 'match'
+    confirmed_members = set()      # members whose relationship is a positive 'match' (for the STR recipient gate)
     declared_backed, declared_unproven = [], []   # Phase 2A: members carried by a declared amount
     # Per-member gaps are AGGREGATED by code into one item carrying a `members` list —
     # the resolution layer keys tickets by code (one per code per application), so
@@ -514,6 +515,7 @@ def _verdict_income_salary(application, student_name, present):
             rel = 'match'
         if rel == 'match':
             evidence.append(_item('relationship_confirmed', member=m))
+            confirmed_members.add(m)
         elif rel == 'mismatch':
             if m == 'mother':
                 bc_mismatch = True
@@ -571,6 +573,22 @@ def _verdict_income_salary(application, student_name, present):
     if declared_unproven:
         return _fact('income', 'recommend', evidence,
                      review + [_item('income_declared_needs_evidence', members=declared_unproven)])
+
+    # ── P3 (str-proof-spec.md §8): a valid, non-breached STR settles B40 on the salary route too ──
+    # A valid STR is the government's own means-test (owner: "STR not breached → no full salary docs").
+    # Honour it here, BEFORE the salary headroom (which ignores the STR and lands 'unknown' → a false
+    # 'unsure', #45/#63). Fraud guard: the recipient must match a CONFIRMED household member's IC.
+    # Invalid STRs (rejected/wrong_type/stale/unreadable) return None → the salary assessment runs
+    # unchanged (V5 fall-through preserved).
+    from .income_engine import salary_route_str
+    str_grade, str_member = salary_route_str(application)
+    str_settles = bool(str_grade and str_member in confirmed_members)
+    if str_settles and str_grade == 'current':
+        # Current STR + confirmed recipient → Certain (green), settled over the salary headroom
+        # (spec §8: "valid current STR → Certain"; the owner's short-circuit over an over-line salary).
+        evidence.append(_item('str_verified'))
+        return _fact('income', 'verified', evidence, [])
+
     if review:
         return _fact('income', 'review', evidence, review)
     # The cluster adds up (every IC + relationship confirmed, financial evidence present).
@@ -600,9 +618,15 @@ def _verdict_income_salary(application, student_name, present):
             evidence.append(_item('income_per_capita_ok', amount=pc, ceiling=ceiling))
             return _fact('income', 'verified', evidence, [])
         # 'unknown' — couldn't compute (unreadable income / no household size).
+        if str_settles:   # unconfirmed STR (approved, no date), recipient confirmed → Probable (blue)
+            evidence.append(_item('str_verified'))
+            return _fact('income', 'review', evidence, [_item('str_not_current', status='unconfirmed')])
         return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
     # Assembled but a human still places it: no payslip/EPF (informal) or a relationship
     # we couldn't machine-confirm. Never blocks.
+    if str_settles:   # unconfirmed STR carrying a thin/uncorroborated salary cluster → Probable (blue)
+        evidence.append(_item('str_verified'))
+        return _fact('income', 'review', evidence, [_item('str_not_current', status='unconfirmed')])
     return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
 
 

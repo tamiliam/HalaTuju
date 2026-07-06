@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-06 — P3: a valid STR settles B40 on the salary route too (#45/#63 seam; no migration)
+
+Shipped the deferred P3 (the #63 route-seam). A family with a valid STR **and** a working member gets
+pushed onto the salary route, where the income verdict ignored the STR and — when the salary headroom
+couldn't compute — fell to a false "Unsure / informal / no payslip" (#45).
+
+**Fixed**
+- **`_verdict_income_salary` now honours a valid, non-breached STR** as the household's own means-test
+  (str-proof-spec §8; owner: "STR not breached → no full salary docs needed"). New
+  `income_engine.salary_route_str` returns the STR's currency grade + the member whose IC the recipient
+  matches (matched against the STR's own tagged member, not `income_earner` — #45's STR is the father's,
+  the declared earner the mother). A **current** STR whose recipient is a confirmed member → Certain
+  (green), settled over the salary headroom; an **approved-but-undated** STR → Probable (blue), but still
+  RED if the salary is clearly over-line. Fraud guard: the recipient must match a confirmed member's IC —
+  a stranger's STR settles nothing. Invalid STRs (rejected / wrong-type / stale / unreadable) still fall
+  through to the salary assessment (V5 preserved).
+
+**Re-banding** (owner-audited before deploy): **#45** Unsure→Certain, **#63** Unsure→Probable; **#115**
+unchanged (unreadable STR). Both changes are toward B40 on the strength of a genuine STR.
+
+**Tests** — 5 new salary-route STR-settle cases (current→green, undated→blue, stranger/​wrong-type/​
+unrelated fall-through). Scholarship pytest 2108. No migration, backend only.
+
 ### 2026-07-06 — Live-review batch #125: STR dedup (household-level), no interview echoes, detailed STR request (no migration)
 
 Three fixes off a live review of applicant #125.

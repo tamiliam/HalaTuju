@@ -528,12 +528,16 @@ gap not yet built: POSITIVE genuineness fingerprints for salary slips / utility 
 (the `_MISFILE_FAMILIES` / MODEL_VERSION framework is shaped for them — each is a new signature list + a
 version bump).**
 
-**▶ P3 (Documents-box reorg Phase 3 — shared-IC + STR-overrides-route income VERDICT, the #63 class) REMAINS
-DEFERRED, RE-BANDING-GATED.** The *display* half shipped 2026-07-05 (a valid non-breached STR makes salary
-docs supportive regardless of route — no more false "Missing"); the *verdict* half (a valid STR short-
-circuits an over-line salary in the income FACT) still needs a re-banding audit + owner sign-off. A 2026-07-05
-audit found **no live case** where it changes an outcome (the only salary-route apps with an STR carry an
-undated/unknown/wrong-type STR, so P3 wouldn't fire) — so it stays parked until a real case appears.
+**✅ SHIPPED 2026-07-06 — P3 (the #63 route-seam: a valid STR settles income B40 on the SALARY route too;
+backend only, NO migration; re-banding owner-audited; retro `docs/retrospective-2026-07-06-p3-str-salary-seam.md`).**
+`_verdict_income_salary` now consults a valid non-breached STR before the salary headroom (new
+`income_engine.salary_route_str` — currency grade + the member whose IC the recipient matches, matched
+against the STR's OWN tagged member not `income_earner`). Current STR + confirmed recipient → Certain
+(green, over the headroom); undated approved → Probable (blue), RED preserved when the salary is clearly
+over-line; invalid STRs (rejected/wrong-type/stale/unreadable) fall through to salary (V5). Fraud guard:
+recipient must match a CONFIRMED member's IC. Re-banding: **#45** Unsure→Certain, **#63** Unsure→Probable,
+#115 unchanged — both toward B40. 2108 scholarship pytest. (The shared-IC display half shipped 2026-07-05;
+P3's verdict half is now done.)
 
 **✅ SHIPPED 2026-07-06 — Live-review batch #125 (FE/BE, NO migration; prod backfill; retro
 `docs/retrospective-2026-07-06-livereview-125-str-dedup.md`).** Three fixes off applicant #125:

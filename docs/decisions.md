@@ -1,5 +1,24 @@
 # Architectural Decisions — HalaTuju
 
+## P3 — a valid STR settles income B40 on EITHER route — 2026-07-06
+**Decision:** On the salary route, a valid non-breached STR settles the income B40 verdict (current STR →
+Certain/green, over the salary headroom; approved-undated → Probable/blue, but RED if the salary is
+clearly over-line). The STR recipient is matched against the STR's OWN tagged household member (then any
+working member), NOT `income_earner` — the STR may belong to a different parent than the declared earner
+(#45: father's STR, mother the declared earner). The matched member's relationship to the student must be
+confirmed (fraud guard). Invalid STRs (rejected/wrong-type/stale/unreadable) still fall through to salary.
+**Alternatives considered:** leave the salary route STR-blind and let the officer place it (status quo,
+the #45/#63 false-Unsure); OR credit the STR only to "back" a declared amount into the headroom (the
+existing partial behaviour, which still lands 'unknown' when the headroom can't compute).
+**Rationale:** an STR is the government's own B40 means-test; the owner's principle is "STR not breached →
+no full salary docs needed." The salary route ignoring it produced a false Unsure for genuinely-B40 STR
+families pushed onto the salary route by a working member.
+**Trade-offs:** a current STR overrides an over-line salary (accepted — STR eligibility is itself income-
+tested; blast radius audited); the recipient match depends on the STR carrying a readable recipient name
+and the member's IC being on file.
+**Revisit if:** STR eligibility bands widen to clearly include M40 (then a current STR would no longer
+imply B40), or a fraud pattern of borrowed-STR uploads appears (tighten the recipient/NRIC match).
+
 ## Lifecycle timeline via real timestamp columns, not FE-derived proxies — 2026-07-06
 **Decision:** Add four nullable columns (`recommended_at` / `awarded_at` / `active_at` /
 `maintenance_at`) stamped at each transition (set-if-null), and drive the cockpit header timeline off

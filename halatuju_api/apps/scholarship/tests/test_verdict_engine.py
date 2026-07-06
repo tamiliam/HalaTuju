@@ -1072,6 +1072,90 @@ class TestIncomeDeclared(TestCase):
         self.assertIn('income_above_b40_line', _codes(f['unresolved']))
 
 
+class TestSalaryRouteStrSettle(TestCase):
+    """P3 (str-proof-spec.md §8): a valid, non-breached STR settles B40 on the SALARY route too — the
+    STR is the household's own means-test, so a family pushed onto the salary route (a working member
+    alongside the STR) is no longer falsely 'unsure' when the salary headroom can't compute. #45
+    (current STR → Certain), #63 (unconfirmed STR → Probable). Invalid / stranger / unrelated STRs
+    still fall through to the salary assessment (V5 preserved)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='p3', name='B40', year=2026,
+                                                      per_capita_ceiling=1584)
+
+    def _app(self, *, name='DIVASHINI A/P MURUGAN', **kw):
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'p3-{self.id()}', name=name, nric='080115-05-0132', household_size=4)
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=profile, status='shortlisted', **kw)
+
+    def test_current_str_recipient_confirmed_settles_green(self):
+        # #45: the father IS the STR recipient (current STR) but drives e-hailing with no payslip;
+        # the salary headroom can't compute → pre-P3 this fell to 'unsure'. Now Certain (green).
+        app = self._app(name='YUKANESWARY A/P SARAVANAN', income_route='salary', income_earner='mother',
+                        income_working_members=['father', 'mother'])
+        _parent_ic(app, 'SARAVANAN A/L CHANTHIRAN', member='father')   # patronymic → father confirmed
+        _parent_ic(app, 'REMAVATHY A/P SELVARAJOO', member='mother')
+        _add_doc(app, 'birth_certificate', student_verdict='ok',
+                 fields={'bc_child_name': 'YUKANESWARY A/P SARAVANAN',
+                         'bc_mother_name': 'REMAVATHY A/P SELVARAJOO'})
+        _add_doc(app, 'str', student_verdict='ok', member='father',
+                 fields={'recipient_name': 'SARAVANAN A/L CHANTHIRAN', 'status': 'Lulus', 'year': '2026'})
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('str_verified', _codes(f['evidence']))
+
+    def test_unconfirmed_str_recipient_confirmed_is_probable_blue(self):
+        # #63: mother's Lulus STR with no date (unconfirmed) whose recipient is the confirmed mother →
+        # Probable (blue), not a false 'unsure'.
+        app = self._app(name='JAYASHREE A/P RAVI', income_route='salary',
+                        income_working_members=['mother'])
+        _parent_ic(app, 'SELVI A/P VELLAYAN', member='mother')
+        _add_doc(app, 'birth_certificate', student_verdict='ok',
+                 fields={'bc_child_name': 'JAYASHREE A/P RAVI', 'bc_mother_name': 'SELVI A/P VELLAYAN'})
+        _add_doc(app, 'str', student_verdict='ok', member='mother',
+                 fields={'recipient_name': 'SELVI A/P VELLAYAN', 'status': 'Lulus'})   # no year → unconfirmed
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('str_verified', _codes(f['evidence']))
+        self.assertIn('str_not_current', _codes(f['unresolved']))
+
+    def test_stranger_str_does_not_settle(self):
+        # Fraud guard: an approved current STR whose recipient matches NO household member's IC proves
+        # nothing about this family → falls through to the salary assessment (not greened).
+        app = self._app(name='YUKANESWARY A/P SARAVANAN', income_route='salary',
+                        income_working_members=['father'])
+        _parent_ic(app, 'SARAVANAN A/L CHANTHIRAN', member='father')
+        _add_doc(app, 'str', student_verdict='ok', member='father',
+                 fields={'recipient_name': 'SOMEONE ELSE BINTI NOBODY', 'status': 'Lulus', 'year': '2026'})
+        f = _facts(app)['income']
+        self.assertNotEqual(f['status'], 'verified')
+        self.assertNotIn('str_verified', _codes(f['evidence']))
+
+    def test_wrong_type_str_still_falls_through(self):
+        # V5 preserved: a non-STR in the STR slot (wrong_type) never settles B40 on the salary route.
+        app = self._app(name='YUKANESWARY A/P SARAVANAN', income_route='salary',
+                        income_working_members=['father'])
+        _parent_ic(app, 'SARAVANAN A/L CHANTHIRAN', member='father')
+        _add_doc(app, 'str', student_verdict='ok', member='father',
+                 fields={'recipient_name': 'SARAVANAN A/L CHANTHIRAN', 'status': 'approved',
+                         'source_type': 'unknown'})
+        f = _facts(app)['income']
+        self.assertNotEqual(f['status'], 'verified')
+
+    def test_current_str_recipient_unrelated_does_not_green(self):
+        # Recipient matches a member's IC, but that member's relationship to the student isn't
+        # confirmed (a mononym / non-patronymic name, no BC link) → the STR alone doesn't settle B40.
+        app = self._app(name='AH HOCK', income_route='salary', income_working_members=['father'])
+        _parent_ic(app, 'TAN AH KOW', member='father')       # no patronymic link to the student
+        _add_doc(app, 'str', student_verdict='ok', member='father',
+                 fields={'recipient_name': 'TAN AH KOW', 'status': 'Lulus', 'year': '2026'})
+        f = _facts(app)['income']
+        self.assertNotEqual(f['status'], 'verified')
+        self.assertNotIn('str_verified', _codes(f['evidence']))
+
+
 class TestUnemploymentEvidence(TestCase):
     """Phase 2B — an EPF (all-zeros employer) corroborating an unemployed member surfaces as
     soft income evidence (unemployment_epf_corroborated), on both routes; never a gate."""

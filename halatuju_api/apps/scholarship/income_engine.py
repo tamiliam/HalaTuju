@@ -855,6 +855,46 @@ def has_valid_str(application):
     return bool(sc and sc['current_status'] in ('current', 'unconfirmed'))
 
 
+def salary_route_str(application):
+    """P3 / str-proof-spec.md §8 — the salary-route STR settle. A valid, non-breached STR is the
+    household's OWN means-test, so it settles B40 on the SALARY route too (owner: "STR not breached →
+    no full salary docs needed"). Returns ``(grade, member)`` where grade ∈ {'current','unconfirmed'}
+    and member is the household member whose IC the STR recipient matches — or ``(None, None)`` when the
+    STR is missing, INVALID (rejected / wrong_type / stale / unreadable → falls through to salary, the
+    V5 behaviour), or its recipient can't be matched to a household member's IC (a stranger's STR
+    proves nothing here).
+
+    The recipient match is the fraud guard. ``student_str_check`` cross-checks against ``income_earner``,
+    which need NOT be the STR recipient (#45: father's STR, mother the declared earner) — so here we
+    match the STR recipient's name / NRIC against the STR's OWN tagged member first, then any working
+    member. Currency drives the grade; the CALLER additionally requires that member's relationship to
+    the student to be confirmed before it greens (so a matched-but-unrelated recipient can't settle B40)."""
+    docs = getattr(application, 'documents', None)
+    if docs is None:
+        return None, None
+    str_doc = docs.filter(doc_type='str', superseded_at__isnull=True).order_by('-uploaded_at').first()
+    if str_doc is None:
+        return None, None
+    sc = student_str_check(str_doc)
+    if not sc or sc['current_status'] not in ('current', 'unconfirmed'):
+        return None, None
+    name, nric = sc['name'], sc['nric']
+    tagged = (getattr(str_doc, 'household_member', '') or '').strip()
+    seen = set()
+    for m in [tagged] + list(effective_working_members(application)) + ['father', 'mother']:
+        if not m or m in seen:
+            continue
+        seen.add(m)
+        ic = _member_ic_doc(application, m)
+        if ic is None:
+            continue
+        ic_name = (getattr(ic, 'vision_name', '') or '').strip()
+        ic_nric = (getattr(ic, 'vision_nric', '') or '').strip()
+        if _name_bucket(name, ic_name) == 'match' or _nric_bucket(nric, ic_nric) == 'match':
+            return sc['current_status'], m
+    return None, None
+
+
 def declared_amount(application, member):
     """A working member's DECLARED average monthly income (RM, int > 0) from the income
     wizard, or None. Stored in ``ScholarshipApplication.income_declared = {member: amount}``.
