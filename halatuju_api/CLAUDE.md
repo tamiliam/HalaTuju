@@ -516,12 +516,45 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-04)
+## Next Sprint (as of 2026-07-05)
 
-**▶ IN PROGRESS — Officer Documents-box reorg (3-phase plan, `.claude/plans/draw-up-the-roadmap-majestic-raccoon.md`).
-P1 (FE re-group) + P2 (document version history) SHIPPED 2026-07-04. NEXT = P3 (shared-IC + STR-overrides-route
-verdict — the #63 class), RE-BANDING-GATED (mandatory V5-style re-banding audit + owner sign-off before it ships,
-because it changes live income verdicts).**
+**▶ NEXT — no roadmap sprint queued. Standing owner-review items (all optional): (a) BC genuineness chip
+cap (TD-158 — the one remaining genuineness type not capped in the cockpit); (b) officer "converted from
+S$X @3.15" chip on Singapore payslips (TD-157); (c) Tamil review of the new first-draft labels
+(`fact.wrongType`/`fact.cgpa`, the reworded Check-2 overflow note); (d) the parked verdict-level `not_ic`
+cap; (e) two future-dated STRs need a fraud call — #14 doc1445 (genuine future date, likely forgery — the
+one still open; #102 was two identical SARA copies, deduped); (f) app 110 doc 1353 identify. Doc-recognition
+gap not yet built: POSITIVE genuineness fingerprints for salary slips / utility bills / semester results
+(the `_MISFILE_FAMILIES` / MODEL_VERSION framework is shaped for them — each is a new signature list + a
+version bump).**
+
+**▶ P3 (Documents-box reorg Phase 3 — shared-IC + STR-overrides-route income VERDICT, the #63 class) REMAINS
+DEFERRED, RE-BANDING-GATED.** The *display* half shipped 2026-07-05 (a valid non-breached STR makes salary
+docs supportive regardless of route — no more false "Missing"); the *verdict* half (a valid STR short-
+circuits an over-line salary in the income FACT) still needs a re-banding audit + owner sign-off. A 2026-07-05
+audit found **no live case** where it changes an outcome (the only salary-route apps with an STR carry an
+undated/unknown/wrong-type STR, so P3 wouldn't fire) — so it stays parked until a real case appears.
+
+**✅ SHIPPED 2026-07-05 — Officer-cockpit live-review round: document verification + income-model hardening
+(FE/BE, NO migration; retro `docs/retrospective-2026-07-05-cockpit-livereview-income.md`; commits
+`e4eeaa0a`→`efa3157f`).** A live-testing pass driven by real applicants (#80/#66/#63/#51/#50/#62/#99/#105/#36):
+- **SGD → MYR income conversion** — a Singapore payslip is converted to ringgit before the B40 band
+  (structural detection: `Pte Ltd`/`Private Limited` suffix OR `currency=SGD` from CPF/SDL/S$ markers — no
+  company names); rate `SGD_TO_MYR_RATE` env-overridable (default 3.15); GATED to in-review apps (a decided
+  case keeps its basis). `gross_income` reads the TOTAL earnings, not the basic. Fixes the #105 false-B40.
+- **STR present (not breached) → salary docs SUPPORTIVE, route-agnostic** (#63) — no red "Missing" for a
+  family with a valid Lulus STR on the salary route.
+- **Correcting tag-guard** (`name_contradicts_tag`); **doc-driven STR salary layout**; **genuineness
+  wrong-type chip cap** → str/salary/EPF/results + light `misfiled_as` for salary slips; **MODEL_VERSION
+  1.2.1 → 1.3.0**.
+- **One-live-copy dedup** (salary/STR/EPF, genuineness-first) + cohort backfill.
+- **Semester-result Name/IC/CGPA chip**; **parent-name validator** (no IC/number in a name box);
+  **optional-field warnings suppressed** (salary NRIC/YTD, semester CGPA/institution, offer
+  offer_date/address/stream/… — core-field warnings kept).
+- **Clarify "N waiting" over-count fix** (#36 — answered clarifies were miscounted) + copy reword.
+- **Prod data (MCP):** mistag retags, #66 names, #51 IC swap, `other`→proper-type re-files, dedup +
+  warning-noise backfills, #105 SGD gross restore — all audited band-neutral except the owner-gated SGD
+  conversion. 2096 scholarship pytest + 455 jest; golden masters intact.
 
 **✅ SHIPPED 2026-07-04 — Documents-box reorg Phase 2: document version history (migration `0093` ADDITIVE,
 applied migrate-first via MCP + prod-verified + Security Advisor clean; retro

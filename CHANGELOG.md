@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-05 — Officer-cockpit live-review round: document verification + income-model hardening (no migration)
+
+A live-testing pass over the officer cockpit's Documents box and the income model, driven by reviewing
+real applicants (#80, #66, #63, #51, #50, #62, #99, #105, #36). All FE/BE, no migration.
+
+**Added**
+- **SGD → MYR income conversion for cross-border earners.** A Malaysian working in Singapore submits an
+  S$ payslip; the engine was counting the S$ figure as ringgit (~3× understatement → false B40, e.g.
+  #105: S$3,114 read as "RM3,114" → Certain B40 when she earns ~RM10k/mo). `income_engine` now detects a
+  Singapore payslip **structurally** — the "Pte Ltd" / "Private Limited" employer suffix (regex, spacing-
+  tolerant) OR `currency=SGD` (set by the extractor from S$/CPF/SDL/Pte-Ltd/Singapore-address markers, so a
+  co-operative / statutory board is caught without naming it) — and converts to MYR at `SGD_TO_MYR_RATE`
+  (env-overridable, default 3.15) before the B40 band. **Gated to in-review applications** (submitted →
+  interviewed); a decided case (recommended+) keeps its as-recorded basis. Also: `gross_income` now reads
+  the TOTAL earnings (basic + OT + allowances), never the basic alone. Added a `currency` field to the slip.
+- **Correcting tag-guard + doc-driven STR salary layout + genuineness wrong-type chips.** The upload
+  tag-guard now CORRECTS a tag whose read name contradicts it (`income_engine.name_contradicts_tag`,
+  strict single-match), not just fills a blank. The cockpit's SALARY sub-section derives its members from
+  the docs actually present (structured Father/Mother groups on any route). The genuineness chip cap
+  extended from ic/parent_ic/offer to **str/salary/EPF/results** (red "Wrong type"/"Genuine"), plus a
+  light NEGATIVE wrong-type check for salary slips (`genuineness.results_doc.misfiled_as` — an EPF filed
+  as a payslip → not_salary_slip). MODEL_VERSION 1.2.1 → 1.3.0.
+- **One-live-copy dedup for income proof (salary / STR / EPF).** A person's copies collapse to a single
+  live doc (newest pay month / dated STR / latest EPF), the rest → Old/Replaced. Ranks **genuineness
+  first** so a fake/wrong-type never supersedes a real proof. Cohort backfilled.
+- **Semester-result slip → Name + IC No + CGPA chip.** Reads name/nric (matched vs the student) + the
+  cumulative CGPA; green on a match / red otherwise / grey CGPA when semester-only (never flagged).
+- **Parent-name field validator.** A parent name may contain only letters + the Malaysian-name connectors
+  (`/ @ . ' -`) — no digits, so an IC/phone typed into a name box is rejected (FE inline + serializer 400).
+  Mirrors `family.is_valid_person_name` ↔ `lib/familyRoster.isValidPersonName`.
+
+**Changed**
+- **STR present (not breached) → salary docs are SUPPORTIVE, regardless of the declared route.** A family
+  holding a genuine non-breached STR no longer gets red "Missing" salary-route placeholders (#63 was on
+  the salary route with a valid Lulus STR). A breached STR (rejected / wrong-type / not-genuine) still
+  drops into full salary docs.
+- **Optional-field warnings suppressed** on salary slips (NRIC, YTD-gross), semester slips (CGPA,
+  institution/programme), and offer letters (offer_date, intake, candidate_address, stream, reporting_date,
+  elektif/aliran) — legitimately absent on many docs, so "missing" made a valid doc look deficient.
+  Core-field warnings (name, NRIC, programme) are kept. Existing docs backfilled.
+- **Broadened salary-slip NRIC + YTD extraction hints** (unlabelled MyKad-shaped IC, two-column YTD).
+
+**Fixed**
+- **Clarify "N more waiting" over-counted answered queries.** `clarify_overflow_count` counted a gap as
+  waiting whenever its clarify item wasn't OPEN — including RESOLVED/WAIVED — but a clarify is once-ever
+  (never re-asked), so #36 showed "3 waiting" with everything answered. Now counts only gaps with no item
+  yet. Copy reworded ("N more question(s) queued …").
+- STR-route force-tag applies pre-consent only (post-consent tagging is Check-2-request-driven, #80 root
+  cause). Dedup Set-spread build-target break; the salary YTD over-match ("month/year … pay date").
+
+**Data (prod, via Supabase MCP — no migration):** mistag retags (#80/1549, #112/1487 mother→father);
+#66 parent names recovered (IC-in-name-field); #51 mother-IC swap (father's payslip was in the IC slot);
+`other`→proper-type re-files (#30/#50/#62/#99/#110/#112 school-leaving certs + STPM/Politeknik semester
+results); income-proof dedup + optional-warning-noise backfills; #105 SGD gross restore. **2096 scholarship
+pytest + 455 jest**; golden masters intact.
+
 ### Changed
 - **Cockpit Decision box split into three cards (2026-07-04, frontend-only).** The single "Decision" card
   is now three: **Rate AI verification** (the four Pass/Fail facts + the AI's suggested verdict, topmost) ·

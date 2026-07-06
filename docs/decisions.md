@@ -4138,3 +4138,33 @@ incomplete) — accepted as the post-deploy tuning the owner signed up for; the 
 may under-ask at first (preferred over over-asking).
 **Revisit if:** the post-deploy cohort check shows an item raising far more/less than the human items
 did — tune its margin/condition (esp. `utility_bill_missing`, `household_roster_undercount`).
+
+## SGD income conversion for cross-border earners — 2026-07-05
+**Decision:** A Singapore (SGD) payslip is auto-converted to MYR before the B40 means-test, at an
+env-configurable rate (`SGD_TO_MYR_RATE`, default 3.15), and the conversion is gated to applications
+still in review (submitted → interviewed); a decided case (recommended+) keeps its as-recorded basis.
+**Alternatives considered:** (a) flag-only — cap the income verdict to Unsure and let the officer convert
+manually; (b) systemic all-stages conversion with no grandfathering.
+**Rationale:** owner chose auto-convert (does the arithmetic once, officer sanity-checks) with a
+configurable rate (FX drifts; no redeploy to update). The in-review gate honours "don't disturb a decision
+already made" (#75 was recommended on a since-corrected double-count). Detection is STRUCTURAL — the
+`Pte Ltd`/`Private Limited` suffix plus `currency=SGD` set from CPF/SDL/S$/Singapore-address markers — never
+a hard-coded company name (NTUC is one issuer; the suffix + CPF are the systemic signal).
+**Trade-offs:** the gate can cosmetically flip an income tile if a case advances past `interviewed`
+(accepted — the human owns it by then); a Malaysian employer with "Pte Ltd"/"Singapore" in its name would
+false-positive (rare; the officer sees the "Singaporean payslip" note).
+**Revisit if:** the SGD/MYR rate moves materially (update the env var), or a real employer trips the
+structural detector wrongly.
+
+## STR validity — not the declared route — gates salary-doc requirements — 2026-07-05
+**Decision:** In the cockpit Documents layout, salary-route documents are SUPPORTIVE (no red "Missing"
+placeholders) whenever a genuine, non-breached STR is on file, regardless of `income_route`. A breached
+STR (rejected / wrong-type / not-genuine) drops the family into full salary documentation.
+**Alternatives considered:** keep the earlier `income_route === 'str'` gate (route-driven); re-route the
+affected apps (per-case data fix).
+**Rationale:** the STR is the means-test — if it hasn't been breached the family need not produce full
+salary docs, even if the declared/auto-set route is 'salary' (#63). Keying on STR validity is route-agnostic
+and systemic; re-routing is a per-case patch that doesn't fix the principle.
+**Trade-offs:** this is display-only (the verdict-level twin — a valid STR overriding an over-line salary in
+the income FACT, "P3" — stays deferred and re-banding-gated; no live case currently needs it).
+**Revisit if:** a live case needs the verdict-level override (then P3 with a re-banding audit + sign-off).

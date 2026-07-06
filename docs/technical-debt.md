@@ -1222,3 +1222,15 @@ space `accessType=OPEN` per-event via the **Google Meet REST API** at creation, 
 org-wide default (the Calendar API's `conferenceData` can't set quick access). Also brief reviewers to join
 signed into the **exact Gmail they were invited under** (a mismatched account forces a knock even with Quick
 Access edge cases).
+
+- TD-157 (low): **officer "converted from S$X @3.15" chip on a Singapore salary slip.** The B40 income now
+  converts SGD → MYR (income_engine), so a Singapore payslip reads OVER the line while the doc still shows
+  the S$ figure — the officer relies on the existing "Singaporean payslip" warning to connect the two. A
+  dedicated chip/note showing the converted ringgit figure + the rate would make the higher income
+  self-explanatory. (Cockpit live-review, 2026-07-05.)
+- TD-158 (low): **birth-certificate genuineness chip cap.** The genuineness scorer already assesses BCs
+  (results_doc signatures → suspect / not_birth_certificate) and the verdict caps on it, but the cockpit
+  BC row (Child / Mother / Father) does NOT surface it — a suspect/wrong-type BC still shows green reads.
+  The other genuineness-scored types (ic/parent_ic/offer/str/salary/epf/results) already cap; BC is the one
+  remaining gap. Same 3-line documentFacts pattern; not re-banding (signal already exists). (Cockpit
+  live-review, 2026-07-05.)
