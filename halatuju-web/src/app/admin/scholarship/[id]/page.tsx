@@ -1376,6 +1376,18 @@ export default function AdminScholarshipDetailPage() {
                       const question = src.kind === 'raw'
                         ? (src.text || item.code)
                         : t(src.titleKey, localiseParams(item.params, t))
+                      // The FULL instruction the STUDENT actually saw (auto items carry a detailed
+                      // description; a manual request's raw `text` above already IS the full ask). Show
+                      // it so the reviewer sees EXACTLY what was asked, next to the student's answer.
+                      // Strip markdown emphasis (*…*) for a clean plain-text read; hide when there's no
+                      // desc key (t() echoes the key path) or it just repeats the title.
+                      let detail = ''
+                      if (src.kind === 'i18n') {
+                        const d = t(src.descKey, localiseParams(item.params, t))
+                        if (d && d !== src.descKey && d !== question) {
+                          detail = d.replace(/\*([^*]+)\*/g, '$1')
+                        }
+                      }
                       return (
                         <li key={item.id} className="flex items-start gap-2.5 rounded-lg border border-gray-100 bg-gray-50 p-3">
                           {answered ? (
@@ -1396,6 +1408,9 @@ export default function AdminScholarshipDetailPage() {
                               {' '}
                               <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 align-middle">{item.kind}</span>
                             </p>
+                            {detail && (
+                              <p className="mt-1 text-xs text-gray-500 break-words">{detail}</p>
+                            )}
                             {answered && item.resolution_text && (
                               <div className="mt-2 rounded-md border border-primary-100 bg-primary-50 p-2">
                                 <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-700">

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-06 — Officer Check-2 Outstanding shows the FULL instruction the student saw (FE only)
+
+The officer list showed only an auto-request's concise title (e.g. "Confirm your STR is approved and being
+paid"), while the detailed instruction (the description — Semakan Status / Maklumat Pembayaran steps) went
+only to the student's Action Centre. The reviewer couldn't see exactly what was asked. Now the officer
+Check-2 Outstanding renders the full description under the title (markdown emphasis stripped for a clean
+read; hidden when an item has no description or it just repeats the title), so the reviewer sees exactly
+what the student was asked next to the student's answer. Manual requests already showed their full text.
+
 ### 2026-07-06 — STR filing robustness: the docs box now resolves an STR by its recipient (no migration)
 
 Hardening after a robustness review: the P3 verdict name-matches an STR's recipient to a household member,
