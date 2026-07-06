@@ -129,6 +129,10 @@ _STR_MARKERS = (r'sumbangan\s+tunai\s+rahmah', r'\bMySTR\b', r'jumlah bayaran ke
                 r'status\s+permohonan', r'layak\s+str', r'\bSTR\b')
 _SARA_MARKERS = (r'sumbangan\s+asas\s+rahmah', r'bantuan\s+sara', r'perdana\s+menteri', r'\bSARA\b')
 _STR_APPROVED = (r'diluluskan', r'\blulus\b', r'\bberjaya\b')
+_STR_REJECTED = (r'\bditolak\b', r'tidak\s+layak', r'\bgagal\b')
+# The STR status VALUE is a small closed vocabulary. Used to (a) validate a label-anchored read and
+# (b) scan the body when a labels-then-values OCR layout puts the value far from its label.
+_STR_STATUS_RE = re.compile('|'.join(_STR_APPROVED + _STR_REJECTED), re.IGNORECASE)
 
 # A MyKad-style name line: all-caps with a patronymic/parentage connector. Layout-robust —
 # survives the mobile "labels column then values column" OCR order that breaks label anchors.
@@ -195,15 +199,15 @@ def _parse_str(text: str) -> Optional[dict]:
     if source_type != 'unknown' and not (name or nric):
         return None
 
-    # Read the status VALUE, not the heading. The label regex CONSUMES the trailing "STR"
-    # (dashboard: "Status Permohonan STR") or "Semasa" (semakan: "Status Permohonan Semasa") so
-    # find_value returns what follows — "Lulus" on the next line — rather than leaking "STR"/"Semasa".
+    # Read the status VALUE, not a label. The status is a small closed vocabulary (Lulus /
+    # diluluskan / Ditolak / …), so ACCEPT the label-anchored read only when it IS one of those
+    # words. A labels-then-values OCR layout (mobile Semakan: labels in one column, values in
+    # another) makes find_value grab the NEXT LABEL — "Fasa Bayaran" / "Status Pedalaman" — instead
+    # of the value (#104), and a dashboard's "Status Permohonan STR" heading leaks "STR". In every
+    # such case we fall back to scanning the whole body for the status token.
     status = find_value(text, r'status\s+permohonan(?:\s+str|\s+semasa)?')
-    if not re.search(r'[A-Za-z]{3}', status or '') or re.fullmatch(r'(?i)str', (status or '').strip()):
-        status = ''                                   # junk (a stray "i"/"STR"/blank) → use body
-    if not status:
-        m = next((re.search(p, text, re.IGNORECASE) for p in _STR_APPROVED
-                  if re.search(p, text, re.IGNORECASE)), None)
+    if not _STR_STATUS_RE.search(status or ''):
+        m = _STR_STATUS_RE.search(text or '')
         status = m.group(0) if m else ''
 
     ym = _YEAR_RE.search(text or '')

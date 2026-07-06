@@ -123,6 +123,28 @@ RM 1,200
 Keseluruhan STR
 """
 
+# A MySTR Semakan in the mobile LABELS-then-VALUES OCR order (#104): "Status Permohonan Semasa" is
+# followed by the NEXT LABEL ("Fasa Bayaran"), not its value — the value "Lulus" sits in the values
+# column further down. The status read must NOT leak "Fasa Bayaran"; it body-scans to "Lulus".
+_SEMAKAN_COLUMNS = """Semakan Status
+Maklumat Pemohon
+Nama
+No. MyKad
+Status Pedalaman
+Status Permohonan Semasa
+Fasa Bayaran
+YOGESWARY A/P TESTAMMA
+880311085266
+Tidak
+Lulus
+Fasa 1 Fasa 2 Fasa 3 Fasa 4
+150 200 0 0
+Jumlah Telah Dibayar
+RM 350
+Jumlah Bayaran Keseluruhan STR
+RM 700
+"""
+
 # A MySTR app DASHBOARD (the #23 shape): heading "Status Permohonan STR" with the value "Lulus"
 # on the next line; the Jumlah tiles are surface signatures, not decision variables. No date.
 _DASHBOARD = """Dashboard
@@ -177,6 +199,15 @@ class TestStrParser(SimpleTestCase):
         self.assertEqual(r['status'], 'Lulus')        # the stray "i" was rejected → body word
         self.assertEqual(r['year'], '')               # no year on the page → current (#5)
         self.assertEqual(r['amount'], 'RM1200')       # keseluruhan total, not the RM600 paid
+
+    def test_semakan_labels_then_values_reads_lulus_not_fasa_bayaran(self):
+        # #104: the label-anchored read grabs the next LABEL ("Fasa Bayaran"); the parser rejects a
+        # non-status word and body-scans to the actual status "Lulus" (else it read 'unreadable' → 🟡).
+        r = parse_by_labels('str', _SEMAKAN_COLUMNS)
+        self.assertEqual(r['source_type'], 'semakan_status')
+        self.assertEqual(r['status'], 'Lulus')
+        self.assertEqual(r['recipient_name'], 'YOGESWARY A/P TESTAMMA')
+        self.assertEqual(r['recipient_nric'], '880311-08-5266')
 
     def test_dashboard_classified_and_status_reads_lulus_not_str(self):
         # #23: the dashboard heading "Status Permohonan STR" must NOT (a) mis-tag the surface as
