@@ -130,6 +130,9 @@ export default function ProfilePage() {
   const [contactEmailVerified, setContactEmailVerified] = useState(false)
   const [contactPhone, setContactPhone] = useState('')
   const [contactPhoneVerified, setContactPhoneVerified] = useState(false)
+  // Student phone verification is paused server-side (cost). Already-verified numbers keep
+  // their badge; the Verify control is hidden and replaced by a "planned" note when off.
+  const [phoneVerifyEnabled, setPhoneVerifyEnabled] = useState(false)
   const [whatsappOptIn, setWhatsappOptIn] = useState(true)
   const [loginMethod, setLoginMethod] = useState('')
   const [sendingVerification, setSendingVerification] = useState(false)
@@ -209,6 +212,7 @@ export default function ProfilePage() {
       setContactEmailVerified(profileData.contact_email_verified || false)
       setContactPhone(profileData.contact_phone || '')
       setContactPhoneVerified(profileData.contact_phone_verified || false)
+      setPhoneVerifyEnabled(profileData.phone_verify_enabled || false)
       setWhatsappOptIn(profileData.whatsapp_opt_in ?? true)
       // Determine login method from session
       if (session?.user?.email) {
@@ -417,7 +421,8 @@ export default function ProfilePage() {
   const identityIncomplete = countIncomplete([name, gender])
   // contact_email is auto-defaulted server-side from the auth email (and treated
   // as verified there), so it only counts as "incomplete" when truly absent.
-  const contactDetailsIncomplete = (!contactEmail || !contactEmailVerified ? 1 : 0) + (!contactPhoneVerified ? 1 : 0)
+  // A paused phone-verify must not count as "incomplete" (it can no longer be actioned).
+  const contactDetailsIncomplete = (!contactEmail || !contactEmailVerified ? 1 : 0) + (phoneVerifyEnabled && !contactPhoneVerified ? 1 : 0)
   const contactIncomplete = countIncomplete([state, address, postalCode, city])
   const familyIncomplete = countIncomplete([householdIncome, householdSize])
   const appIncomplete = countIncomplete([angkaGiliran])
@@ -715,6 +720,7 @@ export default function ProfilePage() {
                       placeholder="012-345 6789"
                       className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                     />
+                    {phoneVerifyEnabled && (
                     <button
                       onClick={async () => {
                         if (!contactPhone || !token) return
@@ -737,11 +743,15 @@ export default function ProfilePage() {
                     >
                       {sendingPhoneVerify ? '...' : t('profile.verify')}
                     </button>
+                    )}
                   </div>
                   {contactPhoneVerified && (
                     <p className="text-xs text-green-600 mt-1.5 font-medium">✓ {t('profile.phoneVerified')}</p>
                   )}
-                  {verifyingPhone && !contactPhoneVerified && (
+                  {!phoneVerifyEnabled && !contactPhoneVerified && (
+                    <p className="text-xs text-gray-500 mt-1.5">{t('profile.phoneVerifyPaused')}</p>
+                  )}
+                  {phoneVerifyEnabled && verifyingPhone && !contactPhoneVerified && (
                     <div className="mt-2 space-y-1.5">
                       <p className="text-xs text-gray-500">{t('profile.phoneCodeSent')}</p>
                       <div className="flex gap-2">
@@ -782,7 +792,9 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   )}
-                  <p className="text-xs text-gray-400 mt-1.5">{t('profile.phoneVerifyNote')}</p>
+                  {phoneVerifyEnabled && (
+                    <p className="text-xs text-gray-400 mt-1.5">{t('profile.phoneVerifyNote')}</p>
+                  )}
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <div>

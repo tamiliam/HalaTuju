@@ -14,6 +14,7 @@ from apps.courses.views import PhoneVerifyStartView, PhoneVerifyCheckView
 _W = 'apps.scholarship.whatsapp'
 
 
+@override_settings(PHONE_VERIFY_ENABLED=True)
 class TestPhoneVerifyStart(TestCase):
     def setUp(self):
         cache.clear()                       # rate-limit counter lives in the cache
@@ -65,6 +66,7 @@ class TestPhoneVerifyStart(TestCase):
         self.assertEqual(self._post().status_code, 429)
 
 
+@override_settings(PHONE_VERIFY_ENABLED=True)
 class TestPhoneVerifyCheck(TestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
@@ -110,3 +112,41 @@ class TestPhoneVerifyCheck(TestCase):
     def test_unconfigured_503(self, _m):
         resp = self._post({'code': '123456'})
         self.assertEqual(resp.status_code, 503)
+
+
+@override_settings(PHONE_VERIFY_ENABLED=False)
+class TestPhoneVerifyPaused(TestCase):
+    """Student phone verification is paused by default — both endpoints refuse with
+    `phone_verify_paused` and never touch Twilio (so no SMS is ever spent)."""
+    def setUp(self):
+        cache.clear()
+        self.factory = APIRequestFactory()
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id='pv-p-1', nric='040815-12-2022', contact_phone='012-345 6789')
+
+    @unittest.mock.patch(f'{_W}.start_phone_verification')
+    def test_start_paused_403_no_twilio(self, m_start):
+        request = self.factory.post('/api/v1/profile/verify-phone/send/', {}, format='json')
+        request.user_id = 'pv-p-1'
+        request.supabase_user = {'id': 'pv-p-1'}
+        resp = PhoneVerifyStartView.as_view()(request)
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.data['error'], 'phone_verify_paused')
+        m_start.assert_not_called()
+
+    @unittest.mock.patch(f'{_W}.check_phone_verification')
+    def test_check_paused_403_no_twilio(self, m_check):
+        request = self.factory.post('/api/v1/profile/verify-phone/check/', {'code': '123456'}, format='json')
+        request.user_id = 'pv-p-1'
+        request.supabase_user = {'id': 'pv-p-1'}
+        resp = PhoneVerifyCheckView.as_view()(request)
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.data['error'], 'phone_verify_paused')
+        m_check.assert_not_called()
+
+    def test_already_verified_keeps_badge(self):
+        """Pausing must not strip an existing verified flag."""
+        self.profile.contact_phone_verified = True
+        self.profile.save(update_fields=['contact_phone_verified'])
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.contact_phone_verified)

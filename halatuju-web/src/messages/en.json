@@ -2499,6 +2499,7 @@
     "emailVerifyNote": "A verification link will be sent to your new email",
     "phoneVerifyNote": "We'll send a one-time code to your number to confirm it's yours.",
     "phoneVerified": "Number verified",
+    "phoneVerifyPaused": "Phone verification isn't available right now — it's a feature we're planning for the future. Your number is saved, so there's nothing you need to do.",
     "phoneCodeSent": "We sent a code to your number. Enter it below.",
     "phoneCodePlaceholder": "Enter code",
     "phoneCodeWrong": "That code didn't match. Please try again.",

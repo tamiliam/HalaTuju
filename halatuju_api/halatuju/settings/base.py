@@ -178,6 +178,13 @@ TWILIO_VERIFY_SERVICE_SID = os.environ.get('TWILIO_VERIFY_SERVICE_SID', '')
 # ship on SMS and flip this env var to 'whatsapp' once that clears — no code change. The /profile
 # copy is channel-neutral ("to your number") so it stays correct either way.
 PHONE_VERIFY_CHANNEL = os.environ.get('PHONE_VERIFY_CHANNEL', 'sms')
+# Student phone verification is PAUSED by default (2026-07-06). It gated nothing yet cost
+# ~$0.34/SMS via Twilio Verify (the biggest line on the Twilio bill), so the student /profile
+# control is disabled: already-verified numbers keep their badge; anyone trying to verify gets a
+# "planned for the future" message; the endpoints refuse with `phone_verify_paused`. Re-enable
+# with PHONE_VERIFY_ENABLED=1 (env only, no deploy). NOTE: student-only — the guarantor signing
+# PIN (scholarship) is a separate flow and is unaffected.
+PHONE_VERIFY_ENABLED = os.environ.get('PHONE_VERIFY_ENABLED', '0').lower() in ('1', 'true', 'yes')
 
 # Check 2 STEP 2: the AI clarify queries asked of the STUDENT. While OFF (default), no
 # clarify query is shown in the student Action Centre and no query email/reminder is

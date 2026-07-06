@@ -2499,6 +2499,7 @@
     "emailVerifyNote": "Pautan pengesahan akan dihantar ke emel baharu anda",
     "phoneVerifyNote": "Kami akan menghantar kod sekali guna ke nombor anda untuk mengesahkan ia milik anda.",
     "phoneVerified": "Nombor disahkan",
+    "phoneVerifyPaused": "Pengesahan nombor telefon belum tersedia buat masa ini — ia ciri yang kami rancang untuk masa hadapan. Nombor anda telah disimpan, jadi anda tidak perlu buat apa-apa.",
     "phoneCodeSent": "Kami telah menghantar kod ke nombor anda. Masukkannya di bawah.",
     "phoneCodePlaceholder": "Masukkan kod",
     "phoneCodeWrong": "Kod itu tidak sepadan. Sila cuba lagi.",

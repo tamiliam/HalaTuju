@@ -998,6 +998,7 @@ class ProfileView(APIView):
     permission_classes = [SupabaseIsAuthenticated]
 
     def get(self, request):
+        from django.conf import settings
         profile, created = StudentProfile.objects.get_or_create(
             supabase_user_id=request.user_id
         )
@@ -1087,6 +1088,9 @@ class ProfileView(APIView):
             'contact_email_verified': contact_email_verified,
             'contact_phone': profile.contact_phone,
             'contact_phone_verified': profile.contact_phone_verified,
+            # Whether the student phone-verify control is live (paused by default — see
+            # settings.PHONE_VERIFY_ENABLED). The badge still shows for already-verified numbers.
+            'phone_verify_enabled': getattr(settings, 'PHONE_VERIFY_ENABLED', False),
             'whatsapp_opt_in': profile.whatsapp_opt_in,
             # TD-061: canonical financial fields (replace legacy family_income/
             # siblings/phone). The /profile family card reads these.
@@ -1490,6 +1494,12 @@ class PhoneVerifyStartView(APIView):
         from django.core.cache import cache
         from apps.scholarship import whatsapp  # local import: avoids app-load order issues
 
+        # Student phone verification is paused (see settings.PHONE_VERIFY_ENABLED). Refuse
+        # gracefully — the /profile UI shows a "planned for the future" note, but guard the
+        # endpoint too so a direct hit can't spend an SMS.
+        if not getattr(settings, 'PHONE_VERIFY_ENABLED', False):
+            return Response({'error': 'phone_verify_paused'}, status=status.HTTP_403_FORBIDDEN)
+
         try:
             profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
         except StudentProfile.DoesNotExist:
@@ -1525,7 +1535,12 @@ class PhoneVerifyCheckView(APIView):
     permission_classes = [SupabaseIsAuthenticated]
 
     def post(self, request):
+        from django.conf import settings
         from apps.scholarship import whatsapp  # local import: avoids app-load order issues
+
+        if not getattr(settings, 'PHONE_VERIFY_ENABLED', False):
+            return Response({'verified': False, 'error': 'phone_verify_paused'},
+                            status=status.HTTP_403_FORBIDDEN)
 
         try:
             profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
