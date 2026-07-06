@@ -1484,10 +1484,11 @@
         "reviewing": "We'll review this"
       },
       "strCheck": {
-        "recipient": "Recipient",
+        "recipient": "Name",
         "icNo": "IC No",
-        "statusYear": "Status / Year",
-        "amount": "Amount",
+        "status": "Status",
+        "year": "Year",
+        "approved": "Approved",
         "current": "Current",
         "stale": "Out of date — needs this year's STR",
         "rejected": "Not approved",

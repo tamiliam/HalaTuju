@@ -254,15 +254,45 @@ V5, 2026-07-04). It supersedes the income paragraph in `verdict-confidence-bands
 cross-links here) and any older phrasing in this spec. `verdict_engine._verdict_income` /
 `_verdict_income_salary` must match it; the regression tests in `test_verdict_engine.py` pin each row.
 
-The STR axis follows the **Status × Current matrix** (§3/§5): Lulus+dated → Certain, Lulus+no-date →
+**STR PRECEDENCE (owner 2026-07-07) — the top rule, above the route split.** A genuine, approved,
+non-breached STR whose recipient matches **ANY parent/guardian** settles income B40 *before the income
+route is even considered*. `verdict_engine._str_precedence_verdict` (fed by `income_engine.household_str_status`)
+runs first in `_verdict_income`; the salary route is explored **only when it returns None**. Consequences:
+- **Exhaustive household either-match.** The recipient's NAME and NRIC are matched *independently* against
+  every parent/guardian's IC (`_str_recipient_household_match`); a hit on either field against any member
+  is a household match. A genuine STR is a household benefit and the letter can carry either spouse's
+  name/IC, so "recipient ≠ the declared earner" is **not** a mismatch (e.g. #45: name → father, NRIC →
+  mother — both household members). "Breached" is a LAST resort, reached only when *all* matching fails.
+- **Route- and tag-agnostic.** A misfiled `income_route`/`income_earner`/doc-tag no longer drops a
+  genuine-STR household to salary.
+- **Amount dropped entirely — four variables on every surface: Name · NRIC · Status · Date.** Status =
+  approved? (a readable "Lulus"/"diluluskan"). Date = current cycle? (the letter date, or a Maklumat-
+  Pembayaran credit date). The Jumlah Telah Dibayar / Jumlah Bayaran Keseluruhan amounts are **genuineness
+  signatures only** (surface recognition), NEVER decision variables — the amount varies without meaning and
+  a prior-year figure is irrelevant. The old paid-amount rescue is RETIRED — a misread approval reads
+  `unreadable` (a clean re-read settles it), never greened off a number.
+- **Surface currency ceiling.** A **Dashboard** confirms approval but is a self-service snapshot that can't
+  certify the cycle → its max band is **Probable** (`_str_currency` caps `source_type='dashboard'` at
+  `unconfirmed`). Only the **Letter** (dated) and **Semakan Status** (dated payment) can reach **Certain**.
+  Extraction (`doc_parse.py`): classify the dashboard by its "Status Permohonan STR" heading BEFORE the broad
+  "status permohonan" Semakan test, and read the status VALUE ("Lulus") not the heading token ("STR").
+- **Fraud guard kept.** The matched member's relationship to the student must be confirmed (father →
+  patronymic, mother → BC, guardian → letter, or the #9 IC-number chain) before the STR greens — an
+  unconfirmed relationship falls through to the route logic, which asks for the missing tie.
+
+The STR axis then follows the **Status × Current matrix** (§3/§5): Lulus+dated → Certain, Lulus+no-date →
 Probable, Lulus+prior-year(stale) / approval-unread → Unsure, Ditolak/non-STR → Fail (salary net below).
 
 | Band | Condition |
 |---|---|
-| 🟢 **Certain** | valid current STR (recipient = earner, dated this cycle) + earner IC + relationship confirmed; OR the fully-confirmed salary route under the line (see the exception note below) |
-| 🔵 **Probable** | approved STR with no date (Lulus, or paid-amount rescue); OR the STR fall-through's salary evidence under the line with large headroom despite an uncorroborated member |
-| 🟡 **Unsure** | stale STR (prior-year); OR approval unreadable; OR a failed STR with **no salary docs**; OR the fall-through near the line / thin uncorroborated headroom; OR **recipient ≠ earner** (a positive name/NRIC mismatch on an otherwise-approved STR — never a blue read off the earner-IC greens); OR a declared income with no accepted proof |
+| 🟢 **Certain** | valid current STR (recipient matches a parent/guardian on name OR NRIC, dated this cycle) + relationship confirmed — route-agnostic; OR the fully-confirmed salary route under the line (see the exception note below) |
+| 🔵 **Probable** | approved STR with no date (Lulus, no readable cycle date) + confirmed recipient; OR the STR fall-through's salary evidence under the line with large headroom despite an uncorroborated member |
+| 🟡 **Unsure** | stale STR (prior-year); OR approval unreadable (no readable "Lulus"); OR a failed STR with **no salary docs**; OR the fall-through near the line / thin uncorroborated headroom; OR a declared income with no accepted proof |
 | 🔴 **Can't-verify / Fail** | no usable income evidence at all; OR a compulsory route doc missing; OR household income **clearly over** the B40 line — **on EITHER route** (the STR fall-through *and* the fully-assembled salary route band identically: same household economics, same colour). Advisory — the officer still places the final verdict; circumstances may apply at interview |
+
+Note: a genuine STR whose recipient matches **no** household member (a stranger's STR) is not dispositive —
+`household_str_status` returns None and the route logic runs (an STR-route case then bands its own
+`str_recipient_mismatch`/`str_present_unverified`). This is the fraud floor, unchanged.
 
 **Two anchored evenness rules (V5, audit #10):**
 

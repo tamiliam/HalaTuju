@@ -268,6 +268,49 @@ def _utility_context(application):
         items.append(_item('household_size_confirm', described=hs['described'], size=hs['size']))  # SOFT
     return items
 
+def _str_precedence_verdict(application):
+    """STR PRECEDENCE (owner 2026-07-07), route-agnostic. A genuine, approved, non-breached STR whose
+    recipient matches — exhaustively, name OR nric (``household_str_status``) — a parent/guardian whose
+    relationship to the student is CONFIRMED settles income B40 BEFORE the route split; the salary
+    route is explored ONLY when no such STR exists (str-proof-spec.md §8). Returns an income ``_fact``,
+    or None when there is no dispositive STR (→ the route-specific assessment runs unchanged).
+
+      - current STR + confirmed parent/guardian recipient → 'verified' (Certain).
+      - unconfirmed STR (approved, no date) + confirmed → 'review' (Probable / blue).
+      - recipient matches an on-file IC but the parent/guardian LINK isn't confirmed → None (fall
+        through): an unproven relationship isn't an established parent/guardian yet, so the route
+        logic asks for the missing tie (BC / patronymic) — the fraud guard the salary route already
+        applied via ``confirmed_members``."""
+    from .income_engine import (household_str_status, _member_ic_doc,
+                                member_relationship_status, chain_verified_earner)
+    grade, member = household_str_status(application)
+    if not grade or not member:
+        return None
+    student_name = getattr(application.profile, 'name', '') or ''
+    ic_doc = _member_ic_doc(application, member)
+    ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
+    # Confirm the matched recipient really is the student's parent/guardian: father → patronymic,
+    # mother → birth certificate, guardian → letter, or the BC↔proof IC-number chain (#9).
+    bcf = _doc_assist_fields(_latest_doc(application, 'birth_certificate'))
+    g_doc = _latest_doc(application, 'guardianship_letter')
+    rel = member_relationship_status(member, student_name, ic_name,
+                                     bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', ''),
+                                     (getattr(g_doc, 'vision_name', '') or ''), bcf.get('bc_father_name', ''))
+    if rel != 'match' and member in ('mother', 'father') and chain_verified_earner(application, member):
+        rel = 'match'
+    if rel != 'match':
+        return None            # recipient not yet an established parent/guardian → route logic runs
+    evidence = _utility_context(application)
+    if ic_name:
+        evidence.append(_item('earner_ic_present', member=member, name=ic_name))
+    evidence.append(_item('relationship_confirmed', member=member))
+    evidence.append(_item('str_verified'))
+    if grade == 'current':
+        return _fact('income', 'verified', evidence, [])
+    # unconfirmed (approved, no date) → Probable (blue); confirm the cycle at interview.
+    return _fact('income', 'review', evidence, [_item('str_not_current', status='unconfirmed')])
+
+
 def _verdict_income(application):
     """Income Check-1 (item 3): the guided wizard says which documents the family
     needs (income_engine.income_requirements); this assembles whether they're present,
@@ -292,6 +335,15 @@ def _verdict_income(application):
     student_name = getattr(application.profile, 'name', '') or ''
     earner = (getattr(application, 'income_earner', '') or '').strip()
     route = (getattr(application, 'income_route', '') or '').strip()
+
+    # STR PRECEDENCE (owner 2026-07-07): a genuine, approved, non-breached STR whose recipient
+    # matches ANY parent/guardian settles B40 before the income route is even considered — the
+    # salary route is explored ONLY when no such STR exists. Route- and tag-agnostic, so a
+    # misfiled route/earner (e.g. #45 on the salary route with the STR tagged 'mother') no longer
+    # drops a genuine-STR household to salary.
+    settled = _str_precedence_verdict(application)
+    if settled is not None:
+        return settled
 
     str_doc = _latest_doc(application, 'str')
 
@@ -468,7 +520,6 @@ def _verdict_income_salary(application, student_name, present):
     evidence = _utility_context(application)
     any_financial = False          # at least one member supplied a payslip/EPF (or an ACCEPTED declared income)
     all_confirmed = True           # every member's relationship is a positive 'match'
-    confirmed_members = set()      # members whose relationship is a positive 'match' (for the STR recipient gate)
     declared_backed, declared_unproven = [], []   # Phase 2A: members carried by a declared amount
     # Per-member gaps are AGGREGATED by code into one item carrying a `members` list —
     # the resolution layer keys tickets by code (one per code per application), so
@@ -515,7 +566,6 @@ def _verdict_income_salary(application, student_name, present):
             rel = 'match'
         if rel == 'match':
             evidence.append(_item('relationship_confirmed', member=m))
-            confirmed_members.add(m)
         elif rel == 'mismatch':
             if m == 'mother':
                 bc_mismatch = True
@@ -574,21 +624,9 @@ def _verdict_income_salary(application, student_name, present):
         return _fact('income', 'recommend', evidence,
                      review + [_item('income_declared_needs_evidence', members=declared_unproven)])
 
-    # ── P3 (str-proof-spec.md §8): a valid, non-breached STR settles B40 on the salary route too ──
-    # A valid STR is the government's own means-test (owner: "STR not breached → no full salary docs").
-    # Honour it here, BEFORE the salary headroom (which ignores the STR and lands 'unknown' → a false
-    # 'unsure', #45/#63). Fraud guard: the recipient must match a CONFIRMED household member's IC.
-    # Invalid STRs (rejected/wrong_type/stale/unreadable) return None → the salary assessment runs
-    # unchanged (V5 fall-through preserved).
-    from .income_engine import salary_route_str
-    str_grade, str_member = salary_route_str(application)
-    str_settles = bool(str_grade and str_member in confirmed_members)
-    if str_settles and str_grade == 'current':
-        # Current STR + confirmed recipient → Certain (green), settled over the salary headroom
-        # (spec §8: "valid current STR → Certain"; the owner's short-circuit over an over-line salary).
-        evidence.append(_item('str_verified'))
-        return _fact('income', 'verified', evidence, [])
-
+    # NB a valid non-breached STR no longer needs handling here: STR PRECEDENCE (_str_precedence_verdict)
+    # settles it BEFORE the route split, so this salary path is only reached when there is no dispositive
+    # STR. Salary is the genuine fallback (str-proof-spec.md §8).
     if review:
         return _fact('income', 'review', evidence, review)
     # The cluster adds up (every IC + relationship confirmed, financial evidence present).
@@ -617,16 +655,12 @@ def _verdict_income_salary(application, student_name, present):
             # an UNverified household; the salary-track redesign will revisit).
             evidence.append(_item('income_per_capita_ok', amount=pc, ceiling=ceiling))
             return _fact('income', 'verified', evidence, [])
-        # 'unknown' — couldn't compute (unreadable income / no household size).
-        if str_settles:   # unconfirmed STR (approved, no date), recipient confirmed → Probable (blue)
-            evidence.append(_item('str_verified'))
-            return _fact('income', 'review', evidence, [_item('str_not_current', status='unconfirmed')])
+        # 'unknown' — couldn't compute (unreadable income / no household size) and no dispositive STR
+        # (precedence would have settled one) → a human places it at interview.
         return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
     # Assembled but a human still places it: no payslip/EPF (informal) or a relationship
-    # we couldn't machine-confirm. Never blocks.
-    if str_settles:   # unconfirmed STR carrying a thin/uncorroborated salary cluster → Probable (blue)
-        evidence.append(_item('str_verified'))
-        return _fact('income', 'review', evidence, [_item('str_not_current', status='unconfirmed')])
+    # we couldn't machine-confirm. Never blocks. (A dispositive STR would already have been
+    # settled by STR precedence upstream, so there is none to lean on here.)
     return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
 
 

@@ -1484,10 +1484,11 @@
         "reviewing": "Kami akan semak ini"
       },
       "strCheck": {
-        "recipient": "Penerima",
+        "recipient": "Nama",
         "icNo": "No. KP",
-        "statusYear": "Status / Tahun",
-        "amount": "Jumlah",
+        "status": "Status",
+        "year": "Tahun",
+        "approved": "Diluluskan",
         "current": "Terkini",
         "stale": "Lapuk — perlukan STR tahun ini",
         "rejected": "Tidak diluluskan",

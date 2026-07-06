@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-07 — STR precedence + exhaustive household match + amount dropped (BE + FE; NO migration; re-banding-gated)
+
+Owner principle (2026-07-07): a genuine, approved (Lulus) STR is the government's own means-test and
+**takes precedence route-agnostically** — a family with a valid STR must never be treated as a salary
+case. Salary is the fallback ONLY when the STR is *breached* (rejected / wrong_type / stale / not-genuine)
+OR its recipient matches no parent/guardian after **exhausting** the match. The IC "mismatch" on #45 was
+system confusion + misfiling, not a real mismatch (the STR letter names the father but prints the mother's
+IC — both household members).
+
+- **`_str_recipient_household_match` (income_engine)** — the STR recipient's NAME and NRIC are now matched
+  *independently* against EVERY parent/guardian's IC (not just the declared earner). A hit on either field
+  against any member is a household match. `student_str_check` uses it, so the officer cockpit STR chip and
+  the upload card become household-aware for free (the #45 false "mismatch" disappears).
+- **`household_str_status` (replaces `salary_route_str`)** — the single route-agnostic "does this household
+  hold a dispositive STR?" (genuine + approved + current/unconfirmed + recipient matches a parent/guardian).
+- **STR precedence hoisted above the route split** — new `verdict_engine._str_precedence_verdict` runs first
+  in `_verdict_income`: a valid STR + confirmed parent/guardian recipient settles B40 (current → Certain,
+  unconfirmed → Probable) before the route is considered; salary runs only when there is no dispositive STR.
+  The P3 salary-route short-circuit is now redundant and removed.
+- **Amount dropped entirely** — `_str_currency` no longer takes/uses an amount; the STR model is the same
+  four variables on every surface: Name · NRIC · Status (approved?) · Date (current cycle?). The Jumlah
+  Telah Dibayar / Keseluruhan amounts are *genuineness signatures only*, never decision variables. The
+  paid-amount rescue is retired: a misread approval reads `unreadable` (a clean re-read settles it), never
+  greened off a number. Upload card (`StrChecklist`) split "Status / Year" into separate **Status** +
+  **Year** rows and dropped the **Amount** row (en/ms/ta); `StrCheck.amount` removed.
+- **Surface currency ceiling** — a **Dashboard** confirms approval but can't certify the cycle, so it caps at
+  **Probable** (`_str_currency` returns `unconfirmed` for `source_type='dashboard'`, never `current`). Only the
+  **Letter** (dated) and **Semakan Status** (dated Maklumat-Pembayaran) can reach **Certain**.
+- **Dashboard parser fixed** (`doc_parse.py`, the real #23 root cause) — `_str_surface` now classifies the
+  dashboard by its own "Status Permohonan STR" / Papan Pemuka heading *before* the broad Semakan test (it was
+  mis-tagged `semakan_status`), and the status read consumes the trailing "STR"/"Semasa" so it returns the
+  value **"Lulus"** on the next line instead of leaking the heading token **"STR"**. Takes effect on a live
+  cockpit **Re-run** of existing STR docs.
+- `current_status` is computed live on read → NO migration, NO MODEL_VERSION bump, and the change
+  self-corrects on deploy.
+- Tests: 2116 scholarship pytest (+ #45 both-spouses green, NRIC-only either-match, de-amount ladder) + 465
+  jest + tsc clean. Spec `docs/scholarship/str-proof-spec.md` §8 updated (STR-precedence top rule).
+
 ### 2026-07-06 — Pre-submit STR cluster: default earner, grouped box, green-when-complete, key-leak fix (FE only)
 
 Polishing the apply-form income wizard's STR route to match the salary route:

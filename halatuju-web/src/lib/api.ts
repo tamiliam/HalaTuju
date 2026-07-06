@@ -1664,8 +1664,9 @@ export interface StrCheck {
   nric: string
   status: string
   year: string
-  amount: string
   member: string
+  // Household-level (owner 2026-07-07): 'match' iff the recipient's name/nric hits ANY
+  // parent/guardian's IC (each field independently — see _str_recipient_household_match).
   name_status: 'match' | 'mismatch' | 'no_ref'
   nric_status: 'match' | 'mismatch' | 'no_ref'
   // 'current' = approved (Lulus/Diluluskan/Layak) AND a current year; 'stale' = older year;

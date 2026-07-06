@@ -171,10 +171,13 @@ def _str_surface(text: str) -> Optional[str]:
         return 'unknown'    # a MySTR application-record COPY — NOT proof of approval
     if has(text, r'kementerian\s+kewangan', r'nama\s+penerima', r'telah\s+diluluskan'):
         return 'letter'
-    if has(text, r'semakan\s+status', r'status\s+permohonan'):
-        return 'semakan_status'
-    if has(text, r'papan\s+pemuka', r'\bdashboard\b'):
+    # DASHBOARD before SEMAKAN: the dashboard's own heading "Status Permohonan STR" (and Papan
+    # Pemuka / Dashboard) is distinct from the Semakan's "Status Permohonan SEMASA". Testing the
+    # broad 'status permohonan' for Semakan first would mis-tag every dashboard as semakan_status.
+    if has(text, r'status\s+permohonan\s+str', r'papan\s+pemuka', r'\bdashboard\b'):
         return 'dashboard'
+    if has(text, r'semakan\s+status', r'status\s+permohonan\s+semasa', r'status\s+pedalaman'):
+        return 'semakan_status'
     return 'semakan_status'    # STR-marked portal screen we can't sub-classify
 
 
@@ -192,9 +195,12 @@ def _parse_str(text: str) -> Optional[dict]:
     if source_type != 'unknown' and not (name or nric):
         return None
 
-    status = find_value(text, r'status\s+permohonan(?:\s+semasa)?')
-    if not re.search(r'[A-Za-z]{3}', status or ''):   # junk (a stray "i", blank) → use body
-        status = ''
+    # Read the status VALUE, not the heading. The label regex CONSUMES the trailing "STR"
+    # (dashboard: "Status Permohonan STR") or "Semasa" (semakan: "Status Permohonan Semasa") so
+    # find_value returns what follows — "Lulus" on the next line — rather than leaking "STR"/"Semasa".
+    status = find_value(text, r'status\s+permohonan(?:\s+str|\s+semasa)?')
+    if not re.search(r'[A-Za-z]{3}', status or '') or re.fullmatch(r'(?i)str', (status or '').strip()):
+        status = ''                                   # junk (a stray "i"/"STR"/blank) → use body
     if not status:
         m = next((re.search(p, text, re.IGNORECASE) for p in _STR_APPROVED
                   if re.search(p, text, re.IGNORECASE)), None)

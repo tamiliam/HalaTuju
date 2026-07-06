@@ -438,7 +438,7 @@ def _member_ic_doc(application, member):
 # against the family roster. Display-facing (the cockpit box + the correcting tag-guard place them
 # under the right person). STR is included so a salary-route STR (the recipient may differ from the
 # declared income_earner — #45) files under its actual RECIPIENT, matching the verdict's own
-# recipient match (salary_route_str) rather than falling back to income_earner.
+# recipient match (household_str_status) rather than falling back to income_earner.
 _RESOLVABLE_INCOME_DOCS = ('parent_ic', 'salary_slip', 'epf', 'str')
 
 
@@ -602,19 +602,6 @@ _STR_YEAR_RE = re.compile(r'(20\d{2})')
 _STR_RECOGNISED_SOURCES = ('letter', 'semakan_status', 'dashboard')
 
 
-def _positive_amount(raw):
-    """True if a currency string carries a POSITIVE RM figure (e.g. 'RM850', '1,200.00').
-    A blank / 'RM0' / unparseable value is False — a genuine STR printed early in the cycle can
-    legitimately show RM0 paid, so a zero/absent amount is never treated as a signal either way."""
-    m = re.search(r'\d[\d,]*\.?\d*', raw or '')
-    if not m:
-        return False
-    try:
-        return float(m.group(0).replace(',', '')) > 0
-    except ValueError:
-        return False
-
-
 # The RED band of the STR-currency ladder — states where the doc on file positively fails
 # to prove a current STR (wrong kind of document, rejected, unreadable status, or a previous
 # year's). Code-health S4 #13: this tuple is THE shared source of truth — the 8b4686b1
@@ -630,7 +617,7 @@ STR_RED_STATES = ('wrong_type', 'rejected', 'stale')
 STR_COACH_STATES = STR_RED_STATES + ('unreadable', 'unconfirmed')
 
 
-def _str_currency(status_raw, year_str, cohort_year, source_type='', amount_raw=''):
+def _str_currency(status_raw, year_str, cohort_year, source_type=''):
     """Structured STR currency state for the verdict (docs/scholarship/str-proof-spec.md). The
     FORMAT GATE runs first: a document that is not one of the three genuine MySTR proofs is
     ``wrong_type`` — never softened to ``unconfirmed``.
@@ -639,24 +626,26 @@ def _str_currency(status_raw, year_str, cohort_year, source_type='', amount_raw=
       'wrong_type'  — NOT a recognised STR proof (``source_type='unknown'``: a SALINAN / SARA
                       letter / salary slip / other). NOT an STR at all → RED; the income verdict
                       falls through to the salary route.
-      'unreadable'  — a recognised format but the approval status did NOT read AND no payment is
-                      shown, so approval can't be confirmed → AMBER (Unsure). NB not a claim the
-                      page is cropped — the status token may simply have been misread.
+      'unreadable'  — a recognised format but the approval status did NOT read AND no current-cycle
+                      date is shown, so approval can't be confirmed → AMBER (Unsure). NB not a claim
+                      the page is cropped — the status token may simply have been misread.
       'stale'       — approved, but a readable year OLDER than the cohort year (STR is annual) → AMBER.
       'unconfirmed' — a recognised format, approved (Lulus), but NO date to pin the cycle
                       (dashboard / collapsed Semakan) → BLUE (probably current).
       'current'     — a recognised format, approved, DATED current (letter date / Semakan payment
                       date ≥ cohort year) → GREEN.
 
-    APPROVAL is proven PRIMARILY by a readable "Lulus"/"diluluskan" status. A positive PAID amount
-    ("Jumlah … STR RM…") is an EXTRA, corroborating proof — you are not paid STR money unless the
-    application is Lulus — so it rescues a doc whose status token was misread (e.g. the MySTR label
-    "STR" grabbed instead of the "Lulus" beneath it). It is additive only: a zero/absent amount never
-    downgrades a Lulus doc (a genuine STR printed early can show RM0 paid).
+    The STR model is exactly Name · IC · Status · Year (owner 2026-07-07). Only two questions
+    decide currency: **Status** — is it approved? (a readable "Lulus"/"diluluskan"; on a dashboard/
+    Semakan the "Lulus" IS shown); and **Year** — is it for the current cycle? proven by a DATE (the
+    letter date, or a Maklumat-Pembayaran credit date), NEVER by an amount. The approved/paid AMOUNT
+    is ignored entirely — it varies without meaning and a prior-year figure is irrelevant (this
+    RETIRES the old paid-amount rescue: a misread approval no longer greens off a number; a readable
+    "Lulus" is required, else the doc reads 'unreadable' and a re-read / interview settles it).
 
-    A dateless approved STR no longer counts as GREEN: a year-old dashboard/Semakan screenshot also
-    shows "Lulus", so without a date we can't confirm the cycle (→ BLUE, confirm at interview /
-    open Maklumat Pembayaran). A blank/legacy ``source_type`` (extracted before classification) is
+    A dateless approved STR is not GREEN: a year-old dashboard/Semakan screenshot also shows
+    "Lulus", so without a date we can't confirm the cycle (→ BLUE, confirm at interview / open
+    Maklumat Pembayaran). A blank/legacy ``source_type`` (extracted before classification) is
     TOLERATED — it falls through to the status assessment rather than being forced to wrong_type;
     a re-run repopulates it."""
     s = (status_raw or '').lower()
@@ -665,12 +654,17 @@ def _str_currency(status_raw, year_str, cohort_year, source_type='', amount_raw=
         return 'rejected'
     if st == 'unknown':
         return 'wrong_type'          # not a genuine STR proof at all (SALINAN / SARA / payslip / …)
-    approved = any(w in s for w in _STR_APPROVED_WORDS)
-    if not approved and not _positive_amount(amount_raw):
-        return 'unreadable'          # no readable Lulus AND no payment → can't confirm approval
-    # Approved (by "Lulus" or, failing a readable status, by a positive paid amount). A DATE pins
-    # the cycle: prior-year → stale; current-or-later → current; NO date (dashboard / collapsed
-    # Semakan) can't be confirmed current → unconfirmed (BLUE).
+    if not any(w in s for w in _STR_APPROVED_WORDS):
+        return 'unreadable'          # no readable "Lulus"/"diluluskan" → STR approval can't be confirmed
+    # SURFACE CEILING (owner 2026-07-07): a DASHBOARD confirms APPROVAL but is a self-service snapshot
+    # that cannot certify the cycle to certainty — its max band is Probable. So an approved dashboard
+    # caps at 'unconfirmed' (BLUE) regardless of any date read. Only the LETTER (dated) and the
+    # SEMAKAN STATUS (dated Maklumat-Pembayaran) can reach 'current' (GREEN / Certain).
+    if st == 'dashboard':
+        return 'unconfirmed'
+    # Letter / Semakan / blank-legacy. The Year question: a DATE (letter date / Maklumat-Pembayaran
+    # credit date) pins the cycle. No date → unconfirmed (BLUE); prior-year → stale (AMBER);
+    # current-or-later → current (GREEN).
     m = _STR_YEAR_RE.search(year_str or '')
     if not m:
         return 'unconfirmed'
@@ -679,24 +673,55 @@ def _str_currency(status_raw, year_str, cohort_year, source_type='', amount_raw=
     return 'current'
 
 
-def student_str_check(doc):
-    """For an STR document: the recipient facts (name · NRIC · status · year · amount)
-    cross-checked against the STR EARNER's IC (the household benefit is in the earner's
-    name — Q2 'whose STR?'), plus whether it's CURRENT (this cohort year + approved).
-    Returns ``{name, nric, status, year, amount, member, name_status, nric_status,
-    current_status, ic_present}`` or None for a non-STR doc.
+def _str_recipient_household_match(application, name, nric, tagged_member=''):
+    """Exhaustively match an STR recipient's NAME and NRIC — INDEPENDENTLY — against every
+    parent/guardian (and any other roster member) whose IC is on file. Returns
+    ``(name_status, nric_status, member)``.
 
-    name_status / nric_status: 'match' | 'mismatch' | 'no_ref'.
-    current_status: 'current' | 'stale' | 'rejected'."""
+    A genuine STR is a HOUSEHOLD benefit and the letter can carry either spouse's name/IC
+    (owner 2026-07-07: "match the STR against ANY parent/guardian; only when ALL attempts fail is
+    it breached"), so we try everyone — not just the declared earner — and each field settles on
+    its own: a recipient whose NAME hits the father and whose NRIC hits the mother is a clean
+    household match on BOTH (e.g. #45). 'match' iff the field hits any member's IC; 'mismatch' iff
+    at least one IC was compared and none hit; 'no_ref' when there was nothing to compare against.
+    ``member`` resolves to the name-matched member (preferred), else the nric-matched member, else
+    the tagged/earner fallback."""
+    members = list(dict.fromkeys([m for m in ([tagged_member] + list(_MEMBER_ORDER)) if m]))
+    name_hit = nric_hit = None
+    name_seen = nric_seen = False
+    for m in members:
+        ic = _member_ic_doc(application, m)
+        if ic is None:
+            continue
+        ic_name = (getattr(ic, 'vision_name', '') or '').strip()
+        ic_nric = (getattr(ic, 'vision_nric', '') or '').strip()
+        if ic_name:
+            name_seen = True
+            if name_hit is None and _name_bucket(name, ic_name) == 'match':
+                name_hit = m
+        if ic_nric:
+            nric_seen = True
+            if nric_hit is None and _nric_bucket(nric, ic_nric) == 'match':
+                nric_hit = m
+    name_status = 'match' if name_hit else ('mismatch' if (name and name_seen) else 'no_ref')
+    nric_status = 'match' if nric_hit else ('mismatch' if (nric and nric_seen) else 'no_ref')
+    return name_status, nric_status, (name_hit or nric_hit or tagged_member or '')
+
+
+def student_str_check(doc):
+    """For an STR document: the recipient facts (name · NRIC · status · year) matched against the
+    HOUSEHOLD — every parent/guardian's IC, on name OR nric independently — plus whether it's
+    CURRENT (this cohort year + approved). Returns ``{name, nric, status, year, member,
+    name_status, nric_status, current_status, ic_present}`` or None for a non-STR doc.
+
+    name_status / nric_status: 'match' | 'mismatch' | 'no_ref' (household-level — see
+    ``_str_recipient_household_match``). current_status: the STR-currency ladder (``_str_currency``)."""
     if getattr(doc, 'doc_type', '') != 'str':
         return None
     app = doc.application
-    # The STR earner: income_earner on the STR route; on the salary route (blank earner) fall back
-    # to the STR document's OWN member tag, so the recipient cross-checks against that parent's IC
-    # (e.g. #63 — a mother-STR family on the salary route: the mother's IC sits right there and the
-    # STR should read against it, not go 'no_ref'). Display-only on the salary route: the salary
-    # verdict never reads this name_status/nric_status (only has_valid_str's currency).
-    member = ((getattr(app, 'income_earner', '') or '').strip()
+    # Where the recipient resolves when neither name nor nric hits an IC: the declared earner on
+    # the STR route, else the doc's own member tag.
+    tagged = ((getattr(app, 'income_earner', '') or '').strip()
               or (getattr(doc, 'household_member', '') or '').strip())
 
     vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
@@ -705,25 +730,20 @@ def student_str_check(doc):
     nric = (f.get('recipient_nric', '') or '').strip()
     status = (f.get('status', '') or '').strip()
     year = (f.get('year', '') or '').strip()
-    amount = (f.get('amount', '') or '').strip()
 
-    ic = _member_ic_doc(app, member) if member else None
-    ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
-    ic_nric = (getattr(ic, 'vision_nric', '') or '').strip() if ic else ''
-
-    name_status = _name_bucket(name, ic_name)
-    nric_status = _nric_bucket(nric, ic_nric)
-    # IC-NUMBER chain (#9): the STR recipient is confirmed by the BC↔STR IC-number match → the
-    # benefit is the verified earner's, regardless of a wrong card uploaded in the slot. (Currency
-    # below is a separate test — a confirmed recipient can still hold a stale/rejected STR.)
+    name_status, nric_status, member = _str_recipient_household_match(app, name, nric, tagged)
+    # IC-NUMBER chain (#9): a BC↔STR IC-number match confirms the recipient is the verified earner,
+    # regardless of a wrong/absent card in the slot. (Currency below is a separate test — a
+    # confirmed recipient can still hold a stale/rejected STR.)
     if member and chain_verified_earner(app, member):
         name_status = nric_status = 'match'
 
     cohort_year = getattr(getattr(app, 'cohort', None), 'year', None)
+    ic = _member_ic_doc(app, member) if member else None
     return {
-        'name': name, 'nric': nric, 'status': status, 'year': year, 'amount': amount,
+        'name': name, 'nric': nric, 'status': status, 'year': year,
         'member': member, 'name_status': name_status, 'nric_status': nric_status,
-        'current_status': _str_currency(status, year, cohort_year, f.get('source_type', ''), amount),
+        'current_status': _str_currency(status, year, cohort_year, f.get('source_type', '')),
         'ic_present': ic is not None,
     }
 
@@ -859,43 +879,36 @@ def has_valid_str(application):
     return bool(sc and sc['current_status'] in ('current', 'unconfirmed'))
 
 
-def salary_route_str(application):
-    """P3 / str-proof-spec.md §8 — the salary-route STR settle. A valid, non-breached STR is the
-    household's OWN means-test, so it settles B40 on the SALARY route too (owner: "STR not breached →
-    no full salary docs needed"). Returns ``(grade, member)`` where grade ∈ {'current','unconfirmed'}
-    and member is the household member whose IC the STR recipient matches — or ``(None, None)`` when the
-    STR is missing, INVALID (rejected / wrong_type / stale / unreadable → falls through to salary, the
-    V5 behaviour), or its recipient can't be matched to a household member's IC (a stranger's STR
-    proves nothing here).
+def household_str_status(application):
+    """Owner 2026-07-07 — the single, ROUTE-AGNOSTIC "does this household hold a dispositive STR?".
+    A genuine, approved, non-breached STR is the government's own means-test, so it settles B40 —
+    on EITHER income route, before the route is even considered (STR PRECEDENCE; the CALLER hoists
+    it above the route split). Returns ``(grade, member)`` where grade ∈ {'current','unconfirmed'}
+    and member is the parent/guardian the recipient resolves to — or ``(None, None)`` when the STR
+    is missing, BREACHED (rejected / wrong_type / stale / unreadable, or judged non-genuine), or its
+    recipient matches NO household member (a stranger's STR proves nothing here).
 
-    The recipient match is the fraud guard. ``student_str_check`` cross-checks against ``income_earner``,
-    which need NOT be the STR recipient (#45: father's STR, mother the declared earner) — so here we
-    match the STR recipient's name / NRIC against the STR's OWN tagged member first, then any working
-    member. Currency drives the grade; the CALLER additionally requires that member's relationship to
-    the student to be confirmed before it greens (so a matched-but-unrelated recipient can't settle B40)."""
+    Supersedes ``salary_route_str``: the recipient match is now exhaustive across EVERY parent/
+    guardian (name OR nric, independently — done inside ``student_str_check``), so "breached" is a
+    LAST resort reached only when all matching attempts fail — not a first read off the declared
+    earner. The CALLER still confirms the matched member's relationship to the student before it
+    greens (so a matched-but-unrelated recipient can't settle B40)."""
     docs = getattr(application, 'documents', None)
     if docs is None:
         return None, None
     str_doc = docs.filter(doc_type='str', superseded_at__isnull=True).order_by('-uploaded_at').first()
     if str_doc is None:
         return None, None
+    # Genuineness guard: a positively non-genuine STR is breached (mirrors str_not_breached).
+    vf = getattr(str_doc, 'vision_fields', None) or {}
+    auth = (vf.get('authenticity') or {}).get('status', '') if isinstance(vf, dict) else ''
+    if auth and auth not in ('genuine', 'likely_genuine'):
+        return None, None
     sc = student_str_check(str_doc)
     if not sc or sc['current_status'] not in ('current', 'unconfirmed'):
         return None, None
-    name, nric = sc['name'], sc['nric']
-    tagged = (getattr(str_doc, 'household_member', '') or '').strip()
-    seen = set()
-    for m in [tagged] + list(effective_working_members(application)) + ['father', 'mother']:
-        if not m or m in seen:
-            continue
-        seen.add(m)
-        ic = _member_ic_doc(application, m)
-        if ic is None:
-            continue
-        ic_name = (getattr(ic, 'vision_name', '') or '').strip()
-        ic_nric = (getattr(ic, 'vision_nric', '') or '').strip()
-        if _name_bucket(name, ic_name) == 'match' or _nric_bucket(nric, ic_nric) == 'match':
-            return sc['current_status'], m
+    if sc['name_status'] == 'match' or sc['nric_status'] == 'match':
+        return sc['current_status'], sc['member']
     return None, None
 
 

@@ -403,21 +403,26 @@ function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => 
       : status === 'mismatch'
         ? pill('mismatch', t('scholarship.docs.incomeProofCheck.mismatchIc'))
         : pill('none', t('scholarship.docs.incomeProofCheck.addIc'))
-  // Currency: current (approved + this year) → green; unconfirmed (no approval shown) → amber
-  // warning; unknown (nothing read) → neutral; stale/rejected → red.
-  const currentPill =
+  // The STR model is exactly four variables — Name · IC · Status · Year (owner 2026-07-07).
+  // STATUS answers "is it approved?" (Lulus/diluluskan); YEAR answers "is it for this cycle?"
+  // (a date, never an amount). The single currency ladder decomposes onto the two axes.
+  const APPROVED_STATES = ['current', 'unconfirmed', 'stale']   // a "Lulus" was read/inferred
+  const statusPill =
+    APPROVED_STATES.includes(chk.current_status)
+      ? pill('match', t('scholarship.docs.strCheck.approved'))
+      : chk.current_status === 'unknown'
+        ? pill('none', t('scholarship.docs.strCheck.unknown'))
+        : pill('mismatch', t(`scholarship.docs.strCheck.${chk.current_status}`))
+  // Year: current (dated this cycle) → green; unconfirmed (approved, no date) → amber; stale
+  // (prior year) → red; anything not approved → neutral (the Status row carries that story).
+  const yearPill =
     chk.current_status === 'current'
       ? pill('match', t('scholarship.docs.strCheck.current'))
       : chk.current_status === 'unconfirmed'
         ? pill('partial', t('scholarship.docs.strCheck.unconfirmed'))
-        : chk.current_status === 'unknown'
-          ? pill('none', t('scholarship.docs.strCheck.unknown'))
-          : pill('mismatch', t(`scholarship.docs.strCheck.${chk.current_status}`))
-  const fromDoc = (
-    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
-      {t('scholarship.docs.incomeProofCheck.fromDoc')}
-    </span>
-  )
+        : chk.current_status === 'stale'
+          ? pill('mismatch', t('scholarship.docs.strCheck.stale'))
+          : pill('none', t('scholarship.docs.strCheck.unknown'))
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
       <p className="min-w-0 text-xs text-gray-700">
@@ -432,9 +437,8 @@ function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => 
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
       {row(t('scholarship.docs.strCheck.recipient'), chk.name, vsIc(chk.name_status))}
       {chk.nric ? row(t('scholarship.docs.strCheck.icNo'), formatNric(chk.nric), vsIc(chk.nric_status)) : null}
-      {row(t('scholarship.docs.strCheck.statusYear'),
-           [chk.status, chk.year].filter(Boolean).join(' · '), currentPill)}
-      {chk.amount ? row(t('scholarship.docs.strCheck.amount'), chk.amount, fromDoc) : null}
+      {row(t('scholarship.docs.strCheck.status'), chk.status, statusPill)}
+      {row(t('scholarship.docs.strCheck.year'), chk.year, yearPill)}
     </div>
   )
 }

@@ -298,17 +298,19 @@ class TestIncome(_Base):
         self.assertEqual(f['status'], 'recommend')
         self.assertIn('str_not_current', _codes(f['unresolved']))
 
-    def test_str_approved_by_paid_amount_when_status_misread(self):
-        # #23: the model misread "Lulus" as the label "STR"; the RM850 paid it DID read proves
-        # approval → unconfirmed (no date) → Probable (review, blue off the verified earner IC).
+    def test_misread_status_no_longer_rescued_by_amount(self):
+        # Owner 2026-07-07: the paid-AMOUNT rescue is retired. #23's misread "Lulus"→"STR" status,
+        # even with an amount on the page, no longer greens — approval needs a readable "Lulus"
+        # (a genuine STR shows it), so a misread status reads 'unreadable' → Unsure (amber), which
+        # the student/officer settles with a clean re-read, never off a number.
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
         _add_doc(self.app, 'str', student_verdict='ok',
                  fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'status': 'STR',
                          'source_type': 'semakan_status', 'amount': 'RM850'})
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'review')                    # blue / Probable
-        self.assertIn('str_not_current', _codes(f['unresolved']))  # unconfirmed — confirm the cycle
+        self.assertEqual(f['status'], 'recommend')                 # amber / Unsure
+        self.assertIn('str_not_current', _codes(f['unresolved']))  # unreadable — needs a clean re-read
 
     def test_str_wrong_type_no_salary_is_unsure_not_double_flagged_genuine(self):
         # A genuine payslip / SARA letter in the STR slot (source_type='unknown') → wrong_type. With
@@ -1154,6 +1156,38 @@ class TestSalaryRouteStrSettle(TestCase):
         f = _facts(app)['income']
         self.assertNotEqual(f['status'], 'verified')
         self.assertNotIn('str_verified', _codes(f['evidence']))
+
+    def test_45_str_names_father_but_prints_mother_nric_settles(self):
+        # #45 EXACT (owner 2026-07-07): a genuine Lulus STR letter NAMES the father but prints the
+        # MOTHER's IC number (a household benefit covering both spouses). Exhaustive household match
+        # hits the father by NAME (and the mother by NRIC) → a genuine household STR → settles B40
+        # GREEN, route-/tag-agnostic (declared earner 'mother', STR mistagged 'mother', route salary).
+        app = self._app(name='YUKANESWARY A/P SARAVANAN', income_route='salary', income_earner='mother',
+                        income_working_members=['father', 'mother'])
+        _parent_ic(app, 'SARAVANAN A/L CHANTHIRAN', member='father', nric='760429-10-5289')
+        _parent_ic(app, 'REMAVATHY A/P SELVARAJOO', member='mother', nric='880328-43-5234')
+        _add_doc(app, 'birth_certificate', student_verdict='ok',
+                 fields={'bc_child_name': 'YUKANESWARY A/P SARAVANAN',
+                         'bc_mother_name': 'REMAVATHY A/P SELVARAJOO'})
+        _add_doc(app, 'str', student_verdict='ok', member='mother',      # mistagged; name is the father's
+                 fields={'recipient_name': 'SARAVANAN A/L CHANTHIRAN',
+                         'recipient_nric': '880328-43-5234',             # ← the MOTHER's IC number
+                         'status': 'Lulus', 'year': '2026'})
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('str_verified', _codes(f['evidence']))
+
+    def test_str_nric_match_alone_settles(self):
+        # Either-match on ONE field: the recipient NAME is an OCR garble that hits no IC, but the
+        # recipient NRIC matches the father's IC → still a household STR → settles.
+        app = self._app(name='YUKANESWARY A/P SARAVANAN', income_route='str', income_earner='father')
+        _parent_ic(app, 'SARAVANAN A/L CHANTHIRAN', member='father', nric='760429-10-5289')
+        _add_doc(app, 'str', student_verdict='ok', member='father',
+                 fields={'recipient_name': 'UNREADABLE GARBLE XYZ', 'recipient_nric': '760429-10-5289',
+                         'status': 'Lulus', 'year': '2026'})
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('str_verified', _codes(f['evidence']))
 
 
 class TestUnemploymentEvidence(TestCase):

@@ -123,6 +123,20 @@ RM 1,200
 Keseluruhan STR
 """
 
+# A MySTR app DASHBOARD (the #23 shape): heading "Status Permohonan STR" with the value "Lulus"
+# on the next line; the Jumlah tiles are surface signatures, not decision variables. No date.
+_DASHBOARD = """Dashboard
+NALINI A/P TESTAMMA
+800723145840
+Profil
+Status Permohonan STR
+Lulus
+Jumlah Telah Dibayar
+RM 850.00
+Jumlah Bayaran Keseluruhan STR
+RM 1,200.00
+"""
+
 # A MySTR application-record COPY — STR-marked but stamped SALINAN, no approval status.
 _SALINAN = """KERAJAAN MALAYSIA
 SUMBANGAN TUNAI RAHMAH (STR)
@@ -163,6 +177,16 @@ class TestStrParser(SimpleTestCase):
         self.assertEqual(r['status'], 'Lulus')        # the stray "i" was rejected → body word
         self.assertEqual(r['year'], '')               # no year on the page → current (#5)
         self.assertEqual(r['amount'], 'RM1200')       # keseluruhan total, not the RM600 paid
+
+    def test_dashboard_classified_and_status_reads_lulus_not_str(self):
+        # #23: the dashboard heading "Status Permohonan STR" must NOT (a) mis-tag the surface as
+        # semakan_status, nor (b) leak the trailing "STR" as the status. Reads dashboard + Lulus.
+        r = parse_by_labels('str', _DASHBOARD)
+        self.assertEqual(r['source_type'], 'dashboard')
+        self.assertEqual(r['recipient_name'], 'NALINI A/P TESTAMMA')
+        self.assertEqual(r['recipient_nric'], '800723-14-5840')
+        self.assertEqual(r['status'], 'Lulus')          # the VALUE, not the "STR" heading leak
+        self.assertEqual(r['amount'], '')               # dashboard amounts are signatures, not variables
 
     def test_salinan_is_unknown_not_a_proof(self):
         r = parse_by_labels('str', _SALINAN)

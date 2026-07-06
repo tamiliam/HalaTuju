@@ -72,28 +72,39 @@ class TestStrCurrency(SimpleTestCase):
     def test_approved_prior_year_still_stale(self):
         self.assertEqual(_str_currency('diluluskan', '2025', 2026, 'letter'), 'stale')
 
-    # ── payment guard: a positive PAID amount corroborates approval (extra, not primary) ──
-    def test_paid_amount_rescues_misread_status(self):
-        # #23: the model misread "Lulus" as the label "STR"; the RM850 it DID read proves approval
-        # (you're not paid STR money unless Lulus). No date → unconfirmed (BLUE), not unreadable.
-        self.assertEqual(_str_currency('STR', '', 2026, 'semakan_status', 'RM850'), 'unconfirmed')
-        # …and with a current date it's current (GREEN).
-        self.assertEqual(_str_currency('STR', '2026', 2026, 'dashboard', 'RM1,200.00'), 'current')
+    # ── amount dropped entirely (owner 2026-07-07): approval requires a readable "Lulus", never a
+    #    number; a misread status reads 'unreadable' regardless of any date or amount on the page ──
+    def test_misread_status_is_always_unreadable(self):
+        # #23: the model misread "Lulus" as the label "STR". The old paid-amount rescue is RETIRED —
+        # a non-approval status is 'unreadable' whether or not a current-cycle date is present. A
+        # genuine STR shows "Lulus" (dashboard/Semakan too), so a clean re-read settles it, never a number.
+        self.assertEqual(_str_currency('STR', '', 2026, 'semakan_status'), 'unreadable')
+        self.assertEqual(_str_currency('STR', '2026', 2026, 'dashboard'), 'unreadable')
 
-    def test_lulus_alone_is_enough_zero_payment_never_downgrades(self):
-        # Approval is proven by "Lulus" on its own — a genuine STR printed early can show RM0 paid.
-        self.assertEqual(_str_currency('Lulus', '', 2026, 'dashboard', 'RM0'), 'unconfirmed')
-        self.assertEqual(_str_currency('Lulus', '', 2026, 'dashboard', ''), 'unconfirmed')
+    def test_lulus_alone_is_enough(self):
+        # Approval is proven by "Lulus" on its own; dateless → unconfirmed (confirm the cycle).
+        self.assertEqual(_str_currency('Lulus', '', 2026, 'dashboard'), 'unconfirmed')
 
-    def test_no_status_and_no_payment_stays_unreadable(self):
-        # Neither a readable approval word NOR a payment → approval can't be confirmed → unreadable.
-        self.assertEqual(_str_currency('', '', 2026, 'semakan_status', ''), 'unreadable')
-        self.assertEqual(_str_currency('STR', '', 2026, 'semakan_status', 'RM0'), 'unreadable')
+    def test_no_status_stays_unreadable(self):
+        # No readable approval word → approval can't be confirmed → unreadable (a date only answers
+        # the Year question AMONG already-approved docs; it never proves approval on its own).
+        self.assertEqual(_str_currency('', '', 2026, 'semakan_status'), 'unreadable')
 
-    def test_rejected_and_wrong_type_beat_the_payment_guard(self):
-        # A Ditolak with a legacy amount is still rejected; a non-STR with an amount is still wrong_type.
-        self.assertEqual(_str_currency('Ditolak', '', 2026, 'semakan_status', 'RM850'), 'rejected')
-        self.assertEqual(_str_currency('', '', 2026, 'unknown', 'RM850'), 'wrong_type')
+    def test_rejected_and_wrong_type_still_win(self):
+        # A clear Ditolak is rejected; a non-STR source is wrong_type — both decided before approval.
+        self.assertEqual(_str_currency('Ditolak', '', 2026, 'semakan_status'), 'rejected')
+        self.assertEqual(_str_currency('', '', 2026, 'unknown'), 'wrong_type')
+
+    # ── surface ceiling (owner 2026-07-07): a dashboard maxes at Probable; letter/semakan can be Certain ──
+    def test_dashboard_caps_at_unconfirmed_even_when_dated(self):
+        # A DASHBOARD confirms approval but can't certify the cycle → capped at 'unconfirmed' (Probable),
+        # even with a current-year date. Only the letter / Semakan reach 'current'.
+        self.assertEqual(_str_currency('Lulus', '2026', 2026, 'dashboard'), 'unconfirmed')
+        self.assertEqual(_str_currency('diluluskan', '2026', 2026, 'dashboard'), 'unconfirmed')
+
+    def test_letter_and_semakan_reach_current_when_dated(self):
+        self.assertEqual(_str_currency('diluluskan', '2026', 2026, 'letter'), 'current')
+        self.assertEqual(_str_currency('Lulus', '2026', 2026, 'semakan_status'), 'current')
 
 
 class TestFatherNameFromIc(SimpleTestCase):
