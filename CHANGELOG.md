@@ -18,8 +18,10 @@ Polishing the apply-form income wizard's STR route to match the salary route:
   "Father's STR document".
 - **Green border + "Complete" badge when the cluster is VERIFIED** (not merely uploaded) — border only, no
   fill, badge top-right. Presence is MEMBER-AWARE (an IC tagged to another member doesn't count as this
-  earner's IC); then the STR must be genuine + approved (current/unconfirmed) with its recipient name AND IC
-  both matching the earner's IC, and the IC must be genuine + readable.
+  earner's IC); then: the STR must be genuine + approved (current/unconfirmed) with its recipient matching
+  the earner's IC on name OR IC (no mismatch on the other); the IC genuine + readable; and any relationship
+  doc must PROVE the link — a birth certificate confirms both the child (student) AND the mother (earner IC),
+  a guardianship letter both the ward and the guardian.
 - **Fixed a raw i18n key leaking to the UI** — a `wrong_type` / `unreadable` STR status rendered the literal
   `scholarship.docs.strCheck.wrong_type`; added both labels (en/ms/ta).
 

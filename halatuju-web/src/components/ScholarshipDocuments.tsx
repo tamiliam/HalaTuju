@@ -1140,10 +1140,12 @@ function IncomeWizard({
   // MEMBER-AWARE (mirrors the card's own slot match: household_member === earner, or a legacy blank for
   // STR-earner docs — so an IC left tagged to another member never counts as this earner's IC). Then, per
   // owner spec:
-  //   • STR  — genuine + an APPROVED STR (current/unconfirmed) + recipient NAME and IC both match the
-  //            earner's IC (str_check.name_status / nric_status are that cross-check).
+  //   • STR  — genuine + an APPROVED STR (current/unconfirmed) whose recipient matches the earner's IC on
+  //            name OR IC (either identifies the same person), with no positive mismatch on the other.
   //   • IC   — genuine + readable (name + IC number read).
-  //   • relationship doc (mother/guardian) — present + not flagged non-genuine.
+  //   • relationship doc — it must PROVE the relationship, and a BC ties TWO people, so BOTH ties confirm:
+  //            birth certificate → child = the student AND mother = the mother's IC; guardianship letter →
+  //            ward = the student AND guardian = the guardian's IC.
   // "Genuine" = not positively flagged suspect/not-<type> (an unscored doc doesn't block — we never gate on
   // our own missing scan).
   const strEarner = ans.income_earner
@@ -1158,13 +1160,25 @@ function IncomeWizard({
       && ((d.household_member || '') === slotMember || (isEarnerDoc && !(d.household_member || ''))))
     if (!inSlot.length) return false
     if (dt === 'str') return inSlot.some((d) => {
+      // Genuine, approved STR whose recipient matches the earner's IC on name OR IC — either identifies
+      // the same person — with no positive mismatch on the other field.
       const c = d.str_check
       const cs = String(c?.current_status || '')
       return notFlaggedFake(d) && (cs === 'current' || cs === 'unconfirmed')
-        && c?.name_status === 'match' && c?.nric_status === 'match'
+        && c?.name_status !== 'mismatch' && c?.nric_status !== 'mismatch'
+        && (c?.name_status === 'match' || c?.nric_status === 'match')
     })
     if (dt === 'parent_ic') return inSlot.some((d) => notFlaggedFake(d) && d.income_ic_check?.readable === true)
-    return inSlot.some(notFlaggedFake)   // birth certificate / guardianship letter
+    if (dt === 'birth_certificate') return inSlot.some((d) => {
+      // A BC ties TWO people (the student AND the parent), so BOTH ties must confirm — not either.
+      const b = d.bc_check
+      return notFlaggedFake(d) && b?.child_status === 'match' && b?.mother_status === 'match'
+    })
+    if (dt === 'guardianship_letter') return inSlot.some((d) => {
+      const g = d.guardianship_check
+      return notFlaggedFake(d) && g?.ward_status === 'match' && g?.guardian_status === 'match'
+    })
+    return inSlot.some(notFlaggedFake)   // any other compulsory doc: present + not flagged non-genuine
   }
   const strComplete = ans.income_route === 'str' && !!strEarner && reqs.compulsory.every(slotDone)
 
