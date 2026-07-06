@@ -1234,6 +1234,10 @@ function IncomeWizard({
     return undefined
   }
 
+  // Utility bills are HOUSEHOLD-level (not route-specific), so they render ONCE in a shared
+  // "Utilities" block below both route branches — Electricity first, then Water.
+  const UTILITY_DOCS = ['electricity_bill', 'water_bill']
+
   return (
     <div className="space-y-4">
       {/* Encouraging, never-punitive intro (blue = info). */}
@@ -1308,8 +1312,10 @@ function IncomeWizard({
               </div>
             ))}
           </div>
-          {/* Supplementary income evidence — optional, outside the group box. */}
-          {ordered(reqs.optional).map((dt) => (
+          {/* Supplementary income evidence (salary slip / EPF) — optional, outside the group box.
+              Utilities are NOT rendered here: they're household-level and show once in the shared
+              "Utilities" block below (so both routes present them identically). */}
+          {ordered(reqs.optional).filter((dt) => !UTILITY_DOCS.includes(dt)).map((dt) => (
             <div key={dt}>
               {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
                 ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
@@ -1319,7 +1325,6 @@ function IncomeWizard({
               )}
             </div>
           ))}
-          <p className="text-xs text-gray-400">{iq('footer')}</p>
         </div>
       )}
 
@@ -1393,25 +1398,26 @@ function IncomeWizard({
               )}
             </div>
           )})}
-          {/* Utilities — household-level optional credibility docs, grouped under their own
-              subheader with Electricity first then Water; any other optional docs follow. */}
-          {(() => {
-            const UTIL_ORDER = ['electricity_bill', 'water_bill']
-            const utils = UTIL_ORDER.filter((dt) => reqs.optional.includes(dt))
-            const rest = reqs.optional.filter((dt) => !UTIL_ORDER.includes(dt))
-            return (
-              <>
-                {utils.length > 0 && (
-                  <h4 className="mt-2 text-sm font-semibold text-gray-700">{iq('utilities')}</h4>
-                )}
-                {utils.map((dt) => (<div key={dt}>{renderCard(dt, { required: false })}</div>))}
-                {rest.map((dt) => (<div key={dt}>{renderCard(dt, { required: false })}</div>))}
-              </>
-            )
-          })()}
-          <p className="text-xs text-gray-400">{iq('footer')}</p>
         </div>
       )}
+
+      {/* Utilities + closing note — SHARED across BOTH income routes (household-level docs are the
+          same regardless of STR vs salary). Rendered once, after whichever route branch showed:
+          Electricity first, then Water. */}
+      {ready && (() => {
+        const utils = UTILITY_DOCS.filter((dt) => reqs.optional.includes(dt))
+        return (
+          <div className="space-y-3 pt-1">
+            {utils.length > 0 && (
+              <>
+                <h4 className="text-sm font-semibold text-gray-700">{iq('utilities')}</h4>
+                {utils.map((dt) => (<div key={dt}>{renderCard(dt, { required: false })}</div>))}
+              </>
+            )}
+            <p className="text-xs text-gray-400">{iq('footer')}</p>
+          </div>
+        )
+      })()}
     </div>
   )
 }
