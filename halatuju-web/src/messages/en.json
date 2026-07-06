@@ -859,6 +859,8 @@
         "parentPhone": "Please enter a valid phone number for your parent or guardian, or leave it blank.",
         "pathwayCertainty": "Let us know whether you've decided on a pathway.",
         "chosenPathway": "Please choose the pathway you've decided on.",
+        "preUTrack": "Please choose your matriculation track or STPM stream.",
+        "preUInstitution": "Please choose your college or school.",
         "declarationMismatch": "The name in your declaration must match your full name in \"About Me\". Please make sure both are your full name exactly as in your IC."
       },
       "gate": {

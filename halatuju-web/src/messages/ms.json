@@ -859,6 +859,8 @@
         "parentPhone": "Sila masukkan nombor telefon yang sah untuk ibu bapa atau penjaga anda, atau biarkan kosong.",
         "pathwayCertainty": "Beritahu kami sama ada anda sudah putuskan laluan.",
         "chosenPathway": "Sila pilih laluan yang telah anda putuskan.",
+        "preUTrack": "Sila pilih trek matrikulasi atau aliran STPM anda.",
+        "preUInstitution": "Sila pilih kolej atau sekolah anda.",
         "declarationMismatch": "Nama dalam perakuan anda mesti sepadan dengan nama penuh anda dalam \"Tentang Saya\". Sila pastikan kedua-duanya nama penuh anda sama seperti dalam IC."
       },
       "gate": {
