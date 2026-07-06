@@ -13,6 +13,7 @@ import {
   NEXT_STEP_ORDER,
   defaultNextTab,
   setOnboardingReturn,
+  showsActionCentre,
   type NextStepKey,
   type DetailsFormState,
 } from '@/lib/scholarship'
@@ -635,10 +636,16 @@ export default function ScholarshipNextSteps({
 
   return (
     <div>
-      {/* Student Action Centre — the self-service "things to finish" queue, shown
-          ABOVE the step tabs. Additive: it renders nothing when there are no
-          tickets. "Review" on a confirm ticket switches to the relevant tab. */}
-      <ActionCentre token={token} studentName={studentName} onConfirm={handleConfirmNav} />
+      {/* Student Action Centre — the self-service "things to finish" queue. It is a
+          POST-SUBMIT surface: this pre-submit editing wizard only renders for `shortlisted`,
+          which is NOT an Action-Centre status, so the same `showsActionCentre` gate the page
+          uses keeps it hidden here. Without this guard, a case that carries resolution tickets
+          while at `shortlisted` (e.g. a revert-to-shortlisted, or a manual status move) would
+          leak the Action Centre into the editing view. Tickets always re-surface once the
+          student re-submits (→ profile_complete → the page's Action Centre). */}
+      {showsActionCentre(app.status) && (
+        <ActionCentre token={token} studentName={studentName} onConfirm={handleConfirmNav} />
+      )}
 
       {/* Admin "please send more documentation" request — shown until resolved by the admin */}
       {app.info_request_note && (
