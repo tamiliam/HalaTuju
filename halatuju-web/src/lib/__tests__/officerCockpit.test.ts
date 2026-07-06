@@ -627,6 +627,22 @@ describe('incomeSubSections', () => {
     expect(ids(sub.salary)).toContain(3)          // …it belongs to SALARY
   })
 
+  it('salary route: a BLANK-tagged STR resolved to its recipient (father) still files the FATHER IC under STR', () => {
+    // Robustness: the STR carries no household_member but the backend name-resolves the recipient
+    // (resolved_member=father). The STR parent keys off memberOf (resolved_member || tag), so the
+    // filing is correct even when the tag is blank — no fall-back to income_earner.
+    const str = doc({ id: 1, doc_type: 'str', household_member: '', resolved_member: 'father' })
+    const fIc = doc({ id: 2, doc_type: 'parent_ic', household_member: 'father' })
+    const mIc = doc({ id: 3, doc_type: 'parent_ic', household_member: 'mother' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_earner: 'mother', income_working_members: ['father', 'mother'] },
+      [str, fIc, mIc])
+    const strIcSlot = sub.str?.find((s) => s.docType === 'parent_ic')
+    expect(strIcSlot?.member).toBe('father')
+    expect(strIcSlot?.doc?.id).toBe(2)
+    expect(ids(sub.salary)).toContain(3)          // mother's IC in SALARY
+  })
+
   it('4a: STR route derives salary members from the docs present, showing ONLY present docs (supportive)', () => {
     // #80 shape: the STR mother is the earner; the FATHER also has payslips but was never listed as
     // a working member. His docs form a structured Father group — but because this is the STR route

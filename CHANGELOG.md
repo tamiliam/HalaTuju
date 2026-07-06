@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-06 — STR filing robustness: the docs box now resolves an STR by its recipient (no migration)
+
+Hardening after a robustness review: the P3 verdict name-matches an STR's recipient to a household member,
+but the DISPLAY filed an STR purely by its `household_member` tag — so a blank- or mis-tagged salary-route
+STR could fall back to `income_earner` and file the wrong parent's IC under STR ROUTE, while the verdict
+stayed correct (a visible divergence waiting to happen).
+
+**Fixed**
+- **`resolved_member` now resolves an STR by its `recipient_name`** — `str` added to `_RESOLVABLE_INCOME_DOCS`
+  and `_doc_person_name` reads the STR recipient. A blank-tagged STR files under its actual recipient in the
+  docs box (render-time; no backfill), matching the verdict.
+- **The correcting tag-guard now covers STR** — a mis-tagged STR (father's tagged "mother", or a mis-selected
+  STR-route pick) self-corrects to the recipient on upload, exactly as `parent_ic`/`salary_slip`/`epf` already do.
+
+**Audit:** a cohort sweep found no genuine mis-tags among live STRs; the one blank-tagged STR (#88, recipient
+= the father) now resolves correctly at render. Band-neutral — verdict/gate unchanged.
+
+**Tests** — blank-STR resolution + STR tag-correction (backend); blank-tagged STR files under its recipient
+(FE). Scholarship pytest 2112, jest 465. No migration.
+
 ### 2026-07-06 — P3 completion: the STR principle reaches the submission GATE + the IC filing (#45; no migration)
 
 Two more places where the salary route ignored a valid STR — the same root cause as the P3 verdict fix

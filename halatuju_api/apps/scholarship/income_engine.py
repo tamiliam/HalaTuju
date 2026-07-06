@@ -435,17 +435,21 @@ def _member_ic_doc(application, member):
 # Income docs SHOULD carry a household_member tag, but some arrive blank — an Action-Centre /
 # officer-requested upload lands without one (e.g. #63's father IC came in untagged). Rather than
 # strand them in an "unassigned" pile, resolve the person from the NAME printed on the document
-# against the family roster. Display-only (the cockpit box places them under the right person);
-# the verdict still reads the stored tags (changing that is the re-banding-gated P3 slice).
-_RESOLVABLE_INCOME_DOCS = ('parent_ic', 'salary_slip', 'epf')
+# against the family roster. Display-facing (the cockpit box + the correcting tag-guard place them
+# under the right person). STR is included so a salary-route STR (the recipient may differ from the
+# declared income_earner — #45) files under its actual RECIPIENT, matching the verdict's own
+# recipient match (salary_route_str) rather than falling back to income_earner.
+_RESOLVABLE_INCOME_DOCS = ('parent_ic', 'salary_slip', 'epf', 'str')
 
 
 def _doc_person_name(doc):
-    """The person a (parent_ic / salary_slip / epf) document is about: the IC's OCR'd name, or the
-    payslip/EPF's extracted holder name. '' when nothing read."""
+    """The person a (parent_ic / salary_slip / epf / str) document is about: the IC's OCR'd name, the
+    payslip/EPF's extracted holder name, or the STR's recipient. '' when nothing read."""
     dt = getattr(doc, 'doc_type', '')
     if dt == 'parent_ic':
         return (getattr(doc, 'vision_name', '') or '').strip()
+    if dt == 'str':
+        return (_doc_fields(doc).get('recipient_name', '') or '').strip()
     return (_doc_fields(doc).get('name', '') or '').strip()
 
 

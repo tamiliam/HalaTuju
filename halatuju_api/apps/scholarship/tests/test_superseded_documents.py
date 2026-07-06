@@ -135,6 +135,22 @@ class TestResolvedMember(TestCase):
         slip = _doc(app, 'results_slip', member='')
         self.assertEqual(resolved_member_for(app, slip), '')
 
+    def test_blank_str_resolves_by_recipient_name(self):
+        # #45: an STR on the salary route is the FATHER's; blank-tagged, it resolves to 'father' by the
+        # RECIPIENT name (not the declared income_earner) — the docs box now files it as the verdict does.
+        app = _app()
+        app.father_name = 'SARAVANAN A/L CHANTHIRAN'
+        app.mother_name = 'REMAVATHY A/P SELVARAJOO'
+        app.save(update_fields=['father_name', 'mother_name'])
+        from apps.scholarship.income_engine import resolved_member_for, name_contradicts_tag
+        blank_str = _doc(app, 'str', member='',
+                         vision_fields={'fields': {'recipient_name': 'SARAVANAN A/L CHANTHIRAN'}})
+        self.assertEqual(resolved_member_for(app, blank_str), 'father')
+        # a father's STR MIS-TAGGED 'mother' self-corrects to 'father' (the #80 class, now for STR too).
+        mis = _doc(app, 'str', member='mother',
+                   vision_fields={'fields': {'recipient_name': 'SARAVANAN A/L CHANTHIRAN'}})
+        self.assertEqual(name_contradicts_tag(app, mis), 'father')
+
 
 class TestStaticReadGuard(TestCase):
     """Every documents-read in the pure verdict/income engine modules MUST exclude superseded

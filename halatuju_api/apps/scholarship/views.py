@@ -778,17 +778,20 @@ class DocumentListCreateView(APIView):
             from . import vision as _vision
             _vision.read_text_document(doc)
         # ── Tag guard (the airtight last line): attribute an income doc (parent_ic / salary_slip /
-        # epf) to the household member by the NAME now read off it (Vision/Gemini has run above), in
-        # two cases:
+        # epf / str) to the household member by the NAME now read off it (Vision/Gemini has run above),
+        # in two cases:
         #   (a) FILL a blank tag — a memberless request (income_doc_stale), a reviewer mis-classify,
         #       a direct/legacy client left it untagged (lenient: first roster name-match wins).
         #   (b) CORRECT a tag the NAME contradicts — the #80/#112 class, where a pre-consent STR-route
         #       force-tag stamped the father's payslip onto the mother. Strict: only when the name
         #       matches EXACTLY ONE member who isn't the current tag (see income_engine.name_contradicts_tag).
+        # STR is included so a salary-route STR (recipient may differ from the declared income_earner —
+        # #45) or a mis-selected STR-route STR files under its actual RECIPIENT (matched on recipient_name),
+        # keeping the docs box in step with the verdict's own recipient match.
         # Either way the doc is never PERSISTED under the wrong person where the name is determinable;
         # the verdict then reads it under the right member. A genuinely-unresolvable name leaves the
         # tag untouched (the cockpit catch-all still shows a blank — never hidden).
-        if doc.doc_type in ('parent_ic', 'salary_slip', 'epf'):
+        if doc.doc_type in ('parent_ic', 'salary_slip', 'epf', 'str'):
             from .income_engine import resolved_member_for, name_contradicts_tag
             has_tag = bool((doc.household_member or '').strip())
             derived = name_contradicts_tag(app, doc) if has_tag else resolved_member_for(app, doc)
