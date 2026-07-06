@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useT } from '@/lib/i18n'
+import { formatDate } from '@/lib/formatDate'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { createSponsorReferral, getSponsorStandingGift, putSponsorStandingGift } from '@/lib/api'
@@ -147,7 +148,7 @@ export default function AccountPage() {
         <p className="text-[11px] text-gray-400 mt-3">{t('sponsorPortal.autoSponsor.note')}</p>
         {sgConfigured && sgLast && (
           <p className="text-[11px] text-gray-400 mt-1">
-            {t('sponsorPortal.autoSponsor.lastAllocated').replace('{date}', new Date(sgLast).toLocaleDateString())}
+            {t('sponsorPortal.autoSponsor.lastAllocated').replace('{date}', formatDate(sgLast))}
           </p>
         )}
       </section>
@@ -231,7 +232,7 @@ export default function AccountPage() {
                 <ul className="text-sm divide-y divide-gray-100">
                   {statement.donations.map((d, i) => (
                     <li key={i} className="py-2 flex justify-between gap-2">
-                      <span>{new Date(d.at).toLocaleDateString()}{d.reference ? <span className="text-gray-400"> · {d.reference}</span> : null}</span>
+                      <span>{formatDate(d.at)}{d.reference ? <span className="text-gray-400"> · {d.reference}</span> : null}</span>
                       <b>RM {d.amount}</b>
                     </li>
                   ))}
@@ -248,7 +249,7 @@ export default function AccountPage() {
                 <ul className="text-sm divide-y divide-gray-100">
                   {statement.gifts.map((g, i) => (
                     <li key={i} className="py-2 flex justify-between gap-2">
-                      <span>{new Date(g.at).toLocaleDateString()} <span className="text-gray-400">· {g.ref}</span></span>
+                      <span>{formatDate(g.at)} <span className="text-gray-400">· {g.ref}</span></span>
                       <b>RM {g.amount}</b>
                     </li>
                   ))}

@@ -122,6 +122,8 @@ def cancel_reopen(app):
         if app.status == 'interviewed':
             app.status = 'recommended'
             restore.append('status')
+            if app.stamp_first('recommended_at'):
+                restore.append('recommended_at')
         elif app.status == 'interviewing':
             app.status = 'interviewed'
             restore.append('status')

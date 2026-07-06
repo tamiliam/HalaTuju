@@ -138,7 +138,10 @@ def fund_student(sponsor, application):
     # Post-award lifecycle: a funder has committed → the application enters 'awarded' (the offer is
     # out + the tri-partite agreement signing begins) and leaves the discovery pool.
     application.status = 'awarded'
-    application.save(update_fields=['status'])
+    fields = ['status']
+    if application.stamp_first('awarded_at'):
+        fields.append('awarded_at')
+    application.save(update_fields=fields)
     return sp
 
 
@@ -308,7 +311,10 @@ def _finalise_award(application, locale='en'):
     ('active' = executed/funded; the first disbursement later flips it to 'maintenance' — S4.)"""
     application.status = 'active'
     application.award_due_at = None
-    application.save(update_fields=['status', 'award_due_at'])
+    fields = ['status', 'award_due_at']
+    if application.stamp_first('active_at'):
+        fields.append('active_at')
+    application.save(update_fields=fields)
     name = getattr(application.profile, 'name', '') if application.profile else ''
     send_award_confirmed_email(
         to_email=application.notify_email, applicant_name=name,

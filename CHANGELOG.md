@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-06 — Cockpit header: British dates site-wide + lifecycle timeline (migration 0094)
+
+Two owner requests off a live cockpit screenshot: dates were rendering American (`7/5/2026`), and the
+header should show a lifecycle timeline once a case is recommended / active.
+
+**Added**
+- **British date format (DD/MM/YYYY) throughout the site.** New shared `lib/formatDate.ts` — formats by
+  hand (zero-padded day/month/year, local timezone) so the output is deterministic and hydration-safe. A
+  bare `toLocaleDateString()` inherited the server's US locale → month-first; every numeric date render
+  (cockpit header + banners, admin scholarship/students/sponsors lists, sponsor portal + account) now
+  routes through `formatDate`. The deliberate long-form letter dates (consent / award / report) are left
+  as "5 July 2026".
+- **Lifecycle timeline in the cockpit header.** Four new transition stamps on `ScholarshipApplication`
+  (`recommended_at`, `awarded_at`, `active_at`, `maintenance_at`), set **at the transition that means that
+  state**, **set-if-null** (a reopen / re-award never overwrites the original) via a new
+  `Application.stamp_first(field)` helper. The header now picks its three date chips by phase:
+  recommended / awarded → **Submitted · Recommended · Awarded**; active / maintenance / closed →
+  **Awarded · Active · Maintenance**; earlier states keep the original Submitted · Applied · Assigned line.
+  A not-yet-reached step renders "—". Timeline selection is a pure `headerTimeline(app)` in
+  `officerCockpit.ts` (jest-tested); labels reuse the existing `admin.scholarship.statuses.*` map (EN/MS/TA).
+
+**Changed / Migration**
+- **0094** (migrate-first) adds the four nullable timestamp columns and backfills existing funded rows:
+  `awarded_at` ← first sponsorship offer (24 rows), `recommended_at` ← verdict-decided moment (best proxy,
+  26 rows). No live active/maintenance cases, so those stamp forward only.
+
+**Tests**
+- `formatDate` unit suite; `headerTimeline` phase-selection suite; backend `test_lifecycle_timestamps.py`
+  (stamp_first set-if-null + fund/finalise/first-payout stamping). Jest 463, scholarship pytest 2102.
+
 ### 2026-07-05 — Officer-cockpit live-review round: document verification + income-model hardening (no migration)
 
 A live-testing pass over the officer cockpit's Documents box and the income model, driven by reviewing

@@ -65,9 +65,11 @@ import {
   isDecisionReady,
   isApproveReady,
   verdictItemKey,
+  headerTimeline,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
+import { formatDate } from '@/lib/formatDate'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
 import { isFunded, disbursementTone, actionsFor, nextSequence, totalReleased } from '@/lib/disbursement'
@@ -847,13 +849,31 @@ export default function AdminScholarshipDetailPage() {
               {referralAcronym(app.referral_source)}
             </span>
           )}
-          {app.submitted_at && (
-            <span>{t('admin.scholarship.submitted')} {new Date(app.submitted_at).toLocaleDateString()}</span>
-          )}
-          {app.profile_completed_at && (
-            <span>{t('admin.scholarship.applied')} {new Date(app.profile_completed_at).toLocaleDateString()}</span>
-          )}
-          <span>{t('admin.scholarship.assigned')} <span className="text-gray-700">{app.assigned_to_name || '—'}</span></span>
+          {(() => {
+            // Post-recommendation, the header shows a lifecycle timeline (Submitted·Recommended·
+            // Awarded, then Awarded·Active·Maintenance). Earlier states keep the original
+            // Submitted·Applied·Assigned line (Assigned carries the reviewer, not a date).
+            const timeline = headerTimeline(app)
+            if (timeline) {
+              return timeline.map((step) => (
+                <span key={step.labelKey}>
+                  {t(`admin.scholarship.statuses.${step.labelKey}`)}{' '}
+                  <span className="text-gray-700">{step.at ? formatDate(step.at) : '—'}</span>
+                </span>
+              ))
+            }
+            return (
+              <>
+                {app.submitted_at && (
+                  <span>{t('admin.scholarship.submitted')} {formatDate(app.submitted_at)}</span>
+                )}
+                {app.profile_completed_at && (
+                  <span>{t('admin.scholarship.applied')} {formatDate(app.profile_completed_at)}</span>
+                )}
+                <span>{t('admin.scholarship.assigned')} <span className="text-gray-700">{app.assigned_to_name || '—'}</span></span>
+              </>
+            )
+          })()}
         </div>
       </header>
 
@@ -863,7 +883,7 @@ export default function AdminScholarshipDetailPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm text-amber-800">
             ⏳ {t('admin.scholarship.cooloff.declineScheduled')}{' '}
-            <strong>{new Date(app.decline_due_at).toLocaleDateString()}</strong>.{' '}
+            <strong>{formatDate(app.decline_due_at)}</strong>.{' '}
             {t('admin.scholarship.cooloff.silentNote')}
           </p>
           <button onClick={doCancelDecline} disabled={busy === 'cooloff'}
@@ -876,7 +896,7 @@ export default function AdminScholarshipDetailPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm text-amber-800">
             ⏳ {t('admin.scholarship.cooloff.awardScheduled')}{' '}
-            <strong>{new Date(app.award_due_at).toLocaleDateString()}</strong>.{' '}
+            <strong>{formatDate(app.award_due_at)}</strong>.{' '}
             {t('admin.scholarship.cooloff.silentNote')}
           </p>
           <button onClick={doHoldAward} disabled={busy === 'cooloff'}
@@ -1626,7 +1646,7 @@ export default function AdminScholarshipDetailPage() {
                 )}
                 {app.interview_session?.submitted_at && (
                   <p className="text-[11px] text-gray-400">
-                    {t('admin.scholarship.interview.submittedOn')} {new Date(app.interview_session.submitted_at).toLocaleDateString()}
+                    {t('admin.scholarship.interview.submittedOn')} {formatDate(app.interview_session.submitted_at)}
                   </p>
                 )}
               </div>
@@ -2142,17 +2162,17 @@ export default function AdminScholarshipDetailPage() {
               <p className="flex items-center gap-1.5 text-sm text-green-700">
                 <span aria-hidden>✓</span>
                 {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
-                {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
+                {app.verified_at ? ` · ${formatDate(app.verified_at)}` : ''}
               </p>
             ) : app.status === 'rejected' ? (
               <p className="text-sm text-red-700">
                 {t('admin.scholarship.recordVerdict.declinedBy')} {app.rejected_by_name || app.rejected_by || '—'}
-                {app.rejected_at ? ` · ${new Date(app.rejected_at).toLocaleDateString()}` : ''}
+                {app.rejected_at ? ` · ${formatDate(app.rejected_at)}` : ''}
               </p>
             ) : (
               <p className="text-sm text-gray-600">
                 {t('admin.scholarship.recordVerdict.recordedBy')} {app.verdict_decided_by_name || app.verdict_decided_by || '—'}
-                {app.verdict_decided_at ? ` · ${new Date(app.verdict_decided_at).toLocaleDateString()}` : ''}
+                {app.verdict_decided_at ? ` · ${formatDate(app.verdict_decided_at)}` : ''}
               </p>
             )}
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
@@ -2190,7 +2210,7 @@ export default function AdminScholarshipDetailPage() {
             <p className="flex items-center gap-1.5 text-sm text-green-700">
               <span aria-hidden>✓</span>
               {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
-              {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
+              {app.verified_at ? ` · ${formatDate(app.verified_at)}` : ''}
             </p>
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
@@ -2591,7 +2611,7 @@ export default function AdminScholarshipDetailPage() {
               </p>
               <p className="text-xs text-gray-500">
                 {t('admin.closure.closedBy')} {app.closed_by || '—'}
-                {app.closed_at ? ` · ${new Date(app.closed_at).toLocaleDateString()}` : ''}
+                {app.closed_at ? ` · ${formatDate(app.closed_at)}` : ''}
               </p>
             </div>
           ) : canWrite ? (

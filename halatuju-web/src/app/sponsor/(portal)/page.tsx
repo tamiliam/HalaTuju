@@ -3,6 +3,7 @@
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { formatDate } from '@/lib/formatDate'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { journeyStages, type JourneyStatus } from '@/lib/sponsorJourney'
@@ -123,7 +124,7 @@ export default function MyGivingPage() {
                 <span className="mt-0.5 text-lg">{ACTIVITY_ICON[e.type] || '•'}</span>
                 <div className="flex-1">
                   <p className="text-sm text-gray-800">{t(`sponsorPortal.activity.${e.type}`).replace('{ref}', e.ref)}</p>
-                  <p className="text-xs text-gray-400">{new Date(e.at).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-400">{formatDate(e.at)}</p>
                 </div>
               </li>
             ))}

@@ -1310,6 +1310,8 @@ class AdminQcDecisionView(_AdminBase):
                 logger.info('AUDIT qc_gap_override admin_id=%s app_id=%s facts=%s',
                             admin.id, pk, ','.join(gap_facts))
             app.status = 'recommended'
+            if app.stamp_first('recommended_at'):
+                update_fields.append('recommended_at')
             app.save(update_fields=update_fields)
             # Publishing is bound HERE: a QC-cleared 'recommended' case is the SINGLE point a
             # student becomes sponsor-visible (the reviewer's verdict only PREPARES the profile).

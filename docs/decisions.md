@@ -1,5 +1,22 @@
 # Architectural Decisions — HalaTuju
 
+## Lifecycle timeline via real timestamp columns, not FE-derived proxies — 2026-07-06
+**Decision:** Add four nullable columns (`recommended_at` / `awarded_at` / `active_at` /
+`maintenance_at`) stamped at each transition (set-if-null), and drive the cockpit header timeline off
+them. Backfill existing rows: `awarded_at` ← first sponsorship offer, `recommended_at` ←
+`verdict_decided_at` (best proxy — no true QC-accept timestamp exists historically).
+**Alternatives considered:** derive the dates in the frontend from existing signals (sponsorship
+`offered_at`, agreement `finalised_at`, first disbursement `released_at`) with no migration; or a
+general status-history/audit table.
+**Rationale:** the owner asked to "fix the system" — auditable, exact dates. Derived proxies are
+approximate and `recommended` has no clean FE-visible source; a full history table is overkill for a
+three-chip header. Real columns are the WAT-consistent, auditable middle.
+**Trade-offs:** a migration + one-off backfill; `recommended_at` for pre-existing rows is only as good
+as `verdict_decided_at` (1 legacy awarded row has neither → shows "—"); `active_at`/`maintenance_at`
+stamp forward only (no live rows to backfill).
+**Revisit if:** a status-history table is introduced for another reason (fold these into it), or a true
+QC-accept timestamp is added upstream (repoint `recommended_at`).
+
 ## Verification-model V6 — member-neutral fallback copy over param-threading — 2026-07-04
 **Decision:** The student income-coach FALLBACK strings (shown only when the AI is down) say
 "this family member('s)" instead of the officer jargon "the earner", rather than threading the

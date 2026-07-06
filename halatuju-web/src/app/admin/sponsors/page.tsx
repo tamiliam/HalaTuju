@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
+import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { listSponsors, reviewSponsor, type AdminSponsor } from '@/lib/admin-api'
 
@@ -102,7 +103,7 @@ export default function AdminSponsorsList() {
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(s.status)}`}>{s.status}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{new Date(s.created_at).toLocaleDateString('ms-MY')}</td>
+                  <td className="px-4 py-3 text-gray-500">{formatDate(s.created_at)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       {actionsFor(s.status).map((a) => (

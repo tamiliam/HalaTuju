@@ -826,3 +826,50 @@ export function isDecisionReady(interviewStatus: string | undefined, officerVerd
 export function isApproveReady(decisionReady: boolean, hasAssistance: boolean): boolean {
   return decisionReady && hasAssistance
 }
+
+// ── Header lifecycle timeline ─────────────────────────────────────────────────
+
+/** One chip in the cockpit header timeline. `labelKey` is the suffix under
+ *  `admin.scholarship.*`; `at` is an ISO date (null → the step is pending, "—"). */
+export interface HeaderTimelineStep { labelKey: string; at: string | null }
+
+/** Minimal shape the timeline needs (a subset of AdminApplicationDetail). */
+export interface TimelineSource {
+  status: string
+  submitted_at?: string | null
+  recommended_at?: string | null
+  awarded_at?: string | null
+  active_at?: string | null
+  maintenance_at?: string | null
+}
+
+// Once funded-and-executing, the header pivots to the post-award trio.
+const TIMELINE_ACTIVE_PHASE = new Set(['active', 'maintenance', 'closed'])
+// QC-cleared but not yet executing: the recommendation → award trio.
+const TIMELINE_RECOMMENDED_PHASE = new Set(['recommended', 'awarded'])
+
+/**
+ * The three date chips for the header, chosen by lifecycle phase:
+ *   • recommended / awarded            → Submitted · Recommended · Awarded
+ *   • active / maintenance / closed    → Awarded · Active · Maintenance
+ *   • anything earlier                 → null (the header keeps its default
+ *                                        Submitted · Applied · Assigned line).
+ * A step whose date is null renders as pending ("—").
+ */
+export function headerTimeline(app: TimelineSource): HeaderTimelineStep[] | null {
+  if (TIMELINE_ACTIVE_PHASE.has(app.status)) {
+    return [
+      { labelKey: 'awarded', at: app.awarded_at ?? null },
+      { labelKey: 'active', at: app.active_at ?? null },
+      { labelKey: 'maintenance', at: app.maintenance_at ?? null },
+    ]
+  }
+  if (TIMELINE_RECOMMENDED_PHASE.has(app.status)) {
+    return [
+      { labelKey: 'submitted', at: app.submitted_at ?? null },
+      { labelKey: 'recommended', at: app.recommended_at ?? null },
+      { labelKey: 'awarded', at: app.awarded_at ?? null },
+    ]
+  }
+  return null
+}

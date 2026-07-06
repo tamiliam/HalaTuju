@@ -516,7 +516,7 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-05)
+## Next Sprint (as of 2026-07-06)
 
 **▶ NEXT — no roadmap sprint queued. Standing owner-review items (all optional): (a) BC genuineness chip
 cap (TD-158 — the one remaining genuineness type not capped in the cockpit); (b) officer "converted from
@@ -534,6 +534,23 @@ docs supportive regardless of route — no more false "Missing"); the *verdict* 
 circuits an over-line salary in the income FACT) still needs a re-banding audit + owner sign-off. A 2026-07-05
 audit found **no live case** where it changes an outcome (the only salary-route apps with an STR carry an
 undated/unknown/wrong-type STR, so P3 wouldn't fire) — so it stays parked until a real case appears.
+
+**✅ SHIPPED 2026-07-06 — Cockpit header: British dates site-wide + lifecycle timeline (migration `0094`,
+applied migrate-first via MCP + prod-verified; retro `docs/retrospective-2026-07-06-cockpit-header-dates-timeline.md`).**
+Two owner requests off a live screenshot:
+- **British DD/MM/YYYY throughout the site** — new shared `halatuju-web/src/lib/formatDate.ts` (hand-formatted,
+  deterministic/hydration-safe); every numeric date render routed through it (cockpit header + banners + chips,
+  admin scholarship/students/sponsors lists, sponsor portal/account). A bare `toLocaleDateString()` was
+  inheriting the server's US locale → month-first. Long-form letter dates (consent/award/report) left as-is.
+- **Lifecycle timeline in the header** — 4 new nullable stamps on `ScholarshipApplication` (`recommended_at`/
+  `awarded_at`/`active_at`/`maintenance_at`), set at each transition **set-if-null** via `Application.stamp_first`
+  (QC-accept + reopen; `fund_student`; agreement-executed both paths; first payout). Header picks 3 chips by phase
+  (pure `headerTimeline(app)` in `officerCockpit.ts`): recommended/awarded → Submitted·Recommended·Awarded;
+  active/maintenance/closed → Awarded·Active·Maintenance; earlier states keep Submitted·Applied·Assigned; a
+  pending step shows "—". Labels reuse `admin.scholarship.statuses.*` (EN/MS/TA — no new keys).
+- **0094 backfill** (migrate-first, same step): `awarded_at` ← first sponsorship offer (24 rows), `recommended_at`
+  ← `verdict_decided_at` best proxy (26 rows); 0 active/maintenance rows so those stamp forward only. **2102
+  scholarship pytest + 463 jest; golden masters intact.**
 
 **✅ SHIPPED 2026-07-05 — Officer-cockpit live-review round: document verification + income-model hardening
 (FE/BE, NO migration; retro `docs/retrospective-2026-07-05-cockpit-livereview-income.md`; commits

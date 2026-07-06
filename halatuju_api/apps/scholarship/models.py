@@ -6,6 +6,7 @@ Phases 2-3. See docs/scholarship/b40-assistance-prd.md and
 docs/scholarship/b40-phase1-roadmap.md.
 """
 from django.db import models
+from django.utils import timezone
 
 from .family import PROFESSION_CHOICES
 
@@ -440,6 +441,16 @@ class ScholarshipApplication(models.Model):
     closed_at = models.DateTimeField(null=True, blank=True)
     closed_by = models.CharField(max_length=254, blank=True, default='')
 
+    # Lifecycle transition stamps — the DATE an application FIRST reached each post-shortlist
+    # milestone (set-if-null via `stamp_first`, so a reopen/re-award never overwrites the
+    # original). They drive the officer-cockpit header timeline (Submitted·Recommended·Awarded
+    # then Awarded·Active·Maintenance). Distinct from the audit stamps above: these mark the
+    # STATE transition, not who acted. Null until the app reaches that state.
+    recommended_at = models.DateTimeField(null=True, blank=True)  # QC-accept → 'recommended'
+    awarded_at = models.DateTimeField(null=True, blank=True)      # funder commits → 'awarded'
+    active_at = models.DateTimeField(null=True, blank=True)       # agreement executed → 'active'
+    maintenance_at = models.DateTimeField(null=True, blank=True)  # first payout → 'maintenance'
+
     # Post-award S5: the operational sub-state WITHIN status='maintenance' (the funded
     # recurring loop). An admin lifecycle overlay, distinct from the sponsor-facing
     # ACADEMIC band (`pool.derive_progress_state`, derived from semester results):
@@ -742,6 +753,17 @@ class ScholarshipApplication(models.Model):
                 condition=models.Q(profile__isnull=False) & ~models.Q(status='expired'),
             ),
         ]
+
+    def stamp_first(self, field):
+        """Set a lifecycle timestamp the FIRST time this app reaches that state
+        (set-if-null). Returns the field name if it stamped — fold that into the
+        caller's ``save(update_fields=[...])`` — else None. Does NOT save, so it
+        composes with the transition's own save. A reopen/re-award that revisits the
+        state leaves the original date intact."""
+        if getattr(self, field) is None:
+            setattr(self, field, timezone.now())
+            return field
+        return None
 
     def __str__(self):
         who = self.profile_id or 'unlinked'

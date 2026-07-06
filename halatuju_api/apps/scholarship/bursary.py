@@ -549,7 +549,10 @@ def _maybe_activate(agreement):
     app = agreement.application
     if app.status == 'awarded':
         app.status = 'active'
-        app.save(update_fields=['status'])
+        fields = ['status']
+        if app.stamp_first('active_at'):
+            fields.append('active_at')
+        app.save(update_fields=fields)
 
 
 def countersign_foundation(agreement, *, by_name):

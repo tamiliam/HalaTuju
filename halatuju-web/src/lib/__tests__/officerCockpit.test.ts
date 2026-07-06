@@ -15,6 +15,8 @@ import {
   isDecisionReady,
   isApproveReady,
   verdictItemKey,
+  headerTimeline,
+  type TimelineSource,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument } from '@/lib/admin-api'
 
@@ -917,5 +919,48 @@ describe('verdictItemKey — STR-not-current resolves to a flat per-status key',
   it('passes every other item code through unchanged', () => {
     expect(verdictItemKey(item('income_salary_probable', { amount: 4200 }))).toBe('income_salary_probable')
     expect(verdictItemKey(item('earner_ic_missing', { members: ['father'] }))).toBe('earner_ic_missing')
+  })
+})
+
+describe('headerTimeline — the cockpit header lifecycle chips', () => {
+  const src = (over: Partial<TimelineSource>): TimelineSource => ({
+    status: 'submitted',
+    submitted_at: '2026-01-01T00:00:00Z',
+    recommended_at: '2026-02-01T00:00:00Z',
+    awarded_at: '2026-03-01T00:00:00Z',
+    active_at: '2026-04-01T00:00:00Z',
+    maintenance_at: '2026-05-01T00:00:00Z',
+    ...over,
+  })
+
+  it('returns null before recommendation (header keeps its default Submitted·Applied·Assigned line)', () => {
+    for (const status of ['submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'rejected']) {
+      expect(headerTimeline(src({ status }))).toBeNull()
+    }
+  })
+
+  it('shows Submitted·Recommended·Awarded once recommended (and while awarded)', () => {
+    for (const status of ['recommended', 'awarded']) {
+      const steps = headerTimeline(src({ status }))
+      expect(steps?.map((s) => s.labelKey)).toEqual(['submitted', 'recommended', 'awarded'])
+      expect(steps?.map((s) => s.at)).toEqual([
+        '2026-01-01T00:00:00Z', '2026-02-01T00:00:00Z', '2026-03-01T00:00:00Z',
+      ])
+    }
+  })
+
+  it('pivots to Awarded·Active·Maintenance once active (and while maintenance/closed)', () => {
+    for (const status of ['active', 'maintenance', 'closed']) {
+      const steps = headerTimeline(src({ status }))
+      expect(steps?.map((s) => s.labelKey)).toEqual(['awarded', 'active', 'maintenance'])
+      expect(steps?.map((s) => s.at)).toEqual([
+        '2026-03-01T00:00:00Z', '2026-04-01T00:00:00Z', '2026-05-01T00:00:00Z',
+      ])
+    }
+  })
+
+  it('leaves a not-yet-reached step pending (null date → the header renders "—")', () => {
+    const steps = headerTimeline(src({ status: 'recommended', awarded_at: null }))
+    expect(steps?.find((s) => s.labelKey === 'awarded')?.at).toBeNull()
   })
 })

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
+import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import {
   getScholarshipApplications,
@@ -303,7 +304,7 @@ export default function AdminScholarshipList() {
                       return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(s)}`}>{statusLabel(s)}</span>
                     })()}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{new Date(a.submitted_at).toLocaleDateString('ms-MY')}</td>
+                  <td className="px-4 py-3 text-gray-500">{formatDate(a.submitted_at)}</td>
                   {isSuper && (
                     <td className="px-4 py-3">
                       {LANG_LABEL[a.call_language] && (

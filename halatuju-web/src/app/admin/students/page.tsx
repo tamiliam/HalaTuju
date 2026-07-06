@@ -1,6 +1,7 @@
 'use client'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
+import { formatDate } from '@/lib/formatDate'
 import {
   getPartnerStudents,
   getExportUrl,
@@ -175,7 +176,7 @@ export default function AdminStudentList() {
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
               {s.gender && <span>{s.gender}</span>}
               {s.contact_phone && <span>{formatPhone(s.contact_phone)}</span>}
-              <span>{new Date(s.created_at).toLocaleDateString('ms-MY')}</span>
+              <span>{formatDate(s.created_at)}</span>
             </div>
           </Link>
         ))}
@@ -240,7 +241,7 @@ export default function AdminStudentList() {
                   </td>
                 )}
                 <td className="px-4 py-3.5 text-gray-500">
-                  {new Date(s.created_at).toLocaleDateString('ms-MY')}
+                  {formatDate(s.created_at)}
                 </td>
               </tr>
             ))}

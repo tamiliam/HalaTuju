@@ -564,6 +564,12 @@ export interface AdminScholarshipDetail {
   /** Post-award S6: manual-close audit (set when status='closed'). */
   closed_at: string | null
   closed_by: string
+  /** Lifecycle transition stamps — the date the app FIRST reached each milestone
+   *  (null until then). Drive the cockpit header timeline. */
+  recommended_at: string | null
+  awarded_at: string | null
+  active_at: string | null
+  maintenance_at: string | null
 }
 
 export type MaintenanceSubstate = 'on_track' | 'probation' | 'on_hold' | 'ready_to_close'

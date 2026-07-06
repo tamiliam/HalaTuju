@@ -333,6 +333,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
             # Closure bucket (post-award lifecycle): graduated/completed/withdrawn/lapsed/terminated
             'closure_reason', 'closed_at', 'closed_by',
+            # Lifecycle transition stamps — the DATE first reached each milestone; drive the
+            # cockpit header timeline (Submitted·Recommended·Awarded → Awarded·Active·Maintenance).
+            'recommended_at', 'awarded_at', 'active_at', 'maintenance_at',
             # S5: operational maintenance sub-state (on_track/probation/on_hold/ready_to_close)
             'maintenance_substate',
             # Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation +

@@ -84,7 +84,10 @@ def _flip_to_maintenance(application):
     ``active`` → ``maintenance``. Idempotent (a no-op once already in maintenance/closed)."""
     if application.status == 'active':
         application.status = 'maintenance'
-        application.save(update_fields=['status'])
+        fields = ['status']
+        if application.stamp_first('maintenance_at'):
+            fields.append('maintenance_at')
+        application.save(update_fields=fields)
 
 
 @transaction.atomic
