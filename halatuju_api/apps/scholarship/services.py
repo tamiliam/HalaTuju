@@ -1530,7 +1530,7 @@ def income_doc_blockers(application):
     letter) stay un-suffixed. The POST gate only cares that the list is non-empty.
     """
     from .income_engine import (working_members, relationship_doc_for,
-                                _member_ic_doc, _cluster_docs)
+                                _member_ic_doc, _cluster_docs, str_not_breached)
     route = (getattr(application, 'income_route', '') or '').strip()
     if not route:
         return ['income_incomplete']
@@ -1555,13 +1555,19 @@ def income_doc_blockers(application):
     members = working_members(application)
     if not members:
         return ['income_incomplete']
+    # STR-as-means-test (the P3 principle, owner 2026-07-05): a non-breached STR on file makes the
+    # per-member SALARY SLIP supportive rather than compulsory — so an informal earner (an e-hailing
+    # father with no payslip) no longer traps a genuinely-B40 family at submission (#45), and the gate
+    # matches what the docs box SHOWS ('supportive', not a red "Missing"). The IC + relationship docs
+    # stay required (identity/link). A BREACHED STR (rejected/wrong-type/not-genuine) → full salary docs.
+    salary_slip_supportive = str_not_breached(application)
     need_bc = need_guard = False
     for m in members:
         # Member-qualified codes so the checklist names each person — IC then salary slip,
         # grouped per member to match the Documents-UI member blocks.
         if _member_ic_doc(application, m) is None:
             out.append(f'parent_ic_missing:{m}')
-        if not _cluster_docs(application, m, 'salary_slip').exists():
+        if not salary_slip_supportive and not _cluster_docs(application, m, 'salary_slip').exists():
             out.append(f'salary_slip_missing:{m}')
         rel = relationship_doc_for(m)
         if rel == 'birth_certificate' and 'birth_certificate' not in present:

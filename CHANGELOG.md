@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-06 — P3 completion: the STR principle reaches the submission GATE + the IC filing (#45; no migration)
+
+Two more places where the salary route ignored a valid STR — the same root cause as the P3 verdict fix
+(STR recipient ≠ declared earner). Found while investigating why #45's Recommendation panel said "Cannot
+accept yet — still owes Required documents + Consent" despite an all-green verdict.
+
+**Fixed**
+- **The submission gate now honours the STR (was blocking genuinely-B40 families).** `income_doc_blockers`
+  demanded a salary slip for **every** working member; #45's father drives e-hailing (no payslip), so
+  `salary_slip_missing:father` fired — which also **blocked consent** (`consent_blockers` includes the doc
+  gate), trapping the student at `shortlisted` unable to submit. New `income_engine.str_not_breached`
+  (mirrors the cockpit's `strNotBreached`) makes the per-member salary slip **supportive, not compulsory**
+  when a non-breached STR is on file; IC + relationship stay required. A breached STR (rejected /
+  wrong-type / not-genuine) still requires full salary docs.
+- **The Documents box filed the wrong IC under STR ROUTE.** `incomeSubSections` keyed the STR sub-section's
+  parent off `income_earner` (mother for #45) instead of the STR's actual recipient (father) — so Mother's
+  IC showed under STR ROUTE and Father's IC under SALARY. Now keyed off the STR doc's own member tag
+  (`earner` is the fallback; on the STR route they agree).
+
+**Investigation answer (owner asked):** the "wrongly filed ICs" are NOT an independent bug — the same P3
+root cause (STR recipient ≠ declared earner) in a third surface. The principle now holds across all three:
+verdict, submission gate, and document display.
+
+**Tests** — 3 gate cases (slip supportive with non-breached STR; still required when breached; IC still
+required) + 1 filing case. Scholarship pytest 2111, jest 464. No migration.
+
 ### 2026-07-06 — P3: a valid STR settles B40 on the salary route too (#45/#63 seam; no migration)
 
 Shipped the deferred P3 (the #63 route-seam). A family with a valid STR **and** a working member gets

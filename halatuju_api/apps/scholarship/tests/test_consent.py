@@ -466,6 +466,41 @@ class TestIncomeGateV2(TestCase):
         self.assertEqual(set(self._blockers(app)),
                          {'parent_ic_missing:mother', 'salary_slip_missing:mother', 'birth_certificate_missing'})
 
+    # ── STR-as-means-test: a non-breached STR makes the salary SLIP supportive (P3, #45) ─────
+    def _str_doc(self, app, *, member='', auth='genuine', **fields):
+        from apps.scholarship.models import ApplicantDocument
+        from django.utils import timezone
+        fields.setdefault('status', 'Lulus')
+        fields.setdefault('year', '2026')
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='str', storage_path=f'x/str/{member}', household_member=member,
+            vision_fields={'fields': fields, 'authenticity': {'status': auth}}, vision_run_at=timezone.now())
+
+    def test_salary_slip_supportive_when_non_breached_str_present(self):
+        # #45: an e-hailing father with no payslip no longer traps a genuinely-B40 family at submission
+        # when a valid STR is on file — the STR is the means-test, so the slip is supportive, not required.
+        app = self._app(route='salary', members=['father', 'mother'])
+        self._doc(app, 'parent_ic', member='father')
+        self._doc(app, 'parent_ic', member='mother')
+        self._doc(app, 'salary_slip', member='mother')     # mother's slip present; father's (informal) absent
+        self._doc(app, 'birth_certificate')
+        self._str_doc(app, member='father')                # a valid, non-breached STR (the father's)
+        self.assertEqual(self._blockers(app), [])          # no salary_slip_missing:father
+
+    def test_salary_slip_still_required_when_str_breached(self):
+        # A wrong-type STR (a non-STR in the slot) does NOT make salary supportive — full docs required.
+        app = self._app(route='salary', members=['father'])
+        self._doc(app, 'parent_ic', member='father')
+        self._str_doc(app, member='father', status='approved', source_type='unknown')   # → wrong_type
+        self.assertIn('salary_slip_missing:father', self._blockers(app))
+
+    def test_member_ic_still_required_even_with_non_breached_str(self):
+        # The STR relaxes the SLIP, not identity: the member IC is still compulsory.
+        app = self._app(route='salary', members=['father'])
+        self._str_doc(app, member='father')                # valid STR but no father IC on file
+        self.assertIn('parent_ic_missing:father', self._blockers(app))
+        self.assertNotIn('salary_slip_missing:father', self._blockers(app))
+
     # ── #4 (2026-06-11): an OPTIONAL wrong-person income proof must not hard-block ─────
     def test_str_route_optional_salary_slip_mismatch_does_not_block(self):
         # The father's payslip dropped onto a mother-STR cluster: the STR is the income proof,

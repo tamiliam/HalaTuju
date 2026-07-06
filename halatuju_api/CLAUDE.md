@@ -536,8 +536,15 @@ against the STR's OWN tagged member not `income_earner`). Current STR + confirme
 (green, over the headroom); undated approved → Probable (blue), RED preserved when the salary is clearly
 over-line; invalid STRs (rejected/wrong-type/stale/unreadable) fall through to salary (V5). Fraud guard:
 recipient must match a CONFIRMED member's IC. Re-banding: **#45** Unsure→Certain, **#63** Unsure→Probable,
-#115 unchanged — both toward B40. 2108 scholarship pytest. (The shared-IC display half shipped 2026-07-05;
-P3's verdict half is now done.)
+#115 unchanged — both toward B40. **P3 COMPLETION (same day):** the same root cause (STR recipient ≠
+declared earner) also hit the SUBMISSION GATE and the IC filing — (1) `services.income_doc_blockers`
+demanded a per-member salary slip even with a valid STR, so an e-hailing father with no payslip fired
+`salary_slip_missing:father` → blocked consent → trapped #45 at `shortlisted` unable to submit; new
+`income_engine.str_not_breached` makes the slip supportive (not compulsory) when a non-breached STR is on
+file (IC + relationship still required; breached STR → full docs). (2) `incomeSubSections` (officerCockpit.ts)
+filed the STR sub-section's parent off `income_earner` not the STR's recipient → Mother's IC under STR ROUTE,
+Father's under SALARY; now keyed off the STR doc's member tag. The STR principle now holds across all THREE
+surfaces (verdict, gate, display). 2111 scholarship pytest + 464 jest.
 
 **✅ SHIPPED 2026-07-06 — Live-review batch #125 (FE/BE, NO migration; prod backfill; retro
 `docs/retrospective-2026-07-06-livereview-125-str-dedup.md`).** Three fixes off applicant #125:

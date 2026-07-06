@@ -895,6 +895,29 @@ def salary_route_str(application):
     return None, None
 
 
+def str_not_breached(application):
+    """True when a genuine, NON-BREACHED STR is on file — approved-ish (any currency state EXCEPT
+    wrong_type / rejected / unread) and not judged non-genuine. Mirrors the officer cockpit's
+    ``strNotBreached`` (officerCockpit.ts): a non-breached STR makes the salary-route documents
+    SUPPORTIVE, not compulsory, on EITHER route (owner 2026-07-05: "STR not breached → no full salary
+    docs needed"). BROADER than ``has_valid_str`` (currency-only current/unconfirmed): a stale-but-
+    genuine STR is also 'not breached'. Keeps the consent gate + the student's wizard checklist in step
+    with what the student is SHOWN — otherwise the docs box says "not required" while the gate blocks."""
+    docs = getattr(application, 'documents', None)
+    if docs is None:
+        return False
+    str_doc = docs.filter(doc_type='str', superseded_at__isnull=True).order_by('-uploaded_at').first()
+    if str_doc is None:
+        return False
+    sc = student_str_check(str_doc)
+    cs = (sc or {}).get('current_status', '')
+    if not cs or cs in ('wrong_type', 'rejected'):     # no read at all, or a failed STR → breached
+        return False
+    vf = getattr(str_doc, 'vision_fields', None) or {}
+    auth = (vf.get('authenticity') or {}).get('status', '') if isinstance(vf, dict) else ''
+    return not (auth and auth not in ('genuine', 'likely_genuine'))   # a positive non-genuine call → breached
+
+
 def declared_amount(application, member):
     """A working member's DECLARED average monthly income (RM, int > 0) from the income
     wizard, or None. Stored in ``ScholarshipApplication.income_declared = {member: amount}``.

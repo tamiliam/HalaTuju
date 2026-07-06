@@ -610,6 +610,23 @@ describe('incomeSubSections', () => {
     expect(salaryIds).not.toContain(3)   // applicant BC stays in STR
   })
 
+  it('salary route, father STR while mother is the declared earner: STR files the FATHER IC, not the earner (#45)', () => {
+    // #45: the family is on the salary route (mother the declared earner + a slip), but the STR is the
+    // FATHER's. The STR sub must show the RECIPIENT's (father's) IC — keyed off the STR's own member
+    // tag, not income_earner — while the mother's IC belongs to SALARY.
+    const str = doc({ id: 1, doc_type: 'str', household_member: 'father' })
+    const fIc = doc({ id: 2, doc_type: 'parent_ic', household_member: 'father' })
+    const mIc = doc({ id: 3, doc_type: 'parent_ic', household_member: 'mother' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_earner: 'mother', income_working_members: ['father', 'mother'] },
+      [str, fIc, mIc])
+    const strIcSlot = sub.str?.find((s) => s.docType === 'parent_ic')
+    expect(strIcSlot?.member).toBe('father')      // the STR recipient, not the declared earner
+    expect(strIcSlot?.doc?.id).toBe(2)
+    expect(ids(sub.str ?? [])).not.toContain(3)   // mother's IC is NOT in the STR cluster
+    expect(ids(sub.salary)).toContain(3)          // …it belongs to SALARY
+  })
+
   it('4a: STR route derives salary members from the docs present, showing ONLY present docs (supportive)', () => {
     // #80 shape: the STR mother is the earner; the FATHER also has payslips but was never listed as
     // a working member. His docs form a structured Father group — but because this is the STR route

@@ -666,7 +666,12 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
   let strParent = ''
   const strDocs = incomeDocs.filter((d) => d.doc_type === 'str')
   if (strDocs.length > 0) {
-    strParent = earner || memberOf(strDocs[0]) || ''
+    // The STR parent = whoever the STR is TAGGED/resolved to (the recipient), NOT the declared
+    // income_earner — on the salary route they differ (#45: the father's STR, the mother the declared
+    // earner). Keying off `earner` filed the WRONG parent's IC under STR ROUTE (mother's) and pushed
+    // the real recipient's (father's) to SALARY. Prefer the STR's own member; earner is the fallback
+    // (on the STR route the wizard tags the STR to the earner, so they agree there).
+    strParent = memberOf(strDocs[0]) || earner || ''
     const s: IncomeSlot[] = strDocs.map((d) => ({ docType: 'str', member: memberOf(d) || strParent, doc: d }))
     s.push({ docType: 'parent_ic', member: strParent, doc: find('parent_ic', strParent) })
     const rel = relationshipDocFor(strParent)   // mother→BC, guardian→letter, father→none
