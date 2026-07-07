@@ -73,7 +73,9 @@ export async function sponsorSignInWithGoogle() {
 export async function sponsorResetPassword(email: string) {
   const captchaToken = await getTurnstileToken('sponsor_reset')
   const { error } = await getSponsorSupabase().auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/sponsor/login`,
+    // Land on the set-a-new-password page (was /sponsor/login, which had no form to
+    // actually change the password — the reset dead-ended).
+    redirectTo: `${window.location.origin}/sponsor/auth/reset`,
     ...(captchaToken ? { captchaToken } : {}),
   })
   return { error }
