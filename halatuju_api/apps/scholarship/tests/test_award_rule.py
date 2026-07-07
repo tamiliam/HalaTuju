@@ -30,11 +30,13 @@ def _app(cohort, *, pathway='matric', status='interviewed', suffix='1'):
 
 
 def _add_not_genuine_offer(app):
-    """A non-official offer — the scorer judged the issuer UNRECOGNISED (private / IPTS) → the pathway
-    ladder flags 'offer_not_official' (a 'suspect' offer is a cropped OFFICIAL one now, not a disqualifier)."""
+    """A non-official offer — MODEL_VERSION 1.4.0 scores a private/IPTS (or otherwise unrecognisable)
+    offer 'not_offer_letter' (fake, p<0.35). The pathway red-chip ladder makes that a −2 step and
+    emits the confident 'offer_not_official' caveat (an award CONFIDENT_DISQUALIFIER); a mid-band
+    'suspect' offer is a cropped OFFICIAL one → the softer 'document_not_genuine', not a disqualifier."""
     return ApplicantDocument.objects.create(
         application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
-        vision_fields={'authenticity': {'status': 'unrecognised'}}, vision_run_at=timezone.now())
+        vision_fields={'authenticity': {'status': 'not_offer_letter'}}, vision_run_at=timezone.now())
 
 
 class TestProposedAmountRule(TestCase):

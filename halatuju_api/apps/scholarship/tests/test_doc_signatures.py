@@ -311,11 +311,15 @@ def test_genuine_poly_offer_types_as_polytechnic():
     assert g['status'] == 'genuine'
 
 
-def test_cropped_offer_is_suspect_never_not_offer_letter():
-    # Recognised as STPM (anchor present) but incomplete → suspect (re-upload), NOT not_offer_letter.
+def test_thin_offer_below_floor_is_not_offer_letter():
+    # MODEL_VERSION 1.4.0 (owner 2026-07-07): the offer identity anchor is DROPPED, so an offer is
+    # scored purely by `band_for`. A very thin/cropped read (p<0.35) now reads 'not_offer_letter'
+    # (fake), no longer floored at 'suspect' — this is what makes #12 (p=0.30) read fake. A MID-band
+    # cropped offer (0.35–0.70) still reads 'suspect' (see test_pismp_announcement_is_suspect).
     g = signature_genuineness(CROPPED_STPM_OFFER, doc_type='offer_letter')
     assert g['type'] == 'stpm'
-    assert g['status'] == 'suspect'
+    assert g['status'] == 'not_offer_letter'
+    assert g['probability'] < 0.35
 
 
 def test_public_university_offer_recognised_as_ua_offer():
@@ -396,7 +400,8 @@ Program Pengajian : Asasi Perubatan
 Tarikh Pendaftaran : 1 Julai 2026
 Sebarang pertukaran program adalah TIDAK dibenarkan.
 """
-# A PRIVATE university (IPTS) — NOT one of the fixed 20 UAs → unrecognised → holistic.
+# A PRIVATE university (IPTS) — NOT one of the fixed 20 UAs → scores ~0 → not_offer_letter (fake),
+# so `offer_official_status` → not_genuine (still not a supported public offer). Owner policy holds.
 PRIVATE_UNIV_OFFER = """SWINBURNE UNIVERSITY OF TECHNOLOGY
 OFFER OF ADMISSION
 Bachelor of Computer Science
@@ -416,10 +421,11 @@ def test_upnm_asasi_offer_types_as_ua_offer_and_genuine():
     assert g['status'] == 'genuine'
 
 
-def test_private_university_defers_to_holistic():
-    # A private (IPTS) university is NOT one of the 20 UAs → unrecognised → holistic (never flagged).
+def test_private_university_is_not_offer_letter():
+    # A private (IPTS) university is NOT one of the 20 UAs → scores ~0 → not_offer_letter (fake).
+    # (Pre-1.4.0 this deferred to a holistic check via 'unrecognised'; the anchor is now dropped.)
     g = signature_genuineness(PRIVATE_UNIV_OFFER, doc_type='offer_letter')
-    assert g['status'] == 'unrecognised'
+    assert g['status'] == 'not_offer_letter'
 
 
 # ── STR (Sumbangan Tunai Rahmah) — three genuine approval forms + SALINAN/SARA counters ──

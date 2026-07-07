@@ -156,11 +156,13 @@ class TestAcademic(_Base):
         self.assertIn('results_slip_name_ok', _codes(f['evidence']))
         self.assertIn('grades_unverified', _codes(f['unresolved']))
 
-    def test_slip_name_mismatch_is_gap_reupload(self):
-        # A slip in someone else's name is unusable → red (can't verify): re-upload.
+    def test_slip_name_mismatch_is_probable_via_red_chip(self):
+        # Owner 2026-07-07 red-chip ladder: a slip in a different name is a RED Name chip (−1), no
+        # longer a hard gap — a lone mismatch on a genuine slip lands Probable ('review'). (Still an
+        # application_completeness submission blocker — a separate gate.)
         _add_doc(self.app, 'results_slip', student_verdict='name_mismatch')
         f = _facts(self.app)['academic']
-        self.assertEqual(f['status'], 'gap')
+        self.assertEqual(f['status'], 'review')
         self.assertIn('results_slip_name_mismatch', _codes(f['unresolved']))
 
 
@@ -560,25 +562,22 @@ class TestPathway(_Base):
         d.save(update_fields=['vision_fields'])
         return d
 
-    def test_unrecognised_offer_is_unsure_via_the_ladder(self):
-        # A PRIVATE/IPTS offer (unrecognised issuer). Ladder (owner 2026-07-07): −2 → 'recommend'
-        # (🟡 Unsure), no longer the ambiguous 'review' that flipped blue on incidental greens.
-        self._offer('unrecognised')
-        f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'recommend')
-        self.assertIn('offer_not_official', _codes(f['unresolved']))
-
     def test_cropped_official_offer_is_probable(self):
-        # A RECOGNISED official offer, just cropped/thin (suspect) → −1 → 'review' (🔵 Probable),
+        # A cropped/thin offer scores 'suspect' (0.35–0.70) → step −1 → 'review' (🔵 Probable),
         # not falsely Certain (the offer's cropped-genuineness wasn't a pathway input before).
         self._offer('suspect')
         f = _facts(self.app)['pathway']
         self.assertEqual(f['status'], 'review')
         self.assertIn('document_not_genuine', _codes(f['unresolved']))
 
-    def test_wrong_document_offer_is_unsure(self):
+    def test_fake_offer_is_unsure_with_offer_not_official(self):
+        # MODEL_VERSION 1.4.0: an offer scoring below the suspect floor reads 'not_offer_letter'
+        # (fake) → step −2 → 'recommend' (🟡 Unsure) + the confident 'offer_not_official' caveat (an
+        # award CONFIDENT_DISQUALIFIER). Content is clean so no red chip stacks.
         self._offer('not_offer_letter')
-        self.assertEqual(_facts(self.app)['pathway']['status'], 'recommend')   # verified −2
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('offer_not_official', _codes(f['unresolved']))
 
     def test_genuine_official_offer_still_verifies(self):
         self._offer('genuine')
@@ -587,17 +586,18 @@ class TestPathway(_Base):
     _WRONG_OFFER = {'candidate_name': 'SOMEONE ELSE BIN OTHER', 'candidate_nric': '990101-01-1234',
                     'institution': 'KOLEJ X', 'programme': 'DIPLOMA Y'}
 
-    def test_unrecognised_offer_plus_wrong_person_is_fail(self):
-        # Non-official AND wrong-person: the content 'recommend' (wrong-person) stepped −2 → 🔴 Fail.
-        d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._WRONG_OFFER)
-        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'unrecognised', 'reason': 'x'})
+    def test_fake_offer_wrong_person_is_fail_hash12(self):
+        # The #12 worked example (owner-verified): a fake offer (p<0.35 → not_offer_letter, step −2)
+        # whose Name + IC also mismatch (2 red chips) → −2 + −2 = −4 → floored 🔴 Fail.
+        d = _add_doc(self.app, 'offer_letter', student_verdict='name_mismatch', fields=self._WRONG_OFFER)
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'not_offer_letter', 'reason': 'x'})
         d.save(update_fields=['vision_fields'])
         self.assertEqual(_facts(self.app)['pathway']['status'], 'gap')
 
-    def test_genuine_offer_wrong_person_stays_amber_unchanged(self):
-        # A GENUINE doc keeps today's logic: a wrong-person offer stays 🟡 amber (family slip-up),
-        # NOT red — the ladder only bites on a genuineness/eligibility defect.
-        d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._WRONG_OFFER)
+    def test_genuine_offer_wrong_person_is_unsure_two_chips(self):
+        # A GENUINE wrong-person offer (Name + IC both mismatch = 2 red chips, step 0) → −2 → 🟡
+        # Unsure (amber, family slip-up), NOT red. A LONE name/IC slip would be −1 (Probable).
+        d = _add_doc(self.app, 'offer_letter', student_verdict='name_mismatch', fields=self._WRONG_OFFER)
         d.vision_fields = dict(d.vision_fields, authenticity={'status': 'genuine', 'reason': 'x'})
         d.save(update_fields=['vision_fields'])
         f = _facts(self.app)['pathway']
@@ -635,22 +635,22 @@ class TestPathway(_Base):
         self.assertIn('pathway_confirmed', _codes(f['evidence']))
         self.assertEqual(f['unresolved'], [])
 
-    def test_offer_name_mismatch_is_recommend_amber(self):
-        # V5 (#12): a wrong-person letter is explicitly 'recommend' (amber/Unsure) — deliberate,
-        # not the old empty-evidence accident of a 'review' that happened to read amber.
+    def test_offer_lone_name_mismatch_is_probable(self):
+        # Owner 2026-07-07 red-chip ladder: a LONE Name mismatch on a genuine-scoring offer (IC
+        # matches) is 1 red chip → −1 → 'review' (🔵 Probable), not the old fixed 'recommend'.
         _add_doc(self.app, 'offer_letter', student_verdict='name_mismatch',
                  fields={'candidate_name': 'SOMEONE ELSE', 'candidate_nric': '080115-05-0132'})
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'review')
         self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
 
-    def test_offer_ic_mismatch_is_recommend_amber(self):
-        # IC is the strong identity check — a wrong NRIC flags even if the name is close.
+    def test_offer_lone_ic_mismatch_is_probable(self):
+        # A LONE IC mismatch (name matches) is likewise 1 red chip → −1 → 'review' (🔵 Probable).
         _add_doc(self.app, 'offer_letter', student_verdict='ok',
                  fields={'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',
                          'candidate_nric': '999999-99-9999'})
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'review')
         self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
 
     def test_offer_notice_without_identity_is_no_identity_not_unreadable(self):
@@ -1492,9 +1492,10 @@ class TestCodeHealthS4IncomeConsistency(TestCase):
 
 
 class TestGenuinenessLadder(_Base):
-    """Owner 2026-07-07 - the genuineness/eligibility ladder for identity + academic. A defect steps
-    the CONTENT band down (suspect -1, wrong-type -2), stacking on a content defect; a genuine doc is
-    untouched (downgrade-only, so a hard-stop like a name mismatch is never softened)."""
+    """Owner 2026-07-07 - the genuineness score-band + red-chip ladder for identity / academic /
+    pathway: band = max(base, genuineness_step + red_chip_count), floored at Fail. genuineness_step
+    by score (genuine 0 / suspect 1 / fake 2); each RED content variable is another -1. A genuine doc
+    with clean content is untouched."""
 
     def _auth(self, doc, status):
         doc.vision_fields = dict(doc.vision_fields or {},
@@ -1533,13 +1534,35 @@ class TestGenuinenessLadder(_Base):
         self._auth(self._slip([{'subject': 'Bahasa Melayu', 'grade': 'A-'}]), 'not_results_slip')
         self.assertEqual(_facts(self.app)['academic']['status'], 'recommend')   # verified -2
 
-    def test_academic_suspect_plus_subject_mismatch_is_unsure(self):
+    def test_academic_suspect_plus_grade_mismatch_is_unsure(self):
+        # suspect (step 1) + a confirmed Results grade mismatch (1 red chip) = -2 -> Unsure.
         self.profile.grades = {'bm': 'A-', 'math': 'B+'}; self.profile.save()
         self._auth(self._slip([{'subject': 'Bahasa Melayu', 'grade': 'A-'},
                                {'subject': 'Matematik', 'grade': 'A'}]), 'suspect')
-        self.assertEqual(_facts(self.app)['academic']['status'], 'recommend')   # review -1 -> Unsure
+        self.assertEqual(_facts(self.app)['academic']['status'], 'recommend')
 
-    def test_academic_suspect_name_mismatch_stays_fail(self):
-        # Downgrade-only: genuineness never LIFTS a hard stop - a wrong-name slip is Fail even suspect.
+    def test_academic_suspect_name_mismatch_is_unsure(self):
+        # Owner 2026-07-07: a wrong-name slip is a RED Name chip (-1), no longer a hard stop; with a
+        # suspect genuineness (-1) it lands 🟡 Unsure (not Fail). Softened by design (rare / OCR misread).
         self._auth(_add_doc(self.app, 'results_slip', student_verdict='name_mismatch'), 'suspect')
-        self.assertEqual(_facts(self.app)['academic']['status'], 'gap')
+        self.assertEqual(_facts(self.app)['academic']['status'], 'recommend')
+
+    # -- worked examples + chip stacking --
+    def test_identity_name_and_nric_both_mismatch_is_unsure(self):
+        # Two red chips (Name + NRIC) on a genuine IC = -2 -> Unsure (a student's own IC misread on
+        # both is rare; owner accepted). A LONE mismatch would be -1 (Probable).
+        self._auth(_add_ic(self.app, nric='999999-99-9999', name='SOMEONE ELSE'), 'genuine')
+        self.assertEqual(_facts(self.app)['identity']['status'], 'recommend')
+
+    def test_pathway_hash31_pemakluman_pathway_mismatch_is_unsure(self):
+        # The #31 worked example: a pemakluman scores 'suspect' (p~0.40, step -1); Name + IC green,
+        # but the offer names a different place than declared (1 red Pathway chip, -1) = -2 -> Unsure.
+        self.app.pre_u_institution = 'SMK Mentakab'; self.app.save()
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields={'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',
+                             'candidate_nric': '080115-05-0132',
+                             'institution': 'SMK Temerloh', 'programme': 'Tingkatan Enam'})
+        self._auth(d, 'suspect')
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('pathway_confirm', _codes(f['unresolved']))

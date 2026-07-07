@@ -516,7 +516,30 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-06)
+## Next Sprint (as of 2026-07-07)
+
+**✅ SHIPPED 2026-07-07 — Genuineness score-band + red-chip LADDER (Identity/Academic/Pathway); backend
+only, NO migration; `MODEL_VERSION` 1.3.0 → 1.4.0; re-banding owner-audited + signed off; retro
+`docs/retrospective-2026-07-07-genuineness-redchip-ladder.md`.** Replaced the V1 "step the bespoke
+content band" ladder with the explicit model: `band = max(base, genuineness_step + red_chip_count)`,
+floored at Fail. genuineness_step by SCORE, uniform incl. offers (genuine 0 / suspect −1 / fake −2);
+one −1 per RED content chip (Identity Name·NRIC; Academic Name·Subjects·Results; Pathway Name·IC·Pathway).
+- **Offer anchor DROPPED** (`_IDENTITY` loses `offer_letter`): an offer is scored purely by `band_for`,
+  so a recognised-issuer offer below the suspect floor reads `not_offer_letter` (fake) not floored-suspect
+  (the #12 fix). STR keeps its anchor. Submission gate UNCHANGED (`offer_official_status` already mapped
+  suspect+unrecognised→not_genuine; not_offer_letter maps there too).
+- **`_verdict_academic`** no longer hard-gaps a name mismatch (→ a −1 Name chip; still an
+  `application_completeness` submission blocker — separate gate). **`_verdict_pathway`** no longer
+  early-returns on identity mismatch — Name·IC·Pathway counted independently so #12's 3 chips stack.
+- **Worked (owner-verified):** #12 offer p=0.30 → fake(−2)+3 chips = Fail; #31 pemakluman p=0.40 →
+  suspect(−1)+1 Pathway chip = Unsure. **Re-banding:** deploy day moves 1 band (app 48 Unsure→Probable,
+  an OCR name-split artefact softened; 0 regressions); the by-score change realises when offers are
+  RE-RUN under 1.4.0 (owner does this per-app on the cockpit — 7 stale-scored thin offers are candidates,
+  but re-scored fresh so a real UA/asasi offer may recover). Audit exposed a SIGNATURE-COVERAGE GAP:
+  asasi/UA offers under-fingerprinted (scoring 0.056 vs polytechnic family) — the old anchor masked it.
+  **2133 scholarship pytest green.**
+- **▶ OWNER TODO:** re-run all offers on the cockpit (1.4.0 re-score). **▶ FOLLOW-UP:** POSITIVE asasi/UA
+  offer fingerprints (the masked gap) — see roadmap.
 
 **▶ NEXT — no roadmap sprint queued. Standing owner-review items (all optional): (a) BC genuineness chip
 cap (TD-158 — the one remaining genuineness type not capped in the cockpit); (b) officer "converted from

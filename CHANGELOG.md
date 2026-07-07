@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## Genuineness score-band + red-chip ladder — 2026-07-07
+
+### Changed
+- **Verdict genuineness model (Identity/Academic/Pathway)** — replaced the V1 "step the content band"
+  ladder with `band = max(base, genuineness_step + red_chip_count)`, floored at Fail. genuineness_step
+  by score, uniform incl. offers (genuine 0 / suspect −1 / fake −2); one −1 per red content chip
+  (Identity Name·NRIC; Academic Name·Subjects·Results; Pathway Name·IC·Pathway). Income unchanged.
+- **Offer genuineness scored purely by-score** — dropped the `offer_letter` identity anchor
+  (`genuineness/results_doc.py`), so a recognised-issuer offer below the suspect floor now reads
+  `not_offer_letter` (fake) not floored-suspect. STR keeps its anchor. `MODEL_VERSION` 1.3.0 → 1.4.0
+  (owner re-runs offers on the cockpit to re-score). Submission gate unchanged.
+- `_verdict_academic` no longer hard-gaps a slip name mismatch (→ a red chip); `_verdict_pathway`
+  counts Name/IC/Pathway independently. Backend only, no migration. 2133 scholarship pytest.
+- See `docs/retrospective-2026-07-07-genuineness-redchip-ladder.md`.
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 

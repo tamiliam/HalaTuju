@@ -1793,10 +1793,10 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                     'model_version': sg.get('model_version'),
                 }
         elif doc.doc_type == 'offer_letter':
-            # SIGNATURE genuineness over the OCR text for the four standard issuers
-            # (STPM/Matric/Poly/PISMP); an unrecognised issuer (university/IPG/IPTS) defers to
-            # the holistic read on the image. Text-only — the crest/JPPKK seal are bonus and the
-            # text signatures already clear the band. No text + no image → no signal.
+            # SIGNATURE genuineness over the OCR text (MODEL_VERSION 1.4.0: scored purely by-score via
+            # `band_for`, no issuer anchor) → genuine (≥0.70) / suspect (0.35–0.70) / not_offer_letter
+            # (<0.35). Text-only — the crest/JPPKK seal are bonus and the text signatures already clear
+            # the band. No text + no image → no signal.
             from .genuineness import assess
             rr = ocr if ocr is not None else ocr_document(doc)
             text = (rr or {}).get('text', '') or ''
@@ -1806,9 +1806,9 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
             auth = (assess('offer_letter', image=gimg, content_type=doc.content_type, ocr_text=text)
                     if text.strip() and not (rr or {}).get('error') else None)
             if auth and auth.get('status'):
-                # 'unrecognised' (not a supported public-issuer offer — private/IPTS or a non-official
-                # notification) is surfaced as 'suspect' so the badge + cap vocabulary handle it; the
-                # pathway verdict + submission gate treat anything != 'genuine' as not an official offer.
+                # The by-score status is stored as-is (the pathway verdict + submission gate treat
+                # anything != 'genuine' as not an official offer). A legacy 'unrecognised' (pre-1.4.0
+                # stored value) is still folded to 'suspect' for badge/cap vocabulary.
                 st = 'suspect' if auth['status'] == 'unrecognised' else auth['status']
                 result['authenticity'] = {
                     'status': st,

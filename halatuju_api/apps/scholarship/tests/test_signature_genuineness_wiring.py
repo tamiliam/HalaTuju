@@ -170,10 +170,10 @@ class TestOfferLetterUsesSignatureScorer(_Base):
         self.assertEqual(auth['status'], 'genuine')
         self.assertEqual(auth['doc_seen'], 'stpm')
 
-    def test_unrecognised_issuer_is_suspect_not_holistic(self):
-        # Owner policy: a private/IPTS offer (not one of the supported public issuers) is NOT
-        # holistic-rescued to genuine — it stays not-genuine ('unrecognised' surfaced as 'suspect')
-        # so the pathway verdict + submission gate can act on it.
+    def test_private_issuer_is_not_offer_letter_not_holistic(self):
+        # MODEL_VERSION 1.4.0: the offer anchor is dropped, so a private/IPTS offer (not one of the
+        # supported public issuers) scores ~0 by-score → stored 'not_offer_letter' (fake). Still NOT
+        # holistic-rescued to genuine → the pathway verdict + submission gate act on it (not-genuine).
         doc = ApplicantDocument.objects.create(
             application=self.app, doc_type='offer_letter', storage_path=f'{self.app.id}/of/u')
         with patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'img'), \
@@ -181,7 +181,7 @@ class TestOfferLetterUsesSignatureScorer(_Base):
              patch('apps.scholarship.vision.extract_document_fields',
                    return_value={'fields': {}, 'warnings': [], 'error': ''}):
             auth = vision.run_field_extraction_for_document(doc, names=[]).get('authenticity')
-        self.assertEqual(auth['status'], 'suspect')
+        self.assertEqual(auth['status'], 'not_offer_letter')
 
     def test_empty_ocr_no_image_gives_no_signal(self):
         auth = self._run('').get('authenticity')

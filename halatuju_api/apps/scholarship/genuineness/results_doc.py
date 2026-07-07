@@ -55,7 +55,16 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       DIFFERENT known family (EPF / BC / results / STR). Catches an EPF filed as a salary slip. No
 #       change to any existing signature family/weight; a new recognition path → bump. When a full
 #       POSITIVE signature list is added for salary/utility/semester, bump again + register it here.
-MODEL_VERSION = '1.3.0'
+#   1.4.0 (2026-07-07) — the OFFER-letter identity anchor is DROPPED (offer_letter removed from
+#       `_IDENTITY`): an offer is now scored purely by `band_for` like the slip / BC / EPF, so a
+#       recognised-issuer offer that scores below the suspect floor reads `not_offer_letter` (fake)
+#       instead of being floored at `suspect`. This makes the genuineness STEP uniform-by-score for
+#       every signature-scored document (genuine ≥0.70 → 0, suspect 0.35–0.70 → −1, fake <0.35 → −2),
+#       feeding the verdict red-chip LADDER (verdict_engine._apply_genuineness_ladder, owner 2026-07-07).
+#       STR keeps its anchor (the SALINAN/SARA gate). The submission gate is UNCHANGED — `offer_official_status`
+#       already collapsed suspect+unrecognised → not_genuine, and not_offer_letter maps there too.
+#       → RE-RUN all offers on the live cockpit so stored authenticity carries the new by-score status.
+MODEL_VERSION = '1.4.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -333,19 +342,12 @@ _FAMILIES = {'results_slip': _RESULTS_LISTS, 'certificate': _RESULTS_LISTS,
              'str': _STR_LISTS}
 _LISTS = _RESULTS_LISTS   # back-compat default (slip/cert)
 
-# Issuer "identity" anchors per offer-letter family: presence of ANY means the document IS that
-# pathway's offer (so a low overall score = cropped/incomplete → suspect, NOT "not an offer
-# letter"). If NO family's anchor matches, the document is not one of the three standard issuers
-# (a university / IPG / private offer) and ``signature_genuineness`` defers to the holistic check.
-_IDENTITY = {'offer_letter': {
-    'stpm':          ['SEKTOR OPERASI SEKOLAH', 'TINGKATAN ENAM', 'PUSAT TINGKATAN ENAM'],
-    'matriculation': ['BAHAGIAN MATRIKULASI', 'PROGRAM MATRIKULASI', 'JURUSAN'],
-    'polytechnic':   ['JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI',
-                      'SURAT TAWARAN PENGAJIAN', 'GALERIA PJH'],
-    'pismp':         ['INSTITUT PENDIDIKAN GURU', 'IJAZAH SARJANA MUDA PERGURUAN'],
-    # Asasi / UA-Diploma / Degree — recognised iff the letter names one of the fixed 20 UAs.
-    'ua_offer':      list(_UA_NAMES),
-}, 'str': {
+# Issuer "identity" anchors. As of MODEL_VERSION 1.4.0 the OFFER-letter anchor is DROPPED: an offer
+# is scored purely by `band_for` (like the slip / BC / EPF), so a recognised-issuer offer that scores
+# below the suspect floor now reads `not_offer_letter` (fake) rather than being floored at `suspect`.
+# Only STR keeps an anchor — its DISTINCTIVE page marker guards the LHDN SALINAN / SARA copies that
+# share the generic strings (without it a SALINAN would score as a genuine STR).
+_IDENTITY = {'str': {
     # The DISTINCTIVE page marker per STR approval form (NOT the shared "Maklumat Pemohon" /
     # "Sumbangan Tunai Rahmah" — those also sit on an LHDN SALINAN copy). A doc matching none
     # (a SALINAN, a SARA letter) is 'unrecognised' → holistic, never a genuine STR.
@@ -445,10 +447,10 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
 
     identity = _IDENTITY.get(doc_type)
     if identity:
-        # Multi-issuer type (offer letter): only score if we recognise one of the standard
-        # issuers; otherwise defer to the holistic check (a legit university/IPG offer is NOT
-        # one of these three, and must never be flagged). Recognised-but-incomplete → suspect,
-        # never not_<type> (we KNOW it's that pathway's offer — it's just cropped).
+        # STR only (MODEL_VERSION 1.4.0 dropped the offer anchor): score as a genuine STR ONLY if a
+        # form's DISTINCTIVE page marker is present; otherwise defer to the holistic check — an LHDN
+        # SALINAN application copy / a SARA letter carries the generic strings but no form marker and
+        # must never pass as a genuine STR. Recognised-but-incomplete → suspect, never not_<type>.
         tn = _norm(ocr_text)
         recognised = any(_norm(p) in tn for p in identity.get(r['type'], []))
         if not recognised:
@@ -458,7 +460,7 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
                                f"(p={r['probability']:.2f}) — defer to holistic check")[:300],
                     'model_version': MODEL_VERSION}
         status = 'genuine' if r['probability'] >= GENUINE_MIN else 'suspect'
-        reason = (f"{n_have}/{n_all} {r['type']} offer signatures present "
+        reason = (f"{n_have}/{n_all} {r['type']} signatures present "
                   f"(p={r['probability']:.2f}); missing: {', '.join(r['missing'][:4]) or 'none'}")
         return {'status': status, 'probability': r['probability'], 'type': r['type'],
                 'present': r['present'], 'missing': r['missing'], 'reason': reason[:300],

@@ -158,9 +158,10 @@ def _verdict_identity(application):
     # match, consistent with the Documents panel and the student's own identity card.
 
     # NB the IC genuineness fingerprint is applied AFTER this by the genuineness LADDER
-    # (_apply_genuineness_ladder), uniformly with academic + pathway: suspect steps the CONTENT band
-    # −1 (Certain→Probable), not_ic −2 (→Unsure), stacking on any content defect. This function
-    # returns the CONTENT-only band (name + NRIC). Downgrade-only, so it never softens a mismatch.
+    # (_apply_genuineness_ladder): the band is rebuilt as max(this base, genuineness_step + red chips),
+    # where the red chips are the Name/NRIC mismatches emitted here (counted by _identity_red_chips) and
+    # the step is the IC fingerprint (suspect −1 / not_ic −2). This function returns the CONTENT base
+    # (verified when clean, review when a value mismatches or a sub-read is pending).
     return _fact('identity', 'verified' if not unresolved else 'review',
                  evidence, unresolved)
 
@@ -186,10 +187,12 @@ def _verdict_academic(application):
     # for "the slip could not be read" (it falsely flagged Sharvani's clean, fully-read slip).
     name_status = _slip_name_status(slip)
     if name_status == 'mismatch':
-        # A slip in someone else's name is unusable — these results can't be attributed
-        # to the student. Hard stop (red, can't verify): re-upload the correct slip. Also
-        # a submission blocker (application_completeness), so it can't be submitted as-is.
-        return _fact('academic', 'gap', evidence, [_item('results_slip_name_mismatch')])
+        # A slip in a different name is a RED Name chip (owner 2026-07-07 red-chip ladder), no longer
+        # a hard gap: the ladder deducts −1 (→ Probable) for the lone mismatch, and it stacks with any
+        # subject/grade chip + the genuineness step (so someone-else's slip whose grades also diverge
+        # still lands Fail). Still an `application_completeness` submission blocker — a SEPARATE gate
+        # (services.py), unchanged. We continue below so subject/grade chips are surfaced too.
+        unresolved.append(_item('results_slip_name_mismatch'))
     name_ok = name_status == 'match'
     if name_status == 'unreadable':
         unresolved.append(_item('results_slip_unreadable'))
@@ -689,50 +692,44 @@ def _verdict_pathway(application):
         return _fact('pathway', 'gap', decl, [_item('offer_letter_missing')])
 
     chk = student_offer_check(offer)
-    # Identity guard: a wrong name OR IC means a wrong-person letter. V5 (#12): explicitly
-    # 'recommend' (amber/Unsure) — previously 'review' that only read amber by the accident of an
-    # empty evidence list (one added green would have silently turned a wrong-person letter blue).
-    # Amber, not red, by decision (decisions.md 2026-07-04): usually a family upload slip-up, the
-    # offer is not the identity anchor the IC is, and no submission block is wanted.
+    # Identity on the letter (name + IC): a wrong name OR IC is a RED content chip the ladder counts
+    # (owner 2026-07-07), NOT an early return — a lone name/IC slip → −1 (Probable), both → −2
+    # (Unsure), and it stacks with the offer's genuineness step (so #12's fake offer + name+IC+pathway
+    # mismatch → Fail). Amber-not-red by decision (decisions.md 2026-07-04): usually a family upload
+    # slip-up, the offer is not the identity anchor the IC is, no submission block wanted. We DON'T
+    # early-return, so the pathway chip below is also evaluated (all three chips are independent).
     if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
-        return _fact('pathway', 'recommend', evidence, [_item('offer_name_mismatch')])
-    # NB the OFFICIAL-offer policy (a conditional / private-IPTS / non-official offer can't settle the
-    # pathway) is now applied by the genuineness LADDER as a −2 step (like a wrong-type), NOT an early
-    # return here — so a non-official offer lands 🟡 Unsure (and 🔴 Fail if identity/pathway also
-    # mismatch), instead of a 🔵/🟡 'review' that flipped on incidental green evidence.
-    # No identity read off the letter. Distinguish a general NOTICE / wrong document
-    # (the body read fine — issuer/institution/programme present — but it carries no
-    # name or IC, e.g. a "your offer will be released later" memo) from a genuinely
-    # blurry scan. Telling the officer to "ask for a clearer copy" on a crisp notice
-    # is misleading; a clearer copy won't add a name that was never there.
-    if chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'pending'):
+        unresolved.append(_item('offer_name_mismatch'))
+    # A general NOTICE / wrong document (body read fine — issuer/programme present — but no name or
+    # IC, e.g. a "your offer will be released later" memo) vs a genuinely blurry scan → grey/pending
+    # (an under-read, capped at Probable), NOT a red chip. Only when identity didn't already flag.
+    elif chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'pending'):
         if chk['programme'] or chk['institution']:
             return _fact('pathway', 'review', evidence, [_item('offer_no_identity')])
         return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
 
     prog, inst = chk['programme'], chk['institution']
-    # Already confirmed (the student answered the reconciliation query) → verified.
-    if application.pathway_confirmed_at is not None:
+    confirmed = application.pathway_confirmed_at is not None
+    if confirmed:
         evidence.append(_item('pathway_confirmed', programme=prog, institution=inst))
-        return _fact('pathway', 'verified', evidence, unresolved)
-
-    if prog or inst:
+    elif prog or inst:
         evidence.append(_item('offer_programme', institution=inst, programme=prog))
 
-    # The offer is for a genuinely different place/field than declared → ask the
-    # student to confirm which is final (Check 2 backstop; record realigns on Yes).
-    if chk['pathway'] == 'mismatch':
+    # The offer names a genuinely different place/field than declared → a RED Pathway chip + the
+    # confirm query (Check-2 backstop; record realigns on Yes). Suppressed once the student confirms.
+    if chk['pathway'] == 'mismatch' and not confirmed:
         unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
                                 declared_programme=chk['declared_programme'],
                                 declared_institution=chk['declared_institution']))
-        return _fact('pathway', 'review', evidence, unresolved)
 
-    # Offer agrees with the declaration (or nothing specific to clash with) AND we
-    # could read a programme/institution off it → the offer settles the pathway.
-    if prog or inst:
-        return _fact('pathway', 'verified', evidence, unresolved)
-    # Identity matched but the offer body didn't read a programme — under-claim.
-    return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
+    # Base band (the ladder then applies the genuineness step + red-chip deductions): a clean letter
+    # with a readable programme (or an already-confirmed pathway) settles it → verified; any red chip
+    # or an unread programme is an under-claim → review.
+    if not unresolved:
+        if prog or inst or confirmed:
+            return _fact('pathway', 'verified', evidence, unresolved)
+        return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
+    return _fact('pathway', 'review', evidence, unresolved)
 
 
 # ── Aggregator ───────────────────────────────────────────────────────────────
@@ -820,34 +817,33 @@ def _apply_genuineness_caps(application, facts):
 
 
 # ── Genuineness / eligibility LADDER (identity + academic + pathway) — owner 2026-07-07 ──
-# A genuineness/eligibility DEFECT steps a fact's CONTENT band DOWN this ladder:
-#   suspect (a cropped-but-real doc)         → −1  (Certain → Probable)
-#   wrong-type / non-official (IPTS) / fake  → −2  (Certain → Unsure)
-# stacking on any content defect already in the band, so suspect + a content mismatch → Unsure and a
-# non-official offer + a mismatch → Fail. DOWNGRADE-ONLY: a GENUINE doc (step 0) is untouched — the
-# academic name-mismatch hard-stop, the pathway wrong-person amber, and the pathway confirm-query all
-# survive — and a step can never LIFT a band. Income keeps its own model (STR-precedence + headroom).
+# The band is REBUILT explicitly (not "step the bespoke content band"):
+#
+#     band_index = max(base_index, genuineness_step + red_chip_count),  floored at 'gap'
+#     _BAND_LADDER = ('verified'=Certain, 'review'=Probable, 'recommend'=Unsure, 'gap'=Fail)
+#
+#   • genuineness_step — by SCORE, uniform for every signature-scored doc (offers INCLUDED as of
+#     MODEL_VERSION 1.4.0): genuine (p≥0.70) → 0, suspect (0.35–0.70) → 1, fake (p<0.35) → 2.
+#   • red_chip_count — one −1 per RED content variable: Identity Name·NRIC; Academic Name·Subjects·
+#     Results; Pathway Name·IC·Pathway. A variable is red when its value MISMATCHES (not when it's
+#     merely unread/pending — that's grey, handled by the base band's under-claim, never a chip).
+#   • base_index — the `_verdict_*` band, which carries only the missing→gap and unread→review
+#     under-claims (mismatches are NOT baked into it any more, they are chips); `max` keeps an
+#     unread-but-genuine doc at Probable rather than letting 0 chips + step 0 read Certain.
+#
+# Worked (owner-verified): #12 offer p=0.30 → fake(2) + Name+IC+Pathway(3) = 5 → Fail; #31 pemakluman
+# p=0.40 → suspect(1) + Pathway(1), Name+IC green = 2 → Unsure. A lone academic name mismatch on a
+# genuine slip → 0+1 = Probable (softens the old hard-Fail — owner accepted, rare / OCR misread).
+# Income keeps its own model (STR-precedence + headroom / flat cap).
 _BAND_LADDER = ('verified', 'review', 'recommend', 'gap')
 
-# identity + academic: (feeding docs, the caveat item to add when the ladder bites). Pathway is
-# handled separately (it also folds the official-offer eligibility into the step).
-_LADDER_CARDS = {
-    'identity': (['ic'], 'ic_low_confidence'),
-    'academic': (['results_slip'], 'document_not_genuine'),
-}
-
-
-def _step_band(status, step):
-    """Move ``status`` ``step`` places toward 'gap' along ``_BAND_LADDER`` (floored at 'gap')."""
-    try:
-        i = _BAND_LADDER.index(status)
-    except ValueError:
-        return status
-    return _BAND_LADDER[min(i + step, len(_BAND_LADDER) - 1)]
+# The document whose genuineness fingerprint scores each card's step.
+_LADDER_DOCS = {'identity': ['ic'], 'academic': ['results_slip'], 'pathway': ['offer_letter']}
 
 
 def _genuineness_step(application, doc_types):
-    """0 (genuine / not scored), 1 (suspect), or 2 (wrong-type) from the feeding docs' fingerprint."""
+    """0 (genuine / not scored), 1 (suspect), or 2 (fake / wrong-type) from the feeding docs'
+    fingerprint — by SCORE (``canonical_status`` folds band_for's genuine/suspect/not_<type>)."""
     st = _suspect_genuineness(application, doc_types)
     if not st:
         return 0
@@ -865,67 +861,96 @@ def _genuineness_reason(application, doc_types):
     return ''
 
 
-def _apply_pathway_ladder(application, fact):
-    """Pathway reads the offer's RAW genuineness status (assess() does NOT holistic-rescue an offer,
-    so signature_genuineness's verdict is what's stored), which distinguishes the two the collapsed
-    ``offer_official_status`` cannot:
-      * 'suspect'      — a RECOGNISED official public issuer, just cropped/thin signatures → −1 (Probable).
-      * 'unrecognised' — a PRIVATE / IPTS / non-standard-issuer offer (owner policy: can't support) → −2 (Unsure).
-      * 'not_<type>'   — the wrong document entirely → −2 (Unsure).
-    Stacks on any content defect (so 'unrecognised' + a name/IC/pathway mismatch → Fail). Genuine /
-    'unknown' (not scored) → no step.
+def _identity_red_chips(application):
+    """RED identity content chips — Name and/or NRIC MISMATCH (0–2). Mirrors the name/NRIC reads in
+    ``_verdict_identity`` (and the cockpit's identity chips). A missing/unreadable IC is a gap
+    pre-empt, not a chip."""
+    if _latest_doc(application, 'ic') is None:
+        return 0
+    blockers = ic_identity_blockers(application)
+    return (1 if 'ic_nric_mismatch' in blockers else 0) + \
+           (1 if 'ic_name_mismatch' in blockers else 0)
 
-    ▶ TO REFINE as more offers arrive (owner 2026-07-07): the 'suspect' band still mixes a cropped
-    OFFICIAL offer (→ Probable, correct) with a UM/UTM-branded PEMAKLUMAN / pre-offer that merely
-    carries a public-university NAME (e.g. #31 — missing the weight-3 'TAWARAN KEMASUKAN' offer-line;
-    should be Unsure). The discriminator already exists in the stored signature detail: key the step on
-    whether the OFFER-LINE signature is present (present → cropped-official → Probable; absent →
-    notification/pemakluman → Unsure), and additionally read the ISSUER DEPARTMENT (Jabatan Pemasaran /
-    Pendidikan Berterusan / Profesional → a private wing → Unsure) for a private-wing offer that DOES
-    carry an offer-line (#12). Until then a pemakluman like #31 reads one band too high — accepted for
-    the first cut."""
+
+def _academic_red_chips(application):
+    """RED academic content chips — Name (slip in a different name), Subjects (a slip subject the
+    student never entered), Results (a CONFIRMED typed-vs-slip grade mismatch). 0–3. An uncertain
+    grade (band disagreement) and an unread slip are grey/pending, not red."""
+    from .academic_engine import compare_academics, read_slip, _slip_name_status
+    slip = _latest_doc(application, 'results_slip')
+    if slip is None:
+        return 0
+    n = 1 if _slip_name_status(slip) == 'mismatch' else 0
+    data = read_slip(slip)
+    if data['names']:
+        cmp = compare_academics(getattr(application.profile, 'grades', None), data)
+        if cmp['missing']:
+            n += 1
+        if cmp['mismatched']:
+            n += 1
+    return n
+
+
+def _pathway_red_chips(application):
+    """RED pathway content chips — Name, IC (wrong-person letter) and Pathway (offer names a
+    genuinely different place/field than declared, not yet reconciled). 0–3. Reads the SAME
+    ``student_offer_check`` the cockpit chips + ``_verdict_pathway`` read."""
+    from .pathway_engine import student_offer_check
     offer = _latest_doc(application, 'offer_letter')
     if offer is None:
-        return                                   # no offer → already 'gap'; nothing to step
-    vf = offer.vision_fields if isinstance(offer.vision_fields, dict) else {}
-    raw = ((vf.get('authenticity') or {}).get('status') or '').strip().lower()
-    if not raw or raw in ('genuine', 'likely_genuine'):
+        return 0
+    chk = student_offer_check(offer)
+    n = (1 if chk['name'] == 'mismatch' else 0) + (1 if chk['ic'] == 'mismatch' else 0)
+    if chk['pathway'] == 'mismatch' and application.pathway_confirmed_at is None:
+        n += 1
+    return n
+
+
+_LADDER_CHIPS = {'identity': _identity_red_chips, 'academic': _academic_red_chips,
+                 'pathway': _pathway_red_chips}
+
+
+def _add_genuineness_caveat(application, fact, docs, step):
+    """Surface WHY the genuineness step bit (the 'Official' dimension), decoupled from the content
+    chips. Identity → ``ic_low_confidence``; academic → ``document_not_genuine``; pathway → the
+    confident ``offer_not_official`` when fake (step 2, an award CONFIDENT_DISQUALIFIER), else the
+    softer ``document_not_genuine`` (suspect / cropped)."""
+    if step == 0:
         return
-    if raw == 'suspect':                         # cropped genuine OFFICIAL offer → Probable
-        fact['status'] = _step_band(fact['status'], 1)
-        caveat = _item('document_not_genuine', status='suspect')
-    elif raw == 'unrecognised':                  # private / IPTS / non-official → Unsure
-        fact['status'] = _step_band(fact['status'], 2)
-        caveat = _item('offer_not_official')
-    else:                                        # not_<type> / wrong document → Unsure
-        fact['status'] = _step_band(fact['status'], 2)
-        caveat = _item('document_not_genuine', status='not_type')
-    if not any(i['code'] == caveat['code'] for i in fact['unresolved']):
-        fact['unresolved'].append(caveat)
-    return
+    st = _suspect_genuineness(application, docs)
+    if fact['fact'] == 'identity':
+        code = 'ic_low_confidence'
+    elif fact['fact'] == 'pathway' and step == 2:
+        code = 'offer_not_official'
+    else:
+        code = 'document_not_genuine'
+    if any(i['code'] == code for i in fact['unresolved']):
+        return
+    if code == 'ic_low_confidence':
+        fact['unresolved'].append(_item('ic_low_confidence', status=st,
+                                        reason=_genuineness_reason(application, docs)))
+    elif code == 'offer_not_official':
+        fact['unresolved'].append(_item('offer_not_official'))
+    else:
+        fact['unresolved'].append(_item('document_not_genuine', status=st))
 
 
 def _apply_genuineness_ladder(application, facts):
-    """Apply the genuineness/eligibility ladder to identity, academic and pathway (income keeps the
-    flat cap). A genuine feeding doc leaves the content band untouched; a defect steps it down."""
+    """Rebuild the identity/academic/pathway band as ``max(base, genuineness_step + red_chips)``,
+    floored at 'gap' (income keeps the flat cap). Downgrade-only: a genuine doc with clean content
+    (step 0, 0 chips) leaves the base untouched."""
     for fact in facts:
-        if fact['fact'] == 'pathway':
-            _apply_pathway_ladder(application, fact)
+        docs = _LADDER_DOCS.get(fact['fact'])
+        if not docs:
             continue
-        spec = _LADDER_CARDS.get(fact['fact'])
-        if not spec:
-            continue
-        docs, caveat = spec
         step = _genuineness_step(application, docs)
-        if step == 0:
-            continue
-        fact['status'] = _step_band(fact['status'], step)
-        st = _suspect_genuineness(application, docs)
-        if caveat == 'ic_low_confidence':
-            fact['unresolved'].append(_item('ic_low_confidence', status=st,
-                                            reason=_genuineness_reason(application, docs)))
-        elif not any(i['code'] == caveat for i in fact['unresolved']):
-            fact['unresolved'].append(_item('document_not_genuine', status=st))
+        chips = _LADDER_CHIPS[fact['fact']](application)
+        try:
+            base_i = _BAND_LADDER.index(fact['status'])
+        except ValueError:
+            base_i = 0
+        fact['status'] = _BAND_LADDER[min(max(base_i, step + chips), len(_BAND_LADDER) - 1)]
+        _add_genuineness_caveat(application, fact, docs, step)
     return facts
 
 
