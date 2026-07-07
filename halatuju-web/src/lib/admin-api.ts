@@ -1036,7 +1036,7 @@ export interface AdminApplicantDocument {
   semester_check?: SemesterCheck | null
   // Genuineness fingerprint (soft, flag-gated) — for ic/parent_ic/str/results_slip/birth_certificate/
   // epf/offer_letter. Null when the check didn't run. The cockpit uses it to colour the doc chip.
-  authenticity?: { status: 'genuine' | 'suspect' | `not_${string}`; reason: string; doc_seen?: string } | null
+  authenticity?: { status: 'genuine' | 'likely_genuine' | 'suspect' | `not_${string}`; reason: string; doc_seen?: string } | null
   // Phase 2 version history: when this doc was replaced by a re-upload (null/absent = the
   // live copy) + which doc superseded it. The admin serializer returns superseded rows so the
   // cockpit can show them under an "Old / Replaced" list; they are excluded from every fact group.

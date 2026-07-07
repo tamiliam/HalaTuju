@@ -445,21 +445,32 @@ describe('documentFacts', () => {
     expect(noAmt.find((f) => f.key === 'amount')!.status).toBe('unknown')  // …shown grey instead
   })
 
-  it('genuineness gate: an IC flagged not_ic reads RED with a failed Genuine chip', () => {
-    // an EPF uploaded into the IC slot — the scorer says not_ic; the chip must not read "Verified"
+  it('genuineness gate: an IC flagged not_ic (WRONG TYPE) reads RED with a Wrong-type chip', () => {
+    // an EPF uploaded into the IC slot — the scorer says not_ic (wrong document); its reads are off
+    // the wrong paper → red, and the chip is 'wrongType' (red), never a green "Verified".
     const icFacts = documentFacts(doc({ doc_type: 'ic', vision_name_verdict: 'match', vision_nric_verdict: 'match',
       authenticity: { status: 'not_ic', reason: 'EPF statement, not a MyKad' } }))
     expect(icFacts).toEqual([
-      { key: 'name', status: 'not' }, { key: 'ic_no', status: 'not' }, { key: 'genuine', status: 'not' }])
+      { key: 'name', status: 'not' }, { key: 'ic_no', status: 'not' }, { key: 'wrongType', status: 'not' }])
     const parentFacts = documentFacts(doc({ doc_type: 'parent_ic',
       income_ic_check: icCheck({ member: 'father', name_status: 'match', readable: true }),
       authenticity: { status: 'not_ic', reason: 'EPF, not MyKad' } }))
-    expect(parentFacts.map((f) => f.key)).toEqual(['name', 'ic_no', 'genuine'])
+    expect(parentFacts.map((f) => f.key)).toEqual(['name', 'ic_no', 'wrongType'])
     expect(parentFacts.every((f) => f.status === 'not')).toBe(true)
   })
 
-  // ── 6-extend: genuineness chip cap now covers str / salary_slip / epf / results_slip ──
-  it('6-extend: a salary slip the wrong-type backstop reads as an EPF → RED + Wrong type chip', () => {
+  it('a SUSPECT IC keeps its Name/IC reads + an AMBER Genuine chip (suspect never caps)', () => {
+    // A cropped-but-real MyKad: the name/IC that matched still read green; only the Genuine chip is
+    // amber "we aren't sure". (The identity VERDICT still caps at Unsure — that is a separate signal.)
+    const facts = documentFacts(doc({ doc_type: 'ic', vision_name_verdict: 'match', vision_nric_verdict: 'match',
+      authenticity: { status: 'suspect', reason: 'glare / cropped' } }))
+    expect(facts).toEqual([
+      { key: 'name', status: 'verified' }, { key: 'ic_no', status: 'verified' },
+      { key: 'genuine', status: 'partial' }])
+  })
+
+  // ── genuineness tone (owner 2026-07-07): WRONG-TYPE (red) caps the reads; SUSPECT (amber) never does ──
+  it('a salary slip the wrong-type backstop reads as an EPF → RED reads + Wrong type chip', () => {
     const facts = documentFacts(doc({ doc_type: 'salary_slip',
       income_proof_check: { name: 'X', nric: '', name_status: 'match', nric_status: 'no_ref',
         member: 'father', ic_present: true, points: [{ key: 'amount', value: '300' }] },
@@ -478,22 +489,34 @@ describe('documentFacts', () => {
     expect(facts).toContainEqual({ key: 'wrongType', status: 'not' })
   })
 
-  it('6-extend: a suspect STR reds every variable + a Genuine chip (not a wrong-type)', () => {
+  it('a SUSPECT STR keeps its variable chips + an AMBER Genuine chip (suspect never caps)', () => {
     const facts = documentFacts(doc({ doc_type: 'str',
       str_check: strCheck({ name_status: 'match', nric_status: 'match', current_status: 'current' }),
       authenticity: { status: 'suspect', reason: 'thin signatures' } }))
-    expect(facts.filter((f) => ['recipient', 'ic_no', 'status', 'current'].includes(f.key))
-      .every((f) => f.status === 'not')).toBe(true)
-    expect(facts).toContainEqual({ key: 'genuine', status: 'not' })
+    expect(facts.find((f) => f.key === 'recipient')!.status).toBe('verified')
+    expect(facts.find((f) => f.key === 'status')!.status).toBe('verified')
+    expect(facts).toContainEqual({ key: 'genuine', status: 'partial' })
+    expect(facts.some((f) => f.status === 'not')).toBe(false)   // suspect reds NOTHING
   })
 
-  it('6-extend: a suspect results slip reds the academic reads + Genuine chip', () => {
+  it('a SUSPECT results slip keeps the academic reads (green) + an AMBER Genuine chip', () => {
+    // #121: values are all there and match — the reviewer sees them stand; only genuineness is amber
+    // ("we aren't sure the slip is genuine", usually a cropped footer). Missing reads would be grey.
     const facts = documentFacts(doc({ doc_type: 'results_slip',
       academic_check: acadCheck({ name: 'match', subjects: 'match', results: 'match' }),
-      authenticity: { status: 'suspect', reason: 'typed copy' } }))
+      authenticity: { status: 'suspect', reason: 'cropped footer — QR/Pengarah missing' } }))
+    expect(facts.filter((f) => ['name', 'subjects', 'results'].includes(f.key))
+      .every((f) => f.status === 'verified')).toBe(true)
+    expect(facts).toContainEqual({ key: 'genuine', status: 'partial' })
+  })
+
+  it('a WRONG-TYPE results slip DOES cap the reads red + a Wrong-type chip', () => {
+    const facts = documentFacts(doc({ doc_type: 'results_slip',
+      academic_check: acadCheck({ name: 'match', subjects: 'match', results: 'match' }),
+      authenticity: { status: 'not_results_slip', reason: 'this is an offer letter' } }))
     expect(facts.filter((f) => ['name', 'subjects', 'results'].includes(f.key))
       .every((f) => f.status === 'not')).toBe(true)
-    expect(facts).toContainEqual({ key: 'genuine', status: 'not' })
+    expect(facts).toContainEqual({ key: 'wrongType', status: 'not' })
   })
 
   it('6-extend: a GENUINE authenticity adds no cap (normal chips stand)', () => {

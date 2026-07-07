@@ -335,15 +335,25 @@ function reasonableStatus(s: string): FactStatus {
   return 'unknown'                       // 'partial' (one bill) + 'unknown' (no data) → grey
 }
 
-// A genuineness verdict that isn't 'genuine' → a red fact for the document: 'wrongType' when the
-// scorer says it isn't that KIND of document at all (`not_<type>` — e.g. an EPF filed as a salary
-// slip), else 'genuine' (suspect — looks like the right type but the fingerprints are thin). null
-// when there is no signal or the doc is genuine. Shared by every genuineness-scored doc type so the
-// chip never reads "Verified" over a wrong-type / suspect upload. (6-extend, owner 2026-07-05.)
+// A genuineness verdict that isn't 'genuine' → its own fact for the document. Two distinct tones
+// (owner 2026-07-07): a `not_<type>` (the scorer says it isn't that KIND of document at all — e.g.
+// an EPF filed as a salary slip) is a RED 'wrongType' — the wrong/"fake" document, its read values
+// are meaningless. A `suspect` (looks like the right type but the fingerprints are thin — usually a
+// cropped page) is AMBER 'genuine' — "we aren't sure it's genuine"; the read VALUES still stand on
+// their own match/read status. null when there is no signal or the doc is genuine/likely_genuine.
 function genuinenessFact(doc: AdminApplicantDocument): DocumentFactLabel | null {
   const s = doc.authenticity?.status
-  if (!s || s === 'genuine') return null
-  return { key: s.startsWith('not_') ? 'wrongType' : 'genuine', status: 'not' }
+  if (!s || s === 'genuine' || s === 'likely_genuine') return null
+  return s.startsWith('not_')
+    ? { key: 'wrongType', status: 'not' }      // wrong document / fake → RED, caps its reads
+    : { key: 'genuine', status: 'partial' }    // suspect → AMBER "unsure", does NOT cap the reads
+}
+
+// Only a WRONG-TYPE genuineness verdict (red) discredits the values read off a document — a merely
+// SUSPECT (amber) one does not (a cropped-but-real slip still read the right name/grades). So the
+// content facts are capped red only when the genuineness fact is itself red.
+function genuinenessCaps(gf: DocumentFactLabel | null): boolean {
+  return gf?.status === 'not'
 }
 
 /**
@@ -352,34 +362,33 @@ function genuinenessFact(doc: AdminApplicantDocument): DocumentFactLabel | null 
  */
 export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] {
   const dt = doc.doc_type
-  // Genuineness gate for the IC types: if the signature scorer says the upload is NOT a MyKad
-  // (`not_ic`) or is suspect, the card can't verify identity — the Name/IC reads are meaningless
-  // (they were lifted off whatever the document actually is, e.g. an EPF statement). Red the reads
-  // and add a red "Genuine" fact, mirroring the offer-letter 'Official' gate. (An EPF uploaded into
-  // the IC slot is exactly this — the scorer flags it `not_ic`; the chip must not read "Verified".)
-  const icAuth = doc.authenticity?.status
-  const icNotGenuine = !!icAuth && icAuth !== 'genuine'
+  // Genuineness is ONE fact of its own, computed once for every scored doc type. Two tones (owner
+  // 2026-07-07): a WRONG-TYPE (`not_<type>`, red) discredits the reads (they came off the wrong
+  // document — e.g. an EPF in the IC slot) so it CAPS them red; a merely SUSPECT (amber) upload —
+  // usually a cropped page — does NOT cap them, so the Name/IC/etc. keep their real match/read
+  // status and the amber Genuine chip says only "we aren't sure it's genuine".
+  const gf = genuinenessFact(doc)
+  const cap = genuinenessCaps(gf)
   if (dt === 'ic') {
-    const nm: FactStatus = icNotGenuine ? 'not' : factStatus(doc.vision_name_verdict)
-    const icn: FactStatus = icNotGenuine ? 'not' : factStatus(doc.vision_nric_verdict)
+    const nm: FactStatus = cap ? 'not' : factStatus(doc.vision_name_verdict)
+    const icn: FactStatus = cap ? 'not' : factStatus(doc.vision_nric_verdict)
     const facts: DocumentFactLabel[] = [{ key: 'name', status: nm }, { key: 'ic_no', status: icn }]
-    if (icNotGenuine) facts.push({ key: 'genuine', status: 'not' })
+    if (gf) facts.push(gf)
     return facts
   }
   if (dt === 'parent_ic') {
     const c = doc.income_ic_check
     if (!c) return []
-    // The earner IC PROVIDES Name + IC No (legible = verified) — UNLESS genuineness says it isn't
-    // an IC (an EPF/other in the IC slot), in which case those reads are red and a "Genuine" fact
-    // fails. Relationship (patronymic) only for a father/elder-sibling; mother/guardian prove it
-    // via the BC / guardianship letter.
-    const read: FactStatus = icNotGenuine ? 'not' : (c.readable ? 'verified' : 'not')
+    // The earner IC PROVIDES Name + IC No (legible = verified) — capped red only when genuineness
+    // says it's the WRONG document (a not_ic upload). Relationship (patronymic) only for a father/
+    // elder-sibling; mother/guardian prove it via the BC / guardianship letter.
+    const read: FactStatus = cap ? 'not' : (c.readable ? 'verified' : 'not')
     const facts: DocumentFactLabel[] = [
       { key: 'name', status: read },
       { key: 'ic_no', status: read },
     ]
-    if (icNotGenuine) {
-      facts.push({ key: 'genuine', status: 'not' })
+    if (gf) {
+      facts.push(gf)
     } else if (c.wrong_card) {
       // The IC-number chain verified the earner from the BC + income proof, but the card in THIS
       // slot is a different family member's — a soft caveat (amber), never a block.
@@ -392,10 +401,12 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   if (dt === 'results_slip') {
     const c = doc.academic_check
     if (!c) return []
-    // Genuineness cap: a suspect/not-a-slip upload can't verify the academic reads (they were
-    // lifted off whatever the document actually is) — red them and add the wrong-type/genuine fact.
-    const gf = genuinenessFact(doc)
-    const st = (v: string | undefined | null): FactStatus => (gf ? 'not' : factStatus(v))
+    // Name / Subjects / Results show their REAL read+match status: green = matches what was entered,
+    // red = a positive mismatch, grey = missing/not read. Genuineness is a SEPARATE fact: a
+    // wrong-type (red) doc discredits the reads (they came off the wrong document) so it caps them;
+    // a merely SUSPECT (amber) slip — usually a cropped footer — does NOT cap them, so the reviewer
+    // sees "the values are here and match, but we're not certain the slip is genuine".
+    const st = (v: string | undefined | null): FactStatus => (cap ? 'not' : factStatus(v))
     const facts: DocumentFactLabel[] = [
       { key: 'name', status: st(c.name) },
       { key: 'subjects', status: st(c.subjects) },
@@ -424,33 +435,32 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   }
   if (dt === 'str') {
     const c = doc.str_check
-    if (!c) return genuinenessFact(doc) ? [genuinenessFact(doc)!] : []
+    if (!c) return gf ? [gf] : []
     // The three REQUIRED STR variables — recipient name, IC, and approval Status (Lulus) — then
-    // Current (the date/cycle dimension). Genuineness cap: a not-STR / suspect document (a SALINAN,
-    // a SARA letter, or the wrong document entirely) can't verify any of them — red them all + the
-    // wrong-type/genuine fact. (Currency vs approval stays in the Status/Current chips.)
-    const gf = genuinenessFact(doc)
+    // Current (the date/cycle dimension). Genuineness cap: only a WRONG-TYPE (red) doc (a SALINAN,
+    // a SARA letter, or the wrong document entirely) discredits these reads → red them all. A merely
+    // SUSPECT (amber) STR does not — its chips keep their real status; the amber Genuine fact stands
+    // alongside. (Currency vs approval stays in the Status/Current chips.)
     const facts: DocumentFactLabel[] = [
-      { key: 'recipient', status: gf ? 'not' : factStatus(c.name_status) },
-      { key: 'ic_no', status: gf ? 'not' : factStatus(c.nric_status) },
-      { key: 'status', status: gf ? 'not' : strStatusFactStatus(c.current_status) },
-      { key: 'current', status: gf ? 'not' : strCurrencyFactStatus(c.current_status) },
+      { key: 'recipient', status: cap ? 'not' : factStatus(c.name_status) },
+      { key: 'ic_no', status: cap ? 'not' : factStatus(c.nric_status) },
+      { key: 'status', status: cap ? 'not' : strStatusFactStatus(c.current_status) },
+      { key: 'current', status: cap ? 'not' : strCurrencyFactStatus(c.current_status) },
     ]
     if (gf) facts.push(gf)
     return facts
   }
   if (dt === 'salary_slip' || dt === 'epf') {
     const c = doc.income_proof_check
-    // Genuineness cap: an EPF signature-scored `not_epf`, or a salary slip the light wrong-type
-    // backstop reads as another document (`not_salary_slip`) — the earner reads are then off the
-    // wrong paper, so red them + add the wrong-type/genuine fact. Fires even with no earner read.
-    const gf = genuinenessFact(doc)
+    // Genuineness cap: only a WRONG-TYPE (red) doc — an EPF signature-scored `not_epf`, or a salary
+    // slip the light wrong-type backstop reads as another document (`not_salary_slip`) — discredits
+    // the earner reads (off the wrong paper), so red them. A merely SUSPECT (amber) one does not.
     if (!c) return gf ? [gf] : []
     const has = (k: string) => (c.points || []).some((p) => p.key === k && (p.value || '').trim())
-    const facts: DocumentFactLabel[] = [{ key: 'name', status: gf ? 'not' : factStatus(c.name_status) }]
+    const facts: DocumentFactLabel[] = [{ key: 'name', status: cap ? 'not' : factStatus(c.name_status) }]
     // IC No: an EPF statement always carries the member's number; a salary slip only sometimes
     // (hide it there when absent). Mirrors the STR chip — the number is the strong earner key.
-    if ((c.nric || '').trim()) facts.push({ key: 'ic_no', status: gf ? 'not' : factStatus(c.nric_status) })
+    if ((c.nric || '').trim()) facts.push({ key: 'ic_no', status: cap ? 'not' : factStatus(c.nric_status) })
     if (dt === 'salary_slip') {
       // CONSISTENT chip set for every salary slip: Amount + Period always present, grey ('unknown')
       // when not read — never omitted, so two payslips don't show different numbers of chips.
