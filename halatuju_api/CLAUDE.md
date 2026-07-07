@@ -516,7 +516,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-07)
+## Next Sprint (as of 2026-07-08)
+
+**✅ SHIPPED 2026-07-08 — Reporting-date BONUS (`MODEL_VERSION` 1.5.0; backend+FE, NO migration;
+backfill pass 2026_07b run — 17 docs, 0 errors; catalogue `docs/scholarship/offer-letter-catalogue.md`).**
+A VALIDATED official registration summons (three gates: the issuer family's own Malay label ·
+the family's public-issuer signature present on the page · no "Sdn. Bhd.") lifts the offer's
+EFFECTIVE genuineness step one band (`offer_reporting_bonus`, `_pathway_effective_step`) — a cropped
+official letter can read Certain; a fake lifts at most to Unsure; the bonus never offsets Name/IC/
+pathway-mismatch chips, never repaints the Official chip, never silences Check-2. Live result:
+exactly 2 lifts (#56/#75 suspect→Certain), every gate held (#93 UniMAIWP + #84 Swinburne blocked).
+Cockpit gains the reporting-date bucket chip (green official+current / orange official+past
+(continuing student) / red unvalidated / absent). Same-day chip fix: the FE Pathway chip now keys
+off EFFECTIVE officialness (the tally↔paint keep-in-sync pair — see lessons.md, third instance).
+Also same-day: per-issuer reporting-date labels in the extraction prompt + offer-name OCR tolerance
+(glued A/P + doubled letter, #48) + two-tone Official chip. 2146 pytest + 483 jest.
+**▶ OWNER-REVIEW queue:** #56's summons is 10 Jun 2025 (past intake — confirm still enrolled);
+Fail-band students owe proper offer letters; #17 owes her full (uncropped) UTHM letter.
+
+## Previous (as of 2026-07-07)
 
 **✅ SHIPPED 2026-07-07 — Genuineness score-band + red-chip LADDER (Identity/Academic/Pathway); backend
 only, NO migration; `MODEL_VERSION` 1.3.0 → 1.4.0; re-banding owner-audited + signed off; retro
