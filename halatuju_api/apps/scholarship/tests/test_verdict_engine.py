@@ -605,6 +605,31 @@ class TestPathway(_Base):
         self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
 
 
+    def test_offer_missing_ic_field_is_red_chip_probable(self):
+        # Owner 2026-07-07: a required IDENTITY field the offer doesn't show (candidate_nric empty on
+        # an extracted offer → student_offer_check 'unreadable') is a RED IC chip, matching the cockpit
+        # (factStatus reds 'unreadable'). A lone missing IC on a genuine offer → −1 → 🔵 Probable, NOT
+        # Certain (the tile now agrees with the red IC chip the reviewer sees).
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields=dict(self._OWN_OFFER, candidate_nric=''))
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'genuine', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        self.assertEqual(_facts(self.app)['pathway']['status'], 'review')
+
+    def test_offer_missing_ic_plus_pathway_mismatch_plus_suspect_is_fail_hash64(self):
+        # The #64 worked example: a suspect offer (step −1) whose candidate IC is missing (−1 red chip)
+        # AND whose place/field clashes with the declaration (−1 red Pathway chip) = −3 → 🔴 Fail.
+        # (After the owner re-runs the offer under 1.4.0 → fake, step −2 → −4, still Fail.)
+        self.app.pre_u_institution = 'SMK Mentakab'; self.app.save()
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields=dict(self._OWN_OFFER, candidate_nric='',
+                                 institution='i-CATS UNIVERSITY COLLEGE', programme='FOUNDATION IN MANAGEMENT'))
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'suspect', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('pathway_confirm', _codes(f['unresolved']))
+
     def test_offer_matching_declared_is_verified_no_nag(self):
         # Declared institution matches the offer (naming quirk) → verified, no query.
         self.app.pre_u_institution = 'KM Melaka'
@@ -653,17 +678,17 @@ class TestPathway(_Base):
         self.assertEqual(f['status'], 'review')
         self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
 
-    def test_offer_notice_without_identity_is_no_identity_not_unreadable(self):
-        # Sharvin: a general UTM NOTICE whose body read fine (issuer/institution/
-        # programme present) but carries NO candidate name or IC. That's a wrong /
-        # placeholder document, not a blurry scan — the officer is told "no identity
-        # on it", never the misleading "ask for a clearer copy".
+    def test_offer_notice_without_identity_is_no_identity_unsure(self):
+        # Sharvin: a general UTM NOTICE whose body read fine (issuer/institution/programme present) but
+        # carries NO candidate name or IC. Both required identity fields are missing → 2 red chips →
+        # 🟡 Unsure (owner 2026-07-07: a placeholder without identity can't confirm the pathway). The
+        # officer is still told "no identity on it" (offer_no_identity), never "ask for a clearer copy".
         _add_doc(self.app, 'offer_letter', student_verdict='ok',
                  fields={'candidate_name': '', 'candidate_nric': '',
                          'institution': 'Universiti Teknologi Malaysia',
                          'programme': 'Program Asasi dan Diploma UTM'})
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'recommend')
         self.assertIn('offer_no_identity', _codes(f['unresolved']))
         self.assertNotIn('offer_unreadable', _codes(f['unresolved']))
 

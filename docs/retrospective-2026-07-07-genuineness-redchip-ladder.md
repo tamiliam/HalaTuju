@@ -56,6 +56,24 @@ are affected. `results_slip_name_mismatch` stays a submission blocker via `appli
   ("not one of the standard issuers", p=0.056). The old anchor was MASKING this coverage gap. Re-running
   re-scores each fresh, so a genuine UA offer may recover. Owner signed off to deploy and re-run per-app.
 
+## Same-day correction — the missing-IC chip (owner flagged #64)
+
+The first cut of `_pathway_red_chips` counted only a `== 'mismatch'` — but the locked spec says
+"missing-required on an offer = red", and the cockpit's own `officerCockpit.factStatus` already reds
+BOTH `'mismatch'` AND `'unreadable'` (an empty candidate field on an extracted offer). So a missing
+candidate IC showed a RED chip on the cockpit but was NOT counted in the band — #64 (missing IC +
+pathway clash + suspect) sat at Unsure when it should be Fail. Fix: `_pathway_red_chips` now counts
+the offer Name/IC red on `{mismatch, unreadable}` (`_OFFER_CHIP_RED`), matching the visible chips.
+Owner confirmed "full red chip, always". Re-banding of the 9 live offers with a missing candidate IC
+(all stricter): 4 Certain→Probable (clean genuine offers whose NRIC OCR missed), 4 Probable→Unsure
+(incl. the no-identity notice), **#64 Unsure→Fail**. 2135 pytest.
+
+**Lesson (added):** a backend band that COUNTS "red chips" must count the SAME set the FE paints red —
+here `factStatus` reds `unreadable`, not just `mismatch`. When the display and the tally are computed
+in two places, pin the tally to the display's exact predicate (mismatch OR unreadable), or the tile
+silently disagrees with the chips the reviewer is looking at. (This is the "reconcile every surface"
+lesson biting within the same feature — verdict band vs the doc chips.)
+
 ## Lessons
 
 - **An identity anchor that floors a score can MASK a signature-coverage gap.** Removing the offer

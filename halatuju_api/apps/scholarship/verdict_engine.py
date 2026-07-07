@@ -891,16 +891,25 @@ def _academic_red_chips(application):
     return n
 
 
+# A pathway identity chip (Name / IC) is RED when its value MISMATCHES **or** is required-but-missing
+# on an extracted offer (owner 2026-07-07: "missing-required on an offer = red"). This mirrors the
+# cockpit's own chip tone exactly — `officerCockpit.factStatus` reds 'mismatch' AND 'unreadable' (an
+# empty candidate field on an offer that WAS OCR'd), so the verdict band and the visible chips agree.
+# 'pending' (not yet extracted) is NOT red — it's a genuine unknown.
+_OFFER_CHIP_RED = {'mismatch', 'unreadable'}
+
+
 def _pathway_red_chips(application):
-    """RED pathway content chips — Name, IC (wrong-person letter) and Pathway (offer names a
-    genuinely different place/field than declared, not yet reconciled). 0–3. Reads the SAME
-    ``student_offer_check`` the cockpit chips + ``_verdict_pathway`` read."""
+    """RED pathway content chips — Name, IC (wrong-person OR the offer doesn't show one) and Pathway
+    (offer names a genuinely different place/field than declared, not yet reconciled). 0–3. Reads the
+    SAME ``student_offer_check`` the cockpit chips + ``_verdict_pathway`` read. The 'Official'
+    (genuineness) dimension is the STEP, never counted here."""
     from .pathway_engine import student_offer_check
     offer = _latest_doc(application, 'offer_letter')
     if offer is None:
         return 0
     chk = student_offer_check(offer)
-    n = (1 if chk['name'] == 'mismatch' else 0) + (1 if chk['ic'] == 'mismatch' else 0)
+    n = (1 if chk['name'] in _OFFER_CHIP_RED else 0) + (1 if chk['ic'] in _OFFER_CHIP_RED else 0)
     if chk['pathway'] == 'mismatch' and application.pathway_confirmed_at is None:
         n += 1
     return n

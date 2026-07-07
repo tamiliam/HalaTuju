@@ -538,6 +538,11 @@ one −1 per RED content chip (Identity Name·NRIC; Academic Name·Subjects·Res
   but re-scored fresh so a real UA/asasi offer may recover). Audit exposed a SIGNATURE-COVERAGE GAP:
   asasi/UA offers under-fingerprinted (scoring 0.056 vs polytechnic family) — the old anchor masked it.
   **2133 scholarship pytest green.**
+- **Same-day fix (owner flagged #64):** `_pathway_red_chips` now reds the offer Name/IC on
+  `{mismatch, unreadable}` (a missing candidate IC on an extracted offer = red, matching the cockpit's
+  `factStatus`) — the first cut counted only `mismatch`, so a missing IC showed red on the chip but
+  wasn't tallied (#64 sat at Unsure not Fail). 9 live offers with a missing candidate IC re-band
+  stricter (4 Certain→Probable, 4 Probable→Unsure, #64 Unsure→Fail). 2135 pytest.
 - **▶ OWNER TODO:** re-run all offers on the cockpit (1.4.0 re-score). **▶ FOLLOW-UP:** POSITIVE asasi/UA
   offer fingerprints (the masked gap) — see roadmap.
 
