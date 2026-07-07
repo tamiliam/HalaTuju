@@ -1579,6 +1579,61 @@ class TestGenuinenessLadder(_Base):
         self._auth(_add_ic(self.app, nric='999999-99-9999', name='SOMEONE ELSE'), 'genuine')
         self.assertEqual(_facts(self.app)['identity']['status'], 'recommend')
 
+    # ── Reporting-date BONUS (owner 2026-07-08) ──
+    _BONUS_FIELDS = {'reporting_date': '9 Jun 2026', 'reporting_date_label': 'Tarikh Mendaftar',
+                     'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',
+                     'candidate_nric': '080115-05-0132',
+                     'institution': 'UNIVERSITI PENDIDIKAN SULTAN IDRIS', 'programme': 'Diploma X'}
+
+    def _bonus_offer(self, status, fields=None):
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields=fields or dict(self._BONUS_FIELDS))
+        d.vision_fields = dict(d.vision_fields, authenticity={
+            'status': status, 'reason': 'x', 'doc_seen': 'ua_offer',
+            'present': ['public university (UA) name']})
+        d.save(update_fields=['vision_fields'])
+        return d
+
+    def test_suspect_offer_with_validated_summons_is_certain(self):
+        # A cropped/thin OFFICIAL letter carrying a validated registration summons: the bonus
+        # lifts the effective step to 0 AND clears the pathway-not-established chip → 🟢 Certain.
+        # The truthful caveat + the amber Official chip + Check-2 all stay (band-only lift).
+        self._bonus_offer('suspect')
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('offer_reporting_official', _codes(f['evidence']))
+        self.assertIn('document_not_genuine', _codes(f['unresolved']))
+
+    def test_fake_offer_with_summons_lifts_one_band_only(self):
+        # fake + bonus → effective step 1; the pathway chip still fires (still not official)
+        # → 1 + 1 = 🟡 Unsure (never green). The confident offer_not_official caveat stays.
+        self._bonus_offer('not_offer_letter')
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('offer_not_official', _codes(f['unresolved']))
+
+    def test_bonus_never_offsets_identity_chips(self):
+        # Guard rail: the bonus is genuineness evidence, NOT identity evidence — a wrong-person
+        # letter with a beautiful Tarikh Mendaftar keeps its Name+IC chips: suspect→0 effective,
+        # +2 identity chips → 🟡 Unsure (not lifted to Probable/Certain).
+        self._bonus_offer('suspect', fields=dict(self._BONUS_FIELDS,
+                          candidate_name='SOMEONE ELSE BIN OTHER', candidate_nric='990101-01-1234'))
+        self.assertEqual(_facts(self.app)['pathway']['status'], 'recommend')
+
+    def test_private_letter_gets_no_bonus(self):
+        # #93 UniMAIWP: a date + label but NO public-issuer signature on the page → no bonus;
+        # fake(−2) + pathway chip(−1) = 🔴 Fail unchanged.
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields={'reporting_date': '19 September 2026', 'reporting_date_label': 'Tarikh',
+                             'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',
+                             'candidate_nric': '080115-05-0132',
+                             'institution': 'UNIVERSITI ANTARABANGSA MAIWP', 'programme': 'Foundation'})
+        d.vision_fields = dict(d.vision_fields, authenticity={
+            'status': 'not_offer_letter', 'reason': 'x', 'doc_seen': 'ua_offer',
+            'present': ['Program / Kod Program']})
+        d.save(update_fields=['vision_fields'])
+        self.assertEqual(_facts(self.app)['pathway']['status'], 'gap')
+
     def test_pathway_hash31_pemakluman_pathway_mismatch_is_unsure(self):
         # The #31 worked example: a pemakluman scores 'suspect' (p~0.40, step -1); Name + IC green,
         # but the offer names a different place than declared (1 red Pathway chip, -1) = -2 -> Unsure.

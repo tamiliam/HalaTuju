@@ -433,6 +433,20 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     ]
     if (c.pathway) facts.push({ key: 'pathway', status: notOfficial ? 'not' : factStatus(c.pathway) })
     if (notOfficial) facts.push({ key: 'official', status: auth!.startsWith('not_') ? 'not' : 'partial' })
+    // Reporting-date bucket chip (owner 2026-07-08): a VALIDATED official registration summons
+    // (the issuer family's own Malay label + public-issuer signature — `reporting_official` from
+    // the backend bonus) is GREEN on a current intake, ORANGE on a past intake (continuing student
+    // — confirm still enrolled); a date WITHOUT the official validation (private / English /
+    // letter-issue date) is RED (+0, no bonus). No date at all → no chip (its absence already
+    // shows in the drawer; an offer without a registration summons deserves suspicion).
+    if (c.reporting_date) {
+      facts.push({
+        key: 'daftar',
+        status: c.reporting_official
+          ? (c.intake_year_status === 'current' ? 'verified' : 'partial')
+          : 'not',
+      })
+    }
     return facts
   }
   if (dt === 'str') {

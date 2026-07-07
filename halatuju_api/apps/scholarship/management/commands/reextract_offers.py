@@ -20,7 +20,9 @@ from apps.scholarship.reextract import reextract_document
 from apps.scholarship.genuineness.bands import GENUINE_MIN
 
 # Bump for a future targeted offer-rescore pass (e.g. after the next MODEL_VERSION change).
-PASS_MARKER = 'reextract_offers_2026_07'
+# 2026_07 = the 1.4.0 by-score re-run; 2026_07b = the 1.5.0 pass capturing `reporting_date_label`
+# (the reporting-date bonus needs it; only the <0.70 docs matter — genuine docs' step is already 0).
+PASS_MARKER = 'reextract_offers_2026_07b'
 
 
 def _below_genuine(doc) -> bool:

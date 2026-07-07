@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## Reporting-date bonus — 2026-07-08
+
+### Added
+- **Reporting-date BONUS (MODEL_VERSION 1.5.0)** — a validated official registration summons lifts
+  the offer's effective genuineness step one band in the verdict ladder (suspect→treated-genuine,
+  fake→treated-suspect), so a cropped/thin OFFICIAL letter isn't punished like a private one. Three
+  gates, all required: the issuer family's own Malay label (Tarikh Mendaftar / Lapor Diri /
+  Pendaftaran / dan Masa Daftar — per `docs/scholarship/offer-letter-catalogue.md`); the family's
+  public-issuer signature actually present on the page (blocks #93 UniMAIWP / #84 Swinburne
+  junk-fits); no "Sdn. Bhd." private marker. Never offsets Name/IC/pathway-mismatch chips; the
+  Official chip + `offer_official_status` + Check-2 requests unchanged.
+- Extraction captures `reporting_date_label` (verbatim label heading); cockpit gains a
+  reporting-date bucket chip (green = official + current intake, orange = official + past intake,
+  red = date without official validation, none = absent).
+- Deploy-day re-banding: ZERO (no stored doc has the label yet); lifts realise via the
+  `reextract-offers` 2026_07b backfill pass over the <0.70 offers. 2146 pytest + 481 jest.
+
 ## Cockpit review follow-ups — 2026-07-08
 
 ### Fixed

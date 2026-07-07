@@ -173,6 +173,74 @@ def _ic_status(candidate_nric: str, profile_nric: str, extracted: bool) -> str:
     return 'mismatch'
 
 
+# ── Reporting-date BONUS (owner 2026-07-08) — a positive per-issuer fingerprint ──────────
+# A genuine government letter SUMMONS the student to register under a precise Malay label
+# (docs/scholarship/offer-letter-catalogue.md); private letters, pemakluman, interview slips and
+# notices almost never carry one (live validation: 6 of 7 no-date offers were non-genuine). A
+# validated official registration summons is therefore GENUINENESS evidence: it lifts the offer's
+# effective genuineness step one band in the verdict ladder (suspect→treated-genuine, fake→treated-
+# suspect) — so a cropped/thin-scanned OFFICIAL letter isn't punished like a private one. It NEVER
+# offsets the Name/IC/pathway-mismatch content chips (it is not identity evidence), never changes
+# the Official chip's colour, and never silences the Check-2 official-doc request
+# (offer_official_status is untouched).
+#
+# Three gates, ALL required (each one kills a known bypass):
+#   1. LABEL — the reporting date sits under the issuer family's own Malay label (catalogue).
+#      Kills: English letters, letter-issue dates, docs with no registration summons.
+#   2. PUBLIC ISSUER — the family's issuer SIGNATURE was actually found on the page (stored in
+#      authenticity.present): the ministry body for STPM/matric/poly/PISMP, or one of the fixed
+#      20 UA names. Kills: private letters junk-fitting a family at low probability (#93 UniMAIWP
+#      best-fits a family but its page carries no public-issuer marker; #84 Swinburne likewise).
+#   3. NO PRIVATE MARKER — "Sdn. Bhd." in the extracted issuer/institution hard-blocks (no public
+#      university is a private company; mirrors the payslip "Pte Ltd" structural test).
+_REPORTING_LABELS = {
+    'stpm':          ('tarikh lapor diri',),
+    'matriculation': ('tarikh kemasukan ke kolej', 'tarikh kemasukan'),
+    'polytechnic':   ('tarikh dan masa daftar', 'tarikh daftar'),
+    'pismp':         ('tarikh pendaftaran',),
+    # UA letterheads diverge: UPSI "Tarikh Mendaftar", UMP/UTeM/UPNM "Tarikh Pendaftaran",
+    # UKM "Tarikh Lapor Diri", UTHM/UTeM a bare "Tarikh" (inside the mendaftar clause — the
+    # extraction prompt guards against the letter-issue Tarikh; the UA-name gate does the rest).
+    'ua_offer':      ('tarikh mendaftar', 'tarikh pendaftaran', 'tarikh lapor diri',
+                      'tarikh dan masa', 'tarikh'),
+}
+# The family's ISSUER signature label (as stored in authenticity.present) — gate 2. These are the
+# weight-3 identity lines of each family in genuineness/results_doc.py; for ua_offer the entry is
+# the 20-UA name signature, so "present" implies the letter names a real public university.
+_FAMILY_ISSUER_SIG = {
+    'stpm':          'Sektor Operasi Sekolah',
+    'matriculation': 'Bahagian Matrikulasi',
+    'polytechnic':   'Jabatan Pend. Politeknik & KK',
+    'pismp':         'Institut Pendidikan Guru',
+    'ua_offer':      'public university (UA) name',
+}
+
+
+def offer_reporting_bonus(doc) -> bool:
+    """True when the offer carries a VALIDATED official registration summons — the reporting-date
+    bonus (owner 2026-07-08). Reads only stored vision_fields; pure."""
+    vf = getattr(doc, 'vision_fields', None)
+    vf = vf if isinstance(vf, dict) else {}
+    f = vf.get('fields', {}) if isinstance(vf.get('fields'), dict) else {}
+    auth = vf.get('authenticity') if isinstance(vf.get('authenticity'), dict) else {}
+    date = (f.get('reporting_date') or '').strip()
+    label = (f.get('reporting_date_label') or '').strip().lower().rstrip(':').strip()
+    if not date or not label:
+        return False
+    family = (auth.get('doc_seen') or '').strip().lower()
+    allowed = _REPORTING_LABELS.get(family)
+    if not allowed or not any(label.startswith(a) for a in allowed):
+        return False                                    # gate 1: family's own Malay label
+    issuer_sig = _FAMILY_ISSUER_SIG.get(family, '')
+    present = auth.get('present') if isinstance(auth.get('present'), list) else []
+    if issuer_sig not in present:
+        return False                                    # gate 2: public issuer actually on the page
+    haystack = ' '.join(((f.get('issuer') or ''), (f.get('institution') or ''))).upper()
+    if 'SDN' in haystack and 'BHD' in haystack:
+        return False                                    # gate 3: a private company is never a UA
+    return True
+
+
 def offer_official_status(doc) -> str:
     """Whether an offer is a genuine OFFICIAL offer for gating purposes, from its stored
     signature-genuineness (``vision_fields['authenticity']``):
@@ -240,6 +308,7 @@ def student_offer_check(doc) -> dict:
         'offer_date': (f.get('offer_date') or '').strip(),
         'intake': intake,
         'reporting_date': reporting_date,         # report/registration = course start (data point)
+        'reporting_official': offer_reporting_bonus(doc),  # validated official registration summons
         'intake_year': intake_year,               # parsed course-start year
         'intake_year_status': intake_year_status, # 'current' | 'off' | '' (vs cohort year)
         'address': (f.get('candidate_address') or '').strip(),

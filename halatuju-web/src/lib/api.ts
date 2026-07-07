@@ -1769,6 +1769,7 @@ export interface PathwayCheck {
   offer_date: string
   intake: string
   reporting_date?: string                 // report/registration date = course start
+  reporting_official?: boolean            // validated official registration summons (the bonus)
   intake_year?: string                    // parsed course-start year
   intake_year_status?: '' | 'current' | 'off'   // vs cohort year: current→green, off→amber
   address: string

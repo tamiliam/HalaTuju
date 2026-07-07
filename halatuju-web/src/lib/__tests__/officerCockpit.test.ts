@@ -394,6 +394,31 @@ describe('documentFacts', () => {
     expect(documentPill(d)).toBe('check')   // never 'verified'
   })
 
+  it('offer letter: reporting-date chip buckets (owner 2026-07-08)', () => {
+    // green: validated official summons + current intake
+    const green = documentFacts(doc({ doc_type: 'offer_letter',
+      pathway_check: pathCheck({ reporting_date: '9 Jun 2026', reporting_official: true,
+                                 intake_year_status: 'current' }),
+      authenticity: { status: 'genuine', reason: '' } }))
+    expect(green.find((f) => f.key === 'daftar')?.status).toBe('verified')
+    // orange: validated summons but a PAST intake (continuing student — confirm enrolment)
+    const orange = documentFacts(doc({ doc_type: 'offer_letter',
+      pathway_check: pathCheck({ reporting_date: '10 Jun 2025', reporting_official: true,
+                                 intake_year_status: 'off' }),
+      authenticity: { status: 'genuine', reason: '' } }))
+    expect(orange.find((f) => f.key === 'daftar')?.status).toBe('partial')
+    // red: a date WITHOUT the official validation (private / English / letter-issue date)
+    const red = documentFacts(doc({ doc_type: 'offer_letter',
+      pathway_check: pathCheck({ reporting_date: '19 September 2026', reporting_official: false }),
+      authenticity: { status: 'not_offer_letter', reason: '' } }))
+    expect(red.find((f) => f.key === 'daftar')?.status).toBe('not')
+    // absent: no date → no chip at all
+    const none = documentFacts(doc({ doc_type: 'offer_letter',
+      pathway_check: pathCheck({ reporting_date: '' }),
+      authenticity: { status: 'genuine', reason: '' } }))
+    expect(none.some((f) => f.key === 'daftar')).toBe(false)
+  })
+
   it('offer letter: a FAKE offer keeps Pathway red + a RED Official flag', () => {
     // not_offer_letter (p<0.35 — not recognisably a proper offer, e.g. #84 the private-uni
     // letter) → Official is RED. Pathway stays red (no pathway established).

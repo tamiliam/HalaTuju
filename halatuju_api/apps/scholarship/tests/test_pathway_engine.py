@@ -82,6 +82,51 @@ class TestStudentOfferCheck(SimpleTestCase):
                                              pnric='081227-02-0661'))
         self.assertEqual(chk['ic'], 'match')
 
+    def test_reporting_bonus_three_gates(self):
+        # The reporting-date BONUS (owner 2026-07-08): label + public-issuer signature + no
+        # private marker — ALL required. Built like #44 (UPSI, ua_offer family).
+        from apps.scholarship.pathway_engine import offer_reporting_bonus
+        from types import SimpleNamespace as NS
+
+        def _doc(fields, auth):
+            return NS(vision_fields={'fields': fields, 'authenticity': auth})
+
+        ua_auth = {'status': 'suspect', 'doc_seen': 'ua_offer',
+                   'present': ['public university (UA) name', 'offer/admission line']}
+        upsi = {'reporting_date': '9 Jun 2026', 'reporting_date_label': 'Tarikh Mendaftar',
+                'institution': 'UNIVERSITI PENDIDIKAN SULTAN IDRIS', 'issuer': ''}
+        self.assertTrue(offer_reporting_bonus(_doc(upsi, ua_auth)))
+
+        # #93 UniMAIWP: has a "Tarikh" label + junk-fits a family, but the page carries NO
+        # public-issuer signature (present lacks the UA-name entry) → gate 2 blocks.
+        maiwp_auth = {'status': 'not_offer_letter', 'doc_seen': 'ua_offer',
+                      'present': ['Program / Kod Program']}
+        maiwp = {'reporting_date': '19 September 2026', 'reporting_date_label': 'Tarikh',
+                 'institution': 'UNIVERSITI ANTARABANGSA MAIWP', 'issuer': ''}
+        self.assertFalse(offer_reporting_bonus(_doc(maiwp, maiwp_auth)))
+
+        # Sdn. Bhd. anywhere in issuer/institution hard-blocks (gate 3) even if gates 1+2 pass.
+        sdn = dict(upsi, issuer='Kolej Sains Perubatan PUSRAWI Sdn. Bhd.')
+        self.assertFalse(offer_reporting_bonus(_doc(sdn, ua_auth)))
+
+        # English label / letter-issue date → gate 1 blocks; so does a missing date or label.
+        self.assertFalse(offer_reporting_bonus(_doc(dict(upsi, reporting_date_label='Registration date'), ua_auth)))
+        self.assertFalse(offer_reporting_bonus(_doc(dict(upsi, reporting_date=''), ua_auth)))
+        self.assertFalse(offer_reporting_bonus(_doc(dict(upsi, reporting_date_label=''), ua_auth)))
+
+        # A ministry family validates via its own issuer signature (poly: JPPKK line present).
+        poly_auth = {'status': 'suspect', 'doc_seen': 'polytechnic',
+                     'present': ['Jabatan Pend. Politeknik & KK', 'Surat Tawaran Pengajian']}
+        poly = {'reporting_date': '15 Jun 2026', 'reporting_date_label': 'Tarikh dan Masa Daftar',
+                'institution': 'POLITEKNIK UNGKU OMAR', 'issuer': ''}
+        self.assertTrue(offer_reporting_bonus(_doc(poly, poly_auth)))
+        # ...but the SAME fields without the issuer signature on the page do not (a mock-up).
+        self.assertFalse(offer_reporting_bonus(_doc(poly, {'status': 'suspect', 'doc_seen': 'polytechnic', 'present': ['Program']})))
+
+        # A bare "Tarikh" label is acceptable ONLY for the UA family (UTHM/UTeM clause style).
+        self.assertFalse(offer_reporting_bonus(_doc(dict(poly, reporting_date_label='Tarikh'), poly_auth)))
+        self.assertTrue(offer_reporting_bonus(_doc(dict(upsi, reporting_date_label='Tarikh'), ua_auth)))
+
     def test_ocr_doubled_letter_offer_name_still_matches(self):
         # #48: the offer name is OCR-flaky too — image-Gemini echoed a letter
         # ("LAKSMITHAA A/P VIJAYAN" for LAKSMITHA). The name_match mismatch is rescued by the

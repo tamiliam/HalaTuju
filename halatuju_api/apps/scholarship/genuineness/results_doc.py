@@ -64,7 +64,17 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       STR keeps its anchor (the SALINAN/SARA gate). The submission gate is UNCHANGED — `offer_official_status`
 #       already collapsed suspect+unrecognised → not_genuine, and not_offer_letter maps there too.
 #       → RE-RUN all offers on the live cockpit so stored authenticity carries the new by-score status.
-MODEL_VERSION = '1.4.0'
+#   1.5.0 (2026-07-08) — reporting-date BONUS (owner; docs/scholarship/offer-letter-catalogue.md):
+#       a VALIDATED official registration summons (the issuer family's own Malay label — Tarikh
+#       Mendaftar / Lapor Diri / Pendaftaran / dan Masa Daftar — + the family's public-issuer
+#       signature present on the page + no "Sdn. Bhd." private marker) lifts the offer's EFFECTIVE
+#       genuineness step one band in the verdict ladder (suspect→treated-genuine, fake→treated-
+#       suspect). Extraction gains `reporting_date_label` (the verbatim label heading). No signature
+#       family/weight change; the verdict logic the scores feed changed + a new extraction field →
+#       bump for traceability (1.2/1.2.1 precedent). Backfill: re-run the <0.70 offers
+#       (reextract_offers pass 2026_07b) so the label lands; genuine ≥0.70 docs don't need it
+#       (their step is already 0 — the bonus is moot).
+MODEL_VERSION = '1.5.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary

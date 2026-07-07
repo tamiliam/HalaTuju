@@ -1134,7 +1134,7 @@ _FIELD_SCHEMAS = {
     'offer_letter': _doc_schema({'candidate_name': _STR, 'candidate_nric': _STR,
                                  'programme': _STR, 'institution': _STR, 'issuer': _STR,
                                  'offer_date': _STR, 'intake': _STR, 'candidate_address': _STR,
-                                 'stream': _STR, 'reporting_date': _STR,
+                                 'stream': _STR, 'reporting_date': _STR, 'reporting_date_label': _STR,
                                  'bidang_pengkhususan': _STR, 'elektif': _STR, 'aliran': _STR}),
     # Income Check-1: the Birth Certificate links the income earner (mother) to the
     # student. Read the child + both parents' names AND their NRICs (the strong match).
@@ -1220,6 +1220,10 @@ _DOC_HINTS = {
                      '(PISMP, UPNM, UMP, UTeM), "Tarikh Mendaftar" (UPSI), or — UTHM style — a bare '
                      '"Tarikh" line INSIDE the "diminta untuk mendaftar pada tarikh, tempat dan masa" '
                      'clause (never the letter-issue "Tarikh" in the reference block). '
+                     '"reporting_date_label" = the VERBATIM label heading the reporting date sits under, '
+                     'exactly as printed on the letter (e.g. "Tarikh Mendaftar", "TARIKH LAPOR DIRI", '
+                     '"Tarikh dan Masa Daftar", or just "Tarikh" for the UTHM clause style); empty when '
+                     'no reporting date is shown. '
                      '"intake" = the session (e.g. "Sesi 2026/2027"); '
                      '"candidate_address" = the student\'s mailing address if shown. Leave any field empty '
                      'if absent — only fill the academic fields that this pathway\'s letter actually has.'),

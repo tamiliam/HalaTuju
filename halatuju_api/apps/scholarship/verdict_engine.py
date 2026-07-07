@@ -903,6 +903,20 @@ def _academic_red_chips(application):
 _OFFER_CHIP_RED = {'mismatch', 'unreadable'}
 
 
+def _pathway_effective_step(application):
+    """The offer's genuineness step AFTER the reporting-date BONUS (owner 2026-07-08): a VALIDATED
+    official registration summons (``offer_reporting_bonus`` — the issuer family's own Malay label +
+    the public-issuer signature on the page + no private-company marker) is genuineness evidence and
+    lifts the step one band, floored at 0 (suspect→0, fake→1). The bonus is genuineness-only: the
+    Name/IC/pathway-mismatch content chips, the Official chip's colour, ``offer_official_status``
+    and the Check-2 official-doc request are all UNTOUCHED."""
+    from .pathway_engine import offer_reporting_bonus
+    step = _genuineness_step(application, ['offer_letter'])
+    if step and offer_reporting_bonus(_latest_doc(application, 'offer_letter')):
+        step -= 1
+    return step
+
+
 def _pathway_red_chips(application):
     """RED pathway content chips — Name, IC (wrong-person OR the offer doesn't show one) and Pathway.
     0–3. Reads the SAME ``student_offer_check`` the cockpit chips + ``_verdict_pathway`` read.
@@ -915,16 +929,21 @@ def _pathway_red_chips(application):
     (officerCockpit ``documentFacts``: notOfficial → Pathway red), so the tile counts precisely the
     chips the reviewer sees. NB it deliberately STACKS with the genuineness step — the owner's
     arithmetic: #31/#131 suspect(−1) + pathway-not-established(−1) = Unsure; #84 fake(−2) +
-    pathway(−1) = Fail. 'Official' remains the step's own display chip, never counted here."""
+    pathway(−1) = Fail. 'Official' remains the step's own display chip, never counted here.
+
+    Reporting-date BONUS (owner 2026-07-08): "not official" is judged on the EFFECTIVE step — a
+    suspect offer carrying a validated official registration summons (step lifted to 0) DOES
+    establish the pathway (the letter provably summons the student to register at a public
+    institution), so its Pathway chip is not red. A fake offer stays not-official even with the
+    bonus (effective step 1). The mismatch arm is untouched — the bonus never offsets a genuine
+    declared-vs-offer clash."""
     from .pathway_engine import student_offer_check
     offer = _latest_doc(application, 'offer_letter')
     if offer is None:
         return 0
     chk = student_offer_check(offer)
     n = (1 if chk['name'] in _OFFER_CHIP_RED else 0) + (1 if chk['ic'] in _OFFER_CHIP_RED else 0)
-    vf = offer.vision_fields if isinstance(offer.vision_fields, dict) else {}
-    raw = (vf.get('authenticity') or {}).get('status', '')
-    not_official = canonical_status(raw, 'offer_letter') not in ('', 'genuine')
+    not_official = _pathway_effective_step(application) > 0
     if not_official or (chk['pathway'] == 'mismatch' and application.pathway_confirmed_at is None):
         n += 1
     return n
@@ -962,18 +981,28 @@ def _add_genuineness_caveat(application, fact, docs, step):
 def _apply_genuineness_ladder(application, facts):
     """Rebuild the identity/academic/pathway band as ``max(base, genuineness_step + red_chips)``,
     floored at 'gap' (income keeps the flat cap). Downgrade-only: a genuine doc with clean content
-    (step 0, 0 chips) leaves the base untouched."""
+    (step 0, 0 chips) leaves the base untouched.
+
+    PATHWAY uses the EFFECTIVE step (raw − the reporting-date bonus) for the BAND, but the RAW step
+    for the caveat — so a suspect-with-bonus offer can read Certain while the tile still carries the
+    truthful "may not be a genuine original" line (the Official chip stays amber, Check-2 still
+    requests the official copy). A ``str_verified``-style evidence line explains the lift."""
     for fact in facts:
         docs = _LADDER_DOCS.get(fact['fact'])
         if not docs:
             continue
         step = _genuineness_step(application, docs)
+        band_step = step
+        if fact['fact'] == 'pathway':
+            band_step = _pathway_effective_step(application)
+            if band_step < step:                 # the bonus fired — say why the band lifted
+                fact['evidence'].append(_item('offer_reporting_official'))
         chips = _LADDER_CHIPS[fact['fact']](application)
         try:
             base_i = _BAND_LADDER.index(fact['status'])
         except ValueError:
             base_i = 0
-        fact['status'] = _BAND_LADDER[min(max(base_i, step + chips), len(_BAND_LADDER) - 1)]
+        fact['status'] = _BAND_LADDER[min(max(base_i, band_step + chips), len(_BAND_LADDER) - 1)]
         _add_genuineness_caveat(application, fact, docs, step)
     return facts
 
