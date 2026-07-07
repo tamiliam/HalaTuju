@@ -311,11 +311,12 @@ def _parse_grade_row(row):
 def _slip_name(rows):
     """Candidate name — the top-area line carrying a parentage marker (a/p, a/l, bin,
     binti); '' if none (a marker-less name) so the downstream name check is skipped
-    rather than fed a wrong value."""
+    rather than fed a wrong value. Strips the slip's own form label "NAMA" / "NAMA :"
+    when it sits on the same line as the value (#121: "NAMA SUVENAA A/P …")."""
     for row in rows[:12]:
         line = ' '.join(w['text'] for w in row).strip()
         if _SLIP_NAME_MARKER.search(line) and not any(ch.isdigit() for ch in line):
-            return line
+            return re.sub(r'^\s*NAMA\s*:?\s*', '', line, flags=re.IGNORECASE).strip()
     return ''
 
 

@@ -336,6 +336,13 @@ class TestParseSpmSlip(SimpleTestCase):
         self.assertEqual(got['Perniagaan'], 'B')
         self.assertEqual(got['Bahasa Tamil'], 'A-')
 
+    def test_candidate_name_strips_nama_label(self):
+        # #121: the slip prints the form label "NAMA" on the same line as the value
+        # ("NAMA SUVENAA A/P …") — it must be stripped so the candidate name is clean.
+        out = self._parse(header=[('SIJIL PELAJARAN MALAYSIA', 200),
+                                  ('NAMA SHARMILA A/P SANGGAR', 250), ('060412-06-0320', 300)])
+        self.assertEqual(out['candidate_name'], 'SHARMILA A/P SANGGAR')
+
     def test_parse_is_order_independent(self):
         # Reverse the OCR word order — positional grouping must still pair by geometry.
         words = list(reversed(_slip_words(self.HEADER, self.SHARMILA)))
