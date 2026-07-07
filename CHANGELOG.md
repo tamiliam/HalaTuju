@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit review follow-ups — 2026-07-08
+
+### Fixed
+- **Pathway chip counted as a variable** — red when the offer clashes with the declaration OR the
+  document is not a genuine official offer (an interview slip / pemakluman / private-IPTS letter
+  establishes no pathway), stacking with the genuineness step. The shipped mismatch-only counter
+  contradicted the owner's locked #31 worked example. Owner-verified: #131 → Unsure, #84 → Fail.
+- **Offer name OCR tolerance (#48)** — a glued parentage marker ("LAKSMITHAA/P") and a doubled-letter
+  echo ("LAKSMITHAA") no longer raise a false wrong-person flag; the offer name check falls back to
+  the tolerant same-person matcher (the `_nric_close` counterpart). IC identity stays exact.
+- **Two-tone Official chip** — red only for a fake offer (`not_offer_letter`), amber for suspect,
+  matching the slip/IC genuineness chip semantics.
+
+### Added
+- **`reextract-offers` cron** — targeted batch re-score of offers with missing/below-genuine (<0.70)
+  authenticity under the current MODEL_VERSION; run against the live cohort (all 88 offers scored).
+- 2141 scholarship pytest + 480 jest.
+
 ## Genuineness score-band + red-chip ladder — 2026-07-07
 
 ### Changed
