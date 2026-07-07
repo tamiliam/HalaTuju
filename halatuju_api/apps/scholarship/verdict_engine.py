@@ -825,8 +825,12 @@ def _apply_genuineness_caps(application, facts):
 #   • genuineness_step — by SCORE, uniform for every signature-scored doc (offers INCLUDED as of
 #     MODEL_VERSION 1.4.0): genuine (p≥0.70) → 0, suspect (0.35–0.70) → 1, fake (p<0.35) → 2.
 #   • red_chip_count — one −1 per RED content variable: Identity Name·NRIC; Academic Name·Subjects·
-#     Results; Pathway Name·IC·Pathway. A variable is red when its value MISMATCHES (not when it's
-#     merely unread/pending — that's grey, handled by the base band's under-claim, never a chip).
+#     Results; Pathway Name·IC·Pathway. A variable is red when its value MISMATCHES or is
+#     required-but-missing on an extracted offer (merely unread/pending → grey, the base band's
+#     under-claim). The PATHWAY variable is additionally red when the document cannot establish any
+#     pathway — a non-genuine offer (suspect/fake: interview slip, pemakluman, private-IPTS letter)
+#     proves no pathway, so its chip stacks with the genuineness step (owner arithmetic: #31/#131
+#     suspect −1 + pathway −1 = Unsure; #84 fake −2 + pathway −1 = Fail).
 #   • base_index — the `_verdict_*` band, which carries only the missing→gap and unread→review
 #     under-claims (mismatches are NOT baked into it any more, they are chips); `max` keeps an
 #     unread-but-genuine doc at Probable rather than letting 0 chips + step 0 read Certain.
@@ -900,17 +904,28 @@ _OFFER_CHIP_RED = {'mismatch', 'unreadable'}
 
 
 def _pathway_red_chips(application):
-    """RED pathway content chips — Name, IC (wrong-person OR the offer doesn't show one) and Pathway
-    (offer names a genuinely different place/field than declared, not yet reconciled). 0–3. Reads the
-    SAME ``student_offer_check`` the cockpit chips + ``_verdict_pathway`` read. The 'Official'
-    (genuineness) dimension is the STEP, never counted here."""
+    """RED pathway content chips — Name, IC (wrong-person OR the offer doesn't show one) and Pathway.
+    0–3. Reads the SAME ``student_offer_check`` the cockpit chips + ``_verdict_pathway`` read.
+
+    The Pathway VARIABLE (owner 2026-07-08, off #131/#84 — refining the locked #31 example) asks
+    "does this document establish the declared pathway?" — red when the offer names a genuinely
+    DIFFERENT place/field than declared (unreconciled), **or** when the document cannot establish ANY
+    pathway because it is not a genuine official offer (suspect / fake / non-official — an interview
+    slip, a pemakluman, a private-IPTS letter). This mirrors the cockpit chip exactly
+    (officerCockpit ``documentFacts``: notOfficial → Pathway red), so the tile counts precisely the
+    chips the reviewer sees. NB it deliberately STACKS with the genuineness step — the owner's
+    arithmetic: #31/#131 suspect(−1) + pathway-not-established(−1) = Unsure; #84 fake(−2) +
+    pathway(−1) = Fail. 'Official' remains the step's own display chip, never counted here."""
     from .pathway_engine import student_offer_check
     offer = _latest_doc(application, 'offer_letter')
     if offer is None:
         return 0
     chk = student_offer_check(offer)
     n = (1 if chk['name'] in _OFFER_CHIP_RED else 0) + (1 if chk['ic'] in _OFFER_CHIP_RED else 0)
-    if chk['pathway'] == 'mismatch' and application.pathway_confirmed_at is None:
+    vf = offer.vision_fields if isinstance(offer.vision_fields, dict) else {}
+    raw = (vf.get('authenticity') or {}).get('status', '')
+    not_official = canonical_status(raw, 'offer_letter') not in ('', 'genuine')
+    if not_official or (chk['pathway'] == 'mismatch' and application.pathway_confirmed_at is None):
         n += 1
     return n
 

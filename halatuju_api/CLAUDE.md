@@ -543,6 +543,16 @@ one −1 per RED content chip (Identity Name·NRIC; Academic Name·Subjects·Res
   `factStatus`) — the first cut counted only `mismatch`, so a missing IC showed red on the chip but
   wasn't tallied (#64 sat at Unsure not Fail). 9 live offers with a missing candidate IC re-band
   stricter (4 Certain→Probable, 4 Probable→Unsure, #64 Unsure→Fail). 2135 pytest.
+- **Second fix 2026-07-08 (owner flagged #131/#84):** the Pathway CHIP is a VARIABLE — "does this
+  document establish the declared pathway?" — red when the offer clashes with the declaration OR the
+  document is not a genuine official offer (interview slip / pemakluman / private-IPTS establishes NO
+  pathway), STACKING with the step (owner: "We need a proper offer letter — a proper flag is good").
+  The shipped mismatch-only counter contradicted the owner's own locked #31 worked example (computed
+  Probable, spec says Unsure). Mirrors the cockpit's `notOfficial → Pathway red`; NO FE change.
+  Re-banding signed off: #43/#56/#75/#131 (+rej #31) Probable→Unsure; #16/#52/#136 (+rej #84)
+  Unsure→Fail (#16/#52/#136 are under-fingerprinted real offers — lift with the asasi/UA signature
+  work). 2139 pytest. Also: `reextract-offers` cron shipped + run (all 88 live offers now scored,
+  MODEL_VERSION 1.4.0; suspect<0.35 → fake relabelled cohort-wide).
 - **▶ OWNER TODO:** re-run all offers on the cockpit (1.4.0 re-score). **▶ FOLLOW-UP:** POSITIVE asasi/UA
   offer fingerprints (the masked gap) — see roadmap.
 

@@ -562,21 +562,21 @@ class TestPathway(_Base):
         d.save(update_fields=['vision_fields'])
         return d
 
-    def test_cropped_official_offer_is_probable(self):
-        # A cropped/thin offer scores 'suspect' (0.35–0.70) → step −1 → 'review' (🔵 Probable),
-        # not falsely Certain (the offer's cropped-genuineness wasn't a pathway input before).
+    def test_suspect_offer_is_unsure_step_plus_pathway_chip(self):
+        # Owner 2026-07-08 (#131, refining the locked #31): a non-genuine document establishes NO
+        # pathway, so the Pathway VARIABLE is red even when the programme text matches — it stacks
+        # with the step. suspect(−1) + pathway-not-established(−1) = −2 → 'recommend' (🟡 Unsure).
         self._offer('suspect')
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'recommend')
         self.assertIn('document_not_genuine', _codes(f['unresolved']))
 
-    def test_fake_offer_is_unsure_with_offer_not_official(self):
-        # MODEL_VERSION 1.4.0: an offer scoring below the suspect floor reads 'not_offer_letter'
-        # (fake) → step −2 → 'recommend' (🟡 Unsure) + the confident 'offer_not_official' caveat (an
-        # award CONFIDENT_DISQUALIFIER). Content is clean so no red chip stacks.
+    def test_fake_offer_is_fail_step_plus_pathway_chip(self):
+        # The #84 arithmetic (owner 2026-07-08): fake(−2) + pathway-not-established(−1) = −3 →
+        # 🔴 Fail, with the confident 'offer_not_official' caveat (an award CONFIDENT_DISQUALIFIER).
         self._offer('not_offer_letter')
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'recommend')
+        self.assertEqual(f['status'], 'gap')
         self.assertIn('offer_not_official', _codes(f['unresolved']))
 
     def test_genuine_official_offer_still_verifies(self):

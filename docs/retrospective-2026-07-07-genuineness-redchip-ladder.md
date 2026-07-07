@@ -74,6 +74,37 @@ in two places, pin the tally to the display's exact predicate (mismatch OR unrea
 silently disagrees with the chips the reviewer is looking at. (This is the "reconcile every surface"
 lesson biting within the same feature — verdict band vs the doc chips.)
 
+## Second correction (2026-07-08) — the Pathway chip is a VARIABLE, not a genuineness echo
+
+Owner flagged #131 (a suspect UPSI interview slip, tile Probable) and #84 (a fake-scoring Swinburne
+offer, tile Unsure) as "one chip not picked up". First diagnosis went the WRONG way (treat the
+cockpit's red Pathway chip as a genuineness leak and green it) — owner corrected: the Pathway
+VARIABLE asks "does this document establish the declared pathway?", and a non-genuine document
+(interview slip / pemakluman / private-IPTS letter) establishes NO pathway, so its chip is
+legitimately red and STACKS with the genuineness step. The tell: the owner's own LOCKED worked
+example **#31 = suspect(−1) + Pathway red(−1) = Unsure**, which the shipped mismatch-only counter
+computed as Probable — the implementation had failed its own locked example and nobody caught it.
+
+Fix: `_pathway_red_chips` reds the Pathway chip on `(canonical authenticity != genuine) OR
+(declared-vs-offer mismatch, unconfirmed)` — mirroring the cockpit's `notOfficial → Pathway red`
+display exactly. NO frontend change (the display was right all along). Owner's arithmetic verified:
+#131 −1−1 = Unsure; #84 −2−1 = Fail; #31 −1−1 = Unsure. Owner rationale on the strictness: "We need
+a proper offer letter. So, a proper flag is good to have."
+
+Re-banding (owner signed off): 8 stricter, 0 softer — #43/#56/#75/#131 (+rejected #31)
+Probable→Unsure; #16/#52/#136 (+rejected #84) Unsure→Fail. Three of the new Fails (#16/#52/#136) are
+thin-scanned real offers the fingerprints under-cover — they lift when the asasi/UA signature work
+lands. 2139 pytest.
+
+**Lesson (added):** when a locked spec ships with WORKED EXAMPLES, turn every one into a regression
+test in the same change — the shipped counter contradicted locked example #31 from day one, and only
+a live case (#131) surfaced it. A worked example that isn't executable is documentation, not a spec.
+
+**Lesson (added):** before "fixing" a display to match the engine, ask which side owns the truth.
+The cockpit chip rule (notOfficial → Pathway red) encoded the owner's semantics correctly; the
+engine was the drifted side. The correct move was the one made for the first correction too — pin
+tally to display — not the reverse.
+
 ## Lessons
 
 - **An identity anchor that floors a score can MASK a signature-coverage gap.** Removing the offer
