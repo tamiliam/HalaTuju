@@ -427,12 +427,21 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // (thin/cropped fingerprints — "we aren't sure"), matching the slip/IC chip semantics.
     const auth = doc.authenticity?.status
     const notOfficial = !!auth && auth !== 'genuine'
+    // Reporting-date BONUS (owner 2026-07-08): a validated official registration summons lifts a
+    // SUSPECT doc's effective officialness — it provably summons the student to register at a
+    // public institution, so it DOES establish the pathway. The Pathway chip must key off this
+    // EFFECTIVE state (the same predicate `_pathway_red_chips` counts), or the tile (Certain) and
+    // the chip (red) contradict each other — #56/#75. A FAKE doc stays not-official even with the
+    // bonus. The Official chip below deliberately keeps the RAW genuineness (amber/red) — that
+    // dimension is what Check-2 acts on and the bonus never repaints it.
+    const fake = !!auth && auth.startsWith('not_')
+    const effectiveNotOfficial = fake || (notOfficial && !c.reporting_official)
     const facts: DocumentFactLabel[] = [
       { key: 'name', status: factStatus(c.name) },
       { key: 'ic_no', status: factStatus(c.ic) },
     ]
-    if (c.pathway) facts.push({ key: 'pathway', status: notOfficial ? 'not' : factStatus(c.pathway) })
-    if (notOfficial) facts.push({ key: 'official', status: auth!.startsWith('not_') ? 'not' : 'partial' })
+    if (c.pathway) facts.push({ key: 'pathway', status: effectiveNotOfficial ? 'not' : factStatus(c.pathway) })
+    if (notOfficial) facts.push({ key: 'official', status: fake ? 'not' : 'partial' })
     // Reporting-date bucket chip (owner 2026-07-08): a VALIDATED official registration summons
     // (the issuer family's own Malay label + public-issuer signature — `reporting_official` from
     // the backend bonus) is GREEN on a current intake, ORANGE on a past intake (continuing student
