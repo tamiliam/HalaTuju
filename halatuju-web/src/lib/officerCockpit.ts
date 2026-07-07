@@ -420,9 +420,11 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     if (!c) return []
     // Owner policy: an offer can settle identity + pathway ONLY if it is a genuine OFFICIAL
     // public offer. A non-genuine offer (conditional / private-IPTS / a non-official
-    // pemakluman/semakan notification) can't confirm the pathway — so an 'Official' fact goes
-    // red and Pathway can never show green off a letter we don't accept. This keeps the chip in
-    // step with the verdict tile (which gates on the same signal).
+    // pemakluman/semakan notification) can't confirm the pathway — so the Pathway VARIABLE goes
+    // red (it establishes no pathway; the verdict counts this chip, `_pathway_red_chips`) and an
+    // 'Official' fact surfaces the genuineness itself. Official is TWO-TONE (owner 2026-07-08):
+    // RED for fake (`not_offer_letter` — not recognisably a proper offer), AMBER for suspect
+    // (thin/cropped fingerprints — "we aren't sure"), matching the slip/IC chip semantics.
     const auth = doc.authenticity?.status
     const notOfficial = !!auth && auth !== 'genuine'
     const facts: DocumentFactLabel[] = [
@@ -430,7 +432,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
       { key: 'ic_no', status: factStatus(c.ic) },
     ]
     if (c.pathway) facts.push({ key: 'pathway', status: notOfficial ? 'not' : factStatus(c.pathway) })
-    if (notOfficial) facts.push({ key: 'official', status: 'not' })
+    if (notOfficial) facts.push({ key: 'official', status: auth!.startsWith('not_') ? 'not' : 'partial' })
     return facts
   }
   if (dt === 'str') {

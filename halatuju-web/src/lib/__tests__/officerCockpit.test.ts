@@ -380,16 +380,30 @@ describe('documentFacts', () => {
     expect(facts.some((f) => f.key === 'official')).toBe(false)
   })
 
-  it('offer letter: a NON-genuine offer forces Pathway red + an Official=red flag (chip not green)', () => {
-    // #31 the pemakluman: identity matches, programme tokens match, but the offer is not an
-    // official public offer → Pathway can't be green, an Official fact goes red, pill → check.
+  it('offer letter: a SUSPECT offer forces Pathway red + an AMBER Official flag', () => {
+    // #31/#131 the pemakluman / interview slip: identity matches, programme tokens match, but
+    // the doc is not confidently a genuine official offer → the Pathway VARIABLE is red (it
+    // establishes no pathway — counted by the verdict's `_pathway_red_chips`), and Official is
+    // AMBER (owner 2026-07-08: two-tone — suspect = "not sure", never branded fake). Pill → check.
     const d = doc({ doc_type: 'offer_letter',
       pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match' }),
       authenticity: { status: 'suspect', reason: 'pemakluman' } })
     const facts = documentFacts(d)
     expect(facts.find((f) => f.key === 'pathway')?.status).toBe('not')
-    expect(facts.find((f) => f.key === 'official')?.status).toBe('not')
+    expect(facts.find((f) => f.key === 'official')?.status).toBe('partial')
     expect(documentPill(d)).toBe('check')   // never 'verified'
+  })
+
+  it('offer letter: a FAKE offer keeps Pathway red + a RED Official flag', () => {
+    // not_offer_letter (p<0.35 — not recognisably a proper offer, e.g. #84 the private-uni
+    // letter) → Official is RED. Pathway stays red (no pathway established).
+    const d = doc({ doc_type: 'offer_letter',
+      pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match' }),
+      authenticity: { status: 'not_offer_letter', reason: 'few signatures' } })
+    const facts = documentFacts(d)
+    expect(facts.find((f) => f.key === 'pathway')?.status).toBe('not')
+    expect(facts.find((f) => f.key === 'official')?.status).toBe('not')
+    expect(documentPill(d)).toBe('check')
   })
 
   // ── IC-NUMBER chain (Item D): a wrong card in the slot, but the earner verified elsewhere ──
