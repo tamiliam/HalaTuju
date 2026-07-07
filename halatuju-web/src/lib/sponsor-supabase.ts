@@ -50,7 +50,10 @@ export async function sponsorSignUpWithPassword(
     options: {
       // Stash the name so it survives an email-confirmation gap (no session yet).
       data: fullName ? { full_name: fullName } : undefined,
-      emailRedirectTo: `${window.location.origin}/sponsor/login`,
+      // Confirmation lands on a dedicated handler that logs the sponsor in when it can
+      // (same browser) and otherwise sends them to sign in with a friendly notice —
+      // never the raw PKCE error a cross-device click used to produce.
+      emailRedirectTo: `${window.location.origin}/sponsor/auth/confirm`,
       ...(captchaToken ? { captchaToken } : {}),
     },
   })

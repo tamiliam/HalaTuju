@@ -26,6 +26,12 @@ export default function SponsorLoginPage() {
   // partner console (one active privileged scope per identity, except super admins).
   const [superseded, setSuperseded] = useState(false)
   useEffect(() => { setSuperseded(consumeSuperseded('sponsor')) }, [])
+  // Shown after an email-confirmation link that couldn't open a session in this browser
+  // (cross-device / already-used link). The email IS confirmed — just sign in.
+  const [emailConfirmed, setEmailConfirmed] = useState(false)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('notice') === 'confirm') setEmailConfirmed(true)
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,6 +93,12 @@ export default function SponsorLoginPage() {
               {superseded && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                   <p className="text-amber-800 text-sm">{t('sponsorAuth.signedOutElsewhere')}</p>
+                </div>
+              )}
+
+              {emailConfirmed && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                  <p className="text-green-800 text-sm">{t('sponsorAuth.emailConfirmedNotice')}</p>
                 </div>
               )}
 

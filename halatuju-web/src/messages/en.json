@@ -3655,6 +3655,7 @@
     "loginTitle": "Partner Login",
     "loginSubtitle": "For partner organisations and invited individuals",
     "signedOutElsewhere": "You were signed out here because the same account signed into the sponsor portal. Sign in again to continue.",
+    "emailConfirmedNotice": "Thanks — your email is confirmed. Please sign in below with your email and password to finish setting up your account.",
     "email": "Email",
     "password": "Password",
     "enterPassword": "Enter your password",
