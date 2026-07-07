@@ -6,6 +6,7 @@ from .views import (
     ApplicationOnboardingCompleteView,
     ApplicationDetailView,
     ApplicationListCreateView,
+    ScholarshipIntakeView,
     BursaryAgreementView,
     BankAccountView,
     StudentComprehensionView,
@@ -104,6 +105,7 @@ from .views_admin import (
 urlpatterns = [
     # Twilio inbound-WhatsApp webhook (STOP/START → opt-out sync; Twilio-signature authed). TD-135.
     path('scholarship/whatsapp/inbound/', WhatsAppInboundView.as_view()),
+    path('scholarship/intake/', ScholarshipIntakeView.as_view()),
     path('scholarship/applications/', ApplicationListCreateView.as_view()),
     path('scholarship/applications/<int:pk>/', ApplicationDetailView.as_view()),
     path('scholarship/applications/<int:pk>/confirm/', ApplicationConfirmView.as_view()),

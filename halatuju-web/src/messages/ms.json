@@ -1642,6 +1642,11 @@
         "apply": "Mohon sekarang",
         "seeQualify": "Lihat jika saya layak"
       },
+      "closed": {
+        "btn": "Permohonan ditutup",
+        "note": "Permohonan untuk pusingan ini kini telah ditutup.",
+        "continue": "Sudah memohon? Teruskan dari papan pemuka anda."
+      },
       "overview": {
         "p1": "Setiap tahun, pelajar berbakat dari isi rumah berpendapatan rendah memperoleh tempat di institusi awam Malaysia — untuk meneruskan pengajian Pra-universiti, Sijil, Diploma dan Ijazah — hanya untuk mendapati mereka tidak mampu memanfaatkan peluang itu sepenuhnya. Program ini wujud untuk merapatkan jurang itu.",
         "p2": "Modelnya mudah. Anggota komuniti memilih untuk menyokong seorang pelajar sepanjang pengajian mereka. Ia bantuan, bukan pinjaman — tiada apa-apa untuk dibayar balik. Harapan kami, mereka yang dibantu hari ini akan, pada suatu masa, membantu orang lain pula."

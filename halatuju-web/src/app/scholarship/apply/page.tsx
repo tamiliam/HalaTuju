@@ -16,6 +16,7 @@ import InstitutionPicker from '@/components/InstitutionPicker'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
+  getScholarshipIntake,
   claimNric,
   checkEligibility,
   calculatePathways,
@@ -144,6 +145,15 @@ export default function ScholarshipApplyPage() {
       clearApplyReturn()
     }
   }, [])
+
+  // Intake gate: no NEW applications once the round closes. A bookmarked /apply link
+  // bounces back to the landing (which shows the closed state); existing applicants
+  // continue via /scholarship/application, not here.
+  useEffect(() => {
+    let active = true
+    getScholarshipIntake().then(r => { if (active && !r.open) router.replace('/scholarship') }).catch(() => {})
+    return () => { active = false }
+  }, [router])
 
   // Pre-fill from the profile once it carries its NRIC (skipped if we restored a stash).
   // Wait for the NRIC specifically: a brand-new user claims it at the auth gate *after*

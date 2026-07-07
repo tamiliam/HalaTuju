@@ -1642,6 +1642,11 @@
         "apply": "Apply now",
         "seeQualify": "See if I qualify"
       },
+      "closed": {
+        "btn": "Applications closed",
+        "note": "Applications for this round have now closed.",
+        "continue": "Already applied? Continue from your dashboard."
+      },
       "overview": {
         "p1": "Every year, promising students from low-income households earn a place at Malaysian public institutions — to pursue Pre-university studies, Certificate, Diploma and Degree — only to find they lack the means to make the most of it. This programme exists to close that gap.",
         "p2": "The model is straightforward. Members of the community choose to support a student through their studies. It is assistance, not a loan — there is nothing to repay. Our hope is that those who are supported today will, in time, support others tomorrow."

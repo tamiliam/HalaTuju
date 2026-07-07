@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
+import { getScholarshipIntake } from '@/lib/api'
 
 // Value-card icons (seedling / people / lock) — inline SVG to match the app.
 const CARD_ICONS: Record<string, string> = {
@@ -28,6 +29,28 @@ const CheckIcon = () => (
 export default function ScholarshipLandingPage() {
   const { t } = useT()
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  // Intake open? Assume open until we hear otherwise, so the button never flickers
+  // closed for a genuine applicant on a slow network.
+  const [intakeOpen, setIntakeOpen] = useState(true)
+  useEffect(() => {
+    let active = true
+    getScholarshipIntake().then(r => { if (active) setIntakeOpen(r.open) }).catch(() => {})
+    return () => { active = false }
+  }, [])
+
+  // Apply CTA — the real button when open; a disabled "closed" state + a route back to
+  // the dashboard (for those who already applied) when closed.
+  const applyCta = (btnClass: string) => intakeOpen ? (
+    <Link href="/scholarship/apply" className={btnClass}>{t('scholarship.landing.hero.apply')} →</Link>
+  ) : (
+    <span className={`${btnClass} opacity-60 pointer-events-none`} aria-disabled="true">{t('scholarship.landing.closed.btn')}</span>
+  )
+  const closedNote = intakeOpen ? null : (
+    <p className="text-sm text-gray-600 mt-3">
+      {t('scholarship.landing.closed.note')}{' '}
+      <Link href="/dashboard" className="text-primary-600 underline font-medium">{t('scholarship.landing.closed.continue')}</Link>
+    </p>
+  )
 
   return (
     <>
@@ -46,9 +69,10 @@ export default function ScholarshipLandingPage() {
               <h1 className="text-3xl lg:text-5xl font-bold text-gray-900 leading-tight">{t('scholarship.landing.hero.heading')}</h1>
               <p className="text-gray-600 mt-3 lg:mt-4 lg:text-lg">{t('scholarship.landing.hero.sub')}</p>
               <div className="mt-5 lg:mt-7 flex flex-col sm:flex-row sm:items-center gap-3">
-                <Link href="/scholarship/apply" className="btn-primary text-center w-full sm:w-auto">{t('scholarship.landing.hero.apply')} →</Link>
+                {applyCta('btn-primary text-center w-full sm:w-auto')}
                 <a href="#requirements" className="text-primary-600 text-sm text-center sm:text-left font-medium">{t('scholarship.landing.hero.seeQualify')} ↓</a>
               </div>
+              {closedNote}
             </div>
           </div>
         </section>
@@ -194,9 +218,10 @@ export default function ScholarshipLandingPage() {
             <div className="p-6 lg:p-10 text-center lg:text-left lg:flex lg:flex-col lg:justify-center">
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">{t('scholarship.landing.cta.heading')}</h2>
               <p className="text-gray-600 mt-2 text-sm lg:text-base">{t('scholarship.landing.cta.body')}</p>
-              <Link href="/scholarship/apply" className="btn-primary w-full sm:w-auto mt-4 inline-block text-center self-center lg:self-start">
-                {t('scholarship.landing.hero.apply')} →
-              </Link>
+              <div className="mt-4 self-center lg:self-start">
+                {applyCta('btn-primary w-full sm:w-auto inline-block text-center')}
+              </div>
+              {closedNote}
               <p className="text-xs text-gray-400 mt-3">
                 {t('scholarship.landing.cta.questions')}{' '}
                 <a href="mailto:info@halatuju.xyz" className="text-primary-600 underline">info@halatuju.xyz</a>

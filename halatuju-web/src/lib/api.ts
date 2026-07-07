@@ -1450,6 +1450,12 @@ export async function getMyScholarshipApplications(
   return apiRequest('/api/v1/scholarship/applications/', options)
 }
 
+/** PUBLIC — whether NEW applications are open (drives the landing Apply button + the
+ *  apply page). Existing applicants continue via their own application regardless. */
+export async function getScholarshipIntake(): Promise<{ open: boolean; cohort_name: string }> {
+  return apiRequest('/api/v1/scholarship/intake/')
+}
+
 // ── Interview scheduling (student books a proposed slot) ──────────────────────
 /** One interview time proposed by the reviewer. `start` is ISO (UTC). */
 export interface InterviewSlot {

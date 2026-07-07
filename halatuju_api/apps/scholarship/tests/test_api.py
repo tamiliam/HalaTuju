@@ -84,6 +84,40 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('priya@example.com', mail.outbox[0].to)
 
+    def test_closed_cohort_blocks_new_application(self):
+        # Intake closed → no NEW application, even though the profile qualifies.
+        self.cohort.is_open = False
+        self.cohort.save(update_fields=['is_open'])
+        self._auth(_make_token(USER_A))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/', self._payload(), format='json',
+        )
+        self.assertEqual(resp.status_code, 409)
+        self.assertFalse(ScholarshipApplication.objects.filter(profile_id=USER_A).exists())
+
+    def test_closed_cohort_blocks_even_with_explicit_code(self):
+        # An explicit cohort_code must not bypass the is_open gate.
+        self.cohort.is_open = False
+        self.cohort.save(update_fields=['is_open'])
+        self._auth(_make_token(USER_A))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/',
+            self._payload(cohort_code='b40-2026'), format='json',
+        )
+        self.assertEqual(resp.status_code, 409)
+        self.assertIn(resp.json().get('code'), ('applications_closed', None))
+        self.assertFalse(ScholarshipApplication.objects.filter(profile_id=USER_A).exists())
+
+    def test_intake_endpoint_public_reflects_open_state(self):
+        # No auth required (NRIC-gate whitelisted). Reflects the cohort's is_open.
+        r_open = self.client.get('/api/v1/scholarship/intake/')
+        self.assertEqual(r_open.status_code, 200)
+        self.assertTrue(r_open.json()['open'])
+        self.cohort.is_open = False
+        self.cohort.save(update_fields=['is_open'])
+        r_closed = self.client.get('/api/v1/scholarship/intake/')
+        self.assertFalse(r_closed.json()['open'])
+
     def test_declaration_name_promoted_to_profile_name(self):
         # The deliberate "as in IC" declaration signature becomes the canonical
         # profile name. The About Me field is pre-filled from the Google sign-in

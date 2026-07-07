@@ -13,7 +13,7 @@ from apps.courses.models import StudentProfile
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from halatuju.throttling import UploadRateThrottle
 
-from .models import ApplicantDocument, Consent, Referee, ScholarshipApplication
+from .models import ApplicantDocument, Consent, Referee, ScholarshipApplication, ScholarshipCohort
 from .serializers import (
     ApplicantDocumentSerializer,
     ApplicationCreateSerializer,
@@ -95,6 +95,25 @@ class WhatsAppInboundView(APIView):
         return HttpResponse(status=status.HTTP_200_OK)
 
 
+class ScholarshipIntakeView(APIView):
+    """
+    GET /api/v1/scholarship/intake/  — PUBLIC. Whether NEW applications are open right
+    now (drives the landing 'Apply' button + the apply page). Open iff an active, open
+    cohort exists. Existing applicants continue via their own application regardless of
+    this flag — it only governs starting a fresh application.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        cohort = (
+            ScholarshipCohort.objects
+            .filter(is_active=True, is_open=True)
+            .order_by('-year', 'code')
+            .first()
+        )
+        return Response({'open': cohort is not None, 'cohort_name': cohort.name if cohort else ''})
+
+
 class ApplicationListCreateView(APIView):
     """
     GET  /api/v1/scholarship/applications/  -> list the caller's applications
@@ -134,6 +153,15 @@ class ApplicationListCreateView(APIView):
         if cohort is None:
             return Response(
                 {'error': 'No open application round is currently available.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        # Intake gate: a closed cohort accepts no NEW applications. resolve_open_cohort
+        # already filters is_open on the default path, but an explicit cohort_code skips
+        # that — so re-check here so the gate can't be bypassed. Existing applicants
+        # never reach this endpoint again (they continue via their own application).
+        if not cohort.is_open:
+            return Response(
+                {'error': 'applications_closed', 'code': 'applications_closed'},
                 status=status.HTTP_409_CONFLICT,
             )
 
