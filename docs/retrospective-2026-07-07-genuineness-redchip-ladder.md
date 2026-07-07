@@ -92,9 +92,13 @@ display exactly. NO frontend change (the display was right all along). Owner's a
 a proper offer letter. So, a proper flag is good to have."
 
 Re-banding (owner signed off): 8 stricter, 0 softer — #43/#56/#75/#131 (+rejected #31)
-Probable→Unsure; #16/#52/#136 (+rejected #84) Unsure→Fail. Three of the new Fails (#16/#52/#136) are
-thin-scanned real offers the fingerprints under-cover — they lift when the asasi/UA signature work
-lands. 2139 pytest.
+Probable→Unsure; #16/#52/#136 (+rejected #84) Unsure→Fail. The first write-up of this section called
+#16/#52/#136 "thin-scanned real offers the fingerprints under-cover" — **wrong**: the owner reviewed
+all three and confirmed none is an offer letter. The fake verdicts were CORRECT. Every owner-reviewed
+Fail so far (#12, #64, #84, #16, #52, #131-as-interview-slip, #136) has been a genuinely improper
+document — the by-score fake band is validating with zero false positives to date. The asasi/UA
+fingerprint follow-up remains on the roadmap for any future REAL public-uni offer that scores thin,
+but no live case currently needs it as a rescue. 2139 pytest.
 
 **Lesson (added):** when a locked spec ships with WORKED EXAMPLES, turn every one into a regression
 test in the same change — the shipped counter contradicted locked example #31 from day one, and only

@@ -550,9 +550,11 @@ one −1 per RED content chip (Identity Name·NRIC; Academic Name·Subjects·Res
   The shipped mismatch-only counter contradicted the owner's own locked #31 worked example (computed
   Probable, spec says Unsure). Mirrors the cockpit's `notOfficial → Pathway red`; NO FE change.
   Re-banding signed off: #43/#56/#75/#131 (+rej #31) Probable→Unsure; #16/#52/#136 (+rej #84)
-  Unsure→Fail (#16/#52/#136 are under-fingerprinted real offers — lift with the asasi/UA signature
-  work). 2139 pytest. Also: `reextract-offers` cron shipped + run (all 88 live offers now scored,
-  MODEL_VERSION 1.4.0; suspect<0.35 → fake relabelled cohort-wide).
+  Unsure→Fail — owner reviewed #16/#52/#136 and confirmed NONE is an offer letter (the fake verdicts
+  were correct; do NOT treat them as a fingerprint coverage gap needing rescue). Every owner-reviewed
+  Fail to date is a genuinely improper document — zero false positives so far. 2139 pytest. Also:
+  `reextract-offers` cron shipped + run (all 88 live offers now scored, MODEL_VERSION 1.4.0;
+  suspect<0.35 → fake relabelled cohort-wide).
 - **▶ OWNER TODO:** re-run all offers on the cockpit (1.4.0 re-score). **▶ FOLLOW-UP:** POSITIVE asasi/UA
   offer fingerprints (the masked gap) — see roadmap.
 
