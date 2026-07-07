@@ -57,6 +57,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-08 — Fix: document upload picker unresponsive on some Android browsers (FE only)
+
+Reported by a shortlisted applicant (Vivo Y39 5G): tapping "Choose file" in the Documents
+step did nothing — no file picker opened.
+- **Root cause** — the hidden file input used `display:none` (`className="hidden"`). Several
+  Android browsers refuse to open the native file picker for a `display:none` input
+  triggered via its wrapping `<label>`; the input must stay rendered.
+- **Fix** — switched the input to `className="sr-only"` (visually hidden but still rendered),
+  matching the pattern the Funding step already uses for its radio pills. One-line hardening,
+  no behavioural change on browsers that already worked.
+- **Note** — this does NOT rescue true in-app/mini browsers (Gmail/WhatsApp WebViews), which
+  often can't open a file chooser at all; the standing advice there is to open the site in
+  Chrome. Applicants affected by that are told so directly.
+
 ### 2026-07-07 — Apply wizard: "Save & continue" advances to the next step (FE only)
 
 The pre-submit wizard's Save button (on the Story and Funding steps) now carries the

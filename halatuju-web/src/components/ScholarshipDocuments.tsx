@@ -111,7 +111,11 @@ function UploadTrigger({
         // Accept photos + PDFs (scan-to-PDF, EPF/payslip downloads). A hint only —
         // the backend allowlist is the real guard (TD-080). Excludes video/junk.
         accept="image/*,application/pdf,.pdf"
-        className="hidden"
+        // `sr-only`, NOT `hidden`: several Android browsers refuse to open the
+        // native file picker for a display:none input triggered via its label.
+        // sr-only keeps the input rendered (just visually hidden) so the picker
+        // reliably opens — matching the Funding step's sr-only radio pills.
+        className="sr-only"
         disabled={busy}
         onChange={(e) => {
           const f = e.target.files?.[0]
