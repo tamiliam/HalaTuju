@@ -114,12 +114,24 @@ def _declared_pathway(application) -> tuple:
 
 
 def _name_status(candidate: str, profile_name: str, extracted: bool) -> str:
-    """'match' / 'partial' / 'mismatch' / 'unreadable' / 'pending'."""
+    """'match' / 'partial' / 'mismatch' / 'unreadable' / 'pending'.
+
+    Identity is ANCHORED on the IC (exact ``name_match`` there); the offer-letter name is soft
+    corroboration read by image OCR, which echoes/doubles letters ("LAKSMITHAA" for LAKSMITHA,
+    #48). So a ``name_match`` mismatch is RESCUED when the tolerant same-person-across-two-
+    documents matcher reads a clean match (doubled letter / w–v / boundary noise) — the exact
+    counterpart of ``_nric_close`` below for the offer NRIC. Only a full tolerant 'match'
+    rescues; a genuinely different name still flags."""
     if not candidate:
         return 'unreadable' if extracted else 'pending'
     if not profile_name:
         return 'pending'           # nothing on file to check against
-    return name_match(candidate, profile_name)
+    verdict = name_match(candidate, profile_name)
+    if verdict == 'mismatch':
+        from .vision import relationship_name_match
+        if relationship_name_match(candidate, profile_name) == 'match':
+            return 'match'
+    return verdict
 
 
 def _nric_digits(s: str) -> str:

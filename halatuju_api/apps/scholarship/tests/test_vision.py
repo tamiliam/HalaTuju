@@ -112,6 +112,23 @@ class TestNameMatch(TestCase):
         # but a genuinely different spelling must STILL mismatch — no over-merge.
         self.assertEqual(name_match('SIVA KUMAR', 'SIRA KUMAR'), 'mismatch')
 
+    def test_glued_parentage_marker_still_matches(self):
+        # #48: the offer's OCR glued the A/P onto the given name ("LAKSMITHAA/P VIJAYAN") —
+        # _NAME_NOISE's \b never fires mid-word, so the stray "a"+"p" polluted both the token
+        # set and the glued comparison → a false red Name chip on the student's own offer.
+        self.assertEqual(
+            name_match('LAKSMITHAA/P VIJAYAN', 'LAKSMITHA A/P VIJAYAN'), 'match')
+        # forward glue (marker stuck to the FOLLOWING name) and A/L too.
+        self.assertEqual(
+            name_match('LAKSMITHA A/PVIJAYAN', 'LAKSMITHA A/P VIJAYAN'), 'match')
+        self.assertEqual(
+            name_match('KALITHESANA/L RAMOO', 'KALITHESAN A/L RAMOO'), 'match')
+        # slash-form only: letters "al"/"ap" INSIDE a name are untouched (no over-split).
+        self.assertEqual(name_match('KALAI SELVI', 'KALAI SELVI'), 'match')
+        self.assertEqual(name_match('KALAI SELVI', 'KALAI SELVA'), 'mismatch')
+        # and a genuinely different person still mismatches with a glued marker present.
+        self.assertEqual(name_match('SOMEONEA/P ELSE', 'LAKSMITHA A/P VIJAYAN'), 'mismatch')
+
     def test_spaced_parentage_marker_matches(self):
         # #20: the student typed "A/ P" with a stray space, so the typed profile/declaration
         # name keeps orphan "a"/"p" tokens while the IC OCR reads a clean "A/P". The exact

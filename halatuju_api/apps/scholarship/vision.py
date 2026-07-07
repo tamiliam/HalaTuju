@@ -34,6 +34,22 @@ _NAME_NOISE = re.compile(
     flags=re.IGNORECASE,
 )
 
+# An OCR read that GLUES a slash parentage marker onto the name ("LAKSMITHAA/P VIJAYAN", #48)
+# defeats _NAME_NOISE — its \b never fires mid-word, so the leftover "a"+"p" letters pollute the
+# token set AND the glued comparison (name_match's boundary tolerance), producing a false red Name
+# chip on the student's own document. These two patterns re-insert the lost space around a glued
+# a/l, a/p, d/o or s/o (backward glue: marker stuck to the preceding name; forward glue: stuck to
+# the following name). Slash-form markers ONLY — a '/' never legitimately occurs inside a name, so
+# this cannot corrupt names that merely contain "al"/"ap" letters (e.g. KALAI).
+_GLUED_MARKER_BEFORE = re.compile(r'([a-z])(a\s*/\s*[lp]|[ds]\s*/\s*o)\b', flags=re.IGNORECASE)
+_GLUED_MARKER_AFTER = re.compile(r'\b(a\s*/\s*[lp]|[ds]\s*/\s*o)([a-z])', flags=re.IGNORECASE)
+
+
+def _split_glued_markers(s: str) -> str:
+    """Detach a slash parentage marker glued to a name token (both directions)."""
+    s = _GLUED_MARKER_BEFORE.sub(r'\1 \2', s)
+    return _GLUED_MARKER_AFTER.sub(r'\1 \2', s)
+
 
 def _canonical_nric(s: str) -> str:
     """Strip hyphens, spaces, and non-digits. Returns ''-on-blank."""
@@ -44,7 +60,7 @@ def canonical_name_tokens(s: str) -> set:
     """Lowercase, strip MyKad parentage tokens + honorific prefixes, return a tokens set."""
     if not s:
         return set()
-    cleaned = _NAME_NOISE.sub(' ', s.lower())
+    cleaned = _NAME_NOISE.sub(' ', _split_glued_markers(s.lower()))
     return {t for t in re.split(r'[^a-z]+', cleaned) if t}
 
 
@@ -54,7 +70,7 @@ def _canonical_name_seq(s: str) -> list:
     inside a token (RUSHAINDRA → "RUSHAIND RA") or GLUED across a real space."""
     if not s:
         return []
-    cleaned = _NAME_NOISE.sub(' ', s.lower())
+    cleaned = _NAME_NOISE.sub(' ', _split_glued_markers(s.lower()))
     return [t for t in re.split(r'[^a-z]+', cleaned) if t]
 
 

@@ -82,6 +82,21 @@ class TestStudentOfferCheck(SimpleTestCase):
                                              pnric='081227-02-0661'))
         self.assertEqual(chk['ic'], 'match')
 
+    def test_ocr_doubled_letter_offer_name_still_matches(self):
+        # #48: the offer name is OCR-flaky too — image-Gemini echoed a letter
+        # ("LAKSMITHAA A/P VIJAYAN" for LAKSMITHA). The name_match mismatch is rescued by the
+        # tolerant same-person matcher (the _nric_close counterpart for the name), so the
+        # student's own letter never raises a false wrong-person flag.
+        fields = dict(YESWINDRAN_OFFER, candidate_name='LAKSMITHAA A/P VIJAYAN',
+                      candidate_nric='')
+        chk = student_offer_check(_offer_doc(fields, pname='LAKSMITHA A/P VIJAYAN',
+                                             pnric='080725-04-0054'))
+        self.assertEqual(chk['name'], 'match')
+        # a genuinely different person is STILL a mismatch (no over-rescue).
+        chk2 = student_offer_check(_offer_doc(YESWINDRAN_OFFER, pname='LAKSMITHA A/P VIJAYAN',
+                                              pnric='080725-04-0054'))
+        self.assertEqual(chk2['name'], 'mismatch')
+
     def test_grossly_different_nric_still_mismatches(self):
         # A genuinely different person's NRIC (many digits differ) is still a real mismatch.
         fields = dict(YESWINDRAN_OFFER, candidate_nric='990101050101')
