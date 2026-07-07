@@ -442,20 +442,12 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     ]
     if (c.pathway) facts.push({ key: 'pathway', status: effectiveNotOfficial ? 'not' : factStatus(c.pathway) })
     if (notOfficial) facts.push({ key: 'official', status: fake ? 'not' : 'partial' })
-    // Reporting-date bucket chip (owner 2026-07-08): a VALIDATED official registration summons
-    // (the issuer family's own Malay label + public-issuer signature — `reporting_official` from
-    // the backend bonus) is GREEN on a current intake, ORANGE on a past intake (continuing student
-    // — confirm still enrolled); a date WITHOUT the official validation (private / English /
-    // letter-issue date) is RED (+0, no bonus). No date at all → no chip (its absence already
-    // shows in the drawer; an offer without a registration summons deserves suspicion).
-    if (c.reporting_date) {
-      facts.push({
-        key: 'daftar',
-        status: c.reporting_official
-          ? (c.intake_year_status === 'current' ? 'verified' : 'partial')
-          : 'not',
-      })
-    }
+    // NB deliberately NO separate reporting-date chip (owner 2026-07-08): the Intake {year} chip
+    // already carries the currency signal (green current / amber past), and the reporting-date
+    // BONUS is band machinery — its effect shows in the tile + the offer_reporting_official
+    // evidence line. A chip keyed on `reporting_official` also mislabels the ≥0.70 genuine offers,
+    // whose stored reads predate the label field (they were never re-extracted; bonus is moot for
+    // them). Removed same-day after a short-lived 'daftar' chip shipped.
     return facts
   }
   if (dt === 'str') {
