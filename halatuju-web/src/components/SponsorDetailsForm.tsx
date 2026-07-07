@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { registerSponsor } from '@/lib/api'
-import { SPONSOR_SOURCES, formatMyMobile, isValidMyMobile } from '@/lib/sponsorAuth'
+import { SPONSOR_SOURCES, formatIntlPhone, isValidIntlPhone, toStoredPhone, parseStoredPhone } from '@/lib/sponsorAuth'
+import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, flagOf } from '@/lib/countries'
 import { KEY_SPONSOR_PENDING, KEY_SPONSOR_REF } from '@/lib/storage'
 
 const inputCls =
@@ -22,6 +23,7 @@ export default function SponsorDetailsForm() {
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [country, setCountry] = useState(DEFAULT_COUNTRY_ISO)
   const [source, setSource] = useState('')
   const [consent, setConsent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -41,13 +43,23 @@ export default function SponsorDetailsForm() {
       (session?.user?.user_metadata?.name as string) ||
       ''
     setName(account?.name || stash.name || metaName || '')
-    setPhone(formatMyMobile(account?.phone || stash.phone || ''))
+    // Existing accounts store "+<dial> <national>"; parse it back to (country, national).
+    // A fresh Google sign-up has only the register stash's raw digits + chosen country.
+    if (account?.phone) {
+      const parsed = parseStoredPhone(account.phone)
+      setCountry(parsed.iso)
+      setPhone(formatIntlPhone(parsed.local))
+    } else {
+      setCountry((stash as { country?: string }).country || DEFAULT_COUNTRY_ISO)
+      setPhone(formatIntlPhone(stash.phone || ''))
+    }
     setSource(account?.source || stash.source || '')
     prefilled.current = true
   }, [account, session])
 
-  const phoneInvalid = phone.length > 0 && !isValidMyMobile(phone)
-  const canSubmit = !!name.trim() && isValidMyMobile(phone) && !!source && consent && !submitting
+  const dial = countryByIso(country)?.dial || '60'
+  const phoneInvalid = phone.length > 0 && !isValidIntlPhone(phone)
+  const canSubmit = !!name.trim() && isValidIntlPhone(phone) && !!source && consent && !submitting
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,7 +70,7 @@ export default function SponsorDetailsForm() {
       let ref = ''
       try { ref = sessionStorage.getItem(KEY_SPONSOR_REF) || '' } catch { /* ignore */ }
       await registerSponsor(
-        { name: name.trim(), phone: `+60 ${phone}`, source, consent: true, ...(ref ? { ref } : {}) },
+        { name: name.trim(), phone: toStoredPhone(dial, phone), source, consent: true, ...(ref ? { ref } : {}) },
         { token },
       )
       try { sessionStorage.removeItem(KEY_SPONSOR_PENDING); sessionStorage.removeItem(KEY_SPONSOR_REF) } catch { /* ignore */ }
@@ -83,13 +95,23 @@ export default function SponsorDetailsForm() {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('sponsorAuth.country')} <span className="text-red-500">*</span>
+          </label>
+          <select value={country} onChange={(e) => setCountry(e.target.value)} className={inputCls}>
+            {COUNTRIES.map((c) => (
+              <option key={c.iso2} value={c.iso2}>{flagOf(c.iso2)} {c.name} (+{c.dial})</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             {t('sponsorAuth.phone')} <span className="text-red-500">*</span>
           </label>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600 whitespace-nowrap">🇲🇾 +60</span>
-            <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatMyMobile(e.target.value))} placeholder="12-345 6789" className={inputCls} />
+            <span className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600 whitespace-nowrap">{flagOf(country)} +{dial}</span>
+            <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatIntlPhone(e.target.value))} placeholder={t('sponsorAuth.phonePlaceholder')} className={inputCls} />
           </div>
-          {phoneInvalid && <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.mobileInvalid')}</p>}
+          {phoneInvalid && <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.phoneInvalid')}</p>}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">

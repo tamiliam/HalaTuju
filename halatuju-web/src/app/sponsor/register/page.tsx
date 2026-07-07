@@ -7,7 +7,8 @@ import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { sponsorSignUpWithPassword, sponsorSignInWithGoogle } from '@/lib/sponsor-supabase'
 import { registerSponsor } from '@/lib/api'
-import { checkPassword, SPONSOR_SOURCES, formatMyMobile, isValidMyMobile } from '@/lib/sponsorAuth'
+import { checkPassword, SPONSOR_SOURCES, formatIntlPhone, isValidIntlPhone, toStoredPhone } from '@/lib/sponsorAuth'
+import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, flagOf } from '@/lib/countries'
 import { KEY_SPONSOR_PENDING } from '@/lib/storage'
 
 const EMAIL_RE = /\S+@\S+\.\S+/
@@ -20,6 +21,7 @@ export default function SponsorRegisterPage() {
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
   const [phone, setPhone] = useState('')
+  const [country, setCountry] = useState(DEFAULT_COUNTRY_ISO)
   const [source, setSource] = useState('')
   const [consent, setConsent] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -29,10 +31,11 @@ export default function SponsorRegisterPage() {
   const pw = checkPassword(password)
   const pwMatch = password.length > 0 && password === password2
   const emailInvalid = email.length > 0 && !EMAIL_RE.test(email)
-  const phoneInvalid = phone.length > 0 && !isValidMyMobile(phone)
+  const dial = countryByIso(country)?.dial || '60'
+  const phoneInvalid = phone.length > 0 && !isValidIntlPhone(phone)
   const canSubmit =
     !!name.trim() && EMAIL_RE.test(email) && pw.allPass && pwMatch &&
-    isValidMyMobile(phone) && !!source && consent && !loading
+    isValidIntlPhone(phone) && !!source && consent && !loading
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,7 +46,7 @@ export default function SponsorRegisterPage() {
     // Stash so the portal's complete-details step can pre-fill after an email
     // confirmation gap (no session returned at sign-up).
     try {
-      sessionStorage.setItem(KEY_SPONSOR_PENDING, JSON.stringify({ name: name.trim(), phone, source }))
+      sessionStorage.setItem(KEY_SPONSOR_PENDING, JSON.stringify({ name: name.trim(), phone, country, source }))
     } catch { /* sessionStorage unavailable — register still works via the form */ }
 
     const { data, error } = await sponsorSignUpWithPassword(email.trim(), password, name.trim())
@@ -57,7 +60,7 @@ export default function SponsorRegisterPage() {
       // Email confirmation disabled → we have a session; create the pending account now.
       try {
         await registerSponsor(
-          { name: name.trim(), phone: `+60 ${phone}`, source, consent: true },
+          { name: name.trim(), phone: toStoredPhone(dial, phone), source, consent: true },
           { token: data.session.access_token },
         )
         try { sessionStorage.removeItem(KEY_SPONSOR_PENDING) } catch { /* ignore */ }
@@ -145,15 +148,23 @@ export default function SponsorRegisterPage() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.country')} <span className="text-red-500">*</span></label>
+                  <select value={country} onChange={(e) => setCountry(e.target.value)} className={inputCls}>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.iso2} value={c.iso2}>{flagOf(c.iso2)} {c.name} (+{c.dial})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.phone')} <span className="text-red-500">*</span></label>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600 whitespace-nowrap">
-                      🇲🇾 +60
+                      {flagOf(country)} +{dial}
                     </span>
-                    <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatMyMobile(e.target.value))}
-                      placeholder="12-345 6789" className={inputCls} />
+                    <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatIntlPhone(e.target.value))}
+                      placeholder={t('sponsorAuth.phonePlaceholder')} className={inputCls} />
                   </div>
-                  {phoneInvalid && <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.mobileInvalid')}</p>}
+                  {phoneInvalid && <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.phoneInvalid')}</p>}
                 </div>
 
                 <div>
