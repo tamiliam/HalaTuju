@@ -157,16 +157,10 @@ def _verdict_identity(application):
     # anomaly_engine), NOT a verdict downgrade. So identity reads green when name + NRIC
     # match, consistent with the Documents panel and the student's own identity card.
 
-    # Genuineness fingerprint (soft, flag-gated — only present when the check ran): if the
-    # IC doesn't look like a real card, the AI cannot be CERTAIN of identity even when the
-    # typed name + NRIC match — so it caps the verdict at 'review' (the reviewer confirms
-    # the physical card at interview). It NEVER auto-fails on genuineness alone — we don't
-    # accuse; we lower confidence (see the verification-assurance roadmap's threat model).
-    auth = ic.vision_fields.get('authenticity') if isinstance(ic.vision_fields, dict) else None
-    auth_status = canonical_status((auth or {}).get('status'), 'ic') if isinstance(auth, dict) else ''
-    if auth_status and auth_status != 'genuine':     # canonical 'suspect' / 'not_ic' (folds legacy)
-        unresolved.append(_item('ic_low_confidence', status=auth_status,
-                                reason=auth.get('reason', '')))
+    # NB the IC genuineness fingerprint is applied AFTER this by the genuineness LADDER
+    # (_apply_genuineness_ladder), uniformly with academic + pathway: suspect steps the CONTENT band
+    # −1 (Certain→Probable), not_ic −2 (→Unsure), stacking on any content defect. This function
+    # returns the CONTENT-only band (name + NRIC). Downgrade-only, so it never softens a mismatch.
     return _fact('identity', 'verified' if not unresolved else 'review',
                  evidence, unresolved)
 
@@ -681,7 +675,7 @@ def _verdict_pathway(application):
     in consent_blockers): the programme funds a CONFIRMED place, so without an offer
     there is nothing to fund. (An older design tolerated "declared-only → review";
     that changed with the 2026-06-07 confidence-scale alignment.)"""
-    from .pathway_engine import student_offer_check, offer_official_status
+    from .pathway_engine import student_offer_check
     evidence, unresolved = [], []
     offer = _latest_doc(application, 'offer_letter')
     chosen = (application.chosen_pathway or application.intended_pathway or '').strip()
@@ -702,13 +696,10 @@ def _verdict_pathway(application):
     # offer is not the identity anchor the IC is, and no submission block is wanted.
     if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
         return _fact('pathway', 'recommend', evidence, [_item('offer_name_mismatch')])
-    # Owner policy: only a genuine OFFICIAL public-issuer offer can settle the pathway. A CONDITIONAL
-    # offer, a PRIVATE/IPTS offer, or a non-official notification (pemakluman / UPU-semakan) is not
-    # support-able → the pathway can't verify on it; the student must provide the official offer. This
-    # only colours the badge for an already-submitted student (status never changes here — the
-    # SUBMISSION gate is what blocks a not-yet-submitted one). 'unknown' (not scored) → don't act.
-    if offer_official_status(offer) == 'not_genuine':
-        return _fact('pathway', 'review', evidence, [_item('offer_not_official')])
+    # NB the OFFICIAL-offer policy (a conditional / private-IPTS / non-official offer can't settle the
+    # pathway) is now applied by the genuineness LADDER as a −2 step (like a wrong-type), NOT an early
+    # return here — so a non-official offer lands 🟡 Unsure (and 🔴 Fail if identity/pathway also
+    # mismatch), instead of a 🔵/🟡 'review' that flipped on incidental green evidence.
     # No identity read off the letter. Distinguish a general NOTICE / wrong document
     # (the body read fine — issuer/institution/programme present — but it carries no
     # name or IC, e.g. a "your offer will be released later" memo) from a genuinely
@@ -746,14 +737,11 @@ def _verdict_pathway(application):
 
 # ── Aggregator ───────────────────────────────────────────────────────────────
 
-# Which documents feed each fact's genuineness (Sprint 2). Only the docs the fingerprint
-# engine actually checks (`vision._GENUINENESS_DOCS`) — salary slip + offer letter vary too
-# much to fingerprint reliably, so they're excluded. The IC feeds identity but is already
-# capped inside _verdict_identity (Sprint 1), so it is not repeated here. INCOME is computed
-# per-route (see _income_genuineness_docs) — only the docs REQUIRED to prove income can cap it.
-_FACT_GENUINENESS_DOCS = {
-    'academic': ['results_slip'],
-}
+# Which documents feed each fact's genuineness FLAT CAP. As of the 2026-07-07 ladder, identity,
+# academic and pathway use `_apply_genuineness_ladder` instead (a graded step, not a flat cap), so
+# only INCOME remains on the flat cap — computed per-route (see `_income_genuineness_docs`), only the
+# docs REQUIRED to prove income can cap it.
+_FACT_GENUINENESS_DOCS: dict = {}
 
 
 def _income_genuineness_docs(application):
@@ -831,14 +819,127 @@ def _apply_genuineness_caps(application, facts):
     return facts
 
 
+# ── Genuineness / eligibility LADDER (identity + academic + pathway) — owner 2026-07-07 ──
+# A genuineness/eligibility DEFECT steps a fact's CONTENT band DOWN this ladder:
+#   suspect (a cropped-but-real doc)         → −1  (Certain → Probable)
+#   wrong-type / non-official (IPTS) / fake  → −2  (Certain → Unsure)
+# stacking on any content defect already in the band, so suspect + a content mismatch → Unsure and a
+# non-official offer + a mismatch → Fail. DOWNGRADE-ONLY: a GENUINE doc (step 0) is untouched — the
+# academic name-mismatch hard-stop, the pathway wrong-person amber, and the pathway confirm-query all
+# survive — and a step can never LIFT a band. Income keeps its own model (STR-precedence + headroom).
+_BAND_LADDER = ('verified', 'review', 'recommend', 'gap')
+
+# identity + academic: (feeding docs, the caveat item to add when the ladder bites). Pathway is
+# handled separately (it also folds the official-offer eligibility into the step).
+_LADDER_CARDS = {
+    'identity': (['ic'], 'ic_low_confidence'),
+    'academic': (['results_slip'], 'document_not_genuine'),
+}
+
+
+def _step_band(status, step):
+    """Move ``status`` ``step`` places toward 'gap' along ``_BAND_LADDER`` (floored at 'gap')."""
+    try:
+        i = _BAND_LADDER.index(status)
+    except ValueError:
+        return status
+    return _BAND_LADDER[min(i + step, len(_BAND_LADDER) - 1)]
+
+
+def _genuineness_step(application, doc_types):
+    """0 (genuine / not scored), 1 (suspect), or 2 (wrong-type) from the feeding docs' fingerprint."""
+    st = _suspect_genuineness(application, doc_types)
+    if not st:
+        return 0
+    return 2 if st.startswith('not_') else 1
+
+
+def _genuineness_reason(application, doc_types):
+    """The human reason string from the first non-genuine feeding doc (for the ic_low_confidence copy)."""
+    for dt in doc_types:
+        d = _latest_doc(application, dt)
+        vf = d.vision_fields if (d and isinstance(d.vision_fields, dict)) else {}
+        auth = vf.get('authenticity') or {}
+        if canonical_status(auth.get('status'), getattr(d, 'doc_type', None) or dt) not in ('', 'genuine'):
+            return auth.get('reason', '')
+    return ''
+
+
+def _apply_pathway_ladder(application, fact):
+    """Pathway reads the offer's RAW genuineness status (assess() does NOT holistic-rescue an offer,
+    so signature_genuineness's verdict is what's stored), which distinguishes the two the collapsed
+    ``offer_official_status`` cannot:
+      * 'suspect'      — a RECOGNISED official public issuer, just cropped/thin signatures → −1 (Probable).
+      * 'unrecognised' — a PRIVATE / IPTS / non-standard-issuer offer (owner policy: can't support) → −2 (Unsure).
+      * 'not_<type>'   — the wrong document entirely → −2 (Unsure).
+    Stacks on any content defect (so 'unrecognised' + a name/IC/pathway mismatch → Fail). Genuine /
+    'unknown' (not scored) → no step.
+
+    ▶ TO REFINE as more offers arrive (owner 2026-07-07): the 'suspect' band still mixes a cropped
+    OFFICIAL offer (→ Probable, correct) with a UM/UTM-branded PEMAKLUMAN / pre-offer that merely
+    carries a public-university NAME (e.g. #31 — missing the weight-3 'TAWARAN KEMASUKAN' offer-line;
+    should be Unsure). The discriminator already exists in the stored signature detail: key the step on
+    whether the OFFER-LINE signature is present (present → cropped-official → Probable; absent →
+    notification/pemakluman → Unsure), and additionally read the ISSUER DEPARTMENT (Jabatan Pemasaran /
+    Pendidikan Berterusan / Profesional → a private wing → Unsure) for a private-wing offer that DOES
+    carry an offer-line (#12). Until then a pemakluman like #31 reads one band too high — accepted for
+    the first cut."""
+    offer = _latest_doc(application, 'offer_letter')
+    if offer is None:
+        return                                   # no offer → already 'gap'; nothing to step
+    vf = offer.vision_fields if isinstance(offer.vision_fields, dict) else {}
+    raw = ((vf.get('authenticity') or {}).get('status') or '').strip().lower()
+    if not raw or raw in ('genuine', 'likely_genuine'):
+        return
+    if raw == 'suspect':                         # cropped genuine OFFICIAL offer → Probable
+        fact['status'] = _step_band(fact['status'], 1)
+        caveat = _item('document_not_genuine', status='suspect')
+    elif raw == 'unrecognised':                  # private / IPTS / non-official → Unsure
+        fact['status'] = _step_band(fact['status'], 2)
+        caveat = _item('offer_not_official')
+    else:                                        # not_<type> / wrong document → Unsure
+        fact['status'] = _step_band(fact['status'], 2)
+        caveat = _item('document_not_genuine', status='not_type')
+    if not any(i['code'] == caveat['code'] for i in fact['unresolved']):
+        fact['unresolved'].append(caveat)
+    return
+
+
+def _apply_genuineness_ladder(application, facts):
+    """Apply the genuineness/eligibility ladder to identity, academic and pathway (income keeps the
+    flat cap). A genuine feeding doc leaves the content band untouched; a defect steps it down."""
+    for fact in facts:
+        if fact['fact'] == 'pathway':
+            _apply_pathway_ladder(application, fact)
+            continue
+        spec = _LADDER_CARDS.get(fact['fact'])
+        if not spec:
+            continue
+        docs, caveat = spec
+        step = _genuineness_step(application, docs)
+        if step == 0:
+            continue
+        fact['status'] = _step_band(fact['status'], step)
+        st = _suspect_genuineness(application, docs)
+        if caveat == 'ic_low_confidence':
+            fact['unresolved'].append(_item('ic_low_confidence', status=st,
+                                            reason=_genuineness_reason(application, docs)))
+        elif not any(i['code'] == caveat for i in fact['unresolved']):
+            fact['unresolved'].append(_item('document_not_genuine', status=st))
+    return facts
+
+
 def build_verdict(application) -> list[dict]:
     """The four-fact verification verdict in fixed order (identity, academic,
     pathway, income). Pure + deterministic — safe to call inside a serializer
     GET. Each fact: ``{fact, status, evidence[], unresolved[]}`` where evidence
-    and unresolved items are ``{code, params}`` dicts resolved on the frontend."""
-    return _apply_genuineness_caps(application, [
+    and unresolved items are ``{code, params}`` dicts resolved on the frontend.
+
+    Genuineness is applied last: the LADDER (identity/academic/pathway) + the flat cap (income)."""
+    facts = [
         _verdict_identity(application),
         _verdict_academic(application),
         _verdict_pathway(application),
         _verdict_income(application),
-    ])
+    ]
+    return _apply_genuineness_ladder(application, _apply_genuineness_caps(application, facts))

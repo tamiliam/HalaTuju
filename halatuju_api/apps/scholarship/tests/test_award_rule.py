@@ -30,10 +30,11 @@ def _app(cohort, *, pathway='matric', status='interviewed', suffix='1'):
 
 
 def _add_not_genuine_offer(app):
-    """An offer letter the genuineness scorer judged suspect → pathway 'offer_not_official'."""
+    """A non-official offer — the scorer judged the issuer UNRECOGNISED (private / IPTS) → the pathway
+    ladder flags 'offer_not_official' (a 'suspect' offer is a cropped OFFICIAL one now, not a disqualifier)."""
     return ApplicantDocument.objects.create(
         application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
-        vision_fields={'authenticity': {'status': 'suspect'}}, vision_run_at=timezone.now())
+        vision_fields={'authenticity': {'status': 'unrecognised'}}, vision_run_at=timezone.now())
 
 
 class TestProposedAmountRule(TestCase):

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-07 — Genuineness/eligibility LADDER for Identity · Academic · Pathway (BE; NO migration; re-banding-gated)
+
+Owner 2026-07-07. Replaces the flat "suspect/wrong-type → one step to review" cap (for these three
+cards) with a graded, downgrade-only ladder over `('verified','review','recommend','gap')`:
+- A genuineness/eligibility DEFECT steps the card's CONTENT band DOWN: **suspect −1** (Certain→Probable),
+  **wrong-type / non-official −2** (Certain→Unsure) — stacking on any content defect (suspect + a
+  mismatch → Unsure; non-official + a mismatch → Fail).
+- **Downgrade-only**: a GENUINE doc is untouched, so the academic name-mismatch hard-stop, the pathway
+  wrong-person amber, and the pathway confirm-query all survive; genuineness never *lifts* a band.
+- **Pathway** reads the offer's RAW genuineness status (not the collapsed `offer_official_status`), so it
+  separates a cropped **official** offer (`suspect` → Probable) from a private/IPTS one (`unrecognised` →
+  Unsure) and a wrong document (`not_<type>` → Unsure). `_verdict_pathway`'s official-offer early-return
+  is removed (now the −2 step); identity's self-cap is removed (the ladder handles it); academic leaves
+  the flat cap. **Income keeps its own model** (STR-precedence + headroom) + the flat cap.
+- No new i18n (reuses `ic_low_confidence` / `document_not_genuine` / `offer_not_official`). Verdicts compute
+  live → NO migration, self-corrects on deploy. 2132 scholarship pytest.
+- **Re-banding:** Identity 0 changes (no non-genuine ICs live); Academic ~1 (#131 wrong-type → Unsure);
+  Pathway 13 `suspect` offers Unsure→Probable (intended cropped-official recognition).
+- **▶ KNOWN, TO REFINE (owner-accepted first cut):** the pathway `suspect` band still over-bands a UM/UTM
+  PEMAKLUMAN / pre-offer that carries a public-university name (#31 — reads Probable, should be Unsure).
+  Refinement (documented in `_apply_pathway_ladder`): step on the **offer-line signature** presence
+  (present → cropped-official → Probable; absent → notification → Unsure) + read the **issuer department**
+  (Jabatan Pemasaran / Pendidikan Berterusan → private wing → Unsure). Data cleanups: #107 has a stale
+  duplicate offer scan to supersede; #12's private-wing offer is unscored.
+
 ### 2026-07-07 — STR precedence + exhaustive household match + amount dropped (BE + FE; NO migration; re-banding-gated)
 
 Owner principle (2026-07-07): a genuine, approved (Lulus) STR is the government's own means-test and

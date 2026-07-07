@@ -11,7 +11,7 @@ from django.utils import timezone
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 from apps.scholarship import vision
-from apps.scholarship.verdict_engine import _apply_genuineness_caps
+from apps.scholarship.verdict_engine import _apply_genuineness_caps, _apply_genuineness_ladder
 from apps.scholarship.anomaly_engine import detect_anomalies
 
 GENUINE_SLIP = (
@@ -50,9 +50,10 @@ class _Base(TestCase):
 
 class TestSuspectRidesSoftCapAndFlag(_Base):
     def test_suspect_caps_academic_to_review(self):
+        # Academic degrades via the LADDER now: a suspect slip is −1 → 'review' (Probable).
         self._slip({'status': 'suspect', 'probability': 0.04, 'reason': 'few signatures'})
-        facts = _apply_genuineness_caps(self.app, [{'fact': 'academic', 'status': 'verified',
-                                                    'evidence': [], 'unresolved': []}])
+        facts = _apply_genuineness_ladder(self.app, [{'fact': 'academic', 'status': 'verified',
+                                                      'evidence': [], 'unresolved': []}])
         self.assertEqual(facts[0]['status'], 'review')
         self.assertIn('document_not_genuine', [i['code'] for i in facts[0]['unresolved']])
 

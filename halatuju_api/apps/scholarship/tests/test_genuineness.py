@@ -74,7 +74,10 @@ class TestSurfaces(_Base):
     def test_not_an_ic_also_caps_but_never_fails(self):
         self._ic(auth={'status': 'not_an_ic'})
         identity = next(f for f in build_verdict(self.app) if f['fact'] == 'identity')
-        self.assertEqual(identity['status'], 'review')      # never 'gap' on genuineness alone
+        # Ladder: a wrong-type IC is a −2 step → 'recommend' (🟡 Unsure); still never 'gap' on
+        # genuineness alone (the content name + NRIC were matching).
+        self.assertEqual(identity['status'], 'recommend')
+        self.assertNotEqual(identity['status'], 'gap')
 
     def test_likely_genuine_stays_verified(self):
         self._ic(auth={'status': 'likely_genuine'})
@@ -185,10 +188,11 @@ class TestVerdictCaps(_Base):
         self.assertNotIn('document_not_genuine', [i['code'] for i in income['unresolved']])
 
     def test_cap_downgrades_verified_to_review(self):
-        from apps.scholarship.verdict_engine import _apply_genuineness_caps
-        self._doc('results_slip', {'status': 'low_confidence'})
-        facts = _apply_genuineness_caps(self.app, [{'fact': 'academic', 'status': 'verified',
-                                                    'evidence': [], 'unresolved': []}])
+        # Academic now degrades via the LADDER (not the flat cap): a suspect slip is −1 → 'review'.
+        from apps.scholarship.verdict_engine import _apply_genuineness_ladder
+        self._doc('results_slip', {'status': 'low_confidence'})   # canonical 'suspect' → −1
+        facts = _apply_genuineness_ladder(self.app, [{'fact': 'academic', 'status': 'verified',
+                                                      'evidence': [], 'unresolved': []}])
         self.assertEqual(facts[0]['status'], 'review')
         self.assertIn('document_not_genuine', [i['code'] for i in facts[0]['unresolved']])
 

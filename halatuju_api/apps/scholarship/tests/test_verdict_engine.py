@@ -552,24 +552,58 @@ class TestPathway(_Base):
         self.assertNotIn('pathway_confirm', _codes(f['unresolved']))
         self.assertIn('offer_programme', _codes(f['evidence']))
 
-    def test_non_genuine_offer_is_review_not_official(self):
-        # Identity + programme match, but the signature scorer flagged the offer not-genuine
-        # (conditional / IPTS / pemakluman) → pathway 'review' (offer_not_official), never verified.
+    def _offer(self, auth_status):
         d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
         d.vision_fields = dict(d.vision_fields,
-                               authenticity={'status': 'suspect', 'reason': 'pemakluman',
+                               authenticity={'status': auth_status, 'reason': 'x',
                                              'probability': 0.4, 'model_version': '1.1'})
         d.save(update_fields=['vision_fields'])
+        return d
+
+    def test_unrecognised_offer_is_unsure_via_the_ladder(self):
+        # A PRIVATE/IPTS offer (unrecognised issuer). Ladder (owner 2026-07-07): −2 → 'recommend'
+        # (🟡 Unsure), no longer the ambiguous 'review' that flipped blue on incidental greens.
+        self._offer('unrecognised')
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'recommend')
         self.assertIn('offer_not_official', _codes(f['unresolved']))
 
+    def test_cropped_official_offer_is_probable(self):
+        # A RECOGNISED official offer, just cropped/thin (suspect) → −1 → 'review' (🔵 Probable),
+        # not falsely Certain (the offer's cropped-genuineness wasn't a pathway input before).
+        self._offer('suspect')
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('document_not_genuine', _codes(f['unresolved']))
+
+    def test_wrong_document_offer_is_unsure(self):
+        self._offer('not_offer_letter')
+        self.assertEqual(_facts(self.app)['pathway']['status'], 'recommend')   # verified −2
+
     def test_genuine_official_offer_still_verifies(self):
-        d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
-        d.vision_fields = dict(d.vision_fields,
-                               authenticity={'status': 'genuine', 'probability': 0.9, 'model_version': '1.1'})
-        d.save(update_fields=['vision_fields'])
+        self._offer('genuine')
         self.assertEqual(_facts(self.app)['pathway']['status'], 'verified')
+
+    _WRONG_OFFER = {'candidate_name': 'SOMEONE ELSE BIN OTHER', 'candidate_nric': '990101-01-1234',
+                    'institution': 'KOLEJ X', 'programme': 'DIPLOMA Y'}
+
+    def test_unrecognised_offer_plus_wrong_person_is_fail(self):
+        # Non-official AND wrong-person: the content 'recommend' (wrong-person) stepped −2 → 🔴 Fail.
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._WRONG_OFFER)
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'unrecognised', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        self.assertEqual(_facts(self.app)['pathway']['status'], 'gap')
+
+    def test_genuine_offer_wrong_person_stays_amber_unchanged(self):
+        # A GENUINE doc keeps today's logic: a wrong-person offer stays 🟡 amber (family slip-up),
+        # NOT red — the ladder only bites on a genuineness/eligibility defect.
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._WRONG_OFFER)
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'genuine', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
+
 
     def test_offer_matching_declared_is_verified_no_nag(self):
         # Declared institution matches the offer (naming quirk) → verified, no query.
@@ -1455,3 +1489,57 @@ class TestCodeHealthS4IncomeConsistency(TestCase):
         self.assertIn('father_patronymic_mismatch', _codes(f['unresolved']))  # the review item
         self.assertEqual(f['status'], 'recommend')
         self.assertIn('income_declared_needs_evidence', _codes(f['unresolved']))
+
+
+class TestGenuinenessLadder(_Base):
+    """Owner 2026-07-07 - the genuineness/eligibility ladder for identity + academic. A defect steps
+    the CONTENT band down (suspect -1, wrong-type -2), stacking on a content defect; a genuine doc is
+    untouched (downgrade-only, so a hard-stop like a name mismatch is never softened)."""
+
+    def _auth(self, doc, status):
+        doc.vision_fields = dict(doc.vision_fields or {},
+                                 authenticity={'status': status, 'reason': 'x'})
+        doc.save(update_fields=['vision_fields'])
+
+    # -- Identity --
+    def test_identity_suspect_ic_is_probable(self):
+        self._auth(_add_ic(self.app, nric=self.profile.nric, name=self.profile.name), 'suspect')
+        f = _facts(self.app)['identity']
+        self.assertEqual(f['status'], 'review')            # verified -1 (Probable with the id greens)
+        self.assertIn('ic_low_confidence', _codes(f['unresolved']))
+
+    def test_identity_not_ic_is_unsure(self):
+        self._auth(_add_ic(self.app, nric=self.profile.nric, name=self.profile.name), 'not_ic')
+        self.assertEqual(_facts(self.app)['identity']['status'], 'recommend')   # verified -2
+
+    def test_identity_genuine_ic_unchanged(self):
+        self._auth(_add_ic(self.app, nric=self.profile.nric, name=self.profile.name), 'genuine')
+        self.assertEqual(_facts(self.app)['identity']['status'], 'verified')
+
+    # -- Academic --
+    def _slip(self, results, verdict='ok', name='found'):
+        return _add_doc(self.app, 'results_slip', student_verdict=verdict, name_match=name,
+                        fields={'results': results})
+
+    def test_academic_suspect_slip_is_probable(self):
+        self.profile.grades = {'bm': 'A-'}; self.profile.save()
+        self._auth(self._slip([{'subject': 'Bahasa Melayu', 'grade': 'A-'}]), 'suspect')
+        f = _facts(self.app)['academic']
+        self.assertEqual(f['status'], 'review')            # verified -1
+        self.assertIn('document_not_genuine', _codes(f['unresolved']))
+
+    def test_academic_wrong_type_slip_is_unsure(self):
+        self.profile.grades = {'bm': 'A-'}; self.profile.save()
+        self._auth(self._slip([{'subject': 'Bahasa Melayu', 'grade': 'A-'}]), 'not_results_slip')
+        self.assertEqual(_facts(self.app)['academic']['status'], 'recommend')   # verified -2
+
+    def test_academic_suspect_plus_subject_mismatch_is_unsure(self):
+        self.profile.grades = {'bm': 'A-', 'math': 'B+'}; self.profile.save()
+        self._auth(self._slip([{'subject': 'Bahasa Melayu', 'grade': 'A-'},
+                               {'subject': 'Matematik', 'grade': 'A'}]), 'suspect')
+        self.assertEqual(_facts(self.app)['academic']['status'], 'recommend')   # review -1 -> Unsure
+
+    def test_academic_suspect_name_mismatch_stays_fail(self):
+        # Downgrade-only: genuineness never LIFTS a hard stop - a wrong-name slip is Fail even suspect.
+        self._auth(_add_doc(self.app, 'results_slip', student_verdict='name_mismatch'), 'suspect')
+        self.assertEqual(_facts(self.app)['academic']['status'], 'gap')
