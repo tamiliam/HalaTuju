@@ -3,7 +3,7 @@
  *
  * Logic lives here (node-testable) so the page component stays a thin renderer.
  */
-import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse, ApplicationCompleteness } from '@/lib/api'
 import { cleanOtherMembers, type OtherMember } from '@/lib/familyRoster'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
@@ -968,6 +968,24 @@ export function defaultNextTab(
   if (!completeness.details_done) return 'story'
   if (!completeness.funding_done) return 'funding'
   return 'quiz'
+}
+
+/**
+ * Whether a wizard step's required fields are all satisfied. Single source of
+ * truth for both the step-rail's done-ticks and the "Save & continue" advance
+ * gate (advance only when the step is complete). S14: the story tick needs the
+ * narrative AND the address sub-section AND the family roster — all captured in
+ * the one "Your story" tab, so the student sees a single consolidated done state.
+ */
+export function isStepComplete(k: NextStepKey, c: ApplicationCompleteness): boolean {
+  switch (k) {
+    case 'quiz': return c.quiz_done
+    case 'story': return c.details_done && c.address_done && c.family_done
+    case 'funding': return c.funding_done
+    case 'documents': return c.documents_done
+    case 'consent': return c.consent_done
+    default: return false
+  }
 }
 
 // ── Documents (Sprint 5b / S4 redesign) ─────────────────────────────────

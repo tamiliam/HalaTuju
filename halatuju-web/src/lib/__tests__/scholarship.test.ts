@@ -44,12 +44,13 @@ import {
   APPLY_RETURN_KEY,
   NEXT_STEP_ORDER,
   defaultNextTab,
+  isStepComplete,
   firstTooLongField,
   showsActionCentre,
   isFundedStatus,
   type ApplyFormState,
 } from '@/lib/scholarship'
-import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse, ApplicationCompleteness } from '@/lib/api'
 import { collegesForTrack } from '@/data/matric-colleges'
 import { stpmSchoolsForStream, STPM_SCHOOLS } from '@/data/stpm-schools'
 
@@ -1146,6 +1147,40 @@ describe('defaultNextTab', () => {
 
   it('falls back to quiz when all three known steps are done', () => {
     expect(defaultNextTab({ quiz_done: true, details_done: true, funding_done: true })).toBe('quiz')
+  })
+})
+
+describe('isStepComplete', () => {
+  // A completeness object with everything done — override individual flags per case.
+  const allDone: ApplicationCompleteness = {
+    quiz_done: true,
+    details_done: true,
+    funding_done: true,
+    documents_done: true,
+    consent_done: true,
+    address_done: true,
+    family_done: true,
+    complete: true,
+  }
+  const c = (over: Partial<ApplicationCompleteness>): ApplicationCompleteness => ({ ...allDone, ...over })
+
+  it('maps each step to its own completeness flag', () => {
+    expect(isStepComplete('quiz', c({ quiz_done: false }))).toBe(false)
+    expect(isStepComplete('funding', c({ funding_done: false }))).toBe(false)
+    expect(isStepComplete('documents', c({ documents_done: false }))).toBe(false)
+    expect(isStepComplete('consent', c({ consent_done: false }))).toBe(false)
+  })
+
+  it('requires narrative AND address AND family for the story step (S14)', () => {
+    expect(isStepComplete('story', c({ details_done: false }))).toBe(false)
+    expect(isStepComplete('story', c({ address_done: false }))).toBe(false)
+    expect(isStepComplete('story', c({ family_done: false }))).toBe(false)
+    expect(isStepComplete('story', c({ details_done: true, address_done: true, family_done: true }))).toBe(true)
+  })
+
+  it('returns true for a fully complete step', () => {
+    expect(isStepComplete('quiz', allDone)).toBe(true)
+    expect(isStepComplete('funding', allDone)).toBe(true)
   })
 })
 

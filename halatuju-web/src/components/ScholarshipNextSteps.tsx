@@ -12,6 +12,7 @@ import {
   STORY_FIELD_LABEL_KEYS,
   NEXT_STEP_ORDER,
   defaultNextTab,
+  isStepComplete,
   setOnboardingReturn,
   showsActionCentre,
   type NextStepKey,
@@ -125,6 +126,9 @@ export default function ScholarshipNextSteps({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  // Shown after a Save when the step's required fields are still incomplete: the
+  // draft is saved, but the student stays put (was not carried to the next step).
+  const [holdNote, setHoldNote] = useState(false)
   const [tab, setTab] = useState<NextStepKey>(() => defaultNextTab(initialApp.completeness))
   // The Review/Summary is a distinct page reached AFTER consent (not a rail step).
   const [reviewing, setReviewing] = useState(false)
@@ -184,11 +188,32 @@ export default function ScholarshipNextSteps({
     setSaving(true)
     setError(null)
     setSaved(false)
+    setHoldNote(false)
     try {
       const updated = await updateScholarshipDetails(app.id, buildDetailsPayload(form), { token })
       setApp(updated)
       setForm(applicationToDetailsForm(updated))
-      setSaved(true)
+      // Option B: carry the student to the next step only when this step's
+      // required fields are all filled (per the freshly-returned completeness).
+      // Otherwise the draft is still saved, but they stay here with a note on
+      // what's outstanding — so nobody skips ahead with gaps that would later
+      // resurface as reviewer queries.
+      if (isStepComplete(tab, updated.completeness)) {
+        const idx = NEXT_STEP_ORDER.indexOf(tab)
+        const next = NEXT_STEP_ORDER[idx + 1]
+        if (next) {
+          setTab(next)
+          setTimeout(() => {
+            document.getElementById('next-steps-active')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }, 60)
+        } else {
+          // No further step to advance to — just confirm the save in place.
+          setSaved(true)
+        }
+      } else {
+        setSaved(true)
+        setHoldNote(true)
+      }
     } catch (e) {
       // If a field was rejected for being too long, tell the student exactly which
       // answer to shorten — not just "could not save".
@@ -226,16 +251,12 @@ export default function ScholarshipNextSteps({
   const confirmed = app.status !== 'shortlisted'  // profile_complete or further along
   const tabIndex = NEXT_STEP_ORDER.indexOf(tab)
 
-  // Completeness mapping — every step now has a backend signal (S5).
-  // S14: story tick requires the narrative AND the address sub-section (both
-  // captured in the same tab; users see one consolidated done state).
-  const stepDone: Record<NextStepKey, boolean> = {
-    quiz: c.quiz_done,
-    story: c.details_done && c.address_done && c.family_done,
-    funding: c.funding_done,
-    documents: c.documents_done,
-    consent: c.consent_done,
-  }
+  // Completeness mapping — every step now has a backend signal (S5). The
+  // per-step rule lives in isStepComplete() so the rail ticks and the
+  // Save & continue advance gate can never drift apart.
+  const stepDone: Record<NextStepKey, boolean> = Object.fromEntries(
+    NEXT_STEP_ORDER.map((k) => [k, isStepComplete(k, c)]),
+  ) as Record<NextStepKey, boolean>
 
   // Jump to a step's tab and scroll into view — used by the review page's per-section
   // Edit links (and Back). An optional anchorId scrolls to a sub-section within the step
@@ -252,7 +273,8 @@ export default function ScholarshipNextSteps({
   const saveFeedback = (
     <>
       {error && <InfoBox kind="block">{error}</InfoBox>}
-      {saved && <p className="text-sm text-green-800">{t('scholarship.nextSteps.saved')}</p>}
+      {holdNote && <InfoBox kind="warning">{t('scholarship.nextSteps.incompleteToContinue')}</InfoBox>}
+      {saved && !holdNote && <p className="text-sm text-green-800">{t('scholarship.nextSteps.saved')}</p>}
     </>
   )
 

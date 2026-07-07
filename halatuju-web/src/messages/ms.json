@@ -1012,7 +1012,7 @@
       "allowanceMonths": "Bilangan bulan",
       "otherDesc": "Untuk apa jumlah 'lain-lain' itu?",
       "total": "Jumlah keperluan kewangan",
-      "save": "Simpan butiran saya",
+      "save": "Simpan & teruskan",
       "saving": "Menyimpan…",
       "saved": "Disimpan.",
       "saveError": "Tidak dapat menyimpan butiran anda. Sila cuba lagi.",
@@ -1204,7 +1204,8 @@
         "emailNote": "Kami akan menghantar semua kemas kini ke {email} — sila semak peti masuk (dan folder spam) anda.",
         "yourEmail": "e-mel yang anda daftar"
       },
-      "reviewCta": "Semak & hantar"
+      "reviewCta": "Semak & hantar",
+      "incompleteToContinue": "Disimpan. Sila lengkapkan medan wajib bertanda * sebelum meneruskan."
     },
     "docs": {
       "type": {

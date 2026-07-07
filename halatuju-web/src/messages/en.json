@@ -1012,7 +1012,7 @@
       "allowanceMonths": "Number of months",
       "otherDesc": "What is the 'other' amount for?",
       "total": "Total funding need",
-      "save": "Save my details",
+      "save": "Save & continue",
       "saving": "Saving…",
       "saved": "Saved.",
       "saveError": "Could not save your details. Please try again.",
@@ -1204,7 +1204,8 @@
         "emailNote": "We'll send all updates to {email} — do check your inbox (and spam folder).",
         "yourEmail": "the email you signed up with"
       },
-      "reviewCta": "Review & submit"
+      "reviewCta": "Review & submit",
+      "incompleteToContinue": "Saved. Please complete the required fields marked * before continuing."
     },
     "docs": {
       "type": {

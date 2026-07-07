@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-07 — Apply wizard: "Save & continue" advances to the next step (FE only)
+
+The pre-submit wizard's Save button (on the Story and Funding steps) now carries the
+student forward instead of leaving them to find the next step in the rail themselves:
+- **Relabelled "Save my details" → "Save & continue"** (en/ms/ta) so the jump is expected.
+- **Advances only when the step is genuinely complete** — after saving, if the step's
+  required fields are all satisfied (per the freshly-returned completeness) the wizard
+  moves to the next step and scrolls to the top. If something required is still missing,
+  the draft is saved but the student stays put with an amber note ("Please complete the
+  required fields marked * before continuing") — so nobody skips ahead with gaps that
+  would later resurface as reviewer queries.
+- **Single source of truth** — the per-step completeness rule moved into a new exported
+  `isStepComplete()` in `lib/scholarship.ts`, shared by both the step-rail's done-ticks
+  and the advance gate (they can no longer drift apart). +3 unit tests.
+
 ### 2026-07-07 — Genuineness/eligibility LADDER for Identity · Academic · Pathway (BE; NO migration; re-banding-gated)
 
 Owner 2026-07-07. Replaces the flat "suspect/wrong-type → one step to review" cap (for these three
@@ -69,7 +84,6 @@ IC — both household members).
   self-corrects on deploy.
 - Tests: 2116 scholarship pytest (+ #45 both-spouses green, NRIC-only either-match, de-amount ladder) + 465
   jest + tsc clean. Spec `docs/scholarship/str-proof-spec.md` §8 updated (STR-precedence top rule).
-
 ### 2026-07-06 — Pre-submit STR cluster: default earner, grouped box, green-when-complete, key-leak fix (FE only)
 
 Polishing the apply-form income wizard's STR route to match the salary route:
