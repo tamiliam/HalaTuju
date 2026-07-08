@@ -958,3 +958,97 @@ class TestRequestOwnedSlots(TestCase):
         i1.refresh_from_db(); i2.refresh_from_db()
         self.assertEqual(i1.status, 'resolved')   # the matching request closes
         self.assertEqual(i2.status, 'open')       # the OTHER request stays open
+
+
+from django.utils import timezone as _dj_tz  # noqa: E402
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestStrKeepBetterGuard(TestCase):
+    """#83 (owner 2026-07-08): a re-upload that does NOT read as a usable STR proof (wrong_type /
+    unreadable) must never DISPLACE a recognised proof with a readable approval — the student
+    answered a request with an old SALINAN copy, four times, superseding her Lulus Semakan each
+    time. The junk upload is kept as history; the better proof stays live. Plus the human-aware
+    re-ask: unresolved attempts are stamped on the open doc-request items."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='kg', name='B40', year=2026)
+        cls.profile = StudentProfile.objects.create(supabase_user_id='keep-1', nric='080101-14-1234')
+        cls.app = ScholarshipApplication.objects.create(
+            cohort=cls.cohort, profile=cls.profile, status='shortlisted',
+            income_route='str', income_earner='mother')
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("keep-1")}')
+
+    def _good_semakan(self):
+        """A recognised Semakan with a readable Lulus (dateless → 'unconfirmed' — Probable)."""
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type='str', household_member='mother',
+            storage_path=f'{self.app.id}/str/good', original_filename='str1.pdf', size=111,
+            vision_fields={'fields': {'source_type': 'semakan_status', 'status': 'Lulus',
+                                      'year': '', 'recipient_name': 'MATHAVI A/P T',
+                                      'recipient_nric': '700423-07-5088'},
+                           'authenticity': {'status': 'genuine'}},
+            vision_run_at=_dj_tz.now())
+
+    def _post_str(self, junk=True, filename='str amma.pdf', size=222):
+        """POST an STR upload whose extraction yields junk (wrong_type) or a genuine current
+        Ditolak (recognised → must replace normally)."""
+        fields = ({'source_type': 'unknown', 'status': '', 'year': '2023'} if junk
+                  else {'source_type': 'letter', 'status': 'Ditolak', 'year': '2026'})
+
+        def _extract(app, doc, *a, **k):
+            doc.vision_fields = dict(doc.vision_fields or {},
+                                     fields=fields, authenticity={'status': 'genuine'})
+            doc.save(update_fields=['vision_fields'])
+
+        with patch('apps.scholarship.vision.ocr_document_full',
+                   return_value={'text': 'x', 'error': None}), \
+             patch('apps.scholarship.vision.run_vision_match_for_document', return_value=None), \
+             patch('apps.scholarship.views.DocumentListCreateView._maybe_extract_fields',
+                   side_effect=_extract):
+            return self.client.post('/api/v1/scholarship/documents/', {
+                'doc_type': 'str', 'storage_path': f'{self.app.id}/str/{filename}-{size}',
+                'original_filename': filename, 'size': size,
+            }, format='json')
+
+    def test_junk_reupload_never_displaces_recognised_proof(self):
+        good = self._good_semakan()
+        resp = self._post_str(junk=True)
+        self.assertEqual(resp.status_code, 201, resp.content)
+        self.assertTrue(resp.json().get('kept_previous'))
+        good.refresh_from_db()
+        self.assertIsNone(good.superseded_at)               # the better proof is live again
+        junk = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertIsNotNone(junk.superseded_at)            # the junk upload is history
+        self.assertEqual(junk.superseded_by_id, good.id)
+
+    def test_recognised_new_doc_still_replaces_normally(self):
+        # A genuine current Ditolak is REALITY, not a downgrade — it must displace the old Lulus.
+        good = self._good_semakan()
+        resp = self._post_str(junk=False)
+        self.assertEqual(resp.status_code, 201, resp.content)
+        self.assertFalse(resp.json().get('kept_previous'))
+        good.refresh_from_db()
+        self.assertIsNotNone(good.superseded_at)            # normal supersede
+        new = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertIsNone(new.superseded_at)
+
+    def test_unresolved_attempts_stamped_on_open_request(self):
+        # Human-aware re-ask: each upload that leaves the doc-request OPEN bumps `attempts` on the
+        # item; the guard's swap marks attempt_rejected so the Action Centre says what happened.
+        from apps.scholarship.models import ResolutionItem
+        self._good_semakan()
+        item = ResolutionItem.objects.create(
+            application=self.app, fact='income', code='str_not_current', kind='doc',
+            source='system', status='open', params={})
+        self._post_str(junk=True)
+        item.refresh_from_db()
+        self.assertEqual(item.params.get('attempts'), 1)
+        self.assertTrue(item.params.get('attempt_rejected'))
+        self._post_str(junk=True)                            # she sends the junk again
+        item.refresh_from_db()
+        self.assertEqual(item.params.get('attempts'), 2)

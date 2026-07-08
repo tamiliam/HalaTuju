@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## STR keep-better guard + human-aware re-ask — 2026-07-08
+
+### Fixed
+- **A junk STR re-upload never displaces a recognised proof (#83)** — a re-upload reading
+  wrong_type/unreadable (SALINAN, old copy, unknown page) while the live doc is a recognised STR
+  proof with a readable approval now keeps the better proof LIVE and stores the junk as history
+  (#83's student superseded her Lulus Semakan with a 2023 copy, four times, dropping herself from
+  Probable to breached). A RECOGNISED new document still replaces normally (a current Ditolak must
+  displace an old Lulus). Same philosophy as the extraction clobber guard. #83's data restored.
+
+### Added
+- **Human-aware re-ask** — when an upload leaves its doc-request OPEN (same file re-sent, or a
+  different-but-still-wrong one), the attempt is stamped on the request and the Action Centre
+  acknowledges it ("it's the same document as before" / "we've kept your earlier document — it was
+  stronger" / "it isn't the page we asked for") before repeating the specific instruction, instead
+  of showing the original copy as if nothing arrived. en/ms/ta. 2160 pytest + 482 jest.
+
 ## Continuing-student CGPA request — 2026-07-08
 
 ### Added

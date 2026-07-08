@@ -103,6 +103,17 @@ function ActionCard({
   const tParams = localiseParams(item.params, t)
   const title = src.kind === 'raw' ? src.text : t(src.titleKey, tParams)
   const desc = src.kind === 'i18n' ? t(src.descKey, tParams) : ''
+  // Human-aware re-ask (#83, owner 2026-07-08): the backend stamps `attempts` on a doc-task when
+  // an upload arrived but did NOT clear it (the student re-sent the same file, or a different-but-
+  // still-wrong one). Acknowledge what happened before repeating the ask, like a human would.
+  const attempts = Number(item.params?.attempts || 0)
+  const retryNote = item.kind === 'doc' && attempts > 0
+    ? t(item.params?.attempt_same_file
+        ? 'scholarship.actionCentre.retry.sameFile'
+        : item.params?.attempt_rejected
+          ? 'scholarship.actionCentre.retry.keptPrevious'
+          : 'scholarship.actionCentre.retry.notAccepted')
+    : ''
   // "From our review assistant" (system / Check 2) vs "From your reviewer" (officer) —
   // so the student knows who's asking, matching the tested Action-Centre design.
   const fromLabel = t(attributionFor(item) === 'reviewer'
@@ -279,6 +290,11 @@ function ActionCard({
               {t('scholarship.actionCentre.toDo')}
             </span>
           </div>
+          {retryNote && (
+            <p className="mt-1 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+              {retryNote}
+            </p>
+          )}
           {desc && <p className="mt-1 text-sm text-gray-500">{desc}</p>}
 
           {/* ── Action ─────────────────────────────────────────────── */}

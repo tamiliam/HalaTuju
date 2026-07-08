@@ -534,6 +534,17 @@ Also same-day: per-issuer reporting-date labels in the extraction prompt + offer
 **▶ OWNER-REVIEW queue:** #56's summons is 10 Jun 2025 (past intake — confirm still enrolled);
 Fail-band students owe proper offer letters; #17 owes her full (uncropped) UTHM letter.
 
+**✅ SHIPPED 2026-07-08 — STR keep-better guard + human-aware re-ask (#83; BE+FE, NO migration).**
+Upload path (`views.py`): a re-upload whose STR read is wrong_type/unreadable never displaces a live
+recognised proof with readable approval (swap-back inside the same request; junk kept as history;
+`kept_previous` in the response) — a recognised new doc (e.g. current Ditolak) still replaces
+normally. `_note_unresolved_attempts` stamps attempts/attempt_same_file (name+size heuristic)/
+attempt_rejected on OPEN doc-request items (CODE_TO_TICKET + DOC_SPECS reverse-lookup) after
+sync/resolve ran; ActionCentre.tsx renders the acknowledgement note ("same document as before" /
+"kept your earlier document" / "isn't the page we asked for") above the original ask. #83 data
+restored via MCP (doc 1056 Lulus Semakan live; 1787 junk → history). Cohort scan: #83 was the only
+better-superseded-than-live STR case. 2160 pytest + 482 jest.
+
 **✅ SHIPPED 2026-07-08 — continuing-student CGPA request (backend only, NO migration).**
 `semester_result_gap` gains the past-intake arm: chosen pathway ∈ `_MULTI_YEAR_PATHWAYS`
 {stpm, pismp, poly, university} AND normalised `reporting_date` year < cohort year → Check-2

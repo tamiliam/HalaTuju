@@ -2143,7 +2143,12 @@
         "holderMismatch": "Akaun ini bukan atas nama anda. Biasiswa hanya boleh dibayar ke akaun bank milik anda sendiri."
       },
       "setAside": "Diketepikan",
-      "setAsideNote": "Ini sebahagian daripada semakan permohonan anda. Kini setelah anda menerima bursari, anda tidak perlu menjawabnya."
+      "setAsideNote": "Ini sebahagian daripada semakan permohonan anda. Kini setelah anda menerima bursari, anda tidak perlu menjawabnya.",
+      "retry": {
+        "sameFile": "Kami menerima muat naik anda — tetapi ia dokumen yang sama seperti sebelum ini, jadi tiada apa yang berubah. Sila baca arahan di bawah dengan teliti dan hantar halaman khusus yang kami minta.",
+        "keptPrevious": "Kami menerima muat naik anda, tetapi ia tidak menunjukkan apa yang kami perlukan — jadi kami mengekalkan dokumen anda yang terdahulu (ia lebih kukuh). Sila baca arahan di bawah dan hantar halaman khusus yang kami minta.",
+        "notAccepted": "Kami menerima muat naik anda, tetapi ia bukan halaman yang kami minta, jadi perkara ini masih terbuka. Sila baca arahan di bawah dengan teliti dan hantar halaman khusus itu."
+      }
     },
     "summary": {
       "subtitle": "Lihat sekali lagi — pastikan semuanya betul, kemudian tatal ke bawah dan hantar.",

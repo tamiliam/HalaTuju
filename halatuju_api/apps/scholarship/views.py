@@ -554,6 +554,39 @@ class GraduationMessageView(_OwnInProgrammeView):
 _FUNDED_STATES = ('awarded', 'active', 'maintenance')
 
 
+def _note_unresolved_attempts(app, doc, stale_ids, kept_previous):
+    """Human-aware re-ask (#83, owner 2026-07-08). After an upload has had its chance to resolve
+    things (sync + resolve_doc_items_for_upload ran), any doc-request for THIS doc type that is
+    STILL OPEN means the upload didn't do the job — the student re-sent the same file, or a
+    different-but-still-wrong one. Stamp the attempt onto the open items' params so the Action
+    Centre acknowledges it like a human would, instead of repeating the original ask verbatim:
+      attempts            — how many uploads have failed to clear this request
+      attempt_same_file   — the latest one was byte-identical-looking (same name + size) to a copy
+                            already superseded in this slot
+      attempt_rejected    — the STR keep-better guard kept the previous proof live
+    Best-effort; never blocks the upload response."""
+    try:
+        from .resolution import CODE_TO_TICKET
+        from .check2_queries import DOC_SPECS
+        same_file = bool(
+            stale_ids and (doc.original_filename or '')
+            and ApplicantDocument.objects.filter(
+                id__in=stale_ids, original_filename=doc.original_filename,
+                size=doc.size or 0).exists())
+        doc_codes = {c for c, s in CODE_TO_TICKET.items() if s.get('doc_type') == doc.doc_type}
+        doc_codes |= {c for c, s in DOC_SPECS.items() if s.get('doc_type') == doc.doc_type}
+        for item in app.resolution_items.filter(code__in=doc_codes, status='open'):
+            p = dict(item.params or {})
+            p['attempts'] = int(p.get('attempts') or 0) + 1
+            p['attempt_same_file'] = same_file
+            p['attempt_rejected'] = bool(kept_previous)
+            item.params = p
+            item.save(update_fields=['params'])
+    except Exception:  # noqa: BLE001 — a stamping failure must never break the upload
+        logging.getLogger(__name__).warning(
+            'attempt-stamping failed for app %s doc %s', app.id, doc.id, exc_info=True)
+
+
 def _current_application(user_id):
     """The caller's current post-shortlist application (one per cohort; latest wins).
 
@@ -842,6 +875,31 @@ class DocumentListCreateView(APIView):
         # One-live-copy dedup (owner 2026-07-05): a salary slip / STR is needed once — the most
         # RECENT. The student re-uploads the same or older copies and each officer re-request adds a
         # parallel slot, so several live copies of one person's proof pile up. Collapse this person's
+        # STR keep-better guard (#83, owner 2026-07-08): a re-upload that does NOT read as a usable
+        # STR proof (wrong_type — a SALINAN/SARA/unknown page — or unreadable) must never DISPLACE a
+        # recognised proof with a readable approval. #83's student answered the str_not_current
+        # request with an old 2023 copy, four times — each upload obediently superseded her Lulus
+        # Semakan, downgrading her own evidence from Probable to breached. Same philosophy as the
+        # extraction clobber guard: a bad read never destroys a good one. A RECOGNISED new document
+        # still replaces normally (a genuine current Ditolak must displace an old Lulus — that is
+        # reality, not a downgrade). The junk upload is kept as history (superseded by the restored
+        # doc) so the officer sees what the student sent.
+        kept_previous = False
+        if doc.doc_type == 'str' and stale_ids:
+            from .income_engine import student_str_check
+            from django.utils import timezone as _tz2
+            new_state = (student_str_check(doc) or {}).get('current_status', '')
+            if new_state in ('wrong_type', 'unreadable'):
+                old = (ApplicantDocument.objects.filter(id__in=stale_ids)
+                       .order_by('-uploaded_at').first())
+                old_state = (student_str_check(old) or {}).get('current_status', '') if old else ''
+                if old_state in ('current', 'unconfirmed', 'stale'):
+                    ApplicantDocument.objects.filter(id=old.id).update(
+                        superseded_at=None, superseded_by=None)
+                    ApplicantDocument.objects.filter(id=doc.id).update(
+                        superseded_at=_tz2.now(), superseded_by=old)
+                    doc.refresh_from_db()
+                    kept_previous = True
         # copies of THIS doc-type to the single newest (newest pay month / latest-dated STR); the
         # rest drop to Old / Replaced (retained). Runs after the tag guard so the member is final.
         from . import income_engine as _ie
@@ -866,8 +924,17 @@ class DocumentListCreateView(APIView):
         # and the returned verdict tells the frontend whether to surface Cikgu Gopal's
         # advice (mismatch/unreadable) or treat the task as done (ok).
         match_verdict = resolve_doc_items_for_upload(app, doc)
+        # Human-aware re-ask (#83, owner 2026-07-08): students routinely re-send the SAME file, or a
+        # different-but-still-wrong one, without following the request's instruction. When this
+        # upload leaves its doc-request OPEN, stamp the attempt on the item so the Action Centre
+        # acknowledges what happened ("you re-sent the same document" / "we received it, but it
+        # isn't what we asked for") instead of repeating the original copy as if nothing arrived.
+        _note_unresolved_attempts(app, doc, stale_ids, kept_previous)
         data = ApplicantDocumentSerializer(doc).data
         data['match_verdict'] = match_verdict
+        # The STR keep-better guard fired: the previous (better) proof stays live; this upload is
+        # stored as history. The FE may surface this immediately; the Action Centre note persists.
+        data['kept_previous'] = kept_previous
         return Response(data, status=status.HTTP_201_CREATED)
 
     @staticmethod

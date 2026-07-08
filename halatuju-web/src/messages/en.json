@@ -2143,7 +2143,12 @@
         "holderMismatch": "This account is not in your name. The bursary can only be paid into a bank account that belongs to you."
       },
       "setAside": "Set aside",
-      "setAsideNote": "This was part of reviewing your application. Now that you've been awarded, you don't need to answer it."
+      "setAsideNote": "This was part of reviewing your application. Now that you've been awarded, you don't need to answer it.",
+      "retry": {
+        "sameFile": "We received your upload — but it's the same document as before, so it doesn't change anything. Please read the instruction below carefully and send the specific page we're asking for.",
+        "keptPrevious": "We received your upload, but it doesn't show what we need — so we've kept your earlier document on file (it was stronger). Please read the instruction below and send the specific page we're asking for.",
+        "notAccepted": "We received your upload, but it isn't the page we asked for, so this is still open. Please read the instruction below carefully and send that specific page."
+      }
     },
     "summary": {
       "subtitle": "One last look — check everything is right, then scroll down and submit.",
