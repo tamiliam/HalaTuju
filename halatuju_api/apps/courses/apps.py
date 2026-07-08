@@ -36,9 +36,12 @@ class CoursesConfig(AppConfig):
         - At startup, load into Pandas DataFrames for the engine
         - Engine logic remains unchanged (golden master preserved)
         """
-        # Only load data if we're in the main process (not migrations/shell)
+        # Only load data if we're in the main process (not migrations/shell). The eligibility
+        # DataFrame is only needed to SERVE eligibility; skip it for schema + read-only diagnostic
+        # commands so they boot fast (esp. run locally against a remote DB).
         import sys
-        if 'migrate' in sys.argv or 'makemigrations' in sys.argv:
+        _SKIP_DATA_CMDS = ('migrate', 'makemigrations', 'stuck_report')
+        if any(cmd in sys.argv for cmd in _SKIP_DATA_CMDS):
             return
 
         try:
