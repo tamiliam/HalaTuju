@@ -164,16 +164,16 @@ VERDICT_FIX_HINT = {
         'them to re-check or re-upload the MyKad. If NO relationship document is named in the '
         'SPECIFICS, the earner\'s IC simply does not carry the family name from the applicant\'s '
         'own IC — suggest they double-check they uploaded the right person\'s MyKad in this slot, '
-        'with a clear, full-name photo. Reassure them nothing is blocked; do NOT tell them to '
-        'edit their profile.'
+        'with a clear, full-name photo. Do NOT claim the application is or is not blocked — the '
+        'submission checklist is the source of truth; do NOT tell them to edit their profile.'
     ),
     'income_proof_needed': (
         'The earner\'s IC is in and matches. The next step is their INCOME proof — the salary '
         'slip named in the SPECIFICS. Kindly ask them to upload that family member\'s latest '
         'salary slip (it is what actually shows the household income). If a relationship '
-        'document is also still needed, you may note it comes after. Warm and matter-of-fact — '
-        'nothing is blocked; do NOT name a different document than the SPECIFICS give, and do '
-        'NOT ask them to edit their profile.'
+        'document is also still needed, you may note it comes after. Warm and matter-of-fact; do '
+        'NOT claim it is or is not blocked; do NOT name a different document than the SPECIFICS '
+        'give, and do NOT ask them to edit their profile.'
     ),
     'income_proof_person_mismatch': (
         'This income document (salary slip / EPF) does not belong to the SAME person as the IC '
@@ -185,7 +185,8 @@ VERDICT_FIX_HINT = {
         'upload one at all. Otherwise (the proof is required on this route), ask them to upload '
         'THAT family member\'s OWN salary slip together with THAT person\'s OWN IC, and remove the '
         'wrong file. This is about the EARNER\'s documents — do NOT tell them to edit their OWN '
-        'name or profile. Nothing is blocked.'
+        'name or profile. Do NOT claim it is or is not blocked — the submission checklist is the '
+        'source of truth.'
     ),
     'income_ic_needed': (
         'They added an income document for this household member but not that person\'s IC yet. '
