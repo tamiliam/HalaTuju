@@ -1681,11 +1681,18 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street
         return 'ok' if _any_field_filled(fields) else 'wrong_doc'
     if not _any_field_filled(fields):
         return 'wrong_doc'   # nothing of the expected shape was found
-    extracted_name = _strip_name_label(fields.get(_NAME_FIELD.get(doc_type, 'name')) or '')
-    if extracted_name:
-        matched = any(name_match(extracted_name, n) in ('match', 'partial') for n in names if n)
-        if not matched:
-            return 'name_mismatch'
+    # A UTILITY BILL is an ADDRESS anchor, held in a PARENT's name — never name-check it against the
+    # student (owner 2026-07-09, #130: a father's-name water/electricity bill looped forever as
+    # 'name_mismatch', with no coaching, because the reference names were student+guardians only).
+    # This matches help_engine (bills deliberately un-name-checked) and doc_match_verdict (bills
+    # accept); a genuine STRANGER's bill is still caught softly by the utility_holder_unknown
+    # question, which knows the declared parents.
+    if doc_type not in ('water_bill', 'electricity_bill'):
+        extracted_name = _strip_name_label(fields.get(_NAME_FIELD.get(doc_type, 'name')) or '')
+        if extracted_name:
+            matched = any(name_match(extracted_name, n) in ('match', 'partial') for n in names if n)
+            if not matched:
+                return 'name_mismatch'
     if check_address:
         addr = (fields.get('address') or '').strip()
         # Only a genuinely DIFFERENT home is flagged to the student; a soft 'unconfirmed'

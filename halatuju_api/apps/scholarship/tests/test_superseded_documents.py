@@ -179,9 +179,13 @@ class TestStaticReadGuard(TestCase):
                 src = fh.read()
             for tok in self.READ_TOKENS:
                 for m in re.finditer(re.escape(tok), src):
-                    # a forward window spans multi-line filter(...) calls
-                    window = src[m.start():m.start() + 220]
-                    if 'superseded_at' not in window:
+                    # a BACK+forward window spans a leading `# all-versions-read:` pragma and the
+                    # multi-line filter(...) call itself.
+                    window = src[max(0, m.start() - 320):m.start() + 220]
+                    # An explicit `all-versions-read:` pragma is a documented, reviewed exception —
+                    # a read that INTENTIONALLY spans superseded rows (e.g. counting prior upload
+                    # attempts). Everything else MUST carry the superseded_at filter.
+                    if 'superseded_at' not in window and 'all-versions-read:' not in window:
                         line = src.count('\n', 0, m.start()) + 1
                         offenders.append(f'{name}:{line} — {tok}')
         self.assertEqual(

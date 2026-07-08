@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: utility-bill upload loop (#130) — 2026-07-09
+
+### Fixed
+- **A parent's-name utility bill no longer reads "in another name" forever.** Three parts of the
+  system judged a bill and disagreed: `help_engine` and `doc_match_verdict` correctly treat a bill
+  as an ADDRESS anchor in a parent's name (no name-check), but `vision.doc_student_verdict` still
+  name-checked the holder against **student + guardians only** — so a father's-name bill (with only
+  the mother's IC on file) stamped a false `name_mismatch` red with no coaching. #130's student
+  re-uploaded a valid bill ~34 times chasing an unsatisfiable check. `doc_student_verdict` now skips
+  the name-check for `water_bill` / `electricity_bill` (a genuine stranger's bill is still caught
+  softly by the `utility_holder_unknown` question, which knows the declared parents).
+- **An undated water bill no longer loops the recheck forever.** Many Malaysian water bills print no
+  machine-readable billing period, so the "undated → re-request" rule trapped the student
+  (`water_bill_recheck` re-fired on every upload). `_bill_needs_upload` now re-asks an undated but
+  otherwise-clean bill (holder + address + amount readable) only **once**, then accepts it — the
+  officer eyeballs the date. A READABLE stale date (>3 months) still asks for a recent one.
+  (`_undated_clean_bill_attempts`; `TestStaticReadGuard` gains an `all-versions-read:` allow-pragma
+  for the one engine read that intentionally spans superseded attempts.) 2221 pytest.
+
 ## Check-2 copy: STR re-ask + member-specific informal-income ask — 2026-07-08
 
 ### Changed

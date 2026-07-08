@@ -1000,8 +1000,20 @@ class TestUtilityBillRecheck(SimpleTestCase):
         self.assertEqual(rc.get('water_bill'), 'stale')
         self.assertNotIn('electricity_bill', rc)
 
-    def test_undated_bill_flagged(self):
-        app = _app([self._b('water_bill', period=''), self._b('electricity_bill')])
+    def test_undated_bill_re_asked_once_then_accepted(self):
+        # Owner 2026-07-09 (#130): an undated but otherwise-clean bill is re-asked ONCE (a single
+        # undated attempt on file) then ACCEPTED — a water bill with no parseable period must not loop.
+        one = _app([self._b('water_bill', period=''), self._b('electricity_bill')])
+        self.assertEqual(utility_bill_recheck(one, today=self.TODAY).get('water_bill'), 'undated')
+        # A second undated-but-clean water bill on file → accepted (no longer re-asked).
+        two = _app([self._b('water_bill', period=''), self._b('water_bill', period=''),
+                    self._b('electricity_bill')])
+        self.assertNotIn('water_bill', utility_bill_recheck(two, today=self.TODAY))
+
+    def test_stale_still_loops_when_date_is_readable(self):
+        # A READABLE but old date is a real "get a recent one" — the accept-after-retry is UNDATED-only.
+        app = _app([self._b('water_bill', period='01/2026'), self._b('water_bill', period='01/2026'),
+                    self._b('electricity_bill')])
         self.assertEqual(utility_bill_recheck(app, today=self.TODAY).get('water_bill'), 'stale')
 
     def test_unreadable_address_flagged(self):

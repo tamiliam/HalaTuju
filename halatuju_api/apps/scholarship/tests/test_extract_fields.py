@@ -44,6 +44,14 @@ class TestDocStudentVerdict(TestCase):
             'electricity_bill', {'name': 'Muthu Raman', 'address': 'No 9 Jalan Z 99999 Ipoh'},
             names=['Muthu Raman'], postcode='62100', city='Putrajaya', check_address=True), 'address_mismatch')
 
+    def test_bill_holder_not_name_checked(self):
+        # Owner 2026-07-09 (#130): a utility bill is an ADDRESS anchor in a PARENT's name — a holder
+        # who isn't in the reference names is NOT a name_mismatch (that looped the student forever).
+        for dt in ('water_bill', 'electricity_bill'):
+            self.assertEqual(vision.doc_student_verdict(
+                dt, {'name': 'SIVAKUMAR A/L KALIAPPAN', 'address': '12 Jln Mawar', 'amount': 'RM90'},
+                names=['A Different Student']), 'ok')
+
 
 class TestExtractDocumentFields(TestCase):
     @patch('apps.scholarship.vision._call_gemini_json')

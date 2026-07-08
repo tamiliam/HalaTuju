@@ -2352,25 +2352,51 @@ def utility_bill_gap(application):
 
 
 def _bill_needs_upload(application, doc_type, today):
-    """Why THIS bill type needs a (re)upload, or '' when the bill on file is usable. Reasons
-    (owner 2026-07-08): 'missing' (none on file), 'stale' (older than ~3 months OR no readable
-    date — we can't confirm it's current), 'address_unreadable' (no address text read),
-    'amount_unreadable' (the charge couldn't be parsed). A HARD address MISMATCH is deliberately
-    NOT here — that's the separate ``utility_address_mismatch`` 'whose address?' clarify, not a
-    re-upload."""
+    """Why THIS bill type needs a (re)upload, or '' when the bill on file is usable. Reasons:
+    'missing' (none on file), 'address_unreadable' / 'amount_unreadable' (a required field couldn't
+    be read), 'stale' (a READABLE date older than ~3 months — the student can fetch a recent one),
+    'undated' (no readable date). The UNDATED case is re-asked only ONCE, then ACCEPTED (owner
+    2026-07-09, #130): many Malaysian water bills never print a machine-readable period, so looping
+    on it traps the student — after one re-try, an otherwise-clean bill (holder + address + amount)
+    is accepted and the officer eyeballs the date. A HARD address MISMATCH is NOT here — that's the
+    separate ``utility_address_mismatch`` clarify."""
     doc = _latest_doc(application, doc_type)
     if doc is None:
         return 'missing'
     facts = utility_check(doc, today)
     if not facts:
         return 'missing'
-    if facts.get('current_status') in ('stale', 'unknown'):   # >3mo OR undated → not confirmably current
-        return 'stale'
     if not (facts.get('address') or '').strip():
         return 'address_unreadable'
     if _parse_rm(facts.get('monthly_bill')) is None:
         return 'amount_unreadable'
+    cs = facts.get('current_status')
+    if cs == 'stale':                       # readable date, >3 months → ask for a recent one
+        return 'stale'
+    if cs == 'unknown':                     # date unreadable → re-ask ONCE, then accept
+        return '' if _undated_clean_bill_attempts(application, doc_type, today) >= 2 else 'undated'
     return ''
+
+
+def _undated_clean_bill_attempts(application, doc_type, today):
+    """How many bills of this type (live + superseded) read CLEAN on holder-address-amount but had
+    NO parseable billing date — the student's undated-bill attempts. At >= 2 the recheck stops
+    re-asking and accepts the bill (re-ask ONCE, then accept; owner 2026-07-09, #130)."""
+    docs = _docs_or_none(application)
+    if docs is None:
+        return 0
+    n = 0
+    # all-versions-read: this is the ONE engine read that INTENTIONALLY spans superseded rows — each
+    # re-upload supersedes the last, so a live-only count is always <=1 and could never reach the
+    # retry threshold. It counts prior ATTEMPTS, never feeds an eligibility verdict. (superseded_at
+    # is deliberately not filtered; see the TestStaticReadGuard allow-list.)
+    for d in docs.filter(doc_type=doc_type):
+        f = _doc_fields(d)
+        if (_utility_currency(f.get('billing_period'), today) == 'unknown'
+                and (f.get('address') or '').strip()
+                and _parse_rm(f.get('amount')) is not None):
+            n += 1
+    return n
 
 
 def utility_bill_recheck(application, today=None):
