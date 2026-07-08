@@ -534,6 +534,14 @@ Also same-day: per-issuer reporting-date labels in the extraction prompt + offer
 **▶ OWNER-REVIEW queue:** #56's summons is 10 Jun 2025 (past intake — confirm still enrolled);
 Fail-band students owe proper offer letters; #17 owes her full (uncropped) UTHM letter.
 
+**✅ SHIPPED 2026-07-08 — continuing-student CGPA request (backend only, NO migration).**
+`semester_result_gap` gains the past-intake arm: chosen pathway ∈ `_MULTI_YEAR_PATHWAYS`
+{stpm, pismp, poly, university} AND normalised `reporting_date` year < cohort year → Check-2
+auto-raises `semester_result_missing` (latest semester slip, CGPA); matric/asasi excluded
+(10-month → past intake = completed). Auto-resolves on a read `semester_result`. Cohort: 5 raised
+(#80 PISMP 2024, #56/#55/#72/#103 STPM 2025), 3 already satisfied (#62/#99/#63). #56's
+"still enrolled?" owner-review item is thereby automated. 2157 pytest.
+
 **✅ SHIPPED 2026-07-08 (same-day live-review continuations; backend+i18n, NO migration):**
 - **#71 band-confirmed grade mismatch** — letter+band agreeing (and the typed grade's band phrase
   not char-loss-degradable into the read) → a CONFIDENT `academic_grade_band_mismatch` ("the typed

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## Continuing-student CGPA request — 2026-07-08
+
+### Added
+- **Check-2 auto-requests the latest semester result (CGPA)** from past-intake continuing students:
+  chosen pathway multi-year (STPM / PISMP / Poly / UA diploma) AND the offer's normalised
+  `reporting_date` year < cohort year. Matriculation/Asasi excluded (10-month programmes — a past
+  intake means completed, not continuing). Auto-resolves on a readable `semester_result` upload.
+  Cohort: 5 students get the request (#80 PISMP 2024; #56/#55/#72/#103 STPM 2025); 3 already
+  satisfied. #56's "still enrolled?" review item is now automated. 2157 pytest.
+
 ## Live-review fixes: #71 grades, #27 income — 2026-07-08
 
 ### Fixed
