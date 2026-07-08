@@ -114,6 +114,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-08 — QC override + AI extenuating-circumstances emphasis + reviewer/QC attribution (BE + FE; migration 0095 additive, applied migrate-first)
+
+Three owner-requested changes shipped together:
+- **QC may override the red-fact floor** (previously super-only). The QC-Accept gap floor blocks
+  Accept while a verdict fact is red; a `qc` (not just `super`) can now pass it by RECORDING a
+  reason, stored + audited as before (`qc_override_reason/_by/_at`). The endpoint was already
+  gated to super-or-qc; the override branch now just requires a reason. Copy reworded (en/ms/ta).
+- **AI FINAL profile foregrounds extenuating circumstances for above-B40 recommended cases.** When
+  the deterministic verdict flags `income_above_b40_line` yet the officer recommends the student, a
+  gated instruction in `REFINE_PROMPT` tells the model to acknowledge the income honestly and
+  foreground the mitigating context — grounded ONLY in the officer's written conclusion + the
+  student's own account, inventing nothing. The QC's own note is deliberately not relied upon (a QC
+  often just endorses the reviewer). `PROMPT_VERSION` 2026-06-29.2 → 2026-07-08.1; applies on the
+  next generation/refresh; no migration.
+- **The Recommendation card attributes reviewer and QC separately.** "Interviewed and recommended by
+  {reviewer}" (awaiting QC) and, once accepted, "…recommended by {reviewer} · {date}, accepted by
+  {QC} · {date}". New `ScholarshipApplication.recommended_by` (migration `0095`, additive) captures
+  the QC's identity at QC-accept; the reviewer line reads from `verdict_decided_*`, the QC line from
+  `recommended_*`, falling back to the reviewer's own accept stamp for cases recommended before this
+  was captured. i18n: +`interviewedRecommendedBy`/+`qcAcceptedBy` (MS/TA first-draft), removed the
+  now-orphaned `acceptedBy` + `recordVerdict.recordedBy`.
+
+2154 scholarship pytest + i18n orphan/parity guard + tsc clean. **▶ OWNER:** Tamil/Malay refine of
+the new attribution strings.
+
 ### 2026-07-08 — Fix: document upload picker unresponsive on some Android browsers (FE only)
 
 Reported by a shortlisted applicant (Vivo Y39 5G): tapping "Choose file" in the Documents
