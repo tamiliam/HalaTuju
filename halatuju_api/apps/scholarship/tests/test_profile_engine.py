@@ -4,6 +4,8 @@ These exercise the *pure* prompt construction + language resolution — the Gemi
 call itself is never made here. The key regression: `_build_prompt` must run
 against the CURRENT (profile-canonical) data model without `AttributeError`.
 """
+from unittest import mock
+
 from django.test import TestCase
 
 from apps.courses.models import StudentProfile
@@ -11,8 +13,8 @@ from apps.scholarship.models import (
     ApplicantDocument, FundingNeed, Referee, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.profile_engine import (
-    DEFAULT_LANGUAGE, _DO_NOT_CLAIM, _build_prompt, _grades_summary, _resolve_language,
-    generate_sponsor_profile,
+    DEFAULT_LANGUAGE, _ABOVE_LINE_EMPHASIS, _DO_NOT_CLAIM, _build_prompt, _grades_summary,
+    _income_above_line, _resolve_language, generate_sponsor_profile, refine_sponsor_profile,
 )
 
 
@@ -404,3 +406,56 @@ class TestWelfareClaimGating(TestCase):
         prompt = _build_prompt(app)
         self.assertIn('Documented income', prompt)
         self.assertIn('none on file', prompt)
+
+
+class TestAboveLineEmphasis(TestCase):
+    """The FINAL profile foregrounds extenuating circumstances (grounded in the officer's
+    conclusion + the student's account) when household income reads ABOVE the B40 line yet
+    the officer recommends the student anyway (owner decision 2026-07-08)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='al', name='B40', year=2026)
+        cls.profile = StudentProfile.objects.create(
+            supabase_user_id='al-1', nric='030101-14-0007', name='Priya', exam_type='SPM')
+        cls.app = ScholarshipApplication.objects.create(
+            cohort=cls.cohort, profile=cls.profile, status='interviewed',
+            verdict_reason='Large household; father is the sole earner on irregular income.')
+
+    def _fake_session(self):
+        s = mock.Mock()
+        s.findings, s.rubric, s.overall_note = {}, {}, ''
+        return s
+
+    def test_income_above_line_true_when_code_present(self):
+        with mock.patch('apps.scholarship.verdict_engine.build_verdict', return_value=[
+                {'fact': 'income', 'status': 'gap', 'evidence': [],
+                 'unresolved': [{'code': 'income_above_b40_line'}]}]):
+            self.assertTrue(_income_above_line(self.app))
+
+    def test_income_above_line_false_when_absent(self):
+        with mock.patch('apps.scholarship.verdict_engine.build_verdict', return_value=[
+                {'fact': 'income', 'status': 'verified', 'evidence': [], 'unresolved': []}]):
+            self.assertFalse(_income_above_line(self.app))
+
+    def _capture_refine_prompt(self, above_line):
+        captured = {}
+
+        def fake_call(prompt, target_language, models=None):
+            captured['prompt'] = prompt
+            return {'markdown': 'ok'}
+
+        with mock.patch('apps.scholarship.profile_engine._call_gemini_text', side_effect=fake_call), \
+             mock.patch('apps.scholarship.profile_engine._income_above_line', return_value=above_line):
+            refine_sponsor_profile(self.app, 'draft text', self._fake_session())
+        return captured['prompt']
+
+    def test_refine_includes_emphasis_when_above_line(self):
+        prompt = self._capture_refine_prompt(above_line=True)
+        self.assertIn(_ABOVE_LINE_EMPHASIS, prompt)
+        self.assertIn('ABOVE the usual B40 line', prompt)
+
+    def test_refine_omits_emphasis_when_within_line(self):
+        prompt = self._capture_refine_prompt(above_line=False)
+        self.assertNotIn(_ABOVE_LINE_EMPHASIS, prompt)
+        self.assertNotIn('ABOVE the usual B40 line', prompt)

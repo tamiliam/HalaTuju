@@ -68,7 +68,7 @@ DEFAULT_LANGUAGE = 'English'
 #                  sponsor skims many profiles, so it just describes factually what the support helps
 #                  with. Amount dropped from the refine inputs + instruction; no-amount/no-advocacy in
 #                  the shared style.
-PROMPT_VERSION = '2026-06-29.2'
+PROMPT_VERSION = '2026-07-08.1'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
@@ -727,6 +727,8 @@ pass/fail list and never contradict the verdict.
 - Use ONLY the inputs below; do not invent facts. It must read as one final profile, not a draft \
 with notes bolted on.
 
+{income_context}
+
 === DRAFT PROFILE ===
 {draft}
 
@@ -823,6 +825,40 @@ def _with_version(result):
     return result
 
 
+# When the deterministic verdict flags household income ABOVE the B40 line yet the officer has
+# recommended the student anyway, the FINAL profile must not read cut-and-dry: it should
+# acknowledge the income honestly and foreground the EXTENUATING CIRCUMSTANCES that make the case
+# exceptional — grounded ONLY in the officer's written conclusion + the student's own account,
+# never invented (owner decision 2026-07-08). The QC's own note is deliberately NOT relied upon
+# here: a QC often simply endorses the reviewer's view without adding detail.
+_ABOVE_LINE_EMPHASIS = (
+    "NOTE ON INCOME — this household's income reads ABOVE the usual B40 line, yet the officer has "
+    "recommended the student. Do NOT present this as a clean-cut B40 case and do NOT hide or "
+    "contradict the income. Acknowledge it honestly, then FOREGROUND the extenuating circumstances "
+    "that make the case exceptional — drawing ONLY on the officer's conclusion and the student's own "
+    "account below (e.g. a large household, a single or irregular earner, medical or caregiving "
+    "costs, recent loss of income, debt). Explain, grounded in those inputs, why the support still "
+    "matters here. Invent nothing: if the inputs give no such circumstances, state the position "
+    "plainly without embellishment."
+)
+
+
+def _income_above_line(application):
+    """True when the deterministic verdict flags household income ABOVE the B40 line
+    (`income_above_b40_line`) — the signal that gates the extenuating-circumstances emphasis in
+    the FINAL profile. Best-effort: any failure to compute the verdict returns False (no emphasis,
+    never a crash in the generation path)."""
+    try:
+        from .verdict_engine import build_verdict
+        for fact in (build_verdict(application) or []):
+            for item in (fact.get('unresolved') or []):
+                if item.get('code') == 'income_above_b40_line':
+                    return True
+    except Exception:
+        pass
+    return False
+
+
 def refine_sponsor_profile(application, draft, session, language=None):
     """Second pass: the FINAL profile, folding the student's answers, the submitted
     interview ``session``, the officer's four-fact verdict, conclusion and recommended
@@ -840,6 +876,7 @@ def refine_sponsor_profile(application, draft, session, language=None):
         qa=_render_qa(application),
         findings=findings_str, rubric=rubric_str, overall_note=note,
         officer_decision=_render_officer_decision(application),
+        income_context=_ABOVE_LINE_EMPHASIS if _income_above_line(application) else '',
     )
     return _with_version(_call_gemini_text(prompt, target_language, models=PRO_CASCADE))
 
