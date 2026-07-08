@@ -197,16 +197,20 @@ class ConsentRedGateTests(TestCase):
         ApplicantDocument.objects.create(application=app, doc_type=doc_type, storage_path='x')
         return app
 
-    def test_results_slip_name_and_grades_mismatch_block(self):
+    def test_results_slip_name_mismatch_blocks_but_grades_do_not(self):
         from unittest.mock import patch
         from apps.scholarship.services import document_red_blockers
         app = self._app_with_doc('results_slip')
+        # Name mismatch = identity red → still hard-blocks consent.
         with patch('apps.scholarship.academic_engine.student_slip_check',
                    return_value={'name': 'mismatch', 'subjects': 'match', 'results': 'match'}):
             self.assertIn('results_slip_name_mismatch', document_red_blockers(app))
+        # Owner 2026-07-08: a GRADE/subject mismatch is now SOFT (the slip is authoritative and the
+        # officer sees the exact diff) — it no longer blocks submission, only the coach + officer
+        # chip flag it.
         with patch('apps.scholarship.academic_engine.student_slip_check',
                    return_value={'name': 'match', 'subjects': 'match', 'results': 'mismatch'}):
-            self.assertIn('results_slip_grades_mismatch', document_red_blockers(app))
+            self.assertNotIn('results_slip_grades_mismatch', document_red_blockers(app))
 
     def test_str_rejected_or_stale_blocks(self):
         from unittest.mock import patch

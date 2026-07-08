@@ -1244,7 +1244,8 @@
         "photo": "Gambar terkini anda.",
         "coachLabel": "Cikgu Gopal · Pembantu",
         "editProfileName": "Betulkan nama anda dalam profil",
-        "editProfileResults": "Kemas kini keputusan anda dalam profil",
+        "adjustGrades": "Laraskan gred saya",
+        "gradeDiff": "{subject}: anda masukkan {typed}, tetapi slip anda menunjukkan {slip}.",
         "fallback": {
           "name_mismatch": "Nama yang kami baca tidak sepadan dengan nama dalam profil anda. Sama ada gambar kurang jelas, atau nama yang anda taip semasa mendaftar dieja sedikit berbeza. Muat naik gambar yang lebih jelas jika itu puncanya; jika nama pada kad betul, betulkan ejaan dalam profil anda.",
           "nric_mismatch": "Nombor IC yang kami baca tidak sepadan dengan yang ada dalam profil anda. Semak digitnya dalam profil, kemudian muat naik gambar IC yang jelas semula.",

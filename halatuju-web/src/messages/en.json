@@ -1244,7 +1244,8 @@
         "birth_certificate": "A photo/PDF of your birth certificate, linking your mother to you.",
         "coachLabel": "Cikgu Gopal · Helper",
         "editProfileName": "Edit your name in your profile",
-        "editProfileResults": "Update your results on your profile",
+        "adjustGrades": "Adjust my grades",
+        "gradeDiff": "{subject}: you entered {typed}, but your slip shows {slip}.",
         "fallback": {
           "name_mismatch": "The name we read on this doesn't match the name in your profile. Either the photo is unclear, or the name you typed when registering is spelled differently. Upload a clearer photo if that's the cause; if the card is correct, fix the spelling in your profile.",
           "nric_mismatch": "The IC number we read doesn't match the one in your profile. Check the digits in your profile, then upload a clear photo of your IC again.",

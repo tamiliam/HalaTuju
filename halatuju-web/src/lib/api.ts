@@ -1867,11 +1867,19 @@ export async function deleteDocument(id: number, options?: ApiOptions): Promise<
 // "Cikgu Gopal" document-help coach. `source`: 'ai' = warm Gemini message;
 // 'fallback' = AI off/throttled → show pre-written i18n copy keyed by `verdict`;
 // 'none' = nothing to help with (good/unchecked doc). Soft, never blocks.
+export interface GradeDiff {
+  subject: string
+  typed: string
+  slip: string
+}
+
 export interface DocumentHelp {
   message: string
   source: 'ai' | 'fallback' | 'none'
   verdict?: string
   model_used?: string
+  /** For a slip grade mismatch: the exact subject(s) that differ, so the coach can name them. */
+  grade_diffs?: GradeDiff[]
 }
 
 export async function getDocumentHelp(

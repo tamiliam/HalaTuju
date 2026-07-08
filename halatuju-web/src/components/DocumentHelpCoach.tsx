@@ -73,6 +73,7 @@ export default function DocumentHelpCoach({
   const [status, setStatus] = useState<'loading' | 'ai' | 'fallback' | 'none'>('loading')
   const [message, setMessage] = useState('')
   const [verdict, setVerdict] = useState<string | undefined>(undefined)
+  const [gradeDiffs, setGradeDiffs] = useState<{ subject: string; typed: string; slip: string }[]>([])
 
   // Cache key: the per-language verdict signal. Only a (re-)upload changes the signal,
   // so a plain page reload reuses the stored advice — Gopal sticks, never re-pops.
@@ -87,6 +88,7 @@ export default function DocumentHelpCoach({
       setVerdict(cached.verdict)
       setMessage(cached.message)
       setStatus(cached.source)
+      setGradeDiffs(cached.gradeDiffs ?? [])
       return
     }
     let cancelled = false
@@ -94,15 +96,17 @@ export default function DocumentHelpCoach({
     getDocumentHelp(doc.id, lang, { token })
       .then((r) => {
         if (cancelled) return
+        const diffs = r.grade_diffs ?? []
         const next =
           r.source === 'ai' && r.message
-            ? { source: 'ai' as const, message: r.message, verdict: r.verdict }
+            ? { source: 'ai' as const, message: r.message, verdict: r.verdict, gradeDiffs: diffs }
             : r.source === 'none'
-              ? { source: 'none' as const, message: '', verdict: r.verdict }
-              : { source: 'fallback' as const, message: '', verdict: r.verdict }
+              ? { source: 'none' as const, message: '', verdict: r.verdict, gradeDiffs: diffs }
+              : { source: 'fallback' as const, message: '', verdict: r.verdict, gradeDiffs: diffs }
         setVerdict(next.verdict)
         setMessage(next.message)
         setStatus(next.source)
+        setGradeDiffs(diffs)
         writeHelpCache(doc.id, cacheSignal, next)
       })
       .catch(() => {
@@ -135,15 +139,29 @@ export default function DocumentHelpCoach({
           <span aria-hidden>→</span>
         </Link>
       )}
+      {/* Name the exact subject(s) that differ, so the student isn't left hunting: e.g.
+          "KIMIA: you entered G, but your slip shows E." */}
+      {!loading && verdict === 'slip_grade_mismatch' && gradeDiffs.length > 0 && (
+        <ul className="mt-1.5 space-y-0.5">
+          {gradeDiffs.map((d) => (
+            <li key={d.subject} className="text-sm text-gray-800">
+              {t('scholarship.docs.help.gradeDiff')
+                .replace('{subject}', d.subject)
+                .replace('{typed}', d.typed)
+                .replace('{slip}', d.slip)}
+            </li>
+          ))}
+        </ul>
+      )}
       {!loading &&
         (verdict === 'slip_grade_mismatch' ||
           verdict === 'slip_subjects_missing' ||
           verdict === 'slip_grade_uncertain') && (
           <Link
-            href="/profile"
+            href="/onboarding/grades"
             className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 underline underline-offset-2 hover:text-primary-800"
           >
-            {t('scholarship.docs.help.editProfileResults')}
+            {t('scholarship.docs.help.adjustGrades')}
             <span aria-hidden>→</span>
           </Link>
         )}

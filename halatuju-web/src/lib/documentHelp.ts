@@ -243,6 +243,7 @@ export interface CachedHelp {
   source: 'ai' | 'fallback' | 'none'
   message: string
   verdict?: string
+  gradeDiffs?: { subject: string; typed: string; slip: string }[]
 }
 
 function helpCacheKey(docId: number, signal: string): string {

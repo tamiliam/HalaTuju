@@ -1697,9 +1697,13 @@ def document_red_blockers(application):
         if dt == 'results_slip':
             chk = student_slip_check(doc)
             if chk.get('name') == 'mismatch':
-                codes.add('results_slip_name_mismatch')
-            if chk.get('subjects') == 'mismatch' or chk.get('results') == 'mismatch':
-                codes.add('results_slip_grades_mismatch')
+                codes.add('results_slip_name_mismatch')      # identity red -> still hard-blocks
+            # A GRADE / subject mismatch is NO LONGER a hard submission block (owner 2026-07-08):
+            # the slip is the authoritative record and the officer sees the exact discrepancy in
+            # the cockpit (the slip-check chip), so it is reconciled at review / interview rather
+            # than walling the student out of submitting -- a student who simply under-typed a
+            # grade (#48: typed G, slip E) must not be trapped. The student's coach still names
+            # the diff and links to the grades page so they can correct it if they wish.
         elif dt == 'offer_letter':
             # Name / IC are hard identity reds; the pathway-clash is a SOFT "is this
             # where you're going?" signal and is deliberately not gated here.
