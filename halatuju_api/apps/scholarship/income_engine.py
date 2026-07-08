@@ -2118,15 +2118,35 @@ def school_leaving_cert_gap(application):
     return not docs.filter(doc_type='results_slip', superseded_at__isnull=True).exists()
 
 
+# The post-SPM pathways that run MULTI-YEAR (owner 2026-07-08): a student who joined one of these
+# in a PREVIOUS year is a continuing student and owes their latest semester result (CGPA).
+# Matriculation and Asasi are 10-MONTH programmes — a past intake there means COMPLETED, not
+# continuing, so no semester-result request applies.
+_MULTI_YEAR_PATHWAYS = frozenset({'stpm', 'pismp', 'poly', 'university'})
+
+
 def semester_result_gap(application):
-    """A continuing STPM/college student (``exam_type='stpm'``) with no current-semester result
-    slip that READ on file → ask for the latest CGPA. The model had no pre-award current-performance
-    box (``SemesterResult`` is post-award only). Clears when a ``semester_result`` field-extracts."""
-    prof = getattr(application, 'profile', None)
-    if (getattr(prof, 'exam_type', '') or '') != 'stpm':
-        return False
+    """A CONTINUING student with no current-semester result slip that READ on file → ask for the
+    latest CGPA. Continuing means (owner 2026-07-08, post-SPM focus):
+      * the chosen pathway is MULTI-YEAR (STPM / PISMP / Poly / UA diploma — `_MULTI_YEAR_PATHWAYS`)
+        AND the offer's normalised ``reporting_date`` is a year OLDER than the cohort (the same
+        past-intake signal the continuing-STPM award rule uses); Matric/Asasi (10-month) excluded —
+        a past intake there = completed, a different conversation; or
+      * the legacy arm: the student applied with STPM credentials (``exam_type='stpm'`` — in Form 6
+        by definition; the programme currently processes post-SPM applicants, so this rarely fires).
+    Clears when a ``semester_result`` field-extracts."""
     docs = _docs_or_none(application)
-    return docs is not None and not _has_read_doc(docs, 'semester_result')
+    if docs is None or _has_read_doc(docs, 'semester_result'):
+        return False
+    prof = getattr(application, 'profile', None)
+    if (getattr(prof, 'exam_type', '') or '') == 'stpm':
+        return True
+    pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
+    if pathway not in _MULTI_YEAR_PATHWAYS:
+        return False
+    rd = getattr(application, 'reporting_date', None)
+    cy = getattr(getattr(application, 'cohort', None), 'year', None)
+    return bool(rd and cy and rd.year < cy)
 
 
 def employed_epf_members(application):

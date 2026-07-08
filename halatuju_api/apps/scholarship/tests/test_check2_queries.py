@@ -518,6 +518,32 @@ class TestV4PromotedAsks(_Base):
         self.assertIn('semester_result_missing', codes)
         self.assertNotIn('school_leaving_cert_missing', codes)   # spm-only ask
 
+    def test_semester_result_for_past_intake_multiyear_pathway(self):
+        # Owner 2026-07-08 (post-SPM focus): a student who JOINED a multi-year programme
+        # (STPM/PISMP/Poly/UA) in a PREVIOUS year — past-intake reporting_date — is a continuing
+        # student and owes their latest semester result (CGPA).
+        import datetime
+        self.app.chosen_pathway = 'poly'
+        self.app.reporting_date = datetime.date(2025, 6, 10)   # cohort 2026 → joined last year
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertIn('semester_result_missing', self._codes())
+
+    def test_no_semester_result_for_ten_month_or_current_intake(self):
+        import datetime
+        # Matric/Asasi are 10-MONTH programmes — a past intake means COMPLETED, not continuing.
+        self.app.chosen_pathway = 'matric'
+        self.app.reporting_date = datetime.date(2025, 6, 10)
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertNotIn('semester_result_missing', self._codes())
+        # A CURRENT-year intake on a multi-year pathway is a fresh entrant — nothing to show yet.
+        self.app.chosen_pathway = 'poly'
+        self.app.reporting_date = datetime.date(2026, 6, 8)
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertNotIn('semester_result_missing', self._codes())
+
     def test_employed_epf_optional_raised_and_clears(self):
         sync_check2_queries(self.app)                       # father gov + slip, no EPF → raise
         # Per-member (2026-07-04): tagged to father, so the Action-Centre upload lands tagged.
