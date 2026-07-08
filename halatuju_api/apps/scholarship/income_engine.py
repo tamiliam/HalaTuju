@@ -1026,6 +1026,21 @@ def salary_income_satisfied(application):
     return any(member_cluster_complete(application, m) for m in working_members(application))
 
 
+def income_established(application):
+    """True when the household's income is ALREADY established by a clean, dispositive document, on
+    EITHER route: a complete salary cluster (`salary_income_satisfied`) OR a valid household STR
+    (`household_str_status` — the government's means-test, matched to a parent/guardian). Owner
+    2026-07-08: in either case an EXTRANEOUS or misread income document must NOT hard-block
+    submission — it becomes a soft Check-2 follow-up. This is the route-agnostic form of "one clean
+    cluster is enough"; it also covers the STR twin where the OTHER parent's IC is cross-checked
+    against a single-recipient STR and 'mismatches' meaninglessly (a valid father's STR + an
+    extraneous mother IC, #28)."""
+    if salary_income_satisfied(application):
+        return True
+    grade, _member = household_str_status(application)
+    return grade is not None
+
+
 def declared_amount(application, member):
     """A working member's DECLARED average monthly income (RM, int > 0) from the income
     wizard, or None. Stored in ``ScholarshipApplication.income_declared = {member: amount}``.

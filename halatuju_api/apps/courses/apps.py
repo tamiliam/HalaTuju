@@ -40,7 +40,7 @@ class CoursesConfig(AppConfig):
         # DataFrame is only needed to SERVE eligibility; skip it for schema + read-only diagnostic
         # commands so they boot fast (esp. run locally against a remote DB).
         import sys
-        _SKIP_DATA_CMDS = ('migrate', 'makemigrations', 'stuck_report')
+        _SKIP_DATA_CMDS = ('migrate', 'makemigrations', 'stuck_report', 'shell')
         if any(cmd in sys.argv for cmd in _SKIP_DATA_CMDS):
             return
 

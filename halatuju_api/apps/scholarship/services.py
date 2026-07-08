@@ -1678,11 +1678,14 @@ def document_red_blockers(application):
     # epf blocked, trapping a student over a document they did not even need.)
     route = (getattr(application, 'income_route', '') or '').strip()
     selected_members = set(income_engine.working_members(application)) if route == 'salary' else set()
-    # "One clean cluster is enough" (owner 2026-07-08): once one earner is fully + coherently
-    # documented, every OTHER income-document error (e.g. an extraneous, misread second-parent IC)
-    # becomes a soft Check-2 follow-up, not a submission blocker. The student's OWN identity/academic
-    # /pathway reds (results_slip / offer_letter) still always block — they're not income-cluster docs.
-    income_ok = income_engine.salary_income_satisfied(application)
+    # "Income already established -> other income-doc errors are soft" (owner 2026-07-08), on BOTH
+    # routes: a complete salary cluster OR a valid dispositive household STR. Once income is
+    # established, every OTHER income-document error -- an extraneous misread second-parent IC on a
+    # clean salary cluster (#19), or the OTHER parent's IC cross-checked against a single-recipient
+    # STR and 'mismatching' meaninglessly (#28) -- becomes a soft Check-2 follow-up, not a
+    # submission blocker. The student's OWN identity/academic/pathway reds (results_slip /
+    # offer_letter) still always block -- they're not income-cluster docs.
+    income_ok = income_engine.income_established(application)
 
     def has(d, *keys):
         return any(d.get(k) == 'mismatch' for k in keys)

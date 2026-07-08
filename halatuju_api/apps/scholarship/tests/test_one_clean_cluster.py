@@ -97,6 +97,24 @@ class TestGateSuppression(_Base):
                             side_effect=lambda a, m: m == 'mother'):
                 self.assertNotIn('parent_ic_person_mismatch', services.document_red_blockers(app))
 
+    def test_str_route_dispositive_str_suppresses_extraneous_ic_mismatch(self):
+        # #28: a valid father's STR + an extraneous MOTHER IC, whose cross-check against the
+        # single-recipient STR 'mismatches' meaninglessly. A dispositive STR makes it soft.
+        app = self._app('g', income_route='str', income_earner='father')
+        self._doc(app, 'parent_ic', 'mother', vision_name='JEYASUTHA A/P JAGANATHAN')
+        proof_mismatch = {'name_status': 'match', 'proof_name_status': 'mismatch',
+                          'proof_nric_status': 'mismatch'}
+        with mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+                        return_value=proof_mismatch):
+            # No dispositive STR → the extraneous IC mismatch BLOCKS.
+            with mock.patch('apps.scholarship.income_engine.household_str_status',
+                            return_value=(None, None)):
+                self.assertIn('parent_ic_person_mismatch', services.document_red_blockers(app))
+            # Dispositive STR (matched to the father) → the mismatch is soft, NOT a blocker.
+            with mock.patch('apps.scholarship.income_engine.household_str_status',
+                            return_value=('current', 'father')):
+                self.assertNotIn('parent_ic_person_mismatch', services.document_red_blockers(app))
+
 
 class TestOcrNameGuard(TestCase):
     def test_fused_header_fragment_is_garbled(self):
