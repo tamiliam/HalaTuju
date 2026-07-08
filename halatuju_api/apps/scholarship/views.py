@@ -875,31 +875,33 @@ class DocumentListCreateView(APIView):
         # One-live-copy dedup (owner 2026-07-05): a salary slip / STR is needed once — the most
         # RECENT. The student re-uploads the same or older copies and each officer re-request adds a
         # parallel slot, so several live copies of one person's proof pile up. Collapse this person's
-        # STR keep-better guard (#83, owner 2026-07-08): a re-upload that does NOT read as a usable
-        # STR proof (wrong_type — a SALINAN/SARA/unknown page — or unreadable) must never DISPLACE a
-        # recognised proof with a readable approval. #83's student answered the str_not_current
-        # request with an old 2023 copy, four times — each upload obediently superseded her Lulus
-        # Semakan, downgrading her own evidence from Probable to breached. Same philosophy as the
-        # extraction clobber guard: a bad read never destroys a good one. A RECOGNISED new document
-        # still replaces normally (a genuine current Ditolak must displace an old Lulus — that is
-        # reality, not a downgrade). The junk upload is kept as history (superseded by the restored
-        # doc) so the officer sees what the student sent.
+        # STR keep-better guard (owner 2026-07-08): a re-upload of STRICTLY LOWER quality never
+        # DISPLACES a better live proof — the better one stays live, the new upload becomes its
+        # history. Quality = str_proof_quality (currency-rank first, source-rank tiebreak), so:
+        #   * #83 — a wrong_type/unreadable page (a SALINAN / old copy) scores (0/1, …) below any
+        #           recognised approved proof → kept out (the student superseded her Lulus Semakan
+        #           with a 2023 copy four times, dropping herself from Probable to breached);
+        #   * #30 — a Lulus DASHBOARD (unconfirmed, source 1) below a Lulus SEMAKAN (unconfirmed,
+        #           source 2) at EQUAL currency → the richer Semakan is kept (it carries the
+        #           payment-dates page that can reach 'current'; the dashboard cannot).
+        # CURRENCY dominates, so a genuinely-better lower-tier upload still replaces (#112: a newer
+        # Lulus dashboard OUTRANKS an older 'Dalam Proses Rayuan' semakan → replaces normally), and a
+        # 'rejected'/Ditolak read (quality None) always replaces — a real negative status is news.
         kept_previous = False
         if doc.doc_type == 'str' and stale_ids:
-            from .income_engine import student_str_check
+            from .income_engine import str_proof_quality
             from django.utils import timezone as _tz2
-            new_state = (student_str_check(doc) or {}).get('current_status', '')
-            if new_state in ('wrong_type', 'unreadable'):
-                old = (ApplicantDocument.objects.filter(id__in=stale_ids)
-                       .order_by('-uploaded_at').first())
-                old_state = (student_str_check(old) or {}).get('current_status', '') if old else ''
-                if old_state in ('current', 'unconfirmed', 'stale'):
-                    ApplicantDocument.objects.filter(id=old.id).update(
-                        superseded_at=None, superseded_by=None)
-                    ApplicantDocument.objects.filter(id=doc.id).update(
-                        superseded_at=_tz2.now(), superseded_by=old)
-                    doc.refresh_from_db()
-                    kept_previous = True
+            new_q = str_proof_quality(doc)
+            old = (ApplicantDocument.objects.filter(id__in=stale_ids)
+                   .order_by('-uploaded_at').first())
+            old_q = str_proof_quality(old) if old else None
+            if old_q is not None and new_q is not None and new_q < old_q:
+                ApplicantDocument.objects.filter(id=old.id).update(
+                    superseded_at=None, superseded_by=None)
+                ApplicantDocument.objects.filter(id=doc.id).update(
+                    superseded_at=_tz2.now(), superseded_by=old)
+                doc.refresh_from_db()
+                kept_previous = True
         # copies of THIS doc-type to the single newest (newest pay month / latest-dated STR); the
         # rest drop to Old / Replaced (retained). Runs after the tag guard so the member is final.
         from . import income_engine as _ie

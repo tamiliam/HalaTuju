@@ -994,11 +994,12 @@ class TestStrKeepBetterGuard(TestCase):
                            'authenticity': {'status': 'genuine'}},
             vision_run_at=_dj_tz.now())
 
-    def _post_str(self, junk=True, filename='str amma.pdf', size=222):
-        """POST an STR upload whose extraction yields junk (wrong_type) or a genuine current
-        Ditolak (recognised → must replace normally)."""
-        fields = ({'source_type': 'unknown', 'status': '', 'year': '2023'} if junk
-                  else {'source_type': 'letter', 'status': 'Ditolak', 'year': '2026'})
+    def _post_str(self, junk=True, filename='str amma.pdf', size=222, fields=None):
+        """POST an STR upload whose extraction yields the given fields (default: junk wrong_type,
+        or a genuine current Ditolak when junk=False)."""
+        if fields is None:
+            fields = ({'source_type': 'unknown', 'status': '', 'year': '2023'} if junk
+                      else {'source_type': 'letter', 'status': 'Ditolak', 'year': '2026'})
 
         def _extract(app, doc, *a, **k):
             doc.vision_fields = dict(doc.vision_fields or {},
@@ -1036,6 +1037,41 @@ class TestStrKeepBetterGuard(TestCase):
         self.assertIsNotNone(good.superseded_at)            # normal supersede
         new = ApplicantDocument.objects.get(id=resp.json()['id'])
         self.assertIsNone(new.superseded_at)
+
+    def test_dashboard_never_displaces_semakan_at_equal_currency(self):
+        # #30 (owner 2026-07-08): a Lulus DASHBOARD (unconfirmed, source 1) must NOT displace a
+        # Lulus SEMAKAN (unconfirmed, source 2) — equal currency, the richer Semakan is kept (it
+        # carries the payment-dates page that can reach 'current'; the dashboard cannot).
+        good = self._good_semakan()
+        resp = self._post_str(fields={'source_type': 'dashboard', 'status': 'Lulus', 'year': '',
+                                      'recipient_name': 'MATHAVI A/P T',
+                                      'recipient_nric': '700423-07-5088'})
+        self.assertEqual(resp.status_code, 201, resp.content)
+        self.assertTrue(resp.json().get('kept_previous'))
+        good.refresh_from_db()
+        self.assertIsNone(good.superseded_at)               # the Semakan stays live
+        dash = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertEqual(dash.superseded_by_id, good.id)
+
+    def test_better_currency_dashboard_still_replaces_weaker_semakan(self):
+        # #112: currency DOMINATES the source tiebreak. An older Semakan whose approval didn't read
+        # as Lulus ('Dalam Proses Rayuan' → unreadable, currency 1) is correctly displaced by a
+        # newer Lulus DASHBOARD (unconfirmed, currency 3) — the dashboard is genuinely better.
+        weak = ApplicantDocument.objects.create(
+            application=self.app, doc_type='str', household_member='mother',
+            storage_path=f'{self.app.id}/str/weak', original_filename='sem.jpg', size=99,
+            vision_fields={'fields': {'source_type': 'semakan_status',
+                                      'status': 'Dalam Proses Rayuan', 'year': ''},
+                           'authenticity': {'status': 'genuine'}},
+            vision_run_at=_dj_tz.now())
+        resp = self._post_str(fields={'source_type': 'dashboard', 'status': 'Lulus', 'year': '',
+                                      'recipient_name': 'MATHAVI A/P T',
+                                      'recipient_nric': '700423-07-5088'})
+        self.assertEqual(resp.status_code, 201, resp.content)
+        self.assertFalse(resp.json().get('kept_previous'))
+        weak.refresh_from_db()
+        self.assertIsNotNone(weak.superseded_at)            # weaker semakan replaced normally
+        self.assertIsNone(ApplicantDocument.objects.get(id=resp.json()['id']).superseded_at)
 
     def test_unresolved_attempts_stamped_on_open_request(self):
         # Human-aware re-ask: each upload that leaves the doc-request OPEN bumps `attempts` on the

@@ -708,6 +708,33 @@ def _str_recipient_household_match(application, name, nric, tagged_member=''):
     return name_status, nric_status, (name_hit or nric_hit or tagged_member or '')
 
 
+# STR-proof QUALITY ranking for the upload keep-better guard (owner: #83 wrong-type, #30 dashboard
+# < Semakan). A re-upload must never displace a live proof of STRICTLY HIGHER quality with a thinner
+# one. Quality is a tuple (currency_rank, source_rank), CURRENCY FIRST — so #112 is correctly NOT a
+# regression: its live Lulus DASHBOARD (unconfirmed) outranks the older 'Dalam Proses Rayuan'
+# SEMAKAN (unreadable approval) on currency, which dominates the source tiebreak. The source tier
+# only decides ties (both Lulus + dateless): a Semakan (shows the payment-dates page → can reach
+# 'current') carries MORE than a Dashboard (home totals, capped at 'unconfirmed'), which carries
+# more than an unrecognised page.
+_STR_CURRENCY_RANK = {'current': 4, 'unconfirmed': 3, 'stale': 2, 'unreadable': 1, 'wrong_type': 0}
+_STR_SOURCE_RANK = {'letter': 3, 'semakan_status': 2, 'dashboard': 1}
+
+
+def str_proof_quality(doc):
+    """A comparable (currency_rank, source_rank) quality tuple for an STR proof — HIGHER is better.
+    Returns ``None`` for a non-STR doc OR a 'rejected' read: a genuine Ditolak is NEWS (a real
+    negative status), so it must ALWAYS replace, never be kept out by the guard."""
+    sc = student_str_check(doc)
+    if not sc:
+        return None
+    cs = sc.get('current_status', '')
+    if cs == 'rejected':
+        return None
+    vf = getattr(doc, 'vision_fields', None)
+    src = (((vf.get('fields') or {}).get('source_type') or '') if isinstance(vf, dict) else '')
+    return (_STR_CURRENCY_RANK.get(cs, 0), _STR_SOURCE_RANK.get(src.strip().lower(), 0))
+
+
 def student_str_check(doc):
     """For an STR document: the recipient facts (name · NRIC · status · year) matched against the
     HOUSEHOLD — every parent/guardian's IC, on name OR nric independently — plus whether it's

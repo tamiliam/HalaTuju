@@ -534,6 +534,17 @@ Also same-day: per-issuer reporting-date labels in the extraction prompt + offer
 **▶ OWNER-REVIEW queue:** #56's summons is 10 Jun 2025 (past intake — confirm still enrolled);
 Fail-band students owe proper offer letters; #17 owes her full (uncropped) UTHM letter.
 
+**✅ SHIPPED 2026-07-08 — STR keep-better guard generalised to QUALITY ranking (#30; BE, NO migration).**
+`income_engine.str_proof_quality(doc)` → (currency_rank {current 4/unconfirmed 3/stale 2/unreadable
+1/wrong_type 0}, source_rank {letter 3/semakan_status 2/dashboard 1}); 'rejected'→None (always
+replaces). The upload guard keeps the live proof when `new_q < old_q` (currency dominates the source
+tiebreak). Fixes #30 (Lulus dashboard no longer supersedes a Lulus Semakan — equal currency, richer
+source wins); #83 wrong-type is now the lowest tier. Currency-first is load-bearing: #112 is NOT a
+regression (its live Lulus dashboard outranks an older 'Dalam Proses Rayuan' semakan on currency, so
+it correctly stayed). Data: #30 restored (1242 Semakan live, 1624 dashboard history); #112 untouched.
+Cohort SQL scan flags source-inversions on rank alone — always re-check with str_proof_quality
+(currency) before any data fix, else you'd wrongly restore #112's weaker semakan. 2162 pytest.
+
 **✅ SHIPPED 2026-07-08 — STR keep-better guard + human-aware re-ask (#83; BE+FE, NO migration).**
 Upload path (`views.py`): a re-upload whose STR read is wrong_type/unreadable never displaces a live
 recognised proof with readable approval (swap-back inside the same request; junk kept as history;

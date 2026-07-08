@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## STR keep-better guard → quality ranking — 2026-07-08
+
+### Changed
+- **The STR keep-better guard now ranks by QUALITY, not just wrong-type (#30).** A re-upload of
+  strictly lower quality never displaces a better live proof; quality = `str_proof_quality` =
+  (currency-rank, source-rank) with CURRENCY first. So a Lulus dashboard no longer supersedes a Lulus
+  Semakan at equal currency (Semakan carries the payment-dates page → can reach 'current'; dashboard
+  is capped at 'unconfirmed'), while a genuinely-better lower-tier upload still replaces (#112: a
+  newer Lulus dashboard correctly displaces an older 'Dalam Proses Rayuan' Semakan — currency
+  dominates). #83's wrong-type case is now the lowest quality tier. #30's data restored; #112 left
+  as-is (its dashboard is genuinely the better proof). 2162 pytest.
+
 ## STR keep-better guard + human-aware re-ask — 2026-07-08
 
 ### Fixed
