@@ -1937,8 +1937,8 @@
           "desc": "Anda menunjukkan pendapatan ibu, jadi kami perlukan sijil kelahiran anda untuk mengaitkannya dengan anda. Ini penting — kami tidak dapat mengesahkan permohonan anda sepenuhnya tanpanya."
         },
         "birth_cert_not_genuine": {
-          "title": "Muat naik sijil kelahiran sebenar anda",
-          "desc": "Dokumen yang anda muat naik sebagai sijil kelahiran nampaknya bukan sijil kelahiran, jadi kami tidak dapat menggunakannya untuk mengaitkan ibu dengan anda. Sila muat naik sijil kelahiran sebenar anda — kami tidak dapat mengesahkan permohonan anda sepenuhnya tanpanya."
+          "title": "Muat naik sijil kelahiran penuh anda",
+          "desc": "Kami tidak dapat membaca dokumen yang anda muat naik sebagai sijil kelahiran yang lengkap — mungkin terpotong atau dokumen yang salah. Sila ambil gambar yang jelas bagi sijil PENUH dengan keempat-empat penjuru kelihatan, dan muat naik semula. Kami memerlukannya untuk mengaitkan ibu dengan anda — kami tidak dapat mengesahkan permohonan anda sepenuhnya tanpanya."
         },
         "birth_cert_mismatch": {
           "title": "Semak sijil kelahiran anda",
@@ -1961,8 +1961,8 @@
           "desc": "Anda menunjukkan pendapatan penjaga, jadi kami perlukan surat penjagaan atau perintah mahkamah. Ini penting — kami tidak dapat mengesahkan permohonan anda sepenuhnya tanpanya."
         },
         "guardianship_letter_not_genuine": {
-          "title": "Muat naik surat penjagaan sebenar",
-          "desc": "Dokumen yang anda muat naik sebagai surat penjagaan nampaknya bukan surat penjagaan, jadi kami tidak dapat menggunakannya untuk mengaitkan penjaga dengan anda. Sila muat naik surat sebenar — kami tidak dapat mengesahkan permohonan anda sepenuhnya tanpanya."
+          "title": "Muat naik surat penjagaan penuh",
+          "desc": "Kami tidak dapat membaca dokumen yang anda muat naik sebagai surat penjagaan yang lengkap — mungkin terpotong atau dokumen yang salah. Sila ambil gambar yang jelas bagi surat PENUH dengan keempat-empat penjuru kelihatan, dan muat naik semula. Kami memerlukannya untuk mengaitkan penjaga dengan anda — kami tidak dapat mengesahkan permohonan anda sepenuhnya tanpanya."
         },
         "offer_unreadable": {
           "title": "Surat tawaran sukar dibaca",
@@ -3404,11 +3404,11 @@
           "earner_ic_missing": "Tiada KP dimuat naik untuk: {members} — kami tidak dapat mengesahkan dokumen pendapatan milik keluarga. Minta KP itu.",
           "earner_ic_unreadable": "KP untuk {members} tidak dapat dibaca — minta gambar yang lebih jelas.",
           "birth_cert_missing": "Salah seorang ahli yang bekerja ialah ibu, tetapi tiada sijil kelahiran mengaitkannya dengan pelajar. Minta sijil itu.",
-          "birth_cert_not_genuine": "Dokumen yang dimuat naik sebagai sijil kelahiran nampaknya bukan sijil kelahiran — kaitan ibu↔pelajar tidak dapat dibaca daripadanya. Pelajar diminta memuat naik sijil kelahiran sebenar.",
+          "birth_cert_not_genuine": "Dokumen dalam slot sijil kelahiran tidak dapat dibaca sebagai sijil kelahiran yang lengkap — mungkin terpotong atau dokumen yang salah, jadi kaitan ibu↔pelajar tidak dapat dibaca daripadanya. Pelajar diminta memuat naik sijil penuh tanpa dipotong.",
           "birth_cert_mismatch": "Sijil kelahiran tidak mengaitkan nama ibu dengan pelajar — semak dengan mata.",
           "father_patronymic_mismatch": "Nama pada KP untuk {members} tidak sepadan dengan nama bapa dalam KP pelajar sendiri — semak hubungan.",
           "guardianship_letter_missing": "Pendapatan yang ditunjukkan ialah penjaga, tetapi tiada surat/perintah penjagaan dimuat naik. Minta surat itu.",
-          "guardianship_letter_not_genuine": "Dokumen yang dimuat naik sebagai surat penjagaan nampaknya bukan surat penjagaan — kaitan penjaga↔pelajar tidak dapat dibaca daripadanya. Pelajar diminta memuat naik surat sebenar.",
+          "guardianship_letter_not_genuine": "Dokumen dalam slot surat penjagaan tidak dapat dibaca sebagai surat yang lengkap — mungkin terpotong atau dokumen yang salah, jadi kaitan penjaga↔pelajar tidak dapat dibaca daripadanya. Pelajar diminta memuat naik surat penuh tanpa dipotong.",
           "str_not_current_wrong_type": "Bukan dokumen STR — ia tidak dikira sebagai bukti STR. Menilai dokumen gaji; STR yang sah diperlukan daripada pelajar.",
           "str_not_current_rejected": "STR ditolak (Ditolak) — ia gagal sebagai bukti STR. Menilai dokumen gaji untuk B40 sebaliknya.",
           "str_not_current_stale": "Diluluskan kitaran lalu sahaja — ia sudah lapuk, bukan bukti keperluan semasa. Status kitaran semasa diperlukan daripada pelajar sebelum ini dikira.",
