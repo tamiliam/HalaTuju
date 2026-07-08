@@ -2078,27 +2078,27 @@
         },
         "epf_statement_missing": {
           "title": "Upload your parent's EPF statement (optional)",
-          "desc": "If your working parent has an EPF (KWSP) statement, uploading it alongside their payslip helps confirm their income. This is optional — skip it if they don't have one."
+          "desc": "If your working parent has an EPF (KWSP) statement, upload it alongside their payslip. It would help confirm their income."
         },
         "father_epf_missing": {
           "title": "Upload your father's EPF statement (optional)",
-          "desc": "If your father has an EPF (KWSP) statement, uploading it alongside his payslip helps confirm his income. Optional — skip it if he doesn't have one."
+          "desc": "If your father has an EPF (KWSP) statement, upload it alongside his payslip. It would help confirm his income."
         },
         "mother_epf_missing": {
           "title": "Upload your mother's EPF statement (optional)",
-          "desc": "If your mother has an EPF (KWSP) statement, uploading it alongside her payslip helps confirm her income. Optional — skip it if she doesn't have one."
+          "desc": "If your mother has an EPF (KWSP) statement, upload it alongside her payslip. It would help confirm her income."
         },
         "guardian_epf_missing": {
           "title": "Upload your guardian's EPF statement (optional)",
-          "desc": "If your guardian has an EPF (KWSP) statement, uploading it alongside their payslip helps confirm their income. Optional — skip it if they don't have one."
+          "desc": "If your guardian has an EPF (KWSP) statement, upload it alongside their payslip. It would help confirm their income."
         },
         "brother_epf_missing": {
           "title": "Upload your elder brother's EPF statement (optional)",
-          "desc": "If your elder brother has an EPF (KWSP) statement, uploading it alongside his payslip helps confirm his income. Optional — skip it if he doesn't have one."
+          "desc": "If your elder brother has an EPF (KWSP) statement, upload it alongside his payslip. It would help confirm his income."
         },
         "sister_epf_missing": {
           "title": "Upload your elder sister's EPF statement (optional)",
-          "desc": "If your elder sister has an EPF (KWSP) statement, uploading it alongside her payslip helps confirm her income. Optional — skip it if she doesn't have one."
+          "desc": "If your elder sister has an EPF (KWSP) statement, upload it alongside her payslip. It would help confirm her income."
         },
         "utility_bill_missing": {
           "title": "Upload a utility bill",

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Copy fixes — 2026-07-08
+
+### Changed
+- **Employed-EPF request copy** — direct ask, drops the "skip it if…" tail: "If your father has an
+  EPF (KWSP) statement, upload it alongside his payslip. It would help confirm his income."
+  (all member variants, en/ms/ta; the "(optional)" title already carries the opt-out).
+- **Interview-gap prompt (`gap_engine`)** — the financial-need bucket now states what the assistance
+  IS (a modest FIXED monthly living-cost bursary, ~RM200/mo — a top-up, not a scholarship covering
+  fees/laptop/full costs) and forbids the "bridge the gap"/partial-coverage framing. Stops the AI
+  generating questions like "RM3,000 may not cover a laptop — how would you bridge the gap?" (which
+  misrepresents the fixed bursary). Existing stored gaps are per-application and reviewer-deletable.
+  2163 pytest + 482 jest.
+
 ## STR keep-better guard → quality ranking — 2026-07-08
 
 ### Changed

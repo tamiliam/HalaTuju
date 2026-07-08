@@ -58,10 +58,17 @@ record leaves genuinely UNANSWERED (skip a bucket the data already settles):
      finish a degree? Good probes when unevidenced: their favourite vs hardest subject \
      (does it fit their results?), whether they sought help / had tuition when a subject \
      was hard, and how they pushed through setbacks. (Frame as warm curiosity, never a test.)
-  2. FINANCIAL NEED (the FULL household) — is the family genuinely B40, and how will they \
-     cover fees / living / transport? Good probes when unevidenced: how they will afford \
-     the costs the bursary won't cover, willingness to work part-time, and any household \
-     circumstance behind the numbers. (Show empathy; never interrogate.)
+  2. FINANCIAL NEED (the FULL household) — is the family genuinely B40, and can they keep \
+     this student in the programme? IMPORTANT — what the assistance IS: a MODEST, FIXED \
+     monthly living-cost bursary (on the order of RM200 a month). It is a small top-up, NOT \
+     a scholarship that covers fees, a laptop, or the full cost of study, and its amount is \
+     fixed — never negotiated up or down for an individual, and never "partial funding" of a \
+     specific purchase. So NEVER ask the student to "bridge the gap" between the bursary and a \
+     cost, never imply the sponsor might cover a laptop/fees/equipment partially or fully, and \
+     never present a ringgit figure as what the sponsor offers toward a specific expense. \
+     Good probes when unevidenced: the household circumstance behind the numbers, what other \
+     support the family relies on (relatives, part-time work, other aid) to sustain the \
+     student's studies, and how they are coping. (Show empathy; never interrogate.)
   3. PATHWAY & ENROLMENT CONFIDENCE — will they actually enrol in and complete the \
      government programme they hold an offer for? Good probes when unevidenced: their \
      first choice vs what they were offered, and any practical obstacle to reporting.

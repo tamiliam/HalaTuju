@@ -76,6 +76,16 @@ class TestGapEngine(TestCase):
                       'academic_resilience', 'financial_need', 'pathway_confidence'):
             self.assertIn(token, prompt)
 
+    def test_prompt_states_bursary_nature_and_forbids_bridge_the_gap(self):
+        # Owner 2026-07-08: the assistance is a modest FIXED monthly bursary (~RM200/mo), NOT
+        # partial cost-coverage — the AI must not ask the student to "bridge the gap" or imply the
+        # sponsor covers a laptop/fees. Guards the interview-query framing so a "RM3,000 may not
+        # cover a laptop, how would you bridge the gap?" question can't be generated again.
+        prompt = gap_engine._build_gap_prompt(self.app)
+        self.assertIn('bridge the gap', prompt)          # named as a thing to NEVER do
+        self.assertIn('fixed', prompt.lower())
+        self.assertIn('RM200', prompt)
+
     @patch('apps.scholarship.vision._call_gemini_json')
     def test_bucket_normalised(self, mock_call):
         mock_call.return_value = {'gaps': [

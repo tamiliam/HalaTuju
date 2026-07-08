@@ -2078,27 +2078,27 @@
         },
         "epf_statement_missing": {
           "title": "Muat naik penyata KWSP ibu/bapa anda (pilihan)",
-          "desc": "Jika ibu/bapa anda yang bekerja mempunyai penyata KWSP, memuat naiknya bersama slip gaji membantu mengesahkan pendapatan mereka. Ini pilihan — langkau jika mereka tiada."
+          "desc": "Jika ibu/bapa anda yang bekerja mempunyai penyata EPF (KWSP), muat naik bersama slip gaji mereka. Ia akan membantu mengesahkan pendapatan mereka."
         },
         "father_epf_missing": {
           "title": "Muat naik penyata KWSP bapa anda (pilihan)",
-          "desc": "Jika bapa anda mempunyai penyata KWSP, memuat naiknya bersama slip gajinya membantu mengesahkan pendapatannya. Pilihan — langkau jika tiada."
+          "desc": "Jika bapa anda mempunyai penyata EPF (KWSP), muat naik bersama slip gajinya. Ia akan membantu mengesahkan pendapatannya."
         },
         "mother_epf_missing": {
           "title": "Muat naik penyata KWSP ibu anda (pilihan)",
-          "desc": "Jika ibu anda mempunyai penyata KWSP, memuat naiknya bersama slip gajinya membantu mengesahkan pendapatannya. Pilihan — langkau jika tiada."
+          "desc": "Jika ibu anda mempunyai penyata EPF (KWSP), muat naik bersama slip gajinya. Ia akan membantu mengesahkan pendapatannya."
         },
         "guardian_epf_missing": {
           "title": "Muat naik penyata KWSP penjaga anda (pilihan)",
-          "desc": "Jika penjaga anda mempunyai penyata KWSP, memuat naiknya bersama slip gaji mereka membantu mengesahkan pendapatan mereka. Pilihan — langkau jika tiada."
+          "desc": "Jika penjaga anda mempunyai penyata EPF (KWSP), muat naik bersama slip gaji mereka. Ia akan membantu mengesahkan pendapatan mereka."
         },
         "brother_epf_missing": {
           "title": "Muat naik penyata KWSP abang anda (pilihan)",
-          "desc": "Jika abang anda mempunyai penyata KWSP, memuat naiknya bersama slip gajinya membantu mengesahkan pendapatannya. Pilihan — langkau jika tiada."
+          "desc": "Jika abang anda mempunyai penyata EPF (KWSP), muat naik bersama slip gajinya. Ia akan membantu mengesahkan pendapatannya."
         },
         "sister_epf_missing": {
           "title": "Muat naik penyata KWSP kakak anda (pilihan)",
-          "desc": "Jika kakak anda mempunyai penyata KWSP, memuat naiknya bersama slip gajinya membantu mengesahkan pendapatannya. Pilihan — langkau jika tiada."
+          "desc": "Jika kakak anda mempunyai penyata EPF (KWSP), muat naik bersama slip gajinya. Ia akan membantu mengesahkan pendapatannya."
         },
         "utility_bill_missing": {
           "title": "Muat naik bil utiliti",
