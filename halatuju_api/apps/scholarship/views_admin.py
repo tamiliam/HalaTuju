@@ -1302,10 +1302,13 @@ class AdminQcDecisionView(_AdminBase):
             update_fields = ['status']
             if gap_facts:
                 override = (request.data.get('override_reason') or '').strip()
-                if not (self.has_role(admin, 'super') and override):
+                # _require_qc already gated this endpoint to a `super` or a `qc`; either may pass
+                # the red-fact floor by RECORDING a reason (owner decision 2026-07-08 — the QC
+                # gains the override, previously super-only). The reason is stored + audited below.
+                if not override:
                     return Response(
                         {'error': 'A verdict fact is still red — resolve it or reopen to the '
-                                  'reviewer. A super admin may override with a recorded reason.',
+                                  'reviewer. A QC or super admin may override with a recorded reason.',
                          'code': 'verdict_gap_floor', 'facts': gap_facts},
                         status=status.HTTP_400_BAD_REQUEST)
                 app.qc_override_reason = override

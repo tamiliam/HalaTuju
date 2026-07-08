@@ -3534,7 +3534,7 @@
         "reopenConfirm": "Reopen & notify reviewer",
         "error": "Could not submit the QC decision.",
         "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
-        "gapFloorSuper": "As a super admin you may override with a recorded reason.",
+        "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",
         "overrideTitle": "Override the red-fact block? Your reason is recorded on the case.",
         "overridePlaceholder": "Why is it safe to recommend this case despite the red fact?",
         "overrideConfirm": "Record reason & accept"

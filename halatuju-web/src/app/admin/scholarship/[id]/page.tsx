@@ -2312,7 +2312,7 @@ export default function AdminScholarshipDetailPage() {
           {floorBlocked && (
             <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-800">
               {t('admin.scholarship.qcDecision.gapFloor', { facts: qcGapLabels })}
-              {isSuper && <> {t('admin.scholarship.qcDecision.gapFloorSuper')}</>}
+              {canQc && <> {t('admin.scholarship.qcDecision.gapFloorSuper')}</>}
             </p>
           )}
           {!qcReopenOpen && !qcOverrideOpen ? (
@@ -2320,9 +2320,9 @@ export default function AdminScholarshipDetailPage() {
               <button
                 onClick={() => {
                   if (!floorBlocked) { doQcDecision('accept'); return }
-                  if (isSuper) { setQcOverrideOpen(true); setQcOverrideReason('') }
+                  if (canQc) { setQcOverrideOpen(true); setQcOverrideReason('') }
                 }}
-                disabled={!!busy || (floorBlocked && !isSuper)}
+                disabled={!!busy || (floorBlocked && !canQc)}
                 className="rounded-lg border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
                 {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.accept')}
               </button>

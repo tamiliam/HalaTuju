@@ -306,10 +306,22 @@ class TestQcGapFloor(TestCase):
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'interviewed')         # unchanged
 
-    def test_qc_role_cannot_override(self):
-        # The override is super-only; a qc providing a reason is still refused.
+    def test_qc_role_overrides_with_reason_and_is_recorded(self):
+        # Owner decision 2026-07-08: a `qc` may pass the red-fact floor too, with a recorded
+        # reason (previously super-only). The reason is stored + attributed to the qc.
         self._auth('qc-uid')
         r = self._qc({'decision': 'accept', 'override_reason': 'I checked it by hand.'})
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'recommended')
+        self.assertIn('by hand', self.app.qc_override_reason)
+        self.assertEqual(self.app.qc_override_by, 'qc@example.com')
+        self.assertIsNotNone(self.app.qc_override_at)
+
+    def test_qc_without_reason_is_refused(self):
+        # A qc still cannot pass the floor with no recorded reason.
+        self._auth('qc-uid')
+        r = self._qc({'decision': 'accept', 'override_reason': '   '})
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'verdict_gap_floor')
 
