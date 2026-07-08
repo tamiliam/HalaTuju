@@ -151,6 +151,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-08 — "One clean cluster is enough" income gate + Gopal honesty + OCR name-guard (BE + FE; NO migration)
+
+Off applicant #19 (NATHIYAA), who was trapped at submission by an *extraneous, misread* second-parent
+IC on the salary route while her mother's cluster was complete.
+- **One complete, clean earner cluster is enough to submit** (owner principle). New
+  `income_engine.member_cluster_complete` / `salary_income_satisfied`: on the salary route, once ANY
+  selected working member is fully + coherently documented (IC linking to the student + salary slip,
+  or a non-breached STR standing in, + relationship doc where required + no person-mismatch), the
+  income requirement is met. `income_doc_blockers` then clears, and `document_red_blockers` turns
+  every OTHER income-document error into a soft Check-2 follow-up. The student's own
+  identity/academic/pathway reds (`ic` / `results_slip` / `offer_letter`) still always gate. This
+  narrows the strict "no red doc at submission" policy to "no red on the one qualifying cluster".
+- **Gopal must not claim "not blocked" when the gate blocks.** The income coach verdicts
+  (`income_relationship_mismatch` / `income_proof_person_mismatch` / `income_proof_needed`) hardcoded
+  "nothing is blocked" — false once the strict gate began blocking them, so a student was reassured
+  while silently blocked. Removed the absolute block-status claims (backend AI prompts + en/ms/ta
+  fallback), replaced with a neutral pointer to the submission checklist (the source of truth).
+- **OCR name-guard.** A MyKad header fragment fused into a name token (e.g. "RAJAANMALAYS" — the
+  MALAYSIA header bled in) now blanks the read → it flows to the "unreadable" path (re-take the photo)
+  instead of a confident WRONG name.
+
+No migration. NATHIYAA is unblocked automatically (her mother's cluster is clean). +9 pytest; 2176
+scholarship pytest + i18n parity green. **▶ OWNER:** MS/TA refine of the new neutral coach line.
+
 ### 2026-07-08 — QC override + AI extenuating-circumstances emphasis + reviewer/QC attribution (BE + FE; migration 0095 additive, applied migrate-first)
 
 Three owner-requested changes shipped together:
