@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Live-review fixes: #71 grades, #27 income — 2026-07-08
+
+### Fixed
+- **Band-confirmed grade mismatch (#71)** — when the slip's letter AND Malay band agree and the typed
+  grade's band phrase could not degrade into the read by character loss, a ±-only difference is now a
+  CONFIDENT `academic_grade_band_mismatch` ("the typed grade is wrong"), not "check by eye". The
+  documented Fizik A+ counter-case ('cemerlang tinggi' IS a char-loss of 'cemerlang tertinggi') stays
+  uncertain. Same Check-2/Action Centre confirm rails; copy en/ms/ta.
+- **Wrong-type relationship doc = unusable + auto re-upload ticket (#27)** — a non-BC in the
+  birth-certificate slot (genuineness `not_<type>`) has its fields blanked at every relationship read
+  (STR precedence + both routes), emits specific gap codes (`birth_cert_not_genuine` /
+  `guardianship_letter_not_genuine`), and auto-raises the Action Centre re-upload request
+  (`document_not_genuine` previously had no resolution mapping — students silently stalled).
+  Cohort audit: #27 is the only live carrier (income Unsure→Fail + ticket).
+- **Reg. date chip removed** — redundant with Intake {year} and mislabelled genuine offers whose
+  reads predate the label field; the reporting-date bonus itself is unchanged (band machinery).
+- 2154 scholarship pytest + 482 jest.
+
 ## Reporting-date bonus — 2026-07-08
 
 ### Added

@@ -534,6 +534,22 @@ Also same-day: per-issuer reporting-date labels in the extraction prompt + offer
 **▶ OWNER-REVIEW queue:** #56's summons is 10 Jun 2025 (past intake — confirm still enrolled);
 Fail-band students owe proper offer letters; #17 owes her full (uncropped) UTHM letter.
 
+**✅ SHIPPED 2026-07-08 (same-day live-review continuations; backend+i18n, NO migration):**
+- **#71 band-confirmed grade mismatch** — letter+band agreeing (and the typed grade's band phrase
+  not char-loss-degradable into the read) → a CONFIDENT `academic_grade_band_mismatch` ("the typed
+  grade is wrong"), not "check by eye"; the live Fizik A+ counter-case ('ter' drop) stays uncertain.
+  read_slip also returns `letters`. Same confirm rails; #71/Fizik/letter-only are regression tests.
+- **#27 wrong-type relationship doc** — `_doc_wrong_type` + `_usable_relationship_fields`: a
+  `not_<type>` BC/guardianship letter is UNUSABLE (fields blanked at STR precedence + both routes —
+  closes the "plausible fields on a fake doc confirm a relationship" hole), emits gap codes
+  `birth_cert_not_genuine`/`guardianship_letter_not_genuine` (resolution-mapped → auto Action-Centre
+  re-upload ticket; `document_not_genuine` was unmapped so students silently stalled). Flat-cap
+  generic caveat suppressed when the specific code fires. Cohort audit: #27 the only carrier
+  (income Unsure→Fail + ticket; one real BC upload → STR precedence greens it to Certain).
+- **Reg. date chip removed** (owner: redundant with Intake {year}; it also mislabelled ≥0.70 genuine
+  offers whose stored reads predate `reporting_date_label`). The 1.5.0 bonus itself unchanged.
+  2154 pytest + 482 jest.
+
 ## Previous (as of 2026-07-07)
 
 **✅ SHIPPED 2026-07-07 — Genuineness score-band + red-chip LADDER (Identity/Academic/Pathway); backend
