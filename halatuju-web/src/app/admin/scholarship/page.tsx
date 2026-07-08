@@ -73,9 +73,6 @@ export default function AdminScholarshipList() {
   // A reviewer's list is already hard-scoped to their own assigned applicants server-side, so
   // the filter is redundant for them (and "Unassigned" would always return nothing).
   const canFilterByAssignee = isSuper || role?.role === 'admin'
-  // Admins + supers see the Assigned column. Only supers get the interactive dropdown to
-  // (re)assign; admins see who's assigned read-only (the assign action stays super-only).
-  const canViewAssigned = isSuper || role?.role === 'admin'
   const { t } = useT()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
   // Super-only inline reviewer assignment (the "Assigned" column dropdown).
@@ -288,7 +285,7 @@ export default function AdminScholarshipList() {
                     {t('admin.scholarship.submitted')}{sortArrow('submitted')}
                   </button>
                 </th>
-                {canViewAssigned && <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
+                {isSuper && <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -313,38 +310,31 @@ export default function AdminScholarshipList() {
                     })()}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(a.submitted_at)}</td>
-                  {canViewAssigned && (
+                  {isSuper && (
                     <td className="px-4 py-3">
                       {LANG_LABEL[a.call_language] && (
                         <p className="mb-1 text-[11px] text-gray-500">
                           {t('admin.scholarship.prefersLang', { lang: LANG_LABEL[a.call_language] })}
                         </p>
                       )}
-                      {isSuper ? (
-                        <>
-                          <select
-                            value={a.assigned_to_id ?? ''}
-                            onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
-                            className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[220px]"
-                          >
-                            <option value="">{t('admin.scholarship.unassigned')}</option>
-                            {/* keep the current assignee selectable even if not in the reviewer list */}
-                            {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
-                              <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
-                            )}
-                            {orderReviewersFor(reviewers, a.call_language).map(({ rv, match, specific }) => (
-                              <option key={rv.id} value={rv.id}>
-                                {specific ? (match ? '✓ ' : '⚠ ') : ''}{rv.name}
-                                {rv.languages.length ? ` — ${langCodesLabel(rv.languages)}` : ' — —'}
-                              </option>
-                            ))}
-                          </select>
-                          {assignNote[a.id] && <p className="text-xs text-red-500 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}
-                        </>
-                      ) : (
-                        // Admin (non-super): read-only — the assignment action stays super-only.
-                        <span className="text-sm text-gray-700">{a.assigned_to_name || t('admin.scholarship.unassigned')}</span>
-                      )}
+                      <select
+                        value={a.assigned_to_id ?? ''}
+                        onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
+                        className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[220px]"
+                      >
+                        <option value="">{t('admin.scholarship.unassigned')}</option>
+                        {/* keep the current assignee selectable even if not in the reviewer list */}
+                        {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
+                          <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
+                        )}
+                        {orderReviewersFor(reviewers, a.call_language).map(({ rv, match, specific }) => (
+                          <option key={rv.id} value={rv.id}>
+                            {specific ? (match ? '✓ ' : '⚠ ') : ''}{rv.name}
+                            {rv.languages.length ? ` — ${langCodesLabel(rv.languages)}` : ' — —'}
+                          </option>
+                        ))}
+                      </select>
+                      {assignNote[a.id] && <p className="text-xs text-red-500 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}
                     </td>
                   )}
                 </tr>
