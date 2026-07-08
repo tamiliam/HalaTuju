@@ -516,7 +516,41 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-08)
+## Next Sprint (as of 2026-07-09)
+
+**✅ SHIPPED 2026-07-08/09 — Stuck-students round: SUBMISSION GATE ↔ VERIFICATION VERDICT alignment
+(BE+FE; NO migration beyond `0095_recommended_by`; retro
+`docs/retrospective-2026-07-08-stuck-students-verification-gate.md`; decisions.md ×4; lessons.md ×3).**
+A systematic "why can't each shortlisted student submit?" pass (new `stuck_report` mgmt command +
+`consent_blockers` on the admin API) found the gate contradicting the verdict card in several places:
+- **Income "already established" → other income-doc errors are SOFT**, route-agnostic:
+  `income_engine.income_established` = a complete salary cluster (`member_cluster_complete`) OR a valid
+  dispositive STR (`household_str_status`). Gates BOTH `income_doc_blockers` + `document_red_blockers`.
+  Unblocked #19 (salary, extraneous misread IC) + #28 (STR, extraneous IC vs single-recipient STR).
+- **Offer gate follows the PATHWAY verdict band** (`verdict_narrative._fact_band`), "blue and above":
+  a not-official offer blocks only when pathway is NOT Probable/Certain — so a reporting-bonus-lifted
+  Certain offer (#56) is accepted; UNKNOWN/unscored offers still never block ("don't gate on our gap").
+- **Patronymic from the VERIFIED IC** (`income_engine.student_name_for_link`): when the typed name
+  lacks the A/P connector, use the student's own verified IC read (same identity, anchored) — fixes
+  #88 (dispositive STR father, typed name had no connector → was wrongly Unsure). Cohort audit: 2 apps.
+- **Grade mismatch is SOFT** (identity/slip-NAME reds still block); coach names the subject + deep-links
+  to `/onboarding/grades` (#48). **QC can override the red-fact floor** with a recorded reason.
+- **Recommendation card**: reviewer + QC attributed separately (`recommended_by`, migration `0095`).
+  **Gopal honesty** (no false "not blocked"); **OCR name-guard** (fused-header → unreadable).
+- 2224 scholarship pytest. **6 near-miss students unblocked by systemic fixes** (#19/#28/#48/#56/#88 +
+  #126). Data: #88 STR earner→father; 4 genuine QC-accepts attributed to Suresh; #16→shortlisted.
+
+**▶ DEPLOY GOTCHA (2026-07-09, see lessons.md):** two pushes (`a5cd592`, `9fe52e72`) did NOT trigger a
+Cloud Build (webhook miss) — the service ran stale code while I'd "verified live" using LOCAL code vs
+prod data. **After every push, match `SHORT_SHA` in `gcloud builds list` and wait on that build; if none
+appears in ~60s, `gcloud builds triggers run <api-trigger-id> --branch=main`.** Both fixes confirmed
+deployed via a manual trigger. Local-code-vs-prod-DATA proves the LOGIC, never that the SERVICE runs it.
+
+**▶ NEXT — no roadmap sprint queued.** Genuine near-miss doc-gap students to NUDGE (not systemic):
+#82 (offer not uploaded), #32 (a story field), #114 (STR+father IC), #133 (father slip mistagged), #5.
+The remaining offer-gate blocks (#64/#93/#109/#113/#131/#136) are PRIVATE-SCHOOL offers — correctly
+not-official, ignore. Standing owner-review + TD items unchanged below. Optional FE follow-up: surface
+`consent_blockers` in the cockpit "Cannot accept yet" panel (currently shows only the completeness part).
 
 **✅ SHIPPED 2026-07-08 — Reporting-date BONUS (`MODEL_VERSION` 1.5.0; backend+FE, NO migration;
 backfill pass 2026_07b run — 17 docs, 0 errors; catalogue `docs/scholarship/offer-letter-catalogue.md`).**

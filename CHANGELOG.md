@@ -225,6 +225,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 2026-07-08/09 — Stuck-students round: gate ↔ verdict alignment (BE + FE; NO migration beyond 0095)
+
+Systematic "why can't each shortlisted student submit?" investigation (see
+`docs/retrospective-2026-07-08-stuck-students-verification-gate.md`). Several places where the
+SUBMISSION GATE was stricter than, or contradicted, the verification VERDICT — now aligned:
+- **STR precedence in the gate** (#28): a valid dispositive household STR makes income-doc
+  person-mismatches soft (the STR-route twin of "one clean cluster"). New
+  `income_engine.income_established` gates both `income_doc_blockers` and `document_red_blockers`.
+- **Offer gate follows the PATHWAY verdict band** (#56): a not-official offer blocks only when the
+  four-fact pathway verdict is NOT "blue and above" (Probable/Certain) — so a reporting-bonus-lifted
+  Certain offer is accepted, while unknown/unscored offers still never block. Reuses
+  `verdict_narrative._fact_band`.
+- **Patronymic from the verified IC** (#88): `student_name_for_link` uses the student's own verified
+  IC read when the typed name lacks the A/P connector, so a typing habit no longer drops a
+  dispositive-STR household to Unsure. Cohort audit: exactly 2 apps change name-source.
+- **Grade mismatch is soft**, not a hard block (#48): identity (slip name) reds still block; the coach
+  names the subject ("KIMIA: you entered G, but your slip shows E") and deep-links to
+  `/onboarding/grades`.
+- **`consent_blockers` on the admin API + `stuck_report` command** — read-only "why is this student
+  stuck?" surface used throughout the round.
+2224 scholarship pytest.
+
 ### 2026-07-08 — "One clean cluster is enough" income gate + Gopal honesty + OCR name-guard (BE + FE; NO migration)
 
 Off applicant #19 (NATHIYAA), who was trapped at submission by an *extraneous, misread* second-parent

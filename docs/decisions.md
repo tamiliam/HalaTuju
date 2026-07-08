@@ -4204,3 +4204,31 @@ and systemic; re-routing is a per-case patch that doesn't fix the principle.
 **Trade-offs:** this is display-only (the verdict-level twin — a valid STR overriding an over-line salary in
 the income FACT, "P3" — stays deferred and re-banding-gated; no live case currently needs it).
 **Revisit if:** a live case needs the verdict-level override (then P3 with a re-banding audit + sign-off).
+
+## Income already established → other income-doc errors are soft — Sprint (stuck-students), 2026-07-08
+**Decision:** On the salary route, ONE complete + coherent earner cluster (`member_cluster_complete`), OR a valid dispositive household STR (`household_str_status`), satisfies the income submission gate — every OTHER income document's gaps AND mismatches become soft Check-2 items. Implemented as `income_engine.income_established`, gating both `income_doc_blockers` and `document_red_blockers`.
+**Alternatives considered:** Keep the strict "all selected members complete + zero red income docs" gate; or a data-only fix per stuck student.
+**Rationale:** A family that has fully documented one earner (or holds the government's own STR means-test) must not be trapped by an extraneous or misread second-parent document (#19 salary, #28 STR). Matches the owner's long-standing "let them through, Check-2 pins the rest" principle.
+**Trade-offs:** The gate now trusts the verdict/cluster completeness rather than requiring every uploaded income doc to be clean; a genuinely wrong second doc reaches the officer as a soft flag instead of blocking at submission.
+**Revisit if:** Officers report cases slipping through where the qualifying cluster itself was unsound.
+
+## Offer submission gate follows the PATHWAY verdict band, not the raw offer check — Sprint (stuck-students), 2026-07-08
+**Decision:** A present offer blocks submission only when it is judged not-official AND the four-fact PATHWAY verdict is NOT "blue and above" (Probable/Certain), via `verdict_narrative._fact_band`. Missing/official/UNKNOWN offers still never block.
+**Alternatives considered:** Keep gating on the raw `offer_official_status == 'not_genuine'`; or make `offer_official_status` itself reporting-bonus-aware.
+**Rationale:** The reporting-date bonus / genuineness ladder can legitimately lift a cropped-official offer's pathway band to Certain, but the raw offer check still read not_genuine — so the card showed Certain while the gate blocked (#56). The gate must agree with the verdict the officer sees.
+**Trade-offs:** The gate now depends on the whole pathway verdict, not a single offer flag; preserved the "don't gate on our own gap" carve-out so an unscored offer never blocks.
+**Revisit if:** The pathway band and the offer's real acceptability ever diverge (e.g. a band lifted by non-offer pathway signals masking a bad offer).
+
+## Father patronymic derived from the verified IC when the typed name lacks the connector — Sprint (stuck-students), 2026-07-08
+**Decision:** `income_engine.student_name_for_link` prefers the typed profile name, but when it carries no A/P-style connector and the student's own VERIFIED IC read does (and the two names agree), it uses the IC's name for the father-relationship check.
+**Alternatives considered:** Keep using the typed name only (status quo — a typing habit silently kills the father link); or ask the student to re-enter their name with the connector.
+**Rationale:** The IC is the same identity, already anchored by the Identity check; letting a missing connector in the typed name override a verified document violated the document-first principle and dropped a dispositive-STR household to Unsure (#88).
+**Trade-offs:** One more IC read in the relationship path; guarded so a mismatching or absent IC read is never adopted, and the Identity check itself still compares the typed name.
+**Revisit if:** IC OCR reliability degrades enough that the IC name is less trustworthy than the typed one.
+
+## Results-slip GRADE mismatch is soft, not a hard submission block — Sprint (stuck-students), 2026-07-08
+**Decision:** A results-slip grade/subject mismatch no longer hard-blocks consent (`document_red_blockers`); the slip is authoritative and the officer sees the exact diff. A slip NAME mismatch (identity) still hard-blocks.
+**Alternatives considered:** Keep the 2026-06-08 "any red doc blocks consent" policy for grades too.
+**Rationale:** A student who under-typed a grade (#48: typed G, slip E — a pass) should not be walled out of submitting over a discrepancy the officer can reconcile at review. The coach now names the subject and links to the grades editor.
+**Trade-offs:** Narrows the strict "no red doc at submission" policy to identity reds; grade discrepancies become officer/interview reconciliation.
+**Revisit if:** Officers find grade mismatches slipping through unreconciled at scale.

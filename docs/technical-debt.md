@@ -1234,3 +1234,9 @@ Access edge cases).
   The other genuineness-scored types (ic/parent_ic/offer/str/salary/epf/results) already cap; BC is the one
   remaining gap. Same 3-line documentFacts pattern; not re-banding (signal already exists). (Cockpit
   live-review, 2026-07-05.)
+- TD-159 (low): **surface `consent_blockers` in the cockpit "Cannot accept yet" panel.** The admin API now
+  returns `consent_blockers` (the exact submission gate) per application, but the cockpit's yellow
+  "Cannot accept yet — the applicant still owes" panel is driven by `application_completeness` (the 7
+  parts) and shows only e.g. "Consent" — not the *reason* consent is blocked (a doc mismatch,
+  offer-not-official). So a doc-gated student reads as "just Consent". Wire the `consent_blockers`
+  list into that panel so the owner sees WHY at a glance. (Stuck-students round, 2026-07-08.)
