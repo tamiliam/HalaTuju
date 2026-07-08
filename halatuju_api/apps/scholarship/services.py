@@ -1530,7 +1530,8 @@ def income_doc_blockers(application):
     letter) stay un-suffixed. The POST gate only cares that the list is non-empty.
     """
     from .income_engine import (working_members, relationship_doc_for,
-                                _member_ic_doc, _cluster_docs, str_not_breached)
+                                _member_ic_doc, _cluster_docs, str_not_breached,
+                                salary_income_satisfied)
     route = (getattr(application, 'income_route', '') or '').strip()
     if not route:
         return ['income_incomplete']
@@ -1551,10 +1552,16 @@ def income_doc_blockers(application):
         if rel and rel not in present:
             out.append(f'{rel}_missing')            # birth_certificate_missing / guardianship_letter_missing
         return out
-    # Salary route — every selected working member needs IC + salary slip (+ rel doc).
+    # Salary route — ONE complete, clean earner cluster is enough to submit (owner 2026-07-08).
     members = working_members(application)
     if not members:
         return ['income_incomplete']
+    # If any selected member's cluster is complete + coherent, the income requirement is met and
+    # every OTHER member's gaps become soft Check-2 follow-ups — so a family that has fully
+    # documented one earner is never trapped over a second earner's missing/partial docs.
+    if salary_income_satisfied(application):
+        return []
+    # No cluster complete yet — list what's still needed so the student can finish at least one.
     # STR-as-means-test (the P3 principle, owner 2026-07-05): a non-breached STR on file makes the
     # per-member SALARY SLIP supportive rather than compulsory — so an informal earner (an e-hailing
     # father with no payslip) no longer traps a genuinely-B40 family at submission (#45), and the gate
@@ -1643,6 +1650,14 @@ def consent_blockers(application):
     return blockers
 
 
+# The income-CLUSTER document types — the ones the "one clean cluster is enough" rule can turn
+# into soft Check-2 items once a different earner is fully documented. The student's own IC and the
+# identity/academic/pathway docs (ic / results_slip / offer_letter) are NOT here — they always gate.
+_INCOME_CLUSTER_DOC_TYPES = (
+    'parent_ic', 'salary_slip', 'epf', 'str', 'birth_certificate', 'guardianship_letter',
+)
+
+
 def document_red_blockers(application):
     """Every RED ('Doesn't match' / rejected / stale) per-document check that must
     clear before consent. Reads the SAME stored verification the student sees in the
@@ -1663,12 +1678,19 @@ def document_red_blockers(application):
     # epf blocked, trapping a student over a document they did not even need.)
     route = (getattr(application, 'income_route', '') or '').strip()
     selected_members = set(income_engine.working_members(application)) if route == 'salary' else set()
+    # "One clean cluster is enough" (owner 2026-07-08): once one earner is fully + coherently
+    # documented, every OTHER income-document error (e.g. an extraneous, misread second-parent IC)
+    # becomes a soft Check-2 follow-up, not a submission blocker. The student's OWN identity/academic
+    # /pathway reds (results_slip / offer_letter) still always block — they're not income-cluster docs.
+    income_ok = income_engine.salary_income_satisfied(application)
 
     def has(d, *keys):
         return any(d.get(k) == 'mismatch' for k in keys)
 
     for doc in application.documents.filter(superseded_at__isnull=True):
         dt = doc.doc_type
+        if income_ok and dt in _INCOME_CLUSTER_DOC_TYPES:
+            continue
         if dt == 'results_slip':
             chk = student_slip_check(doc)
             if chk.get('name') == 'mismatch':

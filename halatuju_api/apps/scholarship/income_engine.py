@@ -978,6 +978,54 @@ def str_confirmed_current(application):
     return bool(sc and sc['current_status'] == 'current')
 
 
+def member_cluster_complete(application, member):
+    """True when this working member's salary-route income cluster is COMPLETE and COHERENT on its
+    own — the unit behind the "one complete, clean earner cluster is enough to submit" gate (owner
+    2026-07-08). Requires:
+      - the earner's IC present, readable, and LINKING to the student (name_status 'match' — the
+        shared patronymic for a father/sibling, the birth certificate for a mother, the letter for
+        a guardian);
+      - this earner's income PROOF present (their salary slip, OR a non-breached household STR
+        standing in per the P3 STR-precedence rule);
+      - the relationship doc present where required (mother -> birth certificate, guardian ->
+        letter; father/sibling need none);
+      - NO person-mismatch between the IC and the salary slip.
+    A member whose cluster clears this carries the application through the income gate; every OTHER
+    member's missing docs or document errors then become soft Check-2 follow-ups (see
+    `salary_income_satisfied`)."""
+    if not member:
+        return False
+    ic = _member_ic_doc(application, member)
+    if ic is None:
+        return False
+    icc = student_income_ic_check(ic)
+    if not icc or not icc.get('readable') or icc.get('name_status') != 'match':
+        return False
+    if not (_cluster_docs(application, member, 'salary_slip').exists() or str_not_breached(application)):
+        return False
+    for p in _cluster_docs(application, member, 'salary_slip'):
+        pc = student_income_proof_check(p)
+        if pc and 'mismatch' in (pc.get('name_status'), pc.get('nric_status')):
+            return False
+    rel = relationship_doc_for(member)
+    if rel and not application.documents.filter(
+            doc_type=rel, superseded_at__isnull=True).exists():
+        return False
+    return True
+
+
+def salary_income_satisfied(application):
+    """Salary route: True when AT LEAST ONE selected working member has a complete, clean cluster
+    (`member_cluster_complete`). This is the "one clean cluster is enough to submit" gate (owner
+    2026-07-08): once one earner is fully and coherently documented, every OTHER member's missing
+    docs AND document errors (e.g. an extraneous, misread second-parent IC) become soft Check-2
+    follow-ups, never submission blockers. False off the salary route — the STR route has its own
+    precedence rule (`household_str_status` / `str_not_breached`)."""
+    if (getattr(application, 'income_route', '') or '').strip() != 'salary':
+        return False
+    return any(member_cluster_complete(application, m) for m in working_members(application))
+
+
 def declared_amount(application, member):
     """A working member's DECLARED average monthly income (RM, int > 0) from the income
     wizard, or None. Stored in ``ScholarshipApplication.income_declared = {member: amount}``.

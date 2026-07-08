@@ -368,6 +368,31 @@ def _is_name_line(line: str) -> bool:
     return not (words and all(w.upper() in _MYKAD_HEADER_TOKENS for w in words))
 
 
+# MyKad header/chrome fragments that, when FUSED INTO a name token (not a standalone word),
+# mean the OCR spliced card chrome into the name — e.g. "RAJAANMALAYS" (the "MALAYSIA" header
+# bled into the name). The clean-token filter (_MYKAD_HEADER_TOKENS) can't catch this because
+# the fragment is glued into one token, so we reject such a read and let the name read as
+# UNREADABLE (a re-take) rather than a confident WRONG name (owner 2026-07-08).
+_GLUED_HEADER_FRAGMENTS = ('MALAYSIA', 'MALAYS', 'WARGANEGARA', 'PENGENALAN', 'MYKAD')
+
+
+def _name_looks_garbled(name: str) -> bool:
+    """True when a name token carries a fused MyKad header fragment (see above) — a sign the OCR
+    mis-read the name line. A standalone header WORD is handled by the clean-token filter and is
+    ignored here; only a fragment glued into a longer token trips this."""
+    for w in (name or '').upper().split():
+        if w in _MYKAD_HEADER_TOKENS:
+            continue
+        if any(frag in w for frag in _GLUED_HEADER_FRAGMENTS):
+            return True
+    return False
+
+
+def _guard_garbled(name: str) -> str:
+    """Blank a name read that carries fused card chrome, so it flows to the 'unreadable' path."""
+    return '' if _name_looks_garbled(name) else name
+
+
 def _extract_name(text: str, nric_match_str: str = '') -> str:
     """Find the holder's name on a MyKad. Most-reliable strategy first:
       1. A line carrying a **parentage marker** (A/L, A/P, S/O, D/O, BIN, BINTI) —
@@ -393,13 +418,13 @@ def _extract_name(text: str, nric_match_str: str = '') -> str:
         # A marker MID-line is the full name; a marker at the END means the surname spilled
         # onto the next line, at the START means the given name spilled onto the previous line
         # — _with_broken_name_parts reassembles either break.
-        return _with_broken_name_parts(max(marked, key=len), lines)
+        return _guard_garbled(_with_broken_name_parts(max(marked, key=len), lines))
     nric_idx = next((i for i, ln in enumerate(lines) if _NRIC_REGEX.search(ln)), -1)
     if nric_idx >= 0:
         for ln in lines[nric_idx + 1:]:
             if ln in candidates:
-                return _with_broken_name_parts(ln, lines)
-    return _with_broken_name_parts(max(candidates, key=len), lines)
+                return _guard_garbled(_with_broken_name_parts(ln, lines))
+    return _guard_garbled(_with_broken_name_parts(max(candidates, key=len), lines))
 
 
 _MY_POSTCODE = re.compile(r'\b\d{5}\b')
