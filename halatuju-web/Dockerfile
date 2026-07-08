@@ -15,7 +15,7 @@ COPY . .
 
 ENV NEXT_PUBLIC_API_URL=https://halatuju-api-90344691621.asia-southeast1.run.app
 ENV NEXT_PUBLIC_SUPABASE_URL=https://pbrrlyoyyiftckqvzvvo.supabase.co
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBicnJseW95eWlmdGNrcXZ6dnZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1MDA4NjYsImV4cCI6MjA4NDA3Njg2Nn0.rl7fo7AmqY-QqNZ97bUO-ajH7-niGtO8_yPLj_PSLos
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ADKtlHpjwGRqWGpYd1JuCg_riPMtc3l
 # Cloudflare Turnstile PUBLIC site key (secret stays in Supabase + the Edge Function).
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAADi6qwQ0qHQQ5BSg
 
