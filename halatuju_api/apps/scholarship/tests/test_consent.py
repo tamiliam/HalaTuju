@@ -621,17 +621,28 @@ class TestOfferValidityGate(TestCase):
                 'model_version': '1.1'}},
             vision_run_at=timezone.now())
 
-    def test_non_genuine_offer_blocks_not_yet_submitted(self):
+    def test_offer_gate_blocks_when_pathway_verdict_unsure(self):
+        # Owner 2026-07-08: the offer gate follows the PATHWAY VERDICT band — Unsure / Can't-verify
+        # blocks; "blue and above" (Probable/Certain) is allowed. (Was: gated on the raw
+        # offer_official_status, which the reporting-date bonus could legitimately outrun — #56.)
+        from unittest.mock import patch
         from apps.scholarship.services import consent_blockers
         app = self._app()
         self._offer(app, 'suspect')
-        self.assertIn('offer_not_official', consent_blockers(app))
+        with patch('apps.scholarship.verdict_engine.build_verdict', return_value=[
+                {'fact': 'pathway', 'status': 'recommend', 'evidence': [], 'unresolved': []}]):
+            self.assertIn('offer_not_official', consent_blockers(app))
 
-    def test_genuine_offer_has_no_offer_not_official_blocker(self):
+    def test_offer_gate_allows_blue_and_above(self):
+        from unittest.mock import patch
         from apps.scholarship.services import consent_blockers
         app = self._app()
-        self._offer(app, 'genuine')
-        self.assertNotIn('offer_not_official', consent_blockers(app))
+        self._offer(app, 'suspect')  # authenticity is irrelevant now — the VERDICT BAND decides
+        for band_status, evidence in (('verified', []),                       # Certain
+                                      ('review', [{'code': 'offer_official'}])):  # Probable (needs a green)
+            with patch('apps.scholarship.verdict_engine.build_verdict', return_value=[
+                    {'fact': 'pathway', 'status': band_status, 'evidence': evidence, 'unresolved': []}]):
+                self.assertNotIn('offer_not_official', consent_blockers(app))
 
     def test_submitted_student_grandfathered_not_blocked(self):
         # An already-submitted student with a now-non-genuine offer is NOT gated by the offer-

@@ -1588,15 +1588,26 @@ def income_doc_blockers(application):
     return out
 
 
-def _offer_not_official(application):
-    """True iff the latest offer letter is present but judged NOT a genuine official PUBLIC offer
-    (a conditional offer, a private/IPTS offer, or a non-official notification — pemakluman /
-    UPU-semakan) by the signature scorer. 'unknown' (genuineness not computed / not re-run since the
-    signature model shipped) is NOT a block — we never gate on our own gap."""
+def _offer_blocks(application):
+    """Whether the offer should BLOCK submission. Blocks only when the offer is judged NOT-official
+    (``offer_official_status == 'not_genuine'``) AND the four-fact PATHWAY VERDICT is NOT "blue and
+    above". Owner 2026-07-08: we accept Probable/Certain — so a cropped-official offer the
+    reporting-date bonus / genuineness ladder legitimately lifts to Certain is allowed even though
+    ``offer_official_status`` still reads not_genuine (#56 tiled Certain yet was blocked). An offer
+    that is missing / official / UNKNOWN (not yet genuineness-scored) still never blocks — we don't
+    gate on our own gap (unchanged)."""
     from .pathway_engine import offer_official_status
     offer = (application.documents.filter(doc_type='offer_letter', superseded_at__isnull=True)
              .order_by('-uploaded_at').first())
-    return offer is not None and offer_official_status(offer) == 'not_genuine'
+    if offer is None or offer_official_status(offer) != 'not_genuine':
+        return False                       # missing / official / unknown → not a block
+    # A not-official offer blocks UNLESS the pathway verdict the officer sees is Probable+.
+    from .verdict_engine import build_verdict
+    from .verdict_narrative import _fact_band
+    for fact in build_verdict(application):
+        if fact.get('fact') == 'pathway':
+            return _fact_band(fact) not in ('Certain', 'Probable')
+    return True
 
 
 def consent_blockers(application):
@@ -1629,13 +1640,13 @@ def consent_blockers(application):
         blockers.append('results_slip_missing')
     if 'offer_letter' not in present:                 # gate v2: compulsory for everyone
         blockers.append('offer_letter_missing')
-    elif application.profile_completed_at is None and _offer_not_official(application):
-        # Owner policy: we can only support a genuine OFFICIAL public offer. A CONDITIONAL offer, a
-        # PRIVATE/IPTS offer, or a non-official notification (pemakluman / UPU-semakan) is judged
-        # not-genuine by the signature scorer → block submission so the student uploads the official
-        # letter if they have one. GRANDFATHER: only for a NOT-yet-submitted app (profile_completed_at
-        # is None) so an already-submitted student is NEVER reverted — their pathway BADGE still
-        # reflects it via the verdict, but their status is untouched.
+    elif application.profile_completed_at is None and _offer_blocks(application):
+        # Owner 2026-07-08: the offer gate follows the PATHWAY VERDICT the officer sees — we accept
+        # "blue and above" (Probable/Certain) and only block Unsure/Can't-verify. This aligns the
+        # gate with the card (the reporting-date bonus / genuineness ladder can legitimately lift a
+        # cropped-official offer to Certain — #56 — which the old raw offer_official_status gate
+        # wrongly still blocked). GRANDFATHER: only for a NOT-yet-submitted app (profile_completed_at
+        # is None) so an already-submitted student is NEVER reverted.
         blockers.append('offer_not_official')
     blockers.extend(income_doc_blockers(application))  # route-aware (replaces parent_ic + income_proof)
     # Identity check only once the IC is actually uploaded (else 'ic_missing' leads).
