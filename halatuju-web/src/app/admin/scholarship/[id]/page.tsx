@@ -726,15 +726,15 @@ export default function AdminScholarshipDetailPage() {
   const decisionReopened = !!app.decision_reopened_at
 
   // Attribution lines on the Recommendation card. The reviewer INTERVIEWED & recommended
-  // (verdict_decided_*); the QC ACCEPTED (recommended_*). For cases recommended before the QC
-  // identity was captured (2026-07-08), fall back to the reviewer's own accept stamp so the
-  // "accepted by" clause never shows blank.
+  // (verdict_decided_*); the QC ACCEPTED (recommended_*). The "accepted by" clause shows ONLY
+  // when a real QC identity was captured — we never fall back to the reviewer's own verify stamp,
+  // because the reviewer is not the QC and that would misattribute. Cases recommended before the
+  // QC gate existed (no QC step) simply omit the clause.
   const reviewerName = app.verdict_decided_by_name || app.verdict_decided_by || '—'
   const reviewerDate = app.verdict_decided_at ? ` · ${formatDate(app.verdict_decided_at)}` : ''
-  const qcName = app.recommended_by_name || app.recommended_by
-    || app.verified_by_name || app.verified_by || '—'
-  const qcDate = app.recommended_at ? ` · ${formatDate(app.recommended_at)}`
-    : app.verified_at ? ` · ${formatDate(app.verified_at)}` : ''
+  const hasQc = !!app.recommended_by
+  const qcName = app.recommended_by_name || app.recommended_by || '—'
+  const qcDate = app.recommended_at ? ` · ${formatDate(app.recommended_at)}` : ''
 
   // S4: once the interview is concluded it's decision time — querying (raise / Resolve /
   // Ask again / request a document) closes and Outstanding becomes a read-only record.
@@ -2189,7 +2189,7 @@ export default function AdminScholarshipDetailPage() {
                 <span aria-hidden>✓</span>
                 <span>
                   {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
-                  {', '}{t('admin.scholarship.qcAcceptedBy')} {qcName}{qcDate}
+                  {hasQc && <>{', '}{t('admin.scholarship.qcAcceptedBy')} {qcName}{qcDate}</>}
                 </span>
               </p>
             ) : app.status === 'rejected' ? (
@@ -2238,7 +2238,7 @@ export default function AdminScholarshipDetailPage() {
               <span aria-hidden>✓</span>
               <span>
                 {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
-                {', '}{t('admin.scholarship.qcAcceptedBy')} {qcName}{qcDate}
+                {hasQc && <>{', '}{t('admin.scholarship.qcAcceptedBy')} {qcName}{qcDate}</>}
               </span>
             </p>
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
