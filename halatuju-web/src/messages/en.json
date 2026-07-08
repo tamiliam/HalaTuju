@@ -3127,7 +3127,8 @@
       "profileDraftHint": "This draft will be replaced with an updated final version that incorporates your findings when you save your verdict.",
       "profileFinalHint": "This is the final profile, generated from the interview findings and your verdict. Reopen the decision to revise it.",
       "model": "Model",
-      "acceptedBy": "Verified & accepted by",
+      "interviewedRecommendedBy": "Interviewed and recommended by",
+      "qcAcceptedBy": "accepted by",
       "acceptError": "Couldn't accept. Please try again.",
       "notShortlisted": "Only a shortlisted application can be verified & accepted.",
       "refHint": "Record a referee — a teacher, counsellor, or referring-org contact who can vouch for the applicant.",
@@ -3511,7 +3512,6 @@
         "reopenReasonLabel": "Reason",
         "cancelReopen": "Cancel reopen (restore)",
         "reopenError": "Could not reopen the decision.",
-        "recordedBy": "Decision recorded by",
         "declinedBy": "Declined by",
         "aiSuggested": "AI verdict:",
         "suggest": {

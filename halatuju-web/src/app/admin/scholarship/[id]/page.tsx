@@ -725,6 +725,17 @@ export default function AdminScholarshipDetailPage() {
   // unlock for the assigned reviewer (and super), not just the decision panel.
   const decisionReopened = !!app.decision_reopened_at
 
+  // Attribution lines on the Recommendation card. The reviewer INTERVIEWED & recommended
+  // (verdict_decided_*); the QC ACCEPTED (recommended_*). For cases recommended before the QC
+  // identity was captured (2026-07-08), fall back to the reviewer's own accept stamp so the
+  // "accepted by" clause never shows blank.
+  const reviewerName = app.verdict_decided_by_name || app.verdict_decided_by || '—'
+  const reviewerDate = app.verdict_decided_at ? ` · ${formatDate(app.verdict_decided_at)}` : ''
+  const qcName = app.recommended_by_name || app.recommended_by
+    || app.verified_by_name || app.verified_by || '—'
+  const qcDate = app.recommended_at ? ` · ${formatDate(app.recommended_at)}`
+    : app.verified_at ? ` · ${formatDate(app.verified_at)}` : ''
+
   // S4: once the interview is concluded it's decision time — querying (raise / Resolve /
   // Ask again / request a document) closes and Outstanding becomes a read-only record.
   // A reopen re-opens it (the backend querying_locked mirrors this).
@@ -2174,10 +2185,12 @@ export default function AdminScholarshipDetailPage() {
               </div>
             )}
             {app.status === 'recommended' ? (
-              <p className="flex items-center gap-1.5 text-sm text-green-700">
+              <p className="flex items-start gap-1.5 text-sm text-green-700">
                 <span aria-hidden>✓</span>
-                {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
-                {app.verified_at ? ` · ${formatDate(app.verified_at)}` : ''}
+                <span>
+                  {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
+                  {', '}{t('admin.scholarship.qcAcceptedBy')} {qcName}{qcDate}
+                </span>
               </p>
             ) : app.status === 'rejected' ? (
               <p className="text-sm text-red-700">
@@ -2186,8 +2199,7 @@ export default function AdminScholarshipDetailPage() {
               </p>
             ) : (
               <p className="text-sm text-gray-600">
-                {t('admin.scholarship.recordVerdict.recordedBy')} {app.verdict_decided_by_name || app.verdict_decided_by || '—'}
-                {app.verdict_decided_at ? ` · ${formatDate(app.verdict_decided_at)}` : ''}
+                {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
               </p>
             )}
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
@@ -2222,10 +2234,12 @@ export default function AdminScholarshipDetailPage() {
              Reopen (→ interviewed → declined as 'interview'); the direct 'contractual'
              decline is reserved for a genuinely post-award (sponsored) case. */
           <div className="space-y-2 border-t pt-3">
-            <p className="flex items-center gap-1.5 text-sm text-green-700">
+            <p className="flex items-start gap-1.5 text-sm text-green-700">
               <span aria-hidden>✓</span>
-              {t('admin.scholarship.acceptedBy')} {app.verified_by_name || app.verified_by || '—'}
-              {app.verified_at ? ` · ${formatDate(app.verified_at)}` : ''}
+              <span>
+                {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
+                {', '}{t('admin.scholarship.qcAcceptedBy')} {qcName}{qcDate}
+              </span>
             </p>
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}

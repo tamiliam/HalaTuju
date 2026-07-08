@@ -528,9 +528,13 @@ export interface AdminScholarshipDetail {
   verdict_reason: string
   verdict_decided_by: string
   verdict_decided_at: string | null
+  /** Email of the QC (super/qc) who QC-Accepted → 'recommended'. Empty for cases recommended
+   *  before this was captured (2026-07-08); the UI falls back to the reviewer accept stamp. */
+  recommended_by: string
   /** Full names resolved from the stored reviewer emails (fall back to email in the UI). */
   verified_by_name: string
   verdict_decided_by_name: string
+  recommended_by_name: string
   rejected_by_name: string
   resolution_items: AdminResolutionItem[]
   /** Recommended assistance amount (RM, Decimal serialised as string) or null. */

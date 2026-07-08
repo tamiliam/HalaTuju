@@ -1318,6 +1318,11 @@ class AdminQcDecisionView(_AdminBase):
                 logger.info('AUDIT qc_gap_override admin_id=%s app_id=%s facts=%s',
                             admin.id, pk, ','.join(gap_facts))
             app.status = 'recommended'
+            # Capture WHO QC-accepted (the second pair of eyes), distinct from the reviewer's
+            # verdict — the cockpit shows "…accepted by {QC}". Stamped every accept (a reopen →
+            # re-accept re-attributes to the accepting QC).
+            app.recommended_by = getattr(admin, 'email', '') or ''
+            update_fields.append('recommended_by')
             if app.stamp_first('recommended_at'):
                 update_fields.append('recommended_at')
             app.save(update_fields=update_fields)

@@ -3127,7 +3127,8 @@
       "profileDraftHint": "Draf ini akan digantikan dengan versi akhir yang dikemas kini dan menggabungkan penemuan anda apabila anda menyimpan keputusan anda.",
       "profileFinalHint": "Ini ialah profil akhir, dijana daripada penemuan temu duga dan keputusan anda. Buka semula keputusan untuk menyemaknya.",
       "model": "Model",
-      "acceptedBy": "Disahkan & diterima oleh",
+      "interviewedRecommendedBy": "Ditemu duga dan disyorkan oleh",
+      "qcAcceptedBy": "diterima oleh",
       "acceptError": "Tidak dapat menerima. Sila cuba lagi.",
       "notShortlisted": "Hanya permohonan yang disenarai pendek boleh disahkan & diterima.",
       "refHint": "Rekod perujuk — seorang guru, kaunselor, atau wakil organisasi perujuk yang boleh menjamin pemohon.",
@@ -3511,7 +3512,6 @@
         "reopenReasonLabel": "Sebab",
         "cancelReopen": "Batal buka semula (pulihkan)",
         "reopenError": "Tidak dapat membuka semula keputusan.",
-        "recordedBy": "Keputusan direkodkan oleh",
         "declinedBy": "Ditolak oleh",
         "aiSuggested": "Keputusan AI:",
         "suggest": {

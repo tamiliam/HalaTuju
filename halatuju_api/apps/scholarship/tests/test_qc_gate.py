@@ -317,6 +317,7 @@ class TestQcGapFloor(TestCase):
         self.assertIn('by hand', self.app.qc_override_reason)
         self.assertEqual(self.app.qc_override_by, 'qc@example.com')
         self.assertIsNotNone(self.app.qc_override_at)
+        self.assertEqual(self.app.recommended_by, 'qc@example.com')  # QC identity captured
 
     def test_qc_without_reason_is_refused(self):
         # A qc still cannot pass the floor with no recorded reason.
@@ -341,6 +342,7 @@ class TestQcGapFloor(TestCase):
         self.assertIn('counsellor', self.app.qc_override_reason)
         self.assertEqual(self.app.qc_override_by, 'super@example.com')
         self.assertIsNotNone(self.app.qc_override_at)
+        self.assertEqual(self.app.recommended_by, 'super@example.com')  # QC identity captured
 
     def test_accept_passes_when_no_fact_is_gap(self):
         # Amber/blue facts are NOT floor-blocked — the floor is gap-only (soft floor by design).
@@ -352,4 +354,5 @@ class TestQcGapFloor(TestCase):
         self.assertEqual(r.status_code, 200)
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'recommended')
+        self.assertEqual(self.app.recommended_by, 'qc@example.com')  # QC identity captured
         self.assertEqual(self.app.qc_override_reason, '')        # no override recorded

@@ -272,6 +272,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # rejected_by store an email; the cockpit shows the name, falling back to email).
     verified_by_name = serializers.SerializerMethodField()
     verdict_decided_by_name = serializers.SerializerMethodField()
+    recommended_by_name = serializers.SerializerMethodField()
     rejected_by_name = serializers.SerializerMethodField()
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
@@ -335,7 +336,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'closure_reason', 'closed_at', 'closed_by',
             # Lifecycle transition stamps — the DATE first reached each milestone; drive the
             # cockpit header timeline (Submitted·Recommended·Awarded → Awarded·Active·Maintenance).
-            'recommended_at', 'awarded_at', 'active_at', 'maintenance_at',
+            'recommended_at', 'recommended_by', 'recommended_by_name',
+            'awarded_at', 'active_at', 'maintenance_at',
             # S5: operational maintenance sub-state (on_track/probation/on_hold/ready_to_close)
             'maintenance_substate',
             # Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation +
@@ -434,6 +436,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
 
     def get_verdict_decided_by_name(self, obj):
         return _admin_name_by_email(obj.verdict_decided_by)
+
+    def get_recommended_by_name(self, obj):
+        return _admin_name_by_email(obj.recommended_by)
 
     def get_rejected_by_name(self, obj):
         return _admin_name_by_email(obj.rejected_by)

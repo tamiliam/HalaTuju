@@ -447,6 +447,11 @@ class ScholarshipApplication(models.Model):
     # then Awarded·Active·Maintenance). Distinct from the audit stamps above: these mark the
     # STATE transition, not who acted. Null until the app reaches that state.
     recommended_at = models.DateTimeField(null=True, blank=True)  # QC-accept → 'recommended'
+    # Email of the QC (super/qc) who QC-Accepted the case → 'recommended'. Distinct from the
+    # reviewer's verdict_decided_by/verified_by: this is the separate second pair of eyes. Null
+    # for cases recommended before this was captured (2026-07-08) — the UI falls back to the
+    # reviewer's accept stamp for those.
+    recommended_by = models.CharField(max_length=254, blank=True, default='')
     awarded_at = models.DateTimeField(null=True, blank=True)      # funder commits → 'awarded'
     active_at = models.DateTimeField(null=True, blank=True)       # agreement executed → 'active'
     maintenance_at = models.DateTimeField(null=True, blank=True)  # first payout → 'maintenance'
