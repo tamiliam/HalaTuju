@@ -55,6 +55,10 @@ CODE_TO_TICKET = {
     'earner_ic_missing':            {'fact': 'income', 'kind': 'doc', 'doc_type': 'parent_ic'},
     'earner_ic_unreadable':         {'fact': 'income', 'kind': 'doc', 'doc_type': 'parent_ic'},
     'birth_cert_missing':           {'fact': 'income', 'kind': 'doc', 'doc_type': 'birth_certificate'},
+    # #27 (owner 2026-07-08): the doc in the BC/letter slot is NOT that kind of document (wrong-type
+    # genuineness) — a required relationship proof is effectively absent → auto-ask a re-upload.
+    'birth_cert_not_genuine':       {'fact': 'income', 'kind': 'doc', 'doc_type': 'birth_certificate'},
+    'guardianship_letter_not_genuine': {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
     'birth_cert_mismatch':          {'fact': 'income', 'kind': 'confirm'},
     'father_patronymic_mismatch':   {'fact': 'income', 'kind': 'confirm'},
     'guardianship_letter_missing':  {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},

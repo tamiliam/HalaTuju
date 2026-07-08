@@ -1936,6 +1936,10 @@
           "title": "Upload your birth certificate",
           "desc": "You're showing your mother's income, so we need your birth certificate to link her to you. This is an important one — we can't fully verify your application without it."
         },
+        "birth_cert_not_genuine": {
+          "title": "Upload your actual birth certificate",
+          "desc": "The document you uploaded as your birth certificate doesn't appear to be one, so we can't use it to link your mother to you. Please upload your actual birth certificate — we can't fully verify your application without it."
+        },
         "birth_cert_mismatch": {
           "title": "Check your birth certificate",
           "desc": "The names on the birth certificate don't seem to match — please check you uploaded your own, with your mother's name on it."
@@ -1947,6 +1951,10 @@
         "guardianship_letter_missing": {
           "title": "Upload your guardianship letter",
           "desc": "You're showing a guardian's income, so we need the guardianship letter or court order. This is an important one — we can't fully verify your application without it."
+        },
+        "guardianship_letter_not_genuine": {
+          "title": "Upload the actual guardianship letter",
+          "desc": "The document you uploaded as the guardianship letter doesn't appear to be one, so we can't use it to link your guardian to you. Please upload the actual letter — we can't fully verify your application without it."
         },
         "str_not_current": {
           "title": "Confirm your STR is approved and being paid",
@@ -3396,9 +3404,11 @@
           "earner_ic_missing": "No IC uploaded for: {members} — we can't confirm the income documents belong to the family. Request it.",
           "earner_ic_unreadable": "Couldn't read the IC for: {members} — ask for a clearer photo.",
           "birth_cert_missing": "A working member is the mother, but no birth certificate links her to the student. Request it.",
+          "birth_cert_not_genuine": "The document uploaded as the birth certificate doesn't appear to be one — the mother↔student link can't be read off it. The student has been asked to upload the actual birth certificate.",
           "birth_cert_mismatch": "The birth certificate doesn't link the named mother to the student — check by eye.",
           "father_patronymic_mismatch": "The IC name for {members} doesn't match the father's name in the student's own IC — check the relationship.",
           "guardianship_letter_missing": "Income shown is a guardian's, but no guardianship letter/order was uploaded. Request it.",
+          "guardianship_letter_not_genuine": "The document uploaded as the guardianship letter doesn't appear to be one — the guardian↔student link can't be read off it. The student has been asked to upload the actual letter.",
           "str_not_current_wrong_type": "Not an STR document — it doesn't count as STR proof. Assessing the salary documents; a valid STR is required from the student.",
           "str_not_current_rejected": "STR rejected (Ditolak) — it fails as STR proof. Assessing the salary documents for B40 instead.",
           "str_not_current_stale": "Approved last cycle only — that's stale, not proof of current need. The current cycle's status is required from the student before this counts.",

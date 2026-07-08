@@ -103,6 +103,27 @@ def _doc_assist_fields(doc):
     return f if isinstance(f, dict) else {}
 
 
+def _doc_wrong_type(doc):
+    """True when the doc's genuineness verdict says it is NOT that kind of document at all
+    (canonical ``not_<type>``). Its extracted fields then prove nothing — e.g. a non-BC in the
+    birth-certificate slot must not confirm a mother↔student relationship (#27, owner 2026-07-08)."""
+    if doc is None:
+        return False
+    vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    raw = (vf.get('authenticity') or {}).get('status', '')
+    return canonical_status(raw, getattr(doc, 'doc_type', None)).startswith('not_')
+
+
+def _usable_relationship_fields(application, doc_type):
+    """The latest live relationship doc of ``doc_type`` + its fields, with a WRONG-TYPE doc treated
+    as unusable (doc returned, fields blanked) so no relationship can be read off it. Returns
+    ``(doc, fields, unusable)``."""
+    d = _latest_doc(application, doc_type)
+    if d is not None and _doc_wrong_type(d):
+        return d, {}, True
+    return d, _doc_assist_fields(d), False
+
+
 # ── Identity (name + NRIC) ───────────────────────────────────────────────────
 
 def _verdict_identity(application):
@@ -291,11 +312,13 @@ def _str_precedence_verdict(application):
     ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
     # Confirm the matched recipient really is the student's parent/guardian: father → patronymic,
     # mother → birth certificate, guardian → letter, or the BC↔proof IC-number chain (#9).
-    bcf = _doc_assist_fields(_latest_doc(application, 'birth_certificate'))
-    g_doc = _latest_doc(application, 'guardianship_letter')
+    # A WRONG-TYPE relationship doc is unusable — its fields must not confirm anything (#27).
+    _, bcf, _ = _usable_relationship_fields(application, 'birth_certificate')
+    g_doc, _, g_unusable = _usable_relationship_fields(application, 'guardianship_letter')
     rel = member_relationship_status(member, student_name, ic_name,
                                      bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', ''),
-                                     (getattr(g_doc, 'vision_name', '') or ''), bcf.get('bc_father_name', ''))
+                                     ('' if g_unusable else (getattr(g_doc, 'vision_name', '') or '')),
+                                     bcf.get('bc_father_name', ''))
     if rel != 'match' and member in ('mother', 'father') and chain_verified_earner(application, member):
         rel = 'match'
     if rel != 'match':
@@ -375,25 +398,34 @@ def _verdict_income(application):
         evidence.append(_item('earner_ic_present', name=earner_ic_name))
 
     # ── Relationship: prove the earner is the student's family ────────────────
+    # A WRONG-TYPE relationship doc (#27: a non-BC in the birth-certificate slot) is UNUSABLE —
+    # its fields prove nothing, and the student gets a specific re-upload ticket (gap, like a
+    # missing doc) instead of the officer-only generic genuineness caveat.
     rel = None
     if earner == 'father':
         # Patronymic, with a BC fallback for a mononym student (#55) when a BC is uploaded.
-        bcf = _doc_assist_fields(_latest_doc(application, 'birth_certificate'))
+        _, bcf, _ = _usable_relationship_fields(application, 'birth_certificate')
         rel = father_link(student_name, earner_ic_name,
                           bcf.get('bc_child_name', ''), bcf.get('bc_father_name', ''))
     elif earner == 'mother':
         if 'birth_certificate' not in present:
             gap.append(_item('birth_cert_missing'))
         else:
-            bcf = _doc_assist_fields(_latest_doc(application, 'birth_certificate'))
-            rel = mother_relationship(bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', ''),
-                                      student_name, earner_ic_name)
+            _, bcf, bc_unusable = _usable_relationship_fields(application, 'birth_certificate')
+            if bc_unusable:
+                gap.append(_item('birth_cert_not_genuine'))
+            else:
+                rel = mother_relationship(bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', ''),
+                                          student_name, earner_ic_name)
     elif earner == 'guardian':
         if 'guardianship_letter' not in present:
             gap.append(_item('guardianship_letter_missing'))
         else:
-            g = _latest_doc(application, 'guardianship_letter')
-            rel = guardian_relationship(getattr(g, 'vision_name', '') or '', earner_ic_name)
+            g, _, g_unusable = _usable_relationship_fields(application, 'guardianship_letter')
+            if g_unusable:
+                gap.append(_item('guardianship_letter_not_genuine'))
+            else:
+                rel = guardian_relationship(getattr(g, 'vision_name', '') or '', earner_ic_name)
     # IC-number chain: the BC's parent number matching the income proof's number confirms a
     # mother/father earner even when the IC uploaded in their slot is the wrong card (#9).
     if rel != 'match' and earner in ('mother', 'father') and chain_verified_earner(application, earner):
@@ -528,12 +560,14 @@ def _verdict_income_salary(application, student_name, present):
     bc_missing = bc_mismatch = False
     letter_missing = False
 
-    # Birth certificate / guardianship letter are single household docs (read once).
-    bcf = _doc_assist_fields(_latest_doc(application, 'birth_certificate'))
+    # Birth certificate / guardianship letter are single household docs (read once). A WRONG-TYPE
+    # doc in the slot is UNUSABLE (#27): fields blanked so no relationship reads off it, and the
+    # student gets a specific re-upload ticket below.
+    _, bcf, bc_unusable = _usable_relationship_fields(application, 'birth_certificate')
     bc_child, bc_mother = bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', '')
     bc_father = bcf.get('bc_father_name', '')      # #55: mononym father fallback
-    g_doc = _latest_doc(application, 'guardianship_letter')
-    letter_name = (getattr(g_doc, 'vision_name', '') or '') if g_doc else ''
+    g_doc, _, letter_unusable = _usable_relationship_fields(application, 'guardianship_letter')
+    letter_name = ('' if letter_unusable else ((getattr(g_doc, 'vision_name', '') or '') if g_doc else ''))
 
     for m in members:
         ic_doc = _latest_doc_for_member(application, 'parent_ic', m)
@@ -597,8 +631,12 @@ def _verdict_income_salary(application, student_name, present):
         gap.append(_item('earner_ic_missing', members=ic_missing))
     if bc_missing:
         gap.append(_item('birth_cert_missing'))
+    elif bc_unusable and any(relationship_doc_for(m) == 'birth_certificate' for m in members):
+        gap.append(_item('birth_cert_not_genuine'))       # required + wrong-type → re-upload (#27)
     if letter_missing:
         gap.append(_item('guardianship_letter_missing'))
+    elif letter_unusable and any(relationship_doc_for(m) == 'guardianship_letter' for m in members):
+        gap.append(_item('guardianship_letter_not_genuine'))
     if ic_unreadable:
         review.append(_item('earner_ic_unreadable', members=ic_unreadable))
     if patronymic_mismatch:
@@ -809,6 +847,14 @@ def _apply_genuineness_caps(application, facts):
         # double-flag it. (str-proof-spec.md §4.)
         if 'str' in dts and _str_wrong_type(application):
             dts = [d for d in dts if d != 'str']
+        # Same principle for a wrong-type RELATIONSHIP doc (#27): the specific re-upload ticket
+        # (birth_cert_not_genuine / guardianship_letter_not_genuine) already explains it — don't
+        # stack the generic officer-only caveat on top.
+        specific = {i['code'] for i in fact['unresolved']}
+        if 'birth_cert_not_genuine' in specific:
+            dts = [d for d in dts if d != 'birth_certificate']
+        if 'guardianship_letter_not_genuine' in specific:
+            dts = [d for d in dts if d != 'guardianship_letter']
         if not dts or any(i['code'] == 'document_not_genuine' for i in fact['unresolved']):
             continue
         st = _suspect_genuineness(application, dts)

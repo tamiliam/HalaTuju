@@ -446,6 +446,47 @@ class TestIncome(_Base):
         self.assertEqual(f['status'], 'verified')
         self.assertIn('relationship_confirmed', _codes(f['evidence']))
 
+    def test_mother_route_wrong_type_bc_is_gap_with_reupload_ticket(self):
+        # #27 (owner 2026-07-08): a genuine CURRENT STR matching the mother's IC, but the doc in
+        # the birth-certificate slot is NOT a birth certificate (genuineness not_birth_certificate,
+        # child/father fields empty). The mother↔student link is unprovable → gap with the SPECIFIC
+        # birth_cert_not_genuine re-upload ticket (resolution-mapped, student-facing), and the
+        # generic officer-only document_not_genuine caveat is suppressed (no double flag).
+        self._wizard(route='str', earner='mother')
+        _parent_ic(self.app, 'KAMALA A/P RAMAN', nric='860419-43-5610')
+        d = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                     fields={'bc_child_name': '', 'bc_mother_name': 'KAMALA A/P RAMAN',
+                             'bc_mother_nric': '860419-43-5610'})
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'not_birth_certificate',
+                                                              'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'KAMALA A/P RAMAN', 'recipient_nric': '860419-43-5610',
+                         'status': 'Lulus', 'year': '2026', 'source_type': 'letter'})
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'gap')
+        codes = _codes(f['unresolved'])
+        self.assertIn('birth_cert_not_genuine', codes)
+        self.assertNotIn('document_not_genuine', codes)
+
+    def test_wrong_type_bc_fields_never_confirm_relationship(self):
+        # Guard: even if the wrong-type doc's extracted fields look COMPLETE and matching (child =
+        # student, mother = earner IC), they prove nothing — the fields are blanked, so neither the
+        # STR precedence nor the route logic can green off a document that isn't a birth certificate.
+        self._wizard(route='str', earner='mother')
+        _parent_ic(self.app, 'KAMALA A/P RAMAN')
+        d = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                     fields={'bc_child_name': 'DIVASHINI A/P MURUGAN',
+                             'bc_mother_name': 'KAMALA A/P RAMAN'})
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'not_birth_certificate',
+                                                              'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'KAMALA A/P RAMAN', 'status': 'Lulus', 'year': '2026'})
+        f = _facts(self.app)['income']
+        self.assertNotEqual(f['status'], 'verified')
+        self.assertIn('birth_cert_not_genuine', _codes(f['unresolved']))
+
     def test_guardian_letter_missing_is_gap(self):
         self._wizard(route='str', earner='guardian')
         _parent_ic(self.app, 'RAJA A/L KUMAR')
