@@ -1959,7 +1959,7 @@
         },
         "str_not_current": {
           "title": "Confirm your STR is approved and being paid",
-          "desc": "The STR screenshot you sent doesn't confirm the recipient is currently receiving STR payments. Please upload a MySTR *Semakan Status* screenshot showing: (1) the recipient's Nama, No. MyKad and Status Permohonan Semasa marked *Lulus*; and (2) the *Maklumat Pembayaran* tab, with the recent payment dates clearly visible."
+          "desc": "The STR screenshot you uploaded doesn't confirm your family is currently receiving STR payments. Please upload a MySTR *Semakan Status* screenshot showing: (1) the recipient's Nama, No. MyKad and Status Permohonan Semasa marked *Lulus*; and (2) the *Maklumat Pembayaran* tab that is open, clearly showing the payment dates."
         },
         "str_recipient_mismatch": {
           "title": "Check your STR document",
@@ -2059,7 +2059,7 @@
         },
         "informal_income_detail": {
           "title": "Tell us about your family's informal income",
-          "desc": "A working adult in your household is in informal or self-employed work (for example fishing, trading, driving, or daily-wage work). Do they get a payslip, or contribute to EPF (KWSP)? If not — which is completely normal for this kind of work — roughly how much do they earn a month?"
+          "desc": "You have stated that your {members} does self-employed or informal work — {jobs}. Roughly how much do they earn a month? Do they get a payslip, or contribute to EPF (KWSP)?"
         },
         "reporting_date_unknown": {
           "title": "When do you report to your institution?",

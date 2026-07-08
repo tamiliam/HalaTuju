@@ -501,6 +501,7 @@ from apps.scholarship.income_engine import (  # noqa: E402
     member_is_informal, informal_income_members, informal_income_detail_gap,
     employed_epf_members, sibling_school_detail_unknown, sibling_tertiary_funding_unknown,
     utility_bill_recheck, high_utility_expense_context, _utility_name_unrelated,
+    informal_income_context,
 )
 import datetime as _dt
 
@@ -934,6 +935,23 @@ class TestInformalEarners(SimpleTestCase):
     def test_informal_guardian_surfaces(self):
         app = self._app_occ(father='gov', others=[{'role': 'guardian', 'occupation': 'hawker'}])
         self.assertIn('guardian', informal_income_members(app))
+
+    def test_context_names_member_and_job(self):
+        # Owner 2026-07-08: the ask-first clarify carries the member + declared occupation label.
+        ctx = informal_income_context(self._app_occ(father='driver'))
+        self.assertEqual(ctx['members'], ['father'])
+        self.assertEqual(ctx['jobs'], 'Driver (taxi / bus / lorry)')
+
+    def test_context_lists_multiple_informal_members(self):
+        app = self._app_occ(father='fisherman', others=[{'role': 'brother', 'occupation': 'odd_jobs'}])
+        ctx = informal_income_context(app)
+        self.assertEqual(ctx['members'], ['father', 'brother'])
+        self.assertEqual(ctx['jobs'], 'Fisherman; Odd jobs / daily wage')
+
+    def test_context_excludes_member_with_declared_amount(self):
+        # A member who already declared an amount is handled by informal_work_detail, not here.
+        ctx = informal_income_context(self._app_occ(father='driver', declared={'father': 900}))
+        self.assertEqual(ctx['members'], [])
 
 
 class TestSiblingClarifyGaps(SimpleTestCase):

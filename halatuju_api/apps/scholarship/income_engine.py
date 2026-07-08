@@ -2416,6 +2416,34 @@ def informal_income_detail_gap(application):
     return any(declared_amount(application, m) is None for m in informal_income_members(application))
 
 
+def _member_occupation_label(application, member):
+    """The human occupation LABEL for a roster member (the declared job, e.g. 'Driver (taxi / bus /
+    lorry)'), honouring the free-text 'other' when the code is 'other'. '' when unknown."""
+    from .family import occupation_label
+    if member == 'father':
+        return occupation_label(_member_occupation(application, member),
+                                getattr(application, 'father_occupation_other', '') or '')
+    if member == 'mother':
+        return occupation_label(_member_occupation(application, member),
+                                getattr(application, 'mother_occupation_other', '') or '')
+    for m in (getattr(application, 'other_family_members', None) or []):
+        if isinstance(m, dict) and m.get('role') == member:
+            return occupation_label((m.get('occupation', '') or '').strip(),
+                                    (m.get('occupation_other', '') or '').strip())
+    return ''
+
+
+def informal_income_context(application):
+    """Params for the ``informal_income_detail`` clarify so its copy NAMES the members the student
+    ALREADY declared (owner 2026-07-08 — 'the information is already in My Family'): ``members`` is
+    the list of informal-earner member codes (the FE localises them to relation labels), ``jobs`` is
+    their declared occupation label(s) joined for display. Only the members whose amount is still
+    unknown (the ones the gap is actually about). Empty ``members`` when the gap isn't live."""
+    members = [m for m in informal_income_members(application) if declared_amount(application, m) is None]
+    jobs = [lbl for lbl in (_member_occupation_label(application, m) for m in members) if lbl]
+    return {'members': members, 'jobs': '; '.join(jobs)}
+
+
 _ROSTER_UNDERCOUNT_MARGIN = 2   # conservative: only a gap of ≥2 unlisted people (tune post-deploy)
 
 

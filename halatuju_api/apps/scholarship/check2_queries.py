@@ -254,6 +254,11 @@ def _clarify_params(application, code):
         if code == 'high_utility_expense' and ctx.get('income') is not None:
             params['income'] = ctx['income']         # the STR variant references status, not a figure
         return params
+    if code == 'informal_income_detail':
+        # Name the member(s) + declared occupation the student already gave in 'My Family', so the
+        # ask reflects what we know rather than a generic prompt (owner 2026-07-08).
+        from .income_engine import informal_income_context
+        return informal_income_context(application)
     return {}
 
 

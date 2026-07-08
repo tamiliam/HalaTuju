@@ -649,6 +649,18 @@ class TestInformalIncomeAsks(_Base):
         self.assertNotIn('father_epf_missing', codes)                   # no dead-end EPF request
         item = self.app.resolution_items.get(code='informal_income_detail')
         self.assertEqual((item.source, item.kind), ('check2', 'clarify'))
+        # Owner 2026-07-08: the clarify NAMES the declared member + occupation (not a generic ask).
+        self.assertEqual(item.params.get('members'), ['father'])
+        self.assertEqual(item.params.get('jobs'), 'Fisherman')
+
+    def test_clarify_names_the_declared_occupation(self):
+        # A driver father → the params carry the full declared occupation label.
+        self.app.father_occupation = 'driver'
+        self.app.save()
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='informal_income_detail')
+        self.assertEqual(item.params.get('members'), ['father'])
+        self.assertEqual(item.params.get('jobs'), 'Driver (taxi / bus / lorry)')
 
     def test_clears_when_income_evidence_arrives(self):
         sync_check2_queries(self.app)

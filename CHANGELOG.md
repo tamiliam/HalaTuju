@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## Check-2 copy: STR re-ask + member-specific informal-income ask — 2026-07-08
+
+### Changed
+- **STR re-ask (`str_not_current`) reworded** (owner, #126): "you sent" → "you uploaded"; "the
+  recipient is" → "your family is"; and the payment-tab instruction now reads "the *Maklumat
+  Pembayaran* tab that is open, clearly showing the payment dates". en/ms/ta.
+- **The informal-income ask (`informal_income_detail`) now names the member + occupation the student
+  already declared** (owner, #126) instead of a generic "a working adult… fishing, trading, driving".
+  The clarify carries `members` (FE-localised relation labels) + `jobs` (the declared occupation
+  label) params, so it reads e.g. "You have stated that your Father does self-employed or informal
+  work — Driver (taxi / bus / lorry). Roughly how much do they earn a month? Do they get a payslip,
+  or contribute to EPF (KWSP)?" (`informal_income_context` in `income_engine.py`; params built in
+  `check2_queries._clarify_params`). en/ms/ta. 2218 pytest + 484 jest.
+
 ## Utility-bill dedup + profile guardrails (laptop / B40 threshold) — 2026-07-08
 
 ### Changed

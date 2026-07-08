@@ -1951,7 +1951,7 @@
         },
         "str_not_current": {
           "title": "Sahkan STR anda diluluskan dan sedang dibayar",
-          "desc": "Tangkapan skrin STR yang anda hantar tidak mengesahkan penerima sedang menerima bayaran STR sekarang. Sila muat naik tangkapan skrin MySTR *Semakan Status* yang menunjukkan: (1) Nama, No. MyKad dan Status Permohonan Semasa penerima bertanda *Lulus*; dan (2) tab *Maklumat Pembayaran*, dengan tarikh bayaran terkini kelihatan jelas."
+          "desc": "Tangkapan skrin STR yang anda muat naik tidak mengesahkan keluarga anda sedang menerima bayaran STR sekarang. Sila muat naik tangkapan skrin MySTR *Semakan Status* yang menunjukkan: (1) Nama, No. MyKad dan Status Permohonan Semasa penerima bertanda *Lulus*; dan (2) tab *Maklumat Pembayaran* yang terbuka, jelas menunjukkan tarikh-tarikh bayaran."
         },
         "str_recipient_mismatch": {
           "title": "Semak dokumen STR anda",
@@ -2059,7 +2059,7 @@
         },
         "informal_income_detail": {
           "title": "Ceritakan tentang pendapatan tidak formal keluarga anda",
-          "desc": "Seorang dewasa yang bekerja dalam isi rumah anda menjalankan kerja tidak formal atau bekerja sendiri (contohnya menangkap ikan, berniaga, memandu, atau kerja upah harian). Adakah mereka menerima slip gaji, atau menyumbang kepada KWSP (EPF)? Jika tidak — yang mana perkara biasa bagi kerja seperti ini — lebih kurang berapa pendapatan mereka sebulan?"
+          "desc": "Anda menyatakan bahawa {members} anda melakukan kerja sendiri atau tidak formal — {jobs}. Lebih kurang berapa pendapatan mereka sebulan? Adakah mereka menerima slip gaji, atau menyumbang kepada KWSP (EPF)?"
         },
         "reporting_date_unknown": {
           "title": "Bila anda perlu melapor diri ke institusi anda?",
