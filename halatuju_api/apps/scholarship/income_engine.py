@@ -54,6 +54,32 @@ def father_name_from_ic(student_name: str) -> str:
     return s[m.end():].strip(' .,')
 
 
+def student_name_for_link(application) -> str:
+    """The student's name to use for the patronymic-based relationship checks.
+
+    Students often TYPE their name without the connector ("THIVYADHAARSHINI THANGARAJAN")
+    while their own IC prints it in full ("THIVYADHAARSHINI A/P THANGARAJAN") — and the
+    typed form alone loses the deterministic father link, wrongly demoting a
+    dispositive-STR household to Unsure (#88). So: prefer the typed profile name, but when
+    it carries NO patronymic and the student's own VERIFIED IC read does, use the IC's name
+    — it is the document form of the SAME identity (the Identity check anchors profile↔IC;
+    we additionally require the two names not to mismatch), so deriving the father from it
+    is grounded, never a guess. Falls back to the profile name in every other case."""
+    profile_name = (getattr(getattr(application, 'profile', None), 'name', '') or '').strip()
+    if father_name_from_ic(profile_name):
+        return profile_name
+    docs = getattr(application, 'documents', None)
+    if docs is None:
+        return profile_name
+    ic = (docs.filter(doc_type='ic', superseded_at__isnull=True)
+          .order_by('-uploaded_at').first())
+    ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
+    if (ic_name and father_name_from_ic(ic_name)
+            and profile_name and name_match(ic_name, profile_name) != 'mismatch'):
+        return ic_name
+    return profile_name
+
+
 # ── Relationship checks (pure; statuses mirror the slip/offer checks) ─────────
 # 'match' | 'mismatch' | 'unknown' (can't derive) | 'pending' (not yet read).
 
@@ -354,7 +380,9 @@ def student_income_ic_check(doc):
     if not member or not name:
         name_status = 'unknown' if (readable and not member) else 'pending'
     else:
-        student_name = getattr(getattr(app, 'profile', None), 'name', '') or ''
+        # IC-aware (#88): a typed profile name without the A/P connector must not lose the
+        # patronymic link when the student's own verified IC carries it.
+        student_name = student_name_for_link(app)
         bc_child, bc_mother, bc_father, letter_name = _relationship_inputs(app, member, name)
         name_status = member_relationship_status(member, student_name, name,
                                                  bc_child, bc_mother, letter_name, bc_father)

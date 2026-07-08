@@ -303,11 +303,14 @@ def _str_precedence_verdict(application):
         logic asks for the missing tie (BC / patronymic) — the fraud guard the salary route already
         applied via ``confirmed_members``."""
     from .income_engine import (household_str_status, _member_ic_doc,
-                                member_relationship_status, chain_verified_earner)
+                                member_relationship_status, chain_verified_earner,
+                                student_name_for_link)
     grade, member = household_str_status(application)
     if not grade or not member:
         return None
-    student_name = getattr(application.profile, 'name', '') or ''
+    # The IC-aware name: a typed profile name without the A/P connector must not lose the
+    # patronymic father link when the student's own verified IC carries it (#88).
+    student_name = student_name_for_link(application)
     ic_doc = _member_ic_doc(application, member)
     ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
     # Confirm the matched recipient really is the student's parent/guardian: father → patronymic,
@@ -352,10 +355,13 @@ def _verdict_income(application):
 
     The SALARY route delegates to ``_verdict_income_salary`` (multi-earner)."""
     from .income_engine import (father_link, mother_relationship,
-                                guardian_relationship, chain_verified_earner)
+                                guardian_relationship, chain_verified_earner,
+                                student_name_for_link)
     evidence, gap, review = _utility_context(application), [], []
     present = _present_doc_types(application)
-    student_name = getattr(application.profile, 'name', '') or ''
+    # IC-aware (#88): prefer the student's verified IC read when the typed name lacks the
+    # patronymic connector, so the father link doesn't silently die on a typing habit.
+    student_name = student_name_for_link(application)
     earner = (getattr(application, 'income_earner', '') or '').strip()
     route = (getattr(application, 'income_route', '') or '').strip()
 

@@ -129,3 +129,53 @@ class TestOcrNameGuard(TestCase):
     def test_extract_name_blanks_a_garbled_read(self):
         text = '750101105279\nRAJAANMALAYS\nKAD PENGENALAN'
         self.assertEqual(_extract_name(text), '')
+
+
+class TestPatronymicFromIc(_Base):
+    """#88: a typed profile name WITHOUT the A/P connector must not lose the father link when
+    the student's own verified IC carries it — `student_name_for_link` prefers the IC read
+    (same identity, anchored) so a dispositive STR settles income Certain, not Unsure."""
+
+    def _app88(self, suffix, profile_name='THIVYA THANGARAJAN', ic_name='THIVYA A/P THANGARAJAN'):
+        p = StudentProfile.objects.create(
+            supabase_user_id=f'pat-{suffix}', name=profile_name, nric='080131-08-0788')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='shortlisted',
+            income_route='str', income_earner='father')
+        if ic_name:
+            self._doc(app, 'ic', '', vision_name=ic_name)
+        self._doc(app, 'parent_ic', 'father', vision_name='THANGARAJAN A/L CHANDARIAH')
+        return app
+
+    def test_prefers_ic_read_when_typed_name_lacks_marker(self):
+        app = self._app88('a')
+        self.assertEqual(income_engine.student_name_for_link(app), 'THIVYA A/P THANGARAJAN')
+
+    def test_keeps_typed_name_when_it_has_marker(self):
+        app = self._app88('b', profile_name='THIVYA A/P THANGARAJAN')
+        self.assertEqual(income_engine.student_name_for_link(app), 'THIVYA A/P THANGARAJAN')
+
+    def test_ignores_ic_read_of_a_different_person(self):
+        # The IC-name substitution is anchored on SAME-person agreement — a mismatching IC
+        # read must never be adopted for the patronymic.
+        app = self._app88('c', ic_name='KAVITHA A/P RAJAN')
+        self.assertEqual(income_engine.student_name_for_link(app), 'THIVYA THANGARAJAN')
+
+    def test_no_ic_uploaded_falls_back_to_typed_name(self):
+        app = self._app88('d', ic_name='')
+        self.assertEqual(income_engine.student_name_for_link(app), 'THIVYA THANGARAJAN')
+
+    def test_str_precedence_fires_for_marker_less_typed_name(self):
+        # The #88 regression end-to-end: dispositive current STR (father) + father IC + a
+        # typed name without the connector -> income VERIFIED with the relationship
+        # confirmed (was: 'recommend' + income_unverified_needs_interview).
+        from apps.scholarship.verdict_engine import build_verdict
+        app = self._app88('e')
+        with mock.patch('apps.scholarship.income_engine.household_str_status',
+                        return_value=('current', 'father')):
+            income = next(f for f in build_verdict(app) if f['fact'] == 'income')
+        self.assertEqual(income['status'], 'verified')
+        codes = [e['code'] for e in income['evidence']]
+        self.assertIn('relationship_confirmed', codes)
+        self.assertIn('str_verified', codes)
+        self.assertEqual(income['unresolved'], [])
