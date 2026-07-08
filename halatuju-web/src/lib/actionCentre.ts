@@ -119,6 +119,9 @@ export const KNOWN_CODES = [
   'results_slip_name_mismatch',
   'academic_missing_subjects',
   'academic_grade_mismatch',
+  // #71 — the slip's letter AND Malay band agree but differ from the typed grade (a confident,
+  // by-eye-unnecessary mismatch → a confirm ticket).
+  'academic_grade_band_mismatch',
   'income_proof_missing',
   // Income Check-1 (item 3: earner identity + relationship). The officer-only
   // `income_unverified_needs_interview` is NOT here — it's an interview flag, not a to-do.
@@ -127,6 +130,10 @@ export const KNOWN_CODES = [
   'earner_ic_unreadable',
   'birth_cert_missing',
   'birth_cert_mismatch',
+  // #27 — the relationship doc is the wrong type / cropped (not a usable BC / guardianship letter)
+  // → a re-upload request for the full, uncropped document.
+  'birth_cert_not_genuine',
+  'guardianship_letter_not_genuine',
   'father_patronymic_mismatch',
   'guardianship_letter_missing',
   'str_not_current',
@@ -159,6 +166,10 @@ export const KNOWN_CODES = [
   // S2 — stale salary slip (doc) + sibling-in-tertiary funding (clarify).
   'income_doc_stale',
   'sibling_tertiary_funding',
+  // Owner 2026-07-08 — a sibling still in school (clarify) + an informal earner's ask-first
+  // "payslip/EPF? rough monthly?" (clarify), so neither shows as a raw code / blank title.
+  'sibling_school_detail',
+  'informal_income_detail',
   // S3 — offer carries no readable reporting date → ask when/where to report (clarify).
   'reporting_date_unknown',
   // Phase 2A — a declared informal income needs a flexible supporting doc (kind='doc').
@@ -177,12 +188,18 @@ export const KNOWN_CODES = [
   'brother_epf_missing',
   'sister_epf_missing',
   'utility_bill_missing',
+  // Owner 2026-07-08 — per-bill utility re-upload (missing / stale / unreadable), replacing the
+  // either-or utility_bill_missing.
+  'water_bill_recheck',
+  'electricity_bill_recheck',
   // V4 — clarifies:
   'deceased_parent_detail',
   'informal_work_detail',
   'household_roster_undercount',
   'other_scholarships_followup',
   'high_utility_expense',
+  // Owner 2026-07-08 — the STR variant of the point-blank high-usage query.
+  'high_utility_expense_str',
   // Post-award payout — the bank-details task. The OPEN state renders via the dedicated
   // BankDetailsTask component (special-cased in ActionCentre), but the RESOLVED state falls
   // through to the generic Done card, so it must be a KNOWN code — otherwise it's mistaken

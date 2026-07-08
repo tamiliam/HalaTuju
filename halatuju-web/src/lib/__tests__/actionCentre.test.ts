@@ -15,6 +15,7 @@ import {
   countDigits,
 } from '@/lib/actionCentre'
 import type { ResolutionItem } from '@/lib/api'
+import en from '@/messages/en.json'
 
 describe('attributionFor', () => {
   it('a known system/Check-2 code is "From our review assistant"', () => {
@@ -113,6 +114,30 @@ describe('isOfficerItem', () => {
     for (const code of KNOWN_CODES) {
       expect(isOfficerItem({ source: 'system', code })).toBe(false)
     }
+  })
+})
+
+// Regression guard (owner 2026-07-08): a code with per-item i18n copy but NOT registered in
+// KNOWN_CODES is silently treated as a free-text officer ticket — so the student sees a BLANK
+// title/desc and the officer sees the raw code (electricity_bill_recheck showed as its own code).
+// Every `scholarship.actionCentre.item.*` code MUST be a KNOWN_CODE, and vice versa, so new
+// student-facing copy can never ship without its frontend registration.
+describe('KNOWN_CODES ↔ actionCentre.item i18n parity', () => {
+  const itemCodes = Object.keys(
+    (en as { scholarship: { actionCentre: { item: Record<string, unknown> } } })
+      .scholarship.actionCentre.item,
+  )
+  const known = new Set(KNOWN_CODES as readonly string[])
+
+  it('every item copy code is registered in KNOWN_CODES (no blank-title tasks)', () => {
+    const orphanCopy = itemCodes.filter((c) => !known.has(c))
+    expect(orphanCopy).toEqual([])
+  })
+
+  it('every KNOWN_CODE has item copy (except the bank task, which renders its own component)', () => {
+    const missingCopy = (KNOWN_CODES as readonly string[])
+      .filter((c) => c !== 'bank_details_missing' && !itemCodes.includes(c))
+    expect(missingCopy).toEqual([])
   })
 })
 

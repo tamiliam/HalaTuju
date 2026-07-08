@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: unregistered task codes showed blank titles — 2026-07-08
+
+### Fixed
+- **Eight student-facing task codes were missing from the frontend `KNOWN_CODES` registry**, so the
+  Action Centre (student) and the officer "Outstanding" panel treated them as free-text officer
+  tickets — the student saw a task with a **blank title and no description** (just an Upload/answer
+  box, mis-attributed "From your reviewer") and the officer saw the **raw code**
+  (e.g. `electricity_bill_recheck`). The intended i18n copy existed but was never used. Registered
+  all eight: `water_bill_recheck`, `electricity_bill_recheck`, `high_utility_expense_str`,
+  `informal_income_detail`, `sibling_school_detail` (last two sprints), plus `academic_grade_band_mismatch`,
+  `birth_cert_not_genuine`, `guardianship_letter_not_genuine` (latent since #71 / #27).
+- **Added a regression guard** (`actionCentre.test.ts`): every `scholarship.actionCentre.item.*`
+  code must be in `KNOWN_CODES` and vice-versa — new student-facing copy can no longer ship without
+  its frontend registration. 484 jest.
+
 ## Check-2: sharper utility-bill handling — 2026-07-08
 
 ### Changed
