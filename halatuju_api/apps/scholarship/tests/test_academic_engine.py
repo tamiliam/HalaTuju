@@ -184,7 +184,8 @@ class TestReadSlip(SimpleTestCase):
         self.assertEqual(d['grades'], {})
 
     def test_empty(self):
-        self.assertEqual(read_slip(_doc({})), {'names': [], 'grades': {}, 'bands': {}})
+        self.assertEqual(read_slip(_doc({})),
+                         {'names': [], 'grades': {}, 'bands': {}, 'letters': {}})
 
 
 class TestBandCrossCheck(SimpleTestCase):
@@ -220,6 +221,27 @@ class TestBandCrossCheck(SimpleTestCase):
         # blind spot → UNCERTAIN, never a confident "you typed A+ but slip says A".
         slip = read_slip(_doc({'results': [{'subject': 'Fizik', 'grade': 'A', 'band': 'Cemerlang Tinggi'}]}))
         cmp = compare_academics({'phy': 'A+'}, slip)
+        self.assertEqual(cmp['mismatched'], [])
+        self.assertEqual(len(cmp['uncertain']), 1)
+
+    def test_hash71_double_confirmed_lower_typed_is_confident_mismatch(self):
+        # #71 (owner 2026-07-08): slip reads A / 'Cemerlang Tinggi' (letter+band AGREE), the
+        # student typed A-. For the truth to be A- the OCR would have to INVENT the word
+        # 'Tinggi' ('cemerlang tinggi' is NOT a char-loss of 'cemerlang') -> the read is
+        # trusted -> a CONFIDENT mismatch flagged band_confirmed, not "check by eye".
+        slip = read_slip(_doc({'results': [
+            {'subject': 'Bahasa Tamil', 'grade': 'A', 'band': 'Cemerlang Tinggi'}]}))
+        cmp = compare_academics({'b_tamil': 'A-'}, slip)
+        self.assertEqual(cmp['uncertain'], [])
+        self.assertEqual(len(cmp['mismatched']), 1)
+        self.assertTrue(cmp['mismatched'][0].get('band_confirmed'))
+        self.assertEqual(cmp['mismatched'][0]['typed'], 'A-')
+        self.assertEqual(cmp['mismatched'][0]['slip'], 'A')
+
+    def test_letter_only_pm_difference_stays_uncertain(self):
+        # No band on the row -> the letter's +/- is uncorroborated -> still 'uncertain'.
+        slip = read_slip(_doc({'results': [{'subject': 'Kimia', 'grade': 'A'}]}))
+        cmp = compare_academics({'chem': 'A-'}, slip)
         self.assertEqual(cmp['mismatched'], [])
         self.assertEqual(len(cmp['uncertain']), 1)
 

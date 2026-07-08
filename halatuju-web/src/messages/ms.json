@@ -1337,7 +1337,11 @@
           "docsHeading": "Dokumen untuk dimuat naik",
           "footer": "Muat naik apa yang anda boleh — seorang penyemak akan melihat situasi anda secara peribadi.",
           "clusterDone": "Lengkap",
-          "strTitle": { "father": "Dokumen STR Bapa", "mother": "Dokumen STR Ibu", "guardian": "Dokumen STR Penjaga" },
+          "strTitle": {
+            "father": "Dokumen STR Bapa",
+            "mother": "Dokumen STR Ibu",
+            "guardian": "Dokumen STR Penjaga"
+          },
           "declared": {
             "cantGet": "Tidak dapat slip gaji atau KWSP untuk mereka?",
             "prompt": "Beritahu kami pendapatan bulanan purata mereka dan kami akan meminta satu dokumen sokongan.",
@@ -1907,6 +1911,10 @@
         "academic_grade_mismatch": {
           "title": "Semak gred anda untuk {subject}",
           "desc": "Slip keputusan anda menunjukkan {subject} sebagai {slip}, tetapi profil anda menyatakan {typed}. Sila betulkan di halaman keputusan anda (halatuju.xyz/onboarding/grades), kemudian kembali dan tandakan ini selesai."
+        },
+        "academic_grade_band_mismatch": {
+          "title": "Betulkan gred anda untuk {subject}",
+          "desc": "Slip keputusan anda jelas menunjukkan {subject} sebagai {slip} (huruf dan band sepadan), tetapi profil anda menyatakan {typed}. Sila betulkan di halaman keputusan anda (halatuju.xyz/onboarding/grades), kemudian kembali dan tandakan ini selesai."
         },
         "income_proof_missing": {
           "title": "Muat naik dokumen STR anda",
@@ -3421,6 +3429,7 @@
           "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
+          "academic_grade_band_mismatch": "{subject}: slip jelas menunjukkan {slip} — huruf dan band Melayu sepadan — tetapi pelajar menaip {typed}. Gred yang ditaip adalah salah; minta pelajar membetulkannya.",
           "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",
           "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan.",
           "offer_letter_missing": "Tiada surat tawaran dimuat naik — diperlukan sebelum kami boleh menyokong tempat pengajian.",
@@ -3925,7 +3934,6 @@
     },
     "setPasswordTitle": "Tetapkan kata laluan anda",
     "setPasswordSubtitle": "Pilih kata laluan untuk melengkapkan penyediaan akaun anda",
-    "newPassword": "Kata laluan baharu",
     "newPasswordHint": "Sekurang-kurangnya 8 aksara",
     "confirmPassword": "Sahkan kata laluan",
     "setPasswordCta": "Tetapkan kata laluan & log masuk",

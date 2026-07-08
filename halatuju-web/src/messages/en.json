@@ -1337,7 +1337,11 @@
           "docsHeading": "Documents to upload",
           "footer": "Upload what you can — a reviewer will look at your situation personally.",
           "clusterDone": "Complete",
-          "strTitle": { "father": "Father's STR document", "mother": "Mother's STR document", "guardian": "Guardian's STR document" },
+          "strTitle": {
+            "father": "Father's STR document",
+            "mother": "Mother's STR document",
+            "guardian": "Guardian's STR document"
+          },
           "declared": {
             "cantGet": "Can't get a payslip or EPF for them?",
             "prompt": "Tell us their average monthly income and we'll ask for one supporting document.",
@@ -1907,6 +1911,10 @@
         "academic_grade_mismatch": {
           "title": "Check your grade for {subject}",
           "desc": "Your results slip shows {subject} as {slip}, but your profile says {typed}. Please fix it on your results page (halatuju.xyz/onboarding/grades), then come back and mark this done."
+        },
+        "academic_grade_band_mismatch": {
+          "title": "Fix your grade for {subject}",
+          "desc": "Your results slip clearly shows {subject} as {slip} (the letter and the band agree), but your profile says {typed}. Please fix it on your results page (halatuju.xyz/onboarding/grades), then come back and mark this done."
         },
         "income_proof_missing": {
           "title": "Upload your STR document",
@@ -3421,6 +3429,7 @@
           "pathway_confirmed": "Final pathway confirmed by the student: {programme} at {institution}.",
           "academic_missing_subjects": "Entered {entered} of {total} subjects on the slip — missing: {subjects}. Ask the student to add them.",
           "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",
+          "academic_grade_band_mismatch": "{subject}: the slip clearly shows {slip} — the letter and the Malay band agree — but the student typed {typed}. The typed grade is wrong; ask the student to correct it.",
           "academic_grade_uncertain": "{subject}: our read shows {slip}, but the student typed {typed} — an A/A+ (±) read we can't be sure of. Check it by eye against the slip.",
           "grades_verified": "All {count} grades match the results slip.",
           "offer_letter_missing": "No offer letter uploaded — required before we can support a place.",
@@ -3925,7 +3934,6 @@
     },
     "setPasswordTitle": "Set your password",
     "setPasswordSubtitle": "Choose a password to finish setting up your account",
-    "newPassword": "New password",
     "newPasswordHint": "At least 8 characters",
     "confirmPassword": "Confirm password",
     "setPasswordCta": "Set password & sign in",

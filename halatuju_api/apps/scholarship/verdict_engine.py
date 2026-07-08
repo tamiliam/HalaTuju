@@ -214,8 +214,11 @@ def _verdict_academic(application):
                                 total=cmp['slip_count'],
                                 subjects=', '.join(cmp['missing'])))
     for m in cmp['mismatched']:
-        unresolved.append(_item('academic_grade_mismatch',
-                                subject=m['subject'], typed=m['typed'], slip=m['slip']))
+        # band_confirmed (#71, owner 2026-07-08): the slip's letter AND Malay band agree, so a
+        # ±-modifier difference is NOT an OCR blind spot — the read is double-confirmed and the
+        # TYPED grade is what's wrong. Distinct copy says so plainly instead of "check by eye".
+        code = 'academic_grade_band_mismatch' if m.get('band_confirmed') else 'academic_grade_mismatch'
+        unresolved.append(_item(code, subject=m['subject'], typed=m['typed'], slip=m['slip']))
     # The slip's letter and band disagree for this subject — the grade read can't be
     # trusted, so surface it as "check by eye", NOT a confident mismatch.
     for u in cmp['uncertain']:

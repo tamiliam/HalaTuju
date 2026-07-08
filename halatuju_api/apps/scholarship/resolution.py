@@ -44,6 +44,9 @@ CODE_TO_TICKET = {
     'results_slip_name_mismatch': {'fact': 'academic', 'kind': 'doc', 'doc_type': 'results_slip'},
     'academic_missing_subjects':  {'fact': 'academic', 'kind': 'confirm'},
     'academic_grade_mismatch':    {'fact': 'academic', 'kind': 'confirm'},
+    # #71 (owner 2026-07-08): the slip's letter + Malay band AGREE → the typed grade is confidently
+    # wrong (not an OCR blind spot); same student-confirm resolution flow, distinct plain copy.
+    'academic_grade_band_mismatch': {'fact': 'academic', 'kind': 'confirm'},
     # Income
     'income_proof_missing': {'fact': 'income', 'kind': 'doc', 'doc_type': 'str'},
     # Income Check-1 (item 3: earner identity + relationship). `income_unverified_needs_interview`

@@ -106,6 +106,16 @@ _BAND_TO_GRADE = {
     'kepujian': 'C', 'lulus atas': 'D', 'lulus': 'E', 'gagal': 'G',
     'tidak hadir': 'TH',
 }
+_GRADE_TO_BAND = {g: p for p, g in _BAND_TO_GRADE.items()}   # canonical phrase per grade
+
+
+def _is_char_loss(read_phrase: str, printed_phrase: str) -> bool:
+    """True when ``read_phrase`` is obtainable from ``printed_phrase`` by DELETING characters
+    (in order) — i.e. the read could be a degraded OCR of the printed text. 'cemerlang tinggi'
+    IS a char-loss of 'cemerlang tertinggi' (the faint 'ter' drops — the live Fizik A+ case);
+    'cemerlang tinggi' is NOT a char-loss of 'cemerlang' (OCR doesn't INVENT the word 'tinggi')."""
+    it = iter(printed_phrase)
+    return all(ch in it for ch in read_phrase)
 # Trailing band phrase: a band word (cemerlang/kepujian/lulus/gagal) optionally
 # followed by a modifier (tertinggi/tinggi/atas). Anchored at the END so a real
 # subject like "Bahasa Arab Tinggi" is untouched (no band word precedes "Tinggi").
@@ -406,7 +416,8 @@ def read_slip(doc) -> dict:
     fields = fields if isinstance(fields, dict) else {}
     names: list[str] = []
     grades: dict[str, str] = {}
-    bands: dict[str, str] = {}   # normname → grade implied by the slip's band phrase
+    bands: dict[str, str] = {}    # normname → grade implied by the slip's band phrase
+    letters: dict[str, str] = {}  # normname → the PRINTED letter grade (band's independent witness)
     results = fields.get('results')
     if isinstance(results, list) and results:
         for r in results:
@@ -420,7 +431,8 @@ def read_slip(doc) -> dict:
                 # reliably, whereas the letter's +/- is a tiny, easily-dropped mark. So
                 # the band's grade wins; the printed letter is only the fallback. (Applies
                 # to BOTH the deterministic parse and the Gemini fallback read.)
-                g = band_grade or (r.get('grade') or '').strip()
+                letter = (r.get('grade') or '').strip()
+                g = band_grade or letter
                 if s:
                     names.append(s)
                     nn = _norm(s)
@@ -428,11 +440,13 @@ def read_slip(doc) -> dict:
                         grades[nn] = g
                     if band_grade:
                         bands[nn] = band_grade
+                    if letter:
+                        letters[nn] = letter
     else:
         subs = fields.get('subjects')
         if isinstance(subs, list):
             names = [_split_band(s)[0] for s in subs if isinstance(s, str) and s.strip()]
-    return {'names': names, 'grades': grades, 'bands': bands}
+    return {'names': names, 'grades': grades, 'bands': bands, 'letters': letters}
 
 
 def compare_academics(profile_grades, slip) -> dict:
@@ -456,6 +470,7 @@ def compare_academics(profile_grades, slip) -> dict:
     for n in slip['names']:
         slip_norm.setdefault(_norm(n), n)
     bands = slip.get('bands', {})
+    letters = slip.get('letters', {})
 
     missing = sorted(orig for nn, orig in slip_norm.items() if nn not in prof_by_name)
     mismatched, uncertain = [], []
@@ -467,9 +482,26 @@ def compare_academics(profile_grades, slip) -> dict:
         row = {'subject': slip_norm.get(nn, nn), 'typed': typed, 'slip': slip_g}
         band_conflict = bool(band_g) and _norm_grade(band_g) != _norm_grade(slip_g)
         # A difference that is ONLY the +/- modifier (A+ vs A) sits in the OCR's blind
-        # spot — even a consistent letter+band misread can't be trusted there.
+        # spot — the letter's ± is a tiny, easily-dropped mark. BUT when the printed
+        # letter AND the Malay band agree with each other (a DOUBLE-CONFIRMED read) *and*
+        # the typed grade's own band phrase could NOT degrade into the read band by losing
+        # characters, the read is trusted → a CONFIDENT mismatch: the student typed the
+        # wrong grade (#71: typed A−/'cemerlang', slip A/'cemerlang tinggi' — OCR doesn't
+        # INVENT the word 'tinggi'). The char-loss guard keeps the live Fizik A+ case
+        # uncertain: 'cemerlang tinggi' IS a degraded 'cemerlang tertinggi' (the faint
+        # 'ter' drops), so letter+band agreeing on A can still mean a real A+. Letter-only
+        # reads and letter↔band conflicts likewise stay 'uncertain' (check by eye).
         pm_only = _base_letter(typed) == _base_letter(slip_g)
-        if band_conflict or pm_only:
+        letter = letters.get(nn, '')
+        double_confirmed = bool(band_g) and bool(letter) and \
+            _norm_grade(letter) == _norm_grade(band_g)
+        typed_phrase = _GRADE_TO_BAND.get(_norm_grade(typed), '')
+        read_phrase = _GRADE_TO_BAND.get(_norm_grade(band_g or ''), '')
+        plausible_degradation = bool(typed_phrase) and bool(read_phrase) and \
+            _is_char_loss(read_phrase, typed_phrase)
+        if pm_only and double_confirmed and not band_conflict and not plausible_degradation:
+            mismatched.append({**row, 'band_confirmed': True})
+        elif band_conflict or pm_only:
             uncertain.append({**row, 'band': band_g or ''})
         else:
             mismatched.append(row)

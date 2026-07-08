@@ -191,6 +191,22 @@ class TestAcademicGrades(_Base):
         self.assertEqual(f['status'], 'review')
         self.assertIn('academic_missing_subjects', _codes(f['unresolved']))
 
+    def test_hash71_band_confirmed_mismatch_gets_confident_copy(self):
+        # #71 (owner 2026-07-08): slip reads A + 'Cemerlang Tinggi' (letter+band agree, and A-
+        # could not degrade INTO 'cemerlang tinggi'), student typed A- -> the verdict emits the
+        # CONFIDENT academic_grade_band_mismatch copy ("the typed grade is wrong"), not the
+        # "check by eye" academic_grade_uncertain. Band stays review (Probable).
+        self.profile.grades = {'b_tamil': 'A-'}
+        self.profile.save()
+        _add_doc(self.app, 'results_slip', student_verdict='ok', name_match='found',
+                 fields={'results': [{'subject': 'Bahasa Tamil', 'grade': 'A',
+                                      'band': 'Cemerlang Tinggi'}]})
+        f = _facts(self.app)['academic']
+        self.assertEqual(f['status'], 'review')
+        codes = _codes(f['unresolved'])
+        self.assertIn('academic_grade_band_mismatch', codes)
+        self.assertNotIn('academic_grade_uncertain', codes)
+
     def test_grade_mismatch_is_review(self):
         self.profile.grades = {'bm': 'A-', 'math': 'B+'}
         self.profile.save()
