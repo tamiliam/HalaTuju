@@ -2049,8 +2049,16 @@
           "desc": "Slip gaji dalam fail berusia lebih tiga bulan. Sila muat naik slip terkini (dalam tempoh tiga bulan lepas) supaya kami ada gambaran pendapatan isi rumah yang terkini."
         },
         "sibling_tertiary_funding": {
-          "title": "Bagaimana pengajian adik-beradik anda dibiayai?",
-          "desc": "Anda mempunyai adik-beradik di kolej atau universiti. Di institusi mana mereka belajar, dan bagaimana pengajian mereka dibiayai — biasiswa, pinjaman PTPTN, sokongan keluarga, atau lain-lain?"
+          "title": "Ceritakan tentang adik-beradik anda dalam pengajian lanjutan",
+          "desc": "Anda mempunyai adik-beradik di kolej atau universiti (atau yang telah tamat). Di institusi mana mereka belajar dan apa yang mereka pelajari — atau, jika mereka bekerja, di mana dan sebagai apa? Dan bagaimana ia dibiayai — biasiswa, pinjaman PTPTN, sokongan keluarga — atau, jika bekerja, lebih kurang berapa pendapatan mereka sebulan?"
+        },
+        "sibling_school_detail": {
+          "title": "Ceritakan tentang adik-beradik anda yang masih bersekolah",
+          "desc": "Anda mempunyai adik-beradik yang masih bersekolah. Di sekolah mana mereka belajar, dan darjah atau tingkatan berapa?"
+        },
+        "informal_income_detail": {
+          "title": "Ceritakan tentang pendapatan tidak formal keluarga anda",
+          "desc": "Seorang dewasa yang bekerja dalam isi rumah anda menjalankan kerja tidak formal atau bekerja sendiri (contohnya menangkap ikan, berniaga, memandu, atau kerja upah harian). Adakah mereka menerima slip gaji, atau menyumbang kepada KWSP (EPF)? Jika tidak — yang mana perkara biasa bagi kerja seperti ini — lebih kurang berapa pendapatan mereka sebulan?"
         },
         "reporting_date_unknown": {
           "title": "Bila anda perlu melapor diri ke institusi anda?",
@@ -3464,7 +3472,9 @@
           "father_status_unknown": "Pekerjaan/status bapa tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
           "mother_status_unknown": "Pekerjaan/status ibu tidak diberikan — pelajar ditanya sama ada dia bekerja (dan di mana) atau suri rumah/pesara/menganggur/telah meninggal/tiada hubungan.",
           "income_doc_stale": "Slip gaji dalam fail berusia lebih 3 bulan — pelajar diminta memuat naik slip terkini.",
-          "sibling_tertiary_funding": "Adik-beradik di pengajian tinggi — pelajar ditanya institusi mana dan cara pembiayaan (biasiswa / PTPTN / keluarga / lain-lain).",
+          "sibling_tertiary_funding": "Adik-beradik dalam pengajian lanjutan — pelajar ditanya institusi + kursus (atau di mana mereka bekerja) dan cara pembiayaan / pendapatan mereka.",
+          "sibling_school_detail": "Adik-beradik masih bersekolah — pelajar ditanya sekolah mana dan darjah/tingkatan berapa.",
+          "informal_income_detail": "Seorang pekerja tidak formal / bekerja sendiri tiada slip gaji atau KWSP dalam fail — pelajar ditanya sama ada mereka menerimanya dan, jika tidak, lebih kurang pendapatan sebulan (tiada permintaan dokumen buntu dibangkitkan).",
           "reporting_date_unknown": "Surat tawaran tiada tarikh lapor diri yang jelas — pelajar ditanya bila dan di mana mereka melapor diri.",
           "declared_income_evidence_missing": "Pendapatan tidak formal yang diisytiharkan tiada slip gaji dan tiada STR yang sah — pelajar diminta memuat naik dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti).",
           "unemployment_detail_unknown": "Seorang ahli isi rumah menganggur — pelajar ditanya mengapa dan lebih kurang sejak bila.",

@@ -45,9 +45,17 @@ CLARIFY_SPECS = {
     # payslip) is a DOC request handled separately below — uncapped (design decision #1).
     'father_status_unknown':    {'fact': 'income'},
     'mother_status_unknown':    {'fact': 'income'},
-    # S2 — a sibling in tertiary → which institution + how funded / on aid (household burden +
-    # the not-double-funded picture). One-line, non-sensitive → a fair student clarify.
+    # S2 — a sibling in tertiary → which institution + course (or where they work), how funded /
+    # what they earn (household burden + the not-double-funded picture). Non-sensitive clarify.
     'sibling_tertiary_funding': {'fact': 'income'},
+    # A sibling still in SCHOOL → which school + what standard/form (household texture; the #130 gap
+    # was that only the tertiary sibling was ever asked about). One-line, non-sensitive clarify.
+    'sibling_school_detail': {'fact': 'income'},
+    # Informal / self-employed earner (fisherman, hawker, e-hailing…) with no payslip/EPF on file →
+    # ASK FIRST before demanding a document: does he get a payslip / contribute to EPF, and roughly
+    # what does he earn a month? (owner 2026-07-08, the #130 fisherman dead-end). One clarify covers
+    # every such member; a formal salary-slip/EPF request is deliberately NOT raised for them.
+    'informal_income_detail': {'fact': 'income'},
     # S3 — the offer letter carries no readable reporting/registration date → ask when (and
     # where) the student must report. One-line, non-sensitive, pathway-fact.
     'reporting_date_unknown': {'fact': 'pathway'},
@@ -119,11 +127,13 @@ _PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_stat
 _CLARIFY_ORDER = [
     # Household-income completeness first — the most material to a fundable B40 profile.
     'father_status_unknown', 'mother_status_unknown',
+    'informal_income_detail',              # informal earner ask-first — replaces a dead-end doc demand
     'unemployment_detail_unknown',
     # V4 — income-story texture (audit §E) sits high, above the comfort items.
     'deceased_parent_detail', 'informal_work_detail', 'household_roster_undercount',
     'other_scholarships_followup',
     'course_unspecified', 'sibling_level_unknown', 'sibling_tertiary_funding',
+    'sibling_school_detail',
     'reporting_date_unknown',
     'device_status_unknown', 'transport_cost_unknown',
     'utility_holder_unknown', 'utility_address_mismatch',
@@ -147,6 +157,8 @@ def _gap_sets(application):
         school_leaving_cert_gap, semester_result_gap, employed_epf_members, utility_bill_gap,
         deceased_parent_detail_gap, informal_work_detail_gap, household_roster_undercount,
         other_scholarships_followup_gap, high_utility_expense_gap,
+        # Owner 2026-07-08 — informal-aware income asks + sibling-in-school clarify.
+        member_is_informal, informal_income_detail_gap, sibling_school_detail_unknown,
     )
     from .pathway_engine import offer_reporting_date_unknown
     gaps = {g['code'] for g in completeness_gaps(application)}
@@ -157,6 +169,10 @@ def _gap_sets(application):
         gaps.add('utility_address_mismatch')
     if sibling_tertiary_funding_unknown(application):   # sibling in tertiary → funding clarify
         gaps.add('sibling_tertiary_funding')
+    if sibling_school_detail_unknown(application):      # sibling in school → school + standard/form
+        gaps.add('sibling_school_detail')
+    if informal_income_detail_gap(application):         # informal earner, no doc → ask-first clarify
+        gaps.add('informal_income_detail')
     if offer_reporting_date_unknown(application):       # readable offer, no parseable report date
         gaps.add('reporting_date_unknown')
     if unemployment_detail_gap(application):            # 'unemployed' member, no reason/since
@@ -178,7 +194,12 @@ def _gap_sets(application):
     for g in household_status_gaps(application):
         if g['need'] == 'status':
             gaps.add(_PARENT_STATUS_CODE[g['member']])   # only father/mother reach 'status'
-        else:                                            # 'proof' — any roster earner
+        elif member_is_informal(application, g['member']):
+            # Informal / self-employed earner: no payslip/EPF to demand (owner 2026-07-08). The
+            # ASK-FIRST clarify (informal_income_detail) + the flexible income-support-doc path
+            # (declared_income_evidence_missing) carry them instead of a dead-end doc request.
+            pass
+        else:                                            # 'proof' — a formal earner, no income doc
             proof_wanted.add(_MEMBER_PROOF_CODE[g['member']])
     if stale_income_proof(application):
         proof_wanted.add('income_doc_stale')

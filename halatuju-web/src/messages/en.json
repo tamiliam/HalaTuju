@@ -2049,8 +2049,16 @@
           "desc": "The salary slip on file is more than three months old. Please upload a current one (within the last three months) so we have an up-to-date picture of the household income."
         },
         "sibling_tertiary_funding": {
-          "title": "How is your sibling's study funded?",
-          "desc": "You have a sibling in college or university. Which institution are they at, and how is their study funded — a scholarship, a PTPTN loan, family support, or something else?"
+          "title": "Tell us about your sibling in further study",
+          "desc": "You have a sibling in college or university (or who has finished). Which institution are they at and what are they studying — or, if they are working, where and as what? And how is it funded — a scholarship, a PTPTN loan, family support — or, if working, roughly what do they earn a month?"
+        },
+        "sibling_school_detail": {
+          "title": "Tell us about your sibling in school",
+          "desc": "You have a sibling still in school. Which school are they at, and what standard or form are they in?"
+        },
+        "informal_income_detail": {
+          "title": "Tell us about your family's informal income",
+          "desc": "A working adult in your household is in informal or self-employed work (for example fishing, trading, driving, or daily-wage work). Do they get a payslip, or contribute to EPF (KWSP)? If not — which is completely normal for this kind of work — roughly how much do they earn a month?"
         },
         "reporting_date_unknown": {
           "title": "When do you report to your institution?",
@@ -3464,7 +3472,9 @@
           "father_status_unknown": "Father's work/status not provided — the student has been asked whether he works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
           "mother_status_unknown": "Mother's work/status not provided — the student has been asked whether she works (and where) or is a homemaker/retired/unemployed/passed away/not in contact.",
           "income_doc_stale": "Salary slip on file is over 3 months old — the student has been asked to upload a current one.",
-          "sibling_tertiary_funding": "Sibling in tertiary — the student has been asked which institution and how it's funded (scholarship / PTPTN / family / other).",
+          "sibling_tertiary_funding": "Sibling in further study — the student has been asked which institution + course (or where they work) and how it's funded / what they earn.",
+          "sibling_school_detail": "Sibling still in school — the student has been asked which school and what standard/form.",
+          "informal_income_detail": "An informal / self-employed earner has no payslip or EPF on file — the student has been asked whether they get one and, if not, roughly what they earn a month (no dead-end doc request raised).",
           "reporting_date_unknown": "Offer letter has no clear reporting date — the student has been asked when and where they report.",
           "declared_income_evidence_missing": "A declared informal income has no payslip and no valid STR — the student has been asked to upload a supporting document (employer/wage letter, bank statements, or a community letter).",
           "unemployment_detail_unknown": "A household member is unemployed — the student has been asked why and roughly since when.",

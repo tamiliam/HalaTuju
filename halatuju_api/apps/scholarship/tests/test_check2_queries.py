@@ -18,17 +18,19 @@ class _Base(TestCase):
     def setUp(self):
         self.profile = StudentProfile.objects.create(
             supabase_user_id=f'c2q-{self.id()}', name='Priya Devi', nric='030101-14-1234',
-            household_income=1200, household_size=5,
+            household_income=1200, household_size=3,
         )
         self.app = ScholarshipApplication.objects.create(
             cohort=self.cohort, profile=self.profile, status='shortlisted',
             profile_completed_at=timezone.now(),  # submitted
             aspirations='I want to teach.', field_of_study='Education',
-            siblings_in_tertiary=0,  # sibling level known
-            # V4: 2 school siblings → described household (student + 2 parents + 2 siblings) = 5 =
-            # household_size, so the base app is roster-CONSISTENT (household_roster_undercount, a
-            # V4 clarify, does not fire by default and crowd out the gap a test is focused on).
-            siblings_in_school=2,
+            # No siblings by default → sibling-level known AND the (owner 2026-07-08)
+            # sibling_school_detail / sibling_tertiary_funding clarifies stay quiet; described
+            # household = student + 2 parents = 3 = household_size, so the base app is
+            # roster-CONSISTENT (household_roster_undercount does not fire by default and crowd
+            # out the low-priority gap a test is focused on). The two default clarifies remain
+            # device + transport (one free slot), the contract the low-priority tests rely on.
+            siblings_in_tertiary=0, siblings_in_school=0,
             chosen_pathway='stpm', pathway_certainty='sure',  # STPM → transport asked
             # Household-income completeness satisfied by default (S1): father earns + has a
             # payslip on file, mother is a homemaker (status known) — so the parent-income
@@ -295,7 +297,10 @@ class TestHouseholdProofQueries(_Base):
 
     def setUp(self):
         super().setUp()   # father='gov' + a father salary_slip on file → father satisfied
-        self.app.other_family_members = [{'role': 'guardian', 'occupation': 'driver'}]
+        # A FORMAL earner (factory operator) → a payslip/EPF proof request is appropriate. (An
+        # INFORMAL occupation like 'driver' now routes to the ask-first clarify instead — owner
+        # 2026-07-08; see TestInformalIncomeAsks.)
+        self.app.other_family_members = [{'role': 'guardian', 'occupation': 'factory'}]
         self.app.save()
 
     def test_working_guardian_proof_request_raised_and_clears(self):
@@ -578,7 +583,7 @@ class TestV4PromotedAsks(_Base):
         self.assertIn('informal_work_detail', self._codes())
 
     def test_household_roster_undercount(self):
-        self.profile.household_size = 8      # described = 5 (student + 2 parents + 2 school) → gap 3
+        self.profile.household_size = 8      # described = 3 (student + 2 parents) → gap 5 ≥ 2
         self.profile.save()
         sync_check2_queries(self.app)
         self.assertIn('household_roster_undercount', self._codes())
@@ -590,7 +595,7 @@ class TestV4PromotedAsks(_Base):
         self.assertIn('other_scholarships_followup', self._codes())
 
     def test_high_utility_expense(self):
-        # Two bills in the student's name (no holder query), RM200 each → 400/5 = 80/head > 60 → high.
+        # Two bills in the student's name (no holder query), RM200 each → 400/3 ≈ 133/head > 60 → high.
         for dt in ('water_bill', 'electricity_bill'):
             ApplicantDocument.objects.create(
                 application=self.app, doc_type=dt, storage_path=f'x/{dt}',
@@ -598,3 +603,98 @@ class TestV4PromotedAsks(_Base):
                                'student_verdict': 'ok'})
         sync_check2_queries(self.app)
         self.assertIn('high_utility_expense', self._codes())
+
+
+class TestInformalIncomeAsks(_Base):
+    """Owner 2026-07-08 — an informal / self-employed earner (fisherman, hawker, e-hailing…) must
+    NOT be chased for a payslip / EPF (the #130 fisherman dead-end): the request would sit open
+    against the SLA clock and invite an irrelevant upload. Instead we ASK FIRST — an
+    informal_income_detail clarify — and route real proof through the flexible support-doc path."""
+
+    def setUp(self):
+        super().setUp()
+        # Father is a fisherman (informal) with no income document on file.
+        self.app.documents.filter(doc_type='salary_slip').delete()
+        self.app.income_route = 'salary'
+        self.app.father_occupation = 'fisherman'
+        self.app.mother_occupation = 'homemaker'
+        self.app.save()
+
+    def test_informal_earner_gets_ask_first_clarify_not_doc_demand(self):
+        sync_check2_queries(self.app)
+        codes = self._codes()
+        self.assertIn('informal_income_detail', codes)                  # ask-first clarify raised
+        self.assertNotIn('father_income_proof_missing', codes)          # no formal payslip demand
+        self.assertNotIn('father_epf_missing', codes)                   # no dead-end EPF request
+        item = self.app.resolution_items.get(code='informal_income_detail')
+        self.assertEqual((item.source, item.kind), ('check2', 'clarify'))
+
+    def test_clears_when_income_evidence_arrives(self):
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='informal_income_detail')
+        # A support doc tagged to the father documents his income → he's no longer an unevidenced
+        # informal earner, so the ask-first clarify auto-resolves.
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='father',
+            storage_path='x/slip2')
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual((item.status, item.resolved_by), ('resolved', 'system'))
+
+    def test_formal_earner_still_gets_doc_asks(self):
+        # A formal earner (base father 'gov' with a payslip, no EPF) keeps the EPF corroboration
+        # ask and never triggers the informal clarify.
+        self.app.father_occupation = 'gov'
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='father',
+            storage_path='x/slip3')
+        self.app.save()
+        sync_check2_queries(self.app)
+        codes = self._codes()
+        self.assertIn('father_epf_missing', codes)
+        self.assertNotIn('informal_income_detail', codes)
+
+    def test_informal_guardian_routes_to_clarify_not_proof(self):
+        self.app.father_occupation = 'gov'
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='father',
+            storage_path='x/slip4')     # father satisfied so only the guardian is in play
+        self.app.other_family_members = [{'role': 'guardian', 'occupation': 'ehailing'}]
+        self.app.save()
+        sync_check2_queries(self.app)
+        codes = self._codes()
+        self.assertIn('informal_income_detail', codes)
+        self.assertNotIn('guardian_income_proof_missing', codes)
+
+
+class TestSiblingClarifies(_Base):
+    """Owner 2026-07-08 (the #130 gap) — a sibling in SCHOOL and a sibling in TERTIARY each get
+    their own clarify; before, only the tertiary sibling was ever asked about."""
+
+    def test_school_sibling_raises_its_own_clarify(self):
+        self.app.siblings_in_school = 1
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertIn('sibling_school_detail', self._codes())
+
+    def test_tertiary_sibling_raises_funding_clarify(self):
+        self.app.siblings_in_tertiary = 1
+        self.app.save()
+        sync_check2_queries(self.app)
+        self.assertIn('sibling_tertiary_funding', self._codes())
+
+    def test_one_in_each_asks_about_both(self):
+        # The #130 case: 1 in school + 1 in tertiary → BOTH clarifies fire (they're independent).
+        self.app.siblings_in_school = 1
+        self.app.siblings_in_tertiary = 1
+        self.app.save()
+        sync_check2_queries(self.app)
+        codes = self._codes()
+        self.assertIn('sibling_school_detail', codes)
+        self.assertIn('sibling_tertiary_funding', codes)
+
+    def test_no_siblings_no_clarify(self):
+        sync_check2_queries(self.app)                       # base has no siblings
+        codes = self._codes()
+        self.assertNotIn('sibling_school_detail', codes)
+        self.assertNotIn('sibling_tertiary_funding', codes)

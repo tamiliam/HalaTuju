@@ -498,6 +498,8 @@ from apps.scholarship.income_engine import (  # noqa: E402
     unemployment_detail_gap, unemployment_epf_gap, unemployment_corroborated_members,
     household_status_gaps, member_income_status, household_size_shortfall,
     _described_household_count,
+    member_is_informal, informal_income_members, informal_income_detail_gap,
+    employed_epf_members, sibling_school_detail_unknown, sibling_tertiary_funding_unknown,
 )
 import datetime as _dt
 
@@ -878,6 +880,81 @@ class TestHouseholdCompleteness(SimpleTestCase):
         self.assertNotIn('sister', earning_members(app))
         # …but they DO count toward the described household size (student + father + 2 siblings).
         self.assertEqual(_described_household_count(app), 4)
+
+
+class TestInformalEarners(SimpleTestCase):
+    """Owner 2026-07-08 — informal / self-employed earners (fisherman, hawker, e-hailing…) have no
+    payslip / EPF, so the engine must not demand one: employed_epf_members skips them, and an
+    unevidenced informal earner surfaces informal_income_detail_gap (the ask-first clarify)."""
+
+    def _app_occ(self, *, father='', mother='', others=None, docs=(), declared=None):
+        app = _app(list(docs))
+        app.father_occupation = father
+        app.mother_occupation = mother
+        app.other_family_members = others or []
+        app.income_declared = declared or {}
+        app.income_route = 'salary'
+        return app
+
+    def test_member_is_informal_reads_taxonomy(self):
+        self.assertTrue(member_is_informal(self._app_occ(father='fisherman'), 'father'))
+        self.assertTrue(member_is_informal(self._app_occ(father='ehailing'), 'father'))
+        self.assertFalse(member_is_informal(self._app_occ(father='gov'), 'father'))
+        self.assertFalse(member_is_informal(self._app_occ(father='factory'), 'father'))
+
+    def test_employed_epf_skips_informal(self):
+        # A fisherman with a salary slip but no EPF → NO EPF request (informal, no KWSP).
+        app = self._app_occ(father='fisherman', docs=[_bill('salary_slip', {'gross_income': 'RM800'})])
+        self.assertEqual(employed_epf_members(app), [])
+
+    def test_employed_epf_still_fires_for_formal(self):
+        # A factory operator with a slip but no EPF → the standard EPF corroboration ask.
+        app = self._app_occ(father='factory', docs=[_bill('salary_slip', {'gross_income': 'RM1500'})])
+        self.assertEqual(employed_epf_members(app), ['father'])
+
+    def test_informal_gap_fires_without_doc_or_amount(self):
+        app = self._app_occ(father='fisherman')
+        self.assertEqual(informal_income_members(app), ['father'])
+        self.assertTrue(informal_income_detail_gap(app))
+
+    def test_informal_gap_quiet_once_amount_declared(self):
+        # A declared amount routes to informal_work_detail instead → the ask-first gap steps aside.
+        app = self._app_occ(father='fisherman', declared={'father': 900})
+        self.assertFalse(informal_income_detail_gap(app))
+
+    def test_informal_gap_quiet_when_documented(self):
+        app = self._app_occ(father='fisherman', docs=[_bill('salary_slip', {'gross_income': 'RM800'})])
+        self.assertEqual(informal_income_members(app), [])
+        self.assertFalse(informal_income_detail_gap(app))
+
+    def test_formal_earner_never_informal_gap(self):
+        self.assertFalse(informal_income_detail_gap(self._app_occ(father='gov')))
+
+    def test_informal_guardian_surfaces(self):
+        app = self._app_occ(father='gov', others=[{'role': 'guardian', 'occupation': 'hawker'}])
+        self.assertIn('guardian', informal_income_members(app))
+
+
+class TestSiblingClarifyGaps(SimpleTestCase):
+    """Owner 2026-07-08 — a sibling in SCHOOL fires its own detail clarify, independent of the
+    tertiary funding clarify (the #130 gap: only the tertiary sibling was ever asked about)."""
+
+    def _app_siblings(self, *, school=0, tertiary=0):
+        app = _app([])
+        app.siblings_in_school = school
+        app.siblings_in_tertiary = tertiary
+        return app
+
+    def test_school_sibling_fires(self):
+        self.assertTrue(sibling_school_detail_unknown(self._app_siblings(school=1)))
+        self.assertFalse(sibling_school_detail_unknown(self._app_siblings(school=0)))
+
+    def test_tertiary_and_school_independent(self):
+        both = self._app_siblings(school=1, tertiary=1)
+        self.assertTrue(sibling_school_detail_unknown(both))
+        self.assertTrue(sibling_tertiary_funding_unknown(both))
+        # A school-only household never triggers the tertiary funding ask.
+        self.assertFalse(sibling_tertiary_funding_unknown(self._app_siblings(school=2)))
 
 
 class TestBillingMonthParse(SimpleTestCase):

@@ -85,6 +85,19 @@ PROFESSION_CODES = frozenset(PROFESSION_LABELS)
 #: Earning professions — used in Phase 2 (roster → income earners). NOT wired yet.
 NON_EARNING = frozenset({'homemaker', 'retired', 'unemployed', 'unable', 'deceased', 'no_contact'})
 
+#: Self-employed / informal earners — the "Self-employed / informal" block above (own-account,
+#: daily-wage, freelance). These typically have NO payslip and do NOT contribute to EPF, so the
+#: income engine must NOT demand a salary slip / EPF from them (owner 2026-07-08, the #130
+#: fisherman dead-end). Instead they get an ASK-FIRST clarify ("does he get a payslip / EPF, and
+#: roughly what does he earn?") and the flexible income-support-doc path. This is the taxonomy's own
+#: grouping — the single source of truth for "informal"; the soft failure mode (asking a question
+#: instead of demanding a doc) is benign even for the borderline entries.
+INFORMAL_OCC = frozenset({
+    'hawker', 'farmer', 'smallholder', 'fisherman', 'livestock', 'ehailing', 'driver',
+    'construction', 'supervisor', 'mechanic', 'craft', 'hairdresser', 'tuition', 'caregiver',
+    'agent', 'odd_jobs', 'self_employed',
+})
+
 ROLE_CHOICES = (('brother', 'Brother'), ('sister', 'Sister'), ('guardian', 'Guardian'))
 ROLE_LABELS = dict(ROLE_CHOICES)
 ROLE_CODES = frozenset(ROLE_LABELS)

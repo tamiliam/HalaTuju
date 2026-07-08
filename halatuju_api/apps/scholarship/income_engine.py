@@ -2022,9 +2022,19 @@ def dedupe_income_proof(application, member, doc_type):
 
 def sibling_tertiary_funding_unknown(application):
     """True when the student has a sibling in tertiary education — the reviewer's recurring
-    "which institution is your sibling at, and how are they funded / are they on aid?" query
-    (household burden + the not-double-funded picture). A one-line, non-sensitive question."""
+    "which institution + course is your sibling at (or if working, where), and how is it funded /
+    what do they earn?" query (household burden + the not-double-funded picture). A one-line,
+    non-sensitive question. (Fires on the count; the bundled copy invites all angles at once — the
+    flat Check-2 queue has no branch-on-answer follow-up, owner 2026-07-08.)"""
     return (getattr(application, 'siblings_in_tertiary', None) or 0) > 0
+
+
+def sibling_school_detail_unknown(application):
+    """True when the student has a sibling still in SCHOOL — ask which school and what standard/form
+    (household texture the counts alone don't capture). Distinct from the tertiary funding clarify;
+    the two fire independently when a household has a sibling in each (the #130 gap: only the tertiary
+    sibling was ever asked about)."""
+    return (getattr(application, 'siblings_in_school', None) or 0) > 0
 
 
 # ── Unemployment detail (Phase 2B, P7) ───────────────────────────────────────
@@ -2187,7 +2197,7 @@ def employed_epf_members(application):
     out = []
     for member in ('father', 'mother'):
         occ = _member_occupation(application, member)
-        if occ and occ not in _NON_EARNING_OCC:
+        if occ and occ not in _NON_EARNING_OCC and not member_is_informal(application, member):
             has_slip = docs.filter(doc_type='salary_slip', household_member__in=[member, ''],
                                    superseded_at__isnull=True).exists()
             has_epf = docs.filter(doc_type='epf', household_member__in=[member, ''],
@@ -2229,6 +2239,38 @@ def informal_work_detail_gap(application):
     if not isinstance(raw, dict):
         return False
     return any(declared_amount(application, m) is not None for m in _MEMBER_ORDER)
+
+
+# ── Informal / self-employed earners (owner 2026-07-08, the #130 fisherman dead-end) ─────────
+# A fisherman / hawker / e-hailing rider etc. rarely has a payslip and does NOT contribute to EPF,
+# so demanding a salary slip / EPF from them is a dead-end: the request sits open against the SLA
+# clock and the student uploads an irrelevant doc to clear it. Instead we ASK FIRST — a one-line
+# clarify ("does he get a payslip or contribute to EPF? if not, roughly what does he earn a month?")
+# — and route real proof through the flexible income-support-doc path (declared_income_gaps).
+def member_is_informal(application, member):
+    """True when *member*'s roster occupation is in the self-employed / informal block
+    (``family.INFORMAL_OCC``) — the earners we must NOT chase for a payslip / EPF."""
+    from .family import INFORMAL_OCC
+    return _member_occupation(application, member) in INFORMAL_OCC
+
+
+def informal_income_members(application):
+    """Informal earners (father/mother/guardian/brother/sister) with NO income document on file —
+    the ones a formal salary-slip / EPF demand would dead-end on. Household-wide (mirrors how
+    ``household_status_gaps`` walks parents + other_family_members)."""
+    out = []
+    for member in _MEMBER_ORDER:
+        if member_is_informal(application, member) and not _parent_has_income_evidence(application, member):
+            out.append(member)
+    return out
+
+
+def informal_income_detail_gap(application):
+    """True when an informal earner has no income document AND no declared amount yet → the ASK-FIRST
+    clarify. Carved so it does NOT overlap ``informal_work_detail_gap`` (which fires once an amount is
+    DECLARED): here we still need the rough monthly figure + whether any payslip/EPF exists at all.
+    One clarify covers every such member."""
+    return any(declared_amount(application, m) is None for m in informal_income_members(application))
 
 
 _ROSTER_UNDERCOUNT_MARGIN = 2   # conservative: only a gap of ≥2 unlisted people (tune post-deploy)

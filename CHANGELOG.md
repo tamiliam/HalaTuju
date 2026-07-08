@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Check-2: informal-aware income asks + sibling-in-school clarify — 2026-07-08
+
+### Changed
+- **Informal / self-employed earners are no longer chased for a payslip or EPF (#130).** A
+  fisherman / hawker / e-hailing rider etc. (`family.INFORMAL_OCC` — the taxonomy's own
+  "Self-employed / informal" block) rarely has a payslip and does not contribute to EPF, so
+  demanding one is a dead-end: the request sat open against the 5-day SLA and the student uploaded
+  an irrelevant document to clear it. Now, for an informal earner with no income document on file,
+  Check-2 **asks first** — a new `informal_income_detail` clarify ("does he get a payslip or
+  contribute to EPF? if not, roughly what does he earn a month?") — instead of raising the formal
+  `*_income_proof_missing` / `*_epf_missing` doc requests. Real proof still routes through the
+  flexible `declared_income_evidence_missing` support-doc path. `employed_epf_members` now skips
+  informal earners; the check2 proof-gap loop skips them too. (`INFORMAL_OCC` in `family.py`;
+  `member_is_informal` / `informal_income_members` / `informal_income_detail_gap` in
+  `income_engine.py`.)
+- **A sibling in SCHOOL now gets its own clarify (#130).** Before, only a sibling in *tertiary*
+  was ever asked about (funding); a sibling in school got no question at all. New
+  `sibling_school_detail` clarify (which school + standard/form) fires independently of
+  `sibling_tertiary_funding`, so a household with one sibling in each is asked about both. The
+  tertiary clarify's copy is broadened to invite institution + course (or, if working, where + as
+  what) and how it's funded / what they earn — a single bundled question (the flat Check-2 queue
+  has no branch-on-answer follow-up). `MAX_CLARIFY` stays 3; the new clarifies compete by priority
+  (informal-income high, sibling-school mid). en/ms/ta parity. 2186 pytest + 482 jest.
+
 ## Copy fixes — 2026-07-08
 
 ### Changed
