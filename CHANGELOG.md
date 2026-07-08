@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Utility-bill dedup + profile guardrails (laptop / B40 threshold) — 2026-07-08
+
+### Changed
+- **Utility bills now de-duplicate like the other income proofs.** `water_bill` / `electricity_bill`
+  join `_DEDUP_DOC_TYPES`: on upload, the household's copies collapse to a single live doc (the rest
+  drop to Old / Replaced, retained). Ranking keeps the **cleanest, then latest** — a genuine,
+  readable bill in a known holder's name (student / declared parent / roster) outranks a
+  stranger-named or unreadable one (`_dedup_clean_rank`), then the newest billing period, then the
+  latest upload — so a newer wrong-name scan can never bury a verified bill. Household-wide scope
+  (bills carry no reliable member tag), same as STR.
+- **The sponsor profile no longer implies our assistance buys a laptop / covers fees (#110).** A
+  shared `WHAT THE ASSISTANCE IS` guardrail (`_ASSISTANCE_NATURE`) is fed to both the draft and the
+  final profile prompts: the support is a modest, FIXED monthly living-cost bursary — the student's
+  needs (a laptop, accommodation, transport) may be described as context, but the profile must never
+  say the assistance "secures a laptop" or is "needed for a laptop", or covers fees / the full cost.
+- **The profile no longer invents an "above the B40 threshold" claim for a genuine B40 case (#20).**
+  For a below-line household the final profile now gets a positive `_BELOW_LINE_AFFIRM` income
+  context — the household is VERIFIED B40-eligible; do not claim/imply the income is above the B40
+  threshold or invent a threshold comparison (it isn't given the RM5,860 cut-off). Slots into the
+  existing above-line/below-line seam. `PROMPT_VERSION` → `2026-07-08.2`. 2214 pytest.
+
 ## Fix: unregistered task codes showed blank titles — 2026-07-08
 
 ### Fixed

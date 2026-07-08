@@ -13,8 +13,9 @@ from apps.scholarship.models import (
     ApplicantDocument, FundingNeed, Referee, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.profile_engine import (
-    DEFAULT_LANGUAGE, _ABOVE_LINE_EMPHASIS, _DO_NOT_CLAIM, _build_prompt, _grades_summary,
-    _income_above_line, _resolve_language, generate_sponsor_profile, refine_sponsor_profile,
+    DEFAULT_LANGUAGE, _ABOVE_LINE_EMPHASIS, _BELOW_LINE_AFFIRM, _ASSISTANCE_NATURE,
+    _DO_NOT_CLAIM, _build_prompt, _grades_summary, _income_above_line, _income_context,
+    _resolve_language, generate_sponsor_profile, refine_sponsor_profile,
 )
 
 
@@ -455,7 +456,41 @@ class TestAboveLineEmphasis(TestCase):
         self.assertIn(_ABOVE_LINE_EMPHASIS, prompt)
         self.assertIn('ABOVE the usual B40 line', prompt)
 
-    def test_refine_omits_emphasis_when_within_line(self):
+    def test_refine_affirms_b40_when_within_line(self):
+        # Owner 2026-07-08 (#20): a below-line case gets a POSITIVE B40-verified note, not silence —
+        # so the model can't invent an "above the B40 threshold" claim.
         prompt = self._capture_refine_prompt(above_line=False)
         self.assertNotIn(_ABOVE_LINE_EMPHASIS, prompt)
-        self.assertNotIn('ABOVE the usual B40 line', prompt)
+        self.assertIn(_BELOW_LINE_AFFIRM, prompt)
+        self.assertIn('VERIFIED as B40-eligible', prompt)
+
+    def test_income_context_selects_by_line(self):
+        with mock.patch('apps.scholarship.profile_engine._income_above_line', return_value=True):
+            self.assertEqual(_income_context(self.app), _ABOVE_LINE_EMPHASIS)
+        with mock.patch('apps.scholarship.profile_engine._income_above_line', return_value=False):
+            self.assertEqual(_income_context(self.app), _BELOW_LINE_AFFIRM)
+
+    def test_refine_carries_assistance_nature_guardrail(self):
+        # #110: the profile must never imply our modest bursary buys a laptop / covers fees.
+        prompt = self._capture_refine_prompt(above_line=False)
+        self.assertIn(_ASSISTANCE_NATURE, prompt)
+        self.assertIn('secure a laptop', prompt)         # the forbidden framing is named
+
+
+class TestAssistanceNatureGuardrail(TestCase):
+    """#110 — the DRAFT profile prompt also carries the 'what the assistance IS' guardrail so the
+    laptop framing can't seed the draft that the refine folds in."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='an', name='B40', year=2026)
+        cls.profile = StudentProfile.objects.create(
+            supabase_user_id='an-1', nric='030101-14-0008', name='Priya', exam_type='SPM')
+        cls.app = ScholarshipApplication.objects.create(
+            cohort=cls.cohort, profile=cls.profile, status='shortlisted')
+
+    def test_draft_prompt_carries_assistance_nature(self):
+        prompt = _build_prompt(self.app)
+        self.assertIn(_ASSISTANCE_NATURE, prompt)
+        self.assertIn('WHAT THE ASSISTANCE IS', prompt)
+        self.assertIn('never as funding a specific purchase in full', prompt)

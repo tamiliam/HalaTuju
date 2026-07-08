@@ -2000,7 +2000,10 @@ def stale_income_proof(application, today=None):
 #   salary_slip → the pay period (newest month wins); str → the shown year; epf → the statement
 #   date (newest wins). A copy whose date can't be read never outranks a dated one; a non-genuine
 #   copy never outranks a genuine one; ties fall to the latest upload (id).
-_DEDUP_DOC_TYPES = ('salary_slip', 'str', 'epf')
+_DEDUP_DOC_TYPES = ('salary_slip', 'str', 'epf', 'water_bill', 'electricity_bill')
+# Dedup scope: these types are HOUSEHOLD-level (one per household, carry no reliable member tag),
+# so they collapse across ALL members; salary_slip / epf are per-member (each earner has their own).
+_HOUSEHOLD_WIDE_DEDUP = ('str', 'water_bill', 'electricity_bill')
 
 
 def _doc_genuine_rank(doc):
@@ -2018,11 +2021,14 @@ def _doc_genuine_rank(doc):
 def _income_doc_recency(doc):
     """A sortable recency value for a de-dupable income-proof doc (higher = keep), or None when no
     date can be read. salary_slip → (year, month) pay period; str → (year, 0) of the shown year;
-    epf → (year, month) of the statement date (year-only if that's all that reads)."""
+    epf → (year, month) of the statement date (year-only if that's all that reads); water/electricity
+    bill → (year, month) of the billing period."""
     dt = getattr(doc, 'doc_type', '')
     f = _doc_fields(doc)
     if dt == 'salary_slip':
         return _parse_billing_month(f.get('period'))          # (y, m) or None
+    if dt in ('water_bill', 'electricity_bill'):
+        return _parse_billing_month(f.get('billing_period'))  # newest billing month wins
     if dt == 'epf':
         ym = _parse_billing_month(f.get('statement_date'))
         if ym:
@@ -2035,6 +2041,27 @@ def _income_doc_recency(doc):
     return None
 
 
+def _dedup_clean_rank(doc):
+    """A quality gate used ONLY for utility bills in the dedup sort (owner 2026-07-08): a genuine,
+    readable bill in a KNOWN holder's name (student / declared parent / roster) outranks a
+    stranger-named or unreadable one — so a newer wrong-name / unreadable scan can never bury a
+    clean, verified bill. Returns 1 for every NON-utility doc, so the salary / STR / EPF ordering is
+    unchanged."""
+    dt = getattr(doc, 'doc_type', '')
+    if dt not in ('water_bill', 'electricity_bill'):
+        return 1
+    app = getattr(doc, 'application', None)
+    f = _doc_fields(doc)
+    name = (f.get('name', '') or '').strip()
+    if app is not None and _utility_name_unrelated(app, _reconciled_holder_name(app, name)):
+        return 0                                              # a stranger's bill — demote
+    if not (f.get('address', '') or '').strip():
+        return 0                                              # address unreadable
+    if _parse_rm(f.get('amount')) is None:
+        return 0                                              # amount unreadable
+    return 1
+
+
 def dedupe_income_proof(application, member, doc_type):
     """Collapse LIVE copies of ``doc_type`` to a SINGLE best live doc, superseding the rest into
     Old / Replaced. Ranks by (genuine, has-a-date, recency, id): a genuine copy is never superseded
@@ -2043,22 +2070,25 @@ def dedupe_income_proof(application, member, doc_type):
     the superseded rows + blobs — never a hard delete. Returns the superseded ids.
 
     Scope differs by type: salary_slip / epf are PER-MEMBER (each earner has their own), so they
-    dedup within ``member``. STR is HOUSEHOLD-level — Sumbangan Tunai Rahmah pays ONE recipient per
-    household, and the same screenshot is re-uploaded / re-requested under an inconsistent member tag
-    ('mother' on the route slot, '' on a blank re-upload; #125) — so STR collapses across ALL members
-    of the application, ignoring the passed ``member``."""
+    dedup within ``member``. STR + utility bills are HOUSEHOLD-level (``_HOUSEHOLD_WIDE_DEDUP``) —
+    STR pays ONE recipient per household, and utility bills / STR screenshots are re-uploaded under
+    an inconsistent (often blank) member tag — so they collapse across ALL members of the
+    application, ignoring the passed ``member``. Utility bills additionally rank a clean, readable,
+    known-holder bill above a stranger-named / unreadable one (``_dedup_clean_rank``) so a newer bad
+    scan never buries a verified bill (owner 2026-07-08)."""
     if doc_type not in _DEDUP_DOC_TYPES:
         return []
     docs = getattr(application, 'documents', None)
     if docs is None:
         return []
     q = docs.filter(doc_type=doc_type, superseded_at__isnull=True)
-    if doc_type != 'str':                       # salary/epf: per-member; STR: household-wide
+    if doc_type not in _HOUSEHOLD_WIDE_DEDUP:   # salary/epf: per-member; STR + utility: household-wide
         q = q.filter(household_member=member)
     live = list(q)
     if len(live) < 2:
         return []
-    live.sort(key=lambda d: (_doc_genuine_rank(d), 1 if _income_doc_recency(d) else 0,
+    live.sort(key=lambda d: (_doc_genuine_rank(d), _dedup_clean_rank(d),
+                             1 if _income_doc_recency(d) else 0,
                              _income_doc_recency(d) or (0, 0), d.id), reverse=True)
     keep, losers = live[0], live[1:]
     # Preserve recipient attribution: if the kept STR copy is blank-tagged but a superseded sibling

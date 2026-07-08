@@ -68,7 +68,12 @@ DEFAULT_LANGUAGE = 'English'
 #                  sponsor skims many profiles, so it just describes factually what the support helps
 #                  with. Amount dropped from the refine inputs + instruction; no-amount/no-advocacy in
 #                  the shared style.
-PROMPT_VERSION = '2026-07-08.1'
+#   2026-07-08.2 — Owner fixes: (a) WHAT THE ASSISTANCE IS guardrail in both prompts — the support is
+#                  a modest FIXED monthly living-cost bursary, never framed as buying a laptop / paying
+#                  fees (#110: "enabling her to secure a laptop"). (b) A below-B40-line case now gets a
+#                  positive B40-VERIFIED income context (_BELOW_LINE_AFFIRM) so the model can't invent
+#                  an "above the standard B40 threshold" claim (#20, RM4,064 < RM5,860 ceiling).
+PROMPT_VERSION = '2026-07-08.2'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
@@ -137,6 +142,18 @@ _COVERAGE = (
     "not silently drop a whole area the sponsor is counting on."
 )
 
+# Owner 2026-07-08 (#110) — the profile must not imply our assistance buys a laptop / covers fees.
+_ASSISTANCE_NATURE = (
+    "WHAT THE ASSISTANCE IS — the support is a MODEST, FIXED monthly living-cost bursary (a small "
+    "top-up toward the student's living costs), NOT a fund that buys equipment or pays fees, and its "
+    "amount is fixed. You MAY describe the student's needs and circumstances (for example that they "
+    "lack a laptop, or face accommodation and transport costs) as CONTEXT for why support matters. "
+    "But NEVER state or imply that the assistance will BUY, SECURE, or PAY FOR a laptop or any other "
+    "item, or COVER fees or the full cost of study — do not write that the support 'enables her to "
+    "secure a laptop' or 'is needed for a laptop'. Frame the support as easing / contributing toward "
+    "the student's living costs, never as funding a specific purchase in full."
+)
+
 PROFILE_PROMPT = """You are writing the profile of a B40 student applying for education \
 financial assistance in Malaysia. It is read first by the reviewer assessing the application, \
 and later by a prospective sponsor.
@@ -149,6 +166,8 @@ understand their meaning whichever language they are in, and write the profile i
 {style}
 
 {coverage}
+
+{assistance_nature}
 
 VERIFICATION — do not over-claim:
 - Some fields are marked "{do_not_claim}" — NOT verified. Do not assert them; omit them.
@@ -649,6 +668,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         redaction=_REDACTION.format(alias=alias),
         style=_STYLE,
         coverage=_COVERAGE,
+        assistance_nature=_ASSISTANCE_NATURE,
         target_language=target_language,
         do_not_claim=_DO_NOT_CLAIM,
         alias=alias,
@@ -703,6 +723,8 @@ and write the profile in {target_language}.
 {style}
 
 {coverage}
+
+{assistance_nature}
 
 Pronouns (use these for the student, never "they"): {pronouns}
 
@@ -831,6 +853,14 @@ def _with_version(result):
 # exceptional — grounded ONLY in the officer's written conclusion + the student's own account,
 # never invented (owner decision 2026-07-08). The QC's own note is deliberately NOT relied upon
 # here: a QC often simply endorses the reviewer's view without adding detail.
+_BELOW_LINE_AFFIRM = (
+    "NOTE ON INCOME — this household has been VERIFIED as B40-eligible under the programme's means "
+    "test; its income is WITHIN the B40 range. Do NOT claim or imply the income is ABOVE the B40 "
+    "threshold, do NOT call the case borderline or exceptional on income grounds, and do NOT invent a "
+    "threshold comparison (you are not given the cut-off figure). Present the reported / documented "
+    "income plainly as a B40 household's income."
+)
+
 _ABOVE_LINE_EMPHASIS = (
     "NOTE ON INCOME — this household's income reads ABOVE the usual B40 line, yet the officer has "
     "recommended the student. Do NOT present this as a clean-cut B40 case and do NOT hide or "
@@ -859,6 +889,13 @@ def _income_above_line(application):
     return False
 
 
+def _income_context(application):
+    """The income NOTE fed to the FINAL profile: the extenuating-circumstances emphasis when the
+    household reads ABOVE the B40 line, else a positive B40-VERIFIED affirmation (owner 2026-07-08,
+    #20) so the model never invents an 'above the B40 threshold' claim for a genuine B40 household."""
+    return _ABOVE_LINE_EMPHASIS if _income_above_line(application) else _BELOW_LINE_AFFIRM
+
+
 def refine_sponsor_profile(application, draft, session, language=None):
     """Second pass: the FINAL profile, folding the student's answers, the submitted
     interview ``session``, the officer's four-fact verdict, conclusion and recommended
@@ -870,13 +907,14 @@ def refine_sponsor_profile(application, draft, session, language=None):
         redaction=_REDACTION.format(alias=_alias(application)),
         style=_STYLE,
         coverage=_COVERAGE,
+        assistance_nature=_ASSISTANCE_NATURE,
         pronouns=_pronouns(application),
         target_language=target_language,
         draft=(draft or '').strip() or 'not provided',
         qa=_render_qa(application),
         findings=findings_str, rubric=rubric_str, overall_note=note,
         officer_decision=_render_officer_decision(application),
-        income_context=_ABOVE_LINE_EMPHASIS if _income_above_line(application) else '',
+        income_context=_income_context(application),
     )
     return _with_version(_call_gemini_text(prompt, target_language, models=PRO_CASCADE))
 

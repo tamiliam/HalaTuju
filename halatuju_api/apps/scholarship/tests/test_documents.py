@@ -602,6 +602,57 @@ class TestDocumentApi(TestCase):
         self.assertEqual(live.count(), 1)
         self.assertEqual(live.first().id, genuine.id)          # genuine kept despite older date/id
 
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    def test_dedupe_utility_keeps_newest_clean_bill(self, _dl):
+        """Owner 2026-07-08: water/electricity bills dedup like STR — household-wide (blank member
+        tags collapse), newest billing period kept, older copies → Old/Replaced."""
+        from apps.scholarship.income_engine import dedupe_income_proof
+        self.app_a.father_name = 'RAVI A/L PERIAKARUPPAN'
+        self.app_a.save(update_fields=['father_name'])
+
+        def ebill(tag, period):
+            d = ApplicantDocument.objects.create(
+                application=self.app_a, doc_type='electricity_bill', household_member='',
+                storage_path=f'{self.app_a.id}/eb/{tag}')
+            d.vision_fields = {'fields': {'billing_period': period, 'address': '12 Jln Mawar',
+                                          'amount': 'RM90', 'name': 'RAVI A/L PERIAKARUPPAN'}}
+            d.save(update_fields=['vision_fields'])
+            return d
+        may = ebill('may', '05/2026')
+        jun = ebill('jun', '06/2026')
+        superseded = dedupe_income_proof(self.app_a, '', 'electricity_bill')
+        live = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='electricity_bill', superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)
+        self.assertEqual(live.first().id, jun.id)              # newest billing period kept
+        self.assertEqual(superseded, [may.id])
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    def test_dedupe_utility_clean_bill_beats_newer_stranger(self, _dl):
+        """A clean, known-holder bill is NOT superseded by a NEWER bill in a stranger's name — the
+        clean-rank ranks above recency, so a bad scan can't bury a verified bill (owner 2026-07-08)."""
+        from apps.scholarship.income_engine import dedupe_income_proof
+        self.app_a.father_name = 'RAVI A/L PERIAKARUPPAN'
+        self.app_a.save(update_fields=['father_name'])
+        clean = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='electricity_bill', household_member='',
+            storage_path=f'{self.app_a.id}/eb/clean')
+        clean.vision_fields = {'fields': {'billing_period': '05/2026', 'address': '12 Jln Mawar',
+                                          'amount': 'RM90', 'name': 'RAVI A/L PERIAKARUPPAN'}}
+        clean.save(update_fields=['vision_fields'])
+        stranger = ApplicantDocument.objects.create(          # newer period, but a stranger's name
+            application=self.app_a, doc_type='electricity_bill', household_member='',
+            storage_path=f'{self.app_a.id}/eb/stranger')
+        stranger.vision_fields = {'fields': {'billing_period': '06/2026', 'address': '9 Jln Lain',
+                                             'amount': 'RM90', 'name': 'SURAINDRA A/S MAHA VAAM'}}
+        stranger.save(update_fields=['vision_fields'])
+        superseded = dedupe_income_proof(self.app_a, '', 'electricity_bill')
+        live = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='electricity_bill', superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)
+        self.assertEqual(live.first().id, clean.id)           # clean kept despite the older date
+        self.assertEqual(superseded, [stranger.id])
+
     def test_dedupe_noop_for_single_or_non_dedup_type(self):
         from apps.scholarship.income_engine import dedupe_income_proof
         one = ApplicantDocument.objects.create(
