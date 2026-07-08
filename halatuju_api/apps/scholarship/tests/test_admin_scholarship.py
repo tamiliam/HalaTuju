@@ -89,6 +89,25 @@ class TestAdminScholarship(TestCase):
         self.assertIn('PRIYA', names('?sort=merit&dir=desc')[0])   # all-A → highest merit
         self.assertIn('AARON', names('?sort=merit&dir=asc')[0])    # weakest → lowest merit
 
+    def test_list_sort_by_submitted_date(self):
+        import datetime
+        from django.utils import timezone
+        prof2 = StudentProfile.objects.create(
+            supabase_user_id='studZ', nric='040303-14-3333', name='Zed', grades={'a': 'A'}, household_income=3000)
+        app2 = ScholarshipApplication.objects.create(cohort=self.cohort, profile=prof2, status='shortlisted')
+        # Force distinct submitted_at (bypasses auto_now_add): PRIYA earliest, Zed latest.
+        ScholarshipApplication.objects.filter(id=self.app.id).update(submitted_at=timezone.now() - datetime.timedelta(days=3))
+        ScholarshipApplication.objects.filter(id=app2.id).update(submitted_at=timezone.now())
+        self._auth(ADMIN)
+
+        def names(params):
+            r = self.client.get('/api/v1/admin/scholarship/applications/' + params)
+            self.assertEqual(r.status_code, 200)
+            return [a['name'] for a in r.json()['applications']]
+
+        self.assertIn('PRIYA', names('?sort=submitted&dir=asc')[0])   # oldest first
+        self.assertIn('ZED', names('?sort=submitted&dir=desc')[0])    # newest first
+
     def test_contact_submission_email(self):
         from django.core import mail
         from apps.scholarship.emails import send_contact_submission_admin_email

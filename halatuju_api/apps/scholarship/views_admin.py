@@ -230,6 +230,11 @@ class AdminApplicationListView(_AdminBase):
         elif sort_f == 'status':
             qs = qs.order_by('-status' if desc else 'status')
             page = paginator.paginate_queryset(qs, request, view=self)
+        elif sort_f == 'submitted':
+            # Submitted-date column. Default (no sort) is already newest-first; this lets
+            # the reviewer flip to oldest-first and back.
+            qs = qs.order_by('-submitted_at' if desc else 'submitted_at')
+            page = paginator.paginate_queryset(qs, request, view=self)
         elif sort_f == 'merit':
             from .serializers_admin import _application_merit_score
             rows = sorted(qs, key=lambda a: _application_merit_score(a) or 0, reverse=desc)
