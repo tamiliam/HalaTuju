@@ -67,7 +67,10 @@ CLARIFY_SPECS = {
     'informal_work_detail':       {'fact': 'income'},   # a declared informal wage — own-account/employer + avg
     'household_roster_undercount':{'fact': 'income'},   # stated size > described (who else is at home?)
     'other_scholarships_followup':{'fact': 'income'},   # other scholarships listed — status/amount
-    'high_utility_expense':       {'fact': 'income'},   # high per-capita utility spend — explain
+    # High utility spend — POINT-BLANK, states the amount (owner 2026-07-08). Two variants: against
+    # the declared income (default) OR against STR status (an STR household). Both carry params.
+    'high_utility_expense':       {'fact': 'income'},   # vs declared/slip income
+    'high_utility_expense_str':   {'fact': 'income'},   # vs STR status
     # 'motivation_missing' is intentionally NOT here — motivation is reviewer texture
     # (§7), not a one-line factual answer.
 }
@@ -108,7 +111,13 @@ DOC_SPECS = {
     # income_engine, auto-resolved when the gap clears.
     'school_leaving_cert_missing': {'doc_type': 'school_leaving_cert', 'fact': 'academic'},  # SPM-track, no slip
     'semester_result_missing':     {'doc_type': 'semester_result', 'fact': 'academic'},      # continuing student
-    'utility_bill_missing':         {'doc_type': 'water_bill'},           # neither bill (either clears)
+    # Per-bill utility re-upload (owner 2026-07-08): each bill that is missing / stale / undated /
+    # unreadable → its own request. Clears when a clean, current bill of that type supersedes it.
+    'water_bill_recheck':       {'doc_type': 'water_bill'},
+    'electricity_bill_recheck': {'doc_type': 'electricity_bill'},
+    # DEPRECATED (2026-07-08) — the either-or 'neither bill' request, replaced by the two per-bill
+    # recheck codes above. Kept in DOC_SPECS ONLY so an existing OPEN item auto-resolves.
+    'utility_bill_missing':         {'doc_type': 'water_bill'},
 }
 _MEMBER_EPF_CODE = {
     'father': 'father_epf_missing', 'mother': 'mother_epf_missing',
@@ -137,7 +146,7 @@ _CLARIFY_ORDER = [
     'reporting_date_unknown',
     'device_status_unknown', 'transport_cost_unknown',
     'utility_holder_unknown', 'utility_address_mismatch',
-    'high_utility_expense',    # V4 — a comfort/consumption signal, lowest priority
+    'high_utility_expense', 'high_utility_expense_str',   # consumption signal, lowest priority
 ]
 
 # The student is not the reviewer: a long list suppresses responses. Cap to the few
@@ -154,11 +163,13 @@ def _gap_sets(application):
         stale_income_proof, sibling_tertiary_funding_unknown, declared_income_gaps,
         unemployment_detail_gap, unemployment_epf_members,
         # V4 — promoted human ask-themes (audit §E).
-        school_leaving_cert_gap, semester_result_gap, employed_epf_members, utility_bill_gap,
+        school_leaving_cert_gap, semester_result_gap, employed_epf_members,
         deceased_parent_detail_gap, informal_work_detail_gap, household_roster_undercount,
-        other_scholarships_followup_gap, high_utility_expense_gap,
+        other_scholarships_followup_gap,
         # Owner 2026-07-08 — informal-aware income asks + sibling-in-school clarify.
         member_is_informal, informal_income_detail_gap, sibling_school_detail_unknown,
+        # Owner 2026-07-08 — per-bill utility recheck + point-blank high-usage query.
+        utility_bill_recheck, high_utility_expense_context,
     )
     from .pathway_engine import offer_reporting_date_unknown
     gaps = {g['code'] for g in completeness_gaps(application)}
@@ -186,8 +197,11 @@ def _gap_sets(application):
         gaps.add('household_roster_undercount')
     if other_scholarships_followup_gap(application):
         gaps.add('other_scholarships_followup')
-    if high_utility_expense_gap(application):
-        gaps.add('high_utility_expense')
+    # High utility spend → a POINT-BLANK student query stating the amount (owner 2026-07-08). Two
+    # variants: an STR household is asked against its STR status, else against the declared income.
+    high_ctx = high_utility_expense_context(application)
+    if high_ctx is not None:
+        gaps.add('high_utility_expense_str' if high_ctx.get('on_str') else 'high_utility_expense')
     # Full-household-income completeness: a blank-slot PARENT → a status CLARIFY; any earning roster
     # member with no income doc → a PROOF doc request (uncapped).
     proof_wanted = set()
@@ -215,9 +229,32 @@ def _gap_sets(application):
         proof_wanted.add('school_leaving_cert_missing')
     if semester_result_gap(application):
         proof_wanted.add('semester_result_missing')
-    if utility_bill_gap(application):
-        proof_wanted.add('utility_bill_missing')
+    # Per-bill utility re-upload (owner 2026-07-08): each of water / electricity that is missing,
+    # stale (>3mo / undated), or unreadable → its OWN re-upload request, so 'both bills, current,
+    # clear' is enforced in logic (replaces the either-or utility_bill_missing).
+    recheck = utility_bill_recheck(application)
+    if 'water_bill' in recheck:
+        proof_wanted.add('water_bill_recheck')
+    if 'electricity_bill' in recheck:
+        proof_wanted.add('electricity_bill_recheck')
     return gaps, proof_wanted
+
+
+def _clarify_params(application, code):
+    """Params frozen onto a clarify at creation so its copy can quote live figures. Only the
+    high-utility queries carry any (owner 2026-07-08 — state the amount + the income/STR basis);
+    every other clarify is static, so this returns {}. Computed once (a clarify is once-ever), so
+    the figures reflect the bills on file when the query was raised."""
+    if code in ('high_utility_expense', 'high_utility_expense_str'):
+        from .income_engine import high_utility_expense_context
+        ctx = high_utility_expense_context(application) or {}
+        params = {}
+        if ctx.get('amount') is not None:
+            params['amount'] = ctx['amount']
+        if code == 'high_utility_expense' and ctx.get('income') is not None:
+            params['income'] = ctx['income']         # the STR variant references status, not a figure
+        return params
+    return {}
 
 
 def clarify_overflow_count(application):
@@ -335,6 +372,7 @@ def sync_check2_queries(application):
                 ResolutionItem.objects.create(
                     application=application, source='check2', code=code,
                     fact=CLARIFY_SPECS[code]['fact'], kind='clarify',
+                    params=_clarify_params(application, code),
                 )
                 if not uncapped:
                     raised += 1

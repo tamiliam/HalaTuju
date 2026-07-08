@@ -374,6 +374,15 @@ class TestUtilityClarifyQueries(_Base):
         self.assertNotIn('utility_holder_unknown', codes)
         self.assertNotIn('utility_address_mismatch', codes)
 
+    def test_bill_in_declared_father_name_not_flagged(self):
+        # Owner 2026-07-08: a bill in the DECLARED father's name is fine even with no parent IC on
+        # file — the SIVAKUMAR A/L KALIAPPAN over-ask. The 'whose bill?' query must not fire.
+        self.app.father_name = 'SIVAKUMAR A/L KALIAPPAN'
+        self.app.save()
+        self._add_water_bill(name='SIVAKUMAR A/L KALIAPPAN', address_match='found')
+        sync_check2_queries(self.app)
+        self.assertNotIn('utility_holder_unknown', self._codes())
+
     def test_holder_query_auto_resolves_when_bill_replaced(self):
         self._add_water_bill(name='STRANGER PERSON')
         sync_check2_queries(self.app)
@@ -561,14 +570,26 @@ class TestV4PromotedAsks(_Base):
         self.assertEqual(self.app.resolution_items.get(
             code='father_epf_missing').status, 'resolved')
 
-    def test_utility_bill_missing_clears_on_either_bill(self):
-        sync_check2_queries(self.app)                       # no bills → raise
-        self.assertIn('utility_bill_missing', self._codes())
-        ApplicantDocument.objects.create(application=self.app, doc_type='electricity_bill',
-                                         storage_path='x/eb')
+    def test_per_bill_recheck_raises_both_and_clears_each(self):
+        # Owner 2026-07-08: BOTH bills are now required. No bills → a per-bill re-upload request for
+        # EACH; a clean, current, readable upload clears only ITS request, the other stays open.
+        import datetime
+        sync_check2_queries(self.app)                       # no bills → both rechecks
+        codes = self._codes()
+        self.assertIn('water_bill_recheck', codes)
+        self.assertIn('electricity_bill_recheck', codes)
+        cur = datetime.date.today()
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='electricity_bill', storage_path='x/eb',
+            vision_fields={'fields': {'amount': 'RM90', 'address': '12 Jln Mawar',
+                                      'name': 'Priya Devi',
+                                      'billing_period': f'{cur.month:02d}/{cur.year}'},
+                           'student_verdict': 'ok'})
         sync_check2_queries(self.app)
         self.assertEqual(self.app.resolution_items.get(
-            code='utility_bill_missing').status, 'resolved')
+            code='electricity_bill_recheck').status, 'resolved')     # clean current bill → cleared
+        self.assertEqual(self.app.resolution_items.get(
+            code='water_bill_recheck').status, 'open')               # still missing → stays
 
     def test_deceased_parent_detail(self):
         self.app.father_occupation = 'deceased'
@@ -698,3 +719,48 @@ class TestSiblingClarifies(_Base):
         codes = self._codes()
         self.assertNotIn('sibling_school_detail', codes)
         self.assertNotIn('sibling_tertiary_funding', codes)
+
+
+class TestHighUtilityQuery(_Base):
+    """Owner 2026-07-08 — the high-usage query is now POINT-BLANK: it states the actual amount and
+    asks against the declared income (default) or STR status (an STR household), via item params."""
+
+    def _add_high_bills(self):
+        # Two bills, RM200 each → 400 / household_size 3 ≈ 133/head > RM60 floor → 'high'.
+        for dt in ('water_bill', 'electricity_bill'):
+            ApplicantDocument.objects.create(
+                application=self.app, doc_type=dt, storage_path=f'x/{dt}',
+                vision_fields={'fields': {'amount': 'RM200', 'name': 'Priya Devi'},
+                               'student_verdict': 'ok'})
+
+    def test_income_variant_states_amount_and_income(self):
+        self._add_high_bills()
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='high_utility_expense')
+        self.assertEqual(item.kind, 'clarify')
+        self.assertEqual(int(item.params.get('amount')), 400)       # combined monthly total
+        self.assertEqual(int(item.params.get('income')), 1200)      # declared household income
+        self.assertNotIn('high_utility_expense_str', self._codes())
+
+    def test_str_variant_states_amount_not_income(self):
+        self._add_high_bills()
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='str', storage_path='x/str',
+            vision_fields={'fields': {'status': 'Lulus', 'source_type': ''}},
+            vision_run_at=timezone.now())
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='high_utility_expense_str')
+        self.assertEqual(int(item.params.get('amount')), 400)
+        self.assertNotIn('income', item.params)                     # STR variant cites status, not a figure
+        self.assertNotIn('high_utility_expense', self._codes())
+
+    def test_no_query_when_usage_reasonable(self):
+        for dt in ('water_bill', 'electricity_bill'):
+            ApplicantDocument.objects.create(
+                application=self.app, doc_type=dt, storage_path=f'x/{dt}',
+                vision_fields={'fields': {'amount': 'RM20', 'name': 'Priya Devi'},
+                               'student_verdict': 'ok'})
+        sync_check2_queries(self.app)
+        codes = self._codes()
+        self.assertNotIn('high_utility_expense', codes)
+        self.assertNotIn('high_utility_expense_str', codes)

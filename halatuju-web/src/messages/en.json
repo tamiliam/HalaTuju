@@ -2112,6 +2112,14 @@
           "title": "Upload a utility bill",
           "desc": "Please upload a recent water or electricity bill for your home. It confirms your address and helps us understand your household. Either bill is fine."
         },
+        "water_bill_recheck": {
+          "title": "Upload a clear, recent water bill",
+          "desc": "We couldn't use your water bill — it may be missing, more than three months old, or hard to read. Please upload a clear water bill from the last three months, showing the full address and the amount."
+        },
+        "electricity_bill_recheck": {
+          "title": "Upload a clear, recent electricity bill",
+          "desc": "We couldn't use your electricity bill — it may be missing, more than three months old, or hard to read. Please upload a clear electricity bill from the last three months, showing the full address and the amount."
+        },
         "deceased_parent_detail": {
           "title": "Tell us about your late parent",
           "desc": "You told us a parent has passed away. If you're comfortable, please tell us briefly when, so we understand your household. We're sorry for your loss."
@@ -2129,8 +2137,12 @@
           "desc": "You mentioned other scholarships or financial aid when you applied. Please tell us briefly which ones, the amount, and whether you've received or been offered them — so support isn't doubled up."
         },
         "high_utility_expense": {
-          "title": "Help us understand your utility bills",
-          "desc": "Your water and electricity bills read a little higher than usual for a household your size. If there's a reason (for example: medical equipment, a home business, or several people), please tell us briefly."
+          "title": "Why are your utility bills this high?",
+          "desc": "Your water and electricity bills come to about RM {amount} a month. That looks high next to the household income of RM {income} a month you reported. Please tell us why the bills are this high — for example medical equipment, a home business, or several people living together."
+        },
+        "high_utility_expense_str": {
+          "title": "Why are your utility bills this high?",
+          "desc": "Your water and electricity bills come to about RM {amount} a month, which looks high. As your family receives STR (cash aid for lower-income households), please help us understand why the bills are this high — for example medical equipment, a home business, or several people living together."
         }
       },
       "bank": {
@@ -3488,11 +3500,14 @@
           "brother_epf_missing": "The elder brother has no EPF on file — the student has been asked to add his EPF as corroboration (optional).",
           "sister_epf_missing": "The elder sister has no EPF on file — the student has been asked to add her EPF as corroboration (optional).",
           "utility_bill_missing": "No water or electricity bill on file — the student has been asked to upload one (address anchor + consumption signal).",
+          "water_bill_recheck": "Water bill missing / stale / unreadable — the student has been asked for a clear, recent one (last 3 months, full address + amount).",
+          "electricity_bill_recheck": "Electricity bill missing / stale / unreadable — the student has been asked for a clear, recent one (last 3 months, full address + amount).",
           "deceased_parent_detail": "A parent is recorded as deceased — the student has been asked, gently, when, for the household picture.",
           "informal_work_detail": "A declared informal wage — the student has been asked own-account vs employer and the average monthly earnings.",
           "household_roster_undercount": "Stated household size exceeds the members described — the student has been asked who else is in the household.",
           "other_scholarships_followup": "Other scholarships were listed at apply — the student has been asked which, the amount, and whether received/offered (avoid double-funding).",
-          "high_utility_expense": "Utility spend per person reads high for the household size — the student has been asked to explain (possible undeclared income, or a legitimate reason)."
+          "high_utility_expense": "Utility spend reads high vs the declared household income — the student has been asked point-blank why, with the amount stated.",
+          "high_utility_expense_str": "Utility spend reads high for an STR (cash-aid) household — the student has been asked point-blank why, with the amount stated."
         }
       },
       "decision": {

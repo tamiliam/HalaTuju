@@ -210,10 +210,20 @@ class TestDueQueryEmails(_Base):
             application=self.app, doc_type='salary_slip', household_member='father',
             storage_path='x/slip')
         # V4: satisfy the promoted doc-requests too, so this app is genuinely question-free — a
-        # results slip (no school-leaving-cert ask), a father EPF (no employed-EPF ask), and a
-        # utility bill (no utility-bill ask).
-        for dt in ('results_slip', 'water_bill'):
-            ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=f'x/{dt}')
+        # results slip (no school-leaving-cert ask) and a father EPF (no employed-EPF ask).
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='results_slip', storage_path='x/results_slip')
+        # Owner 2026-07-08: BOTH bills required, each clean + current + readable (name matches the
+        # student), so neither per-bill recheck fires.
+        import datetime as _dtu
+        cur = _dtu.date.today()
+        for dt in ('water_bill', 'electricity_bill'):
+            ApplicantDocument.objects.create(
+                application=self.app, doc_type=dt, storage_path=f'x/{dt}',
+                vision_fields={'fields': {'amount': 'RM30', 'address': '12 Jln Mawar',
+                                          'name': 'Priya',
+                                          'billing_period': f'{cur.month:02d}/{cur.year}'},
+                               'student_verdict': 'ok'})
         ApplicantDocument.objects.create(
             application=self.app, doc_type='epf', household_member='father', storage_path='x/epf')
         FundingNeed.objects.create(application=self.app, categories=['device'])

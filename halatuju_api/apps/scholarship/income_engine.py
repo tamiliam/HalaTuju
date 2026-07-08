@@ -1445,10 +1445,15 @@ def utility_reasonable(application):
 
 
 def _utility_name_unrelated(application, bill_name):
-    """True when the account-holder name matches NEITHER the student nor any uploaded
-    parent/earner IC — a soft 'bill is in someone else's name' note. Bills are routinely
-    in a parent's name (fine, matches the IC); the note fires only when it's a stranger.
-    Never asserted on a blank read or with no reference name to compare against."""
+    """True when the account-holder name matches NEITHER the student, NOR a declared parent /
+    roster member (father / mother / named guardian / sibling), NOR any uploaded parent/earner
+    IC — a soft 'bill is in someone else's name' note. Bills are routinely in a parent's name
+    (fine — that matches the roster / IC); the note fires only when it's a genuine stranger.
+    Never asserted on a blank read or with no reference name to compare against.
+
+    Owner 2026-07-08: the DECLARED father/mother names (from 'My family') are now checked FIRST,
+    so a bill in the father's name no longer triggers a 'whose bill?' query just because no parent
+    IC happens to be on file (the SIVAKUMAR A/L KALIAPPAN over-ask)."""
     bill = (bill_name or '').strip()
     if not bill:
         return False
@@ -1456,6 +1461,9 @@ def _utility_name_unrelated(application, bill_name):
     student = getattr(getattr(application, 'profile', None), 'name', '') or ''
     if student.strip():
         candidates.append(student)
+    for _member, nm in _roster_candidates(application):   # declared father/mother/guardian/siblings
+        if nm.strip():
+            candidates.append(nm)
     for ic in application.documents.filter(doc_type='parent_ic', superseded_at__isnull=True):
         nm = (getattr(ic, 'vision_name', '') or '').strip()
         if nm:
@@ -2262,11 +2270,53 @@ def employed_epf_gap(application):
 
 
 def utility_bill_gap(application):
-    """NEITHER a water nor an electricity bill on file → ask for one (a home-address anchor + a
-    soft B40 consumption signal). Clears when either bill is uploaded."""
+    """DEPRECATED (owner 2026-07-08) — superseded by the per-bill ``utility_bill_recheck``. NEITHER
+    a water nor an electricity bill on file → ask for one. Kept only for callers that still probe
+    the either-or state; Check-2 now uses the per-bill recheck below."""
     docs = _docs_or_none(application)
     return docs is not None and not docs.filter(
         doc_type__in=('water_bill', 'electricity_bill'), superseded_at__isnull=True).exists()
+
+
+def _bill_needs_upload(application, doc_type, today):
+    """Why THIS bill type needs a (re)upload, or '' when the bill on file is usable. Reasons
+    (owner 2026-07-08): 'missing' (none on file), 'stale' (older than ~3 months OR no readable
+    date — we can't confirm it's current), 'address_unreadable' (no address text read),
+    'amount_unreadable' (the charge couldn't be parsed). A HARD address MISMATCH is deliberately
+    NOT here — that's the separate ``utility_address_mismatch`` 'whose address?' clarify, not a
+    re-upload."""
+    doc = _latest_doc(application, doc_type)
+    if doc is None:
+        return 'missing'
+    facts = utility_check(doc, today)
+    if not facts:
+        return 'missing'
+    if facts.get('current_status') in ('stale', 'unknown'):   # >3mo OR undated → not confirmably current
+        return 'stale'
+    if not (facts.get('address') or '').strip():
+        return 'address_unreadable'
+    if _parse_rm(facts.get('monthly_bill')) is None:
+        return 'amount_unreadable'
+    return ''
+
+
+def utility_bill_recheck(application, today=None):
+    """Per-bill re-upload map (owner 2026-07-08): ``{'water_bill'|'electricity_bill': reason}`` for
+    each bill that is missing / stale / undated / unreadable. Empty when BOTH bills are on file,
+    current, and readable — the 'both bills, current, clear' requirement enforced in logic, not just
+    painted on the row. Drives the two per-bill Check-2 re-upload requests; a fresh clean upload
+    supersedes the old one and clears its request."""
+    if today is None:
+        today = datetime.date.today()
+    docs = _docs_or_none(application)
+    if docs is None:
+        return {}
+    out = {}
+    for dt in ('water_bill', 'electricity_bill'):
+        reason = _bill_needs_upload(application, dt, today)
+        if reason:
+            out[dt] = reason
+    return out
 
 
 def deceased_parent_members(application):
@@ -2355,3 +2405,19 @@ def high_utility_expense_gap(application):
     or a legitimate reason). Fires only when BOTH bills are on file AND per-capita is above the high
     floor (so it can't fire on a partial/unknown read)."""
     return utility_reasonable(application).get('status') == 'high'
+
+
+def high_utility_expense_context(application):
+    """Params for the high-usage clarify (owner 2026-07-08 — state the amount, ask point-blank):
+    the combined monthly bill total (RM), the declared household income (RM), and whether the
+    household holds a VALID STR (so the query references STR status rather than an income figure).
+    Returns None when there is no high signal (the caller then raises nothing)."""
+    if utility_reasonable(application).get('status') != 'high':
+        return None
+    amount = utility_monthly_total(application)
+    income = getattr(getattr(application, 'profile', None), 'household_income', None)
+    return {
+        'amount': int(round(amount)) if amount is not None else None,
+        'income': int(round(income)) if income else None,
+        'on_str': has_valid_str(application),
+    }

@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Check-2: sharper utility-bill handling — 2026-07-08
+
+### Changed
+- **A bill in the DECLARED father/mother name no longer triggers a "whose bill?" query.** The
+  holder-name check (`_utility_name_unrelated`) compared the bill only against the student's name
+  and any uploaded parent-IC docs — so a bill in the father's name, with no IC on file, was
+  treated as a stranger and asked about (the SIVAKUMAR A/L KALIAPPAN over-ask). It now checks the
+  declared roster names (father / mother / named guardian / siblings) FIRST, so the query fires
+  only when the holder truly matches no one in the household.
+- **Per-bill re-upload requests (missing / stale / unreadable).** The old single `utility_bill_missing`
+  fired only when NEITHER bill existed and cleared the moment either arrived. Replaced by two
+  per-bill requests — `water_bill_recheck` / `electricity_bill_recheck` — each firing when its bill
+  is missing, stale (older than 3 months OR no readable date), or unreadable (address or amount
+  can't be read). BOTH bills are now required, current, and legible; a clean re-upload supersedes
+  the old one and clears its request. (`utility_bill_recheck` / `_bill_needs_upload` in
+  `income_engine.py`; `utility_bill_missing` retired to auto-resolve any open one.)
+- **The high-usage query is now point-blank and states the figures.** The vague "reads a little
+  higher than usual… please tell us briefly" is replaced by a direct question that quotes the
+  actual combined monthly bill and asks against the household's own numbers — two variants: vs the
+  declared income (`high_utility_expense`), or vs STR status for an STR household
+  (`high_utility_expense_str`). The live figures ride the clarify's `params`
+  (`high_utility_expense_context`), interpolated into the copy the same way the officer tiles do.
+  en/ms/ta parity. 2200 + 1205 pytest + 482 jest.
+
 ## Check-2: informal-aware income asks + sibling-in-school clarify — 2026-07-08
 
 ### Changed

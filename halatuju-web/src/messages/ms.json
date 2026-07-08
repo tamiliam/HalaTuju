@@ -2112,6 +2112,14 @@
           "title": "Muat naik bil utiliti",
           "desc": "Sila muat naik bil air atau elektrik terkini untuk rumah anda. Ia mengesahkan alamat anda dan membantu kami memahami isi rumah anda. Mana-mana bil boleh."
         },
+        "water_bill_recheck": {
+          "title": "Muat naik bil air yang jelas dan terkini",
+          "desc": "Kami tidak dapat menggunakan bil air anda — mungkin ia tiada, melebihi tiga bulan, atau sukar dibaca. Sila muat naik bil air yang jelas dalam tempoh tiga bulan lepas, menunjukkan alamat penuh dan jumlahnya."
+        },
+        "electricity_bill_recheck": {
+          "title": "Muat naik bil elektrik yang jelas dan terkini",
+          "desc": "Kami tidak dapat menggunakan bil elektrik anda — mungkin ia tiada, melebihi tiga bulan, atau sukar dibaca. Sila muat naik bil elektrik yang jelas dalam tempoh tiga bulan lepas, menunjukkan alamat penuh dan jumlahnya."
+        },
         "deceased_parent_detail": {
           "title": "Beritahu kami tentang ibu/bapa anda yang telah meninggal",
           "desc": "Anda memberitahu kami seorang ibu/bapa telah meninggal dunia. Jika anda selesa, sila beritahu kami secara ringkas bila, supaya kami memahami isi rumah anda. Kami bersimpati atas kehilangan anda."
@@ -2129,8 +2137,12 @@
           "desc": "Anda menyebut biasiswa atau bantuan kewangan lain semasa memohon. Sila beritahu kami secara ringkas yang mana, jumlahnya, dan sama ada anda telah menerima atau ditawarkan — supaya bantuan tidak bertindih."
         },
         "high_utility_expense": {
-          "title": "Bantu kami memahami bil utiliti anda",
-          "desc": "Bil air dan elektrik anda kelihatan lebih tinggi sedikit daripada biasa untuk isi rumah sebesar anda. Jika ada sebabnya (contohnya: peralatan perubatan, perniagaan rumah, atau ramai orang), sila beritahu kami secara ringkas."
+          "title": "Mengapa bil utiliti anda setinggi ini?",
+          "desc": "Bil air dan elektrik anda berjumlah kira-kira RM {amount} sebulan. Itu kelihatan tinggi berbanding pendapatan isi rumah RM {income} sebulan yang anda laporkan. Sila beritahu kami mengapa bil setinggi ini — contohnya peralatan perubatan, perniagaan rumah, atau ramai orang tinggal bersama."
+        },
+        "high_utility_expense_str": {
+          "title": "Mengapa bil utiliti anda setinggi ini?",
+          "desc": "Bil air dan elektrik anda berjumlah kira-kira RM {amount} sebulan, yang kelihatan tinggi. Memandangkan keluarga anda menerima STR (bantuan tunai untuk isi rumah berpendapatan rendah), sila bantu kami memahami mengapa bil setinggi ini — contohnya peralatan perubatan, perniagaan rumah, atau ramai orang tinggal bersama."
         }
       },
       "bank": {
@@ -3488,11 +3500,14 @@
           "brother_epf_missing": "Abang tiada KWSP dalam fail — pelajar diminta menambah KWSP-nya sebagai sokongan (pilihan).",
           "sister_epf_missing": "Kakak tiada KWSP dalam fail — pelajar diminta menambah KWSP-nya sebagai sokongan (pilihan).",
           "utility_bill_missing": "Tiada bil air atau elektrik dalam fail — pelajar diminta memuat naik satu (pengesahan alamat + isyarat penggunaan).",
+          "water_bill_recheck": "Bil air tiada / lapuk / tidak boleh dibaca — pelajar diminta bil yang jelas dan terkini (3 bulan lepas, alamat penuh + jumlah).",
+          "electricity_bill_recheck": "Bil elektrik tiada / lapuk / tidak boleh dibaca — pelajar diminta bil yang jelas dan terkini (3 bulan lepas, alamat penuh + jumlah).",
           "deceased_parent_detail": "Seorang ibu/bapa direkodkan sebagai meninggal dunia — pelajar diminta, dengan lembut, bila, untuk gambaran isi rumah.",
           "informal_work_detail": "Upah tidak formal yang diisytiharkan — pelajar diminta akaun sendiri lawan majikan dan purata pendapatan bulanan.",
           "household_roster_undercount": "Saiz isi rumah yang dinyatakan melebihi ahli yang dihuraikan — pelajar diminta siapa lagi dalam isi rumah.",
           "other_scholarships_followup": "Biasiswa lain disenaraikan semasa memohon — pelajar diminta yang mana, jumlah, dan sama ada diterima/ditawarkan (elak pembiayaan berganda).",
-          "high_utility_expense": "Perbelanjaan utiliti setiap orang kelihatan tinggi untuk saiz isi rumah — pelajar diminta menjelaskan (kemungkinan pendapatan tidak diisytihar, atau sebab yang sah)."
+          "high_utility_expense": "Perbelanjaan utiliti kelihatan tinggi berbanding pendapatan isi rumah yang diisytihar — pelajar diminta secara terus mengapa, dengan jumlah dinyatakan.",
+          "high_utility_expense_str": "Perbelanjaan utiliti kelihatan tinggi bagi isi rumah STR (bantuan tunai) — pelajar diminta secara terus mengapa, dengan jumlah dinyatakan."
         }
       },
       "decision": {

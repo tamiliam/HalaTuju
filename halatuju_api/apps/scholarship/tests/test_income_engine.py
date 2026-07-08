@@ -500,6 +500,7 @@ from apps.scholarship.income_engine import (  # noqa: E402
     _described_household_count,
     member_is_informal, informal_income_members, informal_income_detail_gap,
     employed_epf_members, sibling_school_detail_unknown, sibling_tertiary_funding_unknown,
+    utility_bill_recheck, high_utility_expense_context, _utility_name_unrelated,
 )
 import datetime as _dt
 
@@ -955,6 +956,82 @@ class TestSiblingClarifyGaps(SimpleTestCase):
         self.assertTrue(sibling_tertiary_funding_unknown(both))
         # A school-only household never triggers the tertiary funding ask.
         self.assertFalse(sibling_tertiary_funding_unknown(self._app_siblings(school=2)))
+
+
+class TestUtilityBillRecheck(SimpleTestCase):
+    """Owner 2026-07-08 — per-bill re-upload when a bill is missing, stale (>3mo / undated), or
+    unreadable (no address / no amount). BOTH bills required; a HARD address mismatch is NOT here."""
+
+    TODAY = _dt.date(2026, 7, 8)
+
+    def _b(self, dt, *, period='07/2026', address='12 Jln Mawar', amount='RM90'):
+        return _bill(dt, {'billing_period': period, 'address': address, 'amount': amount,
+                          'name': 'Priya'})
+
+    def test_missing_both_flagged(self):
+        self.assertEqual(utility_bill_recheck(_app([]), today=self.TODAY),
+                         {'water_bill': 'missing', 'electricity_bill': 'missing'})
+
+    def test_clean_current_no_flag(self):
+        app = _app([self._b('water_bill', period='06/2026'), self._b('electricity_bill')])
+        self.assertEqual(utility_bill_recheck(app, today=self.TODAY), {})
+
+    def test_stale_bill_flagged(self):
+        app = _app([self._b('water_bill', period='01/2026'), self._b('electricity_bill')])
+        rc = utility_bill_recheck(app, today=self.TODAY)
+        self.assertEqual(rc.get('water_bill'), 'stale')
+        self.assertNotIn('electricity_bill', rc)
+
+    def test_undated_bill_flagged(self):
+        app = _app([self._b('water_bill', period=''), self._b('electricity_bill')])
+        self.assertEqual(utility_bill_recheck(app, today=self.TODAY).get('water_bill'), 'stale')
+
+    def test_unreadable_address_flagged(self):
+        app = _app([self._b('water_bill', address=''), self._b('electricity_bill')])
+        self.assertEqual(utility_bill_recheck(app, today=self.TODAY).get('water_bill'),
+                         'address_unreadable')
+
+    def test_unreadable_amount_flagged(self):
+        app = _app([self._b('water_bill', amount=''), self._b('electricity_bill')])
+        self.assertEqual(utility_bill_recheck(app, today=self.TODAY).get('water_bill'),
+                         'amount_unreadable')
+
+
+class TestUtilityNameAgainstRoster(SimpleTestCase):
+    """Owner 2026-07-08 — a bill in the DECLARED father/mother name is NOT a stranger, even with no
+    parent IC on file (the SIVAKUMAR A/L KALIAPPAN over-ask)."""
+
+    def test_declared_father_name_is_related(self):
+        app = _app([], student_name='Anand')
+        app.father_name = 'SIVAKUMAR A/L KALIAPPAN'
+        app.mother_name = ''
+        app.other_family_members = []
+        self.assertFalse(_utility_name_unrelated(app, 'SIVAKUMAR A/L KALIAPPAN'))
+
+    def test_true_stranger_still_flags(self):
+        app = _app([], student_name='Anand')
+        app.father_name = 'SIVAKUMAR A/L KALIAPPAN'
+        app.mother_name = ''
+        app.other_family_members = []
+        self.assertTrue(_utility_name_unrelated(app, 'RANDOM STRANGER BIN NOBODY'))
+
+
+class TestHighUtilityContext(SimpleTestCase):
+    def _app_bills(self, amt, *, size=3, income=1200):
+        app = _app([_bill('water_bill', {'amount': amt}), _bill('electricity_bill', {'amount': amt})],
+                   household_size=size)
+        app.profile.household_income = income
+        app.income_route = 'salary'
+        return app
+
+    def test_high_returns_amount_and_income(self):
+        ctx = high_utility_expense_context(self._app_bills('RM200'))
+        self.assertEqual(ctx['amount'], 400)
+        self.assertEqual(ctx['income'], 1200)
+        self.assertFalse(ctx['on_str'])
+
+    def test_reasonable_returns_none(self):
+        self.assertIsNone(high_utility_expense_context(self._app_bills('RM20')))
 
 
 class TestBillingMonthParse(SimpleTestCase):
