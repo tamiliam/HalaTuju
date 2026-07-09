@@ -4232,3 +4232,24 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** A student who under-typed a grade (#48: typed G, slip E — a pass) should not be walled out of submitting over a discrepancy the officer can reconcile at review. The coach now names the subject and links to the grades editor.
 **Trade-offs:** Narrows the strict "no red doc at submission" policy to identity reds; grade discrepancies become officer/interview reconciliation.
 **Revisit if:** Officers find grade mismatches slipping through unreconciled at scale.
+
+## Document upload inverted to stage → judge → promote-only-if-better — Sprint (upload flow), 2026-07-09
+**Decision:** A KEY NAMED Check-2 upload is created STAGED (superseded_at=now), read, then promoted into the live slot only if it is usable (`doc_match_verdict` not mismatch/unreadable) AND at least as good as the live doc (`promotion.should_promote`). Reviewer/other docs (`bank_statement`/`income_support_doc`/`other`) bypass to accept-as-is.
+**Alternatives considered:** The owner's original "purgatory" model (a separate staging store + a genuineness-score-then-chip-score ladder). Keeping replace-first + a per-type keep-better guard (the STR-only status quo).
+**Rationale:** Reuses the existing version-history fields (migration 0093 `superseded_at`/`superseded_by`) — staged = superseded, promoted = un-superseded — so no new table/migration. Generalises the one existing keep-better guard (STR) to every type instead of N bespoke guards. The genuineness/quality signals already exist as pure reads, so "judge" needs no new model.
+**Trade-offs:** The promote decision runs inline on upload (one extra read already forced). A staged doc is briefly not-live between create and promote (same transaction). Correctness leans on `doc_match_verdict`'s usable signal being right per type.
+**Revisit if:** a type needs a genuinely different staging lifecycle, or the inline judge cost becomes material.
+
+## needs_officer_eye is a params flag, not a new application/item STATUS — Sprint (upload flow), 2026-07-09
+**Decision:** The circuit-breaker (after `DOC_STAGE_MAX_ATTEMPTS` not-usable re-uploads) stamps `needs_officer_eye`/`escalated_at` into the open ResolutionItem's `params` JSONField and keeps the item OPEN; the FE reads it for the student calm state + officer hold chip.
+**Alternatives considered:** a new ResolutionItem STATUS choice (`escalated`) or a new application status.
+**Rationale:** No migration; the item genuinely stays open (a hold for a human, not a resolution); `params` is already surfaced on `ResolutionItemSerializer` to both student and officer, so the FE needed no backend change. Mirrors the existing `attempts`/`attempt_rejected` params pattern (#83).
+**Trade-offs:** A JSON flag is less queryable than a status column (can't cheaply "list all escalated apps" in SQL). Acceptable — escalation is a per-item display concern, not a queue driver.
+**Revisit if:** we need to filter/queue escalated cases at scale (then promote it to a column).
+
+## Per-doc quality only where an orthogonal, unguarded axis exists — Sprint (upload flow), 2026-07-09
+**Decision:** `promotion.doc_quality` adds a type-specific axis ONLY for offer_letter (officialness) and results_slip/semester_result (field-completeness). str/salary_slip/epf/utility bills keep the generic proxy; BC too.
+**Alternatives considered:** a uniform per-type quality model for all types (the roadmap's literal Phase-3 list).
+**Rationale:** str/salary/epf/bills are in `_DEDUP_DOC_TYPES` → `dedupe_income_proof` re-collapses live copies to the best AFTER promotion, so a promotion-side quality model is redundant. For every type, `doc_match_verdict` returns unreadable/pending (→ not usable → Phase 2 keeps the live doc) when core fields don't read, so the only remaining gap is two BOTH-usable copies differing on an axis the proxy ignores — which is officialness (offers) and completeness (slips). BC's only axis (genuineness) is already in the proxy.
+**Trade-offs:** slip completeness can be inflated by a noisy OCR read (soft tiebreak within usable+genuine, never a gate → officer overrides). Non-uniform doc_quality is slightly less symmetric to read.
+**Revisit if:** a live case shows a cropped/garbage slip sitting live over a fuller one (switch the primary completeness signal from subject-count to graded-subject-count).

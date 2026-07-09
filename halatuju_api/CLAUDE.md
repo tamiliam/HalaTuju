@@ -518,6 +518,33 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-09)
 
+**✅ SHIPPED 2026-07-09 — Document upload: stage → judge → promote-only-if-better (4 phases; BE+FE,
+NO migration, MODEL_VERSION untouched; retro `docs/retrospective-2026-07-09-upload-stage-judge-promote.md`;
+decisions.md ×3; lessons.md ×1).** Inverted the Check-2 upload flow so a worse/wrong re-upload during
+the Completed stage can never bury a good live doc:
+- **P1** (`34caee74`): STR recipient false `name_mismatch` fixed in `doc_student_verdict`; #126 restored
+  (doc 1932 Semakan live → income Probable).
+- **P2** (`b8b6f087`): new pure `promotion.py` (`doc_quality`+`should_promote`); `views.py` re-sequenced
+  to STAGE (superseded on create) → read → judge → promote only if usable AND ≥ live quality. Generalises
+  the STR-only keep-better to all KEY NAMED types; BYPASS lane (`bank_statement`/`income_support_doc`/
+  `other`) accepts as-is. **Circuit-breaker**: after `DOC_STAGE_MAX_ATTEMPTS` (=3) not-usable re-uploads,
+  the open item is flagged `needs_officer_eye` in `params` (hold-for-human, no migration).
+- **P3** (`8615388a`+`a3516d04`): `doc_quality` per-type axes for the two UN-deduped types — offer_letter
+  officialness `(usable, official_rank, reporting_bonus, id)` and results_slip/semester_result
+  field-completeness. str/salary/epf/bills keep the generic proxy (re-collapsed by `dedupe_income_proof`
+  after promotion); BC too (genuineness already in proxy).
+- **P4** (`eaa8b78c`, FE only): the circuit-breaker's visible half — student Action Centre calm "we're
+  reviewing this with our team" state + officer cockpit orange "Hold — needs a person" chip. Flag already
+  on `ResolutionItemSerializer.params`, so no backend change. i18n `actionCentre.officerHold.*` +
+  `outstanding.hold`/`holdTip` (Tamil first-draft).
+- 2244 scholarship pytest + 487 jest. All builds SUCCESS + live.
+- **▶ OBSERVE-IN-PRACTICE (owner):** the keep-better behaviour is test-/code-verified but NOT yet seen on
+  a live Completed-stage re-upload. When a real case happens, confirm in the cockpit Old/Replaced list that
+  the FULLER/OFFICIAL/better doc is live and the worse copy is filed underneath. Watch the slip-completeness
+  caveat: a noisy OCR read could inflate the subject count (soft tiebreak, officer overrides) — if a cropped
+  slip ever sits live over a fuller one, switch the primary signal from subject-count to graded-subject-count.
+- **▶ CARRY (owner):** Tamil review of the P4 first-draft strings (`officerHold.*`, `outstanding.hold`/`holdTip`).
+
 **✅ SHIPPED 2026-07-08/09 — Stuck-students round: SUBMISSION GATE ↔ VERIFICATION VERDICT alignment
 (BE+FE; NO migration beyond `0095_recommended_by`; retro
 `docs/retrospective-2026-07-08-stuck-students-verification-gate.md`; decisions.md ×4; lessons.md ×3).**
