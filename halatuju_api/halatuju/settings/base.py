@@ -307,6 +307,10 @@ DOC_ASSIST_ONLY_WHEN_UNCERTAIN = os.environ.get('DOC_ASSIST_ONLY_WHEN_UNCERTAIN'
 # "does this look like a real photo of the official document?" check. One extra Gemini call
 # per IC upload. Default OFF — dark until validated on prod, then flip via --update-env-vars.
 DOC_GENUINENESS_CHECK_ENABLED = os.environ.get('DOC_GENUINENESS_CHECK_ENABLED', '') == '1'
+# Stage-judge-promote circuit-breaker (owner 2026-07-09): after this many not-usable re-uploads of a
+# KEY NAMED doc, stop looping the student — accept the best-available into a "needs officer eye" hold
+# instead of forever asking for a cleaner one. Env-overridable.
+DOC_STAGE_MAX_ATTEMPTS = int(os.environ.get('DOC_STAGE_MAX_ATTEMPTS', '3'))
 # IC Gemini second opinion: when the cheap deterministic MyKad read is low-confidence
 # (missing core field, or it disagrees with the typed profile), re-read the card image
 # with Gemini. Already self-gated to shaky reads only; set to '0' to disable entirely

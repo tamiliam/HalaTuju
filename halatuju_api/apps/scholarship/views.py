@@ -587,6 +587,45 @@ def _note_unresolved_attempts(app, doc, stale_ids, kept_previous):
             'attempt-stamping failed for app %s doc %s', app.id, doc.id, exc_info=True)
 
 
+def _open_doc_request_items(app, doc_type):
+    """The OPEN doc-request resolution items for this ``doc_type`` — matched by CODE via
+    ``CODE_TO_TICKET`` + ``DOC_SPECS`` (the same way ``_note_unresolved_attempts`` finds them, so the
+    circuit-breaker reads/writes exactly the items the attempt counter lives on)."""
+    from .resolution import CODE_TO_TICKET
+    from .check2_queries import DOC_SPECS
+    codes = {c for c, s in CODE_TO_TICKET.items() if s.get('doc_type') == doc_type}
+    codes |= {c for c, s in DOC_SPECS.items() if s.get('doc_type') == doc_type}
+    return app.resolution_items.filter(code__in=codes, status='open')
+
+
+def _stage_attempts_exhausted(app, doc, settings):
+    """True when THIS not-usable upload is the K-th failed attempt (``DOC_STAGE_MAX_ATTEMPTS``) for
+    this doc_type — time to stop looping the student. Reads the PRE-increment count
+    (``_note_unresolved_attempts`` stamps the +1 AFTER the decision, so we count prior failures)."""
+    k = getattr(settings, 'DOC_STAGE_MAX_ATTEMPTS', 3)
+    prior = max((int((i.params or {}).get('attempts') or 0)
+                 for i in _open_doc_request_items(app, doc.doc_type)), default=0)
+    return (prior + 1) >= k
+
+
+def _flag_needs_officer_eye(app, doc):
+    """Stamp ``needs_officer_eye`` on the open doc-request items for this doc_type (``params``
+    JSONField — NO migration) so the Action Centre swaps the re-upload loop for a calm "we're
+    reviewing this with our team" and the cockpit shows a hold chip. A HOLD-for-human, never an
+    auto-resolve. Best-effort; never breaks the upload."""
+    try:
+        from django.utils import timezone as _tz
+        for it in _open_doc_request_items(app, doc.doc_type):
+            p = dict(it.params or {})
+            p['needs_officer_eye'] = True
+            p.setdefault('escalated_at', _tz.now().isoformat())
+            it.params = p
+            it.save(update_fields=['params'])
+    except Exception:  # noqa: BLE001 — never break the upload
+        logging.getLogger(__name__).warning(
+            'needs_officer_eye flag failed for app %s doc %s', app.id, doc.id, exc_info=True)
+
+
 def _current_application(user_id):
     """The caller's current post-shortlist application (one per cohort; latest wins).
 
@@ -630,6 +669,11 @@ class DocumentSignUploadView(APIView):
 # results slip, offer letter, and utility bills). Utility bills additionally get a
 # soft home-address check. IC / parent_ic use the dedicated MyKad pipeline instead.
 BILL_DOC_TYPES = frozenset({'water_bill', 'electricity_bill'})
+# Reviewer / "other" documents that BYPASS the stage-judge-promote flow (owner 2026-07-09): the
+# reviewer asked for them and will eyeball them, so we accept whatever is uploaded — no genuineness
+# gate, no keep-better, no staging. They coexist in their own slots via ``request_code``. Every
+# other (KEY NAMED) doc type goes through the staging path (see ``DocumentListCreateView.post``).
+_BYPASS_JUDGE_TYPES = frozenset({'bank_statement', 'income_support_doc', 'other'})
 # Income relationship-proof docs whose VERDICT depends on the Gemini-extracted structured
 # fields (e.g. a birth certificate's child/mother names, or a guardianship letter's
 # guardian/ward names), so they must ALWAYS field-extract — never gated by the "only when
@@ -793,10 +837,23 @@ class DocumentListCreateView(APIView):
                     application=app, doc_type=new_doc_type, household_member__in=sweep_members,
                     request_code='', superseded_at__isnull=True).values_list('id', flat=True)
                 stale_ids += [i for i in apply_form_ids if i not in stale_ids]
+        # STAGE → JUDGE → PROMOTE (owner 2026-07-09): a KEY NAMED doc is created STAGED (not-live) so
+        # the existing proof keeps the prime slot until it is read + judged below; only a usable doc
+        # that is at least as good is promoted. BYPASS/reviewer docs (bank_statement / income_support
+        # _doc / other — the reviewer eyeballs them) keep the replace-first path.
+        staged = single and (new_doc_type not in _BYPASS_JUDGE_TYPES)
+        existing_live = (ApplicantDocument.objects.filter(id__in=stale_ids)
+                         .order_by('-uploaded_at').first() if staged else None)
         with transaction.atomic():
             doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
-            if stale_ids:
-                from django.utils import timezone as _tz
+            from django.utils import timezone as _tz
+            if staged:
+                # Not-live yet; the promote decision below owns ALL slot mutation. The existing live
+                # doc is untouched — a bad upload can never transiently displace a good proof.
+                ApplicantDocument.objects.filter(id=doc.id).update(
+                    superseded_at=_tz.now(), superseded_by=existing_live)
+                doc.refresh_from_db()
+            elif stale_ids:
                 ApplicantDocument.objects.filter(id__in=stale_ids).update(
                     superseded_at=_tz.now(), superseded_by=doc)
         # iPhone HEIC → JPEG, in place, BEFORE any Vision/extraction — so OCR can read it and the
@@ -868,40 +925,59 @@ class DocumentListCreateView(APIView):
                     application=app, doc_type=doc.doc_type, household_member=derived,
                     request_code=doc.request_code, superseded_at__isnull=True,
                 ).exclude(id=doc.id).values_list('id', flat=True))
-                if prior:
+                if staged:
+                    # The member changed → the promote decision must also supersede the DERIVED
+                    # member's live slot (e.g. a mother-tagged STR replacing a blank-tagged legacy
+                    # copy). Fold it into the staged-against set + recompute the doc to protect.
+                    stale_ids = list(dict.fromkeys(list(stale_ids) + list(prior)))
+                    existing_live = (ApplicantDocument.objects.filter(
+                        id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id)
+                        .order_by('-uploaded_at').first())
+                elif prior:
                     from django.utils import timezone as _tz2
                     ApplicantDocument.objects.filter(id__in=prior).update(
                         superseded_at=_tz2.now(), superseded_by=doc)
-        # One-live-copy dedup (owner 2026-07-05): a salary slip / STR is needed once — the most
-        # RECENT. The student re-uploads the same or older copies and each officer re-request adds a
-        # parallel slot, so several live copies of one person's proof pile up. Collapse this person's
-        # STR keep-better guard (owner 2026-07-08): a re-upload of STRICTLY LOWER quality never
-        # DISPLACES a better live proof — the better one stays live, the new upload becomes its
-        # history. Quality = str_proof_quality (currency-rank first, source-rank tiebreak), so:
-        #   * #83 — a wrong_type/unreadable page (a SALINAN / old copy) scores (0/1, …) below any
-        #           recognised approved proof → kept out (the student superseded her Lulus Semakan
-        #           with a 2023 copy four times, dropping herself from Probable to breached);
-        #   * #30 — a Lulus DASHBOARD (unconfirmed, source 1) below a Lulus SEMAKAN (unconfirmed,
-        #           source 2) at EQUAL currency → the richer Semakan is kept (it carries the
-        #           payment-dates page that can reach 'current'; the dashboard cannot).
-        # CURRENCY dominates, so a genuinely-better lower-tier upload still replaces (#112: a newer
-        # Lulus dashboard OUTRANKS an older 'Dalam Proses Rayuan' semakan → replaces normally), and a
-        # 'rejected'/Ditolak read (quality None) always replaces — a real negative status is news.
+        # JUDGE → PROMOTE (owner 2026-07-09): the staged doc has now been read. Decide whether it takes
+        # the prime slot. USABLE = doc_match_verdict 'ok' (not-fake ∧ right-type ∧ readable ∧ right-
+        # person); promote iff it is at least as good as the existing live doc (promotion.should_promote
+        # — quality is str_proof_quality for STR, else a readable+genuine+recency proxy). Otherwise it
+        # stays staged (Old / Replaced) and the existing proof KEEPS its slot — a worse/wrong re-upload
+        # can never bury a good live doc. This generalises the former STR-only keep-better swap-back to
+        # EVERY key type; the four TestStrKeepBetterGuard cases are now instances of it:
+        #   * #83 junk wrong_type re-upload → not usable → kept out;  * a real Ditolak (quality None)
+        #     → news → replaces;  * #30 Lulus dashboard (3,1) vs Lulus Semakan (3,2) → kept;  * #112 a
+        #     newer Lulus dashboard over a weaker semakan → currency dominates → replaces.
         kept_previous = False
-        if doc.doc_type == 'str' and stale_ids:
-            from .income_engine import str_proof_quality
+        if staged:
+            from . import promotion
+            from .resolution import doc_match_verdict
             from django.utils import timezone as _tz2
-            new_q = str_proof_quality(doc)
-            old = (ApplicantDocument.objects.filter(id__in=stale_ids)
-                   .order_by('-uploaded_at').first())
-            old_q = str_proof_quality(old) if old else None
-            if old_q is not None and new_q is not None and new_q < old_q:
-                ApplicantDocument.objects.filter(id=old.id).update(
-                    superseded_at=None, superseded_by=None)
-                ApplicantDocument.objects.filter(id=doc.id).update(
-                    superseded_at=_tz2.now(), superseded_by=old)
+            # USABLE = the read did not CONFIRM a problem: 'ok' (clean) or 'pending' (not scanned yet —
+            # newest still wins, the task stays open, and the quality proxy keeps a pending doc from
+            # burying an 'ok' one). Only a CONFIRMED 'mismatch'/'unreadable' is not-usable → stays
+            # staged so a wrong/blurry re-upload can't displace a good live proof.
+            usable = doc_match_verdict(doc) not in ('mismatch', 'unreadable')
+            if promotion.should_promote(doc, existing_live, usable=usable):
+                # Promote: supersede everything this upload replaces — the staged-against set (the
+                # slot sweep, incl. any blank-tagged legacy copy) PLUS any other live copy in this
+                # doc's exact slot — then unstage this one into the prime slot.
+                _now = _tz2.now()
+                ApplicantDocument.objects.filter(
+                    id__in=stale_ids, superseded_at__isnull=True).exclude(id=doc.id).update(
+                    superseded_at=_now, superseded_by=doc)
+                ApplicantDocument.objects.filter(
+                    application=app, doc_type=doc.doc_type, household_member=doc.household_member,
+                    request_code=doc.request_code, superseded_at__isnull=True).exclude(id=doc.id).update(
+                    superseded_at=_now, superseded_by=doc)
+                ApplicantDocument.objects.filter(id=doc.id).update(superseded_at=None, superseded_by=None)
                 doc.refresh_from_db()
+            else:
                 kept_previous = True
+                # Circuit-breaker: don't trap a student forever on an unsatisfiable read. After K
+                # not-usable attempts, flag the open request for the officer (the existing best doc
+                # stays live — a HOLD for human review, never an auto-resolve).
+                if _stage_attempts_exhausted(app, doc, _settings):
+                    _flag_needs_officer_eye(app, doc)
         # copies of THIS doc-type to the single newest (newest pay month / latest-dated STR); the
         # rest drop to Old / Replaced (retained). Runs after the tag guard so the member is final.
         from . import income_engine as _ie

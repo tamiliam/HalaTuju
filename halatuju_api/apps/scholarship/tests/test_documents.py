@@ -2,7 +2,7 @@
 from unittest.mock import patch
 
 import jwt
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.courses.models import StudentProfile
@@ -206,9 +206,12 @@ class TestDocumentApi(TestCase):
 
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
-    def test_every_doctype_replaces_on_reupload(self, mock_storage_delete, _mock_vision):
-        """Every document is single-instance now (user's call, 2026-06-05) — a re-upload
-        of an UNTAGGED salary slip replaces the prior copy in the same slot."""
+    @patch('apps.scholarship.promotion.should_promote', return_value=True)
+    def test_every_doctype_replaces_on_reupload(self, _mock_promote, mock_storage_delete, _mock_vision):
+        """Every document is single-instance — a re-upload of an UNTAGGED salary slip that PROMOTES
+        replaces the prior copy in the same slot (owner 2026-07-09: promotion is gated on a usable
+        read, tested in TestStrKeepBetterGuard / TestPromoteDecision; here we isolate the slot
+        mechanics by forcing the promote so the read doesn't need mocking)."""
         first = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='salary_slip',
             storage_path=f'{self.app_a.id}/salary_slip/jan',
@@ -233,9 +236,11 @@ class TestDocumentApi(TestCase):
 
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
-    def test_member_tagged_income_doc_is_single_instance_per_member(self, mock_del, _mv):
-        """Salary route: a member-tagged salary slip replaces THAT member's prior copy
-        (single-instance per (doc_type, member)) — never another member's."""
+    @patch('apps.scholarship.promotion.should_promote', return_value=True)
+    def test_member_tagged_income_doc_is_single_instance_per_member(self, _mock_promote, mock_del, _mv):
+        """Salary route: a member-tagged salary slip that PROMOTES replaces THAT member's prior copy
+        (single-instance per (doc_type, member)) — never another member's. (Promote forced to isolate
+        the slot mechanics from the read; the decision is tested elsewhere.)"""
         fathers = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='salary_slip', household_member='father',
             storage_path=f'{self.app_a.id}/salary_slip/father-old')
@@ -1139,3 +1144,77 @@ class TestStrKeepBetterGuard(TestCase):
         self._post_str(junk=True)                            # she sends the junk again
         item.refresh_from_db()
         self.assertEqual(item.params.get('attempts'), 2)
+
+    @override_settings(DOC_STAGE_MAX_ATTEMPTS=2)
+    def test_circuit_breaker_flags_officer_after_repeated_junk(self):
+        # Owner 2026-07-09: don't trap the student forever. After K not-usable attempts the open
+        # request is flagged needs_officer_eye (a HOLD for the officer, never auto-resolved); the good
+        # proof stays live throughout.
+        from apps.scholarship.models import ResolutionItem
+        self._good_semakan()
+        item = ResolutionItem.objects.create(
+            application=self.app, fact='income', code='str_not_current', kind='doc',
+            source='system', status='open', params={})
+        self._post_str(junk=True)                            # attempt 1 < K → no flag yet
+        item.refresh_from_db()
+        self.assertNotIn('needs_officer_eye', item.params)
+        self._post_str(junk=True)                            # attempt 2 == K → flag, item stays open
+        item.refresh_from_db()
+        self.assertTrue(item.params.get('needs_officer_eye'))
+        self.assertEqual(item.status, 'open')                # a hold for the officer, not auto-resolved
+        self.assertEqual(ApplicantDocument.objects.filter(       # the good semakan never displaced
+            application=self.app, doc_type='str', superseded_at__isnull=True).count(), 1)
+
+    def test_bypass_reviewer_doc_replaces_first_not_staged(self):
+        # income_support_doc / bank_statement / other BYPASS the stage-judge-promote path — the
+        # reviewer asked for them and eyeballs them, so a re-upload replaces the prior copy
+        # unconditionally (no staging, no keep-better), even without a clean read.
+        old = ApplicantDocument.objects.create(
+            application=self.app, doc_type='income_support_doc',
+            storage_path=f'{self.app.id}/isd/old', original_filename='old.pdf', size=100)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'income_support_doc', 'storage_path': f'{self.app.id}/isd/new',
+            'original_filename': 'new.pdf', 'size': 200}, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        old.refresh_from_db()
+        self.assertIsNotNone(old.superseded_at)              # replaced immediately, never staged
+        live = ApplicantDocument.objects.filter(
+            application=self.app, doc_type='income_support_doc', superseded_at__isnull=True)
+        self.assertEqual(live.count(), 1)
+        self.assertEqual(live.first().storage_path, f'{self.app.id}/isd/new')
+
+
+class TestPromoteDecision(SimpleTestCase):
+    """promotion.should_promote — the uniform keep-better rule (owner 2026-07-09). doc_quality is
+    patched so the branch logic is tested in isolation (the STR / proxy quality dispatch is exercised
+    end-to-end by TestStrKeepBetterGuard and the slot-mechanics tests)."""
+
+    def _decide(self, qn, qe, usable):
+        from apps.scholarship import promotion
+        new, old = object(), object()
+        with patch.object(promotion, 'doc_quality', side_effect=lambda d: qn if d is new else qe):
+            return promotion.should_promote(new, old, usable=usable)
+
+    def test_empty_slot_promotes(self):
+        from apps.scholarship import promotion
+        with patch.object(promotion, 'doc_quality', return_value=(0, 0)):
+            self.assertTrue(promotion.should_promote(object(), None, usable=False))
+
+    def test_news_promotes_before_usable(self):
+        # quality None (a genuine Ditolak STR) → replace even when not usable — checked BEFORE usable.
+        self.assertTrue(self._decide(None, (3, 2), usable=False))
+
+    def test_not_usable_keeps_existing(self):
+        self.assertFalse(self._decide((0, 0), (3, 2), usable=False))
+
+    def test_usable_better_promotes(self):
+        self.assertTrue(self._decide((3, 2), (3, 1), usable=True))
+
+    def test_usable_equal_promotes(self):
+        self.assertTrue(self._decide((3, 2), (3, 2), usable=True))
+
+    def test_usable_worse_keeps(self):
+        self.assertFalse(self._decide((3, 1), (3, 2), usable=True))
+
+    def test_existing_is_news_promotes(self):
+        self.assertTrue(self._decide((0, 0), None, usable=True))

@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Phase 2: document upload — stage → judge → promote-only-if-better — 2026-07-09
+
+### Changed
+- **The document upload flow is inverted from "replace-first" to "stage → judge → promote".** A KEY
+  NAMED doc (`ic`, `parent_ic`, `str`, `salary_slip`, `epf`, `offer_letter`, `birth_certificate`,
+  `guardianship_letter`, `results_slip`, `school_leaving_cert`, `semester_result`, `water_bill`,
+  `electricity_bill`) is now created **staged** (not-live), read, then promoted into the prime slot
+  **only if it is usable** (`doc_match_verdict` not a confirmed mismatch/unreadable) **and** at least
+  as good as the existing live doc (`promotion.should_promote`, quality = `str_proof_quality` for STR
+  else a readable+genuine+recency proxy). Otherwise it stays under Old / Replaced and the existing
+  proof keeps its slot — a worse/wrong re-upload can never bury a good live document. This
+  **generalises the former STR-only keep-better guard to every key type** (the four
+  `TestStrKeepBetterGuard` cases are now instances of it). **BYPASS / reviewer docs**
+  (`bank_statement`, `income_support_doc`, `other`) are accepted as-is — no staging, no keep-better.
+- **Circuit-breaker so a student is never trapped in a loop.** After `DOC_STAGE_MAX_ATTEMPTS` (=3,
+  env-overridable) not-usable re-uploads, the open request is flagged `needs_officer_eye`
+  (`params` JSONField — no migration): the Action Centre can swap the re-upload loop for a calm
+  "we're reviewing this with our team", the officer sees a hold chip, and the good proof stays live.
+  A hold for a human, never an auto-resolve.
+- New pure module `promotion.py` (`doc_quality` + `should_promote`); the upload path
+  (`DocumentListCreateView.post`) re-sequenced; MODEL_VERSION untouched; no migration. 2236 pytest.
+
 ## Fix: STR recipient false name-mismatch (#126) — Phase 1 of the upload-flow roadmap — 2026-07-09
 
 ### Fixed
