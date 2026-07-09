@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: utility-bill staleness — ask 3 months, accept 6; prefer Tarikh Bil — 2026-07-09
+
+### Changed
+- **A dated utility bill within ~6 months is now accepted without re-looping** (owner 2026-07-09).
+  We still ASK for a bill within 3 months (the request copy + the officer's "Current" chip keep the
+  3-month line), but the recheck (`_bill_needs_upload`) only keeps re-asking past
+  `_UTILITY_ACCEPT_MONTHS = 6`. A student who can only produce a slightly older bill is no longer
+  trapped re-uploading — the officer eyeballs the date. Fixes the stale-bill loop (app #63 Jayashree
+  re-uploaded the same ~4-month TNB bill 13 times; her `electricity_bill_recheck` auto-resolves on
+  deploy via the existing `sync_check2_queries` housekeeping — no manual waive).
+- **Currency is now anchored on `Tarikh Bil` (bill date) when present, else the `Tempoh Bil` period**
+  (`_bill_as_of` / `_bill_age_months`; owner 2026-07-09). A single point-in-time date is unambiguous
+  (no "which end of the range?") and survives a photo that degrades the period to month-only/blank.
+  Backward-compatible: today's cohort has no `bill_date` field yet, so it falls back to the period —
+  extracting `Tarikh Bil` is the separate owner-gated Extraction-v2 step (see
+  `docs/scholarship/electricity-bill-catalogue.md`). `_utility_currency` now takes the `fields` dict.
+- No migration, MODEL_VERSION untouched. Updated `TestUtilityCurrency` (dict signature + bill-date
+  preference) and `TestUtilityBillRecheck` (>6mo re-asks; 3–6mo accepted while the chip stays stale).
+  2249 scholarship pytest.
+
 ## Fix: unassigning a reviewer no longer orphans a case in `interviewing` — 2026-07-09
 
 ### Fixed

@@ -1415,7 +1415,13 @@ _UTILITY_MONTHS = {
     'jun': 6, 'jul': 7, 'ogo': 8, 'aug': 8, 'sep': 9, 'okt': 10, 'oct': 10,
     'nov': 11, 'dis': 12, 'dec': 12,
 }
-_UTILITY_CURRENT_MONTHS = 3   # a bill within ~3 months of the review date counts as current
+_UTILITY_CURRENT_MONTHS = 3   # a bill within ~3 months of the review date counts as 'current' — the
+                              # ASK standard + the officer's 'Current' chip.
+_UTILITY_ACCEPT_MONTHS = 6    # owner 2026-07-09: we ASK for a bill within 3 months, but a DATED bill
+                              # within ~6 months is ACCEPTED without re-looping (the officer eyeballs
+                              # the date). A student who can only produce a slightly older bill is
+                              # never trapped re-uploading; older than 6 still re-asks. Used only by
+                              # ``_bill_needs_upload`` — the officer chip keeps the 3-month line.
 
 
 def _parse_billing_month(period):
@@ -1444,18 +1450,39 @@ def _parse_billing_month(period):
     return year, month
 
 
-def _utility_currency(period, today):
-    """Is the bill recent? 'current' (within ~3 months of *today*) | 'stale' (older) |
-    'unknown' (no readable date). Measured against the review date, not the application
-    date — the question is whether this is a LIVE household paying bills now."""
-    ym = _parse_billing_month(period)
+def _bill_as_of(fields):
+    """The point-in-time a utility bill speaks to, as ``(year, month)``, preferring the TARIKH BIL
+    (``bill_date`` — a single unambiguous issue date, owner 2026-07-09) over the TEMPOH BIL
+    ``billing_period`` range (whose start/end is ambiguous and often degrades to month-only or blank
+    on a photo). ``None`` when neither yields a readable date (the 'undated' case)."""
+    if not isinstance(fields, dict):
+        return None
+    for key in ('bill_date', 'billing_period'):
+        ym = _parse_billing_month(fields.get(key))
+        if ym:
+            return ym
+    return None
+
+
+def _bill_age_months(fields, today):
+    """How many months old the bill is (from ``_bill_as_of``), or ``None`` when undated. A
+    future-dated bill (data entry) clamps to 0."""
+    ym = _bill_as_of(fields)
     if not ym:
+        return None
+    return max(0, (today.year - ym[0]) * 12 + (today.month - ym[1]))
+
+
+def _utility_currency(fields, today):
+    """Is the bill recent? 'current' (within ~3 months of *today*) | 'stale' (older) |
+    'unknown' (no readable date). Dated from TARIKH BIL when present, else the TEMPOH BIL period
+    (``_bill_as_of``), against the review date — the question is whether this is a LIVE household
+    paying bills now. NOTE: takes the whole ``fields`` dict now (not just the period string) so it
+    can prefer the bill date."""
+    age = _bill_age_months(fields, today)
+    if age is None:
         return 'unknown'
-    year, month = ym
-    months_ago = (today.year - year) * 12 + (today.month - month)
-    if months_ago < 0:                                 # future-dated (data entry) → treat current
-        return 'current'
-    return 'current' if months_ago <= _UTILITY_CURRENT_MONTHS else 'stale'
+    return 'current' if age <= _UTILITY_CURRENT_MONTHS else 'stale'
 
 
 def utility_reasonable(application):
@@ -1590,7 +1617,7 @@ def utility_check(doc, today=None):
         'monthly_bill': (f.get('amount', '') or '').strip(),
         'unpaid_balance': (f.get('unpaid_balance', '') or '').strip(),
         'address_status': getattr(doc, 'vision_address_match', '') or '',
-        'current_status': _utility_currency(f.get('billing_period'), today),
+        'current_status': _utility_currency(f, today),
         'reasonable_status': reasonable['status'],
         'reasonable_detail': reasonable['detail'],
         # 'arrears' (shown green) only when arrears exceed the current charge; else hidden.
@@ -2354,12 +2381,13 @@ def utility_bill_gap(application):
 def _bill_needs_upload(application, doc_type, today):
     """Why THIS bill type needs a (re)upload, or '' when the bill on file is usable. Reasons:
     'missing' (none on file), 'address_unreadable' / 'amount_unreadable' (a required field couldn't
-    be read), 'stale' (a READABLE date older than ~3 months — the student can fetch a recent one),
-    'undated' (no readable date). The UNDATED case is re-asked only ONCE, then ACCEPTED (owner
-    2026-07-09, #130): many Malaysian water bills never print a machine-readable period, so looping
-    on it traps the student — after one re-try, an otherwise-clean bill (holder + address + amount)
-    is accepted and the officer eyeballs the date. A HARD address MISMATCH is NOT here — that's the
-    separate ``utility_address_mismatch`` clarify."""
+    be read), 'stale' (a READABLE date older than the ACCEPT window ~6 months), 'undated' (no readable
+    date). We ASK for a bill within 3 months, but only keep RE-ASKING past ``_UTILITY_ACCEPT_MONTHS``:
+    a dated bill within ~6 months is accepted as-is and the officer eyeballs the date (owner
+    2026-07-09) — a student who can only produce a slightly older bill is never trapped. The UNDATED
+    case is re-asked only ONCE, then ACCEPTED (owner 2026-07-09, #130): many Malaysian bills never
+    print a machine-readable date, so looping on it traps the student. A HARD address MISMATCH is NOT
+    here — that's the separate ``utility_address_mismatch`` clarify."""
     doc = _latest_doc(application, doc_type)
     if doc is None:
         return 'missing'
@@ -2371,8 +2399,9 @@ def _bill_needs_upload(application, doc_type, today):
     if _parse_rm(facts.get('monthly_bill')) is None:
         return 'amount_unreadable'
     cs = facts.get('current_status')
-    if cs == 'stale':                       # readable date, >3 months → ask for a recent one
-        return 'stale'
+    if cs == 'stale':                       # officer chip says >3 months, but only KEEP re-asking
+        age = _bill_age_months(_doc_fields(doc), today)   # past the 6-month accept window (owner)
+        return 'stale' if (age is not None and age > _UTILITY_ACCEPT_MONTHS) else ''
     if cs == 'unknown':                     # date unreadable → re-ask ONCE, then accept
         return '' if _undated_clean_bill_attempts(application, doc_type, today) >= 2 else 'undated'
     return ''
@@ -2392,7 +2421,7 @@ def _undated_clean_bill_attempts(application, doc_type, today):
     # is deliberately not filtered; see the TestStaticReadGuard allow-list.)
     for d in docs.filter(doc_type=doc_type):
         f = _doc_fields(d)
-        if (_utility_currency(f.get('billing_period'), today) == 'unknown'
+        if (_utility_currency(f, today) == 'unknown'
                 and (f.get('address') or '').strip()
                 and _parse_rm(f.get('amount')) is not None):
             n += 1

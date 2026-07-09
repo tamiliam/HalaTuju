@@ -995,7 +995,8 @@ class TestUtilityBillRecheck(SimpleTestCase):
         self.assertEqual(utility_bill_recheck(app, today=self.TODAY), {})
 
     def test_stale_bill_flagged(self):
-        app = _app([self._b('water_bill', period='01/2026'), self._b('electricity_bill')])
+        # Older than the 6-month ACCEPT window → still re-asked ('11/2025' is 8 months before Jul 2026).
+        app = _app([self._b('water_bill', period='11/2025'), self._b('electricity_bill')])
         rc = utility_bill_recheck(app, today=self.TODAY)
         self.assertEqual(rc.get('water_bill'), 'stale')
         self.assertNotIn('electricity_bill', rc)
@@ -1010,11 +1011,15 @@ class TestUtilityBillRecheck(SimpleTestCase):
                     self._b('electricity_bill')])
         self.assertNotIn('water_bill', utility_bill_recheck(two, today=self.TODAY))
 
-    def test_stale_still_loops_when_date_is_readable(self):
-        # A READABLE but old date is a real "get a recent one" — the accept-after-retry is UNDATED-only.
-        app = _app([self._b('water_bill', period='01/2026'), self._b('water_bill', period='01/2026'),
-                    self._b('electricity_bill')])
-        self.assertEqual(utility_bill_recheck(app, today=self.TODAY).get('water_bill'), 'stale')
+    def test_bill_within_accept_window_accepted_but_chip_stale(self):
+        # Owner 2026-07-09: we ASK for a bill within 3 months, but a DATED bill within ~6 months is
+        # ACCEPTED without re-looping — a student who can only produce a slightly older bill isn't
+        # trapped. '02/2026' is ~5 months before Jul 2026: no re-ask, yet the officer chip still reads
+        # 'stale' (freshness stays visible to the reviewer).
+        wb = self._b('water_bill', period='02/2026')
+        app = _app([wb, self._b('electricity_bill')])
+        self.assertNotIn('water_bill', utility_bill_recheck(app, today=self.TODAY))
+        self.assertEqual(utility_check(wb, self.TODAY)['current_status'], 'stale')
 
     def test_unreadable_address_flagged(self):
         app = _app([self._b('water_bill', address=''), self._b('electricity_bill')])
@@ -1086,18 +1091,27 @@ class TestUtilityCurrency(SimpleTestCase):
     TODAY = datetime.date(2026, 6, 5)
 
     def test_within_three_months_is_current(self):
-        self.assertEqual(_utility_currency('Mei 2026', self.TODAY), 'current')
-        self.assertEqual(_utility_currency('Mac 2026', self.TODAY), 'current')
+        self.assertEqual(_utility_currency({'billing_period': 'Mei 2026'}, self.TODAY), 'current')
+        self.assertEqual(_utility_currency({'billing_period': 'Mac 2026'}, self.TODAY), 'current')
 
     def test_older_than_three_months_is_stale(self):
-        self.assertEqual(_utility_currency('Jan 2026', self.TODAY), 'stale')
-        self.assertEqual(_utility_currency('2025-12', self.TODAY), 'stale')
+        self.assertEqual(_utility_currency({'billing_period': 'Jan 2026'}, self.TODAY), 'stale')
+        self.assertEqual(_utility_currency({'billing_period': '2025-12'}, self.TODAY), 'stale')
 
     def test_no_date_is_unknown(self):
-        self.assertEqual(_utility_currency('', self.TODAY), 'unknown')
+        self.assertEqual(_utility_currency({'billing_period': ''}, self.TODAY), 'unknown')
+        self.assertEqual(_utility_currency({}, self.TODAY), 'unknown')
 
     def test_future_dated_treated_current(self):
-        self.assertEqual(_utility_currency('07/2026', self.TODAY), 'current')
+        self.assertEqual(_utility_currency({'billing_period': '07/2026'}, self.TODAY), 'current')
+
+    def test_bill_date_preferred_over_period(self):
+        # TARIKH BIL (a single point-in-time date) anchors currency over the TEMPOH BIL range (owner
+        # 2026-07-09). Here the range start reads Jan (stale from Jun) but the bill date is Apr → current.
+        self.assertEqual(_utility_currency(
+            {'bill_date': '18.04.2026', 'billing_period': 'Jan 2026 - Feb 2026'}, self.TODAY), 'current')
+        # No bill_date → falls back to the period (backward-compatible with today's cohort).
+        self.assertEqual(_utility_currency({'billing_period': 'Jan 2026'}, self.TODAY), 'stale')
 
 
 class TestUtilityReasonable(SimpleTestCase):
