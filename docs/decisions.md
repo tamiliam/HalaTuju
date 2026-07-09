@@ -4301,3 +4301,23 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** str/salary/epf/bills are in `_DEDUP_DOC_TYPES` → `dedupe_income_proof` re-collapses live copies to the best AFTER promotion, so a promotion-side quality model is redundant. For every type, `doc_match_verdict` returns unreadable/pending (→ not usable → Phase 2 keeps the live doc) when core fields don't read, so the only remaining gap is two BOTH-usable copies differing on an axis the proxy ignores — which is officialness (offers) and completeness (slips). BC's only axis (genuineness) is already in the proxy.
 **Trade-offs:** slip completeness can be inflated by a noisy OCR read (soft tiebreak within usable+genuine, never a gate → officer overrides). Non-uniform doc_quality is slightly less symmetric to read.
 **Revisit if:** a live case shows a cropped/garbage slip sitting live over a fuller one (switch the primary completeness signal from subject-count to graded-subject-count).
+
+## Electricity-bill genuineness = issuer identity, not statutory grammar — Sprint (utility-bill arc), 2026-07-10
+**Decision:** The electricity-bill fingerprint (`genuineness/electricity_doc.py`) is **issuer identity (TNB/SESB/SESCO) + Malay bill-field grammar**, unlike the salary model's statutory-payroll-grammar fingerprint.
+**Alternatives considered:** Mirror salary exactly (grammar-only, no issuer). A multi-issuer model like water.
+**Rationale:** Corpus is ~96% TNB (a near-monopoly, fixed letterhead) — so issuer identity is the strongest, cleanest discriminator, closer to the single-issuer STR/EPF families. Calibration confirmed an issuer marker is present on every genuine bill (⟹ never rejected). Water is different (Air Selangor/PBA/SYABAS/SAJ/LAKU — many issuers) and would need the salary-style grammar model.
+**Trade-offs:** A cropped photo that loses the TNB header falls to the electricity-grammar path (genuine if strong, else suspect) — slightly lower confidence, but never a false reject.
+**Revisit if:** the cohort gains substantial East-Malaysia (SESB/SESCO) volume, or if a fake TNB letterhead appears (then add content signatures beyond the header).
+
+## Bill genuineness is SOFT — no submission gate (unlike salary's #47 gate) — Sprint (utility-bill arc), 2026-07-10
+**Decision:** `not_electricity_bill` feeds the officer cockpit chip + the keep-better ranking (`_doc_genuine_rank`) only; it does NOT gate submission.
+**Alternatives considered:** Mirror salary's `usable_salary_slip` gate (a not_salary slip fails the income-proof requirement).
+**Rationale:** Utility bills are SOFT signals in the B40 means-test (address/hardship corroboration), never a required proof — so a wrong-type bill should surface to the officer, not block the student. The salary gate exists because a payslip IS route-required income proof; a bill is not.
+**Trade-offs:** A student can submit with a wrong-type bill in the slot — but the officer sees the red "Wrong type" chip and can request a re-slot; no genuine student is trapped.
+**Revisit if:** a utility bill ever becomes a required proof for some route.
+
+## Natural rollout over a forced backfill for the bill model — Sprint (utility-bill arc), 2026-07-10
+**Decision:** No batch `reextract-electricity-bills` command; existing bills activate the model + new fields only when re-run (new uploads are automatic).
+**Alternatives considered:** A backfill/re-score cron over all 88 existing bills.
+**Rationale:** Unscored bills are fail-open (no chip, period-fallback currency — nothing regresses), so the model only ever ADDS signal as bills are re-run. Owner explicitly chose the natural rollout. A batch command is a small add if a review push ever wants the whole cohort scored at once.
+**Revisit if:** the owner wants the existing cohort scored in one pass before a review sweep.

@@ -518,6 +518,37 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-10)
 
+**✅ SHIPPED 2026-07-10 — Utility-bill arc: electricity genuineness model + Extraction-v2 + the
+staleness/currency fix (BE+FE, NO migration; scorer `genuineness/electricity_doc.py`
+`MODEL_VERSION 1.0.0`, per-family; retro `docs/retrospective-2026-07-10-electricity-bill-model.md`;
+spec `docs/scholarship/electricity-bill-catalogue.md`; decisions ×3; lessons ×2).** Built on the
+salary model's pattern (per-family `MODEL_VERSION`, `eval/` OCR calibration).
+- **Genuineness (`electricity_doc.py`):** unlike salary (no letterhead), electricity has a DOMINANT
+  issuer, so the fingerprint is **issuer identity (TNB/SESB/SESCO) + Malay bill-field grammar** →
+  genuine {tnb/…} / suspect {thin/cropped} / **not_electricity_bill** {MyKad / water bill / junk in
+  the slot — the #47 analog}. Calibrated read-only on **27 live OCR'd bills** (NO AKAUN 100%, TNB/
+  ELEKTRIK 92%, Tarikh Bil 88%): **27/27 genuine, 0 false-rejects**; an issuer marker guarantees a
+  genuine bill is never rejected. Scored the full 90-doc corpus: **87 genuine · 1 suspect · 2
+  not_electricity_bill** (#83 a PBA water bill in the electricity slot; #35 an unreadable myTNB
+  screenshot — #35 also has TWO live electricity docs, a dedup gap).
+- **Wired SOFT** (no submission gate — bills are soft signals): scored at extraction →
+  `authenticity`; cockpit shows only the wrong-type reject via the `get_authenticity` allowlist;
+  `documentFacts` (officerCockpit.ts) now pushes the red **"Wrong type"** chip on the utility branch
+  (it was the ONE branch that dropped `gf`) + caps the reads; keep-better ranking reads it via
+  `_doc_genuine_rank`. Added to the `assess()` dispatcher.
+- **Extraction-v2** (no MODEL_VERSION change — field adds): `bill_date` (Tarikh Bil, the point-in-time
+  currency anchor `_bill_as_of` prefers), `account_no`, `usage_kwh`, `tariff` on the bill schema +
+  prompt (`bill_date`/`account_no` on water too).
+- **Staleness/currency fix (905c9926):** ask a bill within 3 months but ACCEPT within 6
+  (`_UTILITY_ACCEPT_MONTHS`, `_bill_needs_upload`) — dissolves the stale re-upload loop (#63 Jayashree
+  self-healed); currency anchored on `bill_date` when present, else the period.
+- Existing bills unscored / lack new fields → **fail-open**; a LIVE-service re-score/re-extraction
+  activates them (never local). 2277 scholarship + 489 jest.
+- **▶ NEXT / carry:** (a) the **water-bill genuineness sibling** (multi-issuer like salary: Air
+  Selangor / PBA / SYABAS / SAJ / LAKU) — so a swapped bill (#83) is caught on BOTH slots, not just
+  electricity; (b) optional `reextract-electricity-bills` batch to activate the existing cohort in one
+  pass (owner chose natural rollout); (c) #35 dedup (two live electricity docs).
+
 **✅ SHIPPED 2026-07-09 — Salary-slip genuineness signature model + the #47 fix (BE-only, NO
 migration; scorer `genuineness/salary_doc.py` `MODEL_VERSION 1.0.0`; retro
 `docs/retrospective-2026-07-09-salary-signature-model.md`; spec `docs/scholarship/salary-signature-model.md`;
