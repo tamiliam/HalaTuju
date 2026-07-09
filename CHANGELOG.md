@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Electricity-bill genuineness signature model + Extraction-v2 — 2026-07-10
+
+### Added
+- **First genuineness signature model for electricity bills** (`genuineness/electricity_doc.py`,
+  `MODEL_VERSION 1.0.0`, per-family — mirrors the salary-slip model). Closes the utility-bill
+  doc-recognition gap (bills had `_dedup_clean_rank`/`utility_check` but no `authenticity`). The
+  fingerprint is **issuer identity (TNB/SESB/SESCO) + Malay bill-field grammar** →
+  genuine {tnb/…} / suspect {thin or cropped-no-issuer} / **not_electricity_bill** {a MyKad, a water
+  bill, or junk in the electricity slot — the #47 analog for bills}. Calibrated read-only on **27 live
+  OCR'd bills** (`eval/capture_ocr.py`): NO AKAUN 100% · TNB/ELEKTRIK 92% · Tarikh Bil 88%; **27/27
+  genuine, 0 false-rejects**; reject floor validated on synthetic MyKad/water/junk. An issuer marker
+  guarantees a genuine bill is never rejected (conservative — a thin read → `suspect`, never a false
+  genuine or reject).
+- **Wired SOFT:** scored at extraction → `vision_fields.authenticity` (vision.py, behind the already-ON
+  `DOC_GENUINENESS_CHECK_ENABLED`); the cockpit surfaces only the wrong-type reject
+  (`get_authenticity` allowlist: `not_electricity_bill` → red chip, `suspect` hidden as amber noise);
+  the keep-better ranking picks it up automatically (`_doc_genuine_rank` reads `authenticity.status`).
+  **Does NOT gate submission** (utility bills are soft signals). Added to the `assess()` dispatcher.
+- **Extraction-v2:** the bill schema + prompt now read `bill_date` (Tarikh Bil — the point-in-time
+  currency anchor `_bill_as_of` prefers), `account_no` (No. Akaun — premises join-key), plus
+  `usage_kwh` + `tariff` for electricity (high-usage query + home-vs-commercial). `bill_date`/
+  `account_no` added to water bills too.
+- **Existing bills are unscored / lack the new fields → fail-open**; a re-score / re-extraction pass on
+  the LIVE service activates them (never re-extract locally). New uploads are scored + fully extracted
+  automatically. No migration; MODEL_VERSION is per-family (no cross-family bump). Spec:
+  `docs/scholarship/electricity-bill-catalogue.md`. +`test_electricity_signatures.py`. 2277 scholarship
+  + 1205 courses/reports pytest.
+
 ## Salary-slip genuineness signature model + the #47 fix — 2026-07-09
 
 ### Added

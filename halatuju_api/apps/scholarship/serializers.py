@@ -711,7 +711,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         IC/parent_ic (Sprint 1) + the standardised supporting docs (Sprint 2: STR, results
         slip, birth cert, EPF). Null when the check didn't run (flag off / AI outage)."""
         if obj.doc_type not in ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf',
-                                'offer_letter', 'salary_slip'):
+                                'offer_letter', 'salary_slip', 'electricity_bill'):
             return None
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         auth = vf.get('authenticity')
@@ -727,6 +727,12 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         # amber noise, so a genuine/suspect slip renders normally (no chip). Mirrors how a genuine EPF
         # shows nothing while a not_epf shows the wrong-type chip.
         if obj.doc_type == 'salary_slip' and not status.startswith('not_'):
+            return None
+        # Electricity bill (MODEL_VERSION 1.0.0): same — surface ONLY the wrong-type reject
+        # (not_electricity_bill: a MyKad / water bill / junk in the electricity slot) → the red chip.
+        # The 'suspect' band is a thin/cropped-but-genuine bill (common), so hide it as amber noise;
+        # a genuine/suspect bill renders normally.
+        if obj.doc_type == 'electricity_bill' and not status.startswith('not_'):
             return None
         return {'status': status,
                 'reason': auth.get('reason', ''), 'doc_seen': auth.get('doc_seen', '')}

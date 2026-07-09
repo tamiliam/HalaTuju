@@ -1134,11 +1134,18 @@ _FIELD_SCHEMAS = {
                         'contribution_status': _STR, 'statement_date': _STR, 'address': _STR,
                         'year': _STR}),
     # Income Check-1: utility bills carry the home address + the MONTHLY charge + any
-    # UNPAID balance (a high outstanding amount is a soft hardship signal).
+    # UNPAID balance (a high outstanding amount is a soft hardship signal). Extraction-v2
+    # (2026-07-10): bill_date (Tarikh Bil — a POINT-IN-TIME date, the preferred currency anchor
+    # over the Tempoh Bil range; see income_engine._bill_as_of) + account_no (No. Akaun — the stable
+    # premises join-key). Electricity also reads usage_kwh (Kegunaan/kWj — the high-usage-vs-income
+    # signal) + tariff (Tarif A domestik confirms a home vs a commercial/landlord account).
     'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR,
-                               'unpaid_balance': _STR, 'billing_period': _STR}),
+                               'unpaid_balance': _STR, 'billing_period': _STR,
+                               'bill_date': _STR, 'account_no': _STR}),
     'electricity_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR,
-                                     'unpaid_balance': _STR, 'billing_period': _STR}),
+                                     'unpaid_balance': _STR, 'billing_period': _STR,
+                                     'bill_date': _STR, 'account_no': _STR,
+                                     'usage_kwh': _STR, 'tariff': _STR}),
     # S2: read the GRADE against each subject (not just the subject list) so the
     # academic engine can verify the typed grades against the slip.
     # Check-1 fix: also read the Malay BAND phrase per subject (Cemerlang Tertinggi /
@@ -1283,6 +1290,25 @@ _DOC_HINTS = {
             '2026" menu item is NOT the STR year); if no such date is shown, leave it EMPTY. '
             '"amount" = the total STR in RM ("jumlah … STR … RM1,200" / "Jumlah Bayaran Keseluruhan '
             'STR"). Leave a field empty if it is not present.'),
+    'electricity_bill': (' This is a Malaysian electricity bill — usually TNB (Tenaga Nasional, header '
+                         '"Bil Elektrik Anda"; SESB in Sabah / SESCO in Sarawak). "name" = the '
+                         'account-holder name; "address" = the premises address. "account_no" = the '
+                         'account number, labelled "No. Akaun" (keep the digits). "amount" = the '
+                         'current charge / total payable ("Caj Semasa" or "Jumlah Perlu Dibayar"), in '
+                         'RM. "unpaid_balance" = any arrears ("Baki Terdahulu" / "Tunggakan"). '
+                         '"bill_date" = the BILL DATE labelled "Tarikh Bil" — a single point-in-time '
+                         'date (e.g. "18.03.2026"); this is DISTINCT from the billing period. '
+                         '"billing_period" = the consumption period labelled "Tempoh Bil" (a range, '
+                         'e.g. "17.02.2026 - 16.03.2026"). "usage_kwh" = the consumption in kWh/kWj '
+                         '("Kegunaan"). "tariff" = the tariff / premise class ("Tarif", e.g. "Domestik '
+                         'Am" for a home). Leave a field empty if it is not present.'),
+    'water_bill': (' This is a Malaysian water bill (e.g. Air Selangor, SYABAS, PBAPP, SAJ, LAKU). '
+                   '"name" = the account-holder name; "address" = the premises address. "account_no" = '
+                   'the account number (keep the digits). "amount" = the current charge / total '
+                   'payable, in RM. "unpaid_balance" = any arrears ("Tunggakan"). "bill_date" = a '
+                   'single point-in-time bill/issue date if shown (e.g. "18.03.2026"), distinct from '
+                   'the billing period. "billing_period" = the consumption period if shown. Leave a '
+                   'field empty if it is not present.'),
     'salary_slip': (' This is a Malaysian salary slip / payslip — OR a government benefit / pension '
                     'payment statement (e.g. a PERKESO/SOCSO "Penyata Bayaran Faedah" survivor\'s '
                     'pension "Pencen Penakat"), which counts as household income too. "name" = the '
@@ -1934,6 +1960,25 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                     'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['family'],
                     'probability': sg['probability'], 'model_version': sg.get('model_version'),
                     'markers': sg.get('markers'),
+                }
+        elif doc.doc_type == 'electricity_bill':
+            # POSITIVE signature scorer (electricity_doc.py, MODEL_VERSION 1.0.0) over the OCR text —
+            # issuer identity (TNB/SESB/SESCO) + Malay bill-field grammar → genuine {tnb/…} / suspect
+            # {thin or cropped-no-issuer} / not_electricity_bill {MyKad or a WATER bill in the slot, or
+            # nothing bill-shaped}. An issuer marker guarantees the doc is never rejected (calibrated on
+            # 27 live bills, 0 false-rejects). Text-only + deterministic; a failed/empty OCR yields NO
+            # signal (never persist 'not_electricity_bill' off our own read failure). SOFT: this feeds
+            # the officer cockpit chip + the keep-better ranking (`_doc_genuine_rank` reads
+            # authenticity.status) — it does NOT gate submission (utility bills are soft signals).
+            from .genuineness.electricity_doc import electricity_genuineness
+            rr = ocr if ocr is not None else ocr_document(doc)
+            text = (rr or {}).get('text', '') or ''
+            if text.strip() and not (rr or {}).get('error'):
+                eg = electricity_genuineness(text)
+                result['authenticity'] = {
+                    'status': eg['status'], 'reason': eg['reason'], 'doc_seen': eg['family'],
+                    'probability': eg['probability'], 'model_version': eg.get('model_version'),
+                    'markers': eg.get('markers'),
                 }
         elif doc.doc_type in _GENUINENESS_DOCS:   # birth_certificate/epf holistic fallback (+ any other)
             gimg = _image()

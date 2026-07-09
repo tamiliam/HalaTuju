@@ -1,11 +1,34 @@
 # Electricity-bill catalogue — categories, signatures & variables
 
+**Status: BUILT + corpus-validated + WIRED (2026-07-10).** Scorer
+`apps/scholarship/genuineness/electricity_doc.py` (`MODEL_VERSION 1.0.0`); scored at extraction →
+`vision_fields.authenticity` (vision.py, behind `DOC_GENUINENESS_CHECK_ENABLED`, already ON); the
+cockpit renders the wrong-type reject (`ApplicantDocumentSerializer.get_authenticity` allowlist —
+`not_electricity_bill` → red chip, `suspect` hidden as amber noise). **Extraction-v2** added
+`bill_date` / `account_no` / `usage_kwh` / `tariff` to the bill schema + prompt. Pairs with
+`salary-signature-model.md` and the framework in `genuineness/` (per-family `MODEL_VERSION`). **SOFT:**
+feeds the officer chip + the keep-better ranking (`_doc_genuine_rank` reads `authenticity.status`);
+it does NOT gate submission (utility bills are soft signals). **Existing bills are unscored →
+fail-open** (a re-score / re-extraction pass on the live service activates them + populates the new
+fields; never re-extract locally — `halatuju_never_reextract_locally`).
+
 **Corpus-derived 2026-07-09** from the live `applicant_documents` electricity-bill corpus (88 rows /
-68 applications, all scanned; 70 live). The authoritative reference for (a) the bill categories we
-actually see, (b) the signatures that identify a genuine bill and its category, and (c) the variable
-set — current + proposed — that a richer extraction should read. This is the design spec for the
-future utility-bill **positive genuineness fingerprint** (the noted doc-recognition gap: bills today
-have `_dedup_clean_rank` + `utility_check` but **no** signature model, no stored `authenticity`).
+68 applications, all scanned; 70 live); the signature model was calibrated on **27 of them OCR'd
+read-only** via `eval/capture_ocr.py electricity_bill` (2026-07-10) — hit-rates below are on n=27.
+This is the authoritative reference for (a) the bill categories we see, (b) the signatures that
+identify a genuine bill and its category, and (c) the variable set. Closes the utility-bill
+**positive genuineness fingerprint** gap (bills previously had `_dedup_clean_rank` + `utility_check`
+but **no** signature model / stored `authenticity`).
+
+## Scorer output on the real corpus (n=27, `MODEL_VERSION 1.0.0`)
+
+`electricity_genuineness()` over the 27 OCR'd bills: **27 genuine (tnb) · 0 suspect · 0
+not_electricity_bill** — **0 false-rejects** (every genuine bill carried a TNB issuer marker + ≥2
+field labels). The reject floor is validated on synthetic wrong-type inputs (a MyKad → reject; a
+water bill in the slot → reject `water_bill`; empty/junk → reject) and a thin myTNB screenshot (issuer
++ amount, no labels) → `suspect` (not rejected). Conservative by design (mirrors salary): a
+thin/cropped read lands in `suspect` (officer confirms), never a false `genuine` or a false reject.
+Its value is catching the **wrong-type-in-slot** case — the #47 analog for bills.
 
 ## The corpus, in one line
 
@@ -75,27 +98,32 @@ The corpus shows exactly **two** real shapes — the parser/normaliser must hand
 | **`tariff` / premise class** | `Tarif A` (domestik) vs komersial | Domestic confirms it's a *home*; commercial + company holder = the landlord case, flagged automatically. |
 | **`issuer`** | logo / header | Future-proofs East Malaysia (SESB / SESCO) if the cohort ever includes it. |
 
-## Implementation constraints (honest — read before building)
+## Remaining operational step (owner-gated)
 
-1. **The extraction stores only the 5 fields above + `capture` — no raw OCR text, no `authenticity`
-   for bills.** A signature genuineness model (scoring over text, like `genuineness/results_doc.py`)
-   AND the new variables both require the **OCR text captured + the prompt/parser extended**.
-2. That is a **re-extraction** — owner-triggered, on the **live service, NEVER local** (a local
-   re-extract has no Storage access → reads "no text" → destroys `vision_fields`;
-   see `memory/halatuju_never_reextract_locally.md`).
-3. A new `electricity_bill` fingerprint follows the `genuineness/results_doc.py` `_FAMILIES` /
-   `MODEL_VERSION` pattern → **bumps `MODEL_VERSION` → cohort re-run** (the deliberate versioned-brain
-   gate).
-4. **Normalisation is warranted regardless of the model:** billing-period separators + month language
-   (EN/Malay), and the optional `RM` prefix, are inconsistent across the corpus.
+The scorer + Extraction-v2 are **built, wired, and live in code**, but existing bills carry no
+`authenticity` and none of the new fields yet — they populate only on a fresh read. So:
 
-## Suggested build order (when the owner greenlights a sprint)
+- **Re-score / re-extraction pass on the LIVE service** (per-doc cockpit Re-run, or a batch job like
+  `reextract-offers`) activates the genuineness chip on existing bills AND populates
+  `bill_date`/`account_no`/`usage_kwh`/`tariff`. **NEVER re-extract locally** (no Storage access →
+  reads "no text" → destroys `vision_fields`; `memory/halatuju_never_reextract_locally.md`). New
+  uploads are scored + fully extracted automatically.
+- `bill_date` only starts anchoring currency (`income_engine._bill_as_of`) once a bill has been
+  (re-)extracted under Extraction-v2; until then the currency logic falls back to the period, which
+  already works (the 3-ask/6-accept window shipped 2026-07-09).
 
-1. **Extraction v2 (no MODEL_VERSION change):** add `account_no`, `bill_date`/`due_date`, `usage_kwh`,
-   `tariff` to the bill prompt/parser + a billing-period/amount normaliser. Re-extract on the live
-   service. This alone fixes the undated/stale loop (`bill_date` anchors currency) and enables the
-   high-usage query — **the highest-value, lowest-risk slice**.
-2. **Bill genuineness fingerprint (bumps MODEL_VERSION):** a `_FAMILIES['electricity_bill']` signature
-   list from the shared TNB marks above, scored over the now-captured OCR text →
-   genuine / suspect / not_electricity_bill, with the C1/C2/C3 discriminators as category tags. Cohort
-   re-run under the new version.
+## Build history
+
+- **DONE 2026-07-09 — Extraction currency fix** (separate, shipped): ask-3/accept-6 window +
+  `bill_date`-preferred currency (`_bill_as_of`), backward-compatible via the period fallback.
+- **DONE 2026-07-10 — Extraction-v2 + genuineness fingerprint** (this doc): `electricity_doc.py`
+  (`MODEL_VERSION 1.0.0`, per-family), wired at extraction + the cockpit wrong-type chip; the new
+  fields added to the schema + prompt. Calibrated on 27 live OCR'd bills (0 false-rejects).
+- **Normalisation note (still open, minor):** billing-period separators + month language (EN/Malay)
+  and the optional `RM` prefix are inconsistent across the corpus — a normaliser would tidy display;
+  the currency + scorer already tolerate the variance.
+
+<!-- superseded build order (both slices now done): the bill genuineness fingerprint (family scorer
+over the captured OCR text → genuine / suspect / not_electricity_bill) and Extraction-v2 are both
+implemented as described above. -->
+
