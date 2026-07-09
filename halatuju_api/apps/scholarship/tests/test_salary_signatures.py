@@ -1,9 +1,13 @@
 """Salary-slip signature scorer (genuineness/salary_doc.py). Synthetic OCR text only — no PII.
 Design: docs/scholarship/salary-signature-model.md."""
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
+from django.utils import timezone
 
+from apps.courses.models import StudentProfile
 from apps.scholarship.genuineness import assess
 from apps.scholarship.genuineness.salary_doc import MODEL_VERSION, salary_genuineness, score_family
+from apps.scholarship.income_engine import usable_salary_slip
+from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
 
 
 class TestSalarySignatures(SimpleTestCase):
@@ -76,3 +80,37 @@ class TestSalarySignatures(SimpleTestCase):
         r = assess('salary_slip', ocr_text='KWSP PERKESO Slip Gaji Gaji Pokok Potongan')
         self.assertEqual(r['status'], 'genuine')
         self.assertEqual(r['family'], 'private')
+
+
+class TestUsableSalarySlipGate(TestCase):
+    """The #47 fix: a salary_slip scored 'not_salary' (a MyKad in the slot) no longer satisfies the
+    income-proof requirement; unscored/genuine/suspect slips still count (fail-open)."""
+
+    def setUp(self):
+        cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        profile = StudentProfile.objects.create(supabase_user_id='s47', nric='030101-14-1234', name='X')
+        self.app = ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='profile_complete',
+            income_route='salary', income_working_members=['father'])
+
+    def _slip(self, auth_status):
+        vf = {'authenticity': {'status': auth_status}} if auth_status is not None else {}
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='father',
+            storage_path='x', vision_fields=vf, uploaded_at=timezone.now())
+
+    def test_not_salary_slip_is_not_usable(self):
+        self._slip('not_salary')
+        self.assertFalse(usable_salary_slip(self.app, 'father'))
+
+    def test_genuine_slip_is_usable(self):
+        self._slip('genuine')
+        self.assertTrue(usable_salary_slip(self.app, 'father'))
+
+    def test_suspect_informal_slip_is_usable(self):
+        self._slip('suspect')
+        self.assertTrue(usable_salary_slip(self.app, 'father'))
+
+    def test_unscored_legacy_slip_fails_open(self):
+        self._slip(None)   # no authenticity yet (the existing 100 slips)
+        self.assertTrue(usable_salary_slip(self.app, 'father'))

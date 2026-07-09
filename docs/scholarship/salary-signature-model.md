@@ -1,9 +1,14 @@
 # Salary-slip signature model — spec (design)
 
-**Status:** BUILT + corpus-validated (2026-07-09). Scorer: `apps/scholarship/genuineness/salary_doc.py`
-(`MODEL_VERSION 1.0.0`), tests `tests/test_salary_signatures.py`, dispatched from `genuineness.assess`.
-**Not yet wired into the live extraction / gate / cockpit** — that behaviour-changing step is held for
-review (see "Proposed scorer + wiring"). This is the reference the scorer is written against. Pairs
+**Status:** BUILT + corpus-validated + WIRED (2026-07-09). Scorer: `apps/scholarship/genuineness/salary_doc.py`
+(`MODEL_VERSION 1.0.0`). Live wiring: scored at extraction → `vision_fields.authenticity` (vision.py,
+behind `DOC_GENUINENESS_CHECK_ENABLED`, already ON); the #47 gate fix
+(`income_engine.usable_salary_slip` used by `member_cluster_complete` + `services.income_doc_blockers`);
+the officer cockpit chip already renders it (`officerCockpit.genuinenessFact`: not_salary→red,
+suspect→amber). **Soft:** the income verdict cap deliberately excludes the salary route
+(`verdict_engine._income_genuineness_docs`), so this NEVER auto-downgrades income — it surfaces to the
+officer + the gate only. **Existing 100 slips are unscored → fail-open** (a re-score pass activates
+them on the live service). This is the reference the scorer is written against. Pairs
 with `docs/scholarship/str-proof-spec.md`, `docs/scholarship/verdict-confidence-bands.md`, and the
 existing signature framework in `genuineness/results_doc.py` (weighted signature families →
 `score_signatures` → `bands.py`).

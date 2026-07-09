@@ -1563,7 +1563,7 @@ def income_doc_blockers(application):
     """
     from .income_engine import (working_members, relationship_doc_for,
                                 _member_ic_doc, _cluster_docs, str_not_breached,
-                                salary_income_satisfied)
+                                salary_income_satisfied, usable_salary_slip)
     route = (getattr(application, 'income_route', '') or '').strip()
     if not route:
         return ['income_incomplete']
@@ -1606,7 +1606,7 @@ def income_doc_blockers(application):
         # grouped per member to match the Documents-UI member blocks.
         if _member_ic_doc(application, m) is None:
             out.append(f'parent_ic_missing:{m}')
-        if not salary_slip_supportive and not _cluster_docs(application, m, 'salary_slip').exists():
+        if not salary_slip_supportive and not usable_salary_slip(application, m):
             out.append(f'salary_slip_missing:{m}')
         rel = relationship_doc_for(m)
         if rel == 'birth_certificate' and 'birth_certificate' not in present:

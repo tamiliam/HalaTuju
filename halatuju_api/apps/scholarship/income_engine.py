@@ -1006,6 +1006,26 @@ def str_confirmed_current(application):
     return bool(sc and sc['current_status'] == 'current')
 
 
+def _salary_slip_not_wrongtype(doc) -> bool:
+    """True unless the doc's stored genuineness says it isn't a salary slip at all ('not_salary' —
+    a MyKad/other doc in the slot, #47). FAIL-OPEN: no authenticity signal (unscored / pre-model),
+    'genuine', or 'suspect' (informal) → True. So an unscored legacy slip counts unchanged; only a
+    slip EXPLICITLY scored not_salary is excluded."""
+    from .genuineness.bands import canonical_status
+    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
+    raw = (vf.get('authenticity') or {}).get('status', '')
+    return not canonical_status(raw, 'salary_slip').startswith('not_')
+
+
+def usable_salary_slip(application, member) -> bool:
+    """A salary_slip tagged to *member* that reads as an actual payslip — the #47 fix: a doc scored
+    'not_salary' (a MyKad/other doc in the salary-slip slot) no longer satisfies the income-proof
+    requirement. SOFT: the miss becomes a Check-2 're-upload the payslip' item, never a hard trap
+    (fail-open on any doc without a not_salary signal)."""
+    return any(_salary_slip_not_wrongtype(d)
+               for d in _cluster_docs(application, member, 'salary_slip'))
+
+
 def member_cluster_complete(application, member):
     """True when this working member's salary-route income cluster is COMPLETE and COHERENT on its
     own — the unit behind the "one complete, clean earner cluster is enough to submit" gate (owner
@@ -1029,7 +1049,7 @@ def member_cluster_complete(application, member):
     icc = student_income_ic_check(ic)
     if not icc or not icc.get('readable') or icc.get('name_status') != 'match':
         return False
-    if not (_cluster_docs(application, member, 'salary_slip').exists() or str_not_breached(application)):
+    if not (usable_salary_slip(application, member) or str_not_breached(application)):
         return False
     for p in _cluster_docs(application, member, 'salary_slip'):
         pc = student_income_proof_check(p)

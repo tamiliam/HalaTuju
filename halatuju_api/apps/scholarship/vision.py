@@ -1917,18 +1917,24 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                        if 'probability' in auth else {}),
                 }
         elif doc.doc_type == 'salary_slip':
-            # No POSITIVE payslip fingerprint yet (layouts too varied — a full signature list is
-            # future work). LIGHT NEGATIVE backstop: if the doc in the salary-slip slot reads
-            # UNAMBIGUOUSLY as a DIFFERENT known document (an EPF statement, BC, results slip, STR),
-            # flag not_salary_slip so the officer gets a wrong-type chip. Text-only + deterministic;
-            # a genuine payslip matches no other family → no signal. A failed/empty OCR = no signal.
-            from .genuineness.results_doc import misfiled_as
+            # POSITIVE signature scorer (salary_doc.py, MODEL_VERSION 1.0.0) over the OCR text —
+            # statutory payroll grammar, not a letterhead → genuine {private/govt/singapore/gig} /
+            # suspect {informal: wage labels, no scaffold} / not_salary {MyKad-in-slot (#47) or no
+            # payslip fields}. Subsumes the old misfiled_as backstop. Text-only + deterministic; a
+            # failed/empty OCR yields NO signal (never penalise our own read failure — an empty read
+            # must NOT persist as 'not_salary'). SOFT: the income verdict cap ignores the salary
+            # route (verdict_engine._income_genuineness_docs); this feeds the officer chip + the
+            # submission gate's usable-salary-slip check only.
+            from .genuineness.salary_doc import salary_genuineness
             rr = ocr if ocr is not None else ocr_document(doc)
             text = (rr or {}).get('text', '') or ''
             if text.strip() and not (rr or {}).get('error'):
-                mis = misfiled_as('salary_slip', text)
-                if mis:
-                    result['authenticity'] = mis
+                sg = salary_genuineness(text)
+                result['authenticity'] = {
+                    'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['family'],
+                    'probability': sg['probability'], 'model_version': sg.get('model_version'),
+                    'markers': sg.get('markers'),
+                }
         elif doc.doc_type in _GENUINENESS_DOCS:   # birth_certificate/epf holistic fallback (+ any other)
             gimg = _image()
             if gimg is not None:
