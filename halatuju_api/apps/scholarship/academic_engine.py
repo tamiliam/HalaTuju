@@ -404,6 +404,85 @@ def parse_spm_slip(words):
             'results': results, 'skew_angle': skew, '_debug_rows': debug}
 
 
+# ── Deterministic parse of an SPM CERTIFICATE (sijil) ──────────────────────────
+# The certificate (sijil) differs from the results SLIP in layout: OCR flattens it into a SUBJECT
+# block and a SEPARATE GRADE block (paired by index), NOT subject+grade per row — so the slip's
+# per-row parser (`parse_spm_slip`) recovers zero rows (subject rows have no band, grade rows have
+# no subject) and bails. This reads the two blocks and pairs them positionally. Self-identifying
+# (the 'layak dianugerahi' award phrase, unique to the cert), so it runs for ANY student — an STPM
+# student's SPM cert included — independent of the profile exam_type gate. CONSERVATIVE: returns
+# None (→ Gemini) unless the subject and grade blocks are equal-length and ≥3, since a mis-paired
+# read is worse than deferring. The exam YEAR sits at the FOOT of a cert ('Peperiksaan Tahun YYYY').
+_CERT_MARKER = 'LAYAK DIANUGERAHI'
+_NRIC_RE = re.compile(r'\b(\d{6}-\d{2}-\d{4})\b')
+_CERT_GRADE_RE = re.compile(r'^\s*([A-G][+-]?)\s*(?:\(|$)')   # 'A- (CEMERLANG)' or a split bare 'B'
+_GRADE_HDR_RE = re.compile(r'^\s*GR[EA]D', re.IGNORECASE)      # 'Gred' / 'Grade' column header
+_ORAL_PREFIXES = ('UJIAN LISAN', 'TAHAP', 'JUMLAH', 'PEPERIKSAAN', 'SALINAN')
+
+
+def parse_spm_cert(text: str):
+    """SPM CERTIFICATE OCR text → ``{candidate_name, nric, exam, results:[{subject,grade,band}]}``
+    or **None** to fall back to Gemini. Pure + deterministic; never raises."""
+    up = (text or '').upper()
+    if _CERT_MARKER not in up or 'SIJIL PELAJARAN MALAYSIA' not in up:
+        return None
+    lines = [ln.strip() for ln in (text or '').splitlines() if ln.strip()]
+
+    # Name: the first top-area line carrying a parentage marker (A/L, A/P, bin, binti), no digits.
+    name = next((ln for ln in lines[:14]
+                 if _SLIP_NAME_MARKER.search(ln) and not any(c.isdigit() for c in ln)), '')
+    # NRIC: the FIRST 12-digit IC — the candidate's, above the witness/endorser block.
+    nm = _NRIC_RE.search(text or '')
+    nric = nm.group(1) if nm else ''
+    # Exam + year: the cert prints its year at the foot ('Peperiksaan Tahun YYYY').
+    ym = re.search(r'PEPERIKSAAN\s+TAHUN\s+(20\d{2})', up) or re.search(r'\b(20\d{2})\b', up)
+    exam = f'SIJIL PELAJARAN MALAYSIA TAHUN {ym.group(1)}' if ym else 'SIJIL PELAJARAN MALAYSIA'
+
+    gi = next((i for i, ln in enumerate(lines) if _GRADE_HDR_RE.match(ln)), None)
+    # Subjects: known SPM subjects BEFORE the grade header; stop at the oral/CEFR/total lines so an
+    # oral line ('Ujian Lisan Bahasa Melayu') can't inject a duplicate/out-of-order subject.
+    subjects, seen = [], set()
+    for ln in (lines[:gi] if gi is not None else lines):
+        if ln.upper().startswith(_ORAL_PREFIXES):
+            break
+        s = _match_known_subject(ln)
+        if s and s not in seen:
+            seen.add(s)
+            subjects.append(s)
+    # Grades: lines AFTER the grade header starting with a grade letter ('A- (…)' or a split bare
+    # 'B'); skip the oral/CEFR lines + band-only continuation lines ('(Kepujian Tinggi)').
+    grades = []
+    for ln in (lines[gi + 1:] if gi is not None else []):
+        if ln.upper().startswith(_ORAL_PREFIXES):
+            continue
+        m = _CERT_GRADE_RE.match(ln)
+        if m:
+            grades.append(_norm_grade(m.group(1)))
+
+    if len(subjects) < 3 or len(subjects) != len(grades):
+        return None
+    results = [{'subject': s, 'grade': g, 'band': _GRADE_TO_BAND.get(g, '')}
+               for s, g in zip(subjects, grades)]
+    return {'candidate_name': name, 'nric': nric, 'exam': exam, 'results': results}
+
+
+def ensure_exam_year(exam: str, text: str) -> str:
+    """Return ``exam`` with the SPM year folded in, sourced from the OCR ``text`` when the field
+    itself lacks it. A CERTIFICATE prints its year at the FOOT ('Peperiksaan Tahun YYYY'), which the
+    Gemini image reader's ``exam`` field routinely drops (it captures the title only) — so the
+    exam-year chip silently vanished on certs. Idempotent: returns ``exam`` unchanged when it already
+    carries a 20xx year or no year is found. Used on the Gemini fallback path in vision.py."""
+    if re.search(r'\b20\d{2}\b', exam or ''):
+        return exam
+    m = (re.search(r'PEPERIKSAAN\s+TAHUN\s+(20\d{2})', (text or '').upper())
+         or re.search(r'\b(20\d{2})\b', text or ''))
+    if not m:
+        return exam
+    year = m.group(1)
+    return f'{exam} TAHUN {year}'.strip() if (exam and 'SIJIL' in exam.upper()) \
+        else f'SIJIL PELAJARAN MALAYSIA TAHUN {year}'
+
+
 def read_slip(doc) -> dict:
     """Pull subject names + grades out of a results_slip's doc-assist fields.
 

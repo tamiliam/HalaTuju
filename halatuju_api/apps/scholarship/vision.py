@@ -1789,19 +1789,35 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
     pre_words = _o.get('words')                 # None = not computed (compute if needed)
     if doc.doc_type == 'results_slip':
         image = _image()
-        ex, diag = _extract_slip_deterministic(doc, image, words=pre_words)   # OCR-first (SPM); None → Gemini
-        if ex is None:
-            if image is not None:
-                ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
-            else:
-                r = ocr if ocr is not None else ocr_document(doc)
-                ex = extract_document_fields(r.get('text', ''), doc.doc_type)
-            ex['capture'] = 'ai'
-            # Record WHY we fell back (+ what Vision read) so the slip can be diagnosed.
-            if isinstance(ex.get('fields'), dict):
-                ex['fields']['_slip_ocr_diag'] = diag
+        from .academic_engine import parse_spm_cert, ensure_exam_year
+        # OCR text for the CERTIFICATE parse (the slip parse below reads word boxes). Prefer the text
+        # from the single ocr_document_full read on the upload path; else fetch it once.
+        _text = _o.get('text')
+        if _text is None:
+            _r = ocr if ocr is not None else ocr_document(doc)
+            _text = (_r or {}).get('text', '') or ''
+        # CERTIFICATE first — self-identifying ('layak dianugerahi'), so it runs for ANY student
+        # (an STPM student's SPM cert included), NOT gated on the profile exam_type. The cert's
+        # subject/grade blocks are read positionally by parse_spm_cert (the per-row slip parser can't).
+        cert = parse_spm_cert(_text)
+        if cert is not None:
+            ex = {'fields': cert, 'warnings': [], 'error': '', 'capture': 'deterministic'}
         else:
-            ex['capture'] = 'deterministic'
+            ex, diag = _extract_slip_deterministic(doc, image, words=pre_words)  # OCR-first (SPM slip); None → Gemini
+            if ex is None:
+                if image is not None:
+                    ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
+                else:
+                    ex = extract_document_fields(_text, doc.doc_type)
+                ex['capture'] = 'ai'
+                # Record WHY we fell back (+ what Vision read) so the slip can be diagnosed.
+                if isinstance(ex.get('fields'), dict):
+                    ex['fields']['_slip_ocr_diag'] = diag
+                    # Backfill the exam YEAR from the OCR text — Gemini's `exam` field drops a
+                    # certificate's foot-of-page year, silently killing the exam-year chip.
+                    ex['fields']['exam'] = ensure_exam_year(ex['fields'].get('exam', ''), _text)
+            else:
+                ex['capture'] = 'deterministic'
     elif doc.doc_type == 'offer_letter':
         # The offer's 2-D label/value layout doesn't survive flattened OCR (labels and values
         # land in separate blocks), so read the IMAGE with Gemini for the per-pathway fields;
