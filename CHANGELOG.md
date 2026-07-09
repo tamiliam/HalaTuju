@@ -38,6 +38,14 @@ All notable changes to this project will be documented in this file.
   (they are re-collapsed to the best live copy by `dedupe_income_proof` after promotion, so they already
   keep-better downstream). New `TestOfferDocQuality` (4) + existing keep-better/circuit-breaker suites
   unchanged. 2240 pytest.
+- **results_slip / semester_result field-completeness (observe-in-practice).** `promotion.doc_quality`
+  gains a `(usable, genuine, completeness, id)` axis for these two also-un-deduped types, where
+  `completeness` = subjects/grades read (`read_slip`) or of-3 core fields name/nric/cgpa (`semester_check`).
+  Phase 2's usable-gate already keeps a live slip when a re-upload is *unreadable*; this handles the
+  narrower case it misses — two BOTH-usable slips where one captured more of the document, so a fuller
+  live slip isn't displaced by a thinner (e.g. cropped) but still-usable re-upload on the id tiebreak.
+  A soft tiebreak within usable+genuine, never a gate (officer overrides). NON-signature, no migration.
+  Caveat to watch: a noisy OCR read could inflate the subject count. New `TestSlipDocQuality` (4). 2244 pytest.
 
 ## Phase 2: document upload — stage → judge → promote-only-if-better — 2026-07-09
 

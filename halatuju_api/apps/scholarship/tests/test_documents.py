@@ -1269,3 +1269,49 @@ class TestOfferDocQuality(SimpleTestCase):
         newer_good = _FakeOffer(9, status='genuine')
         with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
             self.assertTrue(promotion.should_promote(newer_good, live, usable=True))
+
+
+class _FakeSlip:
+    """A results / semester slip stand-in carrying only the extraction the completeness read
+    touches (``read_slip`` / ``semester_check`` both read ``vision_fields`` + a truthy verdict)."""
+
+    def __init__(self, doc_id, doc_type='results_slip', fields=None):
+        self.doc_type = doc_type
+        self.id = doc_id
+        self.application = None       # semester_check tolerates a profile-less doc (→ 'no_ref')
+        self.vision_fields = {'fields': fields or {}, 'student_verdict': 'ok', 'authenticity': {}}
+
+
+class TestSlipDocQuality(SimpleTestCase):
+    """promotion.doc_quality for results_slip / semester_result (Phase 3): a FULLER slip beats a
+    thinner but equally usable+genuine one — the case Phase 2's usable-gate misses (both read enough
+    to be 'ok'). doc_match_verdict patched to 'ok' so completeness is isolated."""
+
+    def _q(self, doc):
+        from apps.scholarship import promotion
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
+            return promotion.doc_quality(doc)
+
+    def test_fuller_results_slip_outranks_thinner(self):
+        thin = self._q(_FakeSlip(9, fields={'subjects': ['BM', 'BI', 'MATH']}))
+        full = self._q(_FakeSlip(1, fields={'subjects': ['BM', 'BI', 'MATH', 'SEJ', 'SAINS']}))
+        self.assertGreater(full, thin)
+
+    def test_graded_read_breaks_a_subject_tie(self):
+        names_only = self._q(_FakeSlip(9, fields={'subjects': ['BM', 'BI', 'MATH']}))
+        with_grades = self._q(_FakeSlip(1, fields={'results': [
+            {'subject': 'BM', 'grade': 'A'}, {'subject': 'BI', 'grade': 'B'}, {'subject': 'MATH', 'grade': 'A'}]}))
+        self.assertGreater(with_grades, names_only)
+
+    def test_live_fuller_slip_kept_over_newer_thinner(self):
+        from apps.scholarship import promotion
+        live = _FakeSlip(1, fields={'subjects': ['BM', 'BI', 'MATH', 'SEJ', 'SAINS']})
+        newer_thin = _FakeSlip(9, fields={'subjects': ['BM', 'BI']})
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
+            self.assertFalse(promotion.should_promote(newer_thin, live, usable=True))
+
+    def test_fuller_semester_result_outranks(self):
+        one = self._q(_FakeSlip(9, doc_type='semester_result', fields={'name': 'AISYAH'}))
+        three = self._q(_FakeSlip(1, doc_type='semester_result',
+                                  fields={'name': 'AISYAH', 'nric': '030101-14-1234', 'cgpa': '3.75'}))
+        self.assertGreater(three, one)

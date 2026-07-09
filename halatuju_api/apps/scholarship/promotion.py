@@ -30,6 +30,31 @@ are all themselves pure doc-local reads.
 # ``dedupe_income_proof`` AFTER promotion, so the generic proxy is sufficient for them here.
 _OFFER_OFFICIAL_RANK = {'genuine': 2, 'unknown': 1, 'not_genuine': 0}
 
+# results_slip / semester_result are ALSO un-deduped (not in `_DEDUP_DOC_TYPES`), so promotion is
+# their only keep-better. Phase 2's usable-gate already keeps a live slip when a re-upload is
+# unreadable (its name / subject table / CGPA didn't read → `doc_match_verdict` unreadable/pending →
+# not usable). This axis handles the NARROWER case the gate misses: TWO both-usable slips where one
+# captured MORE of the document — so a fuller live slip isn't silently displaced by a thinner (e.g.
+# cropped) but still-usable re-upload on the id tiebreak. NON-signature (field counts), so no
+# MODEL_VERSION bump. Caveat to watch in practice: a noisy OCR read could inflate the subject count,
+# so this is a soft tiebreak within usable+genuine, never a gate — the officer still overrides.
+
+
+def _slip_completeness(doc):
+    """Field-completeness for a results/semester slip (HIGHER = more of the document captured).
+    Sits in the recency slot of the generic proxy (slips have no billing date). Pure — reads the
+    stored extraction only (``read_slip`` / ``semester_check`` never query ``.documents``)."""
+    dt = getattr(doc, 'doc_type', '')
+    if dt == 'results_slip':
+        from .academic_engine import read_slip
+        s = read_slip(doc)
+        return (len(s.get('names') or []), len(s.get('grades') or {}))   # subjects read, then graded
+    if dt == 'semester_result':
+        from .academic_engine import semester_check
+        c = semester_check(doc) or {}
+        return (sum(1 for k in ('name', 'nric', 'cgpa') if (c.get(k) or '').strip()),)  # of 3 core fields
+    return (0,)
+
 
 def _offer_quality(doc):
     """Quality axis for an offer letter (HIGHER better): officialness first, then a validated
@@ -48,6 +73,9 @@ def doc_quality(doc):
       * STR → the currency/source ladder (``str_proof_quality``).
       * offer_letter → ``(usable, official_rank, reporting_bonus, id)`` — a genuine OFFICIAL offer
         beats a conditional/private/pemakluman one (``_offer_quality``); see the note above.
+      * results_slip / semester_result → ``(usable, genuine, completeness, id)`` — a fuller slip
+        (more subjects/grades, or more of name/nric/cgpa) beats a thinner but equally usable+genuine
+        one (``_slip_completeness``); see the note above.
       * every other type → a proxy ``(usable, genuine, recency, id)``: a readable + correct +
         right-person doc (``doc_match_verdict == 'ok'``) beats an unreadable/wrong one; a genuine
         beats a suspect (``_doc_genuine_rank``); a newer dated income/utility doc breaks the tie
@@ -64,6 +92,8 @@ def doc_quality(doc):
     if dt == 'offer_letter':
         return (usable,) + _offer_quality(doc)
     genuine = income_engine._doc_genuine_rank(doc)
+    if dt in ('results_slip', 'semester_result'):
+        return (usable, genuine, _slip_completeness(doc), getattr(doc, 'id', 0) or 0)
     recency = income_engine._income_doc_recency(doc) or (0, 0)
     return (usable, genuine, recency, getattr(doc, 'id', 0) or 0)
 
