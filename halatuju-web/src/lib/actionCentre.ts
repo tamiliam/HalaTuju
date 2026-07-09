@@ -290,9 +290,17 @@ export function confirmTargetFor(fact: string): ConfirmTarget {
   return 'documents'
 }
 
+/** True when the circuit-breaker (Phase 2) escalated this doc-request to a human after repeated
+ *  not-usable re-uploads: the loop is stopped, the best copy is kept live, and the student should
+ *  see a calm "we're reviewing this" state instead of the upload prompt. Stamped in `params` by
+ *  `views._flag_needs_officer_eye`. */
+export function needsOfficerEye(item: Pick<ResolutionItem, 'params'>): boolean {
+  return item.params?.needs_officer_eye === true
+}
+
 /** Convert ticket params (string|number values) to the string map `t()` wants. */
 export function paramsToStrings(
-  params: Record<string, string | number> | undefined | null,
+  params: Record<string, string | number | boolean> | undefined | null,
 ): Record<string, string> {
   const out: Record<string, string> = {}
   if (!params) return out
@@ -307,7 +315,7 @@ export function paramsToStrings(
  * officer verdict tile so a member-tagged income gap reads naturally in en/ms/ta.
  */
 export function localiseParams(
-  params: Record<string, string | number | string[]> | undefined | null,
+  params: Record<string, string | number | boolean | string[]> | undefined | null,
   t: (key: string) => string,
 ): Record<string, string> {
   const out: Record<string, string> = {}

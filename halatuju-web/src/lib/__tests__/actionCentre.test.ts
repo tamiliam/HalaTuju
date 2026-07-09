@@ -11,6 +11,7 @@ import {
   sortByWeight,
   clusterMemberOf,
   latestDocFor,
+  needsOfficerEye,
   KNOWN_CODES,
   countDigits,
 } from '@/lib/actionCentre'
@@ -237,6 +238,23 @@ describe('localiseParams', () => {
   it('handles null/undefined', () => {
     expect(localiseParams(undefined, t)).toEqual({})
     expect(localiseParams(null, t)).toEqual({})
+  })
+})
+
+describe('needsOfficerEye (circuit-breaker escalation, Phase 4)', () => {
+  it('true only when the flag is boolean-true', () => {
+    expect(needsOfficerEye(item({ params: { needs_officer_eye: true } }))).toBe(true)
+  })
+
+  it('false for a normal open task (no flag)', () => {
+    expect(needsOfficerEye(item())).toBe(false)
+    expect(needsOfficerEye(item({ params: { attempts: 2 } }))).toBe(false)
+  })
+
+  it('false for a non-boolean or falsy value (never a truthy-string trap)', () => {
+    // A JSON false round-trips as a boolean; a stray string must not read as escalated.
+    expect(needsOfficerEye(item({ params: { needs_officer_eye: false } }))).toBe(false)
+    expect(needsOfficerEye(item({ params: { needs_officer_eye: 'true' } }))).toBe(false)
   })
 })
 

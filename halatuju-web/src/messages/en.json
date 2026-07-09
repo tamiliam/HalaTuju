@@ -2169,6 +2169,11 @@
         "sameFile": "We received your upload — but it's the same document as before, so it doesn't change anything. Please read the instruction below carefully and send the specific page we're asking for.",
         "keptPrevious": "We received your upload, but it doesn't show what we need — so we've kept your earlier document on file (it was stronger). Please read the instruction below and send the specific page we're asking for.",
         "notAccepted": "We received your upload, but it isn't the page we asked for, so this is still open. Please read the instruction below carefully and send that specific page."
+      },
+      "officerHold": {
+        "chip": "We're reviewing this",
+        "title": "We're looking into this with our team",
+        "body": "Thank you — we've received what you sent. Our team is now checking this personally, so there's nothing more you need to upload here for now. We'll be in touch if we need anything else."
       }
     },
     "summary": {
@@ -3578,7 +3583,9 @@
         "itemOne": "item",
         "itemMany": "items",
         "overflow": "{n} more question(s) queued — asked automatically once the current ones are answered or waived.",
-        "empty": "Nothing outstanding — all student tasks are clear."
+        "empty": "Nothing outstanding — all student tasks are clear.",
+        "hold": "Hold — needs a person",
+        "holdTip": "The student re-uploaded several times without a usable document. The loop was stopped and their best copy kept live — please review this one personally."
       },
       "docsDrawer": {
         "title": "Documents",

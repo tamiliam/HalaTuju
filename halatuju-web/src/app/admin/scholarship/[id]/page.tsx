@@ -1418,6 +1418,20 @@ export default function AdminScholarshipDetailPage() {
                               <span className="ml-0.5 rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 align-middle">{item.fact}</span>
                               {' '}
                               <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 align-middle">{item.kind}</span>
+                              {/* Circuit-breaker (Phase 2/4): the student re-uploaded past the limit
+                                  without a usable doc — the loop was stopped and their best copy kept
+                                  live. A HOLD for a human, not an auto-resolve. */}
+                              {item.params?.needs_officer_eye === true && (
+                                <>
+                                  {' '}
+                                  <span
+                                    title={t('admin.scholarship.outstanding.holdTip')}
+                                    className="rounded bg-orange-100 px-1.5 py-0.5 text-[11px] font-semibold text-orange-700 align-middle"
+                                  >
+                                    {t('admin.scholarship.outstanding.hold')}
+                                  </span>
+                                </>
+                              )}
                             </p>
                             {detail && (
                               <p className="mt-1 text-xs text-gray-500 break-words">{detail}</p>

@@ -1947,8 +1947,9 @@ export interface ResolutionItem {
   id: number
   fact: string
   code: string
-  // string[] supports the income reason codes' `members` list (e.g. ['father','brother']).
-  params: Record<string, string | number | string[]>
+  // string[] supports the income reason codes' `members` list (e.g. ['father','brother']);
+  // boolean supports flags like `needs_officer_eye` (the circuit-breaker escalation).
+  params: Record<string, string | number | boolean | string[]>
   prompt: string
   // 'clarify'/'human' added by Check 2 STEP 2 (an AI student query / a reviewer-only item).
   kind: 'doc' | 'confirm' | 'explanation' | 'clarify' | 'human'

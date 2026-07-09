@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## Phase 4: circuit-breaker escalation surface (needs_officer_eye) — 2026-07-09
+
+### Added
+- **The Phase-2 circuit-breaker now has a visible half.** When a student re-uploads past
+  `DOC_STAGE_MAX_ATTEMPTS` without a usable document, the backend already stamps
+  `needs_officer_eye` on the open doc-request; the frontend now reads it (already exposed on
+  `ResolutionItemSerializer.params` — no backend change):
+  - **Student Action Centre** swaps the upload-loop card for a calm blue "We're looking into this
+    with our team" state — no upload button, no coach, no retry note — so a genuine student is
+    never trapped re-uploading. (`ActionCentre.tsx`, pure helper `needsOfficerEye`, jest-tested.)
+  - **Officer cockpit** shows an orange **"Hold — needs a person"** chip (with a tooltip) on the
+    Check-2 Outstanding item, so the reviewer knows the loop was stopped and the best copy kept live.
+- New i18n `scholarship.actionCentre.officerHold.*` + `admin.scholarship.outstanding.hold`/`holdTip`
+  (en/ms; Tamil first-draft). `params` types widened to carry the boolean flag. FE-only, no migration.
+  487 jest. Reason-aware coaching for the keep-better path was already delivered (the `retry.*`
+  acknowledgement notes + the verdict-keyed doc coach).
+
 ## Phase 3: per-doc quality — offer-letter officialness in the promote decision — 2026-07-09
 
 ### Changed

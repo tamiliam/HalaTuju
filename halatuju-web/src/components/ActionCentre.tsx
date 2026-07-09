@@ -37,6 +37,7 @@ import {
   sortByWeight,
   clusterMemberOf,
   latestDocFor,
+  needsOfficerEye,
   type ActionIcon,
   type ConfirmTarget,
   countDigits,
@@ -270,6 +271,33 @@ function ActionCard({
                 {t('scholarship.actionCentre.done')}
               </span>
             </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Circuit-breaker (Phase 2/4): after repeated not-usable re-uploads the loop was stopped and this
+  // request handed to a person. Swap the upload prompt for a calm "we're reviewing this" state — no
+  // upload button, no coach, no retry note — so a genuine student is never trapped re-uploading.
+  if (needsOfficerEye(item)) {
+    return (
+      <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500">
+            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-gray-400">{fromLabel}</p>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="font-semibold text-gray-900">{t('scholarship.actionCentre.officerHold.title')}</h3>
+              <span className="shrink-0 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-blue-800">
+                {t('scholarship.actionCentre.officerHold.chip')}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-gray-600">{t('scholarship.actionCentre.officerHold.body')}</p>
           </div>
         </div>
       </div>

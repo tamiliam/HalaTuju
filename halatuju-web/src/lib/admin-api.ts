@@ -633,7 +633,8 @@ export interface AdminResolutionItem {
   id: number
   fact: string
   code: string
-  params: Record<string, string | number | string[]>
+  // boolean supports flags like `needs_officer_eye` (the circuit-breaker escalation).
+  params: Record<string, string | number | boolean | string[]>
   prompt: string
   kind: 'doc' | 'confirm' | 'explanation'
   doc_type: string
