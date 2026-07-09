@@ -114,3 +114,11 @@ class TestUsableSalarySlipGate(TestCase):
     def test_unscored_legacy_slip_fails_open(self):
         self._slip(None)   # no authenticity yet (the existing 100 slips)
         self.assertTrue(usable_salary_slip(self.app, 'father'))
+
+    def test_serializer_surfaces_wrongtype_only(self):
+        # The cockpit chip: a not_salary slip surfaces (red 'wrong document'); a genuine or informal
+        # (suspect) slip is hidden — no amber noise on a genuine B40 family's informal payslip.
+        from apps.scholarship.serializers import ApplicantDocumentSerializer as S
+        self.assertTrue(S(self._slip('not_salary')).data['authenticity']['status'].startswith('not_'))
+        self.assertIsNone(S(self._slip('genuine')).data['authenticity'])
+        self.assertIsNone(S(self._slip('suspect')).data['authenticity'])

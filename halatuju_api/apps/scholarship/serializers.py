@@ -711,7 +711,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         IC/parent_ic (Sprint 1) + the standardised supporting docs (Sprint 2: STR, results
         slip, birth cert, EPF). Null when the check didn't run (flag off / AI outage)."""
         if obj.doc_type not in ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf',
-                                'offer_letter'):
+                                'offer_letter', 'salary_slip'):
             return None
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         auth = vf.get('authenticity')
@@ -720,7 +720,15 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         from .genuineness.bands import canonical_status
         # Expose the CANONICAL outcome (genuine / suspect / not_<type>), folding any legacy
         # stored value, so the FE renders one consistent vocabulary across all document types.
-        return {'status': canonical_status(auth.get('status'), obj.doc_type),
+        status = canonical_status(auth.get('status'), obj.doc_type)
+        # Salary slip (MODEL_VERSION 1.0.0): surface ONLY the WRONG-TYPE reject (not_salary — a MyKad
+        # or other document in the salary-slip slot, #47) → the red "wrong document" chip. The informal
+        # 'suspect' band (a genuine but weakly-verifiable slip, common for real B40 families) would be
+        # amber noise, so a genuine/suspect slip renders normally (no chip). Mirrors how a genuine EPF
+        # shows nothing while a not_epf shows the wrong-type chip.
+        if obj.doc_type == 'salary_slip' and not status.startswith('not_'):
+            return None
+        return {'status': status,
                 'reason': auth.get('reason', ''), 'doc_seen': auth.get('doc_seen', '')}
 
     def get_academic_check(self, obj):
