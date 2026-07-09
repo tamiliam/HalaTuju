@@ -1881,16 +1881,22 @@ export default function AdminScholarshipDetailPage() {
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${pillClass(p)}`}>
                       {t(`admin.scholarship.docsDrawer.pill.${p}`)}
                     </span>
-                    {/* Capture confidence: was this read deterministically (fixed labels) or by AI? */}
-                    {d.vision_fields?.capture && (
-                      <span
-                        title={t(`admin.scholarship.docsDrawer.capture.${d.vision_fields.capture}.hint`)}
-                        className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
-                          d.vision_fields.capture === 'deterministic'
-                            ? 'bg-slate-100 text-slate-500' : 'bg-violet-50 text-violet-500'}`}>
-                        {t(`admin.scholarship.docsDrawer.capture.${d.vision_fields.capture}.label`)}
-                      </span>
-                    )}
+                    {/* Capture confidence: read deterministically (fixed labels) or by AI? Shown on
+                        every FIELD-EXTRACTED doc; an untagged older extraction (no `capture` recorded)
+                        defaults to 'ai' — the safe "please verify" label — so no doc is ever unlabelled.
+                        Docs with no `fields` (IC/parent_ic, read via a different path) get no badge. */}
+                    {d.vision_fields?.fields && (() => {
+                      const cap = d.vision_fields.capture === 'deterministic' ? 'deterministic' : 'ai'
+                      return (
+                        <span
+                          title={t(`admin.scholarship.docsDrawer.capture.${cap}.hint`)}
+                          className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
+                            cap === 'deterministic'
+                              ? 'bg-slate-100 text-slate-500' : 'bg-violet-50 text-violet-500'}`}>
+                          {t(`admin.scholarship.docsDrawer.capture.${cap}.label`)}
+                        </span>
+                      )
+                    })()}
                   </div>
                   {d.original_filename && (
                     <p className="text-[11px] text-gray-400 truncate max-w-[230px]" title={d.original_filename}>
