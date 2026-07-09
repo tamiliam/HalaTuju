@@ -372,6 +372,30 @@ describe('documentFacts', () => {
     expect(documentFacts(doc({ doc_type: 'str' }))).toEqual([])
   })
 
+  it('electricity bill scored not_electricity_bill → red "Wrong type" chip + capped reads', () => {
+    // The #83 case: a water bill (or MyKad/junk) in the electricity slot. The genuineness scorer
+    // returns not_electricity_bill → the same red wrongType chip every other doc shows, and the
+    // utility reads (off the wrong document) are capped red.
+    const util = { name: '', address: '', monthly_bill: '', unpaid_balance: '', address_status: 'found',
+      current_status: 'current', reasonable_status: 'reasonable', reasonable_detail: '',
+      outstanding_status: '', name_note: '' } as NonNullable<AdminApplicantDocument['utility_check']>
+    const facts = documentFacts(doc({ doc_type: 'electricity_bill', utility_check: util,
+      authenticity: { status: 'not_electricity_bill', reason: 'water bill in the slot' } }))
+    expect(facts.find((f) => f.key === 'wrongType')?.status).toBe('not')
+    expect(facts.find((f) => f.key === 'address')?.status).toBe('not')   // capped — read off the wrong doc
+    expect(facts.find((f) => f.key === 'current')?.status).toBe('not')
+  })
+
+  it('electricity bill scored genuine → no chip (renders normally)', () => {
+    const util = { name: '', address: '', monthly_bill: '', unpaid_balance: '', address_status: 'found',
+      current_status: 'current', reasonable_status: 'reasonable', reasonable_detail: '',
+      outstanding_status: '', name_note: '' } as NonNullable<AdminApplicantDocument['utility_check']>
+    const facts = documentFacts(doc({ doc_type: 'electricity_bill', utility_check: util,
+      authenticity: { status: 'genuine', reason: '' } }))
+    expect(facts.some((f) => f.key === 'wrongType')).toBe(false)
+    expect(facts.find((f) => f.key === 'address')?.status).toBe('verified')
+  })
+
   it('offer letter: a genuine official offer keeps Pathway green and no Official flag', () => {
     const facts = documentFacts(doc({ doc_type: 'offer_letter',
       pathway_check: pathCheck({ name: 'match', ic: 'match', pathway: 'match' }),

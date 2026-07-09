@@ -545,21 +545,26 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   }
   if (dt === 'water_bill' || dt === 'electricity_bill') {
     const c = doc.utility_check
-    if (!c) return []
+    // A WRONG-TYPE upload (electricity_bill scored `not_electricity_bill` — a water bill / MyKad /
+    // junk in the slot) shows the red "Wrong type" chip like every other doc, even if utility_check
+    // read some fields off the wrong document (those reads are then capped red / dropped).
+    if (!c) return gf ? [gf] : []
     // Address · Current · Reasonable always; Outstanding only when arrears > the charge
     // (a real hardship signal, shown green). 'current'/'stale'/'unknown' map through
-    // factStatus directly (current→green, stale→amber, unknown→grey).
+    // factStatus directly (current→green, stale→amber, unknown→grey). Capped red when the
+    // genuineness fact is wrong-type — the reads came off the wrong document.
     const facts: DocumentFactLabel[] = [
-      { key: 'address', status: addressFactStatus(c.address_status) },
-      { key: 'current', status: factStatus(c.current_status) },
-      { key: 'reasonable', status: reasonableStatus(c.reasonable_status) },
+      { key: 'address', status: cap ? 'not' : addressFactStatus(c.address_status) },
+      { key: 'current', status: cap ? 'not' : factStatus(c.current_status) },
+      { key: 'reasonable', status: cap ? 'not' : reasonableStatus(c.reasonable_status) },
     ]
-    if (c.outstanding_status === 'arrears') {
+    if (!cap && c.outstanding_status === 'arrears') {
       facts.push({ key: 'outstanding', status: 'verified' })
     }
+    if (gf) facts.push(gf)
     return facts
   }
-  return []
+  return gf ? [gf] : []
 }
 
 // ── Document pill (the row's aggregate badge) ────────────────────────────────

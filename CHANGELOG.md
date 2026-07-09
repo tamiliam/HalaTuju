@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit: wrong-type electricity bill shows the red "Wrong type" chip — 2026-07-10
+
+### Fixed
+- **A `not_electricity_bill` bill now shows the red "Wrong type" chip in the officer cockpit** (like
+  every other doc type). `officerCockpit.documentFacts` had one gap: the utility branch was the only
+  doc-type branch that never pushed the genuineness fact (`gf`), so a water bill / MyKad / junk in the
+  electricity slot computed the red `wrongType` chip but silently dropped it — the row just rolled up
+  to amber "Check". The utility branch now pushes `gf` and caps its Address/Current/Reasonable reads
+  red when wrong-type (they came off the wrong document), identical to the salary/EPF/IC branches.
+  Verified on #83 (a PBA water bill uploaded into the electricity slot). +2 jest (489 total).
+
 ## Electricity-bill genuineness signature model + Extraction-v2 — 2026-07-10
 
 ### Added
