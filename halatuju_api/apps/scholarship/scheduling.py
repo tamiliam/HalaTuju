@@ -444,6 +444,64 @@ def cancel(application, *, by='student', reason='', now=None):
     return application
 
 
+def release_for_unassign(application, *, now=None):
+    """Tear down interview artefacts when the assigned reviewer is REMOVED
+    (services.assign_reviewer with reviewer=None). Mirrors cancel()'s teardown but is
+    reviewer-initiated: a BOOKED interview is voided (Meet cancelled, booking cleared) and
+    both the student and the OUTGOING reviewer are notified; if times were only PROPOSED
+    (active slots, nothing booked) they are withdrawn quietly (the student never committed,
+    so no notice). Any pending 'ask for other times' request is cleared. Best-effort on the
+    Google/email side — never blocks the unassignment. MUST run BEFORE application.assigned_to
+    is cleared so the outgoing reviewer still receives the notice. Returns the application."""
+    now = now or timezone.now()
+    reviewer = application.assigned_to
+    was_booked = application.interview_status == 'booked'
+    student_email, student_name = _student_identity(application)
+
+    if was_booked and application.interview_calendar_event_id:
+        meeting.cancel_event(application.interview_calendar_event_id)
+
+    # The proposed menu is void either way — withdraw every active slot.
+    InterviewSlot.objects.filter(application=application, is_active=True).update(
+        is_active=False, updated_at=now)
+    fields = []
+    if was_booked:
+        # Same booking-state reset as cancel() (kept in step with it).
+        application.interview_status = 'cancelled'
+        application.interview_cancelled_at = now
+        application.interview_slot = None
+        application.interview_start = None
+        application.interview_meeting_url = ''
+        application.interview_calendar_event_id = ''
+        application.interview_meeting_provider = ''
+        application.interview_reminded_1d_at = None
+        application.interview_reminded_1h_at = None
+        application.interview_cancel_reason = 'Reviewer unassigned — interview released'
+        fields += [
+            'interview_status', 'interview_cancelled_at', 'interview_slot', 'interview_start',
+            'interview_meeting_url', 'interview_calendar_event_id', 'interview_meeting_provider',
+            'interview_reminded_1d_at', 'interview_reminded_1h_at', 'interview_cancel_reason']
+    if application.interview_alternatives_requested_at is not None:
+        application.interview_alternatives_requested_at = None
+        application.interview_alternatives_note = ''
+        fields += ['interview_alternatives_requested_at', 'interview_alternatives_note']
+    if fields:
+        application.save(update_fields=fields)
+
+    # Only notify when there was a BOOKED interview the student was expecting to attend.
+    if was_booked:
+        if student_email:
+            emails.send_interview_released_email(
+                student_email, student_name=student_name,
+                english_only=emails.english_only_email(application))
+        if reviewer is not None and getattr(reviewer, 'email', ''):
+            emails.send_reviewer_interview_cancelled_email(
+                reviewer.email, reviewer_name=getattr(reviewer, 'name', ''),
+                applicant_name=student_name, ref=pool.pool_ref(application.id),
+                reason='You were unassigned from this applicant.')
+    return application
+
+
 def request_alternatives(application, *, note='', now=None):
     """The student says none of the proposed times work and asks for different ones. Records
     the request + an optional note and notifies the ASSIGNED reviewer directly (the proposed

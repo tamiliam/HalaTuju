@@ -2133,6 +2133,83 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
                       text_body, html_body)
 
 
+def send_interview_released_email(to_email, *, student_name, english_only=False):
+    """Notice to the student when the interview is released because their INTERVIEWER
+    changed (an admin unassigned the reviewer) — distinct from the student-initiated
+    cancellation above (which says 'you cancelled'). Reassures them nothing is wrong and
+    they need do nothing until a new interviewer proposes fresh times. HTML primary +
+    plain-text fallback; bilingual (EN+BM) unless ``english_only``. Best-effort."""
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
+
+    en_text = (
+        f'Hi {en_name},\n\n'
+        f"There's been a change to who will be interviewing you for the BrightPath Bursary "
+        f"Programme, so the interview time you'd booked has been released.\n\n"
+        f"Your application is still active and this doesn't affect it. A new interviewer will "
+        f"be assigned and will propose fresh times for you to choose from — there's nothing you "
+        f"need to do right now.\n\n"
+        f"If you have any questions, just reply to this email and we'll help.\n\n"
+        f"One note for your peace of mind: we'll only ever ask about you and your studies. We "
+        f"will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it's "
+        f"not us — please tell us at {SUPPORT_EMAIL}.\n\n"
+        f'Warm regards,\nThe BrightPath Bursary Programme Team'
+    )
+    bm_text = (
+        f'Salam {bm_name},\n\n'
+        f'Terdapat perubahan pada penemu duga yang akan menemu duga anda untuk Program Bursari '
+        f'BrightPath, jadi masa temu duga yang anda tempah sebelum ini kini dilepaskan.\n\n'
+        f'Permohonan anda masih aktif dan perkara ini tidak menjejaskannya. Seorang penemu duga '
+        f'baharu akan ditugaskan dan akan mencadangkan masa baharu untuk anda pilih — tiada apa '
+        f'yang perlu anda lakukan sekarang.\n\n'
+        f'Jika anda mempunyai sebarang pertanyaan, balas sahaja e-mel ini dan kami akan membantu.\n\n'
+        f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
+        f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
+        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
+        f'Salam hormat,\nPasukan Program Bursari BrightPath'
+    )
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    def section(greeting, p_confirm, p_active, p_reply, safety, signoff):
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 14px;">{p_confirm}</p>'
+            f'<p style="margin:0 0 14px;">{p_active}</p>'
+            f'<p style="margin:0 0 18px;">{p_reply}</p>'
+            f'<p style="margin:0 0 18px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    en_html = section(
+        f'Hi {en_name},',
+        "There’s been a change to who will be interviewing you for the BrightPath Bursary "
+        "Programme, so the interview time you’d booked has been released.",
+        "Your application is still active and this doesn’t affect it. A new interviewer will be "
+        "assigned and will propose fresh times for you to choose from — there’s nothing you need "
+        "to do right now.",
+        "If you have any questions, just reply to this email and we’ll help.",
+        f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
+        f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
+        f'please tell us at {SUPPORT_EMAIL}.',
+        'Warm regards,<br>The BrightPath Bursary Programme Team')
+    bm_html = section(
+        f'Salam {bm_name},',
+        'Terdapat perubahan pada penemu duga yang akan menemu duga anda untuk Program Bursari '
+        'BrightPath, jadi masa temu duga yang anda tempah sebelum ini kini dilepaskan.',
+        'Permohonan anda masih aktif dan perkara ini tidak menjejaskannya. Seorang penemu duga '
+        'baharu akan ditugaskan dan akan mencadangkan masa baharu untuk anda pilih — tiada apa yang '
+        'perlu anda lakukan sekarang.',
+        'Jika anda mempunyai sebarang pertanyaan, balas sahaja e-mel ini dan kami akan membantu.',
+        f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
+        f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
+        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
+        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
+    return _send_html(to_email, 'Your BrightPath Bursary Programme interview time has been released',
+                      text_body, html_body)
+
+
 def _send_plain(to_email, subject, body):
     if not to_email:
         return False

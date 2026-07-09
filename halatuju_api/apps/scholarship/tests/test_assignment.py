@@ -206,6 +206,73 @@ class TestReviewerAssignment(TestCase):
         self.assertTrue(AssignmentEvent.objects.filter(
             application=self.app, to_admin__isnull=True).exists())
 
+    # --- unassign must not orphan a case mid-interview ------------------------
+
+    def _assigned_at(self, status):
+        """Put self.app under self.reviewer at a given status (no AssignmentEvent)."""
+        self.app.assigned_to = self.reviewer
+        self.app.assigned_at = timezone.now()
+        self.app.status = status
+        self.app.save(update_fields=['assigned_to', 'assigned_at', 'status'])
+
+    def test_unassign_from_interviewing_reverts_to_profile_complete(self):
+        # The invariant "interviewing => assigned_to set": dropping the reviewer must walk
+        # the case back to the assignable pool, not leave it orphaned in 'interviewing'.
+        self._assigned_at('interviewing')
+        self._auth('super-uid')
+        self.assertEqual(self._assign(None).status_code, 200)
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.assigned_to_id)
+        self.assertEqual(self.app.status, 'profile_complete')
+
+    def test_unassign_from_profile_complete_keeps_status(self):
+        # No spurious status change when the case was not yet in interview.
+        self._assigned_at('profile_complete')
+        self._auth('super-uid')
+        self.assertEqual(self._assign(None).status_code, 200)
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.assigned_to_id)
+        self.assertEqual(self.app.status, 'profile_complete')
+
+    def test_unassign_blocked_once_findings_submitted(self):
+        # A submitted verdict ('interviewed', awaiting QC) must not be silently detached —
+        # the super must Reopen first. Nothing changes and no event is written.
+        self._assigned_at('interviewed')
+        self._auth('super-uid')
+        r = self._assign(None)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'findings_submitted')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.assigned_to_id, self.reviewer.id)
+        self.assertEqual(self.app.status, 'interviewed')
+        self.assertFalse(AssignmentEvent.objects.exists())
+
+    @patch('apps.scholarship.meeting.cancel_event')
+    @patch('apps.scholarship.emails.send_interview_released_email')
+    def test_unassign_releases_booked_interview_and_notifies(self, mock_release, mock_meet):
+        from apps.scholarship.models import InterviewSlot
+        self._assigned_at('interviewing')
+        self.app.notify_email = 'priya@example.com'
+        slot = InterviewSlot.objects.create(
+            application=self.app, reviewer=self.reviewer, start=timezone.now(), is_active=True)
+        self.app.interview_status = 'booked'
+        self.app.interview_slot = slot
+        self.app.interview_start = slot.start
+        self.app.interview_calendar_event_id = 'evt-123'
+        self.app.save(update_fields=[
+            'notify_email', 'interview_status', 'interview_slot', 'interview_start',
+            'interview_calendar_event_id'])
+        self._auth('super-uid')
+        self.assertEqual(self._assign(None).status_code, 200)
+        self.app.refresh_from_db()
+        slot.refresh_from_db()
+        self.assertEqual(self.app.status, 'profile_complete')
+        self.assertEqual(self.app.interview_status, 'cancelled')
+        self.assertIsNone(self.app.interview_slot_id)
+        self.assertFalse(slot.is_active)
+        mock_meet.assert_called_once_with('evt-123')
+        self.assertTrue(mock_release.called)
+
     def test_noop_assign_writes_no_event(self):
         self.app.assigned_to = self.reviewer
         self.app.save(update_fields=['assigned_to'])

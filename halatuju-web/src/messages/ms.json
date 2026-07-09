@@ -3015,7 +3015,8 @@
         "error": {
           "not_ready": "Permohonan ini belum bersedia untuk ditugaskan — pertanyaannya masih terbuka dan tempoh SLA belum tamat.",
           "not_reviewer": "Anda hanya boleh menugaskan kepada seorang penyemak.",
-          "bad_assignee": "Pentadbir itu tidak lagi aktif."
+          "bad_assignee": "Pentadbir itu tidak lagi aktif.",
+          "findings_submitted": "Penemuan temu duga sudah ada — buka semula keputusan dahulu jika anda perlu menukar penemu duga."
         }
       },
       "incompleteTitle": "Belum boleh diterima — pemohon masih perlu:",

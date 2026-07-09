@@ -447,7 +447,7 @@ export default function AdminScholarshipDetailPage() {
     try { setApp(await assignApplication(id, adminId, { token })) }
     catch (e) {
       const code = e instanceof Error ? e.message : ''
-      const known = ['not_ready', 'not_reviewer', 'bad_assignee']
+      const known = ['not_ready', 'not_reviewer', 'bad_assignee', 'findings_submitted']
       setError(known.includes(code)
         ? t(`admin.scholarship.assign.error.${code}`)
         : t('admin.scholarship.assignError'))

@@ -128,6 +128,19 @@ assignment makes every `interviewing` case mean the same thing on the board and 
 a case without first assigning it — intended.
 **Revisit if:** a legitimate flow needs `interviewing` without either a proposal or a submitted session (none
 today), or if assignment stops being the accountability primitive.
+**Follow-up (2026-07-09) — the UNASSIGN side of the same invariant.** The forward triggers guaranteed
+`interviewing ⇒ assigned_to set`, but `services.assign_reviewer(reviewer=None)` only cleared the assignment
+and left the status untouched — so unassigning a reviewer orphaned the case in `interviewing` with no owner
+(the exact invariant the hotfix protects, broken from the other direction). Fixed: an unassign now (a) is
+**refused once findings are in** — status in `_UNASSIGN_BLOCKED_STATUSES` (`interviewed` + the
+recommended/awarded/active/maintenance/closed chain) → 400 `findings_submitted`; the super must **Reopen
+first** so a submitted verdict is never silently detached; (b) otherwise **tears down the outgoing reviewer's
+interview** (`scheduling.release_for_unassign`: a booked interview is cancelled — Meet voided, student + old
+reviewer notified via `send_interview_released_email`; proposed-only slots withdrawn quietly) and **walks
+`interviewing → profile_complete`**, returning the case to the assignable pool. Re-assignment then re-drives
+the forward trigger naturally. **Considered but rejected:** reverting `interviewed → profile_complete` on
+unassign (silently discards a completed verdict — blocking + Reopen is safer) and reusing the student-voice
+"you cancelled" email (inaccurate for a reviewer-initiated release).
 
 ## STR red-band membership + I4 green semantics under the shared headroom test — Code-health S4, 2026-07-03
 **Decision:** (a) STR_RED_STATES = (wrong_type, rejected, stale) — 'unreadable' stays AMBER (misread ≠ disproven, and a never-scanned legacy doc reads 'unreadable', so a red 'unreadable' would gate consent on our own extraction backlog); the student coach separately covers unreadable + unconfirmed. (b) Salary-route I4 adopts income_headroom's two-test CEILING (gross primary, per-capita safety net, boundary inclusive) but keeps its binary green — the fall-through's thin-margin 'unsure'→amber grading compensates for an UNverified household and does not apply where the cluster is fully confirmed. (c) The legacy blank-tag fallback attaches to the named earner only; blank-wizard apps keep the fully tolerant reading.

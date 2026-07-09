@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: unassigning a reviewer no longer orphans a case in `interviewing` — 2026-07-09
+
+### Fixed
+- **`services.assign_reviewer(reviewer=None)` left `status` untouched**, so unassigning a reviewer
+  from a case in `interviewing` left it stuck there with no owner — breaking the invariant
+  "`interviewing ⇒ assigned_to set`". An unassign now:
+  - **walks `interviewing → profile_complete`** (back to the assignable pool) so re-assignment
+    re-drives the forward trigger cleanly;
+  - is **refused once findings are submitted** (status `interviewed` + the recommended/awarded/
+    active/maintenance/closed chain → 400 `findings_submitted`); the super must **Reopen** first,
+    so a completed verdict is never silently detached;
+  - **tears down the outgoing reviewer's interview** (`scheduling.release_for_unassign`): a booked
+    interview is cancelled (Google Meet voided, student + old reviewer notified via the new
+    `emails.send_interview_released_email`), proposed-only slots are withdrawn quietly.
+- New EN+BM `send_interview_released_email` (reviewer-changed wording, distinct from the
+  student-initiated "you cancelled" notice). +4 regression tests (`test_assignment.py`);
+  2248 scholarship pytest green. No migration. Decision logged in `docs/decisions.md`.
+
 ## Phase 4: circuit-breaker escalation surface (needs_officer_eye) — 2026-07-09
 
 ### Added

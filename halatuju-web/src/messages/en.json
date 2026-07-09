@@ -3015,7 +3015,8 @@
         "error": {
           "not_ready": "This application isn't ready to assign yet — its queries are still open and the SLA window hasn't passed.",
           "not_reviewer": "You can only assign to a reviewer.",
-          "bad_assignee": "That admin is no longer active."
+          "bad_assignee": "That admin is no longer active.",
+          "findings_submitted": "The interview findings are already in — reopen the decision first if you need to change the reviewer."
         }
       },
       "incompleteTitle": "Cannot accept yet — the applicant still owes:",

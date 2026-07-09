@@ -494,6 +494,15 @@ def _can_review(admin):
     return bool(getattr(admin, 'is_super_admin', False)) or admin.role in ('reviewer', 'super', 'admin', 'qc')
 
 
+# Unassigning must not orphan a case whose reviewer has already done the work. Once
+# findings are submitted (status 'interviewed') or a decision is recorded (recommended and
+# the post-award chain), a plain unassign is refused — the super must Reopen first (which
+# walks the status back a step) so a completed verdict is never silently detached.
+_UNASSIGN_BLOCKED_STATUSES = frozenset({
+    'interviewed', 'recommended', 'awarded', 'active', 'maintenance', 'closed',
+})
+
+
 def assign_reviewer(application, *, reviewer, by_admin, now=None):
     """F7: (re)assign an application to a reviewer, audited. The caller must already
     have checked the actor is a super-admin. Rules:
@@ -502,6 +511,11 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
       - the FIRST assignment of an unassigned app is gated on is_ready_for_assignment
         (else 'not_ready'); a reassignment/unassignment of an already-assigned app is
         allowed any time (a super may redistribute work mid-flight);
+      - UNASSIGN (reviewer=None) of a case still in interview is refused once findings are
+        in (status in _UNASSIGN_BLOCKED_STATUSES → 'findings_submitted'); otherwise it tears
+        down the interview (releases any booking/proposed slots + notifies) and walks status
+        'interviewing' → 'profile_complete', preserving the invariant "interviewing ⇒
+        assigned_to set" and returning the case to the assignable pool;
       - every change writes an AssignmentEvent (from -> to, by whom) and stamps
         assigned_at (null on unassign). A no-op (target unchanged) writes nothing.
     Returns the application.
@@ -520,10 +534,26 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     if current is None and reviewer is not None and not is_ready_for_assignment(application, now):
         raise AssignmentError('not_ready')
 
+    unassigning = reviewer is None and current is not None
+    if unassigning and application.status in _UNASSIGN_BLOCKED_STATUSES:
+        raise AssignmentError('findings_submitted')
+
     AssignmentEvent.objects.create(
         application=application, from_admin=current, to_admin=reviewer,
         by_email=getattr(by_admin, 'email', '') or '',
     )
+    status_reverted = False
+    if unassigning:
+        # Release the outgoing reviewer's interview artefacts BEFORE we clear assigned_to
+        # (the teardown notifies that reviewer). Best-effort — never block the unassignment.
+        from . import scheduling
+        try:
+            scheduling.release_for_unassign(application, now=now)
+        except Exception:
+            logger.exception('release_for_unassign failed for application %s', application.id)
+        if application.status == 'interviewing':
+            application.status = 'profile_complete'
+            status_reverted = True
     application.assigned_to = reviewer
     application.assigned_at = now if reviewer is not None else None
     # Reset the verdict-SLA nudge stamps (TD-131) so the new reviewer's clock starts clean —
@@ -531,9 +561,11 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     application.review_nudged_soon_at = None
     application.review_nudged_overdue_at = None
     application.review_escalated_at = None
-    application.save(update_fields=[
-        'assigned_to', 'assigned_at',
-        'review_nudged_soon_at', 'review_nudged_overdue_at', 'review_escalated_at'])
+    _fields = ['assigned_to', 'assigned_at',
+               'review_nudged_soon_at', 'review_nudged_overdue_at', 'review_escalated_at']
+    if status_reverted:
+        _fields.append('status')
+    application.save(update_fields=_fields)
 
     # Notify the reviewer they have a new applicant to review. Only on an actual
     # assignment (not an unassign); the no-op short-circuit above means an unchanged
