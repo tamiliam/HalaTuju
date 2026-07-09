@@ -516,7 +516,31 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-09)
+## Next Sprint (as of 2026-07-10)
+
+**✅ SHIPPED 2026-07-09 — Salary-slip genuineness signature model + the #47 fix (BE-only, NO
+migration; scorer `genuineness/salary_doc.py` `MODEL_VERSION 1.0.0`; retro
+`docs/retrospective-2026-07-09-salary-signature-model.md`; spec `docs/scholarship/salary-signature-model.md`;
+decisions ×2; lessons ×2).** The first genuineness model for salary slips (they had none — no shared
+letterhead). Fingerprint = **statutory payroll grammar**, six families: `private` (≥2 of KWSP/SOCSO/
+EIS/PCB) · `govt` (PENYATA GAJI e-Penyata) · `singapore` (CPF/Pte Ltd) · `gig` · `informal` (suspect,
+low ceiling) · `not_salary` (MyKad-in-slot / no payslip fields → reject). Calibrated on 99 live slips
+(genuine 65 / suspect 26 / not_salary 8) via the `eval/` OCR pipeline.
+- **Wired SOFT:** scored at extraction → `vision_fields.authenticity` (`vision.py`, behind the ON
+  `DOC_GENUINENESS_CHECK_ENABLED`); the **#47 gate fix** — `income_engine.usable_salary_slip` (used by
+  `member_cluster_complete` + `services.income_doc_blockers`) rejects a `not_salary` slip (Check-2
+  re-upload, never a hard trap; fail-open on unscored, so the existing 100 slips are unaffected).
+- **Cockpit chip:** `serializers.ApplicantDocumentSerializer.get_authenticity` now includes
+  `salary_slip`, surfacing ONLY the `not_salary` red wrong-type chip; the `informal` suspect band is
+  stored but hidden (no amber noise on genuine B40 informal slips). The income **verdict cap is
+  deliberately untouched** (already excludes the salary route) → never auto-downgrades income.
+- **#47 remediated:** its MyKad-in-salary-slot scored `not_salary`; the real payslip moved epf→salary
+  slot (data op) + MyKad superseded; owner Re-ran → **genuine · private · gross RM5,187 · June 2026**.
+- 16 new salary tests; **3470 combined pytest** green.
+- **▶ NEXT — no roadmap sprint queued.** Deferred/optional: surface the `informal` suspect chip to
+  officers if wanted (flip the serializer guard + bump `MODEL_VERSION`); re-score the other 7
+  `not_salary` docs on a normal cockpit Re-run (backfill was #47-only by design); a salary re-score
+  cron (target stale `model_version`). Standing owner-review + carry items below unchanged.
 
 **✅ SHIPPED 2026-07-09 — Document upload: stage → judge → promote-only-if-better (4 phases; BE+FE,
 NO migration, MODEL_VERSION untouched; retro `docs/retrospective-2026-07-09-upload-stage-judge-promote.md`;

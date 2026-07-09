@@ -1,5 +1,40 @@
 # Architectural Decisions — HalaTuju
 
+## Salary-slip genuineness = statutory-grammar cascade, soft, wrong-type-only chip — 2026-07-09
+**Decision:** Score salary slips by **statutory payroll grammar** (a multi-family cascade in
+`genuineness/salary_doc.py`), not a single-issuer signature list. `private` = ≥2 of {KWSP, SOCSO,
+EIS, PCB}; `govt` = the `PENYATA GAJI` e-Penyata title; `singapore` = CPF/Pte Ltd; `gig` = a platform
+brand; `informal` = wage labels but no scaffold; `not_salary` = MyKad/no payslip fields. Wired SOFT:
+the submission gate excludes a `not_salary` slip (`usable_salary_slip`, fail-open) but the income
+**verdict cap is left untouched** (it already excludes the salary route), and the officer cockpit
+surfaces **only** the `not_salary` (red wrong-type) chip — the `informal` `suspect` band is stored
+but NOT shown.
+**Alternatives considered:** (1) a single weighted signature list like EPF/STR — rejected: salary
+slips have no shared letterhead, so best-fit-probability can't separate `informal` (genuine, low
+signal) from `not_salary` (reject); the statutory-count discriminator can. (2) Feed salary
+authenticity into the income verdict cap — rejected: `informal` is common among genuine B40 families,
+so capping on it would auto-downgrade real cases; the officer decides. (3) Surface the `suspect`
+(informal) chip too, like EPF — rejected: 26/99 slips are informal, so an amber chip on each would be
+noise; only the actionable wrong-type is worth showing.
+**Rationale:** the fingerprint had to match the document class — statutory scaffold is what a real
+payroll produces and a MyKad/fake doesn't. Keeping it off the verdict cap makes it purely
+additive/soft (no re-banding, no risk), while the gate + chip close the #47 hole.
+**Trade-offs:** an OCR-degraded genuine slip can read `informal`/`not_salary` (soft — a Check-2
+re-upload, never a hard trap); the informal `suspect` band is invisible to officers by choice.
+**Revisit if:** officers want to see the informal band (flip the serializer guard), or we decide to
+gate the income verdict on salary genuineness (a deliberate re-banding step, owner-signed).
+
+## Existing salary slips: backfill only #47, not all 8 not_salary — 2026-07-09
+**Decision:** After the model shipped, backfill authenticity for the one confirmed MyKad-in-slot
+(#47, doc 1872) only; leave the other 7 `not_salary` docs to score on a normal cockpit Re-run.
+**Alternatives considered:** backfill all 8, or a full 100-slip re-score from the cached OCR.
+**Rationale:** blast-radius analysis showed 6 of the 8 are STR-route (salary slip optional → no gate
+effect) or blank/cropped, where a red "wrong document" chip risks a FALSE positive on a genuine but
+cropped slip; and all 8 are already-submitted/grandfathered so no gate value. Only #47 was an
+unambiguous wrong-type worth a hand-written chip.
+**Trade-offs:** the other cases show no chip until re-run — acceptable (they're grandfathered).
+**Revisit if:** a re-score cron is built (then target stale `model_version` docs wholesale).
+
 ## P3 — a valid STR settles income B40 on EITHER route — 2026-07-06
 **Decision:** On the salary route, a valid non-breached STR settles the income B40 verdict (current STR →
 Certain/green, over the salary headroom; approved-undated → Probable/blue, but RED if the salary is

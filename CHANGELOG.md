@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## Salary-slip genuineness signature model + the #47 fix — 2026-07-09
+
+### Added
+- **First genuineness model for salary slips** (`genuineness/salary_doc.py`, `MODEL_VERSION 1.0.0`) —
+  a statutory-payroll-grammar cascade (not a letterhead) over the OCR text → six families: `private`
+  (≥2 of KWSP/SOCSO/EIS/PCB) · `govt` (PENYATA GAJI e-Penyata) · `singapore` (CPF/Pte Ltd) · `gig` ·
+  `informal` (suspect, low ceiling) · `not_salary` (MyKad-in-slot / no payslip fields → reject).
+  Calibrated on 99 live slips (genuine 65 / suspect 26 / not_salary 8). Design:
+  `docs/scholarship/salary-signature-model.md`.
+
+### Changed
+- **Salary slips are now scored at extraction** → `vision_fields.authenticity` (`vision.py`, behind
+  the already-ON `DOC_GENUINENESS_CHECK_ENABLED`), replacing the narrow `misfiled_as` backstop.
+- **The officer cockpit surfaces a salary wrong-type chip** — `ApplicantDocumentSerializer.get_authenticity`
+  now includes `salary_slip`, surfacing ONLY the `not_salary` reject (red "wrong document"); the
+  informal `suspect` band stays hidden to avoid amber noise on genuine B40 informal slips.
+
+### Fixed
+- **The #47 hole:** a MyKad uploaded into the salary-slip slot passed the income gate on slot
+  presence alone. `income_engine.usable_salary_slip` (used by `member_cluster_complete` +
+  `services.income_doc_blockers`) now rejects a `not_salary` slip — SOFT (a Check-2 re-upload, never
+  a hard trap) and fail-open (unscored/genuine/suspect count unchanged, so the existing 100 slips are
+  unaffected). Deliberately leaves the income verdict cap untouched (it already excludes the salary
+  route), so this never auto-downgrades a genuine family.
+
 ## Fix: utility-bill staleness — ask 3 months, accept 6; prefer Tarikh Bil — 2026-07-09
 
 ### Changed
