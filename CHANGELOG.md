@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Phase 3: per-doc quality — offer-letter officialness in the promote decision — 2026-07-09
+
+### Changed
+- **A genuine OFFICIAL offer now beats a conditional / private / pemakluman one in the keep-better
+  decision.** `promotion.doc_quality` gains an `offer_letter` axis
+  `(usable, official_rank, reporting_bonus, id)` where `official_rank` = genuine (2) > unknown (1) >
+  not_genuine (0), read from the already-stored `authenticity` via `pathway_engine.offer_official_status`
+  + `offer_reporting_bonus`. **Why offers specifically:** an offer is the one KEY NAMED type with **no
+  downstream dedup safety net** (`offer_letter` is not in `income_engine._DEDUP_DOC_TYPES`, so
+  `dedupe_income_proof` never re-collapses live offers) — so this promote decision is the *only*
+  keep-better for offers. Before, a later non-official re-upload with equal recency would bury a genuine
+  official offer on the newer-`id` tiebreak; now officialness dominates. `unknown` (not scored yet) sits
+  between so a fresh unscored offer still replaces a known-bad one without burying a confirmed-official
+  live offer.
+- **NON-signature — reads the officialness already computed on upload extraction; MODEL_VERSION
+  untouched, no re-run, no migration.** str / salary_slip / epf / utility bills keep the generic proxy
+  (they are re-collapsed to the best live copy by `dedupe_income_proof` after promotion, so they already
+  keep-better downstream). New `TestOfferDocQuality` (4) + existing keep-better/circuit-breaker suites
+  unchanged. 2240 pytest.
+
 ## Phase 2: document upload — stage → judge → promote-only-if-better — 2026-07-09
 
 ### Changed

@@ -1218,3 +1218,54 @@ class TestPromoteDecision(SimpleTestCase):
 
     def test_existing_is_news_promotes(self):
         self.assertTrue(self._decide((0, 0), None, usable=True))
+
+
+class _FakeOffer:
+    """A minimal stand-in for an offer ApplicantDocument — carries only what the pure quality
+    reads (``doc_type`` / ``id`` / ``vision_fields``)."""
+
+    def __init__(self, doc_id, status=None):
+        self.doc_type = 'offer_letter'
+        self.id = doc_id
+        auth = {'status': status} if status else {}
+        self.vision_fields = {'fields': {}, 'authenticity': auth}
+
+
+class TestOfferDocQuality(SimpleTestCase):
+    """promotion.doc_quality for offer_letter (Phase 3, owner 2026-07-09): OFFICIALNESS is the
+    decisive axis, since an offer has no downstream dedup safety net. doc_match_verdict is patched
+    to 'ok' so ``usable`` is constant and the officialness ordering is isolated."""
+
+    def _q(self, doc):
+        from apps.scholarship import promotion
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
+            return promotion.doc_quality(doc)
+
+    def test_genuine_official_outranks_not_genuine(self):
+        # A genuine OFFICIAL offer beats a suspect / pemakluman one EVEN when the bad one is newer.
+        genuine = self._q(_FakeOffer(1, status='genuine'))
+        not_genuine = self._q(_FakeOffer(9, status='suspect'))
+        self.assertGreater(genuine, not_genuine)
+
+    def test_unknown_sits_between_genuine_and_not_genuine(self):
+        genuine = self._q(_FakeOffer(1, status='genuine'))
+        unknown = self._q(_FakeOffer(1, status=None))          # not scored yet
+        not_genuine = self._q(_FakeOffer(1, status='not_offer_letter'))
+        self.assertGreater(genuine, unknown)
+        self.assertGreater(unknown, not_genuine)
+
+    def test_live_genuine_official_kept_over_newer_not_genuine(self):
+        # Real should_promote + doc_quality (unpatched decision): a later pemakluman must NOT bury a
+        # genuine official live offer.
+        from apps.scholarship import promotion
+        live = _FakeOffer(1, status='genuine')
+        newer_bad = _FakeOffer(9, status='suspect')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
+            self.assertFalse(promotion.should_promote(newer_bad, live, usable=True))
+
+    def test_newer_genuine_official_replaces_live_not_genuine(self):
+        from apps.scholarship import promotion
+        live = _FakeOffer(1, status='not_offer_letter')
+        newer_good = _FakeOffer(9, status='genuine')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
+            self.assertTrue(promotion.should_promote(newer_good, live, usable=True))
