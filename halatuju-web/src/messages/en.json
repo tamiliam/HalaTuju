@@ -3677,11 +3677,11 @@
         },
         "capture": {
           "deterministic": {
-            "label": "Exact read",
+            "label": "Exact",
             "hint": "Read deterministically from the document's fixed labels — high confidence."
           },
           "ai": {
-            "label": "AI read",
+            "label": "AI",
             "hint": "Read by AI (Gemini) — please verify the captured values."
           }
         }

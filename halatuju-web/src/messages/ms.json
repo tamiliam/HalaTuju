@@ -3677,11 +3677,11 @@
         },
         "capture": {
           "deterministic": {
-            "label": "Bacaan tepat",
+            "label": "Tepat",
             "hint": "Dibaca terus daripada label tetap dokumen — keyakinan tinggi."
           },
           "ai": {
-            "label": "Bacaan AI",
+            "label": "AI",
             "hint": "Dibaca oleh AI (Gemini) — sila sahkan nilai yang ditangkap."
           }
         }
