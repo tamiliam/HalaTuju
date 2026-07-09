@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: STR recipient false name-mismatch (#126) — Phase 1 of the upload-flow roadmap — 2026-07-09
+
+### Fixed
+- **A parent-name STR no longer reads "name mismatch" on the doc row.** `doc_student_verdict`
+  (`vision.py`) name-checked the STR recipient against **student + guardians only** (`_NAME_FIELD['str']`),
+  so a Lulus Semakan in the declared mother's name stamped a false `name_mismatch` — panicking #126's
+  student into junk re-uploads that buried her good proof. STR now joins utility bills in *not* being
+  name-checked here: an STR recipient is a parent/earner, and the proper household match (against every
+  parent/guardian IC, name-or-nric) is done by `student_str_check`, which is what the income verdict band
+  and `doc_match_verdict` actually read — a genuine recipient mismatch still surfaces as
+  `str_recipient_mismatch`. Display-only change; no band moves, no re-band, MODEL_VERSION untouched.
+  2227 pytest.
+
 ## Fix: utility-bill upload loop (#130) — 2026-07-09
 
 ### Fixed

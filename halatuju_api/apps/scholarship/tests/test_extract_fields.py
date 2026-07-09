@@ -52,6 +52,15 @@ class TestDocStudentVerdict(TestCase):
                 dt, {'name': 'SIVAKUMAR A/L KALIAPPAN', 'address': '12 Jln Mawar', 'amount': 'RM90'},
                 names=['A Different Student']), 'ok')
 
+    def test_str_recipient_not_name_checked(self):
+        # Owner 2026-07-09 (#126): an STR recipient is a PARENT/earner — the proper household match is
+        # done by student_str_check, not this display verdict. A parent-name recipient not in the
+        # narrow reference names must NOT read 'name_mismatch' (it panicked the student into junk).
+        self.assertEqual(vision.doc_student_verdict(
+            'str', {'recipient_name': 'VIMALA A/P MUNIANDY', 'status': 'Lulus',
+                    'source_type': 'semakan_status'},
+            names=['A Different Student']), 'ok')
+
 
 class TestExtractDocumentFields(TestCase):
     @patch('apps.scholarship.vision._call_gemini_json')

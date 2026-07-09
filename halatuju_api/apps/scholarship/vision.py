@@ -1681,13 +1681,20 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', street
         return 'ok' if _any_field_filled(fields) else 'wrong_doc'
     if not _any_field_filled(fields):
         return 'wrong_doc'   # nothing of the expected shape was found
-    # A UTILITY BILL is an ADDRESS anchor, held in a PARENT's name — never name-check it against the
-    # student (owner 2026-07-09, #130: a father's-name water/electricity bill looped forever as
-    # 'name_mismatch', with no coaching, because the reference names were student+guardians only).
-    # This matches help_engine (bills deliberately un-name-checked) and doc_match_verdict (bills
-    # accept); a genuine STRANGER's bill is still caught softly by the utility_holder_unknown
-    # question, which knows the declared parents.
-    if doc_type not in ('water_bill', 'electricity_bill'):
+    # Two doc kinds are held in a PARENT's name and must NEVER be name-checked against the student
+    # here (the reference `names` are student + guardians only, so a genuine parent-name doc reads a
+    # false 'name_mismatch' that loops the student with no useful coaching):
+    #   • UTILITY BILL — an ADDRESS anchor in the account-holder parent's name (owner 2026-07-09,
+    #     #130: a father's-name bill looped ~34× as 'name_mismatch'). Matches help_engine (bills
+    #     un-name-checked) + doc_match_verdict (bills accept); a stranger's bill is still caught
+    #     softly by utility_holder_unknown, which knows the declared parents.
+    #   • STR — the recipient is a PARENT/earner; the proper HOUSEHOLD match (against every
+    #     parent/guardian IC, on name OR nric) is done by income_engine.student_str_check, which is
+    #     what the income VERDICT BAND and doc_match_verdict read — NOT this stored display verdict
+    #     (owner 2026-07-09, #126: a Lulus Semakan in the declared mother's name read 'name_mismatch'
+    #     though VIMALA matches the mother's IC + roster, panicking the student into junk re-uploads).
+    #     A genuine recipient mismatch is still surfaced by student_str_check → str_recipient_mismatch.
+    if doc_type not in ('water_bill', 'electricity_bill', 'str'):
         extracted_name = _strip_name_label(fields.get(_NAME_FIELD.get(doc_type, 'name')) or '')
         if extracted_name:
             matched = any(name_match(extracted_name, n) in ('match', 'partial') for n in names if n)
