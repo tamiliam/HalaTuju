@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## Reviewer & sponsor live-bug batch — 2026-07-10
+
+### Fixed
+- **"Failed to send invite email" on Invite a Reviewer (config only, no deploy).** Supabase Auth's
+  own SMTP setting still held a **deactivated** Brevo SMTP key after a key rotation (Cloud Run's
+  `EMAIL_HOST_PASSWORD` was updated but the Supabase dashboard SMTP was not) → `535 Authentication
+  failed` → invite email never sent. Fixed by putting the live key into Supabase Auth SMTP. Only
+  Supabase-generated emails (invites, password resets) were affected; student Check-2/interview
+  emails (Django SMTP) were verified unaffected. No orphaned user (Supabase rolls back on failure).
+- **QC reviewers could not propose interview times** (`441ad97b`, api `…00717`). A stale copy of the
+  reviewer-role set in `scheduling._can_review` (`'reviewer','super'`) never learned about the `qc`
+  (and view-all `admin`) roles from the 2026-07 assignment-write model, so an assigned qc passed the
+  real write gate but was then rejected inside `propose_slots` with `not_reviewer` → 400 ("Could not
+  save"), regardless of the times chosen. Now both checks read one shared `services.REVIEW_ROLES`;
+  regression + drift-guard tests added. Self-QC guard unchanged.
+- **Sponsored student lingered on the "available students" list until a hard refresh** (`0f902af8`,
+  web `…00616`). The sponsor portal fetches its data once on mount; the fund action refreshed the
+  balance but had no way to refresh the pool list. `SponsorPortalProvider` now exposes
+  `refreshPool` + `refreshWallet`, called after a successful fund → the funded student leaves the
+  list immediately and shows under "My students" as awaiting-acceptance.
+
+### Added
+- **First web component-test harness** (jest-environment-jsdom + @testing-library/react; per-file
+  jsdom docblock so the global node env is untouched; `tsconfig.jest.json` sets `jsx: react-jsx`),
+  with a regression test for the sponsor fund→refresh behaviour. Unblocks TD-065.
+
 ## LAP water bills: date from the meter reading (they have no Tarikh Bil) — 2026-07-10
 
 ### Fixed
