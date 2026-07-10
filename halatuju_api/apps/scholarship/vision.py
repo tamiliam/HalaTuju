@@ -1325,7 +1325,13 @@ _DOC_HINTS = {
                    'printed; "account_no" = the account number ("No. Akaun"); "usage_m3" = the water '
                    'consumed in cubic metres ("Penggunaan"/"Kegunaan", unit m³ / meter padu); '
                    '"tariff" = the tariff/premise class ("Tarif", e.g. domestik) if shown. '
-                   'Leave any field empty if it is not present.'),
+                   'IMPORTANT — dating the bill: some operators (e.g. Lembaga Air Perak / LAP) print '
+                   'NO "Tarikh Bil" or "Tempoh Bil". If neither is present, set "bill_date" to the '
+                   'LATEST / most recent METER-READING date — the newest "Tarikh" beside the meter '
+                   'reading ("No. Meter" / "Bacaan Meter" / "Bacaan", the row with the current usage) '
+                   '— because that is when this bill was issued. Do NOT use "Bil Akhir" / "Bayaran '
+                   'Akhir" for the date (those are the PREVIOUS bill and the LAST payment, not this '
+                   'bill). Leave any field empty if it is not present.'),
     'salary_slip': (' This is a Malaysian salary slip / payslip — OR a government benefit / pension '
                     'payment statement (e.g. a PERKESO/SOCSO "Penyata Bayaran Faedah" survivor\'s '
                     'pension "Pencen Penakat"), which counts as household income too. "name" = the '

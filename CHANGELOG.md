@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## LAP water bills: date from the meter reading (they have no Tarikh Bil) — 2026-07-10
+
+### Fixed
+- **An LAP (Lembaga Air Perak) water bill read as undated → grey "unknown" recency + the #130
+  re-upload loop.** An LAP bill prints no "Tarikh Bil" or "Tempoh Bil", so extraction left both empty
+  (`bill_date`/`billing_period` = "") and `_bill_as_of` had nothing to date the bill by — even though
+  the bill is current (its latest meter-reading date was 15-05-2026 ≈ 2 months old). The extraction
+  hint now tells Gemini: when a water bill has no bill date/period, use the **latest meter-reading
+  date** ("Tarikh" beside "Bacaan Meter" / the current-usage row) as `bill_date`, and explicitly NOT
+  the "Bil Akhir" / "Bayaran Akhir" rows (the previous bill / last payment). The date parser already
+  handles the `dd-mm-yyyy` meter-date format (regression test added) → the bill now resolves to its
+  month (e.g. May 2026 → **Current**). Takes effect on the next Re-run / new upload (natural rollout);
+  existing undated LAP bills need a Re-run to pick up the date.
+
 ## Utility-bill key values on the officer chip + reviewer-facing extraction notes — 2026-07-10
 
 ### Added

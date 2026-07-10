@@ -1096,6 +1096,12 @@ class TestBillingMonthParse(SimpleTestCase):
     def test_iso_yyyy_mm(self):
         self.assertEqual(_parse_billing_month('2026-05'), (2026, 5))
 
+    def test_full_date_dd_mm_yyyy(self):
+        # An LAP bill has no Tarikh Bil — the extractor dates it from the latest METER-READING date,
+        # a full dd-mm-yyyy (any separator). It must resolve to that month (owner 2026-07-10, #130).
+        for d in ('15-05-2026', '15.05.2026', '15/05/2026'):
+            self.assertEqual(_parse_billing_month(d), (2026, 5))
+
     def test_unparseable_returns_none(self):
         self.assertIsNone(_parse_billing_month(''))
         self.assertIsNone(_parse_billing_month('this month'))
