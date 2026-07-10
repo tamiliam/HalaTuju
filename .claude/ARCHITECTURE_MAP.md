@@ -188,7 +188,9 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 │   ├── ic.py                      #   ic_genuineness (MyKad markers) — moved from vision.py
 │   ├── supporting_doc.py          #   doc_genuineness (STR/BC/EPF) — moved from vision.py
 │   ├── results_doc.py             #   probabilistic SIGNATURE scorer (SPM slip + certificate + BC/EPF/offer/STR)
-│   └── salary_doc.py              #   salary_genuineness — statutory-grammar cascade (2026-07-09, MODEL_VERSION 1.0.0)
+│   ├── salary_doc.py              #   salary_genuineness — statutory-grammar cascade (2026-07-09, MODEL_VERSION 1.0.0)
+│   ├── electricity_doc.py         #   electricity_genuineness — issuer identity + bill grammar (2026-07-10, MODEL_VERSION 1.0.0)
+│   └── water_doc.py               #   water_genuineness — GRAMMAR-first, operator-as-bonus (2026-07-10, MODEL_VERSION 1.0.0)
 ├── doc_signatures.py              # back-compat shim → genuineness/results_doc + bands
 ├── sql/rls_policies.sql           # Deny-by-default RLS for the 2 new tables (apply before deploy)
 ├── migrations/0001_initial.py     # ScholarshipCohort + ScholarshipApplication
