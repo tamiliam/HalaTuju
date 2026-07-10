@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Private/IPTS offer arms disqualified + course-switch note + SPM exam-year fix — 2026-07-10
+
+### Changed
+- **A public university's PRIVATE continuing-education arm (UTM SPACE, UM CCE, …) is now disqualifying,
+  like any private/IPTS college** (owner: "SPACE is an IPTS — disqualifying, like AIMST/UTAR"). These
+  print the PARENT university's name, so the `ua_offer` genuineness anchor fired and the letter read
+  `genuine` off a UA it isn't a mainstream public intake for (#13 scored genuine while the identical
+  #12 read `not_offer_letter` — the probabilistic scorer was inconsistent). The scorer
+  (`genuineness/results_doc.py`, **MODEL_VERSION 1.5.0 → 1.6.0**) now vetoes the offer to
+  `not_offer_letter` when it carries the arm's own 'tell' — `Pendidikan Berterusan` / `(SPACE)` /
+  `Continuing Education`, or a `Sdn. Bhd.` operator — giving the −2 genuineness step exactly as a
+  standalone private college that misses the UA list. The reporting-date **bonus gate gains a "3b"**
+  (`pathway_engine.offer_reporting_bonus`) so the +1 "Tarikh" bonus can never lift a private arm back
+  to amber. Net: fake(−2) + pathway chip(−1) = **red Fail**. Standalone private colleges were already
+  caught (not in the 20-UA list → fake); this closes the private-WING gap. **Takes effect on an offer
+  re-run** (`reextract-offers`) — the stored genuineness re-computes on re-extraction.
+
+### Added
+- **Course-switch notification (any → any).** When the live offer replaced a genuinely different prior
+  offer (poly → uni, public → private, …), an always-visible blue **info banner** on the verdict card
+  (survives the green-collapse) + a **Switched** chip on the offer document tell the reviewer a swap
+  happened — shown even after the student confirms. It is **neutral**: a PUBLIC switch stays acceptable
+  (the band is NOT downgraded — a student may legitimately move STPM → matriculation → a UA diploma);
+  a switch INTO a private arm is red on its own via the genuineness veto, not via the switch.
+  `pathway_engine.offer_pathway_switch`; `switched_from` on the offer's `pathway_check`.
+
+### Fixed
+- **SPM results-slip exam year was read from the download timestamp, not the exam (#8 YESWINDRAN read
+  "SPM 2026" off a 2025 slip → false amber "off-cohort" chip).** A downloaded slip prints the download
+  time at the very top ("12/04/2026, 07:25 …"); `academic_engine._slip_exam` grabbed the FIRST `20xx`
+  in the flattened text — the print year — instead of the exam year on "SIJIL PELAJARAN MALAYSIA TAHUN
+  2025". New shared `_spm_exam_year` anchors the year to the exam label (`PELAJARAN MALAYSIA TAHUN` /
+  the cert foot `PEPERIKSAAN TAHUN` / the header `KEPUTUSAN SPM`), never a stray page date; returns
+  blank rather than a wrong year. Wired into `_slip_exam`, `parse_spm_cert`, and `ensure_exam_year`
+  (slip + cert + Gemini-backfill paths all immune). Cohort scan found exactly one affected doc (#8);
+  its stored value was corrected to 2025 from the already-stored OCR (no re-extraction). +5 tests.
+
 ## Air Selangor water bills: the deterministic parser now reads the bill date — 2026-07-10
 
 ### Fixed

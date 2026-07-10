@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## Private/IPTS offer arms disqualified via the genuineness scorer, not a read-time override — 2026-07-10
+**Decision:** A public university's PRIVATE continuing-education arm (UTM SPACE, UM CCE, …) is
+disqualified by a NEGATIVE marker in the genuineness offer scorer (`_private_arm_offer` in
+`results_doc.py`, MODEL_VERSION 1.6.0) that forces `not_offer_letter` — the same −2 mechanism a
+standalone private college gets by missing the 20-UA list. The reporting-bonus gate 3b (reads the
+extracted issuer live) blocks the +1 lift.
+**Alternatives considered:** A deterministic `offer_private_arm` predicate wired into
+`offer_official_status` + `_pathway_effective_step`, read at verdict-time (self-correcting on deploy,
+no re-run).
+**Rationale:** Owner steer — "we already have a private-arm detector; extend it; private → fake −2".
+The scorer is the canonical, auditable genuineness record; routing the disqualification through it
+keeps ONE mechanism for all private (standalone via UA-list-miss, wings via the marker) rather than a
+parallel override.
+**Trade-offs:** The stored genuineness is stale until an offer re-run — a private-arm offer that
+stored `genuine` pre-1.6.0 stays green until `reextract-offers` runs (the standard pattern for any
+genuineness change). The bonus gate 3b bites on deploy, but the −2 needs the re-run.
+**Revisit if:** a private wing appears that self-names blandly (no Berterusan/SPACE/Sdn Bhd) — then add
+the FEE-total tell (a quoted `Yuran Pengajian` is the universal private signal, but noisy) as a
+corroborator.
+
+## Course-switch note is a display-only banner, never a score input — 2026-07-10
+**Decision:** The "course switched (any→any)" signal is surfaced as an always-visible cockpit banner +
+an offer "Switched" chip, carrying ZERO points. It does not sit in the verdict `unresolved`/`evidence`
+lists.
+**Alternatives considered:** A `pathway_switched` verdict item (which would cap the band at Probable).
+**Rationale:** Owner — a PUBLIC switch is acceptable (STPM → matriculation → UA diploma), so it must
+not downgrade the band; a switch into a private arm is already red via the genuineness veto. The verdict
+tile green-collapses (hides evidence/unresolved on a green fact), so a banner OUTSIDE that logic is the
+only way to flash a switch without penalising it.
+**Trade-offs:** The banner is FE-computed from the offer doc's `switched_from`, so it lives in the
+cockpit page, not the verdict payload — a second place that reads the switch.
+**Revisit if:** the owner later wants a switch to actively require reviewer sign-off (then promote it to
+an `unresolved` item with its own non-downgrading treatment).
+
 ## Deterministic reading of standardised docs (cert / govt offers) + capture-label defaults — 2026-07-10
 **Decision:** Read the STANDARDISED documents deterministically (label/positional parsers, 'Exact'),
 Gemini only for the varied ones ('AI'). (1) SPM **certificate** = its own `parse_spm_cert` (subject

@@ -518,6 +518,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-10)
 
+**✅ SHIPPED 2026-07-10 — Private/IPTS offer arms disqualified + course-switch note + SPM exam-year
+fix (BE+FE, NO migration; MODEL_VERSION 1.5.0 → 1.6.0; retro
+`docs/retrospective-2026-07-10-private-arm-switch-examyear.md`; decisions ×2; lessons ×2).**
+- **Private continuing-education ARM (UTM SPACE, UM CCE, …) → disqualifying.** These print the PARENT
+  UA name so the `ua_offer` anchor read them `genuine` (#13 genuine vs identical #12 fake — the scorer
+  was inconsistent). `genuineness/results_doc._private_arm_offer` vetoes to `not_offer_letter` on the
+  arm's own tell (`Pendidikan Berterusan` / `(SPACE)` / `Continuing Education` / `Sdn Bhd`) → −2, like
+  a standalone private college missing the 20-UA list. `pathway_engine.offer_reporting_bonus` **gate
+  3b** blocks the +1 Tarikh lift. Net fake(−2)+pathway(−1) = **Fail**. **▶ Activates on an offer
+  re-run** (`reextract-offers`); #13 stays green until re-run, #12/#64 already fake.
+- **Course-switch note (any→any):** `offer_pathway_switch` → an always-visible blue banner on the
+  verdict card + a "Switched" doc chip. NEUTRAL — a public switch is NOT downgraded (STPM→matrik→UA
+  diploma is fine); a private switch is red via the veto. `switched_from` on `pathway_check`.
+- **SPM exam-year fix (#8):** `_slip_exam` grabbed the first `20xx` = the download timestamp
+  ("12/04/2026") not the exam ("TAHUN 2025"). New anchored `_spm_exam_year` (label-anchored) wired into
+  slip/cert/Gemini-backfill readers. 1 doc affected (#8), data-patched to 2025 from stored OCR.
+- **2332 scholarship pytest** (+16), 123 jest. **▶ OWNER: run `reextract-offers` (or Re-run #13) to
+  activate the 1.6.0 private-arm veto.**
+
 **✅ SHIPPED 2026-07-10 — Deterministic document reading: SPM certificate parser + capture-label
 overhaul + government offer parser (BE+FE, NO migration; retro
 `docs/retrospective-2026-07-10-deterministic-doc-reading.md`; decisions ×1; lessons ×2).** Read the
