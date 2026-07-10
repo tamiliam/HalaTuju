@@ -478,6 +478,19 @@ def _labelled_rm(text: str, label: str) -> str:
     return f'RM{m.group(1).replace(",", "")}' if m else ''
 
 
+def _water_bill_date(text: str) -> str:
+    """The bill's ISSUE date (dd/mm/yyyy) from the "Tarikh" header — used to date the bill so the
+    officer's recency chip works. Deliberately NOT the DUE date ("Bayar Sebelum" / a "Tarikh Akhir"
+    label) nor the last payment ("Bayaran Terakhir"). Air Selangor's info box flattens in OCR to
+    "Tarikh" then, a line or two below, the date (the label/value pairs interleave), so we take the
+    first date within a short window after "Tarikh". '' when not cleanly present → the bill stays
+    dateless (recency 'unknown'), same as before, never a WRONG month. Calibrated on the real Air
+    Selangor OCR corpus (5/6 dated, 0 confused with the ~1-month-later due date)."""
+    m = re.search(r'tarikh(?!\s+akhir)[^0-9]{0,40}(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4})',
+                  text or '', re.IGNORECASE | re.DOTALL)
+    return m.group(1) if m else ''
+
+
 @register('water_bill')
 def _parse_water(text: str) -> Optional[dict]:
     if not has(text, r'bil\s+air') or not has(
@@ -488,4 +501,5 @@ def _parse_water(text: str) -> Optional[dict]:
     if not amount:                           # the soft signal's point — bail to Gemini if unsure
         return None
     return {'name': _patronymic_name(text), 'address': '', 'amount': amount,
-            'unpaid_balance': unpaid, 'billing_period': ''}
+            'unpaid_balance': unpaid, 'billing_period': '',
+            'bill_date': _water_bill_date(text)}

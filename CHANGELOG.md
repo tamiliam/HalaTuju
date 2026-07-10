@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## Air Selangor water bills: the deterministic parser now reads the bill date — 2026-07-10
+
+### Fixed
+- **An Air Selangor water bill read `Current`/grey with no Period, and re-running had no effect.** A
+  water bill from a clean PDF locks onto the DETERMINISTIC parser (`doc_parse._parse_water`, capture
+  "Exact"), which read amount/arrears/name but **hard-coded no date** (`billing_period: ''`, no
+  `bill_date`) — so `_bill_as_of` had nothing, recency fell to grey "unknown", and re-running (which
+  re-runs the *deterministic* path, not Gemini) changed nothing. `_parse_water` now extracts
+  `bill_date` from the **"Tarikh" header** — deliberately NOT the due date ("Bayar Sebelum" / "Tarikh
+  Akhir") or the last payment ("Bayaran Terakhir"), and tolerant of the OCR splitting the label from
+  its value across lines. Calibrated on the real Air Selangor OCR corpus (5/6 dated, 0 confused with
+  the ~1-month-later due date) → the bill now resolves to its month (e.g. May 2026 → **Current**).
+  Complements the earlier Gemini-hint fix for LAP bills (which have no "Tarikh" at all and go via
+  Gemini). Takes effect on Re-run / new upload. +2 pytest.
+
 ## Reviewer & sponsor live-bug batch — 2026-07-10
 
 ### Fixed

@@ -499,12 +499,30 @@ BIL AIR
 KANDASAMY A/L TESTSAMY
 NO 2 JLN 25/27C TMN SRI MUDA
 40400 SHAH ALAM
+Wilayah
+Tarikh
+: 12/05/2026
 RINGKASAN BIL
 Baki Terdahulu RM 39.85
-Bayaran Sehingga Kini RM 0.00
+Bayaran Sehingga Kini (Bayaran Terakhir 08/04/2026)
 Bil Semasa (Bayar Sebelum 15/06/2026) RM 13.00
 Jumlah Perlu Dibayar RM 52.85
 No. Akaun :3482012000
+"""
+
+# a80-style OCR interleaving: the header label/value pairs get shuffled, so the "Tarikh" date sits a
+# line or two below the label (with the Wilayah value spliced between).
+_WATER_INTERLEAVED = """INVOIS
+BIL AIR
+LETCHUMY A/P TESTAMMAL
+41200 KLANG SELANGOR
+Tarikh
+: Hulu Selangor
+: 26/05/2026
+Baki Terdahulu RM 20.00
+Bil Semasa (Bayar Sebelum 25/06/2026) RM 30.00
+Jumlah Perlu Dibayar RM 50.00
+No. Akaun :8659871000
 """
 
 _WATER_MASKED = """INVOIS
@@ -524,12 +542,22 @@ class TestWaterParser(SimpleTestCase):
         self.assertEqual(r['name'], 'KANDASAMY A/L TESTSAMY')
         self.assertEqual(r['amount'], 'RM13.00')          # Bil Semasa (after the inline date clause)
         self.assertEqual(r['unpaid_balance'], 'RM39.85')  # Baki Terdahulu
+        # The bill is dated from the "Tarikh" header (so recency works) — NOT the due date
+        # (15/06/2026) or the last-payment date (08/04/2026).
+        self.assertEqual(r['bill_date'], '12/05/2026')
+
+    def test_bill_date_survives_ocr_interleaving(self):
+        # a80-style: the "Tarikh" date sits two lines below the label (Wilayah value spliced in).
+        r = parse_by_labels('water_bill', _WATER_INTERLEAVED)
+        self.assertEqual(r['bill_date'], '26/05/2026')    # not the due date 25/06/2026
 
     def test_masked_name_still_reads_amounts(self):
         r = parse_by_labels('water_bill', _WATER_MASKED)
         self.assertEqual(r['name'], '')                   # company masked it → soft, fine
         self.assertEqual(r['amount'], 'RM25.95')
         self.assertEqual(r['unpaid_balance'], 'RM25.70')
+        # No "Tarikh" header (only a "Bayar Sebelum" due date) → bill_date empty, NOT the due date.
+        self.assertEqual(r['bill_date'], '')
 
     def test_tunggakan_arrears_variant(self):
         txt = "BIL AIR\nTESTNAME A/P RAJU\nTunggakan RM 10.00\nBil Semasa RM 27.22\nNo. Akaun 123\n"
