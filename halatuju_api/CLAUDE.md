@@ -518,6 +518,27 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-10)
 
+**✅ SHIPPED 2026-07-10 — Deterministic document reading: SPM certificate parser + capture-label
+overhaul + government offer parser (BE+FE, NO migration; retro
+`docs/retrospective-2026-07-10-deterministic-doc-reading.md`; decisions ×1; lessons ×2).** Read the
+STANDARDISED docs deterministically ('Exact'), Gemini only for varied ones ('AI').
+- **SPM certificate parser** `academic_engine.parse_spm_cert` (+`ensure_exam_year`): a cert flattens
+  into a subject block + a separate grade block (paired by index) — the slip parser reads per-row so it
+  bailed to Gemini, which dropped the cert's foot-of-page exam year → the "old result" chip vanished.
+  Self-identifies, runs for ANY student (the `exam_type` gate had skipped the SPM parser for STPM
+  students — the real root cause). Conservative None→Gemini. Validated on 7 certs.
+- **Capture badge overhaul** (cockpit): `Exact read`/`AI read`→`Exact`/`AI`; shown on EVERY read doc
+  (field-extracted + IC); untagged docs default by type (deterministic-first→Exact, Gemini→AI); IC read
+  stamps `vision_fields.capture`.
+- **Govt offer parser** `offer_parse.parse_govt_offer` (STPM/Matrik/Poly, 71/90; the retired P5
+  revisited issuer-aware): reads identity+pathway+intake+institution+reporting per issuer; conservative
+  None→Gemini; university+PISMP stay Gemini. Wired deterministic-first with a MERGE over prior fields
+  (never drops `reporting_date` — the bonus). Validated 30/32, identity ~100%. **54 existing offers
+  backfilled to Exact** via cached OCR + REST PATCH (free, no Gemini, no live re-extract).
+- Commits `636d1d8f`/`5bb8d049`/`1a72219a`/`cb222d14`/`18f4512c`/`150df05c`/`25e5d2b4`. **3516 combined
+  pytest.** **▶ NEXT (optional):** re-run the ~7 no-OCR + 5 deferred (mononym) offers via cockpit;
+  a PISMP offer parser once its new format is captured.
+
 **✅ SHIPPED 2026-07-10 — Utility-bill arc: electricity genuineness model + Extraction-v2 + the
 staleness/currency fix (BE+FE, NO migration; scorer `genuineness/electricity_doc.py`
 `MODEL_VERSION 1.0.0`, per-family; retro `docs/retrospective-2026-07-10-electricity-bill-model.md`;

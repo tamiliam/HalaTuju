@@ -1,5 +1,27 @@
 # Architectural Decisions — HalaTuju
 
+## Deterministic reading of standardised docs (cert / govt offers) + capture-label defaults — 2026-07-10
+**Decision:** Read the STANDARDISED documents deterministically (label/positional parsers, 'Exact'),
+Gemini only for the varied ones ('AI'). (1) SPM **certificate** = its own `parse_spm_cert` (subject
+block + grade block paired by index), NOT an extension of the slip parser, self-identifying so it runs
+regardless of the profile `exam_type` gate. (2) **Government offers** (STPM/Matrik/Poly) = per-issuer
+TEXT-line parsing in `offer_parse.parse_govt_offer` — the retired P5 tried a GENERIC parse; issuer-aware
+it works. Conservative (None → Gemini); wired deterministic-first with a MERGE over prior fields so the
+Exact read never drops a field the AI read had. Universities + PISMP (new format) stay on Gemini. (3)
+The cockpit **capture badge** defaults an UNTAGGED doc by its type's primary method — deterministic-first
+types (ic/parent_ic/results_slip/birth_certificate/str/epf) → 'Exact', Gemini-read types → 'AI'.
+**Alternatives considered:** (a) word-box positional offer parser — unneeded, the OCR text was parseable;
+(b) replace-fields-wholesale on the offer switch — rejected, it dropped `reporting_date` (bonus); (c)
+re-extract existing offers on the live service — the deterministic offer parse needs ONLY OCR text, so a
+local backfill via cached OCR + REST PATCH is free, Gemini-free, and sidesteps the never-re-extract-locally
+hazard; (d) default all untagged docs to 'AI' — rejected, it mislabels the many deterministic-read docs.
+**Rationale:** the standardised docs have fixed formats we already fingerprint; deterministic reads are
+consistent, free, and honestly 'Exact'. Conservative-None + merge make the switch strictly safe.
+**Trade-offs:** per-issuer parsers to maintain; a format change (e.g. PISMP's new one) means defer, not
+break; a few mononym names / odd layouts stay on Gemini.
+**Revisit if:** an issuer changes its letter format (the parser defers → re-tune against fresh OCR), or
+PISMP's new format is captured and worth adding.
+
 ## Salary-slip genuineness = statutory-grammar cascade, soft, wrong-type-only chip — 2026-07-09
 **Decision:** Score salary slips by **statutory payroll grammar** (a multi-family cascade in
 `genuineness/salary_doc.py`), not a single-issuer signature list. `private` = ≥2 of {KWSP, SOCSO,
