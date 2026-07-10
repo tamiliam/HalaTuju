@@ -483,6 +483,14 @@ class AssignmentError(Exception):
         self.code = code
 
 
+# The roles that may be assigned to review an application (and therefore act on it — record a
+# verdict, propose interview times, etc.). SINGLE SOURCE OF TRUTH: scheduling._can_review imports
+# this so the interview surface can never drift out of step with the rest of the review surface
+# again (a stale copy here silently blocked a 'qc' reviewer from proposing interview times —
+# 2026-07-10). A 'partner' (org rep) is never a review target.
+REVIEW_ROLES = ('reviewer', 'super', 'admin', 'qc')
+
+
 def _can_review(admin):
     """A valid assignment target is an active reviewer, admin, qc, or super. Assignment grants
     selective WRITE access: a view-all 'admin' or the senior 'qc' role sees every application
@@ -491,7 +499,7 @@ def _can_review(admin):
     by someone else (the self-QC guard in _require_qc). A 'partner' (org rep) cannot be assigned."""
     if admin is None or not getattr(admin, 'is_active', False):
         return False
-    return bool(getattr(admin, 'is_super_admin', False)) or admin.role in ('reviewer', 'super', 'admin', 'qc')
+    return bool(getattr(admin, 'is_super_admin', False)) or admin.role in REVIEW_ROLES
 
 
 # Unassigning must not orphan a case whose reviewer has already done the work. Once

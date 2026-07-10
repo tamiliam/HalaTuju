@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.utils import timezone
 
-from . import emails, meeting, pool, whatsapp
+from . import emails, meeting, pool, services, whatsapp
 from .models import InterviewSlot
 
 logger = logging.getLogger(__name__)
@@ -60,10 +60,12 @@ def scheduling_enabled() -> bool:
 
 
 def _can_review(admin):
-    """Mirror services._can_review: an active reviewer/super may propose slots."""
+    """Mirror services._can_review: an active review target (reviewer/admin/qc/super) may propose
+    slots. Uses the SHARED services.REVIEW_ROLES so this can't drift from the assignment/write gate
+    again — the per-application assignment check below is what actually scopes WHO can propose."""
     if admin is None or not getattr(admin, 'is_active', False):
         return False
-    return bool(getattr(admin, 'is_super_admin', False)) or getattr(admin, 'role', '') in ('reviewer', 'super')
+    return bool(getattr(admin, 'is_super_admin', False)) or getattr(admin, 'role', '') in services.REVIEW_ROLES
 
 
 def _student_identity(application):

@@ -39,6 +39,16 @@ class SchedulingServiceTests(TestCase):
         cls.viewer = PartnerAdmin.objects.create(
             supabase_user_id='view-uid', role='admin', is_active=True,
             name='Viewer', email='viewer@example.com')
+        # A senior 'qc' reviewer — assignable + reviews its assigned cases (2026-07). Must be
+        # able to propose interview times on a case assigned to it (regression: a stale role
+        # tuple in scheduling._can_review blocked this with 'not_reviewer' — 2026-07-10).
+        cls.qc = PartnerAdmin.objects.create(
+            supabase_user_id='qc-uid', role='qc', is_active=True,
+            name='Suresh', email='qc@example.com')
+        # A 'partner' (org rep) is never a review target — the genuine not_reviewer case.
+        cls.partner = PartnerAdmin.objects.create(
+            supabase_user_id='partner-uid', role='partner', is_active=True,
+            name='Partner', email='partner@example.com')
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         cls.profile = StudentProfile.objects.create(
             supabase_user_id='stud', nric='030101-14-1234', name='Priya')
@@ -246,10 +256,30 @@ class SchedulingServiceTests(TestCase):
         self.assertEqual(str(cm.exception), 'not_assigned')
 
     def test_propose_rejects_non_reviewer(self):
+        # A 'partner' is not a review target → not_reviewer (an 'admin'/'qc' IS one, and is only
+        # scoped out by the assignment check, so they'd raise not_assigned instead — see below).
         with self.assertRaises(scheduling.SchedulingError) as cm:
-            scheduling.propose_slots(self.app, reviewer=self.viewer,
+            scheduling.propose_slots(self.app, reviewer=self.partner,
                                      starts=[self._future(days=3)])
         self.assertEqual(str(cm.exception), 'not_reviewer')
+
+    def test_propose_allowed_for_assigned_qc(self):
+        # Regression (2026-07-10): a 'qc' reviewer assigned to the case could not propose times —
+        # scheduling._can_review omitted 'qc'. An assigned qc must be able to propose.
+        self.app.assigned_to = self.qc
+        self.app.save(update_fields=['assigned_to'])
+        slots = scheduling.propose_slots(self.app, reviewer=self.qc,
+                                         starts=[self._future(days=3)])
+        self.assertEqual(len(slots), 1)
+
+    def test_scheduling_review_roles_match_services(self):
+        # Guard against the two _can_review copies drifting again: the interview surface must accept
+        # exactly the same review roles as the rest of the review/assignment surface.
+        from apps.scholarship import services
+        for role in ('reviewer', 'super', 'admin', 'qc', 'partner', ''):
+            a = PartnerAdmin(role=role, is_active=True)
+            self.assertEqual(scheduling._can_review(a), services._can_review(a),
+                             f'role {role!r} disagrees between scheduling and services')
 
     def test_propose_drops_past_times_and_needs_one_future(self):
         with self.assertRaises(scheduling.SchedulingError) as cm:
