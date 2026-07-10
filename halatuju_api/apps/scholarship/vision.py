@@ -1841,7 +1841,14 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
         govt = parse_govt_offer(_otext)
         if govt is not None:
             govt.pop('_family', None)
-            ex = {'fields': govt, 'warnings': [], 'error': '', 'capture': 'deterministic'}
+            # MERGE the deterministic fields OVER whatever was read before: the deterministic value
+            # wins where present, but a field the parser didn't produce (e.g. an occasional
+            # reporting_date the layout hid) keeps its prior value — so switching to the Exact read
+            # can never DROP a field the Gemini read had (the reporting-date bonus depends on it).
+            prior = doc.vision_fields.get('fields') if isinstance(getattr(doc, 'vision_fields', None), dict) else None
+            fields = ({**prior, **{k: v for k, v in govt.items() if (v or '').strip()}}
+                      if isinstance(prior, dict) else govt)
+            ex = {'fields': fields, 'warnings': [], 'error': '', 'capture': 'deterministic'}
         elif image is not None:
             ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
             ex['capture'] = 'ai'
