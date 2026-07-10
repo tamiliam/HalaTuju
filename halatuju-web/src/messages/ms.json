@@ -3470,7 +3470,7 @@
           "pathway_undeclared": "Belum memilih laluan.",
           "pathway_confirm": "Tawaran untuk {programme} di {institution} berbeza daripada laluan yang diisytiharkan — menunggu pengesahan pelajar yang mana satu akhir.",
           "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",
-          "pathway_switched": "Kursus ditukar — dahulu {from_programme} ({from_institution}), kini {to_programme} ({to_institution}). Pertukaran ke IPTA tidak mengapa; jubin menunjukkan sama ada laluan baharu itu layak.",
+          "pathway_switched": "Kursus ditukar — dahulu {from_programme} ({from_institution}), kini {to_programme} ({to_institution}).",
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
           "academic_grade_band_mismatch": "{subject}: slip jelas menunjukkan {slip} — huruf dan band Melayu sepadan — tetapi pelajar menaip {typed}. Gred yang ditaip adalah salah; minta pelajar membetulkannya.",
