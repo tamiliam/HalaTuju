@@ -797,10 +797,10 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         return student_str_check(obj)
 
     def get_utility_check(self, obj):
-        """{name, address, monthly_bill, unpaid_balance, address_status, current_status,
+        """{name, address, monthly_bill, unpaid_balance, address_status, current_status, bill_month,
         reasonable_status, reasonable_detail, outstanding_status, name_note} for a water /
-        electricity bill — address + soft consumption/recency/arrears signals, never the
-        student's name. Null for every other doc type."""
+        electricity bill — address + soft consumption/recency/arrears signals + the standardised
+        'MMM YYYY' bill month, never the student's name. Null for every other doc type."""
         if obj.doc_type not in ('water_bill', 'electricity_bill'):
             return None
         from .income_engine import utility_check

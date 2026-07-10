@@ -1730,6 +1730,8 @@ export interface UtilityCheck {
   // bill date vs the review date, a 3-tier traffic light: 'current' (≤3 months) |
   // 'ageing' (3–6 months) | 'stale' (>6 months) | 'unknown' (no readable date)
   current_status: 'current' | 'ageing' | 'stale' | 'unknown'
+  // the bill's point-in-time as a standardised 'MMM YYYY' (e.g. 'May 2026'), '' when undated
+  bill_month: string
   // combined household per-capita B40 proxy (both bills): 'reasonable' (the normal case) |
   // 'high' (> RM60/head, officer signal) | 'partial' (only one bill) | 'unknown' (no data)
   reasonable_status: 'reasonable' | 'high' | 'partial' | 'unknown'

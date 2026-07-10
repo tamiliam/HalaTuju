@@ -1495,6 +1495,19 @@ def _bill_age_months(fields, today):
     return max(0, (today.year - ym[0]) * 12 + (today.month - ym[1]))
 
 
+_MONTH_ABBR = ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+
+
+def _bill_month_label(fields):
+    """The bill's point-in-time as a STANDARDISED 'MMM YYYY' (e.g. 'May 2026'), from the same
+    ``_bill_as_of`` the currency chip uses — so however the raw Tarikh Bil / Tempoh Bil is printed
+    (a dd.mm.yyyy range, a full/Malay month name, an ISO date), the officer sees ONE consistent
+    format. '' when undated (the caller falls back to the raw string)."""
+    ym = _bill_as_of(fields)
+    return f'{_MONTH_ABBR[ym[1]]} {ym[0]}' if ym else ''
+
+
 def _utility_currency(fields, today):
     """Is the bill recent? A THREE-tier traffic light (owner 2026-07-10):
     'current' (≤3 months of *today* — green) | 'ageing' (3–6 months — amber, accepted but ageing) |
@@ -1647,6 +1660,8 @@ def utility_check(doc, today=None):
         'unpaid_balance': (f.get('unpaid_balance', '') or '').strip(),
         'address_status': getattr(doc, 'vision_address_match', '') or '',
         'current_status': _utility_currency(f, today),
+        # Standardised 'MMM YYYY' period for the cockpit values line (same date as current_status).
+        'bill_month': _bill_month_label(f),
         'reasonable_status': reasonable['status'],
         'reasonable_detail': reasonable['detail'],
         # 'arrears' (shown green) only when arrears exceed the current charge; else hidden.

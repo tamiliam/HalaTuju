@@ -340,7 +340,7 @@ describe('documentFacts', () => {
   it('utility bill → Address, Current, Reasonable (Outstanding only when arrears > charge)', () => {
     const util = (o: Partial<NonNullable<AdminApplicantDocument['utility_check']>>) =>
       ({ name: '', address: '', monthly_bill: '', unpaid_balance: '', address_status: '',
-        current_status: 'unknown', reasonable_status: 'unknown', reasonable_detail: '',
+        current_status: 'unknown', bill_month: '', reasonable_status: 'unknown', reasonable_detail: '',
         outstanding_status: '', name_note: '', ...o } as NonNullable<AdminApplicantDocument['utility_check']>)
     // Address found, recent bill, both bills cheap, arrears exceed the charge → all four green.
     expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({
@@ -383,26 +383,31 @@ describe('documentFacts', () => {
 
   it('utilityBillValues → labelled key values, empties skipped, arrears none-vs-amount', () => {
     const base = { name: 'X', address: '12 Jln', monthly_bill: '29.93', unpaid_balance: '',
-      address_status: 'found', current_status: 'current', reasonable_status: 'reasonable',
-      reasonable_detail: '', outstanding_status: '', name_note: '' } as NonNullable<AdminApplicantDocument['utility_check']>
-    // Amount RM-prefixed; period prefers bill_date; bill read but no arrears → 'none'. Account no is
-    // deliberately NOT a value (even when extracted).
+      address_status: 'found', current_status: 'current', bill_month: 'May 2026',
+      reasonable_status: 'reasonable', reasonable_detail: '', outstanding_status: '',
+      name_note: '' } as NonNullable<AdminApplicantDocument['utility_check']>
+    // Amount RM-prefixed; period is the standardised bill_month (preferred over the raw bill_date);
+    // bill read but no arrears → 'none'. Account no is deliberately NOT a value (even when extracted).
     expect(utilityBillValues(doc({ doc_type: 'electricity_bill', utility_check: base,
       vision_fields: { fields: { bill_date: 'Mar 2026', billing_period: 'ignored', account_no: '210262' } } } as Partial<AdminApplicantDocument>)))
       .toEqual([
         { labelKey: 'amount', value: 'RM29.93' },
-        { labelKey: 'period', value: 'Mar 2026' },
+        { labelKey: 'period', value: 'May 2026' },
         { labelKey: 'arrears', valueKey: 'none' },
       ])
     // A positive Tunggakan shows the amount (trailing zero preserved), not 'none'.
     expect(utilityBillValues(doc({ doc_type: 'water_bill',
-      utility_check: { ...base, monthly_bill: 'RM40', unpaid_balance: '64.90' },
-      vision_fields: { fields: { billing_period: 'Feb 2026' } } } as Partial<AdminApplicantDocument>)))
+      utility_check: { ...base, monthly_bill: 'RM40', unpaid_balance: '64.90', bill_month: 'Feb 2026' },
+      vision_fields: {} } as Partial<AdminApplicantDocument>)))
       .toEqual([
         { labelKey: 'amount', value: 'RM40' },
         { labelKey: 'period', value: 'Feb 2026' },
         { labelKey: 'arrears', value: 'RM64.90' },
       ])
+    // Undated (bill_month '') → falls back to the raw bill_date / billing_period.
+    expect(utilityBillValues(doc({ doc_type: 'water_bill', utility_check: { ...base, bill_month: '' },
+      vision_fields: { fields: { billing_period: 'Q1 2026' } } } as Partial<AdminApplicantDocument>))
+      .find((v) => v.labelKey === 'period')?.value).toBe('Q1 2026')
     // A non-utility doc (no utility_check) → [].
     expect(utilityBillValues(doc({ doc_type: 'str' }))).toEqual([])
   })

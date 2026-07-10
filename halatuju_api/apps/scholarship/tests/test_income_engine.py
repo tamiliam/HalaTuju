@@ -502,7 +502,7 @@ class TestIncomeIcCheck(SimpleTestCase):
 import datetime  # noqa: E402
 
 from apps.scholarship.income_engine import (  # noqa: E402
-    _parse_billing_month, _utility_currency, utility_reasonable, utility_check,
+    _parse_billing_month, _utility_currency, _bill_month_label, utility_reasonable, utility_check,
     _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
     slip_epf_divergence, _reconciled_holder_name, _arrears_amount,
     earner_monthly_income, _epf_monthly_salary, _salary_monthly_amount,
@@ -1121,6 +1121,20 @@ class TestUtilityCurrency(SimpleTestCase):
     def test_no_date_is_unknown(self):
         self.assertEqual(_utility_currency({'billing_period': ''}, self.TODAY), 'unknown')
         self.assertEqual(_utility_currency({}, self.TODAY), 'unknown')
+
+    def test_bill_month_label_standardises_to_mmm_yyyy(self):
+        # However the raw date is printed, the officer sees one 'MMM YYYY' format (owner 2026-07-10).
+        self.assertEqual(_bill_month_label({'billing_period': 'January 2026'}), 'Jan 2026')
+        self.assertEqual(_bill_month_label({'billing_period': 'Mac 2026'}), 'Mar 2026')            # Malay
+        self.assertEqual(_bill_month_label({'billing_period': '05/2026'}), 'May 2026')
+        self.assertEqual(_bill_month_label({'billing_period': '2026-11'}), 'Nov 2026')
+        # A dd.mm.yyyy range (Tempoh Bil) resolves to its month.
+        self.assertEqual(_bill_month_label({'billing_period': '03.05.2026 02.06.2026'}), 'May 2026')
+        # bill_date (Tarikh Bil) is preferred over the period, same as currency.
+        self.assertEqual(_bill_month_label({'bill_date': '18.04.2026', 'billing_period': 'Jan 2026'}), 'Apr 2026')
+        # Undated → '' (the cockpit falls back to the raw string).
+        self.assertEqual(_bill_month_label({'billing_period': ''}), '')
+        self.assertEqual(_bill_month_label({}), '')
 
     def test_future_dated_treated_current(self):
         self.assertEqual(_utility_currency({'billing_period': '07/2026'}, self.TODAY), 'current')

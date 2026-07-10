@@ -622,7 +622,9 @@ export function utilityBillValues(doc: AdminApplicantDocument): UtilityValue[] {
   const out: UtilityValue[] = []
   const amount = (c.monthly_bill || '').trim()
   if (amount) out.push({ labelKey: 'amount', value: _formatRm(amount) })
-  const period = ((f.bill_date || f.billing_period) || '').trim()
+  // Standardised 'MMM YYYY' from the backend (same date as the currency chip); raw string only as a
+  // fallback when the date couldn't be parsed into a month.
+  const period = (c.bill_month || f.bill_date || f.billing_period || '').trim()
   if (period) out.push({ labelKey: 'period', value: period })
   // Arrears: a real positive Tunggakan → the amount; the bill was read but shows none/credit → the
   // fixed word "none"; the bill wasn't read at all (no amount) → omit (don't claim "none").

@@ -12,6 +12,11 @@ All notable changes to this project will be documented in this file.
   a new `utilityBillValues` helper (empties skipped; a read bill with no arrears shows "Arrears none";
   a positive Tunggakan shows the amount). Account number is intentionally not shown. New i18n
   `docsDrawer.billValue.*` (en/ms/ta).
+- **The Period is standardised to `MMM YYYY`** (e.g. "May 2026") for both bills, however the raw
+  Tarikh Bil / Tempoh Bil was printed (a `dd.mm.yyyy` range, a full or Malay month name, an ISO date).
+  `utility_check` now returns `bill_month` from the SAME `_bill_as_of` the currency chip uses (so the
+  shown period can never disagree with the traffic-light tier); the cockpit falls back to the raw
+  string only when the date can't be parsed into a month.
 
 ### Changed
 - **The bill "warnings" note is now written for the reviewer, not the extractor.** The extraction
