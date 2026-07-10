@@ -834,6 +834,7 @@ def run_vision_for_document(doc) -> dict:
     ``vision_fields['authenticity']`` (no migration). Never blocks.
     """
     image = _fetch_image_bytes(doc.storage_path)
+    used_gemini = False
     if image is None:
         result = {'nric': '', 'name': '', 'address': '', 'error': 'could not fetch image'}
     else:
@@ -844,19 +845,28 @@ def run_vision_for_document(doc) -> dict:
                 g = _gemini_ic_second_opinion(image, doc.content_type)
                 if not g.get('_error'):
                     result = _merge_ic_reads(result, g, profile)
+                    used_gemini = True
     doc.vision_nric = result['nric'] or ''
     doc.vision_name = result['name'] or ''
     doc.vision_address = result.get('address', '') or ''
     doc.vision_error = result['error'] or ''
     doc.vision_run_at = timezone.now()
     update_fields = ['vision_nric', 'vision_name', 'vision_address', 'vision_error', 'vision_run_at']
+    vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    vf_changed = False
+    if image is not None and not result.get('error'):
+        # Capture-confidence tag (mirrors the field-extracted docs): the MyKad NRIC/name is read by
+        # deterministic Vision OCR unless the low-confidence Gemini second opinion was merged in.
+        vf['capture'] = 'ai' if used_gemini else 'deterministic'
+        vf_changed = True
     if image is not None and getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False):
         auth = ic_genuineness(image, doc.content_type)
         if auth:
-            vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
             vf['authenticity'] = auth
-            doc.vision_fields = vf
-            update_fields.append('vision_fields')
+            vf_changed = True
+    if vf_changed:
+        doc.vision_fields = vf
+        update_fields.append('vision_fields')
     doc.save(update_fields=update_fields)
     return result
 

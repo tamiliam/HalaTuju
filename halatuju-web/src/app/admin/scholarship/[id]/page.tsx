@@ -1882,11 +1882,17 @@ export default function AdminScholarshipDetailPage() {
                       {t(`admin.scholarship.docsDrawer.pill.${p}`)}
                     </span>
                     {/* Capture confidence: read deterministically (fixed labels) or by AI? Shown on
-                        every FIELD-EXTRACTED doc; an untagged older extraction (no `capture` recorded)
-                        defaults to 'ai' — the safe "please verify" label — so no doc is ever unlabelled.
-                        Docs with no `fields` (IC/parent_ic, read via a different path) get no badge. */}
-                    {d.vision_fields?.fields && (() => {
-                      const cap = d.vision_fields.capture === 'deterministic' ? 'deterministic' : 'ai'
+                        every read doc — field-extracted docs AND the identity ICs (read via the MyKad
+                        OCR path). The stored `capture` tag wins; when absent (older extractions) the
+                        default is doc-type-aware: an IC/parent_ic is deterministic Vision OCR → 'Exact',
+                        everything else → 'AI' (the safe "please verify" label). So no read doc is ever
+                        unlabelled, and a later Re-run stamps the precise tag. */}
+                    {(d.vision_fields?.fields || d.doc_type === 'ic' || d.doc_type === 'parent_ic') && (() => {
+                      const stored = d.vision_fields?.capture
+                      const isIc = d.doc_type === 'ic' || d.doc_type === 'parent_ic'
+                      const cap = stored === 'deterministic' ? 'deterministic'
+                        : stored === 'ai' ? 'ai'
+                        : isIc ? 'deterministic' : 'ai'
                       return (
                         <span
                           title={t(`admin.scholarship.docsDrawer.capture.${cap}.hint`)}
