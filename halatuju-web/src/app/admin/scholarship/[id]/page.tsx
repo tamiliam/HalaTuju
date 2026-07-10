@@ -1889,10 +1889,14 @@ export default function AdminScholarshipDetailPage() {
                         unlabelled, and a later Re-run stamps the precise tag. */}
                     {(d.vision_fields?.fields || d.doc_type === 'ic' || d.doc_type === 'parent_ic') && (() => {
                       const stored = d.vision_fields?.capture
-                      const isIc = d.doc_type === 'ic' || d.doc_type === 'parent_ic'
+                      // The stored tag always wins. When absent (older extractions), default by the
+                      // doc type's PRIMARY read method: the deterministic-first types (a label/positional
+                      // parser runs before any Gemini fallback) default to 'Exact'; the rest — read by
+                      // Gemini — default to 'AI'. A Re-run stamps the precise tag either way.
+                      const DETERMINISTIC_FIRST = ['ic', 'parent_ic', 'results_slip', 'birth_certificate', 'str', 'epf']
                       const cap = stored === 'deterministic' ? 'deterministic'
                         : stored === 'ai' ? 'ai'
-                        : isIc ? 'deterministic' : 'ai'
+                        : DETERMINISTIC_FIRST.includes(d.doc_type) ? 'deterministic' : 'ai'
                       return (
                         <span
                           title={t(`admin.scholarship.docsDrawer.capture.${cap}.hint`)}
