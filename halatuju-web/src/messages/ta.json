@@ -3650,6 +3650,13 @@
           "reasonable": "நியாயமானது",
           "outstanding": "நிலுவை"
         },
+        "billValue": {
+          "amount": "தொகை",
+          "period": "காலம்",
+          "arrears": "நிலுவை",
+          "account": "கணக்கு",
+          "none": "இல்லை"
+        },
         "type": {
           "ic": "விண்ணப்பதாரரின் IC",
           "parent_ic": "குடும்ப உறுப்பினரின் IC",

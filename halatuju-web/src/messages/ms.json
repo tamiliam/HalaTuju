@@ -3650,6 +3650,13 @@
           "reasonable": "Munasabah",
           "outstanding": "Tunggakan"
         },
+        "billValue": {
+          "amount": "Amaun",
+          "period": "Tempoh",
+          "arrears": "Tunggakan",
+          "account": "Akaun",
+          "none": "tiada"
+        },
         "type": {
           "ic": "IC pemohon",
           "parent_ic": "IC ahli keluarga",

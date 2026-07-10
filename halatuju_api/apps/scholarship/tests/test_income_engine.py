@@ -303,6 +303,20 @@ class TestBirthCertificateWiring(SimpleTestCase):
             'offer_date is not explicitly stated in the document.',   # phrasing variant → dropped
             'candidate_name not found'])
         self.assertEqual(kept_offer, ['candidate_name not found'])
+        # water/electricity bill: drop the extraction BOOKKEEPING (field-name register, which RM
+        # figure was chosen, a credit "left empty as per instructions") — keep the SUBSTANTIVE notes
+        # (a bill date / tariff that reads oddly) which are reviewer-worthy. Owner 2026-07-10.
+        kept_bill = _drop_expected_warnings('electricity_bill', [
+            "The 'amount' field uses 'Caj Penggunaan Bulan Semasa' (29.93) as it excludes the surcharge.",
+            "'unpaid_balance' (Tunggakan) is a negative value (-64.90), indicating a credit, not arrears.",
+            'Field left empty as per instructions.',
+            "The bill date year '2826' was corrected to '2026' — the printed year looks wrong.",
+            'The tariff is unclear on the bill.'])
+        self.assertEqual(kept_bill, [
+            "The bill date year '2826' was corrected to '2026' — the printed year looks wrong.",
+            'The tariff is unclear on the bill.'])
+        self.assertEqual(_drop_expected_warnings('water_bill', ['The address is partly cut off.']),
+                         ['The address is partly cut off.'])
 
     def test_birth_certificate_is_in_the_upload_pipeline(self):
         # The schema existing is NOT enough — the upload handler only OCRs + field-extracts

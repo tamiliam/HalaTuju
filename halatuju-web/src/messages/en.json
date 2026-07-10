@@ -3650,6 +3650,13 @@
           "reasonable": "Reasonable",
           "outstanding": "Outstanding"
         },
+        "billValue": {
+          "amount": "Amount",
+          "period": "Period",
+          "arrears": "Arrears",
+          "account": "Account",
+          "none": "none"
+        },
         "type": {
           "ic": "Applicant's IC",
           "parent_ic": "Family member's IC",

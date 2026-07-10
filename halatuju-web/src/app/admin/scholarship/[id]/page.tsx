@@ -56,6 +56,7 @@ import {
   aiSuggestionFor,
   documentPill,
   documentFacts,
+  utilityBillValues,
   incomeSubSections,
   docIconFor,
   earnerMemberFor,
@@ -1925,6 +1926,21 @@ export default function AdminScholarshipDetailPage() {
                       {t(`admin.scholarship.docsDrawer.utilityNote.${d.utility_check.reasonable_detail}`)}
                     </p>
                   )}
+                  {(() => {
+                    // Key values the AI read, so the reviewer gets the picture without opening the doc.
+                    const vals = utilityBillValues(d)
+                    return vals.length > 0 ? (
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        {vals.map((v, i) => (
+                          <span key={v.labelKey}>
+                            {i > 0 && <span className="text-gray-300"> · </span>}
+                            <span className="text-gray-400">{t(`admin.scholarship.docsDrawer.billValue.${v.labelKey}`)} </span>
+                            {v.value ?? t(`admin.scholarship.docsDrawer.billValue.${v.valueKey}`)}
+                          </span>
+                        ))}
+                      </p>
+                    ) : null
+                  })()}
                   {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && (
                     <p className="text-[11px] text-amber-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                   )}

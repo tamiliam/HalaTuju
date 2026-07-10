@@ -1465,6 +1465,15 @@ def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = Non
     return {'_error': f'All AI models failed: {last_error}'}
 
 
+# The `warnings` are shown to a NON-TECHNICAL officer in the cockpit (docsDrawer). Steer Gemini to
+# write them in reviewer language, not extraction/engineer register — no field names, no reference to
+# these instructions, no OCR mechanics, no "which figure I picked" bookkeeping (owner 2026-07-10).
+_WARNING_VOICE = (' Write each warning as ONE short plain-language sentence for a NON-TECHNICAL '
+                  'reviewer — say what looks unclear or unusual ON THE DOCUMENT in everyday words. '
+                  'Do NOT mention field names, the word "field", these instructions, code, or OCR, '
+                  'and do NOT explain which figure you picked.')
+
+
 def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[bytes] = None,
                             content_type: str = '') -> dict:
     """Gemini extracts the per-doc-type fields. Pass ``image`` to read the document
@@ -1483,7 +1492,7 @@ def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[byt
         prompt = (
             f'This is an image of a Malaysian {doc_label}. Read it carefully and extract '
             'the listed fields exactly as printed. If a field is missing or unclear, leave '
-            f'it empty and add a short note to "warnings". Do NOT invent values.{hint}'
+            f'it empty and add a short note to "warnings". Do NOT invent values.{_WARNING_VOICE}{hint}'
         )
         data = _call_gemini_json(prompt, schema, image=img, mime_type=mime)
     else:
@@ -1492,7 +1501,7 @@ def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[byt
         prompt = (
             f'Here is the OCR text from a Malaysian {doc_label}. Extract the listed fields '
             'exactly as printed. If a field is missing or unclear, leave it empty and add a '
-            f'short note to "warnings". Do NOT invent values.{hint}\n\nOCR TEXT:\n{(ocr_text or "")[:6000]}'
+            f'short note to "warnings". Do NOT invent values.{_WARNING_VOICE}{hint}\n\nOCR TEXT:\n{(ocr_text or "")[:6000]}'
         )
         data = _call_gemini_json(prompt, schema)
     if '_error' in data:
@@ -1652,6 +1661,19 @@ def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
                                         'institution', 'college', 'university', 'programme',
                                         'program', 'course'))
         return [w for w in warnings if not _is_semester_field_noise(w)]
+    if doc_type in ('water_bill', 'electricity_bill'):
+        # Belt-and-braces with _WARNING_VOICE for existing/legacy notes: drop the extraction
+        # BOOKKEEPING the officer doesn't need — which RM figure was chosen (Caj Semasa vs Caj
+        # Penggunaan and its surcharge), a credit balance "left empty as per instructions", and any
+        # note written in field-name / engineer register. Keep the SUBSTANTIVE ones (a bill date or
+        # tariff that reads oddly, an unreadable amount) — those are reviewer-worthy.
+        def _is_utility_note_noise(w) -> bool:
+            s = (w or '').lower()
+            return ("'amount'" in s or "'unpaid_balance'" in s or "'tunggakan'" in s
+                    or 'field' in s or 'as per instruction' in s or 'as instructed' in s
+                    or ('caj ' in s and any(k in s for k in ('exclud', 'includ', 'surcharge')))
+                    or ('negative' in s and 'credit' in s))
+        return [w for w in warnings if not _is_utility_note_noise(w)]
     return warnings
 
 

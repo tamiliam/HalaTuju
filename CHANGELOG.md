@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Utility-bill key values on the officer chip + reviewer-facing extraction notes — 2026-07-10
+
+### Added
+- **The key values the AI read off a utility bill now show inline in the officer cockpit** (owner
+  request) so the reviewer gets the picture without opening the document: a labelled line —
+  **Amount · Period · Arrears · Account** — under the facts, values from `utility_check` +
+  `vision_fields.fields` via a new `utilityBillValues` helper (empties skipped; a read bill with no
+  arrears shows "Arrears none"; a positive Tunggakan shows the amount). New i18n
+  `docsDrawer.billValue.*` (en/ms/ta).
+
+### Changed
+- **The bill "warnings" note is now written for the reviewer, not the extractor.** The extraction
+  `warnings` were surfaced verbatim to the officer in engineer register — field names in quotes
+  ("the 'amount' field…"), "left empty as per instructions", OCR-correction mechanics. Two fixes:
+  (1) the extraction prompt now instructs Gemini to write each warning as one plain-language sentence
+  for a non-technical reviewer (no field names, no "instructions", no OCR talk) — applies to every
+  doc type on the next read/Re-run; (2) `_drop_expected_warnings` gained a water/electricity branch
+  that drops the mechanical bookkeeping (which RM figure was chosen, a credit "left empty as per
+  instructions", field-name-register notes) while keeping substantive ones (a bill date/tariff that
+  reads oddly). Existing bills refresh their notes on Re-run (natural rollout). 2314 scholarship
+  pytest + 491 jest.
+
 ## Utility-bill recency is now a 3-tier traffic light on the officer chip — 2026-07-10
 
 ### Changed
