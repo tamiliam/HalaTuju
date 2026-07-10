@@ -8,9 +8,38 @@ from types import SimpleNamespace
 from django.test import SimpleTestCase
 
 from apps.scholarship.academic_engine import (
-    _declared_subject_count, _split_band, compare_academics, parse_spm_slip, read_slip,
-    student_slip_check,
+    _declared_subject_count, _slip_exam, _split_band, _spm_exam_year, compare_academics,
+    ensure_exam_year, parse_spm_slip, read_slip, student_slip_check,
 )
+
+
+# The exact top-of-page shape that broke #8 (YESWINDRAN): a downloaded slip whose FIRST line is the
+# print timestamp "12/04/2026 , 07:25", while the exam itself is "TAHUN 2025". The exam-year read
+# must anchor to the exam label, never the download timestamp.
+_YESWINDRAN_TOP = ('12/04/2026 , 07:25 Sekolah - Slip Keputusan SPM 2025 '
+                   'KEMENTERIAN PENDIDIKAN LEMBAGA PEPERIKSAAN '
+                   'SIJIL PELAJARAN MALAYSIA TAHUN 2025')
+
+
+class TestExamYearAnchor(SimpleTestCase):
+    def test_year_ignores_download_timestamp(self):
+        self.assertEqual(_spm_exam_year(_YESWINDRAN_TOP), '2025')
+
+    def test_slip_exam_uses_anchored_year(self):
+        rows = [[{'text': w} for w in _YESWINDRAN_TOP.split()]]
+        self.assertEqual(_slip_exam(rows), 'SIJIL PELAJARAN MALAYSIA TAHUN 2025')
+
+    def test_certificate_foot_year(self):
+        self.assertEqual(_spm_exam_year('LAYAK DIANUGERAHI ... PEPERIKSAAN TAHUN 2024'), '2024')
+
+    def test_no_anchored_year_returns_blank(self):
+        # A stray date with no exam label → no year (better no chip than the wrong one).
+        self.assertEqual(_spm_exam_year('printed 12/04/2026 07:25'), '')
+
+    def test_ensure_exam_year_backfills_anchored_not_timestamp(self):
+        # Gemini path: the exam field lost its year → backfill from the OCR, anchored (not 2026).
+        self.assertEqual(ensure_exam_year('SIJIL PELAJARAN MALAYSIA', _YESWINDRAN_TOP),
+                         'SIJIL PELAJARAN MALAYSIA TAHUN 2025')
 
 
 def _doc(fields):

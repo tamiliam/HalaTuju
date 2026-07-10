@@ -330,12 +330,35 @@ def _slip_name(rows):
     return ''
 
 
+# The SPM exam YEAR must be read from the exam TITLE / foot label — never a stray 20xx elsewhere on
+# the page. A downloaded slip prints the DOWNLOAD timestamp at the very top ("12/04/2026, 07:25 …"),
+# so a naive "first 20xx in the text" grabs the print year (2026), not the exam year (2025) — #8
+# YESWINDRAN read "TAHUN 2026" off a 2025 slip → a false amber "off-cohort" chip. Anchor to the
+# label; return '' rather than a wrong year (better no chip than a lie).
+_EXAM_YEAR_ANCHORS = (
+    r'PELAJARAN\s+MALAYSIA\s+TAHUN\s+(20\d{2})',   # "SIJIL PELAJARAN MALAYSIA TAHUN 2025" (slip+cert)
+    r'PEPERIKSAAN\s+TAHUN\s+(20\d{2})',            # certificate foot
+    r'KEPUTUSAN\s+SPM\s+(20\d{2})',                # header "Slip Keputusan SPM 2025"
+)
+
+
+def _spm_exam_year(text: str) -> str:
+    """The SPM exam year, anchored to the exam title / foot label — NEVER a stray date such as the
+    download timestamp at the top of a slip. '' when no anchored year is found."""
+    up = (text or '').upper()
+    for pat in _EXAM_YEAR_ANCHORS:
+        m = re.search(pat, up)
+        if m:
+            return m.group(1)
+    return ''
+
+
 def _slip_exam(rows):
     text = ' '.join(w['text'] for row in rows for w in row)
     if 'SIJIL PELAJARAN MALAYSIA' not in text.upper():
         return ''
-    m = re.search(r'\b(20\d{2})\b', text)
-    return f'SIJIL PELAJARAN MALAYSIA TAHUN {m.group(1)}' if m else 'SIJIL PELAJARAN MALAYSIA'
+    yr = _spm_exam_year(text)
+    return f'SIJIL PELAJARAN MALAYSIA TAHUN {yr}' if yr else 'SIJIL PELAJARAN MALAYSIA'
 
 
 # Malay cardinals for the slip's own declared subject total ("JUMLAH MATA PELAJARAN :
@@ -434,9 +457,9 @@ def parse_spm_cert(text: str):
     # NRIC: the FIRST 12-digit IC — the candidate's, above the witness/endorser block.
     nm = _NRIC_RE.search(text or '')
     nric = nm.group(1) if nm else ''
-    # Exam + year: the cert prints its year at the foot ('Peperiksaan Tahun YYYY').
-    ym = re.search(r'PEPERIKSAAN\s+TAHUN\s+(20\d{2})', up) or re.search(r'\b(20\d{2})\b', up)
-    exam = f'SIJIL PELAJARAN MALAYSIA TAHUN {ym.group(1)}' if ym else 'SIJIL PELAJARAN MALAYSIA'
+    # Exam + year: anchored to the title / foot label (never a stray page date — see _spm_exam_year).
+    yr = _spm_exam_year(text)
+    exam = f'SIJIL PELAJARAN MALAYSIA TAHUN {yr}' if yr else 'SIJIL PELAJARAN MALAYSIA'
 
     gi = next((i for i, ln in enumerate(lines) if _GRADE_HDR_RE.match(ln)), None)
     # Subjects: known SPM subjects BEFORE the grade header; stop at the oral/CEFR/total lines so an
@@ -474,11 +497,9 @@ def ensure_exam_year(exam: str, text: str) -> str:
     carries a 20xx year or no year is found. Used on the Gemini fallback path in vision.py."""
     if re.search(r'\b20\d{2}\b', exam or ''):
         return exam
-    m = (re.search(r'PEPERIKSAAN\s+TAHUN\s+(20\d{2})', (text or '').upper())
-         or re.search(r'\b(20\d{2})\b', text or ''))
-    if not m:
+    year = _spm_exam_year(text)          # anchored — never the download-timestamp year
+    if not year:
         return exam
-    year = m.group(1)
     return f'{exam} TAHUN {year}'.strip() if (exam and 'SIJIL' in exam.upper()) \
         else f'SIJIL PELAJARAN MALAYSIA TAHUN {year}'
 
