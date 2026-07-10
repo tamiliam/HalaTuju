@@ -36,6 +36,11 @@ interface SponsorPortalValue {
   gradMessages: GraduationRelayMessage[]
   referrals: SponsorReferral[]
   refreshReferrals: () => Promise<void>
+  // After a fund: the funded student leaves the pool (→ 'awarded') and appears under wallet
+  // "My students" as awaiting-acceptance. Call these so both surfaces update without a hard
+  // page reload (the portal data is otherwise fetched ONCE on mount — see below).
+  refreshPool: () => Promise<void>
+  refreshWallet: () => Promise<void>
 }
 
 const SponsorPortalContext = createContext<SponsorPortalValue | null>(null)
@@ -66,6 +71,26 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
       setReferrals(r.referrals)
     } catch {
       /* leave the current list on failure */
+    }
+  }, [token])
+
+  const refreshPool = useCallback(async () => {
+    if (!token) return
+    try {
+      const d = await getSponsorPool({ token })
+      setPool(d.students)
+    } catch {
+      /* transient refresh failure → keep the current list (don't blank it) */
+    }
+  }, [token])
+
+  const refreshWallet = useCallback(async () => {
+    if (!token) return
+    try {
+      const w = await getSponsorWallet({ token })
+      setWallet(w)
+    } catch {
+      /* leave the current wallet on failure */
     }
   }, [token])
 
@@ -105,7 +130,7 @@ export function SponsorPortalProvider({ children }: { children: ReactNode }) {
 
   return (
     <SponsorPortalContext.Provider
-      value={{ ready, poolUnavailable, pool, wallet, impact, activity, community, statement, trust, gradMessages, referrals, refreshReferrals }}
+      value={{ ready, poolUnavailable, pool, wallet, impact, activity, community, statement, trust, gradMessages, referrals, refreshReferrals, refreshPool, refreshWallet }}
     >
       {children}
     </SponsorPortalContext.Provider>

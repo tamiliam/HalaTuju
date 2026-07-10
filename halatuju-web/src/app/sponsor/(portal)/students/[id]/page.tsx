@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
+import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { fundStudent, getSponsorPoolDetail, getSponsorWallet, type SponsorPoolDetail } from '@/lib/api'
 
 // Backend fund error code → localised message key.
@@ -22,6 +23,7 @@ const FUND_ERR_KEY: Record<string, string> = {
 export default function StudentDetailPage() {
   const { t } = useT()
   const { token } = useSponsorAuth()
+  const { refreshPool, refreshWallet } = useSponsorPortal()
   const params = useParams()
   const id = Number(params?.id)
 
@@ -57,6 +59,11 @@ export default function StudentDetailPage() {
       getSponsorWallet({ token })
         .then((w) => setBalance(w.balance))
         .catch(() => { /* non-critical */ })
+      // Refresh the shared portal data so the funded student drops off the "available
+      // students" list and shows under "My students" as awaiting-acceptance — without the
+      // sponsor having to hard-refresh (the reported stale-list bug, 2026-07).
+      refreshPool()
+      refreshWallet()
     } catch (e) {
       setErrCode((e as Error & { code?: string }).code || 'generic')
     } finally {
