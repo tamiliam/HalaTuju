@@ -769,6 +769,13 @@ def _verdict_pathway(application):
                                 declared_programme=chk['declared_programme'],
                                 declared_institution=chk['declared_institution']))
 
+    # NB the course-SWITCH note is deliberately NOT a verdict item here (owner 2026-07-10): a PUBLIC
+    # switch is acceptable — a student may legitimately move STPM → matriculation → a UA diploma — so
+    # it must NOT downgrade the pathway band. It is surfaced separately as an always-visible cockpit
+    # banner + the offer's "Switched" chip (both from `offer_pathway_switch` / `pathway_check`), which
+    # inform the reviewer without penalising. A switch INTO a private/IPTS arm is red on its own via
+    # the genuineness veto, not via the switch.
+
     # Base band (the ladder then applies the genuineness step + red-chip deductions): a clean letter
     # with a readable programme (or an already-confirmed pathway) settles it → verified; any red chip
     # or an unread programme is an under-claim → review.

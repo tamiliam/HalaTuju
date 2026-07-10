@@ -1180,6 +1180,28 @@ export default function AdminScholarshipDetailPage() {
             ))}
           </div>
         )}
+        {/* Course-switch banner (owner 2026-07-10): the live offer replaced a genuinely different
+            prior offer (any→any). ALWAYS shown — survives the green-collapse — so a switch is never
+            missed. Info (blue) not warning: a PUBLIC switch is acceptable; the pathway tile itself
+            (red if it landed on a private/IPTS arm) carries the accept/reject. */}
+        {(() => {
+          const sw = (app.documents || []).find(
+            (d) => d.doc_type === 'offer_letter' && d.pathway_check?.switched_from)
+          const from = sw?.pathway_check?.switched_from
+          if (!from) return null
+          const pc = sw!.pathway_check!
+          return (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-primary-100 bg-primary-50 p-2.5 text-xs text-primary-800">
+              <span aria-hidden>⇄</span>
+              <span>{t('admin.scholarship.verdict.item.pathway_switched', {
+                from_programme: from.programme || '—',
+                from_institution: from.institution || '—',
+                to_programme: pc.programme || '—',
+                to_institution: pc.institution || '—',
+              })}</span>
+            </div>
+          )
+        })()}
         {/* Check-2 case summary — the LLM briefing that "talks to the reviewer" (dark-flag aware;
             empty when every fact is Certain). Sits above the checklist, which is the audit trail. */}
         {caseSummary?.enabled && (caseSummary.summary || '').trim() && (

@@ -460,6 +460,10 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     ]
     if (c.pathway) facts.push({ key: 'pathway', status: effectiveNotOfficial ? 'not' : factStatus(c.pathway) })
     if (notOfficial) facts.push({ key: 'official', status: fake ? 'not' : 'partial' })
+    // Course-switch note (owner 2026-07-10): amber chip on the LIVE offer when it replaced a
+    // genuinely different prior offer (any→any). Always shown, even after the student confirms —
+    // so a swap never rides through as a silent green (the verdict tile carries the same note).
+    if (c.switched_from) facts.push({ key: 'switched', status: 'partial' })
     // NB deliberately NO separate reporting-date chip (owner 2026-07-08): the Intake {year} chip
     // already carries the currency signal (green current / amber past), and the reporting-date
     // BONUS is band machinery — its effect shows in the tile + the offer_reporting_official

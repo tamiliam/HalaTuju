@@ -74,7 +74,18 @@ from .bands import GENUINE_MIN, SUSPECT_MAX, band_for  # noqa: F401  (re-exporte
 #       bump for traceability (1.2/1.2.1 precedent). Backfill: re-run the <0.70 offers
 #       (reextract_offers pass 2026_07b) so the label lands; genuine ≥0.70 docs don't need it
 #       (their step is already 0 — the bonus is moot).
-MODEL_VERSION = '1.5.0'
+#   1.6.0 (2026-07-10) — PRIVATE / continuing-education ARM veto (owner: "SPACE is an IPTS —
+#       disqualifying, like AIMST / UTAR; treat all private the same"). A public university's
+#       fee-paying continuing-education arm (UTM SPACE, UM CCE, …) prints the PARENT UA name, so the
+#       ua_offer NAME anchor fires and the letter scored 'genuine' off a UA it is not a mainstream
+#       public intake for (#13 genuine while the identical #12 read not_offer_letter — the scorer
+#       was inconsistent). `_private_arm_offer` reads the ARM's own 'tell' straight off the OCR text
+#       (it names itself: Pendidikan Berterusan / (SPACE) / Continuing Education, or a Sdn. Bhd.
+#       operator) and forces `not_offer_letter` — the −2 genuineness step, exactly as a private
+#       college that misses the UA list. Pairs with the reporting-bonus gate-3b block
+#       (pathway_engine) so the +1 date bonus can't lift it back to amber. Backfill: re-run offers
+#       (reextract_offers) — a private-arm offer that stored 'genuine' pre-1.6.0 re-scores to fake.
+MODEL_VERSION = '1.6.0'
 
 # Each signature: (label, [match patterns], weight, kind). kind 'text' is matched against the
 # OCR text; kind 'visual' is satisfied by a passed-in flag (crest / QR). Weights: 1 = ordinary
@@ -445,6 +456,24 @@ def results_visual_markers(data: bytes, content_type: str = '') -> dict:
     return {'has_qr': bool(r.get('has_qr_code')), 'has_crest': bool(r.get('has_jata_negara_crest'))}
 
 
+# A public university's fee-paying, self-funded continuing-education ARM (UTM SPACE, UM CCE, …) is an
+# IPTS option — disqualifying, like any private college (owner 2026-07-10). It prints the PARENT UA
+# name, so the ua_offer NAME anchor fires and the letter would read 'genuine'. The ARM names itself
+# on the letterhead / "Entiti Pengendali", which is the forge-resistant 'tell'. 'SPACE' is matched as
+# a standalone token (never AEROSPACE); the two phrases are safe as substrings.
+_PRIVATE_ARM_PHRASES = ('PENDIDIKAN BERTERUSAN', 'CONTINUING EDUCATION', 'SDN BHD')
+
+
+def _private_arm_offer(ocr_text: str) -> bool:
+    """True when an offer is from a public university's PRIVATE continuing-education arm (SPACE /
+    Pendidikan Berterusan / Continuing Education) or a Sdn. Bhd. operator — an IPTS option. Read off
+    the OCR text; pure + deterministic."""
+    tn = _norm(ocr_text)
+    if any(p in tn for p in _PRIVATE_ARM_PHRASES):
+        return True
+    return ' SPACE ' in f' {tn} '
+
+
 def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool = False,
                           doc_type: str = None, has_seal: bool = False) -> dict:
     """The soft genuineness signal for a standard document from its signatures:
@@ -454,6 +483,17 @@ def signature_genuineness(ocr_text: str, has_qr: bool = False, has_crest: bool =
     r = score_signatures(ocr_text, has_qr=has_qr, has_crest=has_crest, doc_type=doc_type,
                          has_seal=has_seal)
     n_have, n_all = len(r['present']), len(r['present']) + len(r['missing'])
+
+    # PRIVATE / continuing-education ARM veto (MODEL_VERSION 1.6.0): a private / IPTS option is
+    # disqualifying — force not_offer_letter (fake) so the ladder applies the −2 step, exactly as a
+    # private college that misses the UA list. Overrides the UA-name anchor a SPACE letter would
+    # otherwise ride on. Offers only.
+    if doc_type == 'offer_letter' and _private_arm_offer(ocr_text):
+        return {'status': 'not_offer_letter', 'probability': r['probability'], 'type': r['type'],
+                'present': r['present'], 'missing': r['missing'],
+                'reason': ('private / continuing-education arm (SPACE / Pendidikan Berterusan / '
+                           'Sdn Bhd) — an IPTS option, not a supported public offer')[:300],
+                'model_version': MODEL_VERSION}
 
     identity = _IDENTITY.get(doc_type)
     if identity:

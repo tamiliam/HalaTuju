@@ -1787,6 +1787,9 @@ export interface PathwayCheck {
   pathway?: 'match' | 'mismatch' | 'unknown'
   declared_programme?: string
   declared_institution?: string
+  // The course-switch note: set on the LIVE offer when it replaced a genuinely different prior
+  // offer (any→any). Null when there was no switch. Surfaced even after the student confirms.
+  switched_from?: { programme: string; institution: string } | null
 }
 
 export interface Referee {

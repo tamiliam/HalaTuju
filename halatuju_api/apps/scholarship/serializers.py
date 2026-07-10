@@ -755,11 +755,16 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
 
     def get_pathway_check(self, obj):
         """{name, ic, + data points} for an offer letter — the clinical facts against
-        the student's own profile. Null for every other doc type."""
+        the student's own profile, plus ``switched_from`` on the LIVE offer when it replaced a
+        genuinely different prior offer (the course-switch note). Null for every other doc type."""
         if obj.doc_type != 'offer_letter':
             return None
-        from .pathway_engine import student_offer_check
-        return student_offer_check(obj)
+        from .pathway_engine import student_offer_check, offer_pathway_switch
+        chk = student_offer_check(obj)
+        sw = offer_pathway_switch(obj.application) if getattr(obj, 'superseded_at', None) is None else None
+        chk['switched_from'] = ({'programme': sw['from_programme'], 'institution': sw['from_institution']}
+                                if sw else None)
+        return chk
 
     def get_income_ic_check(self, obj):
         """{nric, name, address, member, name_status, readable} for an income earner's

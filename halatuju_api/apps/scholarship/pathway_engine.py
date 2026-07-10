@@ -238,7 +238,37 @@ def offer_reporting_bonus(doc) -> bool:
     haystack = ' '.join(((f.get('issuer') or ''), (f.get('institution') or ''))).upper()
     if 'SDN' in haystack and 'BHD' in haystack:
         return False                                    # gate 3: a private company is never a UA
+    # gate 3b (owner 2026-07-10): a public university's PRIVATE continuing-education arm (UTM SPACE,
+    # UM CCE, …) is an IPTS option — the scorer vetoes it to not_offer_letter (1.6.0), and the +1
+    # date bonus must never lift it back to amber. Reads the extracted issuer/institution, so it bites
+    # on DEPLOY (before any re-run). 'SPACE' padded so it never matches AEROSPACE.
+    if ('PENDIDIKAN BERTERUSAN' in haystack or 'CONTINUING EDUCATION' in haystack
+            or ' SPACE ' in f' {haystack} '):
+        return False                                    # gate 3b: private continuing-education arm
     return True
+
+
+def offer_pathway_switch(application):
+    """The reviewer-facing "course switched" signal (owner 2026-07-10): the LIVE offer is for a
+    genuinely DIFFERENT pathway than the most-recently superseded offer it replaced. Returns
+    ``{from_programme, from_institution, to_programme, to_institution}`` or None. Surfaced ALWAYS —
+    even after the student confirms the new pathway — so a switch never passes unnoticed (a confirmed
+    switch used to read a silent Certain green). Pure read; no writes."""
+    from .models import ApplicantDocument
+    live = _latest_offer(application)
+    if live is None:
+        return None
+    prev = (ApplicantDocument.objects.filter(
+                application=application, doc_type='offer_letter', superseded_at__isnull=False)
+            .order_by('-superseded_at').first())
+    if prev is None:
+        return None
+    lc, pc = student_offer_check(live), student_offer_check(prev)
+    if _field_status(pc['programme'], lc['programme']) == 'clash' \
+            or _field_status(pc['institution'], lc['institution']) == 'clash':
+        return {'from_programme': pc['programme'], 'from_institution': pc['institution'],
+                'to_programme': lc['programme'], 'to_institution': lc['institution']}
+    return None
 
 
 def offer_official_status(doc) -> str:
@@ -248,7 +278,9 @@ def offer_official_status(doc) -> str:
                         matriculation / polytechnic / pismp). The only kind we can support.
       * 'not_genuine' — anything else the scorer judged: a CONDITIONAL offer / a non-official
                         notification (pemakluman / UPU-semakan) → suspect; a PRIVATE/IPTS offer →
-                        unrecognised (stored as suspect). Owner policy: cannot support these.
+                        unrecognised (stored as suspect); a private continuing-education ARM (SPACE
+                        etc.) → not_offer_letter via the 1.6.0 scorer veto. Owner policy: cannot
+                        support these.
       * 'unknown'     — genuineness not computed yet (flag off / AI outage / not re-run since the
                         signature model shipped). Never gate on our own gap — defer to the reviewer.
     """
