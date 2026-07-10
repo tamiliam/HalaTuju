@@ -15,10 +15,11 @@ from .supporting_doc import doc_genuineness
 from .results_doc import score_signatures, signature_genuineness, misfiled_as
 from .salary_doc import salary_genuineness
 from .electricity_doc import electricity_genuineness
+from .water_doc import water_genuineness
 
 __all__ = ['ic_genuineness', 'doc_genuineness', 'score_signatures', 'signature_genuineness',
-           'misfiled_as', 'salary_genuineness', 'electricity_genuineness', 'band_for',
-           'GENUINE_MIN', 'SUSPECT_MAX', 'assess']
+           'misfiled_as', 'salary_genuineness', 'electricity_genuineness', 'water_genuineness',
+           'band_for', 'GENUINE_MIN', 'SUSPECT_MAX', 'assess']
 
 
 def assess(doc_type, *, image=None, content_type='', ocr_text='', has_qr=False, has_crest=False):
@@ -45,6 +46,12 @@ def assess(doc_type, *, image=None, content_type='', ocr_text='', has_qr=False, 
         # suspect {thin/cropped} / not_electricity_bill {MyKad / water bill / junk in the slot}.
         # See electricity_doc.py + docs/scholarship/electricity-bill-catalogue.md.
         return electricity_genuineness(ocr_text)
+    if doc_type == 'water_bill':
+        # Signature-scored off the OCR text (GRAMMAR-first, operator-as-bonus — water has no single
+        # national operator, unlike TNB) → genuine {air_selangor/saj_johor/…/unrecognised} / suspect
+        # {thin/cropped} / not_water_bill {MyKad / an ELECTRICITY bill in the water slot / junk}.
+        # See water_doc.py + docs/scholarship/water-bill-catalogue.md.
+        return water_genuineness(ocr_text)
     if doc_type == 'str':
         # Three genuine STR approval forms (MOF letter / dashboard / semakan) are signature-
         # scored off the OCR text; an LHDN SALINAN copy or a SARA letter matches no form marker

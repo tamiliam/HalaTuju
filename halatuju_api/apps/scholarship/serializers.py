@@ -711,7 +711,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         IC/parent_ic (Sprint 1) + the standardised supporting docs (Sprint 2: STR, results
         slip, birth cert, EPF). Null when the check didn't run (flag off / AI outage)."""
         if obj.doc_type not in ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf',
-                                'offer_letter', 'salary_slip', 'electricity_bill'):
+                                'offer_letter', 'salary_slip', 'electricity_bill', 'water_bill'):
             return None
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         auth = vf.get('authenticity')
@@ -733,6 +733,12 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         # The 'suspect' band is a thin/cropped-but-genuine bill (common), so hide it as amber noise;
         # a genuine/suspect bill renders normally.
         if obj.doc_type == 'electricity_bill' and not status.startswith('not_'):
+            return None
+        # Water bill (MODEL_VERSION 1.0.0): same — surface ONLY the wrong-type reject (not_water_bill:
+        # a MyKad / an ELECTRICITY bill / junk in the water slot) → the red chip. The 'suspect' band is
+        # a thin/cropped-but-genuine bill (common for real B40 families), so hide it as amber noise; a
+        # genuine/suspect bill renders normally. Closes the swap symmetrically with electricity_bill.
+        if obj.doc_type == 'water_bill' and not status.startswith('not_'):
             return None
         return {'status': status,
                 'reason': auth.get('reason', ''), 'doc_seen': auth.get('doc_seen', '')}

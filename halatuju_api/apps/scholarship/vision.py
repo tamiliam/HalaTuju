@@ -1151,7 +1151,8 @@ _FIELD_SCHEMAS = {
     # signal) + tariff (Tarif A domestik confirms a home vs a commercial/landlord account).
     'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR,
                                'unpaid_balance': _STR, 'billing_period': _STR,
-                               'bill_date': _STR, 'account_no': _STR}),
+                               'bill_date': _STR, 'account_no': _STR,
+                               'usage_m3': _STR, 'tariff': _STR}),
     'electricity_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR,
                                      'unpaid_balance': _STR, 'billing_period': _STR,
                                      'bill_date': _STR, 'account_no': _STR,
@@ -1312,13 +1313,18 @@ _DOC_HINTS = {
                          'e.g. "17.02.2026 - 16.03.2026"). "usage_kwh" = the consumption in kWh/kWj '
                          '("Kegunaan"). "tariff" = the tariff / premise class ("Tarif", e.g. "Domestik '
                          'Am" for a home). Leave a field empty if it is not present.'),
-    'water_bill': (' This is a Malaysian water bill (e.g. Air Selangor, SYABAS, PBAPP, SAJ, LAKU). '
-                   '"name" = the account-holder name; "address" = the premises address. "account_no" = '
-                   'the account number (keep the digits). "amount" = the current charge / total '
-                   'payable, in RM. "unpaid_balance" = any arrears ("Tunggakan"). "bill_date" = a '
-                   'single point-in-time bill/issue date if shown (e.g. "18.03.2026"), distinct from '
-                   'the billing period. "billing_period" = the consumption period if shown. Leave a '
-                   'field empty if it is not present.'),
+    'water_bill': (' This is a Malaysian water utility bill (state-run — e.g. Air Selangor, SAJ/'
+                   'Ranhill, PBAPP, SADA, SAINS, LAP/Air Perak, PAIP, SAMB). "name" = the account '
+                   'holder\'s name ("Nama"); "address" = the supply/billing address; "amount" = ONLY '
+                   'the CURRENT month\'s charge ("Caj Air Semasa" / "Jumlah Caj Air Semasa" / '
+                   '"Jumlah Bil Semasa") — do NOT use "Jumlah Bil Perlu Dibayar", which is the TOTAL '
+                   'including arrears; "unpaid_balance" = the arrears carried forward ("Tunggakan" / '
+                   '"Baki Tertunggak", RM) — empty if none; "billing_period" = the bill month/period '
+                   '("Tempoh Bil"); "bill_date" = the point-in-time bill/issue date ("Tarikh Bil") if '
+                   'printed; "account_no" = the account number ("No. Akaun"); "usage_m3" = the water '
+                   'consumed in cubic metres ("Penggunaan"/"Kegunaan", unit m³ / meter padu); '
+                   '"tariff" = the tariff/premise class ("Tarif", e.g. domestik) if shown. '
+                   'Leave any field empty if it is not present.'),
     'salary_slip': (' This is a Malaysian salary slip / payslip — OR a government benefit / pension '
                     'payment statement (e.g. a PERKESO/SOCSO "Penyata Bayaran Faedah" survivor\'s '
                     'pension "Pencen Penakat"), which counts as household income too. "name" = the '
@@ -1373,14 +1379,6 @@ _DOC_HINTS = {
             'no formal salary; "unknown" if the contributions section is unreadable/absent (do NOT '
             'guess "zero" when you simply cannot read it). "address" = the member\'s correspondence '
             'address if printed. Leave any field empty if it is not present.'),
-    'water_bill': (' This is a Malaysian water utility bill (e.g. PAIP, SAJ, Air Selangor, '
-                   'PBAPP, SADA). "name" = the account holder\'s name ("Nama"); "address" = '
-                   'the supply/billing address; "amount" = ONLY the CURRENT month\'s charge '
-                   '("Caj Air Semasa" / "Jumlah Caj Air Semasa" / "Jumlah Bil Semasa") — do '
-                   'NOT use "Jumlah Bil Perlu Dibayar", which is the TOTAL including arrears; '
-                   '"unpaid_balance" = the arrears carried forward ("Tunggakan" / "Baki '
-                   'Tertunggak", RM) — empty if none; "billing_period" = the bill month. '
-                   'Leave empty if absent.'),
     'electricity_bill': (' This is a Malaysian electricity bill (TNB / SESB / SESCO). "name" = '
                          'the account holder\'s name; "address" = the supply/billing address; '
                          '"amount" = ONLY the CURRENT month\'s charge ("Caj Semasa" / "Caj '
@@ -2021,6 +2019,28 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                     'status': eg['status'], 'reason': eg['reason'], 'doc_seen': eg['family'],
                     'probability': eg['probability'], 'model_version': eg.get('model_version'),
                     'markers': eg.get('markers'),
+                }
+        elif doc.doc_type == 'water_bill':
+            # POSITIVE signature scorer (water_doc.py, MODEL_VERSION 1.0.0) over the OCR text —
+            # GRAMMAR-first, operator-as-bonus (water is state-run: ~13 operators, none dominant, so
+            # the shared 'Bil Air'/m³/'No. Akaun' grammar decides, not a single issuer) → genuine
+            # {air_selangor/saj_johor/…/unrecognised} / suspect {thin/cropped} / not_water_bill {MyKad,
+            # or an ELECTRICITY bill misfiled into the water slot (family 'electricity_bill' — the
+            # reverse of the #83 swap, caught symmetrically), or nothing bill-shaped}. Any water signal
+            # (a water term / an m³ unit / a recognised operator) guarantees the doc is never rejected
+            # (calibrated on 28 live bills, 0 false-rejects). Text-only + deterministic; a failed/empty
+            # OCR yields NO signal (never persist 'not_water_bill' off our own read failure). SOFT:
+            # this feeds the officer cockpit chip + the keep-better ranking (`_doc_genuine_rank` reads
+            # authenticity.status) — it does NOT gate submission (utility bills are soft signals).
+            from .genuineness.water_doc import water_genuineness
+            rr = ocr if ocr is not None else ocr_document(doc)
+            text = (rr or {}).get('text', '') or ''
+            if text.strip() and not (rr or {}).get('error'):
+                wg = water_genuineness(text)
+                result['authenticity'] = {
+                    'status': wg['status'], 'reason': wg['reason'], 'doc_seen': wg['family'],
+                    'probability': wg['probability'], 'model_version': wg.get('model_version'),
+                    'markers': wg.get('markers'),
                 }
         elif doc.doc_type in _GENUINENESS_DOCS:   # birth_certificate/epf holistic fallback (+ any other)
             gimg = _image()

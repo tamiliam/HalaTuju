@@ -545,9 +545,11 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   }
   if (dt === 'water_bill' || dt === 'electricity_bill') {
     const c = doc.utility_check
-    // A WRONG-TYPE upload (electricity_bill scored `not_electricity_bill` — a water bill / MyKad /
-    // junk in the slot) shows the red "Wrong type" chip like every other doc, even if utility_check
-    // read some fields off the wrong document (those reads are then capped red / dropped).
+    // A WRONG-TYPE upload — caught SYMMETRICALLY in either slot: an electricity bill scored
+    // `not_electricity_bill` (a water bill / MyKad / junk), OR a water bill scored `not_water_bill`
+    // (an ELECTRICITY bill / MyKad / junk) — shows the red "Wrong type" chip like every other doc,
+    // even if utility_check read some fields off the wrong document (those reads are then capped
+    // red / dropped).
     if (!c) return gf ? [gf] : []
     // Address · Current · Reasonable always; Outstanding only when arrears > the charge
     // (a real hardship signal, shown green). 'current'/'stale'/'unknown' map through

@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## Water-bill genuineness signature model + Extraction-v2 — 2026-07-10
+
+### Added
+- **First genuineness signature model for water bills** (`genuineness/water_doc.py`,
+  `MODEL_VERSION 1.0.0`, per-family — sibling to the salary + electricity models). The fingerprint is
+  **GRAMMAR-first, operator-as-bonus**, not issuer-first like electricity: water is state-run with no
+  dominant national operator (~13 utilities; the largest, Air Selangor, is only ~20% of the corpus vs
+  TNB's ~92% for electricity), so the shared water-bill grammar (`Bil Air` / m³ / `No. Akaun` /
+  `Tunggakan` / `Tarif` / `Jumlah Perlu Dibayar`) decides genuine / suspect / **not_water_bill**, and
+  the operator identity (air_selangor / saj_johor / sada_kedah / sains_ns / lap_perak / paip_pahang /
+  pbapp_penang / samb_melaka + East-Malaysia stubs) only names the family. A bill from an unlisted
+  operator still scores genuine (`unrecognised`). Calibrated read-only on **28 live OCR'd bills**
+  (`eval/capture_ocr.py water_bill`): water-term 96% · m³ 96% · No. Akaun 96% · Jumlah 100% ·
+  Tunggakan 93% · Tarif 82%; **27 genuine / 1 not_water_bill / 0 false-rejects**, every operator label
+  matching the bill's address-state (0 mislabels).
+- **Symmetric swap catch.** The model rejects an ELECTRICITY bill misfiled into the water slot
+  (`not_water_bill`, family `electricity_bill`) — the mirror of the electricity model, closing the
+  #83 / #35 / #110 "swapped bills" gap on BOTH slots. The reject fires only when NO water signal is
+  present, so a genuine water bill that merely mentions "elektrik" is protected.
+- **Extraction-v2** added `usage_m3` (Penggunaan, m³) + `tariff` (Tarif) to the water-bill schema +
+  prompt hint (`bill_date` / `account_no` were already added with the electricity work).
+- Wired: `assess()` dispatch, `vision.py` genuineness branch → `vision_fields.authenticity`, the
+  serializer allowlist (surfaces only the `not_water_bill` wrong-type reject; genuine/suspect hidden
+  as amber noise). The cockpit utility branch already renders genuineness generically — no FE code
+  change (comment updated to note the symmetric swap). SOFT: feeds the officer chip + keep-better
+  ranking; does NOT gate submission. Existing bills unscored → fail-open. +15 pytest.
+- Docs: `docs/scholarship/water-bill-catalogue.md`; two `docs/decisions.md` entries (grammar-first vs
+  issuer-first; the symmetric swap).
+
+### Note
+- **Latent bug flagged (not fixed — another agent's electricity work + a live-edited file):**
+  `vision._DOC_HINTS` has a DUPLICATE `electricity_bill` key — the detailed Extraction-v2 electricity
+  hint (with `usage_kwh` / `bill_date` guidance) is shadowed by a shorter later duplicate, so the live
+  value lacks that guidance. The electricity *schema* still asks for the fields, so extraction is only
+  weakly affected. The `water_bill` duplicate was de-duped as part of this change.
+
 ## Cockpit: wrong-type electricity bill shows the red "Wrong type" chip — 2026-07-10
 
 ### Fixed
