@@ -3654,7 +3654,6 @@
           "amount": "Amount",
           "period": "Period",
           "arrears": "Arrears",
-          "account": "Account",
           "none": "none"
         },
         "type": {

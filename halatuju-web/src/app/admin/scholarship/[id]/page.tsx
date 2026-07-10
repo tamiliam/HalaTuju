@@ -1915,19 +1915,9 @@ export default function AdminScholarshipDetailPage() {
                     </p>
                   )}
                   {factLine(d)}
-                  {d.utility_check?.name_note === 'unrelated' && (
-                    <p className="text-[11px] text-orange-600 mt-0.5">
-                      {t('admin.scholarship.docsDrawer.utilityNote.unrelated', { name: d.utility_check.name })}
-                    </p>
-                  )}
-                  {(d.utility_check?.reasonable_detail === 'water_only'
-                    || d.utility_check?.reasonable_detail === 'electricity_only') && (
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      {t(`admin.scholarship.docsDrawer.utilityNote.${d.utility_check.reasonable_detail}`)}
-                    </p>
-                  )}
+                  {/* Key values FIRST (directly under the facts), so every note falls below them —
+                      consistent for both water and electricity. */}
                   {(() => {
-                    // Key values the AI read, so the reviewer gets the picture without opening the doc.
                     const vals = utilityBillValues(d)
                     return vals.length > 0 ? (
                       <p className="text-[11px] text-gray-500 mt-0.5">
@@ -1941,6 +1931,17 @@ export default function AdminScholarshipDetailPage() {
                       </p>
                     ) : null
                   })()}
+                  {d.utility_check?.name_note === 'unrelated' && (
+                    <p className="text-[11px] text-orange-600 mt-0.5">
+                      {t('admin.scholarship.docsDrawer.utilityNote.unrelated', { name: d.utility_check.name })}
+                    </p>
+                  )}
+                  {(d.utility_check?.reasonable_detail === 'water_only'
+                    || d.utility_check?.reasonable_detail === 'electricity_only') && (
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {t(`admin.scholarship.docsDrawer.utilityNote.${d.utility_check.reasonable_detail}`)}
+                    </p>
+                  )}
                   {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && (
                     <p className="text-[11px] text-amber-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                   )}

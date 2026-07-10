@@ -385,16 +385,16 @@ describe('documentFacts', () => {
     const base = { name: 'X', address: '12 Jln', monthly_bill: '29.93', unpaid_balance: '',
       address_status: 'found', current_status: 'current', reasonable_status: 'reasonable',
       reasonable_detail: '', outstanding_status: '', name_note: '' } as NonNullable<AdminApplicantDocument['utility_check']>
-    // Amount RM-prefixed; period prefers bill_date; bill read but no arrears → 'none'; account shown.
+    // Amount RM-prefixed; period prefers bill_date; bill read but no arrears → 'none'. Account no is
+    // deliberately NOT a value (even when extracted).
     expect(utilityBillValues(doc({ doc_type: 'electricity_bill', utility_check: base,
       vision_fields: { fields: { bill_date: 'Mar 2026', billing_period: 'ignored', account_no: '210262' } } } as Partial<AdminApplicantDocument>)))
       .toEqual([
         { labelKey: 'amount', value: 'RM29.93' },
         { labelKey: 'period', value: 'Mar 2026' },
         { labelKey: 'arrears', valueKey: 'none' },
-        { labelKey: 'account', value: '210262' },
       ])
-    // A positive Tunggakan shows the amount (trailing zero preserved), not 'none'; no account_no → omitted.
+    // A positive Tunggakan shows the amount (trailing zero preserved), not 'none'.
     expect(utilityBillValues(doc({ doc_type: 'water_bill',
       utility_check: { ...base, monthly_bill: 'RM40', unpaid_balance: '64.90' },
       vision_fields: { fields: { billing_period: 'Feb 2026' } } } as Partial<AdminApplicantDocument>)))

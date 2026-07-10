@@ -611,8 +611,9 @@ function _arrearsAmount(s: string | undefined): number | null {
 /**
  * The KEY VALUES the AI read off a utility bill, for a compact at-a-glance line in the cockpit so
  * the reviewer gets the picture without opening the document (owner 2026-07-10): Amount (current
- * charge), Period (bill date, else billing period), Arrears, Account no. Reviewer-facing labels;
- * empties are skipped. Amount/arrears come from utility_check; period/account from vision_fields.
+ * charge), Period (bill date, else billing period), Arrears. Reviewer-facing labels; empties are
+ * skipped. Amount/arrears come from utility_check; period from vision_fields. (Account number is
+ * deliberately NOT shown — not decision-relevant, owner 2026-07-10.)
  */
 export function utilityBillValues(doc: AdminApplicantDocument): UtilityValue[] {
   const c = doc.utility_check
@@ -628,8 +629,6 @@ export function utilityBillValues(doc: AdminApplicantDocument): UtilityValue[] {
   const arr = _arrearsAmount(c.unpaid_balance)
   if (arr !== null && arr > 0) out.push({ labelKey: 'arrears', value: _formatRm((c.unpaid_balance || '').trim()) })
   else if (amount) out.push({ labelKey: 'arrears', valueKey: 'none' })
-  const acc = (f.account_no || '').trim()
-  if (acc) out.push({ labelKey: 'account', value: acc })
   return out
 }
 

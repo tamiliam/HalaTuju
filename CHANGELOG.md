@@ -7,9 +7,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **The key values the AI read off a utility bill now show inline in the officer cockpit** (owner
   request) so the reviewer gets the picture without opening the document: a labelled line —
-  **Amount · Period · Arrears · Account** — under the facts, values from `utility_check` +
-  `vision_fields.fields` via a new `utilityBillValues` helper (empties skipped; a read bill with no
-  arrears shows "Arrears none"; a positive Tunggakan shows the amount). New i18n
+  **Amount · Period · Arrears** — rendered **directly under the facts** (so every note falls below
+  it, consistent for water and electricity), values from `utility_check` + `vision_fields.fields` via
+  a new `utilityBillValues` helper (empties skipped; a read bill with no arrears shows "Arrears none";
+  a positive Tunggakan shows the amount). Account number is intentionally not shown. New i18n
   `docsDrawer.billValue.*` (en/ms/ta).
 
 ### Changed
