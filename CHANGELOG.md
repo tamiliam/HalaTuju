@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## Deterministic document reading — cert parser + capture labels + govt offer parser — 2026-07-10
+
+### Added
+- **SPM certificate parser** (`academic_engine.parse_spm_cert` + `ensure_exam_year`) — a certificate
+  flattens into separate subject/grade blocks (paired by index), which the slip parser can't read, so
+  certs fell to Gemini and lost their foot-of-page exam year (killing the "old result" chip). The new
+  parser reads the two blocks positionally, self-identifies ('layak dianugerahi'), and runs for any
+  student regardless of the profile `exam_type` gate. Conservative (None → Gemini). Validated on 7 certs.
+- **Government offer-letter parser** (`offer_parse.parse_govt_offer`) — deterministic STPM/Matrikulasi/
+  Polytechnic reads (71 of 90 offers, previously all Gemini). Self-identifying + conservative; reads
+  identity + pathway + intake + institution + reporting date per issuer. University + PISMP stay on
+  Gemini. Validated 30/32, identity ~100%.
+
+### Changed
+- **Capture-confidence badge**: labels shortened `Exact read`/`AI read` → `Exact`/`AI`; now shown on
+  EVERY read doc (field-extracted + IC); untagged docs default by type (deterministic-first →
+  `Exact`, Gemini-read → `AI`). The IC read now stamps its `capture` (`deterministic`/`ai` fallback).
+- **Offer extraction** reads the govt families deterministically first (then Gemini), MERGING over the
+  prior fields so the Exact read never drops a field the AI read had (protects the reporting-date bonus).
+
+### Fixed
+- The missing exam-year chip on SPM certificates (the driving report) — root cause was an STPM student's
+  SPM cert being skipped by the SPM parser's `exam_type` gate, then Gemini dropping the bottom-of-page year.
+
+### Data
+- 54 existing govt offers backfilled to Exact (cached OCR + REST PATCH; 0 failures; reporting_date preserved).
+
 ## Water-bill genuineness signature model + Extraction-v2 — 2026-07-10
 
 ### Added
@@ -31,12 +58,14 @@ All notable changes to this project will be documented in this file.
 - Docs: `docs/scholarship/water-bill-catalogue.md`; two `docs/decisions.md` entries (grammar-first vs
   issuer-first; the symmetric swap).
 
-### Note
-- **Latent bug flagged (not fixed — another agent's electricity work + a live-edited file):**
-  `vision._DOC_HINTS` has a DUPLICATE `electricity_bill` key — the detailed Extraction-v2 electricity
-  hint (with `usage_kwh` / `bill_date` guidance) is shadowed by a shorter later duplicate, so the live
-  value lacks that guidance. The electricity *schema* still asks for the fields, so extraction is only
-  weakly affected. The `water_bill` duplicate was de-duped as part of this change.
+### Fixed
+- **Latent duplicate-key bug in `vision._DOC_HINTS` (both `electricity_bill` and `water_bill`).** Each
+  doc type had two hint entries, so Python's dict literal silently kept only the later one: the
+  detailed Extraction-v2 electricity hint (with `usage_kwh` / `bill_date` / `tariff` guidance) was
+  shadowed by a shorter duplicate that lacked it. De-duped both. The surviving electricity hint is the
+  detailed one, with the correct `amount` rule **merged in from the shadowing copy** (ONLY the current
+  "Caj Semasa" — NOT "Jumlah Perlu Dibayar", which includes arrears), so no extraction guidance
+  regressed.
 
 ## Cockpit: wrong-type electricity bill shows the red "Wrong type" chip — 2026-07-10
 
