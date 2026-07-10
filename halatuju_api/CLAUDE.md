@@ -539,6 +539,30 @@ STANDARDISED docs deterministically ('Exact'), Gemini only for varied ones ('AI'
   pytest.** **▶ NEXT (optional):** re-run the ~7 no-OCR + 5 deferred (mononym) offers via cockpit;
   a PISMP offer parser once its new format is captured.
 
+**✅ SHIPPED 2026-07-10 — Water-bill genuineness model (the electricity sibling) + Extraction-v2 +
+a `_DOC_HINTS` de-dup (BE+FE, NO migration; scorer `genuineness/water_doc.py` `MODEL_VERSION 1.0.0`,
+per-family; retro `docs/retrospective-2026-07-10-water-bill-model.md`; spec
+`docs/scholarship/water-bill-catalogue.md`; decisions ×2).**
+- **Genuineness (`water_doc.py`) — GRAMMAR-first, operator-as-bonus** (NOT issuer-first like
+  electricity): water is state-run, no dominant operator (~13 utilities, largest ~20% vs TNB's ~92%),
+  so the shared bill grammar (Bil Air / m³ / No. Akaun / Tunggakan / Tarif / Jumlah Perlu Dibayar)
+  decides genuine / suspect / **not_water_bill**; the operator (air_selangor / saj_johor / sada_kedah /
+  sains_ns / lap_perak / paip_pahang / pbapp_penang / samb_melaka + East-Msia stubs) only names the
+  family — an unlisted operator still scores genuine (`unrecognised`). Calibrated read-only on **28
+  live OCR'd bills** (water-term 96% · m³ 96% · No. Akaun 96% · Jumlah 100%): **27 genuine · 1
+  not_water_bill · 0 false-rejects**; every operator label matched the address-state (0 mislabels).
+- **Symmetric swap catch:** rejects an ELECTRICITY bill in the water slot (family `electricity_bill`)
+  — closes the #83/#35/#110 swap on BOTH slots (fires only when NO water signal present, so a genuine
+  bill mentioning "elektrik" is safe). Cockpit utility branch already generic → no FE code change.
+- **Extraction-v2:** `usage_m3` + `tariff` on the water schema + hint. **Fixed a latent duplicate-key
+  bug in `vision._DOC_HINTS`** (both electricity_bill + water_bill had two entries; Python kept the
+  later, shadowing the detailed electricity Extraction-v2 hint — merged its correct `amount` rule in
+  and de-duped).
+- Wired SOFT (assess dispatch, vision branch, serializer wrong-type allowlist); existing bills
+  fail-open. Commits `c9433575`/`da509949`. +15 pytest (2311 scholarship + 489 jest).
+- **▶ NEXT / carry:** optional `reextract-water-bills` / `reextract-electricity-bills` batch to
+  activate the existing cohorts in one pass (owner chose natural rollout).
+
 **✅ SHIPPED 2026-07-10 — Utility-bill arc: electricity genuineness model + Extraction-v2 + the
 staleness/currency fix (BE+FE, NO migration; scorer `genuineness/electricity_doc.py`
 `MODEL_VERSION 1.0.0`, per-family; retro `docs/retrospective-2026-07-10-electricity-bill-model.md`;
@@ -565,10 +589,11 @@ salary model's pattern (per-family `MODEL_VERSION`, `eval/` OCR calibration).
   self-healed); currency anchored on `bill_date` when present, else the period.
 - Existing bills unscored / lack new fields → **fail-open**; a LIVE-service re-score/re-extraction
   activates them (never local). 2277 scholarship + 489 jest.
-- **▶ NEXT / carry:** (a) the **water-bill genuineness sibling** (multi-issuer like salary: Air
-  Selangor / PBA / SYABAS / SAJ / LAKU) — so a swapped bill (#83) is caught on BOTH slots, not just
-  electricity; (b) optional `reextract-electricity-bills` batch to activate the existing cohort in one
-  pass (owner chose natural rollout); (c) #35 dedup (two live electricity docs).
+- **▶ carry:** (a) ✅ **water-bill genuineness sibling — SHIPPED 2026-07-10** (grammar-first, not the
+  multi-issuer guess; see the water-bill block above); (b) optional `reextract-electricity-bills`
+  batch to activate the existing cohort in one pass (owner chose natural rollout); (c) ✅ #35/#110
+  duplicate-live-bill dedup — RESOLVED 2026-07-10 (both pairs collapsed via data-only supersede;
+  cohort now 0 apps with duplicate live bills).
 
 **✅ SHIPPED 2026-07-09 — Salary-slip genuineness signature model + the #47 fix (BE-only, NO
 migration; scorer `genuineness/salary_doc.py` `MODEL_VERSION 1.0.0`; retro
