@@ -4405,3 +4405,24 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** The existing 489 tests are node-based pure-logic; a global switch is a large blast radius for a one-test need. Per-file docblock is surgical and the documented Jest pattern. All 490 pass, existing suites untouched.
 **Trade-offs:** Each component test must remember the docblock (a missing one fails loudly with a DOM-undefined error, so it's self-correcting). Adds three dev deps.
 **Revisit if:** component tests become the majority — then flip the global env to jsdom and drop the docblocks.
+
+## Utility recency chip is a 3-tier traffic light that ENCODES the existing 3mo/6mo lines — Sprint (utility-bill cockpit), 2026-07-10
+**Decision:** `_utility_currency` returns `current` (≤3mo, green) / `ageing` (3–6mo, amber) / `stale` (>6mo, red) / `unknown` (grey), and the officer chip's LABEL changes per tier (Current/Ageing/Outdated).
+**Alternatives considered:** Keep the binary green/amber. Recolour a single "Current" label (green→amber→red) without changing the word.
+**Rationale:** A 4-month and a 14-month bill read identically under the binary chip. The two thresholds already existed (3mo = ASK, 6mo = RE-ASK); the 3-tier chip makes them visible instead of inventing a new number — 6mo becomes the amber→red line. A red chip still saying "Current" is self-contradictory, so the label follows the tier.
+**Trade-offs:** Re-ask behaviour is deliberately unchanged (only >6mo `stale` re-asks; `ageing` is accepted), so the chip's amber tier and the re-ask line are intentionally NOT the same boundary — the chip is finer-grained than the action.
+**Revisit if:** the owner wants a 3–6mo bill to be re-asked (then move the re-ask trigger to `ageing`), or wants the month localised (currently English MMM).
+
+## The displayed Period is derived from the SAME `_bill_as_of` as the recency chip — Sprint (utility-bill cockpit), 2026-07-10
+**Decision:** `utility_check.bill_month` (the `MMM YYYY` shown to the officer) is formatted from `_bill_as_of`, the exact function `_utility_currency` uses; the FE prefers it over the raw date string.
+**Alternatives considered:** Format the raw `bill_date`/`billing_period` string in the FE; a separate FE date parser.
+**Rationale:** If the shown Period and the recency tier came from different parses they could disagree (a "May 2026" label next to an "Ageing" chip computed off a different month). One source makes divergence impossible, and reuses the tested Malay-month/range/ISO parser. Computed live in the serializer → applies to every existing bill with no re-run.
+**Trade-offs:** A raw string the parser can't read shows nothing (FE falls back to the raw string only then); the month is English (MMM) regardless of UI language.
+**Revisit if:** the month needs localising, or a company prints a period the parser can't resolve.
+
+## Water bills are dated per EXTRACTION PATH — deterministic reads the Tarikh header, Gemini reads the meter date — Sprint (utility-bill cockpit), 2026-07-10
+**Decision:** Air Selangor (locks onto the deterministic `_parse_water`, capture "Exact") gets `bill_date` from the "Tarikh" header (`_water_bill_date`); LAP and other no-"Tarikh" bills fall to Gemini, whose prompt now dates them from the latest meter-reading date.
+**Alternatives considered:** One fix in the Gemini prompt only (misses the deterministic path — the actual "re-run had no effect" bug). Force every water bill through Gemini (loses the fast, reliable deterministic amount/arrears read). A backend meter-date fallback field.
+**Rationale:** A water bill is read by ONE of two independent paths; a fix must land on the path that actually reads the given bill. The deterministic parser is conservative and already reliably reads amount/arrears — only the date was missing, so add it there rather than abandon the path. Calibrated the Tarikh regex on 6 real Air Selangor bills (5/6, never the ~1-month-later due date).
+**Trade-offs:** Two code sites to keep in step; a heavily-interleaved OCR (1/6) still reads dateless (safe — grey, never a wrong month).
+**Revisit if:** a new water company prints its date in a shape neither the Tarikh regex nor Gemini's meter-date rule catches.

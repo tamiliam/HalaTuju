@@ -518,6 +518,30 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-10)
 
+**✅ SHIPPED 2026-07-10 — Utility-bill officer-review polish (BE+FE, NO migration, no MODEL_VERSION
+change; retro `docs/retrospective-2026-07-10-utility-bill-cockpit.md`; decisions ×3; lessons ×2).**
+Six owner-driven passes on how the cockpit shows water/electricity bills.
+- **3-tier recency chip** (`income_engine._utility_currency`): green `current` ≤3mo / amber `ageing`
+  3–6mo / red `stale` >6mo / grey `unknown` (was binary). The label changes per tier
+  (Current/Ageing/Outdated) so a red chip never reads "Current"; the 6-month accept line is now the
+  amber→red boundary; **re-ask behaviour unchanged** (only >6mo). New FE `utilityCurrencyFact` + i18n
+  `fact.ageing`/`stale`.
+- **Key values inline** (`officerCockpit.utilityBillValues`): **Amount · Period · Arrears** under the
+  facts (all notes render BELOW, consistent for both bills); Account no dropped. **Period = `MMM
+  YYYY`** via `utility_check.bill_month` (formatted from the SAME `_bill_as_of` the chip uses → can't
+  disagree; computed live, no re-run needed).
+- **Reviewer-facing extraction notes:** the Gemini `warnings` prompt (`_WARNING_VOICE`) now writes
+  plain reviewer language (no field names / "instructions" / OCR mechanics); `_drop_expected_warnings`
+  gained a utility branch for legacy bookkeeping notes.
+- **Bill dating, per extraction PATH** (a dateless bill read grey + looped, #130): **LAP** (no
+  "Tarikh" → Gemini) dates from the latest meter-reading date (`_DOC_HINTS` water hint); **Air
+  Selangor** (clean PDF → the DETERMINISTIC `doc_parse._parse_water`, capture "Exact") reads the
+  "Tarikh" header via `_water_bill_date` (NOT the due/last-payment date), calibrated on real OCR (5/6,
+  0 due-date confusion). Verified live: #95 (Air Selangor → May 2026 Current), #130 (LAP).
+- Commits `97cd7704`/`f28d1785`/`f9130a3b`/`3250f2fb`/`3ab3a6cb`/`c9172da0`. SOFT throughout. **▶
+  CARRY:** date extraction activates on Re-run/new upload (display is live); optionally reextract the
+  cohort to backfill dates.
+
 **✅ SHIPPED 2026-07-10 — Private/IPTS offer arms disqualified + course-switch note + SPM exam-year
 fix (BE+FE, NO migration; MODEL_VERSION 1.5.0 → 1.6.0; retro
 `docs/retrospective-2026-07-10-private-arm-switch-examyear.md`; decisions ×2; lessons ×2).**
