@@ -1829,16 +1829,25 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
             else:
                 ex['capture'] = 'deterministic'
     elif doc.doc_type == 'offer_letter':
-        # The offer's 2-D label/value layout doesn't survive flattened OCR (labels and values
-        # land in separate blocks), so read the IMAGE with Gemini for the per-pathway fields;
-        # fall back to OCR text only if the image can't be fetched.
+        # STANDARDISED government offers (STPM / Matrikulasi / Polytechnic) read DETERMINISTICALLY
+        # from the OCR text — self-identifying + conservative (offer_parse.parse_govt_offer returns
+        # None unless it locks a coherent identity+pathway+intake read). University (ua_offer) offers
+        # vary, and PISMP's new format is deferred, so those fall through to the Gemini IMAGE read (the
+        # offer's 2-D label/value layout otherwise doesn't survive flattened OCR).
+        from .offer_parse import parse_govt_offer
         image = _image()
-        if image is not None:
+        _r = ocr if (ocr is not None) else ocr_document(doc)
+        _otext = (_o.get('text') if _o.get('text') is not None else (_r or {}).get('text', '')) or ''
+        govt = parse_govt_offer(_otext)
+        if govt is not None:
+            govt.pop('_family', None)
+            ex = {'fields': govt, 'warnings': [], 'error': '', 'capture': 'deterministic'}
+        elif image is not None:
             ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
+            ex['capture'] = 'ai'
         else:
-            r = ocr if ocr is not None else ocr_document(doc)
-            ex = extract_document_fields(r.get('text', ''), doc.doc_type)
-        ex['capture'] = 'ai'
+            ex = extract_document_fields(_otext, doc.doc_type)
+            ex['capture'] = 'ai'
     elif doc.doc_type == 'birth_certificate':
         # Geometry-first, like the results slip. The BC's KANAK-KANAK / BAPA / IBU blocks place the
         # child's "Nama" far from the parents'; flattened OCR cross-wires them (#10 read the father's
