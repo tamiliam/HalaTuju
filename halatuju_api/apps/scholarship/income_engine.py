@@ -1437,11 +1437,13 @@ _UTILITY_MONTHS = {
 }
 _UTILITY_CURRENT_MONTHS = 3   # a bill within ~3 months of the review date counts as 'current' — the
                               # ASK standard + the officer's 'Current' chip.
-_UTILITY_ACCEPT_MONTHS = 6    # owner 2026-07-09: we ASK for a bill within 3 months, but a DATED bill
-                              # within ~6 months is ACCEPTED without re-looping (the officer eyeballs
-                              # the date). A student who can only produce a slightly older bill is
-                              # never trapped re-uploading; older than 6 still re-asks. Used only by
-                              # ``_bill_needs_upload`` — the officer chip keeps the 3-month line.
+_UTILITY_ACCEPT_MONTHS = 6    # owner 2026-07-09/-10: we ASK for a bill within 3 months, but a DATED
+                              # bill within ~6 months is ACCEPTED without re-looping (the officer
+                              # eyeballs the date). A student who can only produce a slightly older
+                              # bill is never trapped re-uploading; older than 6 still re-asks. This
+                              # is ALSO the officer chip's amber→red line (owner 2026-07-10): the
+                              # recency chip is a THREE-tier traffic light — ≤3mo green 'current',
+                              # 3–6mo amber 'ageing', >6mo red 'stale' (``_utility_currency``).
 
 
 def _parse_billing_month(period):
@@ -1494,15 +1496,22 @@ def _bill_age_months(fields, today):
 
 
 def _utility_currency(fields, today):
-    """Is the bill recent? 'current' (within ~3 months of *today*) | 'stale' (older) |
-    'unknown' (no readable date). Dated from TARIKH BIL when present, else the TEMPOH BIL period
-    (``_bill_as_of``), against the review date — the question is whether this is a LIVE household
-    paying bills now. NOTE: takes the whole ``fields`` dict now (not just the period string) so it
-    can prefer the bill date."""
+    """Is the bill recent? A THREE-tier traffic light (owner 2026-07-10):
+    'current' (≤3 months of *today* — green) | 'ageing' (3–6 months — amber, accepted but ageing) |
+    'stale' (older than the ~6-month accept window — red) | 'unknown' (no readable date — grey).
+    Dated from TARIKH BIL when present, else the TEMPOH BIL period (``_bill_as_of``), against the
+    review date — the question is whether this is a LIVE household paying bills now. The 3-month line
+    is still the ASK standard; the 6-month line is still the RE-ASK threshold (``_bill_needs_upload``,
+    which re-asks only on 'stale'). NOTE: takes the whole ``fields`` dict (not just the period string)
+    so it can prefer the bill date."""
     age = _bill_age_months(fields, today)
     if age is None:
         return 'unknown'
-    return 'current' if age <= _UTILITY_CURRENT_MONTHS else 'stale'
+    if age <= _UTILITY_CURRENT_MONTHS:
+        return 'current'
+    if age <= _UTILITY_ACCEPT_MONTHS:
+        return 'ageing'
+    return 'stale'
 
 
 def utility_reasonable(application):
@@ -2419,9 +2428,9 @@ def _bill_needs_upload(application, doc_type, today):
     if _parse_rm(facts.get('monthly_bill')) is None:
         return 'amount_unreadable'
     cs = facts.get('current_status')
-    if cs == 'stale':                       # officer chip says >3 months, but only KEEP re-asking
-        age = _bill_age_months(_doc_fields(doc), today)   # past the 6-month accept window (owner)
-        return 'stale' if (age is not None and age > _UTILITY_ACCEPT_MONTHS) else ''
+    if cs == 'stale':                       # 'stale' now MEANS >6 months (the accept window is baked
+        return 'stale'                      # into _utility_currency) → keep re-asking. 'ageing'
+                                            # (3–6mo) is NOT stale → accepted as-is, never re-asked.
     if cs == 'unknown':                     # date unreadable → re-ask ONCE, then accept
         return '' if _undated_clean_bill_attempts(application, doc_type, today) >= 2 else 'undated'
     return ''

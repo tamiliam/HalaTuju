@@ -309,6 +309,24 @@ function strStatusFactStatus(s: string | undefined | null): FactStatus {
 }
 
 /**
+ * Utility-bill recency → a THREE-tier traffic light on the officer chip (owner 2026-07-10), from
+ * the backend `_utility_currency`:
+ *   current (≤3 months)  → green  "Current"
+ *   ageing  (3–6 months) → amber  "Ageing"   (accepted, not re-asked — the officer eyeballs it)
+ *   stale   (>6 months)  → red    "Outdated"  (past the accept window → re-asked)
+ *   unknown (no date)    → grey   "Current"   (recency can't be judged)
+ * The LABEL changes with the tier so a red chip never reads the contradictory word "Current".
+ */
+function utilityCurrencyFact(s: string | undefined | null): DocumentFactLabel {
+  switch (s) {
+    case 'current': return { key: 'current', status: 'verified' }
+    case 'ageing': return { key: 'ageing', status: 'partial' }
+    case 'stale': return { key: 'stale', status: 'not' }
+    default: return { key: 'current', status: 'unknown' }
+  }
+}
+
+/**
  * Tone for a utility-bill ADDRESS check. Mirrors the backend's weighted matcher + officer-flag
  * logic: only a genuine 'mismatch' (a different home) is red; 'unconfirmed'/'unreadable' (and the
  * legacy 'not_found') mean "couldn't confirm" — amber, eyeball at interview, never a hard miss.
@@ -557,7 +575,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     // genuineness fact is wrong-type — the reads came off the wrong document.
     const facts: DocumentFactLabel[] = [
       { key: 'address', status: cap ? 'not' : addressFactStatus(c.address_status) },
-      { key: 'current', status: cap ? 'not' : factStatus(c.current_status) },
+      cap ? { key: 'current', status: 'not' } : utilityCurrencyFact(c.current_status),
       { key: 'reasonable', status: cap ? 'not' : reasonableStatus(c.reasonable_status) },
     ]
     if (!cap && c.outstanding_status === 'arrears') {

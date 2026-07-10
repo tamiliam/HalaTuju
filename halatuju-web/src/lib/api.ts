@@ -1727,8 +1727,9 @@ export interface UtilityCheck {
   unpaid_balance: string
   // vs the home address: 'found' | 'not_found' | 'unreadable' | '' (not run)
   address_status: string
-  // billing period vs the review date: 'current' (≤3 months) | 'stale' | 'unknown' (no date)
-  current_status: 'current' | 'stale' | 'unknown'
+  // bill date vs the review date, a 3-tier traffic light: 'current' (≤3 months) |
+  // 'ageing' (3–6 months) | 'stale' (>6 months) | 'unknown' (no readable date)
+  current_status: 'current' | 'ageing' | 'stale' | 'unknown'
   // combined household per-capita B40 proxy (both bills): 'reasonable' (the normal case) |
   // 'high' (> RM60/head, officer signal) | 'partial' (only one bill) | 'unknown' (no data)
   reasonable_status: 'reasonable' | 'high' | 'partial' | 'unknown'

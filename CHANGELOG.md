@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## Utility-bill recency is now a 3-tier traffic light on the officer chip — 2026-07-10
+
+### Changed
+- **The utility-bill "Current" chip is now three tiers instead of two** (owner request): a bill
+  **≤ 3 months** old → green **"Current"**, **3–6 months** → amber **"Ageing"**, **> 6 months** → red
+  **"Outdated"** (undated → grey "Current"). Previously it was binary — green ≤ 3 months, amber for
+  everything older — so a 4-month and a 14-month bill read the same. `_utility_currency`
+  (`income_engine.py`) now returns `current` / `ageing` / `stale` / `unknown`, and the officer cockpit
+  maps them green / amber / red / grey via a new `utilityCurrencyFact` helper. The **label changes
+  with the tier** so a red chip never reads the contradictory word "Current".
+- The two existing thresholds are unchanged and now line up with the chip: 3 months is still the ASK
+  standard (green line), 6 months is still the RE-ASK threshold — and it's now also the amber→red
+  line. **No change to when a student is re-asked**: only a `stale` (> 6-month) bill is re-asked; an
+  `ageing` (3–6-month) bill is still accepted as-is. Same logic for water and electricity.
+- New i18n `fact.ageing` / `fact.stale` (en/ms/ta). +2 pytest, +2 jest assertions.
+
 ## Deterministic document reading — cert parser + capture labels + govt offer parser — 2026-07-10
 
 ### Added

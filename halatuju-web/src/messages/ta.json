@@ -3631,6 +3631,8 @@
           "recipient": "பெறுநர்",
           "status": "நிலை",
           "current": "நடப்பு",
+          "ageing": "சற்று பழையது",
+          "stale": "மிகப் பழையது",
           "amount": "தொகை",
           "period": "காலம்",
           "contribution": "பங்களிப்பு",

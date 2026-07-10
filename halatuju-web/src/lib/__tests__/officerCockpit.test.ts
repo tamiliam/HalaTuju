@@ -350,16 +350,24 @@ describe('documentFacts', () => {
         { key: 'reasonable', status: 'verified' },
         { key: 'outstanding', status: 'verified' },
       ])
-    // Stale bill, only one bill provided, no arrears → Current amber, Reasonable grey, no Outstanding.
+    // Recency is a 3-tier traffic light (owner 2026-07-10): current ≤3mo → green 'Current'; ageing
+    // 3–6mo → amber 'Ageing' (accepted, not re-asked); stale >6mo → red 'Outdated'. The LABEL changes
+    // with the tier so a red chip never reads the contradictory word "Current".
+    // Stale (>6mo) bill, only one bill, no arrears → red 'stale'; Reasonable grey, no Outstanding.
     // Address 'unconfirmed' (couldn't confirm — bilingual town / abbreviation / partial OCR) is
     // AMBER, not red: only a true 'mismatch' (a different home) is red.
     expect(documentFacts(doc({ doc_type: 'electricity_bill', utility_check: util({
       address_status: 'unconfirmed', current_status: 'stale', reasonable_status: 'partial', reasonable_detail: 'electricity_only' }) })))
       .toEqual([
         { key: 'address', status: 'partial' },
-        { key: 'current', status: 'partial' },
+        { key: 'stale', status: 'not' },
         { key: 'reasonable', status: 'unknown' },
       ])
+    // ageing (3–6mo) → amber 'Ageing'; current (≤3mo) → green 'Current'.
+    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ current_status: 'ageing' }) }))
+      .find((f) => f.key === 'ageing')?.status).toBe('partial')
+    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ current_status: 'current' }) }))
+      .find((f) => f.key === 'current')?.status).toBe('verified')
     // Only a genuine 'mismatch' (different home) is red.
     expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ address_status: 'mismatch' }) }))
       .find((f) => f.key === 'address')?.status).toBe('not')

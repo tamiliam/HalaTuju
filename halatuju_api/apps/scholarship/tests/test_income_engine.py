@@ -1011,15 +1011,15 @@ class TestUtilityBillRecheck(SimpleTestCase):
                     self._b('electricity_bill')])
         self.assertNotIn('water_bill', utility_bill_recheck(two, today=self.TODAY))
 
-    def test_bill_within_accept_window_accepted_but_chip_stale(self):
-        # Owner 2026-07-09: we ASK for a bill within 3 months, but a DATED bill within ~6 months is
+    def test_bill_within_accept_window_accepted_but_chip_ageing(self):
+        # Owner 2026-07-09/-10: we ASK for a bill within 3 months, but a DATED bill within ~6 months is
         # ACCEPTED without re-looping — a student who can only produce a slightly older bill isn't
-        # trapped. '02/2026' is ~5 months before Jul 2026: no re-ask, yet the officer chip still reads
-        # 'stale' (freshness stays visible to the reviewer).
+        # trapped. '02/2026' is ~5 months before Jul 2026: no re-ask, and the officer chip reads the
+        # amber 'ageing' tier (freshness stays visible without a red flag or a re-ask).
         wb = self._b('water_bill', period='02/2026')
         app = _app([wb, self._b('electricity_bill')])
         self.assertNotIn('water_bill', utility_bill_recheck(app, today=self.TODAY))
-        self.assertEqual(utility_check(wb, self.TODAY)['current_status'], 'stale')
+        self.assertEqual(utility_check(wb, self.TODAY)['current_status'], 'ageing')
 
     def test_unreadable_address_flagged(self):
         app = _app([self._b('water_bill', address=''), self._b('electricity_bill')])
@@ -1094,9 +1094,15 @@ class TestUtilityCurrency(SimpleTestCase):
         self.assertEqual(_utility_currency({'billing_period': 'Mei 2026'}, self.TODAY), 'current')
         self.assertEqual(_utility_currency({'billing_period': 'Mac 2026'}, self.TODAY), 'current')
 
-    def test_older_than_three_months_is_stale(self):
-        self.assertEqual(_utility_currency({'billing_period': 'Jan 2026'}, self.TODAY), 'stale')
-        self.assertEqual(_utility_currency({'billing_period': '2025-12'}, self.TODAY), 'stale')
+    def test_three_to_six_months_is_ageing(self):
+        # 3–6 months old → amber 'ageing' (accepted but ageing; not re-asked). Owner 2026-07-10.
+        self.assertEqual(_utility_currency({'billing_period': 'Jan 2026'}, self.TODAY), 'ageing')  # 5mo
+        self.assertEqual(_utility_currency({'billing_period': '2025-12'}, self.TODAY), 'ageing')   # 6mo boundary
+
+    def test_older_than_six_months_is_stale(self):
+        # > 6 months old → red 'stale' (past the accept window → re-asked). Owner 2026-07-10.
+        self.assertEqual(_utility_currency({'billing_period': '2025-11'}, self.TODAY), 'stale')    # 7mo
+        self.assertEqual(_utility_currency({'billing_period': '2025-08'}, self.TODAY), 'stale')    # 10mo
 
     def test_no_date_is_unknown(self):
         self.assertEqual(_utility_currency({'billing_period': ''}, self.TODAY), 'unknown')
@@ -1110,8 +1116,9 @@ class TestUtilityCurrency(SimpleTestCase):
         # 2026-07-09). Here the range start reads Jan (stale from Jun) but the bill date is Apr → current.
         self.assertEqual(_utility_currency(
             {'bill_date': '18.04.2026', 'billing_period': 'Jan 2026 - Feb 2026'}, self.TODAY), 'current')
-        # No bill_date → falls back to the period (backward-compatible with today's cohort).
-        self.assertEqual(_utility_currency({'billing_period': 'Jan 2026'}, self.TODAY), 'stale')
+        # No bill_date → falls back to the period (backward-compatible with today's cohort). Jan reads
+        # ~5 months from Jun → 'ageing' under the 3-tier chip.
+        self.assertEqual(_utility_currency({'billing_period': 'Jan 2026'}, self.TODAY), 'ageing')
 
 
 class TestUtilityReasonable(SimpleTestCase):

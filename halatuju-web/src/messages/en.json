@@ -3631,6 +3631,8 @@
           "recipient": "Recipient",
           "status": "Status",
           "current": "Current",
+          "ageing": "Ageing",
+          "stale": "Outdated",
           "amount": "Amount",
           "period": "Period",
           "contribution": "Contribution",

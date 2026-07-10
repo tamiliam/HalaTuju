@@ -3631,6 +3631,8 @@
           "recipient": "Penerima",
           "status": "Status",
           "current": "Semasa",
+          "ageing": "Agak lama",
+          "stale": "Terlalu lama",
           "amount": "Jumlah",
           "period": "Tempoh",
           "contribution": "Caruman",
