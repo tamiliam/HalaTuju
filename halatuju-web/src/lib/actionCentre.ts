@@ -205,6 +205,10 @@ export const KNOWN_CODES = [
   // through to the generic Done card, so it must be a KNOWN code — otherwise it's mistaken
   // for a free-text officer ticket ("From your reviewer" + a blank title).
   'bank_details_missing',
+  // Post-award Vircle eWallet setup. Same shape as the bank task: the OPEN state renders via the
+  // dedicated VircleTask component, but the RESOLVED state falls through to the generic Done
+  // card, so it must be a KNOWN code or it reads as a blank-titled officer ticket.
+  'vircle_setup_pending',
 ] as const
 
 export type KnownCode = (typeof KNOWN_CODES)[number]

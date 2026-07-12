@@ -1426,6 +1426,7 @@ export interface ScholarshipApplication {
   funding_need: FundingNeed | null
   completeness: ApplicationCompleteness
   notify_email?: string   // where decision/comms emails are sent (resolved at submit)
+  contact_phone?: string  // profile phone — pre-fills the Vircle setup task's mobile field
   form_data: Record<string, unknown>
   intake_snapshot?: Record<string, unknown>   // frozen audit copy of what was declared at submit
   // F8b: set once the student finishes post-award onboarding (null until then).

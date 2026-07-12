@@ -520,6 +520,11 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     # The address decision/comms emails are actually sent to (resolved at submit).
     notify_email = serializers.EmailField(read_only=True)
+    # Pre-fills the Vircle setup task's mobile field (the student may correct it there if they
+    # registered with Vircle under a different number).
+    contact_phone = serializers.CharField(
+        source='profile.contact_phone', read_only=True, allow_blank=True,
+    )
 
     class Meta:
         model = ScholarshipApplication
@@ -564,7 +569,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             # Address pre-fill (profile-derived, read-only here; written via
             # ApplicationDetailsUpdateSerializer + save_application_details).
             'address', 'postal_code', 'city', 'preferred_state',
-            'funding_need', 'completeness', 'notify_email',
+            'funding_need', 'completeness', 'notify_email', 'contact_phone',
             'form_data', 'intake_snapshot',
         ]
 

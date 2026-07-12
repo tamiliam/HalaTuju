@@ -19,7 +19,7 @@ export function checkPassword(pw: string): PasswordChecks {
 }
 
 /** Strip a Malaysian mobile to its local digits (no +60, no leading 0). */
-function localMobileDigits(raw: string): string {
+export function localMobileDigits(raw: string): string {
   let d = raw.replace(/\D/g, '')
   if (d.startsWith('60')) d = d.slice(2)
   if (d.startsWith('0')) d = d.slice(1)

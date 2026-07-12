@@ -500,3 +500,43 @@ def sync_bank_details_item(application):
         existing.resolved_by = 'system'
         existing.resolved_at = timezone.now()
         existing.save(update_fields=['status', 'resolved_by', 'resolved_at'])
+
+
+# Post-award Vircle eWallet setup — the same shape as the bank-details task above: a post-award
+# OPERATIONAL step, not a verification gap, so it lives outside CODE_TO_TICKET and is always
+# visible to an awarded/active student (independent of the Check-2 query flag).
+#
+# It is a 'confirm' item, and what the student types is the MOBILE NUMBER they registered with
+# Vircle — stored on the item's own resolution_text (exactly how a clarify answer is stored).
+# That row IS the record: Vircle tells us nothing back, so this is the student's CLAIM, never a
+# verification. Nothing here may call it "verified".
+VIRCLE_CODE = 'vircle_setup_pending'
+VIRCLE_SETUP_STATES = frozenset({'awarded', 'active'})
+
+
+def sync_vircle_item(application):
+    """Reconcile the Vircle setup task: ensure ONE open ``vircle_setup_pending`` item while the
+    student is awarded/active and hasn't confirmed yet. Idempotent.
+
+    Unlike the bank task this NEVER re-opens a resolved item: resolving it is the student saying
+    "my Vircle account is active", and that claim doesn't expire. Re-opening it would nag a
+    student who has already done the work. Gated by ``VIRCLE_SETUP_ENABLED`` (default OFF) →
+    while OFF no task is created and any open one is swept to resolved."""
+    from django.conf import settings
+    from .models import ResolutionItem
+    enabled = getattr(settings, 'VIRCLE_SETUP_ENABLED', False)
+    existing = application.resolution_items.filter(code=VIRCLE_CODE).first()
+    wanted = enabled and application.status in VIRCLE_SETUP_STATES
+    if wanted and existing is None:
+        try:
+            ResolutionItem.objects.create(
+                application=application, source='system', code=VIRCLE_CODE,
+                fact='other', kind='confirm', params={},
+            )
+        except IntegrityError:
+            pass  # created concurrently — fine
+    elif existing is not None and existing.status == 'open' and not wanted:
+        existing.status = 'resolved'
+        existing.resolved_by = 'system'
+        existing.resolved_at = timezone.now()
+        existing.save(update_fields=['status', 'resolved_by', 'resolved_at'])

@@ -2144,7 +2144,24 @@
         "high_utility_expense_str": {
           "title": "Mengapa bil utiliti anda setinggi ini?",
           "desc": "Bil air dan elektrik anda berjumlah kira-kira RM {amount} sebulan, yang kelihatan tinggi. Memandangkan keluarga anda menerima STR (bantuan tunai untuk isi rumah berpendapatan rendah), sila bantu kami memahami mengapa bil setinggi ini — contohnya peralatan perubatan, perniagaan rumah, atau ramai orang tinggal bersama."
+        },
+        "vircle_setup_pending": {
+          "title": "Sediakan eWallet Vircle anda",
+          "desc": "Pasang aplikasi Vircle, lengkapkan pendaftaran, kemudian beritahu kami di sini dengan nombor telefon bimbit yang anda daftarkan — begitulah cara kami memastikan akaun anda menerima biasiswa anda."
         }
+      },
+      "vircle": {
+        "title": "Sediakan eWallet Vircle anda",
+        "intro": "Biasiswa anda dibayar melalui aplikasi Vircle. Sebaik sahaja anda memasang Vircle dan akaun anda aktif, beritahu kami di sini — kami akan memastikan akaun anda boleh menerima wang. Panduan langkah demi langkah disertakan dalam e-mel yang kami hantar.",
+        "mobile": "Nombor telefon bimbit yang anda daftarkan dengan Vircle",
+        "mobileHint": "Pastikan ini nombor yang anda gunakan untuk mendaftar Vircle — itulah cara kami mengenal pasti akaun anda.",
+        "confirm": "Saya telah memasang Vircle dan akaun saya aktif",
+        "confirming": "Menyimpan…",
+        "error": "Pengesahan anda tidak dapat disimpan. Sila semak nombor tersebut dan cuba lagi.",
+        "stuckTitle": "Menghadapi masalah semasa menyediakannya?",
+        "stuckCard": "Gunakan MyKad sebenar anda, bukan fotostat atau gambar salinan — aplikasi memotret kad sebenar dan akan menolak gambar daripada gambar.",
+        "stuckPhone": "Telefon yang terlalu lama boleh gagal semasa pengaktifan walaupun memenuhi syarat iOS 16 / Android 10. Jika ia tersekat, cuba semula dengan telefon yang lebih baharu.",
+        "stuckSupport": "Untuk masalah dengan aplikasi itu sendiri, hantar WhatsApp kepada pasukan sokongan Vircle di +6011 1117 6000 (WhatsApp sahaja)."
       },
       "bank": {
         "title": "Tambah akaun bank anda untuk pembayaran",

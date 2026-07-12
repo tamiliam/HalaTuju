@@ -200,6 +200,23 @@ CHECK2_STUDENT_QUERIES_ENABLED = os.environ.get('CHECK2_STUDENT_QUERIES_ENABLED'
 # only to restore the old flow.
 BANK_DETAILS_CAPTURE_ENABLED = os.environ.get('BANK_DETAILS_CAPTURE_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# Post-award Vircle eWallet setup. The bursary is paid through the Vircle app, so an awarded/
+# active student gets an Action-Centre task: install Vircle, then CONFIRM here with the mobile
+# number they registered. That confirmation is the relay list we hand Vircle to switch on their
+# account. OFF by default so the task stays dark until the install emails go out — flip on with
+# the env var (no deploy needed). While OFF the task is never created and any open one is swept.
+VIRCLE_SETUP_ENABLED = os.environ.get('VIRCLE_SETUP_ENABLED', '').lower() in ('1', 'true', 'yes')
+
+# The relay sheet (My Drive / 03 Vircle). Written by the Workspace service account that already
+# powers Meet (GOOGLE_MEET_SA_JSON + MEET_ORGANISER_EMAIL) — it needs the `drive` + `spreadsheets`
+# scopes added to its domain-wide delegation, else the API returns unauthorized_client.
+VIRCLE_DRIVE_FOLDER = os.environ.get('VIRCLE_DRIVE_FOLDER', '03 Vircle')
+VIRCLE_SHEET_NAME = os.environ.get('VIRCLE_SHEET_NAME', 'Vircle relay — BrightPath Bursary')
+# Optional pin: if set, write to THIS spreadsheet instead of finding/creating one in the folder.
+VIRCLE_SHEET_ID = os.environ.get('VIRCLE_SHEET_ID', '')
+# Explicit scope for the setup-email send (owner lists the application IDs; billable, one per id).
+VIRCLE_EMAIL_APP_IDS = os.environ.get('VIRCLE_EMAIL_APP_IDS', '')
+
 # Check 2 STEP 3: auto-draft the sponsor profile at the reviewer handoff (and the
 # backfill/sweep that share this gate). Billable Gemini, so off by default; flip via the
 # env var. (Was referenced in code but never defined here, so it was permanently off.)

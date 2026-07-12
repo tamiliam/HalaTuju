@@ -1108,8 +1108,12 @@ class ResolutionItemListView(APIView):
         sync_resolution_items(app)
         # Post-award: surface (or clear) the bank-details task for an awarded/active student.
         # Independent of the Check-2 flag — it's a payout step, not a verification query.
-        from .resolution import sync_bank_details_item
+        from .resolution import sync_bank_details_item, sync_vircle_item
         sync_bank_details_item(app)
+        # Post-award: the Vircle eWallet setup task (install the app → confirm here). Same
+        # nature as the bank task — a payout step, not a verification query — so it is likewise
+        # independent of the Check-2 flag, and gated by its own VIRCLE_SETUP_ENABLED.
+        sync_vircle_item(app)
         # Check 2 STEP 2: the AI clarify queries are held behind a flag until the
         # questions have been reviewed — while OFF, students are asked nothing new
         # (officers still review them in the cockpit).
@@ -1123,7 +1127,7 @@ class ResolutionItemListView(APIView):
         # The uploaded-but-bad system tickets (*_unreadable / *_name_mismatch /
         # str_not_current) stay HIDDEN — those are reviewer-raised re-uploads, coached inline
         # by Gopal (the 2026-06-10 duplicate-noise fix). 'human' = reviewer-only.
-        from .resolution import STUDENT_DOC_REQUEST_CODES, BANK_DETAILS_CODE
+        from .resolution import STUDENT_DOC_REQUEST_CODES, BANK_DETAILS_CODE, VIRCLE_CODE
 
         # Once a student is FUNDED (awarded onward), the AUTO review-phase items — verification
         # gaps (source='system') + Check-2 clarify queries (source='check2') — are SET ASIDE,
@@ -1143,15 +1147,22 @@ class ResolutionItemListView(APIView):
             # never shown (sync_bank_details_item also sweeps any existing one to resolved).
             if i.code == BANK_DETAILS_CODE:
                 return getattr(_settings, 'BANK_DETAILS_CAPTURE_ENABLED', False)
+            # The Vircle setup task, likewise: a post-award step, shown to an awarded/active
+            # student whenever the feature is on, whatever the Check-2 flag says.
+            if i.code == VIRCLE_CODE:
+                return getattr(_settings, 'VIRCLE_SETUP_ENABLED', False)
             if i.source == 'system':
                 return queries_live and i.code in STUDENT_DOC_REQUEST_CODES
             if i.source == 'check2':
                 return queries_live
             return True   # officer items always show
 
-        # A review-phase AUTO item (not the bank task): set aside for funded students.
+        # A review-phase AUTO item (not the post-award operational tasks): set aside for funded
+        # students. The bank + Vircle tasks are EXCLUDED — they only exist once funded, so
+        # setting them aside would strike through the one thing we're actually asking for.
         def _is_review_auto(i):
-            return i.source in ('system', 'check2') and i.code != BANK_DETAILS_CODE
+            return (i.source in ('system', 'check2')
+                    and i.code not in (BANK_DETAILS_CODE, VIRCLE_CODE))
 
         items = [i for i in app.resolution_items.all() if _student_visible(i)]
         openq = [i for i in items if i.status == 'open']
@@ -1184,8 +1195,14 @@ class ResolutionItemResolveView(APIView):
         ).select_related('application').first()
         if item is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        from .resolution import VIRCLE_CODE
         from .services import querying_locked
-        if querying_locked(item.application):
+        # Querying is LOCKED from the interview onward — and an awarded student is well past
+        # that. The Vircle task is a post-award operational step, not a Check-2 query, so it
+        # must be exempt or the student could never confirm. (The bank task sidesteps this by
+        # being a 'doc' kind, resolved by upload; this one is a 'confirm', so it comes through
+        # here.)
+        if item.code != VIRCLE_CODE and querying_locked(item.application):
             return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
         if item.kind == 'doc':
             return Response({'error': 'upload_doc_instead', 'doc_type': item.doc_type},
@@ -1195,11 +1212,22 @@ class ResolutionItemResolveView(APIView):
         text = (request.data.get('text') or '').strip()
         if item.kind in ('explanation', 'clarify') and not text:
             return Response({'error': 'text_required'}, status=status.HTTP_400_BAD_REQUEST)
+        # The Vircle confirmation carries the MOBILE NUMBER the student registered with Vircle.
+        # It is the ONLY join key we will ever have between our record and their Vircle account
+        # (Vircle tells us nothing back), so a typo here silently relays the wrong account — or
+        # none. Validate + store E.164 via the shared normaliser.
+        if item.code == VIRCLE_CODE:
+            from .whatsapp import normalise_msisdn
+            mobile = normalise_msisdn(text)
+            if not mobile:
+                return Response({'error': 'bad_mobile'}, status=status.HTTP_400_BAD_REQUEST)
+            text = mobile
         # Phase 2 (D2): on a typed answer, Cikgu Gopal nudges ONLY when it is TOTALLY
         # off-topic — keep the task open and return his one-sentence steer, don't resolve.
         # Flag-gated + AI-off-safe (judge defaults to accept). 'pathway_confirm' is a
-        # one-tap Yes (its 'confirmed' text isn't a free answer, so it's never judged).
-        if text and item.code != 'pathway_confirm':
+        # one-tap Yes (its 'confirmed' text isn't a free answer, so it's never judged); the
+        # Vircle confirmation is a phone number, likewise not a free-text answer to judge.
+        if text and item.code not in ('pathway_confirm', VIRCLE_CODE):
             from django.conf import settings as _settings
             if getattr(_settings, 'CHECK2_ANSWER_RELEVANCE_ENABLED', False):
                 from .help_engine import judge_answer_relevance
@@ -1600,6 +1628,8 @@ class CronRunView(APIView):
         'award-students-batch': 'award_students_batch',  # admin batch-award to a sponsor (scope via SEED_SPONSOR_ID + SEED_AWARD_APP_IDS)
         'send-award-offer-emails': 'send_award_offer_emails',  # owner-forced award email send (scope via AWARD_EMAIL_APP_IDS)
         'send-sign-invitation-emails': 'send_sign_invitation_emails',  # owner-forced "ready to sign" follow-up (scope via SIGN_INVITE_APP_IDS)
+        'send-vircle-install-emails': 'send_vircle_install_emails',  # owner-forced Vircle setup email + task (scope via VIRCLE_EMAIL_APP_IDS)
+        'sync-vircle-sheet': 'sync_vircle_sheet',  # rewrite the Vircle relay sheet (My Drive / 03 Vircle) from the DB
         'bursary-signing-reminders': 'send_bursary_signing_reminders',  # daily: nudge a pending witness/countersignature (SLA)
         'release-award-offer-emails': 'release_award_offer_emails',  # hourly: send award emails past the cool-off window
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly

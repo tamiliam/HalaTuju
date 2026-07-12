@@ -231,6 +231,7 @@ export default function ScholarshipApplicationPage() {
           applicationId={app.id}
           incomeRoute={app.income_route || ''}
           incomeEarner={app.income_earner || ''}
+          contactPhone={app.contact_phone || profile?.contact_phone || ''}
           formLocked
           funded={funded}
         />

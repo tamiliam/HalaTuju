@@ -2144,7 +2144,24 @@
         "high_utility_expense_str": {
           "title": "Why are your utility bills this high?",
           "desc": "Your water and electricity bills come to about RM {amount} a month, which looks high. As your family receives STR (cash aid for lower-income households), please help us understand why the bills are this high — for example medical equipment, a home business, or several people living together."
+        },
+        "vircle_setup_pending": {
+          "title": "Set up your Vircle eWallet",
+          "desc": "Install the Vircle app, complete the sign-up, then tell us here with the mobile number you registered — that's how we arrange for your account to receive your bursary."
         }
+      },
+      "vircle": {
+        "title": "Set up your Vircle eWallet",
+        "intro": "Your bursary is paid through the Vircle app. Once you've installed Vircle and your account is active, tell us here — we'll then arrange for your account to receive money. The step-by-step guide is attached to the email we sent you.",
+        "mobile": "Mobile number you registered with Vircle",
+        "mobileHint": "Check this is the number you used to sign up for Vircle — it's how we identify your account.",
+        "confirm": "I've installed Vircle and my account is active",
+        "confirming": "Saving…",
+        "error": "Could not save your confirmation. Please check the number and try again.",
+        "stuckTitle": "Having trouble setting it up?",
+        "stuckCard": "Use your actual MyKad, not a photocopy or a photo of one — the app photographs the real card and will reject a picture of a picture.",
+        "stuckPhone": "A very old phone can fail during activation even if it meets the iOS 16 / Android 10 requirement. If it stalls, try again on a newer phone.",
+        "stuckSupport": "For problems with the app itself, WhatsApp the Vircle support team at +6011 1117 6000 (WhatsApp chat only)."
       },
       "bank": {
         "title": "Add your bank account for payment",

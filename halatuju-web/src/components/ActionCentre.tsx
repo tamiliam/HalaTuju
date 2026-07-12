@@ -42,6 +42,9 @@ import {
   type ConfirmTarget,
   countDigits,
 } from '@/lib/actionCentre'
+// The Vircle task captures a Malaysian mobile — reuse the shared, node-tested helpers rather
+// than writing a second phone validator.
+import { formatMyMobile, isValidMyMobile, localMobileDigits } from '@/lib/sponsorAuth'
 import DocumentHelpCoach, { CoachCard } from '@/components/DocumentHelpCoach'
 import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import IncomeRouteSwitch from '@/components/IncomeRouteSwitch'
@@ -581,6 +584,95 @@ function BankDetailsTask({
   )
 }
 
+/** Post-award Vircle eWallet setup: the student installs Vircle (per the emailed guide), then
+ *  confirms here with the mobile number they registered. That confirmation is what we relay to
+ *  Vircle to switch their account on.
+ *
+ *  Two things this card must get right:
+ *  - The mobile is the ONLY join key between our record and their Vircle account, so it is
+ *    pre-filled but editable, validated, and shown back before they commit.
+ *  - The "stuck?" note repeats the two blockers that strand people mid-setup (a photo of a
+ *    photocopy is rejected; a very old phone can fail activation). A stuck student is looking at
+ *    THIS card, not hunting back through their inbox for the email. */
+function VircleTask({
+  item, token, contactPhone, onResolved,
+}: {
+  item: ResolutionItem
+  token: string | null
+  contactPhone: string
+  onResolved: () => void
+}) {
+  const { t } = useT()
+  const [mobile, setMobile] = useState(() => formatMyMobile(contactPhone))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const valid = isValidMyMobile(mobile)
+
+  const onConfirmDone = async () => {
+    if (!token || !valid || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      await resolveResolutionItem(item.id, `+60${localMobileDigits(mobile)}`, { token })
+      onResolved()
+    } catch {
+      setError(t('scholarship.actionCentre.vircle.error'))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="flex gap-3">
+        <span aria-hidden className="text-xl">💳</span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-gray-900">{t('scholarship.actionCentre.vircle.title')}</h3>
+          <p className="mt-1 text-sm text-gray-600">{t('scholarship.actionCentre.vircle.intro')}</p>
+
+          <div className="mt-3">
+            <label className="block text-sm font-medium text-gray-700" htmlFor="vircle-mobile">
+              {t('scholarship.actionCentre.vircle.mobile')}
+            </label>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-600">+60</span>
+              <input
+                id="vircle-mobile"
+                className="input flex-1"
+                inputMode="tel"
+                placeholder="12-345 6789"
+                value={mobile}
+                onChange={(e) => setMobile(formatMyMobile(e.target.value))}
+                disabled={busy}
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.vircle.mobileHint')}</p>
+          </div>
+
+          <button
+            type="button" onClick={onConfirmDone} disabled={!valid || busy}
+            className="mt-3 w-full rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+          >
+            {busy ? t('scholarship.actionCentre.vircle.confirming') : t('scholarship.actionCentre.vircle.confirm')}
+          </button>
+
+          <details className="mt-3">
+            <summary className="cursor-pointer text-sm font-medium text-gray-700">
+              {t('scholarship.actionCentre.vircle.stuckTitle')}
+            </summary>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-600">
+              <li>{t('scholarship.actionCentre.vircle.stuckCard')}</li>
+              <li>{t('scholarship.actionCentre.vircle.stuckPhone')}</li>
+              <li>{t('scholarship.actionCentre.vircle.stuckSupport')}</li>
+            </ul>
+          </details>
+
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────
 
 export default function ActionCentre({
@@ -593,6 +685,7 @@ export default function ActionCentre({
   applicationId,
   incomeRoute = '',
   incomeEarner = '',
+  contactPhone = '',
 }: {
   token: string | null
   studentName?: string
@@ -615,6 +708,9 @@ export default function ActionCentre({
    *  cluster coach (audit #15b). Sourced from the application. */
   incomeRoute?: string
   incomeEarner?: string
+  /** The student's phone on file — pre-fills the Vircle task's mobile field. They can
+   *  correct it there if they registered with Vircle under a different number. */
+  contactPhone?: string
 }) {
   const { t } = useT()
   const [open, setOpen] = useState<ResolutionItem[]>([])
@@ -750,6 +846,12 @@ export default function ActionCentre({
             // The post-award bank-details task is a bespoke upload-then-confirm card.
             item.code === 'bank_details_missing' ? (
               <BankDetailsTask key={item.id} item={item} token={token} onResolved={fetchItems} />
+            ) : item.code === 'vircle_setup_pending' ? (
+              // Post-award Vircle setup: confirm the account is active + the mobile registered.
+              <VircleTask
+                key={item.id} item={item} token={token}
+                contactPhone={contactPhone} onResolved={fetchItems}
+              />
             ) : (
               <ActionCard
                 key={item.id}
