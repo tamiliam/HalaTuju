@@ -64,6 +64,22 @@ def can_register(application) -> bool:
     return year <= VIRCLE_MAX_BIRTH_YEAR
 
 
+def raise_setup_task(application):
+    """Put the Vircle confirmation task in the student's Action Centre. Idempotent.
+
+    Called ONLY after the award email has actually been sent (see sponsorship.py + the two
+    commands) — a task must never appear for a student who was never told what it's for. The task
+    is still gated by VIRCLE_SETUP_ENABLED at read time, so creating it while the flag is off is
+    harmless: it simply stays invisible until the flag flips.
+    """
+    from .models import ResolutionItem
+    item, _ = ResolutionItem.objects.get_or_create(
+        application=application, code=VIRCLE_CODE,
+        defaults={'source': 'system', 'fact': 'other', 'kind': 'confirm', 'params': {}},
+    )
+    return item
+
+
 def confirmation(application):
     """The student's Vircle confirmation item, or None if they haven't confirmed."""
     return application.resolution_items.filter(code=VIRCLE_CODE, status='resolved').first()

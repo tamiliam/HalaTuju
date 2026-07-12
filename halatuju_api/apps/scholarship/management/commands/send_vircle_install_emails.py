@@ -26,10 +26,10 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.scholarship.emails import send_vircle_install_email
-from apps.scholarship.models import ResolutionItem, ScholarshipApplication
+from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.resolution import VIRCLE_CODE, VIRCLE_SETUP_STATES
 from apps.scholarship.vircle import (birth_year_from_nric, can_register,
-                                     sync_relay_sheet)
+                                     raise_setup_task, sync_relay_sheet)
 
 
 def _ids(raw):
@@ -79,10 +79,7 @@ class Command(BaseCommand):
                 continue
             # Raise the task ONLY on a successful send — a student who never got the email must
             # not find a mystery task waiting in their Action Centre.
-            ResolutionItem.objects.get_or_create(
-                application=app, code=VIRCLE_CODE,
-                defaults={'source': 'system', 'fact': 'other', 'kind': 'confirm', 'params': {}},
-            )
+            raise_setup_task(app)
             sent.append(aid)
 
         prefix = '[DRY RUN] would send' if dry else 'sent'

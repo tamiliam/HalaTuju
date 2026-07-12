@@ -412,11 +412,19 @@ def send_award_confirmed_email(to_email, applicant_name, programme_name, lang='e
 
 
 # Sent when a student is AWARDED (a sponsor committed → status 'awarded'), BEFORE the formal
-# offer/acceptance. Good news + how support is paid (a monthly payment arrangement) + a formal
-# offer & bursary contract to follow. NO bank-details ask (an alternative payment arrangement is
-# being worked out; documentation pending) — and therefore NO call-to-action button. Deliberately
-# states NO amount (the formal offer carries the figure) and NO sponsor identity (two-way
-# anonymity). From info@, reply-to help@. Owner-cleared wording 2026-06-30.
+# offer/acceptance.
+#
+# MERGED 2026-07-12 (owner): this now carries the GOOD NEWS **and** the Vircle setup in ONE email.
+# It used to end "there's nothing you need to do right now — look out for our next message", and a
+# second email followed with the Vircle instructions. That seam is gone: a student awarded from now
+# on is told the news and the one thing to do, in the same breath. (The standalone Vircle email is
+# KEPT — the 22 students already awarded got the old good-news email, and it's still the tool for a
+# re-send or a manual case.)
+#
+# UNCHANGED and deliberate: NO amount (the formal offer carries the figure), NO sponsor identity
+# (two-way anonymity), NO bank-details ask (money moves through Vircle now). The formal offer +
+# bursary contract still follow as their own step — the contract is being finalised.
+# From info@, reply-to help@. Guide PDF attached. Good-news wording owner-cleared 2026-06-30.
 AWARD_OFFER_SUBJECTS = {
     'en': 'Good news about your BrightPath Bursary application 🎓',
     'ms': 'Berita baik tentang permohonan Biasiswa BrightPath anda 🎓',
@@ -428,62 +436,134 @@ AWARD_OFFER_BODIES = {
         "We're delighted to share some good news. Your application to the BrightPath Bursary "
         "Programme has been successful — you have been selected to receive financial support for "
         "your studies.\n\n"
-        "Your support will be provided through a monthly payment arrangement. We're finalising the "
-        "details now, and we'll send you a formal offer and bursary contract very soon, along with "
-        "the simple steps to accept it.\n\n"
-        "There's nothing you need to do right now — please look out for our next message.\n\n"
-        "If you have any questions in the meantime, reply to this email or contact us at {support}.\n\n"
+        "Your support will be provided through a monthly payment arrangement, and your money will "
+        "reach you through Vircle, a Malaysian eWallet app. So there is one thing to do now: set up "
+        "your Vircle account.\n\n"
+        "Install the Vircle app from the Apple App Store, Google Play Store or Huawei AppGallery. "
+        "You'll need iOS 16 or above, or Android 10 or above. Note that a very old phone can fail "
+        "during registration even if it meets this — if it stalls, try again on a newer phone.\n\n"
+        "When you sign up, the app asks you to register a Parent account. That is simply Vircle's "
+        "name for the main adult account, and it is the correct one for you. You can register if "
+        "you were born in 2008 or earlier. Have your MyKad in your hand before you start: the app "
+        "photographs the actual card, so a picture of a photocopy, a scan, or an image on another "
+        "screen will be rejected.\n\n"
+        "If you were born after 2008, you cannot open your own Vircle account yet. Ask a parent or "
+        "guardian to register their own Vircle account instead, then email us at {support} and "
+        "we'll arrange for you to be added to it.\n\n"
+        "The step-by-step guide is attached to this email.\n\n"
+        "Once your account is active, please tell us in the Action Centre and enter the mobile "
+        "number you registered with Vircle. We'll take it from there and arrange for your account "
+        "to receive money monthly. (The attached guide asks you to message Vircle on WhatsApp — "
+        "you may do so, but you don't have to. Telling us is what we need.)\n\n"
+        "A formal offer and bursary contract will follow separately, along with the simple steps to "
+        "accept it.\n\n"
+        "If you faced any trouble during registration or activation, or have any questions, reply "
+        "to this email or contact us at {support}.\n\n"
         "Warm congratulations,\nThe BrightPath Bursary Team"
     ),
     'ms': (
         "Salam {name},\n\n"
         "Kami gembira berkongsi berita baik. Permohonan anda ke Program Biasiswa BrightPath telah "
         "berjaya — anda telah dipilih untuk menerima bantuan kewangan bagi pengajian anda.\n\n"
-        "Bantuan anda akan disalurkan melalui aturan pembayaran bulanan. Kami sedang memuktamadkan "
-        "butirannya sekarang, dan kami akan menghantar tawaran rasmi dan kontrak biasiswa kepada anda "
-        "tidak lama lagi, berserta langkah mudah untuk menerimanya.\n\n"
-        "Tiada apa-apa yang perlu anda lakukan buat masa ini — sila tunggu mesej kami yang seterusnya.\n\n"
-        "Jika ada sebarang pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
+        "Bantuan anda akan disalurkan melalui aturan pembayaran bulanan, dan wang anda akan sampai "
+        "melalui Vircle, sebuah aplikasi eWallet Malaysia. Jadi ada satu perkara untuk dilakukan "
+        "sekarang: menyediakan akaun Vircle anda.\n\n"
+        "Pasang aplikasi Vircle dari Apple App Store, Google Play Store atau Huawei AppGallery. Anda "
+        "memerlukan iOS 16 ke atas, atau Android 10 ke atas. Perlu diingat, telefon yang terlalu lama "
+        "boleh gagal semasa pendaftaran walaupun memenuhi syarat ini — jika ia tersekat, cuba semula "
+        "dengan telefon yang lebih baharu.\n\n"
+        "Semasa mendaftar, aplikasi akan meminta anda mendaftar Akaun Parent. Itu hanyalah nama Vircle "
+        "bagi akaun dewasa utama, dan ia adalah akaun yang betul untuk anda. Anda boleh mendaftar jika "
+        "anda lahir pada tahun 2008 atau lebih awal. Pastikan MyKad anda ada di tangan sebelum mula: "
+        "aplikasi akan memotret kad sebenar, jadi gambar salinan fotostat, imbasan, atau imej pada "
+        "skrin lain akan ditolak.\n\n"
+        "Jika anda lahir selepas tahun 2008, anda belum boleh membuka akaun Vircle anda sendiri. "
+        "Sebaliknya, minta ibu bapa atau penjaga anda mendaftar akaun Vircle mereka sendiri, "
+        "kemudian e-mel kami di {support} dan kami akan uruskan supaya anda ditambah ke dalam "
+        "akaun tersebut.\n\n"
+        "Panduan langkah demi langkah disertakan bersama e-mel ini.\n\n"
+        "Sebaik sahaja akaun anda aktif, sila beritahu kami di Pusat Tindakan dan masukkan nombor "
+        "telefon bimbit yang anda daftarkan dengan Vircle. Kami akan uruskan yang selebihnya dan "
+        "memastikan akaun anda menerima wang setiap bulan. (Panduan yang disertakan meminta anda "
+        "menghantar mesej WhatsApp kepada Vircle — anda boleh berbuat demikian, tetapi ia tidak "
+        "wajib. Memberitahu kami sudah memadai.)\n\n"
+        "Tawaran rasmi dan kontrak biasiswa akan menyusul secara berasingan, berserta langkah mudah "
+        "untuk menerimanya.\n\n"
+        "Jika anda menghadapi sebarang masalah semasa pendaftaran atau pengaktifan, atau ada "
+        "pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
         "Tahniah,\nPasukan Biasiswa BrightPath"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
         "ஒரு நல்ல செய்தியைப் பகிர்வதில் மகிழ்ச்சி அடைகிறோம். BrightPath Bursary திட்டத்திற்கான உங்கள் "
         "விண்ணப்பம் வெற்றிபெற்றுள்ளது — உங்கள் படிப்பிற்கான நிதியுதவியைப் பெற நீங்கள் தேர்ந்தெடுக்கப்பட்டுள்ளீர்கள்.\n\n"
-        "உங்கள் உதவி மாதாந்திரக் கட்டண முறையில் வழங்கப்படும். அதன் விவரங்களை நாங்கள் இப்போது இறுதி செய்து "
-        "வருகிறோம்; விரைவில் முறையான வழங்கல் (offer) மற்றும் உதவித்தொகை ஒப்பந்தத்தை (bursary contract), அதை "
-        "ஏற்கும் எளிய படிகளுடன் உங்களுக்கு அனுப்புவோம்.\n\n"
-        "இப்போதைக்கு நீங்கள் எதுவும் செய்ய வேண்டியதில்லை — எங்கள் அடுத்த செய்திக்காகக் காத்திருங்கள்.\n\n"
-        "ஏதேனும் கேள்விகள் இருந்தால், இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் "
-        "எங்களைத் தொடர்புகொள்ளவும்.\n\n"
+        "உங்கள் உதவி மாதாந்திரக் கட்டண முறையில் வழங்கப்படும்; உங்கள் பணம் Vircle என்ற மலேசிய eWallet "
+        "செயலி வழியாக உங்களைச் சென்றடையும். எனவே இப்போது ஒரே ஒரு வேலை: உங்கள் Vircle கணக்கை "
+        "அமைப்பது.\n\n"
+        "Apple App Store, Google Play Store அல்லது Huawei AppGallery-இலிருந்து Vircle செயலியை "
+        "நிறுவவும். உங்களுக்கு iOS 16 அல்லது அதற்கு மேல், அல்லது Android 10 அல்லது அதற்கு மேல் தேவை. "
+        "மிகவும் பழைய தொலைபேசி இதைப் பூர்த்தி செய்தாலும் பதிவின்போது தோல்வியடையலாம் — நின்றுவிட்டால், "
+        "புதிய தொலைபேசியில் மீண்டும் முயற்சிக்கவும்.\n\n"
+        "பதிவு செய்யும்போது, ஒரு Parent கணக்கைப் பதிவு செய்யுமாறு செயலி கேட்கும். அது Vircle நிறுவனம் "
+        "முதன்மை வயதுவந்தோர் கணக்கிற்கு வைத்துள்ள பெயர் மட்டுமே; அதுவே உங்களுக்கான சரியான கணக்கு. "
+        "நீங்கள் 2008 அல்லது அதற்கு முன் பிறந்திருந்தால் பதிவு செய்யலாம். தொடங்கும் முன் உங்கள் MyKad-ஐ "
+        "கையில் வைத்திருங்கள்: செயலி உண்மையான அட்டையைப் புகைப்படம் எடுக்கிறது, எனவே நகல், ஸ்கேன், அல்லது "
+        "மற்றொரு திரையில் உள்ள படத்தின் புகைப்படம் நிராகரிக்கப்படும்.\n\n"
+        "நீங்கள் 2008-க்குப் பிறகு பிறந்திருந்தால், உங்கள் சொந்தக் கணக்கை இப்போது திறக்க முடியாது. "
+        "அதற்குப் பதிலாக, உங்கள் பெற்றோர் அல்லது பாதுகாவலரை அவர்களின் சொந்த Vircle கணக்கைப் பதிவு "
+        "செய்யச் சொல்லுங்கள்; பிறகு {support} இல் எங்களுக்கு மின்னஞ்சல் அனுப்புங்கள் — அந்தக் கணக்கில் "
+        "உங்களைச் சேர்ப்பதற்கு நாங்கள் ஏற்பாடு செய்வோம்.\n\n"
+        "படிப்படியான வழிகாட்டி இந்த மின்னஞ்சலுடன் இணைக்கப்பட்டுள்ளது.\n\n"
+        "உங்கள் கணக்கு செயல்பட்டவுடன், Action Centre-இல் எங்களிடம் தெரிவித்து, Vircle-இல் நீங்கள் "
+        "பதிவு செய்த கைபேசி எண்ணை உள்ளிடவும். மீதியை நாங்கள் கவனித்து, உங்கள் கணக்கு ஒவ்வொரு மாதமும் "
+        "பணத்தைப் பெறுவதற்கு ஏற்பாடு செய்வோம். (இணைக்கப்பட்ட வழிகாட்டி Vircle-க்கு WhatsApp அனுப்பச் "
+        "சொல்கிறது — நீங்கள் அனுப்பலாம், ஆனால் அது கட்டாயமில்லை. எங்களிடம் தெரிவிப்பதே எங்களுக்குத் "
+        "தேவை.)\n\n"
+        "முறையான வழங்கல் (offer) மற்றும் உதவித்தொகை ஒப்பந்தம் (bursary contract), அதை ஏற்கும் எளிய "
+        "படிகளுடன், தனியாக அனுப்பப்படும்.\n\n"
+        "பதிவு அல்லது செயல்படுத்தும் போது ஏதேனும் சிக்கல் ஏற்பட்டால், அல்லது ஏதேனும் கேள்விகள் இருந்தால், "
+        "இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் எங்களைத் தொடர்புகொள்ளவும்.\n\n"
         "இதயப்பூர்வ வாழ்த்துகள்,\nBrightPath Bursary குழு"
     ),
 }
 
 
-# The key phrases rendered BOLD in the HTML (how support is paid + the offer/contract to
-# follow), per language. Each must be an exact substring of the body above. There is no
-# call-to-action button on this email — it asks nothing of the student yet.
+# The key phrases rendered BOLD in the HTML, per language. Each must be an exact substring of the
+# body above — a phrase that isn't found is silently left un-bolded. Since the merge these cover
+# BOTH halves: how support is paid, and the Vircle facts a student must not miss (the "Parent"
+# account, the birth-year rule, the physical-MyKad rule) plus the contract still to come.
 _BOLD_PHRASES = {
-    'en': ['monthly payment arrangement', 'formal offer and bursary contract'],
-    'ms': ['aturan pembayaran bulanan', 'tawaran rasmi dan kontrak biasiswa'],
-    'ta': ['மாதாந்திரக் கட்டண முறையில்',
-           'முறையான வழங்கல் (offer) மற்றும் உதவித்தொகை ஒப்பந்தத்தை (bursary contract)'],
+    'en': ['monthly payment arrangement', 'register a Parent account', 'born in 2008 or earlier',
+           'photographs the actual card', 'formal offer and bursary contract'],
+    'ms': ['aturan pembayaran bulanan', 'mendaftar Akaun Parent',
+           'lahir pada tahun 2008 atau lebih awal', 'memotret kad sebenar',
+           'Tawaran rasmi dan kontrak biasiswa'],
+    'ta': ['மாதாந்திரக் கட்டண முறையில்', 'Parent கணக்கைப் பதிவு செய்யுமாறு',
+           '2008 அல்லது அதற்கு முன் பிறந்திருந்தால்',
+           'உண்மையான அட்டையைப் புகைப்படம் எடுக்கிறது'],
 }
 
 
 def _award_offer_html(text_body, lang):
-    """HTML for the award good-news email: paragraphs, with the key phrases (how support is
-    paid + the offer/contract to follow) in BOLD and the sign-off team name (the line after the
-    salutation in the final paragraph) bolded. No call-to-action button — the email asks nothing
-    of the student yet. Falls back gracefully: a phrase that isn't found is left un-bolded."""
+    """HTML for the award email: paragraphs, key phrases BOLD, the sign-off team name bolded,
+    "the Action Centre" as an inline LINK where the ask is made, and a call-to-action button under
+    the sign-off. Since the merge this email DOES ask something of the student (set up Vircle), so
+    it carries both routes to /scholarship/application. Falls back gracefully: a phrase that isn't
+    found is left un-bolded/un-linked."""
     import html as _h
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link_phrase = _VIRCLE_LINK_PHRASES.get(lang, _VIRCLE_LINK_PHRASES['en'])
     phrases = _BOLD_PHRASES.get(lang, [])
 
     def _emphasise(escaped):
         for ph in phrases:
             if ph:
                 escaped = escaped.replace(_h.escape(ph), f'<strong>{_h.escape(ph)}</strong>')
+        if link_phrase:
+            esc_link = _h.escape(link_phrase)
+            anchor = (f'<a href="{frontend}/scholarship/application" '
+                      f'style="color:#2563eb;font-weight:600;">{esc_link}</a>')
+            escaped = escaped.replace(esc_link, anchor, 1)
         return escaped
 
     def _bold_team(escaped):
@@ -498,14 +578,23 @@ def _award_offer_html(text_body, lang):
         if idx == len(paras) - 1 and '\n' in para:   # final paragraph = the sign-off
             esc = _bold_team(esc)
         blocks.append(f'<p style="margin:0 0 14px;">{esc.replace(chr(10), "<br>")}</p>')
+
+    button = _email_button(f'{frontend}/scholarship/application',
+                           VIRCLE_CTA_LABELS.get(lang, VIRCLE_CTA_LABELS['en']))
+    blocks.append(f'<p style="margin:22px 0 6px;">{button}</p>')
     return _html_email_shell(''.join(blocks))
 
 
 def send_award_offer_email(to_email, applicant_name, lang='en'):
-    """Award good-news email: a sponsor has committed (status 'awarded'). Tells the student the
-    application succeeded, that support is paid as a monthly arrangement, and that a formal offer
-    + bursary contract will follow. NO bank-details ask, NO call-to-action, NO amount, NO sponsor
-    identity. HTML (key phrases BOLD) + plain-text fallback, from info@, reply-to help@."""
+    """Award email: a sponsor has committed (status 'awarded'). Since the 2026-07-12 merge this is
+    ONE email carrying the good news AND the Vircle setup — the application succeeded, support is
+    paid monthly through the Vircle eWallet, here is how to set it up, then confirm in the Action
+    Centre. The installation guide is attached. The formal offer + bursary contract still follow
+    separately. NO amount, NO sponsor identity, NO bank-details ask. HTML (key phrases BOLD, inline
+    Action-Centre link + CTA button) + plain-text fallback, from info@, reply-to help@.
+
+    The CALLER raises the Action-Centre task on a successful send (see sponsorship.py) — the task
+    must never appear for a student who didn't get the email."""
     if not to_email:
         return False
     lang = normalise_lang(lang)
@@ -513,10 +602,12 @@ def send_award_offer_email(to_email, applicant_name, lang='en'):
     fmt = {'name': name, 'support': SUPPORT_EMAIL}
     subject = AWARD_OFFER_SUBJECTS[lang]
     text_body = AWARD_OFFER_BODIES[lang].format(**fmt)
+    guide = vircle_guide_attachment()
     return _send_html(
         to_email, subject, text_body, _award_offer_html(text_body, lang),
         from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
         reply_to=[SUPPORT_EMAIL],
+        attachments=[guide] if guide else None,
     )
 
 

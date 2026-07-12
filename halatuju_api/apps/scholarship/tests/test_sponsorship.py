@@ -400,19 +400,29 @@ class TestAwardOfferEmail(TestCase):
         self.assertFalse(send_award_offer_email('', 'Nobody'))
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_award_offer_email_html_bold_no_button_no_bank(self):
+    def test_award_offer_email_carries_the_vircle_ask_but_still_no_bank_no_amount(self):
+        # MERGED 2026-07-12: this email now carries the good news AND the Vircle setup, so it DOES
+        # ask something of the student (it used to ask nothing, and had no button by design).
+        # What must NOT change: no bank-details ask, no amount, no sponsor identity.
         from apps.scholarship.emails import send_award_offer_email
         mail.outbox = []
         send_award_offer_email('x@y.example', 'Aisyah', lang='en')
-        html = mail.outbox[0].alternatives[0][0]   # (html_body, 'text/html')
-        # Key phrases bolded
+        msg = mail.outbox[0]
+        html = msg.alternatives[0][0]   # (html_body, 'text/html')
+        # Key phrases bolded — both halves of the merged email.
         self.assertIn('<strong>monthly payment arrangement</strong>', html)
         self.assertIn('<strong>formal offer and bursary contract</strong>', html)
-        # No bank-details ask and no call-to-action button/link (HTML + plain-text)
-        self.assertNotIn('<a href=', html)
+        self.assertIn('<strong>register a Parent account</strong>', html)
+        # The ask: an inline Action-Centre link AND a button, both to /scholarship/application.
+        self.assertEqual(html.count('/scholarship/application'), 2)
+        # The installation guide rides along.
+        self.assertEqual(len(msg.attachments), 1)
+        self.assertTrue(msg.attachments[0][0].endswith('.pdf'))
+        # Invariants: no bank-details ask, no amount, no sponsor identity.
         self.assertNotIn('bank account', html.lower())
-        self.assertNotIn('/scholarship/application', html)
-        self.assertNotIn('bank account', mail.outbox[0].body.lower())
+        self.assertNotIn('bank account', msg.body.lower())
+        self.assertNotIn('RM', msg.body)
+        self.assertNotIn('sponsor', msg.body.lower())
 
 
 from django.core.management import call_command  # noqa: E402

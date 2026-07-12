@@ -52,8 +52,13 @@ class Command(BaseCommand):
                 # release cron filters offer_emailed_at__isnull=True, one transient failure
                 # permanently suppressed that student's good-news email.
                 from django.utils import timezone
+
+                from apps.scholarship.vircle import raise_setup_task
                 award.offer_emailed_at = timezone.now()
                 award.save(update_fields=['offer_emailed_at', 'updated_at'])
+                # The award email now carries the Vircle instructions, so the task it points at
+                # must exist — but only for a student who actually received it.
+                raise_setup_task(app)
                 sent.append(aid)
             else:
                 failed.append((aid, 'send_failed'))

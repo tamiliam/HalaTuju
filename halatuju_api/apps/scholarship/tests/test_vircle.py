@@ -244,6 +244,46 @@ class TestRelayRows(_Base):
         self.assertEqual(rows[0][0], confirmed.id)
 
 
+# ── The merged award email raises the task (and only on a real send) ─────────
+class TestAwardEmailRaisesTask(_Base):
+    """The award email now CARRIES the Vircle instructions, so the task it points at must exist by
+    the time the student reads it — and must NOT exist for a student whose email never went."""
+
+    def _award(self, app):
+        from apps.scholarship.models import Sponsor, Sponsorship
+        sponsor = Sponsor.objects.create(supabase_user_id=f's{app.id}', name='S',
+                                         email=f's{app.id}@e.com', status='approved')
+        sp = Sponsorship.objects.create(
+            application=app, sponsor=sponsor, amount=3000, status='offered',
+        )
+        # offered_at is auto_now_add, so it must be back-dated AFTER creation to clear the
+        # cool-off window the release cron waits out.
+        Sponsorship.objects.filter(pk=sp.pk).update(
+            offered_at=timezone.now() - timezone.timedelta(days=2))
+        sp.refresh_from_db()
+        return sp
+
+    def test_task_raised_when_the_award_email_sends(self):
+        from apps.scholarship.sponsorship import release_award_offer_emails
+        app = self._make('u1')
+        self._award(app)
+        self.assertEqual(release_award_offer_emails(), 1)
+        self.assertTrue(app.resolution_items.filter(code=VIRCLE_CODE).exists())
+
+    def test_no_task_and_no_stamp_when_the_email_fails(self):
+        # A failed send must leave offer_emailed_at unstamped (so the next run retries — otherwise
+        # the student NEVER hears they won) and must not leave a mystery task behind.
+        from unittest.mock import patch
+        from apps.scholarship.sponsorship import release_award_offer_emails
+        app = self._make('u2')
+        sp = self._award(app)
+        with patch('apps.scholarship.sponsorship.send_award_offer_email', return_value=False):
+            self.assertEqual(release_award_offer_emails(), 0)
+        sp.refresh_from_db()
+        self.assertIsNone(sp.offer_emailed_at)
+        self.assertFalse(app.resolution_items.filter(code=VIRCLE_CODE).exists())
+
+
 # ── The email ────────────────────────────────────────────────────────────────
 class TestInstallEmail(TestCase):
     def test_guide_pdf_is_attached(self):

@@ -18,6 +18,7 @@ from . import pool
 from .emails import send_award_confirmed_email, send_award_offer_email
 from .models import Sponsorship, SponsorProfile
 from .services import is_minor, record_consent
+from .vircle import raise_setup_task
 
 # Days a student/guardian has to accept an award before it lapses.
 ACCEPT_DEADLINE_DAYS = 14
@@ -156,12 +157,22 @@ def award_and_notify(sponsor, application):
 
 
 def release_award_offer_emails(now=None):
-    """Send the award good-news email for every HOLDING award whose cool-off has elapsed and that
-    hasn't been emailed yet (``offered_at + AWARD_OFFER_EMAIL_COOLOFF_HOURS <= now`` and
-    ``offer_emailed_at`` is NULL). Idempotent via ``offer_emailed_at`` — stamped whether or not the
-    best-effort send succeeds, so a transient mail failure never re-floods. A cancelled/lapsed award
-    (no longer offered/active) is skipped, so reconsidering within the window stops the email.
-    Intended for the hourly scheduler (job ``release-award-offer-emails``). Returns the count sent."""
+    """Send the award email for every HOLDING award whose cool-off has elapsed and that hasn't been
+    emailed yet (``offered_at + AWARD_OFFER_EMAIL_COOLOFF_HOURS <= now`` and ``offer_emailed_at`` is
+    NULL). A cancelled/lapsed award (no longer offered/active) is skipped, so reconsidering within
+    the window stops the email. Hourly scheduler (job ``release-award-offer-emails``). Returns the
+    count sent.
+
+    ``offer_emailed_at`` is stamped ONLY ON SUCCESS (changed 2026-07-12). It previously stamped
+    either way, on the reasoning that a transient failure "never re-floods" — but the query filters
+    on ``offer_emailed_at IS NULL``, so a single failed send permanently suppressed that student's
+    email and they would simply never learn they had won. That is a far worse outcome than a retry,
+    and the same fix was already made in ``send_award_offer_emails`` (code-health S3 #7); this path
+    was missed. A genuinely undeliverable address now retries hourly — visible in the logs, and
+    fixable — rather than failing silently forever.
+
+    On a successful send it also raises the Vircle setup task, because the email now carries the
+    Vircle instructions and the task it points at must exist by the time the student reads it."""
     from django.conf import settings as _settings
     now = now or timezone.now()
     hours = getattr(_settings, 'AWARD_OFFER_EMAIL_COOLOFF_HOURS', 24)
@@ -175,10 +186,18 @@ def release_award_offer_emails(now=None):
         name = getattr(app.profile, 'name', '') if app.profile else ''
         ok = send_award_offer_email(
             to_email=app.notify_email, applicant_name=name, lang=getattr(app, 'locale', '') or 'en')
+        if not ok:
+            # Stamp ONLY on success. This query filters offer_emailed_at__isnull=True, so stamping
+            # a FAILED send would permanently suppress that student's award email — they'd simply
+            # never hear they won. Leaving it unstamped means the next hourly run retries.
+            # (The same fix was made in send_award_offer_emails; this path was missed.)
+            continue
         sp.offer_emailed_at = now
         sp.save(update_fields=['offer_emailed_at', 'updated_at'])
-        if ok:
-            sent += 1
+        # The award email now CARRIES the Vircle instructions, so the task it refers to must exist
+        # the moment the student reads it — but never for a student whose email failed.
+        raise_setup_task(app)
+        sent += 1
     return sent
 
 
