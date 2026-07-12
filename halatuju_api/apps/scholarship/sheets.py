@@ -165,8 +165,13 @@ def write_relay_sheet(rows):
             sheet_id = _find_or_create_sheet(drive, folder_id, title)
 
         values = [list(_HEADER)] + [list(r) for r in rows]
+        # Clear EXACTLY the generated columns (A..last header) — never a blanket A:Z. The owner
+        # keeps their own columns to the RIGHT of ours (call notes, what Vircle said, …), and a
+        # wider wipe would silently delete them on the next 15-minute sync. Computed from the
+        # header so it stays correct if a column is ever added here.
+        last_col = chr(ord('A') + len(_HEADER) - 1)
         sheets.spreadsheets().values().clear(
-            spreadsheetId=sheet_id, range='A:Z', body={},
+            spreadsheetId=sheet_id, range=f'A:{last_col}', body={},
         ).execute()
         sheets.spreadsheets().values().update(
             spreadsheetId=sheet_id,

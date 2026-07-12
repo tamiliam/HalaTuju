@@ -239,15 +239,31 @@ class TestRelayRows(_Base):
         self.assertEqual(relay_bucket(app), STATUS_CONFIRMED)
         self.assertEqual(relay_rows([app])[0][6], '+60123456789')
 
-    def test_rows_are_ordered_by_what_you_must_do(self):
-        never = self._make('u4')                                  # never emailed  → last
-        waiting = self._make('u5'); raise_setup_task(waiting)     # chase          → middle
-        done = self._make('u8'); raise_setup_task(done)           # act on         → first
-        item = done.resolution_items.get(code=VIRCLE_CODE)
+    def test_rows_are_ordered_by_awarded_date_first_come_first_served(self):
+        # Awarded order, NOT status order. A status sort would re-shuffle the sheet every time a
+        # student confirms, dragging the owner's own notes (kept in the columns to the right) out
+        # of line with the student they belong to.
+        first = self._make('u4')
+        second = self._make('u5')
+        third = self._make('u8')
+        for app, days in ((first, 10), (second, 5), (third, 1)):
+            app.awarded_at = timezone.now() - timezone.timedelta(days=days)
+            app.save(update_fields=['awarded_at'])
+        # The LAST-awarded student confirms; the order must not budge.
+        raise_setup_task(third)
+        item = third.resolution_items.get(code=VIRCLE_CODE)
         item.status, item.resolved_at = 'resolved', timezone.now()
         item.save()
-        ids = [r[0] for r in relay_rows([never, waiting, done])]
-        self.assertEqual(ids, [done.id, waiting.id, never.id])
+        ids = [r[0] for r in relay_rows([third, second, first])]
+        self.assertEqual(ids, [first.id, second.id, third.id])
+
+    def test_an_application_with_no_awarded_date_sorts_last_rather_than_crashing(self):
+        dated = self._make('u9')
+        dated.awarded_at = timezone.now() - timezone.timedelta(days=3)
+        dated.save(update_fields=['awarded_at'])
+        undated = self._make('u10')   # awarded_at is None
+        ids = [r[0] for r in relay_rows([undated, dated])]
+        self.assertEqual(ids, [dated.id, undated.id])
 
 
 # ── The merged award email raises the task (and only on a real send) ─────────

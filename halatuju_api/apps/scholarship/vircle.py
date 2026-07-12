@@ -131,13 +131,21 @@ def relay_row(application):
 
 
 def relay_rows(applications):
-    """Sheet rows for the cohort. Ordered by what you must DO — confirmed first (ready to relay to
-    Vircle), then emailed-and-waiting (chase), then needs-a-parent (handle by hand), then never
-    emailed (we owe them the email). Ties break on application id, so the sheet is stable."""
-    order = {STATUS_CONFIRMED: 0, STATUS_PENDING: 1, STATUS_PARENT_ACCOUNT: 2,
-             STATUS_NOT_EMAILED: 3}
-    return [relay_row(app) for app in sorted(
-        applications, key=lambda a: (order.get(relay_bucket(a), 9), a.id))]
+    """Sheet rows for the cohort, ordered by AWARDED DATE — first come, first served (owner,
+    2026-07-13).
+
+    Deliberately NOT sorted by status. A status sort re-shuffles the whole sheet every time a
+    student confirms, which would drag any notes the owner keeps in the columns to the RIGHT out of
+    line with their student. Awarded-date order is append-only and stable: a new student lands at
+    the bottom, and nobody else moves.
+
+    An application with no awarded_at (shouldn't happen for this cohort) sorts last rather than
+    crashing; ties break on id.
+    """
+    def key(app):
+        awarded = getattr(app, 'awarded_at', None)
+        return (awarded is None, awarded, app.id)
+    return [relay_row(app) for app in sorted(applications, key=key)]
 
 
 def awarded_applications():
