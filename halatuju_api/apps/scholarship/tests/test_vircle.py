@@ -22,8 +22,8 @@ from apps.courses.models import StudentProfile
 from apps.scholarship.models import (ResolutionItem, ScholarshipApplication,
                                      ScholarshipCohort)
 from apps.scholarship.resolution import VIRCLE_CODE, sync_vircle_item
-from apps.scholarship.vircle import (birth_year_from_nric, can_register,
-                                     confirmation, raise_setup_task, relay_rows)
+from apps.scholarship.vircle import (birth_year_from_nric, can_register, confirmation,
+                                     raise_setup_task, relay_bucket, relay_rows)
 from apps.scholarship.sheets import (STATUS_CONFIRMED, STATUS_NOT_EMAILED,
                                      STATUS_PARENT_ACCOUNT, STATUS_PENDING)
 
@@ -188,9 +188,10 @@ class TestConfirm(_Base):
 
 
 # ── The relay sheet (what we hand Vircle) ────────────────────────────────────
+# Columns: 0 Application · 1 Name · 2 NRIC · 3 Email · 4 Emailed on · 5 Confirmed on · 6 Mobile
 @override_settings(VIRCLE_SETUP_ENABLED=True)
 class TestRelayRows(_Base):
-    def test_confirmed_row_carries_the_mobile_the_student_gave(self):
+    def test_confirmed_row_carries_the_mobile_and_both_dates(self):
         app = self._make('u1')
         raise_setup_task(app)
         item = app.resolution_items.get(code=VIRCLE_CODE)
@@ -198,27 +199,34 @@ class TestRelayRows(_Base):
         item.resolved_at = timezone.now()
         item.save()
         row = relay_rows([app])[0]
-        self.assertEqual(row[3], '+60123456789')
-        self.assertEqual(row[5], STATUS_CONFIRMED)
+        self.assertEqual(row[2], '080214-08-1234')      # NRIC
+        self.assertEqual(row[6], '+60123456789')        # the account we relay
+        self.assertTrue(row[4])                         # emailed on
+        self.assertTrue(row[5])                         # confirmed on
+        self.assertEqual(relay_bucket(app), STATUS_CONFIRMED)
         self.assertIsNotNone(confirmation(app))
 
-    def test_pending_row_when_emailed_but_not_yet_confirmed(self):
+    def test_emailed_but_not_confirmed_has_an_emailed_date_and_no_confirmed_date(self):
         app = self._make('u2')
         raise_setup_task(app)   # the task exists only because the email actually sent
         row = relay_rows([app])[0]
-        self.assertEqual(row[3], '')
-        self.assertEqual(row[5], STATUS_PENDING)
+        self.assertTrue(row[4])         # we asked
+        self.assertEqual(row[5], '')    # they haven't answered
+        self.assertEqual(row[6], '')
+        self.assertEqual(relay_bucket(app), STATUS_PENDING)
 
-    def test_a_student_we_never_emailed_is_not_reported_as_emailed(self):
-        # The sheet must NOT say "emailed, awaiting confirmation" about someone we never wrote to.
-        # That reads as "told, and ignoring us" when the truth is "we never asked" — and it is
-        # exactly how a student gets quietly dropped off a chase list.
+    def test_a_student_we_never_emailed_has_a_BLANK_emailed_date(self):
+        # The two blanks mean different things. Blank "Emailed on" = we never asked. If that read
+        # the same as "asked and ignoring us", a student we never contacted drops off the list.
         app = self._make('u7')
-        self.assertEqual(relay_rows([app])[0][5], STATUS_NOT_EMAILED)
+        row = relay_rows([app])[0]
+        self.assertEqual(row[4], '')
+        self.assertEqual(row[5], '')
+        self.assertEqual(relay_bucket(app), STATUS_NOT_EMAILED)
 
     def test_student_born_after_2008_is_routed_to_a_parent_account(self):
         app = self._make('u3', nric='090101-08-1234')
-        self.assertEqual(relay_rows([app])[0][5], STATUS_PARENT_ACCOUNT)
+        self.assertEqual(relay_bucket(app), STATUS_PARENT_ACCOUNT)
 
     def test_a_confirmed_under_18_reads_as_confirmed_not_as_a_problem(self):
         # If a parent registered and the student gave us the mobile, that IS the account we relay.
@@ -228,19 +236,18 @@ class TestRelayRows(_Base):
         item.status, item.resolution_text = 'resolved', '+60123456789'
         item.resolved_at = timezone.now()
         item.save()
-        row = relay_rows([app])[0]
-        self.assertEqual(row[5], STATUS_CONFIRMED)
-        self.assertEqual(row[3], '+60123456789')
+        self.assertEqual(relay_bucket(app), STATUS_CONFIRMED)
+        self.assertEqual(relay_rows([app])[0][6], '+60123456789')
 
-    def test_confirmed_students_sort_first(self):
-        pending = self._make('u4')
-        confirmed = self._make('u5')
-        raise_setup_task(confirmed)
-        item = confirmed.resolution_items.get(code=VIRCLE_CODE)
+    def test_rows_are_ordered_by_what_you_must_do(self):
+        never = self._make('u4')                                  # never emailed  → last
+        waiting = self._make('u5'); raise_setup_task(waiting)     # chase          → middle
+        done = self._make('u8'); raise_setup_task(done)           # act on         → first
+        item = done.resolution_items.get(code=VIRCLE_CODE)
         item.status, item.resolved_at = 'resolved', timezone.now()
         item.save()
-        rows = relay_rows([pending, confirmed])
-        self.assertEqual(rows[0][0], confirmed.id)
+        ids = [r[0] for r in relay_rows([never, waiting, done])]
+        self.assertEqual(ids, [done.id, waiting.id, never.id])
 
 
 # ── The merged award email raises the task (and only on a real send) ─────────

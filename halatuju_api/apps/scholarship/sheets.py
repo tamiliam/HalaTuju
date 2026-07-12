@@ -39,8 +39,12 @@ logger = logging.getLogger(__name__)
 _SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets'
 _DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 
-_HEADER = ['Application', 'Name', 'Email', 'Mobile registered with Vircle',
-           'Confirmed on', 'Status']
+# Owner's column order (2026-07-13). NOTE what the dates carry: "Emailed on" is blank iff we have
+# NOT asked that student yet, and "Confirmed on" is blank iff they have not answered — so the two
+# empties say different things, and neither may be read as the other. The explicit Status column
+# was dropped at the owner's request; the buckets survive only as the ROW ORDER (see relay_rows).
+_HEADER = ['Application', 'Name', 'NRIC', 'Email', 'Emailed on', 'Confirmed on',
+           'Mobile registered with Vircle']
 
 # The buckets a student can be in. Deliberately plain language: this sheet is read by us and by
 # Vircle, not by the code.

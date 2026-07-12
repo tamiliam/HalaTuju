@@ -85,42 +85,59 @@ def confirmation(application):
     return application.resolution_items.filter(code=VIRCLE_CODE, status='resolved').first()
 
 
-def relay_row(application):
-    """One sheet row for an application: who they are, the mobile they gave, when they confirmed,
-    and which bucket they're in.
+def _date(value):
+    return value.strftime('%d/%m/%Y') if value else ''
 
-    The bucket must distinguish "we asked and they haven't answered" from "we never asked" — see
-    sheets.STATUS_NOT_EMAILED. The setup task exists only if the email actually sent, so its
-    presence is what we key on.
+
+def setup_task(application):
+    """The Vircle task, whatever its state — or None if the student was never emailed. It is raised
+    ONLY on a successful send, so its existence (and created_at) is our record of "we asked"."""
+    return application.resolution_items.filter(code=VIRCLE_CODE).first()
+
+
+def relay_bucket(application):
+    """Which pile a student is in. The sheet no longer prints this (owner dropped the Status
+    column) — it survives as the ROW ORDER, so the rows you must act on come first."""
+    if confirmation(application) is not None:
+        # A confirmation wins even for an under-18: if a parent registered and the student gave us
+        # the mobile, that IS the account we relay.
+        return STATUS_CONFIRMED
+    if not can_register(application):
+        return STATUS_PARENT_ACCOUNT
+    if setup_task(application) is not None:
+        return STATUS_PENDING
+    return STATUS_NOT_EMAILED
+
+
+def relay_row(application):
+    """One sheet row: Application · Name · NRIC · Email · Emailed on · Confirmed on · Mobile.
+
+    The two dates are load-bearing and mean DIFFERENT things when blank. Blank "Emailed on" = we
+    never asked this student. Blank "Confirmed on" = they haven't answered. Reading one as the
+    other is how someone gets chased who was never contacted — or, worse, is never chased at all.
     """
     profile = getattr(application, 'profile', None)
-    name = getattr(profile, 'name', '') or ''
-    item = confirmation(application)
-    if item is not None:
-        # A confirmation wins even for an under-18 — if a parent registered and the student told
-        # us the mobile, that IS the account we relay, and nothing is gained by still calling them
-        # a pending problem.
-        status = STATUS_CONFIRMED
-        mobile = item.resolution_text or ''
-        when = item.resolved_at.strftime('%d/%m/%Y') if item.resolved_at else ''
-    elif not can_register(application):
-        status, mobile, when = STATUS_PARENT_ACCOUNT, '', ''
-    elif application.resolution_items.filter(code=VIRCLE_CODE).exists():
-        status, mobile, when = STATUS_PENDING, '', ''
-    else:
-        status, mobile, when = STATUS_NOT_EMAILED, '', ''
-    return [application.id, name, application.notify_email or '', mobile, when, status]
+    task = setup_task(application)
+    done = confirmation(application)
+    return [
+        application.id,
+        getattr(profile, 'name', '') or '',
+        getattr(profile, 'nric', '') or '',
+        application.notify_email or '',
+        _date(getattr(task, 'created_at', None)),   # blank → never emailed
+        _date(getattr(done, 'resolved_at', None)),  # blank → not yet confirmed
+        (done.resolution_text or '') if done else '',
+    ]
 
 
 def relay_rows(applications):
-    """Sheet rows for the cohort, confirmed students first (they're the ones you act on), then by
-    application id so the sheet is stable across runs."""
-    rows = [relay_row(app) for app in applications]
-    order = {STATUS_CONFIRMED: 0,        # ready to relay to Vircle — act on these
-             STATUS_PENDING: 1,          # asked, waiting — chase these
-             STATUS_PARENT_ACCOUNT: 2,   # needs a parent's account — handle by hand
-             STATUS_NOT_EMAILED: 3}      # never asked — nothing is owed by them yet
-    return sorted(rows, key=lambda r: (order.get(r[5], 9), r[0]))
+    """Sheet rows for the cohort. Ordered by what you must DO — confirmed first (ready to relay to
+    Vircle), then emailed-and-waiting (chase), then needs-a-parent (handle by hand), then never
+    emailed (we owe them the email). Ties break on application id, so the sheet is stable."""
+    order = {STATUS_CONFIRMED: 0, STATUS_PENDING: 1, STATUS_PARENT_ACCOUNT: 2,
+             STATUS_NOT_EMAILED: 3}
+    return [relay_row(app) for app in sorted(
+        applications, key=lambda a: (order.get(relay_bucket(a), 9), a.id))]
 
 
 def awarded_applications():
