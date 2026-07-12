@@ -18,8 +18,8 @@ from __future__ import annotations
 import logging
 
 from .resolution import VIRCLE_CODE, VIRCLE_SETUP_STATES
-from .sheets import (STATUS_CONFIRMED, STATUS_PARENT_ACCOUNT, STATUS_PENDING,
-                     write_relay_sheet)
+from .sheets import (STATUS_CONFIRMED, STATUS_NOT_EMAILED, STATUS_PARENT_ACCOUNT,
+                     STATUS_PENDING, write_relay_sheet)
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,12 @@ def confirmation(application):
 
 def relay_row(application):
     """One sheet row for an application: who they are, the mobile they gave, when they confirmed,
-    and which of the three buckets they're in."""
+    and which bucket they're in.
+
+    The bucket must distinguish "we asked and they haven't answered" from "we never asked" — see
+    sheets.STATUS_NOT_EMAILED. The setup task exists only if the email actually sent, so its
+    presence is what we key on.
+    """
     profile = getattr(application, 'profile', None)
     name = getattr(profile, 'name', '') or ''
     item = confirmation(application)
@@ -100,8 +105,10 @@ def relay_row(application):
         when = item.resolved_at.strftime('%d/%m/%Y') if item.resolved_at else ''
     elif not can_register(application):
         status, mobile, when = STATUS_PARENT_ACCOUNT, '', ''
-    else:
+    elif application.resolution_items.filter(code=VIRCLE_CODE).exists():
         status, mobile, when = STATUS_PENDING, '', ''
+    else:
+        status, mobile, when = STATUS_NOT_EMAILED, '', ''
     return [application.id, name, application.notify_email or '', mobile, when, status]
 
 
@@ -109,7 +116,10 @@ def relay_rows(applications):
     """Sheet rows for the cohort, confirmed students first (they're the ones you act on), then by
     application id so the sheet is stable across runs."""
     rows = [relay_row(app) for app in applications]
-    order = {STATUS_CONFIRMED: 0, STATUS_PENDING: 1, STATUS_PARENT_ACCOUNT: 2}
+    order = {STATUS_CONFIRMED: 0,        # ready to relay to Vircle — act on these
+             STATUS_PENDING: 1,          # asked, waiting — chase these
+             STATUS_PARENT_ACCOUNT: 2,   # needs a parent's account — handle by hand
+             STATUS_NOT_EMAILED: 3}      # never asked — nothing is owed by them yet
     return sorted(rows, key=lambda r: (order.get(r[5], 9), r[0]))
 
 

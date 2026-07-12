@@ -42,10 +42,17 @@ _DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 _HEADER = ['Application', 'Name', 'Email', 'Mobile registered with Vircle',
            'Confirmed on', 'Status']
 
-# The three buckets a student can be in. Deliberately plain language: this sheet is read by us
-# and by Vircle, not by the code.
+# The buckets a student can be in. Deliberately plain language: this sheet is read by us and by
+# Vircle, not by the code.
+#
+# NOT-EMAILED vs EMAILED is a distinction the sheet MUST make. An earlier cut labelled everyone who
+# hadn't confirmed as "Emailed, not confirmed" — including students we had never written to. That
+# reads as "they were told and ignored us" when the truth is "we never asked them", and it is
+# exactly how someone gets quietly dropped. The setup task exists ONLY if the email actually sent
+# (raise_setup_task is called on a successful send), so it is the honest signal for "we asked".
 STATUS_CONFIRMED = 'Confirmed by student'
-STATUS_PENDING = 'Emailed, not confirmed'
+STATUS_NOT_EMAILED = 'Not yet emailed'
+STATUS_PENDING = 'Emailed, awaiting confirmation'
 # Born after 2008 → Vircle won't let them hold their own account. They are NOT excluded: a parent
 # registers, the student is added to that account as a child, and they email help@ so we can
 # arrange it. They still get the email (it carries that instruction) — this label just tells us

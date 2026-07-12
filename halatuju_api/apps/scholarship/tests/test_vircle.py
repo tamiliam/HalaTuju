@@ -24,8 +24,8 @@ from apps.scholarship.models import (ResolutionItem, ScholarshipApplication,
 from apps.scholarship.resolution import VIRCLE_CODE, sync_vircle_item
 from apps.scholarship.vircle import (birth_year_from_nric, can_register,
                                      confirmation, raise_setup_task, relay_rows)
-from apps.scholarship.sheets import (STATUS_CONFIRMED, STATUS_PARENT_ACCOUNT,
-                                     STATUS_PENDING)
+from apps.scholarship.sheets import (STATUS_CONFIRMED, STATUS_NOT_EMAILED,
+                                     STATUS_PARENT_ACCOUNT, STATUS_PENDING)
 
 _TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 _STUDENT = 'KAVITHA A/P SURESH'
@@ -202,12 +202,19 @@ class TestRelayRows(_Base):
         self.assertEqual(row[5], STATUS_CONFIRMED)
         self.assertIsNotNone(confirmation(app))
 
-    def test_pending_row_when_not_yet_confirmed(self):
+    def test_pending_row_when_emailed_but_not_yet_confirmed(self):
         app = self._make('u2')
-        sync_vircle_item(app)
+        raise_setup_task(app)   # the task exists only because the email actually sent
         row = relay_rows([app])[0]
         self.assertEqual(row[3], '')
         self.assertEqual(row[5], STATUS_PENDING)
+
+    def test_a_student_we_never_emailed_is_not_reported_as_emailed(self):
+        # The sheet must NOT say "emailed, awaiting confirmation" about someone we never wrote to.
+        # That reads as "told, and ignoring us" when the truth is "we never asked" — and it is
+        # exactly how a student gets quietly dropped off a chase list.
+        app = self._make('u7')
+        self.assertEqual(relay_rows([app])[0][5], STATUS_NOT_EMAILED)
 
     def test_student_born_after_2008_is_routed_to_a_parent_account(self):
         app = self._make('u3', nric='090101-08-1234')
