@@ -23,7 +23,7 @@ from apps.scholarship.models import (ResolutionItem, ScholarshipApplication,
                                      ScholarshipCohort)
 from apps.scholarship.resolution import VIRCLE_CODE, sync_vircle_item
 from apps.scholarship.vircle import (birth_year_from_nric, can_register,
-                                     confirmation, relay_rows)
+                                     confirmation, raise_setup_task, relay_rows)
 from apps.scholarship.sheets import (STATUS_CONFIRMED, STATUS_PARENT_ACCOUNT,
                                      STATUS_PENDING)
 
@@ -81,32 +81,31 @@ class TestAgeGate(_Base):
 # ── The Action-Centre task ───────────────────────────────────────────────────
 @override_settings(VIRCLE_SETUP_ENABLED=True)
 class TestTaskSync(_Base):
-    def test_created_for_an_awarded_student(self):
+    def test_sync_never_creates_the_task(self):
+        # THE load-bearing rule: the task is raised by whatever SENT the email, never by a sync.
+        # If sync created it, flipping the feature on would drop a "set up your eWallet" card on
+        # every awarded student — including the ones who were never emailed about it.
         app = self._make('u1')
-        sync_vircle_item(app)
-        self.assertEqual(app.resolution_items.filter(code=VIRCLE_CODE, status='open').count(), 1)
-
-    def test_created_for_an_active_student(self):
-        app = self._make('u2', status='active')
-        sync_vircle_item(app)
-        self.assertEqual(app.resolution_items.filter(code=VIRCLE_CODE, status='open').count(), 1)
-
-    def test_not_created_before_the_award(self):
-        app = self._make('u3', status='shortlisted')
         sync_vircle_item(app)
         self.assertFalse(app.resolution_items.filter(code=VIRCLE_CODE).exists())
 
-    def test_idempotent(self):
-        app = self._make('u4')
+    def test_raised_by_the_send_then_left_alone_by_sync(self):
+        app = self._make('u2')
+        raise_setup_task(app)
         sync_vircle_item(app)
-        sync_vircle_item(app)
+        self.assertEqual(app.resolution_items.filter(code=VIRCLE_CODE, status='open').count(), 1)
+
+    def test_raise_is_idempotent(self):
+        app = self._make('u3')
+        raise_setup_task(app)
+        raise_setup_task(app)
         self.assertEqual(app.resolution_items.filter(code=VIRCLE_CODE).count(), 1)
 
     def test_confirmed_task_is_never_reopened(self):
         # The student said their account is active. That claim doesn't expire — re-opening it
         # would nag someone who has already done the work.
         app = self._make('u5')
-        sync_vircle_item(app)
+        raise_setup_task(app)
         item = app.resolution_items.get(code=VIRCLE_CODE)
         item.status = 'resolved'
         item.save(update_fields=['status'])
@@ -116,7 +115,7 @@ class TestTaskSync(_Base):
 
     def test_swept_when_the_award_ends(self):
         app = self._make('u6')
-        sync_vircle_item(app)
+        raise_setup_task(app)
         app.status = 'closed'
         app.save(update_fields=['status'])
         sync_vircle_item(app)
@@ -125,16 +124,9 @@ class TestTaskSync(_Base):
 
 class TestTaskDark(_Base):
     @override_settings(VIRCLE_SETUP_ENABLED=False)
-    def test_no_task_while_the_feature_is_off(self):
-        app = self._make('u1')
-        sync_vircle_item(app)
-        self.assertFalse(app.resolution_items.filter(code=VIRCLE_CODE).exists())
-
-    @override_settings(VIRCLE_SETUP_ENABLED=False)
     def test_open_task_is_swept_when_the_feature_goes_off(self):
         app = self._make('u2')
-        ResolutionItem.objects.create(application=app, source='system', code=VIRCLE_CODE,
-                                      fact='other', kind='confirm', params={})
+        raise_setup_task(app)
         sync_vircle_item(app)
         self.assertEqual(app.resolution_items.get(code=VIRCLE_CODE).status, 'resolved')
 
@@ -145,7 +137,7 @@ class TestConfirm(_Base):
     def setUp(self):
         self.client = APIClient()
         self.app = self._make('u1')
-        sync_vircle_item(self.app)
+        raise_setup_task(self.app)
         self.item = self.app.resolution_items.get(code=VIRCLE_CODE)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("u1")}')
 
@@ -200,7 +192,7 @@ class TestConfirm(_Base):
 class TestRelayRows(_Base):
     def test_confirmed_row_carries_the_mobile_the_student_gave(self):
         app = self._make('u1')
-        sync_vircle_item(app)
+        raise_setup_task(app)
         item = app.resolution_items.get(code=VIRCLE_CODE)
         item.status, item.resolution_text = 'resolved', '+60123456789'
         item.resolved_at = timezone.now()
@@ -224,7 +216,7 @@ class TestRelayRows(_Base):
     def test_a_confirmed_under_18_reads_as_confirmed_not_as_a_problem(self):
         # If a parent registered and the student gave us the mobile, that IS the account we relay.
         app = self._make('u6', nric='090101-08-1234')
-        sync_vircle_item(app)
+        raise_setup_task(app)
         item = app.resolution_items.get(code=VIRCLE_CODE)
         item.status, item.resolution_text = 'resolved', '+60123456789'
         item.resolved_at = timezone.now()
@@ -236,7 +228,7 @@ class TestRelayRows(_Base):
     def test_confirmed_students_sort_first(self):
         pending = self._make('u4')
         confirmed = self._make('u5')
-        sync_vircle_item(confirmed)
+        raise_setup_task(confirmed)
         item = confirmed.resolution_items.get(code=VIRCLE_CODE)
         item.status, item.resolved_at = 'resolved', timezone.now()
         item.save()

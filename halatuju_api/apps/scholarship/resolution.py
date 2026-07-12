@@ -515,27 +515,28 @@ VIRCLE_SETUP_STATES = frozenset({'awarded', 'active'})
 
 
 def sync_vircle_item(application):
-    """Reconcile the Vircle setup task: ensure ONE open ``vircle_setup_pending`` item while the
-    student is awarded/active and hasn't confirmed yet. Idempotent.
+    """Reconcile the Vircle setup task. Idempotent.
 
-    Unlike the bank task this NEVER re-opens a resolved item: resolving it is the student saying
-    "my Vircle account is active", and that claim doesn't expire. Re-opening it would nag a
-    student who has already done the work. Gated by ``VIRCLE_SETUP_ENABLED`` (default OFF) →
-    while OFF no task is created and any open one is swept to resolved."""
+    This function NEVER CREATES the task — that is deliberate. The task is raised by whatever
+    SENT the email (``vircle.raise_setup_task``, called from the award-email paths), so it appears
+    only for a student who was actually told what it is for. If creation lived here instead, then
+    the moment ``VIRCLE_SETUP_ENABLED`` flipped on, every awarded student would find a "set up
+    your eWallet" card they had never been emailed about.
+
+    It only SWEEPS: an open task is resolved once the student leaves awarded/active (the award
+    ended — nothing to set up), or while the feature is switched off.
+
+    It never RE-OPENS a resolved task either: resolving it is the student saying "my Vircle
+    account is active", and that claim doesn't expire — re-opening would nag someone who has
+    already done the work.
+    """
     from django.conf import settings
-    from .models import ResolutionItem
     enabled = getattr(settings, 'VIRCLE_SETUP_ENABLED', False)
     existing = application.resolution_items.filter(code=VIRCLE_CODE).first()
-    wanted = enabled and application.status in VIRCLE_SETUP_STATES
-    if wanted and existing is None:
-        try:
-            ResolutionItem.objects.create(
-                application=application, source='system', code=VIRCLE_CODE,
-                fact='other', kind='confirm', params={},
-            )
-        except IntegrityError:
-            pass  # created concurrently — fine
-    elif existing is not None and existing.status == 'open' and not wanted:
+    if existing is None or existing.status != 'open':
+        return
+    still_wanted = enabled and application.status in VIRCLE_SETUP_STATES
+    if not still_wanted:
         existing.status = 'resolved'
         existing.resolved_by = 'system'
         existing.resolved_at = timezone.now()
