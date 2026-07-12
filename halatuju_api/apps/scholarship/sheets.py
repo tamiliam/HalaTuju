@@ -31,11 +31,13 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# Drive: locate "03 Vircle" + create the spreadsheet inside it. Sheets: write the rows.
-_SCOPES = [
-    'https://www.googleapis.com/auth/drive',
-    'https://www.googleapis.com/auth/spreadsheets',
-]
+# LEAST PRIVILEGE (owner's call). When VIRCLE_SHEET_ID names an existing sheet — the normal case —
+# we ask for the `spreadsheets` scope ONLY: the service account can write that one sheet and can
+# see nothing else in Drive. The broader `drive` scope is requested only in the fallback path where
+# it has to go and FIND the folder and create the file, which needs read access to the whole Drive.
+# Keep it that way: don't "simplify" this to one scope list.
+_SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets'
+_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 
 _HEADER = ['Application', 'Name', 'Email', 'Mobile registered with Vircle',
            'Confirmed on', 'Status']
@@ -58,29 +60,33 @@ def sheets_enabled() -> bool:
 
 
 def _services():
-    """Build authorised (drive, sheets) API clients impersonating the Workspace account.
+    """Build authorised API clients impersonating the Workspace account.
 
-    Returns ``(drive, sheets)``, or ``(None, None)`` if disabled / misconfigured / the client
-    libraries are unavailable. This is the single seam tests patch.
+    Returns ``(drive, sheets)``. ``drive`` is None in the normal (pinned-sheet) case — we neither
+    request the Drive scope nor build the client, so the service account has no Drive access at all.
+    Returns ``(None, None)`` if disabled / misconfigured / the client libraries are unavailable.
+    This is the single seam tests patch.
     """
     if not sheets_enabled():
         return None, None
+    pinned = bool(getattr(settings, 'VIRCLE_SHEET_ID', ''))
     try:
         import json
 
         from google.oauth2 import service_account  # type: ignore
         from googleapiclient.discovery import build  # type: ignore
 
+        scopes = [_SHEETS_SCOPE] if pinned else [_SHEETS_SCOPE, _DRIVE_SCOPE]
         info = json.loads(settings.GOOGLE_MEET_SA_JSON)
         creds = service_account.Credentials.from_service_account_info(
-            info, scopes=_SCOPES,
+            info, scopes=scopes,
         ).with_subject(settings.MEET_ORGANISER_EMAIL)
         # cache_discovery=False — no file cache on Cloud Run's read-only FS.
-        drive = build('drive', 'v3', credentials=creds, cache_discovery=False)
         sheets = build('sheets', 'v4', credentials=creds, cache_discovery=False)
+        drive = None if pinned else build('drive', 'v3', credentials=creds, cache_discovery=False)
         return drive, sheets
     except Exception:
-        logger.warning('Vircle sheet: could not build Drive/Sheets services', exc_info=True)
+        logger.warning('Vircle sheet: could not build Sheets service', exc_info=True)
         return None, None
 
 
@@ -128,11 +134,13 @@ def write_relay_sheet(rows):
     disappears from the sheet rather than lingering as a stale row.
     """
     drive, sheets = _services()
-    if drive is None or sheets is None:
+    if sheets is None:
         return None
     try:
         sheet_id = getattr(settings, 'VIRCLE_SHEET_ID', '')
         if not sheet_id:
+            if drive is None:
+                return None
             folder = getattr(settings, 'VIRCLE_DRIVE_FOLDER', '03 Vircle')
             folder_id = _find_folder(drive, folder)
             if not folder_id:
