@@ -2160,8 +2160,8 @@
         "error": "Could not save your confirmation. Please check the number and try again.",
         "stuckTitle": "Having trouble setting it up?",
         "stuckCard": "Use your actual MyKad, not a photocopy or a photo of one — the app photographs the real card and will reject a picture of a picture.",
-        "stuckPhone": "A very old phone can fail during activation even if it meets the iOS 16 / Android 10 requirement. If it stalls, try again on a newer phone.",
-        "stuckSupport": "For problems with the app itself, WhatsApp the Vircle support team at +6011 1117 6000 (WhatsApp chat only)."
+        "stuckPhone": "A very old phone may fail during registration even if it meets the iOS 16 / Android 10 requirement. If it stalls, try again on a newer phone.",
+        "stuckSupport": "If you faced any problem, WhatsApp our support at +6016-336 6127."
       },
       "bank": {
         "title": "Add your bank account for payment",
