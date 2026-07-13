@@ -343,6 +343,10 @@ export interface AdminScholarshipListItem {
   profile_completed_at: string | null
   assigned_to_id: number | null
   assigned_to_name: string | null
+  // Server-computed: may this case change hands at all right now (Completed / interviewing only)?
+  // The dropdown is disabled when false — the server refuses anyway, and an action that will be
+  // refused should not look available.
+  assignable: boolean
   decision_reopened_at: string | null   // when set, the pill shows "Reopened" (overrides accepted/rejected)
 }
 

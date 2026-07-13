@@ -48,9 +48,11 @@ class TestReviewerAssignment(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        # A submitted app with no open queries is ready for assignment.
+        # A submitted app with no open queries is ready for assignment. `profile_complete` is
+        # the status a submitted student actually holds — and the only one (with `interviewing`)
+        # where a case may change hands at all.
         self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted', bucket='A',
+            cohort=self.cohort, profile=self.profile, status='profile_complete', bucket='A',
             profile_completed_at=timezone.now(),
         )
 

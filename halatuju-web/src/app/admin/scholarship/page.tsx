@@ -164,7 +164,8 @@ export default function AdminScholarshipList() {
       })
     } catch (e) {
       const code = e instanceof Error ? e.message : ''
-      const known = ['not_ready', 'not_reviewer', 'bad_assignee']
+      const known = ['not_ready', 'not_reviewer', 'bad_assignee', 'not_assignable',
+                     'findings_submitted']
       setAssignNote((n) => ({ ...n, [appId]: known.includes(code)
         ? t(`admin.scholarship.assign.error.${code}`)
         : t('admin.scholarship.assignError') }))
@@ -320,7 +321,14 @@ export default function AdminScholarshipList() {
                       <select
                         value={a.assigned_to_id ?? ''}
                         onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
-                        className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[220px]"
+                        // A case may only change hands while there IS a review to do (Completed /
+                        // interviewing). Shortlisted and rejected aren't ready; awaiting-QC and
+                        // beyond are over. The server refuses either way — disabling here means the
+                        // officer isn't invited to take an action that will bounce.
+                        disabled={a.assignable === false}
+                        title={a.assignable === false
+                          ? t('admin.scholarship.assign.error.not_assignable') : undefined}
+                        className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[220px] disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                       >
                         <option value="">{t('admin.scholarship.unassigned')}</option>
                         {/* keep the current assignee selectable even if not in the reviewer list */}

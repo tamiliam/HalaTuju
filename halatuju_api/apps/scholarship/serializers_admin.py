@@ -190,6 +190,10 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     call_language = serializers.CharField(source='profile.preferred_call_language', read_only=True, allow_blank=True)
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
+    # May this case change hands at all right now (Completed / interviewing only)? Computed here
+    # so the list UI disables the dropdown rather than re-deriving the rule — an action the server
+    # will refuse should not look available. See services.ASSIGNABLE_STATUSES.
+    assignable = serializers.SerializerMethodField()
 
     class Meta:
         model = ScholarshipApplication
@@ -198,10 +202,14 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
             'spm_a_count', 'stpm_pngk', 'referral_source', 'merit_score', 'call_language',
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
-            'assigned_to_id', 'assigned_to_name',
+            'assigned_to_id', 'assigned_to_name', 'assignable',
             # When set, the list pill shows "Reopened" (overriding accepted/rejected).
             'decision_reopened_at',
         ]
+
+    def get_assignable(self, obj):
+        from .services import is_assignable
+        return is_assignable(obj)
 
     def get_name(self, obj):
         return _full_name(obj)

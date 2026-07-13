@@ -279,7 +279,9 @@ class TestAssignment(PhaseCBase):
         from django.utils import timezone
         app = self._make_app()
         ScholarshipApplication.objects.filter(pk=app.id).update(
-            profile_completed_at=timezone.now())  # no open queries -> ready
+            profile_completed_at=timezone.now(),   # no open queries -> ready
+            status='profile_complete')             # ...and Completed: the assignable stage
+        app.refresh_from_db()
         return app
 
     def test_super_can_assign(self):

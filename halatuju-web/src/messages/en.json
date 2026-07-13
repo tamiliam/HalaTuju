@@ -3033,7 +3033,8 @@
           "not_ready": "This application isn't ready to assign yet — its queries are still open and the SLA window hasn't passed.",
           "not_reviewer": "You can only assign to a reviewer.",
           "bad_assignee": "That admin is no longer active.",
-          "findings_submitted": "The interview findings are already in — reopen the decision first if you need to change the reviewer."
+          "findings_submitted": "The interview findings are already in — reopen the decision first if you need to change the reviewer.",
+          "not_assignable": "A reviewer can only be assigned while the application is being reviewed (Completed or Interviewing). It's either not ready yet, or the review is already over."
         }
       },
       "incompleteTitle": "Cannot accept yet — the applicant still owes:",

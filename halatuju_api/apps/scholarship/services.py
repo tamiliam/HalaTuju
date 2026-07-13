@@ -510,6 +510,27 @@ _UNASSIGN_BLOCKED_STATUSES = frozenset({
     'interviewed', 'recommended', 'awarded', 'active', 'maintenance', 'closed',
 })
 
+# WHEN A CASE MAY CHANGE HANDS AT ALL (owner, 2026-07-13). A reviewer is assigned to DO the
+# review, so assignment only makes sense while there is a review to do:
+#
+#   shortlisted / rejected  —  not ready, or never will be. Nothing to review.
+#   Completed               —  the case is waiting for a reviewer. ASSIGNABLE.
+#   interviewing            —  a reviewer is working it; a super may hand it to someone else.
+#   Awaiting QC onward      —  the review is OVER. The verdict is in; retargeting it would
+#                              detach a completed piece of work from the person who did it.
+#
+# This gates EVERY change — assign, reassign AND unassign. Before this, only the FIRST assignment
+# of an unassigned app was gated (on is_ready_for_assignment), and reassignment was explicitly
+# allowed at any status — so all 31 awarded and 26 rejected students were silently retargetable
+# from the list dropdown. `is_ready_for_assignment` still applies ON TOP for a first assignment,
+# so this can only ever be stricter, never looser.
+ASSIGNABLE_STATUSES = frozenset({'profile_complete', 'interviewing'})
+
+
+def is_assignable(application):
+    """May this application's reviewer be changed at all right now? See ASSIGNABLE_STATUSES."""
+    return application.status in ASSIGNABLE_STATUSES
+
 
 def assign_reviewer(application, *, reviewer, by_admin, now=None):
     """F7: (re)assign an application to a reviewer, audited. The caller must already
@@ -538,13 +559,24 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     if (current.id if current else None) == (reviewer.id if reviewer else None):
         return application  # no-op
 
+    unassigning = reviewer is None and current is not None
+
+    # Checked FIRST, ahead of the general stage gate: an unassign at 'interviewed' or beyond is
+    # also not-assignable, but 'findings_submitted' tells the super what to DO about it (reopen the
+    # decision), where 'not_assignable' would only tell them they can't. The more specific,
+    # more actionable refusal wins.
+    if unassigning and application.status in _UNASSIGN_BLOCKED_STATUSES:
+        raise AssignmentError('findings_submitted')
+
+    # A case may only change hands while there is a review to do (Completed / interviewing).
+    # Gates assign, REASSIGN and unassign alike — a rejected or awarded student has no live
+    # review, and retargeting one would detach finished work from the person who did it.
+    if not is_assignable(application):
+        raise AssignmentError('not_assignable')
+
     # Ready-gate applies only to the first assignment of an unassigned application.
     if current is None and reviewer is not None and not is_ready_for_assignment(application, now):
         raise AssignmentError('not_ready')
-
-    unassigning = reviewer is None and current is not None
-    if unassigning and application.status in _UNASSIGN_BLOCKED_STATUSES:
-        raise AssignmentError('findings_submitted')
 
     AssignmentEvent.objects.create(
         application=application, from_admin=current, to_admin=reviewer,

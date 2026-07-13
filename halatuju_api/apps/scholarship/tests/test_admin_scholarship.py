@@ -267,6 +267,7 @@ class TestAdminScholarship(TestCase):
     def test_handoff_autodrafts_profile_when_flag_on(self, _gen, _ready):
         from apps.scholarship.services import assign_reviewer
         from apps.scholarship.models import SponsorProfile
+        self._submitted()   # assignable only during Completed / interviewing
         assign_reviewer(self.app, reviewer=self.admin, by_admin=self.admin)
         sp = SponsorProfile.objects.filter(application=self.app).first()
         self.assertIsNotNone(sp)
@@ -279,6 +280,7 @@ class TestAdminScholarship(TestCase):
     def test_handoff_no_autodraft_when_flag_off(self, _gen, _ready):
         from apps.scholarship.services import assign_reviewer
         from apps.scholarship.models import SponsorProfile
+        self._submitted()   # assignable only during Completed / interviewing
         assign_reviewer(self.app, reviewer=self.admin, by_admin=self.admin)
         self.assertFalse(SponsorProfile.objects.filter(application=self.app).exists())
 
@@ -290,6 +292,7 @@ class TestAdminScholarship(TestCase):
         from apps.scholarship.models import SponsorProfile
         SponsorProfile.objects.create(
             application=self.app, draft_markdown='Existing.', generated_at=timezone.now())
+        self._submitted()   # assignable only during Completed / interviewing
         assign_reviewer(self.app, reviewer=self.admin, by_admin=self.admin)
         gen.assert_not_called()
         self.assertEqual(SponsorProfile.objects.get(application=self.app).draft_markdown, 'Existing.')
