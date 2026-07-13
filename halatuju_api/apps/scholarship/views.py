@@ -689,6 +689,41 @@ _BYPASS_JUDGE_TYPES = frozenset({'bank_statement', 'income_support_doc', 'other'
 # its schema + verdict + resolution branch already existed but were never fed because the
 # upload never triggered its extraction; a genuine limb of the pipeline was dead.)
 RELATIONSHIP_DOC_TYPES = frozenset({'birth_certificate', 'guardianship_letter'})
+def _reslot_income_doc(doc, ocr) -> bool:
+    """An EPF statement uploaded into the salary-slip slot is FILED AS AN EPF. Returns True if the
+    document was moved. (Owner, 2026-07-14 — #126.)
+
+    Why this exists: the income-proof request offers "salary slip OR EPF (KWSP) statement" but owns
+    a single `salary_slip` slot, and the Action Centre uploads into the item's doc_type. An EPF put
+    there scored `not_salary`, failed `usable_salary_slip()`, never cleared the request, and looped
+    the student into the circuit-breaker — we invited a document and then refused it.
+
+    The engine already treats EITHER document as income evidence for that member
+    (`income_engine._parent_has_income_evidence`), so once the doc sits in the right slot the gap
+    clears, the evidence counts, and the EPF request that would have followed a payslip is moot.
+    Only the SLOT was wrong.
+
+    Deliberately one-directional and deterministic: we move salary_slip → epf ONLY when the
+    label-anchored KWSP parser (`doc_parse`) positively recognises the statement. A real payslip
+    matches no EPF labels, so a genuine slip is never moved; an unreadable scan is never moved
+    (parse returns None → left alone → the normal not_salary/coach path). We do NOT try the reverse
+    (epf → salary_slip): nothing asks for an EPF and offers a payslip, so there is no trap there.
+    """
+    if doc.doc_type != 'salary_slip':
+        return False
+    text = (ocr or {}).get('text', '') if isinstance(ocr, dict) else ''
+    if not (text or '').strip():
+        return False
+    from .doc_parse import parse_by_labels
+    if parse_by_labels('epf', text) is None:
+        return False   # not recognisably a KWSP statement — leave it where the student put it
+    doc.doc_type = 'epf'
+    doc.save(update_fields=['doc_type'])
+    logger.info('AUDIT reslot app=%s doc=%s salary_slip → epf (KWSP statement in the payslip slot)',
+                doc.application_id, doc.id)
+    return True
+
+
 SUPPORTING_NAME_CHECK_TYPES = frozenset({
     'results_slip', 'str', 'salary_slip', 'epf', 'offer_letter',
     # Post-award: the bank statement field-extracts (bank name / account no / holder) so
@@ -885,6 +920,21 @@ class DocumentListCreateView(APIView):
             street = getattr(profile, 'address', '') or ''   # #3: street line for the bill fallback
             check_address = doc.doc_type in BILL_DOC_TYPES
             ocr = _vision.ocr_document_full(doc)   # ONE fetch + ONE Vision call, shared by every consumer
+            # RE-SLOT an EPF that arrived in the salary-slip slot (owner, 2026-07-14).
+            #
+            # The income-proof request says "his latest salary slip OR EPF (KWSP) statement", but it
+            # has ONE slot — `salary_slip` — and the Action Centre uploads into whatever the item's
+            # doc_type says. So an EPF landed in the payslip slot, scored `not_salary` ("no
+            # recognisable payslip fields"), failed usable_salary_slip(), never cleared the request,
+            # and looped the student into the circuit-breaker. We would have been inviting a document
+            # and then refusing it — the #126 trap again, this time written into our own copy.
+            #
+            # The engine already accepts EITHER doc as income evidence (_parent_has_income_evidence
+            # checks salary_slip OR epf). The ONLY broken link was the slot. So: file it where it
+            # belongs, keep the member tag, and everything downstream resolves itself.
+            _resloted = _reslot_income_doc(doc, ocr)
+            if _resloted:
+                check_address = doc.doc_type in BILL_DOC_TYPES
             match = _vision.run_vision_match_for_document(
                 doc, names=names, postcode=postcode, city=city, street=street,
                 check_address=check_address, ocr=ocr)

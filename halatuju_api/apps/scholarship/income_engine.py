@@ -2406,14 +2406,24 @@ def employed_epf_members(application):
     """EMPLOYED parents with a salary slip but no EPF on file → the per-member OPTIONAL request for
     the EPF as standard corroboration (mirrors ``unemployment_epf_members``). The payslip gate keeps
     it to genuinely-employed parents. Per-member so the request is TAGGED to that person (an EPF
-    belongs to a specific member; a memberless request lands blank-tagged). Soft; never a gate."""
+    belongs to a specific member; a memberless request lands blank-tagged). Soft; never a gate.
+
+    The informal exclusion LIFTS once the student has told us the earner does have a payslip/EPF
+    (owner, 2026-07-14). It is the same occupation-keyed suppression that trapped #126, biting a
+    second time one step later: his father is a 'driver' (informal), so even AFTER his payslip
+    arrived the EPF would never have been asked for — the chain would have stopped dead again. An
+    informal earner who turns out to have a payslip is exactly the person whose EPF is worth asking
+    for.
+    """
     docs = _docs_or_none(application)
     if docs is None:
         return []
     out = []
+    claimed = informal_payslip_claimed(application)
     for member in ('father', 'mother'):
         occ = _member_occupation(application, member)
-        if occ and occ not in _NON_EARNING_OCC and not member_is_informal(application, member):
+        if occ and occ not in _NON_EARNING_OCC and (
+                not member_is_informal(application, member) or claimed):
             has_slip = docs.filter(doc_type='salary_slip', household_member__in=[member, ''],
                                    superseded_at__isnull=True).exists()
             has_epf = docs.filter(doc_type='epf', household_member__in=[member, ''],
@@ -2590,9 +2600,16 @@ def payslip_claim(text):
 def informal_payslip_claimed(application):
     """True when the student has told us, in answer to the ask-first clarify, that an informal
     earner does have a payslip / EPF. Read from the RESOLVED item's stored params — the claim was
-    classified once, when it was given."""
-    for item in application.resolution_items.filter(code='informal_income_detail',
-                                                    status='resolved'):
+    classified once, when it was given.
+
+    Tolerates an application object with no items relation (the engine's pure helpers are exercised
+    with lightweight stand-ins, same as ``_docs_or_none``): no items → no claim → the ask-first
+    suppression stands, which is the safe default.
+    """
+    items = getattr(application, 'resolution_items', None)
+    if items is None:
+        return False
+    for item in items.filter(code='informal_income_detail', status='resolved'):
         if (item.params or {}).get('payslip_claim') == 'yes':
             return True
     return False
