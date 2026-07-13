@@ -167,7 +167,8 @@ def _gap_sets(application):
         deceased_parent_detail_gap, informal_work_detail_gap, household_roster_undercount,
         other_scholarships_followup_gap,
         # Owner 2026-07-08 — informal-aware income asks + sibling-in-school clarify.
-        member_is_informal, informal_income_detail_gap, sibling_school_detail_unknown,
+        member_is_informal, informal_income_detail_gap, informal_payslip_claimed,
+        sibling_school_detail_unknown,
         # Owner 2026-07-08 — per-bill utility recheck + point-blank high-usage query.
         utility_bill_recheck, high_utility_expense_context,
     )
@@ -208,10 +209,16 @@ def _gap_sets(application):
     for g in household_status_gaps(application):
         if g['need'] == 'status':
             gaps.add(_PARENT_STATUS_CODE[g['member']])   # only father/mother reach 'status'
-        elif member_is_informal(application, g['member']):
+        elif member_is_informal(application, g['member']) and not informal_payslip_claimed(application):
             # Informal / self-employed earner: no payslip/EPF to demand (owner 2026-07-08). The
             # ASK-FIRST clarify (informal_income_detail) + the flexible income-support-doc path
             # (declared_income_evidence_missing) carry them instead of a dead-end doc request.
+            #
+            # UNLESS the student has told us otherwise (#126, 2026-07-13). The suppression is keyed
+            # on the OCCUPATION CODE, so it used to be permanent: #126's father is a 'driver'
+            # (informal), the student answered "he has a payslip, I should upload it?" — and the
+            # request stayed suppressed forever. We asked, he answered, and we ignored him. Once he
+            # claims a payslip, the request re-opens and the evidence chain resumes.
             pass
         else:                                            # 'proof' — a formal earner, no income doc
             proof_wanted.add(_MEMBER_PROOF_CODE[g['member']])

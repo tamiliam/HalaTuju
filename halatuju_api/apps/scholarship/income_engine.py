@@ -2535,6 +2535,53 @@ def informal_income_members(application):
     return out
 
 
+# ── The student says the informal earner DOES have a payslip (#126, owner 2026-07-13) ─────────
+# The ask-first rule (2026-07-08) suppresses the payslip/EPF demand for an informal earner — a
+# fisherman has no payslip, and demanding one dead-ends him (#130). But the suppression is keyed on
+# the OCCUPATION CODE, so it never lifts. #126's father is a 'driver' (informal); the student
+# answered the clarify with "he has a payslip, I should upload it?" — and nothing in the code could
+# hear him. He asked us a question and got silence, and an unevidenced income figure stood.
+#
+# So we read the answer ONCE, at the moment it is given (see views.ResolutionItemResolveView), and
+# store the claim on the item. The gap engine then reads a stored value — never re-classifying, and
+# never calling an LLM inside a sync loop.
+#
+# Deliberately conservative: only an explicit YES re-opens the document request. "No payslip", or
+# anything we can't read, leaves the suppression exactly as it is — so the fisherman is never
+# dragged back into the dead end this rule exists to prevent.
+_PAYSLIP_TERMS = ('payslip', 'pay slip', 'slip gaji', 'penyata gaji', 'salary slip', 'epf', 'kwsp')
+_NEGATIONS = ('no ', 'not ', 'none', "n't", 'never', 'tiada', 'tak ', 'tidak', 'bukan', 'without')
+
+
+def payslip_claim(text):
+    """Does this answer say the earner HAS a payslip / EPF? → 'yes' | 'no' | 'unclear'.
+
+    Pure + deterministic (no LLM): the question we asked names the terms, so an answer that
+    engages with it almost always echoes them. Negation is checked FIRST — "he has no payslip"
+    contains 'payslip', and reading that as a yes is precisely the failure that would re-trap the
+    #130 fisherman.
+    """
+    t = ' ' + (text or '').lower().strip() + ' '
+    if not any(term in t for term in _PAYSLIP_TERMS):
+        return 'unclear'
+    # Negation ANYWHERE in a short answer is enough to hold back — we would rather ask a human
+    # than demand a document from someone who just told us they don't have one.
+    if any(neg in t for neg in _NEGATIONS):
+        return 'no'
+    return 'yes'
+
+
+def informal_payslip_claimed(application):
+    """True when the student has told us, in answer to the ask-first clarify, that an informal
+    earner does have a payslip / EPF. Read from the RESOLVED item's stored params — the claim was
+    classified once, when it was given."""
+    for item in application.resolution_items.filter(code='informal_income_detail',
+                                                    status='resolved'):
+        if (item.params or {}).get('payslip_claim') == 'yes':
+            return True
+    return False
+
+
 def informal_income_detail_gap(application):
     """True when an informal earner has no income document AND no declared amount yet → the ASK-FIRST
     clarify. Carved so it does NOT overlap ``informal_work_detail_gap`` (which fires once an amount is

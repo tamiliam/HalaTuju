@@ -879,10 +879,7 @@ class DocumentListCreateView(APIView):
         elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
             from . import vision as _vision
             profile = app.profile
-            names = [getattr(profile, 'name', '') or '']
-            names += [g.get('name', '') for g in (getattr(profile, 'guardians', None) or [])
-                      if isinstance(g, dict)]
-            names = [n for n in names if n]
+            names = _vision.reference_names(app)   # student + guardians + roster parents (#126)
             postcode = getattr(profile, 'postal_code', '') or ''
             city = getattr(profile, 'city', '') or ''
             street = getattr(profile, 'address', '') or ''   # #3: street line for the bill fallback
@@ -1246,6 +1243,16 @@ class ResolutionItemResolveView(APIView):
                 if not verdict['on_topic']:
                     return Response({'resolved': False, 'nudge': verdict['nudge']})
         resolve_item(item, text=text, by='student')
+        # The ask-first informal clarify: READ the answer once, here, and store what it claims
+        # (#126, owner 2026-07-13). If the student says the earner does have a payslip/EPF, the
+        # suppressed document request re-opens (income_engine.informal_payslip_claimed) and the
+        # chain resumes — the payslip arrives, and the EPF request follows it automatically.
+        # Classifying at ANSWER time (not in the gap engine) keeps the sync loop free of both the
+        # cost and the non-determinism of re-reading free text on every reload.
+        if item.code == 'informal_income_detail':
+            from .income_engine import payslip_claim
+            item.params = {**(item.params or {}), 'payslip_claim': payslip_claim(text)}
+            item.save(update_fields=['params'])
         # The pathway confirmation is the one 'confirm' that also WRITES state: the
         # student saying Yes settles their final chosen pathway (no human officer).
         if item.code == 'pathway_confirm':

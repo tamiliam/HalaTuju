@@ -21,10 +21,7 @@ def reextract_document(doc) -> bool:
         _vision.read_text_document(doc)                    # letter of intent → vision_fields['text']
     elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
         profile = getattr(app, 'profile', None)
-        names = [getattr(profile, 'name', '') or '']
-        names += [g.get('name', '') for g in (getattr(profile, 'guardians', None) or [])
-                  if isinstance(g, dict)]
-        names = [n for n in names if n]
+        names = _vision.reference_names(app)   # student + guardians + roster parents (#126)
         postcode = getattr(profile, 'postal_code', '') or ''
         city = getattr(profile, 'city', '') or ''
         # Code-health S2 #5c: the upload path passes the street line too — omitting it here

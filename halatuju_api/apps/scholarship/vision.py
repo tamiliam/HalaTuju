@@ -124,6 +124,35 @@ def nric_close(extracted: str, reference: str) -> bool:
     return True
 
 
+def reference_names(application):
+    """Every name that legitimately belongs to this household — the student, whoever they named
+    as guardians, and the ROSTER parents/other members.
+
+    This is the reference set for the student-facing document coach: a document carrying one of
+    these names is not "somebody else's". It is NOT the wrong-person check that matters for income
+    — that one is done properly in income_engine, against the tagged member's own IC.
+
+    The roster parents are here because of #126 (2026-07-13): `guardians` holds whoever the student
+    named as their contact, often ONE parent. His mother's own EPF read 'name_mismatch' purely
+    because his FATHER was the recorded guardian — a genuine parent's income document flagged as a
+    stranger's. The same class of false mismatch was already patched for bills and the STR by
+    excluding them from the check; EPF and payslips were left behind, and excluding them would have
+    thrown away a check we actually want. Widening the reference set fixes the cause instead.
+
+    ONE definition, used by both the upload path and the re-extract path — they each built this
+    list by hand and had already drifted once (the street line, code-health S2 #5c).
+    """
+    profile = getattr(application, 'profile', None)
+    names = [getattr(profile, 'name', '') or '']
+    names += [g.get('name', '') for g in (getattr(profile, 'guardians', None) or [])
+              if isinstance(g, dict)]
+    names += [getattr(application, 'father_name', '') or '',
+              getattr(application, 'mother_name', '') or '']
+    names += [m.get('name', '') for m in (getattr(application, 'other_family_members', None) or [])
+              if isinstance(m, dict)]
+    return [n for n in names if n]
+
+
 def name_match(extracted: str, profile_name: str) -> str:
     """
     'match' if the token sets are equal after stripping MyKad parentage tokens;
