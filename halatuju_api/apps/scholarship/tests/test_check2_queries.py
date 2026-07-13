@@ -21,7 +21,7 @@ class _Base(TestCase):
             household_income=1200, household_size=3,
         )
         self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            cohort=self.cohort, profile=self.profile, status='profile_complete',
             profile_completed_at=timezone.now(),  # submitted
             aspirations='I want to teach.', field_of_study='Education',
             # No siblings by default → sibling-level known AND the (owner 2026-07-08)

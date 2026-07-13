@@ -1256,6 +1256,50 @@ def querying_locked(application):
     return application.interview_sessions.filter(status='submitted').exists()
 
 
+# ── WHO MAY ASK THE STUDENT ANYTHING, AND WHEN (owner, 2026-07-13) ────────────
+# The single source of truth. Read the two predicates together:
+#
+#   Shortlisted            —  nobody. The student is still filling in Step 4, and the Action
+#                             Centre doesn't even render until they submit, so an officer ticket
+#                             raised here would be invisible — a question nobody can see or answer.
+#   Completed              —  MACHINE + OFFICER. The only stage the machine may ask.
+#   Interviewing           —  OFFICER only. The case now belongs to a human; auto-generated
+#                             questions stop, so the reviewer isn't fighting the system.
+#   Awaiting QC (interviewed) — nobody. The interview is concluded; it's decision time.
+#   Recommended onward     —  nobody, and whatever is still open is SET ASIDE (struck through,
+#                             not a to-do) — see views.SET_ASIDE_STATES.
+#   Rejected / withdrawn / expired / closed — nobody.
+#
+# A REOPENED decision lands the case back in `interviewing` (or `interviewed`), so it follows the
+# same rules by status alone — deliberately NOT via the querying_locked reopen exception, which
+# would otherwise let the machine start asking a reopened case fresh questions.
+AUTO_QUERY_STATUSES = ('profile_complete',)
+OFFICER_QUERY_STATUSES = ('profile_complete', 'interviewing')
+
+
+def auto_queries_allowed(application):
+    """May the SYSTEM raise a new query / document request? Only during the Completed stage.
+
+    Gates the CREATE branches of ``resolution.sync_resolution_items`` and
+    ``check2_queries.sync_check2_queries``. Housekeeping (auto-resolving an open item once its gap
+    clears) is NOT gated — it runs at every stage, so a student who supplies a missing document
+    still sees the task tick green. An item already open when the student moves on stays open and
+    answerable; we asked it in good faith and we don't withdraw it (owner, 2026-07-13).
+    """
+    return (application.profile_completed_at is not None
+            and application.status in AUTO_QUERY_STATUSES)
+
+
+def officer_queries_allowed(application):
+    """May an OFFICER raise a query / document request? Completed + Interviewing only.
+
+    Blocks `shortlisted` (the student cannot see the Action Centre yet, so the ask would be a dead
+    end) and everything from `interviewed` onward (the interview is concluded — decision time).
+    """
+    return (application.profile_completed_at is not None
+            and application.status in OFFICER_QUERY_STATUSES)
+
+
 def _maybe_autofinalise(application, session):
     """S4: on interview submit, refine the draft into the final polished profile from the
     findings — gated behind CHECK2_AUTO_GENERATE (dark by default; billable Gemini call),

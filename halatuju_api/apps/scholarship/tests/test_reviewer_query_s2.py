@@ -30,7 +30,7 @@ class _Base(TestCase):
             supabase_user_id=f's2-{suffix}', name='Anbu A/L Raj', nric='030101-14-1234',
             household_income=1500, household_size=5)
         # Default: father earns + mother homemaker so the S1 parent gaps don't fire.
-        defaults = dict(cohort=self.cohort, profile=p, status='shortlisted',
+        defaults = dict(cohort=self.cohort, profile=p, status='profile_complete',
                         profile_completed_at=timezone.now(),
                         father_occupation='gov', mother_occupation='homemaker',
                         siblings_in_tertiary=0)

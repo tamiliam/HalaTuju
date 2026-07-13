@@ -305,8 +305,12 @@ def sync_check2_queries(application):
     # reconcile so an already-open item whose gap cleared auto-resolves (housekeeping), but every
     # CREATE / RE-OPEN below is gated on `not locked`. Existing doc requests stay answerable (an
     # upload still resolves them); only clarifies close post-lock — see decisions.md.
-    from .services import querying_locked
-    locked = querying_locked(application)
+    # The MACHINE may only ask during the Completed stage (owner, 2026-07-13). From `interviewing`
+    # onward only an officer may raise a query — the reviewer owns the case, and shouldn't be
+    # competing with auto-generated questions landing in the student's Action Centre mid-interview.
+    # Only CREATE / RE-OPEN is gated; the auto-resolve housekeeping below runs at every stage.
+    from .services import auto_queries_allowed
+    may_ask = auto_queries_allowed(application)
 
     gaps, proof_wanted = _gap_sets(application)
 
@@ -324,7 +328,7 @@ def sync_check2_queries(application):
     for code, spec in DOC_SPECS.items():
         item = existing.get(code)
         if code in proof_wanted:
-            if item is None and not locked:      # V3 (#6): no NEW request post-lock
+            if item is None and may_ask:         # machine asks only in the Completed stage
                 try:
                     # V1 (F2/F3): member-tag the doc request so the Action-Centre upload lands
                     # tagged to the RIGHT household member. Without this, a model doc-request stored
@@ -341,7 +345,7 @@ def sync_check2_queries(application):
                     raised_student_visible = True
                 except IntegrityError:
                     pass
-            elif item is not None and item.status == 'resolved' and not locked:
+            elif item is not None and item.status == 'resolved' and may_ask:
                 # V2 (#4): the gap re-fired after a resolve → RE-OPEN and re-notify. Clears the
                 # stale resolving doc/text so the student is asked for a fresh one. V3 (#6): not
                 # post-lock — a concluded case doesn't re-ask.
@@ -362,10 +366,10 @@ def sync_check2_queries(application):
     # V3 (#7): the clarify cap now counts only CONCURRENTLY OPEN clarifies (a waived/resolved one
     # frees a slot), so a few soft queries can't PERMANENTLY crowd out a higher-priority
     # income-story question. reporting_date_unknown is carved OUT of the cap (a sponsor-profile
-    # input of equal standing). V3 (#6): no NEW clarify is raised once querying is locked. A
+    # input of equal standing). No NEW clarify is raised outside the Completed stage. A
     # crowded-out higher-priority gap is surfaced to the officer via clarify_overflow_count().
     raised = sum(1 for r in existing.values() if r.kind == 'clarify' and r.status == 'open')
-    if not locked:
+    if may_ask:
         for code in _CLARIFY_ORDER:
             if code not in gaps or code in existing:
                 continue

@@ -553,6 +553,14 @@ class GraduationMessageView(_OwnInProgrammeView):
 # these endpoints can't fall out of their funded status.
 _FUNDED_STATES = ('awarded', 'active', 'maintenance')
 
+# From RECOMMENDED onward nobody may ask the student anything (see services.auto_queries_allowed /
+# officer_queries_allowed), so whatever is still open was the review's to-do list and is no longer
+# the student's. Those items are SET ASIDE — shown struck-through/amber, not as a to-do, and not as
+# "done" either. Deliberately a SEPARATE constant from _FUNDED_STATES: that one also decides which
+# applications a student may reach at all, and widening it would hand recommended students the
+# post-award endpoints. (Owner, 2026-07-13: set-aside starts at recommended, not awarded.)
+SET_ASIDE_STATES = ('recommended',) + _FUNDED_STATES
+
 
 def _note_unresolved_attempts(app, doc, stale_ids, kept_previous):
     """Human-aware re-ask (#83, owner 2026-07-08). After an upload has had its chance to resolve
@@ -1129,14 +1137,15 @@ class ResolutionItemListView(APIView):
         # by Gopal (the 2026-06-10 duplicate-noise fix). 'human' = reviewer-only.
         from .resolution import STUDENT_DOC_REQUEST_CODES, BANK_DETAILS_CODE, VIRCLE_CODE
 
-        # Once a student is FUNDED (awarded onward), the AUTO review-phase items — verification
-        # gaps (source='system') + Check-2 clarify queries (source='check2') — are SET ASIDE,
-        # not deleted: they were the review's to-do list, valid up to 'recommended'. From
-        # awarded on, the still-OPEN ones are peeled out of the actionable queue and shown
-        # struck-through (amber) — NOT a to-do, NOT "done"/green — so the student sees they no
-        # longer need answering. The bank-details task + anything an officer/super-admin RAISES
-        # stays actionable; a super-admin can re-raise a specific query later. (Owner, 2026-06-29.)
-        funded = app.status in _FUNDED_STATES
+        # From RECOMMENDED onward, the AUTO review-phase items — verification gaps
+        # (source='system') + Check-2 clarify queries (source='check2') — are SET ASIDE, not
+        # deleted: they were the review's to-do list, and the review is over. The still-OPEN ones
+        # are peeled out of the actionable queue and shown struck-through (amber) — NOT a to-do,
+        # NOT "done"/green — so the student sees they no longer need answering. The post-award
+        # tasks (bank details, Vircle setup) stay actionable. (Owner 2026-06-29; moved from
+        # `awarded` to `recommended` 2026-07-13 — nobody may ask a recommended student anything,
+        # so leaving their old queries live was asking for an answer we no longer want.)
+        set_aside_stage = app.status in SET_ASIDE_STATES
 
         def _student_visible(i):
             if i.kind == 'human':
@@ -1167,10 +1176,11 @@ class ResolutionItemListView(APIView):
         items = [i for i in app.resolution_items.all() if _student_visible(i)]
         openq = [i for i in items if i.status == 'open']
         resolved = [i for i in items if i.status == 'resolved'][:10]
-        # Funded: lift the OPEN review-phase items out of the actionable queue into a SET-ASIDE
-        # bucket (the FE renders them struck-through amber). Resolved items stay as they are.
+        # Recommended onward: lift the OPEN review-phase items out of the actionable queue into a
+        # SET-ASIDE bucket (the FE renders them struck-through amber). Resolved items stay as they
+        # are. An OFFICER-raised item is never set aside — but by this stage none can be raised.
         set_aside = []
-        if funded:
+        if set_aside_stage:
             set_aside = [i for i in openq if _is_review_auto(i)]
             openq = [i for i in openq if not _is_review_auto(i)]
         return Response({

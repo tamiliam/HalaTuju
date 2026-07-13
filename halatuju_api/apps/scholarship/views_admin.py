@@ -1046,8 +1046,13 @@ class AdminResolutionItemView(_AdminBase):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
-        from .services import querying_locked
-        if querying_locked(app):
+        # An officer may ask during Completed + Interviewing only (owner, 2026-07-13). Blocks
+        # `shortlisted` — the Action Centre doesn't render until the student submits, so a ticket
+        # raised there is invisible: a question nobody can see or answer. And blocks `interviewed`
+        # onward — the interview is concluded, it's decision time. (Was gated on querying_locked,
+        # which let an officer raise an unseeable ticket at `shortlisted`.)
+        from .services import officer_queries_allowed
+        if not officer_queries_allowed(app):
             return Response({'error': 'querying_closed'}, status=status.HTTP_400_BAD_REQUEST)
         kind = (request.data.get('kind') or '').strip()
         prompt = (request.data.get('prompt') or '').strip()

@@ -189,9 +189,19 @@ class TestAdminScholarship(TestCase):
         self.assertIsNone(item.resolved_at)
         self.assertEqual(item.resolution_text, 'He drives an e-hailing car part-time.')
 
+    def _submitted(self):
+        """An officer may only raise a query on a SUBMITTED student in Completed/Interviewing
+        (owner 2026-07-13). The shared fixture is `shortlisted` with nothing submitted — the
+        Action Centre doesn't render there, so a ticket raised then could never be seen."""
+        from django.utils import timezone
+        self.app.status = 'profile_complete'
+        self.app.profile_completed_at = timezone.now()
+        self.app.save(update_fields=['status', 'profile_completed_at'])
+
     def test_officer_doc_request_tags_member_in_params(self):
         """A per-person document request (e.g. the father's salary slip) stores the target
         member in params so the student's upload tags the right (doc_type, member) slot."""
+        self._submitted()
         self._auth(ADMIN)
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{self.app.id}/resolution-items/',
@@ -222,6 +232,7 @@ class TestAdminScholarship(TestCase):
         just resets the one-time notify stamp so `send_due_query_emails` re-sends ONE
         summary; a re-request after the student cleared everything re-notifies them."""
         from django.utils import timezone
+        self._submitted()
         self.app.query_raised_notified_at = timezone.now()
         self.app.save(update_fields=['query_raised_notified_at'])
         self._auth(ADMIN)

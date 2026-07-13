@@ -138,18 +138,21 @@ def sync_resolution_items(application):
     """
     if application.profile_completed_at is None:
         return ResolutionItem.objects.none()
-    # V3 (#6): once the interview is concluded the case is LOCKED — no NEW system gap-ticket
-    # (or its re-notify email) may be raised. We still auto-resolve open tickets whose gap cleared
-    # (housekeeping) below; only the CREATE is gated. (Existing doc requests stay answerable.)
-    from .services import querying_locked
-    locked = querying_locked(application)
+    # The MACHINE may only ask during the Completed stage (owner, 2026-07-13). From `interviewing`
+    # onward the case belongs to a human — the reviewer asks, the system doesn't. Was gated on
+    # `querying_locked`, which only closed at `interviewed`, so a student mid-interview could still
+    # be sent fresh auto-generated questions while their reviewer was working the case.
+    # Only the CREATE is gated: the housekeeping below still auto-resolves an open item once its
+    # gap clears, at EVERY stage, and an item already open stays open and answerable.
+    from .services import auto_queries_allowed
+    may_ask = auto_queries_allowed(application)
     wanted = _ticketable_unresolved(application)
     existing = {r.code: r for r in application.resolution_items.filter(source='system')}
     now = timezone.now()
 
     raised_student_visible = False
     for code, info in wanted.items():
-        if code in existing or locked:
+        if code in existing or not may_ask:
             continue
         spec = CODE_TO_TICKET[code]
         try:

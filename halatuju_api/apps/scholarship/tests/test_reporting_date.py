@@ -42,7 +42,7 @@ class _OfferBase(TestCase):
         p = StudentProfile.objects.create(
             supabase_user_id=f'rd-{suffix}', name='Anbu A/L Raj', nric='030101-14-1234',
             household_income=1500, household_size=5)
-        defaults = dict(cohort=self.cohort, profile=p, status='shortlisted',
+        defaults = dict(cohort=self.cohort, profile=p, status='profile_complete',
                         profile_completed_at=timezone.now(),
                         father_occupation='gov', mother_occupation='homemaker')
         defaults.update(kw)

@@ -45,10 +45,10 @@ class TestAssignmentBasedWrite(TestCase):
         p2 = StudentProfile.objects.create(supabase_user_id='s2', nric='030101-14-0002', name='B')
         # X assigned to the admin; Y assigned to the reviewer.
         self.appX = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p1, status='shortlisted',
+            cohort=self.cohort, profile=p1, status='profile_complete',
             profile_completed_at=timezone.now(), assigned_to=self.admin)
         self.appY = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p2, status='shortlisted',
+            cohort=self.cohort, profile=p2, status='profile_complete',
             profile_completed_at=timezone.now(), assigned_to=self.reviewer)
 
     def _auth(self, uid):

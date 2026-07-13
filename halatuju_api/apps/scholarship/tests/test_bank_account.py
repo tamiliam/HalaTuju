@@ -252,8 +252,8 @@ class TestFundedSetsAsideReviewQueries(_Base):
         # V3 (#6): those gaps are CREATED during the non-locked review phase (interviewing) and
         # PERSIST once funded — post-lock sync no longer creates new ones (owner decision: show
         # pre-existing, create none), so raise them before flipping to awarded.
-        app = self._make('fund-aside', status='interviewing')
-        sync_resolution_items(app)
+        app = self._make('fund-aside', status='profile_complete')
+        sync_resolution_items(app)   # the machine only raises during Completed
         app.status = 'awarded'
         app.save(update_fields=['status'])
         add_officer_item(app, kind='explanation', prompt='Officer asks', admin_email='r@x')
@@ -274,12 +274,13 @@ class TestFundedSetsAsideReviewQueries(_Base):
             self.assertIn(i['source'], ('system', 'check2'))
             self.assertNotEqual(i['code'], 'bank_details_missing')
 
-    def test_pre_award_keeps_review_items_actionable(self):
-        # Contrast: an interviewed (pre-award) no-docs student with the flag on sees the
-        # review gaps as normal open to-dos — nothing is set aside before funding. V3 (#6): the
-        # gaps are raised while non-locked (interviewing) and persist into interviewed.
+    def test_pre_recommendation_keeps_review_items_actionable(self):
+        # Contrast: a student still IN the review (awaiting QC) sees the review gaps as normal
+        # open to-dos. Set-aside begins at `recommended` (owner 2026-07-13) — before that the
+        # questions still stand. The gaps are raised during Completed (the only stage the machine
+        # asks) and persist into interviewing/interviewed.
         from apps.scholarship.resolution import sync_resolution_items
-        app = self._make('preaward-aside', status='interviewing')
+        app = self._make('preaward-aside', status='profile_complete')
         sync_resolution_items(app)
         app.status = 'interviewed'
         app.save(update_fields=['status'])
