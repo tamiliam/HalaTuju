@@ -886,6 +886,22 @@ def _doc_fields(doc):
     return f if isinstance(f, dict) else {}
 
 
+def epf_no_employer(f):
+    """"No. Majikan 000000000" — no employer on the statement date. The statement proving, on its
+    own face, that the member was not employed (owner, #126).
+
+    Reads BOTH keys. The schema carries `employer_number` (the No. Majikan) and `employer` (the
+    company name), and the reader routinely files the all-zeros NUMBER under `employer` — so the
+    two call sites that keyed on `employer_number` alone silently DROPPED the very proof they had
+    extracted. Either field carrying the zeros is the same fact.
+
+    One definition, used by both consumers (implied salary → 0, and the unemployment
+    corroboration) — they had the same check, hand-written twice, and the same bug twice.
+    """
+    return any(re.sub(r'\D', '', str(f.get(k) or '')) == '000000000'
+               for k in ('employer_number', 'employer'))
+
+
 def _epf_monthly_salary(f):
     """Estimate MONTHLY salary from an EPF statement (TD-123 contract). Returns a float
     (0.0 = unemployed), or None when nothing usable.
@@ -899,7 +915,7 @@ def _epf_monthly_salary(f):
       employee-via-11% term stays exact — ``max()`` selects it.
     - **Legacy fallback** (records extracted before the split totals existed): the old combined
       ``avg_monthly_contribution`` / ``monthly_contribution`` ÷ 0.24."""
-    if re.sub(r'\D', '', str(f.get('employer_number') or '')) == '000000000':
+    if epf_no_employer(f):
         return 0.0
     try:
         n = int(re.sub(r'\D', '', str(f.get('months_counted') or '')) or 0) or 1
@@ -2268,7 +2284,7 @@ def epf_confirms_unemployment(application, member, today=None):
         today = datetime.date.today()
     for epf in _cluster_docs(application, member, 'epf'):
         f = _doc_fields(epf)
-        if re.sub(r'\D', '', str(f.get('employer_number') or '')) == '000000000':
+        if epf_no_employer(f):
             return True
         ym = _parse_billing_month(f.get('last_contribution'))
         if ym and (today.year - ym[0]) * 12 + (today.month - ym[1]) > _INCOME_DOC_CURRENT_MONTHS:

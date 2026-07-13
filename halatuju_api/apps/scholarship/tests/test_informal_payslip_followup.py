@@ -116,3 +116,30 @@ class TestTheRequestReopens(TestCase):
         self._answer(app, 'He earns around RM2000')
         _, proof_wanted = _gap_sets(app)
         self.assertNotIn('father_income_proof_missing', proof_wanted)
+
+
+class TestEpfNoEmployer(TestCase):
+    """"No. Majikan 000000000" = no employer on the statement date (owner, #126).
+
+    We extracted that proof and then threw it away: both consumers keyed on `employer_number`, but
+    the reader routinely files the all-zeros NUMBER under `employer` (the company-name key). The
+    same check, hand-written twice, carried the same bug twice.
+    """
+
+    def test_zeros_in_either_field_mean_no_employer(self):
+        from apps.scholarship.income_engine import epf_no_employer
+        self.assertTrue(epf_no_employer({'employer_number': '000000000'}))
+        self.assertTrue(epf_no_employer({'employer': '000000000'}))   # #126's actual read
+        self.assertTrue(epf_no_employer({'employer': '000 000 000'}))  # punctuation tolerated
+
+    def test_a_real_employer_is_not_mistaken_for_none(self):
+        from apps.scholarship.income_engine import epf_no_employer
+        self.assertFalse(epf_no_employer({'employer': 'PROTON HOLDINGS BERHAD'}))
+        self.assertFalse(epf_no_employer({'employer_number': '123456789'}))
+        self.assertFalse(epf_no_employer({}))
+
+    def test_no_employer_implies_no_salary(self):
+        from apps.scholarship.income_engine import _epf_monthly_salary
+        # #126's mother: the zeros sat in `employer`, so the short-circuit was missed entirely.
+        self.assertEqual(_epf_monthly_salary({'employer': '000000000',
+                                              'avg_monthly_contribution': 'RM0.00'}), 0.0)
