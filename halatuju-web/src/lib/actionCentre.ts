@@ -170,6 +170,11 @@ export const KNOWN_CODES = [
   // "payslip/EPF? rough monthly?" (clarify), so neither shows as a raw code / blank title.
   'sibling_school_detail',
   'informal_income_detail',
+  // #117 — a retired/unable parent's pension: ask-first (clarify) then, on a "yes", ask for the
+  // statement (doc, reuses the salary_slip slot).
+  'pension_amount_unknown',
+  'father_pension_proof_missing',
+  'mother_pension_proof_missing',
   // S3 — offer carries no readable reporting date → ask when/where to report (clarify).
   'reporting_date_unknown',
   // Phase 2A — a declared informal income needs a flexible supporting doc (kind='doc').

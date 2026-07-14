@@ -4454,3 +4454,23 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** Identity-hue made four post-decision stages collapse into one green while two adjacent in-progress stages shouted at each other, and it clashed with the green/amber/red the officer surface already uses for verdict confidence. Meaning-hue + a depth ramp lets an officer read funnel progress at a glance without the label. Two per-screen maps is exactly the drift that caused the bug; one module with a guardrail test is the fix. Returning keys (not strings) keeps the module pure and jest-testable in the node env, mirroring `officerCockpit.ts`. Tones MUST be complete literal class names — Tailwind's JIT can't see a runtime-assembled `bg-blue-${n}`.
 **Trade-offs:** Amber no longer distinguishes in-progress stages (the blue ramp does that instead); the depth ramp relies on shade discrimination, which is weaker for the deepest greens/blues (labels remain the primary signal). The Tamil label for "Awaiting review" is a first draft pending owner review.
 **Revisit if:** a new status needs a colour family the four-hue scheme doesn't cover, or accessibility testing shows the ramp shades aren't distinguishable enough.
+## Break the offer-vs-declaration circularity in the reader, not the writer — #117, 2026-07-14
+**Decision:** `_declared_pathway` ignores a `chosen_programme` whose `source == 'offer_letter_auto'` and falls back to the student's own `pre_u_track` / `pre_u_institution`; separately, `_canonical_preu_institution` stops passing the student's declared school as a fallback candidate.
+**Alternatives considered:** (a) Stop `autofill_pathway_from_offer` writing `chosen_programme` at all. (b) Add a separate "declared" mirror field distinct from the autofilled pick.
+**Rationale:** The autofilled pick is genuinely useful elsewhere (display, catalogue resolution); the bug is only that the *comparison* treated it as a declaration. Fixing it at the single read site (`_declared_pathway`) is surgical and affects all 45 `offer_letter_auto` apps at once, and can only reveal clashes, never create a false one. A new mirror field would be a migration + a backfill for no extra safety.
+**Trade-offs:** When `pre_u_track` was itself autofilled from the offer for a stream-less declaration, the two agree → a match, so a genuine clash there stays hidden — but that is the benign direction (a missed clash, never a false one).
+**Revisit if:** a "declared vs confirmed pathway" distinction is needed for a new surface — then a real declared field earns its migration.
+
+## The pension is ask-and-evidence, NOT re-band — #117, 2026-07-14
+**Decision:** A retired/unable parent's pension is surfaced by asking (a clarify) and, on a "yes", requesting the statement — but the amount is **not** fed into `income_per_capita` / the band this sprint.
+**Alternatives considered:** Read the pension figure and re-run the means test immediately (re-band the cohort).
+**Rationale:** Owner's call — get auditable evidence on file first; re-banding off a self-declared figure with no document is exactly the understatement/overstatement risk the check exists to avoid. Feeding a *documented* pension into the per-capita figure is a clean, separate follow-up once statements exist.
+**Trade-offs:** Until that follow-up, the pension is visible to the officer but does not move the automated band — deliberate.
+**Revisit if:** pension statements are on file for the 12 affected apps and the owner wants them counted — then feed `income_per_capita` from the read statement.
+
+## Compare the STPM stream via canonical codes, clashing only when both are present — #117, 2026-07-14
+**Decision:** `offer_pathway_match` canonicalises both the offer's stream and the declared track through `parse_stpm_stream` and clashes only when both resolve to a code AND the codes differ.
+**Alternatives considered:** Feed the raw stream strings through the existing `_field_status` token-overlap detector alongside programme/institution.
+**Rationale:** `SAINS` and `SAINS SOSIAL` share the `sains` token, so token-overlap would read a real clash as a match. Canonical codes (`sains` vs `sains_sosial`) are distinct; comparing codes for equality is exact. Requiring both sides to be present means a stream-less Form-6 letter (the common case) never manufactures a false clash.
+**Trade-offs:** Depends on `parse_stpm_stream`'s vocabulary; a stream it doesn't recognise reads `''` → no signal (safe, no false clash, but also no catch).
+**Revisit if:** non-STPM pathways need a stream/specialisation compared — extend the canonicaliser per pathway.

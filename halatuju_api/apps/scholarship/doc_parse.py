@@ -491,6 +491,23 @@ def _water_bill_date(text: str) -> str:
     return m.group(1) if m else ''
 
 
+def _water_address(text: str) -> str:
+    """Best-effort supply/correspondence address: the line carrying a 5-digit postcode + the line
+    above it (the water bill prints the holder's address as a short block near the account number).
+    Postcode-anchored rather than label-anchored (the electricity parser's ``ALAMAT POS`` label is
+    NOT printed the same way across the ~13 water companies), so it is OCR-shape-agnostic. '' if
+    none. Soft — the address matcher + officer eyeball decide; never a gate.
+    NOTE (2026-07-14): calibrate the exact block on the real Air Selangor OCR corpus via
+    ``eval/capture_ocr.py`` (ids 1248/928/938/850/1469/1007 + #117's 2035/2039/2042) before trusting
+    the fast path widely — see docs/plans/2026-07-14-check2-117-gaps.md, Fix 1."""
+    lines = [ln for ln in _lines(text) if ln]
+    for i, ln in enumerate(lines):
+        if re.search(r'\b\d{5}\b', ln):
+            prev = lines[i - 1] if i > 0 else ''
+            return ' '.join(p for p in (prev, ln) if p).strip()
+    return ''
+
+
 @register('water_bill')
 def _parse_water(text: str) -> Optional[dict]:
     if not has(text, r'bil\s+air') or not has(
@@ -500,6 +517,14 @@ def _parse_water(text: str) -> Optional[dict]:
     unpaid = _labelled_rm(text, r'baki\s+terdahulu') or _labelled_rm(text, r'tunggakan')
     if not amount:                           # the soft signal's point — bail to Gemini if unsure
         return None
-    return {'name': _patronymic_name(text), 'address': '', 'amount': amount,
+    # THE load-bearing #117 fix: never return a dict with a blank address. A hardcoded blank made
+    # income_engine._bill_needs_upload re-ask forever (a clean Air Selangor PDF that locks onto this
+    # deterministic parser could never satisfy the "address readable" check → the #36/#66 loop, and
+    # #117 only escaped by PHOTOGRAPHING the PDF so it routed to Gemini). If the address can't be
+    # read here, bail to Gemini (the module's None → Gemini convention) — Gemini reads these fine.
+    address = _water_address(text)
+    if not address:
+        return None
+    return {'name': _patronymic_name(text), 'address': address, 'amount': amount,
             'unpaid_balance': unpaid, 'billing_period': '',
             'bill_date': _water_bill_date(text)}

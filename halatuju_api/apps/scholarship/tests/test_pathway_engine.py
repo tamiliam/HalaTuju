@@ -239,6 +239,33 @@ class TestOfferPathwayMatch(SimpleTestCase):
                                 'Sekolah Menengah Kebangsaan Pulau Sebang'),
             'match')
 
+    def test_offer_stream_clashes_with_declared_track(self):
+        # #117: declared sains_sosial, the offer summons him to Bidang SAINS. The programme +
+        # institution can agree while the STREAM is wrong — that clash must now surface.
+        self.assertEqual(
+            offer_pathway_match('Tingkatan Enam', 'Kolej Tingkatan Enam Gombak',
+                                'Tingkatan Enam', 'Kolej Tingkatan Enam Gombak',
+                                declared_track='sains_sosial', offer_stream='SAINS'),
+            'mismatch')
+
+    def test_shared_sains_token_is_not_a_false_match(self):
+        # The trap: 'SAINS' and 'sains_sosial' share the 'sains' substring. Canonicalising to
+        # distinct codes means they clash, never falsely match.
+        from apps.scholarship.offer_pathway import parse_stpm_stream
+        self.assertNotEqual(parse_stpm_stream('SAINS'), parse_stpm_stream('SAINS SOSIAL'))
+
+    def test_agreeing_stream_is_a_match(self):
+        self.assertEqual(
+            offer_pathway_match('', '', '', '', declared_track='sains_sosial',
+                                offer_stream='Sains Sosial'),
+            'match')
+
+    def test_streamless_offer_never_clashes_on_track(self):
+        # Most Form-6 letters print no Bidang → '' → no track signal → no false clash.
+        self.assertEqual(
+            offer_pathway_match('', '', '', '', declared_track='sains_sosial', offer_stream=''),
+            'unknown')
+
 
 class TestStudentOfferCheckPathway(SimpleTestCase):
     """student_offer_check surfaces the offer-vs-declared reconciliation."""
@@ -319,3 +346,26 @@ class TestOfferOfficialStatus(SimpleTestCase):
     def test_no_authenticity_is_unknown(self):
         # Genuineness not computed (flag off / not re-run) → 'unknown' → never gate on our gap.
         self.assertEqual(offer_official_status(_auth_doc(None)), 'unknown')
+
+
+class TestDeclaredPathwayCircularity(SimpleTestCase):
+    """#117 (c): an offer-autofilled chosen_programme must NOT be treated as the declaration —
+    else offer_pathway_match compares the offer against itself (45 live apps carry the source)."""
+    def _app(self, cp, track='', inst=''):
+        return SimpleNamespace(chosen_programme=cp, pre_u_track=track, pre_u_institution=inst)
+
+    def test_offer_autofilled_pick_falls_back_to_pre_u(self):
+        from apps.scholarship.pathway_engine import _declared_pathway
+        app = self._app(
+            {'course_name': 'SAINS', 'institution': 'KOLEJ TINGKATAN ENAM GOMBAK',
+             'source': 'offer_letter_auto'},
+            track='sains_sosial', inst='SMK (P) TEMENGGONG IBRAHIM')
+        # The offer's own values are ignored; the student's real declaration is returned.
+        self.assertEqual(_declared_pathway(app), ('sains_sosial', 'SMK (P) TEMENGGONG IBRAHIM'))
+
+    def test_genuine_student_pick_is_still_used(self):
+        from apps.scholarship.pathway_engine import _declared_pathway
+        app = self._app(
+            {'course_name': 'Diploma Kejuruteraan', 'institution': 'UPM', 'source': 'student'},
+            track='ignored', inst='ignored')
+        self.assertEqual(_declared_pathway(app), ('Diploma Kejuruteraan', 'UPM'))

@@ -19,6 +19,19 @@ SEKOLAH MENENGAH KEBANGSAAN MAXWELL
 08 Jun 2026
 """
 
+# #117 (KIRIIYARASAN): the OCR text layer joined each label to its value on ONE line (glued), which
+# broke the line-anchored reads — name ran into the NRIC label, the institution sat after its label,
+# and the real 'Tarikh Lapor Diri' line was skipped by the TARIKH guard.
+STPM_GLUED = """PEJABAT TIMBALAN KETUA PENGARAH PENDIDIKAN MALAYSIA
+SEKTOR OPERASI SEKOLAH
+Tarikh CETAK : 14 April 2026
+Nama: KIRIIYARASAN A/L MUNIANDY No. Kad Pengenalan: 080111140499
+TAWARAN KEMASUKAN KE TINGKATAN ENAM SEMESTER 1 TAHUN 2026
+2.1 Bidang SAINS
+2.2 Pusat Tingkatan Enam KOLEJ TINGKATAN ENAM GOMBAK
+2.3 Tarikh Lapor Diri 08 Jun 2026
+"""
+
 MATRIC = """KEMENTERIAN PENDIDIKAN
 Bahagian Matrikulasi
 Tarikh: 27 APRIL 2026
@@ -65,6 +78,18 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertEqual(r['intake'], '2026')
         self.assertIn('SEKOLAH', r['institution'])
         self.assertIn('2026', r['reporting_date'])
+        self.assertEqual(r['stream'], 'SAINS')           # #117 (a) — Bidang now captured (block layout)
+
+    def test_stpm_glued_lines(self):
+        # #117: every label glued to its value on one line. All four reads must still land.
+        r = parse_govt_offer(STPM_GLUED)
+        self.assertEqual(r['_family'], 'stpm')
+        self.assertEqual(r['candidate_name'], 'KIRIIYARASAN A/L MUNIANDY')   # truncated at the NRIC label
+        self.assertEqual(r['candidate_nric'], '080111-14-0499')
+        self.assertEqual(r['institution'], 'KOLEJ TINGKATAN ENAM GOMBAK')    # value after the label
+        self.assertEqual(r['stream'], 'SAINS')                               # Bidang
+        self.assertIn('08 Jun 2026', r['reporting_date'])                    # Tarikh Lapor Diri, not skipped
+        self.assertNotIn('Bidang', r['institution'])                        # not swallowed by the institution
 
     def test_matriculation(self):
         r = parse_govt_offer(MATRIC)

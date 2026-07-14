@@ -1180,7 +1180,13 @@ def autofill_pathway_from_offer(application):
             hint = (inst or '').strip() or (application.pre_u_institution or '').strip()
             return op.catalogue_institution(vc, hint) if vc else ''
         if pw == 'stpm':
-            return op.clean_school_name(inst, application.pre_u_institution or '')
+            # #117 (d): standardise ONLY what the offer letter actually read. Passing
+            # application.pre_u_institution as a fallback laundered the student's OWN declared
+            # school into chosen_programme stamped source='offer_letter_auto' whenever the offer's
+            # institution failed to extract — so the cockpit showed the SMK as if the offer said so.
+            # If the offer institution is blank, leave it blank rather than attribute the student's
+            # own answer to the letter.
+            return op.clean_school_name(inst)
         return ''
 
     if not locked:

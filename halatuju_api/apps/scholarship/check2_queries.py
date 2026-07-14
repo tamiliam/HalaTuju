@@ -56,6 +56,11 @@ CLARIFY_SPECS = {
     # what does he earn a month? (owner 2026-07-08, the #130 fisherman dead-end). One clarify covers
     # every such member; a formal salary-slip/EPF request is deliberately NOT raised for them.
     'informal_income_detail': {'fact': 'income'},
+    # #117 (owner 2026-07-14) — a retired / unable-to-work parent may draw a PENSION or benefit that
+    # is currently invisible to the means test (retired sits in NON_EARNING → never asked). ASK FIRST:
+    # does he draw a pension / benefit, and roughly how much? One clarify covers all such members; the
+    # proof (a *_pension_proof_missing doc request) follows only on an explicit "yes".
+    'pension_amount_unknown': {'fact': 'income'},
     # S3 — the offer letter carries no readable reporting/registration date → ask when (and
     # where) the student must report. One-line, non-sensitive, pathway-fact.
     'reporting_date_unknown': {'fact': 'pathway'},
@@ -87,6 +92,13 @@ DOC_SPECS = {
     'guardian_income_proof_missing': {'member': 'guardian', 'doc_type': 'salary_slip'},
     'brother_income_proof_missing': {'member': 'brother', 'doc_type': 'salary_slip'},
     'sister_income_proof_missing': {'member': 'sister', 'doc_type': 'salary_slip'},
+    # #117 — a retired/unable PARENT who (the student confirmed) draws a pension → ask for the
+    # statement. NO new doc type + NO migration: it reuses the salary_slip slot, whose extraction
+    # prompt already states it accepts "a government benefit / pension statement … which counts as
+    # household income too" (vision.py). Separate codes purely so the copy can say *pension
+    # statement*, not *salary slip*. Clears when any income evidence for that parent appears.
+    'father_pension_proof_missing': {'member': 'father', 'doc_type': 'salary_slip'},
+    'mother_pension_proof_missing': {'member': 'mother', 'doc_type': 'salary_slip'},
     # S2 — every salary slip on file is older than ~3 months → ask for a current one.
     'income_doc_stale': {'doc_type': 'salary_slip'},
     # Phase 2A (P5b/D1) — a working member declared an informal wage, but the household has no
@@ -128,6 +140,10 @@ _MEMBER_PROOF_CODE = {
     'guardian': 'guardian_income_proof_missing', 'brother': 'brother_income_proof_missing',
     'sister': 'sister_income_proof_missing',
 }
+# #117 — the pension-statement request per parent (only father/mother can be retired/unable here).
+_MEMBER_PENSION_CODE = {
+    'father': 'father_pension_proof_missing', 'mother': 'mother_pension_proof_missing',
+}
 # Only a PARENT slot can be blank (→ a status clarify); other-members always carry an occupation.
 _PARENT_STATUS_CODE = {'father': 'father_status_unknown', 'mother': 'mother_status_unknown'}
 
@@ -137,6 +153,7 @@ _CLARIFY_ORDER = [
     # Household-income completeness first — the most material to a fundable B40 profile.
     'father_status_unknown', 'mother_status_unknown',
     'informal_income_detail',              # informal earner ask-first — replaces a dead-end doc demand
+    'pension_amount_unknown',              # #117 — retired/unable parent's pension, ask-first
     'unemployment_detail_unknown',
     # V4 — income-story texture (audit §E) sits high, above the comfort items.
     'deceased_parent_detail', 'informal_work_detail', 'household_roster_undercount',
@@ -169,6 +186,8 @@ def _gap_sets(application):
         # Owner 2026-07-08 — informal-aware income asks + sibling-in-school clarify.
         member_is_informal, informal_income_detail_gap, informal_payslip_claimed,
         sibling_school_detail_unknown,
+        # #117 (owner 2026-07-14) — retired/unable parent's pension, ask-first then proof.
+        pension_context, pension_members, pension_claimed,
         # Owner 2026-07-08 — per-bill utility recheck + point-blank high-usage query.
         utility_bill_recheck, high_utility_expense_context,
     )
@@ -185,6 +204,8 @@ def _gap_sets(application):
         gaps.add('sibling_school_detail')
     if informal_income_detail_gap(application):         # informal earner, no doc → ask-first clarify
         gaps.add('informal_income_detail')
+    if pension_context(application) is not None:        # #117 — retired/unable parent → ask-first pension
+        gaps.add('pension_amount_unknown')
     if offer_reporting_date_unknown(application):       # readable offer, no parseable report date
         gaps.add('reporting_date_unknown')
     if unemployment_detail_gap(application):            # 'unemployed' member, no reason/since
@@ -231,6 +252,12 @@ def _gap_sets(application):
         code = _MEMBER_EPF_CODE.get(m)
         if code:
             proof_wanted.add(code)
+    # #117 — a retired/unable parent whom the student CONFIRMED draws a pension (answered the
+    # pension clarify "yes") → ask for the statement (reuses the salary_slip slot). Ask-first→proof
+    # (#126): nothing is demanded until the student says there is a pension to evidence.
+    for m in pension_members(application):
+        if pension_claimed(application, m):
+            proof_wanted.add(_MEMBER_PENSION_CODE[m])
     # V4 — the four promoted DOC-REQUEST themes.
     if school_leaving_cert_gap(application):
         proof_wanted.add('school_leaving_cert_missing')
@@ -266,6 +293,10 @@ def _clarify_params(application, code):
         # ask reflects what we know rather than a generic prompt (owner 2026-07-08).
         from .income_engine import informal_income_context
         return informal_income_context(application)
+    if code == 'pension_amount_unknown':
+        # #117 — name the retired/unable parent(s) so the copy is specific, not generic.
+        from .income_engine import pension_context
+        return pension_context(application) or {}
     return {}
 
 
