@@ -2,7 +2,13 @@
 
 **Date:** 2026-07-14
 **Author:** Research analyst (drafting engineer) — for architect + owner review
-**Status:** DRAFT roadmap. Nothing has been built. Follows `Settings/_workflows/implementation-planning.md` conventions.
+**Status:** **PLAN OF RECORD (revised 2026-07-15).** Owner accepted all decisions D-1…D-10; architect amendments folded in (Sprints 3 and 8 pre-split → **15 sprints** + one conditional off-boarding sprint; no bulk document re-key; Sprint-0 verification done — see the closing note). Nothing has been built. Follows `Settings/_workflows/implementation-planning.md` conventions.
+
+**Sequencing triggers (owner-agreed 2026-07-15, while BrightPath is still actively evolving):**
+- **Now, continuously:** the build-for-tenancy conventions (`docs/build-for-tenancy-conventions.md`) apply to ALL ongoing BrightPath work, so current development stops deepening the coupling.
+- **Phase 1** starts in a quiet window (additive + centralised; safe under active development; closes a real security gap that exists today).
+- **Phase 2** is gated on rule stability: start only after ~a month passes without a `MODEL_VERSION` bump or a new document family — extracting config while the rules churn means extracting a moving target.
+- **Phases 3–4** are gated on a credible second-tenant prospect. No portal for a tenant that doesn't exist.
 **Reads with:** `2026-07-14-tenancy-audit.md` (evidence) and `2026-07-14-platform-prd-draft.md` (requirements).
 
 ---
@@ -17,7 +23,7 @@ The **phasing is fixed** (owner's decision):
 
 Sprints live *inside* these phases. Each sprint is sized to be **reviewable** — a coherent, single deliverable, ≤ ~40 files touched — not to fit in context. **BrightPath must stay live and unbroken after every sprint** (it is in production with real applicants).
 
-**Total: 13 sprints.** Rationale for the count: the two hardest coupling knots (the overloaded `StudentProfile` and the dual-hatted `PartnerAdmin`, audit §6 #1/#3) plus the "prove the fence" safety requirement force the fencing work (Phase 1) into four separate, individually-verifiable sprints rather than one big-bang. Phase 2 is naturally four sprints because branding, timing, documents, and eligibility are independent extraction jobs that ship one at a time. Phase 3 is three (backend org-management, superadmin UI, org-admin scoped UI). Phase 4 is two (metering, then the full rehearsal + rollback drill). Honest sizing — not crammed; if a sprint below looks tight in review, split it rather than overload it.
+**Total: 15 sprints** (+ one conditional off-boarding sprint before any real second tenant). Rationale: the two hardest coupling knots (the overloaded `StudentProfile` and the dual-hatted `PartnerAdmin`, audit §6 #1/#3) plus the "prove the fence" safety requirement force the fencing work (Phase 1) into individually-verifiable sprints rather than one big-bang. The two sprints originally flagged High are **pre-split by architect decision** (review §2.4): Sprint 3 → 3a/3b (Sprint-0 verification found **43** `_AdminBase` endpoint classes, not the ~25 project history suggested — the fence audit is bigger than first sized) and Sprint 8 → 8a/8b. Phase 2 is four extraction jobs shipping one at a time. Phase 3 is three (backend org-management, superadmin UI, org-admin scoped UI). Phase 4 is two (metering, rehearsal + rollback drill) plus the conditional erasure sprint. Honest sizing — if a sprint below still looks tight in review, split it rather than overload it.
 
 **A recurring "invisible today" property:** through Phases 1–2, there is exactly one organisation (BrightPath). Scoping every query to "the caller's org" therefore returns *identical results to today*. This is what makes the risky fencing work safe to ship incrementally — the behaviour doesn't change until a second org exists (Phase 4).
 
@@ -27,7 +33,7 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 ### Sprint 1 — The Organisation record + BrightPath as org #1
 - **Goal:** Establish the tenant spine by growing `courses.PartnerOrganisation` into the platform Organisation record and linking the programme config (`ScholarshipCohort`) to it. (Decision D-6/D-8.)
-- **Scope:** `apps/courses/models.py` (`PartnerOrganisation` — add identity/branding/module-flag columns), `apps/scholarship/models.py` (`ScholarshipCohort` — add `organisation` FK), admin serializers, a data migration seeding BrightPath as organisation #1 and pointing the existing cohort(s) at it.
+- **Scope:** `apps/courses/models.py` (`PartnerOrganisation` — add identity/branding/module-flag columns), `apps/scholarship/models.py` (`ScholarshipCohort` — add the owning-org FK), admin serializers, a data migration seeding BrightPath as organisation #1 and pointing the existing cohort(s) at it. **Naming rule (review §2.5): the new FK is `owning_organisation` (or equally unambiguous) — NEVER another `org`, because `PartnerAdmin.org` already means *referring* organisation; referrer ≠ owner must stay visible in the schema.**
 - **Migrations expected:** 2 (additive columns on `partner_organisations`; additive FK on `scholarship_cohorts`) + 1 data migration (seed org #1, backfill cohort→org). All additive/backward-compatible → migrate-first, zero downtime.
 - **Test plan:** model tests for the new columns/FK; a migration test that the existing cohort ends up owned by org #1; full existing scholarship suite green (2,400+ pytest per project history).
 - **Main risk + mitigation:** *Risk:* the org record diverges from the eventual config surface. *Mitigation:* land only the columns the PRD §3 config surface names; leave editing UI to Phase 3.
@@ -36,30 +42,40 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 ### Sprint 2 — Owning-org on the application
 - **Goal:** Give every `ScholarshipApplication` a durable owning-organisation, so queries can be fenced (audit §3: today there is none).
-- **Scope:** `apps/scholarship/models.py` (denormalised `organisation` FK on the application, populated from its cohort per D-8), the create path (`ApplicationCreateSerializer`/`services`), a data migration backfilling every existing application to org #1.
+- **Scope:** `apps/scholarship/models.py` (denormalised `owning_organisation` FK on the application, populated from its cohort per D-8), the create path (`ApplicationCreateSerializer`/`services`), a data migration backfilling every existing application to org #1, and the **drift guard** (review §2.6): a constraint or test asserting `application.owning_organisation == application.cohort.owning_organisation` at all times.
 - **Migrations expected:** 1 additive FK (`scholarship_applications.organisation_id`) + 1 data migration (backfill all rows → org #1). Additive → migrate-first, zero downtime.
 - **Test plan:** every new application gets an org; backfill covers 100% of existing rows; suite green.
 - **Main risk + mitigation:** *Risk:* an application created without an org slips the fence later. *Mitigation:* make the column non-null after backfill; a create-path test asserts org is always set.
 - **How we know BrightPath still works:** the column is written but not yet *read* for authorisation (that's Sprint 3), so behaviour is unchanged; live smoke of a new application.
 - **Complexity:** Low–Medium.
 
-### Sprint 3 — Org-scoped query layer + fence the admin gates + PROVE it (the #1-risk sprint)
-- **Goal:** Enforce the organisation wall on every admin read/write, and ship a test that *proves* one org cannot see another's applicants. This is the security heart of the project.
-- **Scope:** `apps/scholarship/views_admin.py` — add an org predicate to the shared gates `_b40_scope` (`:89-103`), `_scoped_application` (`:105-119`), `_can_review_app` (`:121-132`), `_require_app_write` (`:134-148`), `_require_qc` (`:150-175`), and the list query (`:186-189`); an org-scoped model manager / queryset helper so the fence is centralised (mirroring the courses `get_partner_students` pattern, `courses/views_admin.py:80-104`). Super stays global.
+### Sprint 3a — Org-scoped query layer + fence the admin gates (the #1-risk work, part 1)
+- **Goal:** Enforce the organisation wall on every admin read/write. This is the security heart of the project. *(Pre-split from the original Sprint 3 by architect decision — Sprint-0 verification counted **43** `_AdminBase` endpoint classes, not ~25.)*
+- **Scope:** `apps/scholarship/views_admin.py` — add an org predicate to the shared gates `_b40_scope` (`:89-103`), `_scoped_application` (`:105-119`), `_can_review_app` (`:121-132`), `_require_app_write` (`:134-148`), `_require_qc` (`:150-175`), and the list query (`:186-189`); an org-scoped model manager / queryset helper so the fence is centralised (mirroring the courses `get_partner_students` pattern, `courses/views_admin.py:80-104`); an endpoint-by-endpoint audit of all 43 `_AdminBase` subclasses confirming each reads through the fenced gates. Super stays global.
 - **Migrations expected:** 0 (code-only).
-- **Test plan:** **the fence-proof test** — seed two organisations with an applicant each; assert every admin endpoint (list/detail/write/QC) returns/permits only the caller-org's applicant and 403/404s the other's, for each role; a static guard test that no admin queryset omits the org filter (mirroring the existing superseded-docs guard pattern, `models.py:943-948`).
-- **Main risk + mitigation:** *Risk (this IS risk #1):* a missed query path leaks cross-tenant data. *Mitigation:* centralise the filter in one manager; the static guard test fails CI if any admin read bypasses it; a second reviewer signs off the query audit.
-- **How we know BrightPath still works:** with one org, every scoped query returns exactly today's rows — the full existing suite passes unchanged; live smoke of the reviewer/QC cockpit against real BrightPath data.
-- **Complexity:** High. (If review finds >40 files or the gate audit balloons, split into 3a "gates + manager" and 3b "fence-proof test + static guard".)
+- **Test plan:** existing suite green (with one org, every scoped query returns exactly today's rows); unit tests on each amended gate.
+- **Main risk + mitigation:** *Risk (this IS risk #1):* a missed query path leaks cross-tenant data. *Mitigation:* centralise the filter in one manager; the 43-endpoint audit is the sprint's review artefact; a second reviewer signs it off.
+- **How we know BrightPath still works:** full existing suite passes unchanged; live smoke of the reviewer/QC cockpit against real BrightPath data.
+- **Complexity:** High (bounded by the pre-split).
 
-### Sprint 4 — Document storage org-prefix + fence
+### Sprint 3b — PROVE the fence (part 2)
+- **Goal:** Ship the tests that *prove* one org cannot see another's applicants — and that keep proving it forever.
+- **Scope:** **the fence-proof test** — seed two organisations with an applicant each; assert every admin endpoint (list/detail/write/QC) returns/permits only the caller-org's applicant and 403/404s the other's, for each role; **the static guard test** — CI fails if any admin queryset omits the org filter (mirroring the existing superseded-docs guard pattern, `models.py:943-948`).
+- **Migrations expected:** 0.
+- **Test plan:** the fence-proof suite is itself the deliverable; it runs against all 43 endpoint classes.
+- **Main risk + mitigation:** *Risk:* the proof covers less than the real surface. *Mitigation:* the test enumerates `_AdminBase` subclasses programmatically (so a new endpoint is auto-covered), not from a hand-kept list.
+- **How we know BrightPath still works:** test-only sprint; no behaviour change.
+- **Complexity:** Medium.
+
+### Sprint 4 — Document storage org-prefix + fence (new uploads only)
 - **Goal:** Fence uploaded documents per organisation (audit §4: keys are `<app_id>/<doc_type>/<uuid>` with no org element).
-- **Scope:** `apps/scholarship/views.py:666` (add org prefix at the single generation site), `apps/scholarship/storage.py` (list/delete/backup helpers to carry the prefix), a dual-read shim so existing objects (old keys) still resolve, and a backfill plan for `storage_path` values; `serializers.py:692-694` (assert the caller's org owns the path before signing a view URL).
-- **Migrations expected:** 0 schema (the `storage_path` column is already `CharField(500)`); 1 data/backfill *operation* (re-key or dual-read existing objects — owner-gated, done on the live service, never a local re-extract per `halatuju_never_reextract_locally.md`).
-- **Test plan:** new uploads land under `<org>/…`; a cross-org signed-URL request is refused; backup/OCR paths carry the prefix; existing docs still viewable via the shim.
-- **Main risk + mitigation:** *Risk:* re-keying breaks access to existing documents. *Mitigation:* dual-read (try new key, fall back to old) so no object is orphaned; verify against a sample of live BrightPath docs before any bulk re-key.
+- **AMENDED (review §2.3): NO bulk re-key of existing objects.** Every existing object belongs to BrightPath by definition, so the fence treats a key **without** an org prefix as org #1 legacy. Only **new** uploads get the `<org>/…` prefix. This removes the riskiest single operation of the whole programme (bulk re-keying live PII documents); revisit only if a real off-boarding/erasure demand ever requires re-keying.
+- **Scope:** `apps/scholarship/views.py:666` (add org prefix at the single generation site), `apps/scholarship/storage.py` (list/delete/backup helpers to handle both prefixed and legacy keys), `serializers.py:692-694` (assert the caller's org owns the path — prefixed → must match caller's org; unprefixed → org #1 only — before signing a view URL).
+- **Migrations expected:** 0 schema, 0 data (the legacy-key convention replaces the backfill operation).
+- **Test plan:** new uploads land under `<org>/…`; a cross-org signed-URL request is refused; an unprefixed key is served only to org #1 callers; backup/OCR paths handle both key shapes; every existing doc still resolves.
+- **Main risk + mitigation:** *Risk:* the two-shape key logic has a gap (e.g. a helper assumes one shape). *Mitigation:* one shared `resolve_org_for_path()` helper used by every storage function; tests cover both shapes at each call site.
 - **How we know BrightPath still works:** every existing BrightPath document opens in the cockpit; a new upload round-trips; the reviewer sees the doc drawer intact.
-- **Complexity:** Medium–High.
+- **Complexity:** Medium (down from Medium–High after the amendment).
 
 *(Phase 1 exit criterion: a hypothetical second org would already be fully isolated at the data + document layer, even though none exists yet.)*
 
@@ -94,14 +110,23 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 - **How we know BrightPath still works:** reminder due-dates for the live cohort are identical before/after; no duplicate sends.
 - **Complexity:** Low–Medium.
 
-### Sprint 8 — Per-org document checklist selection (shared engine, org-selectable)
-- **Goal:** Let each programme select *which* documents/routes/facts apply, while the verification engine stays one shared service (PRD §3c; audit §2b).
-- **Scope:** a per-org document/route/fact configuration read by `income_engine.income_requirements` (`:1884`), `services.income_doc_blockers`/`application_completeness`/`document_red_blockers`, and the fact set in `verdict_engine.build_verdict` (`:1072`). The `ApplicantDocument.DOC_TYPES` catalogue stays the master list; the org config selects a subset.
-- **Migrations expected:** 1 additive (org document/fact config, likely JSON on the org/cohort).
-- **Test plan:** org #1 selects BrightPath's exact current set → checklist + gates identical to today; a fixture org #2 with a different set (e.g. no STR route, requires school-leaving letter) produces a different checklist; the engine maths is untouched (genuineness/STR/EPF tests unchanged).
-- **Main risk + mitigation:** *Risk:* the engine accidentally becomes org-editable (violating the safety promise). *Mitigation:* config selects *inputs* (which docs/facts), never *algorithm*; a test asserts the verdict maths is identical for the same inputs regardless of org.
-- **How we know BrightPath still works:** the four-fact verdict + submission gates for live BrightPath applicants are unchanged (snapshot a sample of real verdicts before/after).
-- **Complexity:** High. (Candidate to split into 8a "document/route selection" and 8b "fact selection" if >40 files.)
+### Sprint 8a — Per-org document/route selection (shared engine, org-selectable, part 1)
+- **Goal:** Let each programme select *which* documents and income routes apply, while the verification engine stays one shared service (PRD §3c; audit §2b). *(Pre-split by architect decision — Sprint-0 reading of the gate bodies confirmed real behavioural complexity: grandfathering of already-submitted applications, results-slip name-mismatch blocks, the income-cluster softening rule — all of which must survive per-org selection unchanged.)*
+- **Scope:** a per-org document/route configuration (whitelisted schema — enums over the `ApplicantDocument.DOC_TYPES` catalogue and the income routes; review §2.8) read by `income_engine.income_requirements` (`:1884`) and `services.income_doc_blockers`/`application_completeness`/`document_red_blockers`. The catalogue stays the master list; the org config selects a subset.
+- **Migrations expected:** 1 additive (org document/route config on the org/cohort).
+- **Test plan:** org #1 selects BrightPath's exact current set → checklist + gates identical to today, INCLUDING the grandfather and name-mismatch behaviours; a fixture org #2 with a different set (e.g. no STR route, requires school-leaving letter) produces a different checklist.
+- **Main risk + mitigation:** *Risk:* the gate subtleties (grandfathering, mismatch blocks, cluster softening) behave differently under a selected subset. *Mitigation:* before/after snapshot tests on real-shaped fixtures for each subtlety.
+- **How we know BrightPath still works:** submission gates for live BrightPath applicants are unchanged (snapshot a sample before/after).
+- **Complexity:** High (bounded by the pre-split).
+
+### Sprint 8b — Per-org verification-fact selection (part 2)
+- **Goal:** Let each programme select which of the four verification facts (identity / academic / income / pathway) apply to its verdict.
+- **Scope:** the fact set in `verdict_engine.build_verdict` (`:1072`) reads the org config; the config schema stays a whitelist (enums + named thresholds only — structurally nowhere to inject bespoke logic).
+- **Migrations expected:** 0 (config column landed in 8a).
+- **Test plan:** org #1 with all four facts → verdicts byte-identical to today; a fixture org #2 without means-testing produces an income-fact-free verdict; **the engine-safety test**: identical inputs produce identical verdict maths regardless of org.
+- **Main risk + mitigation:** *Risk:* the engine accidentally becomes org-editable (violating the safety promise, risk #7). *Mitigation:* config selects *inputs*, never *algorithm*; the whitelisted schema is the structural guarantee; the engine-safety test enforces it.
+- **How we know BrightPath still works:** the four-fact verdict for live BrightPath applicants is unchanged (snapshot a sample of real verdicts before/after).
+- **Complexity:** Medium.
 
 ### Sprint 9 — Per-org eligibility thresholds & funding amounts
 - **Goal:** Finish the extraction — lift the stray hard-coded eligibility constants and per-pathway funding amounts onto per-org config (audit §2a/§2d). (The headline income/academic thresholds are *already* on the cohort — this sprint mops up the baked constants.)
@@ -165,6 +190,14 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 - **How we know BrightPath still works:** BrightPath applicants + reviewers operate normally while Inspire's dummy cohort runs alongside; the fence-proof suite is green.
 - **Complexity:** Medium.
 
+### Sprint E (conditional) — Off-boarding & erasure routine — REQUIRED before any REAL second tenant signs a DPA
+- **Why (review §2.2):** the PRD's data-protection page promises each organisation *"your data can be fully erased on request"* — that routine must exist before the promise is made in a real DPA. Not needed for the 13b rehearsal (dummy data), so it is **conditional: build it when a real second tenant is in sight, before their DPA is signed.**
+- **Goal:** A deliberate, superadmin-only "off-board this organisation" action (D-5): explicit confirmation → full erasure of the org's applications, documents (bucket objects + GCS backups), and derived records — without touching any other organisation or the students' shared platform accounts.
+- **Scope:** an erasure service walking the org's object graph (applications → documents → storage objects → backups → derived rows), an audit log of what was erased, and the superadmin trigger with confirmation. If legacy-unprefixed keys are ever implicated, this is the one place re-keying may return (Sprint 4 amendment).
+- **Test plan:** erase a fixture org end-to-end; assert zero residual rows/objects for that org AND zero impact on org #1's data; the students' platform accounts survive.
+- **Main risk + mitigation:** *Risk:* over-deletion (shared student data) or under-deletion (orphaned bucket objects). *Mitigation:* the erasure walks FKs from the org root, never from the student; a post-erasure sweep asserts both directions.
+- **Complexity:** Medium.
+
 ---
 
 ## Migration strategy note (re-homing BrightPath under organisation #1, zero downtime)
@@ -222,18 +255,21 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 | Phase | Sprint | Deliverable | Migrations | Complexity |
 |---|---|---|---|---|
 | 1 | 1 | Organisation record + BrightPath as org #1 | 2 + 1 data | Low |
-| 1 | 2 | Owning-org on the application | 1 + 1 data | Low–Med |
-| 1 | 3 | Org-scoped gates + fence-proof test | 0 | **High** |
-| 1 | 4 | Document storage org-prefix + fence | 0 schema + 1 backfill op | Med–High |
+| 1 | 2 | Owning-org on the application + drift guard | 1 + 1 data | Low–Med |
+| 1 | 3a | Org-scoped gates + manager (43-endpoint audit) | 0 | **High** |
+| 1 | 3b | Fence-proof test + CI static guard | 0 | Med |
+| 1 | 4 | Document org-prefix, new uploads only (legacy = org #1) | 0 | Med |
 | 2 | 5 | Per-org branding + email identity (backend) | 0 | Med |
 | 2 | 6 | Per-org branding (frontend) | 0 | Med |
 | 2 | 7 | Per-org timing/reminders/consent version | 1 | Low–Med |
-| 2 | 8 | Per-org document checklist selection | 1 | **High** |
+| 2 | 8a | Per-org document/route selection | 1 | **High** |
+| 2 | 8b | Per-org verification-fact selection + engine-safety test | 0 | Med |
 | 2 | 9 | Per-org eligibility thresholds + funding amounts | 1 | Med |
 | 3 | 10 | Superadmin org management (backend) | 0–1 | Med–High |
 | 3 | 11 | Superadmin portal UI | 0 | Med |
 | 3 | 12 | Org-admin scoped portal | 0 | Med–High |
 | 4 | 13a | Per-org cost metering (tagging) | 1 | Med |
 | 4 | 13b | Second-tenant rehearsal + rollback drill | 0 | Med |
+| 4 | E *(conditional)* | Off-boarding & erasure routine — before any real tenant #2 DPA | 0–1 | Med |
 
-**Could not verify / assumptions to confirm before Sprint 1:** the exact count of `_AdminBase` subclasses (Sprint 3 sizing); whether any billable call site was missed in the audit's cost table (Sprint 13a); the full `application_completeness`/`document_red_blockers` bodies (Sprint 8 sizing) — all noted in the audit's "Could not verify" lists. Confirm these during Sprint 0 planning.
+**Sprint-0 verification — DONE 2026-07-15 (architect):** the three "confirm before Sprint 1" unknowns are resolved. (1) `_AdminBase` subclasses = **43** (not ~25) → Sprint 3 pre-split stands. (2) The gate bodies (`application_completeness`, `document_red_blockers`) were read: grandfathering of already-submitted apps, results-slip name-mismatch blocks, and the income-cluster softening rule are the behaviours Sprint 8a's snapshots must protect. (3) The audit's billable-call-site list is **complete** — a repo-wide sweep found no missed paid-API call site (the `bursary.py`/`emails.py` grep hits are the Malay word *mengenai*); the two courses-side management commands (`generate_stpm_headlines`, `map_course_careers`) are platform-level one-off costs, correctly outside tenant metering.

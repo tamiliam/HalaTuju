@@ -3,7 +3,8 @@
 **Date:** 2026-07-15
 **Reviewer:** Architect (senior-consultant pass over the 2026-07-14 research deliverables)
 **Reviewed:** `2026-07-14-tenancy-audit.md`, `2026-07-14-platform-prd-draft.md`, `2026-07-14-platform-roadmap-draft.md` (produced against `2026-07-14-platform-multitenancy-research-brief.md`)
-**Verdict:** **APPROVED WITH AMENDMENTS.** Evidence spot-checked first-hand and it holds. The amendments below are binding on the roadmap; the owner decisions (D-1…D-10) remain open.
+**Verdict:** **APPROVED WITH AMENDMENTS.** Evidence spot-checked first-hand and it holds. The amendments below are binding on the roadmap.
+**Update 2026-07-15 (later the same day):** the owner accepted ALL recommendations (D-1…D-10). The amendments + decisions are folded into the PRD/roadmap (now the plan of record), Sprint-0 verification is done (43 `_AdminBase` endpoints; gate-body subtleties catalogued; billable-site list confirmed complete), and the build-for-tenancy conventions (`docs/build-for-tenancy-conventions.md`) are in force for all ongoing work.
 
 ---
 

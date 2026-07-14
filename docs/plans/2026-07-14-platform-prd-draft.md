@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-14
 **Author:** Research analyst (drafting engineer) — for architect + owner review
-**Status:** DRAFT. Grounded in `2026-07-14-tenancy-audit.md`. Nothing has been built.
+**Status:** **DECIDED 2026-07-15** — the owner accepted the recommendations on ALL open decisions (D-1…D-10; see §8), and the architect's amendments (`2026-07-15-platform-architect-review.md`) are folded in below. This is the plan of record. Nothing has been built.
 **Reads with:** the audit (evidence) and `2026-07-14-platform-roadmap-draft.md` (sequence).
 
 ---
@@ -22,7 +22,7 @@
 
 **The single most important technical fact:** the API connects to the database as a superuser that *ignores* Supabase's row-level security (audit intro; `halatuju_api/docs/incident-001-rls-disabled.md:41`). So the walls between organisations must be built in the application's query code — a missing "which organisation owns this application?" column and an org check on every admin query. That is the spine of the whole project, and it's why "one org sees another's applicants" is the #1 risk in the roadmap.
 
-**The decisions we need from you** (detail in §8): are sponsors shared across programmes or owned by one? how do we meter per-organisation costs and keep the <$10/month baseline? what happens to a programme's data when a module is switched off? A handful of others. None blocks starting Phase 1.
+**Decisions:** all ten owner decisions were made on 2026-07-15 — the owner accepted every recommendation (see §8 for the decided register). Nothing blocks Phase 1.
 
 **What v1 is NOT:** no per-organisation custom code, no separate deployments, no tenant self-signup (you create each org by hand), no automated billing. Deliberately.
 
@@ -40,7 +40,7 @@
 
 ### A day in the life (plain-language walkthroughs)
 
-**Platform superadmin (you).** You get an email from a new organisation, "Inspire", who want to run a bursary for rural STEM students. You open the superadmin portal, create the organisation record (name, contact, branding, sender email), switch on the "Scholarship" module for them, and choose which eligibility checks and documents their programme uses (e.g. they don't means-test on STR, they require a school-leaving letter). You invite their admin by email. You never touch their applicants again — that's their job. You still run the course selector for every student.
+**Platform superadmin (you).** You get an email from a new organisation, "Inspire", who want to run a bursary for rural STEM students. You open the superadmin portal, create the organisation record (name, contact, branding, sender email), switch on the "Scholarship" module for them, and set the programme's **initial** configuration — which eligibility checks and documents apply (e.g. they don't means-test on STR, they require a school-leaving letter). You invite their admin by email; from then on the org admin may adjust that configuration themselves, within the whitelisted catalogue (§3). You never touch their applicants again — that's their job. You still run the course selector for every student.
 
 **Organisation admin (Inspire).** You accept the invite, land on *your* dashboard — only Inspire's applicants, branded as Inspire. You set your income ceiling, your funding amounts, your programme's consent text, and invite two reviewers. When applications arrive you assign them. You cannot see BrightPath's applicants, and BrightPath's admin cannot see yours.
 
@@ -140,9 +140,10 @@ Derived from audit §2. Each setting: type, default, who may edit. **Anything no
 - **One platform account per student**, keyed by Supabase UID (`courses/models.py:483`). A student registers once (for the course selector) and may apply to several programmes. This is already true structurally — `ScholarshipApplication` links to the shared profile (`scholarship/models.py:142`).
 - **Per-application data sharing.** An application belongs to one programme (one organisation). Today applications have **no owning-org** (audit §3) — the refactor adds it, and every org-admin query is fenced to it. An organisation sees only *its own* applications for a student, never another programme's application, verdict, reviewer notes, or interview findings.
 - **Document reuse across programmes requires explicit consent.** Documents are keyed today as `<app_id>/<doc_type>/<uuid>` (`scholarship/views.py:666`) — i.e. per-application, not per-student. So reuse is a deliberate feature: when a student applies to a second programme, the platform offers *"reuse the IC / results slip you already uploaded?"* Each reused document is copied (or referenced) into the new application **only on an explicit per-document consent tick**, recorded as a versioned `Consent` row (the model already supports versioned, withdrawable consents, `scholarship/models.py:977-1023`). **DECISION NEEDED (D-7):** copy the file into the new org's document space, or reference-share one file? *Recommendation: copy, so each organisation's document fence (audit §4) stays clean and one org's deletion can't affect another.*
+- **The student's own profile data follows the student (D-10, decided).** The means-test and family-roster data lives on the shared `StudentProfile` (audit hot-spot #1), so a second application starts from the data the student already entered — it is NOT re-collected from scratch, and it is NOT consent-gated the way documents are. This is deliberate: it is the *student's own declared data*, and re-entering everything would punish the students the platform exists to help. The honesty requirement: the second programme's apply flow must clearly disclose it — *"we've pre-filled this from your profile — please review and update"*. The god-model is NOT split in v1.
 - **What an organisation can and cannot see about a student:**
-  - **Can see:** the data the student submitted *to that programme* (grades, family/income for that application, the documents they consented to share), plus the shared verification engine's output *for that application*.
-  - **Cannot see:** the student's other applications, other programmes' verdicts/notes, the student's course-selector activity, or any document the student did not consent to share.
+  - **Can see:** the data the student submitted *to that programme* (grades, and the student's own declared family/income as pre-filled + confirmed at apply time per D-10, the documents they consented to share), plus the shared verification engine's output *for that application*.
+  - **Cannot see:** the student's other applications, other programmes' verdicts/reviewer notes/interview findings, the student's course-selector activity, or any document the student did not consent to share.
 
 ---
 
@@ -185,21 +186,20 @@ Every external cost is single-account today, untagged by organisation (audit §5
 
 ---
 
-## 8. Open questions register (all DECISION NEEDED, one table)
+## 8. Decisions register — ALL DECIDED 2026-07-15 (owner accepted every recommendation)
 
-| # | Decision | Options | Recommendation |
-|---|---|---|---|
-| **D-1** | Are sponsors platform-level or tenant-level? | (a) platform account, tenant-scoped pool visibility; (b) owned by one org | (a) — but defer the cross-programme case; BrightPath is the only pool in v1 |
-| **D-2** | Split the `PartnerAdmin` role table, or org-scope it? | (a) org-scope the existing gates; (b) split into platform-admin vs org-admin tables | (a) — one table, add an org check to the reviewer/QC/list gates; super stays global |
-| **D-3** | Document fencing: prefix-per-org or bucket-per-org? | (a) one bucket, `org_id/…` prefix; (b) bucket per org | (a) — prefix-per-org, Django enforces |
-| **D-4** | Cost attribution model | (a) platform-metered + tenant tag; (b) tenant brings own keys | (a) for v1; design config to allow (b) later |
-| **D-5** | Module switched off: suspend or delete data? | (a) suspend (hide, retain); (b) delete | (a) — delete is a separate deliberate off-boarding action |
-| **D-6** | Grow `PartnerOrganisation` into the tenant record, or add a new `Organisation` model? | (a) extend `PartnerOrganisation`; (b) new model, migrate referrals onto it | (a) extend — fewer moving parts; it's already the org spine (audit §1) |
-| **D-7** | Cross-programme document reuse: copy the file or reference-share it? | (a) copy into the new org's space; (b) one shared file, referenced | (a) copy — keeps each org's fence clean, deletion-safe |
-| **D-8** | Owning-org on the application: direct FK, or via `cohort → org`? | (a) `Application.organisation` FK; (b) `Cohort.organisation`, app inherits | (b) — `ScholarshipCohort` is already the programme-config record (audit §1c); one org per cohort is natural, but add a denormalised org on the app for cheap fenced queries |
-| **D-9** | Are reviewer identities cross-tenant or per-org? (`ReviewerProfile`, `PartnerAdmin`) | (a) a person can review for several orgs; (b) one account per org | (a) allow cross-tenant identity, scope *access* per assignment/org — but v1 can assume per-org and revisit |
-
-*(D-1..D-5 also appear in the audit's consolidated register; D-6..D-9 are PRD-level design choices.)*
+| # | Decision | DECIDED |
+|---|---|---|
+| **D-1** | Sponsors platform-level or tenant-level? | Platform-level sponsor accounts, tenant-scoped pool visibility; the cross-programme case is deferred — BrightPath is the only pool in v1 |
+| **D-2** | Split the `PartnerAdmin` role table, or org-scope it? | Org-scope the existing gates; one table; super stays global |
+| **D-3** | Document fencing: prefix-per-org or bucket-per-org? | Prefix-per-org, one bucket, Django enforces. **Amended (review §2.3): new uploads only — NO bulk re-key of existing objects; keys without an org prefix are org #1 legacy** |
+| **D-4** | Cost attribution model | Platform-metered + tenant tag on every billable call; config designed to hold optional per-org keys later |
+| **D-5** | Module switched off: suspend or delete data? | Suspend (hide, retain). Deletion is a separate, deliberate, superadmin-only off-boarding action — **and the erasure routine must be BUILT before any real second tenant signs a DPA** (review §2.2) |
+| **D-6** | Tenant record: extend `PartnerOrganisation` or new model? | Extend `PartnerOrganisation` — it's already the org spine |
+| **D-7** | Cross-programme document reuse: copy or reference-share? | Copy into the new org's space — each org's fence stays clean, deletion-safe |
+| **D-8** | Owning-org on the application: direct FK or via cohort? | `Cohort.organisation` + a denormalised org on the application, with a drift guard asserting `application.organisation == application.cohort.organisation`. **Naming rule: the new FK is `owning_organisation` (or equally unambiguous) — never another `org`, which already means *referring* organisation on `PartnerAdmin`** |
+| **D-9** | Reviewer identities cross-tenant or per-org? | Cross-tenant identity allowed in principle; access scoped per assignment/org; v1 assumes per-org and revisits |
+| **D-10** | A student's own income/family profile data: re-entered per programme, or carried with them? | Carried with the student, clearly disclosed at apply time ("we've pre-filled this from your profile — review and update"); the shared profile is NOT split in v1 (see §4) |
 
 ---
 
