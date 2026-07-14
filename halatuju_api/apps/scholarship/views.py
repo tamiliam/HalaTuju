@@ -1716,6 +1716,7 @@ class CronRunView(APIView):
         'course-data-check': 'course_data_check',  # weekly: READ-ONLY audit + link reachability for the dashboard
         'interview-reminders': 'send_interview_reminders',  # frequent (~15 min): 1-day + 1-hour interview reminders
         'review-nudges': 'send_review_nudges',  # daily (TD-131): verdict due/overdue reviewer nudges + super escalation
+        'expire-temp-passwords': 'expire_temp_passwords',  # daily: rotate partner temp passwords unchanged past the 7-day TTL
         'notify-contact-submissions': 'notify_contact_submissions',  # frequent: email unread contact-form messages
         'reextract-documents': 'reextract_documents',  # one-off batches (20/run): re-read stale docs with current parsers
         'reextract-offers': 'reextract_offers',  # one-off batches (20/run): re-score offers with missing/below-genuine (<0.70) authenticity under the current MODEL_VERSION

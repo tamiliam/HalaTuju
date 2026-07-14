@@ -2774,7 +2774,8 @@
     "adminVerifyFailed": "Gagal mengesahkan akses pentadbir.",
     "notSignedIn": "Belum log masuk. Sila kembali dan log masuk semula.",
     "saveFailed": "Gagal menyimpan. Sila cuba lagi.",
-    "claimFailed": "Gagal menuntut. Sila cuba lagi."
+    "claimFailed": "Gagal menuntut. Sila cuba lagi.",
+    "tempPasswordExpired": "Kata laluan sementara anda telah tamat tempoh. Sila minta orang yang menambah anda untuk menghantar semula butiran log masuk anda."
   },
   "stpm": {
     "searchTitle": "Layari Kursus Ijazah STPM",

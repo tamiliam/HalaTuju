@@ -1632,7 +1632,7 @@ _PARTNER_ROLE_LABELS = {
 }
 
 
-def send_partner_welcome_email(to_email, name, role, temp_password=None):
+def send_partner_welcome_email(to_email, name, role, temp_password=None, google=False):
     """Onboard a new partner admin / reviewer. English-only (internal staff), like every other
     admin-facing email here.
 
@@ -1654,13 +1654,20 @@ def send_partner_welcome_email(to_email, name, role, temp_password=None):
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     link = f'{frontend}/admin/login'
 
-    if temp_password:
+    if google:
         access = (
-            f'Your temporary password is:\n\n'
+            f'Just click "Sign in with Google" and use this email address ({to_email}) — '
+            f'there is no password to set up. Your access is waiting for you.'
+        )
+    elif temp_password:
+        access = (
+            f'Your temporary password (valid for 7 days) is:\n\n'
             f'    {temp_password}\n\n'
             f"You'll be asked to choose your own password the first time you use it.\n\n"
             f'If you would rather not use a password at all, you can click "Sign in with Google" '
-            f'on the same page instead — just use this email address ({to_email}).'
+            f'on the same page instead — just use this email address ({to_email}).\n\n'
+            f'If the 7 days pass before you sign in, the temporary password stops working — just '
+            f'ask whoever added you to re-send it, and you get a fresh one.'
         )
     else:
         access = (

@@ -22,6 +22,7 @@ import secrets
 from collections import Counter
 import requests as http_requests
 from django.conf import settings
+from django.utils import timezone
 from django.db import connection
 from django.http import HttpResponse
 from rest_framework.views import APIView
@@ -47,6 +48,16 @@ def generate_temp_password(groups=3, size=4):
     return '-'.join(
         ''.join(secrets.choice(_PW_ALPHABET) for _ in range(size)) for _ in range(groups)
     )
+
+
+# A Google address signs in with Google, so we never issue it a password (owner 2026-07-14). Only
+# the unambiguous personal-Google domains — a custom Workspace domain can't be told from the address
+# and harmlessly gets a temp password it can ignore (Google sign-in auto-links either way).
+_GOOGLE_EMAIL_DOMAINS = {'gmail.com', 'googlemail.com'}
+
+
+def is_google_email(email):
+    return (email or '').rsplit('@', 1)[-1].lower() in _GOOGLE_EMAIL_DOMAINS
 
 
 def _service_headers(service_role_key):
@@ -79,7 +90,10 @@ def _create_supabase_user(supabase_url, service_role_key, email, name, temp_pass
             'email': email,
             'password': temp_password,
             'email_confirm': True,
-            'user_metadata': {'name': name, 'must_change_password': True},
+            # `temp_password_issued_at` starts the 7-day clock: the login gate refuses an unchanged
+            # temp password past the TTL, and the daily `expire_temp_passwords` job rotates it dead.
+            'user_metadata': {'name': name, 'must_change_password': True,
+                              'temp_password_issued_at': timezone.now().isoformat()},
         },
         headers=_service_headers(service_role_key),
     )
@@ -473,9 +487,28 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if not service_role_key or not supabase_url:
             return Response({'error': 'Supabase service role key not configured'}, status=500)
 
-        # Create the Supabase account OURSELVES rather than sending a Supabase invite (see
-        # `_create_supabase_user` for why). The temp password never leaves this request except
-        # in the welcome email.
+        # Option 1 (owner 2026-07-14): a Google address signs in with Google — never issue it a
+        # password. Create ONLY the PartnerAdmin row (supabase_user_id stays None and links by
+        # verified email on first Google sign-in, exactly like the already-registered path), and
+        # send the no-password "sign in with Google" email. No Supabase account is created here — it
+        # materialises when they first sign in with Google.
+        if is_google_email(email):
+            PartnerAdmin.objects.create(
+                email=email, name=name, org=org, role=role,
+                supabase_user_id=None, is_super_admin=(role == 'super'),
+            )
+            emailed = send_partner_welcome_email(email, name, role, temp_password=None, google=True)
+            message = f'{name} added — they sign in with Google ({email}).'
+            if not emailed:
+                message = f'{name} was added, but the email could not be sent. Use Resend to try again.'
+            return Response({
+                'message': message, 'org': org.name if org else None, 'role': role,
+                'already_registered': False, 'google': True, 'emailed': emailed,
+            }, status=201)
+
+        # Non-Google: create the Supabase account OURSELVES rather than sending a Supabase invite
+        # (see `_create_supabase_user` for why). The temp password never leaves this request except
+        # in the welcome email, and expires after the 7-day TTL (login gate + expire cron).
         temp_password = generate_temp_password()
         user_id, already_registered, err = _create_supabase_user(
             supabase_url, service_role_key, email, name, temp_password,
@@ -551,7 +584,9 @@ class AdminResendView(PartnerAdminMixin, APIView):
             resp = http_requests.put(
                 f'{supabase_url}/auth/v1/admin/users/{target.supabase_user_id}',
                 json={'password': temp_password,
-                      'user_metadata': {'name': target.name, 'must_change_password': True}},
+                      # Reset the 7-day clock — a Resend gives a fresh temp password AND a fresh TTL.
+                      'user_metadata': {'name': target.name, 'must_change_password': True,
+                                        'temp_password_issued_at': timezone.now().isoformat()}},
                 headers=_service_headers(service_role_key),
             )
             if resp.status_code not in (200, 201):
