@@ -65,6 +65,30 @@ export default function AdminLoginPage() {
           token: data.session.access_token,
           isSuper: !!(role.is_super_admin || role.role === 'super'),
         })
+        // Temp-password 7-day expiry (owner 2026-07-14). An UNCHANGED temp password
+        // (must_change_password) older than the TTL is refused here — a clear message beats the
+        // generic "invalid credentials" they'd hit once the daily expire-temp-passwords cron has
+        // rotated it dead. The cron is the hard boundary; this gate closes the ≤24h window before
+        // it runs and gives the friendly "ask for a resend" prompt. Recovery = the owner Resends.
+        const meta = data.session.user.user_metadata || {}
+        if (meta.must_change_password && meta.temp_password_issued_at) {
+          const issuedMs = Date.parse(meta.temp_password_issued_at)
+          const TTL_MS = 7 * 24 * 60 * 60 * 1000  // keep in step with PARTNER_TEMP_PASSWORD_TTL_DAYS
+          if (Number.isFinite(issuedMs) && Date.now() - issuedMs > TTL_MS) {
+            const { adminSignOut } = await import('@/lib/admin-supabase')
+            await adminSignOut()
+            setError(t('errors.tempPasswordExpired'))
+            setLoading(false)
+            return
+          }
+        }
+        // They just signed in with the temporary password we emailed them — make them choose
+        // their own before they go anywhere. (Google signers never typed it, so the callback
+        // route deliberately does NOT do this.)
+        if (meta.must_change_password) {
+          router.push('/admin/set-password')
+          return
+        }
         // Reviewers/viewers have no partner-org dashboard — send them to their
         // workspace (B40 Applications); org admins/super keep the dashboard.
         router.push(role.role === 'reviewer' || role.role === 'viewer'

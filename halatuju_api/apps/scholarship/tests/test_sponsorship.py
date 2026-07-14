@@ -123,6 +123,45 @@ class TestSponsorshipService(TestCase):
         svc.respond_to_award(app, action='decline')
         self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))  # returned to balance
 
+    def test_cancel_offer_in_cooloff_reverts_to_pool(self):
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        app = _fundable_app(self.cohort)
+        sp = svc.fund_student(s, app)                   # → 'awarded', balance held
+        self.assertEqual(svc.sponsor_balance(s), Decimal('0'))
+        svc.cancel_offer(s, sp.id)                      # withdrawn before the email went out
+        sp.refresh_from_db()
+        app.refresh_from_db()
+        self.assertEqual(sp.status, 'cancelled')
+        self.assertIsNotNone(sp.decided_at)
+        self.assertEqual(app.status, 'recommended')     # back in the pool…
+        self.assertTrue(pool.is_pool_eligible(app))
+        self.assertTrue(svc.is_fundable(app))           # …and another sponsor may fund them
+        self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))   # amount freed
+
+    def test_cancel_offer_refused_once_student_emailed(self):
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        app = _fundable_app(self.cohort)
+        sp = svc.fund_student(s, app)
+        Sponsorship.objects.filter(id=sp.id).update(offer_emailed_at=timezone.now())
+        with self.assertRaises(svc.SponsorshipError) as e:
+            svc.cancel_offer(s, sp.id)
+        self.assertEqual(e.exception.code, 'already_notified')
+        sp.refresh_from_db()
+        app.refresh_from_db()
+        self.assertEqual(sp.status, 'offered')          # no turning back
+        self.assertEqual(app.status, 'awarded')
+
+    def test_cancel_offer_not_another_sponsors(self):
+        s, other = _sponsor(), _sponsor(uid='spon-2')
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        app = _fundable_app(self.cohort)
+        sp = svc.fund_student(s, app)
+        with self.assertRaises(svc.SponsorshipError) as e:
+            svc.cancel_offer(other, sp.id)
+        self.assertEqual(e.exception.code, 'not_found')
+
     def test_lapse_expired_offer(self):
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('3000'))
@@ -209,6 +248,23 @@ class TestSponsorEndpoints(TestCase):
         mine = self.client.get('/api/v1/sponsor/sponsorships/')
         self.assertEqual(mine.status_code, 200)
         self._assert_no_student_identity(mine.json())
+
+    @override_settings(SPONSOR_POOL_ENABLED=True)
+    def test_cancel_offer_endpoint_cooloff_then_refused(self):
+        self._auth('spon-ok')
+        self.client.post('/api/v1/sponsor/wallet/donate/', {'amount': '5000'}, format='json')
+        sp_id = self.client.post(f'/api/v1/sponsor/pool/{self.app.id}/fund/', {}, format='json').json()['id']
+        c = self.client.post(f'/api/v1/sponsor/sponsorships/{sp_id}/cancel/', {}, format='json')
+        self.assertEqual(c.status_code, 200, c.content)
+        self.assertEqual(c.json()['status'], 'cancelled')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'recommended')
+        # …but once the student has been emailed the award, there is no turning back.
+        sp2_id = self.client.post(f'/api/v1/sponsor/pool/{self.app.id}/fund/', {}, format='json').json()['id']
+        Sponsorship.objects.filter(id=sp2_id).update(offer_emailed_at=timezone.now())
+        r = self.client.post(f'/api/v1/sponsor/sponsorships/{sp2_id}/cancel/', {}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['error'], 'already_notified')
 
     @override_settings(SPONSOR_POOL_ENABLED=True)
     def test_fund_insufficient_400(self):

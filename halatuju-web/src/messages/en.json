@@ -2774,7 +2774,8 @@
     "adminVerifyFailed": "Failed to verify admin access.",
     "notSignedIn": "Not signed in. Please go back and sign in again.",
     "saveFailed": "Failed to save. Please try again.",
-    "claimFailed": "Failed to claim. Please try again."
+    "claimFailed": "Failed to claim. Please try again.",
+    "tempPasswordExpired": "Your temporary password has expired. Please ask whoever added you to re-send your sign-in details."
   },
   "stpm": {
     "searchTitle": "Browse STPM Degree Courses",
@@ -3818,6 +3819,8 @@
     "actionFailed": "Action failed",
     "revoke": "Revoke",
     "restore": "Restore",
+    "resend": "Resend",
+    "resending": "Sending…",
     "noAdmins": "No admins.",
     "notPartnerAdmin": "You are not a partner organisation admin.",
     "totalStudents": "Total Students",

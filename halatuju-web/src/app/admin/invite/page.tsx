@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { getOrgs, inviteAdmin, getAdmins, revokeAdmin, type OrgItem, type AdminItem } from '@/lib/admin-api'
+import { getOrgs, inviteAdmin, getAdmins, revokeAdmin, resendAdminInvite, type OrgItem, type AdminItem } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 
 type InviteRole = 'admin' | 'partner' | 'reviewer'
@@ -22,9 +22,10 @@ export default function AdminInvitePage() {
   const [adminEmail, setAdminEmail] = useState('')
   const [adminRole, setAdminRole] = useState<InviteRole>('reviewer')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [message, setMessage] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
   const [admins, setAdmins] = useState<AdminItem[]>([])
   const [revoking, setRevoking] = useState<number | null>(null)
+  const [resending, setResending] = useState<number | null>(null)
 
   const loadAdmins = () => {
     if (token) getAdmins({ token }).then((data) => setAdmins(data.admins)).catch(() => {})
@@ -61,7 +62,9 @@ export default function AdminInvitePage() {
         }
       }
       const result = await inviteAdmin(data, { token: token! })
-      setMessage({ type: 'success', text: result.message })
+      // The email carries their temporary password and nothing else does, so a failed send is a
+      // warning the owner must act on (Resend), not a quiet success.
+      setMessage({ type: result.emailed === false ? 'warning' : 'success', text: result.message })
       setAdminName(''); setAdminEmail('')
       setSelectedOrgId(''); setNewOrgName(''); setNewOrgCode(''); setContactPerson(''); setOrgPhone('')
       if (token) {
@@ -91,7 +94,10 @@ export default function AdminInvitePage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">{t(`admin.inviteHeading.${adminRole}`)}</h1>
 
       {message && (
-        <div className={`rounded-lg p-4 mb-6 ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-600'}`}>
+        <div className={`rounded-lg p-4 mb-6 ${
+          message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700'
+          : message.type === 'warning' ? 'bg-amber-50 border border-amber-200 text-amber-700'
+          : 'bg-red-50 border border-red-200 text-red-600'}`}>
           {message.text}
         </div>
       )}
@@ -196,20 +202,41 @@ export default function AdminInvitePage() {
                   </td>
                   <td className="px-4 py-3">
                     {!a.is_super_admin && (
-                      <button disabled={revoking === a.id}
-                        onClick={async () => {
-                          setRevoking(a.id)
-                          try {
-                            await revokeAdmin(a.id, a.is_active ? 'revoke' : 'restore', { token: token! })
-                            loadAdmins()
-                          } catch (err) {
-                            setMessage({ type: 'error', text: err instanceof Error ? err.message : t('admin.actionFailed') })
-                          }
-                          setRevoking(null)
-                        }}
-                        className={`text-xs font-medium ${a.is_active ? 'text-red-600 hover:text-red-800' : 'text-blue-600 hover:text-blue-800'} disabled:opacity-50`}>
-                        {a.is_active ? t('admin.revoke') : t('admin.restore')}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {/* Resend: rotates their temporary password and re-emails it. There is no
+                            token to expire, so this always works — the gap that stranded a reviewer
+                            when the old Supabase invite link timed out after 24h. */}
+                        {a.is_active && (
+                          <button disabled={resending === a.id}
+                            onClick={async () => {
+                              setResending(a.id)
+                              try {
+                                const res = await resendAdminInvite(a.id, { token: token! })
+                                setMessage({ type: 'success', text: res.message })
+                              } catch (err) {
+                                setMessage({ type: 'error', text: err instanceof Error ? err.message : t('admin.actionFailed') })
+                              }
+                              setResending(null)
+                            }}
+                            className="text-xs font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50">
+                            {resending === a.id ? t('admin.resending') : t('admin.resend')}
+                          </button>
+                        )}
+                        <button disabled={revoking === a.id}
+                          onClick={async () => {
+                            setRevoking(a.id)
+                            try {
+                              await revokeAdmin(a.id, a.is_active ? 'revoke' : 'restore', { token: token! })
+                              loadAdmins()
+                            } catch (err) {
+                              setMessage({ type: 'error', text: err instanceof Error ? err.message : t('admin.actionFailed') })
+                            }
+                            setRevoking(null)
+                          }}
+                          className={`text-xs font-medium ${a.is_active ? 'text-red-600 hover:text-red-800' : 'text-blue-600 hover:text-blue-800'} disabled:opacity-50`}>
+                          {a.is_active ? t('admin.revoke') : t('admin.restore')}
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>

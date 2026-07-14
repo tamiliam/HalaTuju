@@ -285,6 +285,10 @@ REVIEW_SLA_DAYS = int(os.environ.get('REVIEW_SLA_DAYS', '10'))
 REVIEW_NUDGES_ENABLED = os.environ.get('REVIEW_NUDGES_ENABLED', '').lower() in ('1', 'true', 'yes')
 REVIEW_NUDGE_SOON_DAYS = int(os.environ.get('REVIEW_NUDGE_SOON_DAYS', '2'))   # nudge this many days BEFORE due
 REVIEW_ESCALATE_GRACE_DAYS = int(os.environ.get('REVIEW_ESCALATE_GRACE_DAYS', '4'))  # escalate this many days AFTER due (→ day 14)
+
+# Partner onboarding: an UNCHANGED temp password is rotated dead this many days after it was issued
+# (the expire-temp-passwords daily cron + the login gate). A Resend re-issues a fresh one + clock.
+PARTNER_TEMP_PASSWORD_TTL_DAYS = int(os.environ.get('PARTNER_TEMP_PASSWORD_TTL_DAYS', '7'))
 # Auto-generate a Google Meet link (+ calendar event) on booking. Separate flag so the
 # scheduling surface can go live BEFORE the Google Workspace organiser account is wired.
 # When off (or creds missing / API error), booking still succeeds — the email simply has

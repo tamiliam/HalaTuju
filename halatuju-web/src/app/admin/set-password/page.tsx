@@ -48,6 +48,10 @@ export default function AdminSetPasswordPage() {
     const { error: updErr } = await adminUpdatePassword(password)
     if (updErr) { setError(updErr.message); setLoading(false); return }
 
+    // They now have a password of their own, so stop forcing them through this page on every
+    // sign-in. Best-effort: a failure here would only mean one redundant visit.
+    await getAdminSupabase().auth.updateUser({ data: { must_change_password: false } }).catch(() => {})
+
     // Password set → route the user in by role (reviewers → their workspace).
     try {
       const { data } = await getAdminSupabase().auth.getSession()
