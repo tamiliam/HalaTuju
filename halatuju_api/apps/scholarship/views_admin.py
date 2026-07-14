@@ -84,6 +84,8 @@ class _AdminBase(PartnerAdminMixin, APIView):
         return admin, None
 
     def _get_application(self, pk):
+        # org-fence: the shared lookup; every caller re-gates via _org_allows /
+        # _scoped_application / _require_app_write / _require_qc before use.
         return ScholarshipApplication.objects.select_related('profile', 'cohort').filter(pk=pk).first()
 
     def _b40_scope(self, admin):
@@ -173,6 +175,10 @@ class _AdminBase(PartnerAdminMixin, APIView):
         app = self._get_application(pk)
         if app is None:
             return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not self._org_allows(admin, app):
+            # Cross-org: 404 (don't leak existence). Distinct from the 403 below, which
+            # is a SAME-org app the caller simply isn't assigned to.
+            return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         if not self._can_review_app(admin, app):
             return None, None, self._deny_role()
         return app, admin, None
@@ -216,6 +222,7 @@ class AdminApplicationListView(_AdminBase):
         scope = self._b40_scope(admin)
         if scope == 'none':
             return self._deny_role()   # partner has no B40 Applications access
+        # org-fence: _org_scoped applied immediately below (tenant wall on the list).
         qs = ScholarshipApplication.objects.select_related(
             'profile', 'cohort', 'assigned_to').order_by('-submitted_at')
         qs = self._org_scoped(qs, admin)   # tenant fence (Sprint 3a) — super sees all
@@ -506,6 +513,7 @@ class AdminRunVisionView(_AdminBase):
         app, admin, err = self._require_app_write(request, pk)
         if err:
             return err
+        # org-fence: parent application already fenced by _require_app_write above.
         doc = ApplicantDocument.objects.filter(pk=doc_id, application_id=pk).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -924,9 +932,9 @@ class AdminSponsorshipListView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
+        # org-fence: _org_scoped on the application join, applied below.
         qs = (Sponsorship.objects.select_related('sponsor', 'application', 'application__profile')
               .order_by('-id'))  # deterministic ordering (TD audit 2026-06-14)
-        # org-fence: a sponsorship is only visible to the owning org's staff (super global).
         qs = self._org_scoped(qs, admin, field='application__owning_organisation_id')
         st = request.query_params.get('status')
         if st:
@@ -1438,10 +1446,11 @@ class AdminVerdictMetricsView(_AdminBase):
         if not admin:
             return self._deny()
         from .audit import override_metrics
+        # org-fence: _org_scoped applied below (fences the metrics roll-up).
         qs = (ScholarshipApplication.objects
               .filter(verdict_decided_at__isnull=False)
               .only('ai_verdict_snapshot', 'officer_verdict', 'cohort_id'))
-        qs = self._org_scoped(qs, admin)   # org-fence the metrics roll-up (super global)
+        qs = self._org_scoped(qs, admin)   # super global
         cohort = request.query_params.get('cohort')
         if cohort:
             qs = qs.filter(cohort_id=cohort)
@@ -1599,8 +1608,8 @@ class AdminGraduationMessageListView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
+        # org-fence: _org_scoped on the application join, applied below.
         qs = GraduationMessage.objects.select_related('application').all()
-        # org-fence via the application (super global).
         qs = self._org_scoped(qs, admin, field='application__owning_organisation_id')
         status_f = request.GET.get('status', 'pending')
         if status_f != 'all':
@@ -1625,6 +1634,7 @@ class AdminGraduationMessageReviewView(_AdminBase):
         admin, err = self._require_reviewer(request)
         if err:
             return err
+        # org-fence: _org_allows(message.application) checked immediately below.
         message = GraduationMessage.objects.select_related(
             'application', 'application__profile').filter(pk=pk).first()
         if message is None:
