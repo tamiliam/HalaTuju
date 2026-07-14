@@ -529,3 +529,53 @@ class ExpireTempPasswordsTest(TestCase):
         get, put = self._run({})
         get.assert_not_called()
         put.assert_not_called()
+
+
+@override_settings(
+    ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+    SUPABASE_SERVICE_ROLE_KEY='svc-key', SUPABASE_URL='https://x.supabase.co',
+)
+class AdminSetPasswordTest(TestCase):
+    """A temp-password partner sets their OWN password server-side — the client
+    updateUser({password}) is blocked by the project's re-auth-on-change policy. Scoped to the
+    caller's uid AND must_change_password so it is not a general re-auth bypass."""
+
+    _MOD = 'apps.courses.views_admin.http_requests'
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("partner-uid")}')
+
+    def _post(self, password, meta, get_status=200):
+        with patch(f'{self._MOD}.get') as g, patch(f'{self._MOD}.put') as p:
+            g.return_value = MagicMock(status_code=get_status, json=lambda: {'user_metadata': meta})
+            p.return_value = MagicMock(status_code=200, text='ok')
+            r = self.client.post('/api/v1/admin/set-password/', {'password': password}, format='json')
+        return r, g, p
+
+    def test_sets_the_password_and_clears_the_temp_flags(self):
+        r, _, p = self._post('a-strong-password', {'name': 'Rev', 'must_change_password': True,
+                                                   'temp_password_issued_at': 'x'})
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('/admin/users/partner-uid', p.call_args[0][0])   # the caller's OWN uid
+        body = p.call_args[1]['json']
+        self.assertEqual(body['password'], 'a-strong-password')
+        self.assertFalse(body['user_metadata']['must_change_password'])
+        self.assertNotIn('temp_password_issued_at', body['user_metadata'])
+        self.assertEqual(body['user_metadata']['name'], 'Rev')         # name preserved
+
+    def test_refuses_when_the_caller_is_not_pending_a_change(self):
+        r, _, p = self._post('a-strong-password', {'must_change_password': False})
+        self.assertEqual(r.status_code, 403)
+        p.assert_not_called()
+
+    def test_rejects_a_short_password_without_touching_supabase(self):
+        with patch(f'{self._MOD}.get') as g, patch(f'{self._MOD}.put') as p:
+            r = self.client.post('/api/v1/admin/set-password/', {'password': 'short'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        g.assert_not_called()
+        p.assert_not_called()
+
+    def test_requires_authentication(self):
+        r = APIClient().post('/api/v1/admin/set-password/', {'password': 'a-strong-password'}, format='json')
+        self.assertIn(r.status_code, (401, 403))

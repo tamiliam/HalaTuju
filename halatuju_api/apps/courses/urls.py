@@ -4,7 +4,7 @@ URL patterns for the courses app.
 from django.urls import path
 from . import views
 from .views_admin import (
-    AdminRoleView, AdminInviteView, AdminOrgsView,
+    AdminRoleView, AdminInviteView, AdminOrgsView, AdminSetPasswordView,
     AdminListView, AdminRevokeView, AdminResendView, AdminProfileView,
     PartnerDashboardView, PartnerStudentListView,
     PartnerStudentDetailView, PartnerStudentExportView,
@@ -19,6 +19,7 @@ urlpatterns = [
     path('admin/students/export/', PartnerStudentExportView.as_view(), name='partner-export'),
     path('admin/students/<str:user_id>/', PartnerStudentDetailView.as_view(), name='partner-student-detail'),
     path('admin/invite/', AdminInviteView.as_view(), name='admin-invite'),
+    path('admin/set-password/', AdminSetPasswordView.as_view(), name='admin-set-password'),
     path('admin/orgs/', AdminOrgsView.as_view(), name='admin-orgs'),
     path('admin/admins/', AdminListView.as_view(), name='admin-list'),
     path('admin/admins/<int:admin_id>/revoke/', AdminRevokeView.as_view(), name='admin-revoke'),
