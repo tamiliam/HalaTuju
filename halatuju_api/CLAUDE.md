@@ -518,10 +518,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-14)
+## Next Sprint (as of 2026-07-15)
 
-**▶ NEXT — no roadmap sprint queued.** Both 2026-07-14 parallel streams (Check-2 #117 + status
-vocabulary) are shipped and merged; the CARRY list below is the outstanding owner work.
+**▶ NEXT — no roadmap sprint queued.** The 2026-07-14 parallel streams (Check-2 #117 + status
+vocabulary) AND partner onboarding are all shipped, merged, and live; the CARRY list below is the
+outstanding owner work.
+
+**✅ SHIPPED + LIVE 2026-07-14 — Partner onboarding: durable invite + Google-skip + 7-day temp-password
+expiry (build `4b79d13`; NO migration; retro `docs/retrospective-2026-07-15-partner-onboarding.md`;
+decisions ×2; lesson ×1; TD-160).** Durable invite (create the Supabase account + our own token-less
+welcome email + `AdminResendView` rotate/re-send — replaces the 24h invite link that stranded a reviewer
+2026-07-10) + two owner refinements: **gmail/googlemail → NO password** (route to Google sign-in; a
+Workspace custom domain still gets a harmless temp pw), and **temp passwords expire after 7 days** —
+`temp_password_issued_at` stamp + a login gate (`errors.tempPasswordExpired`) + the daily
+`expire_temp_passwords` cron (Cloud Scheduler `halatuju-expire-temp-passwords`, 09:30 Asia/KL, ENABLED;
+rotates a stale unchanged temp pw dead, never touches a set-own-password or Google account; smoke-tested
+live checked 15/expired 0). Recovery = Resend (fresh pw + fresh clock). `PARTNER_TEMP_PASSWORD_TTL_DAYS`
+(default 7). Also: an award withdrawal now returns the student to the pool. +7 tests. **▶ OWNER (blocking
+full sign-off): the live invite/resend/Google/expiry click-through** — never verified against real
+Supabase (existing accounts are untouched; the flow is unit-tested + the cron proven on prod).
 
 **✅ SHIPPED + LIVE 2026-07-14 — Check-2 gaps found in #117: four fixes + a guardrail (Stream A of the
 2026-07-14 parallel batch; NO migration; retro `docs/retrospective-2026-07-14-check2-117-gaps.md`;
@@ -543,14 +558,16 @@ parser fragility off applicant #117:
 - **Roster under-count margin** `_ROSTER_UNDERCOUNT_MARGIN` 2 → 1; the **CLARIFY registry guardrail**
   (`set(CLARIFY_SPECS)==set(_CLARIFY_ORDER)`); the sibling/guardian EPF side-finding.
 - **2429 scholarship pytest** + golden masters intact (5319/2026); the i18n + status jest suites green.
-- **▶ LIVE FOLLOW-UPS (owner, on the LIVE service only — never local):** (1) calibrate `_water_address`
-  on the 6 real Air Selangor bills (30/36/66/80/82/95) via `eval/capture_ocr.py`, then cockpit Re-run
-  them (#36 auto-resolves); (2) Re-run #117's offer (stream clash → `pathway_confirm`) + STR; surface
-  #33/#99 to officers.
+- **✅ LIVE FOLLOW-UPS DONE 2026-07-14 (verified on prod):** the 6 water bills (30/36/66/80/82/95) Re-run
+  → addresses populated via the deterministic path (heuristic hit real Air Selangor OCR), #36's stuck
+  request cleared; #117's offer Re-run → the SAINS-vs-sains_sosial clash surfaced as `pathway_confirm`
+  (id 700); #117's STR "name not found" self-cleared by the live `reference_names` fix (no re-run needed).
 
 **▶ CARRY (owner actions still pending):**
-- **Run `reextract-offers`** (or Re-run #13) to activate the **1.6.0 private-arm veto** — still not done
-  from the 10 Jul sprint; #13 stays green until re-run.
+- **Run `reextract-offers`** to re-score the offers still on OLD model versions (89 of 92 live offers;
+  only 3 at 1.6.0) — applies the 1.6.0 private-arm veto + red-chip ladder cohort-wide. (The old
+  "#13 stays green until re-run" note was STALE — #13 switched to a Diploma offer already scored
+  `not_offer_letter` at 1.6.0; it is one of the 3 already-current.)
 - **`salary_doc` 1.1.0 EPF-ask improvement rolls out per-slip** (existing slips read `kwsp: unknown` →
   old fallback). To activate the payslip-driven EPF ask cohort-wide, re-extract income docs on the LIVE
   service (never locally).

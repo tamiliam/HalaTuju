@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## Partner onboarding — durable invite, Google emails skip the password, 7-day temp-password expiry — 2026-07-14
+
+The durable-invite core was built on the remote station; the two refinements below were added and the
+whole thing merged + deployed together (build `4b79d13`). No migration.
+
+### Added
+- **Durable partner onboarding.** Inviting a partner no longer depends on Supabase's invite email, whose
+  magic link expired in 24 h and could not be re-sent to an address that already had an auth user —
+  stranding a reviewer on 2026-07-10. `AdminInviteView` now creates the Supabase account itself (temp
+  password + `email_confirm`) and sends HalaTuju's own token-less welcome email, and a new
+  `AdminResendView` rotates the password + re-emails at any time. First login on the temp password forces
+  a password change (`must_change_password`); a failed send is surfaced (amber banner + Resend) rather
+  than swallowed.
+- **`expire-temp-passwords` daily cron** (`CronRunView` job; Cloud Scheduler `halatuju-expire-temp-passwords`,
+  09:30 Asia/KL). Makes the 7-day TTL below a real boundary: it rotates a partner's temp password to a
+  long, never-emailed value once it is unchanged past `PARTNER_TEMP_PASSWORD_TTL_DAYS` (default 7) — so
+  the emailed copy stops working everywhere, not just in the UI. It never touches a partner who has set
+  their own password, nor a Google / no-UID account. Smoke-tested on prod (checked 15, expired 0).
+
+### Changed
+- **A Google address is never issued a password** (owner). `gmail.com` / `googlemail.com` invitees get a
+  no-password "sign in with Google" flow: only the `PartnerAdmin` row is created (it links by verified
+  email on first Google sign-in, like the already-registered path); no Supabase account, no temp password.
+  A custom Workspace domain can't be told from the address, so it harmlessly still gets a temp password
+  that Google sign-in auto-links over.
+- **A temp password now expires 7 days after it is issued**, without re-creating the old dead-end — a
+  Resend re-issues a fresh password *and* a fresh 7-day clock. Enforced by a `temp_password_issued_at`
+  stamp (at create + Resend) plus a **login gate** that refuses an unchanged temp password past the TTL
+  with a clear "ask for a resend" message (`errors.tempPasswordExpired`, en/ms/ta), backed by the cron
+  above. The welcome email states the 7-day validity + how to recover (replacing the old "nothing
+  expires" line).
+- **An award withdrawal returns the student to the pool.** `SponsorCancelOfferView` cancelled the
+  Sponsorship but left the application stranded in `awarded` (locked, out of the pool); it now reverts to
+  `recommended` and frees the held amount (cool-off gated on `offer_emailed_at IS NULL`, `FOR UPDATE`
+  against the email cron; `400 already_notified` once emailed).
+
+### Notes
+- **No migration.** **Not yet live-verified against Supabase** — the invite/resend/Google/expiry
+  click-through is the owner's post-deploy check (see the retrospective + CLAUDE.md).
+
 ## Check-2 gaps found in applicant #117 — four fixes + a guardrail — 2026-07-14
 
 A live review of applicant #117 surfaced four defects, three of them systemic. No migration.

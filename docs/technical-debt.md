@@ -1240,3 +1240,14 @@ Access edge cases).
   parts) and shows only e.g. "Consent" — not the *reason* consent is blocked (a doc mismatch,
   offer-not-official). So a doc-gated student reads as "just Consent". Wire the `consent_blockers`
   list into that panel so the owner sees WHY at a glance. (Stuck-students round, 2026-07-08.)
+
+### [TD-160] Partner invite: a 200-with-unparseable-body leaves supabase_user_id null → Resend won't rotate (low)
+`_create_supabase_user` returns `(None, False, None)` when Supabase replies 200/201 but the JSON body
+can't be parsed (`ValueError`), so the `PartnerAdmin` row is created WITHOUT a `supabase_user_id`. A
+later Resend then treats it as a pre-existing account (no UID → "sign in as usual" email) and never
+rotates the password — leaving that (rare) partner unable to get a fresh temp password via the UI.
+Recovery today: the owner can delete + re-invite, or the partner uses Google / forgot-password.
+Fix when convenient: on a 200 with no readable id, GET the user back by email to capture the UID before
+creating the row (or store a "provisioned, uid-pending" flag and backfill on first sign-in). Introduced
+with the durable-invite flow (2026-07-12); surfaced in the ship-readiness review. Low: needs a Supabase
+200-without-a-body, which has not been observed.
