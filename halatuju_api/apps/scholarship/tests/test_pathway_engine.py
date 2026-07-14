@@ -319,3 +319,26 @@ class TestOfferOfficialStatus(SimpleTestCase):
     def test_no_authenticity_is_unknown(self):
         # Genuineness not computed (flag off / not re-run) → 'unknown' → never gate on our gap.
         self.assertEqual(offer_official_status(_auth_doc(None)), 'unknown')
+
+
+class TestDeclaredPathwayCircularity(SimpleTestCase):
+    """#117 (c): an offer-autofilled chosen_programme must NOT be treated as the declaration —
+    else offer_pathway_match compares the offer against itself (45 live apps carry the source)."""
+    def _app(self, cp, track='', inst=''):
+        return SimpleNamespace(chosen_programme=cp, pre_u_track=track, pre_u_institution=inst)
+
+    def test_offer_autofilled_pick_falls_back_to_pre_u(self):
+        from apps.scholarship.pathway_engine import _declared_pathway
+        app = self._app(
+            {'course_name': 'SAINS', 'institution': 'KOLEJ TINGKATAN ENAM GOMBAK',
+             'source': 'offer_letter_auto'},
+            track='sains_sosial', inst='SMK (P) TEMENGGONG IBRAHIM')
+        # The offer's own values are ignored; the student's real declaration is returned.
+        self.assertEqual(_declared_pathway(app), ('sains_sosial', 'SMK (P) TEMENGGONG IBRAHIM'))
+
+    def test_genuine_student_pick_is_still_used(self):
+        from apps.scholarship.pathway_engine import _declared_pathway
+        app = self._app(
+            {'course_name': 'Diploma Kejuruteraan', 'institution': 'UPM', 'source': 'student'},
+            track='ignored', inst='ignored')
+        self.assertEqual(_declared_pathway(app), ('Diploma Kejuruteraan', 'UPM'))
