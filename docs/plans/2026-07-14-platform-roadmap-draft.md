@@ -33,7 +33,7 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 ### Sprint 1 — ✅ SHIPPED 2026-07-15 (commit `a473a171`; retro `docs/retrospective-2026-07-15-platform-s1-organisation.md`)
 
-### Sprint 2 — Owning-org on the application
+### Sprint 2 — ✅ SHIPPED 2026-07-15 (commit `5ffcd493`; retro `docs/retrospective-2026-07-15-platform-phase1-fencing.md`) — Owning-org on the application
 - **Goal:** Give every `ScholarshipApplication` a durable owning-organisation, so queries can be fenced (audit §3: today there is none).
 - **Scope:** `apps/scholarship/models.py` (denormalised `owning_organisation` FK on the application, populated from its cohort per D-8), the create path (`ApplicationCreateSerializer`/`services`), a data migration backfilling every existing application to org #1, and the **drift guard** (review §2.6): a constraint or test asserting `application.owning_organisation == application.cohort.owning_organisation` at all times.
 - **Migrations expected:** 1 additive FK (`scholarship_applications.organisation_id`) + 1 data migration (backfill all rows → org #1). Additive → migrate-first, zero downtime.
@@ -42,7 +42,7 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 - **How we know BrightPath still works:** the column is written but not yet *read* for authorisation (that's Sprint 3), so behaviour is unchanged; live smoke of a new application.
 - **Complexity:** Low–Medium.
 
-### Sprint 3a — Org-scoped query layer + fence the admin gates (the #1-risk work, part 1)
+### Sprint 3a — ✅ SHIPPED 2026-07-15 (commit `f2c8c5ef`; audit `docs/plans/2026-07-15-phase1-s3a-endpoint-audit.md`) — Org-scoped query layer + fence the admin gates (the #1-risk work, part 1)
 - **Goal:** Enforce the organisation wall on every admin read/write. This is the security heart of the project. *(Pre-split from the original Sprint 3 by architect decision — Sprint-0 verification counted **43** `_AdminBase` endpoint classes, not ~25.)*
 - **Scope:** `apps/scholarship/views_admin.py` — add an org predicate to the shared gates `_b40_scope` (`:89-103`), `_scoped_application` (`:105-119`), `_can_review_app` (`:121-132`), `_require_app_write` (`:134-148`), `_require_qc` (`:150-175`), and the list query (`:186-189`); an org-scoped model manager / queryset helper so the fence is centralised (mirroring the courses `get_partner_students` pattern, `courses/views_admin.py:80-104`); an endpoint-by-endpoint audit of all 43 `_AdminBase` subclasses confirming each reads through the fenced gates. Super stays global.
 - **Migrations expected:** 0 (code-only).
@@ -51,7 +51,7 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 - **How we know BrightPath still works:** full existing suite passes unchanged; live smoke of the reviewer/QC cockpit against real BrightPath data.
 - **Complexity:** High (bounded by the pre-split).
 
-### Sprint 3b — PROVE the fence (part 2)
+### Sprint 3b — ✅ SHIPPED 2026-07-15 (commit `171a6459`) — PROVE the fence (part 2)
 - **Goal:** Ship the tests that *prove* one org cannot see another's applicants — and that keep proving it forever.
 - **Scope:** **the fence-proof test** — seed two organisations with an applicant each; assert every admin endpoint (list/detail/write/QC) returns/permits only the caller-org's applicant and 403/404s the other's, for each role; **the static guard test** — CI fails if any admin queryset omits the org filter (mirroring the existing superseded-docs guard pattern, `models.py:943-948`).
 - **Migrations expected:** 0.
@@ -60,7 +60,11 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 - **How we know BrightPath still works:** test-only sprint; no behaviour change.
 - **Complexity:** Medium.
 
-### Sprint 4 — Document storage org-prefix + fence (new uploads only)
+### Sprint 4 — ✅ SHIPPED 2026-07-15 (commit `200cbbd6`) — Document storage org-prefix + fence (new uploads only)
+
+> **▶ Phase 1 COMPLETE (S1–S4).** The organisation wall is live + CI-guarded; BrightPath is org #1;
+> platform work now PAUSES per the sequencing triggers (Phase 2 gated on rule stability; Phases 3–4 on
+> a credible second tenant). Retro `docs/retrospective-2026-07-15-platform-phase1-fencing.md`.
 - **Goal:** Fence uploaded documents per organisation (audit §4: keys are `<app_id>/<doc_type>/<uuid>` with no org element).
 - **AMENDED (review §2.3): NO bulk re-key of existing objects.** Every existing object belongs to BrightPath by definition, so the fence treats a key **without** an org prefix as org #1 legacy. Only **new** uploads get the `<org>/…` prefix. This removes the riskiest single operation of the whole programme (bulk re-keying live PII documents); revisit only if a real off-boarding/erasure demand ever requires re-keying.
 - **Scope:** `apps/scholarship/views.py:666` (add org prefix at the single generation site), `apps/scholarship/storage.py` (list/delete/backup helpers to handle both prefixed and legacy keys), `serializers.py:692-694` (assert the caller's org owns the path — prefixed → must match caller's org; unprefixed → org #1 only — before signing a view URL).

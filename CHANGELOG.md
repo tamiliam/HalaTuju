@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Platform Phase 1 completion — Sprints 2, 3a, 3b, 4 — 2026-07-15
+
+The organisation wall on the scholarship system. Behaviourally INVISIBLE while BrightPath is
+the only organisation — every fenced query returns exactly today's rows, and the full suite
+passed at every sprint with no edits to existing tests. Roadmap
+`docs/plans/2026-07-14-platform-roadmap-draft.md`; retro
+`docs/retrospective-2026-07-15-platform-phase1-fencing.md`.
+
+### Added
+- **S2 — `ScholarshipApplication.owning_organisation`** (migrations `scholarship/0099`+`0100`):
+  a denormalised copy of `cohort.owning_organisation` (D-8), derived in `save()` (set-once, no
+  extra query on hot paths); backfilled to every existing application. Drift guard.
+- **S3a — the org fence** (migrations `courses/0062`+`0063`): `PartnerAdmin.owning_organisation`
+  (access-control boundary, distinct from the referral `org`); central `_org_scoped`/`_org_allows`
+  on `_AdminBase`, wired into every gate + the three bypass list surfaces; cross-org → 404. Staff
+  backfilled (admin/reviewer/qc → BrightPath; super/partner NULL). Closed a role-only cross-org
+  write hole in the graduation-message review. 44-endpoint audit doc.
+- **S3b — durable CI guards**: a fence-proof suite (two orgs, real endpoints), a `__subclasses__`
+  coverage-completeness check, and a static source guard (raw admin query without `# org-fence:`
+  fails CI). These protect the fence through the owner's feature-work period.
+- **S4 — org-prefixed document keys** (no migration): new uploads →
+  `<org>/<app>/<doc_type>/<uuid>` via one `storage.build_doc_key`; signing seams refuse a
+  key-org/row-org mismatch; the orphan-blob walk recurses to handle both legacy 3-level and
+  prefixed 4-level keys. Legacy blobs keep their keys and sign via the row FK.
+
+### Notes
+- Deploy discipline: TWO checkpoints. Checkpoint 1 (S2+S3a DDL) applied MIGRATE-FIRST via Supabase
+  MCP (runbook `docs/plans/2026-07-15-phase1-checkpoint1-migrate-first.md`) then pushed; Checkpoint 2
+  (S4, no migration) pushed. Both smoke-verified, zero error logs.
+- **Platform work now PAUSES.** Phase 2 is gated on rule stability; Phases 3–4 on a credible
+  second-tenant prospect. The S3b guards keep the fence honest meanwhile.
+- Tests: 3713 pytest passing (+39 over Phase-1 start). No frontend change.
+
 ## Platform Sprint 1 — Organisation record + BrightPath as org #1 — 2026-07-15
 
 First sprint of the multi-tenant platform roadmap (`docs/plans/2026-07-14-platform-roadmap-draft.md`).

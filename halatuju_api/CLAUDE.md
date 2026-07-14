@@ -524,15 +524,35 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-15)
 
-**▶ NEXT — Platform Sprint 2: Owning-org on the application** (roadmap
-`docs/plans/2026-07-14-platform-roadmap-draft.md`; conventions `docs/build-for-tenancy-conventions.md`).
-- Denormalised `owning_organisation` FK on `ScholarshipApplication`, populated from its cohort (D-8);
-  backfill data migration → org #1; non-null after backfill.
-- Create path (`ApplicationCreateSerializer`/services) always sets it; drift guard asserting
-  `application.owning_organisation == application.cohort.owning_organisation`.
-- Additive → MIGRATE-FIRST via Supabase MCP (hand-written Postgres DDL runbook, same pattern as
-  Sprint 1's `docs/plans/2026-07-15-sprint1-migrate-first.md`), THEN push (push = deploy).
-- Column is written, not yet read for authorisation (that's Sprint 3a) — behaviourally invisible.
+**▶ PLATFORM WORK PAUSED — Phase 1 COMPLETE. Return to BrightPath feature work.**
+Phase 2 (extract hard-coded rules into per-org settings) is gated on **rule stability** — start only
+after ~a month passes with **no `MODEL_VERSION` bump and no new document family** (extracting config
+while the rules churn extracts a moving target). Phases 3–4 (superadmin + org-admin portals, second-
+tenant rehearsal) are gated on a **credible second-tenant prospect**. Roadmap
+`docs/plans/2026-07-14-platform-roadmap-draft.md`; conventions still apply to ALL work
+(`docs/build-for-tenancy-conventions.md`). **The org fence is CI-guarded** — a new admin endpoint that
+skips the `_AdminBase` gates, or a raw admin `.objects` query without an `# org-fence:` pragma, FAILS
+the suite (`test_org_fence.py`), so BrightPath feature work stays safe.
+
+**✅ SHIPPED + LIVE 2026-07-15 — Platform Phase 1 completion (Sprints 2, 3a, 3b, 4)** (commits
+`5ffcd493`/`f2c8c5ef`/`171a6459`/`200cbbd6`; migrations `scholarship/0099`+`0100`, `courses/0062`+`0063`
+applied migrate-first via Supabase MCP at Checkpoint 1; retro
+`docs/retrospective-2026-07-15-platform-phase1-fencing.md`). The **organisation wall** on the
+scholarship system, behaviourally invisible while BrightPath is org #1 (every fenced query returns
+today's rows; full suite passed each sprint with no existing-test edits):
+- **S2** `ScholarshipApplication.owning_organisation` (denormalised from the cohort, derived in
+  `save()`); backfilled to all 143 apps.
+- **S3a** `PartnerAdmin.owning_organisation` (access boundary ≠ referral `org`) + central
+  `_org_scoped`/`_org_allows` on `_AdminBase` wired into every gate + the 3 bypass list surfaces;
+  cross-org → 404; staff backfilled (admin/reviewer/qc → BrightPath, super/partner NULL); 44-endpoint
+  audit `docs/plans/2026-07-15-phase1-s3a-endpoint-audit.md`.
+- **S3b** fence-proof suite + `__subclasses__` coverage check + static source guard (all in CI).
+- **S4** org-prefixed NEW document keys (`<org>/<app>/<doc_type>/<uuid>` via `storage.build_doc_key`) +
+  signing fence + mixed-shape orphan walk; the 1114 legacy blobs keep their keys (sign via the row FK).
+- Two deploys (Checkpoint 1 = S2+S3a migrate-first; Checkpoint 2 = S4); both smoke-verified, 0 errors.
+- **▶ CARRY (TD):** tighten `owning_organisation` to NOT NULL once a shared test factory exists;
+  bursary 2-segment PDFs still not reconciled by the orphan walk; the two `_can_review_app` action
+  endpoints return 403 (not 404) cross-org (fenced, minor existence-leak).
 
 **✅ SHIPPED + LIVE 2026-07-15 — Platform Sprint 1: Organisation record + BrightPath as org #1**
 (commit `a473a171`; migrations courses/0061 + scholarship/0097+0098 applied to prod migrate-first via
