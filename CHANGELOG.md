@@ -46,6 +46,10 @@ whole thing merged + deployed together (build `4b79d13`). No migration.
   the service role** (the same key invite/resend use), scoped to the caller's own uid AND only while the
   account still owes a password change (`must_change_password`) — so it is not a general re-auth bypass.
   The set-password page now calls it. +4 tests.
+- **Welcome-email copy (owner feedback from the live test).** Removed a leftover "This link does not
+  expire" line that contradicted the new 7-day temp-password expiry, and the temp-password mail no
+  longer offers "Sign in with Google" (its recipient is a non-Google address, so it misled). Recovery
+  is reframed as "Forgot password" — self-serve, any time — with a Resend as the alternative.
 
 ### Notes
 - **No migration.** The invite/resend/Google/expiry click-through is the owner's live check; the

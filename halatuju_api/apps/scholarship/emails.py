@@ -1638,9 +1638,10 @@ def send_partner_welcome_email(to_email, name, role, temp_password=None, google=
 
     Replaces the Supabase "Invite user" email (2026-07-12). That one carried a magic link that
     EXPIRED IN 24 HOURS and, once expired, could not be re-sent by any route — an invitee who
-    missed the window was stuck. This email carries no token: the account already exists when it
-    is sent, so the mail is just an instruction and stays valid forever. Re-sending it (or
-    rotating the password) is therefore always safe.
+    missed the window was stuck. This email carries no token: the account already exists when it is
+    sent, so re-sending is always safe. The temp password itself now expires after 7 days (owner
+    2026-07-14), but that is never a dead-end — Forgot-password (self-serve, any time) or a Resend
+    re-issues it. The Google / already-registered variants get no password at all.
 
     ``temp_password`` is None when the person already had a HalaTuju account (they sign in with
     the credentials they already have). It is the ONLY copy of that password — it is not stored,
@@ -1664,10 +1665,9 @@ def send_partner_welcome_email(to_email, name, role, temp_password=None, google=
             f'Your temporary password (valid for 7 days) is:\n\n'
             f'    {temp_password}\n\n'
             f"You'll be asked to choose your own password the first time you use it.\n\n"
-            f'If you would rather not use a password at all, you can click "Sign in with Google" '
-            f'on the same page instead — just use this email address ({to_email}).\n\n'
-            f'If the 7 days pass before you sign in, the temporary password stops working — just '
-            f'ask whoever added you to re-send it, and you get a fresh one.'
+            f'If it expires before you sign in, or you lose it, you can set a new one yourself at '
+            f'any time with "Forgot password" on the sign-in page — or ask whoever added you to '
+            f're-send your details.'
         )
     else:
         access = (
@@ -1680,9 +1680,6 @@ def send_partner_welcome_email(to_email, name, role, temp_password=None, google=
         f'You have been added to HalaTuju as {role_label}.\n\n'
         f'Sign in here:\n{link}\n\n'
         f'{access}\n\n'
-        f'This link does not expire — you can come back to it whenever you are ready. '
-        f'If you ever lose your password, use "Forgot password" on the sign-in page, or ask us '
-        f'to send you a new one.\n\n'
         f'Any trouble at all, just reply to this email.\n\n'
         f'Warm regards,\nThe HalaTuju Team'
     )

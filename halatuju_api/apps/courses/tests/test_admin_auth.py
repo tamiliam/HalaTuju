@@ -339,11 +339,16 @@ class PartnerAccountCreationTest(TestCase):
         self.assertIn('/admin/login', msg.body)
         self.assertIn('reviewer', msg.body)
         # The temp password now expires after 7 days (owner 2026-07-14), but onboarding still never
-        # dead-ends — a Resend re-issues it — so the mail states the 7-day window + how to recover,
-        # and carries none of the old 24h-magic-link language.
+        # dead-ends — Forgot-password (any time) or a Resend re-issues it — so the mail states the
+        # 7-day window + the recovery, and carries none of the old copy.
         body = msg.body.lower()
         self.assertIn('7 days', body)
         self.assertNotIn('24 hour', body)
+        self.assertIn('forgot password', body)          # the any-time self-serve recovery
+        self.assertNotIn('does not expire', body)        # was contradicting the 7-day expiry
+        # Don't offer Google sign-in in the temp-password mail — the recipient's (non-gmail) address
+        # is not necessarily a Google account, so it would mislead (owner 2026-07-14).
+        self.assertNotIn('sign in with google', body)
 
     def test_the_create_body_stamps_the_temp_password_clock(self):
         # temp_password_issued_at starts the 7-day TTL the login gate + expire cron enforce.
