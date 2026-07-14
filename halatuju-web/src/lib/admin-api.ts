@@ -195,6 +195,23 @@ export async function revokeAdmin(adminId: number, action: 'revoke' | 'restore',
   return res.json()
 }
 
+/** Re-send a partner's sign-in details, rotating their temporary password. The new password goes
+ *  ONLY to their inbox — it is never returned here. Safe to call any number of times. */
+export async function resendAdminInvite(adminId: number, options?: ApiOptions) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/admins/${adminId}/resend/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({}),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Resend failed: ${res.status}`)
+  }
+  return res.json() as Promise<{ message: string; emailed: boolean }>
+}
+
 // ── Admin profile ───────────────────────────────────────────────────
 
 export interface AdminProfile {
@@ -320,7 +337,15 @@ export async function inviteAdmin(
     throw new Error(body.error || `Invite failed: ${res.status}`)
   }
 
-  return res.json()
+  // `emailed` matters: the welcome email is the ONLY carrier of the temporary password, so a
+  // failed send leaves the new partner with no way in until the owner presses Resend.
+  return res.json() as Promise<{
+    message: string
+    org: string | null
+    role: string
+    already_registered: boolean
+    emailed: boolean
+  }>
 }
 
 // ── Scholarship (BrightPath Bursary Programme) ──────────────────────────────

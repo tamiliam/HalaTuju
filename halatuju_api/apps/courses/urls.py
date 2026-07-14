@@ -5,7 +5,7 @@ from django.urls import path
 from . import views
 from .views_admin import (
     AdminRoleView, AdminInviteView, AdminOrgsView,
-    AdminListView, AdminRevokeView, AdminProfileView,
+    AdminListView, AdminRevokeView, AdminResendView, AdminProfileView,
     PartnerDashboardView, PartnerStudentListView,
     PartnerStudentDetailView, PartnerStudentExportView,
     AdminCourseDataView, AdminCourseDataCheckView,
@@ -22,6 +22,7 @@ urlpatterns = [
     path('admin/orgs/', AdminOrgsView.as_view(), name='admin-orgs'),
     path('admin/admins/', AdminListView.as_view(), name='admin-list'),
     path('admin/admins/<int:admin_id>/revoke/', AdminRevokeView.as_view(), name='admin-revoke'),
+    path('admin/admins/<int:admin_id>/resend/', AdminResendView.as_view(), name='admin-resend'),
     path('admin/profile/', AdminProfileView.as_view(), name='admin-profile'),
     path('admin/course-data/', AdminCourseDataView.as_view(), name='admin-course-data'),
     path('admin/course-data/check/', AdminCourseDataCheckView.as_view(), name='admin-course-data-check'),

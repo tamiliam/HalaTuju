@@ -65,6 +65,13 @@ export default function AdminLoginPage() {
           token: data.session.access_token,
           isSuper: !!(role.is_super_admin || role.role === 'super'),
         })
+        // They just signed in with the temporary password we emailed them — make them choose
+        // their own before they go anywhere. (Google signers never typed it, so the callback
+        // route deliberately does NOT do this.)
+        if (data.session.user.user_metadata?.must_change_password) {
+          router.push('/admin/set-password')
+          return
+        }
         // Reviewers/viewers have no partner-org dashboard — send them to their
         // workspace (B40 Applications); org admins/super keep the dashboard.
         router.push(role.role === 'reviewer' || role.role === 'viewer'

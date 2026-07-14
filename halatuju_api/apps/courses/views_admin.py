@@ -12,11 +12,13 @@ Endpoints:
 - GET /api/v1/admin/orgs/ - List organisations (for invite dropdown)
 - GET /api/v1/admin/admins/ - List all admins (super admin only)
 - PATCH /api/v1/admin/admins/<id>/revoke/ - Revoke or restore admin access (super admin only)
+- POST /api/v1/admin/admins/<id>/resend/ - Re-send sign-in details / rotate the temp password (super admin only)
 - GET/PUT /api/v1/admin/profile/ - View/edit own admin profile
 """
 import csv
 import json
 import logging
+import secrets
 from collections import Counter
 import requests as http_requests
 from django.conf import settings
@@ -27,11 +29,79 @@ from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from halatuju.pagination import FlexiblePageNumberPagination
 
+from apps.scholarship.emails import send_partner_welcome_email
 from .search import apply_people_search
 from .models import StudentProfile, PartnerOrganisation, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
 
 logger = logging.getLogger(__name__)
+
+# Unambiguous alphabet — no O/0, I/l/1 — because this password gets read off a phone screen and
+# typed by hand, and a partner who mistypes it has no other way in.
+_PW_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+
+
+def generate_temp_password(groups=3, size=4):
+    """A one-time password for a newly created partner account, e.g. 'Kx7m-Pq4t-Rd92'.
+    Hyphen-grouped so it can be dictated over the phone if the email goes astray."""
+    return '-'.join(
+        ''.join(secrets.choice(_PW_ALPHABET) for _ in range(size)) for _ in range(groups)
+    )
+
+
+def _service_headers(service_role_key):
+    return {
+        'apikey': service_role_key,
+        'Authorization': f'Bearer {service_role_key}',
+        'Content-Type': 'application/json',
+    }
+
+
+def _create_supabase_user(supabase_url, service_role_key, email, name, temp_password):
+    """Create the partner's Supabase auth account directly, with a password we choose.
+
+    We deliberately do NOT use /auth/v1/invite: its email carries a magic link that expires in 24
+    hours (Supabase's maximum) and cannot be re-sent to an address that already has an auth user,
+    so a partner who missed the window was permanently stuck. Creating the account outright means
+    nothing expires, and we send our own email instead.
+
+    `email_confirm` is load-bearing: PartnerAdminMixin.get_admin only links a PartnerAdmin row by
+    email when the JWT's `email_verified` claim is true. Without it the partner would sign in
+    successfully and still have no role.
+
+    Returns (user_id, already_registered, error). `already_registered` means the address already
+    had a HalaTuju account (student or Google) — not a failure: they keep their existing login and
+    we just grant the role, matching them by verified email on next sign-in.
+    """
+    resp = http_requests.post(
+        f'{supabase_url}/auth/v1/admin/users',
+        json={
+            'email': email,
+            'password': temp_password,
+            'email_confirm': True,
+            'user_metadata': {'name': name, 'must_change_password': True},
+        },
+        headers=_service_headers(service_role_key),
+    )
+    if resp.status_code in (200, 201):
+        try:
+            return (resp.json() or {}).get('id'), False, None
+        except ValueError:
+            # Created, but we cannot read the UID — fall back to the email-match backfill.
+            return None, False, None
+
+    try:
+        body = resp.json() or {}
+    except ValueError:
+        body = {}
+    if resp.status_code in (400, 422) and (
+        body.get('error_code') == 'email_exists' or body.get('code') == 'email_exists'
+        or 'already been registered' in str(body.get('msg', ''))
+    ):
+        return None, True, None
+
+    logger.error('Supabase user creation failed: %s %s', resp.status_code, resp.text)
+    return None, False, 'create_failed'
 
 
 class PartnerAdminMixin:
@@ -403,62 +473,100 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if not service_role_key or not supabase_url:
             return Response({'error': 'Supabase service role key not configured'}, status=500)
 
-        # Pass the invitee's name as user metadata so the Supabase "Invite user"
-        # email template can greet them by name via {{ .Data.name }}. redirect_to sends
-        # the "Accept the invite" link to the SET-PASSWORD page (not the default Site URL =
-        # homepage), where the invite session lets a non-Google invitee choose a password;
-        # it must be allow-listed in Supabase URL Configuration (the
-        # https://halatuju.xyz/** wildcard covers it).
-        frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
-        invite_resp = http_requests.post(
-            f'{supabase_url}/auth/v1/invite',
-            json={'email': email, 'data': {'name': name},
-                  'redirect_to': f'{frontend}/admin/set-password'},
-            headers={
-                'apikey': service_role_key,
-                'Authorization': f'Bearer {service_role_key}',
-                'Content-Type': 'application/json',
-            },
+        # Create the Supabase account OURSELVES rather than sending a Supabase invite (see
+        # `_create_supabase_user` for why). The temp password never leaves this request except
+        # in the welcome email.
+        temp_password = generate_temp_password()
+        user_id, already_registered, err = _create_supabase_user(
+            supabase_url, service_role_key, email, name, temp_password,
         )
-
-        # Supabase refuses to invite an email that already has an account (422
-        # email_exists) — e.g. the person already signed in as a student or via
-        # Google. That is NOT a failure: they already have a login, so we skip the
-        # invite email and just grant the role. `get_admin` links the PartnerAdmin
-        # row to their account by email on their next sign-in (no UID needed here).
-        already_registered = False
-        if invite_resp.status_code not in (200, 201):
-            try:
-                err_code = invite_resp.json().get('error_code')
-            except ValueError:
-                err_code = None
-            if invite_resp.status_code == 422 and err_code == 'email_exists':
-                already_registered = True
-            else:
-                logger.error(f"Supabase invite failed: {invite_resp.status_code} {invite_resp.text}")
-                return Response({'error': 'Failed to send invite email'}, status=502)
+        if err:
+            return Response({'error': 'Failed to create the partner account'}, status=502)
 
         PartnerAdmin.objects.create(
             email=email,
             name=name,
             org=org,
             role=role,
+            # We know the Supabase UID at creation now, so store it instead of waiting for the
+            # email-match backfill in get_admin. (None on the already-registered path — their
+            # existing account is matched by verified email on next sign-in, as before.)
+            supabase_user_id=user_id,
             # Keep the legacy flag in lockstep with the role (expand-contract):
             # several call sites still gate on is_super_admin directly.
             is_super_admin=(role == 'super'),
         )
 
-        message = (
-            f'{name} already has an account — access granted. They will see it the '
-            f'next time they sign in (no invite email needed).'
-            if already_registered else f'Invite sent to {email}'
+        # The email is the ONLY carrier of the temp password, so a failed send strands the
+        # invitee — report it instead of swallowing it, and the UI tells the owner to Resend.
+        emailed = send_partner_welcome_email(
+            email, name, role, temp_password=None if already_registered else temp_password,
         )
+
+        message = (
+            f'{name} already has an account — access granted. They can sign in as they always do.'
+            if already_registered else f'Account created. Sign-in details emailed to {email}.'
+        )
+        if not emailed:
+            message = f'{name} was added, but the email could not be sent. Use Resend to try again.'
         return Response({
             'message': message,
             'org': org.name if org else None,
             'role': role,
             'already_registered': already_registered,
+            'emailed': emailed,
         }, status=201)
+
+
+class AdminResendView(PartnerAdminMixin, APIView):
+    """POST /api/v1/admin/admins/<id>/resend/ - Re-send a partner's sign-in details.
+
+    The reason this exists: the old Supabase invite link expired after 24 hours and there was NO
+    way to send another one (this view's sibling 409s on an existing PartnerAdmin, and Supabase
+    refuses to re-invite an address that already has an auth user), so a partner who missed the
+    window was stuck — which is exactly what happened on 2026-07-10. Resending is safe now
+    because the email carries no token: we simply rotate the temporary password and re-send it.
+    """
+
+    def post(self, request, admin_id):
+        admin = self.get_admin(request)
+        if not admin or not admin.is_super_admin:
+            return Response({'error': 'Super admin access required'}, status=403)
+
+        try:
+            target = PartnerAdmin.objects.get(id=admin_id)
+        except PartnerAdmin.DoesNotExist:
+            return Response({'error': 'Admin not found'}, status=404)
+
+        service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
+        supabase_url = getattr(settings, 'SUPABASE_URL', '')
+        if not service_role_key or not supabase_url:
+            return Response({'error': 'Supabase service role key not configured'}, status=500)
+
+        # No UID = the account pre-existed ours (student/Google sign-up), so we never issued a
+        # password and must not reset theirs. Re-send the "sign in as you always do" note.
+        temp_password = None
+        if target.supabase_user_id:
+            temp_password = generate_temp_password()
+            resp = http_requests.put(
+                f'{supabase_url}/auth/v1/admin/users/{target.supabase_user_id}',
+                json={'password': temp_password,
+                      'user_metadata': {'name': target.name, 'must_change_password': True}},
+                headers=_service_headers(service_role_key),
+            )
+            if resp.status_code not in (200, 201):
+                logger.error('Supabase password rotation failed: %s %s', resp.status_code, resp.text)
+                return Response({'error': 'Failed to reset the password'}, status=502)
+
+        emailed = send_partner_welcome_email(
+            target.email, target.name, target.role, temp_password=temp_password,
+        )
+        if not emailed:
+            return Response({'error': 'Failed to send the email', 'emailed': False}, status=502)
+        return Response({
+            'message': f'Sign-in details re-sent to {target.email}.',
+            'emailed': True,
+        })
 
 
 class AdminOrgsView(PartnerAdminMixin, APIView):

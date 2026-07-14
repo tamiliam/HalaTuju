@@ -1324,6 +1324,76 @@ def send_reviewer_assigned_email(to_email, reviewer_name, *, ref='', programme='
     return _send_plain(to_email, _reviewer_subject('New applicant assigned to you', ref), body)
 
 
+_PARTNER_ROLE_LABELS = {
+    'admin': 'an administrator',
+    'partner': 'a partner organisation representative',
+    'reviewer': 'a reviewer',
+    'qc': 'a quality-control reviewer',
+    'super': 'a super administrator',
+}
+
+
+def send_partner_welcome_email(to_email, name, role, temp_password=None):
+    """Onboard a new partner admin / reviewer. English-only (internal staff), like every other
+    admin-facing email here.
+
+    Replaces the Supabase "Invite user" email (2026-07-12). That one carried a magic link that
+    EXPIRED IN 24 HOURS and, once expired, could not be re-sent by any route — an invitee who
+    missed the window was stuck. This email carries no token: the account already exists when it
+    is sent, so the mail is just an instruction and stays valid forever. Re-sending it (or
+    rotating the password) is therefore always safe.
+
+    ``temp_password`` is None when the person already had a HalaTuju account (they sign in with
+    the credentials they already have). It is the ONLY copy of that password — it is not stored,
+    logged, or returned to the caller — so a send failure must be surfaced, not swallowed; the
+    bool return is what the view reports as ``emailed``.
+    """
+    if not to_email:
+        return False
+    who = name or 'there'
+    role_label = _PARTNER_ROLE_LABELS.get(role, 'a team member')
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/admin/login'
+
+    if temp_password:
+        access = (
+            f'Your temporary password is:\n\n'
+            f'    {temp_password}\n\n'
+            f"You'll be asked to choose your own password the first time you use it.\n\n"
+            f'If you would rather not use a password at all, you can click "Sign in with Google" '
+            f'on the same page instead — just use this email address ({to_email}).'
+        )
+    else:
+        access = (
+            f'You already have a HalaTuju account, so simply sign in the way you normally do '
+            f'— with Google, or with your existing password. Your new access is waiting for you.'
+        )
+
+    body = (
+        f'Dear {who},\n\n'
+        f'You have been added to HalaTuju as {role_label}.\n\n'
+        f'Sign in here:\n{link}\n\n'
+        f'{access}\n\n'
+        f'This link does not expire — you can come back to it whenever you are ready. '
+        f'If you ever lose your password, use "Forgot password" on the sign-in page, or ask us '
+        f'to send you a new one.\n\n'
+        f'Any trouble at all, just reply to this email.\n\n'
+        f'Warm regards,\nThe HalaTuju Team'
+    )
+    try:
+        EmailMessage(
+            subject='Your HalaTuju partner access',
+            body=body,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            to=[to_email],
+            reply_to=[SUPPORT_EMAIL],
+        ).send()
+        return True
+    except Exception:
+        logger.warning('Failed to send partner welcome email to %s', to_email, exc_info=True)
+        return False
+
+
 def send_qc_returned_email(to_email, reviewer_name, *, ref='', applicant_name='', qc_comments=''):
     """QC (2026-07): notify a reviewer that quality control has RETURNED their case for revision,
     carrying the QC's comments (what was missing / the gaps). English-only (internal staff), from
