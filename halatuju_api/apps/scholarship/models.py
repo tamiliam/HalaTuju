@@ -17,6 +17,20 @@ class ScholarshipCohort(models.Model):
     and funding parameters so they can be tuned without code changes (the
     shortlisting rules engine in Sprint 3 reads these).
     """
+    # ── Tenant ownership (platform Sprint 1) ──────────────────────────────────
+    # SOURCE OF TRUTH for "which organisation owns this programme". The
+    # application-level denormalised copy (platform Sprint 2) must always equal
+    # this — never store a second independently-mutable copy. Named
+    # owning_organisation deliberately: `PartnerAdmin.org` / `referred_by_org`
+    # mean the REFERRING org (attribution), never ownership/access control.
+    # Nullable only for additive-migration safety; seeded to BrightPath (org #1)
+    # by migration 0098 — NULL carries no meaning and nothing reads it yet.
+    owning_organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='owned_cohorts',
+        help_text='The tenant organisation that OWNS this programme (platform Sprint 1).',
+    )
+
     code = models.CharField(
         max_length=50, unique=True,
         help_text="URL-safe slug, e.g. 'b40-2026'",

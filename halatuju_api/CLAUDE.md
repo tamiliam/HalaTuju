@@ -524,9 +524,17 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-15)
 
-**▶ NEXT — no roadmap sprint queued.** The 2026-07-14 parallel streams (Check-2 #117 + status
-vocabulary) AND partner onboarding are all shipped, merged, and live; the CARRY list below is the
-outstanding owner work.
+**▶ IN PROGRESS — Platform Sprint 1: Organisation record + BrightPath as org #1** (roadmap
+`docs/plans/2026-07-14-platform-roadmap-draft.md`; conventions `docs/build-for-tenancy-conventions.md`).
+Code BUILT locally (PartnerOrganisation tenant columns, `ScholarshipCohort.owning_organisation`,
+seed migration 0098, +6 tests): **NOT pushed** — the additive DDL must go to prod MIGRATE-FIRST via
+the Supabase MCP using the runbook `docs/plans/2026-07-15-sprint1-migrate-first.md`, THEN push
+(push = deploy). Migrations: courses/0061, scholarship/0097+0098. Behaviourally invisible (nothing
+reads the new columns yet). Serializer exposure deferred to platform Sprint 10 (decision in
+CHANGELOG). After push: live smoke + sprint close.
+
+The 2026-07-14 parallel streams (Check-2 #117 + status vocabulary) AND partner onboarding are all
+shipped, merged, and live; the CARRY list below is the outstanding owner work.
 
 **✅ SHIPPED + LIVE 2026-07-14 — Partner onboarding: durable invite + Google-skip + 7-day temp-password
 expiry (build `4b79d13`; NO migration; retro `docs/retrospective-2026-07-15-partner-onboarding.md`;

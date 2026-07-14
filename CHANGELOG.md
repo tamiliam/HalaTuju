@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## Platform Sprint 1 — Organisation record + BrightPath as org #1 — 2026-07-15
+
+First sprint of the multi-tenant platform roadmap (`docs/plans/2026-07-14-platform-roadmap-draft.md`).
+Behaviourally INVISIBLE: columns are written and seeded but nothing reads them yet.
+
+### Added
+- **`PartnerOrganisation` grows into the tenant Organisation record** (D-6): per-language programme
+  names/personas/team sign-offs, logo/brand colour, sender identities (from/reply-to/support),
+  frontend URL, and four module flags (scholarship / sponsor pool / WhatsApp comms / payout —
+  unenforced until platform Sprint 10). Referral rows are unaffected (all defaults neutral).
+  Migration `courses/0061`.
+- **`ScholarshipCohort.owning_organisation`** — the SOURCE OF TRUTH for which tenant owns a
+  programme (D-8), `on_delete=PROTECT`, named per the build-for-tenancy conventions (never plain
+  `org`, which means *referring* organisation). Migration `scholarship/0097`.
+- **Seed migration `scholarship/0098`**: BrightPath created as organisation #1 with today's live
+  branding/sender constants captured verbatim (so Sprint 5/6 can render byte-identically from
+  config); every existing cohort backfilled to it. Idempotent; reverse detaches cohorts and keeps
+  the org row.
+- Tests: `test_platform_organisation.py` — seed values, idempotency, backfill-only-unowned,
+  referral-role neutrality, PROTECT semantics (+6).
+
+### Notes
+- Serializer exposure of the new columns was consciously DEFERRED to Sprint 10: the only org
+  endpoint today (`AdminOrgsView`) is an invite dropdown with no consumer for tenant config.
+- Deploy discipline: additive migrations applied to prod MIGRATE-FIRST (via Supabase MCP,
+  hand-written Postgres DDL) before this code is pushed.
+
 ## Partner onboarding — durable invite, Google emails skip the password, 7-day temp-password expiry — 2026-07-14
 
 The durable-invite core was built on the remote station; the two refinements below were added and the

@@ -395,7 +395,19 @@ class CourseInstitution(models.Model):
 
 
 class PartnerOrganisation(models.Model):
-    """Partner organisation that refers students via roadshows or campaigns."""
+    """Referral partner AND the platform's tenant Organisation record (dual role).
+
+    - Referral registry (original role): `StudentProfile.referred_by_org` /
+      `PartnerAdmin.org` point here to mean "the organisation that REFERRED a
+      student/admin" — an attribution marker, NEVER an access-control boundary.
+    - Platform organisation (platform Sprint 1, 2026-07): the tenant that OWNS a
+      scholarship programme. Ownership hangs off `ScholarshipCohort.owning_organisation`
+      (the source of truth for programme ownership); the branding/sender/module columns
+      below are that tenant's configuration surface (PRD §2–§3). These columns are
+      seeded but NOT yet read anywhere — the read seams land in later platform sprints
+      (branding Sprint 5/6, module enforcement Sprint 10).
+    `is_active` doubles as the tenant active/suspended switch (D-5: suspend, never delete).
+    """
     code = models.CharField(max_length=50, unique=True, help_text='URL slug: cumig, partner2')
     name = models.CharField(max_length=200)
     contact_email = models.EmailField(blank=True)
@@ -403,6 +415,34 @@ class PartnerOrganisation(models.Model):
     phone = models.CharField(max_length=30, blank=True, default='')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # ── Tenant identity & branding (platform Sprint 1; '' = use platform default) ──
+    programme_name_en = models.CharField(max_length=200, blank=True, default='')
+    programme_name_ms = models.CharField(max_length=200, blank=True, default='')
+    programme_name_ta = models.CharField(max_length=200, blank=True, default='')
+    logo_url = models.CharField(max_length=500, blank=True, default='')
+    brand_colour = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="Hex colour, e.g. '#137fec'; '' = platform default",
+    )
+    persona_name_en = models.CharField(max_length=100, blank=True, default='')
+    persona_name_ms = models.CharField(max_length=100, blank=True, default='')
+    persona_name_ta = models.CharField(max_length=100, blank=True, default='')
+    team_signoff_en = models.CharField(max_length=200, blank=True, default='')
+    team_signoff_ms = models.CharField(max_length=200, blank=True, default='')
+    team_signoff_ta = models.CharField(max_length=200, blank=True, default='')
+
+    # ── Tenant sender identity (platform Sprint 1) ──
+    email_from = models.EmailField(blank=True, default='')
+    email_reply_to = models.EmailField(blank=True, default='')
+    email_support = models.EmailField(blank=True, default='')
+    frontend_url = models.CharField(max_length=200, blank=True, default='')
+
+    # ── Module flags (platform Sprint 1; WRITTEN but NOT enforced until Sprint 10) ──
+    module_scholarship = models.BooleanField(default=False)
+    module_sponsor_pool = models.BooleanField(default=False)
+    module_comms_whatsapp = models.BooleanField(default=False)
+    module_payout = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'partner_organisations'
