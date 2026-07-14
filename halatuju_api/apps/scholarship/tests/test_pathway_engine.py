@@ -239,6 +239,33 @@ class TestOfferPathwayMatch(SimpleTestCase):
                                 'Sekolah Menengah Kebangsaan Pulau Sebang'),
             'match')
 
+    def test_offer_stream_clashes_with_declared_track(self):
+        # #117: declared sains_sosial, the offer summons him to Bidang SAINS. The programme +
+        # institution can agree while the STREAM is wrong — that clash must now surface.
+        self.assertEqual(
+            offer_pathway_match('Tingkatan Enam', 'Kolej Tingkatan Enam Gombak',
+                                'Tingkatan Enam', 'Kolej Tingkatan Enam Gombak',
+                                declared_track='sains_sosial', offer_stream='SAINS'),
+            'mismatch')
+
+    def test_shared_sains_token_is_not_a_false_match(self):
+        # The trap: 'SAINS' and 'sains_sosial' share the 'sains' substring. Canonicalising to
+        # distinct codes means they clash, never falsely match.
+        from apps.scholarship.offer_pathway import parse_stpm_stream
+        self.assertNotEqual(parse_stpm_stream('SAINS'), parse_stpm_stream('SAINS SOSIAL'))
+
+    def test_agreeing_stream_is_a_match(self):
+        self.assertEqual(
+            offer_pathway_match('', '', '', '', declared_track='sains_sosial',
+                                offer_stream='Sains Sosial'),
+            'match')
+
+    def test_streamless_offer_never_clashes_on_track(self):
+        # Most Form-6 letters print no Bidang → '' → no track signal → no false clash.
+        self.assertEqual(
+            offer_pathway_match('', '', '', '', declared_track='sains_sosial', offer_stream=''),
+            'unknown')
+
 
 class TestStudentOfferCheckPathway(SimpleTestCase):
     """student_offer_check surfaces the offer-vs-declared reconciliation."""

@@ -72,30 +72,75 @@ def _value_after_label(lines, label_re):
     return ''
 
 
+def _same_line_value(lines, label_re):
+    """The value on the SAME line as a 'Label: value' match (glued OCR) — NEVER the next line. '' if
+    the label is absent or is a label-only line (a block layout, where the value sits in a separate
+    values block and belongs to a different label by index). #117: a glued OCR text layer joined each
+    label to its value, so 'Pusat Tingkatan Enam: KOLEJ …' / '2.1 Bidang SAINS' read on one line."""
+    for ln in lines:
+        m = label_re.match(ln)
+        if m:
+            tail = (m.group(1) or '').strip(' :').strip()
+            if tail:
+                return tail
+    return ''
+
+
+# The STPM letter's section 2 as a label BLOCK (numbered labels alone, values paired by index in the
+# block below) — the AISYAH shape. Read via _info_block_pairs; the glued #117 shape (value on the
+# label's own line) is read by _same_line_value instead, and the two layouts are mutually exclusive.
+_STPM_BLOCK_LABELS = [
+    ('stream', re.compile(r'^\s*[\d.\s]*Bidang\s*:?\s*$', re.IGNORECASE)),
+    ('institution', re.compile(r'^\s*[\d.\s]*Pusat\s+Tingkatan\s+Enam\s*:?\s*$', re.IGNORECASE)),
+    ('reporting', re.compile(r'^\s*[\d.\s]*Tarikh\s+Lapor\s+Diri\s*:?\s*$', re.IGNORECASE)),
+]
+_PUSAT_RE = re.compile(r'\s*[\d.\s]*Pusat\s+Tingkatan\s+Enam\s*:?\s*(.*)', re.IGNORECASE)
+_BIDANG_RE = re.compile(r'\s*[\d.\s]*Bidang\s*:?\s*(.*)', re.IGNORECASE)
+_LAPOR_RE = re.compile(r'\s*[\d.\s]*Tarikh\s+Lapor\s+Diri\s*:?\s*(.*)', re.IGNORECASE)
+# Truncate a value at a following numbered sub-label ('2.2 …') or a glued 'Bidang' — the #117 fix,
+# where a glued OCR line runs 'KOLEJ TINGKATAN ENAM GOMBAK 2.1 Bidang SAINS' together.
+_SUBLABEL_CUT = re.compile(r'\s+\d+\.\d+\s|\bBidang\b', re.IGNORECASE)
+
+
 def _parse_stpm(lines, up):
     name = _value_after_label(lines, re.compile(r'\s*Nama\s*:?\s*(.*)', re.IGNORECASE))
+    # Glued OCR (#117): 'Nama: X No. Kad Pengenalan: 0801…' on one line → truncate the name at the
+    # following label. A non-glued name has no such substring and is unchanged.
+    name = re.split(r'\bNo\.?\s*Kad\s*Pengenalan\b', name, maxsplit=1, flags=re.IGNORECASE)[0].strip(' :').strip()
     nric = _value_after_label(lines, re.compile(r'\s*No\.?\s*Kad\s*Pengenalan\s*:?\s*(.*)', re.IGNORECASE))
     nric = _norm_nric(nric) or _first_nric('\n'.join(lines))
     m = re.search(r'TINGKATAN ENAM SEMESTER\s+(\d)\s+TAHUN\s+(20\d{2})', up)
     programme = f'Tingkatan Enam Semester {m.group(1)}' if m else 'Tingkatan Enam'
     intake = m.group(2) if m else (re.search(r'TAHUN\s+(20\d{2})', up).group(1)
                                    if re.search(r'TAHUN\s+(20\d{2})', up) else '')
-    # Pusat Tingkatan Enam = the school; the value block starts after the numbered labels.
-    institution = next((ln.strip() for ln in lines
-                        if re.match(r'\s*(SEKOLAH|SMK|KOLEJ|MAKTAB)\b', ln, re.IGNORECASE)), '')
-    # Tarikh Lapor Diri: the reporting date is the first DD-Mon-YYYY that is NOT the offer/print date.
+    pairs = _info_block_pairs(lines, _STPM_BLOCK_LABELS)   # block layout (AISYAH); {} when glued
+    # Institution — glued same-line value → block pair → line-start scan (older shapes). Truncate a
+    # glued trailing sub-label so the institution never swallows '2.1 Bidang SAINS'.
+    institution = (_same_line_value(lines, _PUSAT_RE) or pairs.get('institution', '')
+                   or next((ln.strip() for ln in lines
+                            if re.match(r'\s*(SEKOLAH|SMK|KOLEJ|MAKTAB)\b', ln, re.IGNORECASE)), ''))
+    institution = _SUBLABEL_CUT.split(institution, maxsplit=1)[0].strip(' :').strip()
+    # Bidang → the STPM stream (the Gemini schema already emits `stream`; this catches the
+    # deterministic path up). Glued same-line → block pair. No line-start fallback (Gemini covers it).
+    stream = _same_line_value(lines, _BIDANG_RE) or pairs.get('stream', '')
+    stream = re.split(r'\s+\d+\.\d+\s', stream, maxsplit=1)[0].strip(' :').strip()
+    # Reporting date — read the value after 'Tarikh Lapor Diri' EXPLICITLY (glued or block); the
+    # generic loop below skipped any line containing TARIKH, which also killed this real line.
     offer_dt = _offer_date(lines)
-    reporting = ''
-    for ln in lines:
-        if 'CETAK' in ln.upper():
-            continue
-        mm = _DMY_RE.search(ln)
-        if mm and mm.group(1).strip() != offer_dt and 'TARIKH' not in ln.upper():
-            reporting = mm.group(1).strip()
-            break
+    rep = _same_line_value(lines, _LAPOR_RE) or pairs.get('reporting', '')
+    rm = _DMY_RE.search(rep)
+    reporting = rm.group(1).strip() if rm else ''
+    if not reporting:
+        for ln in lines:
+            if 'CETAK' in ln.upper():
+                continue
+            mm = _DMY_RE.search(ln)
+            if mm and mm.group(1).strip() != offer_dt and 'TARIKH' not in ln.upper():
+                reporting = mm.group(1).strip()
+                break
     return {
         'candidate_name': name, 'candidate_nric': nric, 'programme': programme,
-        'institution': institution, 'intake': intake,
+        'institution': institution, 'stream': stream, 'intake': intake,
         'reporting_date': reporting, 'reporting_date_label': 'Tarikh Lapor Diri' if reporting else '',
         'offer_date': offer_dt, 'issuer': 'Sektor Operasi Sekolah, Kementerian Pendidikan Malaysia',
     }

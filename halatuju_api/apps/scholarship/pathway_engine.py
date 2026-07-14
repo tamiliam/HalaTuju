@@ -81,19 +81,31 @@ def _field_status(declared: str, offer: str) -> str:
 
 
 def offer_pathway_match(declared_programme: str, declared_institution: str,
-                        offer_programme: str, offer_institution: str) -> str:
+                        offer_programme: str, offer_institution: str,
+                        declared_track: str = '', offer_stream: str = '') -> str:
     """'match' / 'mismatch' / 'unknown' for an offer vs the declared pathway.
 
-    A clash on EITHER the institution or the programme makes it a mismatch (the
-    offer is for a genuinely different place or field). Otherwise a shared
-    distinctive token on either side makes it a match. 'unknown' means there was
-    nothing specific enough to compare (the student declared only a pathway type,
-    or the offer body didn't read) — treated as no-conflict downstream."""
+    A clash on the institution, the programme, OR the STREAM/TRACK makes it a mismatch (the
+    offer is for a genuinely different place, field, or stream). Otherwise a shared distinctive
+    token — or an agreeing canonical track — makes it a match. 'unknown' means there was nothing
+    specific enough to compare (the student declared only a pathway type, or the offer body didn't
+    read) — treated as no-conflict downstream.
+
+    #117 (b) — the STREAM was never in the comparison, so an offer summoning the student to
+    ``Bidang SAINS`` against a declared ``sains_sosial`` (#33 / #99 / #117) read as no-conflict.
+    Both sides are canonicalised through ``parse_stpm_stream`` (``SAINS`` → ``sains`` vs
+    ``SAINS SOSIAL`` → ``sains_sosial`` — distinct codes, so the shared 'sains' substring can't
+    produce a false match), and the clash is counted ONLY when BOTH read a stream: a letter that
+    prints no stream (``''``) never clashes."""
+    from .offer_pathway import parse_stpm_stream
     inst = _field_status(declared_institution, offer_institution)
     prog = _field_status(declared_programme, offer_programme)
-    if inst == 'clash' or prog == 'clash':
+    dtrack, otrack = parse_stpm_stream(declared_track), parse_stpm_stream(offer_stream)
+    track_clash = bool(dtrack and otrack and dtrack != otrack)
+    track_match = bool(dtrack and otrack and dtrack == otrack)
+    if inst == 'clash' or prog == 'clash' or track_clash:
         return 'mismatch'
-    if inst == 'match' or prog == 'match':
+    if inst == 'match' or prog == 'match' or track_match:
         return 'match'
     return 'unknown'
 
@@ -319,13 +331,20 @@ def student_offer_check(doc) -> dict:
     cnric = (f.get('candidate_nric') or '').strip()
     programme = (f.get('programme') or '').strip()
     institution = (f.get('institution') or '').strip()
+    stream = (f.get('stream') or '').strip()          # #117 (b) — the offer's Bidang / stream
 
     # Reconcile the offer against what the student declared at apply time. Lenient:
-    # only a genuine clash (different place / field) is 'mismatch' — a naming quirk
+    # only a genuine clash (different place / field / STREAM) is 'mismatch' — a naming quirk
     # is 'match', and 'unknown' when there's nothing specific declared to compare.
     application = getattr(doc, 'application', None)
     decl_prog, decl_inst = _declared_pathway(application) if application is not None else ('', '')
-    pathway = offer_pathway_match(decl_prog, decl_inst, programme, institution)
+    # The declared TRACK is the student's own pre_u_track (a stream, e.g. 'sains_sosial'). Compared
+    # against the offer's stream, both canonicalised inside offer_pathway_match. (When pre_u_track was
+    # itself autofilled from the offer for a stream-less declaration, the two agree → a match, never a
+    # false clash — the same benign direction as _declared_pathway's circularity break.)
+    decl_track = (getattr(application, 'pre_u_track', '') or '').strip() if application is not None else ''
+    pathway = offer_pathway_match(decl_prog, decl_inst, programme, institution,
+                                  declared_track=decl_track, offer_stream=stream)
 
     intake = (f.get('intake') or '').strip()
     reporting_date = (f.get('reporting_date') or '').strip()   # report/registration = course start
@@ -344,6 +363,7 @@ def student_offer_check(doc) -> dict:
         'candidate_nric': cnric,
         'programme': programme,
         'institution': institution,
+        'stream': stream,                         # #117 (b) — the offer's Bidang, for the track compare
         'issuer': (f.get('issuer') or '').strip(),
         'offer_date': (f.get('offer_date') or '').strip(),
         'intake': intake,
