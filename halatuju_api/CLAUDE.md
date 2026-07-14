@@ -548,6 +548,33 @@ test** (`retired` in NON_EARNING; 12 apps) — ask-first→proof, mirroring #126
 
 ---
 
+**✅ SHIPPED (code, on branch `feat/status-vocabulary` — NOT merged; primary does the final merge to
+main) 2026-07-14 — One status vocabulary: shared labels + semantic stage colours (Stream B of the
+2026-07-14 parallel batch; migration `0096_status_awaiting_review` choices-only, NO DDL; retro
+`docs/retrospective-2026-07-14-status-vocabulary.md`; decision ×1; lesson ×1).** The officer admin
+surface described an application's stage in four drifting labels and coloured it in two contradictory
+maps. Now one source of truth: new **`halatuju-web/src/lib/applicationStatus.ts`** (labels via i18n
+keys + semantic Tailwind tones as literal class strings; `APPLICATION_STATUSES`/`SYNTHETIC_STATUSES`/
+`statusLabelKey`/`statusTone`/`hasStatusTone`/`displayStatus`), imported by both admin screens (their
+local `STATUS_LABELS`/`STATUS_TONE`/`statusBadge` maps deleted). Colour is now semantic with a depth
+ramp (blue in-progress ramp / green committed ramp / grey ended / red rejected / **amber reserved for
+`reopened`**), consistent between list and cockpit. The list's status column **finally translates**
+(was hardcoded English) and its filter no longer omits `withdrawn`/`expired`. **`profile_complete`
+renamed "Completed" → "Awaiting review"** (en/ms/ta; parallels `interviewed` = "Awaiting QC"; Django
+`STATUS_CHOICES` synced via `0096`; `verdict` shares `STATUS_CHOICES` so both fields' metadata update,
+still choices-only). Admin FAQ reworded ("Completed"→"Awaiting review" + gloss; stray "Declined"→
+"Rejected"). New guardrail `applicationStatus.test.ts` (label parity en/ms/ta + no local map regrows —
+catches the drift the i18n orphan test is structurally blind to). Full jest 501/501; `next build`
+exit 0; `pytest apps/scholarship` 2408 passed; `makemigrations scholarship --check` clean.
+- **▶ AT MERGE/DEPLOY (primary):** record migration `0096` via Supabase MCP (choices-only → one
+  `django_migrations` INSERT, migrate-first) BEFORE the push that ships the code; leave the 3 *other*
+  status enums (sponsor vetting, course-interest, maintenance sub-state) alone; the student-masking
+  rule in `serializers.py:571-588` is untouched and must stay so. **▶ OWNER:** review the Tamil
+  first-draft label for "Awaiting review" (`மதிப்பாய்வுக்குக் காத்திருக்கிறது`). Shared-file note: only
+  `en/ms/ta.json` overlap Stream A, in the disjoint `admin.scholarship.statuses` block (clean merge).
+
+---
+
 **✅ SHIPPED 2026-07-12→14 — Remote-station batch (3 deliverables, NO migration; retro
 `docs/retrospective-2026-07-12-14-remote-batch.md`; decisions ×3; lessons ×2; all LIVE, last build
 `cdf2a44`):**

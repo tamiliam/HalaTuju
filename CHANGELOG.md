@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## One status vocabulary: shared labels + semantic stage colours — 2026-07-14
+
+### Added
+- **`halatuju-web/src/lib/applicationStatus.ts` — the single source of truth for the officer-facing status vocabulary.** One label per status (via i18n key) and one tone per status, imported by every admin surface. Exports `APPLICATION_STATUSES` (the 13 real statuses in funnel order, mirroring `models.py`), `SYNTHETIC_STATUSES` (`reopened`), `statusLabelKey`, `statusTone` (complete literal Tailwind classes), `hasStatusTone`, and `displayStatus` (the `decision_reopened_at ? 'reopened' : status` rule that was duplicated in both pages). Pure module — returns keys, the caller does `t(...)`.
+- **`src/lib/__tests__/applicationStatus.test.ts` — a guardrail the old i18n orphan test could not provide.** The cockpit's literal `` t(`admin.scholarship.statuses.${s}`) `` makes the whole `statuses.` prefix look dynamic, so every key under it counted as "used" whether or not anything read it. The new test asserts label parity across en/ms/ta (and no unknown key), an explicit tone for every status, and — via a source scan for `STATUS_LABELS`/`STATUS_TONE`/`statusBadge` — that neither admin screen regrows a local map.
+
+### Changed
+- **Status colour is now semantic and consistent between screens.** The list used hue as *identity* (a different colour per stage, then four post-decision stages collapsed into one identical green); the cockpit used hue as *meaning* (amber/green/grey/red) — so the same student was a violet "Interviewing" pill in the list and an amber one in the cockpit, and both spent green/amber/red, the verdict-confidence vocabulary. Both screens now import `statusTone`: colour carries the stage's meaning with a **depth ramp** (blue deepening down the in-progress funnel, green down the committed funnel), grey = ended, red = rejected, and **amber reserved for `reopened`** (needs-attention), matching amber everywhere else in the product.
+- **The list's status column now translates.** Its labels were hardcoded English; it now renders `t(statusLabelKey(s))` in all three languages (the cockpit already did this correctly). The status filter dropdown is built from `APPLICATION_STATUSES`, so it no longer silently omits `withdrawn` and `expired`.
+- **`profile_complete` renamed "Completed" → "Awaiting review"** (ms *"Menunggu semakan"*, ta *"மதிப்பாய்வுக்குக் காத்திருக்கிறது"* — Tamil first-draft, flag for owner review). "Completed" implied the case was finished; the truth is the opposite — the student has finished *their* part and the case is now with us, unreviewed. Parallels its sibling `interviewed` = "Awaiting QC", so the pair reads as the queue it is. The Django-admin `STATUS_CHOICES` label is synced too (**migration `0096_status_awaiting_review`**, choices-only, no DDL — `verdict` shares `STATUS_CHOICES` so both fields' metadata update).
+- **Admin FAQ status glossary reworded to the canonical labels** — "Completed" → "Awaiting review" (with the gloss that names what the old word got wrong), and the stray third name "Declined" → "Rejected".
+
 ## Income-doc reslot + payslip-driven EPF chain (#126) — 2026-07-12→14
 
 ### Fixed

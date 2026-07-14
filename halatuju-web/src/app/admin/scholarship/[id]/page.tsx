@@ -7,6 +7,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym } from '@/lib/scholarship'
+import { statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
 import {
   getScholarshipApplication,
   getVerdictCaseSummary,
@@ -143,26 +144,6 @@ const ANOMALY_CHECK2_OWNER: Record<string, string> = {
 }
 
 const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: '' }
-
-// Status pill colour bands — amber = in-progress/under review, green = accepted/funded,
-// red = closed (rejected/withdrawn/expired). The label itself is the real status (i18n).
-const STATUS_TONE: Record<string, string> = {
-  submitted: 'bg-amber-100 text-amber-700',
-  shortlisted: 'bg-amber-100 text-amber-700',
-  profile_complete: 'bg-amber-100 text-amber-700',
-  interviewing: 'bg-amber-100 text-amber-700',
-  interviewed: 'bg-amber-100 text-amber-700',
-  recommended: 'bg-green-100 text-green-700',
-  awarded: 'bg-green-100 text-green-700',
-  active: 'bg-green-100 text-green-700',
-  maintenance: 'bg-green-100 text-green-700',
-  closed: 'bg-gray-100 text-gray-600',
-  rejected: 'bg-red-100 text-red-700',
-  withdrawn: 'bg-gray-100 text-gray-600',
-  expired: 'bg-gray-100 text-gray-600',
-  reopened: 'bg-amber-100 text-amber-700',
-}
-const statusTone = (s: string) => STATUS_TONE[s] || 'bg-primary-100 text-primary-700'
 
 // Non-parent guardian relationships — drive the dynamic "Parent" vs "Guardian" label (#5).
 const NON_PARENT_RELATIONSHIPS = new Set([
@@ -822,10 +803,10 @@ export default function AdminScholarshipDetailPage() {
           <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">{app.name || '—'}</h1>
           {/* Status pill — a super-reopened decision shows "Reopened" (overrides accepted/rejected). */}
           {(() => {
-            const s = decisionReopened ? 'reopened' : app.status
+            const s = displayStatus(app)
             return (
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusTone(s)}`}>
-                {t(`admin.scholarship.statuses.${s}`)}
+                {t(statusLabelKey(s))}
               </span>
             )
           })()}
