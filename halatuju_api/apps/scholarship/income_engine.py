@@ -2454,7 +2454,19 @@ def employed_epf_members(application):
         return []
     out = []
     claimed = informal_payslip_claimed(application)
-    for member in ('father', 'mother'):
+    # #117 side-finding: this loop was ('father', 'mother') only, so the per-member codes
+    # guardian_epf_missing / brother_epf_missing / sister_epf_missing (already in _MEMBER_EPF_CODE)
+    # were UNREACHABLE — a working sibling/guardian with a payslip but no EPF was never asked. Widen
+    # to the whole roster, exactly as household_status_gaps (line ~2013) already does.
+    members = ['father', 'mother']
+    seen = set()
+    for m in (getattr(application, 'other_family_members', None) or []):
+        if isinstance(m, dict):
+            role = m.get('role', '')
+            if role in ('guardian', 'brother', 'sister') and role not in seen:
+                seen.add(role)
+                members.append(role)
+    for member in members:
         occ = _member_occupation(application, member)
         if not occ or occ in _NON_EARNING_OCC:
             continue

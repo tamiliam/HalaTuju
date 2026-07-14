@@ -928,6 +928,15 @@ class TestInformalEarners(SimpleTestCase):
         app = self._app_occ(father='factory', docs=[_bill('salary_slip', {'gross_income': 'RM1500'})])
         self.assertEqual(employed_epf_members(app), ['father'])
 
+    def test_employed_epf_reaches_a_working_sibling(self):
+        # #117 side-finding: the loop was ('father', 'mother') ONLY, so a working sister/brother/
+        # guardian with a slip but no EPF was never asked (their _MEMBER_EPF_CODE entries were
+        # unreachable). A blank-tagged slip counts for the member; expect the sister to be asked.
+        app = self._app_occ(father='', mother='',
+                            others=[{'role': 'sister', 'occupation': 'factory'}],
+                            docs=[_bill('salary_slip', {'gross_income': 'RM1500'})])
+        self.assertEqual(employed_epf_members(app), ['sister'])
+
     def test_informal_gap_fires_without_doc_or_amount(self):
         app = self._app_occ(father='fisherman')
         self.assertEqual(informal_income_members(app), ['father'])
