@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## Check-2 gaps found in applicant #117 — four fixes + a guardrail — 2026-07-14
+
+A live review of applicant #117 surfaced four defects, three of them systemic. No migration.
+
+### Fixed
+- **A water bill could never satisfy its own re-upload request (6 live bills; #36 stuck, #66 hand-waived).** `doc_parse._parse_water` returned a hardcoded blank address while `income_engine._bill_needs_upload` re-asks for any bill whose address is unreadable — so a clean Air Selangor PDF that locks onto the deterministic parser looped forever (#117 only escaped by photographing the PDF, routing it to Gemini). The parser now reads the address (postcode-anchored, OCR-shape-agnostic) and, if it cannot, **returns `None` to fall through to Gemini** (the module's conservative convention) — never again a dict with a blank address. `_bill_needs_upload` is deliberately not loosened.
+- **The offer letter's pathway was never really compared with the declaration (45 applications).** `autofill_pathway_from_offer` writes `chosen_programme` from the offer stamped `source: offer_letter_auto`, and `_declared_pathway` then treated that AS the declaration — so `offer_pathway_match` compared the offer against itself. It now ignores an `offer_letter_auto` pick and falls back to the student's own `pre_u_track`/`pre_u_institution` (reveals clashes, never creates a false one). Separately, `_canonical_preu_institution` no longer launders the student's declared school into `chosen_programme` when the offer's institution failed to extract.
+- **The STPM offer's stream/track was not in the comparison at all (#33 / #99 / #117).** `offer_pathway_match` gains a third dimension — the offer's stream vs the declared track, both canonicalised through `parse_stpm_stream` (`SAINS` → `sains` vs `SAINS SOSIAL` → `sains_sosial`, distinct codes, so the shared substring can't false-match; a stream-less letter never clashes). The existing chain emits `pathway_confirm` on the mismatch with no new reason code. `offer_parse._parse_stpm` was hardened to read #117's glued-line OCR (name truncated at the NRIC label, institution after `Pusat Tingkatan Enam`, reporting date after `Tarikh Lapor Diri`, and the `Bidang` captured into a new `stream` field — the deterministic path catching up with the Gemini schema).
+- **A working sibling/guardian's EPF was never requested.** `income_engine.employed_epf_members` looped only `('father','mother')`, so `guardian_epf_missing` / `brother_epf_missing` / `sister_epf_missing` (already in `_MEMBER_EPF_CODE`) were unreachable. Widened to the whole roster, exactly as `household_status_gaps` does; the slip-driven KWSP gate still governs the ask.
+
+### Added
+- **A retired / unable-to-work parent's pension is no longer invisible to the means test (12 applications).** A `retired` parent sits in `family.NON_EARNING`, so the income check read "satisfied" — the pension was neither asked for nor counted, understating income. Mirroring #126: **ask first** (a new `pension_amount_unknown` clarify, member-named), hear the answer (`pension_claim`, negation-first), and **only on an explicit "yes"** ask for the statement (`father/mother_pension_proof_missing`, reusing the `salary_slip` slot — no new doc type, no migration; the extraction prompt already accepts a pension/benefit statement). New `family.BENEFIT_OCC`; en/ms/ta copy (Tamil a first draft, queued for owner review). *Not in scope (owner's call): feeding the pension figure into the per-capita computation — ask-and-evidence first, re-banding is a clean separate follow-up.*
+- **A registry guardrail: `set(CLARIFY_SPECS) == set(_CLARIFY_ORDER)`.** `sync_check2_queries` iterates `_CLARIFY_ORDER`, not `CLARIFY_SPECS` — a clarify present in the spec but missing from the order is raised **never**, silently, with no error anywhere. The test now fails loudly on any drift (this plan added a code to both; the next one may forget).
+
+### Changed
+- **The household under-count query fires at a gap of ≥1, not ≥2** (`_ROSTER_UNDERCOUNT_MARGIN` 2 → 1). The household count is the per-capita denominator, so one unaccounted person changes the means test — the owner explicitly overruled the earlier "an under-count of one is benign" justification (#117 described 5 against a stated 6, gap 1, and nothing was asked).
+
 ## Income-doc reslot + payslip-driven EPF chain (#126) — 2026-07-12→14
 
 ### Fixed
