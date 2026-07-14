@@ -21,6 +21,34 @@ logger = logging.getLogger(__name__)
 BUCKET = 'b40-documents'
 
 
+def build_doc_key(app, *segments):
+    """The ONE home for the document storage-key scheme. Org-prefixes the key for the
+    tenant fence (platform Sprint 4): ``<org_id>/<segments...>``. When the application
+    has no owning organisation (bare test fixtures only — prod apps are all backfilled),
+    the prefix is omitted → the legacy layout, which ``resolve_org_for_path`` treats as
+    org #1. Used by BOTH the document upload (``<org>/<app>/<doc_type>/<uuid>``) and the
+    bursary PDF (``<org>/<app>/<file>``) so the scheme can never drift between sites."""
+    tail = '/'.join(str(s) for s in segments if s not in (None, ''))
+    org_id = getattr(app, 'owning_organisation_id', None)
+    return f'{org_id}/{tail}' if org_id else tail
+
+
+def resolve_org_for_path(path):
+    """The owning-organisation id encoded in a document storage key, or None when it
+    can't be read from the path alone. Only a 4-segment DOC key
+    (``<org>/<app>/<doc_type>/<uuid>``) unambiguously carries the org prefix; legacy
+    3-segment doc keys and 2/3-segment bursary keys return None, so the caller falls
+    back to the row's application FK (the real fence). Belt-and-braces for the two
+    signing seams — a doc whose key-org disagrees with its row-org is not signed."""
+    parts = [p for p in (path or '').strip('/').split('/') if p]
+    if len(parts) >= 4:
+        try:
+            return int(parts[0])
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
 def _base_url():
     return getattr(settings, 'SUPABASE_URL', '').rstrip('/')
 

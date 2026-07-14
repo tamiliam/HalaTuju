@@ -27,22 +27,26 @@ def _is_folder(item):
     return item.get('id') is None
 
 
-def _walk_bucket():
-    """Yield every leaf object path ``{app}/{doc_type}/{name}`` in the bucket."""
-    for lvl1 in storage.list_objects(prefix=''):
-        if not _is_folder(lvl1):
-            # A stray file at the root — surface it as its own path.
-            yield lvl1['name']
+def _walk_bucket(prefix=''):
+    """Yield every leaf object path in the bucket, at ANY depth. Recurses folders so it
+    handles BOTH the legacy 3-level layout (``<app>/<doc_type>/<name>``) AND the
+    org-prefixed 4-level layout (``<org>/<app>/<doc_type>/<name>``, Sprint 4). A shallow
+    fixed-depth walk would flag every org-prefixed live blob as an orphan — and
+    ``--apply`` could then delete it. ``prefix`` is '' or ends with '/' by construction.
+
+    Note: 2-segment bursary PDFs (``<app>/<file>``, or ``<org>/<app>/<file>``) are leaf
+    files under the app/org folder and ARE yielded here; the orphan matcher just needs
+    the DB to hold the same path. (Pre-existing gap: bursary PDFs were never reconciled
+    against a DB set here — TD, unchanged by this fix.)"""
+    for item in storage.list_objects(prefix=prefix):
+        name = (item or {}).get('name')
+        if not name:
             continue
-        app_prefix = lvl1['name']
-        for lvl2 in storage.list_objects(prefix=f'{app_prefix}/'):
-            if not _is_folder(lvl2):
-                yield f'{app_prefix}/{lvl2["name"]}'
-                continue
-            doc_prefix = f'{app_prefix}/{lvl2["name"]}'
-            for leaf in storage.list_objects(prefix=f'{doc_prefix}/'):
-                # At this depth everything should be a file; include regardless.
-                yield f'{doc_prefix}/{leaf["name"]}'
+        full = f'{prefix}{name}'
+        if _is_folder(item):
+            yield from _walk_bucket(f'{full}/')
+        else:
+            yield full
 
 
 class Command(BaseCommand):

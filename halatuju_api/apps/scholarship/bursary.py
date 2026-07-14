@@ -501,7 +501,9 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
     sha = hashlib.sha256(html.encode('utf-8')).hexdigest()
 
     pdf_bytes = generate_pdf(html)
-    pdf_path = f'{application.id}/bursary_agreement_{version}_{int(now.timestamp())}.pdf'
+    # Org-prefixed key (Sprint 4): <org_id>/<app_id>/bursary_agreement_....pdf.
+    pdf_path = storage.build_doc_key(
+        application, application.id, f'bursary_agreement_{version}_{int(now.timestamp())}.pdf')
     storage.upload_object(pdf_path, pdf_bytes, 'application/pdf')
 
     agreement, _ = BursaryAgreement.objects.update_or_create(

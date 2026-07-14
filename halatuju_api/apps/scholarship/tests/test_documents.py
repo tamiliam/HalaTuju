@@ -46,7 +46,10 @@ class TestDocumentApi(TestCase):
         resp = self.client.post('/api/v1/scholarship/documents/sign-upload/', {'doc_type': 'ic'}, format='json')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()['upload_url'], 'https://signed.example/upload')
-        self.assertTrue(resp.json()['storage_path'].startswith(f'{self.app_a.id}/ic/'))
+        # Sprint 4: the key is <app>/ic/<uuid> (bare-cohort fixture, no org) or
+        # <org>/<app>/ic/<uuid> when the app has an owning org — tolerate both here;
+        # the org-prefix scheme itself is pinned in test_org_doc_keys.py.
+        self.assertRegex(resp.json()['storage_path'], rf'(^|/){self.app_a.id}/ic/[0-9a-f]+$')
 
     @patch('apps.scholarship.storage.create_signed_upload_url', return_value=None)
     def test_sign_upload_unavailable_503(self, _mock):

@@ -656,14 +656,15 @@ class DocumentSignUploadView(APIView):
 
     def post(self, request):
         import uuid
-        from .storage import create_signed_upload_url
+        from .storage import create_signed_upload_url, build_doc_key
         app = _current_application(request.user_id)
         if app is None:
             return Response({'error': 'No shortlisted application.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = SignUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         doc_type = serializer.validated_data['doc_type']
-        path = f"{app.id}/{doc_type}/{uuid.uuid4().hex}"
+        # Org-prefixed key (Sprint 4): <org_id>/<app_id>/<doc_type>/<uuid>.
+        path = build_doc_key(app, app.id, doc_type, uuid.uuid4().hex)
         url = create_signed_upload_url(path)
         if not url:
             return Response(

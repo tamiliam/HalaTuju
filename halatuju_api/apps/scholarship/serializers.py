@@ -231,7 +231,12 @@ class BursaryAgreementSerializer(serializers.Serializer):
     def get_pdf_url(self, obj):
         if not obj.pdf_storage_path:
             return None
-        from .storage import create_signed_download_url
+        from .storage import create_signed_download_url, resolve_org_for_path
+        # org-fence (Sprint 4, belt-and-braces) — see ApplicantDocumentSerializer.
+        app = getattr(obj, 'application', None)
+        path_org = resolve_org_for_path(obj.pdf_storage_path)
+        if path_org is not None and app is not None and path_org != app.owning_organisation_id:
+            return None
         return create_signed_download_url(obj.pdf_storage_path)
 
 
@@ -690,7 +695,14 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         ]
 
     def get_download_url(self, obj):
-        from .storage import create_signed_download_url
+        from .storage import create_signed_download_url, resolve_org_for_path
+        # org-fence (Sprint 4, belt-and-braces): refuse to sign a doc whose key-org
+        # disagrees with its application's org. The real fence is upstream (student
+        # sees own docs; admin reads are org-scoped) — this catches a mis-keyed blob.
+        app = getattr(obj, 'application', None)
+        path_org = resolve_org_for_path(obj.storage_path)
+        if path_org is not None and app is not None and path_org != app.owning_organisation_id:
+            return None
         return create_signed_download_url(obj.storage_path)
 
     def get_vision_nric_verdict(self, obj):
