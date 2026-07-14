@@ -414,16 +414,18 @@ class SponsorSponsorshipsView(_PoolBase):
 
 
 class SponsorCancelOfferView(_PoolBase):
-    """POST /api/v1/sponsor/sponsorships/<pk>/cancel/ — withdraw an OFFERED award
-    before the student accepts; the amount returns to the sponsor's balance."""
+    """POST /api/v1/sponsor/sponsorships/<pk>/cancel/ — withdraw an OFFERED award within the
+    cool-off, i.e. before the good-news email has gone out; the amount returns to the sponsor's
+    balance and the student reverts to 'recommended' (back in the pool). Once the student has been
+    emailed the award, cancelling is refused (400 ``already_notified``)."""
     def post(self, request, pk):
         sponsor, err = self._gate(request)
         if err:
             return err
-        s = sponsor.sponsorships.filter(id=pk, status='offered').first()
-        if s is None:
-            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
-        s.status = 'cancelled'
-        s.decided_at = timezone.now()
-        s.save(update_fields=['status', 'decided_at', 'updated_at'])
+        try:
+            s = sponsorship_service.cancel_offer(sponsor, pk)
+        except sponsorship_service.SponsorshipError as e:
+            if e.code == 'not_found':
+                return Response({'error': e.code}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(SponsorSponsorshipSerializer(s).data)

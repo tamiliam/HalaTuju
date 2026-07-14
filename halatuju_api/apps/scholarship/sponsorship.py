@@ -188,6 +188,32 @@ def current_offer(application):
 
 
 @transaction.atomic
+def cancel_offer(sponsor, sponsorship_id):
+    """Sponsor withdraws an award they've made — allowed ONLY inside the cool-off, i.e. while the
+    good-news email has NOT gone out (``offer_emailed_at`` is NULL). Once the student has been told,
+    there is no turning back: ``already_notified``. The application reverts 'awarded' → 'recommended'
+    (back in the pool, fundable by another sponsor) and the held amount returns to the balance (a
+    'cancelled' row is not HOLDING).
+
+    ``offer_emailed_at`` — not an elapsed-hours calculation — is the gate, because it IS the fact
+    that matters (the student has been told); a separate clock could drift from the cron that sends
+    the email. Locked FOR UPDATE so a cancel can't race ``release_award_offer_emails`` and land on
+    the wrong side of that line. Raises SponsorshipError on a bad state."""
+    sp = (Sponsorship.objects.select_for_update()
+          .filter(id=sponsorship_id, sponsor=sponsor, status='offered')
+          .select_related('application').first())
+    if sp is None:
+        raise SponsorshipError('not_found')
+    if sp.offer_emailed_at is not None:
+        raise SponsorshipError('already_notified')
+    sp.status = 'cancelled'
+    sp.decided_at = timezone.now()
+    sp.save(update_fields=['status', 'decided_at', 'updated_at'])
+    _revert_to_pool(sp.application)
+    return sp
+
+
+@transaction.atomic
 def respond_to_award(application, *, action, locale='en', granted_by='self',
                      guardian_name='', guardian_relationship='', guardian_nric='', ip=None,
                      student_signed_name='', student_signed_nric='',
