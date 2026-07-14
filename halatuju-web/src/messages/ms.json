@@ -2148,6 +2148,18 @@
         "vircle_setup_pending": {
           "title": "Sediakan eWallet Vircle anda",
           "desc": "Pasang aplikasi Vircle, lengkapkan pendaftaran, kemudian beritahu kami di sini dengan nombor telefon bimbit yang anda daftarkan — begitulah cara kami memastikan akaun anda menerima biasiswa anda."
+        },
+        "pension_amount_unknown": {
+          "title": "Beritahu kami tentang pencen ibu bapa anda",
+          "desc": "Anda memberitahu kami bahawa {members} anda telah bersara atau tidak berupaya bekerja. Adakah mereka menerima pencen atau bantuan tetap (contohnya pencen kerajaan, PERKESO, atau elaun lain)? Lebih kurang berapa sebulan? Jika ya, kami akan meminta penyata tersebut — ia juga dikira sebagai pendapatan isi rumah."
+        },
+        "father_pension_proof_missing": {
+          "title": "Muat naik penyata pencen bapa anda",
+          "desc": "Anda memberitahu bapa anda menerima pencen atau bantuan. Sila muat naik penyata pencen atau bantuan terkininya — ia dikira sebagai sebahagian daripada pendapatan isi rumah."
+        },
+        "mother_pension_proof_missing": {
+          "title": "Muat naik penyata pencen ibu anda",
+          "desc": "Anda memberitahu ibu anda menerima pencen atau bantuan. Sila muat naik penyata pencen atau bantuan terkininya — ia dikira sebagai sebahagian daripada pendapatan isi rumah."
         }
       },
       "vircle": {
@@ -3533,7 +3545,10 @@
           "household_roster_undercount": "Saiz isi rumah yang dinyatakan melebihi ahli yang dihuraikan — pelajar diminta siapa lagi dalam isi rumah.",
           "other_scholarships_followup": "Biasiswa lain disenaraikan semasa memohon — pelajar diminta yang mana, jumlah, dan sama ada diterima/ditawarkan (elak pembiayaan berganda).",
           "high_utility_expense": "Perbelanjaan utiliti kelihatan tinggi berbanding pendapatan isi rumah yang diisytihar — pelajar diminta secara terus mengapa, dengan jumlah dinyatakan.",
-          "high_utility_expense_str": "Perbelanjaan utiliti kelihatan tinggi bagi isi rumah STR (bantuan tunai) — pelajar diminta secara terus mengapa, dengan jumlah dinyatakan."
+          "high_utility_expense_str": "Perbelanjaan utiliti kelihatan tinggi bagi isi rumah STR (bantuan tunai) — pelajar diminta secara terus mengapa, dengan jumlah dinyatakan.",
+          "pension_amount_unknown": "Ibu/bapa yang bersara atau tidak berupaya bekerja mungkin menerima pencen atau bantuan yang belum dikira — pelajar telah ditanya sama ada mereka menerimanya dan, jika ya, lebih kurang berapa (tiada dokumen diminta sehingga disahkan).",
+          "father_pension_proof_missing": "Bapa bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
+          "mother_pension_proof_missing": "Ibu bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah)."
         }
       },
       "decision": {

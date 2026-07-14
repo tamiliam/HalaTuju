@@ -85,6 +85,14 @@ PROFESSION_CODES = frozenset(PROFESSION_LABELS)
 #: Earning professions — used in Phase 2 (roster → income earners). NOT wired yet.
 NON_EARNING = frozenset({'homemaker', 'retired', 'unemployed', 'unable', 'deceased', 'no_contact'})
 
+#: Benefit-drawing statuses (#117, owner 2026-07-14): not employed, but may draw a RECURRING
+#: benefit — a pension (retired) or a disability/hardship allowance (unable to work). These sit in
+#: NON_EARNING too (membership left intact so nothing re-bands), but this narrower lens says: don't
+#: demand a payslip, yet DO ask what they draw and, if they draw something, ask for the statement —
+#: the ask-first→proof pattern (#126). A retired parent was otherwise invisible to the means test
+#: (classed non-earning → never asked → the pension neither requested nor counted).
+BENEFIT_OCC = frozenset({'retired', 'unable'})
+
 #: Self-employed / informal earners — the "Self-employed / informal" block above (own-account,
 #: daily-wage, freelance). These typically have NO payslip and do NOT contribute to EPF, so the
 #: income engine must NOT demand a salary slip / EPF from them (owner 2026-07-08, the #130

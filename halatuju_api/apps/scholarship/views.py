@@ -1303,6 +1303,13 @@ class ResolutionItemResolveView(APIView):
             from .income_engine import payslip_claim
             item.params = {**(item.params or {}), 'payslip_claim': payslip_claim(text)}
             item.save(update_fields=['params'])
+        # The twin, #117: a retired/unable parent's pension answer, classified once here. An explicit
+        # "yes, he draws a pension" opens the *_pension_proof_missing statement request
+        # (check2_queries via income_engine.pension_claimed); "no"/"unclear" ask for nothing.
+        if item.code == 'pension_amount_unknown':
+            from .income_engine import pension_claim
+            item.params = {**(item.params or {}), 'pension_claim': pension_claim(text)}
+            item.save(update_fields=['params'])
         # The pathway confirmation is the one 'confirm' that also WRITES state: the
         # student saying Yes settles their final chosen pathway (no human officer).
         if item.code == 'pathway_confirm':

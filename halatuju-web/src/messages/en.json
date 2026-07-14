@@ -2148,6 +2148,18 @@
         "vircle_setup_pending": {
           "title": "Set up your Vircle eWallet",
           "desc": "Install the Vircle app, complete the sign-up, then tell us here with the mobile number you registered — that's how we arrange for your account to receive your bursary."
+        },
+        "pension_amount_unknown": {
+          "title": "Tell us about your parent's pension",
+          "desc": "You have told us that your {members} is retired or unable to work. Do they receive a pension or a regular benefit (for example a government pension, PERKESO, or another allowance)? Roughly how much a month? If they do, we will ask for the statement — it counts as household income too."
+        },
+        "father_pension_proof_missing": {
+          "title": "Upload your father's pension statement",
+          "desc": "You told us your father draws a pension or benefit. Please upload his latest pension or benefit statement — it counts as part of the household's income."
+        },
+        "mother_pension_proof_missing": {
+          "title": "Upload your mother's pension statement",
+          "desc": "You told us your mother draws a pension or benefit. Please upload her latest pension or benefit statement — it counts as part of the household's income."
         }
       },
       "vircle": {
@@ -3533,7 +3545,10 @@
           "household_roster_undercount": "Stated household size exceeds the members described — the student has been asked who else is in the household.",
           "other_scholarships_followup": "Other scholarships were listed at apply — the student has been asked which, the amount, and whether received/offered (avoid double-funding).",
           "high_utility_expense": "Utility spend reads high vs the declared household income — the student has been asked point-blank why, with the amount stated.",
-          "high_utility_expense_str": "Utility spend reads high for an STR (cash-aid) household — the student has been asked point-blank why, with the amount stated."
+          "high_utility_expense_str": "Utility spend reads high for an STR (cash-aid) household — the student has been asked point-blank why, with the amount stated.",
+          "pension_amount_unknown": "A retired / unable-to-work parent may draw a pension or benefit that isn't yet counted — the student has been asked whether they receive one and, if so, roughly how much (no document demanded until they confirm).",
+          "father_pension_proof_missing": "Father is retired/unable and the student confirmed he draws a pension — asked to upload the statement (counts as household income).",
+          "mother_pension_proof_missing": "Mother is retired/unable and the student confirmed she draws a pension — asked to upload the statement (counts as household income)."
         }
       },
       "decision": {
