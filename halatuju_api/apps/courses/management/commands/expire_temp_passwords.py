@@ -72,9 +72,9 @@ class Command(BaseCommand):
 
             # Expired: rotate to a long random password that is NEVER emailed, so the copy sitting in
             # the invitee's inbox stops working. must_change_password stays true (a Resend re-issues a
-            # known one); temp_password_expired marks it for anyone inspecting the account.
-            new_meta = {k: v for k, v in meta.items() if k != 'temp_password_issued_at'}
-            new_meta['temp_password_expired'] = True
+            # known one); null temp_password_issued_at so THIS run is the only one that acts on it
+            # (Supabase merges user_metadata, so we clear by nulling, not omitting); mark expired.
+            new_meta = {**meta, 'temp_password_issued_at': None, 'temp_password_expired': True}
             try:
                 pr = http_requests.put(
                     f'{url}/auth/v1/admin/users/{uid}',

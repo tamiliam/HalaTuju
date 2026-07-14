@@ -514,7 +514,7 @@ class ExpireTempPasswordsTest(TestCase):
         body = put.call_args[1]['json']
         self.assertTrue(body['password'])                                  # rotated to a new secret
         self.assertTrue(body['user_metadata']['temp_password_expired'])    # marked expired
-        self.assertNotIn('temp_password_issued_at', body['user_metadata'])  # clock cleared
+        self.assertIsNone(body['user_metadata']['temp_password_issued_at'])  # clock nulled (merge-safe)
 
     def test_skips_a_fresh_temp_password(self):
         self._admin('u-fresh', 'fresh@example.com')
@@ -566,7 +566,8 @@ class AdminSetPasswordTest(TestCase):
         body = p.call_args[1]['json']
         self.assertEqual(body['password'], 'a-strong-password')
         self.assertFalse(body['user_metadata']['must_change_password'])
-        self.assertNotIn('temp_password_issued_at', body['user_metadata'])
+        # Nulled (not omitted) — Supabase merges user_metadata, so omitting wouldn't clear it.
+        self.assertIsNone(body['user_metadata']['temp_password_issued_at'])
         self.assertEqual(body['user_metadata']['name'], 'Rev')         # name preserved
 
     def test_refuses_when_the_caller_is_not_pending_a_change(self):

@@ -647,9 +647,10 @@ class AdminSetPasswordView(APIView):
             # Not mid-onboarding — do not let this stand in for a normal (re-auth'd) password change.
             return Response({'error': 'not_pending_password_change'}, status=403)
 
-        new_meta = {k: v for k, v in meta.items()
-                    if k not in ('temp_password_issued_at', 'temp_password_expired')}
-        new_meta['must_change_password'] = False
+        # Supabase admin updateUser MERGES user_metadata (omitting a key does NOT delete it), so we
+        # explicitly null the temp-password fields to clear them.
+        new_meta = {**meta, 'must_change_password': False,
+                    'temp_password_issued_at': None, 'temp_password_expired': None}
         try:
             pr = http_requests.put(
                 user_url, json={'password': password, 'user_metadata': new_meta},
