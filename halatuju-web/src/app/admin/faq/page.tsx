@@ -56,11 +56,11 @@ const REVIEWING: QA[] = [
   {
     q: <>What do the application statuses mean?</>,
     a: <>In order: <strong>Shortlisted</strong> — passed the first checks and invited to complete their
-      application; <strong>Completed</strong> — they&rsquo;ve confirmed their details and documents, ready for
-      you; <strong>Interviewing</strong> — interview times proposed or booked; <strong>Interviewed</strong> —
-      the interview is done and you&rsquo;ve submitted your findings; <strong>Accepted</strong> /
-      <strong> Declined</strong> — your decision is recorded. Most of your work is on the <em>Completed</em> and
-      <em> Interviewing</em> ones.</>,
+      application; <strong>Awaiting review</strong> — the student has confirmed their details and documents;
+      the case is now with us and not yet reviewed; <strong>Interviewing</strong> — interview times proposed or
+      booked; <strong>Interviewed</strong> — the interview is done and you&rsquo;ve submitted your findings;
+      <strong> Accepted</strong> / <strong>Rejected</strong> — your decision is recorded. Most of your work is on
+      the <em>Awaiting review</em> and <em>Interviewing</em> ones.</>,
   },
   {
     q: <>What is the &ldquo;Student profile (draft)&rdquo;?</>,

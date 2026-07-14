@@ -109,7 +109,7 @@ class ScholarshipApplication(models.Model):
         ('submitted', 'Submitted'),
         ('shortlisted', 'Shortlisted'),
         # Phase C post-shortlist funnel (between shortlisted and recommended):
-        ('profile_complete', 'Profile complete'),  # student confirmed a complete Step-4 profile
+        ('profile_complete', 'Awaiting review'),  # student confirmed a complete Step-4 profile; case now with us, not yet reviewed
         ('interviewing', 'Interviewing'),           # interview in progress OR findings in, verdict not yet submitted
         ('interviewed', 'Interviewed — awaiting QC'),  # reviewer submitted the full verdict; awaiting quality control (QC)
         ('recommended', 'Recommended'),  # QC-accepted — provisional, masked from the student

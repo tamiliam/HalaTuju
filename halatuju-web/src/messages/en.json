@@ -3009,7 +3009,7 @@
       "statuses": {
         "submitted": "Submitted",
         "shortlisted": "Shortlisted",
-        "profile_complete": "Profile complete",
+        "profile_complete": "Awaiting review",
         "interviewing": "Interviewing",
         "interviewed": "Awaiting QC",
         "recommended": "Recommended",

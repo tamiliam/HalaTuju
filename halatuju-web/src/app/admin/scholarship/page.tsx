@@ -15,25 +15,12 @@ import {
 import { Pagination } from '@/components/Pagination'
 // import AiReliabilityCard from '@/components/AiReliabilityCard' // hidden 2026-06-13 — re-add when placement is decided (component retained)
 import { REFERRING_ORG_OPTIONS, referralAcronym } from '@/lib/scholarship'
+import { APPLICATION_STATUSES, statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
 
 const bucketBadge = (b: string) =>
   b === 'A' ? 'bg-green-100 text-green-700'
     : b === 'B' ? 'bg-amber-100 text-amber-700'
       : 'bg-gray-100 text-gray-500'
-
-const statusBadge = (s: string) =>
-  s === 'reopened' ? 'bg-amber-100 text-amber-700'
-    : s === 'shortlisted' ? 'bg-blue-100 text-blue-700'
-      : s === 'profile_complete' ? 'bg-emerald-100 text-emerald-700'
-        : s === 'interviewing' ? 'bg-violet-100 text-violet-700'
-          : s === 'interviewed' ? 'bg-indigo-100 text-indigo-700'
-            : s === 'recommended' ? 'bg-green-100 text-green-700'
-            : s === 'awarded' ? 'bg-green-100 text-green-700'
-            : s === 'active' ? 'bg-green-100 text-green-700'
-            : s === 'maintenance' ? 'bg-green-100 text-green-700'
-            : s === 'closed' ? 'bg-gray-100 text-gray-600'
-              : s === 'rejected' ? 'bg-red-100 text-red-600'
-                : 'bg-gray-100 text-gray-600'
 
 // ── Reviewer language matching (assignment dropdown) ───────────────────────────
 const LANG_LABEL: Record<string, string> = { en: 'EN', ms: 'BM', ta: 'TA' }
@@ -48,21 +35,6 @@ function orderReviewersFor(reviewers: Reviewer[], lang: string): Array<{ rv: Rev
   if (specific) out.sort((a, b) => Number(b.match) - Number(a.match) || a.rv.name.localeCompare(b.rv.name))
   return out
 }
-
-const STATUS_OPTIONS = [
-  'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'recommended', 'awarded', 'active', 'maintenance', 'closed', 'rejected',
-]
-
-// Human, Sentence-case status labels (the raw keys like 'profile_complete' aren't for display).
-const STATUS_LABELS: Record<string, string> = {
-  submitted: 'Submitted', shortlisted: 'Shortlisted', profile_complete: 'Completed',
-  interviewing: 'Interviewing', interviewed: 'Awaiting QC',   // repurposed by the QC gate (2026-07-02)
-  recommended: 'Recommended', awarded: 'Awarded', active: 'Active', maintenance: 'Maintenance', closed: 'Closed',
-  rejected: 'Rejected', withdrawn: 'Withdrawn', expired: 'Expired',
-  reopened: 'Reopened',
-}
-const statusLabel = (s: string) =>
-  STATUS_LABELS[s] || (s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : s)
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
@@ -225,7 +197,7 @@ export default function AdminScholarshipList() {
         </select>
         <select value={statusF} onChange={(e) => changeFilter(setStatusF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allStatuses')}</option>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
+          {APPLICATION_STATUSES.map((s) => <option key={s} value={s}>{t(statusLabelKey(s))}</option>)}
         </select>
         {canFilterByAssignee && (
           // Admin/super view this filter (it's hidden for reviewers, whose list is self-scoped).
@@ -306,8 +278,8 @@ export default function AdminScholarshipList() {
                   <td className="px-4 py-3">
                     {(() => {
                       // A super-reopened decision shows "Reopened", overriding the stored accepted/rejected.
-                      const s = a.decision_reopened_at ? 'reopened' : a.status
-                      return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(s)}`}>{statusLabel(s)}</span>
+                      const s = displayStatus(a)
+                      return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone(s)}`}>{t(statusLabelKey(s))}</span>
                     })()}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(a.submitted_at)}</td>
