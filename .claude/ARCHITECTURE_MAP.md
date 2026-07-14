@@ -123,6 +123,7 @@ apps/courses/
 | `StudentProfile` | `student_profiles` | User eligibility data | SPM grades, gender, nationality, exam_type, muet_band, STPM fields, income, siblings |
 | `SavedCourse` | `saved_courses` | User bookmarks | course, student, interest_status |
 | `AdmissionOutcome` | `admission_outcomes` | Track application results | course, student, status (applied/offered/accepted/rejected/withdrawn) |
+| `PartnerOrganisation` | `partner_organisations` | Dual role: partner-referral org AND (since platform Sprint 1, 2026-07-15) the tenant Organisation record | code, name, per-language branding/persona/sign-off, sender emails, frontend_url, module_* flags. NB: `PartnerAdmin.org` = *referring* org; `ScholarshipCohort.owning_organisation` = *owning* tenant (D-8) |
 | `MascoOccupation` | `masco_occupations` | Career occupation codes (274 entries) | code, title_en, title_bm |
 | `StpmCourse` | `stpm_courses` | STPM degree programmes (1,113 rows) | name, university, stream, merit_score, field, category |
 | `StpmRequirement` | `stpm_requirements` | STPM eligibility rules | min_cgpa, min_muet_band, stpm_min_subjects, stpm_min_grade, subject requirements |

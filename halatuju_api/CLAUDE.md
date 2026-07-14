@@ -524,14 +524,24 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-15)
 
-**▶ IN PROGRESS — Platform Sprint 1: Organisation record + BrightPath as org #1** (roadmap
+**▶ NEXT — Platform Sprint 2: Owning-org on the application** (roadmap
 `docs/plans/2026-07-14-platform-roadmap-draft.md`; conventions `docs/build-for-tenancy-conventions.md`).
-Code BUILT locally (PartnerOrganisation tenant columns, `ScholarshipCohort.owning_organisation`,
-seed migration 0098, +6 tests): **NOT pushed** — the additive DDL must go to prod MIGRATE-FIRST via
-the Supabase MCP using the runbook `docs/plans/2026-07-15-sprint1-migrate-first.md`, THEN push
-(push = deploy). Migrations: courses/0061, scholarship/0097+0098. Behaviourally invisible (nothing
-reads the new columns yet). Serializer exposure deferred to platform Sprint 10 (decision in
-CHANGELOG). After push: live smoke + sprint close.
+- Denormalised `owning_organisation` FK on `ScholarshipApplication`, populated from its cohort (D-8);
+  backfill data migration → org #1; non-null after backfill.
+- Create path (`ApplicationCreateSerializer`/services) always sets it; drift guard asserting
+  `application.owning_organisation == application.cohort.owning_organisation`.
+- Additive → MIGRATE-FIRST via Supabase MCP (hand-written Postgres DDL runbook, same pattern as
+  Sprint 1's `docs/plans/2026-07-15-sprint1-migrate-first.md`), THEN push (push = deploy).
+- Column is written, not yet read for authorisation (that's Sprint 3a) — behaviourally invisible.
+
+**✅ SHIPPED + LIVE 2026-07-15 — Platform Sprint 1: Organisation record + BrightPath as org #1**
+(commit `a473a171`; migrations courses/0061 + scholarship/0097+0098 applied to prod migrate-first via
+Supabase MCP; retro `docs/retrospective-2026-07-15-platform-s1-organisation.md`). PartnerOrganisation
+grew 19 tenant columns (branding/persona/sign-off ×3 languages, sender identities, module flags);
+`ScholarshipCohort.owning_organisation` FK (PROTECT); BrightPath seeded as org #1 with today's live
+constants, all cohorts backfilled. Behaviourally invisible — nothing reads the new columns yet;
+serializer exposure deferred to platform Sprint 10. Smoke: web 200, public API 200, gated 401-not-500,
+`/scholarship/intake/` 200 through the new ORM model, zero error logs.
 
 The 2026-07-14 parallel streams (Check-2 #117 + status vocabulary) AND partner onboarding are all
 shipped, merged, and live; the CARRY list below is the outstanding owner work.

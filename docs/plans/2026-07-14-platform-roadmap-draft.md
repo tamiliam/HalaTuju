@@ -31,14 +31,7 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 ## Phase 1 — Organisation layer + data fencing (BrightPath sole tenant, invisible)
 
-### Sprint 1 — The Organisation record + BrightPath as org #1
-- **Goal:** Establish the tenant spine by growing `courses.PartnerOrganisation` into the platform Organisation record and linking the programme config (`ScholarshipCohort`) to it. (Decision D-6/D-8.)
-- **Scope:** `apps/courses/models.py` (`PartnerOrganisation` — add identity/branding/module-flag columns), `apps/scholarship/models.py` (`ScholarshipCohort` — add the owning-org FK), admin serializers, a data migration seeding BrightPath as organisation #1 and pointing the existing cohort(s) at it. **Naming rule (review §2.5): the new FK is `owning_organisation` (or equally unambiguous) — NEVER another `org`, because `PartnerAdmin.org` already means *referring* organisation; referrer ≠ owner must stay visible in the schema.**
-- **Migrations expected:** 2 (additive columns on `partner_organisations`; additive FK on `scholarship_cohorts`) + 1 data migration (seed org #1, backfill cohort→org). All additive/backward-compatible → migrate-first, zero downtime.
-- **Test plan:** model tests for the new columns/FK; a migration test that the existing cohort ends up owned by org #1; full existing scholarship suite green (2,400+ pytest per project history).
-- **Main risk + mitigation:** *Risk:* the org record diverges from the eventual config surface. *Mitigation:* land only the columns the PRD §3 config surface names; leave editing UI to Phase 3.
-- **How we know BrightPath still works:** no runtime behaviour changes (nothing reads the new FK yet); golden masters + full suite pass; a live smoke of the applicant flow.
-- **Complexity:** Low.
+### Sprint 1 — ✅ SHIPPED 2026-07-15 (commit `a473a171`; retro `docs/retrospective-2026-07-15-platform-s1-organisation.md`)
 
 ### Sprint 2 — Owning-org on the application
 - **Goal:** Give every `ScholarshipApplication` a durable owning-organisation, so queries can be fenced (audit §3: today there is none).
@@ -254,7 +247,7 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 | Phase | Sprint | Deliverable | Migrations | Complexity |
 |---|---|---|---|---|
-| 1 | 1 | Organisation record + BrightPath as org #1 | 2 + 1 data | Low |
+| 1 | 1 | ✅ Organisation record + BrightPath as org #1 — shipped 2026-07-15 | 2 + 1 data | Low |
 | 1 | 2 | Owning-org on the application + drift guard | 1 + 1 data | Low–Med |
 | 1 | 3a | Org-scoped gates + manager (43-endpoint audit) | 0 | **High** |
 | 1 | 3b | Fence-proof test + CI static guard | 0 | Med |
