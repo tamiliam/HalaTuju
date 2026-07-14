@@ -545,6 +545,16 @@ class TestWaterParser(SimpleTestCase):
         # The bill is dated from the "Tarikh" header (so recency works) — NOT the due date
         # (15/06/2026) or the last-payment date (08/04/2026).
         self.assertEqual(r['bill_date'], '12/05/2026')
+        # #117 fix: the address is now read (postcode-anchored: street line + postcode line), never
+        # the hardcoded '' that made _bill_needs_upload re-ask forever.
+        self.assertEqual(r['address'], 'NO 2 JLN 25/27C TMN SRI MUDA 40400 SHAH ALAM')
+
+    def test_no_readable_address_bails_to_gemini(self):
+        # THE #117 load-bearing rule: a recognised water bill whose address can't be read must
+        # return None (→ Gemini), never a dict with a blank address (which looped #36/#66).
+        no_addr = ("BIL AIR\nSOME HOLDER\nBaki Terdahulu RM 5.00\n"
+                   "Bil Semasa RM 20.00\nJumlah Perlu Dibayar RM 25.00\nNo. Akaun :1\n")
+        self.assertIsNone(parse_by_labels('water_bill', no_addr))
 
     def test_bill_date_survives_ocr_interleaving(self):
         # a80-style: the "Tarikh" date sits two lines below the label (Wilayah value spliced in).
@@ -560,10 +570,12 @@ class TestWaterParser(SimpleTestCase):
         self.assertEqual(r['bill_date'], '')
 
     def test_tunggakan_arrears_variant(self):
-        txt = "BIL AIR\nTESTNAME A/P RAJU\nTunggakan RM 10.00\nBil Semasa RM 27.22\nNo. Akaun 123\n"
+        txt = ("BIL AIR\nTESTNAME A/P RAJU\n8 LORONG TEST\n41000 KLANG\n"
+               "Tunggakan RM 10.00\nBil Semasa RM 27.22\nNo. Akaun 123\n")
         r = parse_by_labels('water_bill', txt)
         self.assertEqual(r['amount'], 'RM27.22')
         self.assertEqual(r['unpaid_balance'], 'RM10.00')  # via the Tunggakan alternate
+        self.assertEqual(r['address'], '8 LORONG TEST 41000 KLANG')
 
     def test_non_water_or_unrecognised_defers(self):
         self.assertIsNone(parse_by_labels('water_bill', 'CamScanner'))
