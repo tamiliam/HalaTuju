@@ -2691,15 +2691,18 @@ def informal_income_context(application):
     return {'members': members, 'jobs': '; '.join(jobs)}
 
 
-_ROSTER_UNDERCOUNT_MARGIN = 2   # conservative: only a gap of ≥2 unlisted people (tune post-deploy)
+_ROSTER_UNDERCOUNT_MARGIN = 1   # owner (2026-07-14): a gap of ≥1 — the household count is the
+                                # per-capita denominator, so one unaccounted person changes the means test
 
 
 def household_roster_undercount(application):
     """The MISSING direction of 2C: the stated household size is LARGER than the people explicitly
     described → ask who else is in the household (the officers' '6 members, 5 listed' query).
-    Opposite of ``household_size_shortfall`` (the over-count). A gap of ≥2 (an under-count of one
-    is common/benign — grandparents, an un-itemised relative). Returns ``{'described','size'}`` or
-    None. Advisory only."""
+    Opposite of ``household_size_shortfall`` (the over-count). A gap of ≥1: the earlier "an
+    under-count of one is common/benign" justification was explicitly overruled by the owner
+    (2026-07-14) — the household count is the per-capita denominator, so one unaccounted person
+    changes the means test (#117 described 5 against a stated 6, gap 1, and nothing was asked).
+    Returns ``{'described','size'}`` or None. Advisory only."""
     size = getattr(getattr(application, 'profile', None), 'household_size', None)
     if not size:
         return None

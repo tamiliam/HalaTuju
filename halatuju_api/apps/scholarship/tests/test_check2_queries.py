@@ -776,3 +776,22 @@ class TestHighUtilityQuery(_Base):
         codes = self._codes()
         self.assertNotIn('high_utility_expense', codes)
         self.assertNotIn('high_utility_expense_str', codes)
+
+
+class TestClarifyRegistryIntegrity(TestCase):
+    """The silent trap (#117 plan): ``sync_check2_queries`` iterates ``_CLARIFY_ORDER``, NOT
+    ``CLARIFY_SPECS`` — so a clarify present in ``CLARIFY_SPECS`` (and raised by ``_gap_sets``)
+    but MISSING from ``_CLARIFY_ORDER`` is never raised, silently, with no error anywhere. This
+    guardrail fails loudly if the two ever drift."""
+
+    def test_clarify_specs_and_order_are_the_same_set(self):
+        from apps.scholarship.check2_queries import CLARIFY_SPECS, _CLARIFY_ORDER
+        self.assertEqual(
+            set(CLARIFY_SPECS), set(_CLARIFY_ORDER),
+            'CLARIFY_SPECS and _CLARIFY_ORDER have drifted — a code in one but not the other is '
+            'either raised with no priority, or (the dangerous way) never raised at all.')
+
+    def test_clarify_order_has_no_duplicates(self):
+        from apps.scholarship.check2_queries import _CLARIFY_ORDER
+        self.assertEqual(len(_CLARIFY_ORDER), len(set(_CLARIFY_ORDER)),
+                         'a duplicate in _CLARIFY_ORDER skews the MAX_CLARIFY priority walk.')
