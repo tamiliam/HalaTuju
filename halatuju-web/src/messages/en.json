@@ -3818,6 +3818,8 @@
     "actionFailed": "Action failed",
     "revoke": "Revoke",
     "restore": "Restore",
+    "resend": "Resend",
+    "resending": "Sending…",
     "noAdmins": "No admins.",
     "notPartnerAdmin": "You are not a partner organisation admin.",
     "totalStudents": "Total Students",
