@@ -4426,3 +4426,24 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** A water bill is read by ONE of two independent paths; a fix must land on the path that actually reads the given bill. The deterministic parser is conservative and already reliably reads amount/arrears — only the date was missing, so add it there rather than abandon the path. Calibrated the Tarikh regex on 6 real Air Selangor bills (5/6, never the ~1-month-later due date).
 **Trade-offs:** Two code sites to keep in step; a heavily-interleaved OCR (1/6) still reads dateless (safe — grey, never a wrong month).
 **Revisit if:** a new water company prints its date in a shape neither the Tarikh regex nor Gemini's meter-date rule catches.
+
+## Vircle onboarding rides the award email; a confirmation is a CLAIM, not a verification — Remote batch, 2026-07-12
+**Decision:** The onboarding ask (install Vircle → confirm) is merged into the award email (one email), and the `vircle_setup_pending` task is a self-declared confirmation with no surface calling it "verified".
+**Alternatives considered:** (a) A second, separate Vircle email after the award email (the pre-existing shape). (b) Treat the student's confirmation as verified account status.
+**Rationale:** The old two-email seam was a gap a student could drift through; one email closes it. Vircle sends us nothing back, so a confirmation cannot be more than a claim — ground truth is the first payment succeeding or bouncing, and calling it "verified" would be a false assurance to the officer.
+**Trade-offs:** The award email is longer / carries an attachment; the standalone Vircle email is kept for the 22 already-awarded students and manual re-sends. We hold no independent proof of account readiness until money moves.
+**Revisit if:** Vircle exposes an account-status API (then the task can become a real verification), or the award email's length hurts deliverability.
+
+## The payslip's KWSP line — not the occupation code — decides whether to ask for the EPF — Remote batch, 2026-07-14
+**Decision:** `income_engine.slip_epf_evidence()` reads the scored slip: KWSP line present → ask for the EPF; slip read with no KWSP line → don't; slip not scored → fall back to the occupation heuristic. `salary_doc` gains a `kwsp` marker (MODEL_VERSION 1.1.0).
+**Alternatives considered:** Keep the occupation code as the rule (informal → never chase the EPF). Ask every earner for an EPF unconditionally.
+**Rationale:** As the *rule*, the occupation gate trapped #126 — a 'driver' (informal) father would never be asked for his EPF even after his payslip arrived, the same suppression biting one step later. The document knows whether a KWSP statement exists; the job title only guesses. The occupation heuristic is still correct when we have no slip, so it becomes the fallback.
+**Trade-offs:** The signal only exists once a slip is read, so existing slips (no `kwsp` key → `unknown`) keep the old fallback behaviour until re-extracted — the improvement rolls out per-slip, not cohort-wide, unless a re-extraction is run.
+**Revisit if:** the owner wants the improved EPF ask applied to the whole live cohort at once (then re-extract income docs on the live service).
+
+## Query/assignment stage-gates gate only the CREATE branch, from one predicate each — Remote batch, 2026-07-13
+**Decision:** `auto_queries_allowed()` / `officer_queries_allowed()` (queries) and `ASSIGNABLE_STATUSES` / `is_assignable()` (case handoff) are the single source of truth; they gate only the CREATE of a query/assignment — auto-resolve of a cleared gap and answering an already-open item run at every stage.
+**Alternatives considered:** Gate every touch (create, resolve, answer) on stage. Keep the old `querying_locked` field as the gate.
+**Rationale:** A student who uploads a missing doc must still see it tick green even past the query window, and an already-open question must stay answerable — so only creation is stage-sensitive. `querying_locked` only closed at `interviewed`, too late to stop the machine competing with a reviewer mid-interview.
+**Trade-offs:** Two predicates to keep aligned with the owner's stage matrix; the matrix is encoded in code, so a stage-policy change is a code change (pinned stage-by-stage by tests).
+**Revisit if:** the owner's ask/handoff matrix changes, or a stage is added/split.

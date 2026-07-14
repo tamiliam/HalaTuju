@@ -516,7 +516,60 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-10)
+## Next Sprint (as of 2026-07-14)
+
+**▶ NEXT — Check-2 gaps found in #117 (four fixes, plan APPROVED, no code yet):**
+`docs/plans/2026-07-14-check2-117-gaps.md`. Three systemic + one parser fragility, owner decisions
+already recorded: (1) **water-bill parser** hardcodes a blank address → `_bill_needs_upload` re-asks
+forever (6 live bills 30/36/66/80/82/95; #36 stuck open) — read the address like `_parse_electricity`,
+else `return None` to fall to Gemini; (2) **offer pathway** never compares the track and compares the
+offer against itself (`autofill_pathway_from_offer` → `chosen_programme` → `_declared_pathway` treats
+it AS the declaration; 45 apps, #33/#99 unflagged clashes) — add the stream to `offer_pathway_match`,
+break the circularity, stop autofill laundering the declaration; (3) **pensioner invisible to the means
+test** (`retired` in NON_EARNING; 12 apps) — ask-first→proof, mirroring #126 (new `BENEFIT_OCC`,
+`pension_amount_unknown` clarify, `*_pension_proof_missing` reusing the `salary_slip` slot); (4)
+**roster under-count margin** `_ROSTER_UNDERCOUNT_MARGIN` 2 → 1. Plus a guardrail
+(`set(CLARIFY_SPECS) == set(_CLARIFY_ORDER)`) and two cheap side-findings (unreachable sibling EPF in
+`employed_epf_members`; stale STR "name not found" clears on a Re-run now `reference_names` is live).
+**No migration.** Live data follow-ups after deploy: Re-run the 6 water bills + #117's offer/STR.
+
+**▶ CARRY (owner actions still pending):**
+- **Run `reextract-offers`** (or Re-run #13) to activate the **1.6.0 private-arm veto** — still not done
+  from the 10 Jul sprint; #13 stays green until re-run.
+- **`salary_doc` 1.1.0 EPF-ask improvement rolls out per-slip** (existing slips read `kwsp: unknown` →
+  old fallback). To activate the payslip-driven EPF ask cohort-wide, re-extract income docs on the LIVE
+  service (never locally).
+- **Vircle is dark** (`VIRCLE_SETUP_ENABLED=OFF`). Flipping it on shows the setup task to already-
+  emailed students only (the sync never creates it). Needs the relay-sheet delegation scopes present.
+- **Unmerged branch `feat/partner-onboarding-durable`** (2 commits, reviewed ship-ready, LOW merge
+  risk, no migration): durable partner onboarding (create Supabase account + temp password, needs
+  `SUPABASE_SERVICE_ROLE_KEY` in Cloud Run env; never live-verified) + award-withdrawal-returns-student-
+  to-pool. Rebase onto main → run suite → merge → deploy → live Supabase invite/resend check.
+
+---
+
+**✅ SHIPPED 2026-07-12→14 — Remote-station batch (3 deliverables, NO migration; retro
+`docs/retrospective-2026-07-12-14-remote-batch.md`; decisions ×3; lessons ×2; all LIVE, last build
+`cdf2a44`):**
+- **Vircle eWallet onboarding** — install ask merged into the award email (one email, guide PDF
+  attached); a `vircle_setup_pending` confirm task behind `VIRCLE_SETUP_ENABLED` (default OFF), raised
+  on the SEND not a sync, resolve-lock + set-aside carve-outs; a generated least-privilege relay sheet
+  (mirror of the DB, owner columns, generated-columns-only wipe, first-come order). A confirmation is a
+  CLAIM, never "verified". Also fixed: `offer_emailed_at` stamped on failure permanently suppressed a
+  student's award email (now success-only); relay sheet mislabelled never-emailed students.
+- **Query / assignment stage-gates** — the machine asks only during *Completed*, the officer through
+  *interviewing*, nobody before/after; a case may only change hands while there is a review to do.
+  `auto_queries_allowed`/`officer_queries_allowed` + `ASSIGNABLE_STATUSES`/`is_assignable` are the
+  single source of truth; only the CREATE branch is gated; the assign dropdown is disabled with a hover
+  reason when the server would refuse.
+- **Income-doc reslot + payslip-driven EPF chain (#126)** — a suppressed informal-earner payslip
+  request re-opens when the student says he DOES have one (`payslip_claim`, negation-first);
+  `reference_names` widens income-doc name-matching to the roster (no false parent mismatch);
+  `epf_no_employer` reads the all-zeros employer number from either field; `_reslot_income_doc` re-files
+  an EPF put in the payslip slot (KWSP-anchored); the slip's KWSP line — not the occupation code —
+  decides whether to ask for the EPF (`slip_epf_evidence`). **`salary_doc` MODEL_VERSION 1.0.0 → 1.1.0**
+  (adds a `kwsp` marker; re-scores nothing).
+- **2409 scholarship pytest** (2361 → +48), ~490 jest, i18n parity 3264×3.
 
 **✅ SHIPPED 2026-07-10 — Utility-bill officer-review polish (BE+FE, NO migration, no MODEL_VERSION
 change; retro `docs/retrospective-2026-07-10-utility-bill-cockpit.md`; decisions ×3; lessons ×2).**
