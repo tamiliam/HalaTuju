@@ -25,7 +25,9 @@ from .results_doc import _norm
 
 # Version of the salary signature model. History:
 #   1.0.0 (2026-07-09) — initial statutory-grammar cascade; six families.
-MODEL_VERSION = '1.0.0'
+#   1.1.0 (2026-07-14) — record `kwsp` separately in markers: the slip's own KWSP line drives
+#                        whether an EPF statement is worth asking for (owner). Bands unchanged.
+MODEL_VERSION = '1.1.0'
 
 # ── Marker groups (normalised substring probes; matched via _norm) ───────────────────────────
 # Statutory scaffold — the private-payslip discriminator. Each GROUP counts once.
@@ -69,10 +71,18 @@ def _count_groups(groups, tn):
 
 def score_family(ocr_text: str) -> dict:
     """The raw marker tallies for OCR text (transparent, for tests + calibration):
-    ``{statutory, wage, govt, singapore, gig, mykad}``. Pure."""
+    ``{statutory, kwsp, wage, govt, singapore, gig, mykad}``. Pure.
+
+    ``kwsp`` is recorded SEPARATELY from the statutory count (owner, 2026-07-14): the payslip
+    itself tells us whether an EPF statement can even exist. A slip with a KWSP deduction line means
+    the earner contributes — ask for the statement. A slip we have READ that shows no KWSP line
+    means he doesn't — asking would be another dead end. The count alone couldn't distinguish a
+    KWSP line from a SOCSO one.
+    """
     tn = _norm(ocr_text)
     return {
         'statutory': sum(1 for g in _STATUTORY.values() if _any(g, tn)),
+        'kwsp': _any(_STATUTORY['KWSP/EPF'], tn),
         'wage': sum(1 for g in _WAGE_LABELS if _any(g, tn)),
         'govt': _any(_GOVT_FORMAT, tn),
         'singapore': _any(_SINGAPORE, tn),
@@ -92,7 +102,7 @@ def salary_genuineness(ocr_text: str) -> dict:
     def out(status, family, prob, reason):
         return {'status': status, 'family': family, 'probability': round(prob, 3),
                 'reason': reason[:300], 'model_version': MODEL_VERSION,
-                'markers': {'statutory': stat, 'wage': wage}}
+                'markers': {'statutory': stat, 'wage': wage, 'kwsp': m['kwsp']}}
 
     # Reject: a MyKad in the slot (the #47 class), or nothing that reads like a payslip at all.
     if m['mykad'] and wage == 0:

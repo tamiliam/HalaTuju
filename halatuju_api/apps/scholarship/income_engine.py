@@ -2402,18 +2402,52 @@ def semester_result_gap(application):
     return bool(rd and cy and rd.year < cy)
 
 
-def employed_epf_members(application):
-    """EMPLOYED parents with a salary slip but no EPF on file → the per-member OPTIONAL request for
-    the EPF as standard corroboration (mirrors ``unemployment_epf_members``). The payslip gate keeps
-    it to genuinely-employed parents. Per-member so the request is TAGGED to that person (an EPF
-    belongs to a specific member; a memberless request lands blank-tagged). Soft; never a gate.
+def _doc_authenticity(doc):
+    """The stored genuineness result for a document ({} when unscored)."""
+    vf = getattr(doc, 'vision_fields', None)
+    return (vf.get('authenticity') or {}) if isinstance(vf, dict) else {}
 
-    The informal exclusion LIFTS once the student has told us the earner does have a payslip/EPF
-    (owner, 2026-07-14). It is the same occupation-keyed suppression that trapped #126, biting a
-    second time one step later: his father is a 'driver' (informal), so even AFTER his payslip
-    arrived the EPF would never have been asked for — the chain would have stopped dead again. An
-    informal earner who turns out to have a payslip is exactly the person whose EPF is worth asking
-    for.
+
+def slip_epf_evidence(application, member):
+    """Does this member's PAYSLIP show a KWSP/EPF deduction? → 'yes' | 'no' | 'unknown'.
+
+    The slip answers the question we were guessing at (owner, 2026-07-14). A KWSP line means the
+    earner contributes, so an EPF statement exists and is worth asking for. A slip we have READ that
+    shows no KWSP line means he doesn't contribute — asking for the statement would be another dead
+    end, the very thing the ask-first rule exists to prevent.
+
+    'unknown' when no slip has been scored (a legacy doc, or a read that failed): we cannot tell, so
+    the caller keeps today's behaviour rather than silently dropping a legitimate ask. Only a
+    POSITIVE read of a slip with no KWSP line suppresses.
+    """
+    seen = False
+    for doc in _cluster_docs(application, member, 'salary_slip'):
+        markers = ((_doc_authenticity(doc) or {}).get('markers') or {})
+        if 'kwsp' not in markers:
+            continue                      # unscored, or scored before the marker existed
+        seen = True
+        if markers.get('kwsp'):
+            return 'yes'                  # any slip showing KWSP settles it
+    return 'no' if seen else 'unknown'
+
+
+def employed_epf_members(application):
+    """Members with a salary slip but no EPF on file → the per-member OPTIONAL request for the EPF
+    as standard corroboration (mirrors ``unemployment_epf_members``). Per-member so the request is
+    TAGGED to that person (an EPF belongs to a specific member; a memberless request lands
+    blank-tagged). Soft; never a gate.
+
+    The ask is driven by the PAYSLIP first (owner, 2026-07-14) — the document knows, the job title
+    only guesses:
+
+      slip shows a KWSP line   → ASK. He contributes; the statement exists.
+      slip read, no KWSP line  → DON'T. He doesn't contribute; the request would dead-end.
+      slip not scored (legacy) → fall back to the occupation heuristic: skip an informal earner
+                                 unless the student has told us he does have a payslip/EPF.
+
+    The occupation gate is the FALLBACK now, not the rule. As the rule it meant #126's father — a
+    'driver' — would never be asked for his EPF even once his payslip arrived: the same suppression
+    that trapped him, biting one step later.
     """
     docs = _docs_or_none(application)
     if docs is None:
@@ -2422,14 +2456,20 @@ def employed_epf_members(application):
     claimed = informal_payslip_claimed(application)
     for member in ('father', 'mother'):
         occ = _member_occupation(application, member)
-        if occ and occ not in _NON_EARNING_OCC and (
-                not member_is_informal(application, member) or claimed):
-            has_slip = docs.filter(doc_type='salary_slip', household_member__in=[member, ''],
-                                   superseded_at__isnull=True).exists()
-            has_epf = docs.filter(doc_type='epf', household_member__in=[member, ''],
-                                  superseded_at__isnull=True).exists()
-            if has_slip and not has_epf:
-                out.append(member)
+        if not occ or occ in _NON_EARNING_OCC:
+            continue
+        has_slip = docs.filter(doc_type='salary_slip', household_member__in=[member, ''],
+                               superseded_at__isnull=True).exists()
+        has_epf = docs.filter(doc_type='epf', household_member__in=[member, ''],
+                              superseded_at__isnull=True).exists()
+        if not has_slip or has_epf:
+            continue
+        evidence = slip_epf_evidence(application, member)
+        if evidence == 'no':
+            continue                      # the slip says he doesn't contribute — don't dead-end him
+        if evidence == 'unknown' and member_is_informal(application, member) and not claimed:
+            continue                      # can't read the slip → the old ask-first caution stands
+        out.append(member)
     return out
 
 

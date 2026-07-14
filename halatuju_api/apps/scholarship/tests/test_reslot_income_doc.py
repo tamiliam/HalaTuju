@@ -150,3 +150,90 @@ class TestTheRequestClearsOnEitherDocument(TestCase):
         _, wanted = _gap_sets(app)
         self.assertNotIn('father_income_proof_missing', wanted)
         self.assertIn('father_epf_missing', wanted)
+
+
+class TestTheSlipDecidesWhetherToAskForEpf(TestCase):
+    """The payslip answers the question we were guessing at (owner, 2026-07-14).
+
+    KWSP deduction on the slip → he contributes → ask for the statement.
+    Slip READ, no KWSP line     → he doesn't → asking would be another dead end.
+    No slip scored              → we cannot tell → keep today's behaviour, never silently drop a
+                                  legitimate ask.
+
+    This replaces the occupation-keyed guess that trapped #126 twice. The document knows; the job
+    title doesn't.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.scholarship.models import ScholarshipCohort
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def _app(self, uid, *, occupation='driver'):
+        from django.utils import timezone
+        from apps.courses.models import StudentProfile
+        from apps.scholarship.models import ScholarshipApplication
+        profile = StudentProfile.objects.create(
+            supabase_user_id=uid, name='HAVINESH A/L R KANNAN', nric='081211-07-0605',
+            preferred_state='Pulau Pinang', household_income=3900, household_size=5,
+            receives_str=False, receives_jkm=False,
+        )
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=profile, status='profile_complete',
+            profile_completed_at=timezone.now(), income_route='salary',
+            father_name='R KANNAN A/L RAMU', father_occupation=occupation,
+        )
+
+    def _slip(self, app, *, markers):
+        from django.utils import timezone
+        from apps.scholarship.models import ApplicantDocument
+        vf = {'fields': {'name': 'R KANNAN A/L RAMU', 'gross_income': 'RM2400'},
+              'warnings': [], 'student_verdict': 'ok', 'error': ''}
+        if markers is not None:
+            vf['authenticity'] = {'status': 'genuine', 'family': 'private', 'markers': markers}
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='salary_slip', household_member='father',
+            storage_path=f'{app.id}/slip/x', vision_run_at=timezone.now(), vision_fields=vf)
+
+    def test_a_slip_with_a_kwsp_line_asks_for_the_epf(self):
+        from apps.scholarship.income_engine import (employed_epf_members,
+                                                    slip_epf_evidence)
+        app = self._app('e1')
+        self._slip(app, markers={'statutory': 3, 'wage': 4, 'kwsp': True})
+        self.assertEqual(slip_epf_evidence(app, 'father'), 'yes')
+        self.assertEqual(employed_epf_members(app), ['father'])
+
+    def test_a_slip_with_no_kwsp_line_does_NOT_ask(self):
+        # He doesn't contribute. Demanding a statement he cannot produce is the dead end the
+        # ask-first rule exists to prevent.
+        from apps.scholarship.income_engine import (employed_epf_members,
+                                                    slip_epf_evidence)
+        app = self._app('e2')
+        self._slip(app, markers={'statutory': 0, 'wage': 3, 'kwsp': False})
+        self.assertEqual(slip_epf_evidence(app, 'father'), 'no')
+        self.assertEqual(employed_epf_members(app), [])
+
+    def test_an_unscored_slip_falls_back_to_the_occupation_heuristic(self):
+        # Legacy slips carry no marker → 'unknown'. The document can't tell us, so the old
+        # ask-first caution stands: an informal earner is not chased for an EPF...
+        from apps.scholarship.income_engine import (employed_epf_members,
+                                                    slip_epf_evidence)
+        app = self._app('e3', occupation='driver')      # informal
+        self._slip(app, markers=None)
+        self.assertEqual(slip_epf_evidence(app, 'father'), 'unknown')
+        self.assertEqual(employed_epf_members(app), [])
+
+    def test_an_unscored_slip_still_asks_a_formal_earner(self):
+        # ...but a factory operator, whose EPF is standard, still is.
+        from apps.scholarship.income_engine import employed_epf_members
+        app = self._app('e5', occupation='factory')
+        self._slip(app, markers=None)
+        self.assertEqual(employed_epf_members(app), ['father'])
+
+    def test_the_job_title_no_longer_decides(self):
+        # #126's father is a 'driver' (informal). Once his payslip shows KWSP, his EPF is asked
+        # for — the old occupation gate would have stopped the chain dead here.
+        from apps.scholarship.income_engine import employed_epf_members
+        app = self._app('e4', occupation='driver')
+        self._slip(app, markers={'statutory': 2, 'wage': 4, 'kwsp': True})
+        self.assertEqual(employed_epf_members(app), ['father'])
