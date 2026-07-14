@@ -28,7 +28,12 @@ class ScholarshipCohort(models.Model):
     owning_organisation = models.ForeignKey(
         'courses.PartnerOrganisation', on_delete=models.PROTECT,
         null=True, blank=True, related_name='owned_cohorts',
-        help_text='The tenant organisation that OWNS this programme (platform Sprint 1).',
+        help_text='The tenant organisation that OWNS this programme (platform Sprint 1). '
+                  'SOURCE OF TRUTH for tenancy. ScholarshipApplication.owning_organisation is '
+                  'a denormalised copy of this, set in the application save(). A future '
+                  '"move a cohort between organisations" flow MUST cascade the new value to '
+                  'every one of that cohort.applications.owning_organisation (there is no DB '
+                  'trigger — the drift guard test asserts they agree).',
     )
 
     code = models.CharField(
@@ -156,6 +161,18 @@ class ScholarshipApplication(models.Model):
         'courses.StudentProfile', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='scholarship_applications',
         help_text="Linked HalaTuju profile (always set in the apply-first flow)",
+    )
+    # Platform tenancy (Sprint 2): the organisation that OWNS this application —
+    # a DENORMALISED copy of cohort.owning_organisation (D-8). The cohort is the
+    # source of truth; this copy is set automatically in save() so admin queries
+    # can be org-fenced (Sprint 3a) without a join. NULL only for bare test
+    # fixtures whose cohort has no owning_organisation; prod has none (backfill +
+    # the seeded BrightPath cohort). Nothing reads this for authorisation yet.
+    owning_organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='owned_applications',
+        help_text="Tenant organisation that owns this application (denormalised "
+                  "from cohort.owning_organisation; set in save()).",
     )
 
     # Per-application fields only. Person-level data (grades, household_income,
@@ -772,6 +789,27 @@ class ScholarshipApplication(models.Model):
                 condition=models.Q(profile__isnull=False) & ~models.Q(status='expired'),
             ),
         ]
+
+    def save(self, *args, **kwargs):
+        # Derive the denormalised owning organisation from the cohort (D-8): the
+        # cohort is the source of truth, this copy exists so admin reads can be
+        # org-fenced cheaply (Sprint 3a). Set-once — only when unset and a cohort
+        # is present. Prefer the already-loaded cohort relation to avoid a query
+        # on hot paths; else a single lightweight indexed lookup by cohort_id.
+        # Stays None for a bare-cohort test fixture (cohort with no org) — a safe
+        # degenerate bucket the fence still partitions correctly (=None → IS NULL).
+        if self.owning_organisation_id is None and self.cohort_id:
+            cached_cohort = self._state.fields_cache.get('cohort')
+            if cached_cohort is not None:
+                self.owning_organisation_id = cached_cohort.owning_organisation_id
+            else:
+                self.owning_organisation_id = (
+                    ScholarshipCohort.objects
+                    .filter(pk=self.cohort_id)
+                    .values_list('owning_organisation_id', flat=True)
+                    .first()
+                )
+        super().save(*args, **kwargs)
 
     def stamp_first(self, field):
         """Set a lifecycle timestamp the FIRST time this app reaches that state
