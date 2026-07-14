@@ -481,6 +481,14 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             if org is None:
                 return Response({'error': 'A partner must belong to an organisation', 'code': 'org_required'}, status=400)
 
+        # Platform tenancy (Sprint 3a): bind a new B40 STAFF admin to org #1 (BrightPath)
+        # for access control — the fence keys off owning_organisation, never the referral
+        # `org`. super stays global (NULL); partner has no B40 access (NULL). The real
+        # org picker arrives with the superadmin portal (Sprint 10) — default org #1 now.
+        owning_org = None
+        if role in ('admin', 'reviewer', 'qc'):
+            owning_org = PartnerOrganisation.objects.filter(code='brightpath').first()
+
         service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
         supabase_url = getattr(settings, 'SUPABASE_URL', '')
 
@@ -495,6 +503,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if is_google_email(email):
             PartnerAdmin.objects.create(
                 email=email, name=name, org=org, role=role,
+                owning_organisation=owning_org,
                 supabase_user_id=None, is_super_admin=(role == 'super'),
             )
             emailed = send_partner_welcome_email(email, name, role, temp_password=None, google=True)
@@ -521,6 +530,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             name=name,
             org=org,
             role=role,
+            owning_organisation=owning_org,
             # We know the Supabase UID at creation now, so store it instead of waiting for the
             # email-match backfill in get_admin. (None on the already-registered path — their
             # existing account is matched by verified email on next sign-in, as before.)

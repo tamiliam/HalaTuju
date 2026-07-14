@@ -484,6 +484,19 @@ class PartnerAdmin(models.Model):
         null=True, blank=True, related_name='admins',
         help_text='NULL for super admin',
     )
+    # Platform tenancy (Sprint 3a): the organisation whose programme this staff
+    # member works within — the ACCESS-CONTROL boundary for B40 applications.
+    # DISTINCT from `org` above: `org` is the *referring* organisation (referral
+    # attribution, used for the partner-students list + bursary witness), never for
+    # access control. NULL = platform-level: `super` (global, sees every org) and
+    # `partner` (no B40 access — `_b40_scope` returns 'none'). A non-super B40 staff
+    # role (admin/reviewer/qc) is bound to exactly one owning organisation.
+    owning_organisation = models.ForeignKey(
+        PartnerOrganisation, on_delete=models.PROTECT,
+        null=True, blank=True, related_name='staff',
+        help_text='Tenant org this staff member is scoped to for B40 access '
+                  '(NULL = platform-level: super/partner). Never the referral org.',
+    )
     is_super_admin = models.BooleanField(default=False)
     role = models.CharField(
         max_length=20, choices=ROLE_CHOICES, default='reviewer',

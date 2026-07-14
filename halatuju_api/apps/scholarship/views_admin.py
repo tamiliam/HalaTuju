@@ -102,6 +102,31 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return 'assigned'
         return 'none'
 
+    # ── Organisation fence (platform Sprint 3a) ────────────────────────────────
+    # The tenant wall on the B40 admin surface. Access control keys off
+    # PartnerAdmin.owning_organisation (NOT the referral `org`). Invisible while
+    # BrightPath is the only organisation (every staff/application pair is same-org),
+    # and the real fence the moment a second organisation exists. NULL owning_org is
+    # a safe degenerate bucket (=None → IS NULL) so bare test fixtures self-partition.
+    def _org_scoped(self, qs, admin, field='owning_organisation_id'):
+        """Fence an applications queryset (or any model reaching an application by
+        ``field``, e.g. 'application__owning_organisation_id') to the caller's
+        organisation. Super is global; everyone else is filtered to their own org."""
+        if admin is not None and self.has_role(admin, 'super'):
+            return qs
+        org_id = admin.owning_organisation_id if admin is not None else None
+        return qs.filter(**{field: org_id})
+
+    def _org_allows(self, admin, app):
+        """Row-level org fence: True if this admin's organisation owns ``app``.
+        Super is global; everyone else must match owning_organisation. A cross-org
+        answer must surface as 404 (never 403) so existence isn't leaked."""
+        if admin is None or app is None:
+            return False
+        if self.has_role(admin, 'super'):
+            return True
+        return app.owning_organisation_id == admin.owning_organisation_id
+
     def _scoped_application(self, request, pk):
         """The application IFF this admin may access it (reviewer assignment-scoped;
         partner none). Returns (app, error_response|None)."""
@@ -113,6 +138,9 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return None, self._deny_role()
         app = self._get_application(pk)
         if app is None:
+            return None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not self._org_allows(admin, app):
+            # Cross-org: 404, not 403 — don't leak that another org's app exists.
             return None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         if scope == 'assigned' and app.assigned_to_id != admin.id:
             return None, self._deny_role()   # reviewer, not assigned to them
@@ -129,6 +157,8 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return False
         if self.has_role(admin, 'super'):
             return True
+        if not self._org_allows(admin, app):          # cross-org (Sprint 3a)
+            return False
         return app.assigned_to_id == admin.id
 
     def _require_app_write(self, request, pk):
@@ -164,6 +194,9 @@ class _AdminBase(PartnerAdminMixin, APIView):
         app = self._get_application(pk)
         if app is None:
             return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not self._org_allows(admin, app):
+            # Cross-org QC: 404, don't leak existence (super is exempt via _org_allows).
+            return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         if app.status != 'interviewed':
             return None, None, Response(
                 {'error': 'This case is not awaiting QC.', 'code': 'not_awaiting_qc'},
@@ -185,6 +218,7 @@ class AdminApplicationListView(_AdminBase):
             return self._deny_role()   # partner has no B40 Applications access
         qs = ScholarshipApplication.objects.select_related(
             'profile', 'cohort', 'assigned_to').order_by('-submitted_at')
+        qs = self._org_scoped(qs, admin)   # tenant fence (Sprint 3a) — super sees all
         if scope == 'assigned':
             qs = qs.filter(assigned_to=admin)   # reviewer sees only their assigned applicants
         status_f = request.GET.get('status')
@@ -805,6 +839,10 @@ class AdminSponsorListView(_AdminBase):
         # Deterministic ordering (TD audit 2026-06-14) — without it the row order was
         # undefined. Full pagination is deferred: these are low-cardinality admin tables and
         # the sponsors table FE does not yet handle a paged envelope (would truncate to 25).
+        # tenancy: cross-org by design until Sprint 10 (D-1). A Sponsor is a platform-
+        # level account (no owning_organisation; may fund across programmes), so the
+        # vetting list is intentionally NOT org-fenced. Sponsor accounts carry no
+        # student identity, so this is not an applicant-data leak.
         qs = Sponsor.objects.all().order_by('-id')
         status_filter = request.query_params.get('status')
         if status_filter:
@@ -883,10 +921,13 @@ class AdminSponsorshipListView(_AdminBase):
     """Phase E3: GET .../admin/sponsorships/[?status] — oversight of all matches
     (sponsor ↔ student + amount + status)."""
     def get(self, request):
-        if not self.get_admin(request):
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
         qs = (Sponsorship.objects.select_related('sponsor', 'application', 'application__profile')
               .order_by('-id'))  # deterministic ordering (TD audit 2026-06-14)
+        # org-fence: a sponsorship is only visible to the owning org's staff (super global).
+        qs = self._org_scoped(qs, admin, field='application__owning_organisation_id')
         st = request.query_params.get('status')
         if st:
             qs = qs.filter(status=st)
@@ -990,6 +1031,10 @@ class AdminAssignableAdminsView(_AdminBase):
         if not self.get_admin(request):
             return self._deny()
         from django.db.models import Q
+        # tenancy: cross-org by design until Sprint 10 (D-1) — this is a PartnerAdmin
+        # (staff) list, not applicant data. Org-scoping the assignable pool (so an org
+        # admin can only assign their own reviewers) is a Sprint-10 concern; today the
+        # dropdown lists all assignable staff and assignment itself is super-only.
         admins = (PartnerAdmin.objects.filter(is_active=True)
                   .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super', 'admin', 'qc']))
                   .select_related('reviewer_profile').order_by('name'))
@@ -1396,6 +1441,7 @@ class AdminVerdictMetricsView(_AdminBase):
         qs = (ScholarshipApplication.objects
               .filter(verdict_decided_at__isnull=False)
               .only('ai_verdict_snapshot', 'officer_verdict', 'cohort_id'))
+        qs = self._org_scoped(qs, admin)   # org-fence the metrics roll-up (super global)
         cohort = request.query_params.get('cohort')
         if cohort:
             qs = qs.filter(cohort_id=cohort)
@@ -1554,6 +1600,8 @@ class AdminGraduationMessageListView(_AdminBase):
         if not admin:
             return self._deny()
         qs = GraduationMessage.objects.select_related('application').all()
+        # org-fence via the application (super global).
+        qs = self._org_scoped(qs, admin, field='application__owning_organisation_id')
         status_f = request.GET.get('status', 'pending')
         if status_f != 'all':
             qs = qs.filter(status=status_f)
@@ -1577,8 +1625,12 @@ class AdminGraduationMessageReviewView(_AdminBase):
         admin, err = self._require_reviewer(request)
         if err:
             return err
-        message = GraduationMessage.objects.select_related('application__profile').filter(pk=pk).first()
+        message = GraduationMessage.objects.select_related(
+            'application', 'application__profile').filter(pk=pk).first()
         if message is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not self._org_allows(admin, message.application):
+            # Cross-org write: 404, don't leak existence (Sprint 3a).
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         action = (request.data.get('action') or '').strip()
         by_email = getattr(admin, 'email', '') or ''
@@ -1644,6 +1696,10 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
         if agreement is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         profile = agreement.application.profile
+        # tenancy: GRANDFATHERED exception — witness authority is REFERRAL semantics
+        # (the org that referred the student attests), which is orthogonal to the
+        # ownership fence. This is the ONE place `admin.org`/`referred_by_org` is
+        # intentionally used for authorisation. A non-blocking record only.
         org = getattr(profile, 'referred_by_org', None) if profile else None
         is_super = bool(admin.is_super_admin or self.has_role(admin, 'super'))
         is_referring_partner = bool(
