@@ -518,20 +518,33 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-14)
 
-**▶ NEXT — Check-2 gaps found in #117 (four fixes, plan APPROVED, no code yet):**
-`docs/plans/2026-07-14-check2-117-gaps.md`. Three systemic + one parser fragility, owner decisions
-already recorded: (1) **water-bill parser** hardcodes a blank address → `_bill_needs_upload` re-asks
-forever (6 live bills 30/36/66/80/82/95; #36 stuck open) — read the address like `_parse_electricity`,
-else `return None` to fall to Gemini; (2) **offer pathway** never compares the track and compares the
-offer against itself (`autofill_pathway_from_offer` → `chosen_programme` → `_declared_pathway` treats
-it AS the declaration; 45 apps, #33/#99 unflagged clashes) — add the stream to `offer_pathway_match`,
-break the circularity, stop autofill laundering the declaration; (3) **pensioner invisible to the means
-test** (`retired` in NON_EARNING; 12 apps) — ask-first→proof, mirroring #126 (new `BENEFIT_OCC`,
-`pension_amount_unknown` clarify, `*_pension_proof_missing` reusing the `salary_slip` slot); (4)
-**roster under-count margin** `_ROSTER_UNDERCOUNT_MARGIN` 2 → 1. Plus a guardrail
-(`set(CLARIFY_SPECS) == set(_CLARIFY_ORDER)`) and two cheap side-findings (unreachable sibling EPF in
-`employed_epf_members`; stale STR "name not found" clears on a Re-run now `reference_names` is live).
-**No migration.** Live data follow-ups after deploy: Re-run the 6 water bills + #117's offer/STR.
+**▶ NEXT — no roadmap sprint queued.** Both 2026-07-14 parallel streams (Check-2 #117 + status
+vocabulary) are shipped and merged; the CARRY list below is the outstanding owner work.
+
+**✅ SHIPPED + LIVE 2026-07-14 — Check-2 gaps found in #117: four fixes + a guardrail (Stream A of the
+2026-07-14 parallel batch; NO migration; retro `docs/retrospective-2026-07-14-check2-117-gaps.md`;
+decisions ×3; lessons ×2; plan `docs/plans/2026-07-14-check2-117-gaps.md`).** Three systemic + one
+parser fragility off applicant #117:
+- **Water bill reads the address, else bails to Gemini** — `doc_parse._parse_water` no longer emits a
+  hardcoded blank address that made `_bill_needs_upload` re-ask forever (6 live bills; #36 stuck, #66
+  hand-waived). Postcode-anchored read; `return None → Gemini` when unreadable.
+- **Offer pathway made real** — `_declared_pathway` ignores an `offer_letter_auto` pick (was comparing
+  the offer against itself; 45 apps); `_canonical_preu_institution` no longer launders the student's
+  school; `offer_pathway_match` gains a **stream/track** dimension (canonical codes via
+  `parse_stpm_stream`, clash only when both present); `offer_parse._parse_stpm` hardened for glued OCR
+  (name/institution/reporting/`Bidang`→`stream`). Surfaces #33/#99/#117 track clashes via the existing
+  `pathway_confirm`, no new code.
+- **The pensioner** — `family.BENEFIT_OCC` + `pension_amount_unknown` ask-first clarify + a
+  `*_pension_proof_missing` statement request on a "yes" (reuses the `salary_slip` slot, NO new doc
+  type). 27 i18n leaves (Tamil first-draft). *Owner: ask-and-evidence, not re-band — feeding the
+  pension into per-capita is a separate follow-up.*
+- **Roster under-count margin** `_ROSTER_UNDERCOUNT_MARGIN` 2 → 1; the **CLARIFY registry guardrail**
+  (`set(CLARIFY_SPECS)==set(_CLARIFY_ORDER)`); the sibling/guardian EPF side-finding.
+- **2429 scholarship pytest** + golden masters intact (5319/2026); the i18n + status jest suites green.
+- **▶ LIVE FOLLOW-UPS (owner, on the LIVE service only — never local):** (1) calibrate `_water_address`
+  on the 6 real Air Selangor bills (30/36/66/80/82/95) via `eval/capture_ocr.py`, then cockpit Re-run
+  them (#36 auto-resolves); (2) Re-run #117's offer (stream clash → `pathway_confirm`) + STR; surface
+  #33/#99 to officers.
 
 **▶ CARRY (owner actions still pending):**
 - **Run `reextract-offers`** (or Re-run #13) to activate the **1.6.0 private-arm veto** — still not done
@@ -548,8 +561,7 @@ test** (`retired` in NON_EARNING; 12 apps) — ask-first→proof, mirroring #126
 
 ---
 
-**✅ SHIPPED (code, on branch `feat/status-vocabulary` — NOT merged; primary does the final merge to
-main) 2026-07-14 — One status vocabulary: shared labels + semantic stage colours (Stream B of the
+**✅ SHIPPED + LIVE 2026-07-14 — One status vocabulary: shared labels + semantic stage colours (Stream B of the
 2026-07-14 parallel batch; migration `0096_status_awaiting_review` choices-only, NO DDL; retro
 `docs/retrospective-2026-07-14-status-vocabulary.md`; decision ×1; lesson ×1).** The officer admin
 surface described an application's stage in four drifting labels and coloured it in two contradictory
@@ -566,12 +578,9 @@ still choices-only). Admin FAQ reworded ("Completed"→"Awaiting review" + gloss
 "Rejected"). New guardrail `applicationStatus.test.ts` (label parity en/ms/ta + no local map regrows —
 catches the drift the i18n orphan test is structurally blind to). Full jest 501/501; `next build`
 exit 0; `pytest apps/scholarship` 2408 passed; `makemigrations scholarship --check` clean.
-- **▶ AT MERGE/DEPLOY (primary):** record migration `0096` via Supabase MCP (choices-only → one
-  `django_migrations` INSERT, migrate-first) BEFORE the push that ships the code; leave the 3 *other*
-  status enums (sponsor vetting, course-interest, maintenance sub-state) alone; the student-masking
-  rule in `serializers.py:571-588` is untouched and must stay so. **▶ OWNER:** review the Tamil
-  first-draft label for "Awaiting review" (`மதிப்பாய்வுக்குக் காத்திருக்கிறது`). Shared-file note: only
-  `en/ms/ta.json` overlap Stream A, in the disjoint `admin.scholarship.statuses` block (clean merge).
+- Migration `0096` recorded on prod via Supabase MCP (id 175, migrate-first) before the deploy; the 3
+  *other* status enums + the `serializers.py:571-588` student-masking rule untouched. **▶ OWNER:** review
+  the Tamil first-draft label for "Awaiting review" (`மதிப்பாய்வுக்குக் காத்திருக்கிறது`).
 
 ---
 
