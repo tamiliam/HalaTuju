@@ -604,6 +604,64 @@ class AdminResendView(PartnerAdminMixin, APIView):
         })
 
 
+class AdminSetPasswordView(APIView):
+    """POST /api/v1/admin/set-password/ - a temp-password partner sets their OWN password.
+
+    The client cannot use `supabase.auth.updateUser({ password })`: the project requires
+    re-authentication for a password change (GoTrue "Current password required when setting new
+    password"), and the set-password page has no current password to supply. So we set it
+    server-side with the SERVICE ROLE (the same key the invite/resend flows already use), which the
+    admin API applies without re-auth.
+
+    Scoped tightly so this is NOT a general re-auth bypass: it only ever sets the CALLER'S OWN uid
+    (from their JWT), and ONLY while that account still owes a password change
+    (`must_change_password`, read authoritatively from Supabase). Once a partner has set their own
+    password, the endpoint refuses — everyone else keeps the project's secure-change policy.
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        uid = getattr(request, 'user_id', None)
+        if not uid:
+            return Response({'error': 'not_authenticated'}, status=401)
+        password = request.data.get('password') or ''
+        if len(password) < 8:
+            return Response({'error': 'password_too_short'}, status=400)
+
+        service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
+        supabase_url = getattr(settings, 'SUPABASE_URL', '')
+        if not service_role_key or not supabase_url:
+            return Response({'error': 'Supabase service role key not configured'}, status=500)
+        headers = _service_headers(service_role_key)
+        user_url = f'{supabase_url}/auth/v1/admin/users/{uid}'
+
+        # Read current metadata: authoritative must_change_password gate + preserve `name`.
+        try:
+            gr = http_requests.get(user_url, headers=headers, timeout=15)
+        except Exception:  # noqa: BLE001
+            return Response({'error': 'supabase_unreachable'}, status=502)
+        if gr.status_code != 200:
+            return Response({'error': 'user_lookup_failed'}, status=502)
+        meta = (gr.json() or {}).get('user_metadata') or {}
+        if not meta.get('must_change_password'):
+            # Not mid-onboarding — do not let this stand in for a normal (re-auth'd) password change.
+            return Response({'error': 'not_pending_password_change'}, status=403)
+
+        new_meta = {k: v for k, v in meta.items()
+                    if k not in ('temp_password_issued_at', 'temp_password_expired')}
+        new_meta['must_change_password'] = False
+        try:
+            pr = http_requests.put(
+                user_url, json={'password': password, 'user_metadata': new_meta},
+                headers=headers, timeout=15)
+        except Exception:  # noqa: BLE001
+            return Response({'error': 'supabase_unreachable'}, status=502)
+        if pr.status_code not in (200, 201):
+            logger.error('set-password failed: %s %s', pr.status_code, pr.text)
+            return Response({'error': 'set_password_failed'}, status=502)
+        return Response({'ok': True})
+
+
 class AdminOrgsView(PartnerAdminMixin, APIView):
     """GET /api/v1/admin/orgs/ - List organisations for invite dropdown."""
 

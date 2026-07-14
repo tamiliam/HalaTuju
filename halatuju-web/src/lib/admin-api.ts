@@ -212,6 +212,23 @@ export async function resendAdminInvite(adminId: number, options?: ApiOptions) {
   return res.json() as Promise<{ message: string; emailed: boolean }>
 }
 
+// A temp-password partner sets their OWN password server-side (the service role applies it without
+// the re-auth the client updateUser({password}) would demand). Scoped to the caller + must_change_password.
+export async function adminSetPassword(password: string, options?: ApiOptions) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/set-password/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ password }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Set password failed: ${res.status}`)
+  }
+  return res.json() as Promise<{ ok: boolean }>
+}
+
 // ── Admin profile ───────────────────────────────────────────────────
 
 export interface AdminProfile {

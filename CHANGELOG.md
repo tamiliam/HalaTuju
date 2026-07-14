@@ -38,9 +38,18 @@ whole thing merged + deployed together (build `4b79d13`). No migration.
   `recommended` and frees the held amount (cool-off gated on `offer_emailed_at IS NULL`, `FOR UPDATE`
   against the email cron; `400 already_notified` once emailed).
 
+### Fixed
+- **Set-password failed with "Current password required when setting new password" (found in the live
+  click-through).** The set-password page changed the password client-side (`auth.updateUser({password})`),
+  which the project's re-authentication-on-password-change policy rejects — and the page has no current
+  password to supply. New `AdminSetPasswordView` (`POST /admin/set-password/`) sets it **server-side with
+  the service role** (the same key invite/resend use), scoped to the caller's own uid AND only while the
+  account still owes a password change (`must_change_password`) — so it is not a general re-auth bypass.
+  The set-password page now calls it. +4 tests.
+
 ### Notes
-- **No migration.** **Not yet live-verified against Supabase** — the invite/resend/Google/expiry
-  click-through is the owner's post-deploy check (see the retrospective + CLAUDE.md).
+- **No migration.** The invite/resend/Google/expiry click-through is the owner's live check; the
+  set-password step above was fixed after the first attempt surfaced the re-auth policy.
 
 ## Check-2 gaps found in applicant #117 — four fixes + a guardrail — 2026-07-14
 

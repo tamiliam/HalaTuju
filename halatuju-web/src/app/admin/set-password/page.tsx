@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { getAdminSupabase, adminUpdatePassword } from '@/lib/admin-supabase'
+import { getAdminSupabase } from '@/lib/admin-supabase'
+import { adminSetPassword } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 
 const MIN_LEN = 8
@@ -45,25 +46,23 @@ export default function AdminSetPasswordPage() {
     if (password !== password2) { setError(t('admin.passwordMismatch')); return }
 
     setLoading(true)
-    const { error: updErr } = await adminUpdatePassword(password)
-    if (updErr) { setError(updErr.message); setLoading(false); return }
-
-    // They now have a password of their own, so stop forcing them through this page on every
-    // sign-in. Best-effort: a failure here would only mean one redundant visit.
-    await getAdminSupabase().auth.updateUser({ data: { must_change_password: false } }).catch(() => {})
-
-    // Password set → route the user in by role (reviewers → their workspace).
     try {
       const { data } = await getAdminSupabase().auth.getSession()
       const token = data.session?.access_token
+      // Set the password SERVER-SIDE via the service role. The client updateUser({password}) is
+      // blocked by the project's re-auth-on-password-change policy ("Current password required…"),
+      // and this page has no current password; the backend also clears must_change_password.
+      await adminSetPassword(password, { token })
+      // Password set → route the user in by role (reviewers → their workspace).
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/role/`,
         { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
       )
       const role = await res.json()
       router.replace(role.role === 'reviewer' || role.role === 'viewer' ? '/admin/scholarship' : '/admin')
-    } catch {
-      router.replace('/admin/login')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      setLoading(false)
     }
   }
 
