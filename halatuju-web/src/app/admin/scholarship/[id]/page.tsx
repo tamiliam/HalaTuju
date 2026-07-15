@@ -188,17 +188,18 @@ const yn = (v: boolean | null | undefined) => (v === true ? 'Yes' : v === false 
 const joinOr = (a?: string[] | null) => (a && a.length ? a.join(', ') : '—')
 
 /** Grade dict → readable chips (subject key uppercased · grade). */
-function Grades({ grades }: { grades?: Record<string, string> | null }) {
+function Grades({ grades, trailing }: { grades?: Record<string, string> | null; trailing?: ReactNode }) {
   const entries = Object.entries(grades || {}).filter(([, g]) => g)
   if (!entries.length) return <span className="text-gray-400 text-sm">—</span>
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
       {entries.map(([k, g]) => (
         <span key={k} className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs">
           <span className="text-gray-500 uppercase">{k.replace(/_/g, ' ')}</span>
           <span className="font-semibold text-gray-800">{g}</span>
         </span>
       ))}
+      {trailing}
     </div>
   )
 }
@@ -1042,9 +1043,15 @@ export default function AdminScholarshipDetailPage() {
                 <div className="mt-3">
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">
                     {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
-                    {vtip('grades') && <VerifiedTick label={vtip('grades')!} />}
                   </dt>
-                  <Grades grades={isStpm ? app.stpm_grades : app.grades} />
+                  {/* The tick renders AFTER the subject chips (item 1). It verifies the SPM slip
+                      against the SPM `grades`, so it only belongs to an SPM student's grades — an
+                      STPM student's STPM grades are NOT what academic_check verifies (it would sit
+                      on a match against the separate SPM slip → misattribution, #132). */}
+                  <Grades
+                    grades={isStpm ? app.stpm_grades : app.grades}
+                    trailing={!isStpm && vtip('grades') ? <VerifiedTick label={vtip('grades')!} /> : undefined}
+                  />
                   {isStpm && Object.keys(app.spm_prereq_grades || {}).length > 0 && (
                     <div className="mt-2">
                       <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.spmPrereq')}</dt>
