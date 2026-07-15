@@ -90,15 +90,16 @@ class _AdminBase(PartnerAdminMixin, APIView):
 
     def _b40_scope(self, admin):
         """B40 Applications access by role:
-          'all'      — super + admin + qc (see every application, read)
+          'all'      — super + admin + qc + org_admin (see every application in scope, read)
           'assigned' — reviewer (only the applicants assigned to them)
           'none'     — partner / anyone else (B40 is not their page)
-        (qc's only WRITE is the QC gate — see _require_qc; it has no reviewer-write via
-        _can_review_app since it isn't super and isn't assigned.)
+        'all' is org-fenced downstream by _org_scoped/_org_allows (super global; the rest
+        see only their own org). qc's + org_admin's only reviewer-write path is the QC gate
+        (_require_qc); neither has _can_review_app write unless super/assigned.
         """
         if admin is None or admin.role == 'partner':
             return 'none'
-        if self.has_role(admin, 'admin') or admin.role == 'qc':   # super + admin + qc
+        if self.has_role(admin, 'admin') or admin.role in ('qc', 'org_admin'):  # super + admin + qc + org_admin
             return 'all'
         if admin.role == 'reviewer':
             return 'assigned'
@@ -189,13 +190,13 @@ class _AdminBase(PartnerAdminMixin, APIView):
         (`interviewed`) — else (None, None, error_response). QC is deliberately NOT assignment-
         scoped (it checks a reviewer's work across the queue) and is distinct from reviewer writes.
 
-        Self-QC guard: the senior `qc` role can also REVIEW its assigned cases, so a qc must NOT
-        QC a case it was the assigned reviewer of — that routes to another QC / super. (Super is
-        the owner override and is exempt.)"""
+        Self-QC guard: the senior `qc`/`org_admin` roles can also REVIEW their assigned cases, so
+        they must NOT QC a case they were the assigned reviewer of — that routes to another QC /
+        super. (Super is the owner override and is exempt.)"""
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
-        if not (self.has_role(admin, 'super') or admin.role == 'qc'):
+        if not (self.has_role(admin, 'super') or admin.role in ('qc', 'org_admin')):
             return None, None, self._deny_role()
         app = self._get_application(pk)
         if app is None:
@@ -1044,7 +1045,7 @@ class AdminAssignableAdminsView(_AdminBase):
         # admin can only assign their own reviewers) is a Sprint-10 concern; today the
         # dropdown lists all assignable staff and assignment itself is super-only.
         admins = (PartnerAdmin.objects.filter(is_active=True)
-                  .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super', 'admin', 'qc']))
+                  .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super', 'admin', 'qc', 'org_admin']))
                   .select_related('reviewer_profile').order_by('name'))
         # Internal-only "corrections" tally per reviewer (reopened decisions that led
         # to a real change). Never shown to sponsors/students — an internal quality

@@ -59,6 +59,9 @@ class OrgFenceMixin:
         cls.partner = PartnerAdmin.objects.create(
             supabase_user_id='partner-uid', role='partner', is_active=True,
             name='Partner', email='partner@x.com')
+        cls.org_admin_a = PartnerAdmin.objects.create(
+            supabase_user_id='oa-a', role='org_admin', is_active=True, owning_organisation=cls.org_a,
+            name='OrgAdmin A', email='oaa@x.com')
 
     def setUp(self):
         self.client = APIClient()
@@ -98,6 +101,17 @@ class TestGateHelpers(OrgFenceMixin, TestCase):
 
     def test_org_allows_super_global(self):
         self.assertTrue(self.view._org_allows(self.super, self.app_b))
+
+    def test_org_admin_scope_is_all_but_org_fenced(self):
+        # org_admin gets 'all' scope, then _org_scoped fences it to its own org.
+        self.assertEqual(self.view._b40_scope(self.org_admin_a), 'all')
+        qs = ScholarshipApplication.objects.all()
+        ids = set(self.view._org_scoped(qs, self.org_admin_a).values_list('id', flat=True))
+        self.assertEqual(ids, {self.app_a.id})
+
+    def test_org_admin_cross_org_not_allowed(self):
+        self.assertTrue(self.view._org_allows(self.org_admin_a, self.app_a))
+        self.assertFalse(self.view._org_allows(self.org_admin_a, self.app_b))
 
     def test_can_review_app_cross_org_false(self):
         # super assigns appA to adminA out-of-band; even so, adminB may not write it.

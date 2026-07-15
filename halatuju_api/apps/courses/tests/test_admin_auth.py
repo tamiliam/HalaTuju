@@ -276,6 +276,22 @@ class AdminInviteRoleTest(TestCase):
         self.assertEqual(roles['v@example.com'], 'admin')
         self.assertEqual(roles['super@halatuju.com'], 'super')
 
+    @override_settings(SUPABASE_URL='https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY='k')
+    def test_super_invites_org_admin_creates_tenant(self):
+        # A super may install an organisation admin, creating its tenant org (add-tenant).
+        payload = {'email': 'inspire@example.com', 'name': 'Inspire Lead', 'role': 'org_admin',
+                   'new_org_name': 'Inspire', 'new_org_code': 'inspire'}
+        with patch('apps.courses.views_admin.http_requests.post') as mp:
+            mp.return_value = MagicMock(status_code=200, text='ok', json=lambda: {'id': 'oa-new-uid'})
+            r = self.client.post('/api/v1/admin/invite/', payload, format='json')
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()['role'], 'org_admin')
+        a = PartnerAdmin.objects.get(email='inspire@example.com')
+        self.assertEqual(a.role, 'org_admin')
+        org = PartnerOrganisation.objects.get(code='inspire')
+        self.assertEqual(a.owning_organisation_id, org.id)
+        self.assertTrue(org.module_scholarship)
+
 
 @override_settings(
     ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,

@@ -488,7 +488,7 @@ class AssignmentError(Exception):
 # this so the interview surface can never drift out of step with the rest of the review surface
 # again (a stale copy here silently blocked a 'qc' reviewer from proposing interview times —
 # 2026-07-10). A 'partner' (org rep) is never a review target.
-REVIEW_ROLES = ('reviewer', 'super', 'admin', 'qc')
+REVIEW_ROLES = ('reviewer', 'super', 'admin', 'qc', 'org_admin')
 
 
 def _can_review(admin):

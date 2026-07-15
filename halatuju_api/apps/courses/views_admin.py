@@ -133,7 +133,7 @@ class PartnerAdminMixin:
             return None
 
         # Fast path: lookup by UID
-        admin = PartnerAdmin.objects.filter(supabase_user_id=user_id, is_active=True).select_related('org').first()
+        admin = PartnerAdmin.objects.filter(supabase_user_id=user_id, is_active=True).select_related('org', 'owning_organisation').first()
         if admin:
             return admin
 
@@ -143,7 +143,7 @@ class PartnerAdminMixin:
         su = getattr(request, 'supabase_user', None) or {}
         email = su.get('email')
         if email and su.get('email_verified'):
-            admin = PartnerAdmin.objects.filter(email=email, supabase_user_id__isnull=True, is_active=True).select_related('org').first()
+            admin = PartnerAdmin.objects.filter(email=email, supabase_user_id__isnull=True, is_active=True).select_related('org', 'owning_organisation').first()
             if admin:
                 admin.supabase_user_id = user_id
                 admin.save(update_fields=['supabase_user_id'])
@@ -164,20 +164,27 @@ class PartnerAdminMixin:
     def get_partner_students(self, request):
         """Role-aware student scope for the Students list, Dashboard and CSV export
         (all three call this one choke-point):
-          super / admin → ALL students (admin is read-only elsewhere, but sees all).
-          partner       → only their OWN organisation's students.
-          reviewer / anyone else → no access (None → the caller returns 403).
+          super         → ALL students (the platform-wide directory is PLATFORM-only).
+          partner       → only their OWN referral organisation's students.
+          admin / org_admin / qc / reviewer / anyone else → no access (None → 403).
+
+        SURFACE PARTITION (2026-07-15, security fix): the ALL-students branch is now
+        SUPER-ONLY. Previously `has_role(admin,'admin')` granted a B40 `admin` (and any
+        org role) the platform-wide student directory — every course-selector student's
+        PII, far beyond their own programme. The Phase-1 fence covered the scholarship
+        surface; this closes the courses admin surface. `partner` is unchanged (referral
+        semantics — that IS the partner role's purpose).
         """
         admin = self.get_admin(request)
         if not admin:
             return None, None, None
 
-        # super + admin: every student.
-        if self.has_role(admin, 'admin'):
+        # super only: the platform-wide student directory.
+        if admin.is_super:
             students = StudentProfile.objects.all().order_by('-created_at')
             return students, None, admin
 
-        # partner: scoped to their own organisation only.
+        # partner: scoped to their own referral organisation only.
         if admin.role == 'partner' and admin.org:
             students = StudentProfile.objects.filter(
                 referred_by_org=admin.org,
@@ -200,7 +207,12 @@ class AdminRoleView(PartnerAdminMixin, APIView):
             'is_super_admin': admin.is_super_admin,
             'role': 'super' if admin.is_super else admin.role,
             'admin_id': admin.id,
+            # `org_name` is the REFERRAL org (None for an org_admin). The Administration
+            # panel's org section keys off `owning_org_*` — the B40 tenant this staff
+            # member administers (their access boundary), NOT the referral org.
             'org_name': admin.org.name if admin.org else None,
+            'owning_org_id': admin.owning_organisation_id,
+            'owning_org_name': admin.owning_organisation.name if admin.owning_organisation_id else None,
             'admin_name': admin.name,
         })
 
@@ -433,12 +445,42 @@ def _fmt_json(value):
     return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
 
 
+# Programme-staff roles an org_admin may manage (invite / list / resend / revoke). Never
+# partner (referral), never super, never org_admin — no privilege escalation.
+_ORG_ADMIN_MANAGEABLE_ROLES = {'reviewer', 'admin', 'qc'}
+
+
+def _staff_target_manageable(caller, target):
+    """Whether ``caller`` may manage (resend/revoke) the staff row ``target``. A platform
+    super manages anyone; an ``org_admin`` manages ONLY non-super programme staff
+    (reviewer/admin/qc) bound to the caller's OWN owning organisation. Anyone else: no.
+    Caller/target visibility failures collapse to a 404 at the call site (no existence leak)."""
+    if caller is None or target is None:
+        return False
+    if caller.is_super:
+        return True
+    if caller.role == 'org_admin':
+        if target.is_super or target.role not in _ORG_ADMIN_MANAGEABLE_ROLES:
+            return False
+        return (caller.owning_organisation_id is not None
+                and target.owning_organisation_id == caller.owning_organisation_id)
+    return False
+
+
 class AdminInviteView(PartnerAdminMixin, APIView):
-    """POST /api/v1/admin/invite/ - Invite a partner admin (super admin only)."""
+    """POST /api/v1/admin/invite/ — invite staff. A platform super may add any staff role
+    (incl. a new organisation admin = add-tenant); an org_admin may add programme staff
+    (reviewer/admin/qc) to their OWN organisation only."""
 
     def post(self, request):
         admin = self.get_admin(request)
-        if not admin or not admin.is_super_admin:
+        if not admin:
+            return Response({'error': 'Admin access required'}, status=403)
+        # Who may invite: the PLATFORM super (any staff role incl. a new org admin), OR an
+        # ORGANISATION admin (org_admin) delegating programme staff within their OWN org.
+        caller_super = admin.is_super
+        caller_org_admin = (admin.role == 'org_admin')
+        if not (caller_super or caller_org_admin):
             return Response({'error': 'Super admin access required'}, status=403)
 
         email = request.data.get('email', '').strip().lower()
@@ -447,12 +489,19 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         new_org_name = request.data.get('new_org_name', '').strip()
         new_org_code = request.data.get('new_org_code', '').strip().lower()
 
-        # The inviter chooses the new admin's role. Super is NOT invitable here
-        # (there is one super admin — the owner); default to the safe workhorse.
-        INVITABLE_ROLES = {'admin', 'partner', 'reviewer', 'qc'}
+        # Roles this caller may grant. A super may create any staff role including a new
+        # ORGANISATION admin (add-tenant); an org_admin may add only programme staff to
+        # their own org (never partner/super/org_admin — no privilege escalation).
+        if caller_super:
+            invitable = {'admin', 'partner', 'reviewer', 'qc', 'org_admin'}
+        else:
+            invitable = {'reviewer', 'admin', 'qc'}
         role = request.data.get('role', 'reviewer')
-        if role not in INVITABLE_ROLES:
-            role = 'reviewer'
+        if role not in invitable:
+            if caller_super:
+                role = 'reviewer'   # forgiving default (unchanged super behaviour)
+            else:
+                return Response({'error': 'You cannot grant that role.', 'code': 'role_not_allowed'}, status=403)
 
         if not email or not name:
             return Response({'error': 'email and name are required'}, status=400)
@@ -460,10 +509,20 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if PartnerAdmin.objects.filter(email=email).exists():
             return Response({'error': 'Admin with this email already exists'}, status=409)
 
-        # Organisation applies ONLY to a partner (an org rep, scoped to their org's
-        # students). Admin + reviewer are not org-scoped, so any org input is ignored.
+        # ── Resolve the referral org (`org`, partner only) + the B40 tenant fence
+        #    (`owning_organisation`). The two are DISTINCT: referral ≠ ownership. ──
         org = None
-        if role == 'partner':
+        owning_org = None
+        if caller_org_admin:
+            # An org_admin's invites ALWAYS land in the caller's own organisation; any org
+            # inputs are ignored (role already restricted to reviewer/admin/qc above).
+            owning_org = admin.owning_organisation
+            if owning_org is None:
+                return Response({'error': 'Your account is not bound to an organisation.',
+                                 'code': 'no_owning_org'}, status=400)
+        elif role == 'partner':
+            # A REFERRAL partner (a platform concept — roadshow orgs of the course selector),
+            # scoped to their referral org's students. No B40 tenant access (owning_org stays None).
             if new_org_name and new_org_code:
                 org, _ = PartnerOrganisation.objects.get_or_create(
                     code=new_org_code,
@@ -480,13 +539,36 @@ class AdminInviteView(PartnerAdminMixin, APIView):
                     return Response({'error': 'Organisation not found'}, status=404)
             if org is None:
                 return Response({'error': 'A partner must belong to an organisation', 'code': 'org_required'}, status=400)
-
-        # Platform tenancy (Sprint 3a): bind a new B40 STAFF admin to org #1 (BrightPath)
-        # for access control — the fence keys off owning_organisation, never the referral
-        # `org`. super stays global (NULL); partner has no B40 access (NULL). The real
-        # org picker arrives with the superadmin portal (Sprint 10) — default org #1 now.
-        owning_org = None
-        if role in ('admin', 'reviewer', 'qc'):
+        elif role == 'org_admin':
+            # A5 — a super installs a new organisation's ADMIN, creating/selecting its TENANT
+            # (the owning_organisation, NOT the referral `org`) and switching the scholarship
+            # module on. This is the thin add-tenant slice of the superadmin portal.
+            if new_org_name and new_org_code:
+                owning_org, created = PartnerOrganisation.objects.get_or_create(
+                    code=new_org_code,
+                    defaults={
+                        'name': new_org_name,
+                        'contact_person': request.data.get('contact_person', ''),
+                        'phone': request.data.get('org_phone', ''),
+                        'module_scholarship': True,
+                    },
+                )
+                if not created and not owning_org.module_scholarship:
+                    owning_org.module_scholarship = True
+                    owning_org.save(update_fields=['module_scholarship'])
+            elif org_id:
+                try:
+                    owning_org = PartnerOrganisation.objects.get(id=org_id)
+                except PartnerOrganisation.DoesNotExist:
+                    return Response({'error': 'Organisation not found'}, status=404)
+                if not owning_org.module_scholarship:
+                    owning_org.module_scholarship = True
+                    owning_org.save(update_fields=['module_scholarship'])
+            if owning_org is None:
+                return Response({'error': 'A tenant organisation is required.', 'code': 'tenant_required'}, status=400)
+        else:
+            # A super inviting a B40 staff role (admin/reviewer/qc) → bind to org #1 (BrightPath)
+            # for the access fence. super stays global (NULL). (Per-org staff picker is future.)
             owning_org = PartnerOrganisation.objects.filter(code='brightpath').first()
 
         service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
@@ -511,7 +593,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             if not emailed:
                 message = f'{name} was added, but the email could not be sent. Use Resend to try again.'
             return Response({
-                'message': message, 'org': org.name if org else None, 'role': role,
+                'message': message, 'org': (org or owning_org).name if (org or owning_org) else None, 'role': role,
                 'already_registered': False, 'google': True, 'emailed': emailed,
             }, status=201)
 
@@ -554,7 +636,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             message = f'{name} was added, but the email could not be sent. Use Resend to try again.'
         return Response({
             'message': message,
-            'org': org.name if org else None,
+            'org': (org or owning_org).name if (org or owning_org) else None,
             'role': role,
             'already_registered': already_registered,
             'emailed': emailed,
@@ -573,12 +655,13 @@ class AdminResendView(PartnerAdminMixin, APIView):
 
     def post(self, request, admin_id):
         admin = self.get_admin(request)
-        if not admin or not admin.is_super_admin:
+        if not admin or not (admin.is_super or admin.role == 'org_admin'):
             return Response({'error': 'Super admin access required'}, status=403)
 
-        try:
-            target = PartnerAdmin.objects.get(id=admin_id)
-        except PartnerAdmin.DoesNotExist:
+        target = PartnerAdmin.objects.filter(id=admin_id).first()
+        if target is None or not _staff_target_manageable(admin, target):
+            # Not found OR not manageable by this caller (cross-org / super target) — 404,
+            # so an org_admin can't probe for the existence of other orgs' or platform staff.
             return Response({'error': 'Admin not found'}, status=404)
 
         service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
@@ -688,14 +771,22 @@ class AdminOrgsView(PartnerAdminMixin, APIView):
 
 
 class AdminListView(PartnerAdminMixin, APIView):
-    """GET /api/v1/admin/admins/ - List all admins (super admin only)."""
+    """GET /api/v1/admin/admins/ — list staff. Super sees ALL; an org_admin sees only the
+    non-super programme staff in their OWN organisation."""
 
     def get(self, request):
         admin = self.get_admin(request)
-        if not admin or not admin.is_super_admin:
+        if not admin or not (admin.is_super or admin.role == 'org_admin'):
             return Response({'error': 'Super admin access required'}, status=403)
 
         admins = PartnerAdmin.objects.select_related('org').order_by('-created_at')
+        if not admin.is_super:
+            # org_admin: only their own org's manageable staff (never supers / other orgs).
+            admins = admins.filter(
+                owning_organisation_id=admin.owning_organisation_id,
+                role__in=_ORG_ADMIN_MANAGEABLE_ROLES,
+                is_super_admin=False,
+            )
         data = []
         for a in admins:
             data.append({
@@ -716,12 +807,12 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
 
     def patch(self, request, admin_id):
         admin = self.get_admin(request)
-        if not admin or not admin.is_super_admin:
+        if not admin or not (admin.is_super or admin.role == 'org_admin'):
             return Response({'error': 'Super admin access required'}, status=403)
 
-        try:
-            target = PartnerAdmin.objects.get(id=admin_id)
-        except PartnerAdmin.DoesNotExist:
+        target = PartnerAdmin.objects.filter(id=admin_id).first()
+        if target is None or not _staff_target_manageable(admin, target):
+            # 404 for a missing row OR a target outside this caller's remit (cross-org / super).
             return Response({'error': 'Admin not found'}, status=404)
 
         if target.is_super_admin:
@@ -803,13 +894,16 @@ class AdminCourseDataView(PartnerAdminMixin, APIView):
     """GET /api/v1/admin/course-data/ — read-only Course Data dashboard.
 
     Returns per-source freshness (last-run status the tools record) + live coverage counts.
-    Any admin role may view (read-only reporting).
+    PLATFORM surface — SUPER-ONLY (Course Data is the course-selector base, not an org's
+    programme; surface partition 2026-07-15).
     """
 
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return Response({'error': 'Not a partner admin'}, status=403)
+        if not admin.is_super:
+            return Response({'error': 'forbidden'}, status=403)
         return Response(_course_data_payload())
 
 
@@ -818,15 +912,15 @@ class AdminCourseDataCheckView(PartnerAdminMixin, APIView):
 
     Runs `course_data_check` (audit_data + concurrent link reachability — NO --fix, NO scrape,
     NO catalogue writes) synchronously, then returns the refreshed dashboard payload so the page
-    updates immediately. Super/admin only (it issues ~650 outbound link checks). The weekly cron
-    runs the same command. NEVER mutates the catalogue.
+    updates immediately. SUPER-ONLY (platform surface; it issues ~650 outbound link checks). The
+    weekly cron runs the same command. NEVER mutates the catalogue.
     """
 
     def post(self, request):
         admin = self.get_admin(request)
         if not admin:
             return Response({'error': 'Not a partner admin'}, status=403)
-        if not self.has_role(admin, 'super', 'admin'):
+        if not admin.is_super:
             return Response({'error': 'forbidden'}, status=403)
 
         import io

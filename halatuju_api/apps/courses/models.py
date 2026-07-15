@@ -457,20 +457,30 @@ class PartnerAdmin(models.Model):
     # Role categories. Kept ALONGSIDE is_super_admin (expand-contract): is_super_admin
     # is backfilled into role and still read by legacy code; a later TD drops it once
     # role is the sole source of truth.
-    #   super    — everything + invite/role management (the owner).
-    #   admin    — sees ALL pages but READ-ONLY for now (execute powers + add-super-admin
-    #              + transfer-ownership land later; for now == the old 'viewer').
-    #   partner  — an organisation rep: Dashboard + Students + Profile, scoped to their
-    #              OWN org's students only.
+    #   super    — PLATFORM superadmin (the owner). Everything, cross-org; the only role
+    #              that sees the platform surfaces (Dashboard / Students directory / Course
+    #              Data) — those are super-only from the surface-partition sprint (2026-07-15).
+    #   admin    — a B40 staff role, org-scoped: sees its OWN organisation's B40 applications
+    #              (read; write only where assigned). NO LONGER sees the platform Students/
+    #              Dashboard/Course-Data surfaces (that admin-branch became super-only in the
+    #              surface partition). "View-only admin" in the UI.
+    #   org_admin — ORGANISATION superadmin (e.g. BrightPath's programme lead): org-wide B40
+    #              READ + the QC gate + STAFF MANAGEMENT (invite/list/resend/revoke reviewers,
+    #              admins, qc) for its OWN organisation only. Never cross-org, never the
+    #              platform surfaces, never super. Includes QC powers (small-team compromise,
+    #              owner decision 2026-07-15). UI label: "Organisation admin".
+    #   partner  — a REFERRAL organisation rep: Dashboard + Students + Profile, scoped to their
+    #              OWN referral org's students only (referral semantics, not the B40 tenant fence).
     #   reviewer — an individual volunteer: B40 Applications + Profile, scoped to the
     #              applicants ASSIGNED to them only; records the verdict → 'interviewed' (awaiting QC).
-    #   qc       — quality control: reads every B40 application (like admin) but its only WRITE is
-    #              the QC gate on an 'interviewed' case — Accept (→ recommended) or Reopen (→ back to
+    #   qc       — quality control: reads its org's B40 applications but its only WRITE is the
+    #              QC gate on an 'interviewed' case — Accept (→ recommended) or Reopen (→ back to
     #              the reviewer with comments). Cannot record verdicts / verify / interview.
     # ('viewer' retired 2026-06-09 → folded into 'admin'; 0 viewers existed on prod.)
     ROLE_CHOICES = [
         ('super', 'Super admin'),
         ('admin', 'Admin'),
+        ('org_admin', 'Organisation admin'),
         ('partner', 'Partner'),
         ('reviewer', 'Reviewer'),
         ('qc', 'Quality control'),

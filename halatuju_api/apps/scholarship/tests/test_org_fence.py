@@ -12,6 +12,7 @@ Three durable guards protecting the owner's feature-work period after Phase 1:
 """
 import os
 import re
+from unittest import mock
 
 import jwt
 from django.test import TestCase, override_settings
@@ -74,6 +75,13 @@ class TestOrgFenceProof(TestCase):
         cls.reviewer_a = PartnerAdmin.objects.create(
             supabase_user_id='a-rev', role='reviewer', is_active=True,
             owning_organisation=cls.a['org'], name='Reviewer A', email='reva@x.com')
+        # org_admin per tenant — org-wide read + QC, own org only (Administration panel).
+        cls.org_admin_a = PartnerAdmin.objects.create(
+            supabase_user_id='a-oa', role='org_admin', is_active=True,
+            owning_organisation=cls.a['org'], name='OrgAdmin A', email='oaa@x.com')
+        cls.org_admin_b = PartnerAdmin.objects.create(
+            supabase_user_id='b-oa', role='org_admin', is_active=True,
+            owning_organisation=cls.b['org'], name='OrgAdmin B', email='oab@x.com')
 
     def setUp(self):
         self.client = APIClient()
@@ -140,6 +148,35 @@ class TestOrgFenceProof(TestCase):
         r = self.client.post(
             f'/api/v1/admin/graduation-messages/{msg_b.id}/review/', {'action': 'approve'}, format='json')
         self.assertEqual(r.status_code, 404)
+
+    # --- org_admin behaves exactly like the other org-scoped roles -----------
+    def test_org_admin_list_isolated(self):
+        self._auth('a-oa')
+        ids = {a['id'] for a in self.client.get('/api/v1/admin/scholarship/applications/').json()['applications']}
+        self.assertEqual(ids, {self.a['app'].id})
+
+    def test_org_admin_cross_org_detail_404(self):
+        self._auth('a-oa')
+        r = self.client.get(f"/api/v1/admin/scholarship/applications/{self.b['app'].id}/")
+        self.assertEqual(r.status_code, 404)
+
+    def test_org_admin_cross_org_qc_404(self):
+        self._auth('a-oa')
+        r = self.client.post(
+            f"/api/v1/admin/scholarship/applications/{self.b['app'].id}/qc-decision/",
+            {'decision': 'accept'}, format='json')
+        self.assertEqual(r.status_code, 404)
+
+    def test_org_admin_same_org_qc_accepts(self):
+        # org_admin has QC powers (owner decision) — a same-org QC accept works.
+        with mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[]):
+            self._auth('a-oa')
+            r = self.client.post(
+                f"/api/v1/admin/scholarship/applications/{self.a['app'].id}/qc-decision/",
+                {'decision': 'accept'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.a['app'].refresh_from_db()
+        self.assertEqual(self.a['app'].status, 'recommended')
 
 
 class TestFenceCoverageCompleteness(TestCase):
