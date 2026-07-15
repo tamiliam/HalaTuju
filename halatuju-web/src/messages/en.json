@@ -3580,6 +3580,7 @@
         "cancelReopen": "Cancel reopen (restore)",
         "reopenError": "Could not reopen the decision.",
         "declinedBy": "Declined by",
+        "reopenedBy": "Reopened by",
         "aiSuggested": "AI verdict:",
         "suggest": {
           "yes": "yes",

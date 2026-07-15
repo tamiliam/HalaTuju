@@ -291,6 +291,12 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Decision-reopen state: when set, the decision panel is editable + the reviewer
     # dropdown unlocks + a "held from sponsors" banner shows. The open reason drives the banner.
     decision_reopen_reason = serializers.SerializerMethodField()
+    # The most recent reopen (open OR closed) as a compact record for the decision-history
+    # trail on a decided case: who reopened, the reviewer it's attributed to (the original
+    # recommender), the reason, and when. None when the case was never reopened. This is what
+    # lets a rejected card read "recommended by X → reopened by Y (reason) → declined by Z"
+    # instead of hiding the reviewer's recommendation behind a lone "Declined by …" line.
+    last_decision_reopen = serializers.SerializerMethodField()
     # Whether the (dark-by-default) Conditional Bursary Agreement feature is live — the cockpit
     # only renders the agreement panel when this is on (otherwise its signing flow doesn't exist).
     bursary_agreement_enabled = serializers.SerializerMethodField()
@@ -383,7 +389,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
             'verdict_decided_by', 'verdict_decided_at', 'verdict_decided_by_name',
             # Decision-reopen (reverse a recorded decision) state + assigned-reviewer corrections.
-            'decision_reopened_at', 'decision_reopen_reason',
+            'decision_reopened_at', 'decision_reopen_reason', 'last_decision_reopen',
             'assigned_to_corrections', 'bursary_agreement_enabled', 'bursary_agreement',
             # Post-award S4: the disbursement/tranche ledger (cockpit money-out panel).
             'disbursements',
@@ -436,6 +442,20 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         from .reopen import open_reopen
         row = open_reopen(obj)
         return row.reason if row else ''
+
+    def get_last_decision_reopen(self, obj):
+        from .reopen import latest_reopen
+        row = latest_reopen(obj)
+        if row is None:
+            return None
+        return {
+            'reopened_by': row.reopened_by,
+            'reopened_by_name': _admin_name_by_email(row.reopened_by),
+            'reviewer_name': row.reviewer.name if row.reviewer else '',
+            'reason': row.reason,
+            'created_at': row.created_at,
+            'resulted_in_change': row.resulted_in_change,
+        }
 
     def get_name(self, obj):
         return _full_name(obj)

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Rejection record shows the decision trail (reviewer → QC reopen → decline) — 2026-07-15
+
+### Changed
+- **The cockpit rejection record now shows the full decision thread instead of a lone "Declined by …" line.** When a case was declined after a QC reopen, the record read only "Declined by {name}" while the justification box still showed the *reviewer's recommendation* text — so an all-verified case declined on merit looked self-contradictory, and the QC's actual reason (recorded on the reopen) was invisible (the #51 case: Kaneswaran recommended → Ve. Elanjelian reopened on a 5A- merit reason → declined). The rejected record now renders **Recommended by {reviewer} → Reopened by {who} · {date} — "{reason}" → Declined by {who} · {date}** when a reopen exists; a straight reviewer decline with no reopen keeps the single line. Display-only — no student email, no new categories, no migration.
+
+### Added
+- **`last_decision_reopen` on `AdminApplicationDetailSerializer`** — the most recent reopen (open or closed) as `{reopened_by, reopened_by_name, reviewer_name, reason, created_at, resulted_in_change}`, or null when the case was never reopened. Backed by the new `reopen.latest_reopen()` helper. This is the audit anchor for the decision trail; the QC's reopen reason was already stored on `DecisionReopen`, just never surfaced on a decided case.
 ## School-leaving certificate genuineness model + keep-better + duplicate collapse — 2026-07-15
 
 The *Sijil Berhenti Sekolah* had NO genuineness check — the green "Verified" chip only meant the

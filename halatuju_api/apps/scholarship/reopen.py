@@ -34,6 +34,13 @@ def open_reopen(app):
     return app.decision_reopens.filter(closed_at__isnull=True).order_by('-created_at').first()
 
 
+def latest_reopen(app):
+    """The most recent reopen row (open OR closed), or None — the audit anchor for the
+    decision-history trail on a decided case. A closed reopen that led to a change is how a
+    QC override shows up: reviewer recommended → QC reopened (with a reason) → re-decided."""
+    return app.decision_reopens.order_by('-created_at').first()
+
+
 def reopen_decision(app, *, by_admin, reason):
     """Reopen a recorded decision: hold the sponsor profile, open an audit row.
 

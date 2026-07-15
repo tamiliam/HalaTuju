@@ -256,3 +256,50 @@ class TestDecisionReopen(TestCase):
 
     def test_assignable_admins_exposes_corrections(self):
         self.assertEqual(self._corrections_for(self.reviewer.id), 0)
+
+
+@override_settings(SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestDecisionTrailSerializer(TestCase):
+    """`last_decision_reopen` surfaces the reviewer-recommend → QC-reopen(reason) → decline
+    thread on a decided case, so the cockpit record no longer hides the flip behind a lone
+    'Declined by …' line (the #51 case)."""
+
+    def setUp(self):
+        self.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id='trail-student', nric='080119-05-0068', name='Vitharsna')
+        self.reviewer = PartnerAdmin.objects.create(
+            supabase_user_id='trail-rev', role='reviewer', is_active=True,
+            name='Kaneswaran Sinakalai', email='kaneswaran@x.com')
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='rejected',
+            assigned_to=self.reviewer, rejection_category='interview',
+            rejected_by='qc@x.com', rejected_at=timezone.now())
+
+    def _data(self):
+        from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
+        return AdminApplicationDetailSerializer(self.app).data
+
+    def test_null_when_never_reopened(self):
+        self.assertIsNone(self._data()['last_decision_reopen'])
+
+    def test_surfaces_latest_reopen_thread(self):
+        DecisionReopen.objects.create(
+            application=self.app, reviewer=self.reviewer, reopened_by='qc@x.com',
+            reason='5A- is the absolute minimum; grades not met so the application fails.',
+            resulted_in_change=True, closed_at=timezone.now())
+        ro = self._data()['last_decision_reopen']
+        self.assertIsNotNone(ro)
+        self.assertEqual(ro['reviewer_name'], 'Kaneswaran Sinakalai')
+        self.assertEqual(ro['reopened_by'], 'qc@x.com')
+        self.assertIn('absolute minimum', ro['reason'])
+        self.assertTrue(ro['resulted_in_change'])
+
+    def test_returns_most_recent_reopen(self):
+        DecisionReopen.objects.create(
+            application=self.app, reviewer=self.reviewer, reopened_by='qc@x.com',
+            reason='first', closed_at=timezone.now())
+        DecisionReopen.objects.create(
+            application=self.app, reviewer=self.reviewer, reopened_by='qc@x.com',
+            reason='second and latest')
+        self.assertEqual(self._data()['last_decision_reopen']['reason'], 'second and latest')
