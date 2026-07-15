@@ -1078,7 +1078,7 @@ export default function AdminScholarshipDetailPage() {
                         <>
                           <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
                           <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
-                          <Field label={t('admin.scholarship.preUInstitution')} value={expandMatricInstitution(app.pre_u_institution)} />
+                          <Field label={t('admin.scholarship.preUInstitution')} value={expandMatricInstitution(app.pre_u_institution)} verifiedLabel={vtip('preUInstitution')} />
                         </>
                       ) : (
                         <Field

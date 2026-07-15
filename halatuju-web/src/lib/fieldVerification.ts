@@ -20,6 +20,7 @@ export type VerifiableField =
   | 'school'
   | 'grades'
   | 'chosenProgramme'
+  | 'preUInstitution'
   | 'reportingDate'
   | 'address'
   | 'parentName'
@@ -70,11 +71,18 @@ export function fieldVerifications(
   // READ off the offer, so it ticks whenever a non-fake/non-suspect offer carries one (the shown
   // value IS the offer's date — no separate cross-check to make).
   set('chosenProgramme', 'offer_letter', 'pathway', 'offerLetter')
-  if (docs.some((d) => {
-    if (d.doc_type !== 'offer_letter' || !d.pathway_check?.reporting_date) return false
+  // Pre-U institution (matric/STPM): tick when a genuine offer's INSTITUTION matches the declared
+  // one (the offer summons the student to this college). Uses the institution dimension on its own,
+  // not the combined `pathway` (which also folds in programme/stream).
+  const genuineOffer = (d: AdminApplicantDocument): boolean => {
+    if (d.doc_type !== 'offer_letter') return false
     const auth = d.authenticity?.status
     return !auth || auth === 'genuine' || auth === 'likely_genuine' // exclude suspect / not_* (fake)
-  })) {
+  }
+  if (docs.some((d) => genuineOffer(d) && d.pathway_check?.institution_status === 'match')) {
+    out.preUInstitution = { source: 'offerLetter' }
+  }
+  if (docs.some((d) => genuineOffer(d) && d.pathway_check?.reporting_date)) {
     out.reportingDate = { source: 'offerLetter' }
   }
 

@@ -374,6 +374,10 @@ def student_offer_check(doc) -> dict:
         'address': (f.get('candidate_address') or '').strip(),
         # Offer-vs-declared reconciliation (Check-1 pathway).
         'pathway': pathway,                       # 'match' | 'mismatch' | 'unknown'
+        # The INSTITUTION dimension on its own (does the offer's institution match the declared
+        # one?) — surfaced so the cockpit can tick a confirmed pre-U institution (matric/STPM),
+        # which the combined `pathway` can't do precisely (it also folds in programme/stream).
+        'institution_status': _field_status(decl_inst, institution),  # 'match' | 'clash' | 'unknown'
         'declared_programme': decl_prog,
         'declared_institution': decl_inst,
     }

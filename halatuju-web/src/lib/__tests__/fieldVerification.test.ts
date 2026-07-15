@@ -54,6 +54,25 @@ describe('fieldVerifications', () => {
     expect(fv.reportingDate).toEqual({ source: 'offerLetter' })
   })
 
+  it('ticks preUInstitution when a genuine offer institution matches the declared one', () => {
+    const fv = fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { institution_status: 'match' } },
+    ]))
+    expect(fv.preUInstitution).toEqual({ source: 'offerLetter' })
+  })
+
+  it('does NOT tick preUInstitution on an institution clash / unknown / suspect offer', () => {
+    expect(fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { institution_status: 'clash' } },
+    ])).preUInstitution).toBeUndefined()
+    expect(fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { institution_status: 'unknown' } },
+    ])).preUInstitution).toBeUndefined()
+    expect(fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'suspect' }, pathway_check: { institution_status: 'match' } },
+    ])).preUInstitution).toBeUndefined()
+  })
+
   it('does NOT tick reportingDate when the offer carries no reporting date', () => {
     const fv = fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { name: 'match', ic: 'match', pathway: 'match' } },

@@ -181,6 +181,13 @@ class TestOfferPathwayMatch(SimpleTestCase):
             offer_pathway_match('', 'KM Melaka', '', 'Kolej Matrikulasi Melaka'),
             'match')
 
+    def test_institution_status_km_equivalence(self):
+        # The institution dimension on its own (drives the cockpit Pre-U Institution tick):
+        # "KM Perak" ≈ "Kolej Matrikulasi Perak" → match; a different state → clash.
+        from apps.scholarship.pathway_engine import _field_status
+        self.assertEqual(_field_status('KM Perak', 'Kolej Matrikulasi Perak'), 'match')
+        self.assertEqual(_field_status('KM Perak', 'Kolej Matrikulasi Melaka'), 'clash')
+
     def test_different_school_is_mismatch(self):
         # Same STPM stream, but a genuinely different school.
         self.assertEqual(
