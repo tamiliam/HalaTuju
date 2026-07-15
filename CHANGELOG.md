@@ -92,6 +92,14 @@ pill. Deployed `50149446` (api+web) + `06e38dee` (api hardening); NO migration; 
   only on a discrepancy (a non-matching school / a poor conduct); the leadership notes always show.
   Computed live (no re-extraction). `student_school_leaving_check` gains `school_status` +
   `kelakuan_status`.
+- **Match-accuracy follow-up (owner live review):** two false-red causes fixed. (1) **Abbreviation-
+  aware school match** (`academic_engine._school_match`) — the cert prints "Sekolah Menengah
+  Kebangsaan X" while the student typed "SMK X"; strip the generic school-type words + abbreviations
+  and compare the distinctive remainder, so they match (a genuinely different school still reds).
+  Live, no re-extraction. (2) **Parser rejects a garbage cert name** — #66's deterministic read was a
+  bare ":" (a multi-column-layout label misread) that showed as a Name mismatch; the parser now
+  strips a stray leading ":"/index, requires a real name (≥4 letters), else defers to Gemini
+  (#66 re-extracted → "THARUN A/L JAYAKUMAR", green).
 
 ## Rejection record shows the decision trail (reviewer → QC reopen → decline) — 2026-07-15
 
