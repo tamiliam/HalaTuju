@@ -722,6 +722,38 @@ _KELAKUAN_CONCERN = ('SEDERHANA',)
 _KELAKUAN_GOOD = ('TERPUJI', 'CEMERLANG', 'BAIK', 'MEMUASKAN')
 
 
+# School-name matching is ABBREVIATION-AWARE: the cert prints the full form ("Sekolah Menengah
+# Kebangsaan X") while the student types the abbreviation ("SMK X") — the same school (#19/#80/#130…).
+# Strip the generic school-TYPE words + their abbreviations from both sides, then compare the
+# DISTINCTIVE remainder (the place / person the school is named after). A genuinely different school
+# (#136: "Tan Sri Haji Abdul Aziz Tapa" vs "Datuk Bendahara") keeps no distinctive overlap → mismatch.
+# Owner 2026-07-15.
+_SCHOOL_STOP = frozenset({
+    'SEKOLAH', 'MENENGAH', 'KEBANGSAAN', 'JENIS', 'RENDAH', 'TINGGI', 'TAMIL', 'CINA', 'AGAMA',
+    'VOKASIONAL', 'TEKNIK', 'HARIAN', 'ASRAMA', 'BERASRAMA', 'PENUH', 'NEGERI', 'MALAYSIA',
+    'SMK', 'SMJK', 'SJKT', 'SJKC', 'SJK', 'SK', 'SM', 'SMA', 'SBP', 'SR', 'SMT', 'KV', 'MRSM', 'SMKA'})
+
+
+def _school_tokens(s: str) -> set:
+    up = re.sub(r'[^A-Z0-9 ]+', ' ', (s or '').upper())   # drop punctuation: ST. → ST, DATO' → DATO
+    return {t for t in up.split() if t and t not in _SCHOOL_STOP}
+
+
+def _school_match(cert: str, profile: str) -> str:
+    """Abbreviation-aware school match → 'match' / 'partial' / 'mismatch' / 'no_ref'. Compares the
+    DISTINCTIVE tokens after stripping the generic school-type words (so SMK ↔ Sekolah Menengah
+    Kebangsaan). Pure; never raises."""
+    a, b = _school_tokens(cert), _school_tokens(profile)
+    if not a or not b:
+        return 'no_ref'
+    inter = a & b
+    if inter == a or inter == b:          # one distinctive set contains the other (extra location ok)
+        return 'match'
+    if not inter:
+        return 'mismatch'
+    return 'partial' if len(inter) / min(len(a), len(b)) >= 0.6 else 'mismatch'
+
+
 def _kelakuan_quality(raw: str) -> str:
     """A conduct rating → 'good' / 'concern' / 'bad' / 'unknown'. Pure; order matters ('bad' first)."""
     up = (raw or '').upper().strip()
@@ -760,9 +792,9 @@ def student_school_leaving_check(doc) -> dict:
     snric = (getattr(profile, 'nric', '') or '').strip()
     sschool = (getattr(profile, 'school', '') or '').strip()
     name_status = vision.name_match(name, sname) if (name and sname) else 'no_ref'
-    # School matched against the student's declared school (token-set, like the name match): green on
-    # a match, amber on a partial, red on a clear mismatch, grey when either side is blank.
-    school_status = vision.name_match(school, sschool) if (school and sschool) else 'no_ref'
+    # School matched abbreviation-aware (SMK ↔ Sekolah Menengah Kebangsaan): green on a match, amber
+    # on a partial, red on a clear mismatch, grey when either side is blank.
+    school_status = _school_match(school, sschool)
     if not nric or not snric:
         nric_status = 'no_ref'
     else:

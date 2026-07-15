@@ -619,12 +619,14 @@ def _parse_school_leaving(text: str) -> Optional[dict]:
     if not has(text, r'berhenti\s+sekolah', r'tarikh\s+berhenti', r'sebab\s+berhenti', r'sijil\s+berhenti'):
         return None
     name = find_value(text, r'nama\s+murid') or find_value(text, r'nama\s+pelajar')
+    name = re.sub(r'^[^A-Za-z]+', '', name or '').strip()   # strip a stray leading ':' / index (#66)
     school = _leaver_school(text)
     kelakuan = _clean_kelakuan(find_value(text, r'\bkelakuan\b'))
-    # A full school name is ≥3 words (e.g. "SMK Tinggi Klang" / "Sekolah Menengah Kebangsaan X"); a
-    # 1–2-word fragment ("SMK Bukit") is a truncated OCR read → defer to Gemini. kelakuan must be a
-    # recognised conduct word, else the read is unreliable → defer. Both clean → trust the Exact read.
-    if not name or len(school.split()) < 3 or not kelakuan:
+    # The name must read as a real name (≥4 letters) — a multi-column layout can hand the label read a
+    # bare ':' (the #66 misread, which then reads as a Name mismatch against the student). A full
+    # school name is ≥3 words (a 1-2-word fragment "SMK Bukit" is a truncated read); kelakuan must be a
+    # recognised conduct word. ANY gate miss → defer to Gemini (which reads the varied layouts cleanly).
+    if len(re.sub(r'[^A-Za-z]', '', name)) < 4 or len(school.split()) < 3 or not kelakuan:
         return None
     nric = first_nric(find_value(text, r'kad\s+pengenalan')) or first_nric(text)
     return {'name': name, 'nric': nric, 'school': school,

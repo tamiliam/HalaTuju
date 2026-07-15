@@ -81,6 +81,42 @@ class TestSchoolLeavingParser(SimpleTestCase):
         self.assertIn('NAIB BENDAHARI', r['activities'])
         self.assertNotIn('jika ada', r['activities'].lower())
 
+    def test_garbage_colon_name_bails(self):
+        # A multi-column layout hands the label read a bare ':' for the name (the #66 misread) → the
+        # parser must DEFER to Gemini rather than store ':' (which reads as a Name mismatch).
+        txt = ("SMK SEKSYEN 10 KOTA DAMANSARA\nSIJIL BERHENTI SEKOLAH\nNama Murid :\n:\n"
+               "Kelakuan : TERPUJI\nTarikh Berhenti : 2025\nSebab Berhenti : TAMAT\n")
+        self.assertIsNone(self._p(txt))
+
+
+class TestSchoolMatch(SimpleTestCase):
+    """Abbreviation-aware school matching — the systemic #130/#19/#80 fix: the cert prints the full
+    form, the student types the abbreviation, and they are the SAME school."""
+    def _m(self, cert, profile):
+        from apps.scholarship.academic_engine import _school_match
+        return _school_match(cert, profile)
+
+    def test_smk_full_form_matches_abbreviation(self):
+        self.assertEqual(self._m('SEKOLAH MENENGAH KEBANGSAAN TOK PERDANA', 'SMK TOK PERDANA'), 'match')
+        self.assertEqual(self._m('SEKOLAH MENENGAH KEBANGSAAN RAJA MAHADI', 'SMK RAJA MAHADI'), 'match')
+        self.assertEqual(self._m('SM SAINS TAPAH', 'SEKOLAH MENENGAH SAINS TAPAH'), 'match')
+
+    def test_punctuation_and_extra_location_still_match(self):
+        self.assertEqual(self._m("SMK DATO' ZULKIFLI MUHAMMAD", 'SMK DATO ZULKIFLI MUHAMMAD'), 'match')
+        self.assertEqual(
+            self._m('SEKOLAH MENENGAH KEBANGSAAN ST. MARY KUALA LUMPUR, MALAYSIA', 'SMK ST MARY ( Kuala Lumpur)'),
+            'match')
+
+    def test_genuinely_different_school_is_mismatch(self):
+        # #136: the cert's school ≠ the declared school → must stay RED.
+        self.assertEqual(
+            self._m('SEKOLAH MENENGAH KEBANGSAAN TAN SRI HAJI ABDUL AZIZ TAPA', 'SMK DATUK BENDAHARA'),
+            'mismatch')
+
+    def test_blank_is_no_ref(self):
+        self.assertEqual(self._m('', 'SMK X Y'), 'no_ref')
+        self.assertEqual(self._m('SMK X Y', ''), 'no_ref')
+
 
 class TestSchoolLeavingCheck(TestCase):
     def setUp(self):
