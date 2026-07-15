@@ -484,6 +484,23 @@ src/data/
 └── stpm-schools.ts                # TypeScript interface wrapper for stpm-schools.json
 ```
 
+### Content Modules (role-aware admin manual)
+
+```
+src/content/manual/                 # The /admin/guide (manual) + /admin/faq content, as typed
+│                                     modules (one ManualChapter per file, stable deep-link anchors).
+├── types.ts, index.ts             # Types + registry + PURE helpers (visibleChapters / defaultChapterSlug /
+│                                     resolveTarget / manualRole) — role→content visibility, unit-tested
+├── basics-*.tsx (×4)              # Shared Basics chapters (all roles)
+├── role-*.tsx (×4)                # reviewer / qc / org-admin / general-admin (visibility per role;
+│                                     org_admin + super see all role chapters)
+├── help.tsx                       # Help group
+└── faq.tsx                        # Audience-grouped Q&As + faq filter helpers
+```
+
+**Every capability claim traces to `docs/scholarship/role-matrix.md` (currency rule: a role-power
+change updates its chapter + FAQ in the same commit). English only; shaped for ms/ta siblings.**
+
 ### i18n Translations
 
 ```

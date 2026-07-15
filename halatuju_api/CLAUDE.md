@@ -522,7 +522,18 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-15)
+## Next Sprint (as of 2026-07-16)
+
+**✅ SHIPPED 2026-07-16 — Role-aware Guide & FAQ manual** (web/content only, NO backend/migration;
+brief `docs/plans/2026-07-16-guide-faq-manual-brief.md`; retro `docs/retrospective-2026-07-16-guide-faq-manual.md`).
+The reviewer-only Guide+FAQ became ONE role-aware manual: content modules in
+`halatuju-web/src/content/manual/` (4 Basics + reviewer/qc/org-admin/general-admin chapters + help +
+audience-grouped FAQ), sidebar with role-aware landing (org_admin/super see all role chapters), FAQ
+audience filter, stable deep-link anchors. Every claim traces to `docs/scholarship/role-matrix.md`
+(now carries a currency rule + manual pointer). Fixed 2 drifted facts (Save → QC not sponsors;
+reviewer sponsor-vetting removed). New org-admin/QC screenshots = labelled placeholders + manifest
+(`docs/plans/2026-07-16-manual-screenshot-manifest.md`). 552 jest (+22); next build clean.
+**▶ OWNER: screenshot pass (5 PNGs → `/public/manual/`), then revert `elanjelian@me.com` → reviewer.**
 
 **✅ SHIPPED 2026-07-15 — Org-Admin Powers v1 + role-matrix alignment** (brief
 `docs/plans/2026-07-15-org-admin-powers-v1-brief.md`; authority `docs/scholarship/role-matrix.md`;
