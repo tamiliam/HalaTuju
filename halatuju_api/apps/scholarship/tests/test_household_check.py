@@ -14,38 +14,67 @@ def _app(income=None, size=None):
 
 
 class TestHouseholdIncomeReconciliation(SimpleTestCase):
+    @staticmethod
+    def _recon(app, members, incomes, *, genuine=True):
+        """Run the reconciliation with the earner set + per-member incomes mocked; genuineness
+        defaults to genuine (fail-open)."""
+        return mock.patch.object(ie, '_income_earning_members', return_value=members), \
+            mock.patch.object(ie, 'earner_monthly_income', side_effect=[(a, 's') for a in incomes]), \
+            mock.patch.object(ie, '_member_income_genuine', return_value=genuine)
+
     def test_matches_within_tolerance(self):
         app = _app(income=7000, size=5)
-        with mock.patch.object(ie, 'effective_working_members', return_value=['father', 'mother']), \
-             mock.patch.object(ie, 'earner_monthly_income', side_effect=[(3600.0, 'salary'), (3400.0, 'salary')]):
+        m1, m2, m3 = self._recon(app, ['father', 'mother'], [3600.0, 3400.0])
+        with m1, m2, m3:
             r = ie.household_income_reconciliation(app)
         self.assertEqual(r['documented_total'], 7000.0)
         self.assertTrue(r['all_known'])
+        self.assertTrue(r['genuine'])
         self.assertTrue(r['matches'])
 
     def test_137_over_tolerance_no_match(self):
         # #137: father 4,500 + mother 3,374.73 = 7,874.73 vs stated 7,000 (+12.5%) → beyond the
         # ±10% / RM700 band → NOT a match (the owner: it should not tick).
         app = _app(income=7000, size=5)
-        with mock.patch.object(ie, 'effective_working_members', return_value=['father', 'mother']), \
-             mock.patch.object(ie, 'earner_monthly_income', side_effect=[(4500.0, 'salary'), (3374.73, 'salary')]):
+        m1, m2, m3 = self._recon(app, ['father', 'mother'], [4500.0, 3374.73])
+        with m1, m2, m3:
             r = ie.household_income_reconciliation(app)
         self.assertEqual(r['documented_total'], 7874.73)
-        self.assertTrue(r['all_known'])
+        self.assertFalse(r['matches'])
+
+    def test_str_route_sibling_earner_is_summed(self):
+        # #117-style: STR route, no salary-route working members, but a working sister with a
+        # genuine payslip → she's summed, so the household gets a documented income.
+        app = _app(income=3000, size=6)
+        m1, m2, m3 = self._recon(app, ['sister'], [3000.0])
+        with m1, m2, m3:
+            r = ie.household_income_reconciliation(app)
+        self.assertEqual(r['documented_total'], 3000.0)
+        self.assertTrue(r['matches'])
+
+    def test_suspect_income_doc_is_not_confident(self):
+        # #117 real: the sister's slip is genuineness-SUSPECT → no verified tick (documented=None).
+        app = _app(income=3000, size=6)
+        m1, m2, m3 = self._recon(app, ['sister'], [3000.0], genuine=False)
+        with m1, m2, m3:
+            r = ie.household_income_reconciliation(app)
+        self.assertFalse(r['genuine'])
+        self.assertIsNone(r['documented_total'])
         self.assertFalse(r['matches'])
 
     def test_unknown_earner_income_is_not_all_known(self):
         app = _app(income=5000, size=4)
-        with mock.patch.object(ie, 'effective_working_members', return_value=['father', 'mother']), \
-             mock.patch.object(ie, 'earner_monthly_income', side_effect=[(3000.0, 'salary'), (None, 'unknown')]):
+        m1, m2, m3 = self._recon(app, ['father', 'mother'], [3000.0, None])
+        with m1, m2, m3:
             r = ie.household_income_reconciliation(app)
         self.assertFalse(r['all_known'])
         self.assertIsNone(r['documented_total'])
         self.assertFalse(r['matches'])
 
-    def test_no_working_members(self):
+    def test_no_earning_members(self):
         app = _app(income=5000, size=4)
-        with mock.patch.object(ie, 'effective_working_members', return_value=[]):
+        m1, m2, m3 = self._recon(app, [], [])
+        with m1, m2, m3:
             r = ie.household_income_reconciliation(app)
         self.assertIsNone(r['documented_total'])
         self.assertFalse(r['matches'])
@@ -53,8 +82,8 @@ class TestHouseholdIncomeReconciliation(SimpleTestCase):
     def test_small_income_uses_flat_grace(self):
         # 900 documented vs 1000 stated: 10% = 100, but the RM300 floor grace applies → match.
         app = _app(income=1000, size=3)
-        with mock.patch.object(ie, 'effective_working_members', return_value=['father']), \
-             mock.patch.object(ie, 'earner_monthly_income', side_effect=[(900.0, 'salary')]):
+        m1, m2, m3 = self._recon(app, ['father'], [900.0])
+        with m1, m2, m3:
             r = ie.household_income_reconciliation(app)
         self.assertTrue(r['matches'])
 

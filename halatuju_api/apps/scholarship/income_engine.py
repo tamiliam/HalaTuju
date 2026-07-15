@@ -2092,33 +2092,72 @@ _INCOME_MATCH_TOL_FRAC = 0.10     # ±10% of the stated figure …
 _INCOME_MATCH_TOL_MIN = 300.0     # … but at least ±RM300 grace for small incomes.
 
 
+def _income_earning_members(application):
+    """Every household member whose income should be summed for the documented total — the
+    salary-route working members PLUS anyone (either route) with a salary slip / EPF tagged to
+    them. This is what lets an STR-route household with a working sibling/parent still get a
+    document-verified income picture (owner 2026-07-16): the STR is the means-test, but a real
+    payslip on file quantifies that member's pay regardless of route."""
+    members = list(effective_working_members(application))
+    try:
+        doc_members = (application.documents
+                       .filter(doc_type__in=('salary_slip', 'epf'), superseded_at__isnull=True)
+                       .exclude(household_member='')
+                       .values_list('household_member', flat=True))
+    except (AttributeError, TypeError):
+        doc_members = []
+    for m in sorted(set(doc_members)):
+        if m not in members:
+            members.append(m)
+    return members
+
+
+def _member_income_genuine(application, member):
+    """False when any of a member's summed income documents (salary slip / EPF) is genuineness
+    SUSPECT or a WRONG type — such a read can't CONFIRM a figure, so it must not earn a verified
+    tick. Unscored/genuine → True (fail-open, as elsewhere)."""
+    from .genuineness.bands import canonical_status
+    for dt in ('salary_slip', 'epf'):
+        for d in _cluster_docs(application, member, dt):
+            vf = d.vision_fields if isinstance(d.vision_fields, dict) else {}
+            st = canonical_status((vf.get('authenticity') or {}).get('status', ''), dt)
+            if st == 'suspect' or st.startswith('not_'):
+                return False
+    return True
+
+
 def household_income_reconciliation(application):
     """Document-derived household monthly income vs the student's stated ``household_income``.
 
-    Returns ``{documented_total, all_known, stated, matches}``:
-      - ``documented_total`` — Σ ``earner_monthly_income`` over the working members, rounded;
-        None when there are no working members or any member's income couldn't be read.
-      - ``all_known`` — False when any working member's income couldn't be read.
+    Returns ``{documented_total, all_known, genuine, stated, matches}``:
+      - ``documented_total`` — Σ ``earner_monthly_income`` over EVERY documented household earner
+        (salary route + STR-route/other members with a payslip/EPF — ``_income_earning_members``),
+        rounded; None unless we're CONFIDENT (earners exist, all read, all genuine).
+      - ``all_known`` — False when any earner's income couldn't be read.
+      - ``genuine`` — False when any contributing income doc is genuineness-suspect / wrong-type.
       - ``stated`` — the profile's declared household income.
-      - ``matches`` — True ONLY when ``all_known`` AND ``documented_total`` is within tolerance of
-        ``stated``. This is what a cockpit "verified" tick keys off; a mismatch is flagged to the
-        reviewer (the documented figure is shown beside the stated one), never auto-applied.
+      - ``matches`` — True ONLY when confident AND ``documented_total`` is within tolerance of
+        ``stated``. A cockpit "verified" tick keys off this; a mismatch is flagged to the reviewer
+        (the documented figure shown beside the stated one), never auto-applied.
     """
-    members = effective_working_members(application)
-    total, all_known = 0.0, True
+    members = _income_earning_members(application)
+    total, all_known, genuine = 0.0, True, True
     for m in members:
         amt, _src = earner_monthly_income(application, m)
         if amt is None:
             all_known = False
         else:
             total += amt
+        if not _member_income_genuine(application, m):
+            genuine = False
     stated = getattr(getattr(application, 'profile', None), 'household_income', None)
-    documented = round(total, 2) if (members and all_known) else None
+    confident = bool(members) and all_known and genuine
+    documented = round(total, 2) if confident else None
     matches = False
     if documented is not None and stated:
         tol = max(_INCOME_MATCH_TOL_MIN, _INCOME_MATCH_TOL_FRAC * float(stated))
         matches = abs(documented - float(stated)) <= tol
-    return {'documented_total': documented, 'all_known': all_known,
+    return {'documented_total': documented, 'all_known': all_known, 'genuine': genuine,
             'stated': stated, 'matches': matches}
 
 
