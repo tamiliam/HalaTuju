@@ -4,6 +4,7 @@ Tracks one-off small-lane changes between full sprints. Every ~10 pending entrie
 Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
+- 2026-07-15 fix(admin): administration staff-table world split (administration/page.tsx, lib/adminStaff.ts, i18n x3)
 
 - 2026-07-01 fix(web): STR-not-current verdict copy rendered raw ICU `select` — replaced with flat per-status keys (`halatuju-web` messages en/ms/ta, `officerCockpit.verdictItemKey`, cockpit `[id]/page.tsx`, +test)
 - 2026-07-01 feat/fix(web): STR Status (Lulus) chip + verdict detail leads with the finding (`officerCockpit` strStatusFactStatus, `docsDrawer.fact.status` en/ms/ta, cockpit `[id]/page.tsx` render order, +tests)

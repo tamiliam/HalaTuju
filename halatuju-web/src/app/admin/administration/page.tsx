@@ -6,13 +6,15 @@ import {
   getOrgs, inviteAdmin, getAdmins, revokeAdmin, resendAdminInvite,
   type OrgItem, type AdminItem,
 } from '@/lib/admin-api'
+import { programmeStaff } from '@/lib/adminStaff'
 import { useT } from '@/lib/i18n'
 
 // The Administration panel (Stitch v2): a cPanel-style icon grid split into a PLATFORM
-// section (super only — referral partners + add-tenant) and an ORGANISATION section
-// (super + org_admin — programme staff + billing). Per the design memory, ALL programme-
-// staff invites live in the org section (never beside the referral "Partner" concept), so
-// the staff table lives there rather than being split across both sections.
+// section (super only — referral partners + add-tenant + the ALL-staff table across
+// organisations) and an ORGANISATION section (super + org_admin — programme staff +
+// billing). The org section's table shows PROGRAMME roles only (lib/adminStaff.ts):
+// the platform super and referral partners belong to the platform world and never
+// appear inside an organisation's staff list.
 
 type Panel = null | 'partner' | 'tenant' | 'staff'
 type StaffRole = 'reviewer' | 'admin' | 'qc'
@@ -135,6 +137,69 @@ export default function AdministrationPage() {
     ? t('admin.administration.orgHeadingNamed', { org: ownOrgName })
     : t('admin.administration.orgHeading')
 
+  // One table, two worlds: the platform section renders it with ALL rows; the org
+  // section renders it with programme rows only (lib/adminStaff.ts).
+  const staffTable = (rows: AdminItem[]) => (
+    <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
+      <table className="w-full text-sm min-w-[560px]">
+        <thead className="bg-gray-50 border-b">
+          <tr>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.nameHeader')}</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.emailHeader')}</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.roleHeader')}</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.statusHeader')}</th>
+            <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.actionHeader')}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {rows.map((a) => (
+            <tr key={a.id}>
+              <td className="px-4 py-3">{a.name}</td>
+              <td className="px-4 py-3 text-gray-500">{a.email}</td>
+              <td className="px-4 py-3"><span className={`inline-block px-2 py-0.5 text-xs rounded-full ${roleBadge(a.role)}`}>{t(`admin.role.${a.role}`)}</span></td>
+              <td className="px-4 py-3">
+                {a.is_active
+                  ? <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">{t('admin.active')}</span>
+                  : <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">{t('admin.revoked')}</span>}
+              </td>
+              <td className="px-4 py-3">
+                {!a.is_super_admin && a.role !== 'super' && (
+                  <div className="flex items-center gap-3">
+                    {a.is_active && (
+                      <button disabled={resending === a.id}
+                        onClick={async () => {
+                          setResending(a.id)
+                          try { setMessage({ type: 'success', text: (await resendAdminInvite(a.id, { token: token! })).message }) }
+                          catch (err) { onError(err) }
+                          setResending(null)
+                        }}
+                        className="text-xs font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50">
+                        {resending === a.id ? t('admin.resending') : t('admin.resend')}
+                      </button>
+                    )}
+                    <button disabled={revoking === a.id}
+                      onClick={async () => {
+                        setRevoking(a.id)
+                        try { await revokeAdmin(a.id, a.is_active ? 'revoke' : 'restore', { token: token! }); loadAdmins() }
+                        catch (err) { onError(err) }
+                        setRevoking(null)
+                      }}
+                      className={`text-xs font-medium ${a.is_active ? 'text-red-600 hover:text-red-800' : 'text-blue-600 hover:text-blue-800'} disabled:opacity-50`}>
+                      {a.is_active ? t('admin.revoke') : t('admin.restore')}
+                    </button>
+                  </div>
+                )}
+              </td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">{t('admin.noAdmins')}</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+
   const Section = ({ title, badge, badgeCls, children }: { title: string; badge: string; badgeCls: string; children: ReactNode }) => (
     <section className="mb-8">
       <div className="flex items-center gap-2 mb-3">
@@ -203,6 +268,11 @@ export default function AdministrationPage() {
               <button type="submit" disabled={busy} className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">{t('admin.administration.createTenant')}</button>
             </form>
           )}
+
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.administration.allStaff')}</h3>
+            {staffTable(admins)}
+          </div>
         </Section>
       )}
 
@@ -237,64 +307,7 @@ export default function AdministrationPage() {
               <button type="submit" disabled={busy} className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">{t('admin.sendInvite')}</button>
             </form>
 
-            <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
-              <table className="w-full text-sm min-w-[560px]">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.nameHeader')}</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.emailHeader')}</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.roleHeader')}</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.statusHeader')}</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.actionHeader')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {admins.map((a) => (
-                    <tr key={a.id}>
-                      <td className="px-4 py-3">{a.name}</td>
-                      <td className="px-4 py-3 text-gray-500">{a.email}</td>
-                      <td className="px-4 py-3"><span className={`inline-block px-2 py-0.5 text-xs rounded-full ${roleBadge(a.role)}`}>{t(`admin.role.${a.role}`)}</span></td>
-                      <td className="px-4 py-3">
-                        {a.is_active
-                          ? <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">{t('admin.active')}</span>
-                          : <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">{t('admin.revoked')}</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        {!a.is_super_admin && a.role !== 'super' && (
-                          <div className="flex items-center gap-3">
-                            {a.is_active && (
-                              <button disabled={resending === a.id}
-                                onClick={async () => {
-                                  setResending(a.id)
-                                  try { setMessage({ type: 'success', text: (await resendAdminInvite(a.id, { token: token! })).message }) }
-                                  catch (err) { onError(err) }
-                                  setResending(null)
-                                }}
-                                className="text-xs font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50">
-                                {resending === a.id ? t('admin.resending') : t('admin.resend')}
-                              </button>
-                            )}
-                            <button disabled={revoking === a.id}
-                              onClick={async () => {
-                                setRevoking(a.id)
-                                try { await revokeAdmin(a.id, a.is_active ? 'revoke' : 'restore', { token: token! }); loadAdmins() }
-                                catch (err) { onError(err) }
-                                setRevoking(null)
-                              }}
-                              className={`text-xs font-medium ${a.is_active ? 'text-red-600 hover:text-red-800' : 'text-blue-600 hover:text-blue-800'} disabled:opacity-50`}>
-                              {a.is_active ? t('admin.revoke') : t('admin.restore')}
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {admins.length === 0 && (
-                    <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">{t('admin.noAdmins')}</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {staffTable(programmeStaff(admins))}
           </div>
         )}
       </Section>

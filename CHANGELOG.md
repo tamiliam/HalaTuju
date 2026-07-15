@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Small change: Administration panel staff-table world split — 2026-07-15
+
+- Org section now lists PROGRAMME roles only (reviewer/admin/qc/org_admin); the platform
+  section gains the "All staff (all organisations)" table — super and referral partners no
+  longer appear inside an organisation's staff list (owner-reported; `lib/adminStaff.ts` + test).
+
 ## Reviewer first-login onboarding gate + set-password username field — 2026-07-15
 
 ### Added
