@@ -715,14 +715,36 @@ def semester_check(doc) -> dict:
             'name_status': name_status, 'nric_status': nric_status}
 
 
+# Conduct rating → quality (owner 2026-07-15): a good rating chips green, a poor one RED (a reviewer
+# signal), a middling one amber. 'bad' is checked FIRST — "Kurang Memuaskan" contains "Memuaskan".
+_KELAKUAN_BAD = ('KURANG MEMUASKAN', 'TIDAK MEMUASKAN', 'KURANG BAIK', 'TIDAK BAIK', 'LEMAH', 'BURUK')
+_KELAKUAN_CONCERN = ('SEDERHANA',)
+_KELAKUAN_GOOD = ('TERPUJI', 'CEMERLANG', 'BAIK', 'MEMUASKAN')
+
+
+def _kelakuan_quality(raw: str) -> str:
+    """A conduct rating → 'good' / 'concern' / 'bad' / 'unknown'. Pure; order matters ('bad' first)."""
+    up = (raw or '').upper().strip()
+    if not up:
+        return 'unknown'
+    if any(b in up for b in _KELAKUAN_BAD):
+        return 'bad'
+    if any(c in up for c in _KELAKUAN_CONCERN):
+        return 'concern'
+    if any(up.startswith(g) or g in up for g in _KELAKUAN_GOOD):
+        return 'good'
+    return 'unknown'
+
+
 def student_school_leaving_check(doc) -> dict:
     """A school-leaving certificate (Sijil Berhenti Sekolah), read for the officer chips (owner
-    2026-07-15): the student's NAME + NRIC cross-checked against the student's own profile, plus the
-    SCHOOL, the conduct rating (KELAKUAN), and the co-curricular / leadership ROLES + remarks
-    (activities). Returns ``{school, name, name_status, nric, nric_status, kelakuan, activities}`` —
-    name_status 'match'/'partial'/'mismatch'/'no_ref', nric_status 'match'/'mismatch'/'no_ref'. None
-    until the cert has been read (the row then shows 'Unread'). Reads only the student's own document
-    + profile. Mirrors ``semester_check``."""
+    2026-07-15): the student's NAME + NRIC + SCHOOL cross-checked against the student's own profile,
+    the conduct rating (KELAKUAN) classified good/concern/bad, and the co-curricular / leadership
+    ROLES + remarks (activities). Returns ``{school, school_status, name, name_status, nric,
+    nric_status, kelakuan, kelakuan_status, activities}`` — name/school_status
+    'match'/'partial'/'mismatch'/'no_ref', nric_status 'match'/'mismatch'/'no_ref', kelakuan_status
+    'good'/'concern'/'bad'/'unknown'. None until the cert has been read (the row shows 'Unread').
+    Reads only the student's own document + profile. Mirrors ``semester_check``."""
     vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
     if not vf.get('student_verdict'):
         return None
@@ -736,11 +758,17 @@ def student_school_leaving_check(doc) -> dict:
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
     sname = (getattr(profile, 'name', '') or '').strip()
     snric = (getattr(profile, 'nric', '') or '').strip()
+    sschool = (getattr(profile, 'school', '') or '').strip()
     name_status = vision.name_match(name, sname) if (name and sname) else 'no_ref'
+    # School matched against the student's declared school (token-set, like the name match): green on
+    # a match, amber on a partial, red on a clear mismatch, grey when either side is blank.
+    school_status = vision.name_match(school, sschool) if (school and sschool) else 'no_ref'
     if not nric or not snric:
         nric_status = 'no_ref'
     else:
         nric_status = 'match' if vision.nric_match(nric, snric) else 'mismatch'
-    return {'school': school, 'name': name, 'name_status': name_status,
+    return {'school': school, 'school_status': school_status,
+            'name': name, 'name_status': name_status,
             'nric': nric, 'nric_status': nric_status,
-            'kelakuan': kelakuan, 'activities': activities}
+            'kelakuan': kelakuan, 'kelakuan_status': _kelakuan_quality(kelakuan),
+            'activities': activities}

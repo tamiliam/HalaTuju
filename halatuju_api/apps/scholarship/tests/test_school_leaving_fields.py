@@ -86,7 +86,8 @@ class TestSchoolLeavingCheck(TestCase):
     def setUp(self):
         cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         self.profile = StudentProfile.objects.create(
-            supabase_user_id='sl2', nric='080114-10-1495', name='AARON A/L BALA')
+            supabase_user_id='sl2', nric='080114-10-1495', name='AARON A/L BALA',
+            school='SMK SEKSYEN 10 KOTA DAMANSARA')
         self.app = ScholarshipApplication.objects.create(
             cohort=cohort, profile=self.profile, status='profile_complete')
 
@@ -97,18 +98,33 @@ class TestSchoolLeavingCheck(TestCase):
 
     def test_match_and_values(self):
         c = student_school_leaving_check(self._doc({
-            'name': 'AARON A/L BALA', 'nric': '080114-10-1495', 'school': 'SMK SEKSYEN 10',
+            'name': 'AARON A/L BALA', 'nric': '080114-10-1495',
+            'school': 'SMK SEKSYEN 10 KOTA DAMANSARA',
             'kelakuan': 'TERPUJI', 'activities': 'Ketua Pengawas'}))
         self.assertEqual(c['name_status'], 'match')
         self.assertEqual(c['nric_status'], 'match')
-        self.assertEqual(c['school'], 'SMK SEKSYEN 10')
-        self.assertEqual(c['kelakuan'], 'TERPUJI')
+        self.assertEqual(c['school_status'], 'match')          # vs the student's declared school
+        self.assertEqual(c['kelakuan_status'], 'good')         # TERPUJI → green
         self.assertEqual(c['activities'], 'Ketua Pengawas')
 
-    def test_nric_mismatch(self):
+    def test_nric_and_school_mismatch(self):
         c = student_school_leaving_check(self._doc({
-            'name': 'SOMEONE ELSE', 'nric': '010101-01-0101', 'school': '', 'kelakuan': '', 'activities': ''}))
+            'name': 'SOMEONE ELSE', 'nric': '010101-01-0101',
+            'school': 'SEKOLAH MENENGAH TOTALLY DIFFERENT PLACE', 'kelakuan': '', 'activities': ''}))
         self.assertEqual(c['nric_status'], 'mismatch')
+        self.assertEqual(c['school_status'], 'mismatch')
+        self.assertEqual(c['kelakuan_status'], 'unknown')      # blank conduct → grey
+
+    def test_kelakuan_quality_classification(self):
+        def kq(v):
+            return student_school_leaving_check(self._doc({'name': 'AARON A/L BALA', 'nric': '',
+                'school': '', 'kelakuan': v, 'activities': ''}))['kelakuan_status']
+        self.assertEqual(kq('BAIK'), 'good')
+        self.assertEqual(kq('CEMERLANG'), 'good')
+        self.assertEqual(kq('TERPUJI (EMAS)'), 'good')
+        self.assertEqual(kq('SEDERHANA'), 'concern')
+        self.assertEqual(kq('KURANG MEMUASKAN'), 'bad')        # NOT 'good' (contains 'MEMUASKAN')
+        self.assertEqual(kq('TIDAK BAIK'), 'bad')
 
     def test_unread_returns_none(self):
         d = ApplicantDocument.objects.create(

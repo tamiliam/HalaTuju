@@ -284,18 +284,31 @@ describe('documentFacts', () => {
       .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'partial' }, { key: 'results', status: 'verified' }])
   })
 
-  it('school-leaving cert → School, Name, IC, Behaviour chips + value/notes line (owner 2026-07-15)', () => {
+  it('school-leaving cert → School/Name/IC match chips + Behaviour quality chip (owner 2026-07-15)', () => {
     const d = doc({ doc_type: 'school_leaving_cert', school_leaving_check: {
-      school: 'SMK SEKSYEN 10', name: 'A B', name_status: 'match', nric: '1', nric_status: 'mismatch',
-      kelakuan: 'TERPUJI', activities: 'Ketua Pengawas; berdisiplin' } })
+      school: 'SMK SEKSYEN 10', school_status: 'match', name: 'A B', name_status: 'partial',
+      nric: '1', nric_status: 'mismatch', kelakuan: 'TERPUJI', kelakuan_status: 'good',
+      activities: 'Ketua Pengawas; berdisiplin' } })
     expect(documentFacts(d)).toEqual([
-      { key: 'school', status: 'verified' },
-      { key: 'name', status: 'verified' },
-      { key: 'ic_no', status: 'not' },        // NRIC mismatch → red
-      { key: 'behaviour', status: 'verified' },
+      { key: 'school', status: 'verified' },     // school match → green
+      { key: 'name', status: 'partial' },        // partial → amber
+      { key: 'ic_no', status: 'not' },           // NRIC mismatch → red
+      { key: 'behaviour', status: 'verified' },  // good conduct → green
     ])
-    expect(schoolLeavingValues(d).map((v) => v.labelKey)).toEqual(['school', 'behaviour', 'notes'])
+    // clean case: the school + conduct VALUES are hidden (redundant with the green chips); only notes.
+    expect(schoolLeavingValues(d).map((v) => v.labelKey)).toEqual(['notes'])
     expect(schoolLeavingValues(d).find((v) => v.labelKey === 'notes')!.value).toContain('Pengawas')
+  })
+
+  it('school-leaving cert discrepancies → red chips + the value surfaces for the officer', () => {
+    const d = doc({ doc_type: 'school_leaving_cert', school_leaving_check: {
+      school: 'SMK OTHER', school_status: 'mismatch', name: 'A B', name_status: 'match',
+      nric: '1', nric_status: 'match', kelakuan: 'KURANG MEMUASKAN', kelakuan_status: 'bad',
+      activities: '' } })
+    expect(documentFacts(d).find((f) => f.key === 'school')!.status).toBe('not')     // mismatch → red
+    expect(documentFacts(d).find((f) => f.key === 'behaviour')!.status).toBe('not')  // poor conduct → red
+    // a mismatched school + poor conduct → their values surface (no leadership notes on this one)
+    expect(schoolLeavingValues(d).map((v) => v.labelKey)).toEqual(['school', 'behaviour'])
   })
 
   it('school-leaving cert not read yet → no facts, no values', () => {

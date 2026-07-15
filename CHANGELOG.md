@@ -71,6 +71,14 @@ pill. Deployed `50149446` (api+web) + `06e38dee` (api hardening); NO migration; 
   ("16 Tarikh Berhenti Sekolah", ": TERPUJI"), a truncated school ("SMK BUKIT"), or boilerplate in
   activities. Lesson re-learned: validate deterministic parsers on REAL documents, not synthetic
   fixtures.
+- **Chip-semantics follow-up (owner, same day):** the cockpit chips are now meaningful matches, not
+  bare "read" flags — **School / Name / IC** are match chips against the student's own profile (green
+  match · amber partial · red mismatch · grey no-ref); **Behaviour** is a conduct-QUALITY chip (green
+  good — Baik/Terpuji/Cemerlang · amber Sederhana · **red poor** — Kurang Memuaskan…). The redundant
+  school/conduct VALUES were dropped from the value line (they duplicated the green chips) — shown now
+  only on a discrepancy (a non-matching school / a poor conduct); the leadership notes always show.
+  Computed live (no re-extraction). `student_school_leaving_check` gains `school_status` +
+  `kelakuan_status`.
 
 ## Rejection record shows the decision trail (reviewer → QC reopen → decline) — 2026-07-15
 

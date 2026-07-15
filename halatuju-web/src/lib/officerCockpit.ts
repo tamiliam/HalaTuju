@@ -547,18 +547,22 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     ]
   }
   if (dt === 'school_leaving_cert') {
-    // Owner 2026-07-15: read the Sijil Berhenti Sekolah for School + Name + IC + Behaviour. Name and
-    // IC are MATCH chips (green when they match the student, red otherwise); School and Behaviour
-    // (kelakuan) are READ chips (green when read, grey when not). The school name / conduct value and
-    // the leadership/co-curricular notes render as a value line below (schoolLeavingValues).
+    // Owner 2026-07-15: School / Name / IC are MATCH chips against the student's own profile — green
+    // match, amber partial, red mismatch, grey when we can't compare (factStatus). Behaviour is a
+    // QUALITY chip off the conduct rating — green good (Baik/Terpuji/Cemerlang), amber middling
+    // (Sederhana), RED poor (Kurang Memuaskan…), grey unread. The leadership notes (+ a school /
+    // conduct value only when it's worth a second look) render below via schoolLeavingValues.
     const c = doc.school_leaving_check
     if (!c) return []   // not read yet → the row shows "Unread"
-    const idMatch = (s: string): FactStatus => (s === 'match' || s === 'partial' ? 'verified' : 'not')
+    const behaviour: FactStatus =
+      c.kelakuan_status === 'good' ? 'verified'
+        : c.kelakuan_status === 'concern' ? 'partial'
+          : c.kelakuan_status === 'bad' ? 'not' : 'unknown'
     return [
-      { key: 'school', status: (c.school || '').trim() ? 'verified' : 'unknown' },
-      { key: 'name', status: idMatch(c.name_status) },
-      { key: 'ic_no', status: idMatch(c.nric_status) },
-      { key: 'behaviour', status: (c.kelakuan || '').trim() ? 'verified' : 'unknown' },
+      { key: 'school', status: factStatus(c.school_status) },
+      { key: 'name', status: factStatus(c.name_status) },
+      { key: 'ic_no', status: factStatus(c.nric_status) },
+      { key: 'behaviour', status: behaviour },
     ]
   }
   if (dt === 'income_support_doc') {
@@ -655,8 +659,15 @@ export function schoolLeavingValues(doc: AdminApplicantDocument): UtilityValue[]
   const c = doc.school_leaving_check
   if (!c) return []
   const out: UtilityValue[] = []
-  if ((c.school || '').trim()) out.push({ labelKey: 'school', value: c.school.trim() })
-  if ((c.kelakuan || '').trim()) out.push({ labelKey: 'behaviour', value: c.kelakuan.trim() })
+  // Owner 2026-07-15: the school + conduct VALUES are redundant with their (green) chips in the clean
+  // case — show them ONLY when there's a discrepancy worth the officer's eye: a non-matching school,
+  // or a middling/poor conduct. The leadership notes always show (they're not on any chip).
+  if ((c.school || '').trim() && c.school_status !== 'match' && c.school_status !== 'no_ref') {
+    out.push({ labelKey: 'school', value: c.school.trim() })
+  }
+  if ((c.kelakuan || '').trim() && (c.kelakuan_status === 'concern' || c.kelakuan_status === 'bad')) {
+    out.push({ labelKey: 'behaviour', value: c.kelakuan.trim() })
+  }
   if ((c.activities || '').trim()) out.push({ labelKey: 'notes', value: c.activities.trim() })
   return out
 }

@@ -1770,11 +1770,13 @@ export interface SemesterCheck {
 
 export interface SchoolLeavingCheck {
   school: string
+  school_status: 'match' | 'partial' | 'mismatch' | 'no_ref'
   name: string
   name_status: 'match' | 'partial' | 'mismatch' | 'no_ref'
   nric: string
   nric_status: 'match' | 'mismatch' | 'no_ref'
   kelakuan: string
+  kelakuan_status: 'good' | 'concern' | 'bad' | 'unknown'
   activities: string
 }
 
