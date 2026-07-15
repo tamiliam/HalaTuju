@@ -551,10 +551,46 @@ def _leaver_school(text: str) -> str:
     return find_value(text, r'nama\s+sekolah')
 
 
+# Conduct ratings printed on a Sijil Berhenti Sekolah (the closed vocabulary). Validating the
+# kelakuan read against this set is the parser's confidence gate: real forms vary enough (multi-column
+# OCR, labels on their own line) that a naive label read often grabs the NEXT field — so a value that
+# isn't a conduct word means the deterministic read is unreliable → bail to Gemini (which reads these
+# cleanly). Calibrated on 18 live certs (2026-07-15).
+_KELAKUAN_WORDS = ('TERPUJI', 'BAIK', 'CEMERLANG', 'SEDERHANA', 'MEMUASKAN', 'KURANG MEMUASKAN')
+# Section-header / boilerplate tokens that the 'Jawatan' anchor picks up on a real form ("Jawatan
+# Khas", "jika ada", "Tambahan", "Kurikulum") — dropped from the leadership notes.
+_ACT_JUNK = re.compile(
+    r'^(khas|tambahan|tahun|kurikulum|sukan|badan|uniform|disandang|kepimpinan|jawatan|jika\s+ada)\b',
+    re.IGNORECASE)
+
+
+def _clean_kelakuan(raw: str) -> str:
+    """A conduct value validated against the closed vocabulary → the cleaned value (original casing,
+    keeping a '(EMAS)'-style suffix), or '' when the read isn't a recognised conduct word (the
+    parser's confidence gate). Strips a stray leading ':' / digits a next-line OCR read leaves on."""
+    s = re.sub(r'^[^A-Za-z]+', '', (raw or '').strip())
+    up = s.upper()
+    return s[:40].strip() if any(up.startswith(w) for w in _KELAKUAN_WORDS) else ''
+
+
+def _clean_activities(raw: str) -> str:
+    """Filter the raw 'Jawatan' capture to real leadership roles: drop a leading section sub-label
+    (Kepimpinan / Jawatan / Khas …), boilerplate tokens, and anything too short to be a role."""
+    out: list = []
+    for part in (raw or '').split(';'):
+        p = re.sub(r'^\s*(kepimpinan|jawatan|khas|tambahan)\b\s*[:.\-]?\s*', '', part.strip(),
+                   flags=re.IGNORECASE).strip(' :.-')
+        if len(p) < 6 or _ACT_JUNK.match(p):
+            continue
+        if p.lower() not in (r.lower() for r in out):
+            out.append(p)
+    return '; '.join(out)[:500]
+
+
 def _leaver_activities(text: str) -> str:
     """Co-curricular / leadership roles (the Kurikulum/Sukan/Badan Khas 'Jawatan' lines) + the
-    Catatan remark, joined with '; '. '' if none. Free-text — the leadership note the officer reads;
-    captured deterministically here so it shows on BOTH the Exact and AI paths (owner 2026-07-15)."""
+    Catatan remark, filtered + joined with '; '. '' if none. Free-text — the leadership note the
+    officer reads; captured deterministically so it shows on the Exact path too (owner 2026-07-15)."""
     roles: list = []
     lines = _lines(text)
     for i, ln in enumerate(lines):
@@ -564,26 +600,30 @@ def _leaver_activities(text: str) -> str:
         v = ln[m.end():].lstrip(' \t:=-.').strip()
         if not v:
             v = next((nxt for nxt in lines[i + 1:] if nxt), '')
-        if v and v.lower() not in (r.lower() for r in roles):
+        if v:
             roles.append(v)
     catatan = find_value(text, r'\bcatatan\b')
-    if catatan and catatan.lower() not in (r.lower() for r in roles):
+    if catatan:
         roles.append(catatan)
-    return '; '.join(roles)[:500]
+    return _clean_activities('; '.join(roles))
 
 
 @register('school_leaving_cert')
 def _parse_school_leaving(text: str) -> Optional[dict]:
-    # CONSERVATIVE: only the STANDARD numbered Sijil Berhenti Sekolah — a leaver anchor + the 'Nama
-    # Murid' student label + a readable school header. A free-form testimonial has none of these →
-    # None → Gemini reads it (and keeps its richer prose in `activities`).
+    # STRICT deterministic read — fire ('Exact') ONLY on a clean, validated standard form; defer
+    # everything else to Gemini (which reads the varied real layouts cleanly). Validated on 18 live
+    # certs (2026-07-15): a naive read grabbed the wrong kelakuan / a truncated school on ~1/3, so the
+    # gates below (a recognised conduct word + a full ≥3-word school name) keep the Exact path clean.
     if not has(text, r'berhenti\s+sekolah', r'tarikh\s+berhenti', r'sebab\s+berhenti', r'sijil\s+berhenti'):
         return None
     name = find_value(text, r'nama\s+murid') or find_value(text, r'nama\s+pelajar')
     school = _leaver_school(text)
-    if not name or not school:
-        return None                          # a key field didn't read → hand to Gemini
+    kelakuan = _clean_kelakuan(find_value(text, r'\bkelakuan\b'))
+    # A full school name is ≥3 words (e.g. "SMK Tinggi Klang" / "Sekolah Menengah Kebangsaan X"); a
+    # 1–2-word fragment ("SMK Bukit") is a truncated OCR read → defer to Gemini. kelakuan must be a
+    # recognised conduct word, else the read is unreliable → defer. Both clean → trust the Exact read.
+    if not name or len(school.split()) < 3 or not kelakuan:
+        return None
     nric = first_nric(find_value(text, r'kad\s+pengenalan')) or first_nric(text)
     return {'name': name, 'nric': nric, 'school': school,
-            'kelakuan': find_value(text, r'\bkelakuan\b'),
-            'activities': _leaver_activities(text)}
+            'kelakuan': kelakuan, 'activities': _leaver_activities(text)}

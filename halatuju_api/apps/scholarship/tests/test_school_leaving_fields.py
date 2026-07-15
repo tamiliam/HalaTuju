@@ -56,6 +56,31 @@ class TestSchoolLeavingParser(SimpleTestCase):
         txt = "SIJIL BERHENTI SEKOLAH\n1. Nama Murid : X Y\n15. Tarikh Berhenti : 2025"
         self.assertIsNone(self._p(txt))
 
+    # ── strict confidence gates (validated on the 18 live certs, 2026-07-15) ──────────────────
+    def test_invalid_kelakuan_bails_to_gemini(self):
+        # Real multi-column OCR: the Kelakuan value reads as the NEXT field, not a conduct word →
+        # the parser must DEFER to Gemini rather than emit "16 Tarikh Berhenti Sekolah" (the #47 bug).
+        txt = STD_CERT.replace("14. Kelakuan : TERPUJI", "14. Kelakuan :")
+        self.assertIsNone(self._p(txt))
+
+    def test_truncated_school_bails(self):
+        # A 1-2-word school fragment ("SMK BUKIT") is a truncated OCR read → defer to Gemini (#80).
+        self.assertIsNone(self._p(STD_CERT.replace("SMK SEKSYEN 10 KOTA DAMANSARA", "SMK BUKIT")))
+
+    def test_kelakuan_strips_stray_colon(self):
+        # A next-line value keeps a leading ':' (the #66 ": TERPUJI") — cleaned to the conduct word.
+        r = self._p(STD_CERT.replace("14. Kelakuan : TERPUJI", "14. Kelakuan\n: TERPUJI"))
+        self.assertEqual(r['kelakuan'], 'TERPUJI')
+
+    def test_activities_filters_boilerplate(self):
+        # 'Jawatan Khas' headers + 'jika ada' boilerplate are dropped; the real role stays (#80/#110).
+        txt = STD_CERT.replace(
+            "a. Jawatan : NAIB BENDAHARI PERSATUAN BAHASA TAMIL",
+            "Jawatan Khas\na. Jawatan : jika ada\nb. Jawatan : NAIB BENDAHARI PERSATUAN BAHASA TAMIL")
+        r = self._p(txt)
+        self.assertIn('NAIB BENDAHARI', r['activities'])
+        self.assertNotIn('jika ada', r['activities'].lower())
+
 
 class TestSchoolLeavingCheck(TestCase):
     def setUp(self):
