@@ -3364,6 +3364,7 @@
       "callLanguage": "Call language",
       "address": "Address",
       "householdSize": "Household size",
+      "perCapita": "Per capita income",
       "parentLabel": "Parent",
       "guardianLabel": "Guardian",
       "guardianPhone": "{role} phone",
@@ -3380,9 +3381,12 @@
           "schoolLeavingCert": "the school-leaving certificate",
           "utilityBill": "the utility bill",
           "parentIc": "the parent's IC",
-          "incomeProof": "the income document",
+          "incomeProof": "the income documents",
           "strDoc": "the STR document"
-        }
+        },
+        "sizeAccounted": "Everyone in the household is accounted for",
+        "docNote": "Documents show {value}",
+        "rosterNote": "Roster counts {count} people"
       },
       "preUTrack": "Pre-U track",
       "preUInstitution": "Pre-U institution",

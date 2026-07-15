@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## Verified ticks round 2: reporting date, household income/size reconciliation, JKM → per-capita — 2026-07-15
+
+Follow-up to the cockpit verified ticks, off owner review of #137:
+- **Reporting date now ticks** when a genuine (non-fake/suspect) offer letter carries a reporting
+  date — the shown value IS the offer's date, so no separate cross-check. (Was wrongly gated on the
+  rare `reporting_official` validated-summons bonus, so #137's genuine offer showed no tick.)
+- **Household income + size ticks are now document-vs-stated reconciliation**, not "an amount was
+  read". New backend `income_engine.household_income_reconciliation` (Σ each earner's documented
+  income vs the stated figure, within ±10%/RM300) + `household_size_accounted` (itemised roster
+  exactly equals the stated size AND no unknown-status member), exposed as `household_check` on the
+  admin detail serializer. Income ticks only on a ballpark match; size ticks only when fully
+  accounted. **Non-mutating** (owner decision): on a mismatch we FLAG the documented figure / roster
+  count in an amber note beside the value — the reviewer reconciles; we never overwrite the student's
+  declared value. (#137: documented RM7,874.73 vs stated RM7,000 → no tick, "Documents show RM7,875".)
+- **JKM field replaced with Per capita income** (JKM is always "No") = household income ÷ size.
+- +9 backend pytest (`test_household_check.py`), fieldVerification jest updated; i18n
+  `admin.scholarship.perCapita` + `verified.{sizeAccounted,docNote,rosterNote}` en/ms/ta
+  (Tamil first-draft). NO migration.
+
 ## Small change: verified ticks on cockpit profile fields — 2026-07-15
 
 - The officer cockpit ([admin/scholarship/[id]]) now shows a small, non-obtrusive FB/X-style

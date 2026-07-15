@@ -12,6 +12,8 @@ import type { AdminApplicantDocument, AdminScholarshipDetail } from './admin-api
  * state. Partial / mismatch / no-document → no tick (absence = "not corroborated"; the drawer's red
  * chips own the mismatches, so we never paint a competing failure here).
  */
+// NB household income + size ticks are NOT here — they come from the backend `household_check`
+// reconciliation (document total vs stated), handled directly in the cockpit page.
 export type VerifiableField =
   | 'name'
   | 'nric'
@@ -21,7 +23,6 @@ export type VerifiableField =
   | 'reportingDate'
   | 'address'
   | 'parentName'
-  | 'householdIncome'
   | 'str'
 
 export interface FieldVerification {
@@ -65,10 +66,15 @@ export function fieldVerifications(
   set('school', 'school_leaving_cert', 'school', 'schoolLeavingCert')
   set('grades', 'results_slip', 'results', 'resultsSlip')
 
-  // Pathway — the offer letter establishes the chosen programme; the reporting date is trusted only
-  // when it comes from a VALIDATED official registration summons (the reporting-bonus gate).
+  // Pathway — the offer letter establishes the chosen programme; the reporting date is the date
+  // READ off the offer, so it ticks whenever a non-fake/non-suspect offer carries one (the shown
+  // value IS the offer's date — no separate cross-check to make).
   set('chosenProgramme', 'offer_letter', 'pathway', 'offerLetter')
-  if (docs.some((d) => d.doc_type === 'offer_letter' && d.pathway_check?.reporting_official)) {
+  if (docs.some((d) => {
+    if (d.doc_type !== 'offer_letter' || !d.pathway_check?.reporting_date) return false
+    const auth = d.authenticity?.status
+    return !auth || auth === 'genuine' || auth === 'likely_genuine' // exclude suspect / not_* (fake)
+  })) {
     out.reportingDate = { source: 'offerLetter' }
   }
 
@@ -76,16 +82,8 @@ export function fieldVerifications(
   set('address', 'water_bill', 'address', 'utilityBill') ||
     set('address', 'electricity_bill', 'address', 'utilityBill')
 
-  // Family / income (conservative — see the note above).
   //  · Parent name: the parent's IC is on file and legibly read.
   set('parentName', 'parent_ic', 'name', 'parentIc')
-  //  · Household income: a real income figure was read off a payslip or EPF statement.
-  if (
-    docs.some((d) => d.doc_type === 'salary_slip' && factVerified(d, 'amount')) ||
-    docs.some((d) => d.doc_type === 'epf' && factVerified(d, 'contribution'))
-  ) {
-    out.householdIncome = { source: 'incomeProof' }
-  }
   //  · STR: only when the proof is BOTH approved (Lulus) AND current (dated).
   if (docs.some((d) => d.doc_type === 'str' && factVerified(d, 'status') && factVerified(d, 'current'))) {
     out.str = { source: 'strDoc' }

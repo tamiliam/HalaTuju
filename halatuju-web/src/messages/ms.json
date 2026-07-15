@@ -3364,6 +3364,7 @@
       "callLanguage": "Bahasa panggilan",
       "address": "Alamat",
       "householdSize": "Saiz isi rumah",
+      "perCapita": "Pendapatan per kapita",
       "parentLabel": "Ibu bapa",
       "guardianLabel": "Penjaga",
       "guardianPhone": "Telefon {role}",
@@ -3382,7 +3383,10 @@
           "parentIc": "IC ibu bapa",
           "incomeProof": "dokumen pendapatan",
           "strDoc": "dokumen STR"
-        }
+        },
+        "sizeAccounted": "Semua ahli isi rumah telah diambil kira",
+        "docNote": "Dokumen menunjukkan {value}",
+        "rosterNote": "Senarai mencatat {count} orang"
       },
       "preUTrack": "Trek Pra-U",
       "preUInstitution": "Institusi Pra-U",

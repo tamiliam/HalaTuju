@@ -554,6 +554,13 @@ export interface AdminScholarshipDetail {
   // (unlike anomalies which i18n by code). Empty until the admin generates them.
   interview_gaps: Array<{ code: string; question: string; why: string }>
   interview_gaps_run_at: string | null
+  // Cockpit "verified value" reconciliation (2026-07-15): does the DOCUMENT-derived household
+  // income / itemised roster corroborate the student's stated income + size? Drives the income /
+  // household-size verified ticks. Non-mutating — a mismatch is flagged, never auto-applied.
+  household_check?: {
+    income: { documented_total: number | null; all_known: boolean; stated: number | null; matches: boolean }
+    size: { described: number; stated: number | null; accounted: boolean; overcount: boolean }
+  }
   documents: AdminApplicantDocument[]
   referees: AdminReferee[]
   consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; guardian_relationship: string; is_active: boolean; granted_at: string }>

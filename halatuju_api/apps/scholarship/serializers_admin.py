@@ -313,6 +313,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # show it as a red fact — it no longer zeroes the amount (see award.py).
     proposed_award_amount = serializers.SerializerMethodField()
     award_disqualifier = serializers.SerializerMethodField()
+    # Cockpit "verified value" reconciliation (2026-07-15) for the field-level ticks: does the
+    # DOCUMENT-derived household income / itemised roster corroborate the student's stated income
+    # and size? Non-mutating — a mismatch is flagged for the reviewer, never auto-applied.
+    household_check = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -376,6 +380,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'reporting_date',
             # Income wizard answers — drive the cockpit's route-aware income document panel.
             'income_route', 'income_earner', 'income_working_members',
+            'household_check',
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'anomalies',
             'interview_agenda',
@@ -510,6 +515,16 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         from .anomaly_engine import detect_anomalies
         return [a for a in detect_anomalies(obj)
                 if a['code'] not in self._DEDUPED_ANOMALIES]
+
+    def get_household_check(self, obj):
+        """Document-vs-stated reconciliation for the cockpit income/size verified ticks
+        (2026-07-15). Non-mutating: reports what the documents/roster say and whether they
+        corroborate the student's stated figures — the reviewer reconciles a mismatch."""
+        from . import income_engine
+        return {
+            'income': income_engine.household_income_reconciliation(obj),
+            'size': income_engine.household_size_accounted(obj),
+        }
 
     def get_interview_agenda(self, obj):
         """The interviewer's folded Check-3 agenda — anomalies + the 'needs interview' verdict

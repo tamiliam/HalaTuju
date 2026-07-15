@@ -3364,6 +3364,7 @@
       "callLanguage": "அழைப்பு மொழி",
       "address": "முகவரி",
       "householdSize": "குடும்ப அளவு",
+      "perCapita": "தனிநபர் வருமானம்",
       "parentLabel": "பெற்றோர்",
       "guardianLabel": "பாதுகாவலர்",
       "guardianPhone": "{role} தொலைபேசி",
@@ -3380,9 +3381,12 @@
           "schoolLeavingCert": "பள்ளி விடுப்புச் சான்றிதழ்",
           "utilityBill": "பயன்பாட்டு பில்",
           "parentIc": "பெற்றோரின் அடையாள அட்டை",
-          "incomeProof": "வருமான ஆவணம்",
+          "incomeProof": "வருமான ஆவணங்கள்",
           "strDoc": "STR ஆவணம்"
-        }
+        },
+        "sizeAccounted": "குடும்பத்தில் உள்ள அனைவரும் கணக்கில் கொள்ளப்பட்டுள்ளனர்",
+        "docNote": "ஆவணங்கள் {value} எனக் காட்டுகின்றன",
+        "rosterNote": "பட்டியல் {count} பேரைக் கணக்கிடுகிறது"
       },
       "preUTrack": "Pre-U பிரிவு",
       "preUInstitution": "Pre-U நிறுவனம்",

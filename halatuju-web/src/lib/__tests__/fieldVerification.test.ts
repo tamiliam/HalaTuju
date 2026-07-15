@@ -45,20 +45,31 @@ describe('fieldVerifications', () => {
     expect(fv.grades).toEqual({ source: 'resultsSlip' })
   })
 
-  it('ticks chosenProgramme + reportingDate from a genuine official offer with a validated summons', () => {
+  it('ticks chosenProgramme + reportingDate from a genuine offer that carries a reporting date', () => {
+    // reporting_official NOT required — the reporting date is READ off the offer (the #137 case).
     const fv = fieldVerifications(app([
-      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { name: 'match', ic: 'match', pathway: 'match', reporting_official: true } },
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { name: 'match', ic: 'match', pathway: 'match', reporting_date: '22 Jun 2026', reporting_official: false } },
     ]))
     expect(fv.chosenProgramme).toEqual({ source: 'offerLetter' })
     expect(fv.reportingDate).toEqual({ source: 'offerLetter' })
   })
 
-  it('ticks chosenProgramme but NOT reportingDate when the summons is not validated', () => {
+  it('does NOT tick reportingDate when the offer carries no reporting date', () => {
     const fv = fieldVerifications(app([
-      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { name: 'match', ic: 'match', pathway: 'match', reporting_official: false } },
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { name: 'match', ic: 'match', pathway: 'match' } },
     ]))
-    expect(fv.chosenProgramme).toEqual({ source: 'offerLetter' })
     expect(fv.reportingDate).toBeUndefined()
+  })
+
+  it('does NOT tick reportingDate when the offer is suspect/fake', () => {
+    const suspect = fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'suspect' }, pathway_check: { reporting_date: '22 Jun 2026' } },
+    ]))
+    expect(suspect.reportingDate).toBeUndefined()
+    const fake = fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'not_offer_letter' }, pathway_check: { reporting_date: '22 Jun 2026' } },
+    ]))
+    expect(fake.reportingDate).toBeUndefined()
   })
 
   it('ticks address from a utility bill whose address is found', () => {
@@ -73,13 +84,6 @@ describe('fieldVerifications', () => {
       { doc_type: 'parent_ic', income_ic_check: { readable: true, member: 'father', name_status: 'match' } },
     ]))
     expect(fv.parentName).toEqual({ source: 'parentIc' })
-  })
-
-  it('ticks householdIncome when a payslip amount is read', () => {
-    const fv = fieldVerifications(app([
-      { doc_type: 'salary_slip', income_proof_check: { name_status: 'match', nric: '', points: [{ key: 'amount', value: '3000' }] } },
-    ]))
-    expect(fv.householdIncome).toEqual({ source: 'incomeProof' })
   })
 
   it('ticks str only when approved AND current', () => {

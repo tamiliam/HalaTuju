@@ -2061,6 +2061,71 @@ def household_size_shortfall(application):
     return {'described': described, 'size': int(size)} if described > size else None
 
 
+# ── Cockpit "verified value" reconciliation (2026-07-15) ──────────────────────
+# For the small field-level verified ticks on the officer cockpit. NON-MUTATING: we never
+# overwrite the student's declared figure — we compute what the DOCUMENTS say and report whether
+# it corroborates the stated value, leaving the reviewer to reconcile a discrepancy. A stated
+# income "matches" the documents only when every working member's income was read AND the
+# document-derived total is within tolerance (payslips wander month-to-month with OT/allowances,
+# so a small band, not an exact equality).
+_INCOME_MATCH_TOL_FRAC = 0.10     # ±10% of the stated figure …
+_INCOME_MATCH_TOL_MIN = 300.0     # … but at least ±RM300 grace for small incomes.
+
+
+def household_income_reconciliation(application):
+    """Document-derived household monthly income vs the student's stated ``household_income``.
+
+    Returns ``{documented_total, all_known, stated, matches}``:
+      - ``documented_total`` — Σ ``earner_monthly_income`` over the working members, rounded;
+        None when there are no working members or any member's income couldn't be read.
+      - ``all_known`` — False when any working member's income couldn't be read.
+      - ``stated`` — the profile's declared household income.
+      - ``matches`` — True ONLY when ``all_known`` AND ``documented_total`` is within tolerance of
+        ``stated``. This is what a cockpit "verified" tick keys off; a mismatch is flagged to the
+        reviewer (the documented figure is shown beside the stated one), never auto-applied.
+    """
+    members = effective_working_members(application)
+    total, all_known = 0.0, True
+    for m in members:
+        amt, _src = earner_monthly_income(application, m)
+        if amt is None:
+            all_known = False
+        else:
+            total += amt
+    stated = getattr(getattr(application, 'profile', None), 'household_income', None)
+    documented = round(total, 2) if (members and all_known) else None
+    matches = False
+    if documented is not None and stated:
+        tol = max(_INCOME_MATCH_TOL_MIN, _INCOME_MATCH_TOL_FRAC * float(stated))
+        matches = abs(documented - float(stated)) <= tol
+    return {'documented_total': documented, 'all_known': all_known,
+            'stated': stated, 'matches': matches}
+
+
+def household_size_accounted(application):
+    """Whether the household is FULLY accounted for — every stated head is itemised AND every
+    member's economic status is known. Returns ``{described, stated, accounted, overcount}``:
+      - ``described`` — the itemised-roster headcount floor (``_described_household_count``).
+      - ``stated`` — the profile's declared household size.
+      - ``accounted`` — True only when the itemised roster EXACTLY equals the stated size (nobody
+        unexplained) AND there are no income-status gaps (no member of unknown economic status).
+        A cockpit "verified" tick keys off this.
+      - ``overcount`` — True when the itemised roster OUTNUMBERS the stated size (the harmful
+        direction: per-capita denominator too small); flagged, never auto-applied.
+    An under-count (household larger than the itemised roster — grandparents, unlisted relatives)
+    is benign and simply doesn't tick.
+    """
+    size = getattr(getattr(application, 'profile', None), 'household_size', None)
+    described = _described_household_count(application)
+    gaps = household_status_gaps(application)
+    return {
+        'described': described,
+        'stated': int(size) if size else None,
+        'accounted': bool(size) and described == int(size) and not gaps,
+        'overcount': bool(size) and described > int(size),
+    }
+
+
 def declared_income_gaps(application):
     """Working members who DECLARED an informal income (Phase 2A) that isn't yet accepted:
     the household has NO valid STR and no supporting income document for them. Each →

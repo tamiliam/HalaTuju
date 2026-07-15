@@ -157,7 +157,7 @@ const NON_PARENT_RELATIONSHIPS = new Set([
 const SHOW_REFEREES = false
 
 
-function Field({ label, value, verifiedLabel }: { label: string; value: ReactNode; verifiedLabel?: string }) {
+function Field({ label, value, verifiedLabel, note }: { label: string; value: ReactNode; verifiedLabel?: string; note?: string }) {
   return (
     <div>
       <dt className="text-xs text-gray-400 uppercase tracking-wider">{label}</dt>
@@ -165,6 +165,7 @@ function Field({ label, value, verifiedLabel }: { label: string; value: ReactNod
         {value === null || value === undefined || value === '' ? '—' : value}
         {verifiedLabel && <VerifiedTick label={verifiedLabel} />}
       </dd>
+      {note && <p className="mt-0.5 text-xs text-amber-600">{note}</p>}
     </div>
   )
 }
@@ -728,6 +729,23 @@ export default function AdminScholarshipDetailPage() {
         })
       : undefined
 
+  // Household income + size verified ticks come from the backend document-vs-stated reconciliation
+  // (household_check). Non-mutating: on a mismatch we FLAG the documented/roster figure for the
+  // reviewer (amber note) rather than overwrite the student's declared value.
+  const _hc = app.household_check
+  const incomeTip = _hc?.income.matches
+    ? t('admin.scholarship.verified.tooltip', { source: t('admin.scholarship.verified.source.incomeProof') })
+    : undefined
+  const incomeNote = _hc?.income.all_known && !_hc.income.matches && _hc.income.documented_total != null
+    ? t('admin.scholarship.verified.docNote', { value: `RM ${Number(_hc.income.documented_total).toLocaleString('en-US')}` })
+    : undefined
+  const sizeTip = _hc?.size.accounted ? t('admin.scholarship.verified.sizeAccounted') : undefined
+  const sizeNote = _hc?.size.overcount
+    ? t('admin.scholarship.verified.rosterNote', { count: String(_hc.size.described) })
+    : undefined
+  // Per capita income = stated household income ÷ size (replaces the always-"No" JKM field).
+  const perCapita = app.household_income && app.household_size ? app.household_income / app.household_size : null
+
   // A superadmin has REOPENED the recorded decision (server-driven; held from sponsors).
   // A reopen reopens the WHOLE case for revision — Check 2 + Interview Stage + Decision all
   // unlock for the assigned reviewer (and super), not just the decision panel.
@@ -1002,10 +1020,10 @@ export default function AdminScholarshipDetailPage() {
               {/* Family & finances — moved up under About (was below Academic) */}
               <Card title={t('admin.scholarship.sec.family')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM ${Number(app.household_income).toLocaleString('en-US')}` : null} verifiedLabel={vtip('householdIncome')} />
-                  <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
+                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM ${Number(app.household_income).toLocaleString('en-US')}` : null} verifiedLabel={incomeTip} note={incomeNote} />
+                  <Field label={t('admin.scholarship.householdSize')} value={app.household_size} verifiedLabel={sizeTip} note={sizeNote} />
                   <Field label="STR" value={yn(app.receives_str)} verifiedLabel={vtip('str')} />
-                  <Field label="JKM" value={yn(app.receives_jkm)} />
+                  <Field label={t('admin.scholarship.perCapita')} value={perCapita != null ? `RM ${Number(perCapita).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : null} />
                   <Field label={personLabel} value={guardian?.name} verifiedLabel={vtip('parentName')} />
                   <Field label={t('admin.scholarship.guardianPhone', { role: personLabel })} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
                 </dl>
