@@ -8,7 +8,7 @@
 import type {
   AcademicCheck, PathwayCheck, IncomeIcCheck, IncomeProofCheck,
   StrCheck, UtilityCheck, BcCheck, GuardianshipCheck, SupportDocCheck, SemesterCheck,
-  BursaryAgreement,
+  SchoolLeavingCheck, BursaryAgreement,
 } from '@/lib/api'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -1097,6 +1097,7 @@ export interface AdminApplicantDocument {
   guardianship_check?: GuardianshipCheck | null
   support_doc_check?: SupportDocCheck | null
   semester_check?: SemesterCheck | null
+  school_leaving_check?: SchoolLeavingCheck | null
   // Genuineness fingerprint (soft, flag-gated) — for ic/parent_ic/str/results_slip/birth_certificate/
   // epf/offer_letter. Null when the check didn't run. The cockpit uses it to colour the doc chip.
   authenticity?: { status: 'genuine' | 'likely_genuine' | 'suspect' | `not_${string}`; reason: string; doc_seen?: string } | null

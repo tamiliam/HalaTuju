@@ -713,3 +713,34 @@ def semester_check(doc) -> dict:
         nric_status = 'match' if vision.nric_match(nric, snric) else 'mismatch'
     return {'name': name, 'nric': nric, 'cgpa': cgpa,
             'name_status': name_status, 'nric_status': nric_status}
+
+
+def student_school_leaving_check(doc) -> dict:
+    """A school-leaving certificate (Sijil Berhenti Sekolah), read for the officer chips (owner
+    2026-07-15): the student's NAME + NRIC cross-checked against the student's own profile, plus the
+    SCHOOL, the conduct rating (KELAKUAN), and the co-curricular / leadership ROLES + remarks
+    (activities). Returns ``{school, name, name_status, nric, nric_status, kelakuan, activities}`` —
+    name_status 'match'/'partial'/'mismatch'/'no_ref', nric_status 'match'/'mismatch'/'no_ref'. None
+    until the cert has been read (the row then shows 'Unread'). Reads only the student's own document
+    + profile. Mirrors ``semester_check``."""
+    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
+    if not vf.get('student_verdict'):
+        return None
+    from . import vision
+    f = vf.get('fields', {}) if isinstance(vf.get('fields'), dict) else {}
+    name = (f.get('name') or '').strip()
+    nric = (f.get('nric') or '').strip()
+    school = (f.get('school') or '').strip()
+    kelakuan = (f.get('kelakuan') or '').strip()
+    activities = (f.get('activities') or '').strip()
+    profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    sname = (getattr(profile, 'name', '') or '').strip()
+    snric = (getattr(profile, 'nric', '') or '').strip()
+    name_status = vision.name_match(name, sname) if (name and sname) else 'no_ref'
+    if not nric or not snric:
+        nric_status = 'no_ref'
+    else:
+        nric_status = 'match' if vision.nric_match(nric, snric) else 'mismatch'
+    return {'school': school, 'name': name, 'name_status': name_status,
+            'nric': nric, 'nric_status': nric_status,
+            'kelakuan': kelakuan, 'activities': activities}

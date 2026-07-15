@@ -3685,7 +3685,9 @@
           "evidence": "Bukti",
           "address": "Alamat",
           "reasonable": "Munasabah",
-          "outstanding": "Tunggakan"
+          "outstanding": "Tunggakan",
+          "school": "Sekolah",
+          "behaviour": "Kelakuan"
         },
         "billValue": {
           "amount": "Amaun",
@@ -3729,6 +3731,11 @@
             "label": "AI",
             "hint": "Dibaca oleh AI (Gemini) — sila sahkan nilai yang ditangkap."
           }
+        },
+        "certValue": {
+          "school": "Sekolah",
+          "behaviour": "Kelakuan",
+          "notes": "Nota"
         }
       },
       "profilePending": "Profil dijana secara automatik apabila permohonan diserahkan untuk semakan.",

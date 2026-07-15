@@ -1230,10 +1230,12 @@ _FIELD_SCHEMAS = {
     'income_support_doc': _doc_schema({'name': _STR, 'nric': _STR, 'amount': _STR,
                                        'period': _STR, 'issuer': _STR, 'kind': _STR}),
     # V4 — a school-leaving certificate (Sijil Berhenti Sekolah): the student's name + NRIC, the
-    # school, and the conduct rating (kelakuan) — the owner-specified variable set (2026-07-15). The
-    # name is matched against the student (officer chip); NRIC + kelakuan give the officer the cert's
-    # own identity + conduct read.
-    'school_leaving_cert': _doc_schema({'name': _STR, 'nric': _STR, 'school': _STR, 'kelakuan': _STR}),
+    # school, the conduct rating (kelakuan), and the co-curricular / leadership roles + remarks
+    # (activities) — the owner-specified set (2026-07-15). The name is matched against the student
+    # (officer chip); NRIC + kelakuan + activities give the officer the cert's identity, conduct, and
+    # leadership read.
+    'school_leaving_cert': _doc_schema({'name': _STR, 'nric': _STR, 'school': _STR, 'kelakuan': _STR,
+                                        'activities': _STR}),
     # V4 — a current-semester result slip for a continuing student: institution, programme, the
     # semester label, and the CGPA (the officer's current-performance read).
     'semester_result': _doc_schema({'name': _STR, 'nric': _STR, 'institution': _STR,
@@ -1260,7 +1262,10 @@ _DOC_HINTS = {
                             'Sekolah). Read: "name" = the student (Nama Murid); "nric" = the '
                             'student\'s No. Kad Pengenalan (12 digits); "school" = the issuing '
                             'school; "kelakuan" = the conduct rating exactly as printed (e.g. '
-                            'TERPUJI / BAIK / SEDERHANA).'),
+                            'TERPUJI / BAIK / SEDERHANA); "activities" = the co-curricular / '
+                            'leadership roles (the Kurikulum/Sukan/Badan Khas "Jawatan" entries, '
+                            'e.g. "Naib Bendahari Persatuan Bahasa Tamil") plus the Catatan remark, '
+                            'joined with "; " — or empty if none.'),
     'results_slip': (' This is an SPM results slip — a TABLE with one row per subject '
                      '(code · subject name · LETTER grade · Malay BAND phrase). For EACH '
                      'subject row return {subject, grade, band}: "subject" = the subject '

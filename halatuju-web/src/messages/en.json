@@ -3685,7 +3685,9 @@
           "evidence": "Evidence",
           "address": "Address",
           "reasonable": "Reasonable",
-          "outstanding": "Outstanding"
+          "outstanding": "Outstanding",
+          "school": "School",
+          "behaviour": "Behaviour"
         },
         "billValue": {
           "amount": "Amount",
@@ -3729,6 +3731,11 @@
             "label": "AI",
             "hint": "Read by AI (Gemini) — please verify the captured values."
           }
+        },
+        "certValue": {
+          "school": "School",
+          "behaviour": "Behaviour",
+          "notes": "Notes"
         }
       },
       "profilePending": "The profile is generated automatically when the application is handed over for review.",

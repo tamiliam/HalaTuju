@@ -5,6 +5,7 @@ import {
   documentPill,
   documentFacts,
   utilityBillValues,
+  schoolLeavingValues,
   incomeDocLayout,
   incomeSubSections,
   docIconFor,
@@ -281,6 +282,25 @@ describe('documentFacts', () => {
   it('results slip → Name, Subjects, Results from the 3-check', () => {
     expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ name: 'match', subjects: 'partial', results: 'match' }) })))
       .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'partial' }, { key: 'results', status: 'verified' }])
+  })
+
+  it('school-leaving cert → School, Name, IC, Behaviour chips + value/notes line (owner 2026-07-15)', () => {
+    const d = doc({ doc_type: 'school_leaving_cert', school_leaving_check: {
+      school: 'SMK SEKSYEN 10', name: 'A B', name_status: 'match', nric: '1', nric_status: 'mismatch',
+      kelakuan: 'TERPUJI', activities: 'Ketua Pengawas; berdisiplin' } })
+    expect(documentFacts(d)).toEqual([
+      { key: 'school', status: 'verified' },
+      { key: 'name', status: 'verified' },
+      { key: 'ic_no', status: 'not' },        // NRIC mismatch → red
+      { key: 'behaviour', status: 'verified' },
+    ])
+    expect(schoolLeavingValues(d).map((v) => v.labelKey)).toEqual(['school', 'behaviour', 'notes'])
+    expect(schoolLeavingValues(d).find((v) => v.labelKey === 'notes')!.value).toContain('Pengawas')
+  })
+
+  it('school-leaving cert not read yet → no facts, no values', () => {
+    expect(documentFacts(doc({ doc_type: 'school_leaving_cert' }))).toEqual([])
+    expect(schoolLeavingValues(doc({ doc_type: 'school_leaving_cert' }))).toEqual([])
   })
 
   it('str → Recipient, IC No, Status, Current (Status is the 3rd required variable)', () => {

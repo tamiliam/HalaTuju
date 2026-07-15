@@ -547,11 +547,19 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
     ]
   }
   if (dt === 'school_leaving_cert') {
-    // Soft academic-completeness doc. The read is the officer signal (a blank is held on upload,
-    // so a stored one that read is 'Evidence' verified); the officer opens it for the details.
-    const vf = doc.vision_fields as { student_verdict?: string } | null | undefined
-    if (!vf?.student_verdict) return []
-    return [{ key: 'evidence', status: vf.student_verdict === 'ok' ? 'verified' : 'not' }]
+    // Owner 2026-07-15: read the Sijil Berhenti Sekolah for School + Name + IC + Behaviour. Name and
+    // IC are MATCH chips (green when they match the student, red otherwise); School and Behaviour
+    // (kelakuan) are READ chips (green when read, grey when not). The school name / conduct value and
+    // the leadership/co-curricular notes render as a value line below (schoolLeavingValues).
+    const c = doc.school_leaving_check
+    if (!c) return []   // not read yet → the row shows "Unread"
+    const idMatch = (s: string): FactStatus => (s === 'match' || s === 'partial' ? 'verified' : 'not')
+    return [
+      { key: 'school', status: (c.school || '').trim() ? 'verified' : 'unknown' },
+      { key: 'name', status: idMatch(c.name_status) },
+      { key: 'ic_no', status: idMatch(c.nric_status) },
+      { key: 'behaviour', status: (c.kelakuan || '').trim() ? 'verified' : 'unknown' },
+    ]
   }
   if (dt === 'income_support_doc') {
     // V1: the declared-income supporting doc. It NAMES THE EARNER, not the student, so there
@@ -635,6 +643,21 @@ export function utilityBillValues(doc: AdminApplicantDocument): UtilityValue[] {
   const arr = _arrearsAmount(c.unpaid_balance)
   if (arr !== null && arr > 0) out.push({ labelKey: 'arrears', value: _formatRm((c.unpaid_balance || '').trim()) })
   else if (amount) out.push({ labelKey: 'arrears', valueKey: 'none' })
+  return out
+}
+
+/**
+ * The school-leaving certificate's VALUES to show inline under its chips (owner 2026-07-15):
+ * the school name, the conduct rating (kelakuan), and the co-curricular / leadership notes
+ * (activities). labelKey maps to admin.scholarship.docsDrawer.certValue.*. Empty ones are omitted.
+ */
+export function schoolLeavingValues(doc: AdminApplicantDocument): UtilityValue[] {
+  const c = doc.school_leaving_check
+  if (!c) return []
+  const out: UtilityValue[] = []
+  if ((c.school || '').trim()) out.push({ labelKey: 'school', value: c.school.trim() })
+  if ((c.kelakuan || '').trim()) out.push({ labelKey: 'behaviour', value: c.kelakuan.trim() })
+  if ((c.activities || '').trim()) out.push({ labelKey: 'notes', value: c.activities.trim() })
   return out
 }
 

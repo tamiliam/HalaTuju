@@ -528,3 +528,62 @@ def _parse_water(text: str) -> Optional[dict]:
     return {'name': _patronymic_name(text), 'address': address, 'amount': amount,
             'unpaid_balance': unpaid, 'billing_period': '',
             'bill_date': _water_bill_date(text)}
+
+
+# ── P7: School-leaving certificate (Sijil Berhenti Sekolah) ───────────────────
+# A school-issued numbered leaver form with FIXED field labels (Nama Murid / No. Kad Pengenalan /
+# Kelakuan / Tarikh Berhenti / Sebab Berhenti) + a Kurikulum/Sukan/Badan Khas section (co-curricular
+# 'Jawatan' roles) + Catatan (remarks). Deterministic when the STANDARD numbered form is recognised
+# ('Exact'); a free-form testimonial letter (no numbered grammar) → None → Gemini ('AI'). The
+# genuineness scorer (genuineness/school_leaving_doc.py) is a SEPARATE text read — this only extracts
+# the fields. Owner 2026-07-15.
+_SCHOOL_HEADER_RE = re.compile(
+    r'\b(SEKOLAH\s+MENENGAH|SEKOLAH\s+KEBANGSAAN|SMK|MAKTAB|KOLEJ\s+TINGKATAN|SEKOLAH\s+SERI)\b',
+    re.IGNORECASE)
+
+
+def _leaver_school(text: str) -> str:
+    """The ISSUING school (the letterhead near the top) — NOT the 'sekolah terdahulu' (previous
+    school) line further down. '' if not found in the header band → the parser bails to Gemini."""
+    for ln in _lines(text)[:8]:
+        if _SCHOOL_HEADER_RE.search(ln) and not has(ln, r'terdahulu', r'alamat'):
+            return ln.strip()
+    return find_value(text, r'nama\s+sekolah')
+
+
+def _leaver_activities(text: str) -> str:
+    """Co-curricular / leadership roles (the Kurikulum/Sukan/Badan Khas 'Jawatan' lines) + the
+    Catatan remark, joined with '; '. '' if none. Free-text — the leadership note the officer reads;
+    captured deterministically here so it shows on BOTH the Exact and AI paths (owner 2026-07-15)."""
+    roles: list = []
+    lines = _lines(text)
+    for i, ln in enumerate(lines):
+        m = re.search(r'jawatan', ln, re.IGNORECASE)
+        if not m:
+            continue
+        v = ln[m.end():].lstrip(' \t:=-.').strip()
+        if not v:
+            v = next((nxt for nxt in lines[i + 1:] if nxt), '')
+        if v and v.lower() not in (r.lower() for r in roles):
+            roles.append(v)
+    catatan = find_value(text, r'\bcatatan\b')
+    if catatan and catatan.lower() not in (r.lower() for r in roles):
+        roles.append(catatan)
+    return '; '.join(roles)[:500]
+
+
+@register('school_leaving_cert')
+def _parse_school_leaving(text: str) -> Optional[dict]:
+    # CONSERVATIVE: only the STANDARD numbered Sijil Berhenti Sekolah — a leaver anchor + the 'Nama
+    # Murid' student label + a readable school header. A free-form testimonial has none of these →
+    # None → Gemini reads it (and keeps its richer prose in `activities`).
+    if not has(text, r'berhenti\s+sekolah', r'tarikh\s+berhenti', r'sebab\s+berhenti', r'sijil\s+berhenti'):
+        return None
+    name = find_value(text, r'nama\s+murid') or find_value(text, r'nama\s+pelajar')
+    school = _leaver_school(text)
+    if not name or not school:
+        return None                          # a key field didn't read → hand to Gemini
+    nric = first_nric(find_value(text, r'kad\s+pengenalan')) or first_nric(text)
+    return {'name': name, 'nric': nric, 'school': school,
+            'kelakuan': find_value(text, r'\bkelakuan\b'),
+            'activities': _leaver_activities(text)}

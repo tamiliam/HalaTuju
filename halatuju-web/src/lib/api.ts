@@ -1768,6 +1768,16 @@ export interface SemesterCheck {
   nric_status: 'match' | 'mismatch' | 'no_ref'
 }
 
+export interface SchoolLeavingCheck {
+  school: string
+  name: string
+  name_status: 'match' | 'partial' | 'mismatch' | 'no_ref'
+  nric: string
+  nric_status: 'match' | 'mismatch' | 'no_ref'
+  kelakuan: string
+  activities: string
+}
+
 export interface PathwayCheck {
   name: SlipCheckStatus
   ic: SlipCheckStatus

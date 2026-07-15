@@ -643,6 +643,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     support_doc_check = serializers.SerializerMethodField()
     # Academic: a post-SPM semester-result slip — name/NRIC (vs the student) + CGPA. Null otherwise.
     semester_check = serializers.SerializerMethodField()
+    # Academic: a school-leaving cert — school + name/NRIC (vs the student) + kelakuan + activities.
+    school_leaving_check = serializers.SerializerMethodField()
     # Officer box: the household member this income doc belongs to — its stored tag, or (for a
     # blank-tagged doc) resolved by the name on the doc against the family roster. Display-only.
     resolved_member = serializers.SerializerMethodField()
@@ -679,6 +681,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'support_doc_check',
             # Academic: semester-result name/NRIC/CGPA (null unless semester_result).
             'semester_check',
+            # Academic: school-leaving cert school/name/NRIC/kelakuan/activities (null otherwise).
+            'school_leaving_check',
             # Officer box: resolved household member (stored tag or name-resolved). Display-only.
             'resolved_member',
             # Phase 2 version history: when this doc was replaced (null = live) + which
@@ -858,6 +862,15 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return None
         from .academic_engine import semester_check
         return semester_check(obj)
+
+    def get_school_leaving_check(self, obj):
+        """{school, name, name_status, nric, nric_status, kelakuan, activities} for a school-leaving
+        certificate — the officer chips (name/NRIC vs the student) + school/conduct/leadership.
+        Null for every other doc type."""
+        if obj.doc_type != 'school_leaving_cert':
+            return None
+        from .academic_engine import student_school_leaving_check
+        return student_school_leaving_check(obj)
 
     def get_support_doc_check(self, obj):
         """{name/amount/issuer/kind + read_status} for a declared-income supporting doc.

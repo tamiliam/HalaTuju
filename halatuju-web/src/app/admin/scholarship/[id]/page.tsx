@@ -58,6 +58,7 @@ import {
   documentPill,
   documentFacts,
   utilityBillValues,
+  schoolLeavingValues,
   incomeSubSections,
   docIconFor,
   earnerMemberFor,
@@ -1897,7 +1898,7 @@ export default function AdminScholarshipDetailPage() {
                       // doc type's PRIMARY read method: the deterministic-first types (a label/positional
                       // parser runs before any Gemini fallback) default to 'Exact'; the rest — read by
                       // Gemini — default to 'AI'. A Re-run stamps the precise tag either way.
-                      const DETERMINISTIC_FIRST = ['ic', 'parent_ic', 'results_slip', 'birth_certificate', 'str', 'epf']
+                      const DETERMINISTIC_FIRST = ['ic', 'parent_ic', 'results_slip', 'birth_certificate', 'str', 'epf', 'school_leaving_cert']
                       const cap = stored === 'deterministic' ? 'deterministic'
                         : stored === 'ai' ? 'ai'
                         : DETERMINISTIC_FIRST.includes(d.doc_type) ? 'deterministic' : 'ai'
@@ -1929,6 +1930,23 @@ export default function AdminScholarshipDetailPage() {
                             {i > 0 && <span className="text-gray-300"> · </span>}
                             <span className="text-gray-400">{t(`admin.scholarship.docsDrawer.billValue.${v.labelKey}`)} </span>
                             {v.value ?? t(`admin.scholarship.docsDrawer.billValue.${v.valueKey}`)}
+                          </span>
+                        ))}
+                      </p>
+                    ) : null
+                  })()}
+                  {/* School-leaving cert values (owner 2026-07-15): the school name, the conduct
+                      rating, and the co-curricular / leadership notes — under the School/Name/IC/
+                      Behaviour chips. */}
+                  {(() => {
+                    const vals = schoolLeavingValues(d)
+                    return vals.length > 0 ? (
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        {vals.map((v, i) => (
+                          <span key={v.labelKey}>
+                            {i > 0 && <span className="text-gray-300"> · </span>}
+                            <span className="text-gray-400">{t(`admin.scholarship.docsDrawer.certValue.${v.labelKey}`)} </span>
+                            {v.value}
                           </span>
                         ))}
                       </p>
