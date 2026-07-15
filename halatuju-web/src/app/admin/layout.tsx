@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { adminSignOut } from '@/lib/admin-supabase'
+import { mustCompleteProfile } from '@/lib/adminLanding'
 import { useT } from '@/lib/i18n'
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
@@ -19,8 +20,15 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     if (pathname === '/admin/login' || pathname.startsWith('/admin/auth/')) return
     if (!isLoading && !isAdminAuthenticated) {
       router.replace('/admin/login')
+      return
     }
-  }, [isAdminAuthenticated, isLoading, router, pathname])
+    // Hold a newly-invited reviewer on /admin/profile until their compulsory fields are filled
+    // (first-login onboarding). mustCompleteProfile is reviewer-only + exempts the profile /
+    // set-password / auth pages, so it can't loop.
+    if (!isLoading && isAdminAuthenticated && mustCompleteProfile(role, pathname)) {
+      router.replace('/admin/profile')
+    }
+  }, [isAdminAuthenticated, isLoading, router, pathname, role])
 
   // Close mobile menu on navigation
   useEffect(() => {

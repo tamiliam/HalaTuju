@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/admin-supabase'
 import { enforceSingleScope } from '@/lib/sessionPolicy'
+import { adminLanding } from '@/lib/adminLanding'
 import { useT } from '@/lib/i18n'
 
 export default function AdminAuthCallbackPage() {
@@ -45,10 +46,10 @@ export default function AdminAuthCallbackPage() {
           token: session.access_token,
           isSuper: !!(role.is_super_admin || role.role === 'super'),
         })
-        // Reviewers/viewers have no partner-org dashboard — send them to their
-        // workspace (B40 Applications); org admins/super keep the dashboard.
-        router.replace(role.role === 'reviewer' || role.role === 'viewer'
-          ? '/admin/scholarship' : '/admin')
+        // Reviewers/viewers have no partner-org dashboard — send them to their workspace
+        // (B40 Applications); org admins/super keep the dashboard; a reviewer with an
+        // incomplete profile is held on /admin/profile until they finish onboarding.
+        router.replace(adminLanding(role))
         return
       } catch {
         setError(t('errors.adminVerifyFailed'))

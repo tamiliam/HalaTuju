@@ -3962,6 +3962,13 @@
       "selectState": "Select state",
       "langTitle": "Languages",
       "langSubtitle": "So we can match you with students you can speak with comfortably.",
+      "onboarding": {
+        "title": "Complete your reviewer profile to continue",
+        "intro": "Please fill in these required details (marked with *):",
+        "allSet": "All set — press Save to continue to your applications.",
+        "languages": "At least one language you can review in",
+        "langHint": "Set at least one to Conversational or Fluent."
+      },
       "langEnglish": "English",
       "langBm": "Bahasa Melayu",
       "langTamil": "Tamil",

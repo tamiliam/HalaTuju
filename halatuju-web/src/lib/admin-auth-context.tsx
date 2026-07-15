@@ -18,6 +18,9 @@ interface AdminRole {
   admin_id?: number | null
   org_name: string | null
   admin_name: string
+  /** False only for a reviewer who hasn't filled their compulsory profile fields yet — the
+   *  admin layout then holds them on /admin/profile until it flips true. True for everyone else. */
+  reviewer_profile_complete?: boolean
 }
 
 interface AdminAuthContextValue {

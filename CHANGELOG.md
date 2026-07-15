@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Reviewer first-login onboarding gate + set-password username field — 2026-07-15
+
+### Added
+- **A newly-invited reviewer now lands on /admin/profile and is held there until their compulsory profile fields are filled.** Previously reviewers landed on the B40 Applications list with an empty profile. New backend `reviewer_onboarding.reviewer_profile_complete()` (reviewer-only; `True` for every other role) is surfaced as `reviewer_profile_complete` on `GET /api/v1/admin/role/`. Compulsory set (owner's call): name + highest qualification + university + graduation year + field of study + **at least one language at conversational/fluent** + phone. Frontend: pure `adminLanding()` + `mustCompleteProfile()` (`lib/adminLanding.ts`) drive the login/callback landing AND a guard in the admin layout that bounces an incomplete reviewer back to /admin/profile from any other admin page (the profile/set-password/auth/login pages are exempt, so it can't loop). The profile page shows a live "still needed" banner, `*` markers on the required fields, and — on the save that completes it — refreshes the role and forwards them to /admin/scholarship. No migration.
+
+### Fixed
+- **The set-password page now carries the account email as an `autocomplete="username"` field**, so the browser's password manager attaches the saved credential to a username instead of showing an empty "Username" box in its "Update password?" prompt (the reviewer had to type it manually). The read-only field also shows whose account is being set up. The email comes from the Supabase link session; no server change.
+
 ## Rejection record shows the decision trail (reviewer → QC reopen → decline) — 2026-07-15
 
 ### Changed

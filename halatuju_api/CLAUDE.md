@@ -534,6 +534,22 @@ tenant rehearsal) are gated on a **credible second-tenant prospect**. Roadmap
 skips the `_AdminBase` gates, or a raw admin `.objects` query without an `# org-fence:` pragma, FAILS
 the suite (`test_org_fence.py`), so BrightPath feature work stays safe.
 
+**✅ SHIPPED + LIVE 2026-07-15 — Reviewer first-login onboarding gate + set-password username field
+(branch `feat/reviewer-onboarding`; NO migration; retro `docs/retrospective-2026-07-15-reviewer-onboarding.md`;
+decision ×1; lessons ×2).** A newly-invited reviewer now lands on **/admin/profile** and is held
+there until their compulsory fields are filled (was: the empty B40 list). New backend
+`reviewer_onboarding.reviewer_profile_complete(admin)` (reviewer-only; True for every other role) on
+`GET /api/v1/admin/role/`; compulsory = name + qualification + university + graduation year + field of
+study + phone + **≥1 language at conversational/fluent** (the "None" option is an empty value, so
+"at least one" not "all three"). FE: pure `adminLanding()` + `mustCompleteProfile()`
+(`lib/adminLanding.ts`) drive the login/callback landing + a layout guard (bounces an incomplete
+reviewer back to /admin/profile from any other admin page; profile/set-password/auth/login exempt →
+no loop); `lib/reviewerProfile.ts` mirrors the check for `*` markers + a live "still needed" banner +
+the redirect on a completing save. **Folded-in fix:** the set-password page carries the account email
+as an `autocomplete="username"` field (fixes Chrome's empty-Username save prompt). pytest 106 (+11) /
+jest 19 (+ i18n parity) / next build exit 0. **Gotcha (lesson):** branch on the `is_super` bridge, not
+the bare `role` column (which defaults to `'reviewer'`), when gating by role.
+
 **✅ SHIPPED (code, on branch `feat/decision-trail` — NOT merged; owner gates the deploy) 2026-07-15 —
 Rejection record shows the decision trail (reviewer → QC reopen → decline). Display-only, NO migration;
 retro `docs/retrospective-2026-07-15-decision-trail.md`; decision ×1; lesson ×1.** The cockpit rejected

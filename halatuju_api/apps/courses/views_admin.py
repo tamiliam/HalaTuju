@@ -195,6 +195,9 @@ class AdminRoleView(PartnerAdminMixin, APIView):
         admin = self.get_admin(request)
         if not admin:
             return Response({'is_admin': False})
+        # reviewer_profile_complete: gates the reviewer's first-login landing (they stay on
+        # /admin/profile until their compulsory fields are filled). True for every non-reviewer.
+        from apps.scholarship.reviewer_onboarding import reviewer_profile_complete
         return Response({
             'is_admin': True,
             'is_super_admin': admin.is_super_admin,
@@ -202,6 +205,7 @@ class AdminRoleView(PartnerAdminMixin, APIView):
             'admin_id': admin.id,
             'org_name': admin.org.name if admin.org else None,
             'admin_name': admin.name,
+            'reviewer_profile_complete': reviewer_profile_complete(admin),
         })
 
 
