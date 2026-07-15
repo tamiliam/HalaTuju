@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## STR route no longer blocks the household salary picture (Check 2) — 2026-07-16
+
+Off applicant #117 (a retired father on the STR route with no pension follow-up). Root cause: on the
+STR route, `income_engine._parent_has_income_evidence` treated the STR-recipient parent as
+"income-evidenced" — but an STR proves the household's B40/welfare status, it does not quantify (or
+even mention) that parent's own pay or pension. So the STR was silencing all three of Check 2's
+income-completeness asks for the STR earner (pension / informal / formal salary slip), leaving the
+sponsor profile with an incomplete household salary picture. Owner rule (2026-07-16): the STR route
+must not stop the system building the **complete salary picture of the household** — inquire about a
+pensioned or working father/mother whether or not they are the STR earner. (Explicitly NOT about
+moving anyone out of STR: the income verdict + submission gate are untouched, the STR stays
+dispositive there.)
+
+- **New `income_engine._member_income_documented(app, member)`** — the STR-ignoring evidence check
+  (salary slip / EPF tagged to them, or the IC-number chain), used by the completeness ASKS.
+  `_parent_has_income_evidence` keeps the STR branch (means-test "status known" — the household-size
+  verified tick is unchanged) and now delegates its documented part to the new helper.
+- **The three STR-earner asks open up:** `pension_members` (retired/unable STR earner → the
+  ask-first pension clarify — the #117 fix), `informal_income_members` (informal STR earner → the
+  ask-first `informal_income_detail` clarify, no payslip dead-end), and a new
+  `str_earner_income_document_gap` (a FORMAL working STR earner → `father/mother_income_proof_missing`
+  salary-slip request, wired into `check2_queries._gap_sets`). All three partition the STR earner
+  cleanly (retired / informal / formal) with no double-ask.
+- **Siblings deferred (owner "parents now, siblings later"):** working siblings in the roster are
+  already inquired about; honouring "only siblings who stay and eat in the house" needs a roster
+  residency flag (new field + migration + UI) — logged as a follow-up, not built here.
+- SOFT throughout — reuses existing item codes + copy (no FE change, no new i18n, no migration).
+  +6 pytest (STR-route pension/informal/formal + documented-suppression + a household-size-tick
+  guard); 2581 scholarship pytest; golden masters intact. **Takes effect on the NEXT sync while an
+  app is in the Completed stage** — #117 is already `interviewing`, so its pension is best asked at
+  interview (an officer can still raise it; the machine only auto-asks during `profile_complete`).
+
 ## Cockpit tweaks: KM→Kolej Matrikulasi, income document-verified on top, About-card tidy — 2026-07-15
 
 Owner live-review follow-ups (all cockpit display-only, no backend change):

@@ -1926,19 +1926,39 @@ def income_requirements(application) -> dict:
 # (when they work) or their status (when their slot is blank). This is deterministic: every
 # parent must be EITHER marked non-earning (status known) OR have income evidence on file.
 
-def _parent_has_income_evidence(application, member):
-    """True when an income DOCUMENT covers this parent: a salary slip / EPF tagged to them,
-    or — on the STR route — they are the single STR earner with an STR doc, or the IC-number
-    chain confirms them. (Roster-only 'they earn' is NOT evidence — that's the gap.)"""
+def _member_income_documented(application, member):
+    """True when an income-QUANTIFYING document is on file for this member — a salary slip / EPF
+    tagged to them, or the IC-number chain confirms them.
+
+    Deliberately does NOT count an STR. An STR (Sumbangan Tunai Rahmah) proves the HOUSEHOLD's
+    B40 / welfare status; it neither quantifies nor even mentions this member's own pay or pension.
+    So for building the household's SALARY PICTURE (owner 2026-07-16 — "the STR route shouldn't
+    prevent the system from getting a complete salary picture of the household"), an STR-recipient
+    parent is still 'undocumented' and IS inquired about. This governs only the soft completeness
+    ASKS (pension / informal / formal-slip); it never touches the income verdict or the submission
+    gate, where the STR stays dispositive."""
     if (_cluster_docs(application, member, 'salary_slip').exists()
             or _cluster_docs(application, member, 'epf').exists()):
+        return True
+    if member in ('mother', 'father') and chain_verified_earner(application, member):
+        return True
+    return False
+
+
+def _parent_has_income_evidence(application, member):
+    """True when income evidence covers this parent for the MEANS TEST: an income document
+    (``_member_income_documented``) OR — on the STR route — they are the single STR earner with an
+    STR doc on file. Used by ``parent_income_status`` / ``member_income_status`` (whether a member's
+    economic status is 'known', which the household-size tick keys off) and the STR-route reads.
+
+    For the SALARY-PICTURE completeness asks (pension / informal / formal-slip) use
+    ``_member_income_documented`` instead — an STR must not silence those (owner 2026-07-16)."""
+    if _member_income_documented(application, member):
         return True
     route = (getattr(application, 'income_route', '') or '').strip()
     if (route == 'str'
             and (getattr(application, 'income_earner', '') or '').strip() == member
             and application.documents.filter(doc_type='str', superseded_at__isnull=True).exists()):
-        return True
-    if member in ('mother', 'father') and chain_verified_earner(application, member):
         return True
     return False
 
@@ -2673,7 +2693,10 @@ def informal_income_members(application):
     ``household_status_gaps`` walks parents + other_family_members)."""
     out = []
     for member in _MEMBER_ORDER:
-        if member_is_informal(application, member) and not _parent_has_income_evidence(application, member):
+        # Salary picture over the means test (owner 2026-07-16): use the STR-ignoring documented
+        # check, so an informal STR-recipient parent (e.g. a 'driver' father the STR is under) still
+        # gets the ask-first clarify instead of being masked 'evidenced' by the STR.
+        if member_is_informal(application, member) and not _member_income_documented(application, member):
             out.append(member)
     return out
 
@@ -2787,7 +2810,10 @@ def pension_members(application):
     out = []
     for member in ('father', 'mother'):
         occ = (getattr(application, f'{member}_occupation', '') or '').strip()
-        if occ in BENEFIT_OCC and not _parent_has_income_evidence(application, member):
+        # #117 (owner 2026-07-16): the STR-ignoring documented check — a retired father who is the
+        # STR recipient still draws an invisible pension, so being the STR earner must NOT suppress
+        # the pension ask (the STR settles the verdict, not the salary picture).
+        if occ in BENEFIT_OCC and not _member_income_documented(application, member):
             out.append(member)
     return out
 
@@ -2802,6 +2828,27 @@ def pension_context(application):
         return None
     jobs = [lbl for lbl in (_member_occupation_label(application, m) for m in members) if lbl]
     return {'members': members, 'jobs': '; '.join(jobs)}
+
+
+def str_earner_income_document_gap(application):
+    """The STR-recipient parent's OWN salary is still worth documenting for the household picture
+    even though the STR settles the means test (owner 2026-07-16). This covers the FORMAL working
+    STR earner (factory / teacher / clerk / …) whose salary slip we never asked for because the STR
+    marked them 'evidenced' — the retired/unable case is ``pension_members`` and the informal case is
+    ``informal_income_members``, so this partition excludes both. Returns the parent member code
+    ('father'|'mother') or None. STR route only; a soft doc request, never a submission blocker."""
+    if (getattr(application, 'income_route', '') or '').strip() != 'str':
+        return None
+    earner = (getattr(application, 'income_earner', '') or '').strip()
+    if earner not in ('father', 'mother'):
+        return None
+    from .family import NON_EARNING, INFORMAL_OCC
+    occ = (getattr(application, f'{earner}_occupation', '') or '').strip()
+    if not occ or occ in NON_EARNING or occ in INFORMAL_OCC:
+        return None                                  # non-earning / retired-unable / informal → other paths
+    if _member_income_documented(application, earner):
+        return None                                  # their salary slip / EPF is already on file
+    return earner
 
 
 def pension_claim(text):

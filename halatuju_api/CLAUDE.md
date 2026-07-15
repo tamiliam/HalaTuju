@@ -524,6 +524,27 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-16)
 
+**✅ SHIPPED (code — owner gates the deploy) 2026-07-16 — STR route no longer blocks the household
+salary picture (Check 2).** Off #117 (retired father, no pension follow-up). `income_engine`'s
+`_parent_has_income_evidence` STR branch was masking the STR-recipient parent as "income-evidenced",
+silencing all three Check-2 income asks for them. New **`_member_income_documented`** (STR-ignoring:
+salary/EPF/chain) now drives the completeness asks, while `_parent_has_income_evidence` keeps the STR
+branch for the means-test reads + the household-size verified tick (untouched). Three STR-earner asks
+open, cleanly partitioned: **pension** (`pension_members`, the #117 fix), **informal**
+(`informal_income_members` → ask-first, no payslip dead-end), **formal**
+(`str_earner_income_document_gap` → salary-slip request, wired into `check2_queries._gap_sets`).
+Verdict + submission gate independent (STR stays dispositive — no re-band, no hard block). SOFT;
+reuses existing item codes/copy → **NO migration, NO FE, NO i18n**. +6 pytest; 2581 scholarship
+pytest; golden masters intact. Retro `docs/retrospective-2026-07-16-str-salary-picture.md`.
+- **▶ AT DEPLOY:** push (api-only rebuild; code-only, no migrate-first). Takes effect on the next
+  Check-2 sync while an app is in the Completed stage. **#117 is `interviewing`** → its pension won't
+  auto-raise; ask at interview (an officer still can).
+- **▶ FOLLOW-UP (owner "parents now, siblings later"):** honour "only siblings who stay and eat in
+  the house" — add a roster residency flag (new field + migration + "About your family" UI toggle) so
+  an out-of-house working sibling isn't asked. Working in-roster siblings are already inquired about.
+
+
+
 **✅ SHIPPED + LIVE 2026-07-15 — Cockpit verified-value ticks** (commits `23e59620` r1, `ae98afe6`
 r2, `ef6c0344` grades-fix; web `…00641-hdk` + api `…00770-pr8`; NO migration; retro
 `docs/retrospective-2026-07-15-cockpit-verified-ticks.md`; decisions ×2; lessons ×3). A small FB/X

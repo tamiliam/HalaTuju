@@ -188,6 +188,9 @@ def _gap_sets(application):
         sibling_school_detail_unknown,
         # #117 (owner 2026-07-14) — retired/unable parent's pension, ask-first then proof.
         pension_context, pension_members, pension_claimed,
+        # Owner 2026-07-16 — the STR route must not stop us getting the household's salary picture:
+        # a FORMAL working STR-recipient parent's own salary slip is still requested.
+        str_earner_income_document_gap,
         # Owner 2026-07-08 — per-bill utility recheck + point-blank high-usage query.
         utility_bill_recheck, high_utility_expense_context,
     )
@@ -243,6 +246,13 @@ def _gap_sets(application):
             pass
         else:                                            # 'proof' — a formal earner, no income doc
             proof_wanted.add(_MEMBER_PROOF_CODE[g['member']])
+    # Owner 2026-07-16 — the STR settles the means test but must not silence the household's income
+    # asks. A FORMAL working STR-recipient parent (retired→pension above/below, informal→ask-first
+    # clarify) whose own salary slip we never requested → request it, so the sponsor profile carries
+    # the complete salary picture. Soft doc request; auto-resolves once their slip/EPF lands.
+    str_salary_earner = str_earner_income_document_gap(application)
+    if str_salary_earner:
+        proof_wanted.add(_MEMBER_PROOF_CODE[str_salary_earner])
     if stale_income_proof(application):
         proof_wanted.add('income_doc_stale')
     if declared_income_gaps(application):                # declared informal income, no STR + no doc
