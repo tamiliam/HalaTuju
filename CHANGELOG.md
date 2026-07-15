@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## Small change: verified ticks on cockpit profile fields — 2026-07-15
+
+- The officer cockpit ([admin/scholarship/[id]]) now shows a small, non-obtrusive FB/X-style
+  "verified" badge beside a field value that has been MATCHED against an uploaded, machine-read
+  document — Name/NRIC (MyKad), School (school-leaving cert), SPM Grades (results slip), Chosen
+  Programme + Reporting Date (offer letter), Address (utility bill), Parent name (parent IC),
+  Household income (payslip/EPF), STR (STR doc). Hover names the source ("Matches MyKad").
+- Display-only, additive: it is a projection of the SAME document-matching the Documents drawer
+  chips already show (reuses `officerCockpit.documentFacts`), computed on the frontend in a new pure
+  `lib/fieldVerification.ts` (`fieldVerifications(app)`) + `components/VerifiedTick.tsx`. NO backend
+  change, NO migration, NO MODEL_VERSION involvement.
+- CONSERVATIVE: a tick shows only on the engine's strongest clean-match state; partial/mismatch/
+  no-document → no tick (absence = "not corroborated"; the drawer's red chips still own mismatches).
+- 13 jest for the pure helper; i18n `admin.scholarship.verified.*` en/ms/ta (Tamil first-draft).
+
 ## Confirm-or-complete an undeclared pathway (offer but nothing declared) — 2026-07-15
 
 Owner (off #127): a genuine offer with NO declared pathway read silently **Certain** and Check-2

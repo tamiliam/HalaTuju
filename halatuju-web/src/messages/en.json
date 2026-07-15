@@ -3371,6 +3371,19 @@
       "chosenPathway": "Chosen pathway",
       "chosenProgramme": "Chosen programme",
       "reportingDate": "Reporting date",
+      "verified": {
+        "tooltip": "Matches {source}",
+        "source": {
+          "mykad": "MyKad",
+          "resultsSlip": "the results slip",
+          "offerLetter": "the offer letter",
+          "schoolLeavingCert": "the school-leaving certificate",
+          "utilityBill": "the utility bill",
+          "parentIc": "the parent's IC",
+          "incomeProof": "the income document",
+          "strDoc": "the STR document"
+        }
+      },
       "preUTrack": "Pre-U track",
       "preUInstitution": "Pre-U institution",
       "pathwaysConsidered": "Pathways considered",

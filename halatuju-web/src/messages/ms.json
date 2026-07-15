@@ -3371,6 +3371,19 @@
       "chosenPathway": "Laluan dipilih",
       "chosenProgramme": "Program dipilih",
       "reportingDate": "Tarikh lapor diri",
+      "verified": {
+        "tooltip": "Sepadan dengan {source}",
+        "source": {
+          "mykad": "MyKad",
+          "resultsSlip": "slip keputusan",
+          "offerLetter": "surat tawaran",
+          "schoolLeavingCert": "sijil berhenti sekolah",
+          "utilityBill": "bil utiliti",
+          "parentIc": "IC ibu bapa",
+          "incomeProof": "dokumen pendapatan",
+          "strDoc": "dokumen STR"
+        }
+      },
       "preUTrack": "Trek Pra-U",
       "preUInstitution": "Institusi Pra-U",
       "pathwaysConsidered": "Laluan dipertimbang",

@@ -6,8 +6,10 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
+import VerifiedTick from '@/components/VerifiedTick'
 import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym } from '@/lib/scholarship'
 import { statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
+import { fieldVerifications, type VerifiableField } from '@/lib/fieldVerification'
 import {
   getScholarshipApplication,
   getVerdictCaseSummary,
@@ -155,11 +157,14 @@ const NON_PARENT_RELATIONSHIPS = new Set([
 const SHOW_REFEREES = false
 
 
-function Field({ label, value }: { label: string; value: ReactNode }) {
+function Field({ label, value, verifiedLabel }: { label: string; value: ReactNode; verifiedLabel?: string }) {
   return (
     <div>
       <dt className="text-xs text-gray-400 uppercase tracking-wider">{label}</dt>
-      <dd className="text-sm text-gray-800 break-words">{value === null || value === undefined || value === '' ? '—' : value}</dd>
+      <dd className="text-sm text-gray-800 break-words">
+        {value === null || value === undefined || value === '' ? '—' : value}
+        {verifiedLabel && <VerifiedTick label={verifiedLabel} />}
+      </dd>
     </div>
   )
 }
@@ -711,6 +716,18 @@ export default function AdminScholarshipDetailPage() {
   if (error && !app) return <div className="text-red-600 mt-8">{error}</div>
   if (!app) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
 
+  // Field-level "verified" ticks — a small badge beside a value that MATCHES an uploaded,
+  // machine-read document (see lib/fieldVerification). vtip() → the hover tooltip naming the source
+  // doc, or undefined when the field isn't corroborated (then no tick renders). Declared here (not
+  // in the cards block) so the header name/NRIC can use it too.
+  const _fv = fieldVerifications(app)
+  const vtip = (field: VerifiableField): string | undefined =>
+    _fv[field]
+      ? t('admin.scholarship.verified.tooltip', {
+          source: t(`admin.scholarship.verified.source.${_fv[field]!.source}`),
+        })
+      : undefined
+
   // A superadmin has REOPENED the recorded decision (server-driven; held from sponsors).
   // A reopen reopens the WHOLE case for revision — Check 2 + Interview Stage + Decision all
   // unlock for the assigned reviewer (and super), not just the decision panel.
@@ -809,7 +826,7 @@ export default function AdminScholarshipDetailPage() {
           )}
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">{app.name || '—'}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">{app.name || '—'}{vtip('name') && <VerifiedTick label={vtip('name')!} />}</h1>
           {/* Status pill — a super-reopened decision shows "Reopened" (overrides accepted/rejected). */}
           {(() => {
             const s = displayStatus(app)
@@ -842,7 +859,7 @@ export default function AdminScholarshipDetailPage() {
           )}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-          <span>NRIC <span className="font-mono text-gray-700">{formatNric(app.nric || '') || '—'}</span></span>
+          <span>NRIC <span className="font-mono text-gray-700">{formatNric(app.nric || '') || '—'}</span>{vtip('nric') && <VerifiedTick label={vtip('nric')!} />}</span>
           {referralAcronym(app.referral_source) && (
             <span
               title={app.referral_source ? t(`scholarship.apply.org.${app.referral_source}`) : ''}
@@ -978,18 +995,18 @@ export default function AdminScholarshipDetailPage() {
                   <div className="col-span-2"><Field label={t('admin.scholarship.email')} value={app.verified_email
                     ? <a href={`mailto:${app.verified_email}`} className="text-primary-600 hover:underline">{app.verified_email}</a>
                     : null} /></div>
-                  <div className="col-span-2"><Field label={t('admin.scholarship.address')} value={addr} /></div>
+                  <div className="col-span-2"><Field label={t('admin.scholarship.address')} value={addr} verifiedLabel={vtip('address')} /></div>
                 </dl>
               </Card>
 
               {/* Family & finances — moved up under About (was below Academic) */}
               <Card title={t('admin.scholarship.sec.family')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM ${Number(app.household_income).toLocaleString('en-US')}` : null} />
+                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM ${Number(app.household_income).toLocaleString('en-US')}` : null} verifiedLabel={vtip('householdIncome')} />
                   <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
-                  <Field label="STR" value={yn(app.receives_str)} />
+                  <Field label="STR" value={yn(app.receives_str)} verifiedLabel={vtip('str')} />
                   <Field label="JKM" value={yn(app.receives_jkm)} />
-                  <Field label={personLabel} value={guardian?.name} />
+                  <Field label={personLabel} value={guardian?.name} verifiedLabel={vtip('parentName')} />
                   <Field label={t('admin.scholarship.guardianPhone', { role: personLabel })} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
                 </dl>
               </Card>
@@ -1000,13 +1017,14 @@ export default function AdminScholarshipDetailPage() {
               {/* Academic — school / merit / grades. Plans + notes are their own boxes below. */}
               <Card title={t('admin.scholarship.sec.academic')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.school')} value={app.school} />
+                  <Field label={t('admin.scholarship.school')} value={app.school} verifiedLabel={vtip('school')} />
                   <Field label={t('admin.scholarship.meritScore')} value={app.merit_score} />
                   {isStpm && <Field label="MUET" value={app.muet_band} />}
                 </dl>
                 <div className="mt-3">
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">
                     {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
+                    {vtip('grades') && <VerifiedTick label={vtip('grades')!} />}
                   </dt>
                   <Grades grades={isStpm ? app.stpm_grades : app.grades} />
                   {isStpm && Object.keys(app.spm_prereq_grades || {}).length > 0 && (
@@ -1034,9 +1052,10 @@ export default function AdminScholarshipDetailPage() {
                           value={app.chosen_programme?.course_name
                             ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
                             : pathwayLabel(app.chosen_pathway)}
+                          verifiedLabel={vtip('chosenProgramme')}
                         />
                       )}
-                      {reportingDate && <Field label={t('admin.scholarship.reportingDate')} value={reportingDate} />}
+                      {reportingDate && <Field label={t('admin.scholarship.reportingDate')} value={reportingDate} verifiedLabel={vtip('reportingDate')} />}
                     </dl>
                     {app.top_choices?.length > 0 && (
                       <div className="mt-3">

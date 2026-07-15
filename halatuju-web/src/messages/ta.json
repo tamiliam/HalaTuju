@@ -3371,6 +3371,19 @@
       "chosenPathway": "தேர்ந்த பாதை",
       "chosenProgramme": "தேர்ந்த நிரல்",
       "reportingDate": "சேரும் தேதி",
+      "verified": {
+        "tooltip": "{source} உடன் பொருந்துகிறது",
+        "source": {
+          "mykad": "MyKad",
+          "resultsSlip": "முடிவுச் சீட்டு",
+          "offerLetter": "வாய்ப்புக் கடிதம்",
+          "schoolLeavingCert": "பள்ளி விடுப்புச் சான்றிதழ்",
+          "utilityBill": "பயன்பாட்டு பில்",
+          "parentIc": "பெற்றோரின் அடையாள அட்டை",
+          "incomeProof": "வருமான ஆவணம்",
+          "strDoc": "STR ஆவணம்"
+        }
+      },
       "preUTrack": "Pre-U பிரிவு",
       "preUInstitution": "Pre-U நிறுவனம்",
       "pathwaysConsidered": "பரிசீலித்த பாதைகள்",
