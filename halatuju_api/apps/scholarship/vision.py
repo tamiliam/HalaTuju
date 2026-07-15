@@ -1229,9 +1229,11 @@ _FIELD_SCHEMAS = {
     # does NOT clear the declared-income gap (see income_engine.has_income_support_doc).
     'income_support_doc': _doc_schema({'name': _STR, 'nric': _STR, 'amount': _STR,
                                        'period': _STR, 'issuer': _STR, 'kind': _STR}),
-    # V4 — a school-leaving certificate / testimonial (surat berhenti sekolah): the student's name,
-    # the school, and the leaving year. The name is matched against the student (officer chip).
-    'school_leaving_cert': _doc_schema({'name': _STR, 'school': _STR, 'year': _STR}),
+    # V4 — a school-leaving certificate (Sijil Berhenti Sekolah): the student's name + NRIC, the
+    # school, and the conduct rating (kelakuan) — the owner-specified variable set (2026-07-15). The
+    # name is matched against the student (officer chip); NRIC + kelakuan give the officer the cert's
+    # own identity + conduct read.
+    'school_leaving_cert': _doc_schema({'name': _STR, 'nric': _STR, 'school': _STR, 'kelakuan': _STR}),
     # V4 — a current-semester result slip for a continuing student: institution, programme, the
     # semester label, and the CGPA (the officer's current-performance read).
     'semester_result': _doc_schema({'name': _STR, 'nric': _STR, 'institution': _STR,
@@ -1254,6 +1256,11 @@ _DOC_HINTS = {
     # Ask for both, ALIGNED to the same row — the academic engine cross-checks them to
     # catch a row-transposition misread. (The deterministic `_split_band` still strips
     # any band words that leak into the subject name.)
+    'school_leaving_cert': (' This is a Malaysian school-leaving certificate (Sijil Berhenti '
+                            'Sekolah). Read: "name" = the student (Nama Murid); "nric" = the '
+                            'student\'s No. Kad Pengenalan (12 digits); "school" = the issuing '
+                            'school; "kelakuan" = the conduct rating exactly as printed (e.g. '
+                            'TERPUJI / BAIK / SEDERHANA).'),
     'results_slip': (' This is an SPM results slip — a TABLE with one row per subject '
                      '(code · subject name · LETTER grade · Malay BAND phrase). For EACH '
                      'subject row return {subject, grade, band}: "subject" = the subject '
@@ -2092,6 +2099,27 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
                     'status': wg['status'], 'reason': wg['reason'], 'doc_seen': wg['family'],
                     'probability': wg['probability'], 'model_version': wg.get('model_version'),
                     'markers': wg.get('markers'),
+                }
+        elif doc.doc_type == 'school_leaving_cert':
+            # POSITIVE signature scorer (school_leaving_doc.py, MODEL_VERSION 1.0.0) over the OCR text
+            # — leaver-anchor-first (Berhenti Sekolah / a leaving-cert title) + the standard numbered
+            # form's field labels → genuine {sijil_berhenti} / suspect {thin-cropped} / unrecognised
+            # {a free-form testimonial we can't structurally confirm — DEFER, never fake} /
+            # not_school_leaving_cert {a MyKad or another known doc misfiled in the slot}. A leaver
+            # signal guarantees the doc is never rejected. Text-only + deterministic; a failed/empty
+            # OCR yields NO signal (never persist a reject off our own read failure). SOFT: feeds the
+            # officer chip + the keep-better ranking (`_doc_genuine_rank`) only — a school-leaving cert
+            # is a soft academic-completeness doc, it does NOT gate submission. `markers` (incl.
+            # `label_names`) is the calibration readout the re-extraction pass reads back to tune.
+            from .genuineness.school_leaving_doc import school_leaving_genuineness
+            rr = ocr if ocr is not None else ocr_document(doc)
+            text = (rr or {}).get('text', '') or ''
+            if text.strip() and not (rr or {}).get('error'):
+                sg = school_leaving_genuineness(text)
+                result['authenticity'] = {
+                    'status': sg['status'], 'reason': sg['reason'], 'doc_seen': sg['family'],
+                    'probability': sg['probability'], 'model_version': sg.get('model_version'),
+                    'markers': sg.get('markers'),
                 }
         elif doc.doc_type in _GENUINENESS_DOCS:   # birth_certificate/epf holistic fallback (+ any other)
             gimg = _image()

@@ -725,6 +725,37 @@ def _reslot_income_doc(doc, ocr) -> bool:
     return True
 
 
+# Academic-completeness docs that are single-per-person: exactly ONE live copy per member should
+# exist, so a duplicate across request-code slots is collapsed (see _collapse_duplicate_docs).
+_ACADEMIC_SINGLE_TYPES = frozenset({'school_leaving_cert', 'semester_result'})
+
+
+def _collapse_duplicate_docs(app, doc_type, member) -> None:
+    """Collapse duplicate LIVE copies of a single-per-person academic doc to ONE (owner 2026-07-15).
+
+    A ``school_leaving_cert`` / ``semester_result`` is one document per person, but an officer can
+    request it more than once — and each ResolutionItem opens its OWN ``request_code`` slot, so the
+    stage-judge-promote supersede (scoped to the slot) leaves two live copies (app #66: the same cert
+    live under ``officer_1`` AND ``officer_9``). Keep the best copy by the shared keep-better quality
+    axis (``promotion.doc_quality`` — a genuine cert outranks a suspect / wrong-type one, newest
+    breaks a tie) and supersede the rest into Old / Replaced (retained, never hard-deleted).
+    Idempotent + best-effort; never raises into the upload path."""
+    from django.utils import timezone as _tz
+    from . import promotion
+    live = list(ApplicantDocument.objects.filter(
+        application=app, doc_type=doc_type, household_member=member or '',
+        superseded_at__isnull=True))
+    if len(live) < 2:
+        return
+    keeper = max(live, key=lambda d: (promotion.doc_quality(d) or (), getattr(d, 'id', 0) or 0))
+    losers = [d.id for d in live if d.id != keeper.id]
+    if losers:
+        ApplicantDocument.objects.filter(id__in=losers).update(
+            superseded_at=_tz.now(), superseded_by=keeper)
+        logger.info('AUDIT collapse_duplicate app=%s doc_type=%s member=%r kept=%s superseded=%s',
+                    app.id, doc_type, member, keeper.id, losers)
+
+
 SUPPORTING_NAME_CHECK_TYPES = frozenset({
     'results_slip', 'str', 'salary_slip', 'epf', 'offer_letter',
     # Post-award: the bank statement field-extracts (bank name / account no / holder) so
@@ -1039,6 +1070,11 @@ class DocumentListCreateView(APIView):
         from . import income_engine as _ie
         if doc.doc_type in _ie._DEDUP_DOC_TYPES:
             _ie.dedupe_income_proof(app, (doc.household_member or '').strip(), doc.doc_type)
+        # Academic single-per-person docs: an officer can request the same cert/slip twice, each
+        # request opening its own slot → two live copies survive the slot-scoped supersede. Collapse
+        # to the single best live copy across request codes (owner 2026-07-15, app #66).
+        elif doc.doc_type in _ACADEMIC_SINGLE_TYPES:
+            _collapse_duplicate_docs(app, doc.doc_type, (doc.household_member or '').strip())
         # S3: a new upload may clear a verdict gap → auto-resolve its ticket
         # (and link the doc), or surface a fresh ticket. Idempotent, never blocks.
         from .resolution import sync_resolution_items, resolve_doc_items_for_upload

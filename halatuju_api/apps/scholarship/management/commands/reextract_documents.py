@@ -32,6 +32,11 @@ def _summary(doc) -> str:
         return f"child={(f.get('bc_child_name') or '∅')[:16]} mother={(f.get('bc_mother_name') or '')[:12]}"
     if dt == 'results_slip':
         return f"name={(f.get('slip_name') or f.get('name') or '')[:16]} cap={cap}"
+    if dt == 'school_leaving_cert':
+        auth = (vf.get('authenticity') or {}).get('status', '—')
+        mk = (vf.get('authenticity') or {}).get('markers') or {}
+        return (f"name={(f.get('name') or '')[:14]} kel={(f.get('kelakuan') or '∅')[:8]} "
+                f"auth={auth} labels={mk.get('labels', '?')}")
     if dt in ('salary_slip', 'epf', 'str', 'water_bill', 'electricity_bill'):
         return f"name={(f.get('name') or f.get('str_recipient') or '')[:16]} cap={cap}"
     return f"cap={cap}"
@@ -42,6 +47,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=20, help='Docs to process this run.')
+        parser.add_argument('--doc-type', default='',
+                            help='Restrict the pass to ONE doc type (e.g. school_leaving_cert) — a '
+                                 'targeted, cheap re-extraction (calibration / a single-type rollout) '
+                                 'instead of the whole supporting-doc corpus.')
         parser.add_argument('--retry-errors', action='store_true',
                             help="Also re-attempt docs whose last run FAILED (marked 'error'). "
                                  "Default runs skip them so one broken doc can't wedge the pass.")
@@ -49,6 +58,13 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         from apps.scholarship.views import SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
         types = sorted(SUPPORTING_NAME_CHECK_TYPES | TEXT_READ_DOC_TYPES)
+        only = (opts.get('doc_type') or '').strip()
+        if only:
+            if only not in types:
+                self.stderr.write(f"reextract: --doc-type '{only}' is not a re-extractable "
+                                  f"supporting type ({', '.join(types)}).")
+                return
+            types = [only]
         limit = max(1, opts['limit'])
         retry_errors = opts['retry_errors']
 

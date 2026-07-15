@@ -728,7 +728,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         IC/parent_ic (Sprint 1) + the standardised supporting docs (Sprint 2: STR, results
         slip, birth cert, EPF). Null when the check didn't run (flag off / AI outage)."""
         if obj.doc_type not in ('ic', 'parent_ic', 'str', 'results_slip', 'birth_certificate', 'epf',
-                                'offer_letter', 'salary_slip', 'electricity_bill', 'water_bill'):
+                                'offer_letter', 'salary_slip', 'electricity_bill', 'water_bill',
+                                'school_leaving_cert'):
             return None
         vf = obj.vision_fields if isinstance(obj.vision_fields, dict) else {}
         auth = vf.get('authenticity')
@@ -756,6 +757,13 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         # a thin/cropped-but-genuine bill (common for real B40 families), so hide it as amber noise; a
         # genuine/suspect bill renders normally. Closes the swap symmetrically with electricity_bill.
         if obj.doc_type == 'water_bill' and not status.startswith('not_'):
+            return None
+        # School-leaving cert (MODEL_VERSION 1.0.0): surface ONLY the wrong-type reject
+        # (not_school_leaving_cert: a MyKad / results slip / another document in the slot) → the red
+        # chip. A 'suspect' (thin/cropped) OR 'unrecognised' (a free-form testimonial we can't
+        # structurally confirm — folded to 'suspect' by canonical_status) is a real B40 leaver doc, so
+        # hide it as amber noise; a genuine/suspect cert renders normally (never a false reject).
+        if obj.doc_type == 'school_leaving_cert' and not status.startswith('not_'):
             return None
         return {'status': status,
                 'reason': auth.get('reason', ''), 'doc_seen': auth.get('doc_seen', '')}

@@ -16,10 +16,11 @@ from .results_doc import score_signatures, signature_genuineness, misfiled_as
 from .salary_doc import salary_genuineness
 from .electricity_doc import electricity_genuineness
 from .water_doc import water_genuineness
+from .school_leaving_doc import school_leaving_genuineness
 
 __all__ = ['ic_genuineness', 'doc_genuineness', 'score_signatures', 'signature_genuineness',
            'misfiled_as', 'salary_genuineness', 'electricity_genuineness', 'water_genuineness',
-           'band_for', 'GENUINE_MIN', 'SUSPECT_MAX', 'assess']
+           'school_leaving_genuineness', 'band_for', 'GENUINE_MIN', 'SUSPECT_MAX', 'assess']
 
 
 def assess(doc_type, *, image=None, content_type='', ocr_text='', has_qr=False, has_crest=False):
@@ -52,6 +53,12 @@ def assess(doc_type, *, image=None, content_type='', ocr_text='', has_qr=False, 
         # {thin/cropped} / not_water_bill {MyKad / an ELECTRICITY bill in the water slot / junk}.
         # See water_doc.py + docs/scholarship/water-bill-catalogue.md.
         return water_genuineness(ocr_text)
+    if doc_type == 'school_leaving_cert':
+        # Signature-scored off the OCR text (leaver-anchor-first + the standard numbered-form field
+        # labels — school-issued, no single national issuer) → genuine {sijil_berhenti} / suspect
+        # {thin} / unrecognised {a free-form testimonial — defer, never fake} / not_school_leaving_cert
+        # {a MyKad / another known doc in the slot}. See school_leaving_doc.py.
+        return school_leaving_genuineness(ocr_text)
     if doc_type == 'str':
         # Three genuine STR approval forms (MOF letter / dashboard / semakan) are signature-
         # scored off the OCR text; an LHDN SALINAN copy or a SARA letter matches no form marker
