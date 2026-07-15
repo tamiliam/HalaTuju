@@ -608,6 +608,22 @@ a rejected-card trail (**Recommended by {reviewer} → Reopened by {who} · {dat
 approved, then WITHDRAWN by the owner** — the existing `interview` decline template already reads as a
 "limited funds" message, so the generic is sufficient; do NOT rebuild it. **▶ AT DEPLOY:** push branch →
 merge → deploy (code-only, no migrate-first); this is officer-facing, sends no student email.
+**✅ SHIPPED + LIVE 2026-07-15 — Confirm-or-complete an undeclared pathway** (commit `c01ccc04`
+api+web; NO migration; retro `docs/retrospective-2026-07-15-undeclared-pathway.md`; decisions ×2;
+lesson ×1). Off #127 (VIJHAY): a **genuine** offer with **NO declared pathway** read silently
+**Certain** with no Check-2 ask. Now, for `offer_official_status == 'genuine'` + `_no_declared_pathway`
+(a TRUE non-declaration — a value autofilled from the offer doesn't count), the pathway sits at
+**Probable** and asks the student: **resolvable** offer (a pre-U stream / a unique catalogue course,
+`offer_pathway.offer_is_resolvable`) → the one-tap `pathway_confirm`; **ambiguous** (a PISMP offer
+with no SK/SJKT/SJKC aliran) → the revived **`pathway_undeclared`** student query → the profile page
+to pick their course (auto-resolves once a real course lands). `check2_queries._sync_pathway_confirm`
+now mirrors both; `pathway_undeclared` removed from `resolution.CODE_TO_TICKET` (a student query, not a
+hidden system item). FE Action Centre: `pathway_undeclared` → "Update on your profile" link;
+`pathway_confirm` copy neutral. **Re-band scoped to 2 live apps** (#127, #133); type/specific
+declarations stay verified, fake/suspect offers untouched. +4 tests; 2567 scholarship pytest; jest
+552. **▶ CARRY (owner):** Tamil first-draft review of `actionCentre.updatePathwayOnProfile` +
+`item.pathway_undeclared`/`pathway_confirm` copy.
+
 **✅ SHIPPED + LIVE 2026-07-15 — School-leaving cert: deterministic read + officer chips + leadership
 notes** (commits `50149446` api+web, `06e38dee` api hardening; NO migration; retro
 `docs/retrospective-2026-07-15-school-leaving-cert-fields.md`; decision ×1; lesson ×1). Follow-up to

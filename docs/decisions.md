@@ -4521,3 +4521,17 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** A school-ISSUED cert varies far more than a single-issuer national form (SPM slip, EPF), so the deterministic path can't be trusted broadly. Making it rare-but-trustworthy (fire only when confident) gives the free/auditable "Exact" read for pristine forms while Gemini — which reads the varied layouts cleanly — carries the tail. Both paths are clean. Result: 2 Exact / 16 AI / 0 dirty.
 **Trade-offs:** Most certs read via Gemini (a per-cert billable call) rather than free-Exact; acceptable (the cost is tiny and the reads are clean). The Exact badge appears on only a minority.
 **Revisit if:** A larger corpus shows a dominant clean form the gates reject (retune the gates), or the schools converge on a single machine-generated format (then a broad deterministic read becomes viable).
+
+## Undeclared pathway: ask only on a genuine official offer + a true non-declaration — 2026-07-15
+**Decision:** The "confirm or complete your pathway" flow (Probable + a student query) fires ONLY when `offer_official_status == 'genuine'` AND `_no_declared_pathway` (no chosen/intended pathway type, no pre-U track, no specific chosen course — a value autofilled FROM the offer does not count).
+**Alternatives considered:** (A) Fire on any `chk['pathway'] == 'unknown'` (nothing specific to compare) — rejected: too broad, it also fired on students who declared a pathway TYPE and re-banded far more than intended (broke 4 tests). (B) Fire regardless of genuineness — rejected: a fake/suspect offer is already flagged and is not a real pathway to confirm; asking "is this where you're going?" about a fake letter is wrong and double-flags.
+**Rationale:** The owner's concern is a GENUINE offer read silently Certain with no student confirmation (#127). Scoping to genuine + truly-undeclared matches that exactly and keeps the re-band to 2 live apps; type/specific declarations stay verified, fake/suspect offers stay with the genuineness flags.
+**Trade-offs:** A student who declared only a pathway TYPE (e.g. "Matriculation") + a matching offer is still read Certain without an explicit confirm — accepted (they did indicate intent; the offer settles it).
+**Revisit if:** The owner wants a type-only declaration to also require an explicit confirm, or wants suspect offers to prompt a "get a proper offer" student query (currently officer-facing).
+
+## Revive the dormant `pathway_undeclared` as a Check-2 student query — 2026-07-15
+**Decision:** Raise the existing-but-dormant `pathway_undeclared` item for the ambiguous-offer case, routed through Check-2 (`source='check2'`), and REMOVE it from `resolution.CODE_TO_TICKET`.
+**Alternatives considered:** Invent a new `pathway_select_needed` code — rejected: `pathway_undeclared` already exists (registered, KNOWN_CODES, copy) and fits.
+**Rationale:** Less surface area; the item was built for exactly this ("tell us your study plan") but never wired. As a `CODE_TO_TICKET` entry it would sync as a hidden `source='system'` item (officer-only); routing via Check-2 makes it a real student query that the flag governs + that rides the query email, mirroring `pathway_confirm`.
+**Trade-offs:** None material; `pathway_undeclared` was unused.
+**Revisit if:** The Check-2 vs system-item routing model changes.

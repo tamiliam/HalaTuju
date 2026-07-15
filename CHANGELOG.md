@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Confirm-or-complete an undeclared pathway (offer but nothing declared) — 2026-07-15
+
+Owner (off #127): a genuine offer with NO declared pathway read silently **Certain** and Check-2
+never asked the student to confirm or complete it. Deployed `c01ccc04` (api+web); NO migration;
+retro `docs/retrospective-2026-07-15-undeclared-pathway.md`; decisions ×2.
+
+### Changed
+- **`verdict_engine._verdict_pathway`** — for a **genuine official** offer + a **true non-declaration**
+  (`offer_official_status == 'genuine'` + new `_no_declared_pathway`), the pathway now sits at
+  **Probable** (not Certain) and raises a student query:
+  - **Resolvable** (a pre-U stream, or a unique catalogue course — `offer_pathway.offer_is_resolvable`)
+    → the one-tap **`pathway_confirm`** ("is this where you're going?"); Yes → `confirm_pathway` →
+    verified.
+  - **Ambiguous** (a PISMP offer with no SK/SJKT/SJKC aliran, an unpinnable tertiary) → the
+    previously-dormant **`pathway_undeclared`** query, now live, sending the student to the profile
+    page to pick their exact course. Auto-resolves once a real course lands.
+- `check2_queries._sync_pathway_confirm` generalised to mirror **both** pathway student queries;
+  `pathway_undeclared` removed from the system `CODE_TO_TICKET` (it's a student query, not a hidden
+  system item).
+- **Action Centre**: `pathway_undeclared` renders an **"Update on your profile"** link; the
+  `pathway_confirm` copy is now neutral (works for both the undeclared and the clash cases).
+
+### Notes
+- **Tightly scoped re-band = 2 live apps** (#127 PISMP, #133) Certain→Probable + a query; a
+  type/specific declaration stays verified, and a fake/suspect undeclared offer (#12/#109/#131) is
+  left to the genuineness flags (never asked to "confirm" a fake letter). NO migration; +4 tests;
+  2567 scholarship pytest; jest 552; i18n parity (Tamil first-draft).
+
 ## Role-aware Guide & FAQ manual — 2026-07-16
 
 Frontend + content only, one deploy, no backend/migration. The reviewer-only Guide and FAQ
