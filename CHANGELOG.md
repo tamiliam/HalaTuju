@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Role-aware Guide & FAQ manual — 2026-07-16
+
+Frontend + content only, one deploy, no backend/migration. The reviewer-only Guide and FAQ
+became one role-aware self-help manual. Brief `docs/plans/2026-07-16-guide-faq-manual-brief.md`;
+retro `docs/retrospective-2026-07-16-guide-faq-manual.md`.
+
+- **Content modules** in `halatuju-web/src/content/manual/` — four Basics chapters, four role
+  chapters (reviewer/qc/org-admin/general-admin), a help chapter, and an audience-grouped FAQ;
+  each a typed `ManualChapter` with stable deep-link anchors. English now; shaped for `ms`/`ta`
+  siblings (Tamil stays owner-authored).
+- **Guide** (`/admin/guide`): sidebar (Basics / Your role / Help), role-aware landing (opens on
+  the caller's own chapter), role badge, numbered step cards, prev/next, anchors like
+  `#org-admin-assigning`. reviewer/qc/admin see their own chapter; org_admin/super see all.
+- **FAQ** (`/admin/faq`): grouped by audience, default = caller's role (+ Everyone), with a
+  "For me / All roles" toggle for org_admin/super. Existing Q&As re-homed; QC/org-admin/general
+  Q&As added.
+- Every capability claim traces to `docs/scholarship/role-matrix.md` (which gains a currency-rule
+  note + a pointer to the manual). Fixed two drifted facts: Save sends the case on for **QC** (not
+  straight to sponsors), and reviewer sponsor-vetting references removed.
+- New org-admin/QC screenshots are labelled placeholders + a capture manifest
+  (`docs/plans/2026-07-16-manual-screenshot-manifest.md`). 552 jest (+22); `next build` clean.
+
 ## Org-Admin Powers v1 + role-matrix alignment — 2026-07-15
 
 One sprint, one deploy, **no migration**. The organisation roles gained the write powers

@@ -5,6 +5,11 @@ this table; change the table first (owner decision), then the code. Platform rol
 (`super`, referral `partner`) sit above/outside this matrix. See also
 `docs/build-for-tenancy-conventions.md` (referral fields are never access control).
 
+**User-facing rendering:** the role-aware in-app Manual (`/admin/guide`) + FAQ (`/admin/faq`)
+are the human-readable rendering of this matrix (content in `halatuju-web/src/content/manual/`).
+**Currency rule:** any change to a role's powers here must update that role's Manual chapter AND
+its FAQ entries in the same change — the prose must never drift from the gate.
+
 | Role | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|
 | **Org Admin** (`org_admin`) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* | edit | view |
