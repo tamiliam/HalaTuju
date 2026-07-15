@@ -20,6 +20,10 @@ Follow-up to the cockpit verified ticks, off owner review of #137:
 - +9 backend pytest (`test_household_check.py`), fieldVerification jest updated; i18n
   `admin.scholarship.perCapita` + `verified.{sizeAccounted,docNote,rosterNote}` en/ms/ta
   (Tamil first-draft). NO migration.
+- **Fixed (grades tick, off #132):** the grades tick now renders AFTER the subject chips (a
+  `trailing` slot on `<Grades>`), not after the title, and shows ONLY for SPM students —
+  `academic_check` verifies the SPM slip against the SPM `grades`, so an STPM applicant's headline
+  STPM grades (which nothing verifies) no longer carry a misattributed tick.
 
 ## Small change: verified ticks on cockpit profile fields — 2026-07-15
 

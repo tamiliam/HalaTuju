@@ -524,6 +524,36 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-16)
 
+**✅ SHIPPED + LIVE 2026-07-15 — Cockpit verified-value ticks** (commits `23e59620` r1, `ae98afe6`
+r2, `ef6c0344` grades-fix; web `…00641-hdk` + api `…00770-pr8`; NO migration; retro
+`docs/retrospective-2026-07-15-cockpit-verified-ticks.md`; decisions ×2; lessons ×3). A small FB/X
+badge beside a cockpit field when its value MATCHES an uploaded machine-read document — a display
+projection of the SAME document-matching the Documents drawer chips show (`fieldVerification.ts`
+reuses `officerCockpit.documentFacts`; `components/VerifiedTick.tsx`). Ticks only on a clean match;
+mismatch/no-doc → nothing. Household income + size ticks come from a NEW backend reconciliation
+(`income_engine.household_income_reconciliation` / `household_size_accounted` → `household_check` on
+`AdminApplicationDetailSerializer`): documented earner-sum vs stated within ±10%/RM300, roster ==
+stated size AND no unknown-status member. **NON-MUTATING** — a mismatch is FLAGGED in an amber note
+("Documents show RM7,875"), never overwritten. JKM field → **Per capita income**. Reporting-date
+tick relaxed (genuine offer carrying a date, not the rare summons bonus). Grades tick renders after
+the chips + SPM-only (STPM slip-check misattribution, #132). +9 pytest + 13 jest; i18n en/ms/ta
+(Tamil first-draft).
+- **▶ CARRY (Tamil):** `admin.scholarship.verified.*` + `perCapita` first-drafts.
+- **▶ CARRY (tune):** income match tolerance ±10%/RM300 is a first guess — tune vs the cohort.
+- **▶ LATENT (flagged, not fixed):** an STPM student who uploads an ACTUAL STPM slip gives a vacuous
+  `academic_check.results='match'` (STPM subjects skipped as untyped) — mis-greens the officer
+  Documents "Results" chip/verdict; harden `student_slip_check` (results≠match on zero overlap) if it
+  surfaces.
+
+**▶ NEXT (owner-flagged 2026-07-15) — "KM" not standardised to "Kolej Matrikulasi" on the cockpit.**
+A student's `pre_u_institution` shows the raw "KM Perak" instead of the catalogue form "Kolej
+Matrikulasi Perak". The MATCHER already equates them (`pathway_engine.offer_pathway_match` KM≈Kolej
+Matrikulasi, tested), and a batch `normalise_institution_names` / `align_institution_to_catalogue`
+exists — so the gap is that the stored/displayed value isn't run through the expansion at
+write/display time (or this record predates it). Investigate: apply the KM/KMK expansion in
+`_canonical_preu_institution` (offer autofill) and/or a cockpit-display normalisation + a data pass
+over existing rows. Own investigation + its own deploy.
+
 **✅ SHIPPED 2026-07-16 — Role-aware Guide & FAQ manual** (web/content only, NO backend/migration;
 brief `docs/plans/2026-07-16-guide-faq-manual-brief.md`; retro `docs/retrospective-2026-07-16-guide-faq-manual.md`).
 The reviewer-only Guide+FAQ became ONE role-aware manual: content modules in
