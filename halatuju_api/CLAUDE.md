@@ -524,6 +524,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-15)
 
+**✅ SHIPPED + LIVE 2026-07-15 — Administration panel + surface partition + `org_admin` role**
+(Sprints A+B; commits `1b14566e`/`e903f11b`; migration `courses/0064` choices-only recorded
+migrate-first via Supabase MCP; retro `docs/retrospective-2026-07-15-admin-panel-org-admin.md`).
+Delegation of BrightPath staff management + a platform-PII security fix, one deploy (api + web).
+- **NEW `org_admin` role** — organisation superadmin: org-wide B40 read + QC gate + staff
+  management (invite/list/resend/revoke reviewer/admin/qc), OWN org only; never cross-org, never
+  the platform surfaces, never super. Wired through every role branch.
+- **SECURITY — surface partition**: `get_partner_students` ALL-students branch is now SUPER-ONLY
+  (was any-admin → the platform-wide student directory, full course-selector PII, by direct API
+  call — nav hid it, backend didn't). Course-Data views also super-only.
+- **Administration panel** `/admin/administration` (Stitch v2): super PLATFORM section (invite
+  referral partner · add-tenant) + super/org_admin ORG section (invite reviewers/admins + org-scoped
+  staff table · disabled Billing). `/admin/invite` redirects here. i18n en/ms/ta + new guard test.
+- **Add-tenant** (super): inviting `org_admin` creates/binds a tenant org + `module_scholarship=True`.
+- 3770 pytest + 506 jest. **▶ OWNER-GATED ROLLOUT (not yet run):** promote Suresh
+  (`surithiru@gmail.com`, currently qc/BrightPath, id 4) — `UPDATE partner_admins SET role='org_admin'
+  WHERE email='surithiru@gmail.com'` — then the live walkthrough (sees only the org section, invites
+  one reviewer, still QCs, CANNOT reach Students/Dashboard/Course-Data). Finance role + billing metering parked.
+
 **▶ PLATFORM WORK PAUSED — Phase 1 COMPLETE. Return to BrightPath feature work.**
 Phase 2 (extract hard-coded rules into per-org settings) is gated on **rule stability** — start only
 after ~a month passes with **no `MODEL_VERSION` bump and no new document family** (extracting config

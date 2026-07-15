@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## Administration panel + surface partition + org_admin role — Sprints A + B — 2026-07-15
+
+Delegation of BrightPath staff management to its programme lead, plus a platform-PII security
+fix. Two sprints, one deploy (`courses/0064` choices-only, migrate-first). Retro
+`docs/retrospective-2026-07-15-admin-panel-org-admin.md`.
+
+### Added
+- **`org_admin` role** — organisation superadmin: org-wide B40 read + QC gate + staff management
+  (invite/list/resend/revoke reviewers/admins/qc), OWN organisation only; never cross-org, never
+  the platform surfaces, never super. QC powers included (owner decision). Wired across every role
+  branch (`_b40_scope`, `_require_qc`, `REVIEW_ROLES`, assignable list, scheduling drift guard).
+- **Administration panel** (`/admin/administration`, Stitch v2): a super-only PLATFORM section
+  (invite referral partner · add tenant) and a super+org_admin ORGANISATION section (invite
+  reviewers/admins with the org-scoped staff table · disabled Billing & usage). `/admin/invite`
+  redirects here. i18n en/ms/ta + a new `admin.administration` guard test.
+- **Add-tenant** (super only): inviting `role='org_admin'` creates/binds a TENANT org and switches
+  `module_scholarship` on — the thin add-tenant slice of the future superadmin portal.
+
+### Fixed (security)
+- **Platform surface partition**: `get_partner_students`' ALL-students branch is now SUPER-ONLY.
+  Previously any B40 `admin`/org role could fetch the platform-wide student directory (every
+  course-selector student's PII) by direct API call — the nav hid it but the backend didn't gate
+  it. Fixes Dashboard/Students/export/detail; Course-Data views also super-only.
+
+### Notes
+- Staff delegation is org-fenced: cross-org/super targets → 404 (no existence leak); org_admin
+  invites are forced to the caller's own org.
+- Owner-gated rollout (not yet run): promote Suresh (`surithiru@gmail.com`, currently qc/BrightPath)
+  to `org_admin`, then a live walkthrough. Finance role + real billing metering stay parked.
+- Tests: 3770 pytest + 506 jest passing.
+
 ## School-leaving certificate: deterministic read + officer chips + leadership notes — 2026-07-15
 
 Follow-up to the genuineness model (owner, off app #66's cockpit): read the *Sijil Berhenti
