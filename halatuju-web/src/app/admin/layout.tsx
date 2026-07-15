@@ -81,11 +81,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const navLinks =
     // BrightPath (bursary) roles — admin + qc + reviewer + org_admin — see the scholarship
     // side, NOT the HalaTuju course-selector pages (Dashboard/Students/Course Data), which
-    // only super retains. The org_admin (organisation superadmin) additionally gets the
-    // Administration panel (its org's staff management); super gets it as the platform console.
+    // only super retains. Per the role matrix (2026-07-15): QC has NO Sponsors; Admin-General
+    // and org_admin keep Sponsors and get the Administration panel (org_admin manages staff,
+    // Admin-General views it read-only); super gets it as the platform console.
     r === 'partner' ? [dashboard, students, profile]        // HalaTuju org rep
     : r === 'reviewer' ? [scholarship, profile, guide, faq]
-    : (r === 'qc' || r === 'admin') ? [scholarship, sponsors, profile, guide, faq]
+    : r === 'qc' ? [scholarship, profile, guide, faq]        // QC: no Sponsors (matrix)
+    : r === 'admin' ? [scholarship, sponsors, administration, profile, guide, faq]
     : r === 'org_admin' ? [scholarship, sponsors, administration, profile, guide, faq]
     : [dashboard, students, scholarship, sponsors, courseData, administration, profile, guide, faq]  // super
 

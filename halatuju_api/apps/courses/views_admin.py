@@ -775,12 +775,13 @@ class AdminOrgsView(PartnerAdminMixin, APIView):
 
 
 class AdminListView(PartnerAdminMixin, APIView):
-    """GET /api/v1/admin/admins/ — list staff. Super sees ALL; an org_admin sees only the
-    non-super programme staff in their OWN organisation."""
+    """GET /api/v1/admin/admins/ — list staff. Super sees ALL; an org_admin or (matrix
+    2026-07-15) an Admin-General sees only the non-super programme staff in their OWN
+    organisation. Admin-General is READ-ONLY here — invite/resend/revoke stay super/org_admin."""
 
     def get(self, request):
         admin = self.get_admin(request)
-        if not admin or not (admin.is_super or admin.role == 'org_admin'):
+        if not admin or not (admin.is_super or admin.role in ('org_admin', 'admin')):
             return Response({'error': 'Super admin access required'}, status=403)
 
         admins = PartnerAdmin.objects.select_related('org', 'owning_organisation').order_by('-created_at')
@@ -802,7 +803,9 @@ class AdminListView(PartnerAdminMixin, APIView):
                 'is_active': a.is_active,
                 'org_name': a.org.name if a.org else None,
                 # Tenant binding (access boundary) — lets the panel's Add-tenant list show
-                # which organisation an org_admin runs. NOT the referral org above.
+                # which organisation an org_admin runs, and lets the FE derive the sole-
+                # org-admin state (hide Revoke). NOT the referral org above.
+                'owning_org_id': a.owning_organisation_id,
                 'owning_org_name': a.owning_organisation.name if a.owning_organisation else None,
                 'created_at': a.created_at.isoformat(),
             })
@@ -826,6 +829,18 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
             return Response({'error': 'Cannot revoke super admin'}, status=400)
 
         action = request.data.get('action')
+        # Last-org-admin protection (matrix 2026-07-15): never revoke the SOLE active
+        # org_admin of a tenant — it would strand the organisation with no administrator.
+        # (Only a super reaches this branch: _staff_target_manageable refuses an org_admin
+        # caller a same-tier org_admin target.) Restore is unaffected.
+        if (action == 'revoke' and target.role == 'org_admin' and target.is_active
+                and target.owning_organisation_id is not None):
+            has_other = (PartnerAdmin.objects
+                         .filter(role='org_admin', is_active=True,
+                                 owning_organisation_id=target.owning_organisation_id)
+                         .exclude(id=target.id).exists())
+            if not has_other:
+                return Response({'error': 'last_org_admin', 'code': 'last_org_admin'}, status=400)
         if action == 'revoke':
             target.is_active = False
             target.save(update_fields=['is_active'])

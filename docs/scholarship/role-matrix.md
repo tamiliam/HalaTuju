@@ -29,7 +29,10 @@ this table; change the table first (owner decision), then the code. Platform rol
 
 ## Implementation state (2026-07-15)
 
-- EVERYTHING in this matrix except the Finance row:
+- **SHIPPED 2026-07-15** — EVERYTHING in this matrix except the Finance row:
   `docs/plans/2026-07-15-org-admin-powers-v1-brief.md` (single combined brief — org-admin
-  powers + QC hybrid + sponsor migration + Admin-General view-only + guards). Awaiting execution.
+  + qc org-wide write, QC recorder guard, assignment delegation, sponsor-vetting migration to
+  super/org_admin, Admin-General read-only Administration, last-org-admin guard). No migration.
+  Tests: `apps/scholarship/tests/test_org_admin_powers.py` +
+  `apps/courses/tests/test_org_admin_role.py` (`TestLastOrgAdminGuard`/`TestAdminGeneralReadOnly`).
 - Finance role: deferred to payout activation (Vircle/toyyibPay).

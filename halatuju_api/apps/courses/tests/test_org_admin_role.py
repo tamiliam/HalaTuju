@@ -222,6 +222,64 @@ class TestOrgAdminStaffManagement(_Base):
         self.assertEqual(self.client.get('/api/v1/admin/admins/').status_code, 403)
 
 
+class TestLastOrgAdminGuard(_Base):
+    """The sole active org_admin of a tenant cannot be revoked (matrix; backend enforces)."""
+    def test_super_cannot_revoke_sole_org_admin(self):
+        # Suresh (oa-uid) is BrightPath's only org_admin.
+        self._auth('super-uid')
+        r = self.client.patch(f'/api/v1/admin/admins/{self.org_admin.id}/revoke/',
+                              {'action': 'revoke'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json().get('code'), 'last_org_admin')
+        self.org_admin.refresh_from_db()
+        self.assertTrue(self.org_admin.is_active)
+
+    def test_super_can_revoke_when_another_org_admin_exists(self):
+        PartnerAdmin.objects.create(
+            supabase_user_id='oa2-uid', role='org_admin', is_active=True,
+            owning_organisation=self.bp, name='Second', email='oa2@x.com')
+        self._auth('super-uid')
+        r = self.client.patch(f'/api/v1/admin/admins/{self.org_admin.id}/revoke/',
+                              {'action': 'revoke'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.org_admin.refresh_from_db()
+        self.assertFalse(self.org_admin.is_active)
+
+    def test_restore_sole_org_admin_unaffected(self):
+        # The guard only blocks REVOKE; restore of an inactive sole org_admin still works.
+        self.org_admin.is_active = False
+        self.org_admin.save(update_fields=['is_active'])
+        self._auth('super-uid')
+        r = self.client.patch(f'/api/v1/admin/admins/{self.org_admin.id}/revoke/',
+                              {'action': 'restore'}, format='json')
+        self.assertEqual(r.status_code, 200)
+
+
+class TestAdminGeneralReadOnly(_Base):
+    """Admin-General (role='admin') gets a READ-ONLY view of own-org staff; no actions."""
+    def test_admin_general_lists_own_org_staff(self):
+        self._auth('admin-uid')
+        r = self.client.get('/api/v1/admin/admins/')
+        self.assertEqual(r.status_code, 200)
+        emails = {a['email'] for a in r.json()['admins']}
+        self.assertIn('qc@x.com', emails)          # own-org staff visible
+        self.assertNotIn('super@x.com', emails)     # never a super
+
+    def test_admin_general_cannot_invite(self):
+        with patch('apps.courses.views_admin.http_requests.post') as mp:
+            mp.return_value = MagicMock(status_code=200, text='ok', json=lambda: {'id': 'x'})
+            self._auth('admin-uid')
+            r = self.client.post('/api/v1/admin/invite/',
+                                 {'email': 'x@x.com', 'name': 'X', 'role': 'reviewer'}, format='json')
+        self.assertEqual(r.status_code, 403)
+
+    def test_admin_general_cannot_revoke(self):
+        self._auth('admin-uid')
+        r = self.client.patch(f'/api/v1/admin/admins/{self.qc.id}/revoke/',
+                              {'action': 'revoke'}, format='json')
+        self.assertEqual(r.status_code, 403)
+
+
 class TestRolePayload(_Base):
     def test_role_view_exposes_owning_org(self):
         self._auth('oa-uid')

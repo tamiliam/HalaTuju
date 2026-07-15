@@ -3601,6 +3601,7 @@
         "commentsPlaceholder": "Describe the gaps / what the reviewer must address",
         "reopenConfirm": "Reopen & notify reviewer",
         "error": "Could not submit the QC decision.",
+        "selfVerdictForbidden": "You recorded this verdict — it must be QC-checked by someone else.",
         "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",
         "gapFloorSuper": "As a QC or super admin, you may override with a recorded reason.",
         "overrideTitle": "Override the red-fact block? Your reason is recorded on the case.",
@@ -4077,6 +4078,8 @@
       "billing": "Billing & usage",
       "billingSub": "Costs and usage for your programme",
       "comingSoon": "Coming soon",
+      "viewOnlyNote": "You have view-only access to your organisation's staff. Ask an organisation admin to invite or change staff.",
+      "lastOrgAdmin": "This is the organisation's only administrator — assign another before revoking this one.",
       "staffRole": {
         "reviewer": "Reviewer",
         "admin": "View-only admin",

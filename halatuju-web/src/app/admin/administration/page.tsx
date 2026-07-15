@@ -50,6 +50,10 @@ export default function AdministrationPage() {
 
   const isSuper = !!(role?.is_super_admin || role?.role === 'super')
   const isOrgAdmin = role?.role === 'org_admin'
+  // Admin-General (matrix 2026-07-15): READ-ONLY view of the org staff table — no invite
+  // forms, no resend/revoke, no acting icon-cards. Only super + org_admin may manage.
+  const isAdminGeneral = role?.role === 'admin'
+  const canManage = isSuper || isOrgAdmin
 
   const [panel, setPanel] = useState<Panel>(null)
   const [admins, setAdmins] = useState<AdminItem[]>([])
@@ -78,9 +82,15 @@ export default function AdministrationPage() {
     if (isSuper) getOrgs({ token }).then((d) => setOrgs(d.orgs)).catch(() => {})
   }, [token, isSuper])
 
-  if (role && !isSuper && !isOrgAdmin) {
+  if (role && !isSuper && !isOrgAdmin && !isAdminGeneral) {
     return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
   }
+
+  // The sole active org_admin of a tenant cannot be revoked (matrix; backend enforces).
+  // Hide the Revoke affordance for that row, derived from the already-loaded staff list.
+  const isSoleActiveOrgAdmin = (a: AdminItem) =>
+    a.role === 'org_admin' && a.is_active && a.owning_org_id != null &&
+    admins.filter((x) => x.role === 'org_admin' && x.is_active && x.owning_org_id === a.owning_org_id).length <= 1
 
   const roleBadge = (rl: string) =>
     rl === 'super' ? 'bg-purple-100 text-purple-700'
@@ -96,8 +106,12 @@ export default function AdministrationPage() {
     loadAdmins()
     if (isSuper && token) getOrgs({ token }).then((d) => setOrgs(d.orgs)).catch(() => {})
   }
-  const onError = (err: unknown) =>
-    setMessage({ type: 'error', text: err instanceof Error ? err.message : t('admin.actionFailed') })
+  const onError = (err: unknown) => {
+    const code = (err as { code?: string })?.code
+    setMessage({ type: 'error', text: code === 'last_org_admin'
+      ? t('admin.administration.lastOrgAdmin')
+      : err instanceof Error ? err.message : t('admin.actionFailed') })
+  }
 
   const submitPartner = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setMessage(null)
@@ -140,7 +154,9 @@ export default function AdministrationPage() {
   // One table, three uses: the org section renders programme rows; the platform
   // panels render their own world's rows (partners / tenant admins — with the
   // owning-organisation column for tenants). No general all-staff table (owner model).
-  const staffTable = (rows: AdminItem[], showOrg = false) => (
+  const staffTable = (rows: AdminItem[], showOrg = false, canAct = true) => {
+    const cols = 3 + (showOrg ? 1 : 0) + (canAct ? 1 : 0)
+    return (
     <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
       <table className="w-full text-sm min-w-[560px]">
         <thead className="bg-gray-50 border-b">
@@ -150,7 +166,7 @@ export default function AdministrationPage() {
             {showOrg && <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.orgHeader')}</th>}
             <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.roleHeader')}</th>
             <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.statusHeader')}</th>
-            <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.actionHeader')}</th>
+            {canAct && <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.actionHeader')}</th>}
           </tr>
         </thead>
         <tbody className="divide-y">
@@ -165,6 +181,7 @@ export default function AdministrationPage() {
                   ? <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">{t('admin.active')}</span>
                   : <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">{t('admin.revoked')}</span>}
               </td>
+              {canAct && (
               <td className="px-4 py-3">
                 {!a.is_super_admin && a.role !== 'super' && (
                   <div className="flex items-center gap-3">
@@ -180,28 +197,33 @@ export default function AdministrationPage() {
                         {resending === a.id ? t('admin.resending') : t('admin.resend')}
                       </button>
                     )}
-                    <button disabled={revoking === a.id}
-                      onClick={async () => {
-                        setRevoking(a.id)
-                        try { await revokeAdmin(a.id, a.is_active ? 'revoke' : 'restore', { token: token! }); loadAdmins() }
-                        catch (err) { onError(err) }
-                        setRevoking(null)
-                      }}
-                      className={`text-xs font-medium ${a.is_active ? 'text-red-600 hover:text-red-800' : 'text-blue-600 hover:text-blue-800'} disabled:opacity-50`}>
-                      {a.is_active ? t('admin.revoke') : t('admin.restore')}
-                    </button>
+                    {/* Sole active org_admin of a tenant can't be revoked (backend enforces). */}
+                    {!(a.is_active && isSoleActiveOrgAdmin(a)) && (
+                      <button disabled={revoking === a.id}
+                        onClick={async () => {
+                          setRevoking(a.id)
+                          try { await revokeAdmin(a.id, a.is_active ? 'revoke' : 'restore', { token: token! }); loadAdmins() }
+                          catch (err) { onError(err) }
+                          setRevoking(null)
+                        }}
+                        className={`text-xs font-medium ${a.is_active ? 'text-red-600 hover:text-red-800' : 'text-blue-600 hover:text-blue-800'} disabled:opacity-50`}>
+                        {a.is_active ? t('admin.revoke') : t('admin.restore')}
+                      </button>
+                    )}
                   </div>
                 )}
               </td>
+              )}
             </tr>
           ))}
           {rows.length === 0 && (
-            <tr><td colSpan={showOrg ? 6 : 5} className="px-4 py-6 text-center text-gray-400">{t('admin.noAdmins')}</td></tr>
+            <tr><td colSpan={cols} className="px-4 py-6 text-center text-gray-400">{t('admin.noAdmins')}</td></tr>
           )}
         </tbody>
       </table>
     </div>
-  )
+    )
+  }
 
   const Section = ({ title, badge, badgeCls, children }: { title: string; badge: string; badgeCls: string; children: ReactNode }) => (
     <section className="mb-8">
@@ -276,38 +298,46 @@ export default function AdministrationPage() {
         </Section>
       )}
 
-      {/* ORGANISATION section — super + org_admin */}
+      {/* ORGANISATION section — super + org_admin manage; Admin-General views read-only */}
       <Section title={orgHeading} badge={t('admin.administration.orgBadge')} badgeCls="bg-blue-100 text-blue-700">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <IconCard icon="👥" title={t('admin.administration.inviteStaff')} subtitle={t('admin.administration.inviteStaffSub')}
-            active={panel === 'staff'} onClick={() => setPanel(panel === 'staff' ? null : 'staff')} />
-          <IconCard icon="💳" title={t('admin.administration.billing')} subtitle={t('admin.administration.billingSub')}
-            disabled comingSoon={t('admin.administration.comingSoon')} />
-        </div>
+        {canManage ? (<>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <IconCard icon="👥" title={t('admin.administration.inviteStaff')} subtitle={t('admin.administration.inviteStaffSub')}
+              active={panel === 'staff'} onClick={() => setPanel(panel === 'staff' ? null : 'staff')} />
+            <IconCard icon="💳" title={t('admin.administration.billing')} subtitle={t('admin.administration.billingSub')}
+              disabled comingSoon={t('admin.administration.comingSoon')} />
+          </div>
 
-        {panel === 'staff' && (
-          <div className="mt-4 space-y-6">
-            <form onSubmit={submitStaff} className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-gray-900 mb-2">{t('admin.inviteAs')}</p>
-                <div className="grid grid-cols-3 gap-2 max-w-md">
-                  {STAFF_ROLES.map((rl) => (
-                    <button key={rl} type="button" onClick={() => setSRole(rl)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                        sRole === rl ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
-                      {t(`admin.administration.staffRole.${rl}`)}
-                    </button>
-                  ))}
+          {panel === 'staff' && (
+            <div className="mt-4 space-y-6">
+              <form onSubmit={submitStaff} className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 mb-2">{t('admin.inviteAs')}</p>
+                  <div className="grid grid-cols-3 gap-2 max-w-md">
+                    {STAFF_ROLES.map((rl) => (
+                      <button key={rl} type="button" onClick={() => setSRole(rl)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                          sRole === rl ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
+                        {t(`admin.administration.staffRole.${rl}`)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <input className={inputCls} placeholder={t('admin.name')} value={sName} onChange={(e) => setSName(e.target.value)} required />
-                <input className={inputCls} type="email" placeholder={t('admin.emailLabel')} value={sEmail} onChange={(e) => setSEmail(e.target.value)} required />
-              </div>
-              <button type="submit" disabled={busy} className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">{t('admin.sendInvite')}</button>
-            </form>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <input className={inputCls} placeholder={t('admin.name')} value={sName} onChange={(e) => setSName(e.target.value)} required />
+                  <input className={inputCls} type="email" placeholder={t('admin.emailLabel')} value={sEmail} onChange={(e) => setSEmail(e.target.value)} required />
+                </div>
+                <button type="submit" disabled={busy} className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">{t('admin.sendInvite')}</button>
+              </form>
 
-            {staffTable(programmeStaff(admins))}
+              {staffTable(programmeStaff(admins))}
+            </div>
+          )}
+        </>) : (
+          // Admin-General (matrix): read-only staff table, no invite / resend / revoke.
+          <div className="space-y-3">
+            <p className="text-sm text-gray-500">{t('admin.administration.viewOnlyNote')}</p>
+            {staffTable(programmeStaff(admins), false, false)}
           </div>
         )}
       </Section>

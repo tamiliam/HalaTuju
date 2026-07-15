@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## Org-Admin Powers v1 + role-matrix alignment — 2026-07-15
+
+One sprint, one deploy, **no migration**. The organisation roles gained the write powers
+`docs/scholarship/role-matrix.md` promises, all org-fenced and guarded. Brief
+`docs/plans/2026-07-15-org-admin-powers-v1-brief.md`; retro
+`docs/retrospective-2026-07-15-org-admin-powers-v1.md`.
+
+- **org_admin + qc are org-wide writers** (`_can_review_app`) — act on any own-org application
+  (the three cockpit action boxes + the verdict recorder light up); admin/reviewer stay
+  assigned-only.
+- **QC recorder guard** (`_require_qc` → `self_verdict_qc_forbidden`) — a non-super caller can't
+  QC a verdict they themselves recorded (two-person control). Existing self-assignment guard kept.
+- **Assignment delegated to org_admin** — non-super may (re)assign only an active reviewer in
+  their own org (`bad_assignee` otherwise); the assignable-admins dropdown is org-scoped.
+- **Sponsor vetting → super/org_admin** (migrated off the reviewer gate); the sponsor list →
+  super/org_admin/Admin-General (qc + reviewer refused).
+- **Admin-General read-only Administration** (own-org staff table, no actions) + **last-org-admin
+  guard** (`last_org_admin`; the sole active org_admin of a tenant can't be revoked).
+- FE keep-in-sync twins (`canAssign`/`canQc`/`canWrite`), nav re-cut per the matrix (QC drops
+  Sponsors; admin/org_admin keep Sponsors + gain Administration), i18n en/ms/ta (Tamil first-draft).
+- Withheld (owner): reopen/cancel-reopen, award amount, bursary countersign, appointing another
+  org_admin, Add-Tenant — super-only. 3815 pytest + 530 jest; tsc clean.
+
 ## Small change: header role label + free-text university picker — 2026-07-15
 
 - Admin header identity suffix no longer prints "(Super Admin)" for anyone without an

@@ -174,6 +174,7 @@ export interface AdminItem {
   role: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc'
   is_active: boolean
   org_name: string | null
+  owning_org_id?: number | null
   owning_org_name?: string | null
   created_at: string
 }
@@ -192,7 +193,9 @@ export async function revokeAdmin(adminId: number, action: 'revoke' | 'restore',
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `Action failed: ${res.status}`)
+    const err = new Error(body.error || `Action failed: ${res.status}`) as Error & { code?: string }
+    err.code = body.code || body.error || ''
+    throw err
   }
   return res.json()
 }
@@ -722,7 +725,10 @@ async function adminMutate<T>(path: string, method: string, body: unknown, optio
   })
   if (!res.ok) {
     const b = await res.json().catch(() => ({}))
-    throw new Error(b.error || `Admin API error: ${res.status}`)
+    const err = new Error(b.error || `Admin API error: ${res.status}`) as Error & { status?: number; code?: string }
+    err.status = res.status
+    err.code = b.code || b.error || ''
+    throw err
   }
   return res.json()
 }

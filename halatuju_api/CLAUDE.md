@@ -524,6 +524,31 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-15)
 
+**✅ SHIPPED 2026-07-15 — Org-Admin Powers v1 + role-matrix alignment** (brief
+`docs/plans/2026-07-15-org-admin-powers-v1-brief.md`; authority `docs/scholarship/role-matrix.md`;
+retro `docs/retrospective-2026-07-15-org-admin-powers-v1.md`; **NO migration**; one deploy). The
+organisation roles gained the write powers the matrix promises, all org-fenced + guarded:
+- **org_admin + qc = org-wide WRITERS** (`_can_review_app`): act on ANY own-org application (the
+  three cockpit action boxes + verdict recorder light up); admin/reviewer stay assigned-only.
+- **QC recorder guard** (`_require_qc` → `self_verdict_qc_forbidden`): a non-super caller can't QC
+  a verdict they themselves recorded (`verdict_decided_by` email match). Two-person control.
+- **Assignment delegated to org_admin** (`AdminAssignReviewerView`): non-super may (re)assign only
+  an active `reviewer` in their OWN org (→ `bad_assignee` otherwise); assignable-admins dropdown
+  org-scoped (S3b map: → list-fenced).
+- **Sponsor vetting → super/org_admin** (was reviewer); sponsor list → super/org_admin/admin
+  (qc + reviewer refused).
+- **Admin-General read-only Administration** (own-org staff table, no invite/resend/revoke) +
+  **last-org-admin guard** (`AdminRevokeView` → `last_org_admin`; FE hides the affordance via the
+  new `owning_org_id` payload field).
+- **FE twins** (rule 3): `canAssign`/`canQc`/`canWrite` +org_admin (+qc hybrid); nav re-cut per
+  matrix (QC loses Sponsors; admin/org_admin keep Sponsors + gain Administration); i18n en/ms/ta.
+- Withheld (owner): reopen/cancel-reopen, award amount, bursary countersign, appointing another
+  org_admin, Add-Tenant — all super-only. Finance role future.
+- **3815 pytest + 530 jest**; tsc clean. **▶ OWNER-GATED ROLLOUT (not run):** smoke as
+  `elanjelian@me.com` (org_admin test acct) → assign a reviewer, three boxes act, record-then-QC
+  refused, no Revoke on the sole tenant admin; then revert that account → `reviewer` and brief Suresh.
+  **▶ CARRY:** Tamil review of `qcDecision.selfVerdictForbidden` + `administration.viewOnlyNote`/`lastOrgAdmin`.
+
 **✅ SHIPPED + LIVE 2026-07-15 — Administration panel + surface partition + `org_admin` role**
 (Sprints A+B; commits `1b14566e`/`e903f11b`; migration `courses/0064` choices-only recorded
 migrate-first via Supabase MCP; retro `docs/retrospective-2026-07-15-admin-panel-org-admin.md`).

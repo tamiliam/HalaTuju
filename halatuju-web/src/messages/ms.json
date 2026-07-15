@@ -3601,6 +3601,7 @@
         "commentsPlaceholder": "Nyatakan kekurangan / perkara yang perlu diperbaiki oleh penyemak",
         "reopenConfirm": "Buka semula & maklum penyemak",
         "error": "Tidak dapat menghantar keputusan QC.",
+        "selfVerdictForbidden": "Anda yang merekodkan verdik ini — ia mesti disemak QC oleh orang lain.",
         "gapFloor": "Masih ada fakta verdik berstatus merah ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",
         "gapFloorSuper": "Sebagai QC atau pentadbir super, anda boleh mengatasi sekatan ini dengan sebab yang direkodkan.",
         "overrideTitle": "Atasi sekatan fakta merah? Sebab anda akan direkodkan pada kes ini.",
@@ -4077,6 +4078,8 @@
       "billing": "Pengebilan & penggunaan",
       "billingSub": "Kos dan penggunaan untuk program anda",
       "comingSoon": "Akan datang",
+      "viewOnlyNote": "Anda mempunyai akses lihat sahaja kepada kakitangan organisasi anda. Minta pentadbir organisasi untuk menjemput atau menukar kakitangan.",
+      "lastOrgAdmin": "Ini satu-satunya pentadbir organisasi — lantik seorang lagi sebelum menarik balik yang ini.",
       "staffRole": {
         "reviewer": "Penilai",
         "admin": "Pentadbir lihat sahaja",

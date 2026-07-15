@@ -203,13 +203,18 @@ export default function AdminScholarshipDetailPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
-  // QC (2026-07): quality control acts on AWAITING-QC ('interviewed') cases — a `qc` role or super.
-  const canQc = isSuper || role?.role === 'qc'
+  // Assignment (F7) is a super or org_admin power — an org_admin assigns their own org's reviewers.
+  const canAssign = isSuper || role?.role === 'org_admin'
+  // QC (2026-07): quality control acts on AWAITING-QC ('interviewed') cases — super, a `qc`, or
+  // an `org_admin` (the organisation superadmin). The backend recorder guard stops anyone QC-ing
+  // a verdict they themselves recorded (two-person control).
+  const canQc = isSuper || role?.role === 'qc' || role?.role === 'org_admin'
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
-  // Execute (verify/verdict/interview/etc.) is assignment-based: super acts on any application;
-  // an admin/reviewer acts ONLY on applications assigned to them (mirrors backend
-  // _can_review_app). A non-assigned admin still SEES everything, but read-only.
-  const canWrite = isSuper || (app?.assigned_to_id != null && app.assigned_to_id === (role?.admin_id ?? null))
+  // Execute (verify/verdict/interview/etc.): super acts on any application; org_admin + qc (the
+  // org-wide roles) act on any OWN-ORG application (the detail GET already 404s cross-org);
+  // admin/reviewer act ONLY on applications assigned to them (mirrors backend _can_review_app).
+  const canWrite = isSuper || role?.role === 'org_admin' || role?.role === 'qc'
+    || (app?.assigned_to_id != null && app.assigned_to_id === (role?.admin_id ?? null))
   const [caseSummary, setCaseSummary] = useState<VerdictCaseSummary | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
   const [busy, setBusy] = useState('')
@@ -599,7 +604,10 @@ export default function AdminScholarshipDetailPage() {
       setQcReopenOpen(false); setQcComments('')
       setQcOverrideOpen(false); setQcOverrideReason('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('admin.scholarship.qcDecision.error'))
+      const code = (e as { code?: string })?.code
+      setError(code === 'self_verdict_qc_forbidden'
+        ? t('admin.scholarship.qcDecision.selfVerdictForbidden')
+        : e instanceof Error ? e.message : t('admin.scholarship.qcDecision.error'))
     } finally { setBusy('') }
   }
 
@@ -2414,7 +2422,7 @@ export default function AdminScholarshipDetailPage() {
             super). Accept → Recommended; Reopen → back to the reviewer with a gaps note (emailed).
             Self-QC guard: a `qc` who reviewed this case cannot QC it (hidden here; backend blocks it too). ── */}
       {app.status === 'interviewed' && canQc
-        && !(role?.role === 'qc' && app.assigned_to_id === (role?.admin_id ?? null)) && (() => {
+        && !((role?.role === 'qc' || role?.role === 'org_admin') && app.assigned_to_id === (role?.admin_id ?? null)) && (() => {
         // V5 gap floor (#5): a red/'gap' verdict fact blocks Accept. A super sees an override
         // affordance (reason recorded server-side); anyone else resolves the gap or reopens.
         const qcGapFacts = (app.verdict || []).filter((f) => f.status === 'gap').map((f) => f.fact)
@@ -2482,9 +2490,9 @@ export default function AdminScholarshipDetailPage() {
         )
       })()}
 
-      {/* ── Assign a reviewer (F7) — SUPER-ONLY + audited. First assignment is gated on
+      {/* ── Assign a reviewer (F7) — SUPER or org_admin + audited. First assignment is gated on
             readiness (no open queries OR the SLA lapsed); reassign is allowed any time. ─── */}
-      {isSuper && (() => {
+      {canAssign && (() => {
         const ready = app.query_sla?.ready_for_assignment ?? false
         const firstAssignBlocked = !app.assigned_to_id && !ready
         // Once a decision is recorded the reviewer is fixed (it's a finished case) — the

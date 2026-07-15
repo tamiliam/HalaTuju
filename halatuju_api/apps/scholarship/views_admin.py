@@ -94,8 +94,8 @@ class _AdminBase(PartnerAdminMixin, APIView):
           'assigned' — reviewer (only the applicants assigned to them)
           'none'     — partner / anyone else (B40 is not their page)
         'all' is org-fenced downstream by _org_scoped/_org_allows (super global; the rest
-        see only their own org). qc's + org_admin's only reviewer-write path is the QC gate
-        (_require_qc); neither has _can_review_app write unless super/assigned.
+        see only their own org). qc + org_admin are org-wide WRITERS via _can_review_app
+        (review-all within their org); a plain 'admin' stays assigned-only for writes.
         """
         if admin is None or admin.role == 'partner':
             return 'none'
@@ -150,10 +150,16 @@ class _AdminBase(PartnerAdminMixin, APIView):
         return app, None
 
     def _can_review_app(self, admin, app):
-        """True if this admin may WRITE (review-act) on this application: super acts on any;
-        admin/reviewer act ONLY on applications ASSIGNED to them; partner never. (Assignment-
-        based review permission, 2026-07 — an 'admin' has full READ scope via _b40_scope='all'
-        but assigned-only WRITE, so a view-all admin can be given a selective review remit.)"""
+        """True if this admin may WRITE (review-act) on this application:
+          super              — acts on any application;
+          org_admin / qc     — act on ANY application in their OWN org (org_admin = the
+                               organisation superadmin; qc = the hybrid review-all role);
+          admin / reviewer   — act ONLY on applications ASSIGNED to them;
+          partner            — never.
+        (Assignment-based review permission, 2026-07 — a plain 'admin' has full READ scope
+        via _b40_scope='all' but assigned-only WRITE, so a view-all admin can be given a
+        selective review remit. org_admin/qc write across the org is safe because the QC
+        recorder guard in _require_qc stops anyone QC-ing a verdict they themselves recorded.)"""
         if admin is None or app is None:
             return False
         if self._b40_scope(admin) == 'none':          # partner / non-B40
@@ -162,6 +168,8 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return True
         if not self._org_allows(admin, app):          # cross-org (Sprint 3a)
             return False
+        if admin.role in ('org_admin', 'qc'):         # org-wide write (same-org guaranteed above)
+            return True
         return app.assigned_to_id == admin.id
 
     def _require_app_write(self, request, pk):
@@ -212,6 +220,15 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return None, None, Response(
                 {'error': 'You reviewed this case — it must be QC-checked by someone else.',
                  'code': 'self_qc_forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        # Recorder guard (2026-07-15): with org_admin/qc able to record a verdict on ANY
+        # own-org case, assignment no longer proves who recorded it. Two-person control
+        # (models.py:482) means the person who RECORDED the verdict must never QC it —
+        # match on the recorder's email (the stable staff key). Super is the owner override.
+        recorder = (app.verdict_decided_by or '').strip().lower()
+        if not self.has_role(admin, 'super') and recorder and recorder == (getattr(admin, 'email', '') or '').strip().lower():
+            return None, None, Response(
+                {'error': 'You recorded this verdict — it must be QC-checked by someone else.',
+                 'code': 'self_verdict_qc_forbidden'}, status=status.HTTP_403_FORBIDDEN)
         return app, admin, None
 
 
@@ -843,8 +860,13 @@ class AdminSponsorListView(_AdminBase):
     """Phase E: GET .../admin/sponsors/[?status=pending] — self-registered sponsor
     ACCOUNTS for vetting (distinct from the old sponsor-interest leads)."""
     def get(self, request):
-        if not self.get_admin(request):
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
+        # Matrix (2026-07-15): the Sponsors surface is visible to super / org_admin /
+        # Admin-General only. qc + reviewer are refused (nav + endpoint).
+        if not (admin.is_super or admin.role in ('org_admin', 'admin')):
+            return self._deny_role()
         # Deterministic ordering (TD audit 2026-06-14) — without it the row order was
         # undefined. Full pagination is deferred: these are low-cardinality admin tables and
         # the sponsors table FE does not yet handle a paged envelope (would truncate to 25).
@@ -861,13 +883,16 @@ class AdminSponsorListView(_AdminBase):
 
 class AdminSponsorReviewView(_AdminBase):
     """Phase E: POST .../admin/sponsors/<pk>/review/ {action: approve|reject|suspend}
-    — vet a sponsor account. Reviewer-gated; stamps who/when."""
+    — vet a sponsor account. Matrix (2026-07-15): sponsor vetting is a super or ORG_ADMIN
+    power (migrated off the old reviewer gate); stamps who/when."""
     _ACTION_STATUS = {'approve': 'approved', 'reject': 'rejected', 'suspend': 'suspended'}
 
     def post(self, request, pk):
-        admin, err = self._require_reviewer(request)
-        if err:
-            return err
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not (admin.is_super or admin.role == 'org_admin'):
+            return self._deny_role()
         sponsor = Sponsor.objects.filter(pk=pk).first()
         if sponsor is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -1037,16 +1062,19 @@ class AdminAssignableAdminsView(_AdminBase):
     'partner' has no review role and is excluded. (A qc's own reviewed case is QC'd by someone else
     — the self-QC guard in _require_qc.)"""
     def get(self, request):
-        if not self.get_admin(request):
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
         from django.db.models import Q
-        # tenancy: cross-org by design until Sprint 10 (D-1) — this is a PartnerAdmin
-        # (staff) list, not applicant data. Org-scoping the assignable pool (so an org
-        # admin can only assign their own reviewers) is a Sprint-10 concern; today the
-        # dropdown lists all assignable staff and assignment itself is super-only.
+        # tenancy: list-fenced (2026-07-15). Super sees every assignable staff member; a
+        # non-super (org_admin) sees only their OWN org's assignable staff — so a delegated
+        # assignment can't reach across tenants. (A PartnerAdmin list, not applicant data.)
         admins = (PartnerAdmin.objects.filter(is_active=True)
                   .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super', 'admin', 'qc', 'org_admin']))
                   .select_related('reviewer_profile').order_by('name'))
+        if not self.has_role(admin, 'super'):
+            admins = admins.filter(owning_organisation_id=admin.owning_organisation_id,
+                                   is_super_admin=False)
         # Internal-only "corrections" tally per reviewer (reopened decisions that led
         # to a real change). Never shown to sponsors/students — an internal quality
         # signal for whoever assigns reviewers.
@@ -1460,17 +1488,19 @@ class AdminVerdictMetricsView(_AdminBase):
 
 
 class AdminAssignReviewerView(_AdminBase):
-    """POST .../applications/<pk>/assign/ — (re)assign a reviewer (F7). SUPER-ONLY +
-    audited. Body `{reviewer_id}` (null/''/0 = unassign). The first assignment of an
-    unassigned app is gated on is_ready_for_assignment; reassign/unassign of an
-    already-assigned app is allowed any time. Every change writes an AssignmentEvent.
-    The target must be an active reviewer/super (never a viewer)."""
+    """POST .../applications/<pk>/assign/ — (re)assign a reviewer (F7). SUPER or the
+    organisation's ORG_ADMIN, audited. Body `{reviewer_id}` (null/''/0 = unassign). The
+    first assignment of an unassigned app is gated on is_ready_for_assignment; reassign/
+    unassign of an already-assigned app is allowed any time. Every change writes an
+    AssignmentEvent. The application is org-fenced via _scoped_application; a non-super
+    caller may only assign an ACTIVE reviewer in their OWN org (never a super, never
+    cross-org)."""
 
     def post(self, request, pk):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not self.has_role(admin, 'super'):
+        if not (self.has_role(admin, 'super') or admin.role == 'org_admin'):
             return self._deny_role()
         app, _err = self._scoped_application(request, pk)
         if _err:
@@ -1481,6 +1511,13 @@ class AdminAssignReviewerView(_AdminBase):
         if reviewer_id not in (None, '', 0):
             reviewer = PartnerAdmin.objects.filter(pk=reviewer_id, is_active=True).first()
             if reviewer is None:
+                return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if not self.has_role(admin, 'super') and (
+                    reviewer.role != 'reviewer'
+                    or reviewer.owning_organisation_id != admin.owning_organisation_id):
+                # An org_admin assigns only their OWN org's reviewers — never a super, a
+                # cross-org target, or a senior role. Same shape as an unknown assignee.
                 return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
                                 status=status.HTTP_400_BAD_REQUEST)
         try:

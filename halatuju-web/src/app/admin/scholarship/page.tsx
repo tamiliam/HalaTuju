@@ -41,6 +41,9 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50]
 export default function AdminScholarshipList() {
   const { token, role } = useAdminAuth()
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
+  // Assignment (the "Assigned" column + inline dropdown) is a super or org_admin power —
+  // an org_admin assigns their own org's reviewers (backend fences the target + application).
+  const canAssign = isSuper || role?.role === 'org_admin'
   // Only super + admin see every application, so only they benefit from the assignee filter.
   // A reviewer's list is already hard-scoped to their own assigned applicants server-side, so
   // the filter is redundant for them (and "Unassigned" would always return nothing).
@@ -112,14 +115,14 @@ export default function AdminScholarshipList() {
 
   const apps = data?.applications ?? []
 
-  // Reviewers for the assignment dropdown — fetched once, super-admins only (the endpoint
-  // itself is super-only on the backend).
+  // Reviewers for the assignment dropdown — fetched once, for callers who can assign
+  // (super or org_admin). The endpoint org-scopes the pool for a non-super caller.
   useEffect(() => {
-    if (!token || !isSuper) return
+    if (!token || !canAssign) return
     getAssignableAdmins({ token })
       .then((r) => setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, languages: a.languages || [] }))))
       .catch(() => {})
-  }, [token, isSuper])
+  }, [token, canAssign])
 
   // Inline (re)assign — option A: attempt and surface a 'not ready' / error inline. The
   // backend enforces super-only + reviewer-target; first-assign needs the app to be ready.
@@ -258,7 +261,7 @@ export default function AdminScholarshipList() {
                     {t('admin.scholarship.submitted')}{sortArrow('submitted')}
                   </button>
                 </th>
-                {isSuper && <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
+                {canAssign && <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -283,7 +286,7 @@ export default function AdminScholarshipList() {
                     })()}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(a.submitted_at)}</td>
-                  {isSuper && (
+                  {canAssign && (
                     <td className="px-4 py-3">
                       {LANG_LABEL[a.call_language] && (
                         <p className="mb-1 text-[11px] text-gray-500">

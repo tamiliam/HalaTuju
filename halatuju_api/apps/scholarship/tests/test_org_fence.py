@@ -202,19 +202,21 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminRequestInfoView': 'gate', 'AdminResolutionItemView': 'gate',
         'AdminRecordVerdictView': 'gate', 'AdminReopenDecisionView': 'gate',
         'AdminQcDecisionView': 'gate', 'AdminCancelReopenView': 'gate',
-        'AdminAssignReviewerView': 'gate+super', 'AdminInterviewSlotsView': 'gate',
+        'AdminAssignReviewerView': 'gate+super/org_admin', 'AdminInterviewSlotsView': 'gate',
         'AdminInterviewSlotDetailView': 'gate',
         # list/aggregate fenced via _org_scoped
         'AdminApplicationListView': 'list-fenced', 'AdminSponsorshipListView': 'list-fenced',
         'AdminVerdictMetricsView': 'list-fenced', 'AdminGraduationMessageListView': 'list-fenced',
+        # list-fenced (PartnerAdmin staff pool, org-scoped for a non-super caller — 2026-07-15)
+        'AdminAssignableAdminsView': 'list-fenced',
         # secondary fetch + _can_review_app / _org_allows re-gate
         'AdminDisbursementActionView': 'can-review', 'AdminResolutionItemActionView': 'can-review',
         'AdminGraduationMessageReviewView': 'org-allows',
         # super-only (global)
         'AdminBursaryCountersignView': 'super-only',
-        # cross-org by design (platform-level; not applicant data — D-1)
+        # cross-org by design (platform-level Sponsor account; not applicant data — D-1).
+        # Role-gated to super/org_admin (review) and super/org_admin/admin (list) since 2026-07-15.
         'AdminSponsorListView': 'cross-org-by-design', 'AdminSponsorReviewView': 'cross-org-by-design',
-        'AdminAssignableAdminsView': 'cross-org-by-design',
         # self-scoped (caller's own reviewer profile, no application)
         'ReviewerProfileView': 'self-scoped',
         # grandfathered referral-org authorisation (orthogonal to ownership; dark)
