@@ -524,6 +524,30 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-16)
 
+**✅ SHIPPED + LIVE 2026-07-16 — Cockpit income/household reconciliation + Pre-U institution tick +
+confirm-updates-record** (commits `bfe3e000`/`2077937f`/`fb9647d6`/`8dbc55be`/`1da10538`/`a32cd83d`;
+web `…00645-hvr` + api `…00777-zgr`; NO migration; retro
+`docs/retrospective-2026-07-16-cockpit-income-household.md`; decisions ×3; lessons ×2). An owner
+live-review arc, all off real applicants:
+- **KM→Kolej Matrikulasi** display (`expandMatricInstitution`); income leads with the document-
+  verified total + tick, declared → muted "Declared: RMx"; per-capita uses documented income;
+  call-language hidden, Email beside Phone.
+- **Pre-U institution verified tick** — new `institution_status` on the offer `pathway_check`
+  (institution dimension of `offer_pathway_match`, compared against the SHOWN `pre_u_institution`);
+  ticks when a genuine offer's institution matches AND the offer isn't an overall pathway mismatch.
+- **`confirm_pathway` updates the pre-U fields** (`pre_u_institution`/`pre_u_track`) from the confirmed
+  offer, not just `chosen_programme` — so a confirmed matric/STPM student's record + Pathway chip
+  reconcile. Backfilled #117 & #14. **#43 flagged (TD-161): STPM-declared, PISMP-confirmed — a
+  pathway-TYPE change, NOT auto-coerced.**
+- **Income reconciliation covers ALL household earners + genuineness guard** — `_income_earning_members`
+  = salary-route ∪ payslip/EPF holders; `_member_income_genuine` blocks a tick off a suspect doc.
+- **Household-size confirmation query** — a one-tap Check-2 confirm on an over-count; on confirm the
+  cockpit shows the roster count + tick + muted "Declared: M" and per-capita uses it. NON-MUTATING
+  (stated size never rewritten); no migration (confirmed = a student-resolved item).
+- **3844 pytest + 572 jest.** **▶ CARRY:** Tamil review of the `household_size_confirm` title/desc +
+  `confirmHouseholdSizeYes`; #66's RM4,157 salary (owner Re-runs the slip if it's a misread); #43
+  (TD-161).
+
 **✅ SHIPPED (code — owner gates the deploy) 2026-07-16 — STR route no longer blocks the household
 salary picture (Check 2).** Off #117 (retired father, no pension follow-up). `income_engine`'s
 `_parent_has_income_evidence` STR branch was masking the STR-recipient parent as "income-evidenced",

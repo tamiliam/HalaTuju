@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit income/household reconciliation + Pre-U institution tick + confirm-updates-record — 2026-07-16
+
+Owner live-review arc on the officer cockpit (all off real applicants #66/#117/#130/#132/#137):
+
+- **Pre-U institution verified tick** (matric/STPM), which had none — the tick was only wired on the
+  tertiary `chosen_programme`. Exposed `institution_status` on the offer's `pathway_check` (the
+  institution dimension of `offer_pathway_match` on its own, compared against the *shown*
+  `pre_u_institution`); the field ticks when a genuine offer's institution matches AND the offer
+  isn't an overall pathway mismatch (so a green tick can't sit next to a red Pathway chip — #117).
+- **`confirm_pathway` now updates the pre-U fields, not just `chosen_programme`.** The `pathway_confirm`
+  query promised "we'll update your record to match" but left `pre_u_institution`/`pre_u_track` on
+  the student's original declaration — so a confirmed matric/STPM student kept the old school + a red
+  stream clash. Now it sets both from the confirmed offer. Backfilled #117 & #14; #43 flagged
+  (STPM-declared, PISMP-confirmed — a pathway-type change, left for the owner). See [TD-161].
+- **Household income reconciliation covers ALL household earners + a genuineness guard.** It summed
+  only salary-route earners, so an STR-route household with a documented earner (a working sibling)
+  got no verified income. Now `_income_earning_members` = salary-route ∪ anyone with a payslip/EPF;
+  a `_member_income_genuine` guard means a suspect/wrong-type doc can't earn a tick.
+- **Household-size confirmation query.** On an over-count (roster > stated size), the student gets a
+  one-tap Check-2 confirm ("You listed N but entered M — is N right?"). On confirm, the cockpit
+  leads with the roster count + a tick + muted "Declared: M", and per-capita uses the confirmed
+  count — the same non-mutating document-on-top pattern as income (the stated size is never
+  rewritten). No migration (confirmation = a student-resolved item).
+- i18n en/ms/ta (Tamil first-drafts for the household-size query + `confirmHouseholdSizeYes`). No
+  migration across the whole arc.
+
 ## STR route no longer blocks the household salary picture (Check 2) — 2026-07-16
 
 Off applicant #117 (a retired father on the STR route with no pension follow-up). Root cause: on the

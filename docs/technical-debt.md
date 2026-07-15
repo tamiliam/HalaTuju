@@ -1251,3 +1251,16 @@ Fix when convenient: on a 200 with no readable id, GET the user back by email to
 creating the row (or store a "provisioned, uid-pending" flag and backfill on first sign-in). Introduced
 with the durable-invite flow (2026-07-12); surfaced in the ship-readiness review. Low: needs a Supabase
 200-without-a-body, which has not been observed.
+
+### [TD-161] `confirm_pathway` doesn't handle a pathway-TYPE change (STPM→PISMP) — #43 (low)
+When the student confirms an offer whose pathway TYPE differs from what they declared,
+`services.confirm_pathway` updates `chosen_programme` + (now) the pre-U fields, but does NOT change
+`chosen_pathway` itself. #43 declared **STPM** (`chosen_pathway='stpm'`) yet confirmed a **PISMP
+degree at an IPG** (Institut Pendidikan Guru) — a teacher-training place, not an STPM Form-6 school.
+So it now carries `chosen_pathway='stpm'` with a PISMP institution/programme, which is internally
+inconsistent (PISMP is a degree pathway, not a pre-U institution pathway). Left UNFIXED and flagged for
+the owner (2026-07-16, cockpit income/household arc): auto-coercing a pathway *type* on confirm is a
+bigger, riskier change than the school/stream sync, and #43 is the only observed case. Fix when it
+recurs: detect `op.detect_pathway_type(offer)` ≠ `chosen_pathway` at confirm and either re-home the
+application to the offer's real pathway type or raise a reviewer flag rather than silently coercing.
+Low: 1 known app; the pre-U sync otherwise behaves; the officer sees the offer document.
