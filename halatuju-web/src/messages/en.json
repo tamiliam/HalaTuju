@@ -1864,6 +1864,7 @@
       "stillChecking": "We've got your upload and we're still checking it — give it a moment, then refresh this page.",
       "review": "Review",
       "confirmPathwayYes": "Yes, this is my final pathway",
+      "confirmHouseholdSizeYes": "Yes, that's my household size",
       "send": "Send",
       "sending": "Sending…",
       "sendError": "Sorry, we couldn't send that. Please try again.",
@@ -2128,6 +2129,10 @@
         "informal_work_detail": {
           "title": "Tell us about the informal work",
           "desc": "You told us a family member earns an informal wage. Please tell us briefly whether they work for themselves (own account) or for an employer, and roughly their average monthly earnings."
+        },
+        "household_size_confirm": {
+          "title": "Is this your household size?",
+          "desc": "You've described {described} people living with you, but your household size says {size}. If {described} is right, confirm it and we'll use it. If not, update your household size on your profile."
         },
         "household_roster_undercount": {
           "title": "Who else lives in your household?",

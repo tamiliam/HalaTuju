@@ -49,6 +49,11 @@ import DocumentHelpCoach, { CoachCard } from '@/components/DocumentHelpCoach'
 import IncomeClusterCoach from '@/components/IncomeClusterCoach'
 import IncomeRouteSwitch from '@/components/IncomeRouteSwitch'
 
+// Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
+// the pathway confirmation and the household-size confirmation. Every other confirm jumps the
+// student to the form tab that fixes the underlying fact (or, once locked, a typed reply).
+const ONE_TAP_CONFIRM = new Set(['pathway_confirm', 'household_size_confirm'])
+
 // ── Icons (inline SVG, blue circle bg set by the caller) ──────────────────
 
 function KindIcon({ icon }: { icon: ActionIcon }) {
@@ -391,7 +396,7 @@ function ActionCard({
             )}
 
             {((item.kind === 'explanation' && item.code !== 'pathway_undeclared') || item.kind === 'clarify' ||
-              (formLocked && item.kind === 'confirm' && item.code !== 'pathway_confirm')) && (
+              (formLocked && item.kind === 'confirm' && !ONE_TAP_CONFIRM.has(item.code))) && (
               <div className="space-y-2">
                 <textarea
                   className="input"
@@ -414,20 +419,23 @@ function ActionCard({
               </div>
             )}
 
-            {item.kind === 'confirm' && item.code === 'pathway_confirm' && (
+            {item.kind === 'confirm' && ONE_TAP_CONFIRM.has(item.code) && (
               <button
                 type="button"
                 onClick={onAffirm}
                 disabled={busy}
                 className="w-full rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
               >
-                {busy ? t('scholarship.actionCentre.sending') : t('scholarship.actionCentre.confirmPathwayYes')}
+                {busy ? t('scholarship.actionCentre.sending')
+                  : t(item.code === 'household_size_confirm'
+                      ? 'scholarship.actionCentre.confirmHouseholdSizeYes'
+                      : 'scholarship.actionCentre.confirmPathwayYes')}
               </button>
             )}
 
             {/* Pre-submit only: a `confirm` ticket jumps the student to the form tab
                 that resolves it. Post-submit (formLocked) uses the typed reply above. */}
-            {!formLocked && item.kind === 'confirm' && item.code !== 'pathway_confirm' && (
+            {!formLocked && item.kind === 'confirm' && !ONE_TAP_CONFIRM.has(item.code) && (
               <button
                 type="button"
                 onClick={() => onConfirm(confirmTargetFor(item.fact))}

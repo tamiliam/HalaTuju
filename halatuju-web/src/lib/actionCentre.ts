@@ -201,6 +201,7 @@ export const KNOWN_CODES = [
   'deceased_parent_detail',
   'informal_work_detail',
   'household_roster_undercount',
+  'household_size_confirm',
   'other_scholarships_followup',
   'high_utility_expense',
   // Owner 2026-07-08 — the STR variant of the point-blank high-usage query.

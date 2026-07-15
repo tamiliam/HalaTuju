@@ -1864,6 +1864,7 @@
       "stillChecking": "Kami telah menerima muat naik anda dan sedang menyemaknya — tunggu sebentar, kemudian muat semula halaman ini.",
       "review": "Semak",
       "confirmPathwayYes": "Ya, ini laluan akhir saya",
+      "confirmHouseholdSizeYes": "Ya, itu saiz isi rumah saya",
       "send": "Hantar",
       "sending": "Menghantar…",
       "sendError": "Maaf, kami tidak dapat menghantarnya. Sila cuba lagi.",
@@ -2128,6 +2129,10 @@
         "informal_work_detail": {
           "title": "Beritahu kami tentang kerja tidak formal itu",
           "desc": "Anda memberitahu kami seorang ahli keluarga memperoleh upah tidak formal. Sila beritahu kami secara ringkas sama ada mereka bekerja sendiri (akaun sendiri) atau untuk majikan, dan anggaran pendapatan bulanan purata mereka."
+        },
+        "household_size_confirm": {
+          "title": "Adakah ini saiz isi rumah anda?",
+          "desc": "Anda menerangkan {described} orang tinggal bersama anda, tetapi saiz isi rumah anda menyatakan {size}. Jika {described} betul, sahkannya dan kami akan menggunakannya. Jika tidak, kemas kini saiz isi rumah pada profil anda."
         },
         "household_roster_undercount": {
           "title": "Siapa lagi yang tinggal dalam isi rumah anda?",

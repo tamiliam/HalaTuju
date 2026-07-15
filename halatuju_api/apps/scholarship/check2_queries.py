@@ -449,6 +449,11 @@ def sync_check2_queries(application):
     if _sync_pathway_confirm(application, existing, now):
         raised_student_visible = True
 
+    # The one-tap household-size confirmation (the roster describes more people than the stated
+    # size) — also a 'confirm' outside the clarify cap.
+    if _sync_household_size_confirm(application, existing, now):
+        raised_student_visible = True
+
     if raised_student_visible:
         # A new student-visible query/doc-request appeared after the one-time notify →
         # re-announce it via the batched hourly sweep (local import avoids a circular import).
@@ -503,3 +508,38 @@ def _sync_pathway_confirm(application, existing, now):
             item.resolved_at = now
             item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
     return raised
+
+
+def _sync_household_size_confirm(application, existing, now):
+    """Reconcile the ``household_size_confirm`` STUDENT query (a one-tap 'confirm', like
+    ``pathway_confirm``). Raised when the itemised roster OUTNUMBERS the stated household size
+    (``household_size_shortfall`` — the per-capita denominator may be too small, so income looks
+    overstated): we ask the student "you listed N people but entered a size of M — is N right?".
+
+    Non-mutating: a student 'Yes' resolves the query (``resolved_by='student'``) and the cockpit then
+    shows the roster count with a tick + "Declared: M" (per the household_check ``confirmed`` flag);
+    we NEVER rewrite the stated size. Because confirming does not change the size, the over-count
+    persists — so once the student has confirmed we must NOT re-ask (guard on the student-resolved
+    item). If the over-count later disappears (the student edited their size/roster), an unanswered
+    query auto-closes."""
+    from .income_engine import household_size_shortfall
+    hs = household_size_shortfall(application)
+    item = existing.get('household_size_confirm')
+    # Already answered by the student → settled; never re-ask (the over-count still exists by design).
+    if item is not None and getattr(item, 'resolved_by', '') == 'student':
+        return False
+    if hs and item is None:
+        try:
+            ResolutionItem.objects.create(
+                application=application, source='check2', code='household_size_confirm',
+                fact='income', kind='confirm',
+                params={'described': hs['described'], 'size': hs['size']})
+            return True
+        except IntegrityError:
+            pass  # created concurrently — fine
+    elif not hs and item is not None and item.status == 'open':
+        item.status = 'resolved'
+        item.resolved_by = 'system'
+        item.resolved_at = now
+        item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
+    return False

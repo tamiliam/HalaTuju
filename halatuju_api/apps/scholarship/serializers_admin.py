@@ -521,9 +521,15 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         (2026-07-15). Non-mutating: reports what the documents/roster say and whether they
         corroborate the student's stated figures — the reviewer reconciles a mismatch."""
         from . import income_engine
+        size = income_engine.household_size_accounted(obj)
+        # `confirmed`: the student answered the household_size_confirm Check-2 query (Yes, the roster
+        # count is right). The cockpit then shows the roster count with a tick + "Declared: M" and
+        # uses it for per-capita — a non-mutating display switch, never a rewrite of the stated size.
+        size = {**size, 'confirmed': obj.resolution_items.filter(
+            code='household_size_confirm', resolved_by='student').exists()}
         return {
             'income': income_engine.household_income_reconciliation(obj),
-            'size': income_engine.household_size_accounted(obj),
+            'size': size,
         }
 
     def get_interview_agenda(self, obj):

@@ -748,14 +748,22 @@ export default function AdminScholarshipDetailPage() {
   const incomeNote = _incConfident && !_hc!.income.matches && app.household_income
     ? t('admin.scholarship.verified.declaredNote', { value: _fmtRm(app.household_income) })
     : undefined
-  const sizeTip = _hc?.size.accounted ? t('admin.scholarship.verified.sizeAccounted') : undefined
-  const sizeNote = _hc?.size.overcount
-    ? t('admin.scholarship.verified.rosterNote', { count: String(_hc.size.described) })
-    : undefined
-  // Per capita income = the DOCUMENT-VERIFIED household income (when confident) ÷ size, else the
-  // declared income ÷ size. (Replaces the always-"No" JKM field.)
+  // Household size: once the student CONFIRMS the roster count (household_size_confirm query), lead
+  // with the roster count + a tick and drop the stated figure to a muted "Declared: M" note — the
+  // same document-on-top pattern as income (non-mutating). Otherwise: a tick when fully accounted,
+  // or an amber "Roster counts N" prompt on an unconfirmed over-count.
+  const _sizeConfirmed = !!_hc?.size.confirmed
+  const _effectiveSize = _sizeConfirmed ? _hc!.size.described : app.household_size
+  const sizeValue = _effectiveSize
+  const sizeTip = (_sizeConfirmed || _hc?.size.accounted) ? t('admin.scholarship.verified.sizeAccounted') : undefined
+  const sizeNote = _sizeConfirmed
+    ? (app.household_size ? t('admin.scholarship.verified.declaredNote', { value: String(app.household_size) }) : undefined)
+    : (_hc?.size.overcount ? t('admin.scholarship.verified.rosterNote', { count: String(_hc.size.described) }) : undefined)
+  const sizeNoteTone: 'amber' | 'muted' = _sizeConfirmed ? 'muted' : 'amber'
+  // Per capita income = the DOCUMENT-VERIFIED household income (when confident) ÷ the effective size
+  // (confirmed roster count, else stated). (Replaces the always-"No" JKM field.)
   const _pcBase = _incConfident ? _hc!.income.documented_total! : app.household_income
-  const perCapita = _pcBase && app.household_size ? _pcBase / app.household_size : null
+  const perCapita = _pcBase && _effectiveSize ? _pcBase / _effectiveSize : null
 
   // A superadmin has REOPENED the recorded decision (server-driven; held from sponsors).
   // A reopen reopens the WHOLE case for revision — Check 2 + Interview Stage + Decision all
@@ -1031,7 +1039,7 @@ export default function AdminScholarshipDetailPage() {
               <Card title={t('admin.scholarship.sec.family')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                   <Field label={t('admin.scholarship.income')} value={incomeValue} verifiedLabel={incomeTip} note={incomeNote} noteTone="muted" />
-                  <Field label={t('admin.scholarship.householdSize')} value={app.household_size} verifiedLabel={sizeTip} note={sizeNote} />
+                  <Field label={t('admin.scholarship.householdSize')} value={sizeValue} verifiedLabel={sizeTip} note={sizeNote} noteTone={sizeNoteTone} />
                   <Field label="STR" value={yn(app.receives_str)} verifiedLabel={vtip('str')} />
                   <Field label={t('admin.scholarship.perCapita')} value={perCapita != null ? `RM ${Number(perCapita).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : null} />
                   <Field label={personLabel} value={guardian?.name} verifiedLabel={vtip('parentName')} />
