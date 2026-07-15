@@ -86,4 +86,6 @@ export const COMMON_UNIVERSITIES: UniversityOption[] = [
   { name: 'RMIT University', hint: 'Australia', aliases: ['RMIT'] },
   { name: 'Trinity College Dublin', hint: 'Ireland', aliases: ['TCD'] },
   { name: 'University of Auckland', hint: 'New Zealand', aliases: ['Auckland'] },
+  { name: 'Massachusetts Institute of Technology', hint: 'USA', aliases: ['MIT'] },
+  { name: 'Indian Institute of Technology Bombay', hint: 'India', aliases: ['IIT Bombay', 'IITB', 'IIT'] },
 ]

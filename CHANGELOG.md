@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## Small change: header role label + free-text university picker — 2026-07-15
+
+- Admin header identity suffix no longer prints "(Super Admin)" for anyone without an
+  org. A reviewer/qc was mis-labelled because the suffix keyed off "no org name" rather
+  than `is_super_admin` (exposed once the reviewer-onboarding gate began parking reviewers
+  on /admin/profile). Now: genuine super → "Super admin"; org member → org name; everyone
+  else → their real role label (reuses `admin.role.*`). Not a permission leak — label only.
+- Reviewer "University" field: `InstitutionPicker` gains `minChars` (=2 here) so the list
+  no longer pops on focus; suggestions surface only after 2 characters, and free text is
+  kept (already `allowCustom`). Broadened the suggestion list from the 20 public IPTAs to
+  also include popular Malaysian private universities, foreign branch campuses, and top
+  overseas destinations for Malaysians (incl. MIT, IIT Bombay) — convenience only; any
+  value is still accepted. Renamed the data export `PUBLIC_UNIVERSITIES` → `COMMON_UNIVERSITIES`.
+
 ## Small change: Administration platform panels — per-panel lists — 2026-07-15
 
 - Platform section no longer shows a general staff table: the referral-partner card lists
