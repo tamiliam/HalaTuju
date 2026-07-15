@@ -13,7 +13,7 @@ import { MALAYSIAN_STATES } from '@/lib/scholarship'
 import { formatMyMobile } from '@/lib/sponsorAuth'
 import InstitutionPicker from '@/components/InstitutionPicker'
 import SelectWithOther from '@/components/SelectWithOther'
-import { PUBLIC_UNIVERSITIES } from '@/data/publicUniversities'
+import { COMMON_UNIVERSITIES } from '@/data/publicUniversities'
 
 const QUAL_OPTS = [
   ['SPM', 'spm'], ['STPM', 'stpm'], ['Matriculation', 'matriculation'], ['Diploma', 'diploma'],
@@ -26,8 +26,8 @@ const FIELD_OPTS = [
   ['Law', 'law'], ['Education', 'education'], ['Arts & Humanities', 'arts'], ['Social Sciences', 'social'],
 ] as const
 
-const UNI_OPTIONS = PUBLIC_UNIVERSITIES.map((u) => ({
-  name: u.name, hint: u.acronym, keywords: `${u.acronym} ${(u.aliases ?? []).join(' ')}`,
+const UNI_OPTIONS = COMMON_UNIVERSITIES.map((u) => ({
+  name: u.name, hint: u.hint, keywords: (u.aliases ?? []).join(' '),
 }))
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
@@ -216,6 +216,7 @@ export default function AdminProfilePage() {
                     onChange={(v) => setRev({ university: v })}
                     placeholder={t('admin.reviewer.universityHint')}
                     allowCustom
+                    minChars={2}
                   />
                 </div>
                 <div>

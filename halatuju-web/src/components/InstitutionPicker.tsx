@@ -24,6 +24,7 @@ export default function InstitutionPicker({
   placeholder,
   limit = 50,
   allowCustom = false,
+  minChars = 0,
 }: {
   options: InstitutionOption[]
   value: string
@@ -34,6 +35,11 @@ export default function InstitutionPicker({
   // private/foreign/unknown entries. When false (default), blur snaps back to the
   // current selection (the constrained apply-form behaviour).
   allowCustom?: boolean
+  // Suppress the dropdown until at least this many characters are typed. 0 (default)
+  // = list opens on focus (the constrained apply-form browse UX). Set to 2 for a
+  // free-text field like the reviewer's university, where the full list is just noise
+  // and the value need not come from it — matches only appear once they're meaningful.
+  minChars?: number
 }) {
   const { t } = useT()
   const [open, setOpen] = useState(false)
@@ -42,9 +48,12 @@ export default function InstitutionPicker({
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const q = query.trim().toLowerCase()
-  const filtered = q
-    ? options.filter((o) => `${o.name} ${o.keywords ?? ''}`.toLowerCase().includes(q))
-    : options
+  const belowMin = q.length < minChars
+  const filtered = belowMin
+    ? []
+    : q
+      ? options.filter((o) => `${o.name} ${o.keywords ?? ''}`.toLowerCase().includes(q))
+      : options
   const matches = filtered.slice(0, limit)
   const truncated = filtered.length > matches.length
 
@@ -85,7 +94,7 @@ export default function InstitutionPicker({
           else if (e.key === 'Escape') { setOpen(false); setActive(-1) }
         }}
       />
-      {open && (
+      {open && !belowMin && (
         <div
           className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
           onMouseDown={(e) => e.preventDefault()}

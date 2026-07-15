@@ -61,6 +61,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   // Dashboard + Students (own org) — no Guide/FAQ; reviewer + qc see only B40 Applications
   // (qc lands on the awaiting-QC queue).
   const r = role?.is_super_admin ? 'super' : (role?.role || 'reviewer')
+  // Header identity suffix: only a genuine super sees "(Super admin)". Org members show their
+  // org; everyone else shows their real role label (a reviewer/qc must NOT read "Super Admin"
+  // just because they have no org).
+  const roleLabel = role?.is_super_admin
+    ? t('admin.role.super')
+    : role?.org_name
+      ? role.org_name
+      : t(`admin.role.${r}`)
   const dashboard = { href: '/admin', label: t('common.dashboard') }
   const students = { href: '/admin/students', label: t('admin.students') }
   const scholarship = { href: '/admin/scholarship', label: t('admin.scholarship.nav') }
@@ -106,7 +114,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="hidden md:flex items-center gap-3">
             <span className="text-sm text-gray-500">
               {role?.admin_name}
-              {role?.org_name ? ` (${role.org_name})` : ` (${t('admin.superAdmin')})`}
+              {` (${roleLabel})`}
             </span>
             <button onClick={handleSignOut} className="text-sm text-red-600 hover:text-red-800">
               {t('header.logout')}
@@ -146,7 +154,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="border-t border-gray-100 pt-2 mt-2">
               <p className="px-3 py-1 text-xs text-gray-400">
                 {role?.admin_name}
-                {role?.org_name ? ` (${role.org_name})` : ` (${t('admin.superAdmin')})`}
+                {` (${roleLabel})`}
               </p>
               <button
                 onClick={handleSignOut}
