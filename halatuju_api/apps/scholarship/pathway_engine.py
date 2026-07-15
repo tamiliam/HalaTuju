@@ -374,10 +374,14 @@ def student_offer_check(doc) -> dict:
         'address': (f.get('candidate_address') or '').strip(),
         # Offer-vs-declared reconciliation (Check-1 pathway).
         'pathway': pathway,                       # 'match' | 'mismatch' | 'unknown'
-        # The INSTITUTION dimension on its own (does the offer's institution match the declared
-        # one?) — surfaced so the cockpit can tick a confirmed pre-U institution (matric/STPM),
-        # which the combined `pathway` can't do precisely (it also folds in programme/stream).
-        'institution_status': _field_status(decl_inst, institution),  # 'match' | 'clash' | 'unknown'
+        # Does the offer's institution match the pre-U institution SHOWN on the cockpit? Compared
+        # against `pre_u_institution` (the displayed field) specifically — NOT `decl_inst`, which
+        # prefers a CONFIRMED chosen_programme institution and so can diverge from what's displayed
+        # (#117: chosen_programme='Kolej Tingkatan Enam Gombak' but pre_u_institution shows the
+        # student's declared 'SMK P Temenggong Ibrahim'). Drives the Pre-U Institution tick.
+        'institution_status': _field_status(
+            (getattr(application, 'pre_u_institution', '') or '').strip() if application is not None else '',
+            institution),                         # 'match' | 'clash' | 'unknown'
         'declared_programme': decl_prog,
         'declared_institution': decl_inst,
     }

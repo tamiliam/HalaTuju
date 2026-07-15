@@ -71,15 +71,19 @@ export function fieldVerifications(
   // READ off the offer, so it ticks whenever a non-fake/non-suspect offer carries one (the shown
   // value IS the offer's date — no separate cross-check to make).
   set('chosenProgramme', 'offer_letter', 'pathway', 'offerLetter')
-  // Pre-U institution (matric/STPM): tick when a genuine offer's INSTITUTION matches the declared
-  // one (the offer summons the student to this college). Uses the institution dimension on its own,
-  // not the combined `pathway` (which also folds in programme/stream).
+  // Pre-U institution (matric/STPM): tick when a genuine offer's INSTITUTION matches the SHOWN
+  // pre-U institution AND the offer isn't an overall pathway mismatch. The pathway guard keeps the
+  // tick from contradicting a red Pathway chip — e.g. #117, where the school token matches but the
+  // offer's stream (Sains) clashes with the declared Sains Sosial, so the offer doesn't cleanly
+  // confirm the placement.
   const genuineOffer = (d: AdminApplicantDocument): boolean => {
     if (d.doc_type !== 'offer_letter') return false
     const auth = d.authenticity?.status
     return !auth || auth === 'genuine' || auth === 'likely_genuine' // exclude suspect / not_* (fake)
   }
-  if (docs.some((d) => genuineOffer(d) && d.pathway_check?.institution_status === 'match')) {
+  if (docs.some((d) => genuineOffer(d)
+    && d.pathway_check?.institution_status === 'match'
+    && d.pathway_check?.pathway !== 'mismatch')) {
     out.preUInstitution = { source: 'offerLetter' }
   }
   if (docs.some((d) => genuineOffer(d) && d.pathway_check?.reporting_date)) {

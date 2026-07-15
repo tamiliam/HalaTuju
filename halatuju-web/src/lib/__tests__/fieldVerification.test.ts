@@ -73,6 +73,13 @@ describe('fieldVerifications', () => {
     ])).preUInstitution).toBeUndefined()
   })
 
+  it('does NOT tick preUInstitution when the offer is an overall pathway mismatch (#117 stream clash)', () => {
+    const fv = fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { institution_status: 'match', pathway: 'mismatch' } },
+    ]))
+    expect(fv.preUInstitution).toBeUndefined()
+  })
+
   it('does NOT tick reportingDate when the offer carries no reporting date', () => {
     const fv = fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { name: 'match', ic: 'match', pathway: 'match' } },
