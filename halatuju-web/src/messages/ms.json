@@ -3580,6 +3580,7 @@
         "cancelReopen": "Batal buka semula (pulihkan)",
         "reopenError": "Tidak dapat membuka semula keputusan.",
         "declinedBy": "Ditolak oleh",
+        "reopenedBy": "Dibuka semula oleh",
         "aiSuggested": "Keputusan AI:",
         "suggest": {
           "yes": "ya",

@@ -2243,10 +2243,43 @@ export default function AdminScholarshipDetailPage() {
                 </span>
               </p>
             ) : app.status === 'rejected' ? (
-              <p className="text-sm text-red-700">
-                {t('admin.scholarship.recordVerdict.declinedBy')} {app.rejected_by_name || app.rejected_by || '—'}
-                {app.rejected_at ? ` · ${formatDate(app.rejected_at)}` : ''}
-              </p>
+              /* Decision-history trail. A straight reviewer decline is one line; a case that a
+                 QC reopened before it was declined shows the full thread so the record no longer
+                 hides the reviewer's recommendation behind a lone "Declined by …" line. */
+              (() => {
+                const ro = app.last_decision_reopen
+                const declined = (
+                  <p key="declined" className="flex items-start gap-1.5 text-sm text-red-700">
+                    <span aria-hidden>✗</span>
+                    <span>
+                      {t('admin.scholarship.recordVerdict.declinedBy')} {app.rejected_by_name || app.rejected_by || '—'}
+                      {app.rejected_at ? ` · ${formatDate(app.rejected_at)}` : ''}
+                    </span>
+                  </p>
+                )
+                if (!ro) return declined
+                return (
+                  <div className="space-y-1.5">
+                    {ro.reviewer_name && (
+                      <p className="flex items-start gap-1.5 text-sm text-gray-600">
+                        <span aria-hidden>✓</span>
+                        <span>{t('admin.scholarship.interviewedRecommendedBy')} {ro.reviewer_name}</span>
+                      </p>
+                    )}
+                    <div className="flex items-start gap-1.5 text-sm text-amber-800">
+                      <span aria-hidden>↩</span>
+                      <span>
+                        {t('admin.scholarship.recordVerdict.reopenedBy')} {ro.reopened_by_name || ro.reopened_by || '—'}
+                        {ro.created_at ? ` · ${formatDate(ro.created_at)}` : ''}
+                        {(ro.reason || '').trim() && (
+                          <span className="block whitespace-pre-line text-amber-700">“{ro.reason.trim()}”</span>
+                        )}
+                      </span>
+                    </div>
+                    {declined}
+                  </div>
+                )
+              })()
             ) : (
               <p className="text-sm text-gray-600">
                 {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}

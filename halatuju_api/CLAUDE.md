@@ -534,6 +534,21 @@ tenant rehearsal) are gated on a **credible second-tenant prospect**. Roadmap
 skips the `_AdminBase` gates, or a raw admin `.objects` query without an `# org-fence:` pragma, FAILS
 the suite (`test_org_fence.py`), so BrightPath feature work stays safe.
 
+**✅ SHIPPED (code, on branch `feat/decision-trail` — NOT merged; owner gates the deploy) 2026-07-15 —
+Rejection record shows the decision trail (reviewer → QC reopen → decline). Display-only, NO migration;
+retro `docs/retrospective-2026-07-15-decision-trail.md`; decision ×1; lesson ×1.** The cockpit rejected
+record collapsed a reopened-then-declined case to a lone "Declined by …" line while the justification box
+still showed the *reviewer's recommendation* text (the #51 case: Kaneswaran recommended → Ve. Elanjelian
+reopened on a 5A- merit reason → declined), hiding the QC's real reason (stored on `DecisionReopen`, never
+surfaced). New `AdminApplicationDetailSerializer.last_decision_reopen` (`reopen.latest_reopen()` helper) +
+a rejected-card trail (**Recommended by {reviewer} → Reopened by {who} · {date} — "{reason}" → Declined by
+{who} · {date}**; straight declines keep the single line). One i18n key (`reopenedBy`, en/ms/ta).
+`pytest test_decision_reopen.py` 19 passed (+3 trail tests using #51's real values); jest i18n 7 passed;
+`next build` exit 0. **▶ Part 2 (a reviewer decline-reason dropdown + varied decline emails) was designed,
+approved, then WITHDRAWN by the owner** — the existing `interview` decline template already reads as a
+"limited funds" message, so the generic is sufficient; do NOT rebuild it. **▶ AT DEPLOY:** push branch →
+merge → deploy (code-only, no migrate-first); this is officer-facing, sends no student email.
+
 **✅ SHIPPED + LIVE 2026-07-15 — Platform Phase 1 completion (Sprints 2, 3a, 3b, 4)** (commits
 `5ffcd493`/`f2c8c5ef`/`171a6459`/`200cbbd6`; migrations `scholarship/0099`+`0100`, `courses/0062`+`0063`
 applied migrate-first via Supabase MCP at Checkpoint 1; retro

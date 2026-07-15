@@ -598,6 +598,18 @@ export interface AdminScholarshipDetail {
    *  dropdown unlocks + a "held from sponsors" banner shows; the reason drives the banner. */
   decision_reopened_at: string | null
   decision_reopen_reason: string
+  /** The most recent reopen (open OR closed) — the audit anchor for the decision-history
+   *  trail on a decided case (recommended by → reopened by, with reason → decided). Null when
+   *  the case was never reopened. `reviewer_name` is the reviewer the reopen is attributed to
+   *  (the original recommender). */
+  last_decision_reopen: {
+    reopened_by: string
+    reopened_by_name: string
+    reviewer_name: string
+    reason: string
+    created_at: string
+    resulted_in_change: boolean
+  } | null
   /** Internal-only corrections tally for the assigned reviewer (reopened decisions
    *  that led to a real change). Never shown on a sponsor/student surface. */
   assigned_to_corrections: number
