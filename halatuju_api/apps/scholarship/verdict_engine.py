@@ -710,6 +710,21 @@ def _verdict_income_salary(application, student_name, present):
 
 # ── Pathway (offer letter) ───────────────────────────────────────────────────
 
+def _no_declared_pathway(application):
+    """True when the student declared NOTHING about a pathway — no chosen/intended pathway type, no
+    pre-U track, and no SPECIFIC chosen programme (a value autofilled FROM the offer, source
+    'offer_letter_auto', does NOT count as a declaration). This is the #127 all-blank case that the
+    'confirm or complete your pathway' flow targets; a type-only or specific declaration is left as
+    the offer settling it (owner 2026-07-15)."""
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    real_pick = bool(cp.get('course_id')) and cp.get('source') != 'offer_letter_auto'
+    return not (
+        (application.chosen_pathway or '').strip()
+        or (application.intended_pathway or '').strip()
+        or (application.pre_u_track or '').strip()
+        or real_pick)
+
+
 def _verdict_pathway(application):
     """The offer letter settles the FINAL chosen pathway. Identity on the letter
     (name + IC — the IC is the strong check) must be the applicant's, then the
@@ -768,6 +783,29 @@ def _verdict_pathway(application):
         unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
                                 declared_programme=chk['declared_programme'],
                                 declared_institution=chk['declared_institution']))
+
+    # UNDECLARED pathway (owner 2026-07-15): a genuine, readable, non-clashing offer but the student
+    # declared NOTHING about a pathway (not even a type — #127's all-blank case). Don't silently read
+    # Certain — ask the student, and sit at Probable (an unresolved item over the offer evidence)
+    # until they answer:
+    #   - RESOLVABLE offer (a pre-U stream, or a unique catalogue course) → the one-tap "is this where
+    #     you're going?" confirm (Yes → confirm_pathway stamps it → verified/Certain).
+    #   - AMBIGUOUS (a PISMP offer with no SK/SJKT/SJKC aliran, an unpinnable tertiary) → send them to
+    #     the profile page to pick their exact course (pathway_undeclared). Auto-resolves + greens once
+    #     a real course lands (a declaration then exists → this branch no longer fires).
+    # Scoped to a TRUE non-declaration (a student who declared a type or a specific course is left as
+    # verified — the offer settles it) AND a GENUINE OFFICIAL offer only: a fake / suspect / non-
+    # official offer is already flagged (genuineness ladder + offer_not_official) and isn't a real
+    # pathway to confirm — never ask "is this where you're going?" about a fake letter.
+    from .pathway_engine import offer_official_status
+    if (not confirmed and (prog or inst) and _no_declared_pathway(application)
+            and offer_official_status(offer) == 'genuine'):
+        from .offer_pathway import offer_is_resolvable
+        if offer_is_resolvable(prog, inst):
+            unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
+                                    declared_programme='', declared_institution=''))
+        else:
+            unresolved.append(_item('pathway_undeclared', programme=prog, institution=inst))
 
     # NB the course-SWITCH note is deliberately NOT a verdict item here (owner 2026-07-10): a PUBLIC
     # switch is acceptable — a student may legitimately move STPM → matriculation → a UA diploma — so

@@ -611,6 +611,60 @@ class TestPathway(_Base):
         self.assertNotIn('pathway_confirm', _codes(f['unresolved']))
         self.assertIn('offer_programme', _codes(f['evidence']))
 
+    def _undeclared(self):
+        # A student who declared NOTHING about a pathway (the #127 all-blank case).
+        self.app.chosen_pathway = ''
+        self.app.intended_pathway = ''
+        self.app.pre_u_track = ''
+        self.app.chosen_programme = {}
+        self.app.save()
+
+    def _genuine_offer(self, **overrides):
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields=dict(self._OWN_OFFER, **overrides))
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'genuine', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        return d
+
+    def test_undeclared_ambiguous_offer_directs_to_profile_and_is_probable(self):
+        # Owner 2026-07-15 (#127): a genuine PISMP offer but NO declared pathway → not silently
+        # Certain. PISMP names no aliran on the letter → ambiguous → send the student to the profile
+        # to pick their course (pathway_undeclared), and the band sits at Probable ('review').
+        self._undeclared()
+        self._genuine_offer(programme='Ijazah Sarjana Muda Perguruan (PISMP)',
+                            institution='IPG Kampus Temenggong Ibrahim')
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'review')                       # Probable, NOT verified
+        self.assertIn('pathway_undeclared', _codes(f['unresolved']))
+        self.assertNotIn('pathway_confirm', _codes(f['unresolved']))
+
+    def test_undeclared_resolvable_offer_asks_confirm_and_is_probable(self):
+        # A pre-U (STPM) offer whose stream parses + NO declaration → the one-tap "is this where
+        # you're going?" confirm (not the profile redirect); still Probable until confirmed.
+        self._undeclared()
+        self._genuine_offer(programme='Tingkatan Enam (Sains Sosial)', institution='SMK Contoh')
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('pathway_confirm', _codes(f['unresolved']))
+        self.assertNotIn('pathway_undeclared', _codes(f['unresolved']))
+
+    def test_undeclared_but_fake_offer_not_asked(self):
+        # A FAKE offer with no declaration is NOT asked "is this where you're going?" — it's already
+        # flagged by genuineness; only a GENUINE official offer is a real pathway to confirm (#12/#109).
+        self._undeclared()
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields=dict(self._OWN_OFFER, programme='Program Asasi UTM', institution='UTM SPACE'))
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'not_offer_letter', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        codes = _codes(_facts(self.app)['pathway']['unresolved'])
+        self.assertNotIn('pathway_undeclared', codes)
+        self.assertNotIn('pathway_confirm', codes)
+
+    def test_offer_is_resolvable_pismp_vs_preu(self):
+        from apps.scholarship.offer_pathway import offer_is_resolvable
+        self.assertTrue(offer_is_resolvable('Tingkatan Enam (Sains Sosial)', 'SMK X'))
+        self.assertFalse(offer_is_resolvable('Ijazah Sarjana Muda Perguruan (PISMP)', 'IPG Kampus Y'))
+
     def _offer(self, auth_status):
         d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
         d.vision_fields = dict(d.vision_fields,

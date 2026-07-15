@@ -448,18 +448,25 @@ def sync_check2_queries(application):
     return application.resolution_items.filter(source='check2', status='open')
 
 
+# The pathway STUDENT queries mirrored from the verdict — both student-visible (source='check2', NOT
+# in resolution.RESOLUTION_SPECS, so they never become a hidden 'system' item): 'pathway_confirm'
+# (one-tap "is this where you're going?") + 'pathway_undeclared' (an ambiguous offer we can't pin —
+# the student picks their exact course on the profile page). code → kind. Owner 2026-07-15.
+_PATHWAY_QUERY_KINDS = {'pathway_confirm': 'confirm', 'pathway_undeclared': 'explanation'}
+
+
 def _sync_pathway_confirm(application, existing, now):
-    """Reconcile the Check-2 ``pathway_confirm`` item (one-tap "is this offer your final
-    course?") from the live verdict. Routed through Check 2 (``source='check2'``) so the
-    flag governs visibility + the email and the student answers Yes in place
-    (``confirm_pathway`` writes their final pathway). The clash itself is detected by the
-    verdict engine; here we only mirror it into the student queue + auto-resolve it once
-    the offer is confirmed or changed so it no longer clashes."""
+    """Reconcile the Check-2 pathway student queries (``pathway_confirm`` + ``pathway_undeclared``)
+    from the live verdict. Routed through Check 2 (``source='check2'``) so the flag governs
+    visibility + the email; the student answers in place (Yes → ``confirm_pathway`` writes their final
+    pathway for the confirm; picking a course on the profile page clears the undeclared one). The
+    verdict engine detects the state; here we only mirror it into the student queue + auto-resolve
+    each once the verdict no longer raises it. The verdict raises AT MOST ONE of the two at a time."""
     from .models import ApplicantDocument
-    item = existing.get('pathway_confirm')
-    # A clash can only exist when there's an offer letter — skip the verdict compute (and
-    # its cost) otherwise. If a confirm lingers after the offer is gone, close it below.
-    params = None
+    raised = False
+    # Both queries require an offer letter — skip the verdict compute (and its cost) otherwise; a
+    # lingering item after the offer is gone is closed below.
+    verdict_params = {code: None for code in _PATHWAY_QUERY_KINDS}
     if ApplicantDocument.objects.filter(
             application=application, doc_type='offer_letter', superseded_at__isnull=True).exists():
         from .verdict_engine import build_verdict
@@ -467,21 +474,22 @@ def _sync_pathway_confirm(application, existing, now):
             if fact['fact'] != 'pathway':
                 continue
             for it in fact['unresolved']:
-                if it['code'] == 'pathway_confirm':
-                    params = it.get('params', {})
-    if params is not None and item is None:
-        try:
-            ResolutionItem.objects.create(
-                application=application, source='check2', code='pathway_confirm',
-                fact='pathway', kind='confirm', params=params,
-            )
-            return True   # a new student-visible confirm was raised → caller re-notifies
-        except IntegrityError:
-            pass  # created concurrently — fine
-    elif params is None and item is not None and item.status == 'open':
-        # The clash cleared (offer confirmed / replaced) → close the question.
-        item.status = 'resolved'
-        item.resolved_by = 'system'
-        item.resolved_at = now
-        item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
-    return False
+                if it['code'] in verdict_params:
+                    verdict_params[it['code']] = it.get('params', {})
+    for code, kind in _PATHWAY_QUERY_KINDS.items():
+        params, item = verdict_params[code], existing.get(code)
+        if params is not None and item is None:
+            try:
+                ResolutionItem.objects.create(
+                    application=application, source='check2', code=code,
+                    fact='pathway', kind=kind, params=params)
+                raised = True   # a new student-visible query appeared → caller re-notifies
+            except IntegrityError:
+                pass  # created concurrently — fine
+        elif params is None and item is not None and item.status == 'open':
+            # No longer raised (confirmed / course picked / offer replaced) → close the question.
+            item.status = 'resolved'
+            item.resolved_by = 'system'
+            item.resolved_at = now
+            item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
+    return raised

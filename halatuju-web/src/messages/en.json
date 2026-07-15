@@ -1978,12 +1978,12 @@
           "desc": "The name on your offer letter doesn't match your profile. Please re-check."
         },
         "pathway_undeclared": {
-          "title": "Tell us your study plan",
-          "desc": "You haven't chosen what you plan to study yet. Please add it in Your story."
+          "title": "Choose your course",
+          "desc": "We see you have an offer for {programme} at {institution}, but we don’t know your exact course yet. Please choose it on your profile page so we can confirm your pathway."
         },
         "pathway_confirm": {
           "title": "Is this where you're going?",
-          "desc": "Your offer letter is for {programme} at {institution}, which looks different from the study choice you entered earlier. If this offer is your final pathway, confirm it and we'll update your record to match. If you have a better offer, upload that one instead."
+          "desc": "Your offer letter is for {programme} at {institution}. If this is your final pathway, confirm it and we’ll update your record to match. If you have a better offer, upload that one instead."
         },
         "offer_letter_missing": {
           "title": "Upload your offer letter",
@@ -2203,7 +2203,8 @@
         "chip": "We're reviewing this",
         "title": "We're looking into this with our team",
         "body": "Thank you — we've received what you sent. Our team is now checking this personally, so there's nothing more you need to upload here for now. We'll be in touch if we need anything else."
-      }
+      },
+      "updatePathwayOnProfile": "Update on your profile"
     },
     "summary": {
       "subtitle": "One last look — check everything is right, then scroll down and submit.",

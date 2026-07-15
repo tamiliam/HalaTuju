@@ -72,12 +72,13 @@ CODE_TO_TICKET = {
     'offer_unreadable':    {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_no_identity':   {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_name_mismatch': {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
-    'pathway_undeclared':  {'fact': 'pathway', 'kind': 'explanation'},
-    # NOTE: 'pathway_confirm' is intentionally NOT here. The "is this offer your final
-    # chosen pathway?" confirmation is a STUDENT query, routed through Check 2
-    # (source='check2') so CHECK2_STUDENT_QUERIES_ENABLED governs it + it rides the query
-    # email — see check2_queries._sync_pathway_confirm. (As a 'system' item it was hidden
-    # from the student queue, so only the officer ever saw it.)
+    # NOTE: 'pathway_confirm' AND 'pathway_undeclared' are intentionally NOT here. Both are STUDENT
+    # queries routed through Check 2 (source='check2') so CHECK2_STUDENT_QUERIES_ENABLED governs
+    # them + they ride the query email — see check2_queries._sync_pathway_confirm. 'pathway_confirm'
+    # = the one-tap "is this offer your final chosen pathway?"; 'pathway_undeclared' = an ambiguous
+    # offer we can't pin (a PISMP offer with no aliran) → the student picks their exact course on the
+    # profile page (owner 2026-07-15). As a 'system' item either would be hidden from the student
+    # queue, so only the officer would ever see it.
 }
 
 # The "review assistant" (Check 2) asks the STUDENT to upload a compulsory document straight

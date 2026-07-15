@@ -278,3 +278,17 @@ def resolve_catalogue_course(programme: str, institution: str):
     if len(uniq) == 1:
         return next(iter(uniq.values()))
     return None
+
+
+def offer_is_resolvable(programme: str, institution: str) -> bool:
+    """True when an offer pins a SPECIFIC pathway we can fill into the course tree by itself: a
+    pre-U offer whose stream/jurusan parses (stpm/matric), or a tertiary offer that resolves to a
+    UNIQUE catalogue ``course_id``. False = AMBIGUOUS — e.g. a PISMP offer that names the campus but
+    NOT the aliran (SK / SJKT / SJKC), so the student must pick their exact course on the profile
+    page (owner 2026-07-15). Pure (bar the catalogue read inside ``resolve_catalogue_course``)."""
+    ptype = detect_pathway_type(programme, institution)
+    if is_pre_u(ptype):
+        track = parse_matric_track(programme) if ptype == 'matric' else parse_stpm_stream(programme)
+        return bool(track)
+    match = resolve_catalogue_course(programme, institution)
+    return bool(match and match.get('course_id'))

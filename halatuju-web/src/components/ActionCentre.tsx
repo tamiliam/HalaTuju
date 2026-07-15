@@ -378,7 +378,19 @@ function ActionCard({
             {/* Typed reply — explanation/clarify always, and (post-submit only) a
                 non-pathway `confirm` ticket too: the form is locked, so the student
                 can't go back and edit it; they respond in writing instead. */}
-            {(item.kind === 'explanation' || item.kind === 'clarify' ||
+            {/* pathway_undeclared (owner 2026-07-15): an ambiguous offer we can't pin (a PISMP offer
+                with no aliran) — the student picks their exact course on the profile page rather than
+                typing a reply. The query auto-clears once a real course lands. */}
+            {item.code === 'pathway_undeclared' && (
+              <a
+                href="/profile"
+                className="block w-full rounded-xl bg-primary-500 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-600"
+              >
+                {t('scholarship.actionCentre.updatePathwayOnProfile')}
+              </a>
+            )}
+
+            {((item.kind === 'explanation' && item.code !== 'pathway_undeclared') || item.kind === 'clarify' ||
               (formLocked && item.kind === 'confirm' && item.code !== 'pathway_confirm')) && (
               <div className="space-y-2">
                 <textarea

@@ -1978,12 +1978,12 @@
           "desc": "Nama pada surat tawaran tidak sepadan dengan profil anda. Sila semak semula."
         },
         "pathway_undeclared": {
-          "title": "Beritahu kami rancangan pengajian anda",
-          "desc": "Anda belum memilih apa yang ingin dipelajari. Sila tambah dalam Cerita anda."
+          "title": "Pilih kursus anda",
+          "desc": "Kami dapati anda ada tawaran untuk {programme} di {institution}, tetapi kami belum tahu kursus tepat anda. Sila pilih di halaman profil anda supaya kami boleh mengesahkan laluan anda."
         },
         "pathway_confirm": {
           "title": "Ini tempat anda akan pergi?",
-          "desc": "Surat tawaran anda adalah untuk {programme} di {institution}, yang nampak berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Jika tawaran ini ialah laluan akhir anda, sahkannya dan kami akan kemas kini rekod anda supaya sepadan. Jika anda ada tawaran yang lebih baik, muat naik yang itu."
+          "desc": "Surat tawaran anda adalah untuk {programme} di {institution}. Jika ini laluan akhir anda, sahkannya dan kami akan mengemas kini rekod anda. Jika anda ada tawaran yang lebih baik, muat naik tawaran itu."
         },
         "offer_letter_missing": {
           "title": "Muat naik surat tawaran anda",
@@ -2203,7 +2203,8 @@
         "chip": "Kami sedang menyemaknya",
         "title": "Kami sedang menelitinya bersama pasukan kami",
         "body": "Terima kasih — kami telah menerima apa yang anda hantar. Pasukan kami kini sedang menyemaknya secara peribadi, jadi buat masa ini tiada apa lagi yang perlu anda muat naik di sini. Kami akan menghubungi anda jika kami memerlukan apa-apa lagi."
-      }
+      },
+      "updatePathwayOnProfile": "Kemas kini di profil anda"
     },
     "summary": {
       "subtitle": "Lihat sekali lagi — pastikan semuanya betul, kemudian tatal ke bawah dan hantar.",
