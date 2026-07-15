@@ -13,3 +13,13 @@ export function isProgrammeStaff(role: string): boolean {
 export function programmeStaff(admins: AdminItem[]): AdminItem[] {
   return admins.filter((a) => isProgrammeStaff(a.role) && !a.is_super_admin)
 }
+
+// Platform-world lists: each platform icon card shows ITS OWN entries when opened
+// (owner's model, 2026-07-15) — no general all-staff table at platform level.
+export function referralPartners(admins: AdminItem[]): AdminItem[] {
+  return admins.filter((a) => a.role === 'partner')
+}
+
+export function tenantAdmins(admins: AdminItem[]): AdminItem[] {
+  return admins.filter((a) => a.role === 'org_admin' && !a.is_super_admin)
+}

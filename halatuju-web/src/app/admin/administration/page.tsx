@@ -6,7 +6,7 @@ import {
   getOrgs, inviteAdmin, getAdmins, revokeAdmin, resendAdminInvite,
   type OrgItem, type AdminItem,
 } from '@/lib/admin-api'
-import { programmeStaff } from '@/lib/adminStaff'
+import { programmeStaff, referralPartners, tenantAdmins } from '@/lib/adminStaff'
 import { useT } from '@/lib/i18n'
 
 // The Administration panel (Stitch v2): a cPanel-style icon grid split into a PLATFORM
@@ -137,15 +137,17 @@ export default function AdministrationPage() {
     ? t('admin.administration.orgHeadingNamed', { org: ownOrgName })
     : t('admin.administration.orgHeading')
 
-  // One table, two worlds: the platform section renders it with ALL rows; the org
-  // section renders it with programme rows only (lib/adminStaff.ts).
-  const staffTable = (rows: AdminItem[]) => (
+  // One table, three uses: the org section renders programme rows; the platform
+  // panels render their own world's rows (partners / tenant admins — with the
+  // owning-organisation column for tenants). No general all-staff table (owner model).
+  const staffTable = (rows: AdminItem[], showOrg = false) => (
     <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
       <table className="w-full text-sm min-w-[560px]">
         <thead className="bg-gray-50 border-b">
           <tr>
             <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.nameHeader')}</th>
             <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.emailHeader')}</th>
+            {showOrg && <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.orgHeader')}</th>}
             <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.roleHeader')}</th>
             <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.statusHeader')}</th>
             <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.actionHeader')}</th>
@@ -156,6 +158,7 @@ export default function AdministrationPage() {
             <tr key={a.id}>
               <td className="px-4 py-3">{a.name}</td>
               <td className="px-4 py-3 text-gray-500">{a.email}</td>
+              {showOrg && <td className="px-4 py-3 text-gray-500">{a.owning_org_name || '—'}</td>}
               <td className="px-4 py-3"><span className={`inline-block px-2 py-0.5 text-xs rounded-full ${roleBadge(a.role)}`}>{t(`admin.role.${a.role}`)}</span></td>
               <td className="px-4 py-3">
                 {a.is_active
@@ -193,7 +196,7 @@ export default function AdministrationPage() {
             </tr>
           ))}
           {rows.length === 0 && (
-            <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">{t('admin.noAdmins')}</td></tr>
+            <tr><td colSpan={showOrg ? 6 : 5} className="px-4 py-6 text-center text-gray-400">{t('admin.noAdmins')}</td></tr>
           )}
         </tbody>
       </table>
@@ -231,8 +234,8 @@ export default function AdministrationPage() {
               active={panel === 'tenant'} onClick={() => setPanel(panel === 'tenant' ? null : 'tenant')} />
           </div>
 
-          {panel === 'partner' && (
-            <form onSubmit={submitPartner} className="mt-4 bg-white rounded-xl border shadow-sm p-6 space-y-4">
+          {panel === 'partner' && (<div className="mt-4 space-y-4">
+            <form onSubmit={submitPartner} className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <input className={inputCls} placeholder={t('admin.name')} value={pName} onChange={(e) => setPName(e.target.value)} required />
                 <input className={inputCls} type="email" placeholder={t('admin.emailLabel')} value={pEmail} onChange={(e) => setPEmail(e.target.value)} required />
@@ -254,10 +257,11 @@ export default function AdministrationPage() {
               )}
               <button type="submit" disabled={busy} className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">{t('admin.sendInvite')}</button>
             </form>
-          )}
+            {staffTable(referralPartners(admins))}
+          </div>)}
 
-          {panel === 'tenant' && (
-            <form onSubmit={submitTenant} className="mt-4 bg-white rounded-xl border shadow-sm p-6 space-y-4">
+          {panel === 'tenant' && (<div className="mt-4 space-y-4">
+            <form onSubmit={submitTenant} className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
               <p className="text-sm text-gray-500">{t('admin.administration.addTenantHelp')}</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <input className={inputCls} placeholder={t('admin.administration.tenantName')} value={tName} onChange={(e) => setTName(e.target.value)} required />
@@ -267,12 +271,8 @@ export default function AdministrationPage() {
               </div>
               <button type="submit" disabled={busy} className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">{t('admin.administration.createTenant')}</button>
             </form>
-          )}
-
-          <div className="mt-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.administration.allStaff')}</h3>
-            {staffTable(admins)}
-          </div>
+            {staffTable(tenantAdmins(admins), true)}
+          </div>)}
         </Section>
       )}
 

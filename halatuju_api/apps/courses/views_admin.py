@@ -783,7 +783,7 @@ class AdminListView(PartnerAdminMixin, APIView):
         if not admin or not (admin.is_super or admin.role == 'org_admin'):
             return Response({'error': 'Super admin access required'}, status=403)
 
-        admins = PartnerAdmin.objects.select_related('org').order_by('-created_at')
+        admins = PartnerAdmin.objects.select_related('org', 'owning_organisation').order_by('-created_at')
         if not admin.is_super:
             # org_admin: only their own org's manageable staff (never supers / other orgs).
             admins = admins.filter(
@@ -801,6 +801,9 @@ class AdminListView(PartnerAdminMixin, APIView):
                 'role': 'super' if a.is_super else a.role,
                 'is_active': a.is_active,
                 'org_name': a.org.name if a.org else None,
+                # Tenant binding (access boundary) — lets the panel's Add-tenant list show
+                # which organisation an org_admin runs. NOT the referral org above.
+                'owning_org_name': a.owning_organisation.name if a.owning_organisation else None,
                 'created_at': a.created_at.isoformat(),
             })
         return Response({'admins': data})

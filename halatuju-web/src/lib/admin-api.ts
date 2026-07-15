@@ -56,6 +56,7 @@ export interface StudentListItem {
   contact_phone: string
   referral_source: string | null
   org_name: string | null
+  owning_org_name?: string | null
   created_at: string
 }
 
@@ -173,6 +174,7 @@ export interface AdminItem {
   role: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc'
   is_active: boolean
   org_name: string | null
+  owning_org_name?: string | null
   created_at: string
 }
 

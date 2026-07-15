@@ -4065,7 +4065,7 @@
       "addTenant": "Tambah penyewa",
       "addTenantSub": "Cipta organisasi dan lantik pentadbirnya",
       "addTenantHelp": "Mencipta organisasi baharu dengan program biasiswanya sendiri dan melantik pentadbirnya.",
-      "tenantName": "Nama organisasi",
+      "tenantName": "BrightPath Foundation",
       "tenantAdminName": "Nama pentadbir",
       "tenantAdminEmail": "E-mel pentadbir",
       "createTenant": "Cipta organisasi",
@@ -4076,7 +4076,6 @@
       "inviteStaffSub": "Tambah kakitangan program ke organisasi anda",
       "billing": "Pengebilan & penggunaan",
       "billingSub": "Kos dan penggunaan untuk program anda",
-      "allStaff": "Semua kakitangan (semua organisasi)",
       "comingSoon": "Akan datang",
       "staffRole": {
         "reviewer": "Penilai",

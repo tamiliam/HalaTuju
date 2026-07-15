@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Small change: Administration platform panels — per-panel lists — 2026-07-15
+
+- Platform section no longer shows a general staff table: the referral-partner card lists
+  partner rows; the Add-tenant card lists tenant administrators with their organisation
+  (new `owning_org_name` in the staff-list payload); tenant-name placeholder is now
+  "BrightPath Foundation" (owner-specified example).
+
 ## Small change: Administration panel staff-table world split — 2026-07-15
 
 - Org section now lists PROGRAMME roles only (reviewer/admin/qc/org_admin); the platform

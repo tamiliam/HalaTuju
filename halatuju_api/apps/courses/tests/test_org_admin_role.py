@@ -179,6 +179,15 @@ class TestOrgAdminStaffManagement(_Base):
         emails = {a['email'] for a in self.client.get('/api/v1/admin/admins/').json()['admins']}
         self.assertTrue({'ownrev@x.com', 'otherrev@x.com', 'super@x.com'} <= emails)
 
+    def test_list_payload_carries_owning_org_name(self):
+        """The Administration panel's Add-tenant list shows which organisation an
+        org_admin runs — the payload must expose the TENANT binding (never the
+        referral org field)."""
+        self._auth('super-uid')
+        by_email = {a['email']: a for a in self.client.get('/api/v1/admin/admins/').json()['admins']}
+        self.assertEqual(by_email['oa@x.com']['owning_org_name'], self.bp.name)
+        self.assertIsNone(by_email['super@x.com']['owning_org_name'])
+
     def test_revoke_own_org_reviewer_ok(self):
         self._auth('oa-uid')
         r = self.client.patch(f'/api/v1/admin/admins/{self.own_rev.id}/revoke/',

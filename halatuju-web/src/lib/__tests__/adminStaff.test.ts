@@ -1,7 +1,7 @@
 // Regression for the Administration panel world-split: the org-section staff table
 // must never show the platform super admin or referral partners (they surfaced there
 // when the shipped panel rendered the raw all-staff list — owner caught it 2026-07-15).
-import { isProgrammeStaff, programmeStaff } from '../adminStaff'
+import { isProgrammeStaff, programmeStaff, referralPartners, tenantAdmins } from '../adminStaff'
 import type { AdminItem } from '../admin-api'
 
 const row = (over: Partial<AdminItem>): AdminItem => ({
@@ -35,5 +35,23 @@ describe('programmeStaff', () => {
   it('drops a legacy-flag super even if its role string is not "super"', () => {
     const list = [row({ id: 7, role: 'admin', is_super_admin: true })]
     expect(programmeStaff(list)).toEqual([])
+  })
+})
+
+describe('platform panel lists (per-panel worlds, no all-staff table)', () => {
+  const list = [
+    row({ id: 1, role: 'reviewer' }),
+    row({ id: 2, role: 'partner' }),
+    row({ id: 3, role: 'partner' }),
+    row({ id: 4, role: 'org_admin' }),
+    row({ id: 5, role: 'super' }),
+    row({ id: 6, role: 'qc' }),
+  ]
+  it('referralPartners returns partner rows only', () => {
+    expect(referralPartners(list).map((a) => a.id)).toEqual([2, 3])
+  })
+  it('tenantAdmins returns org_admin rows only (never supers)', () => {
+    expect(tenantAdmins(list).map((a) => a.id)).toEqual([4])
+    expect(tenantAdmins([row({ id: 8, role: 'org_admin', is_super_admin: true })])).toEqual([])
   })
 })
