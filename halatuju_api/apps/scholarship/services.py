@@ -1095,7 +1095,35 @@ def confirm_pathway(application):
                'source': 'offer_letter_confirmed'})
     application.chosen_programme = cp
     application.pathway_confirmed_at = timezone.now()
-    application.save(update_fields=['chosen_programme', 'pathway_confirmed_at'])
+    update_fields = ['chosen_programme', 'pathway_confirmed_at']
+
+    # The confirm query promises "we'll update your record to match" — so for an INSTITUTION
+    # pathway (matric/STPM), also bring the displayed pre-U fields into line with the confirmed
+    # offer. Without this, chosen_programme reflected the offer but `pre_u_institution` /
+    # `pre_u_track` stayed on the student's ORIGINAL declaration, so the cockpit kept showing the
+    # old school and the offer's Pathway chip kept a stream clash red (#117: confirmed a Sains
+    # offer at Kolej Tingkatan Enam Gombak, but the record still read Sains Sosial at SMK P
+    # Temenggong Ibrahim). The student confirmed THIS offer, so the offer is now authoritative.
+    pw = (application.chosen_pathway or '').strip().lower()
+    if op.is_pre_u(pw):
+        vf = offer.vision_fields if isinstance(offer.vision_fields, dict) else {}
+        f = vf.get('fields', {}) if isinstance(vf.get('fields'), dict) else {}
+        if pw == 'stpm':
+            stream = op.parse_stpm_stream(f'{f.get("stream", "")} {chk["programme"]}')
+            inst = op.clean_school_name(chk['institution'])
+        else:  # matric — track from the programme, institution from the state-unique catalogue
+            stream = op.parse_matric_track(chk['programme'])
+            vc = op.preu_course_id('matric', stream or (application.pre_u_track or ''))
+            inst = (op.catalogue_institution(vc, chk['institution']) if vc else '') \
+                or op.clean_school_name(chk['institution'])
+        if inst and inst != (application.pre_u_institution or ''):
+            application.pre_u_institution = inst
+            update_fields.append('pre_u_institution')
+        if stream and stream != (application.pre_u_track or ''):
+            application.pre_u_track = stream
+            update_fields.append('pre_u_track')
+
+    application.save(update_fields=update_fields)
     return True
 
 
