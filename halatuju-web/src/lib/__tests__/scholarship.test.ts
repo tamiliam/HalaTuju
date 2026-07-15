@@ -8,6 +8,7 @@ import {
   formatNric,
   formatPhone,
   formatMoney2dp,
+  expandMatricInstitution,
   formatAddress,
   isValidPhone,
   eligiblePathways,
@@ -95,6 +96,28 @@ function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
     ...over,
   }
 }
+
+describe('expandMatricInstitution', () => {
+  it('expands the KM abbreviation for display', () => {
+    expect(expandMatricInstitution('KM Perak')).toBe('Kolej Matrikulasi Perak')
+    expect(expandMatricInstitution('KM Pulau Pinang')).toBe('Kolej Matrikulasi Pulau Pinang')
+    expect(expandMatricInstitution('KM Negeri Sembilan')).toBe('Kolej Matrikulasi Negeri Sembilan')
+    expect(expandMatricInstitution('km johor')).toBe('Kolej Matrikulasi johor') // case-insensitive prefix
+  })
+  it('expands KMK to the engineering matric (checked before KM)', () => {
+    expect(expandMatricInstitution('KMK Perak')).toBe('Kolej Matrikulasi Kejuruteraan Perak')
+  })
+  it('leaves an already-expanded or non-matric name untouched', () => {
+    expect(expandMatricInstitution('Kolej Matrikulasi Perak')).toBe('Kolej Matrikulasi Perak')
+    expect(expandMatricInstitution('SMK Tok Perdana')).toBe('SMK Tok Perdana')
+    expect(expandMatricInstitution('Kompleks Matrikulasi')).toBe('Kompleks Matrikulasi') // no KM word-boundary
+  })
+  it('handles empty/blank', () => {
+    expect(expandMatricInstitution('')).toBe('')
+    expect(expandMatricInstitution(null)).toBe('')
+    expect(expandMatricInstitution(undefined)).toBe('')
+  })
+})
 
 describe('countAGrades', () => {
   it('counts A+, A and A- (case/space tolerant)', () => {

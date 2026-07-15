@@ -139,6 +139,19 @@ export function formatAddress(parts: Array<string | null | undefined>): string {
     .join(' ')
 }
 
+/** Expand a matriculation-college abbreviation for DISPLAY: "KM <State>" → "Kolej Matrikulasi
+ * <State>", "KMK <State>" → "Kolej Matrikulasi Kejuruteraan <State>" (the engineering matric).
+ * Leaves an already-expanded name, or anything not starting with the abbreviation, untouched.
+ * Display-only — never mutates the stored `pre_u_institution` (which keeps the student's wording).
+ * KMK is checked before KM (KMK starts with KM). */
+export function expandMatricInstitution(name: string | null | undefined): string {
+  const s = (name || '').trim()
+  if (!s) return s
+  if (/^kmk\b/i.test(s)) return s.replace(/^kmk\b/i, 'Kolej Matrikulasi Kejuruteraan')
+  if (/^km\b/i.test(s)) return s.replace(/^km\b/i, 'Kolej Matrikulasi')
+  return s
+}
+
 /** Format a raw amount (digit string or number) as money with thousands separators
  * and exactly two decimals, e.g. "3000" → "3,000.00". Empty/non-numeric → "". Used
  * for the household-income field display (the value stored stays the raw digits). */

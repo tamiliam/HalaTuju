@@ -3361,7 +3361,6 @@
       "spmPrereq": "Prasyarat SPM",
       "phone": "Telefon",
       "email": "E-mel",
-      "callLanguage": "Bahasa panggilan",
       "address": "Alamat",
       "householdSize": "Saiz isi rumah",
       "perCapita": "Pendapatan per kapita",
@@ -3385,7 +3384,7 @@
           "strDoc": "dokumen STR"
         },
         "sizeAccounted": "Semua ahli isi rumah telah diambil kira",
-        "docNote": "Dokumen menunjukkan {value}",
+        "declaredNote": "Diisytiharkan: {value}",
         "rosterNote": "Senarai mencatat {count} orang"
       },
       "preUTrack": "Trek Pra-U",

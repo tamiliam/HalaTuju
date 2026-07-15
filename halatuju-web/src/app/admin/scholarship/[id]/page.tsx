@@ -7,7 +7,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import VerifiedTick from '@/components/VerifiedTick'
-import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym } from '@/lib/scholarship'
+import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym, expandMatricInstitution } from '@/lib/scholarship'
 import { statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
 import { fieldVerifications, type VerifiableField } from '@/lib/fieldVerification'
 import {
@@ -157,7 +157,7 @@ const NON_PARENT_RELATIONSHIPS = new Set([
 const SHOW_REFEREES = false
 
 
-function Field({ label, value, verifiedLabel, note }: { label: string; value: ReactNode; verifiedLabel?: string; note?: string }) {
+function Field({ label, value, verifiedLabel, note, noteTone = 'amber' }: { label: string; value: ReactNode; verifiedLabel?: string; note?: string; noteTone?: 'amber' | 'muted' }) {
   return (
     <div>
       <dt className="text-xs text-gray-400 uppercase tracking-wider">{label}</dt>
@@ -165,7 +165,7 @@ function Field({ label, value, verifiedLabel, note }: { label: string; value: Re
         {value === null || value === undefined || value === '' ? '—' : value}
         {verifiedLabel && <VerifiedTick label={verifiedLabel} />}
       </dd>
-      {note && <p className="mt-0.5 text-xs text-amber-600">{note}</p>}
+      {note && <p className={`mt-0.5 text-xs ${noteTone === 'muted' ? 'text-gray-400' : 'text-amber-600'}`}>{note}</p>}
     </div>
   )
 }
@@ -730,22 +730,32 @@ export default function AdminScholarshipDetailPage() {
         })
       : undefined
 
-  // Household income + size verified ticks come from the backend document-vs-stated reconciliation
-  // (household_check). Non-mutating: on a mismatch we FLAG the documented/roster figure for the
-  // reviewer (amber note) rather than overwrite the student's declared value.
+  // Household income + size from the backend document-vs-stated reconciliation (household_check).
+  // Non-mutating throughout — the stored declared value is never overwritten, only the DISPLAY
+  // leads with the document-verified figure.
   const _hc = app.household_check
-  const incomeTip = _hc?.income.matches
+  const _fmtRm = (n: number) => `RM ${Number(n).toLocaleString('en-US')}`
+  // Income: when we've read every earner's income (confident), the DOCUMENT-VERIFIED total leads
+  // with a tick; the student's declared figure drops to a muted "Declared: RMx" note when it
+  // differs. Otherwise fall back to the declared value (no tick).
+  const _incConfident = !!_hc?.income.all_known && _hc.income.documented_total != null
+  const incomeValue = _incConfident
+    ? _fmtRm(_hc!.income.documented_total!)
+    : (app.household_income ? _fmtRm(app.household_income) : null)
+  const incomeTip = _incConfident
     ? t('admin.scholarship.verified.tooltip', { source: t('admin.scholarship.verified.source.incomeProof') })
     : undefined
-  const incomeNote = _hc?.income.all_known && !_hc.income.matches && _hc.income.documented_total != null
-    ? t('admin.scholarship.verified.docNote', { value: `RM ${Number(_hc.income.documented_total).toLocaleString('en-US')}` })
+  const incomeNote = _incConfident && !_hc!.income.matches && app.household_income
+    ? t('admin.scholarship.verified.declaredNote', { value: _fmtRm(app.household_income) })
     : undefined
   const sizeTip = _hc?.size.accounted ? t('admin.scholarship.verified.sizeAccounted') : undefined
   const sizeNote = _hc?.size.overcount
     ? t('admin.scholarship.verified.rosterNote', { count: String(_hc.size.described) })
     : undefined
-  // Per capita income = stated household income ÷ size (replaces the always-"No" JKM field).
-  const perCapita = app.household_income && app.household_size ? app.household_income / app.household_size : null
+  // Per capita income = the DOCUMENT-VERIFIED household income (when confident) ÷ size, else the
+  // declared income ÷ size. (Replaces the always-"No" JKM field.)
+  const _pcBase = _incConfident ? _hc!.income.documented_total! : app.household_income
+  const perCapita = _pcBase && app.household_size ? _pcBase / app.household_size : null
 
   // A superadmin has REOPENED the recorded decision (server-driven; held from sponsors).
   // A reopen reopens the WHOLE case for revision — Check 2 + Interview Stage + Decision all
@@ -953,7 +963,6 @@ export default function AdminScholarshipDetailPage() {
         const isInstitutionPathway = app.chosen_pathway === 'matric' || app.chosen_pathway === 'stpm'
         // Human labels for the stored codes — reuse the apply-form's own i18n maps so
         // the admin sees the same words the student did (matric→Matriculation, etc.).
-        const callLangLabel = app.preferred_call_language ? t(`scholarship.apply.callLang.${app.preferred_call_language}`) : null
         const pathwayLabel = (code?: string | null) => (code ? t(`scholarship.apply.plan.pathway.${code}`) : null)
         // pre_u_track holds a matric TRACK (sains/kejuruteraan…) for matric, or an STPM
         // STREAM (sains/sains_sosial/not_sure) for STPM — both under scholarship.apply.plan.
@@ -1008,12 +1017,12 @@ export default function AdminScholarshipDetailPage() {
               <Card title={t('admin.scholarship.sec.contact')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                   <Field label={t('admin.scholarship.phone')} value={app.contact_phone ? formatPhone(app.contact_phone) : null} />
-                  <Field label={t('admin.scholarship.callLanguage')} value={callLangLabel} />
-                  {/* Verified email only — shown once the student verifies it, else the
-                      verified Google login email. Full-width rows. */}
-                  <div className="col-span-2"><Field label={t('admin.scholarship.email')} value={app.verified_email
+                  {/* Email takes the old Call-language slot (call language hidden — owner 2026-07-15).
+                      Verified email only: shown once the student verifies it, else the verified
+                      Google login email. */}
+                  <Field label={t('admin.scholarship.email')} value={app.verified_email
                     ? <a href={`mailto:${app.verified_email}`} className="text-primary-600 hover:underline">{app.verified_email}</a>
-                    : null} /></div>
+                    : null} />
                   <div className="col-span-2"><Field label={t('admin.scholarship.address')} value={addr} verifiedLabel={vtip('address')} /></div>
                 </dl>
               </Card>
@@ -1021,7 +1030,7 @@ export default function AdminScholarshipDetailPage() {
               {/* Family & finances — moved up under About (was below Academic) */}
               <Card title={t('admin.scholarship.sec.family')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM ${Number(app.household_income).toLocaleString('en-US')}` : null} verifiedLabel={incomeTip} note={incomeNote} />
+                  <Field label={t('admin.scholarship.income')} value={incomeValue} verifiedLabel={incomeTip} note={incomeNote} noteTone="muted" />
                   <Field label={t('admin.scholarship.householdSize')} value={app.household_size} verifiedLabel={sizeTip} note={sizeNote} />
                   <Field label="STR" value={yn(app.receives_str)} verifiedLabel={vtip('str')} />
                   <Field label={t('admin.scholarship.perCapita')} value={perCapita != null ? `RM ${Number(perCapita).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : null} />
@@ -1069,7 +1078,7 @@ export default function AdminScholarshipDetailPage() {
                         <>
                           <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
                           <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
-                          <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
+                          <Field label={t('admin.scholarship.preUInstitution')} value={expandMatricInstitution(app.pre_u_institution)} />
                         </>
                       ) : (
                         <Field

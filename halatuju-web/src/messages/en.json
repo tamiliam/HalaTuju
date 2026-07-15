@@ -3361,7 +3361,6 @@
       "spmPrereq": "SPM prerequisites",
       "phone": "Phone",
       "email": "Email",
-      "callLanguage": "Call language",
       "address": "Address",
       "householdSize": "Household size",
       "perCapita": "Per capita income",
@@ -3385,7 +3384,7 @@
           "strDoc": "the STR document"
         },
         "sizeAccounted": "Everyone in the household is accounted for",
-        "docNote": "Documents show {value}",
+        "declaredNote": "Declared: {value}",
         "rosterNote": "Roster counts {count} people"
       },
       "preUTrack": "Pre-U track",

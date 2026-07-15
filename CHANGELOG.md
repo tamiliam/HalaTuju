@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit tweaks: KM→Kolej Matrikulasi, income document-verified on top, About-card tidy — 2026-07-15
+
+Owner live-review follow-ups (all cockpit display-only, no backend change):
+- **"KM Perak" now displays as "Kolej Matrikulasi Perak"** (and "KMK <X>" → "Kolej Matrikulasi
+  Kejuruteraan <X>"). New pure `expandMatricInstitution()` in `lib/scholarship.ts`, applied to the
+  matric pre-U institution field. Display-only — the stored `pre_u_institution` (student wording)
+  is untouched; the offer/pathway matcher already equated the two. (The catalogue-canonical name in
+  `chosen_programme.institution` was unreliable to reuse: some null, one a downstream degree offer,
+  one an ugly catalogue string — so a deterministic abbreviation expansion is cleaner.)
+- **Household income now leads with the document-verified total + a tick** when every earner's income
+  was read (confident); the declared figure drops to a muted "Declared: RMx" note when it differs
+  (was: declared on top, amber "Documents show RMx" below). Still non-mutating.
+- **Per capita income now uses the document-verified income** ÷ household size (falls back to the
+  declared income when not document-confident).
+- **About card:** Call language hidden; Email moved into its slot (beside Phone).
+- i18n `verified.docNote` → `verified.declaredNote`; removed the now-unused `admin.scholarship.callLanguage`.
+
 ## Verified ticks round 2: reporting date, household income/size reconciliation, JKM → per-capita — 2026-07-15
 
 Follow-up to the cockpit verified ticks, off owner review of #137:
