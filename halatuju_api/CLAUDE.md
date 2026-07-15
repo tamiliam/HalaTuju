@@ -534,6 +534,23 @@ tenant rehearsal) are gated on a **credible second-tenant prospect**. Roadmap
 skips the `_AdminBase` gates, or a raw admin `.objects` query without an `# org-fence:` pragma, FAILS
 the suite (`test_org_fence.py`), so BrightPath feature work stays safe.
 
+**✅ SHIPPED + LIVE 2026-07-15 — School-leaving-cert genuineness model + keep-better + duplicate
+collapse** (commit `af6ef919`; NO migration; retro
+`docs/retrospective-2026-07-15-school-leaving-cert-genuineness.md`; decisions ×2; lessons ×2). The
+*Sijil Berhenti Sekolah* had NO genuineness check (the green "Verified" chip only meant the fields
+read). New **`genuineness/school_leaving_doc.py` (`MODEL_VERSION 1.0.0`)** — leaver-anchor-first
+signature scorer (school-issued, no single national issuer → grammar-first like the water model). Owner
+signature set: title + No. Kad Pengenalan · Tarikh Lahir · Tempat Lahir · Tarikh Masuk Sekolah ·
+Kelakuan · Tarikh Berhenti · Sebab Berhenti. genuine / suspect / **unrecognised (testimonial → defer,
+never fake)** / not_school_leaving_cert (MyKad or another doc in the slot). Variables trimmed to the
+owner set (name · NRIC · school · kelakuan). **Keep-better made real** with no new promotion code — the
+scorer feeds `_doc_genuine_rank` → `promotion.doc_quality`. **`_collapse_duplicate_docs`** collapses the
+same cert requested twice by an officer (app #66). `--doc-type` filter added to `reextract_documents`.
+SOFT (officer chip + keep-better only, NOT the submission gate). **Calibrated on the 19-cert live corpus
+(re-extracted via an isolated one-off Cloud Run Job on the new image): 20/20 genuine, 0 false rejects,
+no tuning.** App-66 duplicate collapsed (1310→2023). +16 tests; 2519 scholarship pytest; golden masters
+intact.
+
 **✅ SHIPPED + LIVE 2026-07-15 — Platform Phase 1 completion (Sprints 2, 3a, 3b, 4)** (commits
 `5ffcd493`/`f2c8c5ef`/`171a6459`/`200cbbd6`; migrations `scholarship/0099`+`0100`, `courses/0062`+`0063`
 applied migrate-first via Supabase MCP at Checkpoint 1; retro

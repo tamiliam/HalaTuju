@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## School-leaving certificate genuineness model + keep-better + duplicate collapse — 2026-07-15
+
+The *Sijil Berhenti Sekolah* had NO genuineness check — the green "Verified" chip only meant the
+fields read. Adds a deterministic signature scorer, extends the extraction variables, and makes the
+keep-better replacement real for this type (owner request). Deployed `af6ef919`; NO migration; retro
+`docs/retrospective-2026-07-15-school-leaving-cert-genuineness.md`.
+
+### Added
+- **`genuineness/school_leaving_doc.py` (`MODEL_VERSION 1.0.0`)** — a leaver-anchor-first signature
+  scorer (school-issued, no single national issuer, so grammar-first like the water model). Owner
+  signature set: `SIJIL BERHENTI SEKOLAH` title + No. Kad Pengenalan · Tarikh Lahir · Tempat Lahir ·
+  Tarikh Masuk Sekolah · Kelakuan · Tarikh Berhenti · Sebab Berhenti. Statuses: **genuine** (standard
+  numbered form) / **suspect** (thin-cropped) / **unrecognised** (a free-form testimonial we can't
+  structurally confirm → DEFER, never fake) / **not_school_leaving_cert** (MyKad or another known doc
+  misfiled in the slot). Registered in `genuineness.assess()`.
+- **Extraction variables** (owner set): student name · NRIC · school · kelakuan (added `nric` +
+  `kelakuan`; dropped `year` + `catatan`).
+- **`--doc-type` filter on `reextract_documents`** — a scoped, cheap re-extraction pass (calibration /
+  a single-type rollout) instead of the whole supporting-doc corpus.
+
+### Changed
+- **Keep-better is now real for this type.** Wired into `vision_fields.authenticity` →
+  `income_engine._doc_genuine_rank` → `promotion.doc_quality`, so a genuine cert outranks a
+  suspect/wrong one and a worse re-upload drops to Old/Replaced. Cockpit chip surfaces ONLY the
+  wrong-type reject (a thin/cropped or testimonial read renders no chip — no amber noise, never a
+  false reject).
+- **`_collapse_duplicate_docs`** — an academic single-per-person doc (school_leaving_cert /
+  semester_result) requested twice by an officer opened two `request_code` slots, leaving two live
+  copies (app #66). Now collapses to the single best live copy across request codes.
+
+### Notes
+- **SOFT throughout** — feeds the officer chip + keep-better ranking, NOT the submission gate. NO
+  migration. +16 tests; 2519 scholarship pytest; golden masters intact.
+- **Calibrated on the 19-cert live corpus (re-extracted on the live service): 20/20 genuine, 0
+  suspect, 0 wrong-type, 0 false rejects.** Leaver anchor fired 20/20; title OCR'd on 18/20 (2 read
+  genuine off labels alone — why the title is not relied on by itself). No tuning needed. The app-66
+  duplicate was collapsed (1310 → 2023).
+
 ## Platform Phase 1 completion — Sprints 2, 3a, 3b, 4 — 2026-07-15
 
 The organisation wall on the scholarship system. Behaviourally INVISIBLE while BrightPath is

@@ -19,11 +19,13 @@ the water model, water_doc.py — grammar-first, not a single issuer):
     certificate / EPF / birth cert / STR) misfiled here, or nothing school-shaped at all. The
     wrong-type reject fires ONLY when NO leaver signal anchors the doc.
 
-Calibration: NO eval snapshots existed for this type (it was added 2026-07-03) and the raw OCR text
-is not persisted, so the initial weights below are set from the standard-form spec + one live sample
-(#66 THARUN). They are VALIDATED against the live corpus (19 certs) by a re-extraction pass that
-stores `authenticity.present`/`missing` per doc — read those back and tune. Conservative by design:
-a thin read lands in 'suspect' (officer confirms), never a false 'genuine' or a false reject.
+Calibration (n=19 live certs, re-extracted 2026-07-15 — no eval snapshots existed, the type was added
+2026-07-03): **20/20 genuine (incl. the app-66 duplicate) · 0 suspect · 0 wrong-type · 0 false
+rejects.** The leaver anchor fired on 20/20 (the never-reject guarantee held); field labels ranged
+4–7; the title OCR'd on 18/20 (2 certs read genuine off labels alone — why the title is not relied on
+by itself). Owner-specified signature set held across the corpus with no tuning. The scorer persists
+`markers.label_names` per doc (the calibration readout — the raw OCR text is not stored). Conservative
+by design: a thin read lands in 'suspect' (officer confirms), never a false 'genuine' or a false reject.
 
 Returns the canonical soft vocabulary ('genuine' / 'suspect' / 'unrecognised' /
 'not_school_leaving_cert') shared with every other genuineness type. SOFT throughout — the reviewer
@@ -41,8 +43,8 @@ from .results_doc import _norm, misfiled_as
 #                        → unrecognised (never fake); wrong-type backstop (MyKad / another known doc
 #                        in the slot). Owner-specified signature set: title (SIJIL BERHENTI SEKOLAH) +
 #                        No. Kad Pengenalan · Tarikh Lahir · Tempat Lahir · Tarikh Masuk Sekolah ·
-#                        Kelakuan · Tarikh Berhenti · Sebab Berhenti. Set from the standard form + one
-#                        live sample; to be validated/tuned against the 19-cert live corpus.
+#                        Kelakuan · Tarikh Berhenti · Sebab Berhenti. Validated on the 19-cert live
+#                        corpus (2026-07-15): 20/20 genuine, 0 false rejects, no tuning needed.
 MODEL_VERSION = '1.0.0'
 
 # ── LEAVER anchor — "is this a school-leaving certificate?" (also the never-reject guarantee) ──────
