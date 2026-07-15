@@ -614,6 +614,8 @@ def _parse_school_leaving(text: str) -> Optional[dict]:
     # everything else to Gemini (which reads the varied real layouts cleanly). Validated on 18 live
     # certs (2026-07-15): a naive read grabbed the wrong kelakuan / a truncated school on ~1/3, so the
     # gates below (a recognised conduct word + a full ≥3-word school name) keep the Exact path clean.
+    # After hardening + re-extraction: 2 read Exact (both clean), 16 defer to Gemini (all clean) — 0
+    # dirty reads. The Exact path is rare-but-trustworthy; Gemini carries the varied tail.
     if not has(text, r'berhenti\s+sekolah', r'tarikh\s+berhenti', r'sebab\s+berhenti', r'sijil\s+berhenti'):
         return None
     name = find_value(text, r'nama\s+murid') or find_value(text, r'nama\s+pelajar')

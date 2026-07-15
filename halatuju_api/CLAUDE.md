@@ -548,6 +548,21 @@ a rejected-card trail (**Recommended by {reviewer} → Reopened by {who} · {dat
 approved, then WITHDRAWN by the owner** — the existing `interview` decline template already reads as a
 "limited funds" message, so the generic is sufficient; do NOT rebuild it. **▶ AT DEPLOY:** push branch →
 merge → deploy (code-only, no migrate-first); this is officer-facing, sends no student email.
+**✅ SHIPPED + LIVE 2026-07-15 — School-leaving cert: deterministic read + officer chips + leadership
+notes** (commits `50149446` api+web, `06e38dee` api hardening; NO migration; retro
+`docs/retrospective-2026-07-15-school-leaving-cert-fields.md`; decision ×1; lesson ×1). Follow-up to
+the genuineness model (owner, off #66's cockpit): read the *Sijil Berhenti Sekolah* OCR-first with AI
+fallback + proper officer chips. New **`doc_parse._parse_school_leaving`** — deterministic parser
+(standard numbered form → "Exact"; testimonial → Gemini "AI"); captures `activities` (Kurikulum
+"Jawatan" roles + Catatan) on both paths. **STRICT confidence gates** (kelakuan = a recognised conduct
+word; school = a full ≥3-word name; activities boilerplate-filtered) — a first lenient cut shipped
+dirty reads (wrong kelakuan / truncated school), corrected by the hardening deploy + a re-extraction:
+**2 Exact / 16 AI / 0 dirty.** New `school_leaving_check` (`academic_engine.student_school_leaving_check`
++ serializer): School · Name · IC · Behaviour chips (Name/IC matched vs the student) + a value line
+(school / conduct / leadership notes) in the cockpit; i18n en/ms/ta. +29 BE tests, +2 jest; 3741
+combined pytest; jest 503. **▶ CARRY (owner):** Tamil first-draft review of the new
+`docsDrawer.fact.{school,behaviour}` + `docsDrawer.certValue.*` labels.
+
 **✅ SHIPPED + LIVE 2026-07-15 — School-leaving-cert genuineness model + keep-better + duplicate
 collapse** (commit `af6ef919`; NO migration; retro
 `docs/retrospective-2026-07-15-school-leaving-cert-genuineness.md`; decisions ×2; lessons ×2). The

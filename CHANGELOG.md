@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## School-leaving certificate: deterministic read + officer chips + leadership notes — 2026-07-15
+
+Follow-up to the genuineness model (owner, off app #66's cockpit): read the *Sijil Berhenti
+Sekolah* OCR-first with AI fallback, and surface proper officer chips instead of one "Verified"
+pill. Deployed `50149446` (api+web) + `06e38dee` (api hardening); NO migration; retro
+`docs/retrospective-2026-07-15-school-leaving-cert-fields.md`; decision ×1; lesson ×1.
+
+### Added
+- **`doc_parse._parse_school_leaving`** — a deterministic label-anchored parser for the standard
+  numbered form (Nama Murid / No. Kad Pengenalan / Kelakuan / school header). Reads → **"Exact"**;
+  a free-form testimonial (no numbered grammar) → `None` → Gemini **"AI"** fallback. Captures the
+  co-curricular / leadership roles (Kurikulum "Jawatan" lines) + Catatan into `activities` on both
+  paths. **STRICT confidence gates** (validated on 18 live certs): fires only on a recognised
+  conduct word for kelakuan + a full ≥3-word school name, else defers to Gemini — so the Exact path
+  is rare-but-clean and the varied tail reads cleanly via Gemini.
+- **`activities`** on the extraction schema + prompt hint.
+- **`school_leaving_check`** (`academic_engine.student_school_leaving_check` + serializer) →
+  `{school, name, name_status, nric, nric_status, kelakuan, activities}`; Name + NRIC matched against
+  the student's own profile (mirrors `semester_check`).
+- **Cockpit chips** — the doc drawer renders **School · Name · IC · Behaviour** (Name/IC = match,
+  School/Behaviour = read) plus a value line with the school, conduct, and **leadership notes**;
+  `school_leaving_cert` added to the capture-badge deterministic-first default list. i18n en/ms/ta
+  (Tamil first-draft).
+
+### Notes
+- NO migration. +29 BE tests, +2 jest; 2518 scholarship pytest + 3741 combined; jest 503; i18n parity.
+- **Live re-extraction outcome: 2 certs read Exact (clean), 16 read Gemini AI (clean), 0 dirty** —
+  the hardening deploy corrected an initial pass where the naive parser grabbed the wrong kelakuan
+  ("16 Tarikh Berhenti Sekolah", ": TERPUJI"), a truncated school ("SMK BUKIT"), or boilerplate in
+  activities. Lesson re-learned: validate deterministic parsers on REAL documents, not synthetic
+  fixtures.
+
 ## Rejection record shows the decision trail (reviewer → QC reopen → decline) — 2026-07-15
 
 ### Changed
