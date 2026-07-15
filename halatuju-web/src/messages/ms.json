@@ -3807,7 +3807,9 @@
       "reviewer": "Penilai",
       "viewer": "Pemerhati",
       "admin": "Pentadbir",
-      "partner": "Rakan kongsi"
+      "partner": "Rakan kongsi",
+      "qc": "Kawalan mutu",
+      "org_admin": "Pentadbir organisasi"
     },
     "roleHint": {
       "super": "Akses penuh, termasuk menjemput dan mengurus pentadbir lain.",
@@ -4045,6 +4047,34 @@
     "passwordMismatch": "Kedua-dua kata laluan tidak sepadan.",
     "setPasswordNoLink": "Halaman ini perlu dibuka daripada pautan dalam e-mel jemputan atau set semula kata laluan anda. Pautan mungkin telah tamat tempoh — minta yang baharu dari halaman log masuk.",
     "guideNav": "Panduan",
-    "faqNav": "Soalan Lazim"
+    "faqNav": "Soalan Lazim",
+    "administration": {
+      "nav": "Pentadbiran",
+      "title": "Pentadbiran",
+      "platform": "Platform",
+      "superOnly": "Pentadbir utama sahaja",
+      "invitePartner": "Jemput rakan rujukan",
+      "invitePartnerSub": "Tambah wakil organisasi rujukan / jerayawara",
+      "addTenant": "Tambah penyewa",
+      "addTenantSub": "Cipta organisasi dan lantik pentadbirnya",
+      "addTenantHelp": "Mencipta organisasi baharu dengan program biasiswanya sendiri dan melantik pentadbirnya.",
+      "tenantName": "Nama organisasi",
+      "tenantAdminName": "Nama pentadbir",
+      "tenantAdminEmail": "E-mel pentadbir",
+      "createTenant": "Cipta organisasi",
+      "orgHeading": "Pentadbiran organisasi",
+      "orgHeadingNamed": "Pentadbiran {org}",
+      "orgBadge": "Organisasi",
+      "inviteStaff": "Jemput penilai & pentadbir",
+      "inviteStaffSub": "Tambah kakitangan program ke organisasi anda",
+      "billing": "Pengebilan & penggunaan",
+      "billingSub": "Kos dan penggunaan untuk program anda",
+      "comingSoon": "Akan datang",
+      "staffRole": {
+        "reviewer": "Penilai",
+        "admin": "Pentadbir lihat sahaja",
+        "qc": "Kawalan mutu"
+      }
+    }
   }
 }

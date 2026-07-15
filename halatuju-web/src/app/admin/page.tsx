@@ -21,7 +21,7 @@ export default function AdminDashboard() {
   // (admin / qc / reviewer) have no dashboard — send them to their scholarship queue.
   const effRole = role?.is_super_admin ? 'super' : role?.role
   useEffect(() => {
-    if (effRole === 'admin' || effRole === 'qc' || effRole === 'reviewer') {
+    if (effRole === 'admin' || effRole === 'qc' || effRole === 'reviewer' || effRole === 'org_admin') {
       router.replace('/admin/scholarship')
     }
   }, [effRole, router])

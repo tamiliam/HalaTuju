@@ -3,6 +3,7 @@
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { getCourseDataStatus, runCourseDataCheck, type CourseDataStatusResponse, type LinkFailure } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 
 function fmtDate(iso: string | null): string | null {
@@ -13,8 +14,14 @@ function fmtDate(iso: string | null): string | null {
 }
 
 export default function CourseDataDashboard() {
-  const { token } = useAdminAuth()
+  const { token, role } = useAdminAuth()
   const { t } = useT()
+  const router = useRouter()
+  // Platform surface — super-only (surface partition); non-super redirects (backend also 403s).
+  const isSuper = role?.is_super_admin || role?.role === 'super'
+  useEffect(() => {
+    if (role && !isSuper) router.replace('/admin/scholarship')
+  }, [role, isSuper, router])
   const [data, setData] = useState<CourseDataStatusResponse | null>(null)
   const [error, setError] = useState('')
   const [checking, setChecking] = useState(false)

@@ -44,7 +44,7 @@ export default function AdminScholarshipList() {
   // Only super + admin see every application, so only they benefit from the assignee filter.
   // A reviewer's list is already hard-scoped to their own assigned applicants server-side, so
   // the filter is redundant for them (and "Unassigned" would always return nothing).
-  const canFilterByAssignee = isSuper || role?.role === 'admin'
+  const canFilterByAssignee = isSuper || role?.role === 'admin' || role?.role === 'org_admin'
   const { t } = useT()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
   // Super-only inline reviewer assignment (the "Assigned" column dropdown).

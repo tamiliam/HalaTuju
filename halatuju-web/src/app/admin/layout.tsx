@@ -58,17 +58,20 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const scholarship = { href: '/admin/scholarship', label: t('admin.scholarship.nav') }
   const sponsors = { href: '/admin/sponsors', label: t('admin.sponsors.nav') }
   const courseData = { href: '/admin/course-data', label: t('admin.courseData.nav') }
-  const invite = { href: '/admin/invite', label: t('admin.invite') }
+  const administration = { href: '/admin/administration', label: t('admin.administration.nav') }
   const profile = { href: '/admin/profile', label: t('admin.profile') }
   const guide = { href: '/admin/guide', label: t('admin.guideNav') }
   const faq = { href: '/admin/faq', label: t('admin.faqNav') }
   const navLinks =
-    // BrightPath (bursary) roles — admin + qc + reviewer — see the scholarship side, NOT the
-    // HalaTuju course-selector pages (Dashboard/Students/Course Data), which only super retains.
+    // BrightPath (bursary) roles — admin + qc + reviewer + org_admin — see the scholarship
+    // side, NOT the HalaTuju course-selector pages (Dashboard/Students/Course Data), which
+    // only super retains. The org_admin (organisation superadmin) additionally gets the
+    // Administration panel (its org's staff management); super gets it as the platform console.
     r === 'partner' ? [dashboard, students, profile]        // HalaTuju org rep
     : r === 'reviewer' ? [scholarship, profile, guide, faq]
     : (r === 'qc' || r === 'admin') ? [scholarship, sponsors, profile, guide, faq]
-    : [dashboard, students, scholarship, sponsors, courseData, invite, profile, guide, faq]  // super (everything)
+    : r === 'org_admin' ? [scholarship, sponsors, administration, profile, guide, faq]
+    : [dashboard, students, scholarship, sponsors, courseData, administration, profile, guide, faq]  // super
 
   return (
     <div className="min-h-screen bg-gray-50">

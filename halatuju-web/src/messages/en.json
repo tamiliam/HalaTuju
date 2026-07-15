@@ -3807,7 +3807,9 @@
       "reviewer": "Reviewer",
       "viewer": "Viewer",
       "admin": "Admin",
-      "partner": "Partner"
+      "partner": "Partner",
+      "qc": "Quality control",
+      "org_admin": "Organisation admin"
     },
     "roleHint": {
       "super": "Full access, including inviting and managing other admins.",
@@ -4045,6 +4047,34 @@
     "passwordMismatch": "The two passwords don’t match.",
     "setPasswordNoLink": "This page must be opened from the link in your invite or password-reset email. The link may have expired — request a new one from the login page.",
     "guideNav": "Guide",
-    "faqNav": "FAQ"
+    "faqNav": "FAQ",
+    "administration": {
+      "nav": "Administration",
+      "title": "Administration",
+      "platform": "Platform",
+      "superOnly": "Super admin only",
+      "invitePartner": "Invite referral partner",
+      "invitePartnerSub": "Add a roadshow / referral organisation representative",
+      "addTenant": "Add tenant",
+      "addTenantSub": "Create an organisation and install its administrator",
+      "addTenantHelp": "Creates a new organisation with its own scholarship programme and installs its administrator.",
+      "tenantName": "Organisation name",
+      "tenantAdminName": "Administrator name",
+      "tenantAdminEmail": "Administrator email",
+      "createTenant": "Create organisation",
+      "orgHeading": "Organisation administration",
+      "orgHeadingNamed": "{org} administration",
+      "orgBadge": "Organisation",
+      "inviteStaff": "Invite reviewers & admins",
+      "inviteStaffSub": "Add programme staff to your organisation",
+      "billing": "Billing & usage",
+      "billingSub": "Costs and usage for your programme",
+      "comingSoon": "Coming soon",
+      "staffRole": {
+        "reviewer": "Reviewer",
+        "admin": "View-only admin",
+        "qc": "QC"
+      }
+    }
   }
 }

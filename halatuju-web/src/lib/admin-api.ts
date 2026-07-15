@@ -170,7 +170,7 @@ export interface AdminItem {
   name: string
   email: string
   is_super_admin: boolean
-  role: 'super' | 'admin' | 'partner' | 'reviewer'
+  role: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc'
   is_active: boolean
   org_name: string | null
   created_at: string
@@ -327,7 +327,7 @@ export async function inviteAdmin(
   data: {
     email: string
     name: string
-    role?: 'admin' | 'partner' | 'reviewer'
+    role?: 'admin' | 'partner' | 'reviewer' | 'qc' | 'org_admin'
     org_id?: number
     new_org_name?: string
     new_org_code?: string

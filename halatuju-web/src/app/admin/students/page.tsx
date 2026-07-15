@@ -10,6 +10,7 @@ import {
 } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { formatNricDisplay } from '@/lib/scholarship'
 import { Pagination } from '@/components/Pagination'
@@ -39,6 +40,13 @@ const formatPhone = (phone: string | null) => {
 export default function AdminStudentList() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
+  const router = useRouter()
+  // Platform surface — super-only (surface partition). The backend 403s a non-super, but
+  // a direct-URL visitor gets a clean redirect rather than an error flash.
+  const isSuper = role?.is_super_admin || role?.role === 'super'
+  useEffect(() => {
+    if (role && !isSuper) router.replace('/admin/scholarship')
+  }, [role, isSuper, router])
   const [data, setData] = useState<StudentListData | null>(null)
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)

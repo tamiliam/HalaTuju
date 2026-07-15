@@ -14,9 +14,13 @@ import type { Session } from '@supabase/supabase-js'
 interface AdminRole {
   is_admin: boolean
   is_super_admin: boolean
-  role?: 'super' | 'admin' | 'partner' | 'reviewer' | 'qc'
+  role?: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc'
   admin_id?: number | null
   org_name: string | null
+  // The B40 tenant this staff member administers (their access boundary) — NOT the
+  // referral org. The Administration panel's org section keys off these.
+  owning_org_id?: number | null
+  owning_org_name?: string | null
   admin_name: string
 }
 
