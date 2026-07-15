@@ -3964,6 +3964,13 @@
       "selectState": "Pilih negeri",
       "langTitle": "Bahasa",
       "langSubtitle": "Supaya kami boleh memadankan anda dengan pelajar yang anda boleh berbual dengan selesa.",
+      "onboarding": {
+        "title": "Lengkapkan profil penyemak anda untuk meneruskan",
+        "intro": "Sila isi butiran wajib ini (bertanda *):",
+        "allSet": "Selesai — tekan Simpan untuk meneruskan ke permohonan anda.",
+        "languages": "Sekurang-kurangnya satu bahasa yang anda boleh menyemak",
+        "langHint": "Tetapkan sekurang-kurangnya satu kepada Perbualan atau Fasih."
+      },
       "langEnglish": "Bahasa Inggeris",
       "langBm": "Bahasa Melayu",
       "langTamil": "Bahasa Tamil",

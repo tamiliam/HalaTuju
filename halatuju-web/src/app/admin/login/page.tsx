@@ -10,6 +10,7 @@ import {
   adminResetPassword,
 } from '@/lib/admin-supabase'
 import { enforceSingleScope, consumeSuperseded } from '@/lib/sessionPolicy'
+import { adminLanding } from '@/lib/adminLanding'
 import { useT } from '@/lib/i18n'
 
 type Step = 'login' | 'forgot' | 'forgot-sent'
@@ -89,10 +90,10 @@ export default function AdminLoginPage() {
           router.push('/admin/set-password')
           return
         }
-        // Reviewers/viewers have no partner-org dashboard — send them to their
-        // workspace (B40 Applications); org admins/super keep the dashboard.
-        router.push(role.role === 'reviewer' || role.role === 'viewer'
-          ? '/admin/scholarship' : '/admin')
+        // Reviewers/viewers have no partner-org dashboard — send them to their workspace
+        // (B40 Applications); org admins/super keep the dashboard; a reviewer with an
+        // incomplete profile is held on /admin/profile until they finish onboarding.
+        router.push(adminLanding(role))
         return
       } catch {
         setError(t('errors.adminVerifyFailed'))

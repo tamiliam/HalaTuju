@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
   getAdminProfile, updateAdminProfile, type AdminProfile,
   getReviewerProfile, updateReviewerProfile, type ReviewerProfile, type LangFluency,
 } from '@/lib/admin-api'
+import { missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
 import { useT } from '@/lib/i18n'
 import { MALAYSIAN_STATES } from '@/lib/scholarship'
 import { formatMyMobile } from '@/lib/sponsorAuth'
@@ -31,7 +33,8 @@ const UNI_OPTIONS = PUBLIC_UNIVERSITIES.map((u) => ({
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
 export default function AdminProfilePage() {
-  const { token, role } = useAdminAuth()
+  const { token, role, refreshRole } = useAdminAuth()
+  const router = useRouter()
   const { t } = useT()
   const [profile, setProfile] = useState<AdminProfile | null>(null)
   const [name, setName] = useState('')
@@ -70,6 +73,21 @@ export default function AdminProfilePage() {
   const qualOpts = QUAL_OPTS.map(([value, key]) => ({ value, label: t(`admin.reviewer.qualOpts.${key}`) }))
   const fieldOpts = FIELD_OPTS.map(([value, key]) => ({ value, label: t(`admin.reviewer.fieldOpts.${key}`) }))
 
+  // Onboarding gate: a reviewer whose backend profile flag is false is held here until the
+  // compulsory fields are filled. `missing` is a live client mirror (updates as they type) that
+  // drives the banner; the labels reuse existing i18n. `gated` = still in first-login onboarding.
+  const gated = isReviewer && role?.reviewer_profile_complete === false
+  const missing = isReviewer ? missingReviewerFields(name, reviewer) : []
+  const MISSING_LABEL: Record<string, string> = {
+    name: t('admin.name'),
+    highest_qualification: t('admin.reviewer.highestQualification'),
+    university: t('admin.reviewer.university'),
+    graduation_year: t('admin.reviewer.graduationYear'),
+    field_of_study: t('admin.reviewer.fieldOfStudy'),
+    languages: t('admin.reviewer.onboarding.languages'),
+    phone: t('admin.reviewer.phone'),
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -85,6 +103,13 @@ export default function AdminProfilePage() {
         await updateReviewerProfile(reviewer, { token: token! })
       }
       setMessage({ type: 'success', text: t('admin.profileUpdated') })
+      // Onboarding: if this save just completed a gated reviewer's profile, refresh the role flag
+      // and send them on to their workspace (the layout guard releases once the flag flips).
+      if (isReviewer && role?.reviewer_profile_complete === false && reviewerProfileComplete(name, reviewer)) {
+        await refreshRole()
+        router.push('/admin/scholarship')
+        return
+      }
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : t('admin.profileUpdateFailed') })
     }
@@ -93,10 +118,27 @@ export default function AdminProfilePage() {
 
   const card = 'bg-white rounded-xl p-6 shadow-sm border space-y-4'
   const labelCls = 'block text-sm text-gray-600 mb-1'
+  const req = <span className="text-red-500" aria-hidden> *</span>  // compulsory-field marker
 
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('admin.profileTitle')}</h1>
+
+      {gated && (
+        <div className={`rounded-lg p-4 mt-4 border ${missing.length ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
+          <p className={`text-sm font-medium ${missing.length ? 'text-amber-900' : 'text-green-800'}`}>
+            {missing.length ? t('admin.reviewer.onboarding.title') : t('admin.reviewer.onboarding.allSet')}
+          </p>
+          {missing.length > 0 && (
+            <>
+              <p className="text-sm text-amber-800 mt-1">{t('admin.reviewer.onboarding.intro')}</p>
+              <ul className="mt-1 list-disc ml-5 text-sm text-amber-800">
+                {missing.map((f) => <li key={f}>{MISSING_LABEL[f]}</li>)}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
 
       {message && (
         <div className={`rounded-lg p-4 my-6 ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-600'}`}>
@@ -110,7 +152,7 @@ export default function AdminProfilePage() {
           <h2 className="font-semibold">{t('admin.yourInfo')}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={labelCls}>{t('admin.name')}</label>
+              <label className={labelCls}>{t('admin.name')}{req}</label>
               <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} required />
             </div>
             <div>
@@ -145,7 +187,7 @@ export default function AdminProfilePage() {
               <p className="text-sm text-gray-500 -mt-2">{t('admin.reviewer.subtitle')}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className={labelCls}>{t('admin.reviewer.highestQualification')}</label>
+                  <label className={labelCls}>{t('admin.reviewer.highestQualification')}{req}</label>
                   <SelectWithOther
                     value={reviewer?.highest_qualification ?? ''}
                     onChange={(v) => setRev({ highest_qualification: v })}
@@ -156,7 +198,7 @@ export default function AdminProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className={labelCls}>{t('admin.reviewer.fieldOfStudy')}</label>
+                  <label className={labelCls}>{t('admin.reviewer.fieldOfStudy')}{req}</label>
                   <SelectWithOther
                     value={reviewer?.field_of_study ?? ''}
                     onChange={(v) => setRev({ field_of_study: v })}
@@ -167,7 +209,7 @@ export default function AdminProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className={labelCls}>{t('admin.reviewer.university')}</label>
+                  <label className={labelCls}>{t('admin.reviewer.university')}{req}</label>
                   <InstitutionPicker
                     options={UNI_OPTIONS}
                     value={reviewer?.university ?? ''}
@@ -177,7 +219,7 @@ export default function AdminProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className={labelCls}>{t('admin.reviewer.graduationYear')}</label>
+                  <label className={labelCls}>{t('admin.reviewer.graduationYear')}{req}</label>
                   <input
                     type="number" inputMode="numeric" min={1950} max={2100}
                     value={reviewer?.graduation_year ?? ''}
@@ -189,8 +231,8 @@ export default function AdminProfilePage() {
             </div>
 
             <div className={card}>
-              <h2 className="font-semibold">{t('admin.reviewer.langTitle')}</h2>
-              <p className="text-sm text-gray-500 -mt-2">{t('admin.reviewer.langSubtitle')}</p>
+              <h2 className="font-semibold">{t('admin.reviewer.langTitle')}{req}</h2>
+              <p className="text-sm text-gray-500 -mt-2">{t('admin.reviewer.langSubtitle')} {t('admin.reviewer.onboarding.langHint')}</p>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
                   <label className={labelCls}>{t('admin.reviewer.langEnglish')}</label>
@@ -229,7 +271,7 @@ export default function AdminProfilePage() {
               <p className="text-sm text-gray-500 -mt-2 italic">{t('admin.reviewer.contactSubtitle')}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className={labelCls}>{t('admin.reviewer.phone')}</label>
+                  <label className={labelCls}>{t('admin.reviewer.phone')}{req}</label>
                   <PhoneField value={reviewer?.phone ?? ''} onChange={(v) => setRev({ phone: v })} />
                 </div>
               </div>

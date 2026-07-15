@@ -17,6 +17,7 @@ export default function AdminSetPasswordPage() {
   const { t } = useT()
   const [ready, setReady] = useState(false)      // a valid session from the email link exists
   const [checking, setChecking] = useState(true) // still waiting for the link session
+  const [email, setEmail] = useState('')         // the invited account's email (the "username")
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
   const [loading, setLoading] = useState(false)
@@ -25,13 +26,18 @@ export default function AdminSetPasswordPage() {
   useEffect(() => {
     const supabase = getAdminSupabase()
     let settled = false
-    const markReady = () => { settled = true; setReady(true); setChecking(false) }
+    const markReady = (session: { user?: { email?: string } } | null) => {
+      // Capture the account email as the "username" so the browser password manager can attach it
+      // to the saved credential (else its "Update password?" prompt shows an empty Username box).
+      setEmail(session?.user?.email ?? '')
+      settled = true; setReady(true); setChecking(false)
+    }
 
     // The session may already be established by the time we subscribe…
-    supabase.auth.getSession().then(({ data }) => { if (data.session) markReady() })
+    supabase.auth.getSession().then(({ data }) => { if (data.session) markReady(data.session) })
     // …or it arrives via the auth event (PASSWORD_RECOVERY / SIGNED_IN) as the link is processed.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) markReady()
+      if (session) markReady(session)
     })
     // If no session shows up shortly, the link was missing/expired/invalid.
     const timer = setTimeout(() => { if (!settled) setChecking(false) }, 4000)
@@ -97,6 +103,19 @@ export default function AdminSetPasswordPage() {
                 </div>
               )}
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* The account email as autocomplete="username": lets the browser password manager
+                    attach it to the saved credential (no more empty "Username" in its prompt) and
+                    shows the reviewer whose account they're setting up. Read-only. */}
+                {email && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.emailLabel')}</label>
+                    <input
+                      type="text" value={email} readOnly name="username" autoComplete="username"
+                      aria-label={t('admin.emailLabel')}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.newPassword')}</label>
                   <input
