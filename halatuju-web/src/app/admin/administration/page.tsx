@@ -302,15 +302,14 @@ export default function AdministrationPage() {
 
       {/* ORGANISATION section — super + org_admin manage; Admin-General views read-only */}
       <Section title={orgHeading} badge={t('admin.administration.orgBadge')} badgeCls="bg-blue-100 text-blue-700">
-        {/* Payments — its own entry point (no top-level nav item); open to admin/org_admin/super. */}
-        <div className="grid gap-3 sm:grid-cols-2 mb-3">
-          <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
-            onClick={() => router.push('/admin/payments')} />
-        </div>
+        {/* Payments — its own entry point (no top-level nav item); open to admin/org_admin/super.
+            Card order (owner, 2026-07-17): Invite → Payments → Billing in one grid. */}
         {canManage ? (<>
           <div className="grid gap-3 sm:grid-cols-2">
             <IconCard icon="👥" title={t('admin.administration.inviteStaff')} subtitle={t('admin.administration.inviteStaffSub')}
               active={panel === 'staff'} onClick={() => setPanel(panel === 'staff' ? null : 'staff')} />
+            <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
+              onClick={() => router.push('/admin/payments')} />
             <IconCard icon="💳" title={t('admin.administration.billing')} subtitle={t('admin.administration.billingSub')}
               disabled comingSoon={t('admin.administration.comingSoon')} />
           </div>
@@ -342,7 +341,12 @@ export default function AdministrationPage() {
           )}
         </>) : (
           // Admin-General (matrix): read-only staff table, no invite / resend / revoke.
+          // Payments stays reachable — it is open to the admin role.
           <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
+                onClick={() => router.push('/admin/payments')} />
+            </div>
             <p className="text-sm text-gray-500">{t('admin.administration.viewOnlyNote')}</p>
             {staffTable(programmeStaff(admins), false, false)}
           </div>
