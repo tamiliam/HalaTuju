@@ -1375,3 +1375,85 @@ export async function getCourseDataStatus(options?: ApiOptions): Promise<CourseD
 export async function runCourseDataCheck(options?: ApiOptions): Promise<CourseDataStatusResponse> {
   return adminMutate<CourseDataStatusResponse>('/api/v1/admin/course-data/check/', 'POST', {}, options)
 }
+
+// ── Payments module (P2): monthly Vircle payment runs ─────────────────────────
+export interface PaymentRunSummary {
+  id: number
+  reference: string
+  payment_date: string
+  status: 'draft' | 'admin_signed' | 'completed' | 'cancelled'
+  students: number
+  total: string
+  created_at: string
+}
+export interface PaymentRunItem {
+  id: number
+  application_id: number
+  name: string
+  nric: string
+  vircle_id: string
+  vircle_confirmed: boolean
+  award_amount: string
+  paid_to_date: string
+  amount: string
+  credit_applied: string
+  included: boolean
+  exclude_reason: string
+}
+export interface PaymentRunSkipped {
+  application_id: number
+  name: string
+  nric: string
+  reasons: string[]
+}
+export interface PaymentSignature { name: string; email: string; at: string }
+export interface PaymentRunDetail {
+  id: number
+  reference: string
+  payment_date: string
+  status: 'draft' | 'admin_signed' | 'completed' | 'cancelled'
+  note: string
+  drive_file_url: string
+  created_by: string
+  created_at: string
+  admin_signed: PaymentSignature | null
+  org_admin_signed: PaymentSignature | null
+  items: PaymentRunItem[]
+  skipped: PaymentRunSkipped[]
+  students: number
+  total: string
+}
+
+export async function getPaymentRuns(options?: ApiOptions) {
+  return adminFetch<{ runs: PaymentRunSummary[] }>('/api/v1/admin/scholarship/payment-runs/', options)
+}
+export async function createPaymentRun(payment_date: string, options?: ApiOptions) {
+  return adminMutate<PaymentRunDetail>('/api/v1/admin/scholarship/payment-runs/', 'POST', { payment_date }, options)
+}
+export async function getPaymentRun(id: number, options?: ApiOptions) {
+  return adminFetch<PaymentRunDetail>(`/api/v1/admin/scholarship/payment-runs/${id}/`, options)
+}
+export async function updatePaymentRunItem(
+  runId: number, itemId: number,
+  patch: { included?: boolean; exclude_reason?: string; amount?: string },
+  options?: ApiOptions,
+) {
+  return adminMutate<PaymentRunDetail>(
+    `/api/v1/admin/scholarship/payment-runs/${runId}/items/${itemId}/`, 'PATCH', patch, options)
+}
+export async function signPaymentRun(id: number, typed_name: string, options?: ApiOptions) {
+  return adminMutate<PaymentRunDetail>(
+    `/api/v1/admin/scholarship/payment-runs/${id}/sign/`, 'POST', { typed_name }, options)
+}
+export async function cancelPaymentRun(id: number, options?: ApiOptions) {
+  return adminMutate<PaymentRunDetail>(
+    `/api/v1/admin/scholarship/payment-runs/${id}/cancel/`, 'POST', {}, options)
+}
+/** Fetch the run CSV (auth header required) and return its text for a client-side download. */
+export async function fetchPaymentRunCsv(id: number, options?: ApiOptions): Promise<string> {
+  const headers: Record<string, string> = {}
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/scholarship/payment-runs/${id}/csv/`, { headers })
+  if (!res.ok) throw new Error(`CSV download failed: ${res.status}`)
+  return res.text()
+}

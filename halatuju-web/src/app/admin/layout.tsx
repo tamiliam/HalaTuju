@@ -57,6 +57,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     router.replace('/admin/login')
   }
 
+  // The Payments module is a sub-page of Administration (no top-level nav entry), so its
+  // pages highlight the Administration link as active (owner, 2026-07-16).
+  const isActive = (href: string) =>
+    pathname === href || (href === '/admin/administration' && pathname.startsWith('/admin/payments'))
+
   // Role-driven menu (2026-06): super/admin see everything; partner sees only
   // Dashboard + Students (own org) — no Guide/FAQ; reviewer + qc see only B40 Applications
   // (qc lands on the awaiting-QC queue).
@@ -103,7 +108,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium ${pathname === link.href ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+                className={`text-sm font-medium ${isActive(link.href) ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
               >
                 {link.label}
               </Link>
@@ -148,7 +153,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`block px-3 py-2.5 rounded-lg text-sm font-medium ${pathname === link.href ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`block px-3 py-2.5 rounded-lg text-sm font-medium ${isActive(link.href) ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 {link.label}
               </Link>

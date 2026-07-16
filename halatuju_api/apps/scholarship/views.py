@@ -1316,6 +1316,15 @@ class ResolutionItemResolveView(APIView):
             if not mobile:
                 return Response({'error': 'bad_mobile'}, status=status.HTTP_400_BAD_REQUEST)
             text = mobile
+            # Payments D9: the student also supplies their Vircle Wallet ID. The client
+            # assembles the full 13-digit value from the fixed prefix + 3-digit suffix; we
+            # validate + store it on the application (the mobile stays in resolution_text).
+            from . import payments
+            vircle_id = ''.join(ch for ch in (request.data.get('vircle_id') or '') if ch.isdigit())
+            if not payments.valid_vircle_id(vircle_id):
+                return Response({'error': 'bad_vircle_id'}, status=status.HTTP_400_BAD_REQUEST)
+            item.application.vircle_id = vircle_id
+            item.application.save(update_fields=['vircle_id'])
         # Phase 2 (D2): on a typed answer, Cikgu Gopal nudges ONLY when it is TOTALLY
         # off-topic — keep the task open and return his one-sentence steer, don't resolve.
         # Flag-gated + AI-off-safe (judge defaults to accept). 'pathway_confirm' is a

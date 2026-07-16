@@ -1,0 +1,236 @@
+'use client'
+// Payment run detail (P2) — eligibility table (editable in draft), greyed skipped list,
+// two-stage maker→approver sign-off, and the completed state (Drive link + CSV download).
+// Access: admin / org_admin / super. Entered from the Payments landing.
+
+import { useCallback, useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
+import { useAdminAuth } from '@/lib/admin-auth-context'
+import { useT } from '@/lib/i18n'
+import { formatDate } from '@/lib/formatDate'
+import {
+  getPaymentRun, updatePaymentRunItem, signPaymentRun, cancelPaymentRun, fetchPaymentRunCsv,
+  type PaymentRunDetail,
+} from '@/lib/admin-api'
+import { statusPill } from '@/lib/paymentStatus'
+
+const errText = (e: unknown, t: (k: string) => string) => {
+  const code = (e as { code?: string })?.code
+  const known = ['name_mismatch', 'same_signer', 'wrong_role', 'past_date', 'amount_over_cap',
+                 'reason_required', 'not_draft', 'not_editable', 'bad_state', 'not_ready']
+  return code && known.includes(code) ? t(`admin.payments.error.${code}`)
+    : e instanceof Error ? e.message : t('admin.actionFailed')
+}
+
+export default function PaymentRunDetailPage() {
+  const params = useParams()
+  const id = Number(params?.id)
+  const { token, role } = useAdminAuth()
+  const { t } = useT()
+  const allowed = !!(role?.is_super_admin || role?.role === 'super'
+    || role?.role === 'admin' || role?.role === 'org_admin')
+
+  const [run, setRun] = useState<PaymentRunDetail | null>(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState('')
+  const [makerName, setMakerName] = useState('')
+  const [approverName, setApproverName] = useState('')
+
+  const load = useCallback(() => {
+    if (!token) return
+    getPaymentRun(id, { token }).then(setRun).catch(() => setError(t('admin.payments.loadFailed')))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, id])
+  useEffect(() => { if (allowed) load() }, [allowed, load])
+
+  if (role && !allowed) return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
+  if (!run) return <p className="text-gray-400">{t('common.loading')}</p>
+
+  const isDraft = run.status === 'draft'
+  const isCompleted = run.status === 'completed'
+
+  const patchItem = async (itemId: number, patch: { included?: boolean; exclude_reason?: string; amount?: string }) => {
+    if (!token) return
+    setError('')
+    try { setRun(await updatePaymentRunItem(id, itemId, patch, { token })) }
+    catch (e) { setError(errText(e, t)) }
+  }
+
+  const sign = async (typed: string) => {
+    if (!token || !typed.trim()) return
+    setBusy('sign'); setError('')
+    try { setRun(await signPaymentRun(id, typed.trim(), { token })); setMakerName(''); setApproverName('') }
+    catch (e) { setError(errText(e, t)) } finally { setBusy('') }
+  }
+
+  const doCancel = async () => {
+    if (!token) return
+    setBusy('cancel'); setError('')
+    try { setRun(await cancelPaymentRun(id, { token })) }
+    catch (e) { setError(errText(e, t)) } finally { setBusy('') }
+  }
+
+  const downloadCsv = async () => {
+    if (!token) return
+    try {
+      const text = await fetchPaymentRunCsv(id, { token })
+      const url = URL.createObjectURL(new Blob([text], { type: 'text/csv' }))
+      const a = document.createElement('a')
+      a.href = url; a.download = `${run.reference}.csv`; a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) { setError(errText(e, t)) }
+  }
+
+  const appHref = (appId: number) => `/admin/scholarship/${appId}`
+  const inputCls = 'px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+
+  return (
+    <div className="max-w-5xl">
+      <nav className="text-xs text-gray-400">
+        <a href="/admin/payments" className="hover:underline">{t('admin.payments.title')}</a>
+        <span className="mx-1">/</span><span className="text-gray-600">{run.reference}</span>
+      </nav>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900">{run.reference}</h1>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusPill(run.status)}`}>{t(`admin.payments.status.${run.status}`)}</span>
+        </div>
+        <div className="rounded-lg border bg-white px-4 py-2 text-sm text-gray-700">
+          {run.students} {t('admin.payments.studentsLabel')} · <span className="font-semibold">{t('admin.payments.totalLabel')} RM {run.total}</span>
+        </div>
+      </div>
+      <p className="mt-1 text-sm text-gray-500">{t('admin.payments.col.paymentDate')}: {formatDate(run.payment_date)}</p>
+
+      {error && <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{error}</div>}
+
+      {/* Students table */}
+      <div className="mt-5 bg-white rounded-xl shadow-sm border overflow-x-auto">
+        <table className="w-full text-sm min-w-[840px]">
+          <thead className="bg-gray-50 border-b">
+            <tr className="text-left text-xs uppercase tracking-wider text-gray-500">
+              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.name')}</th>
+              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.nric')}</th>
+              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.vircleId')}</th>
+              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.awardApproved')}</th>
+              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.paidToDate')}</th>
+              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.amountToPay')}</th>
+              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.include')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {run.items.map((it) => (
+              <tr key={it.id} className={it.included ? '' : 'bg-gray-50/60 text-gray-400'}>
+                <td className="px-4 py-3">
+                  <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">{it.name || '—'} ↗</a>
+                </td>
+                <td className="px-4 py-3">{it.nric || '—'}</td>
+                <td className="px-4 py-3">
+                  <div className="tabular-nums">{it.vircle_id || '—'}</div>
+                  {it.vircle_confirmed && <span className="inline-block mt-0.5 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700">{t('admin.payments.confirmedBadge')}</span>}
+                </td>
+                <td className="px-4 py-3 tabular-nums">RM {it.award_amount}</td>
+                <td className="px-4 py-3 tabular-nums">RM {it.paid_to_date}</td>
+                <td className="px-4 py-3">
+                  {isDraft && it.included ? (
+                    <input defaultValue={it.amount} onBlur={(e) => { if (e.target.value !== it.amount) patchItem(it.id, { amount: e.target.value }) }}
+                      className={`w-24 ${inputCls}`} />
+                  ) : (
+                    <span className="tabular-nums">RM {it.amount}</span>
+                  )}
+                  {Number(it.credit_applied) > 0 && (
+                    <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.payments.creditApplied', { amount: it.credit_applied })}</p>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {isDraft ? (
+                    <div className="space-y-1">
+                      <label className="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={it.included}
+                          onChange={(e) => patchItem(it.id, e.target.checked ? { included: true } : { included: false, exclude_reason: it.exclude_reason || t('admin.payments.defaultReason') })}
+                          className="h-4 w-4" />
+                      </label>
+                      {!it.included && (
+                        <input defaultValue={it.exclude_reason} placeholder={t('admin.payments.reasonPlaceholder')}
+                          onBlur={(e) => { if (e.target.value !== it.exclude_reason) patchItem(it.id, { included: false, exclude_reason: e.target.value }) }}
+                          className={`block w-40 ${inputCls}`} />
+                      )}
+                    </div>
+                  ) : it.included ? '✓' : (it.exclude_reason || '—')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-blue-50/50 border-t">
+            <tr><td colSpan={7} className="px-4 py-3 text-right text-sm font-bold text-gray-900">{t('admin.payments.totalToPay')}: RM {run.total}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+
+      {/* Skipped this run */}
+      {run.skipped.length > 0 && (
+        <div className="mt-4 rounded-xl border bg-white p-4">
+          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-500">🚫 {t('admin.payments.skippedTitle')}</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {run.skipped.map((s) => (
+              <div key={s.application_id} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+                <span className="font-medium text-gray-600">{s.name || '—'}</span>
+                <span className="mx-1">—</span>
+                {s.reasons.map((r) => t(`admin.payments.reason.${r}`)).join(', ')}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sign-off */}
+      {!isCompleted && run.status !== 'cancelled' && (
+        <div className="mt-4 rounded-xl border bg-white p-5">
+          <h2 className="text-base font-semibold text-gray-900">{t('admin.payments.signOff')}</h2>
+          <div className="mt-3 grid gap-6 sm:grid-cols-2">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">1 · {t('admin.payments.makerStep')}</p>
+              {run.admin_signed ? (
+                <p className="mt-1 text-sm text-green-700">✓ {run.admin_signed.name}</p>
+              ) : (<>
+                <p className="mt-1 text-xs text-gray-500">{t('admin.payments.typedNameHint')}</p>
+                <div className="mt-2 flex gap-2">
+                  <input value={makerName} onChange={(e) => setMakerName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
+                  <button onClick={() => sign(makerName)} disabled={!!busy || !makerName.trim()} className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{t('admin.payments.sign')}</button>
+                </div>
+              </>)}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">2 · {t('admin.payments.approverStep')}</p>
+              {run.status === 'draft' ? (
+                <p className="mt-1 text-xs text-gray-400">{t('admin.payments.afterMaker')}</p>
+              ) : (<>
+                <p className="mt-1 text-xs text-gray-500">{t('admin.payments.typedNameHint')}</p>
+                <div className="mt-2 flex gap-2">
+                  <input value={approverName} onChange={(e) => setApproverName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
+                  <button onClick={() => sign(approverName)} disabled={!!busy || !approverName.trim()} className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{t('admin.payments.countersign')}</button>
+                </div>
+              </>)}
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-gray-500">{t('admin.payments.signNote')}</p>
+          <button onClick={doCancel} disabled={!!busy} className="mt-3 text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50">{t('admin.payments.cancelRun')}</button>
+        </div>
+      )}
+
+      {/* Completed */}
+      {isCompleted && (
+        <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-5">
+          <p className="font-semibold text-green-800">✓ {t('admin.payments.completedBanner')}</p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 text-sm text-gray-700">
+            {run.admin_signed && <div><p className="text-xs uppercase tracking-wide text-gray-500">{t('admin.payments.makerStep')}</p><p className="font-medium">{run.admin_signed.name}</p><p className="text-xs text-gray-500">{formatDate(run.admin_signed.at)}</p></div>}
+            {run.org_admin_signed && <div><p className="text-xs uppercase tracking-wide text-gray-500">{t('admin.payments.approverStep')}</p><p className="font-medium">{run.org_admin_signed.name}</p><p className="text-xs text-gray-500">{formatDate(run.org_admin_signed.at)}</p></div>}
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            {run.drive_file_url && <a href={run.drive_file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:underline">{t('admin.payments.openInDrive')}</a>}
+            <button onClick={downloadCsv} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">{t('admin.payments.downloadCsv')}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

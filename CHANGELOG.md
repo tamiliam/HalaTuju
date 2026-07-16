@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Payments module — Sprint P2: API + UI (Vircle ID capture, run pages) — 2026-07-16
+
+Backend endpoints + admin UI on top of the P1 ledger. No deploy — the feature's single deploy
+is P3. Stitch screens owner-approved first. Plan `docs/plans/2026-07-16-payments-module-plan.md`.
+
+- **Endpoints** (`views_admin.py` + `urls.py`, all org-fenced, admin/org_admin only —
+  reviewer/qc/partner 403, cross-org 404): list / create-draft / detail / item PATCH
+  (include-exclude + amount) / sign (maker→approver, completes on countersign) / cancel /
+  CSV download. The 6 views are classified in the S3b fence completeness map.
+- **Serializer** — `AdminApplicationDetailSerializer` gains read `vircle_id` / `payment_credit` /
+  `paid_to_date`; the detail PATCH lets a **super/org_admin** correct `vircle_id` (validated, D9).
+- **Action Centre** — the Vircle setup confirmation now also captures the **Vircle Wallet ID**:
+  a fixed `8000400175` prefix + a 3-digit suffix (client assembles the 13-digit value); the
+  resolve endpoint validates + stores it on the application (mobile still in `resolution_text`).
+- **Admin UI** — a **Payments card in the Administration ORGANISATION section** (no new top-level
+  nav entry; `/admin/payments` keeps "Administration" active) → `/admin/payments` (run list +
+  date dialog) and `/admin/payments/[id]` (eligibility table with the exact columns, greyed
+  "Skipped this run" list, include/exclude + amount edits in draft, two-stage sign-off, completed
+  state with Drive link + CSV download). API client fns in `admin-api.ts`.
+- **Emails (D10)** — the Vircle setup email (en/ms/ta) now tells the student to have their Wallet
+  ID ready and enter it when confirming.
+- **i18n** `admin.payments.*` + `admin.administration.payments` + the Action-Centre Wallet-ID
+  strings (en/ms/ta; Tamil first-draft). Tests: `test_payment_endpoints.py` (org-fence + lifecycle)
+  + Action-Centre Wallet-ID validation in `test_vircle.py`; fence completeness updated.
+  3896 pytest + 573 jest; `next build` clean.
+- **▶ CARRY:** the award-offer email Wallet-ID mention (the setup email + Action Centre carry it);
+  Tamil review of the new `admin.payments.*` strings.
+
 ## Payments module — Sprint P1: ledger foundation + backfill (backend) — 2026-07-16
 
 Backend-only foundation for the organisation Payments module (Vircle payment runs). No API,

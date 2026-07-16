@@ -141,9 +141,15 @@ class TestConfirm(_Base):
         self.item = self.app.resolution_items.get(code=VIRCLE_CODE)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("u1")}')
 
-    def _resolve(self, text):
+    # Payments D9: the confirmation now also carries the 13-digit Vircle Wallet ID.
+    _VALID_VIRCLE = '8000400175123'
+
+    def _resolve(self, text, vircle_id=_VALID_VIRCLE):
+        payload = {'text': text}
+        if vircle_id is not None:
+            payload['vircle_id'] = vircle_id
         return self.client.post(f'/api/v1/scholarship/resolution-items/{self.item.id}/resolve/',
-                                {'text': text}, format='json')
+                                payload, format='json')
 
     def test_awarded_student_can_confirm_despite_querying_being_locked(self):
         # An awarded student is well past the interview, so querying_locked() is true. Without
@@ -157,6 +163,24 @@ class TestConfirm(_Base):
         self._resolve('012-345 6789')
         self.item.refresh_from_db()
         self.assertEqual(self.item.resolution_text, '+60123456789')
+
+    def test_vircle_id_is_stored_on_the_application(self):
+        self._resolve('012-345 6789', vircle_id='8000400175777')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.vircle_id, '8000400175777')
+
+    def test_missing_vircle_id_is_rejected(self):
+        r = self._resolve('012-345 6789', vircle_id=None)
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['error'], 'bad_vircle_id')
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.status, 'open')       # not resolved
+
+    def test_bad_vircle_id_is_rejected(self):
+        for bad in ('8000400175', '9000400175123', '800040017512x'):
+            r = self._resolve('012-345 6789', vircle_id=bad)
+            self.assertEqual(r.status_code, 400, bad)
+            self.assertEqual(r.json()['error'], 'bad_vircle_id', bad)
 
     def test_a_bad_mobile_is_rejected(self):
         # The mobile is the only join key to their Vircle account — a typo silently relays the

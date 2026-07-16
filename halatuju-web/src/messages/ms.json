@@ -2178,7 +2178,9 @@
         "stuckTitle": "Menghadapi masalah semasa menyediakannya?",
         "stuckCard": "Gunakan MyKad sebenar anda, bukan fotostat atau gambar salinan — aplikasi memotret kad sebenar dan akan menolak gambar daripada gambar.",
         "stuckPhone": "Telefon yang terlalu lama mungkin gagal semasa pendaftaran walaupun memenuhi syarat iOS 16 / Android 10. Jika ia tersekat, cuba semula dengan telefon yang lebih baharu.",
-        "stuckSupport": "Jika anda menghadapi sebarang masalah, hantar WhatsApp kepada sokongan kami di +6016-336 6127."
+        "stuckSupport": "Jika anda menghadapi sebarang masalah, hantar WhatsApp kepada sokongan kami di +6016-336 6127.",
+        "walletId": "ID Dompet Vircle",
+        "walletIdHint": "Masukkan 3 digit terakhir ID Dompet Vircle anda (bermula 8000400175)."
       },
       "bank": {
         "title": "Tambah akaun bank anda untuk pembayaran",
@@ -4106,6 +4108,79 @@
         "reviewer": "Penilai",
         "admin": "Pentadbir lihat sahaja",
         "qc": "Kawalan mutu"
+      },
+      "payments": "Pembayaran",
+      "paymentsSub": "Cipta dan hantar larian pembayaran Vircle bulanan"
+    },
+    "payments": {
+      "title": "Pembayaran",
+      "subtitle": "Biasiswa BrightPath — larian pembayaran Vircle bulanan kepada pelajar",
+      "newRun": "Larian pembayaran baharu",
+      "paymentDate": "Tarikh pembayaran",
+      "pastDateHint": "Larian tidak boleh ditarikh ke belakang (tarikh lalu dilumpuhkan).",
+      "createDraft": "Cipta larian draf",
+      "empty": "Belum ada larian pembayaran.",
+      "loadFailed": "Tidak dapat memuatkan larian pembayaran.",
+      "pastDate": "Tarikh itu telah berlalu — pilih hari ini atau tarikh akan datang.",
+      "noOrg": "Akaun anda tidak terikat dengan sesebuah organisasi, jadi ia tidak boleh mencipta larian pembayaran.",
+      "studentsLabel": "pelajar",
+      "totalLabel": "Jumlah",
+      "confirmedBadge": "Disahkan oleh pelajar",
+      "creditApplied": "Kredit RM{amount} digunakan",
+      "defaultReason": "Dikecualikan",
+      "reasonPlaceholder": "Sebab (cth. cuti semester)",
+      "totalToPay": "Jumlah untuk dibayar",
+      "skippedTitle": "Dilangkau larian ini",
+      "signOff": "Pengesahan",
+      "makerStep": "Tandatangan pentadbir (pembuat)",
+      "approverStep": "Tandatangan balas pentadbir organisasi (pelulus)",
+      "typedNameHint": "Taip nama penuh anda tepat seperti dalam profil anda.",
+      "fullName": "Nama penuh",
+      "sign": "Tandatangan",
+      "countersign": "Tandatangan balas & hantar ke Vircle",
+      "afterMaker": "Tersedia selepas pentadbir menandatangani.",
+      "signNote": "Kedua-dua penandatangan mestilah orang yang berbeza. Menyunting senarai selepas menandatangani mengembalikan larian kepada draf.",
+      "cancelRun": "Batalkan larian ini",
+      "completedBanner": "Selesai dan dihantar ke Vircle",
+      "openInDrive": "Buka CSV dalam Drive",
+      "downloadCsv": "Muat turun CSV",
+      "col": {
+        "reference": "Rujukan",
+        "paymentDate": "Tarikh pembayaran",
+        "status": "Status",
+        "students": "Pelajar",
+        "total": "Jumlah",
+        "name": "Nama",
+        "nric": "NRIC",
+        "vircleId": "ID Vircle",
+        "awardApproved": "Jumlah diluluskan",
+        "paidToDate": "Dibayar setakat ini",
+        "amountToPay": "Jumlah perlu dibayar",
+        "include": "Sertakan"
+      },
+      "status": {
+        "draft": "Draf",
+        "admin_signed": "Ditandatangani pentadbir",
+        "completed": "Selesai",
+        "cancelled": "Dibatalkan"
+      },
+      "reason": {
+        "no_vircle_id": "Tiada ID Vircle",
+        "on_hold": "Ditangguhkan",
+        "no_balance": "Anugerah dibayar penuh",
+        "agreement_unsigned": "Perjanjian belum ditandatangani"
+      },
+      "error": {
+        "name_mismatch": "Nama itu tidak sepadan dengan nama profil anda.",
+        "same_signer": "Tandatangan balas mesti orang yang berbeza.",
+        "wrong_role": "Peranan anda tidak boleh menandatangani pada langkah ini.",
+        "past_date": "Tarikh itu telah berlalu.",
+        "amount_over_cap": "Jumlah tidak boleh melebihi baki anugerah.",
+        "reason_required": "Sebab diperlukan untuk mengecualikan pelajar.",
+        "not_draft": "Larian ini tidak boleh disunting lagi.",
+        "not_editable": "Larian ini tidak boleh disunting lagi.",
+        "bad_state": "Tindakan itu tidak dibenarkan dalam keadaan larian semasa.",
+        "not_ready": "CSV tersedia setelah larian ditandatangani."
       }
     }
   }

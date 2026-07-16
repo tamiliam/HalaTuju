@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
   getOrgs, inviteAdmin, getAdmins, revokeAdmin, resendAdminInvite,
@@ -47,6 +48,7 @@ function IconCard({ icon, title, subtitle, onClick, active, disabled, comingSoon
 export default function AdministrationPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
+  const router = useRouter()
 
   const isSuper = !!(role?.is_super_admin || role?.role === 'super')
   const isOrgAdmin = role?.role === 'org_admin'
@@ -300,6 +302,11 @@ export default function AdministrationPage() {
 
       {/* ORGANISATION section — super + org_admin manage; Admin-General views read-only */}
       <Section title={orgHeading} badge={t('admin.administration.orgBadge')} badgeCls="bg-blue-100 text-blue-700">
+        {/* Payments — its own entry point (no top-level nav item); open to admin/org_admin/super. */}
+        <div className="grid gap-3 sm:grid-cols-2 mb-3">
+          <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
+            onClick={() => router.push('/admin/payments')} />
+        </div>
         {canManage ? (<>
           <div className="grid gap-3 sm:grid-cols-2">
             <IconCard icon="👥" title={t('admin.administration.inviteStaff')} subtitle={t('admin.administration.inviteStaffSub')}

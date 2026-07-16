@@ -2178,7 +2178,9 @@
         "stuckTitle": "Having trouble setting it up?",
         "stuckCard": "Use your actual MyKad, not a photocopy or a photo of one — the app photographs the real card and will reject a picture of a picture.",
         "stuckPhone": "A very old phone may fail during registration even if it meets the iOS 16 / Android 10 requirement. If it stalls, try again on a newer phone.",
-        "stuckSupport": "If you faced any problem, WhatsApp our support at +6016-336 6127."
+        "stuckSupport": "If you faced any problem, WhatsApp our support at +6016-336 6127.",
+        "walletId": "Vircle Wallet ID",
+        "walletIdHint": "Enter the last 3 digits of your Vircle Wallet ID (it starts 8000400175)."
       },
       "bank": {
         "title": "Add your bank account for payment",
@@ -4106,6 +4108,79 @@
         "reviewer": "Reviewer",
         "admin": "View-only admin",
         "qc": "QC"
+      },
+      "payments": "Payments",
+      "paymentsSub": "Create and send monthly Vircle payment runs"
+    },
+    "payments": {
+      "title": "Payments",
+      "subtitle": "BrightPath Bursary — monthly Vircle payment runs to students",
+      "newRun": "New payment run",
+      "paymentDate": "Payment date",
+      "pastDateHint": "Runs cannot be back-dated (past dates are disabled).",
+      "createDraft": "Create draft run",
+      "empty": "No payment runs yet.",
+      "loadFailed": "Could not load payment runs.",
+      "pastDate": "That date has passed — pick today or a future date.",
+      "noOrg": "Your account is not tied to an organisation, so it cannot create a payment run.",
+      "studentsLabel": "students",
+      "totalLabel": "Total",
+      "confirmedBadge": "Confirmed by student",
+      "creditApplied": "RM{amount} credit applied",
+      "defaultReason": "Excluded",
+      "reasonPlaceholder": "Reason (e.g. semester break)",
+      "totalToPay": "Total to pay",
+      "skippedTitle": "Skipped this run",
+      "signOff": "Sign-off",
+      "makerStep": "Admin signature (maker)",
+      "approverStep": "Organisation admin countersignature (approver)",
+      "typedNameHint": "Type your full name exactly as it appears in your profile.",
+      "fullName": "Full name",
+      "sign": "Sign",
+      "countersign": "Countersign & send to Vircle",
+      "afterMaker": "Available after the admin has signed.",
+      "signNote": "The two signers must be different people. Editing the list after signing returns the run to draft.",
+      "cancelRun": "Cancel this run",
+      "completedBanner": "Completed and sent to Vircle",
+      "openInDrive": "Open CSV in Drive",
+      "downloadCsv": "Download CSV",
+      "col": {
+        "reference": "Reference",
+        "paymentDate": "Payment date",
+        "status": "Status",
+        "students": "Students",
+        "total": "Total",
+        "name": "Name",
+        "nric": "NRIC",
+        "vircleId": "Vircle ID",
+        "awardApproved": "Amount approved",
+        "paidToDate": "Paid to date",
+        "amountToPay": "Amount to be paid",
+        "include": "Include"
+      },
+      "status": {
+        "draft": "Draft",
+        "admin_signed": "Admin signed",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "reason": {
+        "no_vircle_id": "No Vircle ID",
+        "on_hold": "On hold",
+        "no_balance": "Award fully paid",
+        "agreement_unsigned": "Agreement not signed"
+      },
+      "error": {
+        "name_mismatch": "That name does not match your profile name.",
+        "same_signer": "The countersignature must be a different person.",
+        "wrong_role": "Your role cannot sign at this step.",
+        "past_date": "That date has passed.",
+        "amount_over_cap": "The amount cannot exceed the remaining award.",
+        "reason_required": "A reason is required to exclude a student.",
+        "not_draft": "This run can no longer be edited.",
+        "not_editable": "This run can no longer be edited.",
+        "bad_state": "That action isn't allowed in this run's current state.",
+        "not_ready": "The CSV is available once the run is signed."
       }
     }
   }

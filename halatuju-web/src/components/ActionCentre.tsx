@@ -624,16 +624,20 @@ function VircleTask({
 }) {
   const { t } = useT()
   const [mobile, setMobile] = useState(() => formatMyMobile(contactPhone))
+  const [suffix, setSuffix] = useState('')   // D9: the student types only the final 3 digits
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const valid = isValidMyMobile(mobile)
+  const VIRCLE_PREFIX = '8000400175'
+  const suffixOk = /^\d{3}$/.test(suffix)
+  const valid = isValidMyMobile(mobile) && suffixOk
 
   const onConfirmDone = async () => {
     if (!token || !valid || busy) return
     setBusy(true)
     setError(null)
     try {
-      await resolveResolutionItem(item.id, `+60${localMobileDigits(mobile)}`, { token })
+      await resolveResolutionItem(
+        item.id, `+60${localMobileDigits(mobile)}`, { token }, undefined, VIRCLE_PREFIX + suffix)
       onResolved()
     } catch {
       setError(t('scholarship.actionCentre.vircle.error'))
@@ -666,6 +670,26 @@ function VircleTask({
               />
             </div>
             <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.vircle.mobileHint')}</p>
+          </div>
+
+          <div className="mt-3">
+            <label className="block text-sm font-medium text-gray-700" htmlFor="vircle-id">
+              {t('scholarship.actionCentre.vircle.walletId')}
+            </label>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="rounded-lg bg-gray-100 px-3 py-2 text-sm tabular-nums text-gray-600">{VIRCLE_PREFIX}</span>
+              <input
+                id="vircle-id"
+                className="input w-24 tabular-nums"
+                inputMode="numeric"
+                maxLength={3}
+                placeholder="123"
+                value={suffix}
+                onChange={(e) => setSuffix(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                disabled={busy}
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.vircle.walletIdHint')}</p>
           </div>
 
           <button

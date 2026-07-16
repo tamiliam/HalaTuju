@@ -307,6 +307,10 @@ the full 13-digit ID it assembled from prefix + 3-digit suffix), validate (D9), 
   `/admin/payments` (new `src/app/admin/payments/page.tsx`, detail at
   `payments/[id]/page.tsx`). Guard pages with
   `role === 'admin' || role === 'org_admin' || isSuper`.
+  **NO new top-level nav entry** (owner, 2026-07-16, reaffirmed on the Stitch review):
+  the nav array in `layout.tsx:81-92` is NOT touched — Payments is a sub-item entered only
+  through the Administration panel, and its pages highlight "Administration" as the active
+  nav item. Stitch screens must not show "Payments" in the sidebar/menu.
 - **Date picker:** native `<input type="date" min={today}>` styled with the shared `input`
   class (no picker library exists in the codebase; keep it that way) + server-side `past_date`
   handling.

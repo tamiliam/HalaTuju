@@ -336,6 +336,19 @@ class AdminApplicationDetailView(_AdminBase):
         if 'mentoring_candidate' in request.data:
             app.mentoring_candidate = bool(request.data['mentoring_candidate'])
             fields.append('mentoring_candidate')
+        # Payments D9: a super/org_admin may CORRECT the Vircle ID here (without asking the
+        # student to redo the Action-Centre task). Digits-only; must pass the D9 rule (or blank
+        # to clear). Restricted to super/org_admin even though _require_app_write is wider.
+        if 'vircle_id' in request.data:
+            if not (admin.is_super or admin.role == 'org_admin'):
+                return self._deny_role()
+            from . import payments
+            vid = ''.join(ch for ch in (request.data.get('vircle_id') or '') if ch.isdigit())
+            if vid and not payments.valid_vircle_id(vid):
+                return Response({'error': 'bad_vircle_id', 'code': 'bad_vircle_id'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            app.vircle_id = vid
+            fields.append('vircle_id')
         if fields:
             app.save(update_fields=fields)
         return Response(AdminApplicationDetailSerializer(app).data)
@@ -1761,3 +1774,230 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
             by_name=getattr(admin, 'name', '') or '',
             witness_name=request.data.get('witness_name', '') or '')
         return Response(BursaryAgreementSerializer(agreement).data)
+
+
+# ── Payments module (Vircle payment runs) — admin + org_admin, org-fenced (P2) ────
+# Access: an `admin` or `org_admin` (super passes), and the run is org-fenced (a
+# cross-org run is 404, never 403). Reviewer/qc/partner -> 403. The service
+# (apps.scholarship.payments) owns the state machine; these views are thin.
+from decimal import Decimal as _Decimal
+
+
+def _vircle_confirmed(app):
+    """Info badge only (D4-4): whether the student resolved the Action-Centre setup task.
+    NOT a payment gate -- the vircle_id is the payable fact."""
+    from .resolution import VIRCLE_CODE
+    return app.resolution_items.filter(code=VIRCLE_CODE, status='resolved').exists()
+
+
+def _payment_item_dict(item):
+    app = item.application
+    profile = getattr(app, 'profile', None)
+    return {
+        'id': item.id, 'application_id': app.id,
+        'name': getattr(profile, 'name', '') or '',
+        'nric': getattr(profile, 'nric', '') or '',
+        'vircle_id': item.vircle_id_snapshot or (app.vircle_id or ''),
+        'vircle_confirmed': _vircle_confirmed(app),
+        'award_amount': str(item.award_amount_snapshot),
+        'paid_to_date': str(item.paid_to_date_snapshot),
+        'amount': str(item.amount),
+        'credit_applied': str(item.credit_applied),
+        'included': item.included,
+        'exclude_reason': item.exclude_reason,
+    }
+
+
+def _sig(name, email, at):
+    return {'name': name, 'email': email, 'at': at} if at else None
+
+
+def _payment_run_summary(run):
+    included = [i for i in run.items.all() if i.included]
+    total = sum((i.amount for i in included), _Decimal('0'))
+    return {
+        'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
+        'status': run.status, 'students': len(included), 'total': str(total),
+        'created_at': run.created_at,
+    }
+
+
+def _payment_run_detail(run):
+    items = list(run.items.select_related('application', 'application__profile').all())
+    included = [i for i in items if i.included]
+    total = sum((i.amount for i in included), _Decimal('0'))
+    # "Skipped this run" -- payable-status + started students who fail D4-4/5/6 (greyed,
+    # shown not hidden). Computed live from the eligibility choke-point.
+    from . import payments
+    skipped = []
+    for row in payments.eligible_rows(run.organisation, run.payment_date):
+        if not row['eligible']:
+            a = row['application']
+            p = getattr(a, 'profile', None)
+            skipped.append({'application_id': a.id, 'name': getattr(p, 'name', '') or '',
+                            'nric': getattr(p, 'nric', '') or '', 'reasons': row['reasons']})
+    return {
+        'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
+        'status': run.status, 'note': run.note, 'drive_file_url': run.drive_file_url,
+        'created_by': run.created_by, 'created_at': run.created_at,
+        'admin_signed': _sig(run.admin_signed_name, run.admin_signed_email, run.admin_signed_at),
+        'org_admin_signed': _sig(run.org_admin_signed_name, run.org_admin_signed_email, run.org_admin_signed_at),
+        'items': [_payment_item_dict(i) for i in items],
+        'skipped': skipped,
+        'students': len(included), 'total': str(total),
+    }
+
+
+class _PaymentsBase(_AdminBase):
+    """Shared gate + org-fenced run lookup for the Payments endpoints."""
+    def _payments_admin(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not (admin.is_super or admin.role in ('admin', 'org_admin')):
+            return None, self._deny_role()
+        return admin, None
+
+    def _run_for(self, admin, pk):
+        """The run IFF this admin's organisation owns it (super global); else None -> 404."""
+        from .models import PaymentRun
+        run = PaymentRun.objects.filter(pk=pk).select_related('organisation').first()
+        if run is None:
+            return None
+        if admin.is_super:
+            return run
+        if run.organisation_id != admin.owning_organisation_id:
+            return None   # cross-org -> 404, no existence leak
+        return run
+
+
+class AdminPaymentRunListView(_PaymentsBase):
+    """GET list (org-fenced, newest first) . POST {payment_date} create a draft run."""
+    def get(self, request):
+        admin, err = self._payments_admin(request)
+        if err:
+            return err
+        from .models import PaymentRun
+        qs = PaymentRun.objects.all().prefetch_related('items').order_by('-payment_date', '-id')
+        if not admin.is_super:
+            qs = qs.filter(organisation_id=admin.owning_organisation_id)
+        return Response({'runs': [_payment_run_summary(r) for r in qs]})
+
+    def post(self, request):
+        admin, err = self._payments_admin(request)
+        if err:
+            return err
+        org = admin.owning_organisation
+        if org is None:
+            # The payments module is org-scoped; a caller with no owning organisation
+            # (e.g. a bare super) has no org context to create a run in.
+            return Response({'error': 'no_org', 'code': 'no_org'}, status=status.HTTP_400_BAD_REQUEST)
+        from django.utils.dateparse import parse_date
+        pd = parse_date((request.data.get('payment_date') or '').strip())
+        if pd is None:
+            return Response({'error': 'bad_date', 'code': 'bad_date'}, status=status.HTTP_400_BAD_REQUEST)
+        from . import payments
+        try:
+            run = payments.create_run(org, pd, by_email=getattr(admin, 'email', '') or '')
+        except payments.PaymentsError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(_payment_run_detail(run), status=status.HTTP_201_CREATED)
+
+
+class AdminPaymentRunDetailView(_PaymentsBase):
+    """GET a run's detail: items + greyed skipped list + totals + signatures."""
+    def get(self, request, pk):
+        admin, err = self._payments_admin(request)
+        if err:
+            return err
+        run = self._run_for(admin, pk)
+        if run is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(_payment_run_detail(run))
+
+
+class AdminPaymentRunItemView(_PaymentsBase):
+    """PATCH a run item -- toggle include/exclude(+reason), edit amount (draft only)."""
+    def patch(self, request, pk, item_id):
+        admin, err = self._payments_admin(request)
+        if err:
+            return err
+        run = self._run_for(admin, pk)
+        if run is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        from .models import PaymentRunItem
+        item = (PaymentRunItem.objects.filter(pk=item_id, run=run)
+                .select_related('application', 'run').first())
+        if item is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        kwargs = {}
+        if 'included' in request.data:
+            kwargs['included'] = bool(request.data.get('included'))
+        if 'exclude_reason' in request.data:
+            kwargs['exclude_reason'] = request.data.get('exclude_reason')
+        if 'amount' in request.data:
+            kwargs['amount'] = request.data.get('amount')
+        from . import payments
+        try:
+            payments.set_item(item, **kwargs)
+        except payments.PaymentsError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        run.refresh_from_db()
+        return Response(_payment_run_detail(run))
+
+
+class AdminPaymentRunSignView(_PaymentsBase):
+    """POST {typed_name} -- admin (maker) sign, or org_admin (approver) countersign (which
+    completes the run). The maker/approver role logic + name/same-signer checks live in
+    payments.sign."""
+    def post(self, request, pk):
+        admin, err = self._payments_admin(request)
+        if err:
+            return err
+        run = self._run_for(admin, pk)
+        if run is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        from . import payments
+        try:
+            payments.sign(run, admin, request.data.get('typed_name') or '')
+        except payments.PaymentsError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        run.refresh_from_db()
+        return Response(_payment_run_detail(run))
+
+
+class AdminPaymentRunCancelView(_PaymentsBase):
+    """POST -- cancel a draft or admin_signed run."""
+    def post(self, request, pk):
+        admin, err = self._payments_admin(request)
+        if err:
+            return err
+        run = self._run_for(admin, pk)
+        if run is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        from . import payments
+        try:
+            payments.cancel(run, by=getattr(admin, 'email', '') or '')
+        except payments.PaymentsError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        run.refresh_from_db()
+        return Response(_payment_run_detail(run))
+
+
+class AdminPaymentRunCsvView(_PaymentsBase):
+    """GET the run's payment CSV (any status >= admin_signed) as a download."""
+    def get(self, request, pk):
+        admin, err = self._payments_admin(request)
+        if err:
+            return err
+        run = self._run_for(admin, pk)
+        if run is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if run.status not in ('admin_signed', 'completed'):
+            return Response({'error': 'not_ready', 'code': 'not_ready'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        from django.http import HttpResponse
+        from . import sheets
+        resp = HttpResponse(sheets.payment_csv_text(run), content_type='text/csv')
+        resp['Content-Disposition'] = f'attachment; filename="{run.reference}.csv"'
+        return resp

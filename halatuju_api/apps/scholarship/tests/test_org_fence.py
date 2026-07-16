@@ -187,6 +187,13 @@ class TestFenceCoverageCompleteness(TestCase):
     FENCED_OR_EXEMPT = {
         # base
         '_BursaryAdminBase': 'base — shared _agreement lookup',
+        '_PaymentsBase': 'base — shared payments gate + org-fenced run lookup',
+        # Payments module (P2) — org-fenced via _run_for (cross-org 404) + admin/org_admin role
+        # gate; the list is filtered to the caller's organisation. PaymentRun/PaymentRunItem are
+        # not watched applicant models, so no static-guard pragma is needed.
+        'AdminPaymentRunListView': 'payments-org-fenced', 'AdminPaymentRunDetailView': 'payments-org-fenced',
+        'AdminPaymentRunItemView': 'payments-org-fenced', 'AdminPaymentRunSignView': 'payments-org-fenced',
+        'AdminPaymentRunCancelView': 'payments-org-fenced', 'AdminPaymentRunCsvView': 'payments-org-fenced',
         # gate-fenced (via _scoped_application / _require_app_write / _require_qc)
         'AdminApplicationDetailView': 'gate', 'AdminVerdictSummaryView': 'gate',
         'AdminVerifyAcceptView': 'gate', 'AdminRejectView': 'gate',

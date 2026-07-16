@@ -100,6 +100,12 @@ from .views_admin import (
     AdminSponsorReviewView,
     AdminSuggestGapsView,
     AdminVerifyAcceptView,
+    AdminPaymentRunListView,
+    AdminPaymentRunDetailView,
+    AdminPaymentRunItemView,
+    AdminPaymentRunSignView,
+    AdminPaymentRunCancelView,
+    AdminPaymentRunCsvView,
 )
 
 urlpatterns = [
@@ -169,6 +175,14 @@ urlpatterns = [
     # Internal cron — Cloud Scheduler runs whitelisted commands via a shared
     # secret header (X-Cron-Secret). Inert without the secret.
     path('internal/cron/<str:job>/', CronRunView.as_view()),
+
+    # Payments module (P2): monthly Vircle payment runs. Admin/org_admin, org-fenced.
+    path('admin/scholarship/payment-runs/', AdminPaymentRunListView.as_view()),
+    path('admin/scholarship/payment-runs/<int:pk>/', AdminPaymentRunDetailView.as_view()),
+    path('admin/scholarship/payment-runs/<int:pk>/items/<int:item_id>/', AdminPaymentRunItemView.as_view()),
+    path('admin/scholarship/payment-runs/<int:pk>/sign/', AdminPaymentRunSignView.as_view()),
+    path('admin/scholarship/payment-runs/<int:pk>/cancel/', AdminPaymentRunCancelView.as_view()),
+    path('admin/scholarship/payment-runs/<int:pk>/csv/', AdminPaymentRunCsvView.as_view()),
 
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
     # Phase E: sponsor account vetting

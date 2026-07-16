@@ -306,6 +306,12 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     bursary_agreement = serializers.SerializerMethodField()
     # Post-award S4: the money-out tranche ledger (admin-facing; no sponsor identity).
     disbursements = serializers.SerializerMethodField()
+    # Payments module (P2): the Vircle account ID (display; edited via the detail PATCH,
+    # gated to super/org_admin), the paid-to-date (SUM of released disbursements), and the
+    # paid-ahead credit — all read-only here.
+    vircle_id = serializers.CharField(read_only=True)
+    payment_credit = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    paid_to_date = serializers.SerializerMethodField()
     # Standardised bursary (2026-06-29; by-type-only 2026-07-04): the pathway-derived amount the
     # cockpit shows + auto-applies on approve — always the STANDARD figure for the pathway type
     # (RM2k/3k/1k), never null now. award_amount is the persisted value. award_disqualifier still
@@ -398,11 +404,17 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'assigned_to_corrections', 'bursary_agreement_enabled', 'bursary_agreement',
             # Post-award S4: the disbursement/tranche ledger (cockpit money-out panel).
             'disbursements',
+            # Payments module (P2): Vircle account ID + paid-to-date + paid-ahead credit.
+            'vircle_id', 'payment_credit', 'paid_to_date',
         ]
 
     def get_disbursements(self, obj):
         from .disbursement import disbursement_dict
         return [disbursement_dict(d) for d in obj.disbursements.all()]
+
+    def get_paid_to_date(self, obj):
+        from . import payments
+        return str(payments.paid_to_date(obj))
 
     def _verdict(self, obj):
         """Compute the four-fact verdict ONCE per serialised application — get_verdict,
