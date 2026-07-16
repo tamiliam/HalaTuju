@@ -193,6 +193,57 @@ class TestEligibility(TestCase):
 
 
 @override_settings(BURSARY_AGREEMENT_ENABLED=False)
+class TestPeriodDedup(TestCase):
+    """A month is never paid twice, even when run dates differ (owner 2026-07-16)."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = _make_org()
+        cls.cohort = _make_cohort(cls.org)
+
+    def _completed_run(self, app, period_month, amount='200', ref=None):
+        run = PaymentRun.objects.create(
+            organisation=self.org, payment_date=period_month, period_month=period_month,
+            status='completed', reference=ref or f'done-{period_month}-{app.id}')
+        PaymentRunItem.objects.create(run=run, application=app, included=True, amount=D(amount))
+        return run
+
+    def test_already_paid_for_month_greyed(self):
+        app = _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))  # matric, July floor
+        self._completed_run(app, date(2026, 7, 1))
+        e = payments.eligibility(app, date(2026, 7, 17), period_month=date(2026, 7, 1))
+        self.assertFalse(e['eligible'])
+        self.assertIn('already_paid', e['reasons'])
+
+    def test_paid_july_still_eligible_in_august(self):
+        app = _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
+        self._completed_run(app, date(2026, 7, 1))
+        self.assertTrue(payments.eligibility(app, date(2026, 8, 1), period_month=date(2026, 8, 1))['eligible'])
+
+    def test_only_completed_runs_block(self):
+        app = _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
+        run = PaymentRun.objects.create(organisation=self.org, payment_date=date(2026, 7, 1),
+                                        period_month=date(2026, 7, 1), status='draft', reference='draft-x')
+        PaymentRunItem.objects.create(run=run, application=app, included=True, amount=D('200'))
+        self.assertTrue(payments.eligibility(app, date(2026, 7, 17), period_month=date(2026, 7, 1))['eligible'])
+
+    def test_create_run_excludes_already_paid_for_the_month(self):
+        paid = _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
+        fresh = _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
+        self._completed_run(paid, date(2026, 7, 1))
+        with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 10)):
+            run = payments.create_run(self.org, date(2026, 7, 17), date(2026, 7, 1), by_email='m@x.com')
+        ids = set(run.items.values_list('application_id', flat=True))
+        self.assertIn(fresh.id, ids)
+        self.assertNotIn(paid.id, ids)
+
+    def test_reference_carries_the_pay_date(self):
+        with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 10)):
+            run = payments.create_run(self.org, date(2026, 7, 17), date(2026, 7, 20), by_email='m@x.com')
+        self.assertEqual(run.reference, 'PR-2026-07-17')
+        self.assertEqual(run.period_month, date(2026, 7, 1))   # normalised to the 1st
+
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=False)
 class TestAmountAndCredit(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -240,12 +291,12 @@ class TestRunLifecycle(TestCase):
 
     def _create(self, pay_date=date(2026, 8, 1)):
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            return payments.create_run(self.org, pay_date, by_email='maker@x.com')
+            return payments.create_run(self.org, pay_date, pay_date.replace(day=1), by_email='maker@x.com')
 
     def test_past_date_rejected(self):
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 8, 5)):
             with self.assertRaises(payments.PaymentsError) as cm:
-                payments.create_run(self.org, date(2026, 8, 1))
+                payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1))
         self.assertEqual(cm.exception.code, 'past_date')
 
     def test_create_run_items_only_for_eligible(self):
@@ -321,7 +372,7 @@ class TestSignOff(TestCase):
     def _run(self):
         _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            return payments.create_run(self.org, date(2026, 8, 1), by_email='maker@x.com')
+            return payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
 
     def test_maker_then_approver_completes(self):
         run = self._run()
@@ -396,7 +447,7 @@ class TestComplete(TestCase):
 
     def _complete_run(self):
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            run = payments.create_run(self.org, date(2026, 8, 1), by_email='maker@x.com')
+            run = payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
         payments.sign(run, self.maker, 'Maker One')
         payments.sign(run, self.approver, 'Approver One')
         run.refresh_from_db()
@@ -430,7 +481,7 @@ class TestComplete(TestCase):
     def test_excluded_item_produces_no_disbursement(self):
         app = _make_app(self.cohort, self.org, award='2000', reporting=date(2026, 6, 1))
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            run = payments.create_run(self.org, date(2026, 8, 1), by_email='maker@x.com')
+            run = payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
         payments.set_item(run.items.get(application=app), included=False, exclude_reason='break')
         payments.sign(run, self.maker, 'Maker One')
         payments.sign(run, self.approver, 'Approver One')
@@ -550,7 +601,7 @@ class TestBackfillImport(TestCase):
         EXCLUDES PISMP (September floor, owner 2026-07-16)."""
         self._run_cmd()
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            run = payments.create_run(self.org, date(2026, 8, 1), by_email='maker@x.com')
+            run = payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
         by_app = {it.application_id: it.amount for it in run.items.all()}
         payable = [s for s in self.specs if s['pathway'] != 'pismp']   # PISMP not paid until September
         self.assertEqual(len(by_app), len(payable))   # 27 (the 3 PISMP excluded)

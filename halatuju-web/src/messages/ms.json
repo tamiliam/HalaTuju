@@ -4118,6 +4118,8 @@
       "newRun": "Larian pembayaran baharu",
       "paymentDate": "Tarikh pembayaran",
       "pastDateHint": "Larian tidak boleh ditarikh ke belakang (tarikh lalu dilumpuhkan).",
+      "paymentMonth": "Bulan yang dibayar oleh larian ini",
+      "paymentMonthHint": "Pelajar yang sudah dibayar untuk bulan ini tidak disertakan lagi.",
       "createDraft": "Cipta larian draf",
       "empty": "Belum ada larian pembayaran.",
       "loadFailed": "Tidak dapat memuatkan larian pembayaran.",
@@ -4146,6 +4148,7 @@
       "col": {
         "reference": "Rujukan",
         "paymentDate": "Tarikh pembayaran",
+        "month": "Untuk bulan",
         "status": "Status",
         "students": "Pelajar",
         "total": "Jumlah",
@@ -4168,6 +4171,7 @@
         "vircle_unconfirmed": "Persediaan belum disahkan",
         "on_hold": "Ditangguhkan",
         "no_balance": "Anugerah dibayar penuh",
+        "already_paid": "Sudah dibayar untuk bulan ini",
         "agreement_unsigned": "Perjanjian belum ditandatangani"
       },
       "error": {

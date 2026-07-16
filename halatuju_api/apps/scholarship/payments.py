@@ -148,11 +148,23 @@ def _vircle_confirmation_pending(application):
             .filter(code=VIRCLE_CODE).exclude(status='resolved').exists())
 
 
-def eligibility(application, payment_date):
-    """Per-student eligibility for a run on ``payment_date``. Returns
-    ``{eligible, reasons, remaining, vircle_ready, started}``. ``reasons`` names the D4-4/5/6
-    failures (the greyed-out list); status/started failures are handled by the caller (not
-    listed at all)."""
+def _already_paid_for_period(application, period_month):
+    """True if the student already has a COMPLETED run for this month — so a month is never paid
+    twice, even when the run dates differ (owner 2026-07-16: a run dated 30 Jun can pay for July,
+    and a later July-dated run must not pay the same student again)."""
+    if period_month is None:
+        return False
+    return PaymentRunItem.objects.filter(
+        application=application, included=True,
+        run__status='completed', run__period_month=period_month,
+    ).exists()
+
+
+def eligibility(application, payment_date, period_month=None):
+    """Per-student eligibility for a run on ``payment_date`` paying for ``period_month`` (the 1st
+    of the covered month). Returns ``{eligible, reasons, remaining, vircle_ready, started}``.
+    ``reasons`` names the D4-4/5/6 + already-paid failures (the greyed-out list); status/started
+    failures are handled by the caller (not listed at all)."""
     started = _has_started(application, payment_date)
     reasons = []
     has_id = bool((application.vircle_id or '').strip())
@@ -162,6 +174,8 @@ def eligibility(application, payment_date):
         reasons.append('no_vircle_id')          # D4-4
     elif not vircle_ready:
         reasons.append('vircle_unconfirmed')    # D4-4 — emailed but not yet confirmed
+    if _already_paid_for_period(application, period_month):
+        reasons.append('already_paid')          # no double-paying a month
     if _is_on_hold(application):
         reasons.append('on_hold')               # D4-5
     remaining = _remaining(application)
@@ -181,18 +195,18 @@ def eligibility(application, payment_date):
     }
 
 
-def eligible_rows(organisation, payment_date):
+def eligible_rows(organisation, payment_date, period_month=None):
     """The single choke-point (D5) for a run's candidate students, org-fenced (D4-1).
     Returns a list of ``{application, eligible, reasons, remaining, vircle_ready}`` for every
-    org application that is payable-status (D4-2) AND has started (D4-3). Rows failing 4–6 come
-    back with ``eligible=False`` + reasons (shown greyed-out); status/not-started are excluded
-    entirely. A future per-pathway calendar (D5) drops in here as one more filter."""
+    org application that is payable-status (D4-2) AND has started (D4-3). Rows failing 4–6 (or
+    already paid for ``period_month``) come back with ``eligible=False`` + reasons (shown
+    greyed-out); status/not-started are excluded entirely."""
     qs = (ScholarshipApplication.objects
           .filter(owning_organisation=organisation, status__in=PAYABLE_STATUSES)
           .select_related('cohort', 'profile').order_by('id'))
     rows = []
     for app in qs:
-        elig = eligibility(app, payment_date)
+        elig = eligibility(app, payment_date, period_month=period_month)
         if not elig['started']:
             continue   # D4-3 failure → not listed at all
         rows.append({
@@ -207,33 +221,36 @@ def eligible_rows(organisation, payment_date):
 
 # ── run lifecycle ───────────────────────────────────────────────────────────────
 
-def _next_reference(organisation, payment_date):
-    """A unique, human-readable run reference, e.g. 'PR-2026-08-001'. Globally unique
-    (skips any taken suffix so a cancelled run never blocks the number)."""
-    prefix = f'PR-{payment_date:%Y-%m}-'
-    n = PaymentRun.objects.filter(organisation=organisation,
-                                  reference__startswith=prefix).count()
+def _next_reference(payment_date):
+    """A unique, human-readable run reference carrying the actual pay DATE, e.g.
+    'PR-2026-07-17' (owner 2026-07-16: the old 'PR-2026-07-001' read like a date). A second run
+    on the same date gets '…-02'."""
+    base = f'PR-{payment_date:%Y-%m-%d}'
+    if not PaymentRun.objects.filter(reference=base).exists():
+        return base
+    n = 1
     while True:
         n += 1
-        ref = f'{prefix}{n:03d}'
+        ref = f'{base}-{n:02d}'
         if not PaymentRun.objects.filter(reference=ref).exists():
             return ref
 
 
 @transaction.atomic
-def create_run(organisation, payment_date, by_email=''):
-    """Create a DRAFT run for ``organisation`` on ``payment_date`` (D4/D6). Rejects a past
-    date (``past_date``). Snapshots one PaymentRunItem per ELIGIBLE student with the default
-    amount, credit_applied, and award/paid/vircle snapshots (so the signed record can't drift).
-    Greyed-out (ineligible-4-6) students are NOT items — they surface on the detail view."""
+def create_run(organisation, payment_date, period_month, by_email=''):
+    """Create a DRAFT run for ``organisation`` on ``payment_date`` paying for ``period_month``
+    (any day of the covered month; stored normalised to the 1st) — D4/D6. Rejects a past date
+    (``past_date``). Snapshots one PaymentRunItem per ELIGIBLE student. Greyed-out students (incl.
+    those already paid for ``period_month``) are NOT items — they surface on the detail view."""
     if payment_date < timezone.localdate():
         raise PaymentsError('past_date')
+    pm = period_month.replace(day=1)
     run = PaymentRun.objects.create(
-        organisation=organisation, payment_date=payment_date,
-        reference=_next_reference(organisation, payment_date),
+        organisation=organisation, payment_date=payment_date, period_month=pm,
+        reference=_next_reference(payment_date),
         created_by=(by_email or '')[:254],
     )
-    for row in eligible_rows(organisation, payment_date):
+    for row in eligible_rows(organisation, payment_date, period_month=pm):
         if not row['eligible']:
             continue
         app = row['application']

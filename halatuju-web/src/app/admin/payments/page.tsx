@@ -10,7 +10,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { formatDate } from '@/lib/formatDate'
 import { getPaymentRuns, createPaymentRun, type PaymentRunSummary } from '@/lib/admin-api'
-import { statusPill } from '@/lib/paymentStatus'
+import { statusPill, monthLabel } from '@/lib/paymentStatus'
 
 function todayISO() {
   const d = new Date()
@@ -29,6 +29,7 @@ export default function PaymentsLandingPage() {
   const [error, setError] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [payDate, setPayDate] = useState('')
+  const [payMonth, setPayMonth] = useState('')   // 'YYYY-MM'; defaults to the pay date's month
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function PaymentsLandingPage() {
     if (!token || !payDate) return
     setBusy(true); setError('')
     try {
-      const run = await createPaymentRun(payDate, { token })
+      const run = await createPaymentRun(payDate, payMonth || payDate.slice(0, 7), { token })
       router.push(`/admin/payments/${run.id}`)
     } catch (e) {
       const code = (e as { code?: string })?.code
@@ -66,7 +67,7 @@ export default function PaymentsLandingPage() {
           <h1 className="text-2xl font-bold text-gray-900">{t('admin.payments.title')}</h1>
           <p className="mt-1 text-sm text-gray-500">{t('admin.payments.subtitle')}</p>
         </div>
-        <button onClick={() => { setPayDate(''); setError(''); setDialogOpen(true) }}
+        <button onClick={() => { setPayDate(''); setPayMonth(''); setError(''); setDialogOpen(true) }}
           className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700">
           + {t('admin.payments.newRun')}
         </button>
@@ -80,6 +81,7 @@ export default function PaymentsLandingPage() {
             <tr className="text-left text-xs uppercase tracking-wider text-gray-500">
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.reference')}</th>
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.paymentDate')}</th>
+              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.month')}</th>
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.status')}</th>
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.students')}</th>
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.total')}</th>
@@ -93,6 +95,7 @@ export default function PaymentsLandingPage() {
                   <Link href={`/admin/payments/${r.id}`} className="font-medium text-blue-600 hover:underline">{r.reference}</Link>
                 </td>
                 <td className="px-4 py-3 text-gray-600">{formatDate(r.payment_date)}</td>
+                <td className="px-4 py-3 text-gray-600">{monthLabel(r.period_month)}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${statusPill(r.status)}`}>
                     {t(`admin.payments.status.${r.status}`)}
@@ -106,10 +109,10 @@ export default function PaymentsLandingPage() {
               </tr>
             ))}
             {!loading && runs.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{t('admin.payments.empty')}</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{t('admin.payments.empty')}</td></tr>
             )}
             {loading && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{t('common.loading')}</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{t('common.loading')}</td></tr>
             )}
           </tbody>
         </table>
@@ -123,6 +126,9 @@ export default function PaymentsLandingPage() {
             <label className="mt-4 block text-sm font-medium text-gray-700">{t('admin.payments.paymentDate')}</label>
             <input type="date" min={todayISO()} value={payDate} onChange={(e) => setPayDate(e.target.value)} className={`mt-1 ${inputCls}`} />
             <p className="mt-1 text-xs text-gray-500">{t('admin.payments.pastDateHint')}</p>
+            <label className="mt-4 block text-sm font-medium text-gray-700">{t('admin.payments.paymentMonth')}</label>
+            <input type="month" value={payMonth || payDate.slice(0, 7)} onChange={(e) => setPayMonth(e.target.value)} className={`mt-1 ${inputCls}`} />
+            <p className="mt-1 text-xs text-gray-500">{t('admin.payments.paymentMonthHint')}</p>
             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
             <div className="mt-5 flex items-center justify-end gap-3">
               <button onClick={() => setDialogOpen(false)} disabled={busy} className="text-sm font-medium text-gray-500 hover:text-gray-700">{t('common.cancel')}</button>

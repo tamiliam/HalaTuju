@@ -1385,6 +1385,8 @@ export interface PaymentRunSummary {
   id: number
   reference: string
   payment_date: string
+  /** The month this run pays for (1st of month, ISO); dedup key — a student is paid once per month. */
+  period_month: string | null
   status: 'draft' | 'admin_signed' | 'completed' | 'cancelled'
   students: number
   total: string
@@ -1414,6 +1416,8 @@ export interface PaymentRunDetail {
   id: number
   reference: string
   payment_date: string
+  /** The month this run pays for (1st of month, ISO); dedup key — a student is paid once per month. */
+  period_month: string | null
   status: 'draft' | 'admin_signed' | 'completed' | 'cancelled'
   note: string
   drive_file_url: string
@@ -1430,8 +1434,8 @@ export interface PaymentRunDetail {
 export async function getPaymentRuns(options?: ApiOptions) {
   return adminFetch<{ runs: PaymentRunSummary[] }>('/api/v1/admin/scholarship/payment-runs/', options)
 }
-export async function createPaymentRun(payment_date: string, options?: ApiOptions) {
-  return adminMutate<PaymentRunDetail>('/api/v1/admin/scholarship/payment-runs/', 'POST', { payment_date }, options)
+export async function createPaymentRun(payment_date: string, payment_month: string, options?: ApiOptions) {
+  return adminMutate<PaymentRunDetail>('/api/v1/admin/scholarship/payment-runs/', 'POST', { payment_date, payment_month }, options)
 }
 export async function getPaymentRun(id: number, options?: ApiOptions) {
   return adminFetch<PaymentRunDetail>(`/api/v1/admin/scholarship/payment-runs/${id}/`, options)

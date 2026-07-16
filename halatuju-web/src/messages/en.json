@@ -4118,6 +4118,8 @@
       "newRun": "New payment run",
       "paymentDate": "Payment date",
       "pastDateHint": "Runs cannot be back-dated (past dates are disabled).",
+      "paymentMonth": "Month this run pays for",
+      "paymentMonthHint": "A student already paid for this month is not included again.",
       "createDraft": "Create draft run",
       "empty": "No payment runs yet.",
       "loadFailed": "Could not load payment runs.",
@@ -4146,6 +4148,7 @@
       "col": {
         "reference": "Reference",
         "paymentDate": "Payment date",
+        "month": "Pays for",
         "status": "Status",
         "students": "Students",
         "total": "Total",
@@ -4168,6 +4171,7 @@
         "vircle_unconfirmed": "Setup not confirmed",
         "on_hold": "On hold",
         "no_balance": "Award fully paid",
+        "already_paid": "Already paid for this month",
         "agreement_unsigned": "Agreement not signed"
       },
       "error": {

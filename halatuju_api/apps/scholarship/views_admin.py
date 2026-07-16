@@ -1809,6 +1809,7 @@ def _payment_run_summary(run):
     total = sum((i.amount for i in included), _Decimal('0'))
     return {
         'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
+        'period_month': run.period_month,
         'status': run.status, 'students': len(included), 'total': str(total),
         'created_at': run.created_at,
     }
@@ -1822,7 +1823,7 @@ def _payment_run_detail(run):
     # shown not hidden). Computed live from the eligibility choke-point.
     from . import payments
     skipped = []
-    for row in payments.eligible_rows(run.organisation, run.payment_date):
+    for row in payments.eligible_rows(run.organisation, run.payment_date, period_month=run.period_month):
         if not row['eligible']:
             a = row['application']
             p = getattr(a, 'profile', None)
@@ -1830,6 +1831,7 @@ def _payment_run_detail(run):
                             'nric': getattr(p, 'nric', '') or '', 'reasons': row['reasons']})
     return {
         'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
+        'period_month': run.period_month,
         'status': run.status, 'note': run.note, 'drive_file_url': run.drive_file_url,
         'created_by': run.created_by, 'created_at': run.created_at,
         'admin_signed': _sig(run.admin_signed_name, run.admin_signed_email, run.admin_signed_at),
@@ -1888,9 +1890,17 @@ class AdminPaymentRunListView(_PaymentsBase):
         pd = parse_date((request.data.get('payment_date') or '').strip())
         if pd is None:
             return Response({'error': 'bad_date', 'code': 'bad_date'}, status=status.HTTP_400_BAD_REQUEST)
+        # The MONTH this run pays for (dedup key). Accepts 'YYYY-MM' or a full date; defaults to
+        # the payment date's own month when omitted.
+        pm_raw = (request.data.get('payment_month') or '').strip()
+        if len(pm_raw) == 7:
+            pm_raw += '-01'
+        pm = parse_date(pm_raw) if pm_raw else pd
+        if pm is None:
+            return Response({'error': 'bad_month', 'code': 'bad_month'}, status=status.HTTP_400_BAD_REQUEST)
         from . import payments
         try:
-            run = payments.create_run(org, pd, by_email=getattr(admin, 'email', '') or '')
+            run = payments.create_run(org, pd, pm, by_email=getattr(admin, 'email', '') or '')
         except payments.PaymentsError as e:
             return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(_payment_run_detail(run), status=status.HTTP_201_CREATED)

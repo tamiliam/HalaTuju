@@ -1584,6 +1584,10 @@ class PaymentRun(models.Model):
         'courses.PartnerOrganisation', on_delete=models.PROTECT, related_name='payment_runs',
     )
     payment_date = models.DateField(help_text="The Vircle payment date; validated >= today at creation.")
+    # The MONTH this run pays for (1st of that month). A run dated 30 Jun can pay for July, so the
+    # covered month is explicit, not derived from payment_date. A student already paid for a month
+    # (via a completed run with the same period_month) is excluded — no double-paying a month.
+    period_month = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     reference = models.CharField(
         max_length=50, unique=True,

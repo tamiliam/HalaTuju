@@ -12,7 +12,7 @@ import {
   getPaymentRun, updatePaymentRunItem, signPaymentRun, cancelPaymentRun, fetchPaymentRunCsv,
   type PaymentRunDetail,
 } from '@/lib/admin-api'
-import { statusPill } from '@/lib/paymentStatus'
+import { statusPill, monthLabel } from '@/lib/paymentStatus'
 
 // Amounts are whole ringgit — show "RM 200", not "RM 200.00" (a genuine .50 would still show).
 const rm = (v: string | number) => { const n = Number(v); return Number.isFinite(n) ? String(n) : String(v) }
@@ -124,7 +124,10 @@ export default function PaymentRunDetailPage() {
           {run.students} {t('admin.payments.studentsLabel')} · <span className="font-semibold">{t('admin.payments.totalLabel')} RM {rm(run.total)}</span>
         </div>
       </div>
-      <p className="mt-1 text-sm text-gray-500">{t('admin.payments.col.paymentDate')}: {formatDate(run.payment_date)}</p>
+      <p className="mt-1 text-sm text-gray-500">
+        {t('admin.payments.col.paymentDate')}: {formatDate(run.payment_date)}
+        {run.period_month && <> · {t('admin.payments.col.month')}: <span className="font-medium text-gray-700">{monthLabel(run.period_month)}</span></>}
+      </p>
 
       {error && <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{error}</div>}
 
