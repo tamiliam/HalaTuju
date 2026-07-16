@@ -3019,6 +3019,7 @@
       "allSources": "All sources",
       "allAssignees": "Anyone",
       "byReviewer": "By reviewer",
+      "pastReviewers": "Past reviewers",
       "unassigned": "Unassigned",
       "assigned": "Assigned",
       "source": "Source",

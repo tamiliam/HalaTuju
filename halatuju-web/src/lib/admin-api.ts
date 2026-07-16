@@ -830,9 +830,14 @@ export async function requestMoreInfo(id: number, note: string, options?: ApiOpt
 }
 
 /** Active admins (for the assignment dropdown). Super admin only on the backend.
- *  `languages` = the codes (en/ms/ta) the reviewer is conversational+ in, for matching. */
+ *  `languages` = the codes (en/ms/ta) the reviewer is conversational+ in, for matching.
+ *  `past_assignees` = anyone still on record as an application's assignee (org-fenced,
+ *  independent of is_active/role) — the list filter's "Past reviewers" group. */
 export async function getAssignableAdmins(options?: ApiOptions) {
-  return adminFetch<{ admins: Array<{ id: number; name: string; email: string; role: string; languages: string[]; corrections: number }> }>(
+  return adminFetch<{
+    admins: Array<{ id: number; name: string; email: string; role: string; languages: string[]; corrections: number }>
+    past_assignees?: Array<{ id: number; name: string }>
+  }>(
     `/api/v1/admin/scholarship/assignable-admins/`, options)
 }
 

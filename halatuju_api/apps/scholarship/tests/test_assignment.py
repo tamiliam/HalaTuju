@@ -92,6 +92,22 @@ class TestReviewerAssignment(TestCase):
         self._assign(self.reviewer.id)
         self.assertFalse(mock_send.called)
 
+    def test_assignable_admins_past_assignees(self):
+        # The list filter's "Past reviewers": anyone still on record as an application's
+        # assignee — INDEPENDENT of is_active/role, so an inactive ex-admin's old cases stay
+        # filterable. She must appear in past_assignees but NOT in admins (not offerable).
+        old = PartnerAdmin.objects.create(
+            supabase_user_id='old-uid', role='admin', is_active=False,
+            name='Old Reviewer', email='old@example.com')
+        self.app.assigned_to = old
+        self.app.save(update_fields=['assigned_to'])
+        self._auth('super-uid')
+        r = self.client.get('/api/v1/admin/scholarship/assignable-admins/')
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertNotIn(old.id, [a['id'] for a in body['admins']])
+        self.assertIn({'id': old.id, 'name': 'Old Reviewer'}, body['past_assignees'])
+
     def test_list_serializer_exposes_ready_for_assignment(self):
         # The list dropdown disables a not-ready FIRST assignment (mirroring the cockpit), so the
         # LIST serializer must ship the same gate — not just `assignable` (the stage gate). Guards

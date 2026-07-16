@@ -28,7 +28,7 @@ const bucketBadge = (b: string) =>
 // reads "Prefers Tamil", never a bare code; the dropdown options show ✓/⚠ + the reviewer's name
 // only — the language-code suffix was dropped (owner 2026-07-16).
 const SPECIFIC_CALL_LANGS = new Set(['en', 'ms', 'ta'])
-type Reviewer = { id: number; name: string; languages: string[] }
+type Reviewer = { id: number; name: string; role: string; languages: string[] }
 /** Order reviewers for a student's preferred call language: when it's a specific language
  *  (en/ms/ta), reviewers who speak it come first and each carries a match flag; otherwise
  *  ('mixed'/unset) the list is unchanged and nothing is flagged. */
@@ -53,8 +53,10 @@ export default function AdminScholarshipList() {
   const canFilterByAssignee = isSuper || role?.role === 'admin' || role?.role === 'org_admin'
   const { t } = useT()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
-  // Super-only inline reviewer assignment (the "Assigned" column dropdown).
-  const [reviewers, setReviewers] = useState<Array<{ id: number; name: string; languages: string[] }>>([])
+  // Inline reviewer assignment (the "Assigned" column dropdown) — super or org_admin.
+  const [reviewers, setReviewers] = useState<Reviewer[]>([])
+  // Past assignees (org-fenced, incl. inactive/role-changed) — the filter's "Past reviewers".
+  const [pastAssignees, setPastAssignees] = useState<Array<{ id: number; name: string }>>([])
   const [assignNote, setAssignNote] = useState<Record<number, string>>({})
   const [bucket, setBucket] = useState('')
   const [statusF, setStatusF] = useState('')
@@ -123,7 +125,10 @@ export default function AdminScholarshipList() {
   useEffect(() => {
     if (!token || !canAssign) return
     getAssignableAdmins({ token })
-      .then((r) => setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, languages: a.languages || [] }))))
+      .then((r) => {
+        setReviewers(r.admins.map((a) => ({ id: a.id, name: a.name, role: a.role, languages: a.languages || [] })))
+        setPastAssignees(r.past_assignees ?? [])
+      })
       .catch(() => {})
   }, [token, canAssign])
 
@@ -217,6 +222,17 @@ export default function AdminScholarshipList() {
                 {reviewers.map((rv) => <option key={rv.id} value={rv.id}>{rv.name}</option>)}
               </optgroup>
             )}
+            {/* Past reviewers — still on record as some application's assignee but no longer in
+                the current staff list (inactive / role-changed). Filtering by them surfaces
+                their old cases; they are NOT offered by the assign dropdowns. */}
+            {(() => {
+              const past = pastAssignees.filter((p) => !reviewers.some((rv) => rv.id === p.id))
+              return past.length > 0 && (
+                <optgroup label={t('admin.scholarship.pastReviewers')}>
+                  {past.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </optgroup>
+              )
+            })()}
           </select>
         )}
       </div>
@@ -320,7 +336,14 @@ export default function AdminScholarshipList() {
                         {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
                           <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
                         )}
-                        {orderReviewersFor(reviewers, a.call_language).map(({ rv, match, specific }) => (
+                        {/* Mirror the cockpit's offer rule (= the server's bad_assignee rule):
+                            a super may assign any review-capable staff; a non-super (org_admin)
+                            delegates only to reviewers. The row's CURRENT assignee always
+                            renders even when not offerable (owner 2026-07-16). */}
+                        {orderReviewersFor(
+                          reviewers.filter((rv) => rv.id === a.assigned_to_id || isSuper || rv.role === 'reviewer'),
+                          a.call_language,
+                        ).map(({ rv, match, specific }) => (
                           <option key={rv.id} value={rv.id}>
                             {specific ? (match ? '✓ ' : '⚠ ') : ''}{rv.name}
                           </option>

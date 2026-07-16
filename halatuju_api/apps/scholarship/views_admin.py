@@ -1104,12 +1104,24 @@ class AdminAssignableAdminsView(_AdminBase):
                                            ('ms', rp.bm_fluency),
                                            ('ta', rp.tamil_fluency)) if lvl in ok]
 
+        # "Past reviewers" for the list-page assignee FILTER (owner 2026-07-16): anyone still on
+        # record as an application's ASSIGNEE (any status incl. closed/rejected) — filtering by
+        # them returns their old cases. Deliberately INDEPENDENT of is_active/role, so an inactive
+        # or role-changed past reviewer stays filterable; and deliberately NOT AssignmentEvent
+        # history (a fully-reassigned person filters to zero rows — a dead option).
+        # org-fence: _org_scoped below — a non-super sees only their own org's past assignees.
+        assigned_apps = self._org_scoped(
+            ScholarshipApplication.objects.filter(assigned_to__isnull=False), admin)
+        past = (PartnerAdmin.objects
+                .filter(id__in=assigned_apps.values_list('assigned_to_id', flat=True).distinct())
+                .order_by('name'))
+
         return Response({'admins': [
             {'id': a.id, 'name': a.name, 'email': a.email,
              'role': 'super' if a.is_super else a.role, 'languages': langs(a),
              'corrections': corrections.get(a.id, 0)}
             for a in admins
-        ]})
+        ], 'past_assignees': [{'id': p.id, 'name': p.name} for p in past]})
 
 
 class AdminRequestInfoView(_AdminBase):
