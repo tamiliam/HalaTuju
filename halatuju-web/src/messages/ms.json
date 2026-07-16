@@ -2179,8 +2179,8 @@
         "stuckCard": "Gunakan MyKad sebenar anda, bukan fotostat atau gambar salinan — aplikasi memotret kad sebenar dan akan menolak gambar daripada gambar.",
         "stuckPhone": "Telefon yang terlalu lama mungkin gagal semasa pendaftaran walaupun memenuhi syarat iOS 16 / Android 10. Jika ia tersekat, cuba semula dengan telefon yang lebih baharu.",
         "stuckSupport": "Jika anda menghadapi sebarang masalah, hantar WhatsApp kepada sokongan kami di +6016-336 6127.",
-        "walletId": "ID Dompet Vircle",
-        "walletIdHint": "Masukkan 3 digit terakhir ID Dompet Vircle anda (bermula 8000400175)."
+        "walletId": "ID eWallet",
+        "walletIdHint": "Masukkan 4 digit terakhir ID eWallet anda. Untuk mencarinya: buka aplikasi Vircle, tekan ikon gear di penjuru kanan atas, kemudian skrol ke bahagian bawah halaman Settings."
       },
       "bank": {
         "title": "Tambah akaun bank anda untuk pembayaran",

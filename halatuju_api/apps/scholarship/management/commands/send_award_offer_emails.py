@@ -43,8 +43,10 @@ class Command(BaseCommand):
                 skipped_no_award.append(aid)
                 continue
             name = getattr(app.profile, 'name', '') if app.profile else ''
+            from apps.scholarship.vircle import can_register
             ok = send_award_offer_email(
-                to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en')
+                to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en',
+                guardian_note=not can_register(app))
             if ok:
                 # Stamp the award as emailed so the cool-off cron never re-sends it (idempotent
                 # across the manual force-send and the scheduled release). Code-health S3 #7:

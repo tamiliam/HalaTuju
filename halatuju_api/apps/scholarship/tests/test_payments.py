@@ -39,7 +39,7 @@ _SEQ = {'n': 0}
 
 
 def _make_app(cohort, org, *, pathway='matric', award='2000', reporting=None,
-              status='awarded', vircle_suffix='001', substate='on_track', nric=None, name=None):
+              status='awarded', vircle_suffix='0001', substate='on_track', nric=None, name=None):
     _SEQ['n'] += 1
     i = _SEQ['n']
     prof = StudentProfile.objects.create(
@@ -74,6 +74,12 @@ class TestVircleId(TestCase):
 
     def test_rejects_wrong_prefix(self):
         self.assertFalse(payments.valid_vircle_id('9000400175123'))
+
+    def test_nine_digit_prefix_headroom(self):
+        # Owner 2026-07-17: the fixed prefix is 9 digits (800040017) + 4 typed digits — so an
+        # account numbered past …175999 (e.g. …176xxx) is now valid, but a different 9-prefix isn't.
+        self.assertTrue(payments.valid_vircle_id('8000400176123'))
+        self.assertFalse(payments.valid_vircle_id('8000400169999'))
 
     def test_rejects_non_digits_and_blank(self):
         self.assertFalse(payments.valid_vircle_id('80004001751az'))
@@ -579,7 +585,7 @@ class TestBackfillImport(TestCase):
                 app = s['app']
                 w.writerow([
                     i, app.profile.nric,
-                    payments.vircle_id_prefix() + f'{i:03d}',
+                    payments.vircle_id_prefix() + f'{i:04d}',
                     app.profile.contact_phone, app.profile.name,
                     s['monthly'],
                     s['batch'].strftime('%d/%m/%Y') if s['batch'] else '',

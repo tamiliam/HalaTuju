@@ -465,12 +465,13 @@ class TestAwardOfferEmail(TestCase):
         send_award_offer_email('x@y.example', 'Aisyah', lang='en')
         msg = mail.outbox[0]
         html = msg.alternatives[0][0]   # (html_body, 'text/html')
-        # Key phrases bolded — both halves of the merged email.
-        self.assertIn('<strong>monthly payment arrangement</strong>', html)
+        # Key phrases bolded — both halves of the merged email (two-step structure, 2026-07-17).
+        self.assertIn('<strong>TWO steps</strong>', html)
         self.assertIn('<strong>formal offer and bursary contract</strong>', html)
         self.assertIn('<strong>register a Parent account</strong>', html)
-        # The ask: an inline Action-Centre link AND a button, both to /scholarship/application.
-        self.assertEqual(html.count('/scholarship/application'), 2)
+        # The ask: TWO inline Action-Centre links (the STEP 2 heading + the "not optional"
+        # paragraph — deliberate, students were skipping step 2) AND the CTA button.
+        self.assertEqual(html.count('/scholarship/application'), 3)
         # The installation guide rides along.
         self.assertEqual(len(msg.attachments), 1)
         self.assertTrue(msg.attachments[0][0].endswith('.pdf'))
@@ -486,14 +487,26 @@ class TestAwardOfferEmail(TestCase):
         # future edit can't silently drop the Wallet-ID ask.
         from apps.scholarship.emails import send_award_offer_email
         wallet_phrase = {
-            'en': 'Vircle Wallet ID',
-            'ms': 'ID Dompet Vircle',
-            'ta': 'Vircle வாலட் ID',
+            'en': 'eWallet ID',
+            'ms': 'ID eWallet',
+            'ta': 'eWallet ID',
         }
         for lang, phrase in wallet_phrase.items():
             mail.outbox = []
             self.assertTrue(send_award_offer_email('x@y.example', 'Aisyah', lang=lang))
-            self.assertIn(phrase, mail.outbox[0].body, f'award email ({lang}) omits the Wallet-ID ask')
+            self.assertIn(phrase, mail.outbox[0].body, f'award email ({lang}) omits the eWallet-ID ask')
+
+    def test_award_offer_guardian_note_is_selective(self):
+        # Owner 2026-07-17: the parent/guardian paragraph goes ONLY to a student born after 2008.
+        from apps.scholarship.emails import send_award_offer_email
+        marker = 'born after 2008'
+        mail.outbox = []
+        send_award_offer_email('x@y.example', 'Aisyah', lang='en')                       # adult
+        self.assertNotIn(marker, mail.outbox[0].body)
+        mail.outbox = []
+        send_award_offer_email('x@y.example', 'Aisyah', lang='en', guardian_note=True)   # minor
+        self.assertIn(marker, mail.outbox[0].body)
+        self.assertIn('help@', mail.outbox[0].body.split(marker)[1][:400])   # routes them to support
 
 
 from django.core.management import call_command  # noqa: E402

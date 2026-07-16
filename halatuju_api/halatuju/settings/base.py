@@ -220,14 +220,15 @@ VIRCLE_EMAIL_APP_IDS = os.environ.get('VIRCLE_EMAIL_APP_IDS', '')
 # so all current accounts share this 10-digit prefix and the student types only the final 3
 # digits. A one-line change if Vircle's numbers ever roll past …175999 (the admin PATCH path is
 # the escape hatch meanwhile). A module constant lives in payments.py; this is the tunable.
-VIRCLE_ID_PREFIX = os.environ.get('VIRCLE_ID_PREFIX', '8000400175')
+VIRCLE_ID_PREFIX = os.environ.get('VIRCLE_ID_PREFIX', '800040017')   # 9 digits (owner 2026-07-17: student types the last 4 — more headroom than the 10-digit prefix)
 # Payments module (D7): recipient for the "send to Vircle" email at run countersignature (the
 # payment instruction with the run's CSV attached). Owner default 2026-07-16: gokula@vircle.com;
 # set the env var to override, or set it empty to disable the send.
 VIRCLE_PAYMENTS_EMAIL = os.environ.get('VIRCLE_PAYMENTS_EMAIL', 'gokula@vircle.com')
 # Where the run's CSV is filed in the organiser's Drive ('/'-separated path, folders must
-# already exist; owner 2026-07-16). Needs the Drive scope on the SA's domain-wide delegation.
-VIRCLE_PAYMENTS_FOLDER = os.environ.get('VIRCLE_PAYMENTS_FOLDER', '03 Vircle/01 Payment')
+# already exist; owner 2026-07-17 — 03 Vircle moved under 01 BrightPath). Needs the Drive scope
+# on the SA's domain-wide delegation.
+VIRCLE_PAYMENTS_FOLDER = os.environ.get('VIRCLE_PAYMENTS_FOLDER', '01 BrightPath/03 Vircle/01 Payment')
 
 # Check 2 STEP 3: auto-draft the sponsor profile at the reviewer handoff (and the
 # backfill/sweep that share this gate). Billable Gemini, so off by default; flip via the

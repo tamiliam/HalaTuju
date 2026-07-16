@@ -624,11 +624,11 @@ function VircleTask({
 }) {
   const { t } = useT()
   const [mobile, setMobile] = useState(() => formatMyMobile(contactPhone))
-  const [suffix, setSuffix] = useState('')   // D9: the student types only the final 3 digits
+  const [suffix, setSuffix] = useState('')   // D9 (owner 2026-07-17): the student types the final 4 digits
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const VIRCLE_PREFIX = '8000400175'
-  const suffixOk = /^\d{3}$/.test(suffix)
+  const VIRCLE_PREFIX = '800040017'   // 9-digit fixed prefix; must match settings VIRCLE_ID_PREFIX
+  const suffixOk = /^\d{4}$/.test(suffix)
   const valid = isValidMyMobile(mobile) && suffixOk
 
   const onConfirmDone = async () => {
@@ -682,10 +682,10 @@ function VircleTask({
                 id="vircle-id"
                 className="input w-24 tabular-nums"
                 inputMode="numeric"
-                maxLength={3}
-                placeholder="123"
+                maxLength={4}
+                placeholder="1234"
                 value={suffix}
-                onChange={(e) => setSuffix(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                onChange={(e) => setSuffix(e.target.value.replace(/\D/g, '').slice(0, 4))}
                 disabled={busy}
               />
             </div>

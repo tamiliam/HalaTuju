@@ -436,26 +436,27 @@ AWARD_OFFER_BODIES = {
         "We're delighted to share some good news. Your application to the BrightPath Bursary "
         "Programme has been successful — you have been selected to receive financial support for "
         "your studies.\n\n"
-        "Your support will be provided through a monthly payment arrangement, and your money will "
-        "reach you through Vircle, a Malaysian eWallet app. So there is one thing to do now: set up "
-        "your Vircle account.\n\n"
-        "Install the Vircle app from the Apple App Store, Google Play Store or Huawei AppGallery. "
-        "You'll need iOS 16 or above, or Android 10 or above. Note that a very old phone can fail "
-        "during registration even if it meets this — if it stalls, try again on a newer phone.\n\n"
-        "When you sign up, the app asks you to register a Parent account. That is simply Vircle's "
-        "name for the main adult account, and it is the correct one for you. You can register if "
-        "you were born in 2008 or earlier. Have your MyKad in your hand before you start: the app "
-        "photographs the actual card, so a picture of a photocopy, a scan, or an image on another "
-        "screen will be rejected.\n\n"
-        "If you were born after 2008, you cannot open your own Vircle account yet. Ask a parent or "
-        "guardian to register their own Vircle account instead, then email us at {support} and "
-        "we'll arrange for you to be added to it.\n\n"
-        "The step-by-step guide is attached to this email.\n\n"
-        "Once your account is active, please tell us in the Action Centre: enter the mobile "
-        "number you registered with Vircle AND your Vircle Wallet ID (have it ready — it's the "
-        "long number on your Vircle account). We'll take it from there and arrange for your account "
-        "to receive money monthly. (The attached guide asks you to message Vircle on WhatsApp — "
-        "you may do so, but you don't have to. Telling us is what we need.)\n\n"
+        "Your support is paid monthly through Vircle, a Malaysian eWallet app. There are TWO "
+        "steps to start receiving it, and your payments can only begin once BOTH are done.\n\n"
+        "STEP 1 — Install Vircle and activate your account.\n"
+        "Install the Vircle app from the Apple App Store, Google Play Store or Huawei AppGallery "
+        "(you'll need iOS 16 or above, or Android 10 or above — a very old phone can fail during "
+        "registration even if it meets this; if it stalls, try again on a newer phone). When you "
+        "sign up, the app asks you to register a Parent account: that is simply Vircle's name for "
+        "the main adult account, and it is the correct one for you. Have your MyKad in your hand "
+        "before you start — the app photographs the actual card, so a photocopy, a scan, or an "
+        "image on another screen will be rejected. The step-by-step guide is attached to this "
+        "email.\n\n"
+        "{guardian_note}"
+        "STEP 2 — Tell us in the Action Centre.\n"
+        "Once your account is active, sign in at halatuju.xyz and open your application page. In "
+        "the Action Centre, enter the mobile number you registered with Vircle AND your "
+        "eWallet ID. To find your eWallet ID: open the Vircle app, tap the gear icon at the top "
+        "right of the home screen, then scroll to the bottom of the Settings page — it reads "
+        "\"Your eWallet ID\" followed by a 13-digit number.\n\n"
+        "Step 2 is not optional: we can only arrange your monthly payments after you have told us "
+        "these details. (The attached guide may ask you to message Vircle on WhatsApp — you may, "
+        "but telling us in the Action Centre is what starts your payments.)\n\n"
         "A formal offer and bursary contract will follow separately, along with the simple steps to "
         "accept it.\n\n"
         "If you faced any trouble during registration or activation, or have any questions, reply "
@@ -466,29 +467,29 @@ AWARD_OFFER_BODIES = {
         "Salam {name},\n\n"
         "Kami gembira berkongsi berita baik. Permohonan anda ke Program Biasiswa BrightPath telah "
         "berjaya — anda telah dipilih untuk menerima bantuan kewangan bagi pengajian anda.\n\n"
-        "Bantuan anda akan disalurkan melalui aturan pembayaran bulanan, dan wang anda akan sampai "
-        "melalui Vircle, sebuah aplikasi eWallet Malaysia. Jadi ada satu perkara untuk dilakukan "
-        "sekarang: menyediakan akaun Vircle anda.\n\n"
-        "Pasang aplikasi Vircle dari Apple App Store, Google Play Store atau Huawei AppGallery. Anda "
-        "memerlukan iOS 16 ke atas, atau Android 10 ke atas. Perlu diingat, telefon yang terlalu lama "
-        "boleh gagal semasa pendaftaran walaupun memenuhi syarat ini — jika ia tersekat, cuba semula "
-        "dengan telefon yang lebih baharu.\n\n"
-        "Semasa mendaftar, aplikasi akan meminta anda mendaftar Akaun Parent. Itu hanyalah nama Vircle "
-        "bagi akaun dewasa utama, dan ia adalah akaun yang betul untuk anda. Anda boleh mendaftar jika "
-        "anda lahir pada tahun 2008 atau lebih awal. Pastikan MyKad anda ada di tangan sebelum mula: "
-        "aplikasi akan memotret kad sebenar, jadi gambar salinan fotostat, imbasan, atau imej pada "
-        "skrin lain akan ditolak.\n\n"
-        "Jika anda lahir selepas tahun 2008, anda belum boleh membuka akaun Vircle anda sendiri. "
-        "Sebaliknya, minta ibu bapa atau penjaga anda mendaftar akaun Vircle mereka sendiri, "
-        "kemudian e-mel kami di {support} dan kami akan uruskan supaya anda ditambah ke dalam "
-        "akaun tersebut.\n\n"
-        "Panduan langkah demi langkah disertakan bersama e-mel ini.\n\n"
-        "Sebaik sahaja akaun anda aktif, sila beritahu kami di Pusat Tindakan: masukkan nombor "
-        "telefon bimbit yang anda daftarkan dengan Vircle DAN ID Dompet Vircle anda (sediakan ia "
-        "— nombor panjang pada akaun Vircle anda). Kami akan uruskan yang selebihnya dan "
-        "memastikan akaun anda menerima wang setiap bulan. (Panduan yang disertakan meminta anda "
-        "menghantar mesej WhatsApp kepada Vircle — anda boleh berbuat demikian, tetapi ia tidak "
-        "wajib. Memberitahu kami sudah memadai.)\n\n"
+        "Bantuan anda dibayar setiap bulan melalui Vircle, sebuah aplikasi eWallet Malaysia. "
+        "Terdapat DUA langkah untuk mula menerimanya, dan pembayaran hanya boleh bermula setelah "
+        "KEDUA-DUA langkah selesai.\n\n"
+        "LANGKAH 1 — Pasang Vircle dan aktifkan akaun anda.\n"
+        "Pasang aplikasi Vircle dari Apple App Store, Google Play Store atau Huawei AppGallery "
+        "(anda memerlukan iOS 16 ke atas, atau Android 10 ke atas — telefon yang terlalu lama "
+        "boleh gagal semasa pendaftaran walaupun memenuhi syarat ini; jika ia tersekat, cuba "
+        "semula dengan telefon yang lebih baharu). Semasa mendaftar, aplikasi akan meminta anda "
+        "mendaftar Akaun Parent: itu hanyalah nama Vircle bagi akaun dewasa utama, dan ia adalah "
+        "akaun yang betul untuk anda. Pastikan MyKad anda ada di tangan sebelum mula — aplikasi "
+        "akan memotret kad sebenar, jadi gambar salinan fotostat, imbasan, atau imej pada skrin "
+        "lain akan ditolak. Panduan langkah demi langkah disertakan bersama e-mel ini.\n\n"
+        "{guardian_note}"
+        "LANGKAH 2 — Beritahu kami di Pusat Tindakan.\n"
+        "Sebaik sahaja akaun anda aktif, log masuk di halatuju.xyz dan buka halaman permohonan "
+        "anda. Di Pusat Tindakan, masukkan nombor telefon bimbit yang anda daftarkan dengan "
+        "Vircle DAN ID eWallet anda. Untuk mencari ID eWallet anda: buka aplikasi Vircle, tekan "
+        "ikon gear di penjuru kanan atas skrin utama, kemudian skrol ke bahagian bawah halaman "
+        "Settings — tertera \"Your eWallet ID\" diikuti nombor 13 digit.\n\n"
+        "Langkah 2 bukan pilihan: kami hanya dapat mengaturkan pembayaran bulanan anda selepas "
+        "anda memberitahu kami butiran ini. (Panduan yang disertakan mungkin meminta anda "
+        "menghantar mesej WhatsApp kepada Vircle — anda boleh berbuat demikian, tetapi "
+        "memberitahu kami di Pusat Tindakan itulah yang memulakan pembayaran anda.)\n\n"
         "Tawaran rasmi dan kontrak biasiswa akan menyusul secara berasingan, berserta langkah mudah "
         "untuk menerimanya.\n\n"
         "Jika anda menghadapi sebarang masalah semasa pendaftaran atau pengaktifan, atau ada "
@@ -499,34 +500,56 @@ AWARD_OFFER_BODIES = {
         "அன்புள்ள {name},\n\n"
         "ஒரு நல்ல செய்தியைப் பகிர்வதில் மகிழ்ச்சி அடைகிறோம். BrightPath Bursary திட்டத்திற்கான உங்கள் "
         "விண்ணப்பம் வெற்றிபெற்றுள்ளது — உங்கள் படிப்பிற்கான நிதியுதவியைப் பெற நீங்கள் தேர்ந்தெடுக்கப்பட்டுள்ளீர்கள்.\n\n"
-        "உங்கள் உதவி மாதாந்திரக் கட்டண முறையில் வழங்கப்படும்; உங்கள் பணம் Vircle என்ற மலேசிய eWallet "
-        "செயலி வழியாக உங்களைச் சென்றடையும். எனவே இப்போது ஒரே ஒரு வேலை: உங்கள் Vircle கணக்கை "
-        "அமைப்பது.\n\n"
+        "உங்கள் உதவி Vircle என்ற மலேசிய eWallet செயலி வழியாக மாதந்தோறும் வழங்கப்படும். அதைப் பெறத் "
+        "தொடங்க இரண்டு படிகள் உள்ளன; இரண்டையும் முடித்த பிறகே கட்டணங்கள் தொடங்க முடியும்.\n\n"
+        "படி 1 — Vircle-ஐ நிறுவி உங்கள் கணக்கைச் செயல்படுத்துங்கள்.\n"
         "Apple App Store, Google Play Store அல்லது Huawei AppGallery-இலிருந்து Vircle செயலியை "
-        "நிறுவவும். உங்களுக்கு iOS 16 அல்லது அதற்கு மேல், அல்லது Android 10 அல்லது அதற்கு மேல் தேவை. "
-        "மிகவும் பழைய தொலைபேசி இதைப் பூர்த்தி செய்தாலும் பதிவின்போது தோல்வியடையலாம் — நின்றுவிட்டால், "
-        "புதிய தொலைபேசியில் மீண்டும் முயற்சிக்கவும்.\n\n"
-        "பதிவு செய்யும்போது, ஒரு Parent கணக்கைப் பதிவு செய்யுமாறு செயலி கேட்கும். அது Vircle நிறுவனம் "
-        "முதன்மை வயதுவந்தோர் கணக்கிற்கு வைத்துள்ள பெயர் மட்டுமே; அதுவே உங்களுக்கான சரியான கணக்கு. "
-        "நீங்கள் 2008 அல்லது அதற்கு முன் பிறந்திருந்தால் பதிவு செய்யலாம். தொடங்கும் முன் உங்கள் MyKad-ஐ "
-        "கையில் வைத்திருங்கள்: செயலி உண்மையான அட்டையைப் புகைப்படம் எடுக்கிறது, எனவே நகல், ஸ்கேன், அல்லது "
-        "மற்றொரு திரையில் உள்ள படத்தின் புகைப்படம் நிராகரிக்கப்படும்.\n\n"
-        "நீங்கள் 2008-க்குப் பிறகு பிறந்திருந்தால், உங்கள் சொந்தக் கணக்கை இப்போது திறக்க முடியாது. "
-        "அதற்குப் பதிலாக, உங்கள் பெற்றோர் அல்லது பாதுகாவலரை அவர்களின் சொந்த Vircle கணக்கைப் பதிவு "
-        "செய்யச் சொல்லுங்கள்; பிறகு {support} இல் எங்களுக்கு மின்னஞ்சல் அனுப்புங்கள் — அந்தக் கணக்கில் "
-        "உங்களைச் சேர்ப்பதற்கு நாங்கள் ஏற்பாடு செய்வோம்.\n\n"
-        "படிப்படியான வழிகாட்டி இந்த மின்னஞ்சலுடன் இணைக்கப்பட்டுள்ளது.\n\n"
-        "உங்கள் கணக்கு செயல்பட்டவுடன், Action Centre-இல் எங்களிடம் தெரிவித்து, Vircle-இல் நீங்கள் "
-        "பதிவு செய்த கைபேசி எண்ணையும் உங்கள் Vircle வாலட் ID-யையும் உள்ளிடவும் (அதைத் தயாராக "
-        "வைத்திருங்கள் — உங்கள் Vircle கணக்கில் உள்ள நீண்ட எண்). மீதியை நாங்கள் கவனித்து, உங்கள் கணக்கு ஒவ்வொரு மாதமும் "
-        "பணத்தைப் பெறுவதற்கு ஏற்பாடு செய்வோம். (இணைக்கப்பட்ட வழிகாட்டி Vircle-க்கு WhatsApp அனுப்பச் "
-        "சொல்கிறது — நீங்கள் அனுப்பலாம், ஆனால் அது கட்டாயமில்லை. எங்களிடம் தெரிவிப்பதே எங்களுக்குத் "
-        "தேவை.)\n\n"
+        "நிறுவவும் (iOS 16 அல்லது அதற்கு மேல், அல்லது Android 10 அல்லது அதற்கு மேல் தேவை — மிகவும் "
+        "பழைய தொலைபேசி இதைப் பூர்த்தி செய்தாலும் பதிவின்போது தோல்வியடையலாம்; நின்றுவிட்டால், புதிய "
+        "தொலைபேசியில் மீண்டும் முயற்சிக்கவும்). பதிவு செய்யும்போது, ஒரு Parent கணக்கைப் பதிவு செய்யுமாறு "
+        "செயலி கேட்கும்: அது Vircle நிறுவனம் முதன்மை வயதுவந்தோர் கணக்கிற்கு வைத்துள்ள பெயர் மட்டுமே; "
+        "அதுவே உங்களுக்கான சரியான கணக்கு. தொடங்கும் முன் உங்கள் MyKad-ஐ கையில் வைத்திருங்கள் — செயலி "
+        "உண்மையான அட்டையைப் புகைப்படம் எடுக்கிறது; நகல், ஸ்கேன், அல்லது மற்றொரு திரையில் உள்ள படம் "
+        "நிராகரிக்கப்படும். படிப்படியான வழிகாட்டி இந்த மின்னஞ்சலுடன் இணைக்கப்பட்டுள்ளது.\n\n"
+        "{guardian_note}"
+        "படி 2 — Action Centre-இல் எங்களிடம் தெரிவியுங்கள்.\n"
+        "உங்கள் கணக்கு செயல்பட்டவுடன், halatuju.xyz-இல் உள்நுழைந்து உங்கள் விண்ணப்பப் பக்கத்தைத் "
+        "திறக்கவும். Action Centre-இல், Vircle-இல் நீங்கள் பதிவு செய்த கைபேசி எண்ணையும் உங்கள் "
+        "eWallet ID-யையும் உள்ளிடவும். உங்கள் eWallet ID-ஐக் கண்டறிய: Vircle செயலியைத் திறந்து, "
+        "முகப்புத் திரையின் மேல் வலது மூலையில் உள்ள gear ஐகானை அழுத்தி, Settings பக்கத்தின் "
+        "கீழ்ப்பகுதிக்கு உருட்டவும் — அங்கு \"Your eWallet ID\" என்பதற்குப் பின் 13 இலக்க எண் இருக்கும்.\n\n"
+        "படி 2 விருப்பத்தேர்வு அல்ல: இந்த விவரங்களை நீங்கள் தெரிவித்த பிறகே உங்கள் மாதாந்திரக் "
+        "கட்டணங்களை நாங்கள் ஏற்பாடு செய்ய முடியும். (இணைக்கப்பட்ட வழிகாட்டி Vircle-க்கு WhatsApp "
+        "அனுப்பச் சொல்லலாம் — நீங்கள் அனுப்பலாம்; ஆனால் Action Centre-இல் எங்களிடம் தெரிவிப்பதே உங்கள் "
+        "கட்டணங்களைத் தொடங்கும்.)\n\n"
         "முறையான வழங்கல் (offer) மற்றும் உதவித்தொகை ஒப்பந்தம் (bursary contract), அதை ஏற்கும் எளிய "
         "படிகளுடன், தனியாக அனுப்பப்படும்.\n\n"
         "பதிவு அல்லது செயல்படுத்தும் போது ஏதேனும் சிக்கல் ஏற்பட்டால், அல்லது ஏதேனும் கேள்விகள் இருந்தால், "
         "இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் எங்களைத் தொடர்புகொள்ளவும்.\n\n"
         "இதயப்பூர்வ வாழ்த்துகள்,\nBrightPath Bursary குழு"
+    ),
+}
+
+# The parent/guardian route (owner 2026-07-17): shown ONLY to a student born after 2008
+# (``not vircle.can_register(app)``) — everyone else never sees it. {support} is pre-formatted
+# by the sender before insertion.
+AWARD_OFFER_GUARDIAN_NOTES = {
+    'en': (
+        "If you were born after 2008, you cannot open your own Vircle account yet. Ask a parent "
+        "or guardian to register their own Vircle account instead, then email us at {support} "
+        "and we'll arrange for you to be added to it."
+    ),
+    'ms': (
+        "Jika anda lahir selepas tahun 2008, anda belum boleh membuka akaun Vircle anda sendiri. "
+        "Sebaliknya, minta ibu bapa atau penjaga anda mendaftar akaun Vircle mereka sendiri, "
+        "kemudian e-mel kami di {support} dan kami akan uruskan supaya anda ditambah ke dalam "
+        "akaun tersebut."
+    ),
+    'ta': (
+        "நீங்கள் 2008-க்குப் பிறகு பிறந்திருந்தால், உங்கள் சொந்த Vircle கணக்கை இப்போது திறக்க முடியாது. "
+        "அதற்குப் பதிலாக, உங்கள் பெற்றோர் அல்லது பாதுகாவலரை அவர்களின் சொந்த Vircle கணக்கைப் பதிவு "
+        "செய்யச் சொல்லுங்கள்; பிறகு {support} இல் எங்களுக்கு மின்னஞ்சல் அனுப்புங்கள் — அந்தக் கணக்கில் "
+        "உங்களைச் சேர்ப்பதற்கு நாங்கள் ஏற்பாடு செய்வோம்."
     ),
 }
 
@@ -536,14 +559,18 @@ AWARD_OFFER_BODIES = {
 # BOTH halves: how support is paid, and the Vircle facts a student must not miss (the "Parent"
 # account, the birth-year rule, the physical-MyKad rule) plus the contract still to come.
 _BOLD_PHRASES = {
-    'en': ['monthly payment arrangement', 'register a Parent account', 'born in 2008 or earlier',
-           'photographs the actual card', 'formal offer and bursary contract'],
-    'ms': ['aturan pembayaran bulanan', 'mendaftar Akaun Parent',
-           'lahir pada tahun 2008 atau lebih awal', 'memotret kad sebenar',
+    'en': ['TWO steps', 'STEP 1 — Install Vircle and activate your account.',
+           'STEP 2 — Tell us in the Action Centre.', 'register a Parent account',
+           'photographs the actual card', 'eWallet ID', 'Step 2 is not optional',
+           'formal offer and bursary contract'],
+    'ms': ['DUA langkah', 'LANGKAH 1 — Pasang Vircle dan aktifkan akaun anda.',
+           'LANGKAH 2 — Beritahu kami di Pusat Tindakan.', 'mendaftar Akaun Parent',
+           'memotret kad sebenar', 'ID eWallet', 'Langkah 2 bukan pilihan',
            'Tawaran rasmi dan kontrak biasiswa'],
-    'ta': ['மாதாந்திரக் கட்டண முறையில்', 'Parent கணக்கைப் பதிவு செய்யுமாறு',
-           '2008 அல்லது அதற்கு முன் பிறந்திருந்தால்',
-           'உண்மையான அட்டையைப் புகைப்படம் எடுக்கிறது'],
+    'ta': ['இரண்டு படிகள்', 'படி 1 — Vircle-ஐ நிறுவி உங்கள் கணக்கைச் செயல்படுத்துங்கள்.',
+           'படி 2 — Action Centre-இல் எங்களிடம் தெரிவியுங்கள்.', 'Parent கணக்கைப் பதிவு செய்யுமாறு',
+           'உண்மையான அட்டையைப் புகைப்படம் எடுக்கிறது', 'eWallet ID',
+           'படி 2 விருப்பத்தேர்வு அல்ல'],
 }
 
 
@@ -588,13 +615,16 @@ def _award_offer_html(text_body, lang):
     return _html_email_shell(''.join(blocks))
 
 
-def send_award_offer_email(to_email, applicant_name, lang='en'):
+def send_award_offer_email(to_email, applicant_name, lang='en', guardian_note=False):
     """Award email: a sponsor has committed (status 'awarded'). Since the 2026-07-12 merge this is
-    ONE email carrying the good news AND the Vircle setup — the application succeeded, support is
-    paid monthly through the Vircle eWallet, here is how to set it up, then confirm in the Action
-    Centre. The installation guide is attached. The formal offer + bursary contract still follow
-    separately. NO amount, NO sponsor identity, NO bank-details ask. HTML (key phrases BOLD, inline
-    Action-Centre link + CTA button) + plain-text fallback, from info@, reply-to help@.
+    ONE email carrying the good news AND the Vircle setup, restructured 2026-07-17 (owner) as TWO
+    explicit steps — STEP 1 install/activate, STEP 2 confirm in the Action Centre (students were
+    skipping step 2). The installation guide is attached. The formal offer + bursary contract still
+    follow separately. NO amount, NO sponsor identity, NO bank-details ask. HTML (key phrases BOLD,
+    inline Action-Centre link + CTA button) + plain-text fallback, from info@, reply-to help@.
+
+    ``guardian_note=True`` (a student born after 2008, ``not vircle.can_register(app)``) inserts
+    the parent/guardian-account paragraph after step 1; everyone else never sees it.
 
     The CALLER raises the Action-Centre task on a successful send (see sponsorship.py) — the task
     must never appear for a student who didn't get the email."""
@@ -602,7 +632,9 @@ def send_award_offer_email(to_email, applicant_name, lang='en'):
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    fmt = {'name': name, 'support': SUPPORT_EMAIL}
+    note = (AWARD_OFFER_GUARDIAN_NOTES[lang].format(support=SUPPORT_EMAIL) + '\n\n'
+            if guardian_note else '')
+    fmt = {'name': name, 'support': SUPPORT_EMAIL, 'guardian_note': note}
     subject = AWARD_OFFER_SUBJECTS[lang]
     text_body = AWARD_OFFER_BODIES[lang].format(**fmt)
     guide = vircle_guide_attachment()
