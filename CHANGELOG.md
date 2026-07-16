@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## Officer assignment surfaces — live-review round (cockpit = list = filter) — 2026-07-16/17
+
+An owner live-review arc off real records (#66, #56, #50, #21; org_admin testing as
+`elanjelian@me.com`). Four commits, NO migration. Retro
+`docs/retrospective-2026-07-16-assignment-surfaces.md`.
+
+### Fixed
+- **Cockpit assign dropdown renders the CURRENT assignee whatever their role** (`ec9279ed`) —
+  #66 (assigned to Suresh as `qc`, later promoted `org_admin`) read "Unassigned": the option list
+  was reviewer/super-only and a controlled `<select>` whose value matches no option silently shows
+  the default. A super may now also pick any review-capable staff (matches
+  `services.REVIEW_ROLES`); senior roles are suffixed in the label.
+- **Applicant list disables a not-ready FIRST assignment** (`fc43b07f`) — the list row gated only
+  on the stage (`assignable`), never the cockpit's first-assign readiness (all student tasks done
+  OR the 5-day window lapsed), so #56 (5 open queries, window to 18 Jul) looked assignable and the
+  server bounced `not_ready`. `AdminApplicationListSerializer` now ships `ready_for_assignment`;
+  the row disables with a "not ready" tooltip. +serializer-wiring test.
+- **List assign dropdown mirrors the cockpit offer rule** (`1178df13`) — it offered Kulaly
+  (`admin`) + Suresh (`org_admin`) to an org_admin caller — picks the server refuses
+  (`bad_assignee`). ONE rule on both surfaces now: super → any review-capable staff; non-super →
+  own-org reviewers only; the row's current assignee always renders.
+
+### Changed
+- **"Prefers TA" → "Prefers Tamil"** (`ea7e15ce`) — the list's preferred-call-language note spells
+  the language out via the existing `scholarship.apply.callLang.*` keys (trilingual, NO new keys);
+  reviewer options show ✓/⚠ + name only (the language-code suffix dropped).
+- **Assignee filter gains "Past reviewers"** (`1178df13`) — `assignable-admins` now also returns
+  `past_assignees`: anyone still on record as an application's assignee (org-fenced, INDEPENDENT
+  of is_active/role), so an inactive or role-changed past reviewer's cases stay filterable.
+  Deliberately NOT `AssignmentEvent` history (a fully-reassigned person filters to zero rows — a
+  dead option). New i18n `admin.scholarship.pastReviewers` en/ms/ta (Tamil first-draft). +pytest.
+
+### Data / operations (Supabase MCP, audited)
+- **#50 duplicate live offers collapsed** — the genuine UniMAP PDF (doc 1065, p=1.0) is the sole
+  live offer; the suspect WhatsApp photo (doc 1046, p=0.40) superseded to OLD/REPLACED. Offers are
+  an un-deduped type and this pair pre-dated stage-judge-promote.
+- **RM20,000 manual credit → sponsor Bharathan Nair** (donation id 4; reference mirrors the
+  Chong Lee Min precedent). Wallet RM20,000, no holdings.
+
+### Investigated — no change needed
+- **#56/#118 offers reading `ua_offer`/suspect are CORRECT** — both are online ANNOUNCEMENTS of
+  STPM offers (the text mentions studying at a UKM campus, hence the UA-name anchor), not the
+  official letter; owner policy floors a pemakluman at suspect. The `stpm`-classified population
+  is uniformly genuine (24 × 0.867) — no signature tuning, no reextract, no classifier guard.
+- **Suresh reopen→decline on #21 (KISHANTAN)** — QC-Reopen passes every gate (role / org / stage /
+  self-QC / recorder); decline follows once the reopen unlocks the panel. The FE deliberately
+  offers NO direct decline at Awaiting QC — the recorded-verdict freeze preserves the two-person
+  trail.
+
 ## Payments module — Sprint P3: production cutover (the feature's single deploy) — 2026-07-16
 
 The one deploy for the whole Payments feature (P1 + P2 + the D10 guard). Migrate-first, one push,

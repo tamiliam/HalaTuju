@@ -4591,3 +4591,17 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** The STR is the means-test, but a real payslip quantifies a member's pay regardless of route; a suspect read can't confirm a figure, so it must not earn a tick.
 **Trade-offs:** Broadening the earner set slightly changes salary-route behaviour at the edges (a declared earner with no doc no longer forces "not all known"); acceptable. Runs a few extra per-member doc queries on each cockpit detail GET.
 **Revisit if:** the per-request cost matters, or the owner wants STR-route documented income to influence the verdict (a separate re-band decision).
+
+## Assignment offer rule: strict delegation kept; every surface mirrors the server's bad_assignee rule — 2026-07-16
+**Decision:** A non-super `org_admin` may assign only ACTIVE plain `reviewer`s in their own org (the existing `AdminAssignReviewerView` restriction, unchanged); a `super` may assign any review-capable staff (`services.REVIEW_ROLES`). Every UI surface that OFFERS an assignment (cockpit card, list row dropdown) derives its option filter from that same rule, and always unions in the row's CURRENT assignee so stored state renders whatever the assignee's role has become.
+**Alternatives considered:** Relaxing the backend so an org_admin can assign any review-capable own-org staff (reviewer/admin/qc/org_admin) — the "org_admin is the org's super admin" reading; it would also let an org_admin delegate to a role-`admin` staffer (today super-only).
+**Rationale:** Owner call ("I like the cockpit behaviour — the list must mirror it"). Keeping the strict rule preserves the deliberate two-tier delegation from Org-Admin Powers v1; the defects were the SURFACES drifting from the rule (list over-offering picks the server refuses; cockpit hiding a stored assignee after a role change), not the rule itself.
+**Trade-offs:** Giving a role-`admin` staffer (Kulaly) work stays super-only; if that chafes the cheap fix is flipping her role to `reviewer`, not loosening the rule.
+**Revisit if:** the owner wants org_admins to delegate to senior roles, or a second tenant's staffing pattern makes reviewer-only delegation impractical.
+
+## "Past reviewers" filter = current-assignee-on-record, not AssignmentEvent history — 2026-07-16
+**Decision:** The applicant-list assignee filter's "Past reviewers" group is built from `past_assignees` on the assignable-admins endpoint: the DISTINCT `assigned_to` across the caller's org-fenced applications (any status incl. closed/rejected), INDEPENDENT of `is_active`/role — so an inactive or role-changed past reviewer's old cases stay filterable. They are filter-only; the assign dropdowns never offer them.
+**Alternatives considered:** (A) `AssignmentEvent` history (everyone EVER assigned) — rejected: a fully-reassigned person matches zero rows, a dead option. (B) Current active staff only — rejected: an inactive ex-reviewer's cases become unfindable by person.
+**Rationale:** A filter option should always return the rows it names; assigned_to persists on closed cases, so "still on record as an assignee" is exactly the useful set.
+**Trade-offs:** Someone whose every case was reassigned is unfindable by person (by design — those rows now belong to the new assignee); one extra fenced query per assignable-admins call.
+**Revisit if:** the owner ever needs "who has EVER touched this case" — that's the AssignmentEvent audit trail, a per-application view, not a list filter.

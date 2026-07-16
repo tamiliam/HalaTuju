@@ -522,7 +522,30 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-16)
+## Next Sprint (as of 2026-07-17)
+
+**✅ SHIPPED 2026-07-16/17 — Officer assignment surfaces: cockpit = list = filter (one offer rule)**
+(commits `ec9279ed`/`fc43b07f`/`ea7e15ce`/`1178df13`; NO migration; retro
+`docs/retrospective-2026-07-16-assignment-surfaces.md`; decisions ×2; lesson ×1; TD-162). An owner
+live-review arc off real records. The three assignment surfaces now encode ONE rule — the server's
+`bad_assignee` rule: a super assigns any review-capable staff (`REVIEW_ROLES`), a non-super
+org_admin delegates only to own-org **reviewers**, and the CURRENT assignee always renders (a role
+change can no longer read "Unassigned" — the #66/Suresh case). The list also disables a not-ready
+FIRST assignment (`ready_for_assignment` shipped on the list serializer — the cockpit's
+firstAssignBlocked, mirrored); "Prefers TA" → full language names via the shared
+`scholarship.apply.callLang.*` keys; reviewer options show ✓/⚠ + name only; the assignee filter
+gains **Past reviewers** (`past_assignees` on assignable-admins = anyone still on record as an
+assignee, org-fenced, independent of is_active/role — NOT AssignmentEvent history, which would
+offer dead zero-result options). Data ops (MCP, audited): #50's duplicate offer collapsed (genuine
+PDF live, suspect photo → OLD/REPLACED); RM20,000 manual credit → sponsor Bharathan Nair (donation
+id 4). Confirmed-no-change: **#56/#118 `ua_offer`/suspect reads are CORRECT** (online STPM
+announcements mentioning a UKM campus — a pemakluman floors at suspect; do NOT tune
+STPM_OFFER_SIGNATURES or reextract); Suresh CAN QC-reopen → decline #21 (and the FE deliberately
+offers no direct decline at Awaiting QC — the recorded-verdict freeze is the two-person trail).
+- **▶ CARRY (owner):** Tamil first-draft `admin.scholarship.pastReviewers`
+  (முன்னர் நேர்காணல் செய்தவர்கள்); revert `elanjelian@me.com` → `reviewer` when org_admin testing
+  ends; under the strict rule giving Kulaly (role `admin`) work is super-only — flip her to
+  `reviewer` if that chafes; TD-162 (list readiness N+1) only if the cohort grows.
 
 **✅ SHIPPED + LIVE 2026-07-16 — Organisation Payments module (Vircle payment runs), P1+P2+P3
 complete, the feature's single deploy DONE** (plan `docs/plans/2026-07-16-payments-module-plan.md`;

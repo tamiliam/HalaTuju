@@ -1264,3 +1264,11 @@ bigger, riskier change than the school/stream sync, and #43 is the only observed
 recurs: detect `op.detect_pathway_type(offer)` ≠ `chosen_pathway` at confirm and either re-home the
 application to the offer's real pathway type or raise a reviewer flag rather than silently coercing.
 Low: 1 known app; the pre-U sync otherwise behaves; the officer sees the offer document.
+
+### [TD-162] Applicant list `ready_for_assignment` is an N+1 (one open-tasks query per row) (low)
+`AdminApplicationListSerializer.get_ready_for_assignment` calls
+`services.is_ready_for_assignment(obj)` per row, and its `open_student_tasks(...).exists()` is one
+query per application — ~25-50 extra queries per list page at current page sizes. Fine at today's
+cohort (~140 apps, paginated); annotate/prefetch (an EXISTS subquery on the list queryset) if the
+cohort or page size grows enough to notice. Introduced with the not-ready-first-assignment list
+gate (assignment-surfaces round, 2026-07-16).
