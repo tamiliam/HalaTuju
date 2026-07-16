@@ -1413,6 +1413,8 @@ export interface PaymentRunSkipped {
 }
 export interface PaymentSignature { name: string; email: string; at: string }
 export interface PaymentRunDetail {
+  /** Where the payment instruction is emailed on countersignature (shown in the declaration). */
+  vircle_email?: string
   id: number
   reference: string
   payment_date: string

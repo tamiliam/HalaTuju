@@ -2763,15 +2763,105 @@ def send_super_verdict_escalation_email(to_email, *, applicant_name, ref='', rev
     return _send_plain(to_email, _reviewer_subject('Overdue verdict needs attention', ref), body)
 
 
+def _run_month_label(run):
+    """The month a run pays for, e.g. 'July 2026' (falls back to the payment date's month)."""
+    d = getattr(run, 'period_month', None) or getattr(run, 'payment_date', None)
+    return d.strftime('%B %Y') if d else ''
+
+
+def _run_totals(run):
+    """(included-student count, total amount) for a run."""
+    from decimal import Decimal
+    included = [i for i in run.items.all() if i.included]
+    return len(included), sum((i.amount for i in included), Decimal('0'))
+
+
+def _rm_amount(v):
+    """Whole-ringgit display: Decimal('200.00') → '200' (a genuine .50 is kept)."""
+    try:
+        return f'{v.normalize():f}'
+    except Exception:
+        return str(v)
+
+
+def send_payment_countersign_email(run):
+    """Payments (owner 2026-07-16): when the maker signs a run, tell the organisation admin(s)
+    it awaits their countersignature. Internal officer email (English); best-effort — never
+    raises, a failure never blocks the signature."""
+    from apps.courses.models import PartnerAdmin
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/admin/payments/{run.id}'
+    month = _run_month_label(run)
+    n, total = _run_totals(run)
+    vircle_to = getattr(settings, 'VIRCLE_PAYMENTS_EMAIL', '')
+    subject = f'Payment run {run.reference} awaits your countersignature'
+    sent = False
+    approvers = PartnerAdmin.objects.filter(
+        owning_organisation=run.organisation, role='org_admin', is_active=True)
+    for approver in approvers:
+        if not (approver.email or '').strip():
+            continue
+        body = (
+            f'Dear {(approver.name or "").strip() or "Organisation Admin"},\n\n'
+            f'{run.admin_signed_name} has signed payment run {run.reference}, paying the '
+            f'BrightPath Bursary for {month}:\n\n'
+            f'    Students:      {n}\n'
+            f'    Total:         RM{_rm_amount(total)}\n'
+            f'    Payment date:  {run.payment_date:%d/%m/%Y}\n\n'
+            f'It now needs your countersignature. Once you countersign, the payment '
+            f'instruction (with the payment file attached) will be emailed to Vircle at '
+            f'{vircle_to}.\n\n'
+            f'Review and countersign here: {link}\n\n'
+            f'If anything looks wrong, do not countersign — editing the run returns it to '
+            f'draft and clears the first signature, or ask {run.admin_signed_name} to '
+            f'correct it.\n\n'
+            f'The HalaTuju Team'
+        )
+        try:
+            EmailMessage(subject=subject, body=body,
+                         from_email=settings.DEFAULT_FROM_EMAIL,
+                         to=[approver.email]).send()
+            sent = True
+        except Exception:
+            logger.warning('Failed to send countersign notification for run %s to %s',
+                           run.reference, approver.email, exc_info=True)
+    return sent
+
+
 def send_payment_run_email(run):
-    """STUB (Payments D7) — the future "send to Vircle" email at run completion. A no-op until
-    Vircle confirms the recipient + required file format; enabled only when
-    ``VIRCLE_PAYMENTS_EMAIL`` is set. TODO: build the real send (attach the run's payment CSV
-    from ``sheets.payment_csv_text(run)``) once the format is agreed. Returns False (not sent)."""
-    recipient = getattr(settings, 'VIRCLE_PAYMENTS_EMAIL', '')
+    """Payments D7 — on countersignature, email Vircle the payment instruction with the run's
+    CSV attached. Enabled when ``VIRCLE_PAYMENTS_EMAIL`` is set (default gokula@vircle.com);
+    best-effort — a failure never breaks the completed run (the DB is the record)."""
+    recipient = (getattr(settings, 'VIRCLE_PAYMENTS_EMAIL', '') or '').strip()
     if not recipient:
         return False
-    # TODO(payments-P?): compose + send the real Vircle payment email with the CSV attached.
-    logger.info('send_payment_run_email: stub — would email Vircle run %s to %s',
-                getattr(run, 'reference', '?'), recipient)
-    return False
+    from . import sheets
+    month = _run_month_label(run)
+    n, total = _run_totals(run)
+    body = (
+        'Dear Vircle team,\n\n'
+        f'Please find attached the payment instruction for the BrightPath Bursary '
+        f'for {month}.\n\n'
+        f'    Run reference:  {run.reference}\n'
+        f'    Payment date:   {run.payment_date:%d/%m/%Y}\n'
+        f'    Students:       {n}\n'
+        f'    Total:          RM{_rm_amount(total)}\n\n'
+        "The attached file lists each student's Wallet ID, NRIC, full name and the amount to "
+        "credit. Kindly credit each student's Vircle wallet on the payment date, and reply "
+        'to this email to confirm once the payments have been processed.\n\n'
+        f'This run was signed by {run.admin_signed_name} and countersigned by '
+        f'{run.org_admin_signed_name} of the BrightPath Bursary programme.\n\n'
+        'Thank you,\n'
+        'The BrightPath Bursary Team'
+    )
+    try:
+        msg = EmailMessage(
+            subject=f'BrightPath Bursary — payment instruction {run.reference} ({month})',
+            body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient])
+        msg.attach(f'{run.reference}.csv', sheets.payment_csv_text(run), 'text/csv')
+        msg.send()
+        return True
+    except Exception:
+        logger.warning('Failed to send the Vircle payment email for run %s',
+                       run.reference, exc_info=True)
+        return False

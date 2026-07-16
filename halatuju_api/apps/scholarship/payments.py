@@ -335,6 +335,10 @@ def sign(run, admin, typed_name):
         run.status = 'admin_signed'
         run.save(update_fields=[
             'admin_signed_name', 'admin_signed_email', 'admin_signed_at', 'status', 'updated_at'])
+        # Tell the organisation admin(s) the run awaits their countersignature (owner
+        # 2026-07-16). Best-effort — the function never raises.
+        from . import emails
+        emails.send_payment_countersign_email(run)
         return run
 
     # admin_signed → countersign

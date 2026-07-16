@@ -106,15 +106,29 @@ def _escape_query(name: str) -> str:
     return name.replace('\\', '\\\\').replace("'", "\\'")
 
 
-def _find_folder(drive, name):
-    """The folder's id, or None. Searched in the impersonated account's own Drive."""
+def _find_folder(drive, name, parent_id=None):
+    """The folder's id, or None. Searched in the impersonated account's own Drive; scoped to
+    ``parent_id`` when given (so a path can be walked segment by segment)."""
     q = (f"mimeType='application/vnd.google-apps.folder' and name='{_escape_query(name)}' "
          f"and trashed=false")
+    if parent_id:
+        q += f" and '{parent_id}' in parents"
     res = drive.files().list(q=q, fields='files(id,name)', pageSize=10).execute()
     files = res.get('files') or []
     if not files:
         return None
     return files[0]['id']
+
+
+def _find_folder_path(drive, path):
+    """Walk a '/'-separated folder path (e.g. '03 Vircle/01 Payment') and return the final
+    folder's id, or None if any segment is missing. Folders are never created here."""
+    folder_id = None
+    for segment in [s.strip() for s in (path or '').split('/') if s.strip()]:
+        folder_id = _find_folder(drive, segment, parent_id=folder_id)
+        if folder_id is None:
+            return None
+    return folder_id
 
 
 def _find_or_create_sheet(drive, folder_id, title):
@@ -186,21 +200,10 @@ def write_relay_sheet(rows):
 
 
 # ── Payments module (D7): the per-run payment CSV handed to Vircle ────────────────
-# Owner's column order (schema mirrors the owner's own sheet). One row per INCLUDED item.
-_PAYMENT_HEADER = ['No', 'Student NRIC', 'Vircle ID', 'Phone', 'Student Name',
+# Owner's column order (2026-07-16 review: 'Wallet ID' not 'Vircle ID'; Phone dropped).
+# One row per INCLUDED item.
+_PAYMENT_HEADER = ['No', 'Student NRIC', 'Wallet ID', 'Student Name',
                    'Amount', 'Payment date', 'Run reference']
-
-
-def _payment_phone(application):
-    """The mobile to hand Vircle: the Vircle-registered number from the resolved setup item's
-    ``resolution_text`` (D7), falling back to the profile's contact mobile."""
-    from .resolution import VIRCLE_CODE
-    item = application.resolution_items.filter(code=VIRCLE_CODE, status='resolved').first()
-    mobile = (item.resolution_text or '').strip() if item else ''
-    if mobile:
-        return mobile
-    profile = getattr(application, 'profile', None)
-    return (getattr(profile, 'contact_phone', '') or '').strip() if profile else ''
 
 
 def payment_csv_rows(run):
@@ -214,11 +217,13 @@ def payment_csv_rows(run):
         n += 1
         app = item.application
         profile = getattr(app, 'profile', None)
+        wallet_id = item.vircle_id_snapshot or (app.vircle_id or '')
         rows.append([
             n,
             (getattr(profile, 'nric', '') or ''),
-            item.vircle_id_snapshot or (app.vircle_id or ''),
-            _payment_phone(app),
+            # Excel-safe (owner 2026-07-16): a bare 13-digit number renders as 8.0004E+12 in
+            # Excel; the ="…" form keeps it displayed as text in Excel/Sheets.
+            f'="{wallet_id}"' if wallet_id else '',
             (getattr(profile, 'name', '') or ''),
             str(item.amount),
             run.payment_date.isoformat(),
@@ -268,10 +273,10 @@ def write_payment_csv(run):
         drive = _drive_for_upload()
         if drive is None:
             return None
-        folder = getattr(settings, 'VIRCLE_DRIVE_FOLDER', '03 Vircle')
-        folder_id = _find_folder(drive, folder)
+        folder = getattr(settings, 'VIRCLE_PAYMENTS_FOLDER', '03 Vircle/01 Payment')
+        folder_id = _find_folder_path(drive, folder)
         if not folder_id:
-            logger.warning('Payments CSV: folder %r not found in the Drive of %s',
+            logger.warning('Payments CSV: folder path %r not found in the Drive of %s',
                            folder, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
             return None
         from googleapiclient.http import MediaInMemoryUpload  # type: ignore

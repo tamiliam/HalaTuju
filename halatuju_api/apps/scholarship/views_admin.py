@@ -1829,9 +1829,11 @@ def _payment_run_detail(run):
             p = getattr(a, 'profile', None)
             skipped.append({'application_id': a.id, 'name': getattr(p, 'name', '') or '',
                             'nric': getattr(p, 'nric', '') or '', 'reasons': row['reasons']})
+    from django.conf import settings as _settings
     return {
         'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
         'period_month': run.period_month,
+        'vircle_email': getattr(_settings, 'VIRCLE_PAYMENTS_EMAIL', ''),
         'status': run.status, 'note': run.note, 'drive_file_url': run.drive_file_url,
         'created_by': run.created_by, 'created_at': run.created_at,
         'admin_signed': _sig(run.admin_signed_name, run.admin_signed_email, run.admin_signed_at),

@@ -4141,6 +4141,7 @@
       "countersign": "Countersign & send to Vircle",
       "afterMaker": "Available after the admin has signed.",
       "signNote": "The two signers must be different people. Editing the list after signing returns the run to draft.",
+      "declaration": "I confirm that the students listed above are those qualified to receive the bursary payment for {month}, and that this payment instruction will be sent to {email}.",
       "cancelRun": "Cancel this run",
       "completedBanner": "Completed and sent to Vircle",
       "openInDrive": "Open CSV in Drive",

@@ -4141,6 +4141,7 @@
       "countersign": "Tandatangan balas & hantar ke Vircle",
       "afterMaker": "Tersedia selepas pentadbir menandatangani.",
       "signNote": "Kedua-dua penandatangan mestilah orang yang berbeza. Menyunting senarai selepas menandatangani mengembalikan larian kepada draf.",
+      "declaration": "Saya mengesahkan bahawa pelajar yang tersenarai di atas ialah mereka yang layak menerima bayaran biasiswa bagi {month}, dan arahan pembayaran ini akan dihantar ke {email}.",
       "cancelRun": "Batalkan larian ini",
       "completedBanner": "Selesai dan dihantar ke Vircle",
       "openInDrive": "Buka CSV dalam Drive",

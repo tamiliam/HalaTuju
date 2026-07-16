@@ -175,5 +175,7 @@ class TestRunLifecycle(_Base):
         r = self.client.get(csv_url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r['Content-Type'], 'text/csv')
-        self.assertIn('Vircle ID', r.content.decode())
+        body = r.content.decode()
+        self.assertIn('Wallet ID', body)
+        self.assertNotIn('Phone', body)   # owner 2026-07-16: column dropped
         self.assertIn(self.app_a.vircle_id, r.content.decode())

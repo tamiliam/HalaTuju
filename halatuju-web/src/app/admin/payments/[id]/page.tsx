@@ -12,7 +12,7 @@ import {
   getPaymentRun, updatePaymentRunItem, signPaymentRun, cancelPaymentRun, fetchPaymentRunCsv,
   type PaymentRunDetail,
 } from '@/lib/admin-api'
-import { statusPill, monthLabel } from '@/lib/paymentStatus'
+import { statusPill, monthLabel, monthLabelFull } from '@/lib/paymentStatus'
 
 // Amounts are whole ringgit — show "RM 200", not "RM 200.00" (a genuine .50 would still show).
 const rm = (v: string | number) => { const n = Number(v); return Number.isFinite(n) ? String(n) : String(v) }
@@ -214,6 +214,9 @@ export default function PaymentRunDetailPage() {
       {!isCompleted && run.status !== 'cancelled' && (
         <div className="mt-4 rounded-xl border bg-white p-5">
           <h2 className="text-base font-semibold text-gray-900">{t('admin.payments.signOff')}</h2>
+          <p className="mt-2 rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-sm text-gray-700 italic">
+            {t('admin.payments.declaration', { month: monthLabelFull(run.period_month), email: run.vircle_email || '—' })}
+          </p>
           {signError && <div className="mt-3 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{signError}</div>}
           <div className="mt-3 grid gap-6 sm:grid-cols-2">
             <div>

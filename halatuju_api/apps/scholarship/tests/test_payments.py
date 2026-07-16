@@ -374,6 +374,45 @@ class TestSignOff(TestCase):
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
             return payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
 
+    def test_maker_sign_notifies_org_admin(self):
+        from django.core import mail
+        mail.outbox = []
+        run = self._run()
+        payments.sign(run, self.maker, 'Poongulali Veeran')
+        notes = [m for m in mail.outbox if 'countersignature' in m.subject]
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].to, ['approver@x.com'])
+        self.assertIn(run.reference, notes[0].subject)
+        self.assertIn('Poongulali Veeran', notes[0].body)
+        self.assertIn('gokula@vircle.com', notes[0].body)   # names where the instruction goes
+
+    def test_countersign_emails_vircle_with_csv_attached(self):
+        from django.core import mail
+        run = self._run()
+        payments.sign(run, self.maker, 'Poongulali Veeran')
+        mail.outbox = []
+        payments.sign(run, self.approver, 'Suresh Thiru')
+        vircle = [m for m in mail.outbox if m.to == ['gokula@vircle.com']]
+        self.assertEqual(len(vircle), 1)
+        msg = vircle[0]
+        self.assertIn('payment instruction', msg.subject)
+        self.assertIn('Suresh Thiru', msg.body)
+        fname, content, mime = msg.attachments[0]
+        self.assertEqual(fname, f'{run.reference}.csv')
+        self.assertEqual(mime, 'text/csv')
+        self.assertIn('Wallet ID', content)
+        self.assertNotIn('Phone', content)
+
+    def test_payment_csv_columns(self):
+        # Owner 2026-07-16: 'Wallet ID' (not 'Vircle ID'), and no Phone column.
+        from apps.scholarship import sheets
+        run = self._run()
+        rows = sheets.payment_csv_rows(run)
+        self.assertEqual(rows[0], ['No', 'Student NRIC', 'Wallet ID', 'Student Name',
+                                   'Amount', 'Payment date', 'Run reference'])
+        # Excel-safe Wallet ID: ="8000400175001" renders as text, never 8.0004E+12.
+        self.assertRegex(rows[1][2], r'^="\d{13}"$')
+
     def test_maker_then_approver_completes(self):
         run = self._run()
         payments.sign(run, self.maker, 'Poongulali Veeran')
