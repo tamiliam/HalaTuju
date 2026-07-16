@@ -2755,3 +2755,17 @@ def send_super_verdict_escalation_email(to_email, *, applicant_name, ref='', rev
         f'{_REVIEWER_SIGNOFF}'
     )
     return _send_plain(to_email, _reviewer_subject('Overdue verdict needs attention', ref), body)
+
+
+def send_payment_run_email(run):
+    """STUB (Payments D7) — the future "send to Vircle" email at run completion. A no-op until
+    Vircle confirms the recipient + required file format; enabled only when
+    ``VIRCLE_PAYMENTS_EMAIL`` is set. TODO: build the real send (attach the run's payment CSV
+    from ``sheets.payment_csv_text(run)``) once the format is agreed. Returns False (not sent)."""
+    recipient = getattr(settings, 'VIRCLE_PAYMENTS_EMAIL', '')
+    if not recipient:
+        return False
+    # TODO(payments-P?): compose + send the real Vircle payment email with the CSV attached.
+    logger.info('send_payment_run_email: stub — would email Vircle run %s to %s',
+                getattr(run, 'reference', '?'), recipient)
+    return False

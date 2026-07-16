@@ -216,6 +216,14 @@ VIRCLE_SHEET_NAME = os.environ.get('VIRCLE_SHEET_NAME', 'Vircle relay — Bright
 VIRCLE_SHEET_ID = os.environ.get('VIRCLE_SHEET_ID', '')
 # Explicit scope for the setup-email send (owner lists the application IDs; billable, one per id).
 VIRCLE_EMAIL_APP_IDS = os.environ.get('VIRCLE_EMAIL_APP_IDS', '')
+# Payments module (D9): the standard Vircle account-ID prefix. Vircle issues running numbers,
+# so all current accounts share this 10-digit prefix and the student types only the final 3
+# digits. A one-line change if Vircle's numbers ever roll past …175999 (the admin PATCH path is
+# the escape hatch meanwhile). A module constant lives in payments.py; this is the tunable.
+VIRCLE_ID_PREFIX = os.environ.get('VIRCLE_ID_PREFIX', '8000400175')
+# Payments module (D7): recipient for the "send to Vircle" email (currently a no-op stub). Unset
+# = disabled; wiring the real send is a later change once Vircle confirms recipient/format.
+VIRCLE_PAYMENTS_EMAIL = os.environ.get('VIRCLE_PAYMENTS_EMAIL', '')
 
 # Check 2 STEP 3: auto-draft the sponsor profile at the reviewer handoff (and the
 # backfill/sweep that share this gate). Billable Gemini, so off by default; flip via the

@@ -1,0 +1,379 @@
+"""Organisation Payments module — monthly Vircle payment runs (money OUT to students).
+
+Service layer for the Payments module (plan docs/plans/2026-07-16-payments-module-plan.md).
+Follows the ``disbursement.py`` shape: pure service functions + a ``PaymentsError(code)``.
+
+The model (D1): a ``PaymentRun`` + ``PaymentRunItem`` pair holds the WORKING state (draft
+amounts, per-student exclusions, the two typed signatures) on top of the immutable
+``Disbursement`` ledger. Released ``Disbursement`` rows are created ONLY at countersignature
+(``complete``), so **"paid to date" is always SUM(released disbursements)** — one source of
+truth shared by history, the backfill, and future runs.
+
+Sign-off (D2) is a maker→checker chain: ``draft → admin_signed → completed`` (+ ``cancelled``).
+The two signers must be different people; the typed name must match the signer's
+``PartnerAdmin.name`` (trimmed, case-insensitive), mirroring the bursary agreement.
+
+Deliberately WIDER than ``disbursement.release_tranche`` (D3): ``complete`` writes ``released``
+rows for an application in ``('awarded','active','maintenance')`` — the real cohort is paid
+while still at ``'awarded'`` (the bursary-agreement chain isn't live in-app). **This module
+NEVER flips application status** (the ``active → maintenance`` flip stays ``release_tranche``'s
+business).
+"""
+import logging
+from datetime import date
+from decimal import Decimal, InvalidOperation
+
+from django.conf import settings
+from django.db import transaction
+from django.db.models import Max, Sum
+from django.utils import timezone
+
+from .models import Disbursement, PaymentRun, PaymentRunItem, ScholarshipApplication
+
+logger = logging.getLogger(__name__)
+
+# Single flat rate for EVERY student (D6, owner 2026-07-16). STPM is not a higher rate — its
+# RM3,000 award simply runs longer (15 months vs the standard 10).
+MONTHLY_RATE = Decimal('200')
+
+# Application statuses that may appear in / be paid by a run (D3/D4-2). Wider than
+# pool.FUNDED_STATES because the cohort is paid while at 'awarded'.
+PAYABLE_STATUSES = ('awarded', 'active', 'maintenance')
+
+_ZERO = Decimal('0')
+_CENTS = Decimal('0.01')
+
+
+class PaymentsError(Exception):
+    """Raised by the service with a machine code for the view (e.g. 'past_date',
+    'name_mismatch', 'same_signer', 'not_draft', 'amount_over_cap')."""
+    def __init__(self, code, message=''):
+        self.code = code
+        super().__init__(message or code)
+
+
+# ── amounts ───────────────────────────────────────────────────────────────────
+
+def _money(value):
+    """Normalise to a non-negative 2dp Decimal (0 is allowed — a credit line can be RM0)."""
+    try:
+        v = Decimal(str(value)).quantize(_CENTS)
+    except (InvalidOperation, ValueError, TypeError):
+        raise PaymentsError('bad_amount')
+    if v < 0:
+        raise PaymentsError('bad_amount')
+    return v
+
+
+def paid_to_date(application):
+    """SUM(amount) of the application's RELEASED disbursements — the one truth for history."""
+    total = (application.disbursements.filter(status='released')
+             .aggregate(s=Sum('amount'))['s'])
+    return (total or _ZERO)
+
+
+def _remaining(application):
+    award = application.award_amount or _ZERO
+    rem = award - paid_to_date(application)
+    return rem if rem > 0 else _ZERO
+
+
+def default_amount(application):
+    """D6: amount_due = clamp(RATE − payment_credit, 0, award_amount − paid_to_date)."""
+    credit = application.payment_credit or _ZERO
+    due = MONTHLY_RATE - credit
+    if due < 0:
+        due = _ZERO
+    rem = _remaining(application)
+    if due > rem:
+        due = rem
+    return due.quantize(_CENTS)
+
+
+def _credit_applied(application):
+    """How much of the paid-ahead credit this run consumes: min(credit, RATE) — the amount it
+    offsets against the flat rate (rolls any excess over to the next run)."""
+    credit = application.payment_credit or _ZERO
+    return (credit if credit < MONTHLY_RATE else MONTHLY_RATE).quantize(_CENTS)
+
+
+# ── eligibility (D4) ────────────────────────────────────────────────────────────
+
+def _pathway_start(application):
+    """D4-3 fallback start date when reporting_date is NULL: by pathway, in the cohort year.
+    stpm/matric/asasi → 1 Jun · poly/university (+anything else) → 1 Jul · pismp → 1 Aug."""
+    year = application.cohort.year if application.cohort_id else timezone.localdate().year
+    pathway = (application.chosen_pathway or '').strip().lower()
+    if pathway in ('stpm', 'matric', 'asasi'):
+        return date(year, 6, 1)
+    if pathway == 'pismp':
+        return date(year, 8, 1)
+    return date(year, 7, 1)   # poly / university / UA diploma / unknown
+
+
+def _has_started(application, payment_date):
+    """D4-3: reporting_date <= payment_date when set, else the pathway default start.
+    Continuing students (previous-year reporting date) satisfy this automatically."""
+    start = application.reporting_date or _pathway_start(application)
+    return start <= payment_date
+
+
+def _is_on_hold(application):
+    """D4-5: the only break-like signal in the data today — maintenance 'on_hold'."""
+    return application.status == 'maintenance' and application.maintenance_substate == 'on_hold'
+
+
+def eligibility(application, payment_date):
+    """Per-student eligibility for a run on ``payment_date``. Returns
+    ``{eligible, reasons, remaining, vircle_ready, started}``. ``reasons`` names the D4-4/5/6
+    failures (the greyed-out list); status/started failures are handled by the caller (not
+    listed at all)."""
+    started = _has_started(application, payment_date)
+    reasons = []
+    vircle_ready = bool((application.vircle_id or '').strip())
+    if not vircle_ready:
+        reasons.append('no_vircle_id')          # D4-4
+    if _is_on_hold(application):
+        reasons.append('on_hold')               # D4-5
+    remaining = _remaining(application)
+    if remaining <= 0:
+        reasons.append('no_balance')            # D4-6
+    # D4-7 (future, flag-gated): agreement fully executed. Built off, default disabled.
+    if getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False):
+        agr = getattr(application, 'bursary_agreement', None)
+        if agr is None or getattr(agr, 'foundation_signed_at', None) is None:
+            reasons.append('agreement_unsigned')
+    return {
+        'eligible': started and not reasons,
+        'reasons': reasons,
+        'remaining': remaining,
+        'vircle_ready': vircle_ready,
+        'started': started,
+    }
+
+
+def eligible_rows(organisation, payment_date):
+    """The single choke-point (D5) for a run's candidate students, org-fenced (D4-1).
+    Returns a list of ``{application, eligible, reasons, remaining, vircle_ready}`` for every
+    org application that is payable-status (D4-2) AND has started (D4-3). Rows failing 4–6 come
+    back with ``eligible=False`` + reasons (shown greyed-out); status/not-started are excluded
+    entirely. A future per-pathway calendar (D5) drops in here as one more filter."""
+    qs = (ScholarshipApplication.objects
+          .filter(owning_organisation=organisation, status__in=PAYABLE_STATUSES)
+          .select_related('cohort', 'profile').order_by('id'))
+    rows = []
+    for app in qs:
+        elig = eligibility(app, payment_date)
+        if not elig['started']:
+            continue   # D4-3 failure → not listed at all
+        rows.append({
+            'application': app,
+            'eligible': elig['eligible'],
+            'reasons': elig['reasons'],
+            'remaining': elig['remaining'],
+            'vircle_ready': elig['vircle_ready'],
+        })
+    return rows
+
+
+# ── run lifecycle ───────────────────────────────────────────────────────────────
+
+def _next_reference(organisation, payment_date):
+    """A unique, human-readable run reference, e.g. 'PR-2026-08-001'. Globally unique
+    (skips any taken suffix so a cancelled run never blocks the number)."""
+    prefix = f'PR-{payment_date:%Y-%m}-'
+    n = PaymentRun.objects.filter(organisation=organisation,
+                                  reference__startswith=prefix).count()
+    while True:
+        n += 1
+        ref = f'{prefix}{n:03d}'
+        if not PaymentRun.objects.filter(reference=ref).exists():
+            return ref
+
+
+@transaction.atomic
+def create_run(organisation, payment_date, by_email=''):
+    """Create a DRAFT run for ``organisation`` on ``payment_date`` (D4/D6). Rejects a past
+    date (``past_date``). Snapshots one PaymentRunItem per ELIGIBLE student with the default
+    amount, credit_applied, and award/paid/vircle snapshots (so the signed record can't drift).
+    Greyed-out (ineligible-4-6) students are NOT items — they surface on the detail view."""
+    if payment_date < timezone.localdate():
+        raise PaymentsError('past_date')
+    run = PaymentRun.objects.create(
+        organisation=organisation, payment_date=payment_date,
+        reference=_next_reference(organisation, payment_date),
+        created_by=(by_email or '')[:254],
+    )
+    for row in eligible_rows(organisation, payment_date):
+        if not row['eligible']:
+            continue
+        app = row['application']
+        PaymentRunItem.objects.create(
+            run=run, application=app, included=True,
+            amount=default_amount(app),
+            credit_applied=_credit_applied(app),
+            award_amount_snapshot=(app.award_amount or _ZERO),
+            paid_to_date_snapshot=paid_to_date(app),
+            vircle_id_snapshot=(app.vircle_id or ''),
+        )
+    return run
+
+
+def _revert_to_draft(run):
+    """Editing an admin_signed run reverts it to draft and clears the maker signature (D2 —
+    'nobody signs one list and sends another')."""
+    run.status = 'draft'
+    run.admin_signed_name = ''
+    run.admin_signed_email = ''
+    run.admin_signed_at = None
+    run.save(update_fields=[
+        'status', 'admin_signed_name', 'admin_signed_email', 'admin_signed_at', 'updated_at'])
+
+
+def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
+    """Edit a run item (draft only, or admin_signed → reverts to draft). Enforces: an excluded
+    item needs a reason (``reason_required``); the amount is floored at 0 and capped at the
+    snapshotted remaining award (``amount_over_cap``). Returns the item."""
+    run = run_item.run
+    if run.status not in ('draft', 'admin_signed'):
+        raise PaymentsError('not_editable')
+    if run.status == 'admin_signed':
+        _revert_to_draft(run)
+
+    if included is not None:
+        run_item.included = bool(included)
+    if run_item.included:
+        run_item.exclude_reason = ''
+    elif exclude_reason is not None:
+        run_item.exclude_reason = (exclude_reason or '').strip()[:200]
+    if not run_item.included and not run_item.exclude_reason:
+        raise PaymentsError('reason_required')
+
+    if amount is not None:
+        val = _money(amount)
+        cap = run_item.award_amount_snapshot - run_item.paid_to_date_snapshot
+        if cap < 0:
+            cap = _ZERO
+        if val > cap:
+            raise PaymentsError('amount_over_cap')
+        run_item.amount = val
+    run_item.save()
+    return run_item
+
+
+def _name_matches(admin, typed_name):
+    return bool((typed_name or '').strip()) and \
+        (typed_name or '').strip().casefold() == (admin.name or '').strip().casefold()
+
+
+@transaction.atomic
+def sign(run, admin, typed_name):
+    """The maker→checker sign-off (D2). On a DRAFT run: the MAKER (role ``admin``, or super)
+    signs → ``admin_signed``. On an ADMIN_SIGNED run: the APPROVER (role ``org_admin``, or
+    super) countersigns → ``complete(run)`` → ``completed``. The two signers must be different
+    people (``same_signer``); the typed name must match the signer's PartnerAdmin.name
+    (``name_mismatch``); a wrong role → ``wrong_role``. Returns the run."""
+    if run.status not in ('draft', 'admin_signed'):
+        raise PaymentsError('bad_state')
+    if not _name_matches(admin, typed_name):
+        raise PaymentsError('name_mismatch')
+    is_super = bool(getattr(admin, 'is_super', False))
+    now = timezone.now()
+
+    if run.status == 'draft':
+        if not (is_super or admin.role == 'admin'):
+            raise PaymentsError('wrong_role')
+        run.admin_signed_name = (admin.name or '').strip()[:200]
+        run.admin_signed_email = (admin.email or '')[:254]
+        run.admin_signed_at = now
+        run.status = 'admin_signed'
+        run.save(update_fields=[
+            'admin_signed_name', 'admin_signed_email', 'admin_signed_at', 'status', 'updated_at'])
+        return run
+
+    # admin_signed → countersign
+    if not (is_super or admin.role == 'org_admin'):
+        raise PaymentsError('wrong_role')
+    if (admin.email or '').strip().casefold() == (run.admin_signed_email or '').strip().casefold():
+        raise PaymentsError('same_signer')
+    run.org_admin_signed_name = (admin.name or '').strip()[:200]
+    run.org_admin_signed_email = (admin.email or '')[:254]
+    run.org_admin_signed_at = now
+    run.status = 'completed'
+    run.save(update_fields=[
+        'org_admin_signed_name', 'org_admin_signed_email', 'org_admin_signed_at',
+        'status', 'updated_at'])
+    complete(run)
+    return run
+
+
+@transaction.atomic
+def complete(run):
+    """Realise a completed run into the ledger (D3/D6). For each INCLUDED item: create a
+    ``released`` Disbursement for a positive amount (``reference='vircle:<run.reference>'``,
+    ``scheduled_for=payment_date``) and decrement the application's ``payment_credit`` by
+    ``credit_applied`` (never below 0). Then best-effort write the CSV + send the (stub)
+    email — a failure there never breaks the completed run (the DB is the record). Accepts
+    'awarded'/'active'/'maintenance' and NEVER flips application status (D3)."""
+    from . import sheets
+    from . import emails
+    now = timezone.now()
+    actioned_by = (run.org_admin_signed_email or run.created_by or '')[:254]
+
+    for item in run.items.select_related('application'):
+        if not item.included:
+            continue
+        app = item.application
+        if item.amount and item.amount > 0:
+            top = app.disbursements.aggregate(m=Max('sequence'))['m'] or 0
+            disb = Disbursement.objects.create(
+                application=app, amount=item.amount, status='released',
+                sequence=top + 1, released_at=now, scheduled_for=run.payment_date,
+                actioned_by=actioned_by, reference=f'vircle:{run.reference}'[:100],
+                label=f'Vircle {run.payment_date:%b %Y}'[:100],
+            )
+            item.disbursement = disb
+            item.save(update_fields=['disbursement', 'updated_at'])
+        applied = item.credit_applied or _ZERO
+        if applied > 0:
+            new_credit = (app.payment_credit or _ZERO) - applied
+            app.payment_credit = new_credit if new_credit > 0 else _ZERO
+            app.save(update_fields=['payment_credit'])
+
+    # Best-effort side effects — the DB is already the record.
+    try:
+        url = sheets.write_payment_csv(run)
+    except Exception:
+        logger.warning('Payments: CSV write failed for run %s', run.reference, exc_info=True)
+        url = None
+    if url:
+        run.drive_file_url = url
+        run.save(update_fields=['drive_file_url', 'updated_at'])
+    try:
+        emails.send_payment_run_email(run)
+    except Exception:
+        logger.warning('Payments: run-email stub failed for run %s', run.reference, exc_info=True)
+    return run
+
+
+def cancel(run, by=''):
+    """Cancel a draft or admin_signed run (never a completed one)."""
+    if run.status not in ('draft', 'admin_signed'):
+        raise PaymentsError('bad_state')
+    run.status = 'cancelled'
+    run.note = (run.note or '')
+    run.save(update_fields=['status', 'updated_at'])
+    return run
+
+
+# ── Vircle ID (D9) ────────────────────────────────────────────────────────────
+
+def vircle_id_prefix():
+    return getattr(settings, 'VIRCLE_ID_PREFIX', '8000400175')
+
+
+def valid_vircle_id(value):
+    """D9: a full 13-digit ID starting with the standard prefix. Shared by the Action-Centre
+    resolve endpoint and the admin PATCH path."""
+    v = (value or '').strip()
+    return v.isdigit() and len(v) == 13 and v.startswith(vircle_id_prefix())

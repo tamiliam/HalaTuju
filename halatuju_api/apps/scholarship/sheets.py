@@ -183,3 +183,105 @@ def write_relay_sheet(rows):
     except Exception:
         logger.warning('Vircle sheet: write failed', exc_info=True)
         return None
+
+
+# ── Payments module (D7): the per-run payment CSV handed to Vircle ────────────────
+# Owner's column order (schema mirrors the owner's own sheet). One row per INCLUDED item.
+_PAYMENT_HEADER = ['No', 'Student NRIC', 'Vircle ID', 'Phone', 'Student Name',
+                   'Amount', 'Payment date', 'Run reference']
+
+
+def _payment_phone(application):
+    """The mobile to hand Vircle: the Vircle-registered number from the resolved setup item's
+    ``resolution_text`` (D7), falling back to the profile's contact mobile."""
+    from .resolution import VIRCLE_CODE
+    item = application.resolution_items.filter(code=VIRCLE_CODE, status='resolved').first()
+    mobile = (item.resolution_text or '').strip() if item else ''
+    if mobile:
+        return mobile
+    profile = getattr(application, 'profile', None)
+    return (getattr(profile, 'contact_phone', '') or '').strip() if profile else ''
+
+
+def payment_csv_rows(run):
+    """The run's payment CSV as a list of rows (header + one per INCLUDED item). Pure — the
+    run-page download (P2) and the Drive write share this one builder so they can't disagree."""
+    rows = [list(_PAYMENT_HEADER)]
+    n = 0
+    for item in run.items.select_related('application', 'application__profile'):
+        if not item.included:
+            continue
+        n += 1
+        app = item.application
+        profile = getattr(app, 'profile', None)
+        rows.append([
+            n,
+            (getattr(profile, 'nric', '') or ''),
+            item.vircle_id_snapshot or (app.vircle_id or ''),
+            _payment_phone(app),
+            (getattr(profile, 'name', '') or ''),
+            str(item.amount),
+            run.payment_date.isoformat(),
+            run.reference,
+        ])
+    return rows
+
+
+def payment_csv_text(run):
+    """The run's payment CSV serialised (used by the run-page download + the Drive write)."""
+    import csv
+    import io
+    buf = io.StringIO()
+    csv.writer(buf).writerows(payment_csv_rows(run))
+    return buf.getvalue()
+
+
+def _drive_for_upload():
+    """A Drive client (drive scope) impersonating the Workspace account, for the CSV upload.
+    None if disabled / misconfigured / the client libraries are unavailable."""
+    if not sheets_enabled():
+        return None
+    try:
+        import json
+
+        from google.oauth2 import service_account  # type: ignore
+        from googleapiclient.discovery import build  # type: ignore
+
+        info = json.loads(settings.GOOGLE_MEET_SA_JSON)
+        creds = service_account.Credentials.from_service_account_info(
+            info, scopes=[_DRIVE_SCOPE],
+        ).with_subject(settings.MEET_ORGANISER_EMAIL)
+        return build('drive', 'v3', credentials=creds, cache_discovery=False)
+    except Exception:
+        logger.warning('Payments CSV: could not build Drive service', exc_info=True)
+        return None
+
+
+def write_payment_csv(run):
+    """Best-effort: write the run's payment CSV to the '03 Vircle' Drive folder and return its
+    URL — or None (logged, never raised). A Drive failure leaves the run completed with a blank
+    ``drive_file_url``; a later "retry upload" re-writes it. The DB is always the record."""
+    if not sheets_enabled():
+        return None
+    try:
+        text = payment_csv_text(run)
+        drive = _drive_for_upload()
+        if drive is None:
+            return None
+        folder = getattr(settings, 'VIRCLE_DRIVE_FOLDER', '03 Vircle')
+        folder_id = _find_folder(drive, folder)
+        if not folder_id:
+            logger.warning('Payments CSV: folder %r not found in the Drive of %s',
+                           folder, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
+            return None
+        from googleapiclient.http import MediaInMemoryUpload  # type: ignore
+        media = MediaInMemoryUpload(text.encode('utf-8'), mimetype='text/csv')
+        created = drive.files().create(
+            body={'name': f'{run.reference}.csv', 'parents': [folder_id]},
+            media_body=media, fields='id, webViewLink',
+        ).execute()
+        return (created.get('webViewLink')
+                or f"https://drive.google.com/file/d/{created['id']}/view")
+    except Exception:
+        logger.warning('Payments CSV: write failed for run %s', run.reference, exc_info=True)
+        return None

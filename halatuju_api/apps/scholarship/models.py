@@ -192,6 +192,16 @@ class ScholarshipApplication(models.Model):
     # Phase E3: the admin-approved award amount a sponsor funds in full. Non-identifying;
     # shown on the anonymised pool card. Null until an admin sets it (gates fundability).
     award_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # Payments module (D9): the student's Vircle eWallet account ID — 13 digits, prefix
+    # VIRCLE_ID_PREFIX ('8000400175'). Arrives via the CSV import, the Action-Centre
+    # confirmation, or an admin correction. Blank until captured; the payable fact for a run.
+    vircle_id = models.CharField(
+        max_length=30, blank=True, default='',
+        help_text="Vircle eWallet account ID (13 digits, prefix 8000400175).")
+    # Payments module (D6): a per-application "paid ahead of schedule" balance that the NEXT
+    # payment run absorbs (rate − credit), then decrements at completion. How the July
+    # regularisation is encoded once and consumed automatically. Default 0.
+    payment_credit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     # ── Plans + Support intake (Sprint 7, apply-form rebuild) ──────────────────
     # Collected at apply; drive the sponsor profile + mentoring. Some feed the
@@ -1545,6 +1555,94 @@ class BankAccount(models.Model):
 
     def __str__(self):
         return f'BankAccount app={self.application_id} {self.bank_name} ****{self.account_number[-4:]}'
+
+
+class PaymentRun(models.Model):
+    """A monthly Vircle payment run for one organisation (Payments module, D1/D2).
+
+    Holds the WORKING state — draft amounts, per-student include/exclude, the two typed
+    signatures — on TOP of the immutable Disbursement ledger. Released Disbursement rows are
+    created ONLY at countersignature (``payments.complete``), so "paid to date" is always
+    ``SUM(released disbursements)`` — one source of truth for history, the backfill, and
+    future runs alike (D1).
+
+    Sign-off is a maker→checker chain (D2): ``draft → admin_signed → completed`` (+
+    ``cancelled``). The status field + a per-step signature TRIPLE (name/email/at) — not a
+    boolean pair — so the parked finance 'checker' step can be inserted as an additive
+    middle state later (``draft → admin_signed → finance_checked → completed``).
+
+    Backfill runs (D8) are first-class ``completed`` runs with no signatures (the signature
+    fields are nullable/blank)."""
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('admin_signed', 'Admin signed'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT, related_name='payment_runs',
+    )
+    payment_date = models.DateField(help_text="The Vircle payment date; validated >= today at creation.")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    reference = models.CharField(
+        max_length=50, unique=True,
+        help_text="e.g. 'PR-2026-08-001'; 'backfill-YYYY-MM-DD' for imports.")
+    created_by = models.CharField(max_length=254, blank=True, default='')
+    # Maker (first signature, role admin), then approver (countersignature, role org_admin) — D2.
+    admin_signed_name = models.CharField(max_length=200, blank=True, default='')
+    admin_signed_email = models.CharField(max_length=254, blank=True, default='')
+    admin_signed_at = models.DateTimeField(null=True, blank=True)
+    org_admin_signed_name = models.CharField(max_length=200, blank=True, default='')
+    org_admin_signed_email = models.CharField(max_length=254, blank=True, default='')
+    org_admin_signed_at = models.DateTimeField(null=True, blank=True)
+    # The CSV handed to Vircle (best-effort Drive write, D7); blank if the upload failed.
+    drive_file_url = models.URLField(blank=True, default='')
+    note = models.CharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'payment_runs'
+        ordering = ['-payment_date', '-id']
+
+    def __str__(self):
+        return f'PaymentRun {self.reference} {self.payment_date} ({self.status})'
+
+
+class PaymentRunItem(models.Model):
+    """One student's line in a PaymentRun. Amounts + the award/paid/vircle SNAPSHOTS freeze
+    at creation so the signed record can't drift after signatures are collected; the
+    ``disbursement`` is linked when the run completes."""
+    run = models.ForeignKey(PaymentRun, on_delete=models.CASCADE, related_name='items')
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.PROTECT, related_name='payment_run_items',
+    )
+    included = models.BooleanField(default=True)
+    exclude_reason = models.CharField(max_length=200, blank=True, default='')  # required when excluded
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)   # editable in draft; capped at remaining
+    credit_applied = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="How much payment_credit this item consumed (audit; decremented at completion).")
+    # Snapshots at creation (so the signed record can't drift):
+    award_amount_snapshot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    paid_to_date_snapshot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    vircle_id_snapshot = models.CharField(max_length=30, blank=True, default='')
+    # Set at completion — the released Disbursement this item produced. SET_NULL so deleting a
+    # Disbursement never erases the run history.
+    disbursement = models.ForeignKey(
+        Disbursement, on_delete=models.SET_NULL, null=True, blank=True, related_name='payment_run_items',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'payment_run_items'
+        unique_together = ('run', 'application')
+        ordering = ['id']
+
+    def __str__(self):
+        return f'PaymentRunItem run={self.run_id} app={self.application_id} {self.amount}'
 
 
 class ResolutionItem(models.Model):

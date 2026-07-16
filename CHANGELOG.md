@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Payments module — Sprint P1: ledger foundation + backfill (backend) — 2026-07-16
+
+Backend-only foundation for the organisation Payments module (Vircle payment runs). No API,
+frontend, or deploy — those are Sprints P2/P3. Plan `docs/plans/2026-07-16-payments-module-plan.md`.
+
+- **Migration `scholarship/0101`** (additive, not yet applied to prod — P3): `vircle_id` +
+  `payment_credit` on `ScholarshipApplication`; new `PaymentRun` + `PaymentRunItem` models
+  (working state on top of the immutable `Disbursement` ledger — D1).
+- **`apps/scholarship/payments.py` service:** eligibility engine (org-fenced; started via
+  `reporting_date` or the per-pathway fallback June/July/Aug; on-hold, no-vircle, no-balance
+  greyed with reasons — D4); the flat `MONTHLY_RATE = RM200` + `payment_credit` formula
+  (`clamp(rate − credit, 0, award − paid)` — D6); run lifecycle (`create_run` rejects past
+  dates, snapshots items) + the maker→checker sign-off state machine (`draft → admin_signed →
+  completed`; typed-name match, different-signer, edit-reverts-to-draft — D2); `complete()`
+  writes `released` Disbursements and decrements credit, accepting `awarded`/`active`/
+  `maintenance` and never flipping status (D3); `valid_vircle_id` (13 digits, prefix
+  `8000400175` — D9).
+- **`import_vircle_csv` command (D8):** stamps `vircle_id` (NRIC join), creates the two
+  batches as first-class completed runs with released Disbursements at the CSV's actual
+  amounts, and seeds the regularisation credits DERIVED from the data (overpayment +
+  paid-before-reporting → the two RM100s and the RM200). Idempotent; `--dry-run` reconciles.
+- **`sheets.write_payment_csv` + `send_payment_run_email` stub (D7)** + settings
+  `VIRCLE_ID_PREFIX`, `VIRCLE_PAYMENTS_EMAIL`.
+- **Tests** `tests/test_payments.py` (38, invented PII): Vircle-ID validation, eligibility
+  matrix, the three real credit cases, sign-off state machine, completion ledger writes +
+  credit decrement, backfill dry-run + idempotency, and the simulated 1 Aug 2026 run
+  (RM100/RM100/RM0/RM200). 3882 pytest green.
+
 ## Cockpit income/household reconciliation + Pre-U institution tick + confirm-updates-record — 2026-07-16
 
 Owner live-review arc on the officer cockpit (all off real applicants #66/#117/#130/#132/#137):
