@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## Payments live-review arc — owner-driven hardening after the P3 cutover — 2026-07-16/17
+
+Six deploy rounds off the owner's live testing (Kulaly + Suresh walked the real flow), fixing
+the rules the cutover exposed and finishing the send-to-Vircle chain end to end.
+
+- **Pathway payment floors (hard)** — a pathway is paid only from its start month, even for a
+  continuing student: STPM/Matric/Asasi → July, Poly/UA Diploma → August, PISMP → September; a
+  student also never pays before they've reported. (Was: reporting-date only — a continuing
+  PISMP student leaked into an August run.)
+- **eWallet-confirmation gate** — a student emailed the Vircle setup task but not yet confirmed
+  is greyed (`vircle_unconfirmed`); the 8 legacy students (no task) pay on the ID alone.
+- **Month-tagged runs (migration `scholarship/0102`, migrate-first)** — every run declares the
+  month it pays (`period_month`, month picker defaulting from the pay date); a student in a
+  COMPLETED run for that month is greyed `already_paid`, so a month is never paid twice even
+  when run dates differ (the 30/6 run IS July — tagged so on prod). References now carry the
+  real pay date (`PR-2026-07-17`), not a counter that read like one.
+- **Student names stored in CAPS** — `StudentProfile.save()` upper-cases at the write boundary
+  (every path, in perpetuity); 20 B40 names backfilled on prod; 23 tests updated.
+- **Sign-off chain completed** — maker-sign emails every active org_admin to countersign;
+  countersignature emails Vircle (`VIRCLE_PAYMENTS_EMAIL`, default gokula@vircle.com) the
+  payment instruction with the CSV attached, and files the CSV in Drive under
+  `01 BrightPath/03 Vircle/01 Payment` (DWD Drive scope granted + Drive API enabled, path
+  verified). A maker-voice declaration sits above the signatures naming the covered month and
+  the Vircle address; sign/cancel errors surface inside the sign-off card.
+- **Payment CSV** — `Wallet ID` header (Phone dropped); the 13-digit ID written `="…"`-wrapped
+  so Excel never shows `8.0004E+12`.
+- **Award email rebuilt as TWO explicit steps** (students were skipping the Action-Centre
+  step): STEP 1 install/activate · STEP 2 confirm in the Action Centre ("not optional"), with
+  the gear-icon → Settings-bottom path to find the eWallet ID. The born-after-2008
+  parent/guardian paragraph is now SELECTIVE (`vircle.can_register`); "Vircle Wallet ID" →
+  "eWallet ID" everywhere; the Action-Centre capture widened to a 9-digit fixed prefix
+  (`800040017`) + 4 typed digits. en/ms/ta (Tamil first-drafts).
+- **UI polish** — sortable Name/NRIC/eWallet ID/Paid columns; Approved/Paid/To be paid labels;
+  amounts without the `.00`; the "Confirmed by student" badge removed.
+- **Prod data ops** — test/cancelled runs deleted (the 16/7 backfill removed — that payment was
+  never made; Kulaly generates it for real); the three regularisation credits intact.
+- Commits `540f5a8c` · `cb22cf9a` · `b5fcf0d3` · `a765d419` · `1df757cf` · `d3a10f77`.
+  Retro `docs/retrospective-2026-07-17-payments-live-review.md`.
+
 ## Officer assignment surfaces — live-review round (cockpit = list = filter) — 2026-07-16/17
 
 An owner live-review arc off real records (#66, #56, #50, #21; org_admin testing as

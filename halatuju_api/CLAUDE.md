@@ -557,21 +557,38 @@ top-level nav entry) where staff create a monthly Vircle payment run and sign it
   ledger; `vircle_id` + `payment_credit` on `ScholarshipApplication`. Flat `MONTHLY_RATE = RM200`
   minus `payment_credit`, capped by remaining award (D6). Maker (`admin`) → approver (`org_admin`)
   two-person sign-off, different signers, edit-reverts-to-draft (D2); `complete()` writes released
-  Disbursements + decrements credit, never flips status (D3). Vircle ID = 13 digits prefix
-  `8000400175` (D9), captured in the Action Centre (fixed prefix + 3-digit suffix) or admin PATCH.
-- **Backfill DONE on prod** (`import_vircle_csv`): 30 Vircle IDs stamped, two completed backfill
-  runs (26 released Disbursements = RM5,400; two RM300 overpayments kept as history), credits
-  app 10/18 → RM100, app 61 → RM200. A simulated 1 Aug 2026 run = 28 payable (25×RM200 + 2×RM100 +
-  1×RM0), verified read-only.
-- **▶ OWNER: the real draft run is NOT created** — deliberately left for the UI. Owner is testing by
-  creating a draft themselves (may cancel/recreate); when ready, Poongulali (`admin`) makes it,
-  Suresh (`org_admin`) approves → countersignature writes the CSV to the Drive Vircle folder + the
-  released Disbursements. Note: without the backfill a draft shows everyone greyed "no Vircle ID" —
-  the backfill is what makes amounts visible; undoing the backfill is DB surgery, not a UI Cancel.
-- **▶ CARRY:** the Vircle email stub (`send_payment_run_email`, `VIRCLE_PAYMENTS_EMAIL` unset =
-  disabled) — wire recipient/format once Vircle confirms; Manual/FAQ Payments chapter (fold into the
-  owner's pending Manual screenshot pass); Tamil review of the `admin.payments.*` strings;
-  per-pathway payment calendar / gap months (D5, owner will define). **3897 pytest + 573 jest.**
+  Disbursements + decrements credit, never flips status (D3).
+- **✅ LIVE-REVIEW ARC 2026-07-16/17 (6 deploys, migration `scholarship/0102` migrate-first; retro
+  `docs/retrospective-2026-07-17-payments-live-review.md`; CHANGELOG has the full list). The RULES
+  as they now stand — the plan doc's D4-3/D4-4/D9 are SUPERSEDED (amendment note at its top):**
+  - **Hard pathway floors**: STPM/Matric/Asasi paid from JULY, Poly/UA Diploma from AUGUST, PISMP
+    from SEPTEMBER — even continuing students — AND never before `reporting_date`.
+  - **eWallet-confirmation gate**: an emailed-but-unconfirmed setup task greys the student
+    (`vircle_unconfirmed`); the 8 legacy (no task) pay on the ID alone.
+  - **Month-tagged runs**: `PaymentRun.period_month` (owner picks; defaults from the pay date);
+    a student in a COMPLETED run for that month is greyed `already_paid` — a month is never paid
+    twice (the 30/6 run IS July, tagged on prod). References = `PR-YYYY-MM-DD`.
+  - **eWallet ID** (renamed from Vircle Wallet ID): 13 digits, 9-digit prefix `800040017` +
+    4 typed digits (Action Centre) — the demo account proved the 10-digit prefix too tight.
+  - **Sign-off chain**: maker-sign emails active org_admins to countersign; countersignature
+    emails Vircle (`VIRCLE_PAYMENTS_EMAIL`, default gokula@vircle.com) the instruction + CSV
+    attached, and files the CSV in Drive `01 BrightPath/03 Vircle/01 Payment`
+    (`VIRCLE_PAYMENTS_FOLDER`; DWD Drive scope + Drive API both enabled 2026-07-17, path
+    verified). Declaration above the signatures names the month + destination. CSV = `Wallet ID`
+    header, no Phone, Excel-safe `="…"` id.
+  - **Award email = TWO explicit steps** (STEP 1 install / STEP 2 confirm in the Action Centre,
+    "not optional") + gear-icon path to the eWallet ID; the born-after-2008 guardian paragraph is
+    SELECTIVE via `vircle.can_register` at both send paths. Names now stored CAPS
+    (`StudentProfile.save()`; 20 B40 rows backfilled).
+- **Prod ledger state:** only `backfill-2026-06-30` (completed, period July, 8 × = RM1,800) —
+  the 16/7 "backfill" was DELETED (that payment was never made). Credits 10/18→RM100, 61→RM200.
+- **▶ OWNER NEXT:** Kulaly creates the real 17/7 July run in-UI (11 students, RM2,200 — the 7
+  already-paid grey out as "Already paid for this month") → signs → Suresh countersigns → Vircle
+  emailed + CSV filed. Send SRI UMAYAL's award email: `AWARD_EMAIL_APP_IDS=115` + the
+  `send-award-offer-emails` job (raises her Action-Centre card automatically).
+- **▶ CARRY:** Tamil review of the restructured award email + `admin.payments.*` + eWallet-ID
+  strings (first-drafts); Manual/FAQ Payments chapter (owner's screenshot pass); per-pathway gap
+  months beyond the start floors (D5, owner defines). **3916 pytest + 573 jest.**
 
 **✅ SHIPPED + LIVE 2026-07-16 — Cockpit income/household reconciliation + Pre-U institution tick +
 confirm-updates-record** (commits `bfe3e000`/`2077937f`/`fb9647d6`/`8dbc55be`/`1da10538`/`a32cd83d`;

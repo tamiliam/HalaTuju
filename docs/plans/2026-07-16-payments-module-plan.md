@@ -1,5 +1,17 @@
 # Implementation Plan — Organisation Payments Module (Vircle payment runs)
 
+> **DELIVERED (P1+P2+P3, 2026-07-16) — then AMENDED by the owner's live review (2026-07-16/17).**
+> Where this plan and the code differ, the CODE is current. The amendments (see
+> `docs/retrospective-2026-07-17-payments-live-review.md` + CHANGELOG):
+> D4-3 → HARD pathway floors (STPM/Matric/Asasi Jul · Poly/UA Aug · PISMP Sep, even for
+> continuing students); D4-4 → an emailed-but-unconfirmed setup task DOES gate
+> (`vircle_unconfirmed`; only the 8 no-task legacy students pay on the ID alone); NEW month
+> dedup — runs carry `period_month` (migration 0102) and a month is never paid twice;
+> references = `PR-YYYY-MM-DD`; D9 → 9-digit prefix `800040017` + 4 typed digits, named
+> "eWallet ID"; D7 → the Vircle email is REAL (CSV attached, default gokula@vircle.com) and the
+> CSV ("Wallet ID", no Phone, Excel-safe) files to `01 BrightPath/03 Vircle/01 Payment`; the
+> maker-sign notifies org admins; a declaration sits above the signatures.
+
 **Date:** 2026-07-16 (rev 2, owner corrections applied) · **Status:** Awaiting owner approval
 **Implementer:** Opus 4.8
 **Feature:** A "Payments" module in the Administration panel where BrightPath's staff create a
