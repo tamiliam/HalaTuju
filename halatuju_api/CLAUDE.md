@@ -524,6 +524,32 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-16)
 
+**✅ SHIPPED + LIVE 2026-07-16 — Organisation Payments module (Vircle payment runs), P1+P2+P3
+complete, the feature's single deploy DONE** (plan `docs/plans/2026-07-16-payments-module-plan.md`;
+retro `docs/retrospective-2026-07-16-payments-module-p3.md`; migration `scholarship/0101` applied
+migrate-first via Supabase MCP; authority `docs/scholarship/role-matrix.md` Payments section). A
+Payments card in the Administration ORGANISATION section (`admin`/`org_admin` only, org-fenced, NO
+top-level nav entry) where staff create a monthly Vircle payment run and sign it off maker→approver.
+- **Model** (D1): `PaymentRun` + `PaymentRunItem` working state over the immutable `Disbursement`
+  ledger; `vircle_id` + `payment_credit` on `ScholarshipApplication`. Flat `MONTHLY_RATE = RM200`
+  minus `payment_credit`, capped by remaining award (D6). Maker (`admin`) → approver (`org_admin`)
+  two-person sign-off, different signers, edit-reverts-to-draft (D2); `complete()` writes released
+  Disbursements + decrements credit, never flips status (D3). Vircle ID = 13 digits prefix
+  `8000400175` (D9), captured in the Action Centre (fixed prefix + 3-digit suffix) or admin PATCH.
+- **Backfill DONE on prod** (`import_vircle_csv`): 30 Vircle IDs stamped, two completed backfill
+  runs (26 released Disbursements = RM5,400; two RM300 overpayments kept as history), credits
+  app 10/18 → RM100, app 61 → RM200. A simulated 1 Aug 2026 run = 28 payable (25×RM200 + 2×RM100 +
+  1×RM0), verified read-only.
+- **▶ OWNER: the real draft run is NOT created** — deliberately left for the UI. Owner is testing by
+  creating a draft themselves (may cancel/recreate); when ready, Poongulali (`admin`) makes it,
+  Suresh (`org_admin`) approves → countersignature writes the CSV to the Drive Vircle folder + the
+  released Disbursements. Note: without the backfill a draft shows everyone greyed "no Vircle ID" —
+  the backfill is what makes amounts visible; undoing the backfill is DB surgery, not a UI Cancel.
+- **▶ CARRY:** the Vircle email stub (`send_payment_run_email`, `VIRCLE_PAYMENTS_EMAIL` unset =
+  disabled) — wire recipient/format once Vircle confirms; Manual/FAQ Payments chapter (fold into the
+  owner's pending Manual screenshot pass); Tamil review of the `admin.payments.*` strings;
+  per-pathway payment calendar / gap months (D5, owner will define). **3897 pytest + 573 jest.**
+
 **✅ SHIPPED + LIVE 2026-07-16 — Cockpit income/household reconciliation + Pre-U institution tick +
 confirm-updates-record** (commits `bfe3e000`/`2077937f`/`fb9647d6`/`8dbc55be`/`1da10538`/`a32cd83d`;
 web `…00645-hvr` + api `…00777-zgr`; NO migration; retro

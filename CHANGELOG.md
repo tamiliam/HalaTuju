@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Payments module — Sprint P3: production cutover (the feature's single deploy) — 2026-07-16
+
+The one deploy for the whole Payments feature (P1 + P2 + the D10 guard). Migrate-first, one push,
+live backfill against prod. Plan `docs/plans/2026-07-16-payments-module-plan.md`.
+
+- **Carry closed** — a per-language test now guards the D10 Vircle Wallet-ID mention in the
+  award-offer email (the copy was already in en/ms/ta from P2; nothing had locked it in).
+- **Migrate-first** — `scholarship/0101` applied to prod via Supabase MCP before the push:
+  the two additive columns (backfilled, then DB default dropped), `payment_runs` +
+  `payment_run_items` (exact Django index/constraint names), **RLS deny-by-default** mirroring
+  `disbursements`, and the `django_migrations` ledger row — all in one transaction. Security
+  Advisor: only INFO `rls_enabled_no_policy` on the two new tables (same as `disbursements`); no
+  ERROR, no new WARN.
+- **One deploy** — pushed the 3 held commits; both Cloud Builds SUCCESS (api + web). Smoke: the
+  live `payment-runs` endpoint returns **401 (not 500)** — code and migration consistent; web
+  `/admin/payments` route serves.
+- **Backfill run live on prod** (`import_vircle_csv`): 30 rows matched, 0 unmatched. **30 Vircle
+  IDs** stamped, two completed backfill runs (`backfill-2026-06-30` 8×/RM1,800 · `backfill-2026-07-16`
+  18×/RM3,600 = **26 released Disbursements, RM5,400**; the two RM300 overpayments preserved as
+  history), and the three derived credits (app 10 → RM100, app 18 → RM100, app 61 → RM200).
+- **Verified (read-only)** — a simulated **1 Aug 2026** run yields 28 payable, 0 greyed:
+  **25×RM200 + app 10 RM100 + app 18 RM100 + app 61 RM0** (credit). The real draft is left for the
+  owner/admins to create in the UI (Poongulali maker → Suresh approver).
+
 ## Payments module — Sprint P2: API + UI (Vircle ID capture, run pages) — 2026-07-16
 
 Backend endpoints + admin UI on top of the P1 ledger. No deploy — the feature's single deploy

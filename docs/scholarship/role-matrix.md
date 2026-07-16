@@ -32,6 +32,18 @@ its FAQ entries in the same change — the prose must never drift from the gate.
   pool membership stays org-level. Revisit this cell at tenant #2.
 - **Money:** every money power waits for the Finance role + payout rails (payer ≠ decider).
 
+## Payments module (Vircle payment runs) — access
+
+The Payments module (`/admin/payments`, entered via the Administration ORGANISATION-section card;
+no top-level nav entry) is **`admin` + `org_admin` only** (super passes as always). `reviewer` /
+`qc` / referral `partner` are refused — 403 on every endpoint, cross-org 404. The maker→approver
+sign-off is a **two-person** control (D2): the **maker** signs first (role `admin` — Poongulali at
+BrightPath), the **approver** countersigns (role `org_admin` — Suresh), and the two must be
+different people (`super` may fill either slot, never both on one run). Editing an amount/exclusion
+after the first signature reverts the run to draft and clears that signature. This lives *inside*
+the Administration surface, so it inherits the org fence; it is **not** a Finance power (the money
+here is programme money OUT to students, gated by two named signers, not billing).
+
 ## Implementation state (2026-07-15)
 
 - **SHIPPED 2026-07-15** — EVERYTHING in this matrix except the Finance row:
@@ -40,4 +52,10 @@ its FAQ entries in the same change — the prose must never drift from the gate.
   super/org_admin, Admin-General read-only Administration, last-org-admin guard). No migration.
   Tests: `apps/scholarship/tests/test_org_admin_powers.py` +
   `apps/courses/tests/test_org_admin_role.py` (`TestLastOrgAdminGuard`/`TestAdminGeneralReadOnly`).
+- **SHIPPED 2026-07-16** — the Payments module (see the Payments section above): `admin`/`org_admin`
+  access, org-fenced, two-person maker→approver sign-off. Plan
+  `docs/plans/2026-07-16-payments-module-plan.md`; endpoints in `views_admin.py`
+  (`_PaymentsBase` + 6 views, classified in `test_org_fence.py`). **▶ Manual/FAQ currency carry:**
+  the Payments module is not yet a Manual chapter — fold it into the owner's pending Manual
+  screenshot pass.
 - Finance role: deferred to payout activation (Vircle/toyyibPay).
