@@ -67,26 +67,30 @@ export function fieldVerifications(
   set('school', 'school_leaving_cert', 'school', 'schoolLeavingCert')
   set('grades', 'results_slip', 'results', 'resultsSlip')
 
-  // Pathway — the offer letter establishes the chosen programme; the reporting date is the date
-  // READ off the offer, so it ticks whenever a non-fake/non-suspect offer carries one (the shown
-  // value IS the offer's date — no separate cross-check to make).
-  set('chosenProgramme', 'offer_letter', 'pathway', 'offerLetter')
-  // Pre-U institution (matric/STPM): tick when a genuine offer's INSTITUTION matches the SHOWN
-  // pre-U institution AND the offer isn't an overall pathway mismatch. The pathway guard keeps the
-  // tick from contradicting a red Pathway chip — e.g. #117, where the school token matches but the
-  // offer's stream (Sains) clashes with the declared Sains Sosial, so the offer doesn't cleanly
-  // confirm the placement.
-  const genuineOffer = (d: AdminApplicantDocument): boolean => {
+  // Pathway (all three offer-based ticks). An offer is USABLE for verification unless it's a
+  // genuine FAKE — a `not_offer_letter` / `not_*` read (it isn't an offer at all, so its fields are
+  // meaningless). A merely SUSPECT (thin/cropped) offer still ticks: the field it read (programme /
+  // institution / reporting date) is legitimately the offer's, and we don't withhold verification on
+  // a soft genuineness doubt (owner 2026-07-16). Unscored → also usable (fail-open).
+  const usableOffer = (d: AdminApplicantDocument): boolean => {
     if (d.doc_type !== 'offer_letter') return false
     const auth = d.authenticity?.status
-    return !auth || auth === 'genuine' || auth === 'likely_genuine' // exclude suspect / not_* (fake)
+    return !auth || !auth.startsWith('not_') // only a genuine fake (not_offer_letter / not_*) fails
   }
-  if (docs.some((d) => genuineOffer(d)
+  // Chosen Programme (tertiary/programme pathways): the offer confirms the declared programme.
+  if (docs.some((d) => usableOffer(d) && d.pathway_check?.pathway === 'match')) {
+    out.chosenProgramme = { source: 'offerLetter' }
+  }
+  // Pre-U institution (matric/STPM): the offer's institution matches the SHOWN pre-U institution AND
+  // the offer isn't an overall pathway mismatch (so a green tick can't contradict a red Pathway chip
+  // — #117, where the school matches but the stream clashes).
+  if (docs.some((d) => usableOffer(d)
     && d.pathway_check?.institution_status === 'match'
     && d.pathway_check?.pathway !== 'mismatch')) {
     out.preUInstitution = { source: 'offerLetter' }
   }
-  if (docs.some((d) => genuineOffer(d) && d.pathway_check?.reporting_date)) {
+  // Reporting date: the date READ off the offer (the shown value IS the offer's date).
+  if (docs.some((d) => usableOffer(d) && d.pathway_check?.reporting_date)) {
     out.reportingDate = { source: 'offerLetter' }
   }
 

@@ -61,15 +61,12 @@ describe('fieldVerifications', () => {
     expect(fv.preUInstitution).toEqual({ source: 'offerLetter' })
   })
 
-  it('does NOT tick preUInstitution on an institution clash / unknown / suspect offer', () => {
+  it('does NOT tick preUInstitution on an institution clash / unknown', () => {
     expect(fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { institution_status: 'clash' } },
     ])).preUInstitution).toBeUndefined()
     expect(fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { institution_status: 'unknown' } },
-    ])).preUInstitution).toBeUndefined()
-    expect(fieldVerifications(app([
-      { doc_type: 'offer_letter', authenticity: { status: 'suspect' }, pathway_check: { institution_status: 'match' } },
     ])).preUInstitution).toBeUndefined()
   })
 
@@ -80,22 +77,31 @@ describe('fieldVerifications', () => {
     expect(fv.preUInstitution).toBeUndefined()
   })
 
+  it('a SUSPECT offer still ticks (only a genuine FAKE fails) — owner 2026-07-16', () => {
+    const suspect = fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'suspect' },
+        pathway_check: { pathway: 'match', institution_status: 'match', reporting_date: '22 Jun 2026' } },
+    ]))
+    expect(suspect.chosenProgramme).toEqual({ source: 'offerLetter' })
+    expect(suspect.preUInstitution).toEqual({ source: 'offerLetter' })
+    expect(suspect.reportingDate).toEqual({ source: 'offerLetter' })
+  })
+
+  it('a FAKE (not_offer_letter) offer ticks nothing — its fields are meaningless', () => {
+    const fake = fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'not_offer_letter' },
+        pathway_check: { pathway: 'match', institution_status: 'match', reporting_date: '22 Jun 2026' } },
+    ]))
+    expect(fake.chosenProgramme).toBeUndefined()
+    expect(fake.preUInstitution).toBeUndefined()
+    expect(fake.reportingDate).toBeUndefined()
+  })
+
   it('does NOT tick reportingDate when the offer carries no reporting date', () => {
     const fv = fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { name: 'match', ic: 'match', pathway: 'match' } },
     ]))
     expect(fv.reportingDate).toBeUndefined()
-  })
-
-  it('does NOT tick reportingDate when the offer is suspect/fake', () => {
-    const suspect = fieldVerifications(app([
-      { doc_type: 'offer_letter', authenticity: { status: 'suspect' }, pathway_check: { reporting_date: '22 Jun 2026' } },
-    ]))
-    expect(suspect.reportingDate).toBeUndefined()
-    const fake = fieldVerifications(app([
-      { doc_type: 'offer_letter', authenticity: { status: 'not_offer_letter' }, pathway_check: { reporting_date: '22 Jun 2026' } },
-    ]))
-    expect(fake.reportingDate).toBeUndefined()
   })
 
   it('ticks address from a utility bill whose address is found', () => {
