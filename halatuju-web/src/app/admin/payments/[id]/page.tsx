@@ -40,6 +40,7 @@ export default function PaymentRunDetailPage() {
   const [busy, setBusy] = useState('')
   const [makerName, setMakerName] = useState('')
   const [approverName, setApproverName] = useState('')
+  const [signError, setSignError] = useState('')   // shown inside the sign-off card, beside the action
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' } | null>(null)
 
   const load = useCallback(() => {
@@ -83,16 +84,16 @@ export default function PaymentRunDetailPage() {
 
   const sign = async (typed: string) => {
     if (!token || !typed.trim()) return
-    setBusy('sign'); setError('')
+    setBusy('sign'); setSignError('')
     try { setRun(await signPaymentRun(id, typed.trim(), { token })); setMakerName(''); setApproverName('') }
-    catch (e) { setError(errText(e, t)) } finally { setBusy('') }
+    catch (e) { setSignError(errText(e, t)) } finally { setBusy('') }
   }
 
   const doCancel = async () => {
     if (!token) return
-    setBusy('cancel'); setError('')
+    setBusy('cancel'); setSignError('')
     try { setRun(await cancelPaymentRun(id, { token })) }
-    catch (e) { setError(errText(e, t)) } finally { setBusy('') }
+    catch (e) { setSignError(errText(e, t)) } finally { setBusy('') }
   }
 
   const downloadCsv = async () => {
@@ -213,6 +214,7 @@ export default function PaymentRunDetailPage() {
       {!isCompleted && run.status !== 'cancelled' && (
         <div className="mt-4 rounded-xl border bg-white p-5">
           <h2 className="text-base font-semibold text-gray-900">{t('admin.payments.signOff')}</h2>
+          {signError && <div className="mt-3 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{signError}</div>}
           <div className="mt-3 grid gap-6 sm:grid-cols-2">
             <div>
               <p className="text-sm font-semibold text-gray-900">1 · {t('admin.payments.makerStep')}</p>
