@@ -1392,7 +1392,6 @@ export interface PaymentRunItem {
   name: string
   nric: string
   vircle_id: string
-  vircle_confirmed: boolean
   award_amount: string
   paid_to_date: string
   amount: string

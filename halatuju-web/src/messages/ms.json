@@ -4125,7 +4125,6 @@
       "noOrg": "Akaun anda tidak terikat dengan sesebuah organisasi, jadi ia tidak boleh mencipta larian pembayaran.",
       "studentsLabel": "pelajar",
       "totalLabel": "Jumlah",
-      "confirmedBadge": "Disahkan oleh pelajar",
       "creditApplied": "Kredit RM{amount} digunakan",
       "defaultReason": "Dikecualikan",
       "reasonPlaceholder": "Sebab (cth. cuti semester)",
@@ -4152,10 +4151,10 @@
         "total": "Jumlah",
         "name": "Nama",
         "nric": "NRIC",
-        "vircleId": "ID Vircle",
-        "awardApproved": "Jumlah diluluskan",
-        "paidToDate": "Dibayar setakat ini",
-        "amountToPay": "Jumlah perlu dibayar",
+        "vircleId": "ID eWallet",
+        "awardApproved": "Diluluskan",
+        "paidToDate": "Dibayar",
+        "amountToPay": "Perlu dibayar",
         "include": "Sertakan"
       },
       "status": {
@@ -4165,7 +4164,8 @@
         "cancelled": "Dibatalkan"
       },
       "reason": {
-        "no_vircle_id": "Tiada ID Vircle",
+        "no_vircle_id": "Tiada ID eWallet",
+        "vircle_unconfirmed": "Persediaan belum disahkan",
         "on_hold": "Ditangguhkan",
         "no_balance": "Anugerah dibayar penuh",
         "agreement_unsigned": "Perjanjian belum ditandatangani"

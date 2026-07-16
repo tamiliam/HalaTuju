@@ -4125,7 +4125,6 @@
       "noOrg": "Your account is not tied to an organisation, so it cannot create a payment run.",
       "studentsLabel": "students",
       "totalLabel": "Total",
-      "confirmedBadge": "Confirmed by student",
       "creditApplied": "RM{amount} credit applied",
       "defaultReason": "Excluded",
       "reasonPlaceholder": "Reason (e.g. semester break)",
@@ -4152,10 +4151,10 @@
         "total": "Total",
         "name": "Name",
         "nric": "NRIC",
-        "vircleId": "Vircle ID",
-        "awardApproved": "Amount approved",
-        "paidToDate": "Paid to date",
-        "amountToPay": "Amount to be paid",
+        "vircleId": "eWallet ID",
+        "awardApproved": "Approved",
+        "paidToDate": "Paid",
+        "amountToPay": "To be paid",
         "include": "Include"
       },
       "status": {
@@ -4165,7 +4164,8 @@
         "cancelled": "Cancelled"
       },
       "reason": {
-        "no_vircle_id": "No Vircle ID",
+        "no_vircle_id": "No eWallet ID",
+        "vircle_unconfirmed": "Setup not confirmed",
         "on_hold": "On hold",
         "no_balance": "Award fully paid",
         "agreement_unsigned": "Agreement not signed"

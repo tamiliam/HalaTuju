@@ -40,6 +40,19 @@ MONTHLY_RATE = Decimal('200')
 # pool.FUNDED_STATES because the cohort is paid while at 'awarded'.
 PAYABLE_STATUSES = ('awarded', 'active', 'maintenance')
 
+# D4-3 (owner 2026-07-16) — the MONTH a pathway's payments FIRST open, as a HARD floor applied
+# even to continuing students: STPM/Matric/Asasi → July, Poly/UA Diploma (`university`) →
+# August, PISMP → September. (There is no UA degree — every BrightPath student is post-SPM, so
+# `university` is always the UA Diploma.) A run before a student's floor never pays them; and a
+# student is never paid before they've physically reported (`reporting_date`), so a late arrival
+# isn't paid early. Default is July for any unmapped pathway.
+PATHWAY_PAYMENT_START_MONTH = {
+    'stpm': 7, 'matric': 7, 'asasi': 7,   # July
+    'poly': 8, 'university': 8,           # August (Poly + UA Diploma)
+    'pismp': 9,                           # September
+}
+_DEFAULT_PAYMENT_START_MONTH = 7
+
 _ZERO = Decimal('0')
 _CENTS = Decimal('0.01')
 
@@ -99,28 +112,40 @@ def _credit_applied(application):
 
 # ── eligibility (D4) ────────────────────────────────────────────────────────────
 
-def _pathway_start(application):
-    """D4-3 fallback start date when reporting_date is NULL: by pathway, in the cohort year.
-    stpm/matric/asasi → 1 Jun · poly/university (+anything else) → 1 Jul · pismp → 1 Aug."""
+def _pathway_payment_start(application):
+    """D4-3: the 1st-of-the-month a pathway's payments open, in the cohort year (the HARD floor —
+    July / August / September per PATHWAY_PAYMENT_START_MONTH)."""
     year = application.cohort.year if application.cohort_id else timezone.localdate().year
     pathway = (application.chosen_pathway or '').strip().lower()
-    if pathway in ('stpm', 'matric', 'asasi'):
-        return date(year, 6, 1)
-    if pathway == 'pismp':
-        return date(year, 8, 1)
-    return date(year, 7, 1)   # poly / university / UA diploma / unknown
+    month = PATHWAY_PAYMENT_START_MONTH.get(pathway, _DEFAULT_PAYMENT_START_MONTH)
+    return date(year, month, 1)
 
 
 def _has_started(application, payment_date):
-    """D4-3: reporting_date <= payment_date when set, else the pathway default start.
-    Continuing students (previous-year reporting date) satisfy this automatically."""
-    start = application.reporting_date or _pathway_start(application)
-    return start <= payment_date
+    """D4-3 (owner 2026-07-16): payable on this run only when BOTH hold — (1) the pathway's
+    payment window has opened (`payment_date >= the July/Aug/Sep floor`), applied even to a
+    continuing student; AND (2) the student has physically reported (`reporting_date <=
+    payment_date`, when set) so a late arrival is never paid early."""
+    if payment_date < _pathway_payment_start(application):
+        return False
+    reporting = application.reporting_date
+    return reporting is None or reporting <= payment_date
 
 
 def _is_on_hold(application):
     """D4-5: the only break-like signal in the data today — maintenance 'on_hold'."""
     return application.status == 'maintenance' and application.maintenance_substate == 'on_hold'
+
+
+def _vircle_confirmation_pending(application):
+    """D4-4 (owner 2026-07-16): the student was emailed the Vircle setup task but hasn't
+    confirmed it yet — an `open` (unresolved) `vircle_setup_pending` resolution item. The 8
+    legacy students onboarded outside that flow have NO such item and so are never "pending"
+    (their eWallet ID alone is the payable fact); a student who resolved the task is confirmed.
+    """
+    from .resolution import VIRCLE_CODE
+    return (application.resolution_items
+            .filter(code=VIRCLE_CODE).exclude(status='resolved').exists())
 
 
 def eligibility(application, payment_date):
@@ -130,9 +155,13 @@ def eligibility(application, payment_date):
     listed at all)."""
     started = _has_started(application, payment_date)
     reasons = []
-    vircle_ready = bool((application.vircle_id or '').strip())
-    if not vircle_ready:
+    has_id = bool((application.vircle_id or '').strip())
+    # eWallet-ready (D4-4) = has an ID AND no unconfirmed setup task pending.
+    vircle_ready = has_id and not _vircle_confirmation_pending(application)
+    if not has_id:
         reasons.append('no_vircle_id')          # D4-4
+    elif not vircle_ready:
+        reasons.append('vircle_unconfirmed')    # D4-4 — emailed but not yet confirmed
     if _is_on_hold(application):
         reasons.append('on_hold')               # D4-5
     remaining = _remaining(application)

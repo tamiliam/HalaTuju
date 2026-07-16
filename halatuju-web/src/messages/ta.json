@@ -4125,7 +4125,6 @@
       "noOrg": "உங்கள் கணக்கு ஒரு நிறுவனத்துடன் இணைக்கப்படவில்லை, எனவே கட்டண இயக்கத்தை உருவாக்க முடியாது.",
       "studentsLabel": "மாணவர்கள்",
       "totalLabel": "மொத்தம்",
-      "confirmedBadge": "மாணவரால் உறுதிப்படுத்தப்பட்டது",
       "creditApplied": "RM{amount} கிரெடிட் பயன்படுத்தப்பட்டது",
       "defaultReason": "விலக்கப்பட்டது",
       "reasonPlaceholder": "காரணம் (எ.கா. செமஸ்டர் இடைவேளை)",
@@ -4152,10 +4151,10 @@
         "total": "மொத்தம்",
         "name": "பெயர்",
         "nric": "NRIC",
-        "vircleId": "Vircle ID",
-        "awardApproved": "அங்கீகரிக்கப்பட்ட தொகை",
-        "paidToDate": "இதுவரை செலுத்தியது",
-        "amountToPay": "செலுத்த வேண்டிய தொகை",
+        "vircleId": "eWallet ID",
+        "awardApproved": "அங்கீகரிக்கப்பட்டது",
+        "paidToDate": "செலுத்தியது",
+        "amountToPay": "செலுத்த வேண்டியது",
         "include": "சேர்"
       },
       "status": {
@@ -4165,7 +4164,8 @@
         "cancelled": "ரத்து"
       },
       "reason": {
-        "no_vircle_id": "Vircle ID இல்லை",
+        "no_vircle_id": "eWallet ID இல்லை",
+        "vircle_unconfirmed": "அமைப்பு உறுதிசெய்யப்படவில்லை",
         "on_hold": "இடைநிறுத்தப்பட்டது",
         "no_balance": "அங்கீகாரம் முழுவதும் செலுத்தப்பட்டது",
         "agreement_unsigned": "ஒப்பந்தம் கையொப்பமிடப்படவில்லை"

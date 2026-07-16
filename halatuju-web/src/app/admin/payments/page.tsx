@@ -99,7 +99,7 @@ export default function PaymentsLandingPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-700 tabular-nums">{r.students}</td>
-                <td className="px-4 py-3 text-gray-900 font-medium tabular-nums">RM {r.total}</td>
+                <td className="px-4 py-3 text-gray-900 font-medium tabular-nums">RM {Number(r.total)}</td>
                 <td className="px-4 py-3 text-right">
                   <Link href={`/admin/payments/${r.id}`} className="text-gray-400 hover:text-blue-600">›</Link>
                 </td>

@@ -103,16 +103,60 @@ class TestEligibility(TestCase):
         # not-started rows are excluded from eligible_rows entirely
         self.assertNotIn(app.id, {r['application'].id for r in payments.eligible_rows(self.org, self.pay_date)})
 
-    def test_pathway_fallback_dates_when_reporting_null(self):
-        # stpm/matric/asasi → 1 Jun; poly/university → 1 Jul; pismp → 1 Aug
-        for pathway, start in [('stpm', date(2026, 6, 1)), ('matric', date(2026, 6, 1)),
-                               ('asasi', date(2026, 6, 1)), ('poly', date(2026, 7, 1)),
-                               ('university', date(2026, 7, 1)), ('pismp', date(2026, 8, 1))]:
+    def test_pathway_payment_start_months(self):
+        # Owner 2026-07-16: STPM/Matric/Asasi → July; Poly/UA Diploma (university) → Aug; PISMP → Sep.
+        for pathway, start in [('stpm', date(2026, 7, 1)), ('matric', date(2026, 7, 1)),
+                               ('asasi', date(2026, 7, 1)), ('poly', date(2026, 8, 1)),
+                               ('university', date(2026, 8, 1)), ('pismp', date(2026, 9, 1))]:
             app = _make_app(self.cohort, self.org, pathway=pathway, reporting=None)
-            self.assertEqual(payments._pathway_start(app), start, pathway)
-            # a payment ON the start date counts as started (<=); one before it does not
+            self.assertEqual(payments._pathway_payment_start(app), start, pathway)
             self.assertTrue(payments.eligibility(app, start)['started'], pathway)
-            self.assertFalse(payments.eligibility(app, date(2026, 5, 1))['started'], pathway)
+            # the month BEFORE the floor is never started, even for a null reporting date
+            before = date(start.year, start.month - 1, 1)
+            self.assertFalse(payments.eligibility(app, before)['started'], pathway)
+
+    def test_floor_applies_even_with_an_early_reporting_date(self):
+        # A poly student who reported in June is still NOT paid before the August floor.
+        app = _make_app(self.cohort, self.org, pathway='poly', reporting=date(2026, 6, 20))
+        self.assertFalse(payments.eligibility(app, date(2026, 7, 1))['started'])   # July < Aug floor
+        self.assertTrue(payments.eligibility(app, date(2026, 8, 1))['started'])
+
+    def test_continuing_pismp_not_paid_before_september(self):
+        # Tavanisah case: a continuing PISMP student (reported a prior year) is excluded from an
+        # August run and only appears in September (the PISMP floor).
+        app = _make_app(self.cohort, self.org, pathway='pismp', reporting=date(2024, 8, 26))
+        self.assertFalse(payments.eligibility(app, date(2026, 8, 1))['started'])
+        self.assertTrue(payments.eligibility(app, date(2026, 9, 1))['started'])
+
+    def test_reporting_date_still_gates_a_late_arrival(self):
+        # The floor is necessary but not sufficient — a student who hasn't reported isn't paid.
+        app = _make_app(self.cohort, self.org, pathway='matric', reporting=date(2026, 9, 15))
+        self.assertFalse(payments.eligibility(app, date(2026, 8, 1))['started'])   # floor OK, not reported
+
+    def test_open_vircle_setup_task_greyed_unconfirmed(self):
+        # Emailed the setup task but not resolved → excluded with 'vircle_unconfirmed'.
+        from apps.scholarship.models import ResolutionItem
+        from apps.scholarship.resolution import VIRCLE_CODE
+        app = _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
+        ResolutionItem.objects.create(application=app, code=VIRCLE_CODE, status='open')
+        e = self._elig(app)
+        self.assertFalse(e['eligible'])
+        self.assertFalse(e['vircle_ready'])
+        self.assertIn('vircle_unconfirmed', e['reasons'])
+        self.assertNotIn('no_vircle_id', e['reasons'])   # it HAS an id — just unconfirmed
+
+    def test_resolved_vircle_setup_task_is_ready(self):
+        from apps.scholarship.models import ResolutionItem
+        from apps.scholarship.resolution import VIRCLE_CODE
+        app = _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
+        ResolutionItem.objects.create(application=app, code=VIRCLE_CODE, status='resolved')
+        self.assertTrue(self._elig(app)['eligible'])
+
+    def test_legacy_no_setup_task_is_ready(self):
+        # The 8 legacy students have no vircle_setup_pending item at all → the id alone suffices.
+        app = _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
+        self.assertFalse(app.resolution_items.exists())
+        self.assertTrue(self._elig(app)['eligible'])
 
     def test_status_filter_excludes_recommended(self):
         app = _make_app(self.cohort, self.org, status='recommended', reporting=date(2026, 6, 1))
@@ -502,13 +546,18 @@ class TestBackfillImport(TestCase):
 
     def test_simulated_1_aug_run_matches_owner_expectations(self):
         """Acceptance: after backfill, a 1 Aug 2026 run defaults to RM100 for the two
-        overpaid students, RM0 for the advance-paid student, RM200 for everyone else."""
+        overpaid students, RM0 for the advance-paid student, RM200 for everyone else — and
+        EXCLUDES PISMP (September floor, owner 2026-07-16)."""
         self._run_cmd()
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
             run = payments.create_run(self.org, date(2026, 8, 1), by_email='maker@x.com')
         by_app = {it.application_id: it.amount for it in run.items.all()}
-        # all 30 are eligible on 1 Aug (started, have a vircle id, positive balance)
-        self.assertEqual(len(by_app), 30)
-        for s in self.specs:
+        payable = [s for s in self.specs if s['pathway'] != 'pismp']   # PISMP not paid until September
+        self.assertEqual(len(by_app), len(payable))   # 27 (the 3 PISMP excluded)
+        for s in payable:
             expected = {'overpay': D('100'), 'advance': D('0')}.get(s['kind'], D('200'))
             self.assertEqual(by_app[s['app'].id], expected, f"{s['kind']} app {s['app'].id}")
+        # every PISMP student is absent from the August run
+        for s in self.specs:
+            if s['pathway'] == 'pismp':
+                self.assertNotIn(s['app'].id, by_app)

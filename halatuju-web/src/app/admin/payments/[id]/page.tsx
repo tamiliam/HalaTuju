@@ -14,6 +14,11 @@ import {
 } from '@/lib/admin-api'
 import { statusPill } from '@/lib/paymentStatus'
 
+// Amounts are whole ringgit — show "RM 200", not "RM 200.00" (a genuine .50 would still show).
+const rm = (v: string | number) => { const n = Number(v); return Number.isFinite(n) ? String(n) : String(v) }
+
+type SortKey = 'name' | 'nric' | 'vircle_id' | 'paid_to_date'
+
 const errText = (e: unknown, t: (k: string) => string) => {
   const code = (e as { code?: string })?.code
   const known = ['name_mismatch', 'same_signer', 'wrong_role', 'past_date', 'amount_over_cap',
@@ -35,6 +40,7 @@ export default function PaymentRunDetailPage() {
   const [busy, setBusy] = useState('')
   const [makerName, setMakerName] = useState('')
   const [approverName, setApproverName] = useState('')
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' } | null>(null)
 
   const load = useCallback(() => {
     if (!token) return
@@ -48,6 +54,25 @@ export default function PaymentRunDetailPage() {
 
   const isDraft = run.status === 'draft'
   const isCompleted = run.status === 'completed'
+
+  const toggleSort = (key: SortKey) =>
+    setSort((s) => (s?.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
+  const sortedItems = (() => {
+    if (!sort) return run.items
+    const dir = sort.dir === 'asc' ? 1 : -1
+    return [...run.items].sort((a, b) => {
+      if (sort.key === 'paid_to_date') return (Number(a.paid_to_date) - Number(b.paid_to_date)) * dir
+      return String(a[sort.key] || '').localeCompare(String(b[sort.key] || '')) * dir
+    })
+  })()
+  const sortArrow = (key: SortKey) => (sort?.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : '')
+  const SortTh = ({ k, label }: { k: SortKey; label: string }) => (
+    <th className="px-4 py-3 font-semibold">
+      <button type="button" onClick={() => toggleSort(k)} className="inline-flex items-center uppercase tracking-wider hover:text-gray-700">
+        {label}<span className="text-gray-400">{sortArrow(k)}</span>
+      </button>
+    </th>
+  )
 
   const patchItem = async (itemId: number, patch: { included?: boolean; exclude_reason?: string; amount?: string }) => {
     if (!token) return
@@ -96,7 +121,7 @@ export default function PaymentRunDetailPage() {
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusPill(run.status)}`}>{t(`admin.payments.status.${run.status}`)}</span>
         </div>
         <div className="rounded-lg border bg-white px-4 py-2 text-sm text-gray-700">
-          {run.students} {t('admin.payments.studentsLabel')} · <span className="font-semibold">{t('admin.payments.totalLabel')} RM {run.total}</span>
+          {run.students} {t('admin.payments.studentsLabel')} · <span className="font-semibold">{t('admin.payments.totalLabel')} RM {rm(run.total)}</span>
         </div>
       </div>
       <p className="mt-1 text-sm text-gray-500">{t('admin.payments.col.paymentDate')}: {formatDate(run.payment_date)}</p>
@@ -108,17 +133,17 @@ export default function PaymentRunDetailPage() {
         <table className="w-full text-sm min-w-[840px]">
           <thead className="bg-gray-50 border-b">
             <tr className="text-left text-xs uppercase tracking-wider text-gray-500">
-              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.name')}</th>
-              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.nric')}</th>
-              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.vircleId')}</th>
+              <SortTh k="name" label={t('admin.payments.col.name')} />
+              <SortTh k="nric" label={t('admin.payments.col.nric')} />
+              <SortTh k="vircle_id" label={t('admin.payments.col.vircleId')} />
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.awardApproved')}</th>
-              <th className="px-4 py-3 font-semibold">{t('admin.payments.col.paidToDate')}</th>
+              <SortTh k="paid_to_date" label={t('admin.payments.col.paidToDate')} />
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.amountToPay')}</th>
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.include')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {run.items.map((it) => (
+            {sortedItems.map((it) => (
               <tr key={it.id} className={it.included ? '' : 'bg-gray-50/60 text-gray-400'}>
                 <td className="px-4 py-3">
                   <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">{it.name || '—'} ↗</a>
@@ -126,19 +151,18 @@ export default function PaymentRunDetailPage() {
                 <td className="px-4 py-3">{it.nric || '—'}</td>
                 <td className="px-4 py-3">
                   <div className="tabular-nums">{it.vircle_id || '—'}</div>
-                  {it.vircle_confirmed && <span className="inline-block mt-0.5 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700">{t('admin.payments.confirmedBadge')}</span>}
                 </td>
-                <td className="px-4 py-3 tabular-nums">RM {it.award_amount}</td>
-                <td className="px-4 py-3 tabular-nums">RM {it.paid_to_date}</td>
+                <td className="px-4 py-3 tabular-nums">RM {rm(it.award_amount)}</td>
+                <td className="px-4 py-3 tabular-nums">RM {rm(it.paid_to_date)}</td>
                 <td className="px-4 py-3">
                   {isDraft && it.included ? (
-                    <input defaultValue={it.amount} onBlur={(e) => { if (e.target.value !== it.amount) patchItem(it.id, { amount: e.target.value }) }}
+                    <input defaultValue={rm(it.amount)} onBlur={(e) => { if (e.target.value !== rm(it.amount)) patchItem(it.id, { amount: e.target.value }) }}
                       className={`w-24 ${inputCls}`} />
                   ) : (
-                    <span className="tabular-nums">RM {it.amount}</span>
+                    <span className="tabular-nums">RM {rm(it.amount)}</span>
                   )}
                   {Number(it.credit_applied) > 0 && (
-                    <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.payments.creditApplied', { amount: it.credit_applied })}</p>
+                    <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.payments.creditApplied', { amount: rm(it.credit_applied) })}</p>
                   )}
                 </td>
                 <td className="px-4 py-3">
@@ -161,7 +185,7 @@ export default function PaymentRunDetailPage() {
             ))}
           </tbody>
           <tfoot className="bg-blue-50/50 border-t">
-            <tr><td colSpan={7} className="px-4 py-3 text-right text-sm font-bold text-gray-900">{t('admin.payments.totalToPay')}: RM {run.total}</td></tr>
+            <tr><td colSpan={7} className="px-4 py-3 text-right text-sm font-bold text-gray-900">{t('admin.payments.totalToPay')}: RM {rm(run.total)}</td></tr>
           </tfoot>
         </table>
       </div>

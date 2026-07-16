@@ -1783,13 +1783,6 @@ class AdminBursaryWitnessView(_BursaryAdminBase):
 from decimal import Decimal as _Decimal
 
 
-def _vircle_confirmed(app):
-    """Info badge only (D4-4): whether the student resolved the Action-Centre setup task.
-    NOT a payment gate -- the vircle_id is the payable fact."""
-    from .resolution import VIRCLE_CODE
-    return app.resolution_items.filter(code=VIRCLE_CODE, status='resolved').exists()
-
-
 def _payment_item_dict(item):
     app = item.application
     profile = getattr(app, 'profile', None)
@@ -1798,7 +1791,6 @@ def _payment_item_dict(item):
         'name': getattr(profile, 'name', '') or '',
         'nric': getattr(profile, 'nric', '') or '',
         'vircle_id': item.vircle_id_snapshot or (app.vircle_id or ''),
-        'vircle_confirmed': _vircle_confirmed(app),
         'award_amount': str(item.award_amount_snapshot),
         'paid_to_date': str(item.paid_to_date_snapshot),
         'amount': str(item.amount),
