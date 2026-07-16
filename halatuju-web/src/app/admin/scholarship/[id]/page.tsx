@@ -2578,8 +2578,18 @@ export default function AdminScholarshipDetailPage() {
             className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-gray-100 disabled:text-gray-400"
           >
             <option value="">{t('admin.scholarship.unassigned')}</option>
-            {admins.filter((a) => a.role === 'reviewer' || a.role === 'super')
-              .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            {/* Assignable options. The backend already returns the org-fenced, review-capable set
+                (services.REVIEW_ROLES; AdminAssignableAdminsView). A super may pick any of them; a
+                non-super (org_admin) delegates only to their own org's reviewers (the assign endpoint
+                rejects anything else as bad_assignee). The CURRENT assignee always renders so a later
+                role change never hides them (#66: assigned as qc → promoted to org_admin → was
+                showing "Unassigned"). Role suffixed so a senior assignee is distinguishable. */}
+            {admins.filter((a) => a.id === app.assigned_to_id || isSuper || a.role === 'reviewer')
+              .map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
+                </option>
+              ))}
           </select>
           {assignLocked ? (
             <p className="text-xs text-gray-400">{t('admin.scholarship.assign.lockedHint')}</p>
