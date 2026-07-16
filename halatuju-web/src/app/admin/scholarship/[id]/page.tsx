@@ -992,7 +992,11 @@ export default function AdminScholarshipDetailPage() {
         // Course start: the offer letter's report/registration date — surfaced in the Academic card
         // so the officer sees when the student must report. Prefer the offer that actually carries a
         // reporting date; fall back to the first offer.
-        const _offers = (app.documents || []).filter((d) => d.doc_type === 'offer_letter')
+        // LIVE offers only — a replaced (superseded) offer's reporting date must not show (owner
+        // 2026-07-16): the value shown has to come from the same current offer the tick verifies, so
+        // the two can never disagree. (The course-switch note below deliberately reads superseded
+        // offers separately — that's history, not the current pathway.)
+        const _offers = (app.documents || []).filter((d) => d.doc_type === 'offer_letter' && !d.superseded_at)
         const _offer = _offers.find((d) => d.pathway_check?.reporting_date) || _offers[0]
         const reportingDate = _offer?.pathway_check?.reporting_date || ''
         const hasPlans = !!(app.chosen_pathway || app.chosen_programme?.course_name || reportingDate
