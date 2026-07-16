@@ -23,9 +23,12 @@ const bucketBadge = (b: string) =>
       : 'bg-gray-100 text-gray-500'
 
 // ── Reviewer language matching (assignment dropdown) ───────────────────────────
-const LANG_LABEL: Record<string, string> = { en: 'EN', ms: 'BM', ta: 'TA' }
+// The "Prefers …" note shows only for a SPECIFIC preferred call language (en/ms/ta — 'mixed'/''
+// show nothing). Its displayed name reuses the shared scholarship.apply.callLang.* keys so it
+// reads "Prefers Tamil", never a bare code; the dropdown options show ✓/⚠ + the reviewer's name
+// only — the language-code suffix was dropped (owner 2026-07-16).
+const SPECIFIC_CALL_LANGS = new Set(['en', 'ms', 'ta'])
 type Reviewer = { id: number; name: string; languages: string[] }
-const langCodesLabel = (codes: string[]) => codes.map((c) => LANG_LABEL[c] ?? c.toUpperCase()).join(', ')
 /** Order reviewers for a student's preferred call language: when it's a specific language
  *  (en/ms/ta), reviewers who speak it come first and each carries a match flag; otherwise
  *  ('mixed'/unset) the list is unchanged and nothing is flagged. */
@@ -288,9 +291,9 @@ export default function AdminScholarshipList() {
                   <td className="px-4 py-3 text-gray-500">{formatDate(a.submitted_at)}</td>
                   {canAssign && (
                     <td className="px-4 py-3">
-                      {LANG_LABEL[a.call_language] && (
+                      {SPECIFIC_CALL_LANGS.has(a.call_language) && (
                         <p className="mb-1 text-[11px] text-gray-500">
-                          {t('admin.scholarship.prefersLang', { lang: LANG_LABEL[a.call_language] })}
+                          {t('admin.scholarship.prefersLang', { lang: t(`scholarship.apply.callLang.${a.call_language}`) })}
                         </p>
                       )}
                       <select
@@ -320,7 +323,6 @@ export default function AdminScholarshipList() {
                         {orderReviewersFor(reviewers, a.call_language).map(({ rv, match, specific }) => (
                           <option key={rv.id} value={rv.id}>
                             {specific ? (match ? '✓ ' : '⚠ ') : ''}{rv.name}
-                            {rv.languages.length ? ` — ${langCodesLabel(rv.languages)}` : ' — —'}
                           </option>
                         ))}
                       </select>
