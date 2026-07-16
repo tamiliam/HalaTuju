@@ -194,6 +194,11 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     # so the list UI disables the dropdown rather than re-deriving the rule — an action the server
     # will refuse should not look available. See services.ASSIGNABLE_STATUSES.
     assignable = serializers.SerializerMethodField()
+    # First-assignment readiness (mirrors the detail cockpit): all student tasks done OR the 5-day
+    # submit-clock lapsed. The list dropdown disables a FIRST assignment while false, so it never
+    # offers an assign the server would refuse with 'not_ready' (= services.is_ready_for_assignment,
+    # the same value the detail serializer ships inside query_sla).
+    ready_for_assignment = serializers.SerializerMethodField()
 
     class Meta:
         model = ScholarshipApplication
@@ -202,7 +207,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
             'spm_a_count', 'stpm_pngk', 'referral_source', 'merit_score', 'call_language',
             'status', 'bucket', 'shortlist_reason',
             'submitted_at', 'profile_completed_at',
-            'assigned_to_id', 'assigned_to_name', 'assignable',
+            'assigned_to_id', 'assigned_to_name', 'assignable', 'ready_for_assignment',
             # When set, the list pill shows "Reopened" (overriding accepted/rejected).
             'decision_reopened_at',
         ]
@@ -210,6 +215,10 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     def get_assignable(self, obj):
         from .services import is_assignable
         return is_assignable(obj)
+
+    def get_ready_for_assignment(self, obj):
+        from .services import is_ready_for_assignment
+        return is_ready_for_assignment(obj)
 
     def get_name(self, obj):
         return _full_name(obj)

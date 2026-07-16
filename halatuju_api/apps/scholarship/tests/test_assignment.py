@@ -92,6 +92,18 @@ class TestReviewerAssignment(TestCase):
         self._assign(self.reviewer.id)
         self.assertFalse(mock_send.called)
 
+    def test_list_serializer_exposes_ready_for_assignment(self):
+        # The list dropdown disables a not-ready FIRST assignment (mirroring the cockpit), so the
+        # LIST serializer must ship the same gate — not just `assignable` (the stage gate). Guards
+        # the field's presence + its wiring to services.is_ready_for_assignment. self.app is
+        # submitted with no open tasks → ready.
+        from apps.scholarship.serializers_admin import AdminApplicationListSerializer
+        ser = AdminApplicationListSerializer()
+        self.assertIn('ready_for_assignment', ser.fields)
+        self.assertTrue(ser.get_ready_for_assignment(self.app))
+        with patch('apps.scholarship.services.is_ready_for_assignment', return_value=False):
+            self.assertFalse(ser.get_ready_for_assignment(self.app))
+
     def test_student_email_body_copy(self):
         from django.core import mail
         from apps.scholarship.emails import send_student_assigned_reviewer_email

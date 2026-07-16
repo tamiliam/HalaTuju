@@ -298,11 +298,18 @@ export default function AdminScholarshipList() {
                         onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
                         // A case may only change hands while there IS a review to do (Completed /
                         // interviewing). Shortlisted and rejected aren't ready; awaiting-QC and
-                        // beyond are over. The server refuses either way — disabling here means the
-                        // officer isn't invited to take an action that will bounce.
-                        disabled={a.assignable === false}
+                        // beyond are over. AND a FIRST assignment waits until the app is ready — all
+                        // student tasks done OR the 5-day window lapsed — mirroring the detail
+                        // cockpit's firstAssignBlocked, so the list can't offer an assign the server
+                        // refuses ('not_ready'). The server refuses either way; disabling here means
+                        // the officer isn't invited to take an action that will bounce.
+                        disabled={a.assignable === false
+                          || (a.assigned_to_id == null && a.ready_for_assignment === false)}
                         title={a.assignable === false
-                          ? t('admin.scholarship.assign.error.not_assignable') : undefined}
+                          ? t('admin.scholarship.assign.error.not_assignable')
+                          : (a.assigned_to_id == null && a.ready_for_assignment === false)
+                            ? t('admin.scholarship.assign.error.not_ready')
+                            : undefined}
                         className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[220px] disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                       >
                         <option value="">{t('admin.scholarship.unassigned')}</option>

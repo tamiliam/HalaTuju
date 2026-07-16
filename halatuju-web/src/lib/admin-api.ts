@@ -394,6 +394,10 @@ export interface AdminScholarshipListItem {
   // The dropdown is disabled when false — the server refuses anyway, and an action that will be
   // refused should not look available.
   assignable: boolean
+  // Server-computed first-assign readiness (services.is_ready_for_assignment): all student tasks
+  // done OR the 5-day window lapsed. The dropdown disables a FIRST assignment while false — the
+  // detail cockpit's firstAssignBlocked, mirrored so the list can't offer an assign the server refuses.
+  ready_for_assignment: boolean
   decision_reopened_at: string | null   // when set, the pill shows "Reopened" (overrides accepted/rejected)
 }
 
