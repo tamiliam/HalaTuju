@@ -413,7 +413,7 @@ class SchedulingServiceTests(TestCase):
         mail.outbox.clear()
         scheduling.propose_slots(app, reviewer=self.reviewer, starts=[self._future(days=3)])
         body = mail.outbox[-1].body
-        self.assertIn('Hi Anya,', body)
+        self.assertIn('Hi ANYA,', body)   # profile.name is CAPS-normalised on save
         self.assertNotIn('Salam', body)   # BM mirror dropped for a confident English reader
 
     def test_reproposing_withdraws_old_unbooked_slots(self):

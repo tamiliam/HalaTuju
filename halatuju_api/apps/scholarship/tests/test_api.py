@@ -142,7 +142,7 @@ class TestApplicationIntake(TestCase):
             '/api/v1/scholarship/applications/', self._payload(), format='json')
         self.assertEqual(resp.status_code, 201)
         self.profile_a.refresh_from_db()
-        self.assertEqual(self.profile_a.name, 'Priya')
+        self.assertEqual(self.profile_a.name, 'PRIYA')   # unchanged by submit; CAPS-normalised on save
 
     def test_failing_application_rejected_no_decision_email(self):
         # profile_b has no grades (0 A's -> academic fail) + RM9000 no STR (income fail) -> rejected
@@ -211,7 +211,7 @@ class TestApplicationIntake(TestCase):
         )
         self.assertEqual(resp.status_code, 201)
         self.profile_a.refresh_from_db()
-        self.assertEqual(self.profile_a.name, 'Priya Devi')
+        self.assertEqual(self.profile_a.name, 'PRIYA DEVI')   # normalised to CAPS on save
         self.assertEqual(self.profile_a.school, 'SMK Taman Desa')
         self.assertEqual(self.profile_a.preferred_state, 'Selangor')
         self.assertEqual(self.profile_a.contact_phone, '012-345 6789')

@@ -415,7 +415,7 @@ class TestAdminSponsorship(TestCase):
         self.assertEqual(r.status_code, 200)
         row = r.json()['sponsorships'][0]
         self.assertEqual(row['sponsor']['name'], 'Jane Sponsor')   # admin sees the sponsor
-        self.assertEqual(row['application']['name'], 'Zxq Student')  # …and the student
+        self.assertEqual(row['application']['name'], 'ZXQ STUDENT')  # …and the student (CAPS on save)
 
 
 # ─── award good-news email (sent when a student becomes 'awarded') ────────────

@@ -46,12 +46,12 @@ class StudentSearchFilterTest(TestCase):
                 contact_phone=phone, contact_email=email,
             )
 
-        mk('u1', 'Aisyah Binti Ali', '050101-01-0001', 'spm', 'whatsapp',
+        mk('u1', 'AISYAH BINTI ALI', '050101-01-0001', 'spm', 'whatsapp',
            phone='+60 11-1077 0412', email='aisyah.smc@mailtest.org')
-        mk('u2', 'Bala A/L Raju', '040202-02-0002', 'stpm', 'google')
-        chong = mk('u3', 'Chong Wei', '030303-03-0003', 'spm', 'whatsapp')
-        mk('u4', 'Aisha Khan', '020404-04-0004', 'stpm', 'cumig')
-        mk('u5', 'Devi A/P Suren', '010505-05-0005', 'spm', '')  # blank source
+        mk('u2', 'BALA A/L RAJU', '040202-02-0002', 'stpm', 'google')
+        chong = mk('u3', 'CHONG WEI', '030303-03-0003', 'spm', 'whatsapp')
+        mk('u4', 'AISHA KHAN', '020404-04-0004', 'stpm', 'cumig')
+        mk('u5', 'DEVI A/P SUREN', '010505-05-0005', 'spm', '')  # blank source
 
         # Chong has no contact_email but applied for B40 — his email lives in the
         # application's notify_email (the real-data shape the search must cover).
@@ -70,47 +70,47 @@ class StudentSearchFilterTest(TestCase):
 
     def test_search_by_name_substring(self):
         body = self.client.get('/api/v1/admin/students/?q=ais').json()
-        # "Aisyah Binti Ali" + "Aisha Khan", case-insensitive.
+        # "AISYAH BINTI ALI" + "AISHA KHAN", case-insensitive.
         self.assertEqual(body['count'], 2)
-        self.assertEqual(self._names(body), ['Aisha Khan', 'Aisyah Binti Ali'])
+        self.assertEqual(self._names(body), ['AISHA KHAN', 'AISYAH BINTI ALI'])
 
     def test_search_by_nric_substring(self):
         body = self.client.get('/api/v1/admin/students/?q=030303').json()
         self.assertEqual(body['count'], 1)
-        self.assertEqual(body['students'][0]['name'], 'Chong Wei')
+        self.assertEqual(body['students'][0]['name'], 'CHONG WEI')
 
     def test_search_by_phone(self):
         body = self.client.get('/api/v1/admin/students/?q=1077 0412').json()
         self.assertEqual(body['count'], 1)
-        self.assertEqual(body['students'][0]['name'], 'Aisyah Binti Ali')
+        self.assertEqual(body['students'][0]['name'], 'AISYAH BINTI ALI')
 
     def test_search_by_email(self):
         body = self.client.get('/api/v1/admin/students/?q=mailtest.org').json()
         self.assertEqual(body['count'], 1)
-        self.assertEqual(body['students'][0]['name'], 'Aisyah Binti Ali')
+        self.assertEqual(body['students'][0]['name'], 'AISYAH BINTI ALI')
 
     def test_search_by_phone_digits_only(self):
         # Stored "+60 11-1077 0412"; a plain-digit search must still match.
         body = self.client.get('/api/v1/admin/students/?q=01110770412').json()
         self.assertEqual(body['count'], 1)
-        self.assertEqual(body['students'][0]['name'], 'Aisyah Binti Ali')
+        self.assertEqual(body['students'][0]['name'], 'AISYAH BINTI ALI')
 
     def test_search_by_nric_digits_only(self):
         # Stored "030303-03-0003"; a dash-less search must still match.
         body = self.client.get('/api/v1/admin/students/?q=030303030003').json()
         self.assertEqual(body['count'], 1)
-        self.assertEqual(body['students'][0]['name'], 'Chong Wei')
+        self.assertEqual(body['students'][0]['name'], 'CHONG WEI')
 
     def test_search_by_application_notify_email(self):
         # Email lives only in the B40 application's notify_email (contact_email blank).
         body = self.client.get('/api/v1/admin/students/?q=dirtest.org').json()
         self.assertEqual(body['count'], 1)
-        self.assertEqual(body['students'][0]['name'], 'Chong Wei')
+        self.assertEqual(body['students'][0]['name'], 'CHONG WEI')
 
     def test_filter_by_exam(self):
         body = self.client.get('/api/v1/admin/students/?exam=stpm').json()
         self.assertEqual(body['count'], 2)
-        self.assertEqual(self._names(body), ['Aisha Khan', 'Bala A/L Raju'])
+        self.assertEqual(self._names(body), ['AISHA KHAN', 'BALA A/L RAJU'])
 
     def test_invalid_exam_is_ignored(self):
         body = self.client.get('/api/v1/admin/students/?exam=diploma').json()
@@ -119,7 +119,7 @@ class StudentSearchFilterTest(TestCase):
     def test_filter_by_source(self):
         body = self.client.get('/api/v1/admin/students/?source=whatsapp').json()
         self.assertEqual(body['count'], 2)
-        self.assertEqual(self._names(body), ['Aisyah Binti Ali', 'Chong Wei'])
+        self.assertEqual(self._names(body), ['AISYAH BINTI ALI', 'CHONG WEI'])
 
     def test_source_options_distinct_sorted_no_blanks(self):
         body = self.client.get('/api/v1/admin/students/').json()
@@ -130,7 +130,7 @@ class StudentSearchFilterTest(TestCase):
         self.assertEqual(body['count'], 2)
         body = self.client.get('/api/v1/admin/students/?q=chong&source=whatsapp').json()
         self.assertEqual(body['count'], 1)
-        self.assertEqual(body['students'][0]['name'], 'Chong Wei')
+        self.assertEqual(body['students'][0]['name'], 'CHONG WEI')
 
     def test_source_options_stable_under_filtering(self):
         # The dropdown lists every visible source, not just those on the

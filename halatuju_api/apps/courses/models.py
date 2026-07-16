@@ -712,6 +712,18 @@ class StudentProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Normalise the full name to UPPER CASE at the write boundary (owner 2026-07-16),
+        # so every reader — the payments CSV to Vircle, emails, the student app, and any
+        # future surface — shows it consistently without each having to remember to
+        # upper-case it. Idempotent, and catches every ORM write path (apply-form sync,
+        # profile PUT/sync, the declaration-signature promote). The per-application
+        # declaration signature (`ScholarshipApplication.declaration_name`) stays verbatim
+        # as a legal record; `profile.name` is the canonical name everything displays.
+        if self.name:
+            self.name = self.name.upper()
+        super().save(*args, **kwargs)
+
     class Meta:
         db_table = 'api_student_profiles'
         constraints = [

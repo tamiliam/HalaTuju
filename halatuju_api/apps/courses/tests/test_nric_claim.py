@@ -30,7 +30,7 @@ class TestNricClaim(TestCase):
         resp = self._post('user-b', {'nric': '040815-01-2022'})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data['status'], 'exists')
-        self.assertEqual(resp.data['name'], 'Student A')
+        self.assertEqual(resp.data['name'], 'STUDENT A')   # CAPS-normalised on save
         # Profile NOT transferred yet
         profile = StudentProfile.objects.get(nric='040815-01-2022')
         self.assertEqual(profile.supabase_user_id, 'user-a')
@@ -123,4 +123,4 @@ class TestNricClaim(TestCase):
         self.assertEqual(resp.data['status'], 'created')
         profile = StudentProfile.objects.get(supabase_user_id='user-a')
         self.assertEqual(profile.nric, '040815-01-2022')
-        self.assertEqual(profile.name, 'Temp')  # Existing data preserved
+        self.assertEqual(profile.name, 'TEMP')  # Existing data preserved (CAPS-normalised on save)

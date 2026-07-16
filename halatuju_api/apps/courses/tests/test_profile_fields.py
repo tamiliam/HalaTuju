@@ -16,6 +16,23 @@ class TestProfileNewFields:
         p.refresh_from_db()
         assert p.nric == '010203-14-1234'
 
+    def test_name_stored_uppercase(self):
+        # Owner 2026-07-16: names are normalised to CAPS at the write boundary so every
+        # reader shows them consistently.
+        p = StudentProfile.objects.create(supabase_user_id='test-name-caps',
+                                          name='Shaarveshwaar A/L Sarawanan')
+        p.refresh_from_db()
+        assert p.name == 'SHAARVESHWAAR A/L SARAWANAN'
+        # a later edit is also normalised
+        p.name = 'navitha a/p nadaraj'
+        p.save()
+        p.refresh_from_db()
+        assert p.name == 'NAVITHA A/P NADARAJ'
+        # blank stays blank (no crash)
+        p.name = ''
+        p.save(); p.refresh_from_db()
+        assert p.name == ''
+
     def test_profile_has_address_field(self):
         p = StudentProfile.objects.create(
             supabase_user_id='test-addr',

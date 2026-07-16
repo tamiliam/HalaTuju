@@ -260,8 +260,8 @@ class TestRoleScoping(PhaseCBase):
                                     is_active=True, name='PA', email='pa@x.org')
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("pa-uid")}')
         names = [s['name'] for s in self.client.get('/api/v1/admin/students/').json()['students']]
-        self.assertIn('Anita', names)        # own org
-        self.assertNotIn('Bala', names)      # NEVER another org's student
+        self.assertIn('ANITA', names)        # own org (names CAPS-normalised on save)
+        self.assertNotIn('BALA', names)      # NEVER another org's student
 
     def test_reviewer_has_no_students_access(self):
         # Reviewers are individuals — the Students page is not theirs (even though the

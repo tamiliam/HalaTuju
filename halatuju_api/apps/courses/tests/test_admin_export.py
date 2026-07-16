@@ -66,7 +66,7 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
         StudentProfile.objects.create(
             supabase_user_id='student-uid-1',
             nric='010101-01-1111',
-            name='Anita Rao',
+            name='ANITA RAO',
             angka_giliran='AB123C456',
             contact_phone='012-3456789',
             school='SMK Damansara Jaya',
@@ -90,7 +90,7 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
         StudentProfile.objects.create(
             supabase_user_id='student-uid-stpm',
             nric='020202-02-2222',
-            name='Chong Mei Ling',
+            name='CHONG MEI LING',
             exam_type='stpm',
             stpm_grades={'PA': 'A', 'MATH_T': 'B+'},
             stpm_cgpa=3.67,
@@ -130,7 +130,7 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
         }):
             response = self.client.get('/api/v1/admin/students/export/')
         rows = self._read_csv(response)
-        anita = self._row_for(rows, 'Anita Rao')
+        anita = self._row_for(rows, 'ANITA RAO')
         get = lambda col: anita[EXPECTED_HEADER.index(col)]
         self.assertEqual(get('IC'), '010101-01-1111')
         self.assertEqual(get('Angka Giliran'), 'AB123C456')
@@ -157,7 +157,7 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
         with patch('apps.courses.views_admin._fetch_auth_data', return_value={}):
             response = self.client.get('/api/v1/admin/students/export/')
         rows = self._read_csv(response)
-        chong = self._row_for(rows, 'Chong Mei Ling')
+        chong = self._row_for(rows, 'CHONG MEI LING')
         get = lambda col: chong[EXPECTED_HEADER.index(col)]
         self.assertEqual(get('Exam Type'), 'stpm')
         self.assertIn('"PA":"A"', get('STPM Grades'))

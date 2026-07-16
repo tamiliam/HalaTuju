@@ -121,7 +121,8 @@ class TestReportViews(TestCase):
 
         mock_gen.assert_called_once()
         call_kwargs = mock_gen.call_args[1]
-        self.assertEqual(call_kwargs['student_name'], 'Ahmad bin Ali')
+        # profile.name is normalised to CAPS at the write boundary (owner 2026-07-16).
+        self.assertEqual(call_kwargs['student_name'], 'AHMAD BIN ALI')
 
     @patch('apps.reports.views.generate_report')
     def test_generate_defaults_student_name_when_blank(self, mock_gen):
