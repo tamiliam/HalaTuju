@@ -480,6 +480,21 @@ class TestAwardOfferEmail(TestCase):
         self.assertNotIn('RM', msg.body)
         self.assertNotIn('sponsor', msg.body.lower())
 
+    def test_award_offer_email_mentions_vircle_wallet_id(self):
+        # Payments D10: the award-offer email must tell the student to have their Vircle Wallet ID
+        # ready and enter it when confirming — in every language. Guards the P2 copy change so a
+        # future edit can't silently drop the Wallet-ID ask.
+        from apps.scholarship.emails import send_award_offer_email
+        wallet_phrase = {
+            'en': 'Vircle Wallet ID',
+            'ms': 'ID Dompet Vircle',
+            'ta': 'Vircle வாலட் ID',
+        }
+        for lang, phrase in wallet_phrase.items():
+            mail.outbox = []
+            self.assertTrue(send_award_offer_email('x@y.example', 'Aisyah', lang=lang))
+            self.assertIn(phrase, mail.outbox[0].body, f'award email ({lang}) omits the Wallet-ID ask')
+
 
 from django.core.management import call_command  # noqa: E402
 
