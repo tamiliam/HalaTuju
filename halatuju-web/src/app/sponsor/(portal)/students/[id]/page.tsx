@@ -9,7 +9,16 @@ import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { fundStudent, getSponsorPoolDetail, getSponsorWallet, type SponsorPoolDetail } from '@/lib/api'
 import { fieldImageUrl } from '@/lib/fieldImage'
-import { countdown, rmWhole } from '@/lib/poolCard'
+import { rmWhole } from '@/lib/poolCard'
+import { formatDate } from '@/lib/formatDate'
+
+// The sponsorship pays a flat RM200/month, so the funded duration = amount ÷ 200
+// (RM1,000→5, RM2,000→10, RM3,000→15 months).
+const PAY_RATE = 200
+const payMonthsOf = (amount: string | null | undefined) => {
+  const n = Number(amount)
+  return Number.isFinite(n) && n > 0 ? Math.round(n / PAY_RATE) : 0
+}
 
 // Backend fund error code → localised message key.
 const FUND_ERR_KEY: Record<string, string> = {
@@ -69,7 +78,7 @@ export default function StudentDetailPage() {
     }
   }
 
-  const cd = detail ? countdown(detail.reporting_date) : null
+  const payMonths = payMonthsOf(detail?.award_amount)
 
   // The trust strip's core ticks — every pooled student has passed QC by construction.
   const CHECKS = ['checkIdentity', 'checkAcademic', 'checkPathway', 'checkFinancial'] as const
@@ -94,12 +103,10 @@ export default function StudentDetailPage() {
                 <span className="absolute bottom-2 left-4 rounded-md bg-white/90 px-2.5 py-0.5 text-xs font-bold text-gray-900 shadow-sm">{detail.ref}</span>
               </div>
               <div className="p-6">
-                <div className="flex flex-wrap gap-1.5">
-                  {detail.state && <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.state}</span>}
-                  {detail.academic && <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.academic}</span>}
-                </div>
+                {detail.academic && (
+                  <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.academic}</span>
+                )}
                 <h1 className="mt-2 text-xl font-bold text-gray-900 leading-snug">{detail.course || detail.field || detail.ref}</h1>
-                {detail.institution && <p className="text-sm text-gray-500 mt-0.5">{detail.institution}</p>}
               </div>
             </div>
 
@@ -134,70 +141,87 @@ export default function StudentDetailPage() {
           </div>
 
           {/* Sidebar action card */}
-          <div className="bg-white rounded-2xl border p-6 h-fit space-y-3">
-            {detail.award_amount && (
-              <div>
-                <p className="text-3xl font-bold text-gray-900">RM{rmWhole(detail.award_amount)}</p>
-                {detail.programme_months != null && (
-                  <p className="text-xs text-gray-500">{t('sponsorPool.overMonths').replace('{months}', String(detail.programme_months))}</p>
-                )}
-              </div>
-            )}
-
-            {detail.funding_categories.length > 0 && (
-              <p className="text-xs text-gray-600">
-                <span className="font-semibold text-gray-700">{t('sponsorPool.coversLabel')}:</span>{' '}
-                {detail.funding_categories.join(', ')}
-              </p>
-            )}
-
-            {cd && (
-              <p className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs font-medium text-amber-700">
-                ⏳ {cd.kind === 'today' ? t('sponsorPool.startsToday')
-                  : cd.kind === 'one' ? t('sponsorPool.oneDayAway')
-                  : t('sponsorPool.daysAway').replace('{days}', String(cd.days))}
-              </p>
-            )}
-
-            {funded ? (
-              <div className="rounded-lg bg-green-50 border border-green-100 px-3 py-2.5 text-xs text-green-800">
-                ✅ {t('sponsorPortal.students.funded', { amount: detail.award_amount ?? '' })}
-              </div>
-            ) : confirming ? (
-              <div className="space-y-2">
-                <p className="text-xs text-gray-700">{t('sponsorPortal.students.confirmBody', { amount: detail.award_amount ?? '' })}</p>
-                <div className="flex gap-2">
-                  <button disabled={funding} onClick={doFund}
-                    className="flex-1 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
-                    {funding ? t('common.loading') : t('sponsorPortal.students.confirmAward')}
-                  </button>
-                  <button disabled={funding} onClick={() => { setConfirming(false); setErrCode(null) }}
-                    className="rounded-xl border px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60">
-                    {t('common.cancel')}
-                  </button>
+          <div className="bg-white rounded-2xl border p-6 h-fit space-y-4">
+            {/* Support block */}
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('sponsorPool.supportNeeded')}</p>
+              {detail.award_amount && (
+                <div>
+                  <p className="text-3xl font-bold text-gray-900">RM{rmWhole(detail.award_amount)}</p>
+                  {payMonths > 0 && (
+                    <p className="text-xs text-gray-500">{t('sponsorPool.overMonths').replace('{months}', String(payMonths))}</p>
+                  )}
                 </div>
-              </div>
-            ) : (
-              <button onClick={() => { setConfirming(true); setErrCode(null) }}
-                className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                {t('sponsorPortal.students.support')}
-              </button>
-            )}
+              )}
 
-            {errCode && (
-              <p className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
-                {t(FUND_ERR_KEY[errCode] || 'sponsorPortal.students.errGeneric')}
-              </p>
-            )}
+              {funded ? (
+                <div className="rounded-md bg-green-50 border border-green-100 px-3 py-2.5 text-xs text-green-800">
+                  ✅ {t('sponsorPortal.students.funded', { amount: rmWhole(detail.award_amount) })}
+                </div>
+              ) : confirming ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-700">{t('sponsorPortal.students.confirmBody', { amount: rmWhole(detail.award_amount) })}</p>
+                  <div className="flex gap-2">
+                    <button disabled={funding} onClick={doFund}
+                      className="flex-1 rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+                      {funding ? t('common.loading') : t('sponsorPortal.students.confirmAward')}
+                    </button>
+                    <button disabled={funding} onClick={() => { setConfirming(false); setErrCode(null) }}
+                      className="rounded-md border px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => { setConfirming(true); setErrCode(null) }}
+                  className="w-full rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                  {t('sponsorPool.fullyFund')}
+                </button>
+              )}
 
-            {balance !== null && (
-              <p className="text-xs text-gray-500">
-                {t('sponsorPortal.students.balanceLabel')}:{' '}
-                <span className="font-semibold text-gray-800">RM {balance}</span>
-              </p>
-            )}
+              {errCode && (
+                <p className="rounded-md bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
+                  {t(FUND_ERR_KEY[errCode] || 'sponsorPortal.students.errGeneric')}
+                </p>
+              )}
 
-            <p className="text-[11px] text-gray-400 leading-relaxed border-t pt-3">{t('sponsorPool.privacyNote')}</p>
+              {balance !== null && (
+                <p className="text-xs text-gray-500">
+                  {t('sponsorPortal.students.balanceLabel')}:{' '}
+                  <span className="font-semibold text-gray-800">RM{rmWhole(balance)}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Facts */}
+            <dl className="border-t pt-4 space-y-2.5 text-sm">
+              {detail.state && (
+                <div className="flex items-start justify-between gap-4">
+                  <dt className="text-gray-500">{t('sponsorPool.homeState')}</dt>
+                  <dd className="text-right font-medium text-gray-900">{detail.state}</dd>
+                </div>
+              )}
+              {detail.institution && (
+                <div className="flex items-start justify-between gap-4">
+                  <dt className="text-gray-500 shrink-0">{t('sponsorPool.institutionLabel')}</dt>
+                  <dd className="text-right font-medium text-gray-900">{detail.institution}</dd>
+                </div>
+              )}
+              {detail.reporting_date && (
+                <div className="flex items-start justify-between gap-4">
+                  <dt className="text-gray-500">{t('sponsorPool.reportingDate')}</dt>
+                  <dd className="text-right font-medium text-gray-900">{formatDate(detail.reporting_date)}</dd>
+                </div>
+              )}
+              {detail.funding_categories.length > 0 && (
+                <div className="flex items-start justify-between gap-4">
+                  <dt className="text-gray-500">{t('sponsorPool.coversLabel')}</dt>
+                  <dd className="text-right font-medium text-gray-900">{detail.funding_categories.join(', ')}</dd>
+                </div>
+              )}
+            </dl>
+
+            <p className="text-[11px] text-gray-400 leading-relaxed rounded-lg bg-gray-50 px-3 py-2.5">{t('sponsorPool.privacyNote')}</p>
           </div>
         </div>
       )}

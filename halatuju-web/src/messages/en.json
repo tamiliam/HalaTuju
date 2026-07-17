@@ -358,6 +358,10 @@
     "checkFinancial": "Financial need",
     "checkEnrolment": "Enrolment confirmed",
     "overMonths": "over {months} months",
+    "supportNeeded": "Support needed",
+    "homeState": "Home state",
+    "institutionLabel": "Institution",
+    "reportingDate": "Reporting date",
     "coversLabel": "Covers",
     "privacyNote": "You'll receive semester progress updates. Personal details are never shared.",
     "allAmounts": "All amounts"

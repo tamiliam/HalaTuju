@@ -37,6 +37,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockDetail.mockResolvedValue({
     ref: 'Student A9', state: 'Selangor', field: 'Engineering', academic: '5A 3B',
+    institution: 'Politeknik Ungku Omar', reporting_date: '2026-09-01',
     funding_categories: ['Fees'], programme_months: 24, enrolment_verified: true,
     anon_profile: '', award_amount: '3000',
   })
@@ -47,8 +48,8 @@ beforeEach(() => {
 it('refreshes the pool + wallet after a successful fund', async () => {
   render(<StudentDetailPage />)
 
-  // Support → Confirm (the i18n mock returns the key as the visible label).
-  fireEvent.click(await screen.findByText('sponsorPortal.students.support'))
+  // Fully fund → Confirm (the i18n mock returns the key as the visible label).
+  fireEvent.click(await screen.findByText('sponsorPool.fullyFund'))
   fireEvent.click(await screen.findByText('sponsorPortal.students.confirmAward'))
 
   await waitFor(() => expect(mockFund).toHaveBeenCalledWith(5, { token: 'tok' }))
@@ -58,18 +59,18 @@ it('refreshes the pool + wallet after a successful fund', async () => {
   expect(refreshWallet).toHaveBeenCalled()
 })
 
-it('shows the balance line and renders no facts table (redesign IA)', async () => {
+it('shows the sidebar facts table + balance (owner spec)', async () => {
   render(<StudentDetailPage />)
-  await screen.findByText('sponsorPortal.students.support')   // detail loaded
-  // Sidebar balance line is present (mock wallet resolves to RM 5000).
+  await screen.findByText('sponsorPool.fullyFund')   // detail loaded
+  // The facts table renders its labels (home state / institution / reporting date / covers).
+  expect(screen.getByText('sponsorPool.homeState')).toBeTruthy()
+  expect(screen.getByText('sponsorPool.institutionLabel')).toBeTruthy()
+  expect(screen.getByText('sponsorPool.reportingDate')).toBeTruthy()
+  expect(screen.getByText('sponsorPool.coversLabel')).toBeTruthy()
+  // "SUPPORT NEEDED" eyebrow + the balance line.
+  expect(screen.getByText('sponsorPool.supportNeeded')).toBeTruthy()
   await waitFor(() =>
     expect(screen.getByText((_c, node) =>
       node?.tagName === 'P' && (node.textContent || '').includes('sponsorPortal.students.balanceLabel'),
     )).toBeTruthy())
-  // The old <dl> facts table is gone — none of its labels render.
-  expect(screen.queryByText('sponsorPool.fieldLabel')).toBeNull()
-  expect(screen.queryByText('sponsorPool.academicLabel')).toBeNull()
-  expect(screen.queryByText('sponsorPool.durationLabel')).toBeNull()
-  // The verification strip (our differentiator) is present (emoji-prefixed → substring).
-  expect(screen.getByText('sponsorPool.verifiedByBrightPath', { exact: false })).toBeTruthy()
 })

@@ -45,7 +45,7 @@ export default function StudentsPage() {
     [rows, field, state, amount],
   )
 
-  const selectCls = 'text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white'
+  const selectCls = 'text-sm border border-gray-200 rounded-lg pl-3.5 pr-9 py-2.5 bg-white min-w-[10rem] cursor-pointer'
 
   return (
     <div>
@@ -147,8 +147,8 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
 
         {s.blurb && <p className="mt-3 text-sm italic text-gray-600 leading-relaxed">{s.blurb}</p>}
 
-        {/* Footer: amount + CTA */}
-        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+        {/* Footer: amount + CTA — pinned to the bottom so it aligns across cards of different heights */}
+        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between gap-2">
           {s.award_amount ? <span className="text-xl font-bold text-gray-900">RM{rmWhole(s.award_amount)}</span> : <span />}
           <span className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>
         </div>
