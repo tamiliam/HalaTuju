@@ -737,7 +737,9 @@ live-review arc, all off real applicants:
   (stated size never rewritten); no migration (confirmed = a student-resolved item).
 - **3844 pytest + 572 jest.** **▶ CARRY:** Tamil review of the `household_size_confirm` title/desc +
   `confirmHouseholdSizeYes`; #66's RM4,157 salary (owner Re-runs the slip if it's a misread); #43
-  (TD-161).
+  (TD-161 — scoped in `docs/plans/2026-07-18-td161-pathway-type-switch-brief.md`: unified offer↔declaration
+  reconciliation covering different-type/#43, same-type, and undeclared/#127; system-handled; PISMP aliran
+  via the pre-inferred profile picker).
 
 **✅ SHIPPED (code — owner gates the deploy) 2026-07-16 — STR route no longer blocks the household
 salary picture (Check 2).** Off #117 (retired father, no pension follow-up). `income_engine`'s

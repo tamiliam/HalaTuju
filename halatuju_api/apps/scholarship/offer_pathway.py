@@ -62,6 +62,24 @@ def is_pre_u(pathway_type: str) -> bool:
     return pathway_type in ('stpm', 'matric')
 
 
+# One coarse FUNDING family per pathway, collapsing the two vocabularies that describe a pathway — the
+# offer's DETECTED type (detect_pathway_type: diploma/degree/…) and the stored chosen_pathway
+# (poly/university/…) — so a mere rename is never mistaken for a switch. Only a cross-FAMILY change is
+# a genuine pathway-TYPE switch (TD-161: STPM→PISMP counts; poly→diploma / university→degree do not).
+_PATHWAY_FAMILY = {
+    'stpm': 'stpm', 'matric': 'matric', 'asasi': 'asasi', 'pismp': 'pismp',
+    'diploma': 'diploma', 'poly': 'diploma', 'polytechnic': 'diploma',
+    'degree': 'degree', 'university': 'degree', 'ua': 'degree',
+}
+
+
+def pathway_family(pathway_type: str) -> str:
+    """Coarse funding family for a pathway type/label (poly≡diploma, university≡degree); unknown
+    values map to themselves; '' stays ''."""
+    t = (pathway_type or '').strip().lower()
+    return _PATHWAY_FAMILY.get(t, t)
+
+
 def parse_stpm_stream(programme: str) -> str:
     """Read the STPM bidang off an offer programme string, or ''. Many Form-6 letters
     print only "Tingkatan Enam Semester 1" (no stream) → '' (leave the track open, never
@@ -118,6 +136,30 @@ def infer_stpm_bidang(grades, stream_subjects) -> str:
     if isinstance(grades, dict):
         subs |= {str(k).lower() for k in grades}
     return 'sains' if subs & _SCIENCE_ELECTIVES else 'sains_sosial'
+
+
+# SPM vernacular subject keys that mark a PISMP school stream (aliran). A PISMP offer letter never
+# states the aliran, so this is a picker DEFAULT only (the student confirms it) — never authoritative.
+_TAMIL_SUBJECTS = {'bahasa_tamil', 'b_tamil', 'lit_tamil'}
+_CHINESE_SUBJECTS = {'bahasa_cina', 'b_cina', 'lit_cina'}
+
+
+def infer_pismp_aliran(profile) -> str:
+    """Best-guess PISMP school stream from the student's SPM vernacular subject: Bahasa Tamil →
+    'SJKT', Bahasa Cina → 'SJKC', else 'SK'. A picker DEFAULT the student confirms (the offer letter
+    doesn't state the aliran), never authoritative. Safe on a missing/blank profile → 'SK'."""
+    subs = set()
+    grades = getattr(profile, 'grades', None)
+    if isinstance(grades, dict):
+        subs |= {str(k).lower() for k in grades}
+    ss = getattr(profile, 'stream_subjects', None)
+    if isinstance(ss, (list, tuple)):
+        subs |= {str(s).lower() for s in ss}
+    if subs & _TAMIL_SUBJECTS:
+        return 'SJKT'
+    if subs & _CHINESE_SUBJECTS:
+        return 'SJKC'
+    return 'SK'
 
 
 def _name_aligns(a: set, b: set) -> bool:

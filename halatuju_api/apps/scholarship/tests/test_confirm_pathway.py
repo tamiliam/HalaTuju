@@ -72,6 +72,52 @@ class TestConfirmPathwayUpdatesPreU(_Base):
         self.assertEqual(app.chosen_programme['course_name'], 'Program Matrikulasi')
         self.assertEqual(app.chosen_programme['institution'], app.pre_u_institution)
 
+    def _pismp_offer(self, app, *, identity=False):
+        f = {'institution': 'INSTITUT PENDIDIKAN GURU KAMPUS TUANKU BAINUN',
+             'programme': 'Program Ijazah Sarjana Muda Perguruan (PISMP)', 'stream': ''}
+        if identity:                       # match the profile so the verdict clears identity
+            f['candidate_name'] = app.profile.name
+            f['candidate_nric'] = app.profile.nric
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/pismp',
+            vision_fields={'fields': f, 'student_verdict': 'ok',
+                           'authenticity': {'status': 'genuine', 'reason': 'x'}},
+            vision_run_at=timezone.now())
+
+    def test_type_switch_confirm_adopts_offer_type_and_clears_stale_preu(self):
+        # TD-161 (#43): declared STPM (Sains Sosial), genuine PISMP offer → confirm switches the TYPE
+        # and drops the now-irrelevant STPM stream + school.
+        app = self._app(pathway='stpm', track='sains_sosial', institution='SMK X')
+        self._pismp_offer(app)
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'pismp')
+        self.assertEqual(app.pre_u_track, '')
+        self.assertEqual(app.pre_u_institution, '')
+
+    def test_same_type_confirm_leaves_pathway_unchanged(self):
+        # A within-type confirm (STPM offer) never rewrites the pathway type.
+        app = self._app(pathway='stpm', track='sains_sosial', institution='SMK X')
+        self._offer(app, institution='KOLEJ TINGKATAN ENAM GOMBAK',
+                    programme='Tingkatan Enam Semester 1', stream='SAINS')
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'stpm')
+
+    def test_verdict_raises_type_switch_even_when_confirmed(self):
+        # After an offer-confirm the type mismatch is otherwise invisible; TD-161 re-raises it.
+        from apps.scholarship.verdict_engine import build_verdict
+        app = self._app(pathway='stpm', track='sains_sosial', institution='SMK X')
+        self._pismp_offer(app, identity=True)
+        app.pathway_confirmed_at = timezone.now()
+        app.save(update_fields=['pathway_confirmed_at'])
+        pathway = next(f for f in build_verdict(app) if f['fact'] == 'pathway')
+        item = next((it for it in pathway['unresolved'] if it['code'] == 'pathway_type_switch'), None)
+        self.assertIsNotNone(item)
+        self.assertEqual(item['params']['declared_pathway'], 'stpm')
+        self.assertEqual(item['params']['offer_pathway'], 'pismp')
+        self.assertEqual(item['params']['aliran_hint'], 'SK')   # no vernacular subject on file
+
     def test_no_offer_is_a_noop(self):
         app = self._app(pathway='stpm', track='sains_sosial', institution='SMK Asal')
         self.assertFalse(confirm_pathway(app))

@@ -63,6 +63,16 @@ class TestDetectors(SimpleTestCase):
                          'sains_sosial')
         self.assertEqual(op.infer_stpm_bidang(None, None), 'sains_sosial')
 
+    def test_infer_pismp_aliran(self):
+        import types
+        ns = types.SimpleNamespace
+        # Vernacular SPM subject → the matching school stream; else SK; safe on None.
+        self.assertEqual(op.infer_pismp_aliran(ns(grades={'bahasa_tamil': 'A', 'bm': 'B'})), 'SJKT')
+        self.assertEqual(op.infer_pismp_aliran(ns(grades={'b_cina': 'A'})), 'SJKC')
+        self.assertEqual(op.infer_pismp_aliran(ns(grades={'bm': 'A', 'math': 'A'})), 'SK')
+        self.assertEqual(op.infer_pismp_aliran(ns(stream_subjects=['bahasa_tamil'])), 'SJKT')
+        self.assertEqual(op.infer_pismp_aliran(None), 'SK')
+
     def test_canonical_pre_u_course(self):
         self.assertEqual(op.canonical_pre_u_course('matric'), 'Program Matrikulasi')
         self.assertEqual(op.canonical_pre_u_course('stpm'), 'Tingkatan Enam')

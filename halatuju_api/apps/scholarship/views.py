@@ -1356,9 +1356,11 @@ class ResolutionItemResolveView(APIView):
             from .income_engine import pension_claim
             item.params = {**(item.params or {}), 'pension_claim': pension_claim(text)}
             item.save(update_fields=['params'])
-        # The pathway confirmation is the one 'confirm' that also WRITES state: the
+        # The pathway confirmations are the 'confirm' items that also WRITE state: the
         # student saying Yes settles their final chosen pathway (no human officer).
-        if item.code == 'pathway_confirm':
+        # pathway_type_switch (TD-161) shares the handler — confirm_pathway also adopts the
+        # offer's TYPE when it differs from the declaration (STPM → PISMP, #43).
+        if item.code in ('pathway_confirm', 'pathway_type_switch'):
             from .services import confirm_pathway
             confirm_pathway(item.application)
         return Response(ResolutionItemSerializer(item).data)

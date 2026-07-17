@@ -1153,6 +1153,23 @@ def confirm_pathway(application):
                 cp_std['institution'] = inst
             application.chosen_programme = cp_std   # chosen_programme already in update_fields
 
+    # TD-161: reconcile the pathway TYPE. confirm_pathway writes the programme but never the type;
+    # a genuine offer of a DIFFERENT type than declared means the student is switching pathway
+    # (#43: STPM → PISMP). Adopt the offer's detected type and drop the now-irrelevant pre-U
+    # stream + school, so the record stops contradicting itself — chosen_pathway had stayed on the
+    # ORIGINAL declaration, misclassifying funding. Same-type confirms are a no-op here.
+    offer_type = op.detect_pathway_type(prog, chk['institution'])
+    if offer_type and op.pathway_family(offer_type) != op.pathway_family(application.chosen_pathway or ''):
+        application.chosen_pathway = offer_type
+        if 'chosen_pathway' not in update_fields:
+            update_fields.append('chosen_pathway')
+        if not op.is_pre_u(offer_type):
+            for _f in ('pre_u_track', 'pre_u_institution'):
+                if (getattr(application, _f) or '').strip():
+                    setattr(application, _f, '')
+                    if _f not in update_fields:
+                        update_fields.append(_f)
+
     application.save(update_fields=update_fields)
     return True
 

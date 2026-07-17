@@ -463,11 +463,14 @@ def sync_check2_queries(application):
     return application.resolution_items.filter(source='check2', status='open')
 
 
-# The pathway STUDENT queries mirrored from the verdict — both student-visible (source='check2', NOT
+# The pathway STUDENT queries mirrored from the verdict — all student-visible (source='check2', NOT
 # in resolution.RESOLUTION_SPECS, so they never become a hidden 'system' item): 'pathway_confirm'
 # (one-tap "is this where you're going?") + 'pathway_undeclared' (an ambiguous offer we can't pin —
-# the student picks their exact course on the profile page). code → kind. Owner 2026-07-15.
-_PATHWAY_QUERY_KINDS = {'pathway_confirm': 'confirm', 'pathway_undeclared': 'explanation'}
+# the student picks their exact course on the profile page) + 'pathway_type_switch' (TD-161: the
+# offer is a different pathway TYPE than declared — confirm the switch; Yes → confirm_pathway adopts
+# the type). code → kind. Owner 2026-07-15 / 2026-07-18.
+_PATHWAY_QUERY_KINDS = {'pathway_confirm': 'confirm', 'pathway_undeclared': 'explanation',
+                        'pathway_type_switch': 'confirm'}
 
 
 def _sync_pathway_confirm(application, existing, now):

@@ -777,6 +777,28 @@ def _verdict_pathway(application):
     elif prog or inst:
         evidence.append(_item('offer_programme', institution=inst, programme=prog))
 
+    # TD-161: a genuine offer of a DIFFERENT pathway TYPE than the student declared. The prior
+    # offer-confirm wrote chosen_programme but never chosen_pathway (confirm_pathway doesn't), so a
+    # student who declared STPM and confirmed a PISMP offer (#43) is left classified STPM. Ask them
+    # to confirm the switch — this fires EVEN after pathway_confirmed_at (an un-confirmed clash is
+    # the existing pathway_confirm path below). Genuine official offers ONLY: a fake / suspect /
+    # private offer is already flagged and is not a real pathway to switch INTO. On Yes,
+    # confirm_pathway (the same handler) adopts the new type + drops the stale pre-U stream. For a
+    # PISMP switch the offer letter never states the aliran, so carry a picker default (inferred
+    # from the student's SPM vernacular subject) for the profile Aliran/Bidang hand-off.
+    from .pathway_engine import offer_official_status
+    from . import offer_pathway as _op
+    declared_type = (application.chosen_pathway or '').strip().lower()
+    offer_type = _op.detect_pathway_type(prog, inst)
+    if (confirmed and declared_type and offer_type
+            and _op.pathway_family(declared_type) != _op.pathway_family(offer_type)
+            and offer_official_status(offer) == 'genuine'):
+        sw = {'programme': prog, 'institution': inst,
+              'declared_pathway': declared_type, 'offer_pathway': offer_type}
+        if offer_type == 'pismp':
+            sw['aliran_hint'] = _op.infer_pismp_aliran(getattr(application, 'profile', None))
+        unresolved.append(_item('pathway_type_switch', **sw))
+
     # The offer names a genuinely different place/field than declared → a RED Pathway chip + the
     # confirm query (Check-2 backstop; record realigns on Yes). Suppressed once the student confirms.
     if chk['pathway'] == 'mismatch' and not confirmed:
