@@ -542,13 +542,19 @@ defended at three layers + a repair sweep:**
 - **Repair:** `repair_chosen_programme.propose_repair` corruption signature extended to a clause-number
   institution/course (re-reads STORED fields only, never re-OCRs).
 - +6 unit/DB tests (`test_offer_pathway.TestClauseNumberGuard` + autofill); **2697 scholarship pytest**.
-- **▶ OWNER / DATA (live, via Supabase MCP — do NOT re-run #47, deterministic re-produces the junk):**
-  restore doc 1825 `vision_fields.fields` → institution "KOLEJ TINGKATAN ENAM SRI ISTANA" / stream
-  "SAINS SOSIAL", and #47 `chosen_programme` → "Tingkatan Enam" @ "Kolej Tingkatan Enam Sri Istana";
-  cohort-scan `applicant_documents` for other clause-number institution/stream rows;
-  `repair_chosen_programme --apply` (or MCP) for any already-stored cases. Prefer
-  `backfill_offer_pathways --apply` over cockpit Re-run for remaining stale blanks (Re-run's
-  re-extraction caused this regression).
+- **▶ DATA (DONE 2026-07-17, via Supabase MCP):** cohort-scan found #47 (doc 1825) the ONLY affected
+  row; restored doc 1825 `vision_fields.fields` → institution "KOLEJ TINGKATAN ENAM SRI ISTANA" /
+  stream "SAINS SOSIAL", and #47 `chosen_programme` → "Tingkatan Enam" @ "Kolej Tingkatan Enam Sri
+  Istana" (reporting_date 2026-06-08 kept); re-scan = 0 rows. Prefer `backfill_offer_pathways --apply`
+  over cockpit Re-run for remaining stale blanks (Re-run's re-extraction caused this regression).
+- **▶ ROOT CAUSE (owner-diagnosed): image SKEW.** #47 is a phone photo tilted a few degrees; Vision's
+  flattened line-grouping snapped a left-margin clause number onto the label's line. #99 (same
+  template, upright scan) read fine with the same parser — the fault is per-image OCR reading order,
+  not the template. The clause-number guard makes skewed offers CORRECT (defer to Gemini); the
+  POSITIVE fix (let the deterministic path succeed on skewed photos, reusing the slip parser's
+  positional/de-rotation machinery) is scoped in
+  `docs/plans/2026-07-17-offer-positional-parser-brief.md` — PROPOSED, own sprint, gated on a
+  real-OCR capture batch from the live service. Optional; not urgent (guard holds the line).
 
 **✅ SHIPPED 2026-07-17 — Offer-extraction root cause + sponsor card data fix (upstream-first)**
 (NO migration; brief `docs/plans/2026-07-16-sponsor-card-data-fix-brief.md`; retro
