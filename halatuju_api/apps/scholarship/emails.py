@@ -2886,10 +2886,13 @@ def send_payment_run_email(run):
         'Thank you,\n'
         'The BrightPath Bursary Team'
     )
+    # Owner 2026-07-17 (approver's ask): CC the countersigning org admin so the
+    # organisation holds its own copy of exactly what was sent to Vircle.
+    cc = [e for e in [(run.org_admin_signed_email or '').strip()] if e]
     try:
         msg = EmailMessage(
             subject=f'BrightPath Bursary — payment instruction {run.reference} ({month})',
-            body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient])
+            body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient], cc=cc)
         msg.attach(f'{run.reference}.csv', sheets.payment_csv_text(run), 'text/csv')
         msg.send()
         return True

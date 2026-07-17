@@ -403,6 +403,8 @@ class TestSignOff(TestCase):
         msg = vircle[0]
         self.assertIn('payment instruction', msg.subject)
         self.assertIn('Suresh Thiru', msg.body)
+        # Owner 2026-07-17: the countersigning approver is CC'd on the Vircle instruction.
+        self.assertEqual(msg.cc, ['approver@x.com'])
         fname, content, mime = msg.attachments[0]
         self.assertEqual(fname, f'{run.reference}.csv')
         self.assertEqual(mime, 'text/csv')
