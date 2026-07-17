@@ -1,4 +1,4 @@
-import { daysUntil, countdown, inAmountBucket, rmWhole } from './poolCard'
+import { daysUntil, countdown, rmWhole } from './poolCard'
 
 describe('rmWhole', () => {
   it('drops decimals and groups thousands', () => {
@@ -42,21 +42,3 @@ describe('countdown', () => {
   })
 })
 
-describe('inAmountBucket', () => {
-  it('empty bucket matches everything', () => {
-    expect(inAmountBucket('3000', '')).toBe(true)
-    expect(inAmountBucket(null, '')).toBe(true)
-  })
-  it('ranges', () => {
-    expect(inAmountBucket('1500', 'lt2000')).toBe(true)
-    expect(inAmountBucket('2000', 'lt2000')).toBe(false)
-    expect(inAmountBucket('2000', '2000to3000')).toBe(true)
-    expect(inAmountBucket('3000', '2000to3000')).toBe(true)
-    expect(inAmountBucket('3001', '2000to3000')).toBe(false)
-    expect(inAmountBucket('3500', 'gt3000')).toBe(true)
-    expect(inAmountBucket('3000', 'gt3000')).toBe(false)
-  })
-  it('non-numeric never matches a real bucket', () => {
-    expect(inAmountBucket(null, 'lt2000')).toBe(false)
-  })
-})

@@ -91,7 +91,7 @@ export default function StudentDetailPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={fieldImageUrl(detail.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <span className="absolute bottom-2 left-4 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-gray-900 shadow-sm">{detail.ref}</span>
+                <span className="absolute bottom-2 left-4 rounded-md bg-white/90 px-2.5 py-0.5 text-xs font-bold text-gray-900 shadow-sm">{detail.ref}</span>
               </div>
               <div className="p-6">
                 <div className="flex flex-wrap gap-1.5">

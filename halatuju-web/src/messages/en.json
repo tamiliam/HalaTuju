@@ -360,10 +360,7 @@
     "overMonths": "over {months} months",
     "coversLabel": "Covers",
     "privacyNote": "You'll receive semester progress updates. Personal details are never shared.",
-    "allAmounts": "All amounts",
-    "amountLt2000": "Under RM2,000",
-    "amount2000to3000": "RM2,000–RM3,000",
-    "amountGt3000": "Over RM3,000"
+    "allAmounts": "All amounts"
   },
   "sponsorLanding": {
     "nav": {
@@ -3396,7 +3393,6 @@
       "guardianLabel": "Guardian",
       "guardianPhone": "{role} phone",
       "siblingsLegacyNote": "legacy total — split unknown, confirm at interview",
-      "chosenPathway": "Chosen pathway",
       "chosenProgramme": "Chosen programme",
       "reportingDate": "Reporting date",
       "verified": {
@@ -3415,8 +3411,7 @@
         "declaredNote": "Declared: {value}",
         "rosterNote": "Roster counts {count} people"
       },
-      "preUTrack": "Pre-U track",
-      "preUInstitution": "Pre-U institution",
+      "institution": "Institution",
       "pathwaysConsidered": "Pathways considered",
       "topChoices": "Top course choices",
       "uncertaintyReasons": "Still-deciding reasons",

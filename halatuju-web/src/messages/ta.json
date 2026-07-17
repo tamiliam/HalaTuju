@@ -360,10 +360,7 @@
     "overMonths": "{months} மாதங்களுக்கு",
     "coversLabel": "உள்ளடக்கியது",
     "privacyNote": "ஒவ்வொரு செமஸ்டர் முன்னேற்ற புதுப்பிப்புகளையும் நீங்கள் பெறுவீர்கள். தனிப்பட்ட விவரங்கள் ஒருபோதும் பகிரப்படாது.",
-    "allAmounts": "அனைத்து தொகைகள்",
-    "amountLt2000": "RM2,000-க்கு கீழ்",
-    "amount2000to3000": "RM2,000–RM3,000",
-    "amountGt3000": "RM3,000-க்கு மேல்"
+    "allAmounts": "அனைத்து தொகைகள்"
   },
   "sponsorLanding": {
     "nav": {
@@ -3396,7 +3393,6 @@
       "guardianLabel": "பாதுகாவலர்",
       "guardianPhone": "{role} தொலைபேசி",
       "siblingsLegacyNote": "பழைய மொத்தம் — பிரிவு தெரியவில்லை, நேர்காணலில் உறுதிப்படுத்தவும்",
-      "chosenPathway": "தேர்ந்த பாதை",
       "chosenProgramme": "தேர்ந்த நிரல்",
       "reportingDate": "சேரும் தேதி",
       "verified": {
@@ -3415,8 +3411,7 @@
         "declaredNote": "அறிவிக்கப்பட்டது: {value}",
         "rosterNote": "பட்டியல் {count} பேரைக் கணக்கிடுகிறது"
       },
-      "preUTrack": "Pre-U பிரிவு",
-      "preUInstitution": "Pre-U நிறுவனம்",
+      "institution": "நிறுவனம்",
       "pathwaysConsidered": "பரிசீலித்த பாதைகள்",
       "topChoices": "சிறந்த படிப்புத் தேர்வுகள்",
       "uncertaintyReasons": "இன்னும் முடிவு செய்யாத காரணங்கள்",

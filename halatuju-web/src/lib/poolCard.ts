@@ -30,15 +30,3 @@ export function rmWhole(v: string | number | null | undefined): string {
   return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
-/** Amount-range buckets for the browse filter. Values are whole-ringgit thresholds. */
-export type AmountBucket = '' | 'lt2000' | '2000to3000' | 'gt3000'
-
-export function inAmountBucket(amount: string | null | undefined, bucket: AmountBucket): boolean {
-  if (!bucket) return true
-  if (amount === null || amount === undefined || String(amount).trim() === '') return false
-  const n = Number(amount)
-  if (!Number.isFinite(n)) return false
-  if (bucket === 'lt2000') return n < 2000
-  if (bucket === '2000to3000') return n >= 2000 && n <= 3000
-  return n > 3000
-}

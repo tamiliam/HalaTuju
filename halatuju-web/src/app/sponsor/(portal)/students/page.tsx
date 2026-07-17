@@ -4,10 +4,14 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
-import { poolFacets } from '@/lib/sponsorFilter'
+import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { fieldImageUrl } from '@/lib/fieldImage'
-import { countdown, inAmountBucket, rmWhole, type AmountBucket } from '@/lib/poolCard'
+import { countdown, rmWhole } from '@/lib/poolCard'
 import type { SponsorPoolCard } from '@/lib/api'
+
+// Distinct amount → its whole-ringgit key ("2000.00" -> "2000"); '' when not numeric.
+const amtKey = (v: string | null | undefined) =>
+  v != null && Number.isFinite(Number(v)) ? String(Math.round(Number(v))) : ''
 
 /**
  * Students — the anonymised marketplace (image-led cards). Browse + filter the pool
@@ -15,20 +19,29 @@ import type { SponsorPoolCard } from '@/lib/api'
  * is inviolate: the card shows field artwork + region + programme, never an identity.
  */
 export default function StudentsPage() {
-  const { t } = useT()
+  const { t, locale } = useT()
+  const { getFieldName } = useFieldTaxonomy(locale)
   const { pool } = useSponsorPortal()
 
   const [field, setField] = useState('')
   const [state, setState] = useState('')
-  const [amount, setAmount] = useState<AmountBucket>('')
+  const [amount, setAmount] = useState('')
 
   const rows = pool || []
-  const facets = useMemo(() => poolFacets(rows), [rows])
+  const facets = useMemo(() => {
+    const uniq = (xs: string[]) => Array.from(new Set(xs.filter(Boolean)))
+    return {
+      fields: uniq(rows.map((r) => r.field)).sort(),
+      states: uniq(rows.map((r) => r.state)).sort(),
+      // Only the amounts actually present (currently RM1,000 / RM2,000 / RM3,000).
+      amounts: uniq(rows.map((r) => amtKey(r.award_amount))).sort((a, b) => Number(a) - Number(b)),
+    }
+  }, [rows])
   const shown = useMemo(
     () => rows.filter((r) =>
       (!field || r.field === field) &&
       (!state || r.state === state) &&
-      inAmountBucket(r.award_amount, amount)),
+      (!amount || amtKey(r.award_amount) === amount)),
     [rows, field, state, amount],
   )
 
@@ -46,17 +59,15 @@ export default function StudentsPage() {
       <div className="flex flex-wrap gap-2 mt-5">
         <select value={field} onChange={(e) => setField(e.target.value)} className={selectCls}>
           <option value="">{t('sponsorPortal.students.allFields')}</option>
-          {facets.fields.map((f) => <option key={f} value={f}>{f}</option>)}
+          {facets.fields.map((f) => <option key={f} value={f}>{getFieldName(f) || f}</option>)}
         </select>
         <select value={state} onChange={(e) => setState(e.target.value)} className={selectCls}>
           <option value="">{t('sponsorPortal.students.allStates')}</option>
           {facets.states.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select value={amount} onChange={(e) => setAmount(e.target.value as AmountBucket)} className={selectCls}>
+        <select value={amount} onChange={(e) => setAmount(e.target.value)} className={selectCls}>
           <option value="">{t('sponsorPool.allAmounts')}</option>
-          <option value="lt2000">{t('sponsorPool.amountLt2000')}</option>
-          <option value="2000to3000">{t('sponsorPool.amount2000to3000')}</option>
-          <option value="gt3000">{t('sponsorPool.amountGt3000')}</option>
+          {facets.amounts.map((a) => <option key={a} value={a}>RM{rmWhole(a)}</option>)}
         </select>
       </div>
 
@@ -107,7 +118,7 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
             ✓ {t('sponsorPool.enrolmentVerified')}
           </span>
         )}
-        <span className="absolute bottom-2 left-2 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-gray-900 shadow-sm">
+        <span className="absolute bottom-2 left-2 rounded-md bg-white/90 px-2.5 py-0.5 text-xs font-bold text-gray-900 shadow-sm">
           {s.ref}
         </span>
       </div>
@@ -139,7 +150,7 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
         {/* Footer: amount + CTA */}
         <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
           {s.award_amount ? <span className="text-xl font-bold text-gray-900">RM{rmWhole(s.award_amount)}</span> : <span />}
-          <span className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>
+          <span className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>
         </div>
       </div>
     </Link>

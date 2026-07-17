@@ -360,10 +360,7 @@
     "overMonths": "selama {months} bulan",
     "coversLabel": "Meliputi",
     "privacyNote": "Anda akan menerima kemas kini kemajuan setiap semester. Butiran peribadi tidak sekali-kali dikongsi.",
-    "allAmounts": "Semua jumlah",
-    "amountLt2000": "Bawah RM2,000",
-    "amount2000to3000": "RM2,000–RM3,000",
-    "amountGt3000": "Melebihi RM3,000"
+    "allAmounts": "Semua jumlah"
   },
   "sponsorLanding": {
     "nav": {
@@ -3396,7 +3393,6 @@
       "guardianLabel": "Penjaga",
       "guardianPhone": "Telefon {role}",
       "siblingsLegacyNote": "jumlah lama — pecahan tidak diketahui, sahkan semasa temu duga",
-      "chosenPathway": "Laluan dipilih",
       "chosenProgramme": "Program dipilih",
       "reportingDate": "Tarikh lapor diri",
       "verified": {
@@ -3415,8 +3411,7 @@
         "declaredNote": "Diisytiharkan: {value}",
         "rosterNote": "Senarai mencatat {count} orang"
       },
-      "preUTrack": "Trek Pra-U",
-      "preUInstitution": "Institusi Pra-U",
+      "institution": "Institusi",
       "pathwaysConsidered": "Laluan dipertimbang",
       "topChoices": "Pilihan kursus teratas",
       "uncertaintyReasons": "Sebab masih memutuskan",
