@@ -51,6 +51,10 @@ class TestConfirmPathwayUpdatesPreU(_Base):
         self.assertEqual(app.pre_u_track, 'sains')                              # clash resolved
         self.assertEqual(app.chosen_programme['source'], 'offer_letter_confirmed')
         self.assertIsNotNone(app.pathway_confirmed_at)
+        # chosen_programme is STANDARDISED like the silent auto-settle — canonical course name +
+        # cleaned institution, NOT the raw "Tingkatan Enam Semester 1" / ALL-CAPS the offer prints.
+        self.assertEqual(app.chosen_programme['course_name'], 'Tingkatan Enam')
+        self.assertEqual(app.chosen_programme['institution'], 'Kolej Tingkatan Enam Gombak')
 
     def test_matric_confirm_updates_track_and_institution(self):
         # Declared a genuinely different school; confirming the Selangor matric offer updates both
@@ -64,6 +68,9 @@ class TestConfirmPathwayUpdatesPreU(_Base):
         self.assertEqual(app.pre_u_track, 'perakaunan')
         self.assertIn('Selangor', app.pre_u_institution)
         self.assertNotEqual(app.pre_u_institution, 'SMK Salah (wrong)')
+        # chosen_programme standardised: canonical name + the same cleaned institution.
+        self.assertEqual(app.chosen_programme['course_name'], 'Program Matrikulasi')
+        self.assertEqual(app.chosen_programme['institution'], app.pre_u_institution)
 
     def test_no_offer_is_a_noop(self):
         app = self._app(pathway='stpm', track='sains_sosial', institution='SMK Asal')

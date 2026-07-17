@@ -1137,6 +1137,21 @@ def confirm_pathway(application):
         if stream and stream != (application.pre_u_track or ''):
             application.pre_u_track = stream
             update_fields.append('pre_u_track')
+        # Standardise chosen_programme to match the SILENT auto-settle (canonical course name +
+        # the same cleaned institution), so a CONFIRMED pre-U pick reads identically to an
+        # auto-settled one — never the raw "Tingkatan Enam Semester 1" / ALL-CAPS school the offer
+        # prints (owner 2026-07-17; #119/#120 vs #103). The whole-doc write above kept the raw text.
+        # Gate on the OFFER's own detected type (like autofill), NOT the declared pathway: a pre-U
+        # DECLARED pathway confirmed against a non-pre-U offer (#43: stpm declared, PISMP offer — the
+        # TD-161 mismatch) must keep its real programme name, never be forced to "Tingkatan Enam".
+        if op.is_pre_u(op.detect_pathway_type(prog, chk['institution'])):
+            canon = op.canonical_pre_u_course(pw)
+            cp_std = dict(application.chosen_programme) if isinstance(application.chosen_programme, dict) else {}
+            if canon:
+                cp_std['course_name'] = canon
+            if inst:
+                cp_std['institution'] = inst
+            application.chosen_programme = cp_std   # chosen_programme already in update_fields
 
     application.save(update_fields=update_fields)
     return True
