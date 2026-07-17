@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit Academic box: tertiary Institution tick + profile-sync clobber guard — 2026-07-18
+
+Two owner-flagged follow-ups off the Academic-box redesign. NO migration; web + api.
+
+- **Added — verified tick on the tertiary Institution row** (poly / UA diploma / asasi / PISMP).
+  The row only ticked for pre-U pathways (matric/STPM) via `institution_status` (offer vs
+  `pre_u_institution`). A tertiary student shows `chosen_programme.institution` and has a blank
+  `pre_u_institution`, so that dimension was always `unknown` → no tick even with a genuine
+  matching offer. New `chosen_institution_status` on `pathway_engine.student_offer_check` (offer
+  institution vs the SHOWN `chosen_programme.institution`) drives a new generic `institution`
+  field in `fieldVerification.ts`; it ticks on a usable genuine offer whose institution matches
+  AND isn't an overall pathway mismatch — the same red-chip guard as `preUInstitution`. The
+  cockpit uses `preUInstitution` for pre-U, the new `institution` tick for tertiary.
+- **Fixed — a /profile edit could wipe an offer-confirmed programme** (#117 clobber). The
+  family/pathway two-way sync copied `chosen_programme` field-for-field from the profile onto the
+  open application whenever any pathway field changed, so a student editing an unrelated pre-U
+  field with a blank profile `chosen_programme` overwrote the app's offer/officer-confirmed value
+  with `{}`. `family.copy_pathway` now routes `chosen_programme` through a provenance guard
+  (`_should_overwrite_chosen_programme`): an empty value never overwrites a populated one, and a
+  student-sourced value never overwrites a confirmed one (`offer_letter_auto`/
+  `offer_letter_confirmed`/`repair_chosen_programme`/`officer_interview`). All other pathway
+  fields sync as before; the closed-status freeze is unchanged.
+- Tests: +3 backend (`chosen_institution_status`) + 4 backend (clobber guard) + 2 jest
+  (tertiary tick). Commits `e8db600c` (tick) / `8c3c7572` (guard).
+
 ## Sponsor card lines: Pre-U track + single-source institution — 2026-07-17
 
 Owner-directed follow-up to the card data fix, per the desired 4-line card (code / programme

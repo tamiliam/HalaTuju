@@ -522,7 +522,31 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-17)
+## Next Sprint (as of 2026-07-18)
+
+**✅ SHIPPED (code — owner gates the deploy) 2026-07-18 — Tertiary Institution tick + profile-sync
+clobber guard.** NO migration; web + api; push = deploy (held for owner). Two owner-flagged
+follow-ups off the Academic-box redesign (commits `e8db600c` / `8c3c7572`; retro
+`docs/retrospective-2026-07-18-tertiary-tick-clobber-guard.md`; decision ×1; lesson ×1).
+- **Verified tick on the TERTIARY Institution row** (poly / UA diploma / asasi / PISMP). It only
+  ticked for pre-U (matric/STPM) via `institution_status` (offer vs `pre_u_institution`); a
+  tertiary student shows `chosen_programme.institution` with a blank `pre_u_institution` → always
+  `unknown` → no tick. New `chosen_institution_status` on `pathway_engine.student_offer_check`
+  (offer institution vs the SHOWN `chosen_programme.institution`) drives a generic `institution`
+  field in `fieldVerification.ts`; ticks on a usable genuine offer that matches AND isn't an
+  overall pathway mismatch (same red-chip guard as `preUInstitution`). NB gating on
+  `pathway === 'match'` would NOT work — `_declared_pathway` ignores an `offer_letter_auto`
+  chosen_programme, so a poly student reads `pathway = 'unknown'`.
+- **`family.copy_pathway` clobber guard** — the profile↔application two-way sync copied
+  `chosen_programme` field-for-field on any pathway edit, so a student's unrelated pre-U edit wiped
+  the app's offer/officer-confirmed programme with `{}` (#117). It now routes `chosen_programme`
+  through `_should_overwrite_chosen_programme` (empty never overwrites populated; student-sourced
+  never overwrites `CONFIRMED_CP_SOURCES` = offer_letter_auto/offer_letter_confirmed/
+  repair_chosen_programme/officer_interview). Other pathway fields sync unchanged.
+- **2715 scholarship pytest + 585 jest.** **▶ AT DEPLOY:** push (api rebuild = pathway_engine +
+  family; web rebuild); code-only, no migrate-first. Also carried in on origin/main since the last
+  close: the Academic-box unified layout (`53b09a3e`, which fixes the live raw-i18n-key bug) is
+  already pushed — confirm on prod.
 
 **✅ SHIPPED (code — owner gates the deploy) 2026-07-17 — Offer parser: reject numbered-clause tokens
 as data (#47).** NO migration; api-only; push = deploy (held for owner). Off #47 (TAMOTHARAN, STPM): a
