@@ -1194,8 +1194,10 @@ def _pick_standout(cards):
     return best
 
 
-def _sponsor_subject(subjects, cards, lang):
-    n = len(cards)
+def _sponsor_subject(subjects, cards, lang, count=None):
+    # ``count`` is the FULL number of students this email is about (the subject reflects the
+    # whole batch even when the body is capped); the standout hook is drawn from the shown cards.
+    n = count if count is not None else len(cards)
     subject = subjects[lang]['one' if n == 1 else 'many'].format(n=n)
     st = _pick_standout(cards)
     if st and (st.get('academic') or '').strip() and (st.get('state') or '').strip():
@@ -1271,12 +1273,13 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     freq_word = _SPONSOR_FREQ_WORD.get(freq, {}).get(lang, freq)
     tax = _tax_name_map()
-    cards = list(cards)[:_sponsor_email_max_cards()]   # cap the email to 5; the button shows the rest
-    n = len(cards)
+    all_cards = list(cards)
+    full_n = len(all_cards)                            # the whole batch — drives the subject/intro count
+    cards = all_cards[:_sponsor_email_max_cards()]     # cap the BODY to 5; the button shows the rest
     greeting = (_SPONSOR_GREETING[lang].format(name=name.strip())
                 if (name or '').strip() else _SPONSOR_GREETING_GENERIC[lang])
-    intro = intro_map[lang]['one' if n == 1 else 'many']
-    subject = _sponsor_subject(subjects, cards, lang)
+    intro = intro_map[lang]['one' if full_n == 1 else 'many']
+    subject = _sponsor_subject(subjects, cards, lang, count=full_n)
     signoff = _SPONSOR_SIGNOFF[lang]
     cta_url = f'{frontend}/sponsor/students'          # the pool itself, not the portal landing
     account_url = f'{frontend}/sponsor/account'
