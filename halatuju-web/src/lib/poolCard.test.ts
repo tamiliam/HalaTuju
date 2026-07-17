@@ -1,4 +1,17 @@
-import { daysUntil, countdown, inAmountBucket } from './poolCard'
+import { daysUntil, countdown, inAmountBucket, rmWhole } from './poolCard'
+
+describe('rmWhole', () => {
+  it('drops decimals and groups thousands', () => {
+    expect(rmWhole('2000.00')).toBe('2,000')
+    expect(rmWhole('3000')).toBe('3,000')
+    expect(rmWhole(500)).toBe('500')
+    expect(rmWhole('12345.67')).toBe('12,346')
+  })
+  it('passes non-numeric through', () => {
+    expect(rmWhole(null)).toBe('')
+    expect(rmWhole('abc')).toBe('abc')
+  })
+})
 
 const NOW = new Date(2026, 6, 17) // 17 Jul 2026 (local)
 

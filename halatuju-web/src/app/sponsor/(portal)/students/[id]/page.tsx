@@ -9,7 +9,7 @@ import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { fundStudent, getSponsorPoolDetail, getSponsorWallet, type SponsorPoolDetail } from '@/lib/api'
 import { fieldImageUrl } from '@/lib/fieldImage'
-import { countdown } from '@/lib/poolCard'
+import { countdown, rmWhole } from '@/lib/poolCard'
 
 // Backend fund error code → localised message key.
 const FUND_ERR_KEY: Record<string, string> = {
@@ -95,8 +95,8 @@ export default function StudentDetailPage() {
               </div>
               <div className="p-6">
                 <div className="flex flex-wrap gap-1.5">
-                  {detail.state && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.state}</span>}
-                  {detail.academic && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.academic}</span>}
+                  {detail.state && <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.state}</span>}
+                  {detail.academic && <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.academic}</span>}
                 </div>
                 <h1 className="mt-2 text-xl font-bold text-gray-900 leading-snug">{detail.course || detail.field || detail.ref}</h1>
                 {detail.institution && <p className="text-sm text-gray-500 mt-0.5">{detail.institution}</p>}
@@ -137,7 +137,7 @@ export default function StudentDetailPage() {
           <div className="bg-white rounded-2xl border p-6 h-fit space-y-3">
             {detail.award_amount && (
               <div>
-                <p className="text-3xl font-bold text-gray-900">RM {detail.award_amount}</p>
+                <p className="text-3xl font-bold text-gray-900">RM{rmWhole(detail.award_amount)}</p>
                 {detail.programme_months != null && (
                   <p className="text-xs text-gray-500">{t('sponsorPool.overMonths').replace('{months}', String(detail.programme_months))}</p>
                 )}

@@ -6,7 +6,7 @@ import { useT } from '@/lib/i18n'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { poolFacets } from '@/lib/sponsorFilter'
 import { fieldImageUrl } from '@/lib/fieldImage'
-import { countdown, inAmountBucket, type AmountBucket } from '@/lib/poolCard'
+import { countdown, inAmountBucket, rmWhole, type AmountBucket } from '@/lib/poolCard'
 import type { SponsorPoolCard } from '@/lib/api'
 
 /**
@@ -88,7 +88,8 @@ export default function StudentsPage() {
 function PoolCard({ s }: { s: SponsorPoolCard }) {
   const { t } = useT()
   const cd = countdown(s.reporting_date)
-  const institutionLine = [s.institution, s.state].filter(Boolean).join(' - ')
+  // Institution only — the home state next to it misleads (it's not where the institution is).
+  const institutionLine = s.institution
 
   return (
     <Link href={`/sponsor/students/${s.id}`}
@@ -119,9 +120,9 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
         {institutionLine && <p className="text-xs text-gray-500 mt-0.5">{institutionLine}</p>}
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {s.academic && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{s.academic}</span>}
+          {s.academic && <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{s.academic}</span>}
           {s.funding_categories.slice(0, 3).map((c) => (
-            <span key={c} className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">{c}</span>
+            <span key={c} className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">{c}</span>
           ))}
         </div>
 
@@ -137,7 +138,7 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
 
         {/* Footer: amount + CTA */}
         <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-          {s.award_amount ? <span className="text-xl font-bold text-gray-900">RM {s.award_amount}</span> : <span />}
+          {s.award_amount ? <span className="text-xl font-bold text-gray-900">RM{rmWhole(s.award_amount)}</span> : <span />}
           <span className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>
         </div>
       </div>

@@ -22,6 +22,14 @@ export function countdown(iso: string | null | undefined, now: Date = new Date()
   return { kind: 'many', days: d }
 }
 
+/** Whole-ringgit with thousands grouping, no decimals: "2000.00" -> "2,000". */
+export function rmWhole(v: string | number | null | undefined): string {
+  if (v === null || v === undefined || String(v).trim() === '') return ''
+  const n = Number(v)
+  if (!Number.isFinite(n)) return String(v)
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
 /** Amount-range buckets for the browse filter. Values are whole-ringgit thresholds. */
 export type AmountBucket = '' | 'lt2000' | '2000to3000' | 'gt3000'
 
