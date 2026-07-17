@@ -84,7 +84,7 @@ export default function StudentDetailPage() {
   const CHECKS = ['checkIdentity', 'checkAcademic', 'checkPathway', 'checkFinancial'] as const
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-4xl">
       <Link href="/sponsor/students" className="text-sm text-blue-600 hover:underline">← {t('sponsorPool.back')}</Link>
 
       {unavailable ? (
@@ -92,8 +92,8 @@ export default function StudentDetailPage() {
       ) : detail === null ? (
         <p className="text-center text-gray-500 mt-12">{t('common.loading')}</p>
       ) : (
-        <div className="mt-4 grid lg:grid-cols-5 gap-5">
-          <div className="lg:col-span-3 space-y-4">
+        <div className="mt-4 grid lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 space-y-4">
             {/* Header card: slim banner strip + title + chips */}
             <div className="overflow-hidden rounded-2xl border bg-white">
               <div className="relative h-24">
@@ -142,7 +142,7 @@ export default function StudentDetailPage() {
           </div>
 
           {/* Sidebar action card */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border p-6 h-fit space-y-5">
+          <div className="bg-white rounded-2xl border p-6 h-fit space-y-5">
             {/* Support block */}
             <div>
               <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('sponsorPool.supportNeeded')}</p>
@@ -195,8 +195,8 @@ export default function StudentDetailPage() {
               )}
             </div>
 
-            {/* Facts */}
-            <dl className="border-t pt-4 space-y-2.5 text-sm">
+            {/* Facts — compact (smaller than the support block) */}
+            <dl className="border-t pt-4 space-y-2 text-xs">
               {detail.school && (
                 <div className="flex items-start justify-between gap-4">
                   <dt className="text-gray-500 shrink-0">{t('sponsorPool.secondarySchool')}</dt>
