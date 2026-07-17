@@ -332,6 +332,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # DOCUMENT-derived household income / itemised roster corroborate the student's stated income
     # and size? Non-mutating — a mismatch is flagged for the reviewer, never auto-applied.
     household_check = serializers.SerializerMethodField()
+    # Read-time institution fill for a multi-campus POLY diploma (see get_chosen_programme).
+    chosen_programme = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -391,6 +393,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # Plans redesign — surface the structured pathway plan for admin/coordinator
             'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
             'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
+            # NB chosen_programme is a SerializerMethodField (get_chosen_programme) — fills a
+            # blank POLY-diploma institution live from the offer (see the method).
             # S3: normalised (sortable) offer reporting date.
             'reporting_date',
             # Income wizard answers — drive the cockpit's route-aware income document panel.
@@ -552,6 +556,21 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'income': income_engine.household_income_reconciliation(obj),
             'size': size,
         }
+
+    def get_chosen_programme(self, obj):
+        """Serve the stored chosen_programme, but fill a BLANK institution for a multi-campus
+        POLY diploma from the student's live offer (the selection tree offers only a programme, so
+        the offer is the sole campus source — owner 2026-07-17). Read-time so it can't go stale
+        waiting for a re-run/backfill; catalogue-validated + poly-only in the helper, and it never
+        overwrites a non-blank institution. The write-side merge still fills the STORED value on
+        offer upload; this guarantees the cockpit is right even when that hasn't fired yet."""
+        from . import offer_pathway as op
+        cp = obj.chosen_programme if isinstance(obj.chosen_programme, dict) else {}
+        if (cp.get('course_id') or '').startswith('POLY-') and not (cp.get('institution') or '').strip():
+            inst = op.poly_institution_from_live_offer(obj)
+            if inst:
+                return {**cp, 'institution': inst}
+        return cp
 
     def get_interview_agenda(self, obj):
         """The interviewer's folded Check-3 agenda — anomalies + the 'needs interview' verdict

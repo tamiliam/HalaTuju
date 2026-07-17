@@ -453,3 +453,64 @@ class TestAutofillPathwayFromOffer(_Base):
         self.assertTrue(autofill_pathway_from_offer(app))
         app.refresh_from_db()
         self.assertEqual(app.chosen_programme['institution'], 'Politeknik Ungku Omar')
+
+
+class TestPolyInstitutionFromLiveOffer(_Base):
+    """Read-time poly-campus disambiguation (owner 2026-07-17): the cockpit serves a blank
+    poly-diploma institution filled LIVE from the offer, so display never waits on a re-run."""
+    def setUp(self):
+        # One POLY diploma at TWO campuses → catalogue_single_institution can't disambiguate;
+        # only the offer names the real one.
+        self.psp = Institution.objects.create(institution_id='psp', institution_name='Politeknik Seberang Perai',
+                                              type='Politeknik', state='Pulau Pinang')
+        self.puo = Institution.objects.create(institution_id='puo', institution_name='Politeknik Ungku Omar',
+                                              type='Politeknik', state='Perak')
+        c = Course.objects.create(course_id='POLY-DIP-049', course='Diploma Perakaunan', level='Diploma',
+                                  department='Commerce', field='Accounting', field_key=self.ft)
+        CourseInstitution.objects.create(course=c, institution=self.psp)
+        CourseInstitution.objects.create(course=c, institution=self.puo)
+
+    def _poly_app(self, **over):
+        cp = over.pop('chosen_programme', {'course_id': 'POLY-DIP-049', 'course_name': 'Diploma Perakaunan'})
+        return self._app(chosen_programme=cp, chosen_pathway='poly', pathway_certainty='sure', **over)
+
+    def test_resolves_valid_campus_from_offer(self):
+        app = self._poly_app()
+        self._offer(app, 'DAC - DIPLOMA PERAKAUNAN', 'POLITEKNIK SEBERANG PERAI')
+        self.assertEqual(op.poly_institution_from_live_offer(app), 'Politeknik Seberang Perai')
+
+    def test_non_poly_course_is_blank(self):
+        # A degree pick is out of scope — never fill (owner: BrightPath doesn't cover degrees).
+        app = self._app(chosen_programme={'course_id': 'UU6380001', 'course_name': 'Law'}, chosen_pathway='')
+        self._offer(app, 'SARJANA MUDA UNDANG-UNDANG', 'Universiti Utara Malaysia')
+        self.assertEqual(op.poly_institution_from_live_offer(app), '')
+
+    def test_no_offer_is_blank(self):
+        self.assertEqual(op.poly_institution_from_live_offer(self._poly_app()), '')
+
+    def test_wrong_person_offer_is_blank(self):
+        app = self._poly_app()
+        self._offer(app, 'DIPLOMA PERAKAUNAN', 'POLITEKNIK SEBERANG PERAI',
+                    name='SOMEONE ELSE', nric='990101010101')
+        self.assertEqual(op.poly_institution_from_live_offer(app), '')
+
+    def test_offer_campus_not_of_course_is_blank(self):
+        # Offer names a polytechnic that isn't a campus of THIS course → never contradict.
+        app = self._poly_app()
+        self._offer(app, 'DIPLOMA PERAKAUNAN', 'Politeknik Kota Bharu')
+        self.assertEqual(op.poly_institution_from_live_offer(app), '')
+
+    def test_serializer_fills_blank_poly_institution(self):
+        from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
+        app = self._poly_app()
+        self._offer(app, 'DAC - DIPLOMA PERAKAUNAN', 'POLITEKNIK SEBERANG PERAI')
+        cp = AdminApplicationDetailSerializer().get_chosen_programme(app)
+        self.assertEqual(cp['institution'], 'Politeknik Seberang Perai')
+
+    def test_serializer_preserves_non_blank_institution(self):
+        from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
+        app = self._poly_app(chosen_programme={'course_id': 'POLY-DIP-049',
+            'course_name': 'Diploma Perakaunan', 'institution': 'Politeknik Ungku Omar'})
+        self._offer(app, 'DAC - DIPLOMA PERAKAUNAN', 'POLITEKNIK SEBERANG PERAI')
+        cp = AdminApplicationDetailSerializer().get_chosen_programme(app)
+        self.assertEqual(cp['institution'], 'Politeknik Ungku Omar')   # never overwritten

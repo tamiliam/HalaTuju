@@ -155,6 +155,37 @@ def catalogue_institution(course_id: str, hint: str = '') -> str:
     return next(iter(matches)) if len(matches) == 1 else ''
 
 
+def poly_institution_from_live_offer(application):
+    """READ-TIME disambiguation of a POLY diploma's campus from the student's latest LIVE
+    genuine offer — the campus source of last resort for a multi-campus course whose stored
+    ``chosen_programme.institution`` is blank (the selection tree offers only a programme, so the
+    OFFER is the sole campus source — owner 2026-07-17). Mirrors the catalogue-validated logic the
+    write-side merge uses (``services.autofill_pathway_from_offer``) so display can never go stale
+    waiting for a re-run. POLY-scoped; returns the canonical catalogue campus, or '' when the pick
+    isn't a poly diploma / there's no offer / the offer names no valid campus of that course. A
+    non-blank stored institution is the caller's to protect — this only ever RESOLVES, never
+    overwrites. Read-only."""
+    from .models import ApplicantDocument
+    from .pathway_engine import student_offer_check
+    cp = application.chosen_programme if isinstance(getattr(application, 'chosen_programme', None), dict) else {}
+    cid = (cp.get('course_id') or '').strip()
+    if not cid.startswith('POLY-'):   # poly diplomas only (never a degree; owner scope)
+        return ''
+    offer = (ApplicantDocument.objects.filter(
+                application=application, doc_type='offer_letter', superseded_at__isnull=True)
+             .order_by('-uploaded_at').first())
+    if offer is None:
+        return ''
+    chk = student_offer_check(offer)
+    if chk.get('name') == 'mismatch' or chk.get('ic') == 'mismatch':
+        return ''   # not this student's letter — never adopt its campus
+    hint = (chk.get('institution') or '').strip()
+    # catalogue_institution validates the offer's campus IS one of this course's campuses
+    # (unique match) and returns the canonical catalogue casing — so a wrong/imprecise campus
+    # yields '' rather than a contradictory fill.
+    return catalogue_institution(cid, hint) if hint else ''
+
+
 # Pre-U virtual course ids in the recommender catalogue (the /course/<slug> pages) — the
 # single source of truth for matric colleges / STPM schools (linked via CourseInstitution).
 PREU_COURSE_SLUG = {
