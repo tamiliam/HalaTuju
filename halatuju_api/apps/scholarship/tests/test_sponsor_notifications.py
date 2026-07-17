@@ -159,10 +159,12 @@ class TestSponsorEmailContent(TestCase):
         self.assertNotIn('Perak', msg.body)                # state dropped from the card line
         self.assertIn('Politeknik Ungku Omar', msg.body)   # institution still shown
         self.assertIn('field-images/kejuruteraan.png', html)
+        # "See all students" links to the pool; "sponsor account" links to the account page.
+        self.assertIn('https://halatuju.xyz/sponsor/students', html)
+        self.assertIn('https://halatuju.xyz/sponsor/account', html)
+        self.assertIn('https://halatuju.xyz/sponsor/account', msg.body)   # plain-text bare URL
         # greeting carries the sponsor's name
         self.assertIn('Aisha', msg.body)
-        # no '—' placeholder anywhere (the rework dropped the em-dash separator too)
-        self.assertNotIn('—', msg.body)
 
     def test_singular_vs_plural_subject(self):
         from apps.scholarship.emails import send_sponsor_new_student_email
@@ -196,10 +198,14 @@ class TestSponsorEmailContent(TestCase):
                           award_amount=None, reporting_date=None, blurb='', field_image_slug='')
         send_sponsor_digest_email('s@x.com', [card], lang='en')
         msg, html = self._last()
-        self.assertNotIn('—', msg.body)
+        # Card-content checks on the card formatter itself (the body's intro/footer copy may
+        # legitimately contain an em-dash; the CARD never renders a '—' placeholder).
+        from apps.scholarship.emails import _sponsor_card_text, _tax_name_map
+        card_txt = _sponsor_card_text(card, 'en', 'https://halatuju.xyz', _tax_name_map())
+        self.assertNotIn('—', card_txt)
+        self.assertIn('Widgetry', card_txt)           # taxonomy display name, never 'zz_x'
+        self.assertNotIn('zz_x', card_txt)
         self.assertNotIn('\n\n\n', msg.body)          # no doubled blank lines from omitted facts
-        self.assertIn('Widgetry', msg.body)           # taxonomy display name, never 'zz_x'
-        self.assertNotIn('zz_x', msg.body)
         self.assertNotIn('<img', html)                # empty slug → no thumbnail
 
     def test_all_three_languages_render(self):

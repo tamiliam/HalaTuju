@@ -1069,29 +1069,30 @@ _SPONSOR_HOOK = {
 _SPONSOR_GREETING = {'en': 'Dear {name},', 'ms': 'Salam {name},', 'ta': 'அன்புள்ள {name},'}
 _SPONSOR_GREETING_GENERIC = {'en': 'Dear Sponsor,', 'ms': 'Salam Penaja,', 'ta': 'அன்புள்ள நிதியுதவியாளரே,'}
 _SPONSOR_NEW_INTRO = {
-    'en': {'one': 'A new anonymised student has joined the pool and is waiting for a sponsor:',
-           'many': 'New anonymised students have joined the pool and are waiting for a sponsor:'},
-    'ms': {'one': 'Seorang pelajar tanpa nama baharu telah menyertai kumpulan dan menunggu penaja:',
-           'many': 'Pelajar tanpa nama baharu telah menyertai kumpulan dan menunggu penaja:'},
-    'ta': {'one': 'ஒரு புதிய அடையாளம் தெரியாத மாணவர் சேர்ந்து நிதியுதவியாளருக்காகக் காத்திருக்கிறார்:',
-           'many': 'புதிய அடையாளம் தெரியாத மாணவர்கள் சேர்ந்து நிதியுதவியாளருக்காகக் காத்திருக்கிறார்கள்:'},
+    'en': {'one': 'A student is now ready for a sponsor — a young person from a low-income family who has done well despite the odds:',
+           'many': 'More students are now ready for a sponsor — young people from low-income families who have done well despite the odds:'},
+    'ms': {'one': 'Seorang pelajar kini bersedia untuk penaja — anak muda daripada keluarga berpendapatan rendah yang berjaya walaupun mencabar:',
+           'many': 'Beberapa pelajar kini bersedia untuk penaja — anak muda daripada keluarga berpendapatan rendah yang berjaya walaupun mencabar:'},
+    'ta': {'one': 'ஒரு மாணவர் இப்போது நிதியுதவியாளருக்குத் தயாராக உள்ளார் — சவால்களுக்கு மத்தியிலும் சிறந்து விளங்கிய, குறைந்த வருமானக் குடும்பத்தைச் சேர்ந்த ஓர் இளையவர்:',
+           'many': 'சில மாணவர்கள் இப்போது நிதியுதவியாளருக்குத் தயாராக உள்ளனர் — சவால்களுக்கு மத்தியிலும் சிறந்து விளங்கிய, குறைந்த வருமானக் குடும்பங்களைச் சேர்ந்த இளையவர்கள்:'},
 }
 _SPONSOR_DIGEST_INTRO = {
-    'en': {'one': 'A student joined the pool this week:',
-           'many': 'Here are the students who joined the pool this week:'},
-    'ms': {'one': 'Seorang pelajar menyertai kumpulan minggu ini:',
-           'many': 'Berikut ialah pelajar yang menyertai kumpulan minggu ini:'},
-    'ta': {'one': 'இந்த வாரம் ஒரு மாணவர் கூட்டத்தில் சேர்ந்தார்:',
-           'many': 'இந்த வாரம் கூட்டத்தில் சேர்ந்த மாணவர்கள் இங்கே:'},
+    'en': {'one': 'Here is a student who has done well despite the odds — from a low-income family, and waiting for a sponsor to help them go further:',
+           'many': 'Here are students who have done well despite the odds — each from a low-income family, and waiting for a sponsor to help them go further:'},
+    'ms': {'one': 'Berikut seorang pelajar yang berjaya walaupun mencabar — daripada keluarga berpendapatan rendah, dan menunggu penaja untuk melangkah lebih jauh:',
+           'many': 'Berikut pelajar yang berjaya walaupun mencabar — masing-masing daripada keluarga berpendapatan rendah, dan menunggu penaja untuk melangkah lebih jauh:'},
+    'ta': {'one': 'சவால்களுக்கு மத்தியிலும் சிறந்து விளங்கிய ஒரு மாணவர் இங்கே — குறைந்த வருமானக் குடும்பத்தைச் சேர்ந்தவர், மேலும் முன்னேற நிதியுதவியாளருக்காகக் காத்திருக்கிறார்:',
+           'many': 'சவால்களுக்கு மத்தியிலும் சிறந்து விளங்கிய மாணவர்கள் இங்கே — ஒவ்வொருவரும் குறைந்த வருமானக் குடும்பத்தைச் சேர்ந்தவர்கள், மேலும் முன்னேற நிதியுதவியாளருக்காகக் காத்திருக்கின்றனர்:'},
 }
 _SPONSOR_CTA = {'en': 'See all students', 'ms': 'Lihat semua pelajar', 'ta': 'அனைத்து மாணவர்களையும் காண்க'}
 _SPONSOR_READ_STORY = {'en': 'Read their story →', 'ms': 'Baca kisah mereka →', 'ta': 'அவர்களின் கதையைப் படிக்க →'}
 _SPONSOR_REGISTERS = {'en': 'registers {date}', 'ms': 'mendaftar {date}', 'ta': '{date} அன்று பதிவு'}
 _SPONSOR_FOOTER = {
-    'en': "You're receiving this because your notifications are set to {freq}. You can change this any time in your sponsor account.",
-    'ms': "Anda menerima ini kerana pemberitahuan anda ditetapkan kepada {freq}. Anda boleh menukarnya bila-bila masa dalam akaun penaja anda.",
-    'ta': "உங்கள் அறிவிப்புகள் {freq} என அமைக்கப்பட்டுள்ளதால் இதைப் பெறுகிறீர்கள். உங்கள் நிதியுதவியாளர் கணக்கில் எப்போது வேண்டுமானாலும் இதை மாற்றலாம்.",
+    'en': "You're receiving this because your notifications are set to {freq}. You can change this any time in your {account}.",
+    'ms': "Anda menerima ini kerana pemberitahuan anda ditetapkan kepada {freq}. Anda boleh menukarnya bila-bila masa dalam {account} anda.",
+    'ta': "உங்கள் அறிவிப்புகள் {freq} என அமைக்கப்பட்டுள்ளதால் இதைப் பெறுகிறீர்கள். எப்போது வேண்டுமானாலும் உங்கள் {account} இல் இதை மாற்றலாம்.",
 }
+_SPONSOR_ACCOUNT = {'en': 'sponsor account', 'ms': 'akaun penaja', 'ta': 'நிதியுதவியாளர் கணக்கு'}
 _SPONSOR_SIGNOFF = {
     'en': 'Warm regards,\nThe BrightPath Bursary Programme Team',
     'ms': 'Salam hormat,\nPasukan Program Bursari BrightPath',
@@ -1269,13 +1270,20 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=
                 if (name or '').strip() else _SPONSOR_GREETING_GENERIC[lang])
     intro = intro_map[lang]['one' if n == 1 else 'many']
     subject = _sponsor_subject(subjects, cards, lang)
-    footer = _SPONSOR_FOOTER[lang].format(freq=freq_word)
     signoff = _SPONSOR_SIGNOFF[lang]
-    cta_url = f'{frontend}/sponsor'
+    cta_url = f'{frontend}/sponsor/students'          # the pool itself, not the portal landing
+    account_url = f'{frontend}/sponsor/account'
+
+    # Footer: 'sponsor account' is a link in HTML, a bare URL in plain text.
+    account = _SPONSOR_ACCOUNT[lang]
+    footer_text = _SPONSOR_FOOTER[lang].format(freq=freq_word, account=f'{account} ({account_url})')
+    footer_html = _h.escape(_SPONSOR_FOOTER[lang]).format(
+        freq=_h.escape(freq_word),
+        account=f'<a href="{account_url}" style="color:#2563eb;">{_h.escape(account)}</a>')
 
     text_cards = '\n\n'.join(_sponsor_card_text(c, lang, frontend, tax) for c in cards)
     text_body = (f'{greeting}\n\n{intro}\n\n{text_cards}\n\n'
-                 f'{_SPONSOR_CTA[lang]}: {cta_url}\n\n{footer}\n\n{signoff}')
+                 f'{_SPONSOR_CTA[lang]}: {cta_url}\n\n{footer_text}\n\n{signoff}')
 
     html_cards = ''.join(_sponsor_card_html(c, lang, frontend, tax) for c in cards)
     html_body = _html_email_shell(
@@ -1283,7 +1291,7 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=
         f'<p style="margin:0 0 16px;">{_h.escape(intro)}</p>'
         + html_cards +
         f'<p style="margin:18px 0 0;">{_email_button(cta_url, _SPONSOR_CTA[lang])}</p>'
-        f'<p style="margin:18px 0 0;color:#6b7280;font-size:12px;">{_h.escape(footer)}</p>'
+        f'<p style="margin:18px 0 0;color:#6b7280;font-size:12px;">{footer_html}</p>'
         f'<p style="margin:12px 0 0;color:#6b7280;font-size:12px;">'
         f'{_h.escape(signoff).replace(chr(10), "<br>")}</p>'
     )
