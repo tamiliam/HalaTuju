@@ -59,7 +59,7 @@ def send_sponsor_realtime():
 
     sent = 0
     for s in sponsors:
-        if send_sponsor_new_student_email(s.email, _serialise_cards(new_apps, s)):
+        if send_sponsor_new_student_email(s.email, _serialise_cards(new_apps, s), name=s.name):
             sent += 1
 
     # Stamp the whole batch as real-time-notified (whether or not any sponsor is
@@ -93,7 +93,7 @@ def send_sponsor_digests():
         apps = list(qs)
         if not apps:
             continue
-        send_sponsor_digest_email(s.email, _serialise_cards(apps, s))
+        send_sponsor_digest_email(s.email, _serialise_cards(apps, s), name=s.name)
         sent += 1
         # Advance the clock whether or not the best-effort send succeeded, so the
         # sponsor is never sent the same digest twice (the students remain browsable

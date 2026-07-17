@@ -1035,53 +1035,67 @@ def send_countersign_pending_email(to_email, *, applicant_name='', link=''):
 
 
 # ── F3: sponsor notifications (real-time alert + weekly digest) ───────────────
-# The body is built ONLY from already-serialised SponsorPoolDetailSerializer dicts
-# (an allowlist), so it can never contain a student's identity by construction.
+# Reworked to branded mini-card emails (HTML + plain-text pair) carrying the pool-card
+# DNA. The body is built ONLY from already-serialised SponsorPoolDetailSerializer dicts
+# (an allowlist) + the public FieldTaxonomy display names/artwork (non-identifying), so it
+# can never contain a student's identity by construction. n-aware subjects (no "student(s)")
+# with a standout hook; a per-student "Read their story" link; the sponsor's name in the
+# greeting when the caller has it. NO '—' placeholders and NO empty lines — a missing fact
+# is simply omitted.
+FIELD_IMAGE_BASE = 'https://pbrrlyoyyiftckqvzvvo.supabase.co/storage/v1/object/public/field-images'
+
 SPONSOR_NEW_SUBJECTS = {
-    'en': '{n} new student(s) waiting for a sponsor',
-    'ms': '{n} pelajar baharu sedang menunggu penaja',
-    'ta': '{n} புதிய மாணவர்(கள்) நிதியுதவியாளருக்காகக் காத்திருக்கிறார்கள்',
+    'en': {'one': 'A new student is waiting for a sponsor',
+           'many': '{n} new students are waiting for a sponsor'},
+    'ms': {'one': 'Seorang pelajar baharu menunggu penaja',
+           'many': '{n} pelajar baharu menunggu penaja'},
+    'ta': {'one': 'ஒரு புதிய மாணவர் நிதியுதவியாளருக்காகக் காத்திருக்கிறார்',
+           'many': '{n} புதிய மாணவர்கள் நிதியுதவியாளருக்காகக் காத்திருக்கிறார்கள்'},
 }
 SPONSOR_DIGEST_SUBJECTS = {
-    'en': 'Your weekly update: {n} student(s) waiting for a sponsor',
-    'ms': 'Kemas kini mingguan anda: {n} pelajar menunggu penaja',
-    'ta': 'உங்கள் வாராந்திர புதுப்பிப்பு: {n} மாணவர்(கள்) நிதியுதவியாளருக்காகக் காத்திருக்கிறார்கள்',
+    'en': {'one': 'Your weekly update: a student is waiting for a sponsor',
+           'many': 'Your weekly update: {n} students waiting for a sponsor'},
+    'ms': {'one': 'Kemas kini mingguan: seorang pelajar menunggu penaja',
+           'many': 'Kemas kini mingguan: {n} pelajar menunggu penaja'},
+    'ta': {'one': 'வாராந்திர புதுப்பிப்பு: ஒரு மாணவர் நிதியுதவியாளருக்காகக் காத்திருக்கிறார்',
+           'many': 'வாராந்திர புதுப்பிப்பு: {n} மாணவர்கள் நிதியுதவியாளருக்காகக் காத்திருக்கிறார்கள்'},
 }
-SPONSOR_NOTIFY_BODIES = {
-    'en': (
-        "Dear Sponsor,\n\n"
-        "{intro}\n\n{list}\n\n"
-        "Sign in to read their anonymous profiles and choose someone to support:\n{link}\n\n"
-        "You're receiving this because your notifications are set to {freq}. You can "
-        "change this any time in your sponsor account.\n\n"
-        "Warm regards,\nThe BrightPath Bursary Programme Team"
-    ),
-    'ms': (
-        "Salam Penaja,\n\n"
-        "{intro}\n\n{list}\n\n"
-        "Log masuk untuk membaca profil tanpa nama mereka dan memilih seseorang untuk ditaja:\n{link}\n\n"
-        "Anda menerima ini kerana pemberitahuan anda ditetapkan kepada {freq}. Anda boleh "
-        "menukarnya bila-bila masa dalam akaun penaja anda.\n\n"
-        "Salam hormat,\nPasukan Program Bursari BrightPath"
-    ),
-    'ta': (
-        "அன்புள்ள நிதியுதவியாளரே,\n\n"
-        "{intro}\n\n{list}\n\n"
-        "அவர்களின் அடையாளம் தெரியாத சுயவிவரங்களைப் படித்து, உதவ ஒருவரைத் தேர்ந்தெடுக்க உள்நுழையவும்:\n{link}\n\n"
-        "உங்கள் அறிவிப்புகள் {freq} என அமைக்கப்பட்டுள்ளதால் இதைப் பெறுகிறீர்கள். உங்கள் நிதியுதவியாளர் "
-        "கணக்கில் எப்போது வேண்டுமானாலும் இதை மாற்றலாம்.\n\n"
-        "அன்புடன்,\nBrightPath Bursary திட்டக் குழு"
-    ),
+# Standout hook appended to the subject when the best-academic card also has a state.
+_SPONSOR_HOOK = {
+    'en': ' — including {acad} from {state}',
+    'ms': ' — termasuk {acad} dari {state}',
+    'ta': ' — {state} மாநிலத்தைச் சேர்ந்த {acad} உட்பட',
 }
+_SPONSOR_GREETING = {'en': 'Dear {name},', 'ms': 'Salam {name},', 'ta': 'அன்புள்ள {name},'}
+_SPONSOR_GREETING_GENERIC = {'en': 'Dear Sponsor,', 'ms': 'Salam Penaja,', 'ta': 'அன்புள்ள நிதியுதவியாளரே,'}
 _SPONSOR_NEW_INTRO = {
-    'en': 'A new anonymised student has joined the pool and is waiting for a sponsor:',
-    'ms': 'Seorang pelajar tanpa nama baharu telah menyertai kumpulan dan menunggu penaja:',
-    'ta': 'ஒரு புதிய அடையாளம் தெரியாத மாணவர் சேர்ந்து நிதியுதவியாளருக்காகக் காத்திருக்கிறார்:',
+    'en': {'one': 'A new anonymised student has joined the pool and is waiting for a sponsor:',
+           'many': 'New anonymised students have joined the pool and are waiting for a sponsor:'},
+    'ms': {'one': 'Seorang pelajar tanpa nama baharu telah menyertai kumpulan dan menunggu penaja:',
+           'many': 'Pelajar tanpa nama baharu telah menyertai kumpulan dan menunggu penaja:'},
+    'ta': {'one': 'ஒரு புதிய அடையாளம் தெரியாத மாணவர் சேர்ந்து நிதியுதவியாளருக்காகக் காத்திருக்கிறார்:',
+           'many': 'புதிய அடையாளம் தெரியாத மாணவர்கள் சேர்ந்து நிதியுதவியாளருக்காகக் காத்திருக்கிறார்கள்:'},
 }
 _SPONSOR_DIGEST_INTRO = {
-    'en': 'Here are the students who joined the pool this week:',
-    'ms': 'Berikut ialah pelajar yang menyertai kumpulan minggu ini:',
-    'ta': 'இந்த வாரம் கூட்டத்தில் சேர்ந்த மாணவர்கள் இங்கே:',
+    'en': {'one': 'A student joined the pool this week:',
+           'many': 'Here are the students who joined the pool this week:'},
+    'ms': {'one': 'Seorang pelajar menyertai kumpulan minggu ini:',
+           'many': 'Berikut ialah pelajar yang menyertai kumpulan minggu ini:'},
+    'ta': {'one': 'இந்த வாரம் ஒரு மாணவர் கூட்டத்தில் சேர்ந்தார்:',
+           'many': 'இந்த வாரம் கூட்டத்தில் சேர்ந்த மாணவர்கள் இங்கே:'},
+}
+_SPONSOR_CTA = {'en': 'See all students', 'ms': 'Lihat semua pelajar', 'ta': 'அனைத்து மாணவர்களையும் காண்க'}
+_SPONSOR_READ_STORY = {'en': 'Read their story →', 'ms': 'Baca kisah mereka →', 'ta': 'அவர்களின் கதையைப் படிக்க →'}
+_SPONSOR_REGISTERS = {'en': 'registers {date}', 'ms': 'mendaftar {date}', 'ta': '{date} அன்று பதிவு'}
+_SPONSOR_FOOTER = {
+    'en': "You're receiving this because your notifications are set to {freq}. You can change this any time in your sponsor account.",
+    'ms': "Anda menerima ini kerana pemberitahuan anda ditetapkan kepada {freq}. Anda boleh menukarnya bila-bila masa dalam akaun penaja anda.",
+    'ta': "உங்கள் அறிவிப்புகள் {freq} என அமைக்கப்பட்டுள்ளதால் இதைப் பெறுகிறீர்கள். உங்கள் நிதியுதவியாளர் கணக்கில் எப்போது வேண்டுமானாலும் இதை மாற்றலாம்.",
+}
+_SPONSOR_SIGNOFF = {
+    'en': 'Warm regards,\nThe BrightPath Bursary Programme Team',
+    'ms': 'Salam hormat,\nPasukan Program Bursari BrightPath',
+    'ta': 'அன்புடன்,\nBrightPath Bursary திட்டக் குழு',
 }
 _SPONSOR_FREQ_WORD = {
     'realtime': {'en': 'real-time', 'ms': 'masa nyata', 'ta': 'நிகழ்நேரம்'},
@@ -1089,55 +1103,200 @@ _SPONSOR_FREQ_WORD = {
 }
 
 
-def _format_sponsor_cards(cards, lang):
-    """Render the anonymised card dicts as a plain-text bullet list. Reads ONLY the
-    allowlist keys the SponsorPoolDetailSerializer produces — never any identity."""
-    lines = []
+def _field_image_url(slug):
+    """Public field-artwork URL from a slug — '' (omit the <img>) when the slug is empty."""
+    slug = (slug or '').strip()
+    return f'{FIELD_IMAGE_BASE}/{slug}.png' if slug else ''
+
+
+def _tax_name_map():
+    """{taxonomy_key: {en,ms,ta}} — for turning a raw field key into a display name.
+    Non-identifying (catalogue names shared by hundreds of courses); one query per send."""
+    from apps.courses.models import FieldTaxonomy
+    return {k: {'en': en, 'ms': ms, 'ta': ta}
+            for k, en, ms, ta in FieldTaxonomy.objects.values_list(
+                'key', 'name_en', 'name_ms', 'name_ta')}
+
+
+def _programme_of(card, lang, tax):
+    """The bold programme line: the confirmed course name, else the field's taxonomy
+    DISPLAY name — NEVER a raw field key, NEVER '—'. '' when nothing is known (line omitted)."""
+    prog = (card.get('course') or '').strip()
+    if prog:
+        return (tax[prog][lang] or prog) if prog in tax else prog
+    field = (card.get('field') or '').strip()
+    if not field:
+        return ''
+    return (tax.get(field, {}).get(lang) or field)
+
+
+def _registers_line(card, lang):
+    """'registers DD/MM/YYYY' when the course-start date is today/future; else ''."""
+    iso = card.get('reporting_date')
+    if not iso:
+        return ''
+    from datetime import date
+    from django.utils import timezone
+    try:
+        d = date.fromisoformat(iso)
+    except (TypeError, ValueError):
+        return ''
+    if d < timezone.localdate():
+        return ''
+    return _SPONSOR_REGISTERS[lang].format(date=d.strftime('%d/%m/%Y'))
+
+
+def _facts_bits(card, lang):
+    """academic · RM amount · registers <date> — only the parts present (no '—')."""
+    bits = []
+    if (card.get('academic') or '').strip():
+        bits.append(card['academic'].strip())
+    amt = card.get('award_amount')
+    if amt:
+        bits.append(f'RM {amt}')
+    reg = _registers_line(card, lang)
+    if reg:
+        bits.append(reg)
+    return bits
+
+
+def _acad_score(academic):
+    """A rough 'best academic' score for the subject hook, off pool.academic_band's format
+    ('SPM · N As' / 'STPM · PNGK X.X'): the SPM A-count, or an STPM CGPA magnitude — whichever
+    is larger. Subject flavour only, never load-bearing."""
+    import re
+    a = (academic or '').upper()
+    counts = [int(m) for m in re.findall(r'(\d+)\s*A', a)]   # "7 As" / "9A" → 7 / 9
+    score = float(max(counts)) if counts else float(a.count('A'))
+    m = re.search(r'(\d\.\d+)', a)                            # STPM "PNGK 3.5" → 3.5
+    if m:
+        score = max(score, float(m.group(1)))
+    return score
+
+
+def _pick_standout(cards):
+    best, best_score = None, -1.0
     for c in cards:
-        ref = c.get('ref', '')
-        field = c.get('field', '') or '—'
-        bits = [field]
-        if c.get('academic'):
-            bits.append(c['academic'])
-        if c.get('state'):
-            bits.append(c['state'])
-        lines.append(f"• {ref} — {', '.join(bits)}")
+        s = _acad_score(c.get('academic', ''))
+        if s > best_score:
+            best, best_score = c, s
+    return best
+
+
+def _sponsor_subject(subjects, cards, lang):
+    n = len(cards)
+    subject = subjects[lang]['one' if n == 1 else 'many'].format(n=n)
+    st = _pick_standout(cards)
+    if st and (st.get('academic') or '').strip() and (st.get('state') or '').strip():
+        subject += _SPONSOR_HOOK[lang].format(acad=st['academic'].strip(), state=st['state'].strip())
+    return subject
+
+
+def _sponsor_card_text(card, lang, frontend, tax):
+    """Plain-text mini-card — mirrors the HTML content (never regresses below the old text)."""
+    ref = card.get('ref', '')
+    prog = _programme_of(card, lang, tax)
+    lines = [ref]
+    if prog:
+        lines.append(prog)
+    loc = ' · '.join([b for b in [(card.get('institution') or '').strip(),
+                                  (card.get('state') or '').strip()] if b])
+    if loc:
+        lines.append(loc)
+    facts = _facts_bits(card, lang)
+    if facts:
+        lines.append(' · '.join(facts))
+    blurb = (card.get('blurb') or '').strip()
+    if blurb:
+        lines.append(f'"{blurb}"')
+    lines.append(f'{_SPONSOR_READ_STORY[lang]} {frontend}/sponsor/students/{card.get("id", "")}')
     return '\n'.join(lines)
 
 
-def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map):
+def _sponsor_card_html(card, lang, frontend, tax):
+    """One email-safe mini-card (table markup, shell-consistent). Thumbnail omitted when
+    the field artwork slug is empty; every fact line is dropped when absent (no '—')."""
+    import html as _h
+    ref = _h.escape(card.get('ref', ''))
+    prog = _h.escape(_programme_of(card, lang, tax))
+    loc = _h.escape(' · '.join([b for b in [(card.get('institution') or '').strip(),
+                                            (card.get('state') or '').strip()] if b]))
+    facts = _h.escape(' · '.join(_facts_bits(card, lang)))
+    blurb = (card.get('blurb') or '').strip()
+    url = f'{frontend}/sponsor/students/{card.get("id", "")}'
+    img = _field_image_url(card.get('field_image_slug', ''))
+    thumb = (f'<td width="64" valign="top" style="padding-right:12px;">'
+             f'<img src="{img}" width="56" height="56" alt="{prog or "Field"}" '
+             f'style="width:56px;height:56px;border-radius:8px;object-fit:cover;display:block;"></td>') if img else ''
+    prog_html = f'<div style="margin:6px 0 0;font-weight:700;color:#111827;">{prog}</div>' if prog else ''
+    loc_html = f'<div style="color:#6b7280;font-size:13px;">{loc}</div>' if loc else ''
+    facts_html = f'<div style="margin-top:4px;font-size:13px;color:#374151;">{facts}</div>' if facts else ''
+    blurb_html = (f'<div style="margin:6px 0 0;color:#4b5563;font-style:italic;">{_h.escape(blurb)}</div>'
+                  if blurb else '')
+    return (
+        '<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;'
+        'border-radius:12px;margin:0 0 12px;"><tr><td style="padding:14px;">'
+        '<table width="100%" cellpadding="0" cellspacing="0"><tr>'
+        f'{thumb}<td valign="top">'
+        f'<div style="display:inline-block;background:#eef2ff;color:#3730a3;font-size:11px;'
+        f'font-weight:700;padding:2px 8px;border-radius:999px;">{ref}</div>'
+        f'{prog_html}{loc_html}{facts_html}{blurb_html}'
+        f'<div style="margin-top:8px;"><a href="{url}" style="color:#2563eb;text-decoration:none;'
+        f'font-weight:600;font-size:13px;">{_SPONSOR_READ_STORY[lang]}</a></div>'
+        '</td></tr></table></td></tr></table>'
+    )
+
+
+def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=''):
     if not to_email or not cards:
         return False
+    import html as _h
     lang = normalise_lang(lang)
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     freq_word = _SPONSOR_FREQ_WORD.get(freq, {}).get(lang, freq)
-    try:
-        EmailMessage(
-            subject=subjects[lang].format(n=len(cards)),
-            body=SPONSOR_NOTIFY_BODIES[lang].format(
-                intro=intro_map[lang], list=_format_sponsor_cards(cards, lang),
-                link=f'{frontend}/sponsor', freq=freq_word,
-            ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-            to=[to_email],
-            reply_to=[SPONSOR_REPLY_TO],
-        ).send()
-        return True
-    except Exception:
-        logger.warning('Failed to send sponsor notification to %s', to_email, exc_info=True)
-        return False
+    tax = _tax_name_map()
+    n = len(cards)
+    greeting = (_SPONSOR_GREETING[lang].format(name=name.strip())
+                if (name or '').strip() else _SPONSOR_GREETING_GENERIC[lang])
+    intro = intro_map[lang]['one' if n == 1 else 'many']
+    subject = _sponsor_subject(subjects, cards, lang)
+    footer = _SPONSOR_FOOTER[lang].format(freq=freq_word)
+    signoff = _SPONSOR_SIGNOFF[lang]
+    cta_url = f'{frontend}/sponsor'
+
+    text_cards = '\n\n'.join(_sponsor_card_text(c, lang, frontend, tax) for c in cards)
+    text_body = (f'{greeting}\n\n{intro}\n\n{text_cards}\n\n'
+                 f'{_SPONSOR_CTA[lang]}: {cta_url}\n\n{footer}\n\n{signoff}')
+
+    html_cards = ''.join(_sponsor_card_html(c, lang, frontend, tax) for c in cards)
+    html_body = _html_email_shell(
+        f'<p style="margin:0 0 12px;">{_h.escape(greeting)}</p>'
+        f'<p style="margin:0 0 16px;">{_h.escape(intro)}</p>'
+        + html_cards +
+        f'<p style="margin:18px 0 0;">{_email_button(cta_url, _SPONSOR_CTA[lang])}</p>'
+        f'<p style="margin:18px 0 0;color:#6b7280;font-size:12px;">{_h.escape(footer)}</p>'
+        f'<p style="margin:12px 0 0;color:#6b7280;font-size:12px;">'
+        f'{_h.escape(signoff).replace(chr(10), "<br>")}</p>'
+    )
+    return _send_html(
+        to_email, subject, text_body, html_body,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+        reply_to=[SPONSOR_REPLY_TO],
+    )
 
 
-def send_sponsor_new_student_email(to_email, cards, lang='en'):
+def send_sponsor_new_student_email(to_email, cards, lang='en', name=''):
     """F3 real-time: alert a sponsor that newly-published student(s) are waiting.
     ``cards`` = a list of SponsorPoolDetailSerializer dicts (allowlist-safe)."""
-    return _send_sponsor_notify(to_email, SPONSOR_NEW_SUBJECTS, cards, 'realtime', lang, _SPONSOR_NEW_INTRO)
+    return _send_sponsor_notify(to_email, SPONSOR_NEW_SUBJECTS, cards, 'realtime', lang,
+                                _SPONSOR_NEW_INTRO, name=name)
 
 
-def send_sponsor_digest_email(to_email, cards, lang='en'):
+def send_sponsor_digest_email(to_email, cards, lang='en', name=''):
     """F3 weekly: a digest of students published since the sponsor's last digest.
     ``cards`` = a list of SponsorPoolDetailSerializer dicts (allowlist-safe)."""
-    return _send_sponsor_notify(to_email, SPONSOR_DIGEST_SUBJECTS, cards, 'weekly', lang, _SPONSOR_DIGEST_INTRO)
+    return _send_sponsor_notify(to_email, SPONSOR_DIGEST_SUBJECTS, cards, 'weekly', lang,
+                                _SPONSOR_DIGEST_INTRO, name=name)
 
 
 def _decline_html(text_body):

@@ -27,7 +27,14 @@ Benchmarked against Funding Societies / LinkedFinance; anonymity stays inviolate
   apps, 25 resolved via course→field_key, 0 via field_of_study, 38 → generic; all 10 slugs
   exist (zero 404s). No art gaps → no image generation this sprint (breadth is the only
   headroom; see the retro).
-- 20 new `sponsorPool.*` i18n keys × en/ms/ta (Tamil first-drafts). 2669 scholarship pytest +
+- **Part 2 — sponsor notification emails reworked** to branded mini-card emails (HTML +
+  plain-text pair) carrying the pool-card DNA: per-student field-artwork thumbnail (omitted
+  when no slug), bold programme (taxonomy display name, never a raw key or `'—'`),
+  institution·state, a facts line (academic · RM amount · "registers DD/MM/YYYY"), the blurb,
+  and a per-student "Read their story →" link. n-aware subjects with a standout-academic hook,
+  the sponsor's name in the greeting (senders + schedulers updated), a full plain-text mirror.
+  Allowlist discipline unchanged; who-gets-notified-when untouched.
+- 20 new `sponsorPool.*` i18n keys × en/ms/ta (Tamil first-drafts). 2674 scholarship pytest +
   583 jest; `next build` clean. Retro `docs/retrospective-2026-07-17-sponsor-pool-redesign.md`.
 
 ## Payments live-review arc — owner-driven hardening after the P3 cutover — 2026-07-16/17

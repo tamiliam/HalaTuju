@@ -118,6 +118,96 @@ class TestSponsorDigests(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
+@override_settings(FRONTEND_URL='https://halatuju.xyz')
+class TestSponsorEmailContent(TestCase):
+    """Part 2 — the reworked mini-card emails: HTML+text pair, per-student links,
+    n-aware subjects with a standout hook, and no '—'/empty-line fallbacks."""
+
+    def setUp(self):
+        mail.outbox = []
+
+    def _card(self, **over):
+        c = {
+            'id': 42, 'ref': 'S-ABC123', 'state': 'Perak', 'field': 'engineering',
+            'course': 'Diploma Kejuruteraan Mekanikal', 'academic': 'SPM · 7A 1B',
+            'institution': 'Politeknik Ungku Omar', 'blurb': 'A determined leaver.',
+            'funding_categories': ['tuition'], 'programme_months': 24, 'award_amount': '3000',
+            'progress_state': None, 'support_status': None, 'enrolment_verified': True,
+            'field_image_slug': 'kejuruteraan', 'reporting_date': '2099-09-01',
+        }
+        c.update(over)
+        return c
+
+    def _last(self):
+        msg = mail.outbox[-1]
+        html = msg.alternatives[0][0] if msg.alternatives else ''
+        return msg, html
+
+    def test_html_and_text_pair_with_per_student_link(self):
+        from apps.scholarship.emails import send_sponsor_digest_email
+        send_sponsor_digest_email('s@x.com', [self._card()], lang='en', name='Aisha')
+        msg, html = self._last()
+        self.assertTrue(html, 'HTML alternative present')
+        # per-student link in BOTH parts
+        link = 'https://halatuju.xyz/sponsor/students/42'
+        self.assertIn(link, msg.body)
+        self.assertIn(link, html)
+        # programme (never the raw field key), amount, artwork thumbnail
+        self.assertIn('Diploma Kejuruteraan Mekanikal', msg.body)
+        self.assertIn('RM 3000', msg.body)
+        self.assertIn('field-images/kejuruteraan.png', html)
+        # greeting carries the sponsor's name
+        self.assertIn('Aisha', msg.body)
+        # no '—' placeholder anywhere (the rework dropped the em-dash separator too)
+        self.assertNotIn('—', msg.body)
+
+    def test_singular_vs_plural_subject(self):
+        from apps.scholarship.emails import send_sponsor_new_student_email
+        send_sponsor_new_student_email('s@x.com', [self._card()], lang='en')
+        self.assertIn('A new student', mail.outbox[-1].subject)
+        self.assertNotIn('student(s)', mail.outbox[-1].subject)
+        mail.outbox = []
+        send_sponsor_new_student_email('s@x.com', [self._card(), self._card(id=2, ref='S-2')], lang='en')
+        self.assertIn('2 new students', mail.outbox[-1].subject)
+
+    def test_standout_hook_picks_best_academic(self):
+        from apps.scholarship.emails import send_sponsor_digest_email
+        cards = [
+            self._card(id=1, ref='S-1', academic='SPM · 3A', state='Johor'),
+            self._card(id=2, ref='S-2', academic='SPM · 9A', state='Perak'),  # standout
+            self._card(id=3, ref='S-3', academic='SPM · 5A', state='Kedah'),
+        ]
+        send_sponsor_digest_email('s@x.com', cards, lang='en')
+        subj = mail.outbox[-1].subject
+        self.assertIn('SPM · 9A', subj)
+        self.assertIn('Perak', subj)
+
+    def test_empty_fields_no_dash_no_empty_lines(self):
+        from apps.scholarship.emails import send_sponsor_digest_email
+        # No course → falls back to the field's taxonomy display name (not the raw key);
+        # no institution/state → the location line is omitted, not rendered as '—'.
+        from apps.courses.models import FieldTaxonomy
+        FieldTaxonomy.objects.create(key='zz_x', name_en='Widgetry', name_ms='Widget',
+                                     name_ta='விட்செட்', image_slug='umum-kemanusiaan')
+        card = self._card(course='', field='zz_x', institution='', state='',
+                          award_amount=None, reporting_date=None, blurb='', field_image_slug='')
+        send_sponsor_digest_email('s@x.com', [card], lang='en')
+        msg, html = self._last()
+        self.assertNotIn('—', msg.body)
+        self.assertNotIn('\n\n\n', msg.body)          # no doubled blank lines from omitted facts
+        self.assertIn('Widgetry', msg.body)           # taxonomy display name, never 'zz_x'
+        self.assertNotIn('zz_x', msg.body)
+        self.assertNotIn('<img', html)                # empty slug → no thumbnail
+
+    def test_all_three_languages_render(self):
+        from apps.scholarship.emails import send_sponsor_digest_email
+        for lang in ('en', 'ms', 'ta'):
+            mail.outbox = []
+            self.assertTrue(send_sponsor_digest_email('s@x.com', [self._card()], lang=lang))
+            msg, html = self._last()
+            self.assertTrue(msg.subject and msg.body and html)
+
+
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestSponsorNotificationPref(TestCase):
     @classmethod

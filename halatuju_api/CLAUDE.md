@@ -543,9 +543,17 @@ anonymity unchanged.
   home for the bucket URL) + pure `lib/poolCard.ts`.
 - **Coverage audit** (read-only `audit_pool_field_images`, run on prod): 63 apps — 25 via
   course→field_key, 0 via field_of_study, 38 → generic; all 10 slugs exist (0 404s). No art
-  gaps → no image generation. **▶ CARRY:** Tamil review of 20 new `sponsorPool.*` first-drafts;
-  optional specific-art breadth (normalise `field_of_study`→keys / carry `course_id`).
-- **2669 scholarship pytest + 583 jest**; `next build` clean.
+  gaps → no image generation. **▶ CARRY:** Tamil review of 20 new `sponsorPool.*` first-drafts
+  + the reworked sponsor notification email copy; optional specific-art breadth (normalise
+  `field_of_study`→keys / carry `course_id`).
+- **Part 2 — sponsor notification emails reworked** (`emails.py`): branded mini-card emails
+  (HTML + plain-text pair) carrying the pool-card DNA — per-student artwork thumbnail
+  (omitted when no slug), bold programme (taxonomy display name, never a raw key/`'—'`),
+  institution·state, facts line (academic · RM amount · "registers DD/MM/YYYY"), blurb, and a
+  per-student "Read their story →" link; n-aware subjects with a standout-academic hook; the
+  sponsor's name in the greeting (senders + `sponsor_notifications.py` schedulers pass
+  `sponsor.name`); full plain-text mirror. Allowlist unchanged; notify-cadence untouched.
+- **2674 scholarship pytest + 583 jest**; `next build` clean.
 
 **✅ SHIPPED 2026-07-17 — Payments live-review follow-ups (P3 cutover polish)** (NO migration):
 completed-run page styled to the Stitch design (green header bar + signature cards + CSV row);

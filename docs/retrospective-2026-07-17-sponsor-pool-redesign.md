@@ -73,8 +73,39 @@ Findings for the owner:
   `next build` clean. One deploy (web + api on the same push; api rebuilds because
   `serializers.py` changed). NO migration.
 
+## Part 2 — Sponsor notification emails rework (same sprint)
+
+The real-time + weekly sponsor notifications were bare plain-text `EmailMessage`s that
+discarded almost everything in the card dicts (raw `field` key with an ugly `'—'` fallback,
+no programme/blurb/amount/urgency/links, "student(s)" pluralisation). Reworked to branded
+mini-card emails carrying the pool-card DNA (`emails.py`):
+
+- **HTML + plain-text pair** via the house `_html_email_shell` + `_send_html`
+  (`EmailMultiAlternatives`), From `info@` / reply-to `sponsor@`, the frequency footer kept.
+- **One mini-card per student** (email-safe table markup): field-artwork thumbnail (public
+  bucket URL from `field_image_slug`; `<img>` omitted entirely when the slug is empty, always
+  alt-text), bold **programme** (`course`, else the field's taxonomy display name — NEVER a
+  raw key, NEVER `'—'`), muted "institution · state" (omitted when empty), a facts line
+  (academic · **RM amount** · "registers DD/MM/YYYY" when the start date is today/future),
+  the italic blurb, and a per-student **"Read their story →"** link to
+  `/sponsor/students/{id}`. The browse CTA stays as the footer button.
+- **n-aware subjects** (no "student(s)") with a **standout hook** — the best academic band in
+  the batch + its state (e.g. "3 new students … including SPM · 9 As from Perak"). `_acad_score`
+  reads `pool.academic_band`'s real format ("SPM · N As" / "STPM · PNGK X.X").
+- **Greeting** carries the sponsor's name when the scheduler has it — the senders gained an
+  optional `name`; `sponsor_notifications.py` passes `sponsor.name` at both call sites.
+- **Plain-text mirrors the HTML** (programme, amount, date, per-student links) — never below
+  the old text. Allowlist discipline unchanged: the formatter reads only serializer keys plus
+  the non-identifying taxonomy display-name map.
+- Tests: 1-card + 3-card content, HTML/text pair, per-student URLs, singular↔plural subjects,
+  the standout pick, empty-field fallbacks (no `'—'`, no doubled blank lines, taxonomy name
+  not the key, no `<img>` on an empty slug), all three languages. Existing scheduler +
+  idempotency tests stay green. **2674 scholarship pytest.** Behaviour (who is notified when)
+  untouched — content only.
+
 ## Carries (owner)
-- **Tamil review** of the 20 new `sponsorPool.*` first-drafts.
+- **Tamil review** of the 20 new `sponsorPool.*` first-drafts **and the reworked sponsor
+  notification email copy** (subjects/greeting/intro/CTA/footer in `emails.py`, Tamil drafts).
 - **Specific-art coverage** (optional): normalise `field_of_study` → taxonomy keys, or
   ensure confirmed programmes carry a `course_id`, to move students off the generic image.
   Nothing is broken; this is breadth, not a gap.
