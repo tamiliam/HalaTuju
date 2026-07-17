@@ -1146,14 +1146,24 @@ def _registers_line(card, lang):
     return _SPONSOR_REGISTERS[lang].format(date=d.strftime('%d/%m/%Y'))
 
 
+def _rm_whole(v):
+    """Whole-ringgit, thousands-grouped, no decimals — "2000.00" → "2,000" (mirrors the web
+    card's rmWhole)."""
+    try:
+        n = float(v)
+    except (TypeError, ValueError):
+        return str(v or '')
+    return f'{int(round(n)):,}'
+
+
 def _facts_bits(card, lang):
-    """academic · RM amount · registers <date> — only the parts present (no '—')."""
+    """academic · RMamount · registers <date> — only the parts present (no '—')."""
     bits = []
     if (card.get('academic') or '').strip():
         bits.append(card['academic'].strip())
     amt = card.get('award_amount')
     if amt:
-        bits.append(f'RM {amt}')
+        bits.append(f'RM{_rm_whole(amt)}')          # RM2,000 (matches the web card)
     reg = _registers_line(card, lang)
     if reg:
         bits.append(reg)
@@ -1199,10 +1209,10 @@ def _sponsor_card_text(card, lang, frontend, tax):
     lines = [ref]
     if prog:
         lines.append(prog)
-    loc = ' · '.join([b for b in [(card.get('institution') or '').strip(),
-                                  (card.get('state') or '').strip()] if b])
-    if loc:
-        lines.append(loc)
+    # Institution only — the home state next to it misleads (matches the web card).
+    inst = (card.get('institution') or '').strip()
+    if inst:
+        lines.append(inst)
     facts = _facts_bits(card, lang)
     if facts:
         lines.append(' · '.join(facts))
@@ -1219,8 +1229,7 @@ def _sponsor_card_html(card, lang, frontend, tax):
     import html as _h
     ref = _h.escape(card.get('ref', ''))
     prog = _h.escape(_programme_of(card, lang, tax))
-    loc = _h.escape(' · '.join([b for b in [(card.get('institution') or '').strip(),
-                                            (card.get('state') or '').strip()] if b]))
+    loc = _h.escape((card.get('institution') or '').strip())   # institution only (no state)
     facts = _h.escape(' · '.join(_facts_bits(card, lang)))
     blurb = (card.get('blurb') or '').strip()
     url = f'{frontend}/sponsor/students/{card.get("id", "")}'

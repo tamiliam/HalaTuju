@@ -152,9 +152,12 @@ class TestSponsorEmailContent(TestCase):
         link = 'https://halatuju.xyz/sponsor/students/42'
         self.assertIn(link, msg.body)
         self.assertIn(link, html)
-        # programme (never the raw field key), amount, artwork thumbnail
+        # programme (never the raw field key), amount (RM2,000 format), artwork thumbnail
         self.assertIn('Diploma Kejuruteraan Mekanikal', msg.body)
-        self.assertIn('RM 3000', msg.body)
+        self.assertIn('RM3,000', msg.body)                 # whole ringgit, thousands-grouped
+        self.assertNotIn('RM 3000', msg.body)              # not the raw "RM 3000"
+        self.assertNotIn('Perak', msg.body)                # state dropped from the card line
+        self.assertIn('Politeknik Ungku Omar', msg.body)   # institution still shown
         self.assertIn('field-images/kejuruteraan.png', html)
         # greeting carries the sponsor's name
         self.assertIn('Aisha', msg.body)
