@@ -982,7 +982,15 @@ export default function AdminScholarshipDetailPage() {
         const helpLabel = (v?: string | null) => (v ? t(`scholarship.apply.help.${v}`) : null)
         // Link a course back to its HalaTuju public page (opens in a new tab so
         // the admin doesn't lose the application). STPM degrees live under /stpm.
-        const courseHref = (cid?: string) => (cid ? (isStpm ? `/stpm/${cid}` : `/course/${cid}`) : null)
+        // Every genuine programme has a page: a catalogue course_id → /course (or /stpm for an
+        // STPM degree); a pre-U pick (no course_id) → its /pathway page, keyed by the track/stream
+        // (owner 2026-07-17). Falls back to null (plain text) only when neither exists.
+        const courseHref = (cid?: string) => {
+          if (cid) return isStpm ? `/stpm/${cid}` : `/course/${cid}`
+          if (app.chosen_pathway === 'stpm') return `/pathway/stpm${app.pre_u_track ? `?stream=${app.pre_u_track}` : ''}`
+          if (app.chosen_pathway === 'matric') return `/pathway/matric${app.pre_u_track ? `?track=${app.pre_u_track}` : ''}`
+          return null
+        }
         const courseLink = (cid: string | undefined, name: string) => {
           const href = courseHref(cid)
           return href
@@ -1086,22 +1094,36 @@ export default function AdminScholarshipDetailPage() {
                 {hasPlans && (
                   <div className="mt-4 border-t border-gray-100 pt-3">
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                      {isInstitutionPathway ? (
-                        <>
-                          <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
-                          <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
-                          <Field label={t('admin.scholarship.preUInstitution')} value={expandMatricInstitution(app.pre_u_institution)} verifiedLabel={vtip('preUInstitution')} />
-                        </>
-                      ) : (
-                        <Field
-                          label={t('admin.scholarship.chosenProgramme')}
-                          value={app.chosen_programme?.course_name
-                            ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
-                            : pathwayLabel(app.chosen_pathway)}
-                          verifiedLabel={vtip('chosenProgramme')}
-                        />
-                      )}
+                      {/* Unified across ALL pathways (owner 2026-07-17): Chosen Programme (linked to
+                          its course / pathway page) · Institution · Reporting Date. Replaces the old
+                          split (Chosen Pathway + Pre-U Track + Pre-U Institution for STPM/Matric vs
+                          Chosen Programme for the rest). The pre-U track (Sains Sosial / Perakaunan)
+                          folds inline after the programme so no info is lost. */}
+                      <Field
+                        label={t('admin.scholarship.chosenProgramme')}
+                        value={(() => {
+                          const name = (app.chosen_programme?.course_name as string) || pathwayLabel(app.chosen_pathway)
+                          if (!name) return null
+                          const track = isInstitutionPathway ? preUTrackLabel : null
+                          return (
+                            <>
+                              {courseLink(app.chosen_programme?.course_id as string | undefined, name)}
+                              {track && <span className="text-gray-400"> · {track}</span>}
+                            </>
+                          )
+                        })()}
+                        verifiedLabel={vtip('chosenProgramme')}
+                      />
                       {reportingDate && <Field label={t('admin.scholarship.reportingDate')} value={reportingDate} verifiedLabel={vtip('reportingDate')} />}
+                      {/* Institution on its OWN row below (col-span-2); Chosen Programme + Reporting
+                          Date share the top row (owner 2026-07-18). */}
+                      <div className="col-span-2">
+                        <Field
+                          label={t('admin.scholarship.institution')}
+                          value={expandMatricInstitution((app.chosen_programme?.institution as string) || app.pre_u_institution || '') || null}
+                          verifiedLabel={isInstitutionPathway ? vtip('preUInstitution') : undefined}
+                        />
+                      </div>
                     </dl>
                     {app.top_choices?.length > 0 && (
                       <div className="mt-3">
