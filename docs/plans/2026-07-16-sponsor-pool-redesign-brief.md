@@ -1,7 +1,7 @@
-# Implementation Brief — Sponsor Pool Redesign (image-led cards + refined detail)
+# Implementation Brief — Sponsor Pool Redesign (image-led cards + refined detail + notification emails)
 
 **For:** the implementing agent (Opus 4.8), in `c:\Users\tamil\Python\Production\HalaTuju`
-**Shape:** ONE sprint, one deploy, NO migrations. Backend = two allowlist serializer fields only; everything else frontend.
+**Shape:** ONE sprint, one deploy, NO migrations. Backend = two allowlist serializer fields + the sponsor notification-email rework (Part 2); everything else frontend.
 **Authority — build EXACTLY these, no simplification:**
 - Browse grid mock: `stitch.withgoogle.com/preview/10844973747787673276?node-id=da6e43ca92d347b3851e07543a8640cb`
 - Detail mock: `stitch.withgoogle.com/preview/10844973747787673276?node-id=594d11501b6b4f51bff8ee8cc0c1d921`
@@ -60,6 +60,22 @@ The sponsor pool pages (`/sponsor` browse + `/sponsor/students/[id]`) under-use 
 
 **Out of scope (do not touch):** the My Students page and sponsorship cards (follow-up); the fund/confirm flow; any backend pool eligibility logic; partial-funding mechanics (deliberately rejected — funding is full-or-nothing; no progress bars).
 
+## Part 2 — Sponsor notification emails rework (owner: "serious rework"; same sprint)
+
+The real-time and weekly sponsor notifications (`emails.py`: `send_sponsor_new_student_email` / `send_sponsor_digest_email` → `_send_sponsor_notify` ~:1108, `_format_sponsor_cards` ~:1092) are bare plain-text `EmailMessage`s that discard almost everything in the card dicts they receive (raw `field` key with an ugly `'—'` fallback; no programme, blurb, amount, urgency, or per-student links; no branded shell; "student(s)" pluralisation). Rework to mini-card emails carrying the pool-card DNA:
+
+1. **HTML + plain-text pair** via the house pattern other emails use (branded `_html_email_shell` + `EmailMultiAlternatives`-style body; see `_decline_html` for the shell precedent). Keep From/reply-to and the frequency/unsubscribe footer line.
+2. **One mini-card per student** (email-safe table markup, shell-consistent styling):
+   - a small field-artwork thumbnail (the PUBLIC `field-images` URL from `field_image_slug` — same resolution as Part 1; omit the `<img>` entirely when slug is empty; always alt-text),
+   - bold **programme name** (`course`), muted "institution · state" line — NEVER the raw `field` key; when `course` is empty fall back to the taxonomy display name, and if both are empty OMIT the line (no `'—'` placeholders, ever),
+   - one facts line: academic band · **RM amount** · "registers <date>" when `reporting_date` is near/future,
+   - the italic ≤20-word blurb when present,
+   - a per-student link "Read their story →" to `{FRONTEND_URL}/sponsor/students/{id}` (the browse-page link stays as the footer CTA button).
+3. **Subject lines with a hook**, n-aware (no "student(s)"): e.g. EN weekly "5 new students this week — including an 8-A SPM student from Perak" (standout = best academic band in the batch); real-time singular variant. All three languages.
+4. **Greeting**: the sponsor's name when the caller has it (extend the senders' signatures to accept an optional name; the schedulers that call them pass `sponsor.name` — trace the call sites and update them in the same change), falling back to today's generic greeting.
+5. **Plain-text part** mirrors the same content (programme, amount, date, per-student links) — never regresses below the current text version.
+6. **Allowlist discipline unchanged**: the formatter reads only serializer keys; extend its docstring note. Tests: HTML + text snapshots for 1-card and 3-card digests in all three languages; empty-field fallbacks (no `'—'`, no empty lines); per-student URLs; pluralised subjects; the standout-subject pick; existing scheduler tests stay green.
+
 ## Field-image coverage audit (required deliverable, not optional)
 
 Before closing: a small script/management-command run (read-only) listing every DISTINCT resolved `field_image_slug` for current pool + recently pooled applications, checking each URL exists in the bucket (HEAD request), and reporting: total fields seen, resolved via (a)/(b)/(c) counts, and any 404 slugs. Findings go in the retro. NO image generation in this sprint — art gaps are reported for an owner-approved follow-up.
@@ -73,4 +89,4 @@ Before closing: a small script/management-command run (read-only) listing every 
 
 ## Sizing & risks
 
-~12–16 files. Risks: (1) N+1 queries from the image lookup on the list — the per-request cache is mandatory; (2) taxonomy-key drift (`field_of_study` values that aren't keys) — tolerated by chain (b)'s miss-handling + surfaced by the coverage audit; (3) banner crops looking poor on some art — acceptable this sprint (gradient helps); the audit report tells the owner where regeneration is worth it; (4) breaking the existing anonymity tests — they are the guardrail, extend them, never weaken them.
+~16–22 files (incl. Part 2). Risks: (1) N+1 queries from the image lookup on the list — the per-request cache is mandatory; (2) taxonomy-key drift (`field_of_study` values that aren't keys) — tolerated by chain (b)'s miss-handling + surfaced by the coverage audit; (3) banner crops looking poor on some art — acceptable this sprint (gradient helps); the audit report tells the owner where regeneration is worth it; (4) breaking the existing anonymity tests — they are the guardrail, extend them, never weaken them; (5) email-client rendering of the mini-cards — keep the markup to the shell's existing table-based conventions, remote images with alt text, and a full-fidelity plain-text part; (6) touching the notification schedulers — behaviour (who gets notified when) is OUT of scope, only the message content changes.
