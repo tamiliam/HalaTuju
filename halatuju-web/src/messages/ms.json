@@ -4146,7 +4146,12 @@
       "signNote": "Kedua-dua penandatangan mestilah orang yang berbeza. Menyunting senarai selepas menandatangani mengembalikan larian kepada draf.",
       "declaration": "Saya mengesahkan bahawa pelajar yang tersenarai di atas ialah mereka yang layak menerima bayaran biasiswa bagi {month}, dan arahan pembayaran ini akan dihantar ke {email}.",
       "cancelRun": "Batalkan larian ini",
-      "completedBanner": "Selesai dan dihantar ke Vircle",
+      "completedOn": "Selesai pada {date}",
+      "sentToVircle": "Dihantar ke Vircle",
+      "referenceCopy": "Salinan rujukan sahaja",
+      "authorisedBy": "Disahkan oleh (pembuat)",
+      "approvedBy": "Diluluskan oleh (pelulus)",
+      "exportedForVircle": "Dieksport untuk pemprosesan kelompok Vircle",
       "openInDrive": "Buka CSV dalam Drive",
       "downloadCsv": "Muat turun CSV",
       "col": {

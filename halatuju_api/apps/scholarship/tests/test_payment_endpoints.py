@@ -150,6 +150,20 @@ class TestRunLifecycle(_Base):
         # completion wrote a released disbursement
         self.assertEqual(self.app_a.disbursements.filter(status='released').count(), 1)
 
+    def test_completed_run_does_not_skip_its_own_students(self):
+        # Regression (owner 2026-07-17, PR-2026-07-17): after completion the live skipped
+        # list matched the run's OWN items as already_paid and listed all its students.
+        run = self._create_run('pe-mk').json()
+        sign = f"/api/v1/admin/scholarship/payment-runs/{run['id']}/sign/"
+        self._auth('pe-mk')
+        self.client.post(sign, {'typed_name': 'Maker One'}, format='json')
+        self._auth('pe-ap')
+        self.client.post(sign, {'typed_name': 'Approver One'}, format='json')
+        detail = self.client.get(f"/api/v1/admin/scholarship/payment-runs/{run['id']}/").json()
+        self.assertEqual(detail['status'], 'completed')
+        skipped_ids = [s['application_id'] for s in detail['skipped']]
+        self.assertNotIn(self.app_a.id, skipped_ids)
+
     def test_sign_name_mismatch(self):
         run = self._create_run('pe-mk').json()
         self._auth('pe-mk')

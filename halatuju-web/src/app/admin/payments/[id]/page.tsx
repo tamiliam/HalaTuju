@@ -22,6 +22,22 @@ const rm = (v: string | number) => {
   return Number.isFinite(n) ? String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : String(v)
 }
 
+// "17/07/2026, 11:18 AM" (Malaysia time). Run data is client-fetched, so no hydration risk.
+const dateTime = (iso: string | null | undefined) => {
+  if (!iso) return ''
+  const time = new Date(iso).toLocaleTimeString('en-US',
+    { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kuala_Lumpur' })
+  return `${formatDate(iso)}, ${time}`
+}
+
+// Faint rosette seal on the signature cards (Stitch completed-box design).
+const Rosette = () => (
+  <svg viewBox="0 0 24 24" className="h-10 w-10 shrink-0 text-green-200" fill="currentColor" aria-hidden>
+    <path d="M12 1.7l2.5 1.9 3.1-.3 1.2 2.9 2.9 1.2-.3 3.1 1.9 2.5-1.9 2.5.3 3.1-2.9 1.2-1.2 2.9-3.1-.3-2.5 1.9-2.5-1.9-3.1.3-1.2-2.9-2.9-1.2.3-3.1L.8 12l1.9-2.5-.3-3.1 2.9-1.2 1.2-2.9 3.1.3L12 1.7z" />
+    <path d="M10.6 14.6l-2.2-2.2-1.4 1.4 3.6 3.6 6.4-6.4-1.4-1.4-5 5z" fill="#ffffff" />
+  </svg>
+)
+
 type SortKey = 'name' | 'nric' | 'vircle_id' | 'paid_to_date'
 
 const errText = (e: unknown, t: (k: string) => string) => {
@@ -271,17 +287,49 @@ export default function PaymentRunDetailPage() {
         </div>
       )}
 
-      {/* Completed */}
+      {/* Completed (Stitch design): green header bar + signature cards + CSV file row */}
       {isCompleted && (
-        <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-5">
-          <p className="font-semibold text-green-800">✓ {t('admin.payments.completedBanner')}</p>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2 text-sm text-gray-700">
-            {run.admin_signed && <div><p className="text-xs uppercase tracking-wide text-gray-500">{t('admin.payments.makerStep')}</p><p className="font-medium">{run.admin_signed.name}</p><p className="text-xs text-gray-500">{formatDate(run.admin_signed.at)}</p></div>}
-            {run.org_admin_signed && <div><p className="text-xs uppercase tracking-wide text-gray-500">{t('admin.payments.approverStep')}</p><p className="font-medium">{run.org_admin_signed.name}</p><p className="text-xs text-gray-500">{formatDate(run.org_admin_signed.at)}</p></div>}
+        <div className="mt-4 overflow-hidden rounded-xl border border-green-200 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-green-600 px-5 py-3 text-white">
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-[11px]">✓</span>
+              {t('admin.payments.completedOn', { date: formatDate(run.org_admin_signed?.at || run.payment_date) })}
+              <span className="opacity-70">·</span> {t('admin.payments.sentToVircle')}
+            </p>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-green-100">{t('admin.payments.referenceCopy')}</p>
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-4">
-            {run.drive_file_url && <a href={run.drive_file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:underline">{t('admin.payments.openInDrive')}</a>}
-            <button onClick={downloadCsv} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">{t('admin.payments.downloadCsv')}</button>
+          <div className="space-y-4 bg-white p-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {run.admin_signed && (
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 p-4">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-green-700/70">{t('admin.payments.authorisedBy')}</p>
+                    <p className="mt-1 truncate font-serif text-lg italic text-gray-900">{run.admin_signed.name}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{dateTime(run.admin_signed.at)}</p>
+                  </div>
+                  <Rosette />
+                </div>
+              )}
+              {run.org_admin_signed && (
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 p-4">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-green-700/70">{t('admin.payments.approvedBy')}</p>
+                    <p className="mt-1 truncate font-serif text-lg italic text-gray-900">{run.org_admin_signed.name}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{dateTime(run.org_admin_signed.at)}</p>
+                  </div>
+                  <Rosette />
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3">
+              <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-lg">📄</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-gray-900">{run.reference}.csv</p>
+                <p className="text-xs text-gray-500">{t('admin.payments.exportedForVircle')}</p>
+              </div>
+              {run.drive_file_url && <a href={run.drive_file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:underline">{t('admin.payments.openInDrive')}</a>}
+              <button onClick={downloadCsv} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">{t('admin.payments.downloadCsv')}</button>
+            </div>
           </div>
         </div>
       )}

@@ -1832,11 +1832,14 @@ def _payment_run_detail(run):
     included = [i for i in items if i.included]
     total = sum((i.amount for i in included), _Decimal('0'))
     # "Skipped this run" -- payable-status + started students who fail D4-4/5/6 (greyed,
-    # shown not hidden). Computed live from the eligibility choke-point.
+    # shown not hidden). Computed live from the eligibility choke-point. A student who IS
+    # an item of this run is never "skipped" by it -- without this, a COMPLETED run's own
+    # students re-enter as already_paid (they now sit in a completed run for the period).
     from . import payments
+    item_app_ids = {i.application_id for i in items}
     skipped = []
     for row in payments.eligible_rows(run.organisation, run.payment_date, period_month=run.period_month):
-        if not row['eligible']:
+        if not row['eligible'] and row['application'].id not in item_app_ids:
             a = row['application']
             p = getattr(a, 'profile', None)
             skipped.append({'application_id': a.id, 'name': getattr(p, 'name', '') or '',
