@@ -299,6 +299,33 @@ class TestStudentOfferCheckPathway(SimpleTestCase):
         self.assertEqual(chk['declared_programme'], 'Diploma Senibina')
 
 
+class TestChosenInstitutionStatus(SimpleTestCase):
+    """`chosen_institution_status` drives the TERTIARY (poly/UA-diploma/asasi/PISMP) Institution
+    tick: the offer institution vs the SHOWN `chosen_programme.institution` — distinct from
+    `institution_status`, which compares the pre-U `pre_u_institution` (blank for tertiary)."""
+
+    _OWN = dict(pname='Yeswindran Muraly', pnric='081227-02-0661')
+
+    def test_matches_shown_chosen_programme_institution(self):
+        # A poly student: chosen_programme.institution set, pre_u_institution blank.
+        chk = student_offer_check(_offer_doc(
+            YESWINDRAN_OFFER, **self._OWN,
+            declared={'institution': 'Universiti Teknikal Malaysia Melaka'}))
+        self.assertEqual(chk['chosen_institution_status'], 'match')
+        # The pre-U comparison has nothing to compare (pre_u_institution is blank).
+        self.assertEqual(chk['institution_status'], 'unknown')
+
+    def test_clashes_on_a_different_institution(self):
+        chk = student_offer_check(_offer_doc(
+            YESWINDRAN_OFFER, **self._OWN,
+            declared={'institution': 'Politeknik Sultan Idris Shah'}))
+        self.assertEqual(chk['chosen_institution_status'], 'clash')
+
+    def test_unknown_when_no_chosen_programme_institution(self):
+        chk = student_offer_check(_offer_doc(YESWINDRAN_OFFER, **self._OWN))
+        self.assertEqual(chk['chosen_institution_status'], 'unknown')
+
+
 class TestOfferIntakeYear(SimpleTestCase):
     """Course-start (intake) year + currency vs the cohort: 'current' (==cohort year) → green,
     'off' → amber, '' → no signal."""

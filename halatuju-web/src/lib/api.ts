@@ -1805,6 +1805,9 @@ export interface PathwayCheck {
   pathway?: 'match' | 'mismatch' | 'unknown'
   // The institution dimension on its own — drives the cockpit's Pre-U Institution verified tick.
   institution_status?: 'match' | 'clash' | 'unknown'
+  // The offer institution vs the SHOWN chosen_programme.institution — drives the TERTIARY
+  // (poly / UA diploma / asasi / PISMP) Institution tick, where pre_u_institution is blank.
+  chosen_institution_status?: 'match' | 'clash' | 'unknown'
   declared_programme?: string
   declared_institution?: string
   // The course-switch note: set on the LIVE offer when it replaced a genuinely different prior

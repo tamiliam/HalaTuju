@@ -382,6 +382,16 @@ def student_offer_check(doc) -> dict:
         'institution_status': _field_status(
             (getattr(application, 'pre_u_institution', '') or '').strip() if application is not None else '',
             institution),                         # 'match' | 'clash' | 'unknown'
+        # Does the offer's institution match the CHOSEN-PROGRAMME institution shown for a TERTIARY
+        # pathway (poly / UA diploma / asasi / PISMP)? That value is the single-source
+        # `chosen_programme.institution` — catalogue-resolved, often FROM this very offer (autofill's
+        # institution merge, or the poly read-time fill) — so it's what the Academic box actually
+        # shows for a tertiary student, whereas `institution_status` above compares the pre-U field.
+        # Drives the tertiary Institution tick (a pre-U student keeps using `institution_status`).
+        'chosen_institution_status': _field_status(
+            ((getattr(application, 'chosen_programme', None) or {}).get('institution') or '').strip()
+            if isinstance(getattr(application, 'chosen_programme', None), dict) else '',
+            institution),                         # 'match' | 'clash' | 'unknown'
         'declared_programme': decl_prog,
         'declared_institution': decl_inst,
     }

@@ -77,6 +77,25 @@ describe('fieldVerifications', () => {
     expect(fv.preUInstitution).toBeUndefined()
   })
 
+  it('ticks tertiary institution when a genuine offer institution matches the chosen programme', () => {
+    const fv = fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'match' } },
+    ]))
+    expect(fv.institution).toEqual({ source: 'offerLetter' })
+  })
+
+  it('does NOT tick tertiary institution on a clash / unknown / pathway mismatch', () => {
+    expect(fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'clash' } },
+    ])).institution).toBeUndefined()
+    expect(fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'unknown' } },
+    ])).institution).toBeUndefined()
+    expect(fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'match', pathway: 'mismatch' } },
+    ])).institution).toBeUndefined()
+  })
+
   it('a SUSPECT offer still ticks (only a genuine FAKE fails) — owner 2026-07-16', () => {
     const suspect = fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'suspect' },

@@ -21,6 +21,7 @@ export type VerifiableField =
   | 'grades'
   | 'chosenProgramme'
   | 'preUInstitution'
+  | 'institution'
   | 'reportingDate'
   | 'address'
   | 'parentName'
@@ -88,6 +89,15 @@ export function fieldVerifications(
     && d.pathway_check?.institution_status === 'match'
     && d.pathway_check?.pathway !== 'mismatch')) {
     out.preUInstitution = { source: 'offerLetter' }
+  }
+  // Tertiary institution (poly / UA diploma / asasi / PISMP): the offer's institution matches the
+  // SHOWN chosen_programme.institution (pre_u_institution is blank for these, so `institution_status`
+  // can't tick them). Same red-chip guard — never green while the offer is an overall pathway
+  // mismatch. The cockpit uses this for a tertiary student; a pre-U student uses `preUInstitution`.
+  if (docs.some((d) => usableOffer(d)
+    && d.pathway_check?.chosen_institution_status === 'match'
+    && d.pathway_check?.pathway !== 'mismatch')) {
+    out.institution = { source: 'offerLetter' }
   }
   // Reporting date: the date READ off the offer (the shown value IS the offer's date).
   if (docs.some((d) => usableOffer(d) && d.pathway_check?.reporting_date)) {

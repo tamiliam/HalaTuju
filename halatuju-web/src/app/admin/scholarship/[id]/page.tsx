@@ -1121,7 +1121,7 @@ export default function AdminScholarshipDetailPage() {
                         <Field
                           label={t('admin.scholarship.institution')}
                           value={expandMatricInstitution((app.chosen_programme?.institution as string) || app.pre_u_institution || '') || null}
-                          verifiedLabel={isInstitutionPathway ? vtip('preUInstitution') : undefined}
+                          verifiedLabel={isInstitutionPathway ? vtip('preUInstitution') : vtip('institution')}
                         />
                       </div>
                     </dl>
