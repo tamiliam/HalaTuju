@@ -4,12 +4,57 @@ Covers the pure taxonomy/derivation module (`family.py`) + the derive-on-save
 behaviour in `services.save_application_details` (the structured roster is the
 INPUT; first_in_family + parents_occupation become OUTPUTS).
 """
-from django.test import TestCase
+from types import SimpleNamespace
+
+from django.test import SimpleTestCase, TestCase
 
 from apps.courses.models import StudentProfile
 from apps.scholarship import family
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import save_application_details
+
+
+class CopyPathwayGuardTests(SimpleTestCase):
+    """copy_pathway's chosen_programme provenance guard — a /profile edit must never wipe an
+    offer/officer-confirmed programme on the open application (#117 clobber)."""
+
+    @staticmethod
+    def _obj(cp, **extra):
+        base = dict(pathway_certainty='', chosen_pathway='', pre_u_track='', pre_u_institution='',
+                    chosen_programme=cp, pathways_considered=[], uncertainty_reasons=[],
+                    uncertainty_note='')
+        base.update(extra)
+        return SimpleNamespace(**base)
+
+    def test_empty_profile_value_does_not_clobber_confirmed_app_value(self):
+        # #117: the profile carries {} and a pre-U-track edit fires the sync.
+        profile = self._obj({}, pre_u_track='sains_sosial')
+        app = self._obj({'course_name': 'Tingkatan Enam',
+                         'institution': 'Kolej Tingkatan Enam Gombak',
+                         'source': 'officer_interview'})
+        family.copy_pathway(profile, app)
+        # The confirmed programme survives; the other pathway fields still sync.
+        self.assertEqual(app.chosen_programme['institution'], 'Kolej Tingkatan Enam Gombak')
+        self.assertEqual(app.pre_u_track, 'sains_sosial')
+
+    def test_student_pick_does_not_override_offer_confirmed(self):
+        profile = self._obj({'course_name': 'Some Other Course'})   # no confirmed source
+        app = self._obj({'course_name': 'Diploma A', 'source': 'offer_letter_confirmed'})
+        family.copy_pathway(profile, app)
+        self.assertEqual(app.chosen_programme['course_name'], 'Diploma A')
+
+    def test_populates_a_blank_destination(self):
+        profile = self._obj({'course_name': 'Diploma A', 'source': 'offer_letter_auto'})
+        app = self._obj({})
+        family.copy_pathway(profile, app)
+        self.assertEqual(app.chosen_programme['course_name'], 'Diploma A')
+
+    def test_like_for_like_student_value_still_syncs(self):
+        # Neither side confirmed → a student's new pick propagates normally.
+        profile = self._obj({'course_name': 'New Pick'})
+        app = self._obj({'course_name': 'Old Pick'})
+        family.copy_pathway(profile, app)
+        self.assertEqual(app.chosen_programme['course_name'], 'New Pick')
 
 
 class FamilyTaxonomyTests(TestCase):

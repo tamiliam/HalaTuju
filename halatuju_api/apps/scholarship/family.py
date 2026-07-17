@@ -142,11 +142,50 @@ PROFILE_PATHWAY_FIELDS = (
 )
 
 
+#: ``chosen_programme.source`` values set by the OFFER / OFFICER pipeline (autofill, the
+#: student's own offer confirmation, an officer repair, or an interview correction). Such a value
+#: is authoritative — a plain /profile edit must never wipe it (the #117 clobber: the student's
+#: profile carried an empty chosen_programme, an unrelated pre-U-track edit fired the two-way sync,
+#: and ``copy_pathway`` blindly overwrote the app's offer-confirmed programme with ``{}``). A
+#: student-picked chosen_programme carries none of these sources.
+CONFIRMED_CP_SOURCES = frozenset({
+    'offer_letter_auto', 'offer_letter_confirmed', 'repair_chosen_programme', 'officer_interview',
+})
+
+
+def _cp_is_populated(cp):
+    """True when a chosen_programme dict actually names a programme (course / institution)."""
+    return bool(isinstance(cp, dict)
+                and (cp.get('course_name') or cp.get('course_id') or cp.get('institution')))
+
+
+def _should_overwrite_chosen_programme(src_cp, dst_cp):
+    """Guard for the two-way sync's ``chosen_programme`` copy. Never let an empty value clobber a
+    populated one, and never let a plain (student-sourced) value overwrite an offer/officer-confirmed
+    one. Any other case (populating a blank, or a like-for-like refresh) copies normally."""
+    if not _cp_is_populated(src_cp):
+        return False                                   # an empty source can't overwrite anything
+    if not _cp_is_populated(dst_cp):
+        return True                                    # nothing to protect on the destination
+    dst_src = (dst_cp.get('source') if isinstance(dst_cp, dict) else '') or ''
+    src_src = (src_cp.get('source') if isinstance(src_cp, dict) else '') or ''
+    if dst_src in CONFIRMED_CP_SOURCES and src_src not in CONFIRMED_CP_SOURCES:
+        return False                                   # keep the confirmed programme
+    return True
+
+
 def copy_pathway(src, dst):
-    """Copy the pathway fields between a StudentProfile and a ScholarshipApplication
-    (they share field names). Pure — the caller saves dst."""
+    """Copy the pathway fields between a StudentProfile and a ScholarshipApplication (they share
+    field names). ``chosen_programme`` is copied through a provenance guard so a student profile
+    edit can't wipe an offer/officer-confirmed programme (#117). Pure — the caller saves dst."""
     for field in PROFILE_PATHWAY_FIELDS:
-        setattr(dst, field, getattr(src, field))
+        if field == 'chosen_programme':
+            if _should_overwrite_chosen_programme(getattr(src, 'chosen_programme', None),
+                                                  getattr(dst, 'chosen_programme', None)):
+                dst.chosen_programme = getattr(src, 'chosen_programme', None)
+            # else: keep dst's populated/confirmed value untouched
+        else:
+            setattr(dst, field, getattr(src, field))
 
 
 def has_pathway(obj):
