@@ -235,6 +235,13 @@ describe('localiseParams', () => {
     expect(localiseParams({ name: 'Aisyah', count: 2 }, t)).toEqual({ name: 'Aisyah', count: '2' })
   })
 
+  it('renders pathway codes as display labels (TD-161 switch card)', () => {
+    // declared_pathway / offer_pathway route through scholarship.actionCentre.pathwayName.<code>
+    // so the card reads "STPM"/"PISMP", not the raw code.
+    expect(localiseParams({ declared_pathway: 'stpm', offer_pathway: 'pismp' }, t))
+      .toEqual({ declared_pathway: 'Stpm', offer_pathway: 'Pismp' })
+  })
+
   it('handles null/undefined', () => {
     expect(localiseParams(undefined, t)).toEqual({})
     expect(localiseParams(null, t)).toEqual({})

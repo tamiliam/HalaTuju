@@ -52,7 +52,7 @@ import IncomeRouteSwitch from '@/components/IncomeRouteSwitch'
 // Confirm-kind queries the student answers with a single tap (resolved in place via onAffirm) —
 // the pathway confirmation and the household-size confirmation. Every other confirm jumps the
 // student to the form tab that fixes the underlying fact (or, once locked, a typed reply).
-const ONE_TAP_CONFIRM = new Set(['pathway_confirm', 'household_size_confirm'])
+const ONE_TAP_CONFIRM = new Set(['pathway_confirm', 'household_size_confirm', 'pathway_type_switch'])
 
 // ── Icons (inline SVG, blue circle bg set by the caller) ──────────────────
 
@@ -149,6 +149,16 @@ function ActionCard({
   // non-income doc uses the doc-anchored coach instead.
   const clusterMember = clusterMemberOf(item, incomeRoute, incomeEarner)
   const isClusterTask = !!clusterMember
+
+  // TD-161: a PISMP pathway-type switch can't be settled by a one-tap Yes — the offer letter never
+  // states the aliran (SK/SJKT/SJKC), so the student pins the exact course on the profile picker
+  // (which then reconciles chosen_pathway + the catalogue link and auto-clears this query). Every
+  // other type switch (STPM → diploma/degree/asasi/matric) is a plain one-tap confirm. Carry the
+  // inferred aliran as a hint the picker can pre-select on.
+  const isPismpSwitch = item.code === 'pathway_type_switch' && item.params?.offer_pathway === 'pismp'
+  const pismpProfileHref = isPismpSwitch && typeof item.params?.aliran_hint === 'string'
+    ? `/profile?aliran=${encodeURIComponent(String(item.params.aliran_hint))}`
+    : '/profile'
 
   // #15a: re-surface the doc-anchored coach for a NON-cluster held task from the fetched
   // documents, so a page reload keeps Gopal's advice (not just the in-session upload).
@@ -386,12 +396,16 @@ function ActionCard({
             {/* pathway_undeclared (owner 2026-07-15): an ambiguous offer we can't pin (a PISMP offer
                 with no aliran) — the student picks their exact course on the profile page rather than
                 typing a reply. The query auto-clears once a real course lands. */}
-            {item.code === 'pathway_undeclared' && (
+            {/* pathway_undeclared, and a PISMP type-switch (TD-161): both need the profile Aliran/Bidang
+                picker to pin an exact course — a one-tap Yes can't choose the aliran the offer omits. */}
+            {(item.code === 'pathway_undeclared' || isPismpSwitch) && (
               <a
-                href="/profile"
+                href={isPismpSwitch ? pismpProfileHref : '/profile'}
                 className="block w-full rounded-xl bg-primary-500 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-600"
               >
-                {t('scholarship.actionCentre.updatePathwayOnProfile')}
+                {t(isPismpSwitch
+                  ? 'scholarship.actionCentre.confirmPathwaySwitchOnProfile'
+                  : 'scholarship.actionCentre.updatePathwayOnProfile')}
               </a>
             )}
 
@@ -419,7 +433,8 @@ function ActionCard({
               </div>
             )}
 
-            {item.kind === 'confirm' && ONE_TAP_CONFIRM.has(item.code) && (
+            {/* One-tap confirm — but NOT a PISMP type-switch (that routes to the profile picker above). */}
+            {item.kind === 'confirm' && ONE_TAP_CONFIRM.has(item.code) && !isPismpSwitch && (
               <button
                 type="button"
                 onClick={onAffirm}
@@ -429,7 +444,9 @@ function ActionCard({
                 {busy ? t('scholarship.actionCentre.sending')
                   : t(item.code === 'household_size_confirm'
                       ? 'scholarship.actionCentre.confirmHouseholdSizeYes'
-                      : 'scholarship.actionCentre.confirmPathwayYes')}
+                      : item.code === 'pathway_type_switch'
+                        ? 'scholarship.actionCentre.confirmPathwaySwitchYes'
+                        : 'scholarship.actionCentre.confirmPathwayYes')}
               </button>
             )}
 

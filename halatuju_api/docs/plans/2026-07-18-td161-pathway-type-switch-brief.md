@@ -1,8 +1,8 @@
 # Brief — TD-161: unify pathway reconciliation (offer vs the student's declaration — present, different-type, or absent)
 
-**Status:** BACKEND SLICE DONE + TESTED (2026-07-18); FE + PISMP picker hand-off REMAINING. NOT
-deploy-ready alone (see below). Own sprint; NO migration. System-handled (no officer gate) — owner
-decision 2026-07-18. Live test case: **#43** (STPM-declared, PISMP-confirmed).
+**Status:** BACKEND + FE DONE + TESTED (2026-07-18) — answerable end-to-end, deploy-ready (owner gates
+the push). NO migration. System-handled (no officer gate) — owner decision 2026-07-18. Live test case:
+**#43** (STPM-declared, PISMP-confirmed). Only cosmetic follow-up left (aliran pre-select on the picker).
 
 ## Implementation status (2026-07-18)
 
@@ -19,14 +19,23 @@ decision 2026-07-18. Live test case: **#43** (STPM-declared, PISMP-confirmed).
 - Tests: verdict detection (fires when confirmed), confirm handler (adopts type + clears pre-U),
   same-type no-op, aliran inference; the public-switch (poly≡diploma) regression is guarded.
 
-**REMAINING (before deploy — do NOT ship the backend alone):**
-- **FE Action-Centre card** for `pathway_type_switch` + register it in `actionCentre` KNOWN_CODES, else
-  the synced query is INVISIBLE to the student (an open task nobody can answer → #43 stuck). This is the
-  blocker that makes backend-only unsafe to deploy.
-- **i18n** en/ms/ta for the new card (Tamil first-draft).
-- **PISMP picker hand-off** (§3/§5): after a switch to PISMP, route the student to the profile
-  Aliran/Bidang picker (pre-selected via `aliran_hint`) to pin `(aliran,bidang)` → `course_id` link —
-  today the TYPE reconciles but the specific course/link is not yet forced.
+**DONE (frontend, +586 jest green, `ActionCentre.tsx`/`actionCentre.ts` tsc-clean):**
+- `actionCentre.KNOWN_CODES` += `pathway_type_switch` (so the synced query renders, not treated as a
+  blank-titled officer ticket); the KNOWN_CODES↔item-copy parity guard covers it.
+- `localiseParams` renders the `declared_pathway`/`offer_pathway` codes as display labels via new
+  `scholarship.actionCentre.pathwayName.<code>` (so the card reads "STPM"/"PISMP", not raw codes).
+- `ActionCentre.tsx`: a non-PISMP switch → one-tap "Yes, I've switched" (`onAffirm` → resolve
+  'confirmed' → `confirm_pathway`); a **PISMP** switch → routes to the profile Aliran/Bidang picker
+  (`/profile?aliran=<hint>`) — a one-tap can't choose the aliran the offer omits; the picker pins
+  `(aliran,bidang)` → `course_id` and the query auto-clears.
+- i18n en/ms/ta: `item.pathway_type_switch.{title,desc}`, `confirmPathwaySwitchYes`,
+  `confirmPathwaySwitchOnProfile`, `pathwayName.*` (Tamil first-draft).
+
+**REMAINING (cosmetic, non-blocking):**
+- The profile page/`AliranPicker` doesn't yet CONSUME the `?aliran=<hint>` URL param to pre-select the
+  inferred stream — the hint is passed through (backend computes it, FE carries it), only the picker's
+  default-read is left. A small follow-up; the flow works without it (student just taps the aliran).
+- Tamil review of the new first-draft strings.
 
 ## Framing — one reconciliation, three inputs (owner 2026-07-18)
 

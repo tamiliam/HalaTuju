@@ -145,6 +145,9 @@ export const KNOWN_CODES = [
   'offer_name_mismatch',
   'pathway_undeclared',
   'pathway_confirm',
+  // TD-161 — the offer is a different pathway TYPE than declared (STPM → PISMP, #43): a one-tap
+  // confirm of the switch (PISMP routes to the profile picker to pin the exact aliran/bidang).
+  'pathway_type_switch',
   // Check 2 STEP 2 — AI clarify queries (kind='clarify', source='check2').
   'course_unspecified',
   'sibling_level_unknown',
@@ -333,6 +336,10 @@ export function localiseParams(
   for (const [k, v] of Object.entries(params)) {
     if (k === 'members' && Array.isArray(v)) {
       out[k] = v.map((m) => t(`scholarship.docs.income.wizard.member.${m}`)).join(', ')
+    } else if ((k === 'declared_pathway' || k === 'offer_pathway') && typeof v === 'string' && v) {
+      // TD-161: render the pathway CODE (stpm/pismp/…) as its display label ("STPM"/"PISMP") so the
+      // pathway_type_switch card reads naturally; fall back to the raw code for an unmapped value.
+      out[k] = t(`scholarship.actionCentre.pathwayName.${v}`) || String(v)
     } else {
       out[k] = String(v)
     }

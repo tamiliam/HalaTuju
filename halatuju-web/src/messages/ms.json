@@ -2186,6 +2186,10 @@
         "mother_pension_proof_missing": {
           "title": "Muat naik penyata pencen ibu anda",
           "desc": "Anda memberitahu ibu anda menerima pencen atau bantuan. Sila muat naik penyata pencen atau bantuan terkininya — ia dikira sebagai sebahagian daripada pendapatan isi rumah."
+        },
+        "pathway_type_switch": {
+          "title": "Sahkan perubahan laluan anda",
+          "desc": "Anda memberitahu kami anda mengikuti {declared_pathway}, tetapi surat tawaran anda adalah untuk {offer_pathway} ({programme} di {institution}). Jika anda telah bertukar ke {offer_pathway}, sahkannya dan kami akan mengemas kini rekod anda. Jika ini bukan tawaran anda, muat naik yang betul."
         }
       },
       "vircle": {
@@ -2232,7 +2236,19 @@
         "title": "Kami sedang menelitinya bersama pasukan kami",
         "body": "Terima kasih — kami telah menerima apa yang anda hantar. Pasukan kami kini sedang menyemaknya secara peribadi, jadi buat masa ini tiada apa lagi yang perlu anda muat naik di sini. Kami akan menghubungi anda jika kami memerlukan apa-apa lagi."
       },
-      "updatePathwayOnProfile": "Kemas kini di profil anda"
+      "updatePathwayOnProfile": "Kemas kini di profil anda",
+      "confirmPathwaySwitchYes": "Ya, saya telah bertukar ke laluan ini",
+      "confirmPathwaySwitchOnProfile": "Sahkan dan pilih program anda",
+      "pathwayName": {
+        "stpm": "STPM",
+        "matric": "Matrikulasi",
+        "asasi": "Asasi",
+        "pismp": "PISMP",
+        "diploma": "Diploma",
+        "degree": "Ijazah",
+        "poly": "Politeknik",
+        "university": "Universiti"
+      }
     },
     "summary": {
       "subtitle": "Lihat sekali lagi — pastikan semuanya betul, kemudian tatal ke bawah dan hantar.",

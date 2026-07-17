@@ -2186,6 +2186,10 @@
         "mother_pension_proof_missing": {
           "title": "Upload your mother's pension statement",
           "desc": "You told us your mother draws a pension or benefit. Please upload her latest pension or benefit statement — it counts as part of the household's income."
+        },
+        "pathway_type_switch": {
+          "title": "Confirm your pathway change",
+          "desc": "You told us you were taking {declared_pathway}, but your offer letter is for {offer_pathway} ({programme} at {institution}). If you've switched to {offer_pathway}, confirm it and we'll update your record. If this isn't your offer, upload the right one instead."
         }
       },
       "vircle": {
@@ -2232,7 +2236,19 @@
         "title": "We're looking into this with our team",
         "body": "Thank you — we've received what you sent. Our team is now checking this personally, so there's nothing more you need to upload here for now. We'll be in touch if we need anything else."
       },
-      "updatePathwayOnProfile": "Update on your profile"
+      "updatePathwayOnProfile": "Update on your profile",
+      "confirmPathwaySwitchYes": "Yes, I've switched to this pathway",
+      "confirmPathwaySwitchOnProfile": "Confirm and choose your programme",
+      "pathwayName": {
+        "stpm": "STPM",
+        "matric": "Matrikulasi",
+        "asasi": "Asasi",
+        "pismp": "PISMP",
+        "diploma": "Diploma",
+        "degree": "Degree",
+        "poly": "Politeknik",
+        "university": "University"
+      }
     },
     "summary": {
       "subtitle": "One last look — check everything is right, then scroll down and submit.",
