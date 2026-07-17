@@ -1,14 +1,16 @@
 """Repair mis-slotted ``chosen_programme`` values from ALREADY-STORED fields — the residual
 correction path for offer-extraction faults (app #125: an institution name in the course slot,
-a "Tarikh dan Masa Daftar…" line in the institution slot).
+a "Tarikh dan Masa Daftar…" line in the institution slot; app #47: a bare numbered-clause header
+"2.4."/"2.5." latched as the stream/institution value).
 
 **NEVER re-runs Vision/Gemini** (standing rule: local re-extraction destroys ``vision_fields``).
 It only re-reads the stored ``chosen_programme`` + the catalogue, applying the same
 ``card_display`` sanity/resolution the read-side uses, and fills ``reporting_date`` from a
 mis-slotted date when currently null.
 
-Scope: ONLY the corruption signature (a date/'Tarikh' institution, or an institution-shaped /
-date-shaped course name). A secondary-school name in the institution slot is LEFT ALONE — it is
+Scope: ONLY the corruption signature (a date/'Tarikh' or clause-number institution, or an
+institution-shaped / date-shaped / clause-number course name). A secondary-school name in the
+institution slot is LEFT ALONE — it is
 legitimate officer data; the sponsor-card school-block (card_display.resolve_institution) keeps
 it off sponsor cards at read time. This command never deletes a school.
 
@@ -31,9 +33,11 @@ def propose_repair(app):
     course_id = (cp.get('course_id') or '').strip()
 
     course_bad = bool(course_name) and (card_display.looks_like_institution(course_name)
-                                        or card_display.looks_like_date(course_name))
+                                        or card_display.looks_like_date(course_name)
+                                        or card_display.looks_like_clause_number(course_name))
     inst_is_date = bool(institution) and card_display.looks_like_date(institution)
-    if not (course_bad or inst_is_date):
+    inst_bad = inst_is_date or (bool(institution) and card_display.looks_like_clause_number(institution))
+    if not (course_bad or inst_bad):
         return None  # not the corruption signature (school-in-institution is handled read-side)
 
     # Recover the institution: the institution-shaped course_name IS the real institution;
@@ -41,7 +45,7 @@ def propose_repair(app):
     new_inst = ''
     if course_bad and card_display.looks_like_institution(course_name):
         new_inst = course_name
-    elif institution and not inst_is_date:
+    elif institution and not inst_bad:
         new_inst = institution
     else:
         new_inst = card_display.catalogue_single_institution(course_id)

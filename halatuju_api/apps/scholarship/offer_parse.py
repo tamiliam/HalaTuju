@@ -281,7 +281,8 @@ _REQUIRED = ('candidate_name', 'candidate_nric', 'programme', 'intake')
 
 # Parser version — bump on ANY change to the deterministic capture (doc-recognition versioning
 # rule) so re-runs are traceable. 1.1.0: poly slot-guard for the #125 block-misalignment.
-PARSER_VERSION = '1.1.0'
+# 1.2.0: reject a clause-number stream/institution/programme (#47) → defer to Gemini.
+PARSER_VERSION = '1.2.0'
 
 
 def parse_govt_offer(text: str):
@@ -295,6 +296,13 @@ def parse_govt_offer(text: str):
     fields = {'stpm': _parse_stpm, 'matriculation': _parse_matric,
               'polytechnic': _parse_poly}[fam](lines, up)
     if any(not (fields.get(k) or '').strip() for k in _REQUIRED):
+        return None
+    # A bare numbered-clause header leaked as a field value means the label-anchored layout read
+    # went wrong (#47: the STPM section labels '2.4.'/'2.5.' latched as stream/institution). Don't
+    # trust a corrupt deterministic read — defer the whole offer to Gemini (which reads the body
+    # correctly). A bare N.N. token is NEVER a valid stream / institution / programme.
+    from .card_display import looks_like_clause_number
+    if any(looks_like_clause_number(fields.get(k, '')) for k in ('stream', 'institution', 'programme')):
         return None
     fields['_family'] = fam
     fields['_offer_parser_version'] = PARSER_VERSION

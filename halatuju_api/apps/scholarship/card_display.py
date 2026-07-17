@@ -41,6 +41,18 @@ INSTITUTION_SHAPE_RE = re.compile(
     r'Universiti|Institut\s+Pendidikan\s+Guru|IPG|Institut|Maktab)\b',
     re.IGNORECASE)
 
+# A value that is really a numbered-clause header / list marker off the offer BODY
+# ("2.4.", "2.5.", "3", "(iv)") — never a real stream / institution / programme. It leaks when
+# a label-anchored parser latches onto the section numbering instead of the value (#47: a Form-6
+# offer whose "2.4. Bidang" / "2.5. Pusat Tingkatan Enam" section labels landed as the values).
+# A real value is always a multi-word phrase, so a whole value that is ONLY a numbering token is junk.
+CLAUSE_NUMBER_RE = re.compile(
+    r'^\s*(?:'
+    r'\(?\d+(?:\.\d+)*\)?\.?'       # 2  2.4  2.4.  (3)  3)
+    r'|\([ivxlcdm]{1,7}\)\.?'       # (i)  (iv)  (iv). — bracketed roman list markers
+    r')\s*$',
+    re.IGNORECASE)
+
 
 def looks_like_school(s):
     return bool(SCHOOL_BLOCK_RE.search(s or ''))
@@ -52,6 +64,11 @@ def looks_like_date(s):
 
 def looks_like_institution(s):
     return bool(INSTITUTION_SHAPE_RE.match((s or '').strip()))
+
+
+def looks_like_clause_number(s):
+    """True when the whole value is only a numbered-clause header / list marker (#47)."""
+    return bool(CLAUSE_NUMBER_RE.match((s or '').strip()))
 
 
 # ── catalogue resolution ─────────────────────────────────────────────────────────
@@ -165,6 +182,13 @@ def sanitise_offer_slots(programme, institution):
     prog = (programme or '').strip()
     inst = (institution or '').strip()
     reporting_raw = ''
+
+    # A bare numbered-clause header ("2.4."/"2.5.") that leaked from the offer body's section
+    # numbering is never a field value (#47) — drop it from either slot before anything else.
+    if prog and looks_like_clause_number(prog):
+        prog = ''
+    if inst and looks_like_clause_number(inst):
+        inst = ''
 
     if inst and looks_like_date(inst):
         reporting_raw = inst

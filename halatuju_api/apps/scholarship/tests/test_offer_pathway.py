@@ -10,10 +10,11 @@ from django.utils import timezone
 from apps.courses.models import (
     Course, CourseInstitution, FieldTaxonomy, Institution, StudentProfile,
 )
-from apps.scholarship import offer_pathway as op
+from apps.scholarship import card_display, offer_pathway as op
 from apps.scholarship.models import (
     ApplicantDocument, ScholarshipApplication, ScholarshipCohort,
 )
+from apps.scholarship.offer_parse import parse_govt_offer
 from apps.scholarship.services import autofill_pathway_from_offer
 
 
@@ -113,6 +114,55 @@ class TestDetectors(SimpleTestCase):
         self.assertTrue(op._name_aligns({'dac', 'perakaunan'}, {'perakaunan'}))
         # A single shared generic-ish token is NOT enough (neither is a subset).
         self.assertFalse(op._name_aligns({'teknikal', 'malaysia', 'melaka'}, {'malaysia', 'sabah'}))
+
+
+# ───────────── clause-number guard (#47: numbered-clause tokens as data) ────
+_STPM_HEAD = [
+    'KEMENTERIAN PENDIDIKAN MALAYSIA',
+    'SEKTOR OPERASI SEKOLAH',
+    'TAWARAN KEMASUKAN KE TINGKATAN ENAM SEMESTER 1 TAHUN 2026',
+    'Nama : TAMOTHARAN A/L GUNASEGARAN',
+    'No. Kad Pengenalan : 080101-01-1234',
+]
+
+
+class TestClauseNumberGuard(SimpleTestCase):
+    def test_detector_flags_only_numbering(self):
+        for junk in ('2.4.', '2.5.', '2', '2.4', '3)', '(iv)', ' 2.6. ', '(i).'):
+            self.assertTrue(card_display.looks_like_clause_number(junk), junk)
+        for real in ('SAINS SOSIAL', 'KOLEJ TINGKATAN ENAM SRI ISTANA',
+                     'Politeknik Ungku Omar', '1 JULAI 2026', 'sains', '', 'Civil'):
+            self.assertFalse(card_display.looks_like_clause_number(real), real)
+
+    def test_sanitise_drops_clause_number_from_either_slot(self):
+        # A numbered-clause header in either slot is never stored.
+        prog, inst, _rep = card_display.sanitise_offer_slots('2.4.', '2.5.')
+        self.assertEqual((prog, inst), ('', ''))
+        prog, inst, _rep = card_display.sanitise_offer_slots('Tingkatan Enam', '2.5.')
+        self.assertEqual((prog, inst), ('Tingkatan Enam', ''))
+
+    def test_parser_defers_to_gemini_on_clause_number(self):
+        # A glued Form-6 OCR where the section labels' values are the NEXT clause numbers →
+        # the deterministic read latches '2.5.'/'2.6.' as stream/institution → defer to Gemini.
+        text = '\n'.join(_STPM_HEAD + [
+            '2.4. Bidang : 2.5.',
+            '2.5. Pusat Tingkatan Enam : 2.6.',
+            '2.6. Tarikh Lapor Diri : 1 JULAI 2026',
+        ])
+        self.assertIsNone(parse_govt_offer(text))
+
+    def test_parser_reads_clean_stpm_values(self):
+        # Control: the same layout with REAL values reads cleanly (guard isn't over-eager).
+        text = '\n'.join(_STPM_HEAD + [
+            '2.4. Bidang : SAINS SOSIAL',
+            '2.5. Pusat Tingkatan Enam : KOLEJ TINGKATAN ENAM SRI ISTANA',
+            '2.6. Tarikh Lapor Diri : 1 JULAI 2026',
+        ])
+        parsed = parse_govt_offer(text)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed['stream'], 'SAINS SOSIAL')
+        self.assertEqual(parsed['institution'], 'KOLEJ TINGKATAN ENAM SRI ISTANA')
+        self.assertFalse(card_display.looks_like_clause_number(parsed['institution']))
 
 
 # ──────────────────── catalogue resolver + auto-fill (DB) ───────────────────
@@ -373,6 +423,18 @@ class TestAutofillPathwayFromOffer(_Base):
         app.refresh_from_db()
         self.assertEqual(app.chosen_programme['institution'], 'Politeknik Seberang Perai')
         self.assertEqual(app.chosen_programme['course_id'], 'DAC')
+
+    def test_clause_number_institution_never_stored(self):
+        # #47: a stored offer whose institution is a leaked clause number must not reach ANY
+        # field — not chosen_programme, not pre_u_institution.
+        app = self._app()
+        self._offer(app, 'Tingkatan Enam Semester 1', '2.5.')
+        autofill_pathway_from_offer(app)
+        app.refresh_from_db()
+        self.assertFalse(card_display.looks_like_clause_number(app.pre_u_institution))
+        self.assertNotEqual(app.pre_u_institution, '2.5.')
+        stored_inst = (app.chosen_programme or {}).get('institution', '')
+        self.assertFalse(card_display.looks_like_clause_number(stored_inst))
 
     def test_blank_institution_filled_from_offer_hint_multicampus(self):
         # Multi-campus course + blank stored institution → disambiguate via the OFFER's

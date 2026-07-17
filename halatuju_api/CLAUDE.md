@@ -524,6 +524,32 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-17)
 
+**✅ SHIPPED (code — owner gates the deploy) 2026-07-17 — Offer parser: reject numbered-clause tokens
+as data (#47).** NO migration; api-only; push = deploy (held for owner). Off #47 (TAMOTHARAN, STPM): a
+cockpit Re-run re-extracted the Form-6 offer (doc 1825) via the deterministic govt parser and mis-read
+its numbered section labels as the values — `stream="2.4."`, `institution="2.5."` — which autofill then
+stored into `chosen_programme.institution`. A bare `N.N.` token is never a field value (the exact
+"anchor to the label, don't grab the first token" fault in lessons.md). **Fix — one shared detector,
+defended at three layers + a repair sweep:**
+- `card_display.looks_like_clause_number(s)` (`CLAUSE_NUMBER_RE`, `^\s*\d+(\.\d+)*\.?\s*$` + bracketed
+  roman list markers).
+- **Read (primary):** `offer_parse.parse_govt_offer` returns None (→ Gemini, the clean prior read)
+  when a parsed stream/institution/programme looks like a clause number. `PARSER_VERSION 1.1.0 → 1.2.0`
+  (offer-parser version, NOT the genuineness `MODEL_VERSION`).
+- **Write (defence-in-depth):** wired into `card_display.sanitise_offer_slots` (covers `confirm_pathway`
+  + `autofill_pathway_from_offer`'s `chosen_programme`); autofill also drops a clause-number `inst`/`prog`
+  early so `pre_u_institution` can't get it either.
+- **Repair:** `repair_chosen_programme.propose_repair` corruption signature extended to a clause-number
+  institution/course (re-reads STORED fields only, never re-OCRs).
+- +6 unit/DB tests (`test_offer_pathway.TestClauseNumberGuard` + autofill); **2697 scholarship pytest**.
+- **▶ OWNER / DATA (live, via Supabase MCP — do NOT re-run #47, deterministic re-produces the junk):**
+  restore doc 1825 `vision_fields.fields` → institution "KOLEJ TINGKATAN ENAM SRI ISTANA" / stream
+  "SAINS SOSIAL", and #47 `chosen_programme` → "Tingkatan Enam" @ "Kolej Tingkatan Enam Sri Istana";
+  cohort-scan `applicant_documents` for other clause-number institution/stream rows;
+  `repair_chosen_programme --apply` (or MCP) for any already-stored cases. Prefer
+  `backfill_offer_pathways --apply` over cockpit Re-run for remaining stale blanks (Re-run's
+  re-extraction caused this regression).
+
 **✅ SHIPPED 2026-07-17 — Offer-extraction root cause + sponsor card data fix (upstream-first)**
 (NO migration; brief `docs/plans/2026-07-16-sponsor-card-data-fix-brief.md`; retro
 `docs/retrospective-2026-07-17-sponsor-card-data-fix.md`). Owner-diagnosed from #125's card.

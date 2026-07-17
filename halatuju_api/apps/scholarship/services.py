@@ -1175,6 +1175,14 @@ def autofill_pathway_from_offer(application):
         return False
     prog = (chk['programme'] or '').strip()
     inst = (chk['institution'] or '').strip()
+    # A bare numbered-clause header ("2.4."/"2.5.") leaked from an offer's section numbering (#47)
+    # is never a programme/institution — drop it before it reaches ANY stored field
+    # (pre_u_institution as well as chosen_programme), defence-in-depth over the read-side guard.
+    from . import card_display
+    if prog and card_display.looks_like_clause_number(prog):
+        prog = ''
+    if inst and card_display.looks_like_clause_number(inst):
+        inst = ''
     if not prog and not inst:
         return False  # nothing readable to settle
     # A genuine clash with a SPECIFIC declared programme is the confirm query's job, not a
