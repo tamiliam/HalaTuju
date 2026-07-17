@@ -208,6 +208,15 @@ class TestSponsorEmailContent(TestCase):
         self.assertNotIn('\n\n\n', msg.body)          # no doubled blank lines from omitted facts
         self.assertNotIn('<img', html)                # empty slug → no thumbnail
 
+    def test_email_caps_at_five_students(self):
+        from apps.scholarship.emails import send_sponsor_digest_email
+        cards = [self._card(id=i, ref=f'S-{i}') for i in range(9)]   # 9 in the pool
+        send_sponsor_digest_email('s@x.com', cards, lang='en')
+        msg = self._last()[0]
+        shown = [i for i in range(9) if f'S-{i}' in msg.body]
+        self.assertEqual(len(shown), 5)                 # only 5 shown in the email
+        self.assertIn('5 ', msg.subject)                # subject count reflects the 5 shown
+
     def test_all_three_languages_render(self):
         from apps.scholarship.emails import send_sponsor_digest_email
         for lang in ('en', 'ms', 'ta'):

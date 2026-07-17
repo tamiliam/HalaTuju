@@ -1257,6 +1257,12 @@ def _sponsor_card_html(card, lang, frontend, tax):
     )
 
 
+def _sponsor_email_max_cards():
+    """A notification email shows at most this many students (a teaser — the 'See all
+    students' button leads to the full pool). Owner 2026-07-18: keep it to 5."""
+    return int(getattr(settings, 'SPONSOR_EMAIL_MAX_CARDS', 5) or 5)
+
+
 def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=''):
     if not to_email or not cards:
         return False
@@ -1265,6 +1271,7 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=
     frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
     freq_word = _SPONSOR_FREQ_WORD.get(freq, {}).get(lang, freq)
     tax = _tax_name_map()
+    cards = list(cards)[:_sponsor_email_max_cards()]   # cap the email to 5; the button shows the rest
     n = len(cards)
     greeting = (_SPONSOR_GREETING[lang].format(name=name.strip())
                 if (name or '').strip() else _SPONSOR_GREETING_GENERIC[lang])
