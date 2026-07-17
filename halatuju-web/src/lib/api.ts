@@ -707,6 +707,7 @@ export interface SponsorPoolCard {
   id: number          // opaque key to fetch the detail; not identifying
   ref: string         // human alias, e.g. "S-A3F9C1"
   state: string
+  school: string      // the SECONDARY school attended (owner 2026-07-18) — '' when unknown
   field: string
   course: string      // confirmed programme name (e.g. "Diploma Kejuruteraan Mekanikal")
   academic: string

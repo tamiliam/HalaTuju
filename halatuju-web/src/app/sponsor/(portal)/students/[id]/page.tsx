@@ -107,6 +107,7 @@ export default function StudentDetailPage() {
                   <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.academic}</span>
                 )}
                 <h1 className="mt-2 text-xl font-bold text-gray-900 leading-snug">{detail.course || detail.field || detail.ref}</h1>
+                {detail.institution && <p className="text-sm text-gray-500 mt-0.5">{detail.institution}</p>}
               </div>
             </div>
 
@@ -201,10 +202,10 @@ export default function StudentDetailPage() {
                   <dd className="text-right font-medium text-gray-900">{detail.state}</dd>
                 </div>
               )}
-              {detail.institution && (
+              {detail.school && (
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="text-gray-500 shrink-0">{t('sponsorPool.institutionLabel')}</dt>
-                  <dd className="text-right font-medium text-gray-900">{detail.institution}</dd>
+                  <dt className="text-gray-500 shrink-0">{t('sponsorPool.secondarySchool')}</dt>
+                  <dd className="text-right font-medium text-gray-900">{detail.school}</dd>
                 </div>
               )}
               {detail.reporting_date && (

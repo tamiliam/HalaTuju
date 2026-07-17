@@ -138,6 +138,8 @@ class TestAllowlistNoLeak(TestCase):
     def _assert_no_identifiers(self, payload):
         blob = json.dumps(payload)
         for label, value in IDENTIFIERS.items():
+            if label == 'school':
+                continue  # owner 2026-07-18: the secondary school IS shown to sponsors
             self.assertNotIn(value, blob, f'{label} leaked into sponsor payload')
 
     def test_card_leaks_nothing(self):
@@ -155,14 +157,14 @@ class TestAllowlistNoLeak(TestCase):
         self._assert_no_identifiers(data)
         self.assertIn('anon_profile', data)
 
-    def test_institution_is_target_university_never_school(self):
-        # institution = the TARGET university (chosen programme), shown to every sponsor;
-        # the secondary school is never surfaced, with or without any context.
+    def test_institution_is_target_and_school_is_secondary(self):
+        # institution = the TARGET university (chosen programme); school = the SECONDARY
+        # school attended (owner 2026-07-18) — two distinct fields.
         app = _make_eligible_app(self.cohort)
         for ctx in (None, {'is_trusted': True}):
             data = SponsorPoolCardSerializer(app, context=ctx or {}).data
             self.assertEqual(data['institution'], 'Politeknik Test')
-            self.assertNotIn(IDENTIFIERS['school'], json.dumps(data))
+            self.assertEqual(data['school'], IDENTIFIERS['school'])   # the secondary school, shown
 
     def test_institution_blank_when_target_unknown(self):
         # No institution on the chosen programme → '' so the card falls back to course-only.
@@ -340,6 +342,8 @@ class TestProgressState(TestCase):
         app.save(update_fields=['status'])
         blob = json.dumps(SponsorPoolCardSerializer(app).data)
         for label, value in IDENTIFIERS.items():
+            if label == 'school':
+                continue  # owner 2026-07-18: the secondary school IS shown to sponsors
             self.assertNotIn(value, blob, f'{label} leaked alongside progress_state')
 
     # F9a — the real band derived from the latest SemesterResult.
@@ -486,7 +490,9 @@ class TestSponsorBrowse(TestCase):
 
     def _assert_clean(self, payload):
         blob = json.dumps(payload)
-        for value in IDENTIFIERS.values():
+        for label, value in IDENTIFIERS.items():
+            if label == 'school':
+                continue  # owner 2026-07-18: the secondary school IS shown to sponsors
             self.assertNotIn(value, blob)
 
 

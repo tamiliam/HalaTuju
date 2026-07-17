@@ -37,7 +37,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockDetail.mockResolvedValue({
     ref: 'Student A9', state: 'Selangor', field: 'Engineering', academic: '5A 3B',
-    institution: 'Politeknik Ungku Omar', reporting_date: '2026-09-01',
+    institution: 'Politeknik Ungku Omar', school: 'SMK Test', reporting_date: '2026-09-01',
     funding_categories: ['Fees'], programme_months: 24, enrolment_verified: true,
     anon_profile: '', award_amount: '3000',
   })
@@ -64,7 +64,7 @@ it('shows the sidebar facts table + balance (owner spec)', async () => {
   await screen.findByText('sponsorPool.fullyFund')   // detail loaded
   // The facts table renders its labels (home state / institution / reporting date / covers).
   expect(screen.getByText('sponsorPool.homeState')).toBeTruthy()
-  expect(screen.getByText('sponsorPool.institutionLabel')).toBeTruthy()
+  expect(screen.getByText('sponsorPool.secondarySchool')).toBeTruthy()
   expect(screen.getByText('sponsorPool.reportingDate')).toBeTruthy()
   expect(screen.getByText('sponsorPool.coversLabel')).toBeTruthy()
   // "SUPPORT NEEDED" eyebrow + the balance line.

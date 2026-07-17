@@ -13,14 +13,14 @@ jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 
 const pool: SponsorPoolCard[] = [
   {
-    id: 1, ref: 'S-AAA', state: 'Perak', field: 'engineering', course: 'Diploma Mekanikal',
+    id: 1, ref: 'S-AAA', state: 'Perak', school: 'SMK A', field: 'engineering', course: 'Diploma Mekanikal',
     academic: 'SPM · 7A', institution: 'Politeknik Ungku Omar', blurb: 'A determined leaver.',
     funding_categories: ['tuition'], programme_months: 24, award_amount: '3000',
     progress_state: null, support_status: null, enrolment_verified: true,
     field_image_slug: 'kejuruteraan', reporting_date: '2099-09-01',
   },
   {
-    id: 2, ref: 'S-BBB', state: 'Kedah', field: 'health', course: 'Diploma Kejururawatan',
+    id: 2, ref: 'S-BBB', state: 'Kedah', school: 'SMK B', field: 'health', course: 'Diploma Kejururawatan',
     academic: 'SPM · 5A', institution: '', blurb: '', funding_categories: [],
     programme_months: 36, award_amount: '2000', progress_state: null, support_status: null,
     enrolment_verified: false, field_image_slug: '', reporting_date: null,

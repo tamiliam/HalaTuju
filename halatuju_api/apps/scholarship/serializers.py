@@ -83,14 +83,17 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     student OR their parents.)
 
     ``institution`` is the TARGET university/college the student is heading to (from the
-    confirmed offer / chosen programme) — NEVER the secondary school, which is no longer
-    surfaced on any sponsor card. ``state`` stays region-level. ``blurb`` is a ≤20-word
+    confirmed offer / chosen programme). ``school`` is the student's SECONDARY school (the
+    one they attended) — surfaced on the sponsor DETAIL by owner decision 2026-07-18 (it is
+    material context for a sponsor; the anonymity promise to sponsors covers name/NRIC/photo/
+    contact/address, not the school). ``state`` stays region-level. ``blurb`` is a ≤20-word
     card-strict one-liner (generated + identifier-scanned at publish)."""
     # `id` is the application row id — used only as the opaque key to fetch the
     # detail; it is not identifying. `ref` is the human-facing alias.
     id = serializers.IntegerField(read_only=True)
     ref = serializers.SerializerMethodField()
     state = serializers.SerializerMethodField()
+    school = serializers.SerializerMethodField()        # the SECONDARY school attended (owner 2026-07-18)
     field = serializers.SerializerMethodField()
     course = serializers.SerializerMethodField()        # the confirmed programme name
     academic = serializers.SerializerMethodField()
@@ -141,6 +144,11 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     def get_state(self, app):
         # State-level region only — street/postcode/city are never exposed.
         return (getattr(app.profile, 'preferred_state', '') or '') if app.profile else ''
+
+    def get_school(self, app):
+        # The SECONDARY school the student attended (owner 2026-07-18: shown to sponsors as
+        # material context). Distinct from the TARGET `institution`.
+        return (getattr(app.profile, 'school', '') or '') if app.profile else ''
 
     def get_field(self, app):
         return app.field_of_study or ''

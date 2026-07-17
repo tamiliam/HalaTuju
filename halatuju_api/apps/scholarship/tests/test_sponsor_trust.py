@@ -97,10 +97,10 @@ class TestEnrolmentVerifiedBadge(TestCase):
         app = _eligible_app(self.cohort, verified=True)
         data = SponsorPoolCardSerializer(app).data
         self.assertIs(data['enrolment_verified'], True)
-        # allowlist-safe: still no identity, even with the new field
+        # allowlist-safe: still no identity, even with the new field. (The secondary school
+        # IS shown to sponsors by owner decision 2026-07-18, so it is not checked here.)
         blob = json.dumps(data, default=str)
-        for v in ('Zxq Student', ADULT_NRIC, 'student@secret.example',
-                  '012-7776666', 'SMK Rahsia'):
+        for v in ('Zxq Student', ADULT_NRIC, 'student@secret.example', '012-7776666'):
             self.assertNotIn(v, blob, 'identity leaked on the trust card')
 
     def test_badge_defaults_false(self):
