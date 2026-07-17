@@ -84,7 +84,7 @@ export default function StudentDetailPage() {
   const CHECKS = ['checkIdentity', 'checkAcademic', 'checkPathway', 'checkFinancial'] as const
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-5xl">
       <Link href="/sponsor/students" className="text-sm text-blue-600 hover:underline">← {t('sponsorPool.back')}</Link>
 
       {unavailable ? (
@@ -92,8 +92,8 @@ export default function StudentDetailPage() {
       ) : detail === null ? (
         <p className="text-center text-gray-500 mt-12">{t('common.loading')}</p>
       ) : (
-        <div className="mt-4 grid lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 space-y-4">
+        <div className="mt-4 grid lg:grid-cols-5 gap-5">
+          <div className="lg:col-span-3 space-y-4">
             {/* Header card: slim banner strip + title + chips */}
             <div className="overflow-hidden rounded-2xl border bg-white">
               <div className="relative h-24">
@@ -142,10 +142,10 @@ export default function StudentDetailPage() {
           </div>
 
           {/* Sidebar action card */}
-          <div className="bg-white rounded-2xl border p-6 h-fit space-y-4">
+          <div className="lg:col-span-2 bg-white rounded-2xl border p-6 h-fit space-y-5">
             {/* Support block */}
-            <div className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('sponsorPool.supportNeeded')}</p>
+            <div>
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('sponsorPool.supportNeeded')}</p>
               {detail.award_amount && (
                 <div>
                   <p className="text-3xl font-bold text-gray-900">RM{rmWhole(detail.award_amount)}</p>
@@ -155,57 +155,58 @@ export default function StudentDetailPage() {
                 </div>
               )}
 
-              {funded ? (
-                <div className="rounded-md bg-green-50 border border-green-100 px-3 py-2.5 text-xs text-green-800">
-                  ✅ {t('sponsorPortal.students.funded', { amount: rmWhole(detail.award_amount) })}
-                </div>
-              ) : confirming ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-gray-700">{t('sponsorPortal.students.confirmBody', { amount: rmWhole(detail.award_amount) })}</p>
-                  <div className="flex gap-2">
-                    <button disabled={funding} onClick={doFund}
-                      className="flex-1 rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
-                      {funding ? t('common.loading') : t('sponsorPortal.students.confirmAward')}
-                    </button>
-                    <button disabled={funding} onClick={() => { setConfirming(false); setErrCode(null) }}
-                      className="rounded-md border px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60">
-                      {t('common.cancel')}
-                    </button>
+              <div className="mt-5">
+                {funded ? (
+                  <div className="rounded-md bg-green-50 border border-green-100 px-3 py-2.5 text-xs text-green-800">
+                    ✅ {t('sponsorPortal.students.funded', { amount: rmWhole(detail.award_amount) })}
                   </div>
-                </div>
-              ) : (
-                <button onClick={() => { setConfirming(true); setErrCode(null) }}
-                  className="w-full rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                  {t('sponsorPool.fullyFund')}
-                </button>
-              )}
+                ) : confirming ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-700">{t('sponsorPortal.students.confirmBody', { amount: rmWhole(detail.award_amount) })}</p>
+                    <div className="flex gap-2">
+                      <button disabled={funding} onClick={doFund}
+                        className="flex-1 rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+                        {funding ? t('common.loading') : t('sponsorPortal.students.confirmAward')}
+                      </button>
+                      <button disabled={funding} onClick={() => { setConfirming(false); setErrCode(null) }}
+                        className="rounded-md border px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+                        {t('common.cancel')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => { setConfirming(true); setErrCode(null) }}
+                    className="w-full rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                    {t('sponsorPool.fullyFund')}
+                  </button>
+                )}
+              </div>
 
               {errCode && (
-                <p className="rounded-md bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
+                <p className="mt-2 rounded-md bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
                   {t(FUND_ERR_KEY[errCode] || 'sponsorPortal.students.errGeneric')}
                 </p>
               )}
 
               {balance !== null && (
-                <p className="text-xs text-gray-500">
-                  {t('sponsorPortal.students.balanceLabel')}:{' '}
-                  <span className="font-semibold text-gray-800">RM{rmWhole(balance)}</span>
+                <p className="mt-3 text-center text-xs text-gray-500">
+                  {t('sponsorPortal.students.balanceLabel')}: RM{rmWhole(balance)}
                 </p>
               )}
             </div>
 
             {/* Facts */}
             <dl className="border-t pt-4 space-y-2.5 text-sm">
-              {detail.state && (
-                <div className="flex items-start justify-between gap-4">
-                  <dt className="text-gray-500">{t('sponsorPool.homeState')}</dt>
-                  <dd className="text-right font-medium text-gray-900">{detail.state}</dd>
-                </div>
-              )}
               {detail.school && (
                 <div className="flex items-start justify-between gap-4">
                   <dt className="text-gray-500 shrink-0">{t('sponsorPool.secondarySchool')}</dt>
                   <dd className="text-right font-medium text-gray-900">{detail.school}</dd>
+                </div>
+              )}
+              {detail.state && (
+                <div className="flex items-start justify-between gap-4">
+                  <dt className="text-gray-500">{t('sponsorPool.homeState')}</dt>
+                  <dd className="text-right font-medium text-gray-900">{detail.state}</dd>
                 </div>
               )}
               {detail.reporting_date && (
@@ -222,7 +223,13 @@ export default function StudentDetailPage() {
               )}
             </dl>
 
-            <p className="text-[11px] text-gray-400 leading-relaxed rounded-lg bg-gray-50 px-3 py-2.5">{t('sponsorPool.privacyNote')}</p>
+            {/* Privacy note — blue info box with an ⓘ icon (matches the design) */}
+            <div className="flex items-start gap-2 rounded-lg bg-blue-50 px-3 py-2.5 text-xs leading-relaxed text-blue-800/80">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" aria-hidden>
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 9a1 1 0 012 0v4a1 1 0 11-2 0V9zm1-4a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
+              </svg>
+              <span>{t('sponsorPool.privacyNote')}</span>
+            </div>
           </div>
         </div>
       )}
