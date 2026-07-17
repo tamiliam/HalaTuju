@@ -1,0 +1,36 @@
+// Pure, node-testable helpers for the sponsor pool card + detail redesign.
+
+/** Whole days from `now` until an ISO date (course start). null when absent/unparseable.
+ *  Negative when the date has passed. `now` is injectable for deterministic tests. */
+export function daysUntil(iso: string | null | undefined, now: Date = new Date()): number | null {
+  if (!iso) return null
+  const target = new Date(`${iso}T00:00:00`)
+  if (Number.isNaN(target.getTime())) return null
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const ms = target.getTime() - startOfToday.getTime()
+  return Math.round(ms / 86_400_000)
+}
+
+export type Countdown = { kind: 'today' | 'one' | 'many'; days: number } | null
+
+/** The countdown state a card/sidebar renders — null (hidden) when no date or already past. */
+export function countdown(iso: string | null | undefined, now: Date = new Date()): Countdown {
+  const d = daysUntil(iso, now)
+  if (d === null || d < 0) return null
+  if (d === 0) return { kind: 'today', days: 0 }
+  if (d === 1) return { kind: 'one', days: 1 }
+  return { kind: 'many', days: d }
+}
+
+/** Amount-range buckets for the browse filter. Values are whole-ringgit thresholds. */
+export type AmountBucket = '' | 'lt2000' | '2000to3000' | 'gt3000'
+
+export function inAmountBucket(amount: string | null | undefined, bucket: AmountBucket): boolean {
+  if (!bucket) return true
+  if (amount === null || amount === undefined || String(amount).trim() === '') return false
+  const n = Number(amount)
+  if (!Number.isFinite(n)) return false
+  if (bucket === 'lt2000') return n < 2000
+  if (bucket === '2000to3000') return n >= 2000 && n <= 3000
+  return n > 3000
+}

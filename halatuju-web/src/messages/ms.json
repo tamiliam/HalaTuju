@@ -343,7 +343,27 @@
     "academicLabel": "Akademik",
     "fundingLabel": "Bantuan diperlukan",
     "durationLabel": "Tempoh program",
-    "months": "bulan"
+    "months": "bulan",
+    "verified": "Disahkan",
+    "enrolmentVerified": "Pendaftaran disahkan",
+    "fullyFund": "Taja penuh pelajar ini",
+    "daysAway": "Bermula dalam {days} hari",
+    "oneDayAway": "Bermula dalam 1 hari",
+    "startsToday": "Bermula hari ini",
+    "verifiedByBrightPath": "Disahkan oleh BrightPath",
+    "verifyCaption": "Setiap pelajar dalam kumpulan ini telah lulus semakan kami sebelum anda melihatnya.",
+    "checkIdentity": "Identiti",
+    "checkAcademic": "Rekod akademik",
+    "checkPathway": "Laluan pengajian",
+    "checkFinancial": "Keperluan kewangan",
+    "checkEnrolment": "Pendaftaran disahkan",
+    "overMonths": "selama {months} bulan",
+    "coversLabel": "Meliputi",
+    "privacyNote": "Anda akan menerima kemas kini kemajuan setiap semester. Butiran peribadi tidak sekali-kali dikongsi.",
+    "allAmounts": "Semua jumlah",
+    "amountLt2000": "Bawah RM2,000",
+    "amount2000to3000": "RM2,000–RM3,000",
+    "amountGt3000": "Melebihi RM3,000"
   },
   "sponsorLanding": {
     "nav": {

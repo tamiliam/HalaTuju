@@ -4,12 +4,15 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
-import { filterPool, poolFacets } from '@/lib/sponsorFilter'
+import { poolFacets } from '@/lib/sponsorFilter'
+import { fieldImageUrl } from '@/lib/fieldImage'
+import { countdown, inAmountBucket, type AmountBucket } from '@/lib/poolCard'
+import type { SponsorPoolCard } from '@/lib/api'
 
 /**
- * Students — the anonymised marketplace. Browse + filter the pool (client-side over the
- * already-fetched cards) and open a student. Funding is confirmed with the owner as a
- * fast follow (the detail page carries the "Support" affordance).
+ * Students — the anonymised marketplace (image-led cards). Browse + filter the pool
+ * (client-side over the already-fetched cards) and open a student to fund them. Anonymity
+ * is inviolate: the card shows field artwork + region + programme, never an identity.
  */
 export default function StudentsPage() {
   const { t } = useT()
@@ -17,20 +20,29 @@ export default function StudentsPage() {
 
   const [field, setField] = useState('')
   const [state, setState] = useState('')
-  const [level, setLevel] = useState('')
+  const [amount, setAmount] = useState<AmountBucket>('')
 
   const rows = pool || []
   const facets = useMemo(() => poolFacets(rows), [rows])
-  const shown = useMemo(() => filterPool(rows, { field, state, level }), [rows, field, state, level])
+  const shown = useMemo(
+    () => rows.filter((r) =>
+      (!field || r.field === field) &&
+      (!state || r.state === state) &&
+      inAmountBucket(r.award_amount, amount)),
+    [rows, field, state, amount],
+  )
 
   const selectCls = 'text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white'
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">{t('sponsorPortal.students.title')}</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-2xl font-bold text-gray-900">{t('sponsorPortal.students.title')}</h1>
+        <span className="text-xs text-gray-400">{t('sponsorPortal.students.shown').replace('{count}', String(shown.length))}</span>
+      </div>
       <p className="text-sm text-gray-600 mt-1 max-w-2xl">{t('sponsorPortal.students.intro')}</p>
 
-      {/* Filters */}
+      {/* Filters: field / state / amount */}
       <div className="flex flex-wrap gap-2 mt-5">
         <select value={field} onChange={(e) => setField(e.target.value)} className={selectCls}>
           <option value="">{t('sponsorPortal.students.allFields')}</option>
@@ -40,13 +52,12 @@ export default function StudentsPage() {
           <option value="">{t('sponsorPortal.students.allStates')}</option>
           {facets.states.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select value={level} onChange={(e) => setLevel(e.target.value)} className={selectCls}>
-          <option value="">{t('sponsorPortal.students.allLevels')}</option>
-          {facets.levels.map((l) => <option key={l} value={l}>{l}</option>)}
+        <select value={amount} onChange={(e) => setAmount(e.target.value as AmountBucket)} className={selectCls}>
+          <option value="">{t('sponsorPool.allAmounts')}</option>
+          <option value="lt2000">{t('sponsorPool.amountLt2000')}</option>
+          <option value="2000to3000">{t('sponsorPool.amount2000to3000')}</option>
+          <option value="gt3000">{t('sponsorPool.amountGt3000')}</option>
         </select>
-        <span className="ml-auto self-center text-xs text-gray-400">
-          {t('sponsorPortal.students.shown').replace('{count}', String(shown.length))}
-        </span>
       </div>
 
       {/* Anonymity note */}
@@ -66,41 +77,68 @@ export default function StudentsPage() {
           {t('sponsorPortal.students.filteredEmpty')}
         </div>
       ) : (
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {shown.map((s) => (
-            <Link key={s.id} href={`/sponsor/students/${s.id}`}
-              className="flex flex-col bg-white rounded-2xl border p-5 hover:border-blue-300 hover:shadow-sm transition">
-              {/* 1. Code · qualification · As · state */}
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-sm text-gray-700">
-                  <span className="font-semibold text-gray-900">{s.ref}</span>
-                  {s.academic && <span className="text-gray-400"> · {s.academic}</span>}
-                </span>
-                {s.state && <span className="shrink-0 text-xs text-gray-500">{s.state}</span>}
-              </div>
-
-              {/* 2. Course + target institution (institution omitted when unknown) */}
-              <p className="mt-3 text-[15px] font-semibold text-blue-700 leading-snug">{s.course || s.field || '—'}</p>
-              {s.institution && <p className="text-xs text-gray-500 mt-0.5">{s.institution}</p>}
-
-              {s.enrolment_verified && (
-                <p className="mt-2 inline-flex w-fit items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
-                  🛡️ {t('sponsorPortal.trust.verifiedBadge')}
-                </p>
-              )}
-
-              {/* 3. Short blurb */}
-              {s.blurb && <p className="mt-3 text-sm text-gray-600 leading-relaxed">{s.blurb}</p>}
-
-              {/* 4. Amount · Support */}
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                {s.award_amount ? <span className="text-base font-semibold text-gray-900">RM {s.award_amount}</span> : <span />}
-                <span className="text-sm text-blue-600 font-medium">{t('sponsorPortal.students.support')} →</span>
-              </div>
-            </Link>
-          ))}
+        <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {shown.map((s) => <PoolCard key={s.id} s={s} />)}
         </div>
       )}
     </div>
+  )
+}
+
+function PoolCard({ s }: { s: SponsorPoolCard }) {
+  const { t } = useT()
+  const cd = countdown(s.reporting_date)
+  const institutionLine = [s.institution, s.state].filter(Boolean).join(' · ')
+
+  return (
+    <Link href={`/sponsor/students/${s.id}`}
+      className="flex flex-col overflow-hidden rounded-2xl border bg-white hover:border-blue-300 hover:shadow-md transition">
+      {/* Banner: field artwork + badges + ref pill */}
+      <div className="relative h-28">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={fieldImageUrl(s.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+        <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-green-700 shadow-sm">
+          🛡️ {t('sponsorPool.verified')}
+        </span>
+        {s.enrolment_verified && (
+          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-blue-600/90 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm">
+            ✓ {t('sponsorPool.enrolmentVerified')}
+          </span>
+        )}
+        <span className="absolute bottom-2 left-2 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-gray-900 shadow-sm">
+          {s.ref}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div className="flex flex-1 flex-col p-5">
+        <p className="text-[15px] font-semibold text-gray-900 leading-snug">{s.course || s.field || '—'}</p>
+        {institutionLine && <p className="text-xs text-gray-500 mt-0.5">{institutionLine}</p>}
+
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {s.academic && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{s.academic}</span>}
+          {s.funding_categories.slice(0, 3).map((c) => (
+            <span key={c} className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">{c}</span>
+          ))}
+        </div>
+
+        {cd && (
+          <p className="mt-3 text-xs font-medium text-amber-700">
+            ⏳ {cd.kind === 'today' ? t('sponsorPool.startsToday')
+              : cd.kind === 'one' ? t('sponsorPool.oneDayAway')
+              : t('sponsorPool.daysAway').replace('{days}', String(cd.days))}
+          </p>
+        )}
+
+        {s.blurb && <p className="mt-3 text-sm italic text-gray-600 leading-relaxed">{s.blurb}</p>}
+
+        {/* Footer: amount + CTA */}
+        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+          {s.award_amount ? <span className="text-xl font-bold text-gray-900">RM {s.award_amount}</span> : <span />}
+          <span className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>
+        </div>
+      </div>
+    </Link>
   )
 }

@@ -57,3 +57,19 @@ it('refreshes the pool + wallet after a successful fund', async () => {
   await waitFor(() => expect(refreshPool).toHaveBeenCalled())
   expect(refreshWallet).toHaveBeenCalled()
 })
+
+it('shows the balance line and renders no facts table (redesign IA)', async () => {
+  render(<StudentDetailPage />)
+  await screen.findByText('sponsorPortal.students.support')   // detail loaded
+  // Sidebar balance line is present (mock wallet resolves to RM 5000).
+  await waitFor(() =>
+    expect(screen.getByText((_c, node) =>
+      node?.tagName === 'P' && (node.textContent || '').includes('sponsorPortal.students.balanceLabel'),
+    )).toBeTruthy())
+  // The old <dl> facts table is gone — none of its labels render.
+  expect(screen.queryByText('sponsorPool.fieldLabel')).toBeNull()
+  expect(screen.queryByText('sponsorPool.academicLabel')).toBeNull()
+  expect(screen.queryByText('sponsorPool.durationLabel')).toBeNull()
+  // The verification strip (our differentiator) is present (emoji-prefixed → substring).
+  expect(screen.getByText('sponsorPool.verifiedByBrightPath', { exact: false })).toBeTruthy()
+})

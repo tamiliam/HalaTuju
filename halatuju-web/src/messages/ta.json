@@ -343,7 +343,27 @@
     "academicLabel": "கல்வி",
     "fundingLabel": "தேவையான ஆதரவு",
     "durationLabel": "திட்ட காலம்",
-    "months": "மாதங்கள்"
+    "months": "மாதங்கள்",
+    "verified": "சரிபார்க்கப்பட்டது",
+    "enrolmentVerified": "சேர்க்கை உறுதி",
+    "fullyFund": "இந்த மாணவருக்கு முழுநிதி வழங்குங்கள்",
+    "daysAway": "{days} நாட்களில் தொடங்கும்",
+    "oneDayAway": "1 நாளில் தொடங்கும்",
+    "startsToday": "இன்று தொடங்குகிறது",
+    "verifiedByBrightPath": "BrightPath ஆல் சரிபார்க்கப்பட்டது",
+    "verifyCaption": "நீங்கள் பார்ப்பதற்கு முன்பே கும்பலில் உள்ள ஒவ்வொரு மாணவரும் எங்கள் சரிபார்ப்புகளில் தேர்ச்சி பெற்றுள்ளனர்.",
+    "checkIdentity": "அடையாளம்",
+    "checkAcademic": "கல்விப் பதிவு",
+    "checkPathway": "படிப்புப் பாதை",
+    "checkFinancial": "நிதித் தேவை",
+    "checkEnrolment": "சேர்க்கை உறுதி",
+    "overMonths": "{months} மாதங்களுக்கு",
+    "coversLabel": "உள்ளடக்கியது",
+    "privacyNote": "ஒவ்வொரு செமஸ்டர் முன்னேற்ற புதுப்பிப்புகளையும் நீங்கள் பெறுவீர்கள். தனிப்பட்ட விவரங்கள் ஒருபோதும் பகிரப்படாது.",
+    "allAmounts": "அனைத்து தொகைகள்",
+    "amountLt2000": "RM2,000-க்கு கீழ்",
+    "amount2000to3000": "RM2,000–RM3,000",
+    "amountGt3000": "RM3,000-க்கு மேல்"
   },
   "sponsorLanding": {
     "nav": {

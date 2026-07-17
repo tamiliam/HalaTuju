@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { fetchFieldTaxonomy, type FieldTaxonomyEntry } from '@/lib/api'
+import { fieldImageUrl, GENERIC_FIELD_SLUG } from '@/lib/fieldImage'
 import type { Locale } from '@/lib/i18n'
 
 interface FieldOption {
@@ -19,8 +20,6 @@ interface FieldTaxonomyData {
   /** Whether taxonomy data has loaded */
   loaded: boolean
 }
-
-const SUPABASE_STORAGE = 'https://pbrrlyoyyiftckqvzvvo.supabase.co/storage/v1/object/public/field-images'
 
 // Module-level cache so multiple components/pages share the same data
 let cachedData: FieldTaxonomyData | null = null
@@ -82,9 +81,8 @@ export function useFieldTaxonomy(locale: Locale = 'ms'): FieldTaxonomyData & {
   }, [locale])
 
   const getImageUrl = (fieldKey: string | undefined): string => {
-    if (!fieldKey) return `${SUPABASE_STORAGE}/umum-kemanusiaan.png`
-    const slug = data.imageSlugMap.get(fieldKey) || 'umum-kemanusiaan'
-    return `${SUPABASE_STORAGE}/${slug}.png`
+    if (!fieldKey) return fieldImageUrl(GENERIC_FIELD_SLUG)
+    return fieldImageUrl(data.imageSlugMap.get(fieldKey) || GENERIC_FIELD_SLUG)
   }
 
   const getFieldName = (fieldKey: string | undefined): string => {

@@ -8,6 +8,8 @@ import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { fundStudent, getSponsorPoolDetail, getSponsorWallet, type SponsorPoolDetail } from '@/lib/api'
+import { fieldImageUrl } from '@/lib/fieldImage'
+import { countdown } from '@/lib/poolCard'
 
 // Backend fund error code → localised message key.
 const FUND_ERR_KEY: Record<string, string> = {
@@ -16,9 +18,10 @@ const FUND_ERR_KEY: Record<string, string> = {
 }
 
 /**
- * One anonymised student. Renders inside the portal shell (the layout supplies the
- * top bar + nav). The "Support" panel funds the student IN FULL for their award
- * amount from the sponsor's BrightPath balance → an 'offered' award (status 'awarded').
+ * One anonymised student (image-led, IA: one home per fact). Header (artwork + title +
+ * chips) → verification strip (our differentiator) → narrative → sidebar action card.
+ * No fact renders twice; there is no facts table. Funding commits the award IN FULL from
+ * the sponsor's BrightPath balance.
  */
 export default function StudentDetailPage() {
   const { t } = useT()
@@ -55,13 +58,8 @@ export default function StudentDetailPage() {
       await fundStudent(id, { token })
       setFunded(true)
       setConfirming(false)
-      // Reflect the committed amount in the displayed balance.
-      getSponsorWallet({ token })
-        .then((w) => setBalance(w.balance))
-        .catch(() => { /* non-critical */ })
-      // Refresh the shared portal data so the funded student drops off the "available
-      // students" list and shows under "My students" as awaiting-acceptance — without the
-      // sponsor having to hard-refresh (the reported stale-list bug, 2026-07).
+      getSponsorWallet({ token }).then((w) => setBalance(w.balance)).catch(() => {})
+      // Refresh shared portal data so the funded student drops off the available list.
       refreshPool()
       refreshWallet()
     } catch (e) {
@@ -71,8 +69,13 @@ export default function StudentDetailPage() {
     }
   }
 
+  const cd = detail ? countdown(detail.reporting_date) : null
+
+  // The trust strip's core ticks — every pooled student has passed QC by construction.
+  const CHECKS = ['checkIdentity', 'checkAcademic', 'checkPathway', 'checkFinancial'] as const
+
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-4xl">
       <Link href="/sponsor/students" className="text-sm text-blue-600 hover:underline">← {t('sponsorPool.back')}</Link>
 
       {unavailable ? (
@@ -82,60 +85,77 @@ export default function StudentDetailPage() {
       ) : (
         <div className="mt-4 grid lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 space-y-4">
-            <div className="bg-white rounded-2xl border p-6">
-              <div className="flex items-center justify-between">
-                <h1 className="text-xl font-bold text-gray-900">{detail.ref}</h1>
-                {detail.state && <span className="text-sm text-gray-500">{detail.state}</span>}
+            {/* Header card: slim banner strip + title + chips */}
+            <div className="overflow-hidden rounded-2xl border bg-white">
+              <div className="relative h-24">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={fieldImageUrl(detail.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <span className="absolute bottom-2 left-4 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-gray-900 shadow-sm">{detail.ref}</span>
               </div>
-              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                {detail.field && (
-                  <div><dt className="text-gray-500">{t('sponsorPool.fieldLabel')}</dt><dd className="text-gray-900">{detail.field}</dd></div>
-                )}
-                {detail.academic && (
-                  <div><dt className="text-gray-500">{t('sponsorPool.academicLabel')}</dt><dd className="text-gray-900">{detail.academic}</dd></div>
-                )}
-                {detail.funding_categories.length > 0 && (
-                  <div><dt className="text-gray-500">{t('sponsorPool.fundingLabel')}</dt><dd className="text-gray-900">{detail.funding_categories.join(' · ')}</dd></div>
-                )}
-                {detail.programme_months != null && (
-                  <div><dt className="text-gray-500">{t('sponsorPool.durationLabel')}</dt><dd className="text-gray-900">{detail.programme_months} {t('sponsorPool.months')}</dd></div>
-                )}
-              </dl>
-              {detail.enrolment_verified && (
-                <div className="mt-5 flex items-start gap-2 bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-800">
-                  🛡️ <span><b>{t('sponsorPortal.trust.verifiedBadge')}.</b> {t('sponsorPortal.trust.verifiedDetail')}</span>
+              <div className="p-6">
+                <div className="flex flex-wrap gap-1.5">
+                  {detail.state && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.state}</span>}
+                  {detail.academic && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.academic}</span>}
                 </div>
-              )}
+                <h1 className="mt-2 text-xl font-bold text-gray-900 leading-snug">{detail.course || detail.field || detail.ref}</h1>
+                {detail.institution && <p className="text-sm text-gray-500 mt-0.5">{detail.institution}</p>}
+              </div>
             </div>
 
+            {/* Verification strip — our differentiator */}
+            <div className="rounded-2xl border border-green-100 bg-green-50/60 p-5">
+              <p className="flex items-center gap-2 text-sm font-semibold text-green-800">
+                🛡️ {t('sponsorPool.verifiedByBrightPath')}
+              </p>
+              <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+                {CHECKS.map((c) => (
+                  <li key={c} className="flex items-center gap-2 text-sm text-gray-700">
+                    <span className="text-green-600">✓</span> {t(`sponsorPool.${c}`)}
+                  </li>
+                ))}
+                {detail.enrolment_verified && (
+                  <li className="flex items-center gap-2 text-sm text-gray-700">
+                    <span className="text-green-600">✓</span> {t('sponsorPool.checkEnrolment')}
+                  </li>
+                )}
+              </ul>
+              <p className="mt-3 text-xs text-green-700/80">{t('sponsorPool.verifyCaption')}</p>
+            </div>
+
+            {/* Narrative */}
             {detail.anon_profile && (
               <div className="bg-white rounded-2xl border p-6">
-                <div className="text-sm text-gray-800 leading-relaxed [&_h1]:text-base [&_h1]:font-bold [&_h2]:font-semibold [&_h2]:mt-3 [&_p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5">
+                <div className="text-sm text-gray-800 leading-relaxed [&_p]:mt-2 [&_p:first-child]:mt-0">
                   <ReactMarkdown>{detail.anon_profile}</ReactMarkdown>
                 </div>
               </div>
             )}
-
-            <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-2.5 text-xs text-blue-800">
-              {t('sponsorPool.anonymityNote')}
-            </div>
           </div>
 
-          {/* Support panel */}
+          {/* Sidebar action card */}
           <div className="bg-white rounded-2xl border p-6 h-fit space-y-3">
             {detail.award_amount && (
               <div>
-                <p className="text-xs text-gray-500">{t('sponsorPool.fundingLabel')}</p>
                 <p className="text-3xl font-bold text-gray-900">RM {detail.award_amount}</p>
                 {detail.programme_months != null && (
-                  <p className="text-xs text-gray-400">{detail.programme_months} {t('sponsorPool.months')}</p>
+                  <p className="text-xs text-gray-500">{t('sponsorPool.overMonths').replace('{months}', String(detail.programme_months))}</p>
                 )}
               </div>
             )}
-            {balance !== null && (
-              <p className="text-xs text-gray-500">
-                {t('sponsorPortal.students.balanceLabel')}:{' '}
-                <span className="font-semibold text-gray-800">RM {balance}</span>
+
+            {detail.funding_categories.length > 0 && (
+              <p className="text-xs text-gray-600">
+                <span className="font-semibold text-gray-700">{t('sponsorPool.coversLabel')}:</span>{' '}
+                {detail.funding_categories.join(', ')}
+              </p>
+            )}
+
+            {cd && (
+              <p className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs font-medium text-amber-700">
+                ⏳ {cd.kind === 'today' ? t('sponsorPool.startsToday')
+                  : cd.kind === 'one' ? t('sponsorPool.oneDayAway')
+                  : t('sponsorPool.daysAway').replace('{days}', String(cd.days))}
               </p>
             )}
 
@@ -145,31 +165,21 @@ export default function StudentDetailPage() {
               </div>
             ) : confirming ? (
               <div className="space-y-2">
-                <p className="text-xs text-gray-700">
-                  {t('sponsorPortal.students.confirmBody', { amount: detail.award_amount ?? '' })}
-                </p>
+                <p className="text-xs text-gray-700">{t('sponsorPortal.students.confirmBody', { amount: detail.award_amount ?? '' })}</p>
                 <div className="flex gap-2">
-                  <button
-                    disabled={funding}
-                    onClick={doFund}
-                    className="flex-1 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                  >
+                  <button disabled={funding} onClick={doFund}
+                    className="flex-1 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
                     {funding ? t('common.loading') : t('sponsorPortal.students.confirmAward')}
                   </button>
-                  <button
-                    disabled={funding}
-                    onClick={() => { setConfirming(false); setErrCode(null) }}
-                    className="rounded-xl border px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-                  >
+                  <button disabled={funding} onClick={() => { setConfirming(false); setErrCode(null) }}
+                    className="rounded-xl border px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60">
                     {t('common.cancel')}
                   </button>
                 </div>
               </div>
             ) : (
-              <button
-                onClick={() => { setConfirming(true); setErrCode(null) }}
-                className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-              >
+              <button onClick={() => { setConfirming(true); setErrCode(null) }}
+                className="w-full rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
                 {t('sponsorPortal.students.support')}
               </button>
             )}
@@ -179,6 +189,15 @@ export default function StudentDetailPage() {
                 {t(FUND_ERR_KEY[errCode] || 'sponsorPortal.students.errGeneric')}
               </p>
             )}
+
+            {balance !== null && (
+              <p className="text-xs text-gray-500">
+                {t('sponsorPortal.students.balanceLabel')}:{' '}
+                <span className="font-semibold text-gray-800">RM {balance}</span>
+              </p>
+            )}
+
+            <p className="text-[11px] text-gray-400 leading-relaxed border-t pt-3">{t('sponsorPool.privacyNote')}</p>
           </div>
         </div>
       )}

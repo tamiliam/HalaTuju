@@ -38,6 +38,42 @@ def _funding_need_or_none(application):
         return None
 
 
+def _resolve_field_image_slug(app, cache):
+    """Resolve the catalogue field-artwork slug for a pool card, catalogue-first:
+    (a) chosen_programme['course_id'] → Course.field_key_id → FieldTaxonomy.image_slug;
+    (b) else field_of_study treated as a taxonomy key → FieldTaxonomy.image_slug;
+    (c) else '' (the frontend falls back to the generic slug).
+
+    ``cache`` is the per-request serializer context dict — the taxonomy map (37 rows) is
+    loaded once and course→field_key lookups are memoised, so serialising a whole list is
+    not N queries. Allowlist rationale: catalogue artwork shared by hundreds of courses is
+    non-identifying — it is the field, not the student."""
+    tax = cache.get('_tax_slugs')
+    if tax is None:
+        from apps.courses.models import FieldTaxonomy
+        tax = dict(FieldTaxonomy.objects.values_list('key', 'image_slug'))
+        cache['_tax_slugs'] = tax
+    # (a) confirmed catalogue course → its canonical field's artwork
+    cp = getattr(app, 'chosen_programme', None)
+    if isinstance(cp, dict):
+        course_id = (cp.get('course_id') or '').strip()
+        if course_id:
+            course_fk = cache.setdefault('_course_fk', {})
+            if course_id not in course_fk:
+                from apps.courses.models import Course
+                course_fk[course_id] = (Course.objects.filter(course_id=course_id)
+                                        .values_list('field_key_id', flat=True).first())
+            fk = course_fk[course_id]
+            if fk and tax.get(fk):
+                return tax[fk]
+    # (b) the broad field-of-study, when it is itself a taxonomy key
+    fos = (app.field_of_study or '').strip()
+    if fos and tax.get(fos):
+        return tax[fos]
+    # (c) unknown → generic (frontend fallback)
+    return ''
+
+
 class SponsorPoolCardSerializer(serializers.Serializer):
     """Phase E2 — the ANONYMISED card a vetted sponsor sees. **Allowlist by
     construction:** every field is an explicit, derived, non-identifying value and
@@ -66,9 +102,21 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     progress_state = serializers.SerializerMethodField()  # F2: coarse, non-identifying
     support_status = serializers.SerializerMethodField()  # S5: coarse operational signal
     enrolment_verified = serializers.SerializerMethodField()  # R5: bare boolean badge
+    field_image_slug = serializers.SerializerMethodField()  # redesign: catalogue artwork
+    reporting_date = serializers.SerializerMethodField()     # redesign: course-start countdown
 
     def get_ref(self, app):
         return pool.pool_ref(app.id)
+
+    def get_field_image_slug(self, app):
+        # Catalogue field artwork (shared by hundreds of courses) — non-identifying.
+        return _resolve_field_image_slug(app, self.context)
+
+    def get_reporting_date(self, app):
+        # DATE ONLY (never a time) — already sponsor-visible via the narrative/pathway
+        # text; a coarse date drives the "starts in N days" countdown. Null-safe.
+        d = getattr(app, 'reporting_date', None)
+        return d.isoformat() if d else None
 
     def get_enrolment_verified(self, app):
         # R5: a BARE boolean — "an independent party confirmed this student's

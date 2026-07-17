@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor pool redesign — image-led cards + refined detail — 2026-07-17
+
+One sprint, one deploy, NO migration (two allowlist serializer fields + a frontend rebuild).
+Benchmarked against Funding Societies / LinkedFinance; anonymity stays inviolate.
+
+- **Backend (allowlist)** — `field_image_slug` on the pool card (catalogue-first resolution:
+  chosen course → its `field_key` artwork → else `field_of_study` as a taxonomy key → else
+  generic; taxonomy map + course lookups memoised per request, no N+1) and a date-only
+  `reporting_date` for the course-start countdown. The anonymity suite was extended to scan
+  both new fields.
+- **Browse grid** — image-led cards: field-artwork banner + gradient, green "Verified" shield,
+  conditional blue "Enrolment verified" badge, ref pill, bold programme + "institution · state",
+  academic/funding chips, amber countdown, italic blurb, amount + "Fully fund this student".
+  Filters: field / state / amount.
+- **Detail page** — rebuilt to a strict one-home-per-fact IA (no fact twice, no facts table):
+  header card (banner strip + chips + title + institution) → verification strip (Verified by
+  BrightPath + Identity/Academic/Pathway/Financial ticks + conditional Enrolment tick) →
+  narrative → sidebar (amount · over N months · Covers · countdown · CTA · BrightPath balance ·
+  privacy footer). The old `<dl>` facts grid + standalone enrolment box removed.
+- **Shared plumbing** — `lib/fieldImage.ts` is now the single home for the bucket URL (used by
+  the course selector too); pure `lib/poolCard.ts` (countdown + amount buckets), node-tested.
+- **Coverage audit** — new read-only `audit_pool_field_images` command; run against prod: 63
+  apps, 25 resolved via course→field_key, 0 via field_of_study, 38 → generic; all 10 slugs
+  exist (zero 404s). No art gaps → no image generation this sprint (breadth is the only
+  headroom; see the retro).
+- 20 new `sponsorPool.*` i18n keys × en/ms/ta (Tamil first-drafts). 2669 scholarship pytest +
+  583 jest; `next build` clean. Retro `docs/retrospective-2026-07-17-sponsor-pool-redesign.md`.
+
 ## Payments live-review arc — owner-driven hardening after the P3 cutover — 2026-07-16/17
 
 Six deploy rounds off the owner's live testing (Kulaly + Suresh walked the real flow), fixing

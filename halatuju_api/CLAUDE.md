@@ -524,6 +524,37 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-17)
 
+**✅ SHIPPED 2026-07-17 — Sponsor pool redesign (image-led cards + refined detail)** (NO
+migration; brief `docs/plans/2026-07-16-sponsor-pool-redesign-brief.md`; retro
+`docs/retrospective-2026-07-17-sponsor-pool-redesign.md`). One sprint, one deploy. Two
+allowlist serializer fields + a frontend rebuild around a strict one-home-per-fact IA;
+anonymity unchanged.
+- **Backend (allowlist):** `field_image_slug` on `SponsorPoolCardSerializer` (catalogue-first
+  chain: `chosen_programme.course_id`→`Course.field_key`→`FieldTaxonomy.image_slug`; else
+  `field_of_study` as a taxonomy key; else '' → frontend generic; taxonomy map + course lookups
+  memoised on the per-request context, no N+1) + date-only `reporting_date` (countdown). The
+  anonymity suite scans both new fields.
+- **Frontend:** browse = image-led cards (artwork banner, green Verified shield, conditional
+  blue Enrolment-verified badge, ref pill, programme + institution·state, chips, amber
+  countdown, blurb, amount + "Fully fund this student"); filters field/state/amount. Detail =
+  header card → verification strip (BrightPath + 4 ticks + conditional enrolment tick) →
+  narrative → sidebar (amount · over N months · Covers · countdown · CTA · **BrightPath
+  balance** · privacy footer). NO facts table, no fact twice. Shared `lib/fieldImage.ts` (one
+  home for the bucket URL) + pure `lib/poolCard.ts`.
+- **Coverage audit** (read-only `audit_pool_field_images`, run on prod): 63 apps — 25 via
+  course→field_key, 0 via field_of_study, 38 → generic; all 10 slugs exist (0 404s). No art
+  gaps → no image generation. **▶ CARRY:** Tamil review of 20 new `sponsorPool.*` first-drafts;
+  optional specific-art breadth (normalise `field_of_study`→keys / carry `course_id`).
+- **2669 scholarship pytest + 583 jest**; `next build` clean.
+
+**✅ SHIPPED 2026-07-17 — Payments live-review follow-ups (P3 cutover polish)** (NO migration):
+completed-run page styled to the Stitch design (green header bar + signature cards + CSV row);
+"Skipped this run" no longer lists a completed run's own students (`_payment_run_detail`
+excludes the run's own items — regression test added); the countersigning approver is CC'd on
+the Vircle instruction email; the Administration cards reordered Invite→Payments→Billing; the
+run-detail table restyled (Include toggle, STUDENTS|TOTAL stat card, Total-to-pay band,
+thousands grouping). Commits `7a2be136`/`63454c7a`/`7b520f26`/`81db37a5`.
+
 **✅ SHIPPED 2026-07-16/17 — Officer assignment surfaces: cockpit = list = filter (one offer rule)**
 (commits `ec9279ed`/`fc43b07f`/`ea7e15ce`/`1178df13`; NO migration; retro
 `docs/retrospective-2026-07-16-assignment-surfaces.md`; decisions ×2; lesson ×1; TD-162). An owner

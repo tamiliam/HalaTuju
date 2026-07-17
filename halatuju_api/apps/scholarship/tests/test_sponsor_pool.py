@@ -185,6 +185,78 @@ class TestAllowlistNoLeak(TestCase):
         data = SponsorPoolCardSerializer(app).data
         self.assertIn('sponsorship covers monthly living costs', data['blurb'])
 
+    def test_reporting_date_iso_and_null(self):
+        from datetime import date
+        app = _make_eligible_app(self.cohort)
+        app.reporting_date = date(2026, 9, 1)
+        app.save(update_fields=['reporting_date'])
+        self.assertEqual(SponsorPoolCardSerializer(app).data['reporting_date'], '2026-09-01')
+        app.reporting_date = None
+        app.save(update_fields=['reporting_date'])
+        self.assertIsNone(SponsorPoolCardSerializer(app).data['reporting_date'])
+
+    def test_new_fields_leak_nothing(self):
+        # field_image_slug + reporting_date are in the payload — must carry no identifier.
+        from datetime import date
+        app = _make_eligible_app(self.cohort)
+        app.reporting_date = date(2026, 9, 1)
+        app.save(update_fields=['reporting_date'])
+        data = SponsorPoolCardSerializer(app).data
+        self.assertIn('field_image_slug', data)
+        self.assertIn('reporting_date', data)
+        self._assert_no_identifiers(data)
+
+
+class TestFieldImageSlug(TestCase):
+    """The catalogue-first resolution chain (a)/(b)/(c) for the card's field artwork."""
+    @classmethod
+    def setUpTestData(cls):
+        from apps.courses.models import Course, FieldTaxonomy
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        # Test-only taxonomy keys (the 37 canonical rows are migration-seeded — avoid a clash).
+        cls.tax_eng = FieldTaxonomy.objects.create(
+            key='zz_eng', name_en='Engineering', name_ms='Kejuruteraan',
+            name_ta='பொறியியல்', image_slug='slug-eng')
+        cls.tax_health = FieldTaxonomy.objects.create(
+            key='zz_health', name_en='Health', name_ms='Kesihatan',
+            name_ta='சுகாதாரம்', image_slug='slug-health')
+        cls.course = Course.objects.create(
+            course_id='PT001', course='Diploma Kej', level='Diploma', department='X',
+            field='Eng', field_key=cls.tax_health)
+
+    def _slug(self, app):
+        return SponsorPoolCardSerializer(app).data['field_image_slug']
+
+    def test_a_course_id_wins_via_field_key(self):
+        # The confirmed course's OWN field_key (health) beats the broad field_of_study (eng).
+        app = _make_eligible_app(self.cohort, suffix='a')
+        app.field_of_study = 'zz_eng'
+        app.chosen_programme = {'course_id': 'PT001', 'course_name': 'Diploma Kej'}
+        app.save(update_fields=['field_of_study', 'chosen_programme'])
+        self.assertEqual(self._slug(app), 'slug-health')
+
+    def test_b_field_of_study_key_when_no_course_id(self):
+        app = _make_eligible_app(self.cohort, suffix='b')
+        app.field_of_study = 'zz_eng'
+        app.chosen_programme = {'course_name': 'Something', 'institution': 'X'}  # no course_id
+        app.save(update_fields=['field_of_study', 'chosen_programme'])
+        self.assertEqual(self._slug(app), 'slug-eng')
+
+    def test_c_unknown_key_returns_blank(self):
+        app = _make_eligible_app(self.cohort, suffix='c')
+        app.field_of_study = 'no_such_field'
+        app.chosen_programme = {}
+        app.save(update_fields=['field_of_study', 'chosen_programme'])
+        self.assertEqual(self._slug(app), '')
+
+    def test_c_missing_course_row_falls_through_to_field(self):
+        # A course_id that isn't in the catalogue → fall through to (b).
+        app = _make_eligible_app(self.cohort, suffix='d')
+        app.field_of_study = 'zz_health'
+        app.chosen_programme = {'course_id': 'GHOST999'}
+        app.save(update_fields=['field_of_study', 'chosen_programme'])
+        self.assertEqual(self._slug(app), 'slug-health')
+
 
 # ─── card blurb generation (card-strict, mocked Gemini) ──────────────────────
 

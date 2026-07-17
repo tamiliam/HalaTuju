@@ -343,7 +343,27 @@
     "academicLabel": "Academic",
     "fundingLabel": "Support needed",
     "durationLabel": "Programme length",
-    "months": "months"
+    "months": "months",
+    "verified": "Verified",
+    "enrolmentVerified": "Enrolment verified",
+    "fullyFund": "Fully fund this student",
+    "daysAway": "Starts in {days} days",
+    "oneDayAway": "Starts in 1 day",
+    "startsToday": "Starts today",
+    "verifiedByBrightPath": "Verified by BrightPath",
+    "verifyCaption": "Every student in the pool has passed our checks before you ever see them.",
+    "checkIdentity": "Identity",
+    "checkAcademic": "Academic record",
+    "checkPathway": "Study pathway",
+    "checkFinancial": "Financial need",
+    "checkEnrolment": "Enrolment confirmed",
+    "overMonths": "over {months} months",
+    "coversLabel": "Covers",
+    "privacyNote": "You'll receive semester progress updates. Personal details are never shared.",
+    "allAmounts": "All amounts",
+    "amountLt2000": "Under RM2,000",
+    "amount2000to3000": "RM2,000–RM3,000",
+    "amountGt3000": "Over RM3,000"
   },
   "sponsorLanding": {
     "nav": {

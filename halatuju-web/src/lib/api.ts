@@ -722,6 +722,10 @@ export interface SponsorPoolCard {
   support_status: 'paused' | 'completing' | null
   // R5: a bare boolean — an independent party confirmed enrolment with the institution.
   enrolment_verified: boolean
+  // Redesign: catalogue field artwork slug ('' → frontend uses the generic image).
+  field_image_slug: string
+  // Redesign: course-start date (ISO, date-only) → the "starts in N days" countdown; null when unset.
+  reporting_date: string | null
 }
 
 export interface SponsorPoolDetail extends SponsorPoolCard {
