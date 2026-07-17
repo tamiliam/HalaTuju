@@ -13,9 +13,14 @@ import {
   type PaymentRunDetail,
 } from '@/lib/admin-api'
 import { statusPill, monthLabel, monthLabelFull } from '@/lib/paymentStatus'
+import Toggle from '@/components/Toggle'
 
-// Amounts are whole ringgit — show "RM 200", not "RM 200.00" (a genuine .50 would still show).
-const rm = (v: string | number) => { const n = Number(v); return Number.isFinite(n) ? String(n) : String(v) }
+// Amounts are whole ringgit with thousands grouping — "RM 2,200", never "RM 200.00"
+// (a genuine .50 would still show). Hand-formatted so server and browser render identically.
+const rm = (v: string | number) => {
+  const n = Number(v)
+  return Number.isFinite(n) ? String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : String(v)
+}
 
 type SortKey = 'name' | 'nric' | 'vircle_id' | 'paid_to_date'
 
@@ -121,8 +126,16 @@ export default function PaymentRunDetailPage() {
           <h1 className="text-2xl font-bold text-gray-900">{run.reference}</h1>
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusPill(run.status)}`}>{t(`admin.payments.status.${run.status}`)}</span>
         </div>
-        <div className="rounded-lg border bg-white px-4 py-2 text-sm text-gray-700">
-          {run.students} {t('admin.payments.studentsLabel')} · <span className="font-semibold">{t('admin.payments.totalLabel')} RM {rm(run.total)}</span>
+        {/* Two-segment stat card (Stitch design): STUDENTS | TOTAL AMOUNT */}
+        <div className="flex rounded-xl border bg-white shadow-sm divide-x">
+          <div className="px-5 py-2 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.payments.studentsHeading')}</p>
+            <p className="text-xl font-bold text-gray-900 tabular-nums leading-tight">{run.students}</p>
+          </div>
+          <div className="px-5 py-2 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.payments.totalAmountHeading')}</p>
+            <p className="text-xl font-bold text-primary-500 tabular-nums leading-tight">RM {rm(run.total)}</p>
+          </div>
         </div>
       </div>
       <p className="mt-1 text-sm text-gray-500">
@@ -133,7 +146,7 @@ export default function PaymentRunDetailPage() {
       {error && <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{error}</div>}
 
       {/* Students table */}
-      <div className="mt-5 bg-white rounded-xl shadow-sm border overflow-x-auto">
+      <div className="mt-5 bg-white rounded-xl shadow border overflow-x-auto">
         <table className="w-full text-sm min-w-[840px]">
           <thead className="bg-gray-50 border-b">
             <tr className="text-left text-xs uppercase tracking-wider text-gray-500">
@@ -148,48 +161,57 @@ export default function PaymentRunDetailPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {sortedItems.map((it) => (
-              <tr key={it.id} className={it.included ? '' : 'bg-gray-50/60 text-gray-400'}>
-                <td className="px-4 py-3">
+              <tr key={it.id} className={it.included ? 'hover:bg-primary-50/40' : 'bg-gray-50/60 text-gray-400'}>
+                <td className="px-4 py-3.5">
                   <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">{it.name || '—'} ↗</a>
                 </td>
-                <td className="px-4 py-3">{it.nric || '—'}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">{it.nric || '—'}</td>
+                <td className="px-4 py-3.5">
                   <div className="tabular-nums">{it.vircle_id || '—'}</div>
                 </td>
-                <td className="px-4 py-3 tabular-nums">RM {rm(it.award_amount)}</td>
-                <td className="px-4 py-3 tabular-nums">RM {rm(it.paid_to_date)}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5 tabular-nums">RM {rm(it.award_amount)}</td>
+                <td className="px-4 py-3.5 tabular-nums">RM {rm(it.paid_to_date)}</td>
+                <td className="px-4 py-3.5">
                   {isDraft && it.included ? (
                     <input defaultValue={rm(it.amount)} onBlur={(e) => { if (e.target.value !== rm(it.amount)) patchItem(it.id, { amount: e.target.value }) }}
-                      className={`w-24 ${inputCls}`} />
+                      className="w-24 rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm tabular-nums focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                   ) : (
                     <span className="tabular-nums">RM {rm(it.amount)}</span>
                   )}
                   {Number(it.credit_applied) > 0 && (
-                    <p className="mt-0.5 text-[11px] text-gray-400">{t('admin.payments.creditApplied', { amount: rm(it.credit_applied) })}</p>
+                    <p className="mt-0.5 text-[11px] italic text-primary-500">{t('admin.payments.creditApplied', { amount: rm(it.credit_applied) })}</p>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3.5">
                   {isDraft ? (
-                    <div className="space-y-1">
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={it.included}
-                          onChange={(e) => patchItem(it.id, e.target.checked ? { included: true } : { included: false, exclude_reason: it.exclude_reason || t('admin.payments.defaultReason') })}
-                          className="h-4 w-4" />
-                      </label>
+                    <div className="space-y-1.5">
+                      <Toggle on={it.included} label={t('admin.payments.col.include')}
+                        onChange={(v) => patchItem(it.id, v ? { included: true } : { included: false, exclude_reason: it.exclude_reason || t('admin.payments.defaultReason') })} />
                       {!it.included && (
                         <input defaultValue={it.exclude_reason} placeholder={t('admin.payments.reasonPlaceholder')}
                           onBlur={(e) => { if (e.target.value !== it.exclude_reason) patchItem(it.id, { included: false, exclude_reason: e.target.value }) }}
                           className={`block w-40 ${inputCls}`} />
                       )}
                     </div>
-                  ) : it.included ? '✓' : (it.exclude_reason || '—')}
+                  ) : (
+                    <div className="space-y-1">
+                      <Toggle on={it.included} disabled label={t('admin.payments.col.include')} onChange={() => {}} />
+                      {!it.included && <p className="text-xs">{it.exclude_reason || '—'}</p>}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
-          <tfoot className="bg-blue-50/50 border-t">
-            <tr><td colSpan={7} className="px-4 py-3 text-right text-sm font-bold text-gray-900">{t('admin.payments.totalToPay')}: RM {rm(run.total)}</td></tr>
+          <tfoot className="bg-primary-50 border-t border-primary-100">
+            <tr>
+              <td colSpan={7} className="px-4 py-4">
+                <div className="flex items-center justify-end gap-4">
+                  <span className="text-sm font-medium text-gray-600">{t('admin.payments.totalToPay')}</span>
+                  <span className="text-2xl font-bold text-gray-900 tabular-nums">RM {rm(run.total)}</span>
+                </div>
+              </td>
+            </tr>
           </tfoot>
         </table>
       </div>
