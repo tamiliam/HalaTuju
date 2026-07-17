@@ -174,11 +174,44 @@ class TestAllowlistNoLeak(TestCase):
         self.assertEqual(data['course'], 'Diploma Test Engineering')
 
     def test_course_falls_back_to_field(self):
+        # No programme → the field taxonomy DISPLAY name (Fix-1 d), not the raw key. 'engineering'
+        # is a seeded taxonomy key, so the card shows its proper display name.
         app = _make_eligible_app(self.cohort)
         app.chosen_programme = {}
         app.save(update_fields=['chosen_programme'])
         data = SponsorPoolCardSerializer(app).data
-        self.assertEqual(data['course'], 'engineering')
+        self.assertEqual(data['course'], 'Engineering & Technical')
+
+    def test_secondary_school_never_reaches_card_PRIVACY(self):
+        # PRIVACY (allowlist promise): a Form-6 student's SECONDARY SCHOOL must never appear on
+        # a sponsor card, in either the institution slot or the pre-U fallback. The school-block
+        # (card_display.resolve_institution) drops it — the card shows the course only.
+        app = _make_eligible_app(self.cohort)
+        app.chosen_programme = {'course_name': 'Tingkatan Enam',
+                                'institution': 'Sekolah Menengah Kebangsaan Maxwell'}
+        app.pre_u_institution = 'SMK MAXWELL'
+        app.chosen_pathway = 'stpm'
+        app.pre_u_track = 'sains'
+        app.save(update_fields=['chosen_programme', 'pre_u_institution', 'chosen_pathway', 'pre_u_track'])
+        data = SponsorPoolCardSerializer(app).data
+        self.assertEqual(data['institution'], '')                 # school blocked
+        self.assertNotIn('Maxwell', json.dumps(data))             # nowhere in the payload
+        self.assertNotIn('SMK', json.dumps(data))
+        self.assertEqual(data['course'], 'Tingkatan Enam')        # the sane stored label, never a school
+
+    def test_mis_slotted_offer_never_shows_junk(self):
+        # #125: an institution name in the course slot + a 'Tarikh…' line in the institution slot
+        # must never surface. With no catalogue course_id, course falls to the pre-U label and the
+        # date-junk institution is dropped.
+        app = _make_eligible_app(self.cohort)
+        app.chosen_programme = {'course_name': 'Politeknik Sultan Idris Shah',
+                                'institution': 'Tarikh dan Masa Daftar: 15 JUN 2026 (8.00 PAGI)'}
+        app.chosen_pathway = 'asasi'
+        app.save(update_fields=['chosen_programme', 'chosen_pathway'])
+        data = SponsorPoolCardSerializer(app).data
+        self.assertNotIn('Tarikh', json.dumps(data))
+        self.assertEqual(data['institution'], '')
+        self.assertEqual(data['course'], 'Asasi')
 
     def test_blurb_passthrough(self):
         app = _make_eligible_app(self.cohort)

@@ -146,25 +146,22 @@ class SponsorPoolCardSerializer(serializers.Serializer):
         return app.field_of_study or ''
 
     def get_course(self, app):
-        # The confirmed programme NAME (e.g. "Diploma Kejuruteraan Mekanikal"), from the
-        # chosen programme; falls back to the broad field. Non-identifying.
-        cp = getattr(app, 'chosen_programme', None)
-        if isinstance(cp, dict) and (cp.get('course_name') or '').strip():
-            return cp['course_name'].strip()
-        return app.field_of_study or ''
+        # The confirmed programme NAME (e.g. "Diploma Kejuruteraan Mekanikal") — resolved
+        # defence-in-depth so a mis-slotted offer (an institution name / a "Tarikh…" line in
+        # the course slot) or a raw pre-U value never reaches a sponsor. See card_display.
+        from . import card_display
+        return card_display.resolve_course(app)
 
     def get_academic(self, app):
         return pool.academic_band(app.profile)
 
     def get_institution(self, app):
-        # The TARGET institution the student will study AT (from the confirmed offer /
-        # chosen programme), e.g. "Politeknik Ungku Omar". A university/college is a far
-        # weaker locator than a school, and it's the place a sponsor cares about. The
-        # SECONDARY SCHOOL is NEVER surfaced. '' when unknown → the card shows course only.
-        cp = getattr(app, 'chosen_programme', None)
-        if isinstance(cp, dict) and (cp.get('institution') or '').strip():
-            return cp['institution'].strip()
-        return (getattr(app, 'pre_u_institution', '') or '').strip()
+        # The TARGET institution the student will study AT, e.g. "Politeknik Ungku Omar" —
+        # resolved so a date/'Tarikh' junk value and, critically, a SECONDARY SCHOOL are
+        # NEVER surfaced to a sponsor (the allowlist privacy promise; card_display enforces
+        # the school-block). '' when nothing safe resolves → the card shows the course only.
+        from . import card_display
+        return card_display.resolve_institution(app)
 
     def get_blurb(self, app):
         sp = getattr(app, 'sponsor_profile', None)

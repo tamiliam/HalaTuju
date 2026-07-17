@@ -113,7 +113,9 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
 
       {/* Body */}
       <div className="flex flex-1 flex-col p-5">
-        <p className="text-[15px] font-semibold text-gray-900 leading-snug">{s.course || s.field || '—'}</p>
+        {(s.course || s.field) && (
+          <p className="text-[15px] font-semibold text-gray-900 leading-snug">{s.course || s.field}</p>
+        )}
         {institutionLine && <p className="text-xs text-gray-500 mt-0.5">{institutionLine}</p>}
 
         <div className="mt-3 flex flex-wrap gap-1.5">

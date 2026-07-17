@@ -68,7 +68,37 @@ Tarikh dan Masa Daftar: 20 JUN 2026 (8.30 PAGI)
 """
 
 
+# #125 (RUBESHAN): an Asasi-TVET-at-Politeknik letter whose info block is INTERLEAVED
+# (label, value, label, value) rather than block-grouped. The _info_block_pairs zip mis-paired
+# it — the institution landed in the programme slot and the 'Tarikh dan Masa Daftar' line in the
+# institution slot (the stored fault). The parser now reads it correctly (per-label recovery +
+# slot guard). Reconstructed layout — the deterministic path doesn't persist raw OCR, so this
+# faithfully reproduces the stored mis-slot signature rather than the exact bytes.
+POLY_ASASI_INTERLEAVED = """JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI
+Tarikh: 15 JUN 2026
+RUBESHAN A/L SANTHASWARAN (080130080735)
+SURAT TAWARAN PENGAJIAN SESI : 2026/2027
+Program
+:ASASI TEKNOLOGI KEJURUTERAAN (ASASI TVET)
+Institusi
+POLITEKNIK SULTAN IDRIS SHAH
+Tarikh dan Masa Daftar: 15 JUN 2026 (8.00 PAGI - 11.00 PAGI)
+"""
+
+
 class TestGovtOfferParser(SimpleTestCase):
+    def test_polytechnic_asasi_interleaved_125(self):
+        # The reproduced #125 fault must now read cleanly — never institution-as-programme
+        # or a 'Tarikh…' line as the institution.
+        r = parse_govt_offer(POLY_ASASI_INTERLEAVED)
+        self.assertIsNotNone(r)
+        self.assertEqual(r['_family'], 'polytechnic')
+        self.assertEqual(r['candidate_name'], 'RUBESHAN A/L SANTHASWARAN')
+        self.assertIn('ASASI TEKNOLOGI KEJURUTERAAN', r['programme'])
+        self.assertEqual(r['institution'], 'POLITEKNIK SULTAN IDRIS SHAH')
+        self.assertNotIn('Tarikh', r['institution'])
+        self.assertIn('15 JUN 2026', r['reporting_date'])
+
     def test_stpm(self):
         r = parse_govt_offer(STPM)
         self.assertEqual(r['_family'], 'stpm')

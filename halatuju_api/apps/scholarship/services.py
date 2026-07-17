@@ -1086,16 +1086,31 @@ def confirm_pathway(application):
     if offer is None:
         return False
     chk = student_offer_check(offer)
+    # Write-side guard (defence-in-depth): never store a mis-slotted offer value — a date/'Tarikh'
+    # line in the institution slot, or an institution name in the programme slot (the #125 fault).
+    # A parsed date fills reporting_date (when null); junk is dropped rather than stored.
+    from . import card_display
+    from .pathway_engine import parse_reporting_date
+    prog, inst, rep_raw = card_display.sanitise_offer_slots(chk['programme'], chk['institution'])
+    if not prog and (chk['programme'] or '').strip():
+        logger.warning('offer-confirm guard dropped an institution-shaped programme (doc %s)', offer.id)
     # Offer letters are often ALL-CAPS; re-case a shouty programme name to Title Case so it
     # never reaches the sponsor pool / profile shouting (catalogue names are already cased — this
     # is the one path that writes raw offer text). Already-cased names pass through untouched.
     cp = dict(application.chosen_programme) if isinstance(application.chosen_programme, dict) else {}
-    cp.update({'course_name': op.title_case_programme(chk['programme']),
-               'institution': chk['institution'],
+    cp.update({'course_name': op.title_case_programme(prog),
+               'institution': inst,
                'source': 'offer_letter_confirmed'})
     application.chosen_programme = cp
     application.pathway_confirmed_at = timezone.now()
     update_fields = ['chosen_programme', 'pathway_confirmed_at']
+    if rep_raw and application.reporting_date is None:
+        _d = parse_reporting_date(rep_raw)
+        if _d:
+            application.reporting_date = _d
+            update_fields.append('reporting_date')
+            logger.warning('offer-confirm guard recovered reporting_date from a mis-slotted '
+                           'institution value (doc %s)', offer.id)
 
     # The confirm query promises "we'll update your record to match" — so for an INSTITUTION
     # pathway (matric/STPM), also bring the displayed pre-U fields into line with the confirmed
@@ -1233,7 +1248,12 @@ def autofill_pathway_from_offer(application):
         # stream/jurusan lives in pre_u_track) AND the institution is canonicalised here too
         # (matric → catalogue college; STPM → casing-only), so a re-run is idempotent and never
         # reintroduces raw offer wording (e.g. "TINGKATAN ENAM SEMESTER 1 TAHUN 2025").
-        new_cp = {'course_name': prog, 'institution': inst, 'source': 'offer_letter_auto'}
+        # Write-side guard (defence-in-depth): a mis-slotted offer (institution in the
+        # programme slot / a 'Tarikh' line in the institution slot — the #125 fault) is
+        # sanitised before it can be stored.
+        from . import card_display
+        g_prog, g_inst, _rep = card_display.sanitise_offer_slots(prog, inst)
+        new_cp = {'course_name': g_prog, 'institution': g_inst, 'source': 'offer_letter_auto'}
         if op.is_pre_u(ptype):
             canon = op.canonical_pre_u_course(ptype)
             if canon:
@@ -1242,7 +1262,7 @@ def autofill_pathway_from_offer(application):
             if canon_inst:
                 new_cp['institution'] = canon_inst
         else:
-            match = op.resolve_catalogue_course(prog, inst)
+            match = op.resolve_catalogue_course(g_prog, g_inst)
             if match:
                 new_cp = {**match, 'source': 'offer_letter_auto'}
         # Only overwrite when there's no precise existing pick to protect, and only when the

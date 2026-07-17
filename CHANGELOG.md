@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## Offer-extraction root cause + sponsor card data fix (upstream-first) — 2026-07-17
+
+Owner-diagnosed from app #125's card. Fixed UPSTREAM (parser + data) with the read/write chain
+as defence-in-depth. NO migration.
+
+- **Root cause (#125):** the deterministic poly offer parser (`offer_parse._parse_poly`) mis-slotted
+  the interleaved JPPKK Asasi-at-Politeknik letter — institution → programme slot, the "Tarikh dan
+  Masa Daftar…" line → institution slot (a label-anchoring failure in `_info_block_pairs`' block
+  zip). #102 (Gemini, clean) was the control.
+- **Parser fix:** `_parse_poly` now handles the interleaved layout (per-label recovery) + a slot
+  guard (a date is never an institution; an institution-shaped value is never a programme);
+  `PARSER_VERSION 1.1.0` stamped. New #125-signature fixture.
+- **Read-side (`card_display.resolve_course`/`resolve_institution`):** catalogue → sane free-text →
+  pre-U label → taxonomy name; a **school-block** (`SCHOOL_BLOCK_RE`) keeps a secondary-school name
+  off every sponsor card (privacy — fixed a real leak on the pooled STPM cards #10/#18/#25/#83), and
+  a date/'Tarikh' junk value never shows. Wired into the pool serializer.
+- **Write-side guard:** `confirm_pathway` + `autofill_pathway_from_offer` sanitise the offer pair
+  before storing; a mis-slotted date fills `reporting_date` (when null) instead of being written as
+  institution.
+- **Repair command** `repair_chosen_programme --report/--apply` (re-reads stored fields + catalogue,
+  NEVER re-OCRs; leaves legit school data alone). **#125 repaired via MCP** → "Asasi Teknologi
+  Kejuruteraan (Asasi TVET)" at "Politeknik Sultan Idris Shah"; #102 control byte-identical.
+- Browse card `'—'` fallback removed. 2692 scholarship pytest + 584 jest; `next build` clean.
+  Retro `docs/retrospective-2026-07-17-sponsor-card-data-fix.md`.
+
 ## Sponsor pool redesign — image-led cards + refined detail — 2026-07-17
 
 One sprint, one deploy, NO migration (two allowlist serializer fields + a frontend rebuild).

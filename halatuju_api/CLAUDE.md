@@ -524,6 +524,30 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-17)
 
+**✅ SHIPPED 2026-07-17 — Offer-extraction root cause + sponsor card data fix (upstream-first)**
+(NO migration; brief `docs/plans/2026-07-16-sponsor-card-data-fix-brief.md`; retro
+`docs/retrospective-2026-07-17-sponsor-card-data-fix.md`). Owner-diagnosed from #125's card.
+- **Root cause:** the deterministic poly offer parser (`offer_parse._parse_poly`) mis-slotted the
+  INTERLEAVED JPPKK Asasi-at-Politeknik letter (`_info_block_pairs` block-zip): institution →
+  programme slot, "Tarikh dan Masa Daftar…" → institution slot. #102 (Gemini) = clean control.
+  The deterministic offer path does NOT persist raw OCR, so the fixture reproduces the *signature*.
+- **Parser fix:** interleaved-layout per-label recovery + slot guard (date never an institution,
+  institution-shape never a programme); `PARSER_VERSION 1.1.0` (`_offer_parser_version` stamp).
+- **`card_display.py` (NEW):** one home for `resolve_course`/`resolve_institution` (catalogue →
+  sane free-text → pre-U label → taxonomy name) + `SCHOOL_BLOCK_RE` (privacy — a Form-6 school
+  never crosses to a sponsor; fixed a real leak on pooled cards #10/#18/#25/#83) +
+  `sanitise_offer_slots` (write guard). Wired into the pool serializer (`get_course`/`get_institution`)
+  and both offer-write paths (`confirm_pathway` + `autofill_pathway_from_offer`, which also recovers
+  `reporting_date` from a mis-slotted date).
+- **`repair_chosen_programme --report/--apply`:** re-reads STORED fields + catalogue, NEVER re-OCRs;
+  corruption-signature rows only (a legit Form-6 school in institution is left alone — read-side
+  blocks it). **#125 repaired via MCP** → "Asasi Teknologi Kejuruteraan (Asasi TVET)" at "Politeknik
+  Sultan Idris Shah" (reporting 2026-06-15 kept); **#102 control byte-identical.**
+- Browse card `'—'` fallback removed (Phase 4d). **2692 scholarship pytest + 584 jest**; build clean.
+- **▶ CARRY:** ~19 STPM school-leak cards now blocked read-side (no data change); optional periodic
+  `repair_chosen_programme` report on the live service; positive deterministic reading of more offer
+  layouts is future parser work.
+
 **✅ SHIPPED 2026-07-17 — Sponsor pool redesign (image-led cards + refined detail)** (NO
 migration; brief `docs/plans/2026-07-16-sponsor-pool-redesign-brief.md`; retro
 `docs/retrospective-2026-07-17-sponsor-pool-redesign.md`). One sprint, one deploy. Two

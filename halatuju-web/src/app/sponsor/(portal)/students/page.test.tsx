@@ -47,4 +47,9 @@ describe('sponsor browse grid', () => {
     // the "fully fund" CTA on every card
     expect(screen.getAllByText('sponsorPool.fullyFund')).toHaveLength(2)
   })
+
+  it('never renders a — placeholder (Phase 4d no-dash rule)', () => {
+    render(<StudentsPage />)
+    expect(screen.queryByText('—')).toBeNull()
+  })
 })

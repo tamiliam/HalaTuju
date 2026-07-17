@@ -227,9 +227,19 @@ def _parse_poly(lines, up):
     pairs = _info_block_pairs(lines, _POLY_LABELS)
     reporting = _value_after_label(lines, re.compile(r'\s*Tarikh\s*dan\s*Masa\s*Daftar\s*:?\s*(.*)', re.IGNORECASE))
     rm = _DMY_RE.search(reporting) or re.search(r'(\d{1,2}[/-]\d{1,2}[/-]20\d{2})', reporting)
+    programme, institution = _guard_poly_slots(pairs.get('programme', ''), pairs.get('institution', ''), lines)
+    # Interleaved layout (label, value, label, value — the #125 Asasi shape) defeats the
+    # block-pairing zip: read the value on/after the 'Program' label directly when the block
+    # left the programme empty. Reject a value that is itself a label / institution / date.
+    if not programme:
+        cand = _value_after_label(lines, re.compile(r'^\s*Program\s*:?\s*(.*)', re.IGNORECASE))
+        cand = (cand or '').strip(' :').strip()
+        from .card_display import looks_like_institution, looks_like_date
+        if cand and not _is_poly_label(cand) and not looks_like_institution(cand) and not looks_like_date(cand):
+            programme = cand
     return {
-        'candidate_name': name, 'candidate_nric': nric, 'programme': pairs.get('programme', ''),
-        'institution': pairs.get('institution', ''), 'intake': intake,
+        'candidate_name': name, 'candidate_nric': nric, 'programme': programme,
+        'institution': institution, 'intake': intake,
         'reporting_date': rm.group(1).strip() if rm else '',
         'reporting_date_label': 'Tarikh dan Masa Daftar' if rm else '',
         'offer_date': _offer_date(lines),
@@ -237,8 +247,41 @@ def _parse_poly(lines, up):
     }
 
 
+def _is_poly_label(line):
+    """True when a line is itself one of the poly info-block labels (so a per-label value read
+    never grabs the NEXT label as the value)."""
+    return any(pat.match(line) for _k, pat in _POLY_LABELS)
+
+
+def _guard_poly_slots(programme, institution, lines):
+    """Guard the ``_info_block_pairs`` block misalignment behind app #125 (a JPPKK
+    Asasi-at-Politeknik letter whose value block paired the INSTITUTION into the programme
+    slot and the 'Tarikh dan Masa Daftar…' line into the institution slot). Anchor to SHAPE,
+    never trust the positional pair blindly: a date/'Tarikh' value is not an institution; an
+    institution-shaped value is not a programme. When the programme is cleared, the conservative
+    ``_REQUIRED`` gate makes ``parse_govt_offer`` return None → the Gemini image read (which the
+    clean control #102 handles correctly), rather than locking an incoherent read."""
+    from .card_display import looks_like_institution, looks_like_date
+    prog = (programme or '').strip()
+    inst = (institution or '').strip()
+    if inst and looks_like_date(inst):
+        inst = ''
+    if prog and looks_like_institution(prog):
+        if not inst:
+            inst = prog
+        prog = ''
+    if not inst:
+        inst = next((ln.strip() for ln in lines
+                     if re.match(r'\s*(POLITEKNIK|KOLEJ\s+KOMUNITI)\b', ln, re.IGNORECASE)), '')
+    return prog, inst
+
+
 # The verdict-critical fields a lock REQUIRES (so switching off Gemini can't drop them).
 _REQUIRED = ('candidate_name', 'candidate_nric', 'programme', 'intake')
+
+# Parser version — bump on ANY change to the deterministic capture (doc-recognition versioning
+# rule) so re-runs are traceable. 1.1.0: poly slot-guard for the #125 block-misalignment.
+PARSER_VERSION = '1.1.0'
 
 
 def parse_govt_offer(text: str):
@@ -254,4 +297,5 @@ def parse_govt_offer(text: str):
     if any(not (fields.get(k) or '').strip() for k in _REQUIRED):
         return None
     fields['_family'] = fam
+    fields['_offer_parser_version'] = PARSER_VERSION
     return fields
