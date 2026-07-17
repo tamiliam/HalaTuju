@@ -49,8 +49,8 @@ def propose_repair(app):
         new_inst = institution
     else:
         new_inst = card_display.catalogue_single_institution(course_id)
-    if card_display.looks_like_school(new_inst):
-        new_inst = ''
+    # A recovered institution that is a Form-6 school is fine — schools are shown to sponsors
+    # (owner 2026-07-17); the repair only suppresses date/clause junk.
 
     # Recover the programme name: catalogue via course_id; else the current name only if sane.
     new_course = card_display.catalogue_course_name(course_id)

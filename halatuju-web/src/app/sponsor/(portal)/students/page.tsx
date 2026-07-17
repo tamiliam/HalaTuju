@@ -88,7 +88,7 @@ export default function StudentsPage() {
 function PoolCard({ s }: { s: SponsorPoolCard }) {
   const { t } = useT()
   const cd = countdown(s.reporting_date)
-  const institutionLine = [s.institution, s.state].filter(Boolean).join(' · ')
+  const institutionLine = [s.institution, s.state].filter(Boolean).join(' - ')
 
   return (
     <Link href={`/sponsor/students/${s.id}`}

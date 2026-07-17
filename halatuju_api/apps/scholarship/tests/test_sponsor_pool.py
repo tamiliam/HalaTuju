@@ -182,22 +182,20 @@ class TestAllowlistNoLeak(TestCase):
         data = SponsorPoolCardSerializer(app).data
         self.assertEqual(data['course'], 'Engineering & Technical')
 
-    def test_secondary_school_never_reaches_card_PRIVACY(self):
-        # PRIVACY (allowlist promise): a Form-6 student's SECONDARY SCHOOL must never appear on
-        # a sponsor card, in either the institution slot or the pre-U fallback. The school-block
-        # (card_display.resolve_institution) drops it — the card shows the course only.
+    def test_stpm_card_shows_institution_and_track(self):
+        # Owner 2026-07-17: the institution (incl. a Form-6 school) IS shown, from the single
+        # chosen_programme.institution field; the STPM track is appended to the programme.
         app = _make_eligible_app(self.cohort)
         app.chosen_programme = {'course_name': 'Tingkatan Enam',
                                 'institution': 'Sekolah Menengah Kebangsaan Maxwell'}
-        app.pre_u_institution = 'SMK MAXWELL'
+        app.pre_u_institution = 'SMK MAXWELL'          # abbreviated duplicate — NOT the source
         app.chosen_pathway = 'stpm'
         app.pre_u_track = 'sains'
         app.save(update_fields=['chosen_programme', 'pre_u_institution', 'chosen_pathway', 'pre_u_track'])
         data = SponsorPoolCardSerializer(app).data
-        self.assertEqual(data['institution'], '')                 # school blocked
-        self.assertNotIn('Maxwell', json.dumps(data))             # nowhere in the payload
-        self.assertNotIn('SMK', json.dumps(data))
-        self.assertEqual(data['course'], 'Tingkatan Enam')        # the sane stored label, never a school
+        self.assertEqual(data['institution'], 'Sekolah Menengah Kebangsaan Maxwell')  # shown, from cp.institution
+        self.assertEqual(data['course'], 'Tingkatan Enam (Sains)')                    # track appended
+        self.assertNotIn('SMK MAXWELL', json.dumps(data))         # the pre_u duplicate is never used
 
     def test_mis_slotted_offer_never_shows_junk(self):
         # #125: an institution name in the course slot + a 'Tarikh…' line in the institution slot

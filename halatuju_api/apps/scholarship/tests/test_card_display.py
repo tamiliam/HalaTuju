@@ -30,6 +30,16 @@ class TestPatterns(SimpleTestCase):
         self.assertTrue(cd.looks_like_institution('Kolej Komuniti Bakri'))
         self.assertFalse(cd.looks_like_institution('Diploma Kejuruteraan Mekanikal'))
 
+    def test_clause_number(self):
+        # #47: a bare numbered-clause header latched as a value — junk, never a real field.
+        for s in ['2.4.', '2.5', '3', '(iv)', '(3)', '2.4.1']:
+            self.assertTrue(cd.looks_like_clause_number(s), s)
+        for s in ['Kolej Matrikulasi Perak', 'Tingkatan Enam', 'Sains Sosial', '']:
+            self.assertFalse(cd.looks_like_clause_number(s), s)
+        # sanitise drops a clause-number in either slot
+        p, i, _rep = cd.sanitise_offer_slots('2.4.', 'Kolej Matrikulasi Perak')
+        self.assertEqual((p, i), ('', 'Kolej Matrikulasi Perak'))
+
     def test_preu_label(self):
         self.assertEqual(cd.preu_label('stpm', 'sains'), 'STPM · Sains')
         self.assertEqual(cd.preu_label('stpm', 'sains_sosial'), 'STPM · Sains Sosial')
@@ -72,6 +82,18 @@ class TestResolution(TestCase):
                       chosen_pathway='asasi', field_of_study='zz_mek')
         self.assertEqual(cd.resolve_course(a), 'Asasi')
 
+    def test_course_appends_track_for_stpm_and_matric_only(self):
+        stpm = self._app(chosen_programme={'course_name': 'Tingkatan Enam'},
+                         chosen_pathway='stpm', pre_u_track='sains_sosial')
+        self.assertEqual(cd.resolve_course(stpm), 'Tingkatan Enam (Sains Sosial)')
+        matric = self._app(chosen_programme={'course_name': 'Program Matrikulasi'},
+                           chosen_pathway='matric', pre_u_track='perakaunan')
+        self.assertEqual(cd.resolve_course(matric), 'Program Matrikulasi (Perakaunan)')
+        # A poly course carries no track even if a stray pre_u_track is set.
+        poly = self._app(chosen_programme={'course_name': 'Diploma Kejuruteraan Mekanikal'},
+                         chosen_pathway='poly', pre_u_track='sains')
+        self.assertEqual(cd.resolve_course(poly), 'Diploma Kejuruteraan Mekanikal')
+
     def test_course_taxonomy_fallback(self):
         a = self._app(chosen_programme={}, field_of_study='zz_mek')
         self.assertEqual(cd.resolve_course(a), 'Mechanical')
@@ -84,9 +106,16 @@ class TestResolution(TestCase):
         a = self._app(chosen_programme={'institution': 'Tarikh dan Masa Daftar: 15 JUN 2026'})
         self.assertEqual(cd.resolve_institution(a), '')
 
-    def test_institution_blocks_school(self):
-        # PRIVACY: a Form-6 school in either slot never resolves to a sponsor-facing value.
+    def test_institution_shows_school(self):
+        # Owner 2026-07-17: a Form-6 school IS shown — it's the institution the student attends.
         a = self._app(chosen_programme={'institution': 'Sekolah Menengah Kebangsaan Maxwell'},
+                      pre_u_institution='SMK Maxwell')
+        self.assertEqual(cd.resolve_institution(a), 'Sekolah Menengah Kebangsaan Maxwell')
+
+    def test_institution_single_source_no_preu_fallback(self):
+        # ONLY chosen_programme.institution — never the pre_u_institution duplicate. Empty
+        # cp.institution → '' (data is fixed at source, not papered over from pre_u).
+        a = self._app(chosen_programme={'course_name': 'Tingkatan Enam'},
                       pre_u_institution='SMK Maxwell')
         self.assertEqual(cd.resolve_institution(a), '')
 

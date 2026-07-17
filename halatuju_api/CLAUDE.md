@@ -576,9 +576,15 @@ defended at three layers + a repair sweep:**
   blocks it). **#125 repaired via MCP** → "Asasi Teknologi Kejuruteraan (Asasi TVET)" at "Politeknik
   Sultan Idris Shah" (reporting 2026-06-15 kept); **#102 control byte-identical.**
 - Browse card `'—'` fallback removed (Phase 4d). **2692 scholarship pytest + 584 jest**; build clean.
-- **▶ CARRY:** ~19 STPM school-leak cards now blocked read-side (no data change); optional periodic
-  `repair_chosen_programme` report on the live service; positive deterministic reading of more offer
-  layouts is future parser work.
+- **▶ FOLLOW-UP SHIPPED 2026-07-17 (owner-directed):** the school-block was REVERSED — sponsors
+  now DO see the institution incl. Form-6 schools (`resolve_institution` = single-source
+  `chosen_programme.institution`, no `pre_u_institution` fallback, only date/clause junk
+  suppressed); the Pre-U TRACK is appended for STPM/Matric ("Tingkatan Enam (Sains Sosial)",
+  "Program Matrikulasi (Perakaunan)"). Card institution·state separator → hyphen. Verified across
+  all 40 pooled students. **2706 pytest + 584 jest.** See memory
+  `halatuju_sponsor_card_institution.md`.
+- **▶ CARRY:** optional periodic `repair_chosen_programme` report on the live service; positive
+  deterministic reading of more offer layouts is future parser work.
 
 **✅ SHIPPED 2026-07-17 — Sponsor pool redesign (image-led cards + refined detail)** (NO
 migration; brief `docs/plans/2026-07-16-sponsor-pool-redesign-brief.md`; retro

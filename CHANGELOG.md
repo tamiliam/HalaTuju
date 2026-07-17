@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor card lines: Pre-U track + single-source institution — 2026-07-17
+
+Owner-directed follow-up to the card data fix, per the desired 4-line card (code / programme
+(track) / institution - state / SPM #As - need). NO migration.
+
+- **Line 2 — Pre-U track shown for STPM & Matric** (`card_display.resolve_course`): the track
+  is appended in parentheses — "Tingkatan Enam (Sains Sosial)", "Program Matrikulasi
+  (Perakaunan)". Poly/Uni/Asasi/PISMP keep their catalogue course name (no track). Was: the
+  track was silently dropped for every STPM/Matric card.
+- **Line 3 — one source, schools shown** (`resolve_institution`): the card now uses ONLY
+  `chosen_programme.institution` (no `pre_u_institution` fallback), applied consistently, and
+  **shows the institution including a Form-6 secondary school** — the owner's call (it's material
+  to the sponsorship; reverses the earlier privacy school-block). Only a mis-slotted date/clause
+  junk value is suppressed (read-side safety net; corruption is fixed at source). The card's
+  institution·state separator is now a hyphen per the spec.
+- Verified against all 40 pooled students across every pathway — course+track and institution now
+  render consistently. 2706 scholarship pytest + 584 jest; `next build` clean.
+
 ## Offer-extraction root cause + sponsor card data fix (upstream-first) — 2026-07-17
 
 Owner-diagnosed from app #125's card. Fixed UPSTREAM (parser + data) with the read/write chain

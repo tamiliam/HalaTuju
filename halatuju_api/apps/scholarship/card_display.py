@@ -1,25 +1,27 @@
 """Card display derivation + slot sanity — the ONE home for turning a possibly-corrupt
 ``chosen_programme`` into a clean programme/institution for the sponsor pool, and for the
-guards that keep junk (a mis-slotted date, or a secondary-school name) from ever being
+guards that keep JUNK (a mis-slotted date, or an offer-body clause number) from ever being
 STORED or SHOWN.
 
 Why this exists: offer extraction can mis-slot (app #125 — the JPPKK Asasi-at-Politeknik
 letter put the institution into ``course_name`` and the "Tarikh dan Masa Daftar…" line into
 ``institution``). This module is defence-in-depth: the read-side (``resolve_course`` /
-``resolve_institution``) NEVER emits junk or a school to a sponsor even if the stored data is
-wrong, and the write-side (``sanitise_offer_slots``) never lets such a value be written.
+``resolve_institution``) NEVER emits junk to a sponsor even if the stored data is wrong, and
+the write-side (``sanitise_offer_slots``) never lets such a value be written.
 
-**Allowlist promise (privacy):** a sponsor card must NEVER carry a student's secondary school
-— it is a strong locator. ``SCHOOL_BLOCK_RE`` enforces that at the card boundary. A Form-6
-school is legitimate OFFICER data (it stays on the record); it simply never crosses to a sponsor.
+**Institution policy (owner 2026-07-17):** a sponsor SHOULD see the institution, INCLUDING a
+Form-6 secondary school — it is material to the sponsorship. ``resolve_institution`` therefore
+shows ``chosen_programme.institution`` as-is (only date/clause junk is suppressed); there is no
+school-block. ``SCHOOL_BLOCK_RE`` survives only as a COURSE-slot sanity check (a school name is
+never a programme name), never as a privacy block.
 """
 import re
 
 # ── pattern constants (each cited by the guards below) ───────────────────────────
 
-# Secondary-school shapes that must never reach a sponsor card (privacy — the allowlist
-# promise). Post-secondary institutions (Politeknik / Universiti / Kolej Matrikulasi /
-# Kolej / Kolej Tingkatan Enam / KTE / IPG / Institut) are NOT schools and pass through.
+# Secondary-school shapes — used ONLY to reject a school that has landed in the COURSE/programme
+# slot (a school is never a programme name). NOT a privacy block: an institution that is a Form-6
+# school is shown to sponsors (owner 2026-07-17). Post-secondary institutions pass here anyway.
 SCHOOL_BLOCK_RE = re.compile(
     r'\bSMK\b|\bSJK\b|\bSMJK\b|\bSABK\b|\bSBP\b|\bSMKA\b|'
     r'Sekolah\s+Menengah|Sekolah\s+Jenis|Sekolah\s+Kebangsaan',
@@ -131,38 +133,45 @@ def preu_label(chosen_pathway, pre_u_track):
 # ── read-side resolution (the sponsor card / anywhere anonymous) ─────────────────
 
 def resolve_course(app, lang='en'):
-    """The programme title a sponsor sees. Resolution order (never junk, never a school):
-    (a) catalogue name via chosen_programme.course_id; (b) chosen_programme.course_name ONLY
-    when sane (not institution-shaped, not a date, not a school); (c) canonical pre-U label;
-    (d) the field taxonomy display name; else ''."""
+    """The programme title a sponsor sees, with the Pre-U TRACK appended for STPM/Matric only
+    ("Tingkatan Enam (Sains)", "Program Matrikulasi (Perakaunan)"). Base resolution order
+    (never junk, never a school): (a) catalogue name via chosen_programme.course_id;
+    (b) chosen_programme.course_name when sane (not institution-shaped/date/school); (c) canonical
+    pre-U label; (d) the field taxonomy display name; else ''."""
     cp = app.chosen_programme if isinstance(getattr(app, 'chosen_programme', None), dict) else {}
+    base = ''
     cat = catalogue_course_name(cp.get('course_id'))
     if cat:
-        return cat
-    name = (cp.get('course_name') or '').strip()
-    if name and not looks_like_institution(name) and not looks_like_date(name) and not looks_like_school(name):
-        return name
-    label = preu_label(getattr(app, 'chosen_pathway', ''), getattr(app, 'pre_u_track', ''))
-    if label:
-        return label
-    return _taxonomy_name(getattr(app, 'field_of_study', ''), lang) or (getattr(app, 'field_of_study', '') or '').strip()
+        base = cat
+    else:
+        name = (cp.get('course_name') or '').strip()
+        if name and not looks_like_institution(name) and not looks_like_date(name) and not looks_like_school(name):
+            base = name
+        else:
+            base = (preu_label(getattr(app, 'chosen_pathway', ''), getattr(app, 'pre_u_track', ''))
+                    or _taxonomy_name(getattr(app, 'field_of_study', ''), lang)
+                    or (getattr(app, 'field_of_study', '') or '').strip())
+    # Append the Pre-U track — STPM/Matric only (a poly/uni/asasi/pismp course name is complete).
+    pw = (getattr(app, 'chosen_pathway', '') or '').strip().lower()
+    if pw in ('stpm', 'matric'):
+        tl = _TRACK_LABEL.get((getattr(app, 'pre_u_track', '') or '').strip().lower(), '')
+        if tl and base and f'({tl})' not in base:
+            base = f'{base} ({tl})'
+    return base
 
 
 def resolve_institution(app):
-    """The institution a sponsor sees. Resolution order (never a date, never a school):
-    (a) catalogue institution via course_id when unambiguous; (b) chosen_programme.institution
-    ONLY when sane (no date) AND not school-like; (c) pre_u_institution ONLY when not
-    school-like; else ''. A Form-6 school is deliberately dropped here — privacy."""
+    """The institution a sponsor sees — the SINGLE stored ``chosen_programme.institution`` field
+    (owner 2026-07-17: sponsors SHOULD see the institution, including a Form-6 secondary school —
+    it is material to the sponsorship). One source, applied consistently: there is deliberately no
+    ``pre_u_institution`` fallback and no school-block. The ONLY value suppressed is a mis-slotted
+    date/clause junk value — a read-side safety net; that corruption is fixed at source and blocked
+    write-side. Data aberrations are corrected in ``chosen_programme.institution`` itself, not
+    papered over here."""
     cp = app.chosen_programme if isinstance(getattr(app, 'chosen_programme', None), dict) else {}
-    cat = catalogue_single_institution(cp.get('course_id'))
-    if cat and not looks_like_school(cat):
-        return cat
     inst = (cp.get('institution') or '').strip()
-    if inst and not looks_like_date(inst) and not looks_like_school(inst):
+    if inst and not looks_like_date(inst) and not looks_like_clause_number(inst):
         return inst
-    preu = (getattr(app, 'pre_u_institution', '') or '').strip()
-    if preu and not looks_like_school(preu):
-        return preu
     return ''
 
 
