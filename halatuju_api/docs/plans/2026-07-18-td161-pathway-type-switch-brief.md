@@ -1,176 +1,90 @@
-# Brief — TD-161: unify pathway reconciliation (offer vs the student's declaration — present, different-type, or absent)
+# Brief — TD-161: unify the pathway reconciliation (offer ↔ declaration), band-aware, one detector
 
-**Status:** BACKEND + FE DONE + TESTED (2026-07-18) — answerable end-to-end, deploy-ready (owner gates
-the push). NO migration. System-handled (no officer gate) — owner decision 2026-07-18. Live test case:
-**#43** (STPM-declared, PISMP-confirmed). Only cosmetic follow-up left (aliran pre-select on the picker).
-
-## Implementation status (2026-07-18)
-
-**DONE (backend, +2719 scholarship pytest green):**
-- `offer_pathway.pathway_family` (poly≡diploma, university≡degree — only a cross-FAMILY change counts
-  as a switch) + `offer_pathway.infer_pismp_aliran` (SPM BT→SJKT, BC→SJKC, else SK).
-- `verdict_engine._verdict_pathway`: raises **`pathway_type_switch`** when a genuine offer is a
-  different FAMILY than the declared `chosen_pathway`, **even after `pathway_confirmed_at`** (carries
-  `declared_pathway`/`offer_pathway`, + `aliran_hint` for PISMP).
-- `services.confirm_pathway`: on "yes" adopts the offer's type into `chosen_pathway` and drops the
-  now-stale `pre_u_track`/`pre_u_institution` (same-family confirms are a no-op).
-- `check2_queries._PATHWAY_QUERY_KINDS` += `pathway_type_switch` (synced to the student queue like
-  `pathway_confirm`); `views` resolve routes its "yes" → `confirm_pathway`.
-- Tests: verdict detection (fires when confirmed), confirm handler (adopts type + clears pre-U),
-  same-type no-op, aliran inference; the public-switch (poly≡diploma) regression is guarded.
-
-**DONE (frontend, +586 jest green, `ActionCentre.tsx`/`actionCentre.ts` tsc-clean):**
-- `actionCentre.KNOWN_CODES` += `pathway_type_switch` (so the synced query renders, not treated as a
-  blank-titled officer ticket); the KNOWN_CODES↔item-copy parity guard covers it.
-- `localiseParams` renders the `declared_pathway`/`offer_pathway` codes as display labels via new
-  `scholarship.actionCentre.pathwayName.<code>` (so the card reads "STPM"/"PISMP", not raw codes).
-- `ActionCentre.tsx`: a non-PISMP switch → one-tap "Yes, I've switched" (`onAffirm` → resolve
-  'confirmed' → `confirm_pathway`); a **PISMP** switch → routes to the profile Aliran/Bidang picker
-  (`/profile?aliran=<hint>`) — a one-tap can't choose the aliran the offer omits; the picker pins
-  `(aliran,bidang)` → `course_id` and the query auto-clears.
-- i18n en/ms/ta: `item.pathway_type_switch.{title,desc}`, `confirmPathwaySwitchYes`,
-  `confirmPathwaySwitchOnProfile`, `pathwayName.*` (Tamil first-draft).
-
-**REMAINING (cosmetic, non-blocking):**
-- The profile page/`AliranPicker` doesn't yet CONSUME the `?aliran=<hint>` URL param to pre-select the
-  inferred stream — the hint is passed through (backend computes it, FE carries it), only the picker's
-  default-read is left. A small follow-up; the flow works without it (student just taps the aliran).
-- Tamil review of the new first-draft strings.
-
-## Framing — one reconciliation, three inputs (owner 2026-07-18)
-
-The real question is always the same: *"Your genuine offer says X — is X your pathway?"* Three inputs
-feed it, and they should be ONE flow, not three branches:
-
-1. **Different TYPE declared** — #43: declared STPM, offer PISMP. **NEW** (this is the TD-161 gap).
-2. **Same type, different detail** — the existing within-type `pathway_confirm` (declared a specific
-   course/stream, offer names another). Already live.
-3. **Nothing declared** — #127: no pathway at all. Already live via `_no_declared_pathway` →
-   resolvable/ambiguous fork. **Fold in as the "declaration = ∅" instance of the same model** (see §5).
-
-All three resolve identically: on "yes" → reconcile `chosen_pathway` + `chosen_programme` (+ catalogue
-link for a public programme); PISMP → the aliran-pre-inferred picker; private → red via the existing veto.
+**Status:** SHIPPED (code) 2026-07-18 — commits `917d43cc` + `ad2d33ac` (initial confirmed-only slice)
+then `6bf2660e` (the unified, band-aware rewrite). NO migration; no `MODEL_VERSION` bump. **Unpushed —
+owner gates the deploy** (push = deploy). Live test case: **#43** (STPM-declared, PISMP-confirmed).
 
 ## Problem
 
-A student declares pathway A at apply time, then uploads a **genuine, different-TYPE** offer letter
-B (e.g. #43: declared STPM, offer is PISMP). Today:
+When a student declares pathway A at apply time then uploads/confirms an offer for a *different*
+pathway, the record was left contradictory and misclassified. Root causes:
 
-- **`confirm_pathway` never writes `chosen_pathway`** — for anyone. On the student's "yes" it writes
-  `chosen_programme` + `pathway_confirmed_at` (+ `reporting_date`), and for a *pre-U-declared*
-  pathway it tidies `pre_u_institution` / `pre_u_track` — but the pathway **type** field is never in
-  scope. (services.py `confirm_pathway`, ~1072–1157.)
-- `autofill_pathway_from_offer` only **fills a blank** `chosen_pathway`; it never overwrites a
-  declared one.
-- The pathway verdict **suppresses the confirm once `pathway_confirmed_at` is set**
-  (`verdict_engine._verdict_pathway`, the `chk['pathway']=='mismatch' and not confirmed` guard), so
-  after the student confirmed offer B **no query re-fires** and the record sits contradictory:
-  `chosen_pathway=stpm` / `pre_u_track=sains_sosial` next to a confirmed PISMP `chosen_programme`.
+- **`confirm_pathway` never wrote `chosen_pathway`** — for anyone. On "yes" it wrote `chosen_programme`
+  + `pathway_confirmed_at`, and (for a pre-U-declared pathway) tidied `pre_u_*` — but never the pathway
+  **type**. So #43 sat `chosen_pathway=stpm` next to a confirmed **PISMP** `chosen_programme`.
+- The pathway verdict **suppressed the confirm once `pathway_confirmed_at` was set**, so after the
+  student confirmed the offer no query re-fired — the type mismatch was invisible.
+- The three pathway-hearing branches were **inconsistently gated on genuineness**: the clash arm
+  (`pathway_confirm`) fired even for a **fake** offer; the undeclared + type-switch arms were
+  `== 'genuine'` and so **excluded suspect**.
 
-This was deliberate ("a pathway-TYPE change, NOT auto-coerced" — reclassifying STPM→PISMP changes
-funding/eligibility), flagged as **TD-161** for an explicit decision. Owner's decision now: **let the
-system handle it** via the existing Check-2 confirm flow, extended to the type mismatch.
+## Owner policy (2026-07-18)
 
-## What already exists (reuse — do NOT rebuild)
+Genuineness is **three bands** (`genuineness/bands.py`): `genuine` ≥0.70, `suspect` 0.35–0.70, **fake**
+<0.35 (stored `not_offer_letter`); plus `unknown` (unscored). The single rule:
 
-- **The resolvable-vs-ambiguous fork** in `_verdict_pathway` (owner 2026-07-15): a genuine offer with
-  no declared pathway routes to either a **one-tap `pathway_confirm`** (`offer_is_resolvable(prog,inst)`
-  true → a pre-U stream / unique catalogue course) OR a **`pathway_undeclared`** query that sends the
-  student to the **profile Aliran→Bidang picker** (the code's own ambiguous example is *"a PISMP offer
-  with no SK/SJKT/SJKC aliran"*). This is exactly the shape we want.
-- **The PISMP picker** — `AliranPicker` (SJKT/SK/SJKC/SKPK) → `ProgrammePicker` (bidang) on `/profile`,
-  wired to `courses.pismp_taxonomy`; picking a course yields a `course_id` (the catalogue **link**) and
-  the `pathway_undeclared` item auto-resolves.
-- **Catalogue linking** — `offer_pathway.resolve_catalogue_course(prog, inst)` (used by autofill) for a
-  confident PUBLIC tertiary match → `course_id`.
-- **The private-arm veto** — a private/IPTS offer already scores `not_official` → red card + can block
-  (`offer_not_official`); no new red-path needed.
-- **The Check-2 sync + lifecycle** — `check2_queries.sync_check2_queries` runs only while submitted AND
-  not `querying_locked`, i.e. **awaiting-review (`profile_complete`) + interviewing**, and locks from
-  `interviewed`/decided onward (unless reopened). `_sync_pathway_confirm` mirrors verdict pathway
-  queries and is NOT `may_ask`-gated, so it already fires across both those stages. The new confirm
-  inherits this window and idempotency for free (re-evaluated every pass).
+> **A pathway hearing fires iff the offer is a SCORED, non-fake offer — `genuine` OR `suspect`.**
+> **Fake and `unknown` get NO hearing** (fake is flagged + submission-blocked; unknown waits until scored).
 
-## Design (system-handled, no officer gate)
+## The design — ONE band-aware, mutually-exclusive detector
 
-### 1. Detection (verdict_engine `_verdict_pathway`)
-Raise a confirm when the offer's detected **TYPE** differs from the declared `chosen_pathway` TYPE —
-**even when `pathway_confirmed_at` is set** (that's the new bit; the current guard only compares
-within-value and only when not confirmed). Compare at the type family level via
-`offer_pathway.detect_pathway_type(prog, inst)` vs `chosen_pathway`. Keep the invariant **at most one
-pathway query at a time** (type-switch takes precedence over / is exclusive with `pathway_confirm` /
-`pathway_undeclared`). Genuine-official offers only (a fake/suspect/private offer is already
-flagged/red — never ask "is this where you're going?" about it).
+`verdict_engine._verdict_pathway`: the identity/presence checks stay outside the gate; the three hearing
+branches collapse into one block, `if offer_hearing_ok(offer):` then `if/elif` (at most one, and the
+type switch suppresses the generic confirm):
 
-Decide the code shape: either a distinct `pathway_type_switch` code, or reuse `pathway_confirm` with a
-`type_switch` param + a `declared_pathway`/`offer_pathway` payload. Prefer a **distinct code** so the
-FE copy can name the switch ("You told us STPM, but your offer is PISMP — is PISMP right?") and so it
-doesn't collide with the within-type confirm.
+1. **Case 2 — TYPE switch** (declared family ≠ offer family, e.g. STPM→PISMP/Matric, #43): raise
+   `pathway_type_switch` **regardless of `pathway_confirmed_at`**. Carries `declared_pathway`/
+   `offer_pathway` (+ `aliran_hint` for PISMP).
+2. **Case 3 — within-family clash** (same family, institution/stream differs — the #117 case): the
+   generic `pathway_confirm` (kept `not confirmed` — a minor drift isn't re-asked post-confirm).
+3. **Case 1 — nothing declared** (#127): `offer_is_resolvable` → one-tap `pathway_confirm`; ambiguous
+   (a PISMP offer with no aliran) → `pathway_undeclared` → the profile picker (+ `aliran_hint`).
 
-### 2. Confirm handler (extend/adjacent to `confirm_pathway`)
-On "yes":
-- **Public + resolvable** → set `chosen_pathway = offer type`; write `chosen_programme` from the offer
-  and **link `course_id`** via `resolve_catalogue_course`; **clear the now-irrelevant `pre_u_track`**
-  (an STPM stream doesn't apply to PISMP) and reconcile `pre_u_institution`.
-- **PISMP (aliran-ambiguous)** → set `chosen_pathway = pismp` and hand off to the **profile
-  Aliran→Bidang picker** by leaving/raising the `pathway_undeclared`-style item (reuse the existing
-  route), so the student pins the exact `(aliran, bidang)` → `course_id`, which auto-resolves.
-- **Private** → no special handling; the existing `not_official` veto keeps the card red.
+## Reused / new helpers (backend)
 
-### 3. PISMP aliran — a SEPARATE step, aliran PRE-INFERRED (owner 2026-07-18)
-The offer letter does not state the aliran, and a catalogue course needs `(aliran × bidang)` — so the
-aliran alone can't produce the link. Do NOT cram a multi-choice into the one-tap confirm. Instead:
-- Reuse the existing `pathway_undeclared` → profile Aliran/Bidang picker (separate step).
-- **Pre-infer the likely aliran** from the student's SPM vernacular subject so the picker opens on the
-  probable answer: SPM **Bahasa Tamil → SJKT**, **Bahasa Cina → SJKC**, else **SK** (mirror the
-  eligible-PISMP subject logic already in `pismp_taxonomy` / the courses engine). #43 almost certainly
-  took BT → SJKT. This gives the tightness of "within the question" (a sensible default, minimal taps)
-  without losing a real catalogue link.
+- **NEW `pathway_engine.offer_band(doc)` / `offer_hearing_ok(doc)`** — read
+  `vision_fields['authenticity']['status']` through the existing three-way `bands.canonical_status`
+  → `genuine`/`suspect`/`not_offer_letter`/`''`; `offer_hearing_ok = band in ('genuine','suspect')`.
+  `offer_official_status` (binary) is **unchanged** — the submission gate / promotion /
+  `resolution.doc_match_verdict` keep asking the different "official enough?" question.
+- **`offer_pathway.pathway_family`** — now normalizes ALL vocabularies (detect codes, the 8
+  apply-form `chosen_pathway` codes, AND legacy labels: `Matriculation≡matric`, `university≡degree`,
+  `poly≡diploma`) to one funding family, and returns `''` for an unrecognised value so it can never
+  spuriously differ from a known family (the switch requires BOTH sides to resolve to a known family).
+- **`offer_pathway.infer_pismp_aliran`** — SPM Bahasa Tamil→`sjkt`, Bahasa Cina→`sjkc`, else `sk`
+  (LOWERCASE codes matching the FE `PismpAliran` / storage). A picker default the student confirms.
+- **`services.confirm_pathway`** — the shared "yes" handler for both `pathway_confirm` and
+  `pathway_type_switch`: adopts the offer's family into `chosen_pathway` and clears the now-stale
+  `pre_u_track`/`pre_u_institution`; same-family confirms are a no-op.
+- `check2_queries._PATHWAY_QUERY_KINDS` includes `pathway_type_switch`; `views.py` routes its "yes" to
+  `confirm_pathway` and skips the relevance judge for it.
 
-### 5. Fold in the undeclared case (#127)
-The "nothing declared" case is just this same reconciliation with the declaration set to **empty**, and
-it *already* routes through the resolvable/ambiguous fork we're reusing (`_no_declared_pathway` →
-one-tap `pathway_confirm` / `pathway_undeclared` → picker). So unify the detection into a single
-predicate — **"the genuine offer's (type, programme) does not agree with the student's declaration
-(present, different-type, or absent)"** — with the shared resolvable/ambiguous/private handling. Do NOT
-keep three parallel branches drifting apart.
-- Keep the CURRENT live #127 behaviour intact (it works) — the unification must be behaviour-preserving
-  for undeclared: resolvable → one-tap + link; PISMP-ambiguous → picker (now with the §3 aliran
-  pre-inference upgrade, which also benefits #127); private → red.
-- The only genuinely NEW trigger is case 1 (different TYPE, even after `pathway_confirmed_at`); the
-  other two are re-expressed through the same unified detector, not rebuilt.
+## Frontend (`halatuju-web`)
 
-### 6. Surfaces / i18n
-- **FE:** an Action-Centre confirm card for the type-switch (copy names both types); reuse the existing
-  PISMP picker for the hand-off — no new bespoke widget. en/ms/ta (Tamil first-draft).
-- **Officer:** none required (system-handled). The existing "Switched" cockpit banner
-  (`offer_pathway_switch`) already informs the reviewer.
+- `components/ActionCentre.tsx`: a non-PISMP switch → one-tap "Yes, I've switched" (→ resolve
+  'confirmed' → `confirm_pathway`); a **PISMP** switch **and** `pathway_undeclared` → the profile
+  Aliran/Bidang picker via the pure **`actionCentre.profilePickerHref`** (`/profile?aliran=<hint>`).
+- `components/PathwayPicker.tsx`: **pre-selects the aliran from the `?aliran=` URL param** (reads
+  `window.location.search`, no extra Suspense boundary) when it's an eligible school type.
+- `localiseParams` renders the `declared_pathway`/`offer_pathway` codes as labels via
+  `scholarship.actionCentre.pathwayName.*`; i18n en/ms/ta for the card + button copy (Tamil first-draft).
 
-## Scope / cost
+## Verification (done)
 
-- Backend: verdict detection + confirm handler + check2 sync wiring + aliran inference helper.
-- FE: one Action-Centre card + copy; picker reused.
-- Migration: **none** expected (reuses `chosen_pathway`/`pre_u_track`/`chosen_programme` + the existing
-  `pathway_undeclared` route). Bump nothing model-versioned.
-- Tests: verdict detection (type mismatch even when confirmed), confirm handler reconciliation
-  (public-link / PISMP-handoff / private-red), aliran inference, idempotency + stage-window (never on
-  a decided case).
+- **Backend: 2725 scholarship pytest green.** New: `TestOfferBand`; suspect-undeclared-asks;
+  unknown-no-hearing; not-confirmed-type-switch-suppresses-generic. Several verdict fixtures aligned to
+  same-family / scored where they test a within-family clash (their `chosen_pathway='Matriculation'`
+  label vs a `Tingkatan Enam` offer had been an accidental cross-family case).
+- **Frontend: 591 jest green** (incl. `profilePickerHref` + the KNOWN_CODES↔copy parity + pathway-label
+  localisation); `ActionCentre`/`actionCentre`/`PathwayPicker` tsc-clean.
+- **4-case × 4-band matrix demo** (temp, deleted) confirmed the full grid: **fake + unknown silent;
+  genuine + suspect ask;** undeclared-preU/within-clash → `pathway_confirm`, undeclared-PISMP →
+  `pathway_undeclared`, type-switch → `pathway_type_switch`; **both PISMP paths → picker with
+  `aliran=sjkt` pre-inferred.**
 
-## Edge cases / guards
-- **Do not double-fire** with `pathway_confirm` / `pathway_undeclared` (one pathway query at a time).
-- **Re-detection after confirm:** the mismatch is `chosen_pathway` type vs the confirmed
-  `chosen_programme`/offer type — must survive `pathway_confirmed_at` being set (unlike today).
-- **Funding reclassification** is the real effect (PISMP ≠ STPM funding) — that's the whole point; it
-  only lands on the student's explicit confirm, within the review window, never on a decided case.
-- **Idempotent:** the student may keep changing their programme; the verdict re-evaluates each pass and
-  the confirm re-raises / auto-resolves accordingly.
-
-## Definition of done
-One unified detector reconciles a genuine offer against the declaration across all three inputs —
-**different-type (new, #43), same-type-detail (existing), and undeclared (existing, #127)** — raising a
-system confirm in the awaiting-review/interviewing window only. On the student's "yes" the record
-reconciles `chosen_pathway` + `chosen_programme` (+ catalogue link for public), clears the stale
-`pre_u_track`, and for PISMP hands off to the aliran-pre-inferred picker that lands a linked course;
-private stays red; nothing fires on a decided case; #127's current behaviour is preserved. Tests cover
-detection (all three inputs) / handler (public-link / PISMP-handoff / private-red) / aliran inference /
-idempotency / stage-window. **#43 is the live validation case.**
+## Carry / deferred
+- **Live Supabase data sanity (read-only) — deferred (MCP was down):** re-check #43 raises
+  `pathway_type_switch`, and scan for the cohort where `chosen_pathway` family ≠ the confirmed
+  `chosen_programme` family — this "scored + family-aware" logic now catches a real set of
+  declared-A/offer-B students who will start seeing the switch hearing. Worth eyeballing before deploy.
+- Tamil review of the first-draft `pathway_type_switch` / `pathwayName.*` strings.
