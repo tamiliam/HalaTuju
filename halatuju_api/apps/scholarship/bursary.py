@@ -7,14 +7,15 @@ FOUNDATION (counterparty — signatory from settings) and the PARTNER ORGANISATI
 (non-blocking witness). The DONOR is NEVER a party and is never named — anonymity
 is sacred. The contract names the FOUNDATION only.
 
-This module is the deterministic core: the agreement TEMPLATE (EN + BM), the
-particulars builder, the immutable HTML render, the shared guarantor-identity
-gate (extracted from the consent view), the xhtml2pdf render, and the
-``sign_agreement`` / ``countersign_foundation`` / ``record_witness`` writers.
+This module is the deterministic core: the particulars builder, the immutable HTML
+render, the shared guarantor-identity gate (extracted from the consent view), the
+xhtml2pdf render, the ``sign_agreement`` / ``countersign_foundation`` /
+``record_witness`` writers, and the executed-agreement distribution.
 
-DRAFT: the clause wording below is pending legal review — the rendered document
-carries a "DRAFT — pending legal review" banner and the whole feature ships
-behind ``BURSARY_AGREEMENT_ENABLED`` (default OFF).
+The agreement's TEXT (title, preamble, clauses, schedule, counterparty) now comes from
+the org-owned, versioned ``ContractTemplate`` (apps.scholarship.contracts) — the
+hard-coded constants that used to live here were removed in Sprint 5 after a render-diff
+parity test. The whole feature ships behind ``BURSARY_AGREEMENT_ENABLED`` (default OFF).
 """
 import hashlib
 import io
@@ -38,226 +39,36 @@ class BursaryError(Exception):
         super().__init__(message or code)
 
 
-# ── The agreement clauses (EN + BM). DRAFT — lawyer to finalise. ──────────────
-# Each clause is framed as SUPPORT, not a punitive contract: the bursary is a gift
-# (not repayable except on fraud/misuse), academic progress is a REVIEW (not auto-
-# suspension), and seminars are reframed to "Foundation/programme activities". We
-# DROP any criminal-record / "good standing in public" clause and any "the
-# Foundation may change your obligations at any time" clause. The FOUNDATION is the
-# named counterparty — the donor is never mentioned.
-AGREEMENT_TITLE = {
-    'en': 'Conditional Bursary Award Agreement',
-    'ms': 'Perjanjian Pemberian Biasiswa Bersyarat',
-}
-
-# Recitals / preamble, interpolated with party + particulars at render time.
-AGREEMENT_PREAMBLE = {
-    'en': (
-        'This Agreement records the terms on which the Foundation awards a bursary to '
-        'the Student named below, with the Student’s parent or guardian signing as '
-        'surety/guarantor. It is made between the Foundation (the counterparty), the '
-        'Student, and the Guarantor, and witnessed by the Student’s referring '
-        'partner organisation.'
-    ),
-    'ms': (
-        'Perjanjian ini merekodkan terma-terma pemberian biasiswa oleh Yayasan kepada '
-        'Pelajar yang dinamakan di bawah, dengan ibu bapa atau penjaga Pelajar '
-        'menandatangani sebagai penjamin. Ia dibuat antara Yayasan (pihak rakan kontrak), '
-        'Pelajar, dan Penjamin, serta disaksikan oleh organisasi rakan kongsi yang merujuk '
-        'Pelajar.'
-    ),
-}
-
-# The numbered clauses. List of (heading, body) tuples.
-AGREEMENT_CLAUSES = {
-    'en': [
-        ('The Bursary Award',
-         'The Foundation agrees to award the Student a bursary of the amount stated in the '
-         'Particulars, to be applied in good faith towards the approved expenses of the '
-         'Student’s studies (such as fees, learning materials and reasonable living '
-         'costs). The bursary is to be used for its stated purpose; it is not subject to '
-         'clawback for ordinary, good-faith use.'),
-        ('Payment Schedule',
-         'The bursary will be paid according to the payment schedule stated in the '
-         'Particulars. The Foundation may make reasonable administrative adjustments to '
-         'timing, communicated to the Student in advance.'),
-        ('Evidence of Results, Income and Eligibility',
-         'The Student agrees to provide, when reasonably requested, evidence of academic '
-         'results, household income, and continued eligibility (for example STR or other '
-         'supporting documents), so the Foundation can administer the bursary responsibly.'),
-        ('Enrolment at a Government Institution',
-         'The Student confirms they are, or will be, enrolled at a recognised government '
-         'institution of higher learning for the course stated in the Particulars.'),
-        ('Remaining Enrolled',
-         'The Student agrees to remain enrolled in their course of study for the duration '
-         'of the bursary, and to inform the Foundation promptly if they intend to defer, '
-         'change or withdraw from the course.'),
-        ('Academic Progress (Review, not Automatic Suspension)',
-         'The Student agrees to work towards satisfactory academic progress, as described '
-         'in the Particulars. Where progress falls short, the Foundation will REVIEW the '
-         'situation with the Student supportively; the bursary is not automatically '
-         'suspended.'),
-        ('Notifying the Foundation of Changes',
-         'The Student agrees to notify the Foundation of any material change in their '
-         'circumstances — institution, course, contact details, or household '
-         'situation — within a reasonable time.'),
-        ('Good Standing in School',
-         'The Student agrees to maintain good standing at their institution and to conduct '
-         'themselves honestly and responsibly as a member of its community.'),
-        ('Communication with the Assigned Mentor',
-         'The Student agrees to maintain reasonable communication with the mentor assigned '
-         'to them, and to take part in Foundation or programme activities where invited.'),
-        ('Suspension or Withholding of Future Support',
-         'The Foundation may suspend or withhold future support where the Student fails to '
-         'comply with this Agreement, provides false information, or misuses the bursary. '
-         'The Foundation will give the Student a fair opportunity to respond first.'),
-        ('The Bursary is a Gift',
-         'The bursary is a gift and is NOT repayable, except where it was obtained by fraud '
-         'or has been misused, in which case the Foundation may require repayment of the '
-         'affected amount.'),
-        ('Confidentiality',
-         'The parties will keep each other’s personal and programme information '
-         'confidential, and use it only to administer the bursary.'),
-        ('No Employment Relationship',
-         'Nothing in this Agreement creates an employment, agency or partnership '
-         'relationship between the Student, the Guarantor and the Foundation.'),
-        ('Governing Law and Dispute Resolution',
-         'This Agreement is governed by the laws of Malaysia. The parties will first seek '
-         'to resolve any dispute through good-faith discussion, and then through mediation, '
-         'before any other step.'),
-        ('Term and Termination',
-         'This Agreement takes effect on signing and continues for the duration of the '
-         'bursary. It may be ended by agreement of the parties, or by the Foundation in '
-         'accordance with the clauses above.'),
-        ('Entire Agreement and Amendment',
-         'This Agreement is the entire agreement between the parties on its subject matter. '
-         'Any amendment must be in writing and agreed by the parties.'),
-    ],
-    'ms': [
-        ('Pemberian Biasiswa',
-         'Yayasan bersetuju memberi Pelajar biasiswa sebanyak amaun yang dinyatakan dalam '
-         'Butiran, untuk digunakan dengan suci hati bagi perbelanjaan yang diluluskan untuk '
-         'pengajian Pelajar (seperti yuran, bahan pembelajaran dan kos sara hidup yang '
-         'munasabah). Biasiswa hendaklah digunakan untuk tujuan yang dinyatakan; ia tidak '
-         'tertakluk kepada tuntutan balik bagi penggunaan biasa dengan suci hati.'),
-        ('Jadual Pembayaran',
-         'Biasiswa akan dibayar mengikut jadual pembayaran yang dinyatakan dalam Butiran. '
-         'Yayasan boleh membuat pelarasan pentadbiran yang munasabah terhadap masa '
-         'pembayaran, dengan memaklumkan Pelajar terlebih dahulu.'),
-        ('Bukti Keputusan, Pendapatan dan Kelayakan',
-         'Pelajar bersetuju memberikan, apabila diminta dengan munasabah, bukti keputusan '
-         'akademik, pendapatan isi rumah, dan kelayakan berterusan (contohnya STR atau '
-         'dokumen sokongan lain), supaya Yayasan dapat mentadbir biasiswa dengan '
-         'bertanggungjawab.'),
-        ('Pendaftaran di Institusi Kerajaan',
-         'Pelajar mengesahkan bahawa mereka sedang, atau akan, mendaftar di institusi '
-         'pengajian tinggi kerajaan yang diiktiraf untuk kursus yang dinyatakan dalam '
-         'Butiran.'),
-        ('Kekal Mendaftar',
-         'Pelajar bersetuju untuk kekal mendaftar dalam kursus pengajian mereka sepanjang '
-         'tempoh biasiswa, dan memberitahu Yayasan dengan segera jika mereka berhasrat '
-         'untuk menangguh, menukar atau menarik diri daripada kursus.'),
-        ('Kemajuan Akademik (Semakan, Bukan Penggantungan Automatik)',
-         'Pelajar bersetuju berusaha ke arah kemajuan akademik yang memuaskan, seperti yang '
-         'diterangkan dalam Butiran. Jika kemajuan kurang memuaskan, Yayasan akan MENYEMAK '
-         'keadaan bersama Pelajar secara menyokong; biasiswa tidak digantung secara '
-         'automatik.'),
-        ('Memaklumkan Yayasan tentang Perubahan',
-         'Pelajar bersetuju memaklumkan Yayasan tentang sebarang perubahan penting dalam '
-         'keadaan mereka — institusi, kursus, butiran perhubungan, atau keadaan isi '
-         'rumah — dalam masa yang munasabah.'),
-        ('Tatakelakuan Baik di Sekolah',
-         'Pelajar bersetuju mengekalkan tatakelakuan baik di institusi mereka dan bertindak '
-         'dengan jujur dan bertanggungjawab sebagai ahli komunitinya.'),
-        ('Komunikasi dengan Mentor yang Ditugaskan',
-         'Pelajar bersetuju mengekalkan komunikasi yang munasabah dengan mentor yang '
-         'ditugaskan kepada mereka, dan menyertai aktiviti Yayasan atau program apabila '
-         'dijemput.'),
-        ('Penggantungan atau Penahanan Sokongan Masa Hadapan',
-         'Yayasan boleh menggantung atau menahan sokongan masa hadapan jika Pelajar gagal '
-         'mematuhi Perjanjian ini, memberikan maklumat palsu, atau menyalahgunakan '
-         'biasiswa. Yayasan akan memberi Pelajar peluang yang adil untuk menjawab '
-         'terlebih dahulu.'),
-        ('Biasiswa adalah Pemberian',
-         'Biasiswa adalah pemberian dan TIDAK perlu dibayar balik, kecuali jika ia '
-         'diperoleh melalui penipuan atau disalahgunakan, di mana Yayasan boleh menuntut '
-         'pembayaran balik amaun yang terjejas.'),
-        ('Kerahsiaan',
-         'Pihak-pihak akan merahsiakan maklumat peribadi dan program antara satu sama lain, '
-         'dan menggunakannya hanya untuk mentadbir biasiswa.'),
-        ('Tiada Hubungan Pekerjaan',
-         'Tiada apa-apa dalam Perjanjian ini mewujudkan hubungan pekerjaan, agensi atau '
-         'perkongsian antara Pelajar, Penjamin dan Yayasan.'),
-        ('Undang-undang dan Penyelesaian Pertikaian',
-         'Perjanjian ini ditadbir oleh undang-undang Malaysia. Pihak-pihak akan terlebih '
-         'dahulu cuba menyelesaikan sebarang pertikaian melalui perbincangan dengan suci '
-         'hati, dan kemudian melalui pengantaraan, sebelum sebarang langkah lain.'),
-        ('Tempoh dan Penamatan',
-         'Perjanjian ini berkuat kuasa apabila ditandatangani dan berterusan sepanjang '
-         'tempoh biasiswa. Ia boleh ditamatkan melalui persetujuan pihak-pihak, atau oleh '
-         'Yayasan menurut klausa di atas.'),
-        ('Keseluruhan Perjanjian dan Pindaan',
-         'Perjanjian ini adalah keseluruhan perjanjian antara pihak-pihak mengenai '
-         'perkaranya. Sebarang pindaan mestilah secara bertulis dan dipersetujui oleh '
-         'pihak-pihak.'),
-    ],
-}
-
-DRAFT_BANNER = {
-    'en': 'DRAFT — pending legal review',
-    'ms': 'DERAF — menunggu semakan undang-undang',
-}
-
-DEFAULT_PAYMENT_SCHEDULE = 'RM500 one-time then RM250/month for 10 months'
-DEFAULT_PROGRESS_STANDARD = 'Maintain satisfactory academic progress as reviewed each semester'
-
-
 def _locale(locale):
     """Normalise to a template locale ('en' or 'ms'). 'ta'/unknown → 'en'."""
     return 'ms' if (locale or '').startswith('ms') else 'en'
 
 
-def particulars_for(application, template=None, locale='en'):
-    """Build the filled-in particulars dict for an application. Reads the award
-    amount + chosen programme off the application. When a ``template`` is given, the
-    payment schedule, progress standard and counterparty (Foundation signatory) come
-    from the versioned template (the module cutover); with no template it falls back
-    to the legacy ``bursary.py`` constants + settings signatory (removed in Sprint 5).
-    NEVER reads or exposes any donor identity."""
+def particulars_for(application, template, locale='en'):
+    """Build the filled-in particulars dict for an application from the versioned
+    ``template`` — the payment schedule, progress standard and counterparty (Foundation
+    signatory) all come from it (Sprint 5: the hard-coded constants were removed after a
+    render-diff parity test). ``template`` is REQUIRED — ``sign_agreement`` resolves it and
+    raises ``no_active_template`` when absent. NEVER reads or exposes any donor identity."""
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     institution = (cp.get('institution') or '').strip()
     course = (cp.get('course_name') or '').strip()
     if not course:
         course = (getattr(application, 'field_of_study', '') or '').strip()
 
-    if template is not None:
-        from . import contracts
-        lang = _locale(locale)
-        row = contracts.schedule_row_for(template, application)
-        payment_schedule = contracts.schedule_summary_text(row, lang) if row else ''
-        progress = getattr(template, f'progress_standard_{lang}', '') or template.progress_standard_en
-        cp_name = template.counterparty_name
-        cp_title = template.counterparty_title
-        cp_nric = template.counterparty_nric
-    else:
-        payment_schedule = DEFAULT_PAYMENT_SCHEDULE
-        progress = DEFAULT_PROGRESS_STANDARD
-        cp_name = getattr(settings, 'FOUNDATION_SIGNATORY_NAME', 'Suresh')
-        cp_title = getattr(
-            settings, 'FOUNDATION_SIGNATORY_TITLE',
-            'For and on behalf of the Foundation (interim signatory)')
-        cp_nric = getattr(settings, 'FOUNDATION_SIGNATORY_NRIC', '') or ''
-
+    from . import contracts
+    lang = _locale(locale)
+    row = contracts.schedule_row_for(template, application)
     return {
         'award_amount': application.award_amount,
-        'payment_schedule': payment_schedule,
+        'payment_schedule': contracts.schedule_summary_text(row, lang) if row else '',
         'institution_name': institution,
         'course_name': course,
         'commencement_date': None,
-        'progress_standard': progress,
-        'foundation_signatory_name': cp_name,
-        'foundation_signatory_title': cp_title,
-        'foundation_signatory_nric': cp_nric,
+        'progress_standard': getattr(template, f'progress_standard_{lang}', '') or template.progress_standard_en,
+        'foundation_signatory_name': template.counterparty_name,
+        'foundation_signatory_title': template.counterparty_title,
+        'foundation_signatory_nric': template.counterparty_nric,
     }
 
 
@@ -313,65 +124,46 @@ def _clause_body_html(body):
 
 
 def render_agreement_html(application, particulars, *, student, guarantor,
-                          foundation, witness, locale='en', template=None):
+                          foundation, witness, locale='en', template):
     """Render the full, self-contained agreement HTML (inline CSS only — xhtml2pdf
     has limited CSS support). This is the immutable snapshot stored on the record.
 
-    With a ``template`` the title/preamble/clauses, the party-block wording and the
-    Schedule 1 payment table all come from the versioned template; with no template
-    it renders the legacy ``bursary.py`` constants (removed in Sprint 5).
+    The title/preamble/clauses, the party-block wording and the Schedule 1 payment table
+    all come from the versioned ``template`` (REQUIRED — Sprint 5 removed the hard-coded
+    constants fallback after a render-diff parity test). A deployed template is
+    lawyer-vetted, so the document carries an "English is authoritative" notice (no DRAFT
+    banner) + a "Vetted by {name}, {date}" footer.
 
-    ``student`` / ``guarantor`` / ``foundation`` / ``witness`` are dicts with the
-    party's name (+ nric/role/timestamp where applicable). The donor is NEVER
-    rendered — there is no donor field anywhere in this document."""
+    ``student`` / ``guarantor`` / ``foundation`` / ``witness`` are dicts with the party's
+    name (+ nric/role/timestamp where applicable). The donor is NEVER rendered."""
+    from . import contracts
     lang = _locale(locale)
-    calendar = []
-    if template is not None:
-        from . import contracts
-        title = getattr(template, f'title_{lang}', '') or template.title_en
-        preamble = getattr(template, f'preamble_{lang}', '') or template.preamble_en
-        clauses = [
-            (getattr(c, f'heading_{lang}', '') or c.heading_en,
-             getattr(c, f'body_{lang}', '') or c.body_en)
-            for c in template.clauses.all().order_by('order')
-        ]
-        guarantor_role = _guarantor_role_label(template.parent_role)
-        version = template.version
-        vetted_line = (f'Vetted by {template.vetted_by_name}, {template.vetted_on}'
-                       if template.vetted_by_name and template.vetted_on else '')
-        cohort_year = getattr(getattr(application, 'cohort', None), 'year', None)
-        row = contracts.schedule_row_for(template, application)
-        calendar = contracts.schedule_calendar(row, cohort_year, lang)
-    else:
-        title = AGREEMENT_TITLE[lang]
-        preamble = AGREEMENT_PREAMBLE[lang]
-        clauses = AGREEMENT_CLAUSES[lang]
-        guarantor_role = 'Guarantor / Penjamin (surety)'
-        version = getattr(settings, 'BURSARY_AGREEMENT_VERSION', '')
-        vetted_line = ''
+    title = getattr(template, f'title_{lang}', '') or template.title_en
+    preamble = getattr(template, f'preamble_{lang}', '') or template.preamble_en
+    clauses = [
+        (getattr(c, f'heading_{lang}', '') or c.heading_en,
+         getattr(c, f'body_{lang}', '') or c.body_en)
+        for c in template.clauses.all().order_by('order')
+    ]
+    guarantor_role = _guarantor_role_label(template.parent_role)
+    version = template.version
+    vetted_line = (f'Vetted by {template.vetted_by_name}, {template.vetted_on}'
+                   if template.vetted_by_name and template.vetted_on else '')
+    cohort_year = getattr(getattr(application, 'cohort', None), 'year', None)
+    row = contracts.schedule_row_for(template, application)
+    calendar = contracts.schedule_calendar(row, cohort_year, lang)
 
     parts = [
         '<html><head><meta charset="utf-8"/></head>',
         '<body style="font-family: Helvetica, Arial, sans-serif; font-size: 11px; '
         'color: #222; line-height: 1.4;">',
+        '<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; '
+        'padding:6px 10px; text-align:center; font-size:9px; margin-bottom:12px;">'
+        'The English version of this Agreement is authoritative; any other language '
+        'is a courtesy translation.</div>',
+        f'<h1 style="font-size:18px; text-align:center; margin:0 0 4px 0;">{_esc(title)}</h1>',
+        f'<p>{_esc(preamble)}</p>',
     ]
-    if template is not None:
-        # Deployed template = lawyer-vetted → no DRAFT banner; English-authoritative notice.
-        parts.append(
-            '<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; '
-            'padding:6px 10px; text-align:center; font-size:9px; margin-bottom:12px;">'
-            'The English version of this Agreement is authoritative; any other language '
-            'is a courtesy translation.</div>')
-    else:
-        parts.append(
-            '<div style="background:#fde68a; border:1px solid #d97706; color:#92400e; '
-            'padding:6px 10px; text-align:center; font-weight:bold; margin-bottom:12px;">'
-            f'{_esc(DRAFT_BANNER[lang])}</div>')
-    parts.append(f'<h1 style="font-size:18px; text-align:center; margin:0 0 4px 0;">{_esc(title)}</h1>')
-    if template is None and lang == 'en':
-        parts.append('<p style="text-align:center; font-size:9px; color:#666; margin:0 0 12px 0;">'
-                     'Perjanjian Pemberian Biasiswa Bersyarat</p>')
-    parts.append(f'<p>{_esc(preamble)}</p>')
 
     # Particulars table.
     p = particulars
@@ -451,14 +243,10 @@ def render_agreement_html(application, particulars, *, student, guarantor,
         signed_at=witness.get('signed_at')))
     parts.append('</tr></table>')
 
-    if template is not None:
-        footer = f'Version {_esc(version)}.'
-        if vetted_line:
-            footer += f' {_esc(vetted_line)}.'
-        parts.append(f'<p style="margin-top:14px; font-size:9px; color:#666;">{footer}</p>')
-    else:
-        parts.append(f'<p style="margin-top:14px; font-size:9px; color:#666;">'
-                     f'{_esc(DRAFT_BANNER[lang])} — version {_esc(version)}.</p>')
+    footer = f'Version {_esc(version)}.'
+    if vetted_line:
+        footer += f' {_esc(vetted_line)}.'
+    parts.append(f'<p style="margin-top:14px; font-size:9px; color:#666;">{footer}</p>')
     parts.append('</body></html>')
     return ''.join(parts)
 
@@ -682,9 +470,9 @@ def countersign_foundation(agreement, *, by_name):
     agreement.save(update_fields=fields)
     _maybe_activate(agreement)
     # The Foundation signs last → if this executed the agreement (app now 'active'),
-    # tell the student their bursary is in effect.
+    # distribute the signed PDF (student notice + witness/org copies + Drive).
     if agreement.application.status == 'active':
-        _notify_agreement_executed(agreement.application)
+        distribute_executed_agreement(agreement)
     return agreement
 
 
@@ -705,7 +493,7 @@ def record_witness(agreement, *, org, by_name, witness_name=''):
     if agreement.foundation_signed_at is None:
         _notify_foundation_countersign_pending(agreement.application)
     elif agreement.application.status == 'active':
-        _notify_agreement_executed(agreement.application)
+        distribute_executed_agreement(agreement)
     return agreement
 
 
@@ -830,21 +618,75 @@ def _notify_foundation_countersign_pending(application):
                          getattr(application, 'id', '?'))
 
 
-def _notify_agreement_executed(application):
-    """Tell the student their agreement is fully executed (→ 'active'). Best-effort.
-    (The parent/guarantor has no email on file — only a phone — so this is student-only.)"""
-    try:
-        from . import emails
-        profile = getattr(application, 'profile', None)
-        to = (getattr(application, 'notify_email', '') or ''
-              or getattr(profile, 'contact_email', '') or '')
-        cp = getattr(application, 'chosen_programme', None) or {}
-        programme = cp.get('course_name', '') if isinstance(cp, dict) else ''
-        emails.send_agreement_executed_email(
-            to, _applicant_name(application), programme, lang=getattr(application, 'locale', 'en') or 'en')
-    except Exception:
-        logger.exception('bursary: executed notify failed (app %s)',
-                         getattr(application, 'id', '?'))
+def _student_app_link(application):
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    return f'{frontend}/scholarship/application'
+
+
+def distribute_executed_agreement(agreement):
+    """Execution distribution (Sprint 5): once the agreement is fully executed (→ 'active'),
+    email the signed PDF to the STUDENT (their "in effect" notice), the witnessing partner
+    contact and the org admins, and file the PDF in Google Drive. Best-effort and idempotent
+    via two stamps: ``executed_pdf_emailed_at`` (all the emails) and ``drive_file_url`` (Drive).
+    A re-run (the signing-reminder cron) only fills the missing half. A Drive/email/storage
+    failure NEVER blocks execution — the agreement is already executed when this runs. The
+    donor is never named. All external seams (storage/email/Drive) are mocked in tests."""
+    application = agreement.application
+    # Fetch the signed PDF once (best-effort). Without it we still send the plain student notice.
+    pdf_bytes = None
+    if agreement.pdf_storage_path:
+        try:
+            from . import storage
+            pdf_bytes = storage.download_object(agreement.pdf_storage_path)
+        except Exception:
+            logger.exception('bursary: could not fetch executed PDF (app %s)',
+                             getattr(application, 'id', '?'))
+
+    # (A) Emails — one stamp covers the student notice + all copies.
+    if agreement.executed_pdf_emailed_at is None:
+        student_ok = False
+        try:
+            from . import emails
+            profile = getattr(application, 'profile', None)
+            name = _applicant_name(application)
+            cp = getattr(application, 'chosen_programme', None) or {}
+            programme = cp.get('course_name', '') if isinstance(cp, dict) else ''
+            lang = getattr(application, 'locale', 'en') or 'en'
+            student_to = (getattr(application, 'notify_email', '') or ''
+                          or getattr(profile, 'contact_email', '') or '')
+            student_ok = emails.send_agreement_executed_email(
+                student_to, name, programme, lang=lang,
+                link=_student_app_link(application), pdf=pdf_bytes)
+            # Witnessing partner contact (the recorded witness org, else the referring org).
+            org = agreement.witness_org or getattr(profile, 'referred_by_org', None)
+            witness_email = getattr(org, 'contact_email', '') if org else ''
+            cockpit = _cockpit_link(application)
+            if witness_email:
+                emails.send_executed_copy_email(
+                    witness_email, applicant_name=name, programme_name=programme,
+                    pdf=pdf_bytes, link=cockpit)
+            # Org admins (template counterparty_notify_emails → supers → ADMIN_NOTIFY_EMAIL).
+            for to in foundation_notify_emails(application):
+                emails.send_executed_copy_email(
+                    to, applicant_name=name, programme_name=programme, pdf=pdf_bytes, link=cockpit)
+        except Exception:
+            logger.exception('bursary: executed distribution emails failed (app %s)',
+                             getattr(application, 'id', '?'))
+        if student_ok:
+            agreement.executed_pdf_emailed_at = timezone.now()
+            agreement.save(update_fields=['executed_pdf_emailed_at', 'updated_at'])
+
+    # (B) Drive — idempotent on drive_file_url.
+    if not agreement.drive_file_url and pdf_bytes:
+        try:
+            from . import sheets
+            url = sheets.write_contract_pdf(agreement, pdf_bytes)
+            if url:
+                agreement.drive_file_url = url
+                agreement.save(update_fields=['drive_file_url', 'updated_at'])
+        except Exception:
+            logger.exception('bursary: executed Drive upload failed (app %s)',
+                             getattr(application, 'id', '?'))
 
 
 def send_signing_reminders(now=None):
@@ -897,4 +739,21 @@ def send_signing_reminders(now=None):
                 ag.countersign_reminded_at = now
                 ag.save(update_fields=['countersign_reminded_at', 'updated_at'])
                 summary['countersign'] += 1
+
+    # Distribution retry pass (Sprint 5): an EXECUTED agreement whose best-effort distribution
+    # didn't fully complete (a Drive/email/storage hiccup at execution) is retried here.
+    # distribute_executed_agreement is idempotent — it only fills the missing stamp.
+    from django.db.models import Q
+    summary['distributed'] = 0
+    executed = (BursaryAgreement.objects
+                .filter(foundation_signed_at__isnull=False)
+                .filter(Q(executed_pdf_emailed_at__isnull=True) | Q(drive_file_url=''))
+                .select_related('application', 'application__profile', 'witness_org'))
+    for ag in executed:
+        if getattr(ag.application, 'status', '') != 'active':
+            continue   # only a fully-executed (active) agreement is distributed
+        before = (ag.executed_pdf_emailed_at, ag.drive_file_url)
+        distribute_executed_agreement(ag)
+        if (ag.executed_pdf_emailed_at, ag.drive_file_url) != before:
+            summary['distributed'] += 1
     return summary

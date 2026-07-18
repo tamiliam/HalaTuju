@@ -290,3 +290,35 @@ def write_payment_csv(run):
     except Exception:
         logger.warning('Payments CSV: write failed for run %s', run.reference, exc_info=True)
         return None
+
+
+def write_contract_pdf(agreement, pdf_bytes):
+    """Best-effort (Contract module, Sprint 5): file the executed signed-agreement PDF into
+    the ``CONTRACTS_DRIVE_FOLDER`` Drive folder and return its URL — or None (logged, never
+    raised). A Drive failure leaves ``drive_file_url`` blank; the signing-reminder cron
+    retries. The DB + Supabase bucket copy remain the record."""
+    if not sheets_enabled() or not pdf_bytes:
+        return None
+    try:
+        drive = _drive_for_upload()
+        if drive is None:
+            return None
+        folder = getattr(settings, 'CONTRACTS_DRIVE_FOLDER', '04 Contracts')
+        folder_id = _find_folder_path(drive, folder)
+        if not folder_id:
+            logger.warning('Contract PDF: folder path %r not found in the Drive of %s',
+                           folder, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
+            return None
+        from googleapiclient.http import MediaInMemoryUpload  # type: ignore
+        name = f'app{agreement.application_id}_bursary_agreement_{agreement.version}.pdf'
+        media = MediaInMemoryUpload(pdf_bytes, mimetype='application/pdf')
+        created = drive.files().create(
+            body={'name': name, 'parents': [folder_id]},
+            media_body=media, fields='id, webViewLink',
+        ).execute()
+        return (created.get('webViewLink')
+                or f"https://drive.google.com/file/d/{created['id']}/view")
+    except Exception:
+        logger.warning('Contract PDF: write failed for agreement %s', getattr(agreement, 'id', '?'),
+                       exc_info=True)
+        return None

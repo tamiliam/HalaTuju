@@ -956,16 +956,54 @@ AGREEMENT_EXECUTED_BODIES = {
 }
 
 
-def send_agreement_executed_email(to_email, applicant_name, programme_name='', lang='en'):
+def send_agreement_executed_email(to_email, applicant_name, programme_name='', lang='en',
+                                  link='', pdf=None):
     """Sent when the bursary agreement is fully executed (student + guarantor + Foundation
     signed → application 'active'). Confirms the bursary is in effect. NO sponsor identity.
-    Plain text + info@."""
+    From info@. When ``pdf`` (the signed-agreement bytes) is given, it is ATTACHED and the
+    mail goes HTML via ``_send_html``; otherwise the plain ``_send`` path (backward-compat)."""
     if not to_email:
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    return _send(to_email, AGREEMENT_EXECUTED_SUBJECTS, AGREEMENT_EXECUTED_BODIES,
-                 name, programme_name, lang, extra={'support': SUPPORT_EMAIL})
+    if pdf is None:
+        return _send(to_email, AGREEMENT_EXECUTED_SUBJECTS, AGREEMENT_EXECUTED_BODIES,
+                     name, programme_name, lang, extra={'support': SUPPORT_EMAIL})
+    subject = AGREEMENT_EXECUTED_SUBJECTS[lang]
+    text = AGREEMENT_EXECUTED_BODIES[lang].format(name=name, link=link or '', support=SUPPORT_EMAIL)
+    html = _html_email_shell('<p style="margin:0 0 14px;">'
+                             + text.replace('\n\n', '</p><p style="margin:0 0 14px;">').replace('\n', '<br>')
+                             + '</p>')
+    return _send_html(
+        to_email, subject, text, html,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+        reply_to=[SUPPORT_EMAIL],
+        attachments=[('bursary_agreement.pdf', pdf, 'application/pdf')])
+
+
+def send_executed_copy_email(to_email, *, applicant_name='', programme_name='', pdf=None, link=''):
+    """A copy of a fully-executed bursary agreement, for the witnessing partner contact and
+    the org admins (Sprint 5 distribution). Internal (English); the signed PDF attached when
+    available. From info@, reply-to help@. Best-effort → bool. Donor never named."""
+    if not to_email:
+        return False
+    who = applicant_name or 'a student'
+    subject = f'Executed bursary agreement — {who}'
+    text = (f"Hello,\n\nThe bursary agreement for {who} is now fully signed and in effect. "
+            f"A copy of the signed agreement is attached for your records.\n\n"
+            + (f"View the application:\n{link}\n\n" if link else "")
+            + "The BrightPath Bursary Team")
+    html = _html_email_shell(
+        '<p style="margin:0 0 14px;">Hello,</p>'
+        f'<p style="margin:0 0 14px;">The bursary agreement for <strong>{who}</strong> is now '
+        'fully signed and in effect. A copy of the signed agreement is attached for your records.</p>'
+        + (f'<p style="margin:0 0 6px;">{_email_button(link, "Open the application")}</p>' if link else '')
+        + '<p style="margin:18px 0 0;">The BrightPath Bursary Team</p>')
+    attachments = [('bursary_agreement.pdf', pdf, 'application/pdf')] if pdf else None
+    return _send_html(
+        to_email, subject, text, html,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+        reply_to=[SUPPORT_EMAIL], attachments=attachments)
 
 
 def send_witness_pending_email(to_email, *, contact_person='', applicant_name='',

@@ -126,6 +126,9 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 # lesser model — if the configured model is unavailable/errors, raise, don't degrade.
 # (Deliberately NOT the reports MODEL_CASCADE.)
 CONTRACT_QUIZ_MODEL = os.environ.get('CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+# Contract module (Sprint 5) — the Google Drive folder the executed signed agreement
+# PDF is filed into (best-effort; mirrors VIRCLE_PAYMENTS_FOLDER). Env-overridable.
+CONTRACTS_DRIVE_FOLDER = os.environ.get('CONTRACTS_DRIVE_FOLDER', '04 Contracts')
 
 # Admin notifications. The env var was set on Cloud Run but never read into
 # settings, so getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') silently returned ''

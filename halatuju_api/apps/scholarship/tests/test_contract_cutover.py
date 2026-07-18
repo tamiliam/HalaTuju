@@ -193,22 +193,9 @@ class TestParticularsAndRender(TestCase):
 
     def test_particulars_schedule_from_template(self):
         p = bursary.particulars_for(self.app, self.tmpl, 'en')
-        self.assertIn('RM200', p['payment_schedule'])
-        self.assertNotEqual(p['payment_schedule'], bursary.DEFAULT_PAYMENT_SCHEDULE)
+        self.assertIn('RM200', p['payment_schedule'])   # from the template's schedule row
         self.assertEqual(p['foundation_signatory_name'], 'Test Signatory')
 
-    def test_particulars_legacy_fallback(self):
-        p = bursary.particulars_for(self.app, None)
-        self.assertEqual(p['payment_schedule'], bursary.DEFAULT_PAYMENT_SCHEDULE)
-        self.assertEqual(p['progress_standard'], bursary.DEFAULT_PROGRESS_STANDARD)
-
-    def test_legacy_render_still_has_draft_banner(self):
-        p = bursary.particulars_for(self.app, None)
-        html = bursary.render_agreement_html(
-            self.app, p, student={'name': 'S'}, guarantor={'name': 'G'},
-            foundation={'name': 'F'}, witness={'by': ''}, template=None)
-        self.assertIn('DRAFT', html)
-        self.assertNotIn('Exam month', html)
 
 
 class TestBursaryE2ECommand(TestCase):

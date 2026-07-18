@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract Module — Sprint 5 (final): distribution + constants removal — 2026-07-18
+
+Fifth and final sprint of the contract module (plan
+`docs/plans/2026-07-18-contract-module-plan.md`) — the feature's **single prod deploy**.
+Still behind `BURSARY_AGREEMENT_ENABLED` (OFF); migration `0103` applied migrate-first.
+
+- **Added — execution distribution.** When an agreement is fully executed,
+  `bursary.distribute_executed_agreement` (hooked where the student "in effect" notice
+  fired) emails the **signed PDF** to the student, the witnessing partner contact and the
+  org admins, and files it in Google Drive via `sheets.write_contract_pdf`
+  (`CONTRACTS_DRIVE_FOLDER`, default `04 Contracts`; webViewLink → `drive_file_url`).
+  Idempotent via two stamps (`executed_pdf_emailed_at`, `drive_file_url`); the
+  signing-reminder cron gains a retry pass for incomplete distribution. Best-effort — a
+  storage/Drive/email failure never blocks execution. `send_agreement_executed_email`
+  gained a PDF attachment; new `send_executed_copy_email`. All seams mocked in tests.
+- **Removed — the hard-coded bursary.py constants** (`AGREEMENT_TITLE/PREAMBLE/CLAUSES`,
+  `DRAFT_BANNER`, `DEFAULT_PAYMENT_SCHEDULE`, `DEFAULT_PROGRESS_STANDARD`) + the
+  `template=None` render/particulars fallback — after a **render-diff parity test** proved
+  the seeded BrightPath template reproduces today's title/preamble/clauses and the render
+  carries them all. `render_agreement_html`/`particulars_for` now require a template;
+  grep confirms no references remain. `MONTHLY_RATE`/`PATHWAY_PAYMENT_START_MONTH` stay in
+  `payments.py` as the documented no-template fallback.
+- **Docs** — `bursary-go-live-playbook.md` reworked (the lawyer-vet gate is now the
+  template's deployment gate; Phase 1b author→attest→deploy; migrate-first `0103` + RLS;
+  Dec-2026 STPM `gap_month` eyeball).
+- **Tests**: `test_contract_distribution.py` (+5) + `test_contract_render_parity.py` (+1
+  permanent guard) + `bursary_e2e` distribution assertions; 2 legacy `template=None` tests
+  removed. **2850 scholarship pytest**; e2e green both paths; 0 migration drift.
+
 ## Contract Module — Sprint 4: admin FE + quiz refactor + Word import — 2026-07-18
 
 Fourth sprint of the contract module (plan `docs/plans/2026-07-18-contract-module-plan.md`).

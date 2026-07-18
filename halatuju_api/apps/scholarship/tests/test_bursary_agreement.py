@@ -697,7 +697,7 @@ class TestSigningReminders(TestCase):
         self._signed(suffix='r1')   # just signed → within the interval
         self.mail.outbox = []
         out = bursary.send_signing_reminders()
-        self.assertEqual(out, {'witness': 0, 'countersign': 0})
+        self.assertEqual(out, {'witness': 0, 'countersign': 0, 'distributed': 0})
         self.assertEqual(len(self.mail.outbox), 0)
 
     def test_countersign_reminder_after_interval_no_org(self):

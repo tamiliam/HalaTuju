@@ -64,8 +64,12 @@ class Command(BaseCommand):
             stack.enter_context(patch('apps.scholarship.bursary.generate_pdf',
                                       return_value=b'%PDF-1.4 local-e2e'))
             stack.enter_context(patch('apps.scholarship.storage.upload_object', return_value=True))
+            stack.enter_context(patch('apps.scholarship.storage.download_object',
+                                      return_value=b'%PDF-1.4 local-e2e'))
             stack.enter_context(patch('apps.scholarship.storage.create_signed_download_url',
                                       return_value='https://signed.local/agreement.pdf'))
+            stack.enter_context(patch('apps.scholarship.sheets.write_contract_pdf',
+                                      return_value='https://drive.local/agreement.pdf'))
             stack.enter_context(patch('apps.scholarship.whatsapp._post_to_verify',
                                       return_value={'status': 'approved'}))
             mail.outbox = []   # locmem backend appends here; init before the first send
@@ -230,6 +234,10 @@ class Command(BaseCommand):
             self._line(f'EMAIL -> {to}: "{subj}"')
         self._check(any('e2e.student@example.test' == to for to, _ in self._emails_since(mark)),
                     'student emailed that the agreement is in effect')
+        # Sprint 5 — execution distribution (all seams mocked): signed PDF emailed + filed in Drive.
+        self._check(ag.executed_pdf_emailed_at is not None, 'signed PDF distributed (emailed, stamped)')
+        self._check(ag.drive_file_url == 'https://drive.local/agreement.pdf',
+                    'signed PDF filed in Google Drive (webViewLink stored)')
 
         self._step('done', 'Final state')
         self._line(f"application status   = {app.status}")
