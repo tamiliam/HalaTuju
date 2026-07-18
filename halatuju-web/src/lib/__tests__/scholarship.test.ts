@@ -9,6 +9,7 @@ import {
   formatPhone,
   formatMoney2dp,
   expandMatricInstitution,
+  preUTrackMalay,
   formatAddress,
   isValidPhone,
   eligiblePathways,
@@ -116,6 +117,25 @@ describe('expandMatricInstitution', () => {
     expect(expandMatricInstitution('')).toBe('')
     expect(expandMatricInstitution(null)).toBe('')
     expect(expandMatricInstitution(undefined)).toBe('')
+  })
+})
+
+describe('preUTrackMalay', () => {
+  it('gives the Malay-only label for STPM streams', () => {
+    expect(preUTrackMalay('sains')).toBe('Sains')
+    expect(preUTrackMalay('sains_sosial')).toBe('Sains Sosial')
+    expect(preUTrackMalay('not_sure')).toBe('Belum pasti')
+  })
+  it('gives the Malay-only label for matric tracks', () => {
+    expect(preUTrackMalay('kejuruteraan')).toBe('Kejuruteraan')
+    expect(preUTrackMalay('sains_komputer')).toBe('Sains Komputer')
+    expect(preUTrackMalay('perakaunan')).toBe('Perakaunan')
+  })
+  it('returns null for an unknown/blank code', () => {
+    expect(preUTrackMalay('')).toBeNull()
+    expect(preUTrackMalay(null)).toBeNull()
+    expect(preUTrackMalay(undefined)).toBeNull()
+    expect(preUTrackMalay('mystery')).toBeNull()
   })
 })
 

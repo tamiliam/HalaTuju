@@ -7,7 +7,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import VerifiedTick from '@/components/VerifiedTick'
-import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym, expandMatricInstitution } from '@/lib/scholarship'
+import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym, expandMatricInstitution, preUTrackMalay } from '@/lib/scholarship'
 import { statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
 import { fieldVerifications, type VerifiableField } from '@/lib/fieldVerification'
 import {
@@ -972,11 +972,10 @@ export default function AdminScholarshipDetailPage() {
         // Human labels for the stored codes — reuse the apply-form's own i18n maps so
         // the admin sees the same words the student did (matric→Matriculation, etc.).
         const pathwayLabel = (code?: string | null) => (code ? t(`scholarship.apply.plan.pathway.${code}`) : null)
-        // pre_u_track holds a matric TRACK (sains/kejuruteraan…) for matric, or an STPM
-        // STREAM (sains/sains_sosial/not_sure) for STPM — both under scholarship.apply.plan.
-        const preUTrackLabel = app.pre_u_track
-          ? t(`scholarship.apply.plan.${app.chosen_pathway === 'stpm' ? 'stream' : 'track'}.${app.pre_u_track}`)
-          : null
+        // pre_u_track holds a matric TRACK (sains/kejuruteraan…) or an STPM STREAM
+        // (sains/sains_sosial/not_sure). The cockpit shows the Malay term ONLY (owner 2026-07-18) —
+        // "Sains Sosial", not the apply form's bilingual "Social Science (Sains Sosial)".
+        const preUTrackLabel = preUTrackMalay(app.pre_u_track)
         // Help answers: render the apply-form's own words (Yes / No / Not sure) rather
         // than the raw 'yes'/'no'/'unsure' codes.
         const helpLabel = (v?: string | null) => (v ? t(`scholarship.apply.help.${v}`) : null)
