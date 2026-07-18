@@ -312,6 +312,8 @@ export default function AdministrationPage() {
               onClick={() => router.push('/admin/payments')} />
             <IconCard icon="📄" title={t('admin.administration.contracts')} subtitle={t('admin.administration.contractsSub')}
               onClick={() => router.push('/admin/contracts')} />
+            <IconCard icon="🏷️" title={t('admin.administration.sources')} subtitle={t('admin.administration.sourcesSub')}
+              onClick={() => router.push('/admin/sources')} />
             <IconCard icon="💳" title={t('admin.administration.billing')} subtitle={t('admin.administration.billingSub')}
               disabled comingSoon={t('admin.administration.comingSoon')} />
           </div>

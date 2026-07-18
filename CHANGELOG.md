@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract Go-Live Transition — Sprint T2 (Sources UI + witness dropdown + deploy) — 2026-07-19
+
+Second and final sprint of the go-live transition (plan
+`docs/plans/2026-07-19-contract-golive-transition-plan.md`) — **the transition's single api+web
+deploy.** Both flags stay OFF; the flip is the owner's runbook. Stitch-approved before coding.
+
+- **Added — Sources page** (`admin/sources/page.tsx`): a super/org_admin registry of referral
+  organisations (name · contact person · email · **phone** · active-in-apply toggle · student
+  count) with inline edit + add. Reached from a new **Sources** IconCard in Administration →
+  ORGANISATION. Reuses `PartnerOrganisation.phone`/`contact_person`/`contact_email` (T1's decision).
+- **Added — witness-organisation dropdown** on the admin application cockpit for a **sourceless**
+  student (no `referred_by_org`): assign an active source as witness, or None (Foundation-direct).
+  Un-gated by the agreement flag — usable during go-live prep (runbook step 2, before the flip).
+- **Added — admin-api client** `getSources` / `createSource` / `updateSource` / `assignWitness`;
+  `AdminApplicationDetailSerializer` now exposes `referred_by_org` + `witness_org` ({id,code,name}).
+- **Added — i18n** `admin.sources.*` + the `admin.administration.sources` card, en/ms/ta (Tamil is
+  a flagged first-draft, pending owner review). New guard test `admin-sources-i18n.test.ts` + the
+  `sources-api.test.ts` client test (8 jest tests).
+- **Docs** — go-live runbook finalised in `docs/scholarship/bursary-go-live-playbook.md` (both flags
+  flip together; witness assignment via the new UI; armed-clock; lapse cron only after the cohort
+  signs) + a note that the next intake's apply form must draw its source list from this module
+  (`show_in_apply` + social chips) — build deferred until the form reopens.
+
 ## Contract Go-Live Transition — Sprint T1 (backend) — 2026-07-19
 
 First of two sprints managing the switch from the grandfather arrangement to contract mode

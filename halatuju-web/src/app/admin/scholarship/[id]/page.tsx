@@ -36,6 +36,9 @@ import {
   actionResolutionItem,
   adminCountersignBursary,
   adminWitnessBursary,
+  getSources,
+  assignWitness,
+  type SourceItem,
   scheduleTranche,
   actOnDisbursement,
   setMaintenanceSubstate,
@@ -274,6 +277,32 @@ export default function AdminScholarshipDetailPage() {
   // the countersign/witness action responses (each returns the full agreement).
   const [bursary, setBursary] = useState<BursaryAgreement | null>(null)
   const [bursaryMsg, setBursaryMsg] = useState('')
+
+  // Witness-organisation assignment (go-live transition, T2). Shown for a SOURCELESS student
+  // (no referred_by_org) so a super/org_admin can assign a witness org — usable BEFORE the flag
+  // flips (runbook step 2 precedes the flip), so it is NOT gated behind bursary_agreement_enabled.
+  const [activeSources, setActiveSources] = useState<SourceItem[]>([])
+  const [witnessSel, setWitnessSel] = useState<string>('')
+  const [witnessBusy, setWitnessBusy] = useState(false)
+  const [witnessMsg, setWitnessMsg] = useState('')
+  const sourceless = !!app && !app.referred_by_org
+  useEffect(() => {
+    if (!token || !canAssign || !sourceless) return
+    getSources({ token }).then((d) => setActiveSources(d.sources.filter((s) => s.show_in_apply && s.is_active))).catch(() => {})
+  }, [token, canAssign, sourceless])
+  useEffect(() => { setWitnessSel(app?.witness_org?.code || '') }, [app?.witness_org?.code])
+
+  const doAssignWitness = async () => {
+    if (!token || !app) return
+    setWitnessBusy(true); setWitnessMsg('')
+    try {
+      const res = await assignWitness(id, witnessSel || null, { token })
+      setApp({ ...app, witness_org: res.witness_org ? { id: 0, code: res.witness_org, name: res.witness_org_name || res.witness_org } : null })
+      setWitnessMsg(t('admin.sources.witness.assigned'))
+    } catch {
+      setWitnessMsg(t('admin.actionFailed'))
+    } finally { setWitnessBusy(false) }
+  }
 
   const doCountersignBursary = async () => {
     if (!token) return
@@ -2637,6 +2666,35 @@ export default function AdminScholarshipDetailPage() {
       </div>{/* end RIGHT column */}
 
       </div>{/* end cockpit grid */}
+
+      {/* ── Witness organisation (go-live transition) — for a SOURCELESS student only.
+          Un-gated by the agreement flag: the owner assigns witnesses during go-live prep,
+          before the flags flip (runbook step 2 precedes step 3). super/org_admin. */}
+      {canAssign && sourceless && (
+        <div className="mt-6 bg-white rounded-xl border shadow-sm p-5 max-w-2xl">
+          <h3 className="font-semibold text-gray-900">{t('admin.sources.witness.title')}</h3>
+          <p className="mt-1 text-sm text-gray-500">{t('admin.sources.witness.help')}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={witnessSel} onChange={(e) => setWitnessSel(e.target.value)}>
+              <option value="">{t('admin.sources.witness.none')}</option>
+              {activeSources.map((s) => <option key={s.id} value={s.code}>{s.name}</option>)}
+            </select>
+            <button type="button" onClick={doAssignWitness}
+              disabled={witnessBusy || witnessSel === (app.witness_org?.code || '')}
+              className="px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              {witnessBusy ? t('admin.sources.witness.assigning') : t('admin.sources.witness.assign')}
+            </button>
+            {app.witness_org && (
+              <span className="text-xs text-gray-500">{t('admin.sources.witness.current', { org: app.witness_org.name })}</span>
+            )}
+          </div>
+          {witnessMsg && (
+            <p className={`mt-2 text-sm ${witnessMsg === t('admin.sources.witness.assigned') ? 'text-green-700' : 'text-red-600'}`}>{witnessMsg}</p>
+          )}
+        </div>
+      )}
 
       {/* ── Conditional Bursary Award Agreement (flag-gated; dark by default) ──
           Shown once the award has been accepted (the student + guarantor have

@@ -328,6 +328,56 @@ export async function getOrgs(options?: ApiOptions) {
   return adminFetch<{ orgs: OrgItem[] }>('/api/v1/admin/orgs/', options)
 }
 
+// ── Sources (referral organisations) + witness assignment (go-live transition) ──
+// The Sources registry reuses PartnerOrganisation.phone / contact_person / contact_email
+// (NOT a separate contact_phone column). super/org_admin only.
+
+export interface SourceItem {
+  id: number
+  code: string
+  name: string
+  contact_person: string
+  contact_email: string
+  phone: string
+  show_in_apply: boolean
+  is_active: boolean
+  student_count: number | null
+}
+
+export async function getSources(options?: ApiOptions) {
+  return adminFetch<{ sources: SourceItem[] }>('/api/v1/admin/scholarship/sources/', options)
+}
+
+export async function createSource(
+  data: {
+    code: string; name: string; contact_person?: string; contact_email?: string
+    phone?: string; show_in_apply?: boolean
+  },
+  options?: ApiOptions,
+) {
+  return adminMutate<SourceItem>('/api/v1/admin/scholarship/sources/', 'POST', data, options)
+}
+
+export async function updateSource(
+  id: number,
+  data: Partial<{
+    name: string; contact_person: string; contact_email: string; phone: string
+    show_in_apply: boolean; is_active: boolean
+  }>,
+  options?: ApiOptions,
+) {
+  return adminMutate<SourceItem>(`/api/v1/admin/scholarship/sources/${id}/`, 'PATCH', data, options)
+}
+
+/** Assign (code/id) or clear (null) the witness-organisation override for an application. */
+export async function assignWitness(
+  applicationId: number, witnessOrg: string | number | null, options?: ApiOptions,
+) {
+  return adminMutate<{ id: number; witness_org: string | null; witness_org_name: string | null }>(
+    `/api/v1/admin/scholarship/applications/${applicationId}/witness/`, 'PATCH',
+    { witness_org: witnessOrg }, options)
+}
+
 export async function inviteAdmin(
   data: {
     email: string
@@ -490,6 +540,10 @@ export interface AdminScholarshipDetail {
   verified_email: string
   preferred_call_language: string
   referral_source: string | null
+  // Go-live transition (T2): the referring organisation (source) + the witness-org override.
+  // referred_by_org null = sourceless (the cockpit then offers the witness dropdown).
+  referred_by_org: { id: number; code: string; name: string } | null
+  witness_org: { id: number; code: string; name: string } | null
   guardians: Array<{ name?: string; phone?: string; relationship?: string }>
   muet_band: number | null
   coq_score: number | null

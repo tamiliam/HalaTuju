@@ -341,6 +341,12 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
+    # Go-live transition (T2): the student's referring organisation (the source) and the
+    # witness-org OVERRIDE. The cockpit shows the witness dropdown for a SOURCELESS student
+    # (referred_by_org is null) so an org_admin can assign one; witness_org is the current
+    # override. Each is {id, code, name} or null.
+    referred_by_org = serializers.SerializerMethodField()
+    witness_org = serializers.SerializerMethodField()
 
     class Meta:
         model = ScholarshipApplication
@@ -351,6 +357,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'aspirations', 'plans', 'fears', 'justification',
             'address', 'postal_code', 'city', 'preferred_state',
             'contact_phone', 'contact_email', 'notify_email', 'verified_email', 'preferred_call_language', 'referral_source', 'guardians',
+            'referred_by_org', 'witness_org',
             # Academic detail (FE renders SPM vs STPM by qualification)
             'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
             # "Your story" narrative (S2) + support + declaration
@@ -508,6 +515,16 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
 
     def get_school(self, obj):
         return getattr(obj.profile, 'school', '') if obj.profile else ''
+
+    @staticmethod
+    def _org_dict(org):
+        return {'id': org.id, 'code': org.code, 'name': org.name} if org else None
+
+    def get_referred_by_org(self, obj):
+        return self._org_dict(getattr(getattr(obj, 'profile', None), 'referred_by_org', None))
+
+    def get_witness_org(self, obj):
+        return self._org_dict(obj.witness_org)
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades

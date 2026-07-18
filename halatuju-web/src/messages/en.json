@@ -2949,6 +2949,50 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "sources": {
+      "nav": "Sources",
+      "title": "Sources",
+      "subtitle": "Referral organisations — the partners who refer students to the programme.",
+      "add": "Add source",
+      "addTitle": "Add a source",
+      "create": "Create",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "edit": "Edit",
+      "colOrganisation": "Organisation",
+      "colContactPerson": "Contact person",
+      "colEmail": "Email",
+      "colPhone": "Phone",
+      "colActive": "Active in apply form",
+      "colStudents": "Students",
+      "code": "Code",
+      "codeHelp": "lowercase, e.g. smc",
+      "name": "Name",
+      "contactPerson": "Contact person",
+      "email": "Email",
+      "phone": "Phone",
+      "activeInApply": "Active in apply form",
+      "activeHelp": "Show this organisation in the apply form's source list when the intake reopens.",
+      "empty": "—",
+      "noSources": "No sources yet.",
+      "loadError": "Could not load sources.",
+      "created": "Source added.",
+      "updated": "Source updated.",
+      "codeAndNameRequired": "Code and name are required.",
+      "codeTaken": "That code is already in use.",
+      "superRequired": "Only a super admin or organisation admin can manage sources.",
+      "witness": {
+        "title": "Witness organisation",
+        "help": "This student has no referring organisation. Assign a witness organisation to attest their agreement, or leave as None — the Foundation then countersigns directly.",
+        "none": "None (Foundation-direct)",
+        "assign": "Assign",
+        "assigning": "Assigning…",
+        "assigned": "Witness organisation updated.",
+        "current": "Current: {org}",
+        "label": "Witness"
+      }
+    },
     "sponsors": {
       "nav": "Sponsors",
       "title": "Sponsor applications",
@@ -4148,7 +4192,9 @@
       "payments": "Payments",
       "paymentsSub": "Create and send monthly Vircle payment runs",
       "contracts": "Contracts",
-      "contractsSub": "Author and deploy the bursary agreement"
+      "contractsSub": "Author and deploy the bursary agreement",
+      "sources": "Sources",
+      "sourcesSub": "Referral organisations & apply-form source list"
     },
     "payments": {
       "title": "Payments",

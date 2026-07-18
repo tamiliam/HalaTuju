@@ -21,8 +21,10 @@ grandfather cohort, offer-lapse redesign, and the new Sources module. Prior plan
   14-day `accept_deadline` is long expired. If scheduled as-is it would lapse all 32 awards.
   (Remove/replace the tech-debt item proposing to wire it unchanged.)
 - Sources: 20/32 students carry `referred_by_org` (SMC 9, CUMIG 4, MHM 2, EWRF 2, PPT6M 2,
-  HSS 1); 12 have none. `PartnerOrganisation` has `contact_person`/`contact_email`; **no
-  phone field**, and **no UI anywhere** edits organisation records.
+  HSS 1); 12 have none. `PartnerOrganisation` has `contact_person`/`contact_email` **and an
+  existing `phone` field (models.py:418; the plan's original "no phone field" claim was wrong —
+  T1 correctly REUSED `phone` rather than adding a duplicate `contact_phone`)**. No UI edits
+  organisation records apart from AdminProfileView's own-org phone.
 
 ## Owner decisions (locked, 2026-07-19)
 
@@ -61,8 +63,9 @@ grandfather cohort, offer-lapse redesign, and the new Sources module. Prior plan
    list) any application with released disbursements. Update `docs/technical-debt.md` (c) —
    the cron may be scheduled only AFTER this lands.
 5. **Witness assignment + Sources model** (`courses` migration): `PartnerOrganisation` gains
-   `contact_phone` + `show_in_apply` (active-source flag, default False; seed the 6 live
-   referral orgs True). `ScholarshipApplication` gains `witness_org` override FK (null =
+   only `show_in_apply` (active-source flag, default False; seed the 6 live referral orgs
+   True) — phone REUSES the existing `phone` field (see Verified facts; T2 FE reads/writes
+   `phone`). `ScholarshipApplication` gains `witness_org` override FK (null =
    derive from `referred_by_org` as today); `bursary` witness resolution reads override →
    referral → none (straight to countersign). Admin endpoints: Sources CRUD
    (list+counts / create / PATCH contacts+active) + per-application witness assignment PATCH —

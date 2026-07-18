@@ -83,16 +83,46 @@ Both must print "Bursary E2E walk completed OK". Also run the suite:
 3. (Optional) set `FOUNDATION_NOTIFY_EMAIL` to target the countersign nudges, and confirm
    `ADMIN_NOTIFY_EMAIL` is set as the fallback.
 
-## Phase 4 — flip the flag
+## Phase 4 — flip BOTH flags together
+
+Owner decision (2026-07-19, contract go-live transition): `AWARD_ACCEPTANCE_ENABLED` and
+`BURSARY_AGREEMENT_ENABLED` flip **together, never separately** — the accept panel and the
+signing chain are one journey, and grandfathered students go through the same accept → quiz →
+sign door as future students (this back-fills their acceptance + consent records).
 
 ```bash
 gcloud run services update halatuju-api --region asia-southeast1 \
   --project gen-lang-client-0871147736 --account tamiliam@gmail.com \
-  --update-env-vars BURSARY_AGREEMENT_ENABLED=1
+  --update-env-vars AWARD_ACCEPTANCE_ENABLED=1,BURSARY_AGREEMENT_ENABLED=1
 ```
 
-This also un-hides the cockpit bursary panel (now showing accurate TD-144 ticks). Re-dark with
-`BURSARY_AGREEMENT_ENABLED=0` at any time — no data is lost.
+This un-hides the "View my award" accept panel AND the cockpit bursary panel. Re-dark by setting
+both back to `0` at any time — no data is lost.
+
+### Go-live transition ordering (do these in order)
+
+The switch from the grandfather arrangement (students paid at `awarded`) to contract mode is
+**timed around a completed monthly run** so the unsigned-is-unpayable gate creates pressure
+without stranding anyone:
+
+1. **Complete a monthly payment run** (both sign-offs). The lapse clock only ever starts the day
+   AFTER a student is invited to sign (below), so nothing lapses in the meantime.
+2. **Assign witness organisations to the sourceless students.** Administration → ORGANISATION →
+   **Sources** curates the referral orgs (contact + active-in-apply toggle + student count); on a
+   **sourceless** student's cockpit page a **Witness organisation** dropdown (active sources)
+   assigns one, or leave it None → the Foundation countersigns directly. (This is usable NOW,
+   before the flags flip.)
+3. **Flip both flags** (command above). Phase-0 lawyer/template gates + Phase 1b (an ACTIVE
+   deployed template) must already be satisfied.
+4. **Send sign invitations** (Phase 5) — this ARMS each student's `SIGN_ACCEPT_DEADLINE_DAYS`
+   (default 30) clock.
+5. **Chase** via the next draft run's greyed `agreement_unsigned` list; the signing-reminder cron
+   nudges automatically.
+6. **Next monthly run:** signed students pay normally and flip to `maintenance`; unsigned are
+   visibly excluded (the Option-A pressure). **Only after the cohort is through** consider
+   scheduling the (reworked) lapse cron — see `docs/technical-debt.md` (c). It refuses to lapse any
+   application with a released disbursement (flags it for review instead), so it can never pull
+   money out from under a paid grandfather student.
 
 ## Phase 5 — invite students to sign
 
@@ -115,14 +145,23 @@ turning it on un-hides the panel for ALL funded students at once, so prefer the 
 2. Student opens the Action Centre → **comprehension quiz** (8 checkpoints) → signing form.
 3. Student types their signature; parent/guardian enters an **SMS PIN** sent to their locked
    phone (the gate); both sign in-session.
-4. Chain notifications fire: **partner witnesses** (if a referring org) → **Foundation
-   countersigns** → agreement **executed** → app flips to **active**. **Distribution** then runs
-   (best-effort, idempotent): the **signed PDF is emailed** to the student (their "in effect"
-   notice), the witness contact and the org admins, and **filed in Google Drive**
-   (`CONTRACTS_DRIVE_FOLDER`, webViewLink stored on the agreement).
+4. Chain notifications fire: the **resolved witness org** (assigned override → student's referral
+   → none) witnesses if one resolves → **Foundation countersigns** → agreement **executed** → app
+   flips to **active**. **Distribution** then runs (best-effort, idempotent): the **signed PDF is
+   emailed** to the student (their "in effect" notice), the witness contact and the org admins, and
+   **filed in Google Drive** (`CONTRACTS_DRIVE_FOLDER`, webViewLink stored on the agreement). The
+   student's **Vircle eWallet setup** (install email + Action-Centre task) is also bootstrapped
+   here at execution — skipped for a grandfather who already has a setup task or a `vircle_id`.
 5. Anyone stalled is re-nudged daily after `BURSARY_SIGN_REMINDER_DAYS`; the same cron **retries
-   any incomplete distribution** (a Drive/email hiccup) until both stamps are set.
-6. Only after full execution does the student reach the portal/onboarding.
+   any incomplete distribution** (a Drive/email/Vircle hiccup) until the stamps are set.
+6. Only after full execution does the student reach the portal/onboarding. The **first completed
+   payment run** then flips the student `active → maintenance`.
+
+### The award email in contract mode
+
+With the flags on, the good-news award email (`release_award_offer_emails`) is the **review-&-sign**
+variant (link to `/scholarship/award`), carrying **no Vircle content** — Vircle setup follows at
+execution (step 4). The flag-OFF award email (Vircle-flavoured) is unchanged.
 
 ## Known scope boundaries (deliberate)
 
@@ -130,3 +169,9 @@ turning it on un-hides the panel for ALL funded students at once, so prefer the 
   student-only; the parent's touchpoint is the SMS PIN. (An SMS to the parent is a later option.)
 - Real disbursement / toyyibPay is a separate track (TD-075).
 - The optional "pending signatures" filter on the applications list was not built (S5 note).
+- **Apply-form source integration is DEFERRED (build when the intake reopens).** The Sources module
+  carries a `show_in_apply` flag (managed in Administration → ORGANISATION → Sources). When the apply
+  form reopens, its "who referred you?" list MUST be sourced from the active (`show_in_apply=true`)
+  organisations in this module, plus social-media/"other" chips for unaffiliated students — replacing
+  today's hard-coded `scholarship.apply.org.*` list. The form is currently closed, so this is noted,
+  not built. (Contract go-live transition T2, 2026-07-19.)
