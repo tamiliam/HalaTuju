@@ -1,4 +1,4 @@
-import { daysUntil, countdown, rmWhole } from './poolCard'
+import { daysUntil, countdown, rmWhole, fundedFraction } from './poolCard'
 
 describe('rmWhole', () => {
   it('drops decimals and groups thousands', () => {
@@ -10,6 +10,25 @@ describe('rmWhole', () => {
   it('passes non-numeric through', () => {
     expect(rmWhole(null)).toBe('')
     expect(rmWhole('abc')).toBe('abc')
+  })
+})
+
+describe('fundedFraction', () => {
+  it('0 when unfunded (empty rail)', () => {
+    expect(fundedFraction('0', '2000')).toBe(0)
+    expect(fundedFraction(null, '2000')).toBe(0)
+    expect(fundedFraction(undefined, 2000)).toBe(0)
+  })
+  it('partial and full', () => {
+    expect(fundedFraction('500', '2000')).toBe(0.25)
+    expect(fundedFraction('2000', '2000')).toBe(1)
+  })
+  it('0 for a missing/non-positive target', () => {
+    expect(fundedFraction('500', null)).toBe(0)
+    expect(fundedFraction('500', '0')).toBe(0)
+  })
+  it('clamps overshoot to 1', () => {
+    expect(fundedFraction('3000', '2000')).toBe(1)
   })
 })
 

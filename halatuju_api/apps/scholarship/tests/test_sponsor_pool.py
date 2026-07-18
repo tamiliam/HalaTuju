@@ -6,9 +6,11 @@ eligibility rule, the SPONSOR_POOL_ENABLED gate, approved-sponsor gating, and th
 admin generate/publish flow. All on synthetic data; the AI call is mocked.
 """
 import json
+from decimal import Decimal
 from unittest.mock import patch
 
 import jwt
+from django.db.models import Q, Sum
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -17,6 +19,7 @@ from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship import pool
 from apps.scholarship.models import (
     Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort, SponsorProfile, Sponsor,
+    Sponsorship,
 )
 from apps.scholarship.profile_engine import _build_prompt, generate_anon_blurb
 from apps.scholarship.serializers import (
@@ -533,6 +536,46 @@ class TestSponsorPoolCount(TestCase):
         for value in IDENTIFIERS.values():
             self.assertNotIn(value, blob)
         self.assertEqual(set(r.json().keys()), {'count', 'enabled'})
+
+
+# ─── funding bar: funded_amount seam (partial-funding forward-compat) ─────────
+
+class TestFundedAmount(TestCase):
+    """funded_amount = sum of HOLDING (offered+active) sponsorships. '0' for every
+    pooled student today (funding is full-or-nothing and a funded student leaves the
+    pool); drives the funding bar and is ready for partial funding (TD-075)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def test_zero_when_unfunded(self):
+        app = _make_eligible_app(self.cohort)
+        self.assertEqual(SponsorPoolCardSerializer(app).data['funded_amount'], '0')
+
+    def test_sums_holding_and_ignores_lapsed(self):
+        app = _make_eligible_app(self.cohort)
+        sponsor = Sponsor.objects.create(supabase_user_id='spon-1', email='s@example.com',
+                                         name='S', status='approved')
+        Sponsorship.objects.create(sponsor=sponsor, application=app,
+                                   amount=Decimal('500'), status='offered')
+        # A lapsed allocation no longer holds balance → must not count.
+        Sponsorship.objects.create(sponsor=sponsor, application=app,
+                                   amount=Decimal('999'), status='lapsed')
+        self.assertEqual(Decimal(SponsorPoolCardSerializer(app).data['funded_amount']),
+                         Decimal('500'))
+
+    def test_annotated_queryset_branch_zero(self):
+        # Mirror the list view's annotation: the funded_total attr is set (None) even with
+        # no sponsorships, so the serializer reads it rather than firing a per-card query.
+        _make_eligible_app(self.cohort)
+        _make_eligible_app(self.cohort, suffix='2')
+        qs = pool.eligible_pool_queryset(ScholarshipApplication).annotate(
+            funded_total=Sum('sponsorships__amount',
+                             filter=Q(sponsorships__status__in=Sponsorship.HOLDING)),
+        )
+        data = SponsorPoolCardSerializer(qs, many=True).data
+        self.assertEqual([c['funded_amount'] for c in data], ['0', '0'])
 
 
 # ─── admin generate / publish the anonymous profile ──────────────────────────

@@ -102,6 +102,7 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     funding_categories = serializers.SerializerMethodField()
     programme_months = serializers.SerializerMethodField()
     award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
+    funded_amount = serializers.SerializerMethodField()  # partial-funding seam: raised so far
     progress_state = serializers.SerializerMethodField()  # F2: coarse, non-identifying
     support_status = serializers.SerializerMethodField()  # S5: coarse operational signal
     enrolment_verified = serializers.SerializerMethodField()  # R5: bare boolean badge
@@ -140,6 +141,23 @@ class SponsorPoolCardSerializer(serializers.Serializer):
 
     def get_award_amount(self, app):
         return str(app.award_amount) if app.award_amount is not None else None
+
+    def get_funded_amount(self, app):
+        # Money RAISED toward award_amount so far = sum of HOLDING (offered+active)
+        # sponsorships. Non-identifying (a ringgit figure). Today a pooled ('recommended')
+        # student has none — funding is full-or-nothing and a funded student leaves the
+        # pool — so this is '0' on every card; it drives the funding bar as an EMPTY rail.
+        # When partial funding (TD-075) ships, the same field renders partial/full with NO
+        # frontend change. Reads the list view's `funded_total` annotation when present
+        # (avoids an N+1 across the card grid); falls back to a per-object sum otherwise.
+        from django.db.models import Sum
+        from .models import Sponsorship
+        if hasattr(app, 'funded_total'):
+            total = app.funded_total
+        else:
+            total = (app.sponsorships.filter(status__in=Sponsorship.HOLDING)
+                     .aggregate(t=Sum('amount'))['t'])
+        return str(total or 0)
 
     def get_state(self, app):
         # State-level region only — street/postcode/city are never exposed.

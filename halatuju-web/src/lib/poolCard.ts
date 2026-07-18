@@ -22,6 +22,19 @@ export function countdown(iso: string | null | undefined, now: Date = new Date()
   return { kind: 'many', days: d }
 }
 
+/** Funded fraction 0..1 = raised / target, for the funding bar. Guards nulls, a
+ *  non-positive/absent target, and clamps to [0,1]. 0 when unfunded (the empty rail). */
+export function fundedFraction(
+  funded: string | number | null | undefined,
+  award: string | number | null | undefined,
+): number {
+  const target = Number(award)
+  const raised = Number(funded)
+  if (!Number.isFinite(target) || target <= 0) return 0
+  if (!Number.isFinite(raised) || raised <= 0) return 0
+  return Math.max(0, Math.min(1, raised / target))
+}
+
 /** Whole-ringgit with thousands grouping, no decimals: "2000.00" -> "2,000". */
 export function rmWhole(v: string | number | null | undefined): string {
   if (v === null || v === undefined || String(v).trim() === '') return ''

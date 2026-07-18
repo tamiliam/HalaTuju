@@ -716,6 +716,7 @@ export interface SponsorPoolCard {
   funding_categories: string[]
   programme_months: number | null
   award_amount: string | null   // E3: admin-set; non-identifying
+  funded_amount: string | null  // raised so far (sum of holding sponsorships); '0' until partial funding ships → drives the funding bar
   // F2: coarse, non-identifying progress band — null until the student is sponsored.
   progress_state: 'on_track' | 'semester_completed' | 'needs_attention' | 'graduated' | null
   // S5: coarse operational signal, distinct from the academic band — 'paused' (on hold)
