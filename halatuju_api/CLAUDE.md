@@ -524,6 +524,29 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-18)
 
+**✅ SHIPPED (code — owner gates the deploy) 2026-07-18 — Cockpit pre-U stream in Malay + label
+parity guard.** NO migration; web + one backend test; push = deploy (HELD for owner). Owner
+live-review follow-up (commits `258bac51` / `ed7d6bdf`; retro
+`docs/retrospective-2026-07-18-malay-stream-label-parity-guard.md`; decision ×1; lesson ×1).
+- The cockpit's chosen-programme line shows the pre-U stream/track in **Malay only** ("· Sains
+  Sosial") via `preUTrackMalay()`, not the apply form's bilingual "Social Science (Sains Sosial)".
+  The apply form is unchanged. `preUTrackMalay()` reads the Malay values from the SAME `ms.json`
+  the apply form uses (`scholarship.apply.plan.stream`/`.track`) — one FE source, no hardcoded copy.
+- **`TestTrackLabelParity`** — the pre-U track labels are copied across two runtimes that can't
+  share a file at runtime (backend `card_display._TRACK_LABEL` for the sponsor card/emails; FE
+  `ms.json` for apply form/cockpit). The test reads the FE JSON and fails the build if they drift
+  (owner-approved "keep two copies + enforce equality"; decisions.md rates it vs the heavier
+  unification options). Skips in an api-only checkout. CI-only.
+- **3974 combined pytest (2720 scholarship) + 589 jest.** **▶ AT DEPLOY:** push (web rebuild; the
+  guard is CI-only). NB the unpushed queue also holds another agent's TD-161 pathway-type-switch
+  work — a push carries it too; coordinate before pushing.
+- **▶ NOTED for the other agent — PISMP false Pathway clash.** 6 records (#43/#80/#107/#110/#115/
+  #127): the offer's programme field is the generic degree ("Program Ijazah Sarjana Muda Perguruan
+  (PISMP)") while the student declared the Bidang, and the offer `stream` is blank, so
+  `offer_pathway_match` reads a false `mismatch` → red Pathway chip + suppressed Chosen-Programme
+  and Institution ticks. Fix belongs with the offer parser (capture the Bidang/Aliran into
+  `stream`). Left to the agent already working PISMP.
+
 **✅ SHIPPED (code — owner gates the deploy) 2026-07-18 — Tertiary Institution tick + profile-sync
 clobber guard.** NO migration; web + api; push = deploy (held for owner). Two owner-flagged
 follow-ups off the Academic-box redesign (commits `e8db600c` / `8c3c7572`; retro

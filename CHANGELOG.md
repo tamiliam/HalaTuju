@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit pre-U stream in Malay only + cross-runtime label parity guard — 2026-07-18
+
+Owner live-review follow-up. NO migration; web + one backend test. Commits `258bac51` / `ed7d6bdf`.
+
+- **Changed — the officer cockpit shows the pre-U stream/track in Malay only.** The chosen-programme
+  line appended the apply form's bilingual label ("Tingkatan Enam · Social Science (Sains Sosial)");
+  the cockpit now shows the Malay term only ("· Sains Sosial") via a new `preUTrackMalay()` helper.
+  The student apply form's bilingual labels are unchanged (deliberate — for student comprehension).
+- **Single FE source for the labels.** `preUTrackMalay()` reads the Malay values from the SAME i18n
+  messages the apply form uses (`ms.json` `scholarship.apply.plan.stream`/`.track`) — no second
+  hardcoded map. `ms.json` is already statically bundled by `lib/i18n.tsx`, so zero extra bundle cost.
+- **Added — cross-runtime label parity guard** (`TestTrackLabelParity`). The same code→label map must
+  live in two separately-deployed runtimes that can't share a file at runtime: the backend
+  `card_display._TRACK_LABEL` (sponsor card + emails) and the FE `ms.json` (apply form + cockpit). The
+  test reads the FE JSON and fails the build if the two ever drift, so the duplication can never
+  silently disagree (option B — keep both copies, enforce equality). Skips cleanly in an api-only
+  checkout. CI-only; no runtime/deploy effect.
+
 ## Cockpit Academic box: tertiary Institution tick + profile-sync clobber guard — 2026-07-18
 
 Two owner-flagged follow-ups off the Academic-box redesign. NO migration; web + api.
