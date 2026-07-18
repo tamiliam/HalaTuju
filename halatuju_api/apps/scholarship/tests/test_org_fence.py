@@ -194,6 +194,16 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminPaymentRunListView': 'payments-org-fenced', 'AdminPaymentRunDetailView': 'payments-org-fenced',
         'AdminPaymentRunItemView': 'payments-org-fenced', 'AdminPaymentRunSignView': 'payments-org-fenced',
         'AdminPaymentRunCancelView': 'payments-org-fenced', 'AdminPaymentRunCsvView': 'payments-org-fenced',
+        # Contract module (S3) — org-fenced via _ContractsBase._template_for (cross-org 404)
+        # + super/org_admin role gate; the list filters to the caller's org; deploy is
+        # super-only. ContractTemplate is not a watched applicant model → no static pragma.
+        '_ContractsBase': 'base — shared contract gate + org-fenced template lookup',
+        'AdminContractTemplateListView': 'contract-org-fenced', 'AdminContractTemplateDetailView': 'contract-org-fenced',
+        'AdminContractClausesView': 'contract-org-fenced', 'AdminContractScheduleView': 'contract-org-fenced',
+        'AdminContractGenerateQuizView': 'contract-org-fenced', 'AdminContractVettingView': 'contract-org-fenced',
+        'AdminContractValidateView': 'contract-org-fenced', 'AdminContractSubmitView': 'contract-org-fenced',
+        'AdminContractRevertView': 'contract-org-fenced', 'AdminContractDeployView': 'contract-org-fenced+super-deploy',
+        'AdminContractPreviewView': 'contract-org-fenced', 'AdminContractQuizPreviewView': 'contract-org-fenced',
         # gate-fenced (via _scoped_application / _require_app_write / _require_qc)
         'AdminApplicationDetailView': 'gate', 'AdminVerdictSummaryView': 'gate',
         'AdminVerifyAcceptView': 'gate', 'AdminRejectView': 'gate',

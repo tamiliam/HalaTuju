@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract Module — Sprint 3: admin API + Stitch (backend) — 2026-07-18
+
+Third sprint of the contract module (plan `docs/plans/2026-07-18-contract-module-plan.md`).
+The admin authoring/deployment API + the Stitch UI prototype. Backend only — the
+FE pages/components are Sprint 4, gated on the owner's Stitch approval. **NO
+deploy**; no migration.
+
+- **Added — the contract admin API** (`_ContractsBase(_AdminBase)` +12 thin views
+  in `views_admin.py`; URLs after the payments block). Endpoints under
+  `admin/scholarship/contract-templates/`: `GET`/`POST` (list + create draft) ·
+  `<pk>/` `GET`/`PATCH` (detail + config) · `<pk>/clauses/` `PUT` ·
+  `<pk>/clauses/<order>/generate-quiz/` `POST` (Gemini, draft-only) ·
+  `<pk>/schedule/` `PUT` · `<pk>/vetting/` `POST` · `<pk>/validate/` `GET` ·
+  `<pk>/submit/` · `<pk>/revert/` · `<pk>/deploy/` `POST` · `<pk>/preview/?locale=&format=pdf`
+  `GET` · `<pk>/quiz-preview/` `GET`. Thin wrappers over the `contracts` service.
+- **Access** — super / org_admin only (reviewer/qc/admin/partner → 403);
+  org-fenced via `_template_for` (cross-org read/write → **404**, never 403);
+  **deploy is super-only** (org_admin → 403). The validate endpoint returns the
+  service's exact error/warning codes (with human labels). generate-quiz is
+  draft-only and calls the mockable Gemini seam (never live in tests). The 12
+  endpoints + `_ContractsBase` are classified in the org-fence CI guard.
+- **Added — Stitch prototype** (project `10844973747787673276`): the deploy panel
+  rendered (design system "Administrative Clarity" auto-created); the list +
+  config/clauses/quiz/schedule/preview editor tabs are generating. **Owner visual
+  approval gates the Sprint 4 FE.**
+- **Tests** — `test_contract_admin_api.py` (+21): access gate, create/author,
+  org-fence (cross-org 404, list scoped), generate-quiz (mocked + draft-only),
+  validate mirrors the service, full author→vet→submit→deploy lifecycle over the
+  API, org_admin deploy 403, deploy archives predecessor. **2841 scholarship
+  pytest** green; org-fence guard green; 0 migration drift.
+
 ## Contract Module — Sprint 2: engine cutover (backend) — 2026-07-18
 
 Second sprint of the contract module (plan `docs/plans/2026-07-18-contract-module-plan.md`).

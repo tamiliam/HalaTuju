@@ -107,6 +107,18 @@ from .views_admin import (
     AdminPaymentRunSignView,
     AdminPaymentRunCancelView,
     AdminPaymentRunCsvView,
+    AdminContractTemplateListView,
+    AdminContractTemplateDetailView,
+    AdminContractClausesView,
+    AdminContractScheduleView,
+    AdminContractGenerateQuizView,
+    AdminContractVettingView,
+    AdminContractValidateView,
+    AdminContractSubmitView,
+    AdminContractRevertView,
+    AdminContractDeployView,
+    AdminContractPreviewView,
+    AdminContractQuizPreviewView,
 )
 
 urlpatterns = [
@@ -186,6 +198,22 @@ urlpatterns = [
     path('admin/scholarship/payment-runs/<int:pk>/sign/', AdminPaymentRunSignView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/cancel/', AdminPaymentRunCancelView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/csv/', AdminPaymentRunCsvView.as_view()),
+
+    # Contract module (S3): org-owned versioned bursary templates. Super/org_admin,
+    # org-fenced (cross-org 404); deploy super-only. Service = apps.scholarship.contracts.
+    path('admin/scholarship/contract-templates/', AdminContractTemplateListView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/', AdminContractTemplateDetailView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/clauses/', AdminContractClausesView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/clauses/<int:order>/generate-quiz/',
+         AdminContractGenerateQuizView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/schedule/', AdminContractScheduleView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/vetting/', AdminContractVettingView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/validate/', AdminContractValidateView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/submit/', AdminContractSubmitView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/revert/', AdminContractRevertView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/deploy/', AdminContractDeployView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/preview/', AdminContractPreviewView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/quiz-preview/', AdminContractQuizPreviewView.as_view()),
 
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
     # Phase E: sponsor account vetting
