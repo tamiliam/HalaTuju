@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract Go-Live Transition — Sprint T1 (backend) — 2026-07-19
+
+First of two sprints managing the switch from the grandfather arrangement to contract mode
+(plan `docs/plans/2026-07-19-contract-golive-transition-plan.md`). **Backend only; NOT deployed
+— the single deploy is Sprint T2.** Both flags stay OFF. On branch `feat/contract-golive-transition`.
+
+- **Added — contract-mode award email.** When `BURSARY_AGREEMENT_ENABLED`, the good-news award
+  email (`emails.send_award_offer_sign_email`, sent by `sponsorship.release_award_offer_emails`)
+  invites the student to review & sign the agreement (link `/scholarship/award`), carries NO
+  Vircle content, and raises NO Vircle setup task. **Flag-OFF path byte-identical** (Vircle-flavoured
+  award email + `raise_setup_task`) — regression-tested both ways.
+- **Added — Vircle bootstrap at execution.** `bursary.send_vircle_setup_at_execution` (on the
+  `distribute_executed_agreement` seam) sends the Vircle install email + raises the setup task once
+  the agreement executes. **Grandfather skip + idempotency:** a student who already has a Vircle
+  setup task (any status) or a non-blank `vircle_id` gets nothing.
+- **Changed — maintenance flip on the payment run.** `payments.complete` now flips an application
+  `active → maintenance` on its first released item (mirrors `disbursement._flip_to_maintenance`;
+  never from `awarded`; idempotent). Previously `complete` never touched status, stranding the run
+  cohort at `active`.
+- **Changed — offer-lapse rework.** The accept clock is now ARMED only when the sign-invitation
+  email is actually sent (`arm_sign_deadline`, `now + SIGN_ACCEPT_DEADLINE_DAYS` default 30),
+  cleared when the agreement binds; `fund_student` no longer arms at offer time. `lapse_expired_offers`
+  lapses only ARMED-and-expired offers and **REFUSES to lapse any application with a released
+  disbursement** (returns it in `flagged` for admin review) — it now returns
+  `{'lapsed': n, 'flagged': [ids]}`. The dead offer+14d semantics are gone. tech-debt (c) updated —
+  the lapse cron may only ever be scheduled against these semantics, after the cohort signs.
+- **Added — Sources model + witness assignment.** `PartnerOrganisation.show_in_apply` (active-source
+  flag, default False; migration seeds the live referral orgs True) + `ScholarshipApplication.witness_org`
+  override FK. Bursary witness resolution now reads override → referral → none. New `_AdminBase`-fenced
+  (super/org_admin) endpoints: Sources list+counts / create / PATCH, and per-application witness PATCH.
+- **Note — reused `PartnerOrganisation.phone`** (not a new `contact_phone` column, as the plan's
+  field name suggested): the field already exists and is edited by `AdminProfileView`; a second
+  column would drift against that editor. Migrations `courses/0065`, `scholarship/0104`.
+
 ## Contract Module — Sprint 5 (final): distribution + constants removal — 2026-07-18
 
 Fifth and final sprint of the contract module (plan

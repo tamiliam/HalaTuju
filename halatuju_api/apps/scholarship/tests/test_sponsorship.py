@@ -167,11 +167,24 @@ class TestSponsorshipService(TestCase):
         Donation.objects.create(sponsor=s, amount=Decimal('3000'))
         app = _fundable_app(self.cohort)
         sp = svc.fund_student(s, app)
+        # fund_student no longer arms the clock — arm it explicitly (as the sign-invitation would),
+        # then push it into the past.
         Sponsorship.objects.filter(id=sp.id).update(accept_deadline=timezone.now() - timezone.timedelta(days=1))
-        self.assertEqual(svc.lapse_expired_offers(), 1)
+        self.assertEqual(svc.lapse_expired_offers(), {'lapsed': 1, 'flagged': []})
         sp.refresh_from_db()
         self.assertEqual(sp.status, 'lapsed')
         self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))
+
+    def test_fund_student_does_not_arm_deadline(self):
+        # Offer-lapse rework: a fresh offer has a NULL accept_deadline (no clock until the
+        # sign-invitation arms it), so it is never a lapse candidate.
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        sp = svc.fund_student(s, _fundable_app(self.cohort))
+        self.assertIsNone(sp.accept_deadline)
+        self.assertEqual(svc.lapse_expired_offers(), {'lapsed': 0, 'flagged': []})
+        sp.refresh_from_db()
+        self.assertEqual(sp.status, 'offered')
 
     # ─── F8a: award-confirmed email + onboarding ─────────────────────────────
     def test_accept_emails_award_confirmed_without_sponsor_identity(self):

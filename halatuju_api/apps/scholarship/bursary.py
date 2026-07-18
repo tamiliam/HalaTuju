@@ -582,6 +582,19 @@ def _applicant_name(application):
     return getattr(getattr(application, 'profile', None), 'name', '') or ''
 
 
+def _resolve_witness_org(application):
+    """Witness-organisation resolution (go-live transition, 2026-07-19): the admin OVERRIDE on the
+    application (``witness_org``) wins, else the student's referring organisation
+    (``profile.referred_by_org``), else None — straight to the Foundation countersignature, no
+    witness step. Lets an org_admin assign a witness to a SOURCELESS student without inventing a
+    referral, and lets one be overridden when the private arrangement differs from the referrer."""
+    override = getattr(application, 'witness_org', None)
+    if override is not None:
+        return override
+    profile = getattr(application, 'profile', None)
+    return getattr(profile, 'referred_by_org', None)
+
+
 def notify_after_guarantor_signed(application):
     """Student + guarantor have signed → email the NEXT party in the chain. If a referring
     partner organisation with a contact email exists, ask them to witness (sequenced first);
@@ -589,8 +602,7 @@ def notify_after_guarantor_signed(application):
     must never stall the student). Best-effort: any failure is logged, never raised."""
     try:
         from . import emails
-        profile = getattr(application, 'profile', None)
-        org = getattr(profile, 'referred_by_org', None)
+        org = _resolve_witness_org(application)
         name = _applicant_name(application)
         link = _cockpit_link(application)
         if org and getattr(org, 'contact_email', ''):
@@ -623,14 +635,47 @@ def _student_app_link(application):
     return f'{frontend}/scholarship/application'
 
 
+def send_vircle_setup_at_execution(application):
+    """Contract-era Vircle bootstrap (go-live transition, 2026-07-19). Once the agreement is fully
+    executed, the student needs the Vircle eWallet the bursary is paid through — so send the Vircle
+    install email + raise the Action-Centre setup task. In contract mode the award email no longer
+    carries Vircle (it's the sign-flavoured variant), so this is where a NEW student is first told.
+
+    GRANDFATHER SKIP + idempotency in one guard: send NOTHING and raise NOTHING when the student
+    already has a Vircle setup task (any status — the pre-contract cohort was emailed the merged
+    award email, so they already carry one; and a task raised by a prior run of THIS function means
+    we already invited them) OR a non-blank ``vircle_id`` (they are already paying through Vircle).
+    A student who confirmed has BOTH. Best-effort: a failure never blocks execution, and — because
+    the task is raised ONLY on a successful send — a failed send simply retries on the next
+    execution-hook pass (the signing-reminder cron re-runs distribution)."""
+    from . import vircle
+    if vircle.setup_task(application) is not None:
+        return   # already invited (grandfather with a task, or a prior run) — idempotent no-op
+    if (getattr(application, 'vircle_id', '') or '').strip():
+        return   # already paying through Vircle (grandfather, confirmed) — nothing to set up
+    try:
+        from . import emails
+        name = _applicant_name(application)
+        lang = getattr(application, 'locale', 'en') or 'en'
+        to = (getattr(application, 'notify_email', '') or ''
+              or getattr(getattr(application, 'profile', None), 'contact_email', '') or '')
+        if emails.send_vircle_install_email(to, name, lang=lang):
+            vircle.raise_setup_task(application)
+    except Exception:
+        logger.exception('bursary: execution-time Vircle setup failed (app %s)',
+                         getattr(application, 'id', '?'))
+
+
 def distribute_executed_agreement(agreement):
     """Execution distribution (Sprint 5): once the agreement is fully executed (→ 'active'),
     email the signed PDF to the STUDENT (their "in effect" notice), the witnessing partner
-    contact and the org admins, and file the PDF in Google Drive. Best-effort and idempotent
-    via two stamps: ``executed_pdf_emailed_at`` (all the emails) and ``drive_file_url`` (Drive).
-    A re-run (the signing-reminder cron) only fills the missing half. A Drive/email/storage
-    failure NEVER blocks execution — the agreement is already executed when this runs. The
-    donor is never named. All external seams (storage/email/Drive) are mocked in tests."""
+    contact and the org admins, file the PDF in Google Drive, and (go-live transition) bootstrap
+    the student's Vircle eWallet. Best-effort and idempotent via two stamps:
+    ``executed_pdf_emailed_at`` (all the emails) and ``drive_file_url`` (Drive), plus the Vircle
+    setup-task guard. A re-run (the signing-reminder cron) only fills the missing half. A
+    Drive/email/storage failure NEVER blocks execution — the agreement is already executed when
+    this runs. The donor is never named. All external seams (storage/email/Drive) are mocked in
+    tests."""
     application = agreement.application
     # Fetch the signed PDF once (best-effort). Without it we still send the plain student notice.
     pdf_bytes = None
@@ -657,8 +702,9 @@ def distribute_executed_agreement(agreement):
             student_ok = emails.send_agreement_executed_email(
                 student_to, name, programme, lang=lang,
                 link=_student_app_link(application), pdf=pdf_bytes)
-            # Witnessing partner contact (the recorded witness org, else the referring org).
-            org = agreement.witness_org or getattr(profile, 'referred_by_org', None)
+            # Witnessing partner contact: the recorded witness org (who actually attested), else
+            # the resolved witness (override -> referral -> none) for the copy.
+            org = agreement.witness_org or _resolve_witness_org(application)
             witness_email = getattr(org, 'contact_email', '') if org else ''
             cockpit = _cockpit_link(application)
             if witness_email:
@@ -688,6 +734,11 @@ def distribute_executed_agreement(agreement):
             logger.exception('bursary: executed Drive upload failed (app %s)',
                              getattr(application, 'id', '?'))
 
+    # (C) Vircle eWallet bootstrap (go-live transition) — idempotent + grandfather-skipping.
+    # Rides the same execution seam so the signing-reminder cron's distribution retry re-attempts
+    # a failed Vircle send too.
+    send_vircle_setup_at_execution(application)
+
 
 def send_signing_reminders(now=None):
     """SLA cron: nudge the party whose signature is still pending on a binding-but-not-yet-
@@ -705,13 +756,13 @@ def send_signing_reminders(now=None):
     interval = timedelta(days=getattr(settings, 'BURSARY_SIGN_REMINDER_DAYS', 3))
     qs = (BursaryAgreement.objects
           .filter(guarantor_signed_at__isnull=False, foundation_signed_at__isnull=True)
-          .select_related('application', 'application__profile', 'witness_org'))
+          .select_related('application', 'application__profile', 'application__witness_org',
+                          'witness_org'))
     for ag in qs:
         app = ag.application
         if getattr(app, 'status', '') != 'awarded':
             continue   # only a still-pending (not declined/active) agreement is nudged
-        profile = getattr(app, 'profile', None)
-        org = getattr(profile, 'referred_by_org', None)
+        org = _resolve_witness_org(app)
         name = _applicant_name(app)
         link = _cockpit_link(app)
         witness_pending = bool(org and getattr(org, 'contact_email', '')

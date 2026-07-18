@@ -425,9 +425,17 @@ def complete(run):
     ``scheduled_for=payment_date``) and decrement the application's ``payment_credit`` by
     ``credit_applied`` (never below 0). Then best-effort write the CSV + send the (stub)
     email — a failure there never breaks the completed run (the DB is the record). Accepts
-    'awarded'/'active'/'maintenance' and NEVER flips application status (D3)."""
+    'awarded'/'active'/'maintenance'.
+
+    Maintenance flip (go-live transition, 2026-07-19): a released item for an application at
+    'active' flips it to 'maintenance' (the recurring funded loop) — the FIRST payment only,
+    never from 'awarded'. This mirrors ``disbursement._flip_to_maintenance`` (the same effect the
+    ad-hoc release path already had); the payment RUN is the real cohort's first payout, so it must
+    carry the same flip. Historically ``complete`` never touched status; that gap left the whole
+    run cohort stuck at 'active' after their first run."""
     from . import sheets
     from . import emails
+    from .disbursement import _flip_to_maintenance
     now = timezone.now()
     actioned_by = (run.org_admin_signed_email or run.created_by or '')[:254]
 
@@ -445,6 +453,9 @@ def complete(run):
             )
             item.disbursement = disb
             item.save(update_fields=['disbursement', 'updated_at'])
+            # First real payout → enter the recurring loop (active → maintenance). Idempotent
+            # and a no-op from 'awarded'/'maintenance'/'closed' (see _flip_to_maintenance).
+            _flip_to_maintenance(app)
         applied = item.credit_applied or _ZERO
         if applied > 0:
             new_credit = (app.payment_credit or _ZERO) - applied

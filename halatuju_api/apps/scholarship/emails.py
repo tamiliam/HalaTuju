@@ -646,6 +646,96 @@ def send_award_offer_email(to_email, applicant_name, lang='en', guardian_note=Fa
     )
 
 
+# ── Award email, CONTRACT-MODE variant (BURSARY_AGREEMENT_ENABLED) ────────────
+# The go-live transition (2026-07-19) splits the award email in two. When the bursary
+# agreement flag is ON, the good-news email's next step is to REVIEW AND SIGN the
+# agreement — NOT to set up Vircle. Vircle setup now follows automatically once the
+# agreement is fully executed (bursary.distribute_executed_agreement). So this variant
+# carries NO Vircle content and NO guide attachment, and its caller raises NO setup task.
+# Still: NO amount, NO sponsor identity. First-draft trilingual copy — owner to review.
+AWARD_OFFER_SIGN_SUBJECTS = {
+    'en': 'Good news about your BrightPath Bursary application 🎓',
+    'ms': 'Berita baik tentang permohonan Biasiswa BrightPath anda 🎓',
+    'ta': 'உங்கள் BrightPath Bursary விண்ணப்பம் பற்றிய நல்ல செய்தி 🎓',
+}
+AWARD_OFFER_SIGN_BODIES = {
+    'en': (
+        "Dear {name},\n\n"
+        "We're delighted to share some good news. Your application to the BrightPath Bursary "
+        "Programme has been successful — you have been selected to receive financial support for "
+        "your studies.\n\n"
+        "The next step is to review and sign your bursary agreement. Please log in and open your "
+        "application page, where you'll first go through a short, friendly check to make sure the "
+        "terms are clear, and then sign the agreement together with your parent or guardian — all "
+        "on the same device.\n{link}\n\n"
+        "Please have your parent or guardian with you when you sign: they sign as your guarantor, "
+        "and we'll send a one-time PIN to their phone to confirm it's them.\n\n"
+        "Once everything is signed, we'll be in touch with the simple steps to start receiving your "
+        "monthly support.\n\n"
+        "If you have any questions, reply to this email or contact us at {support}.\n\n"
+        "Warm congratulations,\nThe BrightPath Bursary Team"
+    ),
+    'ms': (
+        "Salam {name},\n\n"
+        "Kami gembira berkongsi berita baik. Permohonan anda ke Program Biasiswa BrightPath telah "
+        "berjaya — anda telah dipilih untuk menerima bantuan kewangan bagi pengajian anda.\n\n"
+        "Langkah seterusnya ialah menyemak dan menandatangani perjanjian biasiswa anda. Sila log "
+        "masuk dan buka halaman permohonan anda. Anda akan melalui semakan ringkas dan mesra "
+        "dahulu untuk memastikan terma jelas, kemudian menandatangani perjanjian bersama ibu bapa "
+        "atau penjaga anda — semuanya pada peranti yang sama.\n{link}\n\n"
+        "Sila pastikan ibu bapa atau penjaga anda bersama anda semasa menandatangani: mereka "
+        "menandatangani sebagai penjamin anda, dan kami akan menghantar PIN sekali guna ke telefon "
+        "mereka untuk mengesahkannya.\n\n"
+        "Setelah semuanya ditandatangani, kami akan menghubungi anda dengan langkah mudah untuk "
+        "mula menerima bantuan bulanan anda.\n\n"
+        "Jika ada sebarang pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
+        "Tahniah,\nPasukan Biasiswa BrightPath"
+    ),
+    'ta': (
+        "அன்புள்ள {name},\n\n"
+        "ஒரு நல்ல செய்தியைப் பகிர்வதில் மகிழ்ச்சி அடைகிறோம். BrightPath Bursary திட்டத்திற்கான உங்கள் "
+        "விண்ணப்பம் வெற்றிபெற்றுள்ளது — உங்கள் படிப்பிற்கான நிதியுதவியைப் பெற நீங்கள் தேர்ந்தெடுக்கப்பட்டுள்ளீர்கள்.\n\n"
+        "அடுத்த படி, உங்கள் உதவித்தொகை ஒப்பந்தத்தை மதிப்பாய்வு செய்து கையொப்பமிடுவதாகும். உள்நுழைந்து உங்கள் "
+        "விண்ணப்பப் பக்கத்தைத் திறக்கவும். முதலில் விதிமுறைகள் தெளிவாக இருப்பதை உறுதிசெய்ய ஒரு சிறிய, நட்பான "
+        "சரிபார்ப்பின் வழியாகச் செல்வீர்கள், பின்னர் உங்கள் பெற்றோர் அல்லது பாதுகாவலருடன் சேர்ந்து — ஒரே சாதனத்தில் — "
+        "ஒப்பந்தத்தில் கையொப்பமிடுவீர்கள்.\n{link}\n\n"
+        "கையொப்பமிடும்போது உங்கள் பெற்றோர் அல்லது பாதுகாவலர் உங்களுடன் இருப்பதை உறுதிசெய்யவும்: அவர்கள் உங்கள் "
+        "பிணையாளராகக் கையொப்பமிடுகிறார்கள், அவர்கள்தான் என்பதை உறுதிப்படுத்த அவர்களின் தொலைபேசிக்கு ஒரு முறை "
+        "PIN அனுப்புவோம்.\n\n"
+        "எல்லாம் கையொப்பமிடப்பட்ட பிறகு, உங்கள் மாதாந்திர உதவியைப் பெறத் தொடங்குவதற்கான எளிய படிகளுடன் உங்களைத் "
+        "தொடர்புகொள்வோம்.\n\n"
+        "ஏதேனும் கேள்விகள் இருந்தால், இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் எங்களைத் "
+        "தொடர்புகொள்ளவும்.\n\n"
+        "இதயப்பூர்வ வாழ்த்துகள்,\nBrightPath Bursary குழு"
+    ),
+}
+
+
+def send_award_offer_sign_email(to_email, applicant_name, lang='en'):
+    """Contract-mode (BURSARY_AGREEMENT_ENABLED) award email: the same good news, but the
+    next step is to REVIEW AND SIGN the bursary agreement — NOT Vircle setup (which now
+    follows at agreement execution). Points to /scholarship/award. NO amount, NO sponsor
+    identity, NO Vircle content or guide. Best-effort; from info@, reply-to help@.
+
+    The CALLER (release_award_offer_emails, flag-ON branch) does NOT raise a Vircle setup
+    task on this path — the task is raised at execution instead."""
+    if not to_email:
+        return False
+    lang = normalise_lang(lang)
+    name = applicant_name or _DEFAULT_NAME[lang]
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/scholarship/award'
+    body = AWARD_OFFER_SIGN_BODIES[lang].format(name=name, link=link, support=SUPPORT_EMAIL)
+    html = _html_email_shell('<p style="margin:0 0 14px;">'
+                             + body.replace('\n\n', '</p><p style="margin:0 0 14px;">').replace('\n', '<br>')
+                             + '</p>')
+    return _send_html(
+        to_email, AWARD_OFFER_SIGN_SUBJECTS[lang], body, html,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+        reply_to=[SUPPORT_EMAIL],
+    )
+
+
 # ── Vircle eWallet setup (VIRCLE_SETUP_ENABLED) ───────────────────────────────
 # The follow-up to the award email (which said "nothing to do right now — look out for our
 # next message"). This IS that message: the bursary is paid through the Vircle eWallet, so

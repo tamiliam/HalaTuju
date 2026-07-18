@@ -120,6 +120,9 @@ from .views_admin import (
     AdminContractPreviewView,
     AdminContractQuizPreviewView,
     AdminContractImportDocxView,
+    AdminSourcesView,
+    AdminSourceDetailView,
+    AdminApplicationWitnessView,
 )
 
 urlpatterns = [
@@ -223,6 +226,10 @@ urlpatterns = [
     path('admin/sponsors/<int:pk>/review/', AdminSponsorReviewView.as_view()),
     # Phase E3: match oversight + set the award amount
     path('admin/sponsorships/', AdminSponsorshipListView.as_view()),
+    # Sources (referral organisations) + per-application witness assignment (go-live transition)
+    path('admin/scholarship/sources/', AdminSourcesView.as_view()),
+    path('admin/scholarship/sources/<int:pk>/', AdminSourceDetailView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/witness/', AdminApplicationWitnessView.as_view()),
     path('admin/scholarship/applications/<int:pk>/award-amount/', AdminSetAwardAmountView.as_view()),
     # Post-award S4: disbursement/tranche ledger (schedule + release/withhold/return)
     path('admin/scholarship/applications/<int:pk>/disbursements/',

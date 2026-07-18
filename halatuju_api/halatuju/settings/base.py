@@ -397,6 +397,13 @@ FOUNDATION_NOTIFY_EMAIL = os.environ.get('FOUNDATION_NOTIFY_EMAIL', '')
 # application IDs to send to (the cron job 'send-sign-invitation-emails' reads this).
 SIGN_INVITE_APP_IDS = os.environ.get('SIGN_INVITE_APP_IDS', '')
 
+# Contract-era offer lapse (go-live transition, 2026-07-19). Under contract mode the
+# accept clock ARMS when the sign-invitation email is actually sent (NOT at offer time),
+# and is FULFILLED when the agreement binds (student + guarantor sign). This is how long a
+# student then has to sign before the offer may lapse. The old offer+14d semantics
+# (ACCEPT_DEADLINE_DAYS in sponsorship.py) are dead once the sign-invitation drives the clock.
+SIGN_ACCEPT_DEADLINE_DAYS = int(os.environ.get('SIGN_ACCEPT_DEADLINE_DAYS', '30'))
+
 # Signing-chain SLA: how many days a pending witness/countersignature may sit before the
 # reminder cron ('bursary-signing-reminders') nudges the responsible party again.
 BURSARY_SIGN_REMINDER_DAYS = int(os.environ.get('BURSARY_SIGN_REMINDER_DAYS', '3'))

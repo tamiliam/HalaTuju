@@ -522,24 +522,35 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-18)
+## Next Sprint (as of 2026-07-19)
 
-**✅ SHIPPED (code — owner gates the deploy) 2026-07-18 — Cockpit pre-U stream in Malay + label
-parity guard.** NO migration; web + one backend test; push = deploy (HELD for owner). Owner
-live-review follow-up (commits `258bac51` / `ed7d6bdf`; retro
-`docs/retrospective-2026-07-18-malay-stream-label-parity-guard.md`; decision ×1; lesson ×1).
-- The cockpit's chosen-programme line shows the pre-U stream/track in **Malay only** ("· Sains
-  Sosial") via `preUTrackMalay()`, not the apply form's bilingual "Social Science (Sains Sosial)".
-  The apply form is unchanged. `preUTrackMalay()` reads the Malay values from the SAME `ms.json`
-  the apply form uses (`scholarship.apply.plan.stream`/`.track`) — one FE source, no hardcoded copy.
-- **`TestTrackLabelParity`** — the pre-U track labels are copied across two runtimes that can't
-  share a file at runtime (backend `card_display._TRACK_LABEL` for the sponsor card/emails; FE
-  `ms.json` for apply form/cockpit). The test reads the FE JSON and fails the build if they drift
-  (owner-approved "keep two copies + enforce equality"; decisions.md rates it vs the heavier
-  unification options). Skips in an api-only checkout. CI-only.
-- **3974 combined pytest (2720 scholarship) + 589 jest.** **▶ AT DEPLOY:** push (web rebuild; the
-  guard is CI-only). NB the unpushed queue also holds another agent's TD-161 pathway-type-switch
-  work — a push carries it too; coordinate before pushing.
+**▶ NEXT: Contract Go-Live Transition — Sprint T2 (Sources UI + witness dropdown + deploy).**
+Plan `docs/plans/2026-07-19-contract-golive-transition-plan.md`. **T1 (backend) is DONE on branch
+`feat/contract-golive-transition` — NOT merged, NOT pushed, NOT deployed.** The single api+web
+deploy is T2. Both flags (`AWARD_ACCEPTANCE_ENABLED`, `BURSARY_AGREEMENT_ENABLED`) stay OFF; the
+flip is the owner's runbook after T2 deploys.
+
+**T1 shipped (branch only):** contract-mode award email (sign-flavoured, no Vircle — flag-OFF path
+byte-identical); Vircle bootstrap moved to agreement execution (grandfather-skips); `payments.complete`
+flips `active → maintenance` on first payout; offer-lapse rework (clock arms at sign-invitation send
+via `SIGN_ACCEPT_DEADLINE_DAYS`=30, cleared at bind, paid apps flagged never lapsed — `lapse_expired_offers`
+now returns `{'lapsed','flagged'}`); `PartnerOrganisation.show_in_apply` + `ScholarshipApplication.witness_org`
+override + witness resolution (override → referral → none) + `_AdminBase` Sources/witness admin endpoints.
+Migrations `courses/0065`, `scholarship/0104` (NOT applied to prod — migrate-first happens at T2 deploy).
+Retro `docs/retrospective-2026-07-19-contract-golive-t1.md`; decisions ×3; lesson ×1.
+
+**T2 gotchas / do-first:**
+- **Reused `PartnerOrganisation.phone`** (not a new `contact_phone`) — the T2 FE (`admin-api.ts`,
+  Sources page, `admin.sources.*` i18n) must read/write `phone`. See decisions.md.
+- **Migrate-first at T2 deploy:** apply `courses/0065` (+ its RunPython seed of live referral orgs) and
+  `scholarship/0104` to prod via Supabase MCP BEFORE the push (hand-write the Postgres DDL; `sqlmigrate`
+  renders SQLite). `0104` adds `witness_org_id` FK on `scholarship_applications`; `0065` adds
+  `show_in_apply` bool on `partner_organisations`.
+- **Stitch first** for the Sources list/edit screen (owner approval before page code).
+- **Concurrent agent** was editing the sponsor funding-bar/pool in this SAME tree uncommitted — stage
+  explicit paths, never `git add -A`; coordinate before merging to main.
+- **Tamil first-draft strings** in `emails.AWARD_OFFER_SIGN_BODIES` await owner review (as does the
+  rest of the contract Tamil).
 - **▶ NOTED for the other agent — PISMP false Pathway clash.** 6 records (#43/#80/#107/#110/#115/
   #127): the offer's programme field is the generic degree ("Program Ijazah Sarjana Muda Perguruan
   (PISMP)") while the student declared the Bidang, and the offer `stream` is blank, so

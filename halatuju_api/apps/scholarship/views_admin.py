@@ -981,6 +981,157 @@ class AdminSponsorshipListView(_AdminBase):
         return Response({'sponsorships': [_sponsorship_dict(s) for s in qs]})
 
 
+# ── Sources (referral organisations) + witness assignment (go-live transition) ────
+# The Sources module is the first UI that edits organisation records as a registry (name,
+# contact person/email/phone, active-in-apply, student count) — reusing the SAME
+# PartnerOrganisation.phone/contact_* fields the existing AdminProfileView self-edit writes
+# (no second contact_phone column, which would drift against that editor). Single-tenant
+# today, so source rows are shared and NOT org-fenced (multi-tenant fencing of shared source
+# rows is deliberately out of scope — see the plan's Out of scope / future).
+
+def _source_dict(org, student_count=None):
+    return {
+        'id': org.id,
+        'code': org.code,
+        'name': org.name,
+        'contact_person': org.contact_person or '',
+        'contact_email': org.contact_email or '',
+        'phone': org.phone or '',
+        'show_in_apply': bool(org.show_in_apply),
+        'is_active': bool(org.is_active),
+        'student_count': student_count,
+    }
+
+
+def _source_student_counts():
+    """{org_id: number of students who name it as referred_by_org}."""
+    from apps.courses.models import StudentProfile
+    from django.db.models import Count
+    return {row['referred_by_org_id']: row['n']
+            for row in (StudentProfile.objects.filter(referred_by_org__isnull=False)
+                        .values('referred_by_org_id').annotate(n=Count('pk')))}
+
+
+class _SourcesBase(_AdminBase):
+    """Gate for the Sources + witness-assignment endpoints: super or org_admin only."""
+    def _sources_admin(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not (self.has_role(admin, 'super') or admin.role == 'org_admin'):
+            return None, self._deny_role()
+        return admin, None
+
+
+class AdminSourcesView(_SourcesBase):
+    """GET  .../admin/scholarship/sources/ — every referral organisation + its student count.
+    POST .../admin/scholarship/sources/ {code, name, contact_person?, contact_email?, phone?,
+         show_in_apply?} — create a new source organisation."""
+    def get(self, request):
+        admin, err = self._sources_admin(request)
+        if err:
+            return err
+        from apps.courses.models import PartnerOrganisation
+        counts = _source_student_counts()
+        orgs = PartnerOrganisation.objects.order_by('name')
+        return Response({'sources': [_source_dict(o, counts.get(o.id, 0)) for o in orgs]})
+
+    def post(self, request):
+        admin, err = self._sources_admin(request)
+        if err:
+            return err
+        from apps.courses.models import PartnerOrganisation
+        code = (request.data.get('code') or '').strip().lower()
+        name = (request.data.get('name') or '').strip()
+        if not code or not name:
+            return Response({'error': 'code_and_name_required', 'code': 'code_and_name_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if PartnerOrganisation.objects.filter(code=code).exists():
+            return Response({'error': 'code_taken', 'code': 'code_taken'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        org = PartnerOrganisation.objects.create(
+            code=code, name=name,
+            contact_person=(request.data.get('contact_person') or '').strip()[:200],
+            contact_email=(request.data.get('contact_email') or '').strip()[:254],
+            phone=(request.data.get('phone') or '').strip()[:30],
+            show_in_apply=bool(request.data.get('show_in_apply', False)),
+        )
+        return Response(_source_dict(org, 0), status=status.HTTP_201_CREATED)
+
+
+class AdminSourceDetailView(_SourcesBase):
+    """PATCH .../admin/scholarship/sources/<pk>/ — edit a source's name, contact details,
+    active-in-apply flag, or is_active. Whitelisted fields only; the code slug is immutable."""
+    def patch(self, request, pk):
+        admin, err = self._sources_admin(request)
+        if err:
+            return err
+        from apps.courses.models import PartnerOrganisation
+        org = PartnerOrganisation.objects.filter(pk=pk).first()
+        if org is None:
+            return Response({'error': 'not_found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+        fields = []
+        if 'name' in request.data:
+            org.name = (request.data.get('name') or '').strip()[:200]
+            fields.append('name')
+        if 'contact_person' in request.data:
+            org.contact_person = (request.data.get('contact_person') or '').strip()[:200]
+            fields.append('contact_person')
+        if 'contact_email' in request.data:
+            org.contact_email = (request.data.get('contact_email') or '').strip()[:254]
+            fields.append('contact_email')
+        if 'phone' in request.data:
+            org.phone = (request.data.get('phone') or '').strip()[:30]
+            fields.append('phone')
+        if 'show_in_apply' in request.data:
+            org.show_in_apply = bool(request.data.get('show_in_apply'))
+            fields.append('show_in_apply')
+        if 'is_active' in request.data:
+            org.is_active = bool(request.data.get('is_active'))
+            fields.append('is_active')
+        if fields:
+            org.save(update_fields=fields)
+        return Response(_source_dict(org, _source_student_counts().get(org.id, 0)))
+
+
+class AdminApplicationWitnessView(_SourcesBase):
+    """PATCH .../admin/scholarship/applications/<pk>/witness/ {witness_org: <code|id|null>} —
+    assign (or clear) the witness-organisation OVERRIDE for a (typically sourceless) application.
+    NULL/'' clears the override (bursary witness resolution then falls back to the referring org,
+    else straight to the Foundation countersignature)."""
+    def patch(self, request, pk):
+        admin, err = self._sources_admin(request)
+        if err:
+            return err
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'not_found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+        if 'witness_org' not in request.data:
+            return Response({'error': 'witness_org_required', 'code': 'witness_org_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        raw = request.data.get('witness_org')
+        if raw in (None, '', 'none'):
+            app.witness_org = None
+        else:
+            from apps.courses.models import PartnerOrganisation
+            key = str(raw).strip()
+            org = PartnerOrganisation.objects.filter(code=key).first()
+            if org is None and key.isdigit():
+                org = PartnerOrganisation.objects.filter(pk=int(key)).first()
+            if org is None:
+                return Response({'error': 'unknown_organisation', 'code': 'unknown_organisation'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            app.witness_org = org
+        app.save(update_fields=['witness_org'])
+        return Response({
+            'id': app.id,
+            'witness_org': app.witness_org.code if app.witness_org else None,
+            'witness_org_name': app.witness_org.name if app.witness_org else None,
+        })
+
+
 class AdminDisbursementScheduleView(_AdminBase):
     """Post-award S4: POST .../applications/<pk>/disbursements/ {amount, sequence?, label?,
     scheduled_for?} — schedule one tranche against a funded application. Reviewer-gated.

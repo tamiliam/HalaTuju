@@ -412,8 +412,17 @@ class PartnerOrganisation(models.Model):
     name = models.CharField(max_length=200)
     contact_email = models.EmailField(blank=True)
     contact_person = models.CharField(max_length=200, blank=True, default='')
+    # The contact person's phone (paired with contact_person/contact_email above; the
+    # Sources module + AdminProfileView both edit this SAME field — deliberately not a
+    # second `contact_phone` column, which would drift against the existing editor).
     phone = models.CharField(max_length=30, blank=True, default='')
     is_active = models.BooleanField(default=True)
+    # Active-source flag (go-live transition, 2026-07-19): when a future apply form reopens
+    # it will draw its "who referred you" list from the organisations flagged here (plus
+    # social-media/other chips for unaffiliated students). Default False; the 6 live referral
+    # orgs are seeded True by migration. Referral attribution still uses `referred_by_org`
+    # regardless of this flag — this only governs apply-form visibility.
+    show_in_apply = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # ── Tenant identity & branding (platform Sprint 1; '' = use platform default) ──

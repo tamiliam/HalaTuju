@@ -18,6 +18,7 @@ from django.core.management.base import BaseCommand
 
 from apps.scholarship.emails import send_sign_invitation_email
 from apps.scholarship.models import ScholarshipApplication, Sponsorship
+from apps.scholarship.sponsorship import arm_sign_deadline
 
 
 def _ids(raw):
@@ -53,6 +54,13 @@ class Command(BaseCommand):
             name = getattr(app.profile, 'name', '') if app.profile else ''
             ok = send_sign_invitation_email(
                 to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en')
-            (sent if ok else failed).append(aid if ok else (aid, 'send_failed'))
+            if ok:
+                # Offer-lapse rework: sending the invitation ARMS the student's accept clock
+                # (now + SIGN_ACCEPT_DEADLINE_DAYS). Only on a successful send — an unsent
+                # invitation must never start a clock the student can't see.
+                arm_sign_deadline(app)
+                sent.append(aid)
+            else:
+                failed.append((aid, 'send_failed'))
         self.stdout.write(
             f'Sign-invitation emails. sent={sent} skipped_no_award={skipped_no_award} failed={failed}')

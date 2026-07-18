@@ -8,6 +8,7 @@ deadline → 'active', app → 'sponsored', the student leaves the pool. Not acc
 in time (or cancelled) → the allocation stops holding and the amount is back in the
 sponsor's balance to redirect — never a bank refund. Tranches/disbursement = E3b.
 """
+import logging
 from decimal import Decimal
 
 from django.db import transaction
@@ -15,13 +16,14 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from . import pool
-from .emails import send_award_confirmed_email, send_award_offer_email
+
+logger = logging.getLogger(__name__)
+from .emails import (send_award_confirmed_email, send_award_offer_email,
+                     send_award_offer_sign_email)
 from .models import Sponsorship, SponsorProfile
 from .services import is_minor, record_consent
 from .vircle import raise_setup_task
 
-# Days a student/guardian has to accept an award before it lapses.
-ACCEPT_DEADLINE_DAYS = 14
 SPONSORSHIP_CONSENT_TYPE = 'consent_to_sponsorship'
 
 
@@ -125,7 +127,13 @@ def is_fundable(application):
 @transaction.atomic
 def fund_student(sponsor, application):
     """Sponsor funds a student IN FULL for the award amount. Creates an 'offered'
-    Sponsorship and issues the award (deadline = now + ACCEPT_DEADLINE_DAYS).
+    Sponsorship and issues the award.
+
+    Offer-lapse rework (go-live transition, 2026-07-19): NO accept_deadline is armed here.
+    Under contract mode the lapse clock arms only when the sign-invitation email is actually
+    sent (``arm_sign_deadline`` / the ``send_sign_invitation_emails`` command) and is cleared
+    when the agreement binds — so a fresh offer has a NULL deadline and can never lapse until a
+    student has actually been invited to sign. The old offer+14d semantics are dead.
     Raises SponsorshipError on a bad state."""
     if not is_fundable(application):
         raise SponsorshipError('not_fundable')
@@ -134,7 +142,6 @@ def fund_student(sponsor, application):
         raise SponsorshipError('insufficient_balance')
     sp = Sponsorship.objects.create(
         sponsor=sponsor, application=application, amount=amount, status='offered',
-        accept_deadline=timezone.now() + timezone.timedelta(days=ACCEPT_DEADLINE_DAYS),
     )
     # Post-award lifecycle: a funder has committed → the application enters 'awarded' (the offer is
     # out + the tri-partite agreement signing begins) and leaves the discovery pool.
@@ -177,6 +184,12 @@ def release_award_offer_emails(now=None):
     now = now or timezone.now()
     hours = getattr(_settings, 'AWARD_OFFER_EMAIL_COOLOFF_HOURS', 24)
     cutoff = now - timezone.timedelta(hours=hours)
+    # Contract mode (go-live transition, 2026-07-19): when the bursary agreement flag is ON the
+    # good-news email invites the student to REVIEW & SIGN the agreement, carries NO Vircle content,
+    # and raises NO Vircle setup task here — the Vircle install email + task now fire automatically
+    # at agreement EXECUTION (bursary.distribute_executed_agreement). When the flag is OFF the path
+    # below is byte-identical to before (Vircle-flavoured award email + raise_setup_task).
+    bursary_on = getattr(_settings, 'BURSARY_AGREEMENT_ENABLED', False)
     qs = (Sponsorship.objects
           .filter(status__in=Sponsorship.HOLDING, offer_emailed_at__isnull=True, offered_at__lte=cutoff)
           .select_related('application', 'application__profile'))
@@ -184,6 +197,16 @@ def release_award_offer_emails(now=None):
     for sp in qs:
         app = sp.application
         name = getattr(app.profile, 'name', '') if app.profile else ''
+        if bursary_on:
+            ok = send_award_offer_sign_email(
+                to_email=app.notify_email, applicant_name=name,
+                lang=getattr(app, 'locale', '') or 'en')
+            if not ok:
+                continue   # stamp only on success (see below); retry next run
+            sp.offer_emailed_at = now
+            sp.save(update_fields=['offer_emailed_at', 'updated_at'])
+            sent += 1
+            continue   # NO Vircle task on the contract-mode path — it's raised at execution
         from .vircle import can_register
         ok = send_award_offer_email(
             to_email=app.notify_email, applicant_name=name, lang=getattr(app, 'locale', '') or 'en',
@@ -206,6 +229,23 @@ def release_award_offer_emails(now=None):
 def current_offer(application):
     """The single open ('offered') award for this application, or None."""
     return application.sponsorships.filter(status='offered').order_by('-offered_at').first()
+
+
+def arm_sign_deadline(application, *, now=None):
+    """Offer-lapse rework (go-live transition): ARM the accept clock on this application's open
+    offer — ``accept_deadline = now + SIGN_ACCEPT_DEADLINE_DAYS``. Called when the sign-invitation
+    email is actually sent (see the ``send_sign_invitation_emails`` command), so the student then
+    has that window to sign before the offer may lapse. No-op (returns None) if there is no open
+    offer. Re-arming an already-armed offer simply resets the window (a resend extends the clock)."""
+    from django.conf import settings as _settings
+    sp = current_offer(application)
+    if sp is None:
+        return None
+    now = now or timezone.now()
+    days = getattr(_settings, 'SIGN_ACCEPT_DEADLINE_DAYS', 30)
+    sp.accept_deadline = now + timezone.timedelta(days=days)
+    sp.save(update_fields=['accept_deadline', 'updated_at'])
+    return sp.accept_deadline
 
 
 @transaction.atomic
@@ -312,7 +352,12 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
     sponsorship.status = 'active'
     sponsorship.consent = consent
     sponsorship.decided_at = timezone.now()
-    sponsorship.save(update_fields=['status', 'consent', 'decided_at', 'updated_at'])
+    # Offer-lapse rework: the agreement has bound (student + guarantor signed above, flag-ON) —
+    # the accept clock is FULFILLED, so clear any armed deadline. (The status also leaves 'offered'
+    # here, which alone takes it out of the lapse query; clearing the deadline keeps the record
+    # honest and belt-and-braces.)
+    sponsorship.accept_deadline = None
+    sponsorship.save(update_fields=['status', 'consent', 'decided_at', 'accept_deadline', 'updated_at'])
 
     # Flag-ON (bursary signing) path: the app stays 'awarded' until the Foundation counter-signs
     # (the binding, last signature) — bursary.countersign_foundation flips 'awarded' → 'active'.
@@ -442,15 +487,39 @@ def reinstate_lapsed_sponsorship(application, *, since):
 
 
 def lapse_expired_offers():
-    """Mark every 'offered' award past its accept_deadline as 'lapsed' (the amount
-    returns to the sponsor's balance). Intended for a scheduled job; returns the
-    count lapsed."""
+    """Lapse every 'offered' award whose ARMED accept_deadline has passed (the amount returns to
+    the sponsor's balance; the application reverts to the pool). Intended for a scheduled job.
+
+    Offer-lapse rework (go-live transition, 2026-07-19, owner decision 3):
+      • ARMED-ONLY. A NULL ``accept_deadline`` means the sign-invitation clock was never started,
+        so the offer is NOT a lapse candidate. (Django's ``accept_deadline__lt=now`` already
+        excludes NULLs; ``isnull=False`` makes the intent explicit.)
+      • PAID APPS NEVER AUTO-LAPSE. An application with any released disbursement (e.g. the
+        grandfather cohort, already being paid while their in-app acceptance is back-filled) is
+        REFUSED — it is logged and returned in ``flagged`` for an admin to handle by hand, never
+        silently lapsed out from under real money.
+
+    Returns ``{'lapsed': <count>, 'flagged': [<application_id>, ...]}``. (The cron that calls this
+    is still UNSCHEDULED — it may only ever be wired against THESE semantics; see
+    docs/technical-debt.md (c).)"""
     now = timezone.now()
-    expired = list(Sponsorship.objects.filter(status='offered', accept_deadline__lt=now)
+    expired = list(Sponsorship.objects
+                   .filter(status='offered', accept_deadline__isnull=False, accept_deadline__lt=now)
                    .select_related('application'))
+    lapsed = 0
+    flagged = []
     for sp in expired:
+        app = sp.application
+        if app.disbursements.filter(status='released').exists():
+            # Released money against this application → never auto-lapse. Flag for admin review.
+            flagged.append(app.id)
+            logger.warning(
+                'lapse_expired_offers: REFUSED to lapse app %s (sponsorship %s) — it has released '
+                'disbursements. Flagged for admin review.', app.id, sp.id)
+            continue
         sp.status = 'lapsed'
         sp.decided_at = now
         sp.save(update_fields=['status', 'decided_at', 'updated_at'])
-        _revert_to_pool(sp.application)   # offer expired unaccepted → back in the pool
-    return len(expired)
+        _revert_to_pool(app)   # offer expired unaccepted → back in the pool
+        lapsed += 1
+    return {'lapsed': lapsed, 'flagged': flagged}

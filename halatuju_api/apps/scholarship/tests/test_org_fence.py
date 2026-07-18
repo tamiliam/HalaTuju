@@ -205,6 +205,13 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminContractRevertView': 'contract-org-fenced', 'AdminContractDeployView': 'contract-org-fenced+super-deploy',
         'AdminContractPreviewView': 'contract-org-fenced', 'AdminContractQuizPreviewView': 'contract-org-fenced',
         'AdminContractImportDocxView': 'contract-org-fenced',
+        # Sources module (go-live transition, T1) — super/org_admin role gate via _SourcesBase.
+        # Source rows (PartnerOrganisation) are a SHARED single-tenant registry, deliberately NOT
+        # org-fenced (multi-tenant fencing of shared source rows is out of scope — see the plan).
+        # The witness endpoint reaches an application via _get_application (not a raw query).
+        '_SourcesBase': 'base — super/org_admin gate for sources + witness assignment',
+        'AdminSourcesView': 'shared-registry-single-tenant', 'AdminSourceDetailView': 'shared-registry-single-tenant',
+        'AdminApplicationWitnessView': 'super/org_admin — witness assignment (single-tenant)',
         # gate-fenced (via _scoped_application / _require_app_write / _require_qc)
         'AdminApplicationDetailView': 'gate', 'AdminVerdictSummaryView': 'gate',
         'AdminVerifyAcceptView': 'gate', 'AdminRejectView': 'gate',

@@ -364,6 +364,15 @@ class ScholarshipApplication(models.Model):
         'ContractTemplate', null=True, blank=True,
         on_delete=models.SET_NULL, related_name='+',
     )
+    # Witness-organisation OVERRIDE (go-live transition, 2026-07-19). The bursary witness
+    # resolution reads override -> profile.referred_by_org -> none. This lets an org_admin
+    # assign a witness for a SOURCELESS student (a private arrangement made outside the
+    # portal) without inventing a referral. NULL = derive from referred_by_org as before.
+    # SET_NULL so retiring an organisation never deletes the application.
+    witness_org = models.ForeignKey(
+        'courses.PartnerOrganisation', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='+',
+    )
     # Post-award signing — the parent/guardian SURETY's phone-PIN verification, captured
     # in-session just before the bursary signature. ``guarantor_phone`` is the locked
     # number (read from profile.guardians at apply) the PIN was sent to; the stamp marks a
