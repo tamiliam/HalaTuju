@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Lexend } from 'next/font/google'
+import { Lexend, Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { ReferralCapture } from '@/components/ReferralCapture'
@@ -9,6 +9,14 @@ const lexend = Lexend({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-lexend',
+})
+
+// Inter — registered as a CSS variable here (root, server component, where next/font resolves
+// cleanly) and applied to the sponsor portal only. The rest of HalaTuju stays on Lexend.
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
 })
 
 export const metadata: Metadata = {
@@ -48,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={lexend.variable}>
+    <html lang="en" className={`${lexend.variable} ${inter.variable}`}>
       <body className="font-sans">
         <Providers>
           <HtmlLang />

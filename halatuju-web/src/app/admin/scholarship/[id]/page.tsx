@@ -1098,21 +1098,34 @@ export default function AdminScholarshipDetailPage() {
                           split (Chosen Pathway + Pre-U Track + Pre-U Institution for STPM/Matric vs
                           Chosen Programme for the rest). The pre-U track (Sains Sosial / Perakaunan)
                           folds inline after the programme so no info is lost. */}
-                      <Field
-                        label={t('admin.scholarship.chosenProgramme')}
-                        value={(() => {
-                          const name = (app.chosen_programme?.course_name as string) || pathwayLabel(app.chosen_pathway)
-                          if (!name) return null
-                          const track = isInstitutionPathway ? preUTrackLabel : null
-                          return (
-                            <>
-                              {courseLink(app.chosen_programme?.course_id as string | undefined, name)}
-                              {track && <span className="text-gray-400"> · {track}</span>}
-                            </>
-                          )
-                        })()}
-                        verifiedLabel={vtip('chosenProgramme')}
-                      />
+                      {/* PISMP (a degree+specialisation pathway) reads INLINE exactly like STPM/Matric:
+                          the constant degree + " · {bidang}" in the one Chosen Programme field
+                          ("Ijazah Sarjana Muda Perguruan · Bahasa Tamil Pendidikan Rendah (SJKT)"),
+                          mirroring "Tingkatan Enam · Sains Sosial". The gray suffix is the pre-U track
+                          for STPM/Matric, or the bidang for PISMP; other pathways keep course_name and
+                          have no suffix. One inline format across all pathways — no separate row. */}
+                      {(() => {
+                        const cid = app.chosen_programme?.course_id as string | undefined
+                        const disp = app.chosen_programme_display
+                        const degreeSplit = !isInstitutionPathway && !!disp?.stream
+                        const name = degreeSplit
+                          ? (disp?.title || pathwayLabel(app.chosen_pathway))
+                          : ((app.chosen_programme?.course_name as string) || pathwayLabel(app.chosen_pathway))
+                        if (!name) return null
+                        const suffix = isInstitutionPathway ? preUTrackLabel : (degreeSplit ? disp?.stream : null)
+                        return (
+                          <Field
+                            label={t('admin.scholarship.chosenProgramme')}
+                            value={
+                              <>
+                                {courseLink(cid, name)}
+                                {suffix && <span className="text-gray-400"> · {suffix}</span>}
+                              </>
+                            }
+                            verifiedLabel={vtip('chosenProgramme')}
+                          />
+                        )
+                      })()}
                       {reportingDate && <Field label={t('admin.scholarship.reportingDate')} value={reportingDate} verifiedLabel={vtip('reportingDate')} />}
                       {/* Institution on its OWN row below (col-span-2); Chosen Programme + Reporting
                           Date share the top row (owner 2026-07-18). */}

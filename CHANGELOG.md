@@ -186,6 +186,61 @@ local sqlite only.
   atomically; the seeded draft reproduces today's constants + schedule; Gemini
   mocked (never a live call). **2798 scholarship pytest** green; no migration
   drift; `bursary.py`/`payments.py` untouched.
+## confirm_pathway aligns the institution to the catalogue (this + future) — 2026-07-18
+
+Owner-directed off #43/#115: the cockpit showed the IPG institution in raw ALL-CAPS
+(e.g. "INSTITUT PENDIDIKAN GURU KAMPUS TUANKU BAINUN") while the course selector
+shows the clean catalogue title-case. Root cause: `confirm_pathway` title-cased the
+programme name but stored the institution RAW — no catalogue alignment (whereas
+`autofill_pathway_from_offer` already aligned). The catalogue (`institutions`) is the
+single source of truth. **NO migration; api-only; push = deploy.**
+
+- **Systemic (code):** `confirm_pathway` now, for a catalogue-linked (tertiary)
+  programme, runs the stored institution through `offer_pathway.catalogue_institution`
+  (course_id → `course_institutions` → canonical name, unique-match only — never
+  swaps to a different place) and writes the catalogue spelling. Mirrors autofill.
+  Matric aligns in the existing pre-U branch; STPM schools stay casing-only (not
+  catalogue-matched). PISMP courses ARE catalogue-linked (~27 IPGs each), and the
+  distinctive-token matcher disambiguates the right campus from the others.
+- **Data (one-time, via Supabase MCP — done):** the 5 apps whose stored institution
+  matched a catalogue name case-insensitively but differed in case were aligned to
+  the canonical spelling — #43 + #115 (IPGs), #31 (Universiti Malaya), #32 (Kolej
+  Matrikulasi Selangor), #131 (UPSI). The 70 already-exact and the 26 not-in-catalogue
+  (STPM schools / private) were left untouched.
+- **Tests** — `test_confirm_pathway.test_pismp_confirm_aligns_institution_to_catalogue`
+  (all-caps IPG offer → stored institution becomes the catalogue title-case, picking
+  the right campus among siblings). 8 confirm_pathway + 75 offer_pathway/card_display
+  pytest green.
+
+## PISMP display standardisation — degree + Stream/Bidang split — 2026-07-18
+
+Owner-directed off the PISMP cohort (#43/#80/#107/#110/#115): the cockpit showed
+a different programme string per student (three generations of stored `course_name`)
+while the link pointed at the catalogue course. Standardised so a PISMP student
+always reads one constant degree + the bidang on its own line — a reusable pattern
+for future degree+specialisation programmes. **NO migration; backend + web.**
+
+- **Added — `card_display.programme_split(app)` → `{title, stream}`** (the one home
+  for the "constant degree + specialisation" shape) + `_DEGREE_TITLE` map (the
+  extension point: register a future programme's degree name and nothing else
+  changes). PISMP → title `Ijazah Sarjana Muda Perguruan`, stream = the bidang
+  (taken ONLY from a pinned catalogue course — an unpinned PISMP shows the degree
+  alone until the Aliran/Bidang pick lands). STPM/Matric → title + track; others →
+  title + ''. `resolve_course` (sponsor card / emails) now builds on it (PISMP joins
+  with a dash), so every surface reads identically. STPM/Matric/poly/asasi output
+  unchanged.
+- **Added — `chosen_programme_display` on `AdminApplicationDetailSerializer`**
+  (server-computed split) → the cockpit Chosen Programme reads the degree + bidang
+  **inline** ("Ijazah Sarjana Muda Perguruan · Bahasa Tamil Pendidikan Rendah
+  (SJKT)"), exactly like STPM/Matric show "Tingkatan Enam · Sains Sosial" — the
+  degree is the catalogue link, the bidang the gray `·` suffix. No separate row.
+- **Data (one-time, via Supabase MCP — done):** #43 reconciled (STPM→PISMP switch
+  the student had been asked but the query was waived; pathway `pismp`, stale pre-U
+  track/school cleared, bidang course `50PD040T00P` pinned — byte-identical to a
+  student "Yes"). #80/#107/#110/#115 `course_name` normalised to the catalogue
+  bidang name their `course_id` already pointed to.
+- **Tests** — `test_card_display` +4 (PISMP pinned/unpinned split, STPM/Matric/poly
+  split); existing sponsor-card resolution + track-label parity unchanged.
 
 ## Cockpit pre-U stream in Malay only + cross-runtime label parity guard — 2026-07-18
 

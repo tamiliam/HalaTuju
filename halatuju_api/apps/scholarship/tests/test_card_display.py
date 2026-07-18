@@ -67,6 +67,8 @@ class TestResolution(TestCase):
                                                name_ta='இயந்திரவியல்', image_slug='mekanikal-am')
         cls.course = Course.objects.create(course_id='ZZC1', course='Asasi Teknologi Kejuruteraan (Asasi TVET)',
                                            level='Asasi', department='X', field='Eng', field_key=cls.tax)
+        cls.pismp = Course.objects.create(course_id='50PD040T00P', course='Bahasa Tamil Pendidikan Rendah (SJKT)',
+                                          level='Ijazah Sarjana Muda', department='X', field='Edu', field_key=cls.tax)
 
     def _app(self, **over):
         p = StudentProfile.objects.create(supabase_user_id=f'cd-{ScholarshipApplication.objects.count()}')
@@ -122,6 +124,38 @@ class TestResolution(TestCase):
     def test_institution_sane_freetext_kept(self):
         a = self._app(chosen_programme={'institution': 'Politeknik Ungku Omar'})
         self.assertEqual(cd.resolve_institution(a), 'Politeknik Ungku Omar')
+
+    # ── degree + specialisation split (PISMP) ────────────────────────────────────
+    def test_pismp_split_pinned_bidang(self):
+        # A pinned PISMP course: title = the constant degree, stream = the catalogue bidang.
+        a = self._app(chosen_pathway='pismp',
+                      chosen_programme={'course_id': '50PD040T00P',
+                                        'course_name': 'Bahasa Tamil Pendidikan Rendah (SJKT)'})
+        self.assertEqual(cd.programme_split(a),
+                         {'title': 'Ijazah Sarjana Muda Perguruan',
+                          'stream': 'Bahasa Tamil Pendidikan Rendah (SJKT)'})
+        # The single-line sponsor form joins the two with a dash.
+        self.assertEqual(cd.resolve_course(a),
+                         'Ijazah Sarjana Muda Perguruan — Bahasa Tamil Pendidikan Rendah (SJKT)')
+
+    def test_pismp_unpinned_shows_degree_alone(self):
+        # An UNPINNED PISMP (no course_id — awaiting the Aliran/Bidang pick) must NOT echo the
+        # generic offer course_name as the bidang; the degree stands alone until a course lands.
+        a = self._app(chosen_pathway='pismp',
+                      chosen_programme={'course_name': 'Program Ijazah Sarjana Muda Perguruan (PISMP)'})
+        self.assertEqual(cd.programme_split(a),
+                         {'title': 'Ijazah Sarjana Muda Perguruan', 'stream': ''})
+        self.assertEqual(cd.resolve_course(a), 'Ijazah Sarjana Muda Perguruan')
+
+    def test_split_stpm_matric_carry_track_others_bare(self):
+        stpm = self._app(chosen_programme={'course_name': 'Tingkatan Enam'},
+                         chosen_pathway='stpm', pre_u_track='sains_sosial')
+        self.assertEqual(cd.programme_split(stpm),
+                         {'title': 'Tingkatan Enam', 'stream': 'Sains Sosial'})
+        poly = self._app(chosen_programme={'course_name': 'Diploma Kejuruteraan Mekanikal'},
+                         chosen_pathway='poly')
+        self.assertEqual(cd.programme_split(poly),
+                         {'title': 'Diploma Kejuruteraan Mekanikal', 'stream': ''})
 
 
 class TestRepairCommand(TestCase):

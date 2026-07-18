@@ -151,6 +151,42 @@ class TestConfirmPathwayUpdatesPreU(_Base):
         self.assertEqual(app.chosen_programme['course_id'], '50PD04TA')
         self.assertEqual(app.pre_u_track, '')                    # stale STPM stream dropped
 
+    def test_pismp_confirm_aligns_institution_to_catalogue(self):
+        # Owner 2026-07-18 (#43/#115): the offer prints the IPG ALL-CAPS and confirm_pathway stored
+        # that raw text; now it aligns the institution to the recommender CATALOGUE's clean
+        # title-case name (the single source of truth the course selector shows), disambiguating
+        # the one IPG among the many the course is offered at.
+        from apps.courses.models import (Course, CourseInstitution, CourseRequirement,
+                                         FieldTaxonomy, Institution)
+        ft = FieldTaxonomy.objects.create(key='edu2', name_en='Education', name_ms='Pendidikan',
+                                          name_ta='x', image_slug='edu')
+        c = Course.objects.create(course_id='50PD04TA', course='Bahasa Tamil Pendidikan Rendah (SJKT)',
+                                  level='Ijazah Sarjana Muda', department='Edu', field='Education', field_key=ft)
+        CourseRequirement.objects.create(course=c, source_type='pismp')
+        bainun = Institution.objects.create(
+            institution_id='IPG01', type='IPG', state='Perak',
+            institution_name='Institut Pendidikan Guru Kampus Tuanku Bainun')
+        ipoh = Institution.objects.create(          # a sibling campus — the matcher must NOT pick it
+            institution_id='IPG02', type='IPG', state='Perak',
+            institution_name='Institut Pendidikan Guru Kampus Ipoh')
+        CourseInstitution.objects.create(course=c, institution=bainun)
+        CourseInstitution.objects.create(course=c, institution=ipoh)
+        app = self._app(pathway='stpm', track='sains_sosial', institution='SMK X')
+        ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/pi',
+            vision_fields={'fields': {
+                'candidate_name': app.profile.name, 'candidate_nric': app.profile.nric,
+                'programme': 'Program Ijazah Sarjana Muda Perguruan (PISMP)',
+                'institution': 'INSTITUT PENDIDIKAN GURU KAMPUS TUANKU BAINUN',   # ALL-CAPS, as printed
+                'bidang_pengkhususan': 'BAHASA TAMIL PENDIDIKAN RENDAH', 'stream': ''},
+                'student_verdict': 'ok', 'authenticity': {'status': 'genuine', 'reason': 'x'}},
+            vision_run_at=timezone.now())
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_programme['course_id'], '50PD04TA')
+        self.assertEqual(app.chosen_programme['institution'],
+                         'Institut Pendidikan Guru Kampus Tuanku Bainun')   # aligned, not raw caps
+
     def test_no_offer_is_a_noop(self):
         app = self._app(pathway='stpm', track='sains_sosial', institution='SMK Asal')
         self.assertFalse(confirm_pathway(app))
