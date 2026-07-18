@@ -409,8 +409,11 @@ class TestPathwayConfirmQuery(_Base):
         from apps.scholarship.models import ApplicantDocument
         return ApplicantDocument.objects.create(
             application=self.app, doc_type='offer_letter', storage_path=f'{self.app.id}/offer/x',
+            # A SCORED (genuine) offer — the pathway hearing gate now requires genuine|suspect
+            # (owner 2026-07-18); an unscored offer raises no confirm.
             vision_fields={'fields': {**self._OFFER, **over}, 'student_verdict': 'ok',
-                           'warnings': [], 'error': ''},
+                           'warnings': [], 'error': '',
+                           'authenticity': {'status': 'genuine', 'reason': 'x'}},
             vision_run_at=timezone.now())
 
     def _clash(self):

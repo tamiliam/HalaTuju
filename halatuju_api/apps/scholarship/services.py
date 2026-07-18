@@ -1159,7 +1159,8 @@ def confirm_pathway(application):
     # stream + school, so the record stops contradicting itself — chosen_pathway had stayed on the
     # ORIGINAL declaration, misclassifying funding. Same-type confirms are a no-op here.
     offer_type = op.detect_pathway_type(prog, chk['institution'])
-    if offer_type and op.pathway_family(offer_type) != op.pathway_family(application.chosen_pathway or ''):
+    ofam = op.pathway_family(offer_type)
+    if ofam and ofam != op.pathway_family(application.chosen_pathway or ''):
         application.chosen_pathway = offer_type
         if 'chosen_pathway' not in update_fields:
             update_fields.append('chosen_pathway')

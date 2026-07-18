@@ -66,12 +66,12 @@ class TestDetectors(SimpleTestCase):
     def test_infer_pismp_aliran(self):
         import types
         ns = types.SimpleNamespace
-        # Vernacular SPM subject → the matching school stream; else SK; safe on None.
-        self.assertEqual(op.infer_pismp_aliran(ns(grades={'bahasa_tamil': 'A', 'bm': 'B'})), 'SJKT')
-        self.assertEqual(op.infer_pismp_aliran(ns(grades={'b_cina': 'A'})), 'SJKC')
-        self.assertEqual(op.infer_pismp_aliran(ns(grades={'bm': 'A', 'math': 'A'})), 'SK')
-        self.assertEqual(op.infer_pismp_aliran(ns(stream_subjects=['bahasa_tamil'])), 'SJKT')
-        self.assertEqual(op.infer_pismp_aliran(None), 'SK')
+        # Vernacular SPM subject → the matching school stream (lowercase code the picker uses); else sk.
+        self.assertEqual(op.infer_pismp_aliran(ns(grades={'bahasa_tamil': 'A', 'bm': 'B'})), 'sjkt')
+        self.assertEqual(op.infer_pismp_aliran(ns(grades={'b_cina': 'A'})), 'sjkc')
+        self.assertEqual(op.infer_pismp_aliran(ns(grades={'bm': 'A', 'math': 'A'})), 'sk')
+        self.assertEqual(op.infer_pismp_aliran(ns(stream_subjects=['bahasa_tamil'])), 'sjkt')
+        self.assertEqual(op.infer_pismp_aliran(None), 'sk')
 
     def test_canonical_pre_u_course(self):
         self.assertEqual(op.canonical_pre_u_course('matric'), 'Program Matrikulasi')

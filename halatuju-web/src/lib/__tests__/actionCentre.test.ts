@@ -12,6 +12,7 @@ import {
   clusterMemberOf,
   latestDocFor,
   needsOfficerEye,
+  profilePickerHref,
   KNOWN_CODES,
   countDigits,
 } from '@/lib/actionCentre'
@@ -245,6 +246,16 @@ describe('localiseParams', () => {
   it('handles null/undefined', () => {
     expect(localiseParams(undefined, t)).toEqual({})
     expect(localiseParams(null, t)).toEqual({})
+  })
+})
+
+describe('profilePickerHref (TD-161 aliran hand-off)', () => {
+  it('carries the inferred aliran as ?aliran so the picker pre-selects it', () => {
+    expect(profilePickerHref({ params: { aliran_hint: 'sjkt' } })).toBe('/profile?aliran=sjkt')
+  })
+  it('falls back to bare /profile with no hint', () => {
+    expect(profilePickerHref({ params: {} })).toBe('/profile')
+    expect(profilePickerHref({ params: null } as never)).toBe('/profile')
   })
 })
 

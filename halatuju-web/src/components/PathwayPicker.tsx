@@ -68,7 +68,14 @@ export default function PathwayPicker({
     if (form.chosenPathway !== 'pismp') return
     const fromChosen = aliranForChosen(pismpCourses, form.chosenProgramme?.courseId)
     if (fromChosen) { if (fromChosen !== pismpAliran) setPismpAliran(fromChosen); return }
-    if (!pismpAliran && availableAlirans.length === 1) setPismpAliran(availableAlirans[0])
+    if (pismpAliran) return
+    // TD-161: a PISMP switch / undeclared hand-off from the Action Centre carries the inferred school
+    // type as ?aliran=SJKT|SJKC|SK — pre-select it when it's an eligible aliran (the student can still
+    // change it). Read from the URL directly (no useSearchParams → no extra Suspense boundary).
+    const hint = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('aliran') : null
+    if (hint && (availableAlirans as string[]).includes(hint)) { setPismpAliran(hint); return }
+    if (availableAlirans.length === 1) setPismpAliran(availableAlirans[0])
   }, [form.chosenPathway, form.chosenProgramme, eligibleCourses]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Switching school type clears the bidang (it belonged to the old Aliran).

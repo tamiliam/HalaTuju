@@ -116,7 +116,7 @@ class TestConfirmPathwayUpdatesPreU(_Base):
         self.assertIsNotNone(item)
         self.assertEqual(item['params']['declared_pathway'], 'stpm')
         self.assertEqual(item['params']['offer_pathway'], 'pismp')
-        self.assertEqual(item['params']['aliran_hint'], 'SK')   # no vernacular subject on file
+        self.assertEqual(item['params']['aliran_hint'], 'sk')   # no vernacular subject on file (lowercase code)
 
     def test_no_offer_is_a_noop(self):
         app = self._app(pathway='stpm', track='sains_sosial', institution='SMK Asal')

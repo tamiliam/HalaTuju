@@ -38,6 +38,7 @@ import {
   clusterMemberOf,
   latestDocFor,
   needsOfficerEye,
+  profilePickerHref,
   type ActionIcon,
   type ConfirmTarget,
   countDigits,
@@ -150,15 +151,15 @@ function ActionCard({
   const clusterMember = clusterMemberOf(item, incomeRoute, incomeEarner)
   const isClusterTask = !!clusterMember
 
-  // TD-161: a PISMP pathway-type switch can't be settled by a one-tap Yes — the offer letter never
-  // states the aliran (SK/SJKT/SJKC), so the student pins the exact course on the profile picker
-  // (which then reconciles chosen_pathway + the catalogue link and auto-clears this query). Every
-  // other type switch (STPM → diploma/degree/asasi/matric) is a plain one-tap confirm. Carry the
-  // inferred aliran as a hint the picker can pre-select on.
+  // TD-161: a PISMP pathway can't be settled by a one-tap Yes — the offer letter never states the
+  // aliran (SK/SJKT/SJKC), so the student pins the exact course on the profile Aliran/Bidang picker
+  // (which reconciles chosen_pathway + the catalogue link and auto-clears this query). This applies to
+  // BOTH a PISMP type-switch AND an undeclared-PISMP offer; every other type switch (STPM →
+  // diploma/degree/asasi/matric) is a plain one-tap confirm. The inferred aliran (from the student's
+  // SPM vernacular subject) rides along as ?aliran so the picker can pre-select it.
   const isPismpSwitch = item.code === 'pathway_type_switch' && item.params?.offer_pathway === 'pismp'
-  const pismpProfileHref = isPismpSwitch && typeof item.params?.aliran_hint === 'string'
-    ? `/profile?aliran=${encodeURIComponent(String(item.params.aliran_hint))}`
-    : '/profile'
+  const routesToPicker = item.code === 'pathway_undeclared' || isPismpSwitch
+  const pickerHref = profilePickerHref(item)
 
   // #15a: re-surface the doc-anchored coach for a NON-cluster held task from the fetched
   // documents, so a page reload keeps Gopal's advice (not just the in-session upload).
@@ -397,10 +398,11 @@ function ActionCard({
                 with no aliran) — the student picks their exact course on the profile page rather than
                 typing a reply. The query auto-clears once a real course lands. */}
             {/* pathway_undeclared, and a PISMP type-switch (TD-161): both need the profile Aliran/Bidang
-                picker to pin an exact course — a one-tap Yes can't choose the aliran the offer omits. */}
-            {(item.code === 'pathway_undeclared' || isPismpSwitch) && (
+                picker to pin an exact course — a one-tap Yes can't choose the aliran the offer omits.
+                The inferred aliran rides along as ?aliran for the picker to pre-select. */}
+            {routesToPicker && (
               <a
-                href={isPismpSwitch ? pismpProfileHref : '/profile'}
+                href={pickerHref}
                 className="block w-full rounded-xl bg-primary-500 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-600"
               >
                 {t(isPismpSwitch

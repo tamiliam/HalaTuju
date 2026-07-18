@@ -1327,10 +1327,11 @@ class ResolutionItemResolveView(APIView):
             item.application.save(update_fields=['vircle_id'])
         # Phase 2 (D2): on a typed answer, Cikgu Gopal nudges ONLY when it is TOTALLY
         # off-topic — keep the task open and return his one-sentence steer, don't resolve.
-        # Flag-gated + AI-off-safe (judge defaults to accept). 'pathway_confirm' is a
-        # one-tap Yes (its 'confirmed' text isn't a free answer, so it's never judged); the
-        # Vircle confirmation is a phone number, likewise not a free-text answer to judge.
-        if text and item.code not in ('pathway_confirm', VIRCLE_CODE):
+        # Flag-gated + AI-off-safe (judge defaults to accept). 'pathway_confirm' /
+        # 'pathway_type_switch' are one-tap Yes confirms (their 'confirmed' text isn't a free
+        # answer, so it's never judged); the Vircle confirmation is a phone number, likewise not a
+        # free-text answer to judge.
+        if text and item.code not in ('pathway_confirm', 'pathway_type_switch', VIRCLE_CODE):
             from django.conf import settings as _settings
             if getattr(_settings, 'CHECK2_ANSWER_RELEVANCE_ENABLED', False):
                 from .help_engine import judge_answer_relevance

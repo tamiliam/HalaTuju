@@ -62,22 +62,28 @@ def is_pre_u(pathway_type: str) -> bool:
     return pathway_type in ('stpm', 'matric')
 
 
-# One coarse FUNDING family per pathway, collapsing the two vocabularies that describe a pathway — the
-# offer's DETECTED type (detect_pathway_type: diploma/degree/…) and the stored chosen_pathway
-# (poly/university/…) — so a mere rename is never mistaken for a switch. Only a cross-FAMILY change is
-# a genuine pathway-TYPE switch (TD-161: STPM→PISMP counts; poly→diploma / university→degree do not).
+# One coarse FUNDING family per pathway, collapsing the several vocabularies that name a pathway — the
+# offer's DETECTED type (detect_pathway_type: diploma/degree/…), the stored chosen_pathway code
+# (poly/university/… — the 8 apply-form codes) AND legacy display labels (Matriculation/Foundation) —
+# so a mere rename/vocabulary-difference is never mistaken for a switch. Only a cross-FAMILY change is
+# a genuine pathway-TYPE switch (TD-161: STPM→PISMP counts; poly≡diploma, university≡degree do not).
+# An UNRECOGNISED value maps to '' so it can never spuriously differ from a known family (the caller
+# requires BOTH sides to resolve to a known family before treating it as a switch).
 _PATHWAY_FAMILY = {
-    'stpm': 'stpm', 'matric': 'matric', 'asasi': 'asasi', 'pismp': 'pismp',
-    'diploma': 'diploma', 'poly': 'diploma', 'polytechnic': 'diploma',
-    'degree': 'degree', 'university': 'degree', 'ua': 'degree',
+    'stpm': 'stpm',
+    'matric': 'matric', 'matriculation': 'matric', 'matrikulasi': 'matric',
+    'asasi': 'asasi', 'foundation': 'asasi',
+    'pismp': 'pismp',
+    'diploma': 'diploma', 'poly': 'diploma', 'polytechnic': 'diploma', 'politeknik': 'diploma',
+    'degree': 'degree', 'university': 'degree', 'universiti': 'degree', 'ua': 'degree', 'ijazah': 'degree',
 }
 
 
 def pathway_family(pathway_type: str) -> str:
-    """Coarse funding family for a pathway type/label (poly≡diploma, university≡degree); unknown
-    values map to themselves; '' stays ''."""
-    t = (pathway_type or '').strip().lower()
-    return _PATHWAY_FAMILY.get(t, t)
+    """Coarse funding family for a pathway type/label/code (poly≡diploma, university≡degree,
+    Matriculation≡matric); an unrecognised value → '' (so it never spuriously differs from a known
+    family). Reduces the code/label/detected vocabularies to one comparable family."""
+    return _PATHWAY_FAMILY.get((pathway_type or '').strip().lower(), '')
 
 
 def parse_stpm_stream(programme: str) -> str:
@@ -146,8 +152,9 @@ _CHINESE_SUBJECTS = {'bahasa_cina', 'b_cina', 'lit_cina'}
 
 def infer_pismp_aliran(profile) -> str:
     """Best-guess PISMP school stream from the student's SPM vernacular subject: Bahasa Tamil →
-    'SJKT', Bahasa Cina → 'SJKC', else 'SK'. A picker DEFAULT the student confirms (the offer letter
-    doesn't state the aliran), never authoritative. Safe on a missing/blank profile → 'SK'."""
+    'sjkt', Bahasa Cina → 'sjkc', else 'sk'. A picker DEFAULT the student confirms (the offer letter
+    doesn't state the aliran), never authoritative. Safe on a missing/blank profile → 'sk'. Returns
+    the LOWERCASE aliran code the FE picker + storage use (PISMP_ALIRAN_ORDER: sk/sjkc/sjkt/khas)."""
     subs = set()
     grades = getattr(profile, 'grades', None)
     if isinstance(grades, dict):
@@ -156,10 +163,10 @@ def infer_pismp_aliran(profile) -> str:
     if isinstance(ss, (list, tuple)):
         subs |= {str(s).lower() for s in ss}
     if subs & _TAMIL_SUBJECTS:
-        return 'SJKT'
+        return 'sjkt'
     if subs & _CHINESE_SUBJECTS:
-        return 'SJKC'
-    return 'SK'
+        return 'sjkc'
+    return 'sk'
 
 
 def _name_aligns(a: set, b: set) -> bool:

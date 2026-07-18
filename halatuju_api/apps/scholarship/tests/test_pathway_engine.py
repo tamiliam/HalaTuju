@@ -382,6 +382,25 @@ class TestOfferOfficialStatus(SimpleTestCase):
         self.assertEqual(offer_official_status(_auth_doc(None)), 'unknown')
 
 
+class TestOfferBand(SimpleTestCase):
+    """The THREE-way band + the pathway-HEARING gate (owner 2026-07-18): a hearing fires only for a
+    SCORED, non-fake offer — genuine OR suspect. Fake (not_offer_letter) and unknown get none."""
+
+    def test_offer_band_three_way(self):
+        from apps.scholarship.pathway_engine import offer_band
+        self.assertEqual(offer_band(_auth_doc({'status': 'genuine'})), 'genuine')
+        self.assertEqual(offer_band(_auth_doc({'status': 'suspect'})), 'suspect')
+        self.assertEqual(offer_band(_auth_doc({'status': 'not_offer_letter'})), 'not_offer_letter')
+        self.assertEqual(offer_band(_auth_doc(None)), '')                       # unscored → no signal
+
+    def test_hearing_ok_only_for_scored_non_fake(self):
+        from apps.scholarship.pathway_engine import offer_hearing_ok
+        self.assertTrue(offer_hearing_ok(_auth_doc({'status': 'genuine'})))
+        self.assertTrue(offer_hearing_ok(_auth_doc({'status': 'suspect'})))     # suspect gets a hearing
+        self.assertFalse(offer_hearing_ok(_auth_doc({'status': 'not_offer_letter'})))  # fake: no hearing
+        self.assertFalse(offer_hearing_ok(_auth_doc(None)))                     # unscored: no hearing
+
+
 class TestDeclaredPathwayCircularity(SimpleTestCase):
     """#117 (c): an offer-autofilled chosen_programme must NOT be treated as the declaration —
     else offer_pathway_match compares the offer against itself (45 live apps carry the source)."""

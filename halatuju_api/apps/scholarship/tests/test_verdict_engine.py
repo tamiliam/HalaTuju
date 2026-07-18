@@ -665,6 +665,43 @@ class TestPathway(_Base):
         self.assertTrue(offer_is_resolvable('Tingkatan Enam (Sains Sosial)', 'SMK X'))
         self.assertFalse(offer_is_resolvable('Ijazah Sarjana Muda Perguruan (PISMP)', 'IPG Kampus Y'))
 
+    def test_undeclared_suspect_offer_is_asked(self):
+        # Owner 2026-07-18: a SUSPECT (scored, not fake) offer still gets a hearing — a suspect PISMP
+        # offer with no declaration → the profile picker (pathway_undeclared), same as a genuine one.
+        self._undeclared()
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields=dict(self._OWN_OFFER, programme='Ijazah Sarjana Muda Perguruan (PISMP)',
+                                 institution='IPG Kampus Temenggong Ibrahim'))
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'suspect', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        self.assertIn('pathway_undeclared', _codes(_facts(self.app)['pathway']['unresolved']))
+
+    def test_undeclared_unknown_offer_not_asked(self):
+        # An UNSCORED offer (no authenticity → unknown) gets NO hearing — we don't ask which pathway
+        # until the offer's genuineness is actually scored (owner 2026-07-18).
+        self._undeclared()
+        _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                 fields=dict(self._OWN_OFFER, programme='Tingkatan Enam (Sains Sosial)', institution='SMK X'))
+        codes = _codes(_facts(self.app)['pathway']['unresolved'])
+        self.assertNotIn('pathway_undeclared', codes)
+        self.assertNotIn('pathway_confirm', codes)
+
+    def test_not_confirmed_type_switch_asks_switch_not_generic_confirm(self):
+        # Owner 2026-07-18: a TYPE switch fires regardless of confirmed-state. Declared STPM, a genuine
+        # Matriculation offer (different family), NOT yet confirmed → pathway_type_switch, and the
+        # generic pathway_confirm is suppressed (if/elif → at most one).
+        self.app.chosen_pathway = 'stpm'
+        self.app.pre_u_institution = 'SMK X'
+        self.app.save()
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields=dict(self._OWN_OFFER, programme='Program Matrikulasi',
+                                 institution='Kolej Matrikulasi Melaka'))
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'genuine', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        codes = _codes(_facts(self.app)['pathway']['unresolved'])
+        self.assertIn('pathway_type_switch', codes)
+        self.assertNotIn('pathway_confirm', codes)
+
     def _offer(self, auth_status):
         d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
         d.vision_fields = dict(d.vision_fields,
@@ -729,8 +766,9 @@ class TestPathway(_Base):
 
     def test_offer_missing_ic_plus_pathway_mismatch_plus_suspect_is_fail_hash64(self):
         # The #64 worked example: a suspect offer (step −1) whose candidate IC is missing (−1 red chip)
-        # AND whose place/field clashes with the declaration (−1 red Pathway chip) = −3 → 🔴 Fail.
+        # AND whose place clashes with the declaration (−1 red Pathway chip) = −3 → 🔴 Fail.
         # (After the owner re-runs the offer under 1.4.0 → fake, step −2 → −4, still Fail.)
+        self.app.chosen_pathway = 'asasi'          # same family as the Foundation offer (within-type clash)
         self.app.pre_u_institution = 'SMK Mentakab'; self.app.save()
         d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
                      fields=dict(self._OWN_OFFER, candidate_nric='',
@@ -751,13 +789,15 @@ class TestPathway(_Base):
         self.assertNotIn('pathway_confirm', _codes(f['unresolved']))
 
     def test_offer_clashing_with_declared_asks_to_confirm(self):
-        # Declared a genuinely different school → the offer clashes → the student is
-        # asked to confirm which is final (Check-2 backstop), so the fact is 'review'.
+        # Declared the SAME pathway type (STPM) but a genuinely different SCHOOL → the offer clashes on
+        # institution (a within-family Case-3 clash) → the student confirms which is final, so 'review'.
+        self.app.chosen_pathway = 'stpm'           # same family as the Tingkatan Enam offer
         self.app.pre_u_institution = 'SMK Mentakab'
         self.app.save()
-        clash = dict(self._OWN_OFFER, institution='SMK Temerloh',
-                     programme='Tingkatan Enam')
-        _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=clash)
+        clash = dict(self._OWN_OFFER, institution='SMK Temerloh', programme='Tingkatan Enam')
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=clash)
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'genuine', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
         f = _facts(self.app)['pathway']
         self.assertEqual(f['status'], 'review')
         self.assertIn('pathway_confirm', _codes(f['unresolved']))
@@ -1709,6 +1749,8 @@ class TestGenuinenessLadder(_Base):
         # A cropped/thin OFFICIAL letter carrying a validated registration summons: the bonus
         # lifts the effective step to 0 AND clears the pathway-not-established chip → 🟢 Certain.
         # The truthful caveat + the amber Official chip + Check-2 all stay (band-only lift).
+        self.app.chosen_pathway = 'diploma'        # same family as the UA Diploma offer (no switch)
+        self.app.save()
         self._bonus_offer('suspect')
         f = _facts(self.app)['pathway']
         self.assertEqual(f['status'], 'verified')
@@ -1748,6 +1790,7 @@ class TestGenuinenessLadder(_Base):
     def test_pathway_hash31_pemakluman_pathway_mismatch_is_unsure(self):
         # The #31 worked example: a pemakluman scores 'suspect' (p~0.40, step -1); Name + IC green,
         # but the offer names a different place than declared (1 red Pathway chip, -1) = -2 -> Unsure.
+        self.app.chosen_pathway = 'stpm'           # same family as the Tingkatan Enam offer (place clash)
         self.app.pre_u_institution = 'SMK Mentakab'; self.app.save()
         d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
                      fields={'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',

@@ -303,6 +303,14 @@ export function confirmTargetFor(fact: string): ConfirmTarget {
   return 'documents'
 }
 
+/** The profile-picker href for a pathway hand-off (pathway_undeclared / a PISMP type-switch): carries
+ *  the inferred aliran as ?aliran when present, so the profile Aliran/Bidang picker pre-selects the
+ *  student's likely school type (TD-161). Falls back to bare /profile with no hint. */
+export function profilePickerHref(item: Pick<ResolutionItem, 'params'>): string {
+  const hint = typeof item.params?.aliran_hint === 'string' ? item.params.aliran_hint : ''
+  return hint ? `/profile?aliran=${encodeURIComponent(hint)}` : '/profile'
+}
+
 /** True when the circuit-breaker (Phase 2) escalated this doc-request to a human after repeated
  *  not-usable re-uploads: the loop is stopped, the best copy is kept live, and the student should
  *  see a calm "we're reviewing this" state instead of the upload prompt. Stamped in `params` by

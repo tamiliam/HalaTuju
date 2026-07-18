@@ -311,6 +311,30 @@ def offer_official_status(doc) -> str:
     return 'genuine' if auth.get('status') == 'genuine' else 'not_genuine'
 
 
+def offer_band(doc) -> str:
+    """The THREE-way genuineness band of an offer, from its stored signature score — for the pathway
+    HEARING gate (which must tell suspect from fake, unlike the binary ``offer_official_status``):
+      * 'genuine'          — probability >= 0.70.
+      * 'suspect'          — 0.35 <= probability < 0.70 (cropped / partial / not confidently genuine).
+      * 'not_offer_letter' — probability < 0.35, OR the private-arm veto (a fake — not recognisably an
+                             official offer letter).
+      * ''                 — genuineness not computed yet (unscored / flag off / AI outage).
+    Reuses ``genuineness.bands.canonical_status`` (the one three-way mapper); pure, never raises."""
+    from .genuineness.bands import canonical_status
+    vf = getattr(doc, 'vision_fields', None)
+    auth = vf.get('authenticity') if isinstance(vf, dict) else None
+    status = auth.get('status') if isinstance(auth, dict) else ''
+    return canonical_status(status, 'offer_letter')
+
+
+def offer_hearing_ok(doc) -> bool:
+    """Owner policy 2026-07-18: a pathway HEARING (confirm / type-switch / undeclared) fires only for
+    a SCORED, non-fake offer — ``genuine`` OR ``suspect``. A fake (``not_offer_letter``) gets no
+    hearing (just the red flag + submission block); an UNKNOWN/unscored offer also gets none (we don't
+    ask which pathway until the offer's genuineness is actually scored)."""
+    return offer_band(doc) in ('genuine', 'suspect')
+
+
 def student_offer_check(doc) -> dict:
     """The clinical read of ONE offer letter against the student's own profile.
 

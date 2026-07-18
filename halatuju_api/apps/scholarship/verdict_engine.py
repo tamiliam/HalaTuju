@@ -777,57 +777,46 @@ def _verdict_pathway(application):
     elif prog or inst:
         evidence.append(_item('offer_programme', institution=inst, programme=prog))
 
-    # TD-161: a genuine offer of a DIFFERENT pathway TYPE than the student declared. The prior
-    # offer-confirm wrote chosen_programme but never chosen_pathway (confirm_pathway doesn't), so a
-    # student who declared STPM and confirmed a PISMP offer (#43) is left classified STPM. Ask them
-    # to confirm the switch — this fires EVEN after pathway_confirmed_at (an un-confirmed clash is
-    # the existing pathway_confirm path below). Genuine official offers ONLY: a fake / suspect /
-    # private offer is already flagged and is not a real pathway to switch INTO. On Yes,
-    # confirm_pathway (the same handler) adopts the new type + drops the stale pre-U stream. For a
-    # PISMP switch the offer letter never states the aliran, so carry a picker default (inferred
-    # from the student's SPM vernacular subject) for the profile Aliran/Bidang hand-off.
-    from .pathway_engine import offer_official_status
+    # ── The pathway HEARING — ONE band-aware, mutually-exclusive detector (owner 2026-07-18) ──────
+    # A "which pathway?" hearing fires only for a SCORED, non-fake offer — genuine OR suspect
+    # (offer_hearing_ok). A FAKE (not_offer_letter) or UNSCORED offer never gets one: fake is flagged
+    # + submission-blocked elsewhere, and we don't ask about an offer whose genuineness isn't scored.
+    # Then AT MOST ONE of three cases (if/elif → the type switch suppresses the generic confirm):
+    #   Case 2 — the offer is a different pathway FAMILY than declared (STPM→PISMP/Matric, #43):
+    #     ask to confirm the SWITCH. Fires regardless of pathway_confirmed_at (the prior offer-confirm
+    #     wrote chosen_programme but never chosen_pathway); on Yes confirm_pathway adopts the new type
+    #     + drops the stale pre-U stream. A PISMP switch carries an aliran picker default (the letter
+    #     never states SK/SJKT/SJKC), inferred from the student's SPM vernacular subject.
+    #   Case 3 — SAME family but the institution/stream CLASHES (the #117 within-type case): the
+    #     generic "is this where you're going?" confirm. Not re-asked once confirmed (minor drift).
+    #   Case 1 — the student declared NOTHING (#127): resolvable → one-tap confirm; ambiguous (a PISMP
+    #     offer with no aliran) → the profile Aliran/Bidang picker (pathway_undeclared).
     from . import offer_pathway as _op
-    declared_type = (application.chosen_pathway or '').strip().lower()
-    offer_type = _op.detect_pathway_type(prog, inst)
-    if (confirmed and declared_type and offer_type
-            and _op.pathway_family(declared_type) != _op.pathway_family(offer_type)
-            and offer_official_status(offer) == 'genuine'):
-        sw = {'programme': prog, 'institution': inst,
-              'declared_pathway': declared_type, 'offer_pathway': offer_type}
-        if offer_type == 'pismp':
-            sw['aliran_hint'] = _op.infer_pismp_aliran(getattr(application, 'profile', None))
-        unresolved.append(_item('pathway_type_switch', **sw))
-
-    # The offer names a genuinely different place/field than declared → a RED Pathway chip + the
-    # confirm query (Check-2 backstop; record realigns on Yes). Suppressed once the student confirms.
-    if chk['pathway'] == 'mismatch' and not confirmed:
-        unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
-                                declared_programme=chk['declared_programme'],
-                                declared_institution=chk['declared_institution']))
-
-    # UNDECLARED pathway (owner 2026-07-15): a genuine, readable, non-clashing offer but the student
-    # declared NOTHING about a pathway (not even a type — #127's all-blank case). Don't silently read
-    # Certain — ask the student, and sit at Probable (an unresolved item over the offer evidence)
-    # until they answer:
-    #   - RESOLVABLE offer (a pre-U stream, or a unique catalogue course) → the one-tap "is this where
-    #     you're going?" confirm (Yes → confirm_pathway stamps it → verified/Certain).
-    #   - AMBIGUOUS (a PISMP offer with no SK/SJKT/SJKC aliran, an unpinnable tertiary) → send them to
-    #     the profile page to pick their exact course (pathway_undeclared). Auto-resolves + greens once
-    #     a real course lands (a declaration then exists → this branch no longer fires).
-    # Scoped to a TRUE non-declaration (a student who declared a type or a specific course is left as
-    # verified — the offer settles it) AND a GENUINE OFFICIAL offer only: a fake / suspect / non-
-    # official offer is already flagged (genuineness ladder + offer_not_official) and isn't a real
-    # pathway to confirm — never ask "is this where you're going?" about a fake letter.
-    from .pathway_engine import offer_official_status
-    if (not confirmed and (prog or inst) and _no_declared_pathway(application)
-            and offer_official_status(offer) == 'genuine'):
-        from .offer_pathway import offer_is_resolvable
-        if offer_is_resolvable(prog, inst):
+    from .pathway_engine import offer_hearing_ok
+    if offer_hearing_ok(offer):
+        declared_type = (application.chosen_pathway or '').strip().lower()
+        offer_type = _op.detect_pathway_type(prog, inst)
+        profile = getattr(application, 'profile', None)
+        dfam, ofam = _op.pathway_family(declared_type), _op.pathway_family(offer_type)
+        if dfam and ofam and dfam != ofam:
+            sw = {'programme': prog, 'institution': inst,
+                  'declared_pathway': declared_type, 'offer_pathway': offer_type}
+            if offer_type == 'pismp':
+                sw['aliran_hint'] = _op.infer_pismp_aliran(profile)
+            unresolved.append(_item('pathway_type_switch', **sw))
+        elif chk['pathway'] == 'mismatch' and not confirmed:
             unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
-                                    declared_programme='', declared_institution=''))
-        else:
-            unresolved.append(_item('pathway_undeclared', programme=prog, institution=inst))
+                                    declared_programme=chk['declared_programme'],
+                                    declared_institution=chk['declared_institution']))
+        elif not confirmed and (prog or inst) and _no_declared_pathway(application):
+            if _op.offer_is_resolvable(prog, inst):
+                unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
+                                        declared_programme='', declared_institution=''))
+            else:
+                ud = {'programme': prog, 'institution': inst}
+                if offer_type == 'pismp':
+                    ud['aliran_hint'] = _op.infer_pismp_aliran(profile)
+                unresolved.append(_item('pathway_undeclared', **ud))
 
     # NB the course-SWITCH note is deliberately NOT a verdict item here (owner 2026-07-10): a PUBLIC
     # switch is acceptable — a student may legitimately move STPM → matriculation → a UA diploma — so
