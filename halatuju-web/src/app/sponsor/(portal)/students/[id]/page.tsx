@@ -9,6 +9,7 @@ import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { fundStudent, getSponsorPoolDetail, getSponsorWallet, type SponsorPoolDetail } from '@/lib/api'
 import { fieldImageUrl } from '@/lib/fieldImage'
+import { FundingBar } from '@/components/FundingBar'
 import { rmWhole } from '@/lib/poolCard'
 import { formatDate } from '@/lib/formatDate'
 
@@ -152,6 +153,7 @@ export default function StudentDetailPage() {
                   {payMonths > 0 && (
                     <p className="text-xs text-gray-500">{t('sponsorPool.overMonths').replace('{months}', String(payMonths))}</p>
                   )}
+                  <FundingBar funded={detail.funded_amount} award={detail.award_amount} className="mt-3" />
                 </div>
               )}
 

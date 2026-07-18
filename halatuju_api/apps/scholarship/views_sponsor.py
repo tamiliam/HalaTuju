@@ -9,6 +9,7 @@ whitelisted from the NRIC gate (sponsors have no NRIC).
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
+from django.db.models import Q, Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -227,7 +228,12 @@ class SponsorPoolListView(_PoolBase):
         _, err = self._gate(request)
         if err:
             return err
-        qs = pool.eligible_pool_queryset(ScholarshipApplication)
+        # Annotate the funded-so-far total (sum of HOLDING sponsorships) once per row so
+        # the funding-bar field doesn't fire a per-card aggregate across the grid.
+        qs = pool.eligible_pool_queryset(ScholarshipApplication).annotate(
+            funded_total=Sum('sponsorships__amount',
+                             filter=Q(sponsorships__status__in=Sponsorship.HOLDING)),
+        )
         return Response({'students': SponsorPoolCardSerializer(qs, many=True).data})
 
 
