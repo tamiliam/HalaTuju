@@ -133,7 +133,11 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
     href === '/sponsor' ? pathname === '/sponsor' : pathname.startsWith(href)
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    // Sponsor portal typeface (owner 2026-07-18): Inter — crisp at small sizes, trustworthy
+    // for the money/facts. Scoped here; the rest of HalaTuju stays on Lexend. (--font-inter
+    // is registered in the root layout.)
+    <div className="min-h-screen flex flex-col bg-gray-50"
+      style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
       <header className="bg-white border-b sticky top-0 z-20">
         <div className="container mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/sponsor" className="flex items-center gap-2 shrink-0">
