@@ -91,10 +91,31 @@ def _remaining(application):
     return rem if rem > 0 else _ZERO
 
 
-def default_amount(application):
-    """D6: amount_due = clamp(RATE − payment_credit, 0, award_amount − paid_to_date)."""
+def _schedule_row(application):
+    """The versioned contract-template schedule row governing this application (the
+    signed agreement's pinned template, else the org's active template), or ``None``
+    → the legacy flat behaviour (``MONTHLY_RATE`` + ``PATHWAY_PAYMENT_START_MONTH``,
+    byte-identical to pre-cutover). This is the ONE seam the payments module reads the
+    contract module through."""
+    from . import contracts
+    template = contracts.template_for_application(application)
+    if template is None:
+        return None
+    return contracts.schedule_row_for(template, application)
+
+
+def _row_rate(row):
+    return row.monthly_amount if row is not None else MONTHLY_RATE
+
+
+def default_amount(application, row=None):
+    """D6: amount_due = clamp(RATE − payment_credit, 0, award_amount − paid_to_date).
+    RATE is the governing template row's ``monthly_amount`` when a contract template
+    governs the app, else ``MONTHLY_RATE`` (seeded BrightPath v1 = RM200 → identical)."""
+    if row is None:
+        row = _schedule_row(application)
     credit = application.payment_credit or _ZERO
-    due = MONTHLY_RATE - credit
+    due = _row_rate(row) - credit
     if due < 0:
         due = _ZERO
     rem = _remaining(application)
@@ -103,33 +124,63 @@ def default_amount(application):
     return due.quantize(_CENTS)
 
 
-def _credit_applied(application):
+def _credit_applied(application, rate=None):
     """How much of the paid-ahead credit this run consumes: min(credit, RATE) — the amount it
     offsets against the flat rate (rolls any excess over to the next run)."""
     credit = application.payment_credit or _ZERO
-    return (credit if credit < MONTHLY_RATE else MONTHLY_RATE).quantize(_CENTS)
+    if rate is None:
+        rate = _row_rate(_schedule_row(application))
+    return (credit if credit < rate else rate).quantize(_CENTS)
 
 
 # ── eligibility (D4) ────────────────────────────────────────────────────────────
 
-def _pathway_payment_start(application):
+def _pathway_payment_start(application, row=None):
     """D4-3: the 1st-of-the-month a pathway's payments open, in the cohort year (the HARD floor —
-    July / August / September per PATHWAY_PAYMENT_START_MONTH)."""
+    July / August / September). The month comes from the governing template row's ``start_month``
+    when a template governs the app, else ``PATHWAY_PAYMENT_START_MONTH`` (seeded rows use the
+    same 7/7/7/8/8/9 → identical)."""
     year = application.cohort.year if application.cohort_id else timezone.localdate().year
-    pathway = (application.chosen_pathway or '').strip().lower()
-    month = PATHWAY_PAYMENT_START_MONTH.get(pathway, _DEFAULT_PAYMENT_START_MONTH)
+    if row is None:
+        row = _schedule_row(application)
+    if row is not None:
+        month = row.start_month
+    else:
+        pathway = (application.chosen_pathway or '').strip().lower()
+        month = PATHWAY_PAYMENT_START_MONTH.get(pathway, _DEFAULT_PAYMENT_START_MONTH)
     return date(year, month, 1)
 
 
-def _has_started(application, payment_date):
+def _has_started(application, payment_date, row=None):
     """D4-3 (owner 2026-07-16): payable on this run only when BOTH hold — (1) the pathway's
     payment window has opened (`payment_date >= the July/Aug/Sep floor`), applied even to a
     continuing student; AND (2) the student has physically reported (`reporting_date <=
     payment_date`, when set) so a late arrival is never paid early."""
-    if payment_date < _pathway_payment_start(application):
+    if payment_date < _pathway_payment_start(application, row):
         return False
     reporting = application.reporting_date
     return reporting is None or reporting <= payment_date
+
+
+def _schedule_status(row, application, period_month):
+    """Where ``period_month`` (the 1st of the covered month) falls in the template
+    schedule: 'paid' | 'gap' (an exam/skip month within the span) | 'complete' (past
+    the last paid month) | None (no template governs the app, or before the schedule
+    — the start-month floor handles that). Drives the gap_month / schedule_complete
+    greyed reasons; None means the legacy path adds no schedule reason (parity)."""
+    if row is None or period_month is None:
+        return None
+    cohort_year = application.cohort.year if application.cohort_id else None
+    if cohort_year is None:
+        return None
+    offset = (period_month.year - cohort_year) * 12 + (period_month.month - row.start_month)
+    paid = {int(o) for o in (row.paid_offsets or [])}
+    if offset in paid:
+        return 'paid'
+    if offset < 0:
+        return None
+    last = max(paid) if paid else -1
+    return 'complete' if offset > last else 'gap'
 
 
 def _is_on_hold(application):
@@ -165,8 +216,17 @@ def eligibility(application, payment_date, period_month=None):
     of the covered month). Returns ``{eligible, reasons, remaining, vircle_ready, started}``.
     ``reasons`` names the D4-4/5/6 + already-paid failures (the greyed-out list); status/started
     failures are handled by the caller (not listed at all)."""
-    started = _has_started(application, payment_date)
+    row = _schedule_row(application)
+    started = _has_started(application, payment_date, row)
     reasons = []
+    # Contract-schedule greying (D5): a template exam/skip month or a month past the
+    # schedule end is greyed with a reason. None (no template) adds nothing → the legacy
+    # run is byte-identical for every paid month.
+    sched = _schedule_status(row, application, period_month)
+    if sched == 'gap':
+        reasons.append('gap_month')             # exam-month skip (e.g. STPM Dec/Jun)
+    elif sched == 'complete':
+        reasons.append('schedule_complete')     # past the last scheduled payment
     has_id = bool((application.vircle_id or '').strip())
     # eWallet-ready (D4-4) = has an ID AND no unconfirmed setup task pending.
     vircle_ready = has_id and not _vircle_confirmation_pending(application)
@@ -250,14 +310,15 @@ def create_run(organisation, payment_date, period_month, by_email=''):
         reference=_next_reference(payment_date),
         created_by=(by_email or '')[:254],
     )
-    for row in eligible_rows(organisation, payment_date, period_month=pm):
-        if not row['eligible']:
+    for erow in eligible_rows(organisation, payment_date, period_month=pm):
+        if not erow['eligible']:
             continue
-        app = row['application']
+        app = erow['application']
+        sched_row = _schedule_row(app)
         PaymentRunItem.objects.create(
             run=run, application=app, included=True,
-            amount=default_amount(app),
-            credit_applied=_credit_applied(app),
+            amount=default_amount(app, sched_row),
+            credit_applied=_credit_applied(app, _row_rate(sched_row)),
             award_amount_snapshot=(app.award_amount or _ZERO),
             paid_to_date_snapshot=paid_to_date(app),
             vircle_id_snapshot=(app.vircle_id or ''),

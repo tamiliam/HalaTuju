@@ -1429,22 +1429,61 @@ class BankAccountView(APIView):
         return Response(BankAccountSerializer(acct).data, status=status.HTTP_200_OK)
 
 
-class StudentComprehensionView(APIView):
-    """POST: the student passed the bursary-agreement comprehension quiz (the "Understand"
-    step on /scholarship/award). Stamp ``comprehension_passed_at`` (idempotent) for the
-    caller's AWARDED application — recorded for defensibility alongside the signed agreement."""
+class StudentComprehensionQuizView(APIView):
+    """GET the comprehension checkpoints for the caller's AWARDED application, served
+    from the governing contract template (the org's active version). Returns
+    ``{template_version, locale_used, checkpoints}`` — the FE renders these and posts
+    ``template_version`` back on pass, so a mid-flight redeploy is caught (409)."""
     permission_classes = [SupabaseIsAuthenticated]
 
-    def post(self, request):
-        from django.utils import timezone
+    def get(self, request):
+        from . import contracts
         app = _current_application(request.user_id)
         if app is None or app.status != 'awarded':
             return Response({'error': 'no_application', 'code': 'no_application'},
                             status=status.HTTP_403_FORBIDDEN)
+        template = contracts.template_for_application(app)
+        locale = contracts.resolve_locale(request.query_params.get('locale', 'en'), template)
+        return Response({
+            'template_version': template.version if template else '',
+            'locale_used': locale,
+            'checkpoints': contracts.quiz_checkpoints(template, locale) if template else [],
+        })
+
+
+class StudentComprehensionView(APIView):
+    """POST: the student passed the bursary-agreement comprehension quiz (the "Understand"
+    step on /scholarship/award). Stamps ``comprehension_passed_at`` (idempotent) AND pins
+    ``comprehension_template`` to the version they were quizzed on — the runtime guard that
+    ``bursary.sign_agreement`` checks (``comprehension_stale``). A posted ``template_version``
+    that no longer matches the active template → 409 ``version_changed`` (the FE re-fetches
+    and re-takes)."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        from django.utils import timezone
+        from . import contracts
+        app = _current_application(request.user_id)
+        if app is None or app.status != 'awarded':
+            return Response({'error': 'no_application', 'code': 'no_application'},
+                            status=status.HTTP_403_FORBIDDEN)
+        template = contracts.template_for_application(app)
+        if template is not None:
+            posted = (request.data.get('template_version') or '').strip()
+            if posted and posted != template.version:
+                return Response({'error': 'version_changed', 'code': 'version_changed',
+                                 'template_version': template.version},
+                                status=status.HTTP_409_CONFLICT)
+        fields = []
         if app.comprehension_passed_at is None:
             app.comprehension_passed_at = timezone.now()
-            app.save(update_fields=['comprehension_passed_at'])
-        return Response({'ok': True})
+            fields.append('comprehension_passed_at')
+        if template is not None and app.comprehension_template_id != template.id:
+            app.comprehension_template = template
+            fields.append('comprehension_template')
+        if fields:
+            app.save(update_fields=fields)
+        return Response({'ok': True, 'template_version': template.version if template else ''})
 
 
 class DocumentHelpView(APIView):

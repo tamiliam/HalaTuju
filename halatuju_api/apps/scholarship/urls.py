@@ -10,6 +10,7 @@ from .views import (
     BursaryAgreementView,
     BankAccountView,
     StudentComprehensionView,
+    StudentComprehensionQuizView,
     GuarantorPhoneVerifyStartView,
     GuarantorPhoneVerifyCheckView,
     ConsentView,
@@ -140,7 +141,9 @@ urlpatterns = [
     path('scholarship/award/', StudentAwardView.as_view()),
     # Conditional Bursary Award Agreement — the student's own signed contract (flag-gated)
     path('scholarship/bursary-agreement/', BursaryAgreementView.as_view()),
-    # Post-award comprehension quiz pass ("Understand" step) — recorded for defensibility
+    # Post-award comprehension quiz — GET the template-served checkpoints, POST the pass
+    # (version-pinned) — recorded for defensibility
+    path('scholarship/award/comprehension-quiz/', StudentComprehensionQuizView.as_view()),
     path('scholarship/award/comprehension/', StudentComprehensionView.as_view()),
     # Post-award parent gate — SMS PIN to the guarantor's locked phone before signing
     path('scholarship/award/guarantor/verify-phone/send/', GuarantorPhoneVerifyStartView.as_view()),

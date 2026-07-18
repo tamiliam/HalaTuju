@@ -217,27 +217,47 @@ def _locale(locale):
     return 'ms' if (locale or '').startswith('ms') else 'en'
 
 
-def particulars_for(application):
+def particulars_for(application, template=None, locale='en'):
     """Build the filled-in particulars dict for an application. Reads the award
-    amount + chosen programme off the application and the Foundation signatory off
-    settings. NEVER reads or exposes any donor identity."""
+    amount + chosen programme off the application. When a ``template`` is given, the
+    payment schedule, progress standard and counterparty (Foundation signatory) come
+    from the versioned template (the module cutover); with no template it falls back
+    to the legacy ``bursary.py`` constants + settings signatory (removed in Sprint 5).
+    NEVER reads or exposes any donor identity."""
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     institution = (cp.get('institution') or '').strip()
     course = (cp.get('course_name') or '').strip()
     if not course:
         course = (getattr(application, 'field_of_study', '') or '').strip()
+
+    if template is not None:
+        from . import contracts
+        lang = _locale(locale)
+        row = contracts.schedule_row_for(template, application)
+        payment_schedule = contracts.schedule_summary_text(row, lang) if row else ''
+        progress = getattr(template, f'progress_standard_{lang}', '') or template.progress_standard_en
+        cp_name = template.counterparty_name
+        cp_title = template.counterparty_title
+        cp_nric = template.counterparty_nric
+    else:
+        payment_schedule = DEFAULT_PAYMENT_SCHEDULE
+        progress = DEFAULT_PROGRESS_STANDARD
+        cp_name = getattr(settings, 'FOUNDATION_SIGNATORY_NAME', 'Suresh')
+        cp_title = getattr(
+            settings, 'FOUNDATION_SIGNATORY_TITLE',
+            'For and on behalf of the Foundation (interim signatory)')
+        cp_nric = getattr(settings, 'FOUNDATION_SIGNATORY_NRIC', '') or ''
+
     return {
         'award_amount': application.award_amount,
-        'payment_schedule': DEFAULT_PAYMENT_SCHEDULE,
+        'payment_schedule': payment_schedule,
         'institution_name': institution,
         'course_name': course,
         'commencement_date': None,
-        'progress_standard': DEFAULT_PROGRESS_STANDARD,
-        'foundation_signatory_name': getattr(settings, 'FOUNDATION_SIGNATORY_NAME', 'Suresh'),
-        'foundation_signatory_title': getattr(
-            settings, 'FOUNDATION_SIGNATORY_TITLE',
-            'For and on behalf of the Foundation (interim signatory)'),
-        'foundation_signatory_nric': getattr(settings, 'FOUNDATION_SIGNATORY_NRIC', '') or '',
+        'progress_standard': progress,
+        'foundation_signatory_name': cp_name,
+        'foundation_signatory_title': cp_title,
+        'foundation_signatory_nric': cp_nric,
     }
 
 
@@ -276,31 +296,79 @@ def _signature_block(role, *, name, nric='', extra='', signed_at):
     )
 
 
+def _guarantor_role_label(parent_role):
+    """The signature-block label for the parent/guardian party, driven by the
+    template's ``parent_role`` so the config and the wording agree by construction.
+    ``co_signer_all`` (the v1 default): the parent co-signs the whole agreement;
+    ``minor_only`` (fenced in v1) keeps the legacy surety wording."""
+    if parent_role == 'co_signer_all':
+        return 'Parent/Guardian — Co-signer / Ibu bapa atau Penjaga (Penandatangan bersama)'
+    return 'Guarantor / Penjamin (surety)'
+
+
+def _clause_body_html(body):
+    """Plain-text clause body → HTML, a blank line becoming a paragraph break."""
+    paras = [_esc(p) for p in (body or '').split('\n\n') if p.strip()]
+    return '<br/><br/>'.join(paras)
+
+
 def render_agreement_html(application, particulars, *, student, guarantor,
-                          foundation, witness, locale='en'):
+                          foundation, witness, locale='en', template=None):
     """Render the full, self-contained agreement HTML (inline CSS only — xhtml2pdf
     has limited CSS support). This is the immutable snapshot stored on the record.
+
+    With a ``template`` the title/preamble/clauses, the party-block wording and the
+    Schedule 1 payment table all come from the versioned template; with no template
+    it renders the legacy ``bursary.py`` constants (removed in Sprint 5).
 
     ``student`` / ``guarantor`` / ``foundation`` / ``witness`` are dicts with the
     party's name (+ nric/role/timestamp where applicable). The donor is NEVER
     rendered — there is no donor field anywhere in this document."""
     lang = _locale(locale)
-    title = AGREEMENT_TITLE[lang]
-    banner = DRAFT_BANNER[lang]
-    preamble = AGREEMENT_PREAMBLE[lang]
-    clauses = AGREEMENT_CLAUSES[lang]
+    calendar = []
+    if template is not None:
+        from . import contracts
+        title = getattr(template, f'title_{lang}', '') or template.title_en
+        preamble = getattr(template, f'preamble_{lang}', '') or template.preamble_en
+        clauses = [
+            (getattr(c, f'heading_{lang}', '') or c.heading_en,
+             getattr(c, f'body_{lang}', '') or c.body_en)
+            for c in template.clauses.all().order_by('order')
+        ]
+        guarantor_role = _guarantor_role_label(template.parent_role)
+        version = template.version
+        vetted_line = (f'Vetted by {template.vetted_by_name}, {template.vetted_on}'
+                       if template.vetted_by_name and template.vetted_on else '')
+        cohort_year = getattr(getattr(application, 'cohort', None), 'year', None)
+        row = contracts.schedule_row_for(template, application)
+        calendar = contracts.schedule_calendar(row, cohort_year, lang)
+    else:
+        title = AGREEMENT_TITLE[lang]
+        preamble = AGREEMENT_PREAMBLE[lang]
+        clauses = AGREEMENT_CLAUSES[lang]
+        guarantor_role = 'Guarantor / Penjamin (surety)'
+        version = getattr(settings, 'BURSARY_AGREEMENT_VERSION', '')
+        vetted_line = ''
 
     parts = [
         '<html><head><meta charset="utf-8"/></head>',
         '<body style="font-family: Helvetica, Arial, sans-serif; font-size: 11px; '
         'color: #222; line-height: 1.4;">',
-        # DRAFT banner
-        '<div style="background:#fde68a; border:1px solid #d97706; color:#92400e; '
-        'padding:6px 10px; text-align:center; font-weight:bold; margin-bottom:12px;">'
-        f'{_esc(banner)}</div>',
-        f'<h1 style="font-size:18px; text-align:center; margin:0 0 4px 0;">{_esc(title)}</h1>',
     ]
-    if lang == 'en':
+    if template is not None:
+        # Deployed template = lawyer-vetted → no DRAFT banner; English-authoritative notice.
+        parts.append(
+            '<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; '
+            'padding:6px 10px; text-align:center; font-size:9px; margin-bottom:12px;">'
+            'The English version of this Agreement is authoritative; any other language '
+            'is a courtesy translation.</div>')
+    else:
+        parts.append(
+            '<div style="background:#fde68a; border:1px solid #d97706; color:#92400e; '
+            'padding:6px 10px; text-align:center; font-weight:bold; margin-bottom:12px;">'
+            f'{_esc(DRAFT_BANNER[lang])}</div>')
+    parts.append(f'<h1 style="font-size:18px; text-align:center; margin:0 0 4px 0;">{_esc(title)}</h1>')
+    if template is None and lang == 'en':
         parts.append('<p style="text-align:center; font-size:9px; color:#666; margin:0 0 12px 0;">'
                      'Perjanjian Pemberian Biasiswa Bersyarat</p>')
     parts.append(f'<p>{_esc(preamble)}</p>')
@@ -329,12 +397,33 @@ def render_agreement_html(application, particulars, *, student, guarantor,
             '</tr>')
     parts.append('</table>')
 
+    # Schedule 1 — the month-by-month payment table (template only; gap months shown).
+    if calendar:
+        parts.append('<h2 style="font-size:13px; margin:14px 0 6px 0;">'
+                     'Schedule 1 / Jadual 1 — Payment schedule</h2>')
+        parts.append('<table style="width:100%; border-collapse:collapse; font-size:11px;">')
+        parts.append('<tr>'
+                     '<td style="border:1px solid #ccc; padding:4px; background:#f3f4f6; '
+                     'font-weight:bold; width:50%;">Month / Bulan</td>'
+                     '<td style="border:1px solid #ccc; padding:4px; background:#f3f4f6; '
+                     'font-weight:bold;">Amount / Amaun</td></tr>')
+        for m in calendar:
+            cell = (_fmt_amount(m['amount']) if m['paid']
+                    else 'Exam month — no payment / Bulan peperiksaan — tiada bayaran')
+            style = '' if m['paid'] else ' color:#92400e; background:#fffbeb;'
+            parts.append(
+                '<tr>'
+                f'<td style="border:1px solid #ccc; padding:4px;{style}">{_esc(m["label"])}</td>'
+                f'<td style="border:1px solid #ccc; padding:4px;{style}">{_esc(cell)}</td>'
+                '</tr>')
+        parts.append('</table>')
+
     # Clauses.
     parts.append('<h2 style="font-size:13px; margin:16px 0 6px 0;">Terms / Terma</h2>')
     parts.append('<ol style="padding-left:18px;">')
     for heading, body in clauses:
         parts.append(
-            f'<li style="margin-bottom:8px;"><b>{_esc(heading)}.</b> {_esc(body)}</li>')
+            f'<li style="margin-bottom:8px;"><b>{_esc(heading)}.</b> {_clause_body_html(body)}</li>')
     parts.append('</ol>')
 
     # Signature blocks.
@@ -345,7 +434,7 @@ def render_agreement_html(application, particulars, *, student, guarantor,
         'Student / Pelajar', name=student.get('name', ''), nric=student.get('nric', ''),
         signed_at=student.get('signed_at')))
     parts.append(_signature_block(
-        'Guarantor / Penjamin (surety)', name=guarantor.get('name', ''),
+        guarantor_role, name=guarantor.get('name', ''),
         nric=guarantor.get('nric', ''),
         extra=(f"Relationship: {guarantor.get('relationship', '')}"
                if guarantor.get('relationship') else ''),
@@ -362,8 +451,14 @@ def render_agreement_html(application, particulars, *, student, guarantor,
         signed_at=witness.get('signed_at')))
     parts.append('</tr></table>')
 
-    parts.append(f'<p style="margin-top:14px; font-size:9px; color:#666;">{_esc(banner)} '
-                 f'— version {_esc(getattr(settings, "BURSARY_AGREEMENT_VERSION", ""))}.</p>')
+    if template is not None:
+        footer = f'Version {_esc(version)}.'
+        if vetted_line:
+            footer += f' {_esc(vetted_line)}.'
+        parts.append(f'<p style="margin-top:14px; font-size:9px; color:#666;">{footer}</p>')
+    else:
+        parts.append(f'<p style="margin-top:14px; font-size:9px; color:#666;">'
+                     f'{_esc(DRAFT_BANNER[lang])} — version {_esc(version)}.</p>')
     parts.append('</body></html>')
     return ''.join(parts)
 
@@ -457,7 +552,7 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
     back. The caller (respond_to_award) runs this BEFORE the consent + 'active' flip
     so a BursaryError aborts the whole acceptance. Returns the BursaryAgreement.
     """
-    from . import storage
+    from . import contracts, storage
     from .models import BursaryAgreement
 
     check = guarantor_identity_check(application, guarantor_name, guarantor_nric)
@@ -472,9 +567,25 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
     if not guarantor_phone_verification_fresh(application):
         raise BursaryError('guarantor_phone_unverified')
 
+    # Contract-module cutover: the agreement is rendered from the org's ACTIVE template
+    # (or the one already pinned to a prior agreement). Flag-on with no active template is
+    # a hard error — never fall back to the hard-coded constants once the org is live.
+    # And the student must have passed the comprehension quiz for THIS exact version
+    # (comprehension_stale otherwise — the runtime quiz↔contract guard against a redeploy
+    # between "Understand" and "Sign").
+    template = contracts.template_for_application(application)
+    if template is None:
+        if getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False):
+            raise BursaryError('no_active_template')
+    else:
+        if application.comprehension_template_id != template.id:
+            raise BursaryError('comprehension_stale')
+        locale = contracts.resolve_locale(locale, template)
+
     now = timezone.now()
-    version = getattr(settings, 'BURSARY_AGREEMENT_VERSION', '2026-v1')
-    p = particulars_for(application)
+    version = template.version if template is not None else getattr(
+        settings, 'BURSARY_AGREEMENT_VERSION', '2026-v1')
+    p = particulars_for(application, template, locale)
 
     student = {
         'name': student_signed_name,
@@ -497,7 +608,7 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
 
     html = render_agreement_html(
         application, p, student=student, guarantor=guarantor,
-        foundation=foundation, witness=witness, locale=locale)
+        foundation=foundation, witness=witness, locale=locale, template=template)
     sha = hashlib.sha256(html.encode('utf-8')).hexdigest()
 
     pdf_bytes = generate_pdf(html)
@@ -510,6 +621,7 @@ def sign_agreement(application, *, sponsorship=None, student_signed_name,
         application=application,
         defaults={
             'sponsorship': sponsorship,
+            'template': template,
             'version': version,
             'locale': _locale(locale),
             'award_amount': p['award_amount'],
@@ -628,7 +740,8 @@ def _regenerate_artefact(agreement, fields):
                'signed_at': agreement.witness_signed_at}
     html = render_agreement_html(
         application, p, student=student, guarantor=guarantor,
-        foundation=foundation, witness=witness, locale=agreement.locale)
+        foundation=foundation, witness=witness, locale=agreement.locale,
+        template=agreement.template)  # safe: a non-draft template is immutable
     agreement.rendered_html = html
     agreement.agreement_sha256 = hashlib.sha256(html.encode('utf-8')).hexdigest()
     fields.extend(['rendered_html', 'agreement_sha256'])
@@ -647,10 +760,19 @@ def _cockpit_link(application):
     return f'{frontend}/admin/scholarship/{application.id}'
 
 
-def foundation_notify_emails():
-    """Recipients for a "please countersign" nudge: the ``FOUNDATION_NOTIFY_EMAIL`` override
-    (comma-separated) if set, else every active super admin (the people who can countersign),
-    else ``ADMIN_NOTIFY_EMAIL``. Returns a de-duplicated list (possibly empty)."""
+def foundation_notify_emails(application=None):
+    """Recipients for a "please countersign" nudge: the governing template's
+    ``counterparty_notify_emails`` (when an ``application`` with an active/pinned
+    template is given) take precedence; else the ``FOUNDATION_NOTIFY_EMAIL`` override
+    (comma-separated) if set, else every active super admin (the people who can
+    countersign), else ``ADMIN_NOTIFY_EMAIL``. Returns a de-duplicated list."""
+    if application is not None:
+        from . import contracts
+        template = contracts.template_for_application(application)
+        emails = list((template.counterparty_notify_emails or []) if template else [])
+        emails = [e for e in (str(x).strip() for x in emails) if e]
+        if emails:
+            return list(dict.fromkeys(emails))
     env = getattr(settings, 'FOUNDATION_NOTIFY_EMAIL', '') or ''
     explicit = [e.strip() for e in env.split(',') if e.strip()]
     if explicit:
@@ -688,7 +810,7 @@ def notify_after_guarantor_signed(application):
                 org.contact_email, contact_person=getattr(org, 'contact_person', ''),
                 applicant_name=name, org_name=getattr(org, 'name', ''), link=link)
         else:
-            for to in foundation_notify_emails():
+            for to in foundation_notify_emails(application):
                 emails.send_countersign_pending_email(to, applicant_name=name, link=link)
     except Exception:
         logger.exception('bursary: notify_after_guarantor_signed failed (app %s)',
@@ -701,7 +823,7 @@ def _notify_foundation_countersign_pending(application):
         from . import emails
         name = _applicant_name(application)
         link = _cockpit_link(application)
-        for to in foundation_notify_emails():
+        for to in foundation_notify_emails(application):
             emails.send_countersign_pending_email(to, applicant_name=name, link=link)
     except Exception:
         logger.exception('bursary: countersign-pending notify failed (app %s)',
@@ -768,7 +890,7 @@ def send_signing_reminders(now=None):
             if now - since < interval:
                 continue
             any_sent = False
-            for to in foundation_notify_emails():
+            for to in foundation_notify_emails(app):
                 any_sent = emails.send_countersign_pending_email(
                     to, applicant_name=name, link=link) or any_sent
             if any_sent:

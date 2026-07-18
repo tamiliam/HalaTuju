@@ -17,15 +17,23 @@ data behind. Pass --keep to commit the seeded records instead.
 SAFE TO RUN LOCALLY. It forces BURSARY_AGREEMENT_ENABLED on for the run only and uses the
 in-memory email backend, so it never sends a real email or touches a real document bucket.
 """
+import datetime
+import os
 from contextlib import ExitStack
 from decimal import Decimal
 from unittest.mock import patch
 
 from django.core import mail
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.test import override_settings
 from django.utils import timezone
+
+# The committed BrightPath v1 fixture (apps/scholarship/fixtures/...), three dirs up
+# from this command file (commands → management → scholarship) + fixtures/.
+_FIXTURE = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'fixtures', 'brightpath_contract_v1.json')
 
 
 class _Done(Exception):
@@ -90,18 +98,46 @@ class Command(BaseCommand):
             raise AssertionError(f'E2E assertion failed: {msg}')
         self._line(f'[ok] {msg}')
 
+    def _seed_and_deploy_template(self, owner_org, contracts, ContractTemplate):
+        """Seed the BrightPath v1 fixture as a DRAFT for the owner org, fill the
+        counterparty + vetting attestation (test values), submit and deploy — so a
+        real ACTIVE template governs the signing chain."""
+        self._step(0, 'Seed + deploy a contract template for the owning org')
+        call_command('seed_contract_template', org=owner_org.code,
+                     template_version='2026-e2e', fixture=_FIXTURE, verbosity=0)
+        template = ContractTemplate.objects.get(organisation=owner_org, version='2026-e2e')
+        contracts.update_config(
+            template, counterparty_name='Foundation Signatory',
+            counterparty_nric='000000-00-0000')
+        contracts.record_vetting(
+            template, vetted_by_name='E2E Lawyer', vetted_on=datetime.date(2026, 7, 1),
+            attested_by_email='lawyer@example.test')
+        contracts.submit_for_deployment(template, submitted_by_email='owner@example.test')
+        contracts.deploy(template, is_super=True, deployed_by_email='super@example.test')
+        self._check(template.status == 'active', f"template {template.version} deployed (active)")
+        return template
+
     # ── the walk ─────────────────────────────────────────────────────────────
     def _walk(self, *, no_org):
         from apps.courses.models import PartnerOrganisation, PartnerAdmin, StudentProfile
-        from apps.scholarship import bursary
+        from apps.scholarship import bursary, contracts
         from apps.scholarship import sponsorship as svc
         from apps.scholarship.models import (
-            ApplicantDocument, ScholarshipApplication, ScholarshipCohort, Sponsor,
-            SponsorProfile, Donation, Consent,
+            ApplicantDocument, ContractTemplate, ScholarshipApplication, ScholarshipCohort,
+            Sponsor, SponsorProfile, Donation, Consent,
         )
 
         guar_name, guar_nric, guar_phone = 'Rahmah Binti Ahmad', '700101-10-5555', '013-1112222'
         cohort = ScholarshipCohort.objects.create(code='e2e', name='B40 E2E', year=2026)
+
+        # The org that OWNS the student + the contract template. Distinct from the
+        # referring partner (the witness) below. Seed + deploy a template so the
+        # cutover engine renders from it (flag-on with no active template = error).
+        owner_org = PartnerOrganisation.objects.create(
+            code='e2e-owner', name='E2E Owner Org', contact_email='owner@example.test')
+        cohort.owning_organisation = owner_org
+        cohort.save(update_fields=['owning_organisation'])
+        template = self._seed_and_deploy_template(owner_org, contracts, ContractTemplate)
 
         org = None
         if not no_org:
@@ -139,8 +175,11 @@ class Command(BaseCommand):
 
         self._step(2, 'Student passes the comprehension quiz ("Understand")')
         app.comprehension_passed_at = timezone.now()
-        app.save(update_fields=['comprehension_passed_at'])
+        app.comprehension_template = template   # pins the version the quiz covered
+        app.save(update_fields=['comprehension_passed_at', 'comprehension_template'])
         self._check(app.comprehension_passed_at is not None, 'comprehension_passed_at stamped')
+        self._check(app.comprehension_template_id == template.id,
+                    'comprehension pinned to the deployed template version')
 
         self._step(3, "Parent PIN verified on the guardian's locked phone (Twilio mocked)")
         from apps.scholarship import whatsapp

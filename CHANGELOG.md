@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract Module — Sprint 2: engine cutover (backend) — 2026-07-18
+
+Second sprint of the contract module (plan `docs/plans/2026-07-18-contract-module-plan.md`).
+`bursary.py` and `payments.py` now read the versioned template instead of the
+hard-coded constants (which STAY in place — removal is Sprint 5). Backend only.
+**NO deploy** (Sprint 5 is the feature's single deploy); still behind
+`BURSARY_AGREEMENT_ENABLED` (OFF). The other-agent "bursary.py reconciliation"
+prerequisite was cancelled and folded into this sprint.
+
+- **Changed — `bursary.py` renders from the template.** `particulars_for(app,
+  template, locale)` takes the payment-schedule text (from the app's schedule
+  row), progress standard and counterparty (Suresh) from the template — killing the
+  wrong `DEFAULT_PAYMENT_SCHEDULE` free text; falls back to the constants when
+  there's no template. `render_agreement_html(..., template)` renders the title/
+  preamble/clauses from the template, a **Schedule 1 payment table** (gap months
+  shown "Exam month — no payment"), the parent co-signer-for-all wording (from
+  `parent_role`), an "English is authoritative" notice (no DRAFT banner), and a
+  "Vetted by {name}, {date}" footer. `sign_agreement` resolves the org's active
+  (or pinned) template — flag-on with **no active template → `no_active_template`**;
+  the student must have passed the quiz for that exact version else
+  **`comprehension_stale`** (the runtime quiz↔contract guard); stores `template` +
+  version. `_regenerate_artefact` passes the pinned template;
+  `foundation_notify_emails(application)` prefers the template's
+  `counterparty_notify_emails`.
+- **Changed — quiz is API-served.** New `GET
+  /scholarship/award/comprehension-quiz/?locale=` → `{template_version,
+  locale_used, checkpoints}` from the governing template. The pass POST
+  (`…/award/comprehension/`) now pins `comprehension_template` and rejects a stale
+  posted `template_version` with **409 `version_changed`** (re-take).
+- **Changed — `payments.py` reads the schedule row.** New `_schedule_row(app)`
+  seam; `default_amount`/`_pathway_payment_start` take the row's `monthly_amount`/
+  `start_month` (legacy `MONTHLY_RATE`/`PATHWAY_PAYMENT_START_MONTH` fallback when
+  no template — **byte-identical** for the seeded RM200 rows); a run greys
+  `gap_month` (exam-month skip) / `schedule_complete` (past the schedule end) with
+  reasons. First divergence from legacy = Dec 2026 STPM skip.
+- **Changed — `bursary_e2e`** seeds the BrightPath fixture, fills counterparty +
+  vetting, deploys the template, and pins `comprehension_template` before walking
+  the signing chain — both chain paths green.
+- **Tests**: new `test_contract_cutover.py` (+14: **payment-run parity Jul–Nov
+  template==legacy**, Dec STPM gap greying, `no_active_template`,
+  `comprehension_stale`, template render, quiz GET/pass/409, e2e-as-CI-test).
+  Pre-cutover `test_bursary_agreement.py` updated to sign through a deployed
+  template. **4074 pytest** (2820 scholarship + 1254 courses/reports) green; 0
+  migration drift; constants untouched.
+
 ## Contract Module — Sprint 1: model + service + seed (backend, INERT) — 2026-07-18
 
 First sprint of the org-owned, versioned bursary-agreement module (plan

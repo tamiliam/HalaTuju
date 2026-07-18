@@ -553,6 +553,27 @@ def schedule_table(template, locale='en'):
     return table
 
 
+def schedule_calendar(row, cohort_year, locale='en'):
+    """Month-by-month rows for Schedule 1: every month from the first paid month
+    through the last, each flagged paid (with amount) or a gap ('exam month — no
+    payment'). Drives the rendered contract's payment table."""
+    if row is None or not row.paid_offsets or not cohort_year:
+        return []
+    offsets = sorted(int(o) for o in row.paid_offsets)
+    paid = set(offsets)
+    calendar = []
+    for off in range(0, offsets[-1] + 1):
+        total = (row.start_month - 1) + off
+        year = cohort_year + total // 12
+        month = total % 12 + 1
+        calendar.append({
+            'label': f'{_MONTHS[month]} {year}',
+            'paid': off in paid,
+            'amount': row.monthly_amount if off in paid else None,
+        })
+    return calendar
+
+
 def quiz_checkpoints(template, locale='en'):
     """The comprehension checkpoints for the candidate clauses, in order, with a
     per-clause English fallback when the requested locale isn't translated."""

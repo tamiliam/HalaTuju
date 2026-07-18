@@ -41,7 +41,30 @@ def _token(uid, email='x@x.com'):
         TEST_JWT_SECRET, algorithm='HS256')
 
 
+def _ensure_active_template(cohort):
+    """Post-cutover, a flag-on signing goes through the org's ACTIVE contract template.
+    Point the cohort at BrightPath (the org migration 0098 seeds) and deploy a template
+    whose counterparty is 'Suresh' (matching the legacy FOUNDATION_SIGNATORY_NAME so the
+    render assertions in this module stay valid). Idempotent within a test."""
+    import datetime
+    from apps.scholarship import contracts
+    from apps.scholarship.tests.contract_helpers import brightpath_org, seed_draft
+    org = brightpath_org()
+    cohort.owning_organisation = org
+    cohort.save(update_fields=['owning_organisation'])
+    active = contracts.active_template_for(org)
+    if active is None:
+        t = seed_draft('2026-bursary-test')
+        contracts.update_config(t, counterparty_name='Suresh', counterparty_nric='000000-00-0000')
+        contracts.record_vetting(t, vetted_by_name='Legal Reviewer',
+                                 vetted_on=datetime.date(2026, 7, 1), attested_by_email='a@b.c')
+        contracts.submit_for_deployment(t)
+        active = contracts.deploy(t, is_super=True)
+    return active
+
+
 def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'), org=None):
+    template = _ensure_active_template(cohort)   # sets cohort org + deploys a template
     profile = StudentProfile.objects.create(
         supabase_user_id=f'stu-{suffix}', name='Zxq Student', nric=nric,
         preferred_state='Kedah', exam_type='spm', grades={'bm': 'A'},
@@ -53,6 +76,10 @@ def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'),
         cohort=cohort, profile=profile, status='recommended', award_amount=award,
         notify_email='student@secret.example',
         chosen_programme={'course_name': 'Diploma in Nursing', 'institution': 'Politeknik KL'})
+    # The student passed the comprehension quiz on THIS version (the runtime lockstep
+    # sign_agreement enforces); without it signing would raise comprehension_stale.
+    app.comprehension_template = template
+    app.save(update_fields=['comprehension_template'])
     SponsorProfile.objects.create(application=app, anon_markdown='Determined.', anon_published=True)
     Consent.objects.create(application=app, consent_type='share_with_sponsors', version='e', is_active=True)
     return app
