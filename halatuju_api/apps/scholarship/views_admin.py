@@ -2404,3 +2404,30 @@ class AdminContractQuizPreviewView(_ContractsBase):
         loc = contracts.resolve_locale(request.query_params.get('locale', 'en'), template)
         return Response({'template_version': template.version, 'locale_used': loc,
                          'checkpoints': contracts.quiz_checkpoints(template, loc)})
+
+
+class AdminContractImportDocxView(_ContractsBase):
+    """POST a .docx — extract its text + Gemini-segment it into a PROPOSED [{heading,
+    body}] clause list for the author to review (draft-only). Nothing is saved and the
+    uploaded file is NOT retained — on confirm the FE calls the clauses PUT with the
+    reviewed list. Segmentation failures return a code the FE degrades on."""
+    from rest_framework.parsers import MultiPartParser
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, pk):
+        template, admin, err = self._template_for(request, pk)
+        if err:
+            return err
+        if template.status != 'draft':
+            return Response({'error': 'not_draft', 'code': 'not_draft'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        upload = request.FILES.get('file')
+        if upload is None:
+            return Response({'error': 'no_file', 'code': 'no_file'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        from . import contracts
+        try:
+            clauses = contracts.segment_docx(upload.read())   # bytes only; never stored
+        except contracts.ContractsError as e:
+            return _contracts_err(e)
+        return Response({'clauses': clauses})   # PROPOSED — the FE reviews, then PUTs clauses

@@ -310,6 +310,8 @@ export default function AdministrationPage() {
               active={panel === 'staff'} onClick={() => setPanel(panel === 'staff' ? null : 'staff')} />
             <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
               onClick={() => router.push('/admin/payments')} />
+            <IconCard icon="📄" title={t('admin.administration.contracts')} subtitle={t('admin.administration.contractsSub')}
+              onClick={() => router.push('/admin/contracts')} />
             <IconCard icon="💳" title={t('admin.administration.billing')} subtitle={t('admin.administration.billingSub')}
               disabled comingSoon={t('admin.administration.comingSoon')} />
           </div>

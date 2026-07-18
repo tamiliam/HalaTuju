@@ -11,6 +11,7 @@ import json
 from unittest.mock import patch
 
 import jwt
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -251,6 +252,78 @@ class TestLifecycleOverApi(_Base):
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data['code'], 'not_deployable')
         self.assertIn('T1', r.data['errors'])
+
+
+def _docx_bytes(paragraphs):
+    """A minimal in-memory .docx with the given paragraphs."""
+    import io
+    import docx
+    d = docx.Document()
+    for p in paragraphs:
+        d.add_paragraph(p)
+    buf = io.BytesIO()
+    d.save(buf)
+    return buf.getvalue()
+
+
+class TestImportDocx(_Base):
+    def setUp(self):
+        super().setUp()
+        self.t = seed_draft('2026-imp')
+        self._auth('ct-oa')
+
+    @patch('apps.scholarship.contracts._gemini_generate')
+    def test_import_returns_proposed_clauses(self, mock_gemini):
+        mock_gemini.return_value = json.dumps([
+            {'heading': 'The Bursary Award', 'body': 'The Foundation agrees to award...'},
+            {'heading': 'Payment Schedule', 'body': 'Paid monthly...'},
+        ])
+        docx_file = SimpleUploadedFile(
+            'contract.docx', _docx_bytes(['1. The Bursary Award', 'Body text here.']),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        r = self.client.post(f'{BASE}{self.t.id}/import-docx/', {'file': docx_file}, format='multipart')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data['clauses']), 2)
+        self.assertEqual(r.data['clauses'][0]['heading'], 'The Bursary Award')
+        self.assertEqual(mock_gemini.call_count, 1)
+        # It only PROPOSES — the draft's own clauses are untouched until a clauses PUT.
+        self.assertEqual(self.t.clauses.count(), 16)
+
+    def test_import_requires_a_file(self):
+        r = self.client.post(f'{BASE}{self.t.id}/import-docx/', {}, format='multipart')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'no_file')
+
+    @patch('apps.scholarship.contracts._gemini_generate')
+    def test_import_segmentation_failure_degrades(self, mock_gemini):
+        mock_gemini.return_value = 'not json'
+        docx_file = SimpleUploadedFile(
+            'contract.docx', _docx_bytes(['Some text']),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        r = self.client.post(f'{BASE}{self.t.id}/import-docx/', {'file': docx_file}, format='multipart')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'segmentation_failed')
+
+    @patch('apps.scholarship.contracts._gemini_generate')
+    def test_import_draft_only(self, mock_gemini):
+        mock_gemini.return_value = json.dumps([{'heading': 'H', 'body': 'B'}])
+        t = make_deployable('2026-imp2')
+        contracts.submit_for_deployment(t)
+        docx_file = SimpleUploadedFile(
+            'c.docx', _docx_bytes(['x']),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        r = self.client.post(f'{BASE}{t.id}/import-docx/', {'file': docx_file}, format='multipart')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'not_draft')
+        mock_gemini.assert_not_called()
+
+    def test_import_cross_org_404(self):
+        other = ContractTemplate.objects.create(organisation=self.org_b, version='imp-b')
+        docx_file = SimpleUploadedFile(
+            'c.docx', _docx_bytes(['x']),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        r = self.client.post(f'{BASE}{other.id}/import-docx/', {'file': docx_file}, format='multipart')
+        self.assertEqual(r.status_code, 404)
 
 
 class TestPreviewEndpoints(_Base):

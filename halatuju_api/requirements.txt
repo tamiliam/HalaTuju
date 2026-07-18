@@ -51,5 +51,10 @@ pillow-heif>=0.16,<1.0
 # snapshot for the private document bucket.
 xhtml2pdf>=0.2.16,<0.3
 
+# Contract module — Word import (Sprint 4): extract text from an author's .docx before
+# Gemini segments it into clauses. The uploaded file is a populate convenience, never
+# retained; the reviewed structured clauses remain the single source of truth.
+python-docx>=1.1,<2.0
+
 # Development
 python-dotenv>=1.0,<2.0

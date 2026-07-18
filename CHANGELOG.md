@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract Module — Sprint 4: admin FE + quiz refactor + Word import — 2026-07-18
+
+Fourth sprint of the contract module (plan `docs/plans/2026-07-18-contract-module-plan.md`).
+The owner-approved Stitch screens become real admin pages; the student quiz is
+API-served; and an author can import a Word document to populate a draft's clauses.
+Behind `BURSARY_AGREEMENT_ENABLED` (OFF); **NO deploy** (Sprint 5); no migration.
+
+- **Added — Contracts admin FE.** A "Contracts" card in the Administration →
+  Organisation grid (no top-level nav; the layout keeps "Administration" active).
+  `admin/contracts/` — template list (status chips, languages, vetted-by,
+  New-version with copy-from). `admin/contracts/[id]/` — a six-tab editor
+  (`components/contracts/`): ConfigForm (localised title/preamble/progress + party
+  config, en authoritative), ClauseEditor (ordered clauses en|ms|ta + Word import),
+  QuizEditor (flag → Generate with Gemini → review/edit/regenerate per language),
+  ScheduleEditor (real data — RM200, a 17-month Jul→Nov two-year month-grid →
+  offsets, per-row total vs award), TemplatePreview (iframe srcDoc + Open PDF),
+  DeployPanel (validation checklist + attestation + Submit; **Deploy super-only,
+  org_admin sees only Submit/Revert**). Client fns in `lib/admin-api.ts`; i18n
+  `admin.contracts.*` en/ms/ta (Tamil first-draft) + a parity guard test.
+- **Changed — the comprehension quiz is API-served.** `AwardComprehensionQuiz`
+  fetches from `GET /scholarship/award/comprehension-quiz/`, records the pass
+  pinned to `template_version`, and re-takes on a `version_changed` 409. The static
+  `CHECKPOINTS` (verified captured in the seed fixture) were deleted from
+  `awardComprehension.ts` — only the UI chrome remains; the jest guardrail is
+  replaced by a slim component test (content invariants now live server-side).
+- **Added — Word import.** `POST …/contract-templates/<pk>/import-docx/` (draft-only,
+  org-fenced, super/org_admin) — python-docx text extraction + Gemini segmentation
+  into a proposed `[{heading, body}]` list (same mockable seam + model as
+  generate-quiz; never live in tests). The FE shows a **review-before-accept** step;
+  only on confirm does it replace the draft's clauses. The uploaded file is never
+  retained; segmentation failures degrade gracefully to hand-editing. `python-docx`
+  pinned in requirements.
+- **Tests**: +5 import-docx (mocked, draft-only, cross-org 404) → **2846
+  scholarship pytest**; **593 jest** (new admin.contracts i18n guard + quiz
+  component test); `next build` clean; tsc 0 errors; org-fence guard green.
+
 ## Contract Module — Sprint 3: admin API + Stitch (backend) — 2026-07-18
 
 Third sprint of the contract module (plan `docs/plans/2026-07-18-contract-module-plan.md`).

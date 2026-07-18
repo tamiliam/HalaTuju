@@ -57,10 +57,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     router.replace('/admin/login')
   }
 
-  // The Payments module is a sub-page of Administration (no top-level nav entry), so its
-  // pages highlight the Administration link as active (owner, 2026-07-16).
+  // Payments + Contracts are sub-pages of Administration (no top-level nav entry), so
+  // their pages highlight the Administration link as active (owner, 2026-07-16/18).
   const isActive = (href: string) =>
-    pathname === href || (href === '/admin/administration' && pathname.startsWith('/admin/payments'))
+    pathname === href || (href === '/admin/administration'
+      && (pathname.startsWith('/admin/payments') || pathname.startsWith('/admin/contracts')))
 
   // Role-driven menu (2026-06): super/admin see everything; partner sees only
   // Dashboard + Students (own org) — no Guide/FAQ; reviewer + qc see only B40 Applications

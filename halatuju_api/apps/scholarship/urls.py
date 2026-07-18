@@ -119,6 +119,7 @@ from .views_admin import (
     AdminContractDeployView,
     AdminContractPreviewView,
     AdminContractQuizPreviewView,
+    AdminContractImportDocxView,
 )
 
 urlpatterns = [
@@ -214,6 +215,7 @@ urlpatterns = [
     path('admin/scholarship/contract-templates/<int:pk>/deploy/', AdminContractDeployView.as_view()),
     path('admin/scholarship/contract-templates/<int:pk>/preview/', AdminContractPreviewView.as_view()),
     path('admin/scholarship/contract-templates/<int:pk>/quiz-preview/', AdminContractQuizPreviewView.as_view()),
+    path('admin/scholarship/contract-templates/<int:pk>/import-docx/', AdminContractImportDocxView.as_view()),
 
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
     # Phase E: sponsor account vetting

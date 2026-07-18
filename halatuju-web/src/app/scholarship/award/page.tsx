@@ -11,7 +11,7 @@ import FieldLabel from '@/components/FieldLabel'
 import InfoBox from '@/components/InfoBox'
 import AwardComprehensionQuiz from '@/components/AwardComprehensionQuiz'
 import {
-  getStudentAward, respondToAward, recordComprehensionPass,
+  getStudentAward, respondToAward,
   sendGuarantorPin, checkGuarantorPin,
   type StudentAward, type BursaryPreview, type BursaryAgreement,
 } from '@/lib/api'
@@ -326,9 +326,9 @@ export default function ScholarshipAwardPage() {
     if (!comprehensionPassed) {
       return wrap(
         <AwardComprehensionQuiz
+          token={token || undefined}
           onComplete={() => {
             setComprehensionPassed(true)
-            if (token) recordComprehensionPass({ token }).catch(() => {})
             window.scrollTo(0, 0)
           }}
         />,

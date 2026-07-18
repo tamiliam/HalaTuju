@@ -2045,12 +2045,36 @@ export async function confirmBankAccount(
   })
 }
 
-/** Record that the student passed the bursary-agreement comprehension quiz (the
- *  "Understand" step on /scholarship/award). Best-effort; stamps comprehension_passed_at. */
-export async function recordComprehensionPass(options?: ApiOptions): Promise<{ ok: boolean }> {
+/** One comprehension checkpoint as served by the API (matches the ContractClause quiz
+ *  shape: options is a 3-string array, `correct` is the 0-based index). */
+export interface ComprehensionCheckpoint {
+  tag: string
+  plain: string
+  question: string
+  options: string[]
+  correct: number
+  why: string
+}
+export interface ComprehensionQuizData {
+  template_version: string
+  locale_used: string
+  checkpoints: ComprehensionCheckpoint[]
+}
+
+/** GET the comprehension checkpoints for the caller's awarded application, served from
+ *  the governing contract template (en fallback when the locale isn't translated). */
+export async function getComprehensionQuiz(locale: string, options?: ApiOptions): Promise<ComprehensionQuizData> {
+  return apiRequest(`/api/v1/scholarship/award/comprehension-quiz/?locale=${encodeURIComponent(locale)}`, options)
+}
+
+/** Record that the student passed the comprehension quiz — pins `comprehension_template`
+ *  to the version they were quizzed on. A stale `template_version` (a redeploy mid-quiz)
+ *  → 409 `version_changed`, surfaced as `err.code` so the caller can re-take. */
+export async function recordComprehensionPass(
+  templateVersion: string, options?: ApiOptions): Promise<{ ok: boolean; template_version: string }> {
   return apiRequest('/api/v1/scholarship/award/comprehension/', {
     method: 'POST',
-    body: JSON.stringify({}),
+    body: JSON.stringify({ template_version: templateVersion }),
     ...options,
   })
 }

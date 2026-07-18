@@ -307,6 +307,82 @@ def generate_quiz(clause, *, model=None):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Word import (populate a draft's clauses from an author's .docx — Sprint 4)
+#
+# The uploaded file is a POPULATE CONVENIENCE, never retained as a legal artefact:
+# segment_docx returns a proposed [{heading, body}] list the author reviews, and only
+# the reviewed structured clauses (saved via replace_clauses) are the source of truth.
+# ─────────────────────────────────────────────────────────────────────────────
+def _extract_docx_text(data):
+    """Plain text of a .docx (paragraphs joined by newlines). Raises on an
+    unreadable or empty document (the FE degrades to hand-editing)."""
+    try:
+        import docx
+    except ImportError:
+        raise ContractsError('docx_unavailable')
+    import io as _io
+    try:
+        document = docx.Document(_io.BytesIO(data))
+    except Exception:
+        raise ContractsError('docx_unreadable')
+    paragraphs = [p.text.strip() for p in document.paragraphs]
+    text = '\n'.join(p for p in paragraphs if p)
+    if not text.strip():
+        raise ContractsError('docx_empty')
+    return text
+
+
+def _build_segment_prompt(text):
+    return (
+        'You segment the plain text of a bursary-agreement document into its numbered '
+        'clauses. Return STRICT JSON only, no prose: a list '
+        '[{"heading": str, "body": str}, ...] in document order. Each heading is the '
+        "clause's short title; each body is its plain-text content (keep paragraphs as "
+        'blank-line-separated text). Do NOT invent, summarise, or reword — copy the '
+        'wording. Drop page headers/footers, signature blocks and the title.\n\n'
+        'DOCUMENT:\n' + text
+    )
+
+
+def _parse_segments(raw):
+    text = (raw or '').strip()
+    if text.startswith('```'):
+        text = re.sub(r'^```[a-zA-Z]*\n?', '', text)
+        text = re.sub(r'\n?```$', '', text).strip()
+    try:
+        data = json.loads(text)
+    except (ValueError, TypeError):
+        raise ContractsError('segmentation_failed')
+    if not isinstance(data, list) or not data:
+        raise ContractsError('segmentation_failed')
+    clauses = []
+    for item in data:
+        if not isinstance(item, dict):
+            raise ContractsError('segmentation_failed')
+        heading = (item.get('heading') or '').strip()
+        body = (item.get('body') or '').strip()
+        if not (heading or body):
+            continue
+        clauses.append({'heading': heading, 'body': body})
+    if not clauses:
+        raise ContractsError('segmentation_failed')
+    return clauses
+
+
+def segment_docx(data, *, model=None):
+    """Extract a .docx's text and segment it into a proposed [{heading, body}] clause
+    list via Gemini (same seam + CONTRACT_QUIZ_MODEL as generate_quiz; mocked in tests,
+    never live in CI). Returns the PROPOSAL only — nothing is saved and the file is not
+    retained; the caller reviews it and, on confirm, calls replace_clauses. Raises
+    ContractsError (docx_unreadable / docx_empty / segmentation_failed / …) so the FE
+    can degrade to hand-editing."""
+    text = _extract_docx_text(data)
+    model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+    raw = _gemini_generate(_build_segment_prompt(text), model)
+    return _parse_segments(raw)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Deploy validation (T / C / Q / S / P rules + W warnings)
 # ─────────────────────────────────────────────────────────────────────────────
 def _expected_row_total(pathway, variant):
