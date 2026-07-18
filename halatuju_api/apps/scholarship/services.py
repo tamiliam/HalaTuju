@@ -1186,6 +1186,25 @@ def confirm_pathway(application):
             if 'chosen_programme' not in update_fields:
                 update_fields.append('chosen_programme')
 
+    # Align the institution to the recommender CATALOGUE — the single source of truth (owner
+    # 2026-07-18). Offer letters often print the institution ALL-CAPS ("INSTITUT PENDIDIKAN GURU
+    # KAMPUS TUANKU BAINUN") and confirm_pathway stored that raw text; the catalogue holds the clean
+    # title-case name (the course selector reads it). For a catalogue-linked (tertiary) programme,
+    # swap in the catalogue's canonical spelling when it UNIQUELY matches the stored value (same
+    # place, cleaner — never a different institution). Matric aligns in the pre-U branch above; STPM
+    # schools are deliberately NOT catalogue-matched. Mirrors autofill_pathway_from_offer.
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    _cid = (cp.get('course_id') or '').strip()
+    _inst = (cp.get('institution') or '').strip()
+    if _cid and _inst and not op.is_pre_u(application.chosen_pathway or ''):
+        canon = op.catalogue_institution(_cid, _inst)
+        if canon and canon != _inst:
+            cp = dict(cp)
+            cp['institution'] = canon
+            application.chosen_programme = cp
+            if 'chosen_programme' not in update_fields:
+                update_fields.append('chosen_programme')
+
     application.save(update_fields=update_fields)
     return True
 

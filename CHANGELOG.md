@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## confirm_pathway aligns the institution to the catalogue (this + future) — 2026-07-18
+
+Owner-directed off #43/#115: the cockpit showed the IPG institution in raw ALL-CAPS
+(e.g. "INSTITUT PENDIDIKAN GURU KAMPUS TUANKU BAINUN") while the course selector
+shows the clean catalogue title-case. Root cause: `confirm_pathway` title-cased the
+programme name but stored the institution RAW — no catalogue alignment (whereas
+`autofill_pathway_from_offer` already aligned). The catalogue (`institutions`) is the
+single source of truth. **NO migration; api-only; push = deploy.**
+
+- **Systemic (code):** `confirm_pathway` now, for a catalogue-linked (tertiary)
+  programme, runs the stored institution through `offer_pathway.catalogue_institution`
+  (course_id → `course_institutions` → canonical name, unique-match only — never
+  swaps to a different place) and writes the catalogue spelling. Mirrors autofill.
+  Matric aligns in the existing pre-U branch; STPM schools stay casing-only (not
+  catalogue-matched). PISMP courses ARE catalogue-linked (~27 IPGs each), and the
+  distinctive-token matcher disambiguates the right campus from the others.
+- **Data (one-time, via Supabase MCP — done):** the 5 apps whose stored institution
+  matched a catalogue name case-insensitively but differed in case were aligned to
+  the canonical spelling — #43 + #115 (IPGs), #31 (Universiti Malaya), #32 (Kolej
+  Matrikulasi Selangor), #131 (UPSI). The 70 already-exact and the 26 not-in-catalogue
+  (STPM schools / private) were left untouched.
+- **Tests** — `test_confirm_pathway.test_pismp_confirm_aligns_institution_to_catalogue`
+  (all-caps IPG offer → stored institution becomes the catalogue title-case, picking
+  the right campus among siblings). 8 confirm_pathway + 75 offer_pathway/card_display
+  pytest green.
+
 ## PISMP display standardisation — degree + Stream/Bidang split — 2026-07-18
 
 Owner-directed off the PISMP cohort (#43/#80/#107/#110/#115): the cockpit showed
