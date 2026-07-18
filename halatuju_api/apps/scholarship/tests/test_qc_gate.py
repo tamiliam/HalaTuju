@@ -261,6 +261,107 @@ class TestPublishBoundToQc(TestCase):
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestDeclineToQc(TestCase):
+    """Owner 2026-07-19: a DECLINE also routes through QC (was: straight to reject). The reviewer
+    submits a decline verdict (submit-decline → AWAITING QC); QC CONFIRMS it (qc-decision accept on
+    a decline verdict → rejected, 24h cool-off, NO gap floor) or REOPENS it. The fixtures carry no
+    documents, so the real build_verdict is all-gaps — these also prove the gap floor is bypassed
+    for a decline (a declined case is EXPECTED to have red facts)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superadmin = PartnerAdmin.objects.create(
+            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            name='Super', email='super@example.com')
+        cls.qc = PartnerAdmin.objects.create(
+            supabase_user_id='qc-uid', role='qc', is_active=True,
+            name='QC', email='qc@example.com')
+        cls.reviewer = PartnerAdmin.objects.create(
+            supabase_user_id='rev-uid', role='reviewer', is_active=True,
+            name='Reviewer', email='reviewer@example.com')
+        cls.cohort = ScholarshipCohort.objects.create(code='d', name='B40', year=2026)
+
+    def setUp(self):
+        self.client = APIClient()
+        p = StudentProfile.objects.create(supabase_user_id='sd1', nric='030101-14-0009', name='Nila')
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='interviewing', notify_email='nila@example.com',
+            profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
+            verdict_decided_by='reviewer@example.com', assigned_to=self.reviewer,
+            officer_verdict={'overall': 'decline', 'identity': 'pass', 'academic': 'fail',
+                             'pathway': 'pass', 'income': 'fail'})
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
+
+    def _submit_decline(self):
+        return self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/submit-decline/', {}, format='json')
+
+    def _qc(self, payload):
+        return self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/qc-decision/', payload, format='json')
+
+    def test_reviewer_submits_decline_to_qc_not_reject(self):
+        self._auth('rev-uid')
+        r = self._submit_decline()
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')   # AWAITING QC, NOT 'rejected'
+
+    def test_submit_decline_requires_a_recorded_decline_verdict(self):
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(officer_verdict={'overall': 'accept'})
+        self._auth('rev-uid')
+        r = self._submit_decline()
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'no_decline_verdict')
+
+    def test_qc_confirm_decline_rejects_with_cooloff_and_no_gap_floor(self):
+        # AWAITING QC; QC confirms. Real build_verdict is all-gaps → proves NO gap floor on decline.
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(status='interviewed')
+        mail.outbox = []
+        self._auth('qc-uid')
+        r = self._qc({'decision': 'accept'})
+        self.assertEqual(r.status_code, 200)               # NOT 400 verdict_gap_floor
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'rejected')
+        self.assertEqual(self.app.rejection_category, 'interview')
+        self.assertIsNotNone(self.app.decline_due_at)      # 24h email embargo (cool-off)
+        self.assertEqual(len(mail.outbox), 0)              # email embargoed, not sent yet
+
+    @override_settings(DECLINE_QC_COOLOFF_HOURS=0)
+    def test_qc_confirm_decline_emails_now_when_cooloff_zero(self):
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(status='interviewed')
+        mail.outbox = []
+        self._auth('qc-uid')
+        r = self._qc({'decision': 'accept'})
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'rejected')
+        self.assertIsNone(self.app.decline_due_at)         # no embargo
+        self.assertEqual(len(mail.outbox), 1)              # emailed immediately
+
+    def test_qc_reopen_from_a_decline_returns_to_reviewer(self):
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(status='interviewed')
+        self._auth('qc-uid')
+        r = self._qc({'decision': 'reopen', 'comments': 'Reconsider the income route before declining.'})
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewing')  # back to the reviewer, not rejected
+
+    def test_recommend_still_recommends_not_rejects(self):
+        # Guard: a recommend verdict at QC still → recommended (the branch only diverts declines).
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(
+            status='interviewed', officer_verdict={'overall': 'accept'})
+        with mock.patch('apps.scholarship.views_admin.build_verdict', return_value=[]):
+            self._auth('qc-uid')
+            r = self._qc({'decision': 'accept'})
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'recommended')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestQcGapFloor(TestCase):
     """V5 #5 (owner decision 1): QC-Accept is blocked while any verdict fact is red/'gap' —
     400 verdict_gap_floor naming the red facts. Only a `super` passes it, and only with a

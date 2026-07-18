@@ -292,6 +292,10 @@ PROFILE_COMPLETE_EMAIL_ENABLED = os.environ.get('PROFILE_COMPLETE_EMAIL_ENABLED'
 # can cancel/hold within the window and the student never sees it. **Default 0 = OFF (immediate),
 # like the other comms flags — prod sets the env vars (DECLINE=7, AWARD=2) to switch the cool-off on.**
 DECLINE_COOLOFF_DAYS = float(os.environ.get('DECLINE_COOLOFF_DAYS', '0'))
+# A QC-CONFIRMED decline uses a shorter cool-off than DECLINE_COOLOFF_DAYS: the decision has already
+# passed the two-person QC gate (reviewer verdict + QC confirmation), so the reconsideration window
+# is shorter. Hours (default 24). 0 = email immediately.
+DECLINE_QC_COOLOFF_HOURS = float(os.environ.get('DECLINE_QC_COOLOFF_HOURS', '24'))
 AWARD_COOLOFF_DAYS = float(os.environ.get('AWARD_COOLOFF_DAYS', '0'))
 
 # Interview scheduling: the assigned reviewer proposes a few times, the student books

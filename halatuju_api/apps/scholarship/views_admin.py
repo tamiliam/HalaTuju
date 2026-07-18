@@ -1545,6 +1545,34 @@ class AdminReopenDecisionView(_AdminBase):
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
+class AdminSubmitDeclineView(_AdminBase):
+    """POST .../<pk>/submit-decline/ — the reviewer sends a DECLINE verdict to QC.
+
+    The RECOMMEND path routes through verify-accept (identity + hard-completeness gate) into
+    AWAITING QC. A decline has no such gate — an incomplete or failing applicant is exactly who
+    gets declined — so this is the decline's lightweight equivalent: with a recorded decline
+    verdict on file, move the case to 'interviewed' (AWAITING QC). QC then CONFIRMS the decline
+    (→ rejected + student email, 24h cool-off) or REOPENS it (→ back to the reviewer). The
+    rejection + student email happen only at QC-confirm, never here (owner 2026-07-19)."""
+    def post(self, request, pk):
+        app, admin, err = self._require_app_write(request, pk)
+        if err:
+            return err
+        ov = app.officer_verdict if isinstance(app.officer_verdict, dict) else {}
+        if ov.get('overall') != 'decline' or app.verdict_decided_at is None:
+            return Response(
+                {'error': 'Record a decline verdict before sending to QC.',
+                 'code': 'no_decline_verdict'}, status=status.HTTP_400_BAD_REQUEST)
+        if app.status not in ('shortlisted', 'profile_complete', 'interviewing', 'interviewed'):
+            return Response(
+                {'error': 'Only a live in-review application can be sent to QC.',
+                 'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
+        app.status = 'interviewed'   # AWAITING QC (the recorded decline verdict distinguishes it)
+        app.save(update_fields=['status'])
+        logger.info('AUDIT submit_decline admin_id=%s app_id=%s', admin.id, pk)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
 class AdminQcDecisionView(_AdminBase):
     """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen', comments?, override_reason?} —
     the QC gate on an AWAITING-QC ('interviewed') case. QC = a `qc`-role admin or super (never
@@ -1563,6 +1591,24 @@ class AdminQcDecisionView(_AdminBase):
             return err
         decision = (request.data.get('decision') or '').strip()
         if decision == 'accept':
+            # The QC ACCEPT decision means "uphold the reviewer's recorded verdict". For a DECLINE
+            # verdict that is a rejection, not a recommendation — QC is the second pair of eyes on
+            # BOTH outcomes (owner 2026-07-19). No gap floor here (a declined case is EXPECTED to
+            # have red facts) and a shorter 24h cool-off (already two-person-vetted). Bucket
+            # 'interview' (reviewed but not selected); the decline email fires now, embargoed.
+            ov = app.officer_verdict if isinstance(app.officer_verdict, dict) else {}
+            if ov.get('overall') == 'decline':
+                from datetime import timedelta
+                from django.conf import settings as _settings
+                hours = getattr(_settings, 'DECLINE_QC_COOLOFF_HOURS', 24)
+                try:
+                    admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours))
+                except ValueError:
+                    return Response({'error': 'This case cannot be declined from its current state.',
+                                     'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
+                app.refresh_from_db()
+                logger.info('AUDIT qc_confirm_decline admin_id=%s app_id=%s', admin.id, pk)
+                return Response(AdminApplicationDetailSerializer(app).data)
             gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
             update_fields = ['status']
             if gap_facts:

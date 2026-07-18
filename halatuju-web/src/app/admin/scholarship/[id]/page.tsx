@@ -17,6 +17,7 @@ import {
   suggestInterviewGaps,
   verifyAcceptApplication,
   rejectApplication,
+  submitDeclineApplication,
   cancelPendingDecline,
   holdPendingAward,
   addReferee,
@@ -585,13 +586,33 @@ export default function AdminScholarshipDetailPage() {
   // The amount is now managed backend-side by record-verdict (accept → auto-apply the
   // pathway-standard amount; decline → clear), so the UI no longer pokes the award endpoint.
   const selectDecline = () => setOfficerVerdict((v) => ({ ...v, overall: 'decline' }))
+  // Send a recorded DECLINE verdict to QC (→ AWAITING QC) instead of rejecting directly. A second
+  // reviewer then CONFIRMS the decline (→ rejected) or reopens it (owner 2026-07-19).
+  const doSubmitDecline = async () => {
+    if (!token) return
+    setBusy('verdict'); setError('')
+    try {
+      const updated = await submitDeclineApplication(id, { token })
+      setApp(updated); setProfile(updated.sponsor_profile); loadVerdictState(updated)
+      setVerdictMsg(t('admin.scholarship.decision.declineSentToQc')); setVerdictMsgTone('ok')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
+    } finally { setBusy('') }
+  }
   const doSave = async () => {
     const outcome = officerVerdict.overall
     if (outcome === 'accept') {
       await doRecordVerdict(true, true)                 // record (overall=accept) + finalise + accept + publish
     } else if (outcome === 'decline') {
-      await doRecordVerdict(false, false)               // record the verdict (overall=decline), no profile gen
-      await doReject(app?.status === 'recommended' ? 'contractual' : 'interview')
+      // Record the decline verdict, then route to QC. A post-award (recommended) case still
+      // declines via the contractual path (that decline is already post-QC); an in-review case
+      // goes to AWAITING QC for a second pair of eyes before it becomes a rejection.
+      await doRecordVerdict(false, false)
+      if (app?.status === 'recommended') {
+        await doReject('contractual')
+      } else {
+        await doSubmitDecline()
+      }
     }
   }
 
@@ -2558,7 +2579,11 @@ export default function AdminScholarshipDetailPage() {
         // affordance (reason recorded server-side); anyone else resolves the gap or reopens.
         const qcGapFacts = (app.verdict || []).filter((f) => f.status === 'gap').map((f) => f.fact)
         const qcGapLabels = qcGapFacts.map((f) => t(`admin.scholarship.verdict.fact.${f}`)).join(', ')
-        const floorBlocked = qcGapFacts.length > 0
+        // A DECLINE verdict at QC confirms a REJECTION, not a recommendation (owner 2026-07-19).
+        // The gap floor does NOT apply — a declined case is EXPECTED to have red facts — and the
+        // primary button reads "Confirm decline" (red), not "Accept".
+        const isDeclineVerdict = app.officer_verdict?.overall === 'decline'
+        const floorBlocked = qcGapFacts.length > 0 && !isDeclineVerdict
         return (
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.qcDecision.title')}</h2>
@@ -2577,8 +2602,9 @@ export default function AdminScholarshipDetailPage() {
                   if (canQc) { setQcOverrideOpen(true); setQcOverrideReason('') }
                 }}
                 disabled={!!busy || (floorBlocked && !canQc)}
-                className="rounded-lg border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
-                {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.accept')}
+                className={`rounded-lg border px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 ${isDeclineVerdict ? 'border-red-600 bg-red-600 hover:bg-red-700' : 'border-green-600 bg-green-600 hover:bg-green-700'}`}>
+                {busy === 'qc' ? t('common.loading')
+                  : t(isDeclineVerdict ? 'admin.scholarship.qcDecision.confirmDecline' : 'admin.scholarship.qcDecision.accept')}
               </button>
               <button onClick={() => { setQcReopenOpen(true); setQcComments('') }} disabled={!!busy}
                 className="rounded-lg border border-amber-600 bg-white px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50">

@@ -3658,7 +3658,8 @@
       },
       "decision": {
         "title": "Recommendation",
-        "savedAndAccepted": "Verdict saved — applicant accepted."
+        "savedAndAccepted": "Verdict saved — applicant accepted.",
+        "declineSentToQc": "Decline recorded — sent to QC for confirmation."
       },
       "recordVerdict": {
         "title": "Record your verdict",
@@ -3700,6 +3701,7 @@
         "title": "Quality control",
         "hint": "This case is awaiting QC. Accept to move it to Recommended, or Reopen to send it back to the reviewer with your comments.",
         "accept": "Accept",
+        "confirmDecline": "Confirm decline",
         "reopen": "Reopen",
         "reopenTitle": "What was missing? (shared with the reviewer)",
         "commentsPlaceholder": "Describe the gaps / what the reviewer must address",

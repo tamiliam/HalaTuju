@@ -1008,6 +1008,14 @@ export async function verifyAcceptApplication(
   )
 }
 
+/** Reviewer sends a DECLINE verdict to QC (→ AWAITING QC), instead of rejecting directly. QC then
+ * confirms the decline (→ rejected) or reopens it. Requires a recorded decline verdict. */
+export async function submitDeclineApplication(id: number, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/submit-decline/`, 'POST', {}, options
+  )
+}
+
 /** Toggle the coordinator-facing mentoring-candidate flag. */
 export async function setMentoringCandidate(id: number, value: boolean, options?: ApiOptions) {
   return adminMutate<AdminScholarshipDetail>(
