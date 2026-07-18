@@ -161,3 +161,46 @@ class TestRepairCommand(TestCase):
         a = self._app(chosen_programme={'course_name': 'Tingkatan Enam',
                                         'institution': 'Sekolah Menengah Kebangsaan Maxwell'})
         self.assertIsNone(propose_repair(a))
+
+
+class TestTrackLabelParity(SimpleTestCase):
+    """Cross-runtime single-source-of-truth GUARD for the pre-U track/stream Malay labels.
+
+    The same code->label map is needed in two separately-deployed runtimes that cannot share one
+    file while running: the backend ``card_display._TRACK_LABEL`` (sponsor card + emails, Python on
+    the server) and the FE ``messages/ms.json`` (apply form + officer cockpit, JS in the browser).
+    We keep a copy in each, and this test fails the build if they ever DRIFT — so the duplication
+    can never silently disagree (option B, owner-approved 2026-07-18). It reads the FE JSON directly
+    (Python can parse it); it SKIPS when the web folder isn't checked out (e.g. an api-only build
+    context) rather than falsely failing."""
+
+    # Codes present in the FE stream/track sets but deliberately NOT on the sponsor-card map — a
+    # placeholder that never labels a real specialisation. Excluded from the parity comparison.
+    _FE_ONLY = {'not_sure'}
+
+    @staticmethod
+    def _load_fe_track_labels():
+        import json
+        import os
+        here = os.path.dirname(os.path.abspath(__file__))
+        ms_path = os.path.normpath(os.path.join(
+            here, '..', '..', '..', '..', 'halatuju-web', 'src', 'messages', 'ms.json'))
+        if not os.path.exists(ms_path):
+            return None
+        with open(ms_path, encoding='utf-8') as fh:
+            ms = json.load(fh)
+        plan = (((ms.get('scholarship') or {}).get('apply') or {}).get('plan') or {})
+        merged = {**(plan.get('stream') or {}), **(plan.get('track') or {})}
+        for k in TestTrackLabelParity._FE_ONLY:
+            merged.pop(k, None)
+        return merged
+
+    def test_backend_and_frontend_track_labels_agree(self):
+        fe = self._load_fe_track_labels()
+        if fe is None:
+            self.skipTest('halatuju-web/src/messages/ms.json not present (api-only checkout)')
+        self.assertEqual(
+            cd._TRACK_LABEL, fe,
+            'Pre-U track labels have DRIFTED between the backend (card_display._TRACK_LABEL) and the '
+            'FE (messages/ms.json scholarship.apply.plan.stream/.track). Update BOTH so the sponsor '
+            'card and the officer cockpit render the same words.')
