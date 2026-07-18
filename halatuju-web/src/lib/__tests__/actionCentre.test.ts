@@ -243,6 +243,16 @@ describe('localiseParams', () => {
       .toEqual({ declared_pathway: 'Stpm', offer_pathway: 'Pismp' })
   })
 
+  it('names the PISMP bidang/course instead of the generic programme', () => {
+    // A resolved PISMP offer → the specific course name; otherwise the raw bidang.
+    expect(localiseParams(
+      { offer_pathway: 'pismp', programme: 'Program Ijazah (PISMP)', course_name: 'Bahasa Tamil Pendidikan Rendah (SJKT)' }, t,
+    )).toMatchObject({ programme: 'Bahasa Tamil Pendidikan Rendah (SJKT)' })
+    expect(localiseParams(
+      { offer_pathway: 'pismp', programme: 'Program Ijazah (PISMP)', bidang: 'BAHASA INGGERIS' }, t,
+    )).toMatchObject({ programme: 'BAHASA INGGERIS' })
+  })
+
   it('handles null/undefined', () => {
     expect(localiseParams(undefined, t)).toEqual({})
     expect(localiseParams(null, t)).toEqual({})

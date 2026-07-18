@@ -356,6 +356,9 @@ def student_offer_check(doc) -> dict:
     programme = (f.get('programme') or '').strip()
     institution = (f.get('institution') or '').strip()
     stream = (f.get('stream') or '').strip()          # #117 (b) — the offer's Bidang / stream
+    # PISMP: the letter RELIABLY states the BIDANG PENGKHUSUSAN (major); the aliran is NOT printed on
+    # the letter (Gemini infers it — a soft hint only). We key PISMP resolution on the bidang.
+    bidang = (f.get('bidang_pengkhususan') or '').strip()
 
     # Reconcile the offer against what the student declared at apply time. Lenient:
     # only a genuine clash (different place / field / STREAM) is 'mismatch' — a naming quirk
@@ -388,6 +391,7 @@ def student_offer_check(doc) -> dict:
         'programme': programme,
         'institution': institution,
         'stream': stream,                         # #117 (b) — the offer's Bidang, for the track compare
+        'bidang': bidang,                         # PISMP BIDANG PENGKHUSUSAN (major) — literally on the letter
         'issuer': (f.get('issuer') or '').strip(),
         'offer_date': (f.get('offer_date') or '').strip(),
         'intake': intake,

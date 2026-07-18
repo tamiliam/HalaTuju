@@ -157,7 +157,12 @@ function ActionCard({
   // BOTH a PISMP type-switch AND an undeclared-PISMP offer; every other type switch (STPM →
   // diploma/degree/asasi/matric) is a plain one-tap confirm. The inferred aliran (from the student's
   // SPM vernacular subject) rides along as ?aliran so the picker can pre-select it.
-  const isPismpSwitch = item.code === 'pathway_type_switch' && item.params?.offer_pathway === 'pismp'
+  // A PISMP switch routes to the profile Aliran picker ONLY when the offer's bidang did NOT resolve to
+  // a unique course (multi-aliran — English/BM/Maths). When it DID resolve (a vernacular bidang like
+  // Bahasa Tamil → course_id present), it's a plain one-tap confirm that pins the named course.
+  const pismpResolved = typeof item.params?.course_id === 'string' && !!item.params.course_id
+  const isPismpSwitch = item.code === 'pathway_type_switch'
+    && item.params?.offer_pathway === 'pismp' && !pismpResolved
   const routesToPicker = item.code === 'pathway_undeclared' || isPismpSwitch
   const pickerHref = profilePickerHref(item)
 

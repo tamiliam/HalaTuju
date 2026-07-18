@@ -348,6 +348,12 @@ export function localiseParams(
       // TD-161: render the pathway CODE (stpm/pismp/…) as its display label ("STPM"/"PISMP") so the
       // pathway_type_switch card reads naturally; fall back to the raw code for an unmapped value.
       out[k] = t(`scholarship.actionCentre.pathwayName.${v}`) || String(v)
+    } else if (k === 'programme' && typeof v === 'string' && params?.offer_pathway === 'pismp') {
+      // PISMP: the generic "Program Ijazah…(PISMP)" isn't useful — the letter states the BIDANG. Show
+      // the resolved course name (or the raw bidang) so the card names the actual specialisation.
+      const cn = typeof params.course_name === 'string' ? params.course_name : ''
+      const bd = typeof params.bidang === 'string' ? params.bidang : ''
+      out[k] = cn || bd || String(v)
     } else {
       out[k] = String(v)
     }

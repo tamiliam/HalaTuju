@@ -118,6 +118,39 @@ class TestConfirmPathwayUpdatesPreU(_Base):
         self.assertEqual(item['params']['offer_pathway'], 'pismp')
         self.assertEqual(item['params']['aliran_hint'], 'sk')   # no vernacular subject on file (lowercase code)
 
+    def test_pismp_bidang_resolves_and_pins_course(self):
+        # Owner 2026-07-18 (#43): a PISMP offer stating a vernacular bidang (Bahasa Tamil) resolves to
+        # the UNIQUE SJKT course → the switch carries bidang + course, and confirm PINS the course_id
+        # (so the cockpit links the right PISMP course, not a stale STPM one) + reconciles the type.
+        from apps.courses.models import Course, CourseRequirement, FieldTaxonomy
+        from apps.scholarship.verdict_engine import build_verdict
+        ft = FieldTaxonomy.objects.create(key='edu', name_en='Education', name_ms='Pendidikan',
+                                          name_ta='x', image_slug='edu')
+        c = Course.objects.create(course_id='50PD04TA', course='Bahasa Tamil Pendidikan Rendah (SJKT)',
+                                  level='Ijazah Sarjana Muda', department='Edu', field='Education', field_key=ft)
+        CourseRequirement.objects.create(course=c, source_type='pismp')
+        app = self._app(pathway='stpm', track='sains_sosial', institution='SMK X')
+        ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/p',
+            vision_fields={'fields': {
+                'candidate_name': app.profile.name, 'candidate_nric': app.profile.nric,
+                'programme': 'Program Ijazah Sarjana Muda Perguruan (PISMP)',
+                'institution': 'Institut Pendidikan Guru Kampus Tuanku Bainun',
+                'bidang_pengkhususan': 'BAHASA TAMIL PENDIDIKAN RENDAH', 'stream': ''},
+                'student_verdict': 'ok', 'authenticity': {'status': 'genuine', 'reason': 'x'}},
+            vision_run_at=timezone.now())
+        app.pathway_confirmed_at = timezone.now(); app.save(update_fields=['pathway_confirmed_at'])
+        item = next(i for i in next(f for f in build_verdict(app) if f['fact'] == 'pathway')['unresolved']
+                    if i['code'] == 'pathway_type_switch')
+        self.assertEqual(item['params']['bidang'], 'BAHASA TAMIL PENDIDIKAN RENDAH')
+        self.assertEqual(item['params']['course_id'], '50PD04TA')
+        self.assertEqual(item['params']['aliran'], 'sjkt')
+        self.assertNotIn('aliran_hint', item['params'])          # unique bidang → no picker hint
+        confirm_pathway(app); app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'pismp')
+        self.assertEqual(app.chosen_programme['course_id'], '50PD04TA')
+        self.assertEqual(app.pre_u_track, '')                    # stale STPM stream dropped
+
     def test_no_offer_is_a_noop(self):
         app = self._app(pathway='stpm', track='sains_sosial', institution='SMK Asal')
         self.assertFalse(confirm_pathway(app))

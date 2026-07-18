@@ -383,3 +383,49 @@ def offer_is_resolvable(programme: str, institution: str) -> bool:
         return bool(track)
     match = resolve_catalogue_course(programme, institution)
     return bool(match and match.get('course_id'))
+
+
+# The trailing "(SJKT)" / "(SJKC)" / "(Khas)" / "(SK)" aliran suffix on a catalogue PISMP course name;
+# stripping it leaves the BIDANG (major), which is what the offer letter states.
+_ALIRAN_SUFFIX_RE = re.compile(r'\s*\((?:SK|SJKC|SJKT|Khas)\)\s*$', re.IGNORECASE)
+
+
+def pismp_courses_for_bidang(bidang: str) -> list:
+    """The catalogue PISMP courses whose BIDANG (major) matches the offer's stated bidang — ONE entry
+    per aliran variant → ``[{'course_id', 'course_name', 'aliran'}]`` sorted by aliran. The offer
+    letter states the bidang but NOT the aliran, so this returns the aliran SET that exists for that
+    bidang (Bahasa Tamil → 1 (sjkt); Bahasa Inggeris → 3). Match = the bidang's DISTINCTIVE tokens
+    equal the course's (with the ``(ALIRAN)`` suffix stripped) — strict, so "Matematik" never matches
+    "Matematik Tambahan". '' / no match → []. Pure bar the catalogue read."""
+    want = distinctive_tokens(bidang)
+    if not want:
+        return []
+    from apps.courses.models import Course
+    from apps.courses.pismp_taxonomy import aliran_of
+    out = []
+    # source_type lives on the OneToOne CourseRequirement, not Course itself.
+    for c in Course.objects.filter(requirement__source_type='pismp').values('course_id', 'course'):
+        name = c['course'] or ''
+        base = _ALIRAN_SUFFIX_RE.sub('', name).strip()
+        if distinctive_tokens(base) == want:
+            out.append({'course_id': c['course_id'], 'course_name': name,
+                        'aliran': aliran_of(name, c['course_id'])})
+    out.sort(key=lambda x: x['aliran'])
+    return out
+
+
+def resolve_pismp_course(bidang: str, aliran: str = '') -> dict:
+    """Resolve a PISMP offer to a SINGLE catalogue course from its stated bidang (+ an aliran when
+    known). Returns ``{'course_id', 'course_name', 'aliran'}`` or ``None``:
+    - ``aliran`` given → the variant with that aliran (the student's confirmed school type);
+    - else the bidang maps to EXACTLY ONE course (a vernacular-language bidang: Bahasa Tamil → sjkt) →
+      that course, no aliran question needed;
+    - else (the bidang spans several alirans — English/BM/Maths) → ``None`` (the aliran must be asked).
+    """
+    variants = pismp_courses_for_bidang(bidang)
+    if aliran:
+        for v in variants:
+            if v['aliran'] == aliran.strip().lower():
+                return v
+        return None
+    return variants[0] if len(variants) == 1 else None

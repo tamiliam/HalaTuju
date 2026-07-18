@@ -1171,6 +1171,21 @@ def confirm_pathway(application):
                     if _f not in update_fields:
                         update_fields.append(_f)
 
+    # PISMP (owner 2026-07-18): pin the SPECIFIC catalogue course from the offer's stated BIDANG when it
+    # resolves to a unique course (a vernacular bidang — Bahasa Tamil → SJKT). Recording the course_id
+    # makes the cockpit link the right PISMP course instead of a stale STPM one (the #43 display bug).
+    # A multi-aliran bidang is pinned via the profile Aliran picker instead (no unique course here).
+    if offer_type == 'pismp':
+        resolved = op.resolve_pismp_course((chk.get('bidang') or '').strip())
+        if resolved:
+            cp = dict(application.chosen_programme) if isinstance(application.chosen_programme, dict) else {}
+            cp.update({'course_id': resolved['course_id'], 'course_name': resolved['course_name'],
+                       'institution': cp.get('institution') or chk['institution'],
+                       'source': 'offer_letter_confirmed'})
+            application.chosen_programme = cp
+            if 'chosen_programme' not in update_fields:
+                update_fields.append('chosen_programme')
+
     application.save(update_fields=update_fields)
     return True
 

@@ -539,3 +539,45 @@ class TestPolyInstitutionFromLiveOffer(_Base):
         self._offer(app, 'DAC - DIPLOMA PERAKAUNAN', 'POLITEKNIK SEBERANG PERAI')
         cp = AdminApplicationDetailSerializer().get_chosen_programme(app)
         self.assertEqual(cp['institution'], 'Politeknik Ungku Omar')   # never overwritten
+
+
+class TestPismpBidangResolver(TestCase):
+    """PISMP: the offer letter states the BIDANG (major), not the aliran. Resolve the bidang against
+    the catalogue → the aliran set that exists for it (owner 2026-07-18)."""
+    @classmethod
+    def setUpTestData(cls):
+        from apps.courses.models import CourseRequirement
+        cls.ft = FieldTaxonomy.objects.create(key='edu', name_en='Education', name_ms='Pendidikan',
+                                               name_ta='x', image_slug='edu')
+
+        def mk(cid, name):
+            c = Course.objects.create(course_id=cid, course=name, level='Ijazah Sarjana Muda',
+                                      department='Edu', field='Education', field_key=cls.ft)
+            CourseRequirement.objects.create(course=c, source_type='pismp')
+            return c
+        mk('50PD04TA', 'Bahasa Tamil Pendidikan Rendah (SJKT)')          # vernacular → SJKT only
+        mk('50PD01EN', 'Bahasa Inggeris Pendidikan Rendah (SK)')          # English → 3 alirans
+        mk('50PD03EN', 'Bahasa Inggeris Pendidikan Rendah (SJKC)')
+        mk('50PD04EN', 'Bahasa Inggeris Pendidikan Rendah (SJKT)')
+        mk('50PD01MT', 'Matematik (SK)')
+        mk('50PD01MZ', 'Matematik Tambahan (SK)')                         # collision guard
+
+    def test_bidang_unique_vernacular(self):
+        v = op.pismp_courses_for_bidang('BAHASA TAMIL PENDIDIKAN RENDAH')
+        self.assertEqual([x['aliran'] for x in v], ['sjkt'])
+        self.assertEqual(op.resolve_pismp_course('BAHASA TAMIL PENDIDIKAN RENDAH')['course_id'], '50PD04TA')
+
+    def test_bidang_multi_aliran_needs_pick(self):
+        v = op.pismp_courses_for_bidang('BAHASA INGGERIS PENDIDIKAN RENDAH')
+        self.assertEqual(sorted(x['aliran'] for x in v), ['sjkc', 'sjkt', 'sk'])
+        self.assertIsNone(op.resolve_pismp_course('BAHASA INGGERIS PENDIDIKAN RENDAH'))     # ambiguous
+        self.assertEqual(                                                                   # aliran picked
+            op.resolve_pismp_course('BAHASA INGGERIS PENDIDIKAN RENDAH', 'sjkc')['course_id'], '50PD03EN')
+
+    def test_bidang_no_false_collision(self):
+        # 'Matematik' must NOT match 'Matematik Tambahan' (strict token equality).
+        self.assertEqual([x['course_id'] for x in op.pismp_courses_for_bidang('Matematik')], ['50PD01MT'])
+
+    def test_bidang_blank_or_unknown(self):
+        self.assertEqual(op.pismp_courses_for_bidang(''), [])
+        self.assertEqual(op.pismp_courses_for_bidang('Nonexistent Field Xyz'), [])

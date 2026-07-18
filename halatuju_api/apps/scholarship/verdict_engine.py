@@ -797,25 +797,49 @@ def _verdict_pathway(application):
         declared_type = (application.chosen_pathway or '').strip().lower()
         offer_type = _op.detect_pathway_type(prog, inst)
         profile = getattr(application, 'profile', None)
+
+        # PISMP extras (owner 2026-07-18): the letter states the BIDANG (major) but NOT the aliran.
+        # Carry the bidang; when it pins a UNIQUE catalogue course (a vernacular bidang — Bahasa Tamil
+        # → SJKT) carry that course so the confirm NAMES + pins it directly (no picker); else carry the
+        # inferred aliran default for the scoped picker. Reliable-datum-first: never trust the
+        # Gemini-inferred aliran to pin a course.
+        def _pismp_extra():
+            bidang = (chk.get('bidang') or '').strip()
+            extra = {'bidang': bidang}
+            resolved = _op.resolve_pismp_course(bidang) if bidang else None
+            if resolved:
+                extra.update({'course_id': resolved['course_id'], 'course_name': resolved['course_name'],
+                              'aliran': resolved['aliran']})
+            else:
+                extra['aliran_hint'] = _op.infer_pismp_aliran(profile)
+            return extra
+
         dfam, ofam = _op.pathway_family(declared_type), _op.pathway_family(offer_type)
         if dfam and ofam and dfam != ofam:
             sw = {'programme': prog, 'institution': inst,
                   'declared_pathway': declared_type, 'offer_pathway': offer_type}
             if offer_type == 'pismp':
-                sw['aliran_hint'] = _op.infer_pismp_aliran(profile)
+                sw.update(_pismp_extra())
             unresolved.append(_item('pathway_type_switch', **sw))
         elif chk['pathway'] == 'mismatch' and not confirmed:
             unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
                                     declared_programme=chk['declared_programme'],
                                     declared_institution=chk['declared_institution']))
         elif not confirmed and (prog or inst) and _no_declared_pathway(application):
-            if _op.offer_is_resolvable(prog, inst):
-                unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
-                                        declared_programme='', declared_institution=''))
+            # A unique-bidang PISMP offer is now RESOLVABLE (one-tap confirm + pin), like a pre-U/tertiary
+            # offer; a multi-aliran bidang still needs the profile picker.
+            pismp_unique = offer_type == 'pismp' and bool(
+                _op.resolve_pismp_course((chk.get('bidang') or '').strip()))
+            if _op.offer_is_resolvable(prog, inst) or pismp_unique:
+                cp = {'programme': prog, 'institution': inst,
+                      'declared_programme': '', 'declared_institution': ''}
+                if offer_type == 'pismp':
+                    cp.update(_pismp_extra())
+                unresolved.append(_item('pathway_confirm', **cp))
             else:
                 ud = {'programme': prog, 'institution': inst}
                 if offer_type == 'pismp':
-                    ud['aliran_hint'] = _op.infer_pismp_aliran(profile)
+                    ud.update(_pismp_extra())
                 unresolved.append(_item('pathway_undeclared', **ud))
 
     # NB the course-SWITCH note is deliberately NOT a verdict item here (owner 2026-07-10): a PUBLIC
