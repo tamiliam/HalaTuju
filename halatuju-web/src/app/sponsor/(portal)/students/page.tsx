@@ -107,7 +107,7 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
     <Link href={`/sponsor/students/${s.id}`}
       className="flex flex-col overflow-hidden rounded-2xl border bg-white hover:border-blue-300 hover:shadow-md transition">
       {/* Banner: field artwork + badges + ref pill */}
-      <div className="relative h-[140px]">
+      <div className="relative h-[150px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={fieldImageUrl(s.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
@@ -148,8 +148,9 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
 
         {s.blurb && <p className="mt-3 text-sm italic text-gray-600 leading-relaxed">{s.blurb}</p>}
 
-        {/* Footer: funding bar + amount + CTA — pinned to the bottom so it aligns across cards of different heights */}
-        <div className="mt-auto pt-4 border-t border-gray-100">
+        {/* Footer: pinned to the bottom so it aligns across cards of different heights.
+            The funding bar doubles as the divider (no border-t), with symmetric spacing. */}
+        <div className="mt-auto pt-3">
           <FundingBar funded={s.funded_amount} award={s.award_amount} />
           <div className="mt-3 flex items-center justify-between gap-2">
             {s.award_amount ? <span className="text-xl font-bold text-gray-900">RM{rmWhole(s.award_amount)}</span> : <span />}
