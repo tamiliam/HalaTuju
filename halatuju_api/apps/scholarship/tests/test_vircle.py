@@ -212,7 +212,8 @@ class TestConfirm(_Base):
 
 
 # ── The relay sheet (what we hand Vircle) ────────────────────────────────────
-# Columns: 0 Application · 1 Name · 2 NRIC · 3 Email · 4 Emailed on · 5 Confirmed on · 6 Mobile
+# Columns: 0 Application · 1 Name · 2 NRIC · 3 Email · 4 Emailed on · 5 Confirmed on · 6 Mobile ·
+#          7 eWallet ID (the owner keeps their own columns, e.g. "Activated On", to the RIGHT)
 @override_settings(VIRCLE_SETUP_ENABLED=True)
 class TestRelayRows(_Base):
     def test_confirmed_row_carries_the_mobile_and_both_dates(self):
@@ -247,6 +248,25 @@ class TestRelayRows(_Base):
         self.assertEqual(row[4], '')
         self.assertEqual(row[5], '')
         self.assertEqual(relay_bucket(app), STATUS_NOT_EMAILED)
+
+    def test_row_carries_the_principal_ewallet_id(self):
+        app = self._make('u8')
+        app.vircle_id = '8000400175153'
+        app.save(update_fields=['vircle_id'])
+        row = relay_rows([app])[0]
+        self.assertEqual(row[7], '8000400175153')   # eWallet ID (principal), column H
+
+    def test_ewallet_id_is_blank_when_unset(self):
+        app = self._make('u9')
+        row = relay_rows([app])[0]
+        self.assertEqual(row[7], '')
+
+    def test_header_width_matches_row_width(self):
+        # The clear range in write_relay_sheet is computed from len(_HEADER); if the header and the
+        # row ever drift, the sheet would clip a column or wipe one of the owner's. Guard it.
+        from apps.scholarship.sheets import _HEADER
+        app = self._make('u10')
+        self.assertEqual(len(relay_rows([app])[0]), len(_HEADER))
 
     def test_student_born_after_2008_is_routed_to_a_parent_account(self):
         app = self._make('u3', nric='090101-08-1234')

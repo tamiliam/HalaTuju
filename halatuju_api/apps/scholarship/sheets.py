@@ -44,7 +44,7 @@ _DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 # empties say different things, and neither may be read as the other. The explicit Status column
 # was dropped at the owner's request; the buckets survive only as the ROW ORDER (see relay_rows).
 _HEADER = ['Application', 'Name', 'NRIC', 'Email', 'Emailed on', 'Confirmed on',
-           'Mobile registered with Vircle']
+           'Mobile registered with Vircle', 'eWallet ID']
 
 # The buckets a student can be in. Deliberately plain language: this sheet is read by us and by
 # Vircle, not by the code.

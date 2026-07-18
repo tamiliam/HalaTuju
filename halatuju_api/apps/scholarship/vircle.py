@@ -110,11 +110,16 @@ def relay_bucket(application):
 
 
 def relay_row(application):
-    """One sheet row: Application · Name · NRIC · Email · Emailed on · Confirmed on · Mobile.
+    """One sheet row: Application · Name · NRIC · Email · Emailed on · Confirmed on · Mobile ·
+    eWallet ID.
 
     The two dates are load-bearing and mean DIFFERENT things when blank. Blank "Emailed on" = we
     never asked this student. Blank "Confirmed on" = they haven't answered. Reading one as the
     other is how someone gets chased who was never contacted — or, worse, is never chased at all.
+
+    eWallet ID is the student's PRINCIPAL Vircle wallet id — the one we pay into and Vircle reports
+    on (never the parent's supplementary/transfer-only wallet). It's the last GENERATED column;
+    the owner's own columns (e.g. "Activated On") live to the right of it and are preserved on sync.
     """
     profile = getattr(application, 'profile', None)
     task = setup_task(application)
@@ -127,6 +132,7 @@ def relay_row(application):
         _date(getattr(task, 'created_at', None)),   # blank → never emailed
         _date(getattr(done, 'resolved_at', None)),  # blank → not yet confirmed
         (done.resolution_text or '') if done else '',
+        application.vircle_id or '',                 # eWallet ID (principal) — column H
     ]
 
 
