@@ -20,10 +20,10 @@ for future degree+specialisation programmes. **NO migration; backend + web.**
   with a dash), so every surface reads identically. STPM/Matric/poly/asasi output
   unchanged.
 - **Added — `chosen_programme_display` on `AdminApplicationDetailSerializer`**
-  (server-computed split) → the cockpit Academic box shows the degree as the
-  programme and a new **Stream / Bidang** row (linked to the catalogue course);
-  STPM/Matric keep their inline track. i18n `admin.scholarship.streamBidang`
-  (en/ms/ta — Tamil first-draft `பிரிவு / துறை`).
+  (server-computed split) → the cockpit Chosen Programme reads the degree + bidang
+  **inline** ("Ijazah Sarjana Muda Perguruan · Bahasa Tamil Pendidikan Rendah
+  (SJKT)"), exactly like STPM/Matric show "Tingkatan Enam · Sains Sosial" — the
+  degree is the catalogue link, the bidang the gray `·` suffix. No separate row.
 - **Data (one-time, via Supabase MCP — done):** #43 reconciled (STPM→PISMP switch
   the student had been asked but the query was waived; pathway `pismp`, stale pre-U
   track/school cleared, bidang course `50PD040T00P` pinned — byte-identical to a
