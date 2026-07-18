@@ -334,6 +334,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     household_check = serializers.SerializerMethodField()
     # Read-time institution fill for a multi-campus POLY diploma (see get_chosen_programme).
     chosen_programme = serializers.SerializerMethodField()
+    # The display split {title, stream}: a degree+specialisation pathway (PISMP) shows the CONSTANT
+    # degree as the programme + the bidang on its own Stream/Bidang row; STPM/Matric carry the track;
+    # else stream is ''. One backend home (card_display.programme_split) so the cockpit just renders.
+    chosen_programme_display = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -392,7 +396,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'help_scholarship', 'anything_else',
             # Plans redesign — surface the structured pathway plan for admin/coordinator
             'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
-            'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
+            'chosen_programme', 'chosen_programme_display', 'uncertainty_reasons', 'uncertainty_note',
             # NB chosen_programme is a SerializerMethodField (get_chosen_programme) — fills a
             # blank POLY-diploma institution live from the offer (see the method).
             # S3: normalised (sortable) offer reporting date.
@@ -571,6 +575,12 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             if inst:
                 return {**cp, 'institution': inst}
         return cp
+
+    def get_chosen_programme_display(self, obj):
+        """The {title, stream} display split (card_display.programme_split): PISMP shows the constant
+        degree as the title + the bidang as the stream; STPM/Matric carry the track; else stream=''."""
+        from . import card_display
+        return card_display.programme_split(obj)
 
     def get_interview_agenda(self, obj):
         """The interviewer's folded Check-3 agenda — anomalies + the 'needs interview' verdict

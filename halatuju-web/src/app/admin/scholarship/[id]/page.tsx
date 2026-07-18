@@ -1098,21 +1098,45 @@ export default function AdminScholarshipDetailPage() {
                           split (Chosen Pathway + Pre-U Track + Pre-U Institution for STPM/Matric vs
                           Chosen Programme for the rest). The pre-U track (Sains Sosial / Perakaunan)
                           folds inline after the programme so no info is lost. */}
-                      <Field
-                        label={t('admin.scholarship.chosenProgramme')}
-                        value={(() => {
-                          const name = (app.chosen_programme?.course_name as string) || pathwayLabel(app.chosen_pathway)
-                          if (!name) return null
-                          const track = isInstitutionPathway ? preUTrackLabel : null
-                          return (
-                            <>
-                              {courseLink(app.chosen_programme?.course_id as string | undefined, name)}
-                              {track && <span className="text-gray-400"> · {track}</span>}
-                            </>
-                          )
-                        })()}
-                        verifiedLabel={vtip('chosenProgramme')}
-                      />
+                      {/* A degree+specialisation pathway (PISMP) shows the CONSTANT degree as the
+                          programme and the bidang on its own Stream/Bidang row below — identified by
+                          a display `stream` on a non-pre-U pathway (STPM/Matric keep their track
+                          inline). The catalogue link moves to the bidang row (the bidang IS the
+                          specific course); the degree title is a plain constant. */}
+                      {(() => {
+                        const cid = app.chosen_programme?.course_id as string | undefined
+                        const disp = app.chosen_programme_display
+                        const degreeSplit = !isInstitutionPathway && !!disp?.stream
+                        return (
+                          <Field
+                            label={t('admin.scholarship.chosenProgramme')}
+                            value={(() => {
+                              // Only the degree-split (PISMP) path shows the constant degree title;
+                              // every other pathway keeps its original course_name so STPM/Matric/poly
+                              // render byte-identically (no inline-track doubling on an empty name).
+                              const name = degreeSplit
+                                ? (disp?.title || pathwayLabel(app.chosen_pathway))
+                                : ((app.chosen_programme?.course_name as string) || pathwayLabel(app.chosen_pathway))
+                              if (!name) return null
+                              const track = isInstitutionPathway ? preUTrackLabel : null
+                              return (
+                                <>
+                                  {degreeSplit ? name : courseLink(cid, name)}
+                                  {track && <span className="text-gray-400"> · {track}</span>}
+                                </>
+                              )
+                            })()}
+                            verifiedLabel={vtip('chosenProgramme')}
+                          />
+                        )
+                      })()}
+                      {!isInstitutionPathway && app.chosen_programme_display?.stream && (
+                        <Field
+                          label={t('admin.scholarship.streamBidang')}
+                          value={courseLink(app.chosen_programme?.course_id as string | undefined,
+                                            app.chosen_programme_display.stream)}
+                        />
+                      )}
                       {reportingDate && <Field label={t('admin.scholarship.reportingDate')} value={reportingDate} verifiedLabel={vtip('reportingDate')} />}
                       {/* Institution on its OWN row below (col-span-2); Chosen Programme + Reporting
                           Date share the top row (owner 2026-07-18). */}

@@ -511,6 +511,9 @@ export interface AdminScholarshipDetail {
   pathway_certainty: string
   chosen_pathway: string
   chosen_programme: Record<string, unknown> | null
+  // Display split (card_display.programme_split): PISMP shows the constant degree as `title` +
+  // the bidang as `stream`; STPM/Matric carry the track in `stream`; else `stream` is ''.
+  chosen_programme_display?: { title: string; stream: string }
   pre_u_track: string
   pre_u_institution: string
   uncertainty_reasons: string[]

@@ -3414,6 +3414,7 @@
       "guardianPhone": "{role} phone",
       "siblingsLegacyNote": "legacy total — split unknown, confirm at interview",
       "chosenProgramme": "Chosen programme",
+      "streamBidang": "Stream / Bidang",
       "reportingDate": "Reporting date",
       "verified": {
         "tooltip": "Matches {source}",

@@ -118,6 +118,16 @@ _TRACK_LABEL = {
     'sains_komputer': 'Sains Komputer', 'perakaunan': 'Perakaunan',
 }
 
+# Pathways whose catalogue course name is a SPECIALISATION under a CONSTANT degree title — the
+# "degree + specialisation" shape. PISMP is the first: every course is one Ijazah Sarjana Muda
+# Perguruan, differing only by bidang ("Bahasa Tamil Pendidikan Rendah (SJKT)"). We show the degree
+# as the programme and the bidang on its own Stream/Bidang line — the same split STPM/Matric use for
+# their track. To add a future degree+specialisation programme, register its constant degree name
+# here; nothing else changes (programme_split / resolve_course / the cockpit all read this map).
+_DEGREE_TITLE = {
+    'pismp': 'Ijazah Sarjana Muda Perguruan',
+}
+
 
 def preu_label(chosen_pathway, pre_u_track):
     """A canonical pre-U programme label, British-cased — 'STPM · Sains',
@@ -132,32 +142,51 @@ def preu_label(chosen_pathway, pre_u_track):
 
 # ── read-side resolution (the sponsor card / anywhere anonymous) ─────────────────
 
-def resolve_course(app, lang='en'):
-    """The programme title a sponsor sees, with the Pre-U TRACK appended for STPM/Matric only
-    ("Tingkatan Enam (Sains)", "Program Matrikulasi (Perakaunan)"). Base resolution order
-    (never junk, never a school): (a) catalogue name via chosen_programme.course_id;
-    (b) chosen_programme.course_name when sane (not institution-shaped/date/school); (c) canonical
-    pre-U label; (d) the field taxonomy display name; else ''."""
+def programme_split(app, lang='en'):
+    """Split a chosen programme into a display ``{'title', 'stream'}`` pair — the ONE home for the
+    "constant degree + specialisation" shape, so the cockpit, sponsor card + emails read it
+    identically. By pathway:
+    - a degree+specialisation pathway (PISMP — see ``_DEGREE_TITLE``): title = the CONSTANT degree
+      name ("Ijazah Sarjana Muda Perguruan"), stream = the bidang, taken ONLY from a pinned
+      catalogue course (a free-text ``course_name`` on a PISMP offer is often the generic degree,
+      not the bidang — an UNPINNED PISMP, still awaiting the Aliran/Bidang pick, shows the degree
+      alone until a real course lands);
+    - STPM/Matric: title = the resolved pre-U course name, stream = the track label
+      ("Sains Sosial"/"Perakaunan");
+    - everything else (poly/UA diploma/asasi/degree): title = the resolved course name, stream = ''.
+    Base name order (never junk/school): catalogue name via course_id > sane free-text course_name >
+    canonical pre-U label > field-taxonomy name. Pure bar the catalogue read."""
     cp = app.chosen_programme if isinstance(getattr(app, 'chosen_programme', None), dict) else {}
-    base = ''
-    cat = catalogue_course_name(cp.get('course_id'))
-    if cat:
-        base = cat
-    else:
+    pw = (getattr(app, 'chosen_pathway', '') or '').strip().lower()
+    degree = _DEGREE_TITLE.get(pw, '')
+    if degree:
+        return {'title': degree, 'stream': catalogue_course_name(cp.get('course_id'))}
+    base = catalogue_course_name(cp.get('course_id'))
+    if not base:
         name = (cp.get('course_name') or '').strip()
         if name and not looks_like_institution(name) and not looks_like_date(name) and not looks_like_school(name):
             base = name
-        else:
-            base = (preu_label(getattr(app, 'chosen_pathway', ''), getattr(app, 'pre_u_track', ''))
-                    or _taxonomy_name(getattr(app, 'field_of_study', ''), lang)
-                    or (getattr(app, 'field_of_study', '') or '').strip())
-    # Append the Pre-U track — STPM/Matric only (a poly/uni/asasi/pismp course name is complete).
+    title = base or (preu_label(pw, getattr(app, 'pre_u_track', ''))
+                     or _taxonomy_name(getattr(app, 'field_of_study', ''), lang)
+                     or (getattr(app, 'field_of_study', '') or '').strip())
+    stream = (_TRACK_LABEL.get((getattr(app, 'pre_u_track', '') or '').strip().lower(), '')
+              if pw in ('stpm', 'matric') else '')
+    return {'title': title, 'stream': stream}
+
+
+def resolve_course(app, lang='en'):
+    """The single-line programme title a sponsor sees. Built on ``programme_split``: a
+    degree+specialisation pathway (PISMP) joins with a dash ("Ijazah Sarjana Muda Perguruan —
+    Bahasa Tamil Pendidikan Rendah (SJKT)"); STPM/Matric append the track in parens ("Tingkatan
+    Enam (Sains Sosial)"); everything else is the bare course name. Never junk, never a school."""
+    sp = programme_split(app, lang)
+    title, stream = sp['title'], sp['stream']
+    if not title or not stream:
+        return title
     pw = (getattr(app, 'chosen_pathway', '') or '').strip().lower()
-    if pw in ('stpm', 'matric'):
-        tl = _TRACK_LABEL.get((getattr(app, 'pre_u_track', '') or '').strip().lower(), '')
-        if tl and base and f'({tl})' not in base:
-            base = f'{base} ({tl})'
-    return base
+    if pw in _DEGREE_TITLE:
+        return f'{title} — {stream}'
+    return title if f'({stream})' in title else f'{title} ({stream})'
 
 
 def resolve_institution(app):

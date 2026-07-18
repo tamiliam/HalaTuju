@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## PISMP display standardisation — degree + Stream/Bidang split — 2026-07-18
+
+Owner-directed off the PISMP cohort (#43/#80/#107/#110/#115): the cockpit showed
+a different programme string per student (three generations of stored `course_name`)
+while the link pointed at the catalogue course. Standardised so a PISMP student
+always reads one constant degree + the bidang on its own line — a reusable pattern
+for future degree+specialisation programmes. **NO migration; backend + web.**
+
+- **Added — `card_display.programme_split(app)` → `{title, stream}`** (the one home
+  for the "constant degree + specialisation" shape) + `_DEGREE_TITLE` map (the
+  extension point: register a future programme's degree name and nothing else
+  changes). PISMP → title `Ijazah Sarjana Muda Perguruan`, stream = the bidang
+  (taken ONLY from a pinned catalogue course — an unpinned PISMP shows the degree
+  alone until the Aliran/Bidang pick lands). STPM/Matric → title + track; others →
+  title + ''. `resolve_course` (sponsor card / emails) now builds on it (PISMP joins
+  with a dash), so every surface reads identically. STPM/Matric/poly/asasi output
+  unchanged.
+- **Added — `chosen_programme_display` on `AdminApplicationDetailSerializer`**
+  (server-computed split) → the cockpit Academic box shows the degree as the
+  programme and a new **Stream / Bidang** row (linked to the catalogue course);
+  STPM/Matric keep their inline track. i18n `admin.scholarship.streamBidang`
+  (en/ms/ta — Tamil first-draft `பிரிவு / துறை`).
+- **Data (one-time, via Supabase MCP — done):** #43 reconciled (STPM→PISMP switch
+  the student had been asked but the query was waived; pathway `pismp`, stale pre-U
+  track/school cleared, bidang course `50PD040T00P` pinned — byte-identical to a
+  student "Yes"). #80/#107/#110/#115 `course_name` normalised to the catalogue
+  bidang name their `course_id` already pointed to.
+- **Tests** — `test_card_display` +4 (PISMP pinned/unpinned split, STPM/Matric/poly
+  split); existing sponsor-card resolution + track-label parity unchanged.
+
 ## Cockpit pre-U stream in Malay only + cross-runtime label parity guard — 2026-07-18
 
 Owner live-review follow-up. NO migration; web + one backend test. Commits `258bac51` / `ed7d6bdf`.
