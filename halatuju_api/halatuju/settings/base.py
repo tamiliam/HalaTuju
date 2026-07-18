@@ -121,6 +121,12 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
+# Contract module — the SINGLE Gemini model used to draft comprehension-quiz
+# questions (contracts.generate_quiz). Owner decision 4: no silent downgrade to a
+# lesser model — if the configured model is unavailable/errors, raise, don't degrade.
+# (Deliberately NOT the reports MODEL_CASCADE.)
+CONTRACT_QUIZ_MODEL = os.environ.get('CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+
 # Admin notifications. The env var was set on Cloud Run but never read into
 # settings, so getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') silently returned ''
 # and every admin-notify email (sponsor interest, profile-complete, Vision-outage

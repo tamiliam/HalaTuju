@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract Module — Sprint 1: model + service + seed (backend, INERT) — 2026-07-18
+
+First sprint of the org-owned, versioned bursary-agreement module (plan
+`docs/plans/2026-07-18-contract-module-plan.md`). Backend only; the module is
+**INERT** — neither `bursary.py` nor `payments.py` reads it yet (Sprint 2). **NO
+deploy** — the feature's single prod deploy is at Sprint 5. Migration applied to
+local sqlite only.
+
+- **Added — migration `scholarship/0103_contract_module`** (3 new models + 3 FK
+  additions). `ContractTemplate` (`contract_templates`): org-owned, versioned,
+  `draft → pending_deployment → active → archived`; localised title/preamble/
+  progress (en authoritative); flow config (counterparty, `parent_role`,
+  `witness_policy`); lawyer-vetting attestation; lifecycle stamps;
+  `languages_available` property. `ContractClause` (`contract_clauses`):
+  contiguous ordered clauses, plain-text bodies, per-language quiz JSON.
+  `PaymentScheduleRow` (`contract_payment_schedule_rows`): `pathway`+`variant`,
+  `paid_offsets` JSON (start/count/gap months in one field), derived `total`.
+  Additions: `BursaryAgreement.template` (PROTECT) + `executed_pdf_emailed_at` +
+  `drive_file_url`; `ScholarshipApplication.comprehension_template` (SET_NULL).
+- **Added — `apps/scholarship/contracts.py`** service (mirrors `payments.py` +
+  `ContractsError`): draft-only authoring (`create_template` w/ `copy_from`,
+  `update_config`, `replace_clauses`, `replace_schedule`, `record_vetting` — all
+  refuse a non-draft → `not_draft`); `generate_quiz` (single Gemini model
+  `CONTRACT_QUIZ_MODEL`=`gemini-2.5-pro`, NO downgrade, mocked in tests);
+  lifecycle (`validate_for_deployment` → `submit_for_deployment` →
+  `revert_to_draft` → `deploy` [super-only, atomically archives the previous
+  active version]); deploy validations T1/T2·C1/C2·Q1–Q4·S1–S4·P1 + warnings
+  W1–W3; readers (`active_template_for`, `template_for_application`,
+  `schedule_row_for`, `is_paid_month`, `schedule_summary_text`, `schedule_table`,
+  `quiz_checkpoints`, `resolve_locale`, `render_preview_html`).
+- **Added — BrightPath v1 fixture** (`fixtures/brightpath_contract_v1.json`, NO
+  PII — counterparty name/NRIC left for the UI) reproducing today's 16
+  `AGREEMENT_CLAUSES` (en+ms) + the 8 reconciled comprehension checkpoints
+  (en/ms/ta) + the schedule (RM200; starts 7/7/7/8/8/9; STPM 15 paid months with
+  Dec+Jun gaps; continuing 5; default 10). Command `seed_contract_template
+  --org brightpath --template-version 2026-v1 --fixture …` creates a DRAFT only.
+- **Added — setting `CONTRACT_QUIZ_MODEL`** (default `gemini-2.5-pro`).
+- **Tests**: `test_contracts.py` / `test_contract_validation.py` /
+  `test_contract_schedule.py` (+70). Every validation rule has a failing→passing
+  test; non-draft mutation raises `not_draft`; deploy archives the predecessor
+  atomically; the seeded draft reproduces today's constants + schedule; Gemini
+  mocked (never a live call). **2798 scholarship pytest** green; no migration
+  drift; `bursary.py`/`payments.py` untouched.
+
 ## Cockpit pre-U stream in Malay only + cross-runtime label parity guard — 2026-07-18
 
 Owner live-review follow-up. NO migration; web + one backend test. Commits `258bac51` / `ed7d6bdf`.

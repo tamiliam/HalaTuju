@@ -356,6 +356,14 @@ class ScholarshipApplication(models.Model):
     # comprehension quiz ("Understand" step on /scholarship/award), recorded for
     # defensibility alongside the signed agreement.
     comprehension_passed_at = models.DateTimeField(null=True, blank=True)
+    # Contract module: the ContractTemplate version whose comprehension quiz this student
+    # passed. Pins the runtime quiz↔contract lockstep — ``bursary.sign_agreement`` refuses
+    # (``comprehension_stale``) if the active template no longer matches what they were
+    # quizzed on. SET_NULL so retiring a template never deletes the application.
+    comprehension_template = models.ForeignKey(
+        'ContractTemplate', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='+',
+    )
     # Post-award signing — the parent/guardian SURETY's phone-PIN verification, captured
     # in-session just before the bursary signature. ``guarantor_phone`` is the locked
     # number (read from profile.guardians at apply) the PIN was sent to; the stamp marks a
@@ -2062,6 +2070,18 @@ class BursaryAgreement(models.Model):
     )
     version = models.CharField(max_length=20)
     locale = models.CharField(max_length=5, default='en')
+    # Contract module: the versioned ContractTemplate this agreement was rendered from.
+    # PROTECT — a deployed template that has governed a signed agreement can never be
+    # deleted. Null for legacy agreements rendered from the hard-coded bursary.py
+    # constants (pre-module); ``version`` above is filled from the template when present.
+    template = models.ForeignKey(
+        'ContractTemplate', null=True, blank=True,
+        on_delete=models.PROTECT, related_name='agreements',
+    )
+    # Execution distribution (Sprint 5): the signed PDF is emailed to student + witness +
+    # org admin and filed in Google Drive. Stamps guard idempotent best-effort delivery.
+    executed_pdf_emailed_at = models.DateTimeField(null=True, blank=True)
+    drive_file_url = models.URLField(blank=True, default='')
 
     # ── Particulars (the filled-in terms, frozen at signing) ──────────────────
     award_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -2145,3 +2165,194 @@ class BursaryAgreement(models.Model):
         if self.student_signed_at:
             return 'student_signed'
         return 'draft'
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Contract module (org-owned, versioned bursary agreement).
+#
+# Replaces the hard-coded bursary.py constants + the static FE quiz with an
+# org-authored, versioned, deployable artifact. Lifecycle is DEPLOYMENT, not
+# approval: draft → pending_deployment → active → archived. A non-draft template
+# is IMMUTABLE (the contracts.py authoring calls refuse status != 'draft'), which
+# is what lets a signed BursaryAgreement PROTECT-reference the exact version it
+# was rendered from, forever. Module is INERT in Sprint 1 — nothing reads it yet.
+# ─────────────────────────────────────────────────────────────────────────────
+class ContractTemplate(models.Model):
+    """A versioned bursary-agreement template owned by one organisation.
+
+    English is authoritative (the lawyer vets English only); ms/ta are courtesy
+    translations offered only when fully translated. Exactly one ACTIVE template
+    per org at a time — deploying a new version atomically archives the previous
+    active one (see ``contracts.deploy``)."""
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('pending_deployment', 'Pending deployment'),
+        ('active', 'Active'),
+        ('archived', 'Archived'),
+    )
+    PARENT_ROLE_CHOICES = (
+        ('co_signer_all', 'Co-signer (all students)'),
+        ('minor_only', 'Co-signer (minors only)'),
+    )
+    WITNESS_POLICY_CHOICES = (
+        ('none', 'No witness'),
+        ('optional', 'Witness optional'),
+        ('required', 'Witness required'),
+    )
+
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT,
+        related_name='contract_templates',
+    )
+    version = models.CharField(max_length=40)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+
+    # Localised document chrome (en required; ms/ta blank until translated).
+    title_en = models.CharField(max_length=255, blank=True, default='')
+    title_ms = models.CharField(max_length=255, blank=True, default='')
+    title_ta = models.CharField(max_length=255, blank=True, default='')
+    preamble_en = models.TextField(blank=True, default='')
+    preamble_ms = models.TextField(blank=True, default='')
+    preamble_ta = models.TextField(blank=True, default='')
+    progress_standard_en = models.TextField(blank=True, default='')
+    progress_standard_ms = models.TextField(blank=True, default='')
+    progress_standard_ta = models.TextField(blank=True, default='')
+
+    # ── Flow config (party + signing rules) ───────────────────────────────────
+    # NRIC is NEVER seeded/committed — the org admin fills it in the UI before deploy.
+    counterparty_name = models.CharField(max_length=200, blank=True, default='')
+    counterparty_title = models.CharField(max_length=255, blank=True, default='')
+    counterparty_nric = models.CharField(max_length=20, blank=True, default='')
+    counterparty_notify_emails = models.JSONField(default=list, blank=True)
+    parent_role = models.CharField(
+        max_length=20, choices=PARENT_ROLE_CHOICES, default='co_signer_all',
+    )
+    parent_pin_required = models.BooleanField(default=True)
+    witness_policy = models.CharField(
+        max_length=10, choices=WITNESS_POLICY_CHOICES, default='optional',
+    )
+
+    # ── Attestation (the lawyer-vetting gate — T2) ────────────────────────────
+    vetted_by_name = models.CharField(max_length=200, blank=True, default='')
+    vetted_on = models.DateField(null=True, blank=True)
+    vetting_attested_by_email = models.CharField(max_length=254, blank=True, default='')
+    vetting_attested_at = models.DateTimeField(null=True, blank=True)
+
+    # ── Lifecycle stamps ──────────────────────────────────────────────────────
+    created_by_email = models.CharField(max_length=254, blank=True, default='')
+    submitted_by_email = models.CharField(max_length=254, blank=True, default='')
+    submitted_by_at = models.DateTimeField(null=True, blank=True)
+    deployed_by_email = models.CharField(max_length=254, blank=True, default='')
+    deployed_by_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'contract_templates'
+        ordering = ['organisation_id', '-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['organisation', 'version'],
+                name='uniq_contract_template_org_version',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.organisation_id}/{self.version} ({self.status})'
+
+    @property
+    def languages_available(self):
+        """en, plus each language whose title/preamble/progress AND every clause
+        (heading+body) are fully translated. English is always available."""
+        langs = ['en']
+        for lang in ('ms', 'ta'):
+            if not (getattr(self, f'title_{lang}') and getattr(self, f'preamble_{lang}')
+                    and getattr(self, f'progress_standard_{lang}')):
+                continue
+            clauses = list(self.clauses.all())
+            if clauses and all(
+                getattr(c, f'heading_{lang}') and getattr(c, f'body_{lang}')
+                for c in clauses
+            ):
+                langs.append(lang)
+        return langs
+
+
+class ContractClause(models.Model):
+    """One numbered clause of a ContractTemplate. English is authoritative; bodies
+    are PLAIN TEXT (a blank line is a paragraph break) — no rich text in v1, for
+    xhtml2pdf safety. A clause may be flagged as a comprehension-quiz candidate,
+    in which case it carries a per-language quiz payload."""
+    template = models.ForeignKey(
+        ContractTemplate, on_delete=models.CASCADE, related_name='clauses',
+    )
+    order = models.PositiveIntegerField()
+    heading_en = models.CharField(max_length=255, blank=True, default='')
+    heading_ms = models.CharField(max_length=255, blank=True, default='')
+    heading_ta = models.CharField(max_length=255, blank=True, default='')
+    body_en = models.TextField(blank=True, default='')
+    body_ms = models.TextField(blank=True, default='')
+    body_ta = models.TextField(blank=True, default='')
+
+    is_quiz_candidate = models.BooleanField(default=False)
+    # Each quiz payload: {tag, plain, question, options:[3 strings], correct:0-2, why}
+    # (matches the FE QuizCheckpoint). Empty dict = no quiz for that language.
+    quiz_en = models.JSONField(default=dict, blank=True)
+    quiz_ms = models.JSONField(default=dict, blank=True)
+    quiz_ta = models.JSONField(default=dict, blank=True)
+    # Audit: which Gemini model drafted the quiz. Blank = hand-written/seeded.
+    quiz_generated_model = models.CharField(max_length=80, blank=True, default='')
+
+    class Meta:
+        db_table = 'contract_clauses'
+        ordering = ['template_id', 'order']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['template', 'order'],
+                name='uniq_contract_clause_template_order',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.template_id}#{self.order} {self.heading_en}'
+
+
+class PaymentScheduleRow(models.Model):
+    """One row of a template's versioned payment schedule. A student is governed by
+    the schedule of the version they signed, forever. The total is DERIVED —
+    ``len(paid_offsets) * monthly_amount`` — never stored, so it can never drift
+    from the offsets. ``paid_offsets`` are sorted 0-based month offsets from
+    ``start_month`` and encode start, count, and gap/exam months in one field."""
+    template = models.ForeignKey(
+        ContractTemplate, on_delete=models.CASCADE, related_name='schedule_rows',
+    )
+    pathway = models.CharField(max_length=40)
+    # '' = the plain pathway row; 'continuing' = the continuing-student variant.
+    variant = models.CharField(max_length=20, blank=True, default='')
+    label_en = models.CharField(max_length=120, blank=True, default='')
+    label_ms = models.CharField(max_length=120, blank=True, default='')
+    label_ta = models.CharField(max_length=120, blank=True, default='')
+    monthly_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    start_month = models.PositiveSmallIntegerField()  # 1-12
+    paid_offsets = models.JSONField(default=list, blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'contract_payment_schedule_rows'
+        ordering = ['template_id', 'sort_order', 'pathway', 'variant']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['template', 'pathway', 'variant'],
+                name='uniq_contract_schedule_template_pathway_variant',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.template_id} {self.pathway}/{self.variant or "-"}'
+
+    @property
+    def total(self):
+        from decimal import Decimal
+        return (self.monthly_amount or Decimal('0')) * len(self.paid_offsets or [])
