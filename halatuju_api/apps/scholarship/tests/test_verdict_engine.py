@@ -686,6 +686,20 @@ class TestPathway(_Base):
         self.assertNotIn('pathway_undeclared', codes)
         self.assertNotIn('pathway_confirm', codes)
 
+    def test_university_declared_diploma_offer_is_not_a_switch(self):
+        # Data 2026-07-18: the 'university' track + a university DIPLOMA offer is the normal case, not
+        # a switch — diploma/degree/university/poly all collapse to the 'tertiary' family. No hearing.
+        self.app.chosen_pathway = 'university'
+        self.app.save()
+        d = _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                     fields=dict(self._OWN_OFFER, programme='DIPLOMA KEJURUTERAAN AWAM',
+                                 institution='Universiti Teknologi Malaysia'))
+        d.vision_fields = dict(d.vision_fields, authenticity={'status': 'genuine', 'reason': 'x'})
+        d.save(update_fields=['vision_fields'])
+        codes = _codes(_facts(self.app)['pathway']['unresolved'])
+        self.assertNotIn('pathway_type_switch', codes)
+        self.assertNotIn('pathway_confirm', codes)
+
     def test_not_confirmed_type_switch_asks_switch_not_generic_confirm(self):
         # Owner 2026-07-18: a TYPE switch fires regardless of confirmed-state. Declared STPM, a genuine
         # Matriculation offer (different family), NOT yet confirmed → pathway_type_switch, and the

@@ -54,6 +54,11 @@ def detect_pathway_type(programme: str, institution: str) -> str:
         return 'diploma'
     if any(k in t for k in ('ijazah', 'sarjana muda', 'bachelor', 'degree')):
         return 'degree'
+    # A bare polytechnic name with no programme keyword (an occasional extraction quirk, #125):
+    # a polytechnic's default level is a diploma. LAST — so an "Ijazah/Asasi … @ Politeknik" is
+    # still caught by the specific branches above.
+    if 'politeknik' in t or 'polytechnic' in t:
+        return 'diploma'
     return ''
 
 
@@ -62,27 +67,33 @@ def is_pre_u(pathway_type: str) -> bool:
     return pathway_type in ('stpm', 'matric')
 
 
-# One coarse FUNDING family per pathway, collapsing the several vocabularies that name a pathway — the
-# offer's DETECTED type (detect_pathway_type: diploma/degree/…), the stored chosen_pathway code
-# (poly/university/… — the 8 apply-form codes) AND legacy display labels (Matriculation/Foundation) —
-# so a mere rename/vocabulary-difference is never mistaken for a switch. Only a cross-FAMILY change is
-# a genuine pathway-TYPE switch (TD-161: STPM→PISMP counts; poly≡diploma, university≡degree do not).
-# An UNRECOGNISED value maps to '' so it can never spuriously differ from a known family (the caller
-# requires BOTH sides to resolve to a known family before treating it as a switch).
+# One coarse pathway-TYPE family, collapsing the several vocabularies that name a pathway — the offer's
+# DETECTED type (detect_pathway_type: diploma/degree/…), the stored chosen_pathway code (poly/university/…
+# — the 8 apply-form codes) AND legacy display labels (Matriculation/Foundation) — so a mere rename is
+# never mistaken for a switch. The three pre-U tracks (stpm/matric/asasi) and pismp are distinct
+# families; ALL of {diploma, poly, degree, university} collapse to ONE 'tertiary' family — a student on
+# the university/UA track who receives a university DIPLOMA (or vice-versa) has NOT switched pathway
+# (data 2026-07-18: 9 of 10 flagged rows were this benign case), and any institution-level difference
+# is caught by the within-family clash (Case 3), not the type switch. Only a cross-FAMILY change is a
+# genuine TYPE switch (STPM→PISMP counts; university→diploma does not). An UNRECOGNISED value → '' so it
+# can never spuriously differ from a known family (the caller requires BOTH sides to resolve to a
+# known family before treating it as a switch).
 _PATHWAY_FAMILY = {
     'stpm': 'stpm',
     'matric': 'matric', 'matriculation': 'matric', 'matrikulasi': 'matric',
     'asasi': 'asasi', 'foundation': 'asasi',
     'pismp': 'pismp',
-    'diploma': 'diploma', 'poly': 'diploma', 'polytechnic': 'diploma', 'politeknik': 'diploma',
-    'degree': 'degree', 'university': 'degree', 'universiti': 'degree', 'ua': 'degree', 'ijazah': 'degree',
+    'diploma': 'tertiary', 'poly': 'tertiary', 'polytechnic': 'tertiary', 'politeknik': 'tertiary',
+    'degree': 'tertiary', 'university': 'tertiary', 'universiti': 'tertiary', 'ua': 'tertiary',
+    'ijazah': 'tertiary',
 }
 
 
 def pathway_family(pathway_type: str) -> str:
-    """Coarse funding family for a pathway type/label/code (poly≡diploma, university≡degree,
-    Matriculation≡matric); an unrecognised value → '' (so it never spuriously differs from a known
-    family). Reduces the code/label/detected vocabularies to one comparable family."""
+    """Coarse pathway-TYPE family for a type/label/code — pre-U (stpm/matric/asasi) and pismp are each
+    distinct; diploma/poly/degree/university all collapse to 'tertiary' (a level nuance within the same
+    track is not a pathway switch). Matriculation≡matric. An unrecognised value → '' (so it never
+    spuriously differs from a known family)."""
     return _PATHWAY_FAMILY.get((pathway_type or '').strip().lower(), '')
 
 

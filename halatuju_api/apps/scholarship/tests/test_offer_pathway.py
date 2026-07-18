@@ -35,6 +35,21 @@ class TestDetectors(SimpleTestCase):
         for t in ('diploma', 'asasi', 'degree', 'pismp', ''):
             self.assertFalse(op.is_pre_u(t))
 
+    def test_detect_politeknik_fallback(self):
+        # A bare polytechnic name (no programme keyword) → diploma (#125-class); a specific keyword wins.
+        self.assertEqual(op.detect_pathway_type('', 'POLITEKNIK SULTAN IDRIS SHAH'), 'diploma')
+        self.assertEqual(op.detect_pathway_type('Asasi Teknologi Kejuruteraan', 'Politeknik X'), 'asasi')
+
+    def test_pathway_family_tertiary_collapse(self):
+        # diploma/poly/degree/university all collapse to one 'tertiary' family (a university student
+        # with a university diploma has NOT switched); pre-U tracks + pismp stay distinct.
+        for t in ('diploma', 'poly', 'degree', 'university', 'ua', 'politeknik'):
+            self.assertEqual(op.pathway_family(t), 'tertiary', t)
+        self.assertEqual(op.pathway_family('Matriculation'), 'matric')   # legacy label
+        self.assertEqual(op.pathway_family('random'), '')                # unknown → '' (never a switch)
+        self.assertEqual(op.pathway_family('university'), op.pathway_family('diploma'))   # not a switch
+        self.assertNotEqual(op.pathway_family('stpm'), op.pathway_family('pismp'))        # a real switch
+
     def test_parse_stpm_stream(self):
         self.assertEqual(op.parse_stpm_stream('Tingkatan Enam Semester 1 (Sains Sosial)'), 'sains_sosial')
         self.assertEqual(op.parse_stpm_stream('Tingkatan Enam Semester 1 (SAINS)'), 'sains')

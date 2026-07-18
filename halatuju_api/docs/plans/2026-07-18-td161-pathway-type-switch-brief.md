@@ -82,9 +82,24 @@ type switch suppresses the generic confirm):
   `pathway_undeclared`, type-switch → `pathway_type_switch`; **both PISMP paths → picker with
   `aliran=sjkt` pre-inferred.**
 
+## Cohort sanity (read-only, 2026-07-18) → family map refined
+
+A read-only prod scan of the 79 scored-live-offer apps found 10 cross-family rows. **9 were the same
+benign pattern — `university`-track declared + a university **diploma** offer** (#8/17/44/48/50/61/87/
+121 + #75 suspect); only **#43** was a real switch (stpm→pismp). That exposed a too-coarse map
+(`university→degree` vs `diploma`), fixed here:
+- **`_PATHWAY_FAMILY`: collapse {diploma, poly, degree, university} → one `tertiary` family** — a
+  university student with a university diploma has NOT switched pathway (a level nuance, not a track
+  change); institution differences within tertiary are still caught by the within-family clash (Case 3).
+  This drops the 9 false positives; the effective switch cohort is #43.
+- **`detect_pathway_type`: added a `politeknik|polytechnic` fallback** (last, after the specific
+  branches) so a bare polytechnic name with no programme keyword (#125-class, an extraction quirk) is
+  read as a diploma — catching e.g. #125 (asasi → polytechnic), a real switch the old regex missed.
+- +3 tests (`test_pathway_family_tertiary_collapse`, `test_detect_politeknik_fallback`,
+  `test_university_declared_diploma_offer_is_not_a_switch`); **2728 scholarship pytest green.**
+
 ## Carry / deferred
-- **Live Supabase data sanity (read-only) — deferred (MCP was down):** re-check #43 raises
-  `pathway_type_switch`, and scan for the cohort where `chosen_pathway` family ≠ the confirmed
-  `chosen_programme` family — this "scored + family-aware" logic now catches a real set of
-  declared-A/offer-B students who will start seeing the switch hearing. Worth eyeballing before deploy.
+- Optional re-scan to confirm the cohort is now ~#43 (+#125) — the tests already lock the behaviour.
+  Two extraction quirks noted but SEPARATE from this logic: #51/#62 have a "Tarikh dan Masa Daftar"
+  label mis-slotted into the programme field (a re-run / the offer-parser guards fix these).
 - Tamil review of the first-draft `pathway_type_switch` / `pathwayName.*` strings.
