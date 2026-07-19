@@ -2981,7 +2981,7 @@
       "updated": "Source updated.",
       "codeAndNameRequired": "Code and name are required.",
       "codeTaken": "That code is already in use.",
-      "superRequired": "Only a super admin or organisation admin can manage sources.",
+      "superRequired": "Only the Admin, Organisation admin, or Super admin roles can manage sources.",
       "witness": {
         "title": "Witness organisation",
         "help": "This student has no referring organisation. Assign a witness organisation to attest their agreement, or leave as None — the Foundation then countersigns directly.",

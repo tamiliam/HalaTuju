@@ -2981,7 +2981,7 @@
       "updated": "Sumber dikemas kini.",
       "codeAndNameRequired": "Kod dan nama diperlukan.",
       "codeTaken": "Kod itu telah digunakan.",
-      "superRequired": "Hanya pentadbir utama atau pentadbir organisasi boleh menguruskan sumber.",
+      "superRequired": "Hanya peranan Admin, Pentadbir organisasi, atau Pentadbir utama boleh menguruskan sumber.",
       "witness": {
         "title": "Organisasi saksi",
         "help": "Pelajar ini tiada organisasi rujukan. Tetapkan organisasi saksi untuk mengesahkan perjanjian mereka, atau biarkan sebagai Tiada — Yayasan kemudiannya menandatangani terus.",

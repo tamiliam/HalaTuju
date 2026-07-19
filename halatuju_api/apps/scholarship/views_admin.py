@@ -1013,12 +1013,14 @@ def _source_student_counts():
 
 
 class _SourcesBase(_AdminBase):
-    """Gate for the Sources + witness-assignment endpoints: super or org_admin only."""
+    """Gate for the Sources + witness-assignment endpoints: super, admin, or org_admin
+    (owner 2026-07-19 — the Admin role manages sources too). qc/reviewer/partner → 403.
+    `has_role(admin, 'admin')` already passes super; org_admin is added explicitly."""
     def _sources_admin(self, request):
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (self.has_role(admin, 'super') or admin.role == 'org_admin'):
+        if not (self.has_role(admin, 'admin') or admin.role == 'org_admin'):
             return None, self._deny_role()
         return admin, None
 

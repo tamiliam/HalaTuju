@@ -36,7 +36,8 @@ export default function SourcesPage() {
   const { t } = useT()
 
   const isSuper = !!(role?.is_super_admin || role?.role === 'super')
-  const canManage = isSuper || role?.role === 'org_admin'
+  // Sources management: super + admin + org_admin (owner 2026-07-19). Matches the backend gate.
+  const canManage = isSuper || role?.role === 'org_admin' || role?.role === 'admin'
 
   const [sources, setSources] = useState<SourceItem[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)

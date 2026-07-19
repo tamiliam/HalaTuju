@@ -215,6 +215,9 @@ export default function AdminScholarshipDetailPage() {
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
   // Assignment (F7) is a super or org_admin power — an org_admin assigns their own org's reviewers.
   const canAssign = isSuper || role?.role === 'org_admin'
+  // Sources / witness-org management: super + admin + org_admin (owner 2026-07-19). Distinct from
+  // canAssign (reviewer assignment stays super/org_admin) — the Admin role manages sources/witness.
+  const canManageSources = isSuper || role?.role === 'org_admin' || role?.role === 'admin'
   // QC (2026-07): quality control acts on AWAITING-QC ('interviewed') cases — super, a `qc`, or
   // an `org_admin` (the organisation superadmin). The backend recorder guard stops anyone QC-ing
   // a verdict they themselves recorded (two-person control).
@@ -287,9 +290,9 @@ export default function AdminScholarshipDetailPage() {
   const [witnessMsg, setWitnessMsg] = useState('')
   const sourceless = !!app && !app.referred_by_org
   useEffect(() => {
-    if (!token || !canAssign || !sourceless) return
+    if (!token || !canManageSources || !sourceless) return
     getSources({ token }).then((d) => setActiveSources(d.sources.filter((s) => s.show_in_apply && s.is_active))).catch(() => {})
-  }, [token, canAssign, sourceless])
+  }, [token, canManageSources, sourceless])
   useEffect(() => { setWitnessSel(app?.witness_org?.code || '') }, [app?.witness_org?.code])
 
   const doAssignWitness = async () => {
@@ -2669,8 +2672,8 @@ export default function AdminScholarshipDetailPage() {
 
       {/* ── Witness organisation (go-live transition) — for a SOURCELESS student only.
           Un-gated by the agreement flag: the owner assigns witnesses during go-live prep,
-          before the flags flip (runbook step 2 precedes step 3). super/org_admin. */}
-      {canAssign && sourceless && (
+          before the flags flip (runbook step 2 precedes step 3). super/admin/org_admin. */}
+      {canManageSources && sourceless && (
         <div className="mt-6 bg-white rounded-xl border shadow-sm p-5 max-w-2xl">
           <h3 className="font-semibold text-gray-900">{t('admin.sources.witness.title')}</h3>
           <p className="mt-1 text-sm text-gray-500">{t('admin.sources.witness.help')}</p>

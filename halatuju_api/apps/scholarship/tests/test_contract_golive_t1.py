@@ -372,6 +372,13 @@ class TestSourcesAdminAPI(TestCase):
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='gl-rev', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='Rev', email='r@x.com')
+        # The Admin role manages sources too (owner 2026-07-19); qc does NOT.
+        cls.adm = PartnerAdmin.objects.create(
+            supabase_user_id='gl-adm', role='admin', is_active=True,
+            owning_organisation=cls.org, name='Adm', email='a@x.com')
+        cls.qc = PartnerAdmin.objects.create(
+            supabase_user_id='gl-qc', role='qc', is_active=True,
+            owning_organisation=cls.org, name='Qc', email='qc@x.com')
         # a referred student → source A shows a student_count of 1
         StudentProfile.objects.create(
             supabase_user_id='gl-referred', name='Ref Stu', referred_by_org=cls.src)
@@ -383,8 +390,9 @@ class TestSourcesAdminAPI(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
 
-    def test_list_with_counts_super_and_org_admin(self):
-        for uid in ('gl-super', 'gl-oa'):
+    def test_list_with_counts_super_admin_orgadmin(self):
+        # super + Admin + org_admin may all manage sources (owner 2026-07-19).
+        for uid in ('gl-super', 'gl-oa', 'gl-adm'):
             self._auth(uid)
             r = self.client.get(self.SOURCES)
             self.assertEqual(r.status_code, 200, uid)
@@ -392,10 +400,17 @@ class TestSourcesAdminAPI(TestCase):
             self.assertEqual(src['student_count'], 1)
             self.assertEqual(src['phone'], '0111')
 
-    def test_reviewer_forbidden(self):
-        self._auth('gl-rev')
-        self.assertEqual(self.client.get(self.SOURCES).status_code, 403)
-        self.assertEqual(self.client.post(self.SOURCES, {'code': 'x', 'name': 'X'}).status_code, 403)
+    def test_admin_role_can_create(self):
+        self._auth('gl-adm')
+        r = self.client.post(self.SOURCES, {'code': 'admincreated', 'name': 'By Admin'}, format='json')
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(PartnerOrganisation.objects.filter(code='admincreated').exists())
+
+    def test_reviewer_and_qc_forbidden(self):
+        for uid in ('gl-rev', 'gl-qc'):
+            self._auth(uid)
+            self.assertEqual(self.client.get(self.SOURCES).status_code, 403, uid)
+            self.assertEqual(self.client.post(self.SOURCES, {'code': 'x', 'name': 'X'}).status_code, 403, uid)
 
     def test_create_source(self):
         self._auth('gl-super')

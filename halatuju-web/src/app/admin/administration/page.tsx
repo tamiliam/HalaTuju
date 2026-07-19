@@ -345,11 +345,13 @@ export default function AdministrationPage() {
           )}
         </>) : (
           // Admin-General (matrix): read-only staff table, no invite / resend / revoke.
-          // Payments stays reachable — it is open to the admin role.
+          // Payments + Sources stay reachable — both are open to the admin role.
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
                 onClick={() => router.push('/admin/payments')} />
+              <IconCard icon="🏷️" title={t('admin.administration.sources')} subtitle={t('admin.administration.sourcesSub')}
+                onClick={() => router.push('/admin/sources')} />
             </div>
             <p className="text-sm text-gray-500">{t('admin.administration.viewOnlyNote')}</p>
             {staffTable(programmeStaff(admins), false, false)}
