@@ -8,7 +8,7 @@ import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { fundStudent, getSponsorPoolDetail, getSponsorWallet, type SponsorPoolDetail } from '@/lib/api'
-import { fieldImageUrl } from '@/lib/fieldImage'
+import { conceptFieldImageUrl } from '@/lib/fieldImage'
 import { FundingBar } from '@/components/FundingBar'
 import { rmWhole } from '@/lib/poolCard'
 import { formatDate } from '@/lib/formatDate'
@@ -99,7 +99,7 @@ export default function StudentDetailPage() {
             <div className="overflow-hidden rounded-2xl border bg-white">
               <div className="relative h-24">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={fieldImageUrl(detail.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <img src={conceptFieldImageUrl(detail.field_image_slug)} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 <span className="absolute bottom-2 left-4 rounded-md bg-white/90 px-2.5 py-0.5 text-xs font-bold text-gray-900 shadow-sm">{detail.ref}</span>
               </div>

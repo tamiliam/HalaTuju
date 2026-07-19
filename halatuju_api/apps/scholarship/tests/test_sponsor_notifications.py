@@ -158,7 +158,7 @@ class TestSponsorEmailContent(TestCase):
         self.assertNotIn('RM 3000', msg.body)              # not the raw "RM 3000"
         self.assertNotIn('Perak', msg.body)                # state dropped from the card line
         self.assertIn('Politeknik Ungku Omar', msg.body)   # institution still shown
-        self.assertIn('field-images/kejuruteraan.png', html)
+        self.assertIn('field-images-concept/kejuruteraan.png', html)  # tight-spot illustration set
         # "See all students" links to the pool; "sponsor account" links to the account page.
         self.assertIn('https://halatuju.xyz/sponsor/students', html)
         self.assertIn('https://halatuju.xyz/sponsor/account', html)

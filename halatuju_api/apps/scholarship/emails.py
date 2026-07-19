@@ -1171,6 +1171,10 @@ def send_countersign_pending_email(to_email, *, applicant_name='', link=''):
 # greeting when the caller has it. NO '—' placeholders and NO empty lines — a missing fact
 # is simply omitted.
 FIELD_IMAGE_BASE = 'https://pbrrlyoyyiftckqvzvvo.supabase.co/storage/v1/object/public/field-images'
+# Bright flat-illustration alternative set (no people/faces/text), used for the email
+# THUMBNAIL — a photo cropped to 56px reads poorly. Same slug filenames, separate public
+# bucket. (The sponsor detail-page strip uses the same set via the web `conceptFieldImageUrl`.)
+FIELD_IMAGE_CONCEPT_BASE = 'https://pbrrlyoyyiftckqvzvvo.supabase.co/storage/v1/object/public/field-images-concept'
 
 SPONSOR_NEW_SUBJECTS = {
     'en': {'one': 'A new student is waiting for a sponsor',
@@ -1233,9 +1237,10 @@ _SPONSOR_FREQ_WORD = {
 
 
 def _field_image_url(slug):
-    """Public field-artwork URL from a slug — '' (omit the <img>) when the slug is empty."""
+    """Public field-artwork URL from a slug — '' (omit the <img>) when the slug is empty.
+    Uses the concept (illustration) set, which crops cleanly at thumbnail size."""
     slug = (slug or '').strip()
-    return f'{FIELD_IMAGE_BASE}/{slug}.png' if slug else ''
+    return f'{FIELD_IMAGE_CONCEPT_BASE}/{slug}.png' if slug else ''
 
 
 def _tax_name_map():
