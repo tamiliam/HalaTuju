@@ -916,7 +916,7 @@ export async function cancelReopen(id: number, options?: ApiOptions) {
  *  override_reason: super-only pass of the V5 verdict gap floor — recorded server-side. */
 export async function recordQcDecision(
   id: number,
-  payload: { decision: 'accept' | 'reopen'; comments?: string; override_reason?: string },
+  payload: { decision: 'accept' | 'reopen' | 'reject'; comments?: string; override_reason?: string },
   options?: ApiOptions,
 ) {
   return adminMutate<AdminScholarshipDetail>(

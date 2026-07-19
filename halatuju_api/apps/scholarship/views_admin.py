@@ -1574,7 +1574,7 @@ class AdminSubmitDeclineView(_AdminBase):
 
 
 class AdminQcDecisionView(_AdminBase):
-    """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen', comments?, override_reason?} —
+    """POST .../<pk>/qc-decision/ {decision: 'accept'|'reopen'|'reject', comments?, override_reason?} —
     the QC gate on an AWAITING-QC ('interviewed') case. QC = a `qc`-role admin or super (never
     the reviewer).
       accept → 'interviewed' → 'recommended' (the case becomes pool-eligible). SOFT FLOOR
@@ -1584,7 +1584,13 @@ class AdminQcDecisionView(_AdminBase):
                (qc_override_reason/_by/_at) — advisory model, but the override leaves a trail.
       reopen → require `comments` (what was missing/the gaps); reopen the decision back to the
                reviewer ('interviewing', reopened banner + DecisionReopen audit) and email the
-               assigned reviewer the comments."""
+               assigned reviewer the comments.
+      reject → (owner 2026-07-19) QC OUTRIGHT rejection of a recommend the QC won't uphold — the
+               one-click form of today's manual reopen→decline. Require `comments` (the QC's reason,
+               shared with the reviewer). Records the SAME audited trail as the manual path (a
+               DecisionReopen row carrying the reason, closed as a correction) then declines as
+               'interview' with the 24h QC cool-off; the reviewer gets the "rejected by QC" email
+               (distinct from the "returned for revision" one)."""
     def post(self, request, pk):
         app, admin, err = self._require_qc(request, pk)
         if err:
@@ -1665,6 +1671,45 @@ class AdminQcDecisionView(_AdminBase):
                     qc_comments=comments,
                 )
             logger.info('AUDIT qc_reopen admin_id=%s app_id=%s', admin.id, pk)
+            return Response(AdminApplicationDetailSerializer(app).data)
+        if decision == 'reject':
+            # QC OUTRIGHT rejection (owner 2026-07-19): the QC won't uphold the reviewer's recommend
+            # and won't bounce it back — it's rejected here. Collapses today's manual two-step
+            # (reopen-with-reason → decline) into one action, producing the IDENTICAL audit trail:
+            # a DecisionReopen row carrying the QC's reason (rendered as "↩ Reopened by {QC} — …"),
+            # closed as a real correction, then a decline bucketed 'interview' with the 24h QC
+            # cool-off. The reviewer gets the "rejected by QC" email (not "returned for revision").
+            comments = (request.data.get('comments') or '').strip()
+            if not comments:
+                return Response(
+                    {'error': 'Say why you are rejecting so the reviewer has your reason.',
+                     'code': 'comments_required'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                reopen_service.reopen_decision(app, by_admin=admin, reason=comments)
+            except reopen_service.ReopenError as e:
+                return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+            reopen_service.close_reopen_with_change(app)   # a real correction (reviewer overruled)
+            from datetime import timedelta
+            from django.conf import settings as _settings
+            hours = getattr(_settings, 'DECLINE_QC_COOLOFF_HOURS', 24)
+            try:
+                admin_reject(app, admin, 'interview', cooloff=timedelta(hours=hours))
+            except ValueError:
+                return Response({'error': 'This case cannot be rejected from its current state.',
+                                 'code': 'bad_status'}, status=status.HTTP_400_BAD_REQUEST)
+            app.refresh_from_db()
+            reviewer = app.assigned_to
+            if reviewer is not None and getattr(reviewer, 'email', ''):
+                from .emails import send_qc_rejected_email
+                name = getattr(getattr(app, 'profile', None), 'name', '') or ''
+                send_qc_rejected_email(
+                    to_email=reviewer.email,
+                    reviewer_name=getattr(reviewer, 'name', ''),
+                    ref=pool.pool_ref(app.id),
+                    applicant_name=name,
+                    qc_comments=comments,
+                )
+            logger.info('AUDIT qc_reject admin_id=%s app_id=%s', admin.id, pk)
             return Response(AdminApplicationDetailSerializer(app).data)
         return Response({'error': 'bad_decision', 'code': 'bad_decision'},
                         status=status.HTTP_400_BAD_REQUEST)

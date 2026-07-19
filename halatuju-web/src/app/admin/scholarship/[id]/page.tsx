@@ -270,6 +270,9 @@ export default function AdminScholarshipDetailPage() {
   // QC gate (on an AWAITING-QC 'interviewed' case): Accept, or Reopen with a gaps note.
   const [qcReopenOpen, setQcReopenOpen] = useState(false)
   const [qcComments, setQcComments] = useState('')
+  // Reject toggle inside the reopen box (default off): on → the case is rejected outright
+  // instead of returned to the reviewer (owner 2026-07-19).
+  const [qcRejectMode, setQcRejectMode] = useState(false)
   // V5 gap floor: super-only override panel state (reason recorded server-side).
   const [qcOverrideOpen, setQcOverrideOpen] = useState(false)
   const [qcOverrideReason, setQcOverrideReason] = useState('')
@@ -650,18 +653,20 @@ export default function AdminScholarshipDetailPage() {
   // reviewer at 'interviewing' with the gaps comments (emailed to the assigned reviewer).
   // V5 gap floor: while a verdict fact is red the server refuses accept (verdict_gap_floor);
   // a super passes it with overrideReason, which the server records.
-  const doQcDecision = async (decision: 'accept' | 'reopen', overrideReason?: string) => {
+  const doQcDecision = async (decision: 'accept' | 'reopen' | 'reject', overrideReason?: string) => {
     if (!token) return
-    if (decision === 'reopen' && !qcComments.trim()) return
+    // Reopen AND reject both carry the shared-with-reviewer comment (the gaps / the reject reason).
+    const carriesComments = decision === 'reopen' || decision === 'reject'
+    if (carriesComments && !qcComments.trim()) return
     setBusy('qc'); setError(''); setVerdictMsg('')
     try {
       const result = await recordQcDecision(
-        id, { decision, comments: decision === 'reopen' ? qcComments.trim() : undefined,
+        id, { decision, comments: carriesComments ? qcComments.trim() : undefined,
               override_reason: overrideReason?.trim() || undefined }, { token })
       setApp(result)
       setProfile(result.sponsor_profile)
       loadVerdictState(result)
-      setQcReopenOpen(false); setQcComments('')
+      setQcReopenOpen(false); setQcComments(''); setQcRejectMode(false)
       setQcOverrideOpen(false); setQcOverrideReason('')
     } catch (e) {
       const code = (e as { code?: string })?.code
@@ -2628,17 +2633,27 @@ export default function AdminScholarshipDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
-              <p className="text-xs font-medium text-amber-900">{t('admin.scholarship.qcDecision.reopenTitle')}</p>
+            <div className={`rounded-lg border p-3 space-y-2 ${qcRejectMode ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
+              <p className={`text-xs font-medium ${qcRejectMode ? 'text-red-900' : 'text-amber-900'}`}>
+                {t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectTitle' : 'admin.scholarship.qcDecision.reopenTitle')}
+              </p>
               <textarea value={qcComments} rows={3} onChange={(e) => setQcComments(e.target.value)}
-                placeholder={t('admin.scholarship.qcDecision.commentsPlaceholder')}
-                className="w-full rounded border border-amber-300 px-2 py-1.5 text-sm" />
+                placeholder={t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectPlaceholder' : 'admin.scholarship.qcDecision.commentsPlaceholder')}
+                className={`w-full rounded border px-2 py-1.5 text-sm ${qcRejectMode ? 'border-red-300' : 'border-amber-300'}`} />
+              {/* Reject toggle (default off): flip the reopen box into an outright rejection. */}
+              <label className="flex items-center gap-2 text-xs text-gray-700 select-none cursor-pointer">
+                <input type="checkbox" checked={qcRejectMode} disabled={!!busy}
+                  onChange={(e) => setQcRejectMode(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-gray-300 text-red-600 focus:ring-red-500" />
+                {t('admin.scholarship.qcDecision.rejectToggle')}
+              </label>
               <div className="flex items-center gap-2">
-                <button onClick={() => doQcDecision('reopen')} disabled={!!busy || !qcComments.trim()}
-                  className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50">
-                  {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.reopenConfirm')}
+                <button onClick={() => doQcDecision(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 ${qcRejectMode ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
+                  {busy === 'qc' ? t('common.loading')
+                    : t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectConfirm' : 'admin.scholarship.qcDecision.reopenConfirm')}
                 </button>
-                <button onClick={() => { setQcReopenOpen(false); setQcComments('') }}
+                <button onClick={() => { setQcReopenOpen(false); setQcComments(''); setQcRejectMode(false) }}
                   className="text-xs text-gray-500 hover:text-gray-700">{t('common.cancel')}</button>
               </div>
             </div>

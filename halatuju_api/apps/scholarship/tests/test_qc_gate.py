@@ -111,6 +111,48 @@ class TestQcGate(TestCase):
         self.app.refresh_from_db()
         self.assertEqual(self.app.status, 'interviewed')            # unchanged
 
+    # --- reject (QC outright rejection of a recommend) ------------------------
+    @override_settings(DECLINE_QC_COOLOFF_HOURS=24)
+    def test_qc_reject_rejects_records_trail_and_embargoes_student(self):
+        mail.outbox = []
+        self._auth('qc-uid')
+        r = self._qc({'decision': 'reject', 'comments': 'Grades fall short of the 5A minimum.'})
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'rejected')
+        self.assertEqual(self.app.rejection_category, 'interview')
+        self.assertEqual(self.app.rejected_by, 'qc@example.com')
+        # Same audited trail as the manual reopen→decline: a reopen row carries the reason and is
+        # closed as a real correction (so the case-history renders "↩ Reopened by … — reason").
+        row = DecisionReopen.objects.get(application=self.app)
+        self.assertIn('5A', row.reason)
+        self.assertTrue(row.resulted_in_change)
+        self.assertIsNotNone(row.closed_at)
+        # The 24h QC cool-off embargoes the STUDENT email (nothing to the student yet)…
+        self.assertIsNotNone(self.app.decline_due_at)
+        self.assertIsNone(self.app.decline_email_sent_at)
+        # …but the reviewer IS told, with the distinct "rejected by QC" email carrying the reason.
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['reviewer@example.com'])
+        self.assertIn('rejected by QC', mail.outbox[0].subject)
+        self.assertIn('5A', mail.outbox[0].body)
+
+    def test_qc_reject_requires_comments(self):
+        self._auth('qc-uid')
+        r = self._qc({'decision': 'reject', 'comments': '  '})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'comments_required')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')            # unchanged
+        self.assertFalse(DecisionReopen.objects.filter(application=self.app).exists())
+
+    def test_reviewer_cannot_qc_reject(self):
+        self._auth('rev-uid')
+        r = self._qc({'decision': 'reject', 'comments': 'no'})
+        self.assertEqual(r.status_code, 403)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.status, 'interviewed')            # unchanged
+
     # --- who can QC -----------------------------------------------------------
     def test_reviewer_cannot_qc(self):
         self._auth('rev-uid')
