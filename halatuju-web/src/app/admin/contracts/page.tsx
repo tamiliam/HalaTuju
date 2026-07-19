@@ -69,7 +69,7 @@ export default function ContractsListPage() {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-5xl font-plex">
       <div className="flex items-start justify-between gap-4 mb-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('admin.contracts.title')}</h1>

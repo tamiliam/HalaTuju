@@ -61,7 +61,7 @@ export default function PaymentsLandingPage() {
   const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl font-plex">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('admin.payments.title')}</h1>

@@ -53,7 +53,7 @@ export default function ContractEditorPage() {
   const shared = { template: tpl, token: token!, onChange: setTpl }
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-5xl font-plex">
       <button type="button" onClick={() => router.push('/admin/contracts')}
         className="text-sm text-blue-600 hover:text-blue-800">{t('admin.contracts.backToList')}</button>
 

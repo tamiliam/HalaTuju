@@ -20,6 +20,7 @@ parity test. The whole feature ships behind ``BURSARY_AGREEMENT_ENABLED`` (defau
 import hashlib
 import io
 import logging
+import os
 from decimal import Decimal
 
 from django.conf import settings
@@ -154,9 +155,13 @@ def render_agreement_html(application, particulars, *, student, guarantor,
     calendar = contracts.schedule_calendar(row, cohort_year, lang)
 
     parts = [
+        # IBM Plex Serif for the contract document (2026-07-19). The face is registered with
+        # reportlab (xhtml2pdf's engine) in generate_pdf, so xhtml2pdf EMBEDS it in the PDF.
+        # The browser preview (a sandboxed srcDoc iframe with no font loaded) falls back to the
+        # serif stack below — a close visual match to the embedded PDF font.
         '<html><head><meta charset="utf-8"/></head>',
-        '<body style="font-family: Helvetica, Arial, sans-serif; font-size: 11px; '
-        'color: #222; line-height: 1.4;">',
+        '<body style="font-family: \'IBM Plex Serif\', Georgia, \'Times New Roman\', serif; '
+        'font-size: 11px; color: #222; line-height: 1.4;">',
         '<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; '
         'padding:6px 10px; text-align:center; font-size:9px; margin-bottom:12px;">'
         'The English version of this Agreement is authoritative; any other language '
@@ -303,12 +308,48 @@ def guarantor_phone_verification_fresh(application):
     return (timezone.now() - ts).total_seconds() <= ttl
 
 
+_FONT_DIR = os.path.join(os.path.dirname(__file__), 'fonts')
+_FONTS_REGISTERED = False
+
+
+def _register_contract_fonts():
+    """Register the bundled IBM Plex Serif faces with reportlab (xhtml2pdf's engine) so the
+    contract document font is EMBEDDED in the PDF. Idempotent; best-effort — if the font files
+    are missing, xhtml2pdf simply falls back to the serif stack in the HTML (Georgia/Times).
+    Registering with reportlab directly avoids xhtml2pdf's @font-face temp-file handling (which
+    is flaky on Windows) and is the standard custom-font pattern for xhtml2pdf."""
+    global _FONTS_REGISTERED
+    if _FONTS_REGISTERED:
+        return
+    try:
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.lib.fonts import addMapping
+        from xhtml2pdf.default import DEFAULT_FONT
+        regular = os.path.join(_FONT_DIR, 'IBMPlexSerif-Regular.ttf')
+        bold = os.path.join(_FONT_DIR, 'IBMPlexSerif-Bold.ttf')
+        if os.path.exists(regular) and os.path.exists(bold):
+            pdfmetrics.registerFont(TTFont('IBM Plex Serif', regular))
+            pdfmetrics.registerFont(TTFont('IBM Plex Serif Bold', bold))
+            addMapping('IBM Plex Serif', 0, 0, 'IBM Plex Serif')       # normal
+            addMapping('IBM Plex Serif', 1, 0, 'IBM Plex Serif Bold')  # bold
+            # Tell xhtml2pdf's font resolver (getFontName looks up the lowercased CSS family in
+            # fontList, seeded from DEFAULT_FONT) to map the family to the reportlab base font.
+            DEFAULT_FONT['ibm plex serif'] = 'IBM Plex Serif'
+    except Exception:
+        logger.warning('bursary: could not register contract fonts; PDF will use the serif '
+                       'fallback', exc_info=True)
+    _FONTS_REGISTERED = True   # don't retry every render; the fallback stack is acceptable
+
+
 def generate_pdf(html):
     """Render the agreement HTML to PDF bytes via xhtml2pdf (pure-Python, no system
     libs). Raises ``BursaryError('pdf_failed')`` on any failure. This is a mockable
-    seam — tests patch it so no real PDF engine runs."""
+    seam — tests patch it so no real PDF engine runs. The IBM Plex Serif document font is
+    registered with reportlab (once) so xhtml2pdf embeds it in the output."""
     try:
         from xhtml2pdf import pisa
+        _register_contract_fonts()
         buf = io.BytesIO()
         result = pisa.CreatePDF(io.StringIO(html), dest=buf)
         if result.err:

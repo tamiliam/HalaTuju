@@ -29,6 +29,9 @@ const config: Config = {
       fontFamily: {
         // Lexend from Stitch design
         sans: ['Lexend', 'system-ui', 'sans-serif'],
+        // IBM Plex Sans — applied to the four ORGANISATION admin modules only
+        // (invite / payments / contracts / sources) via `font-plex`.
+        plex: ['var(--font-ibm-plex-sans)', 'IBM Plex Sans', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         // 8px rounded corners from Stitch

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Admin module fonts — IBM Plex Sans + contract in IBM Plex Serif — 2026-07-19
+
+- **Changed** — the three ORGANISATION admin modules **Payments, Contracts, and Sources** now
+  render in **IBM Plex Sans** (loaded via `next/font`, applied through a new `font-plex` Tailwind
+  family on each page root). The rest of HalaTuju stays on Lexend; the sponsor portal stays on
+  Inter. ("Invite" is a redirect into Administration, which by owner decision stays on Lexend.)
+- **Changed** — the **bursary contract document** (the previewed agreement + the signed PDF) now
+  renders in **IBM Plex Serif**. The faces are bundled (`apps/scholarship/fonts/`, OFL-licensed)
+  and registered with reportlab so **xhtml2pdf embeds them in the PDF** (verified: both Regular +
+  Bold subset-embedded, no Helvetica/Times fallback). The browser preview iframe (which can't load
+  the .ttf) falls back to a Georgia/Times serif — a close visual match to the embedded PDF font.
+
 ## Sources module — Admin role may manage (permission tweak) — 2026-07-19
 
 - **Changed** — the Sources module (registry endpoints + the witness-org dropdown, sharing

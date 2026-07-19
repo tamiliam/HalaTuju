@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Lexend, Inter } from 'next/font/google'
+import { Lexend, Inter, IBM_Plex_Sans } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { ReferralCapture } from '@/components/ReferralCapture'
@@ -17,6 +17,16 @@ const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
+})
+
+// IBM Plex Sans — registered as a CSS variable here and applied (via the `font-plex` Tailwind
+// family) to the four ORGANISATION admin modules only: invite, payments, contracts, sources.
+// The rest of HalaTuju stays on Lexend; the sponsor portal stays on Inter.
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-ibm-plex-sans',
 })
 
 export const metadata: Metadata = {
@@ -56,7 +66,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${lexend.variable} ${inter.variable}`}>
+    <html lang="en" className={`${lexend.variable} ${inter.variable} ${ibmPlexSans.variable}`}>
       <body className="font-sans">
         <Providers>
           <HtmlLang />
