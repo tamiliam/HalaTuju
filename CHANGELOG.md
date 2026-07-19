@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sources module — Admin role may manage (permission tweak) — 2026-07-19
+
+- **Changed** — the Sources module (registry endpoints + the witness-org dropdown, sharing
+  `_SourcesBase`) is now editable by **super + admin + org_admin** (was super + org_admin only);
+  qc/reviewer/partner stay forbidden (403). The FE Sources card also shows for the Admin role, and
+  the witness dropdown uses a distinct `canManageSources` gate (reviewer assignment stays
+  super/org_admin via `canAssign`). Small follow-up deploy; both go-live flags remain OFF.
+
 ## Contract Go-Live Transition — Sprint T2 (Sources UI + witness dropdown + deploy) — 2026-07-19
 
 Second and final sprint of the go-live transition (plan
