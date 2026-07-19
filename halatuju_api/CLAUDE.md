@@ -524,20 +524,36 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-19)
 
-**✅ SHIPPED + DEPLOYED 2026-07-19 — QC Decision Gate (Decline-to-QC + QC outright reject).**
-api+web, commit `899cb82e`; **no migration**; `DECLINE_QC_COOLOFF_HOURS` defaults to 24 (no env var
-needed). Both reviewer outcomes now pass QC: a DECLINE routes to AWAITING QC (card shows "Confirm
-decline", red, no gap floor, 24h cool-off) via new `AdminSubmitDeclineView`; and the QC can REJECT a
-recommend outright — a default-off toggle in the reopen box → "Reject & inform reviewer" (`qc-decision`
-`decision:'reject'`), which reuses `reopen_decision`+`close_reopen_with_change`+`admin_reject('interview',24h)`
-to reproduce the manual reopen→decline audit trail with no schema change, and emails the reviewer
-`send_qc_rejected_email`. Retro `docs/retrospective-2026-07-19-qc-decision-gate.md`; decision ×1.
-**Owner to-do:** Tamil review of `qcDecision.{confirmDecline,reject*}` + `decision.declineSentToQc`.
+**Status: the contract module + reviewer-QC flow are fully built out and DEPLOYED; both go-live flags
+stay OFF. No coding sprint is queued — the open item is the OWNER's flag-flip runbook.** Migrations
+`courses/0065`, `scholarship/0104`, `scholarship/0105` are ALL APPLIED to prod (migrate-first). The
+older T1/T2 narrative further down is HISTORICAL — where it reads "not applied / not deployed", that
+is superseded (it is applied + deployed).
 
-**NOTE (was "NEXT" below):** Contract Go-Live **T2 has since SHIPPED + DEPLOYED 2026-07-19** (see
-CHANGELOG top; both flags remain OFF — the flip is the owner runbook). The T2 narrative below is kept
-for the contract agent's context; the real open item there is the **owner flag-flip runbook**, not a
-coding sprint.
+**▶ Deployed this arc (all api+web, 2026-07-19, flags remain OFF):**
+- **QC Decision Gate** — a reviewer DECLINE routes through QC; the QC can also reject a recommend
+  outright (`899cb82e`). Retro `docs/retrospective-2026-07-19-qc-decision-gate.md`.
+- **Contract Go-Live T1+T2** — contract-mode award email, Vircle-at-execution, maintenance flip,
+  offer-lapse rework, **Sources module + witness dropdown**. Migrations `0065`/`0104` applied.
+- **Contract fonts** — admin Payments/Contracts/Sources = IBM Plex Sans; the **contract PDF = IBM
+  Plex Serif** (bundled + reportlab-registered so xhtml2pdf embeds it).
+- **Clause 3-level hierarchy** (`1.` / `1.1` / `i)`, computed numbering) + **upload-a-document at
+  create** + quiz-covers-the-whole-subtree. Migration `0105` applied. Retro
+  `docs/retrospective-2026-07-19-clause-hierarchy.md`.
+
+**▶ Open items (OWNER, not code):**
+1. **Flag-flip runbook** (`docs/scholarship/bursary-go-live-playbook.md`): complete a monthly run →
+   assign witnesses to sourceless students → flip BOTH `AWARD_ACCEPTANCE_ENABLED` +
+   `BURSARY_AGREEMENT_ENABLED` → send sign invitations. Phase-0 lawyer/template gates first.
+2. **Tamil first-drafts await review** before the flip: `emails.AWARD_OFFER_SIGN_BODIES`,
+   `admin.sources.*`, `admin.contracts.*` (hierarchy/upload), `qcDecision.*`.
+3. **TD-163 (parked)** — contract Preview / "Open PDF" errors on a draft (likely draft-incomplete
+   render, not the fonts).
+
+**Gotchas:** contract PDF font = reportlab-registered IBM Plex Serif — verify `FontFile2` embed, not a
+silent Times fallback (see lessons). Clause numbering is computed in Python (xhtml2pdf can't do mixed
+decimal/roman `<ol>`). A concurrent agent commits to `main` directly — always stage explicit paths +
+`git merge origin/main` before a deploy.
 
 **▶ (historical) Contract Go-Live Transition — Sprint T2 (Sources UI + witness dropdown + deploy).**
 Plan `docs/plans/2026-07-19-contract-golive-transition-plan.md`. **T1 (backend) is DONE on branch
