@@ -2070,6 +2070,27 @@ def send_qc_returned_email(to_email, reviewer_name, *, ref='', applicant_name=''
     return _send_plain(to_email, _reviewer_subject('Case returned by QC — action needed', ref), body)
 
 
+def send_qc_rejected_email(to_email, reviewer_name, *, ref='', applicant_name='', qc_comments=''):
+    """QC (2026-07): notify a reviewer that quality control has REJECTED one of their cases outright
+    (not returned for revision — the case is closed). Carries the QC's reason. English-only (internal
+    staff), from the monitored interview@ alias. Best-effort — a mail hiccup never breaks the action."""
+    if not to_email:
+        return False
+    reviewer = reviewer_name or 'there'
+    details = [f'Reference: {ref or "—"}', f'Applicant: {applicant_name or "—"}']
+    body = (
+        f'Dear {reviewer},\n\n'
+        f'After quality control review, one of your cases has been rejected. No further action is '
+        f'needed from you — this note is for your records.\n\n'
+        + '\n'.join(details) + '\n\n'
+        f'QC reason:\n{qc_comments}\n\n'
+        f'You can see the case in your reviewer dashboard:\n\n'
+        f'{_reviewer_dashboard_cta()}\n\n'
+        f'{_REVIEWER_SIGNOFF}'
+    )
+    return _send_plain(to_email, _reviewer_subject('Case rejected by QC', ref), body)
+
+
 def send_student_assigned_reviewer_email(to_email, *, student_name, english_only=False,
                                          reviewer_name='', reviewer_email='', reviewer_phone=''):
     """Advance notice to the STUDENT once a reviewer is assigned: what happens next (an

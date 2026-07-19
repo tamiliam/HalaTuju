@@ -3658,7 +3658,8 @@
       },
       "decision": {
         "title": "Cadangan",
-        "savedAndAccepted": "Keputusan disimpan — pemohon diterima."
+        "savedAndAccepted": "Keputusan disimpan — pemohon diterima.",
+        "declineSentToQc": "Penolakan direkodkan — dihantar ke QC untuk pengesahan."
       },
       "recordVerdict": {
         "title": "Rekod keputusan anda",
@@ -3700,10 +3701,15 @@
         "title": "Kawalan mutu",
         "hint": "Kes ini menunggu kawalan mutu (QC). Terima untuk memindahkannya ke Disyorkan, atau Buka semula untuk menghantarnya kembali kepada penyemak dengan komen anda.",
         "accept": "Terima",
+        "confirmDecline": "Sahkan penolakan",
         "reopen": "Buka semula",
         "reopenTitle": "Apa yang kurang? (dikongsi dengan penyemak)",
         "commentsPlaceholder": "Nyatakan kekurangan / perkara yang perlu diperbaiki oleh penyemak",
         "reopenConfirm": "Buka semula & maklum penyemak",
+        "rejectToggle": "Tolak calon ini, bukan buka semula",
+        "rejectTitle": "Mengapa anda menolak? (dikongsi dengan penyemak)",
+        "rejectPlaceholder": "Nyatakan sebab anda menolak calon ini",
+        "rejectConfirm": "Tolak & maklum penyemak",
         "error": "Tidak dapat menghantar keputusan QC.",
         "selfVerdictForbidden": "Anda yang merekodkan verdik ini — ia mesti disemak QC oleh orang lain.",
         "gapFloor": "Masih ada fakta verdik berstatus merah ({facts}) — butang Terima disekat. Selesaikan kekurangan itu atau buka semula kepada penyemak.",

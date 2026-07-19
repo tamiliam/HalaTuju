@@ -898,8 +898,11 @@ def _finalise_reject(application, category, by_email):
     _send_decline_for(application)
 
 
-def admin_reject(application, admin, category):
+def admin_reject(application, admin, category, cooloff=None):
     """Post-shortlist admin rejection (buckets 'interview' & 'contractual').
+
+    ``cooloff`` (a ``timedelta``) overrides the day-based ``DECLINE_COOLOFF_DAYS`` embargo — used
+    by the QC-confirmed decline, whose window is 24h (the decision already passed two-person QC).
 
     The DECISION is immediate — the application flips to ``rejected`` at once, so the cockpit and
     records reflect it straight away. With a cool-off (DECLINE_COOLOFF_DAYS > 0, default 7) only
@@ -924,7 +927,13 @@ def admin_reject(application, admin, category):
         raise ValueError('bad_category')
 
     from django.conf import settings as _settings
-    days = getattr(_settings, 'DECLINE_COOLOFF_DAYS', 7)
+    # Email-embargo window. An explicit `cooloff` timedelta (the QC-confirmed decline's 24h) wins;
+    # otherwise fall back to the day-based DECLINE_COOLOFF_DAYS. total_seconds()<=0 → email now.
+    if cooloff is not None:
+        window = cooloff
+    else:
+        days = getattr(_settings, 'DECLINE_COOLOFF_DAYS', 7)
+        window = timedelta(days=days) if (days and days > 0) else timedelta(0)
     by = getattr(admin, 'email', '') or ''
     _record_reject(application, category, by)        # the decision is immediate, either way
     if category == 'contractual':
@@ -936,10 +945,10 @@ def admin_reject(application, admin, category):
         # — the module dependency runs sponsorship → services.
         from .sponsorship import lapse_holding_sponsorships
         lapse_holding_sponsorships(application)
-    if days and days > 0:
+    if window.total_seconds() > 0:
         # Embargo only the student email: schedule it; the student sees nothing until it goes.
         application.pending_rejection_category = category
-        application.decline_due_at = timezone.now() + timedelta(days=days)
+        application.decline_due_at = timezone.now() + window
         application.pending_decline_by = by
         application.save(update_fields=['pending_rejection_category', 'decline_due_at',
                                         'pending_decline_by'])

@@ -3658,7 +3658,8 @@
       },
       "decision": {
         "title": "Recommendation",
-        "savedAndAccepted": "Verdict saved — applicant accepted."
+        "savedAndAccepted": "Verdict saved — applicant accepted.",
+        "declineSentToQc": "Decline recorded — sent to QC for confirmation."
       },
       "recordVerdict": {
         "title": "Record your verdict",
@@ -3700,10 +3701,15 @@
         "title": "Quality control",
         "hint": "This case is awaiting QC. Accept to move it to Recommended, or Reopen to send it back to the reviewer with your comments.",
         "accept": "Accept",
+        "confirmDecline": "Confirm decline",
         "reopen": "Reopen",
         "reopenTitle": "What was missing? (shared with the reviewer)",
         "commentsPlaceholder": "Describe the gaps / what the reviewer must address",
         "reopenConfirm": "Reopen & notify reviewer",
+        "rejectToggle": "Reject this candidate instead of reopening",
+        "rejectTitle": "Why are you rejecting? (shared with the reviewer)",
+        "rejectPlaceholder": "State your reason for rejecting this candidate",
+        "rejectConfirm": "Reject & inform reviewer",
         "error": "Could not submit the QC decision.",
         "selfVerdictForbidden": "You recorded this verdict — it must be QC-checked by someone else.",
         "gapFloor": "A verdict fact is still red ({facts}) — Accept is blocked. Resolve the gap or reopen to the reviewer.",

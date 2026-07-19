@@ -916,7 +916,7 @@ export async function cancelReopen(id: number, options?: ApiOptions) {
  *  override_reason: super-only pass of the V5 verdict gap floor — recorded server-side. */
 export async function recordQcDecision(
   id: number,
-  payload: { decision: 'accept' | 'reopen'; comments?: string; override_reason?: string },
+  payload: { decision: 'accept' | 'reopen' | 'reject'; comments?: string; override_reason?: string },
   options?: ApiOptions,
 ) {
   return adminMutate<AdminScholarshipDetail>(
@@ -1005,6 +1005,14 @@ export async function verifyAcceptApplication(
 ) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/verify-accept/`, 'POST', { checklist }, options
+  )
+}
+
+/** Reviewer sends a DECLINE verdict to QC (→ AWAITING QC), instead of rejecting directly. QC then
+ * confirms the decline (→ rejected) or reopens it. Requires a recorded decline verdict. */
+export async function submitDeclineApplication(id: number, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/submit-decline/`, 'POST', {}, options
   )
 }
 
