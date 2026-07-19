@@ -4389,7 +4389,16 @@
       "deploy": "Lancarkan",
       "deployArchives": "Pelancaran mengarkibkan versi aktif semasa.",
       "superOnlyDeploy": "Hanya super admin boleh melancarkan.",
-      "deployed": "Dilancarkan — versi ini kini aktif."
+      "deployed": "Dilancarkan — versi ini kini aktif.",
+      "hierarchyHint": "Guna Inden (→) / Nyah-inden (←) untuk menyusun klausa. Penomboran (1 / 1.1 / i) automatik; hanya klausa peringkat atas mempunyai kuiz.",
+      "outdent": "Nyah-inden",
+      "indent": "Inden",
+      "moveUp": "Alih ke atas",
+      "moveDown": "Alih ke bawah",
+      "subclauseQuizNote": "Sebahagian daripada klausa di atas — kuiznya merangkumi ini.",
+      "uploadDoc": "Muat naik dokumen…",
+      "uploadDocHint": "Kami akan membaca klausa (dan struktur 1 / 1.1 / i)) daripada .docx; anda menyemak dan menyunting sebelum melancarkan.",
+      "uploadNeedsFile": "Pilih fail .docx untuk dimuat naik, atau pilih pilihan lain."
     }
   }
 }

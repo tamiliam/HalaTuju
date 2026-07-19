@@ -309,3 +309,107 @@ class TestReaders(TestCase):
         self.assertIn('PREVIEW', html)
         self.assertIn('authoritative', html)
         self.assertIn(t.title_en, html)
+
+
+class TestClauseNumbering(TestCase):
+    def test_clause_numbers_three_levels(self):
+        self.assertEqual(
+            contracts.clause_numbers([0, 1, 1, 2, 2, 0, 1, 2]),
+            ['1.', '1.1', '1.2', 'i)', 'ii)', '2.', '2.1', 'i)'])
+
+    def test_normalise_forbids_skipping_and_forces_first_zero(self):
+        self.assertEqual(contracts.normalise_levels([0, 2, 1, 3, 0, 2]), [0, 1, 1, 2, 0, 1])
+        self.assertEqual(contracts.normalise_levels([2, 1]), [0, 1])
+
+    def test_roman(self):
+        self.assertEqual([contracts._roman(n) for n in range(1, 6)], ['i', 'ii', 'iii', 'iv', 'v'])
+
+
+@override_settings(GEMINI_API_KEY='test-key', CONTRACT_QUIZ_MODEL='gemini-2.5-pro')
+class TestClauseHierarchy(TestCase):
+    def _hierarchy(self, template):
+        contracts.replace_clauses(template, [
+            {'heading_en': 'Purpose', 'body_en': 'A', 'level': 0, 'is_quiz_candidate': True},
+            {'heading_en': 'Eligibility', 'body_en': 'B', 'level': 1, 'is_quiz_candidate': True},
+            {'heading_en': 'Instalment', 'body_en': 'C', 'level': 2},
+            {'heading_en': 'Obligations', 'body_en': 'D', 'level': 0},
+        ])
+        return list(template.clauses.order_by('order'))
+
+    def test_replace_clauses_stores_level_and_restricts_quiz_to_top_level(self):
+        clauses = self._hierarchy(seed_draft())
+        self.assertEqual([c.level for c in clauses], [0, 1, 2, 0])
+        # the level-1 clause's quiz flag was dropped (only level-0 carries a quiz)
+        self.assertTrue(clauses[0].is_quiz_candidate)
+        self.assertFalse(clauses[1].is_quiz_candidate)
+
+    def test_replace_clauses_normalises_a_skip(self):
+        d = seed_draft()
+        contracts.replace_clauses(d, [
+            {'heading_en': 'A', 'body_en': 'a', 'level': 0},
+            {'heading_en': 'B', 'body_en': 'b', 'level': 2},  # skip → normalised to 1
+        ])
+        self.assertEqual([c.level for c in d.clauses.order_by('order')], [0, 1])
+
+    def test_clause_and_descendants_covers_subtree(self):
+        clauses = self._hierarchy(seed_draft())
+        top, sub, subsub, other = clauses
+        self.assertEqual([c.pk for c in contracts._clause_and_descendants(top)],
+                         [top.pk, sub.pk, subsub.pk])
+        self.assertEqual([c.pk for c in contracts._clause_and_descendants(other)], [other.pk])
+
+    @patch('google.genai.Client')
+    def test_generate_quiz_refuses_non_top_level(self, mock_cls):
+        cls, _ = _mock_genai(json.dumps({'en': VALID_QUIZ, 'ms': VALID_QUIZ, 'ta': VALID_QUIZ}))
+        mock_cls.side_effect = cls
+        sub = self._hierarchy(seed_draft())[1]   # level 1
+        with self.assertRaises(ContractsError) as cm:
+            contracts.generate_quiz(sub)
+        self.assertEqual(cm.exception.code, 'quiz_not_top_level')
+
+    @patch('google.genai.Client')
+    def test_quiz_prompt_includes_subtree_text(self, mock_cls):
+        cls, client = _mock_genai(json.dumps({'en': VALID_QUIZ, 'ms': VALID_QUIZ, 'ta': VALID_QUIZ}))
+        mock_cls.side_effect = cls
+        top = self._hierarchy(seed_draft())[0]
+        contracts.generate_quiz(top)
+        _, kwargs = client.models.generate_content.call_args
+        prompt = kwargs['contents']
+        # the top clause's quiz prompt carries its sub-clause bodies too
+        self.assertIn('Eligibility', prompt)
+        self.assertIn('Instalment', prompt)
+
+    @patch('apps.scholarship.contracts._extract_docx_text', return_value='doc text')
+    @patch('google.genai.Client')
+    def test_segment_docx_returns_normalised_levels(self, mock_cls, _extract):
+        segments = json.dumps([
+            {'heading': 'A', 'body': 'a', 'level': 0},
+            {'heading': 'B', 'body': 'b', 'level': 2},   # skip → 1
+            {'heading': 'C', 'body': 'c', 'level': 1},
+        ])
+        cls, _ = _mock_genai(segments)
+        mock_cls.side_effect = cls
+        got = contracts.segment_docx(b'x')
+        self.assertEqual([c['level'] for c in got], [0, 1, 1])
+
+    def test_render_shows_computed_numbers(self):
+        from apps.scholarship import bursary
+        d = seed_draft('2027-hier-d')
+        self._hierarchy(d)
+        cohort = ScholarshipCohort.objects.create(
+            code='hc', name='B40', year=2026, owning_organisation=d.organisation)
+        prof = StudentProfile.objects.create(supabase_user_id='hs', name='S', nric='000101-10-1233')
+        app = ScholarshipApplication.objects.create(
+            cohort=cohort, profile=prof, status='awarded', notify_email='s@e.test', award_amount=3000)
+        p = {'award_amount': 3000, 'payment_schedule': 'x', 'institution_name': 'U',
+             'course_name': 'N', 'commencement_date': None, 'progress_standard': 'Pass',
+             'foundation_signatory_name': 'F', 'foundation_signatory_title': 't',
+             'foundation_signatory_nric': ''}
+        html = bursary.render_agreement_html(
+            app, p, student={'name': 'S', 'nric': 'x', 'signed_at': None},
+            guarantor={'name': 'G', 'nric': 'y', 'relationship': 'father', 'signed_at': None},
+            foundation={'name': 'F', 'title': 't', 'nric': '', 'signed_at': None},
+            witness={'by': '', 'org': '', 'signed_at': None}, template=d)
+        self.assertIn('>1.<', html)     # top-level number
+        self.assertIn('>1.1<', html)    # sub-clause
+        self.assertIn('>i)<', html)     # sub-sub-clause (roman)

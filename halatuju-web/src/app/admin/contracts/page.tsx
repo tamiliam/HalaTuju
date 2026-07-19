@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import {
-  getContractTemplates, createContractTemplate,
+  getContractTemplates, createContractTemplate, importContractDocx, putContractClauses,
   type ContractTemplateSummary, type ContractStatus,
 } from '@/lib/admin-api'
 
@@ -36,7 +36,9 @@ export default function ContractsListPage() {
   const [creating, setCreating] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [version, setVersion] = useState('')
-  const [copyFrom, setCopyFrom] = useState<number | ''>('')
+  // Source: '' = start blank · 'upload' = populate from a .docx · a numeric id = copy that version.
+  const [source, setSource] = useState<string>('')
+  const [file, setFile] = useState<File | null>(null)
   const [org, setOrg] = useState('')   // super only (org_admin uses own org)
   const [error, setError] = useState<string | null>(null)
 
@@ -55,12 +57,25 @@ export default function ContractsListPage() {
   }
 
   const submitNew = async (e: React.FormEvent) => {
-    e.preventDefault(); setCreating(true); setError(null)
+    e.preventDefault(); setError(null)
+    if (source === 'upload' && !file) { setError(t('admin.contracts.uploadNeedsFile')); return }
+    setCreating(true)
     try {
       const body: Parameters<typeof createContractTemplate>[0] = { version: version.trim() }
-      if (copyFrom) body.copy_from = Number(copyFrom)
+      if (source && source !== 'upload') body.copy_from = Number(source)
       if (isSuper && org.trim()) body.organisation = org.trim()
       const created = await createContractTemplate(body, { token: token! })
+      // Upload path: populate the new draft's clauses from the document (levels detected), then
+      // land on the editor — that IS the review; nothing is live until vetting + deploy. A parse
+      // failure still leaves a usable blank draft (the author imports/edits in the editor).
+      if (source === 'upload' && file) {
+        try {
+          const { clauses } = await importContractDocx(created.id, file, { token: token! })
+          await putContractClauses(created.id, clauses.map((c) => ({
+            level: c.level, heading_en: c.heading, body_en: c.body,
+          })), { token: token! })
+        } catch { /* soft-fail — blank draft created; author can import/hand-edit */ }
+      }
       router.push(`/admin/contracts/${created.id}`)
     } catch (err) {
       setError((err as Error)?.message || t('admin.contracts.actionFailed'))
@@ -88,11 +103,12 @@ export default function ContractsListPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <input className={inputCls} placeholder={t('admin.contracts.versionPlaceholder')}
               value={version} onChange={(e) => setVersion(e.target.value)} required />
-            <select className={inputCls} value={copyFrom}
-              onChange={(e) => setCopyFrom(e.target.value ? Number(e.target.value) : '')}>
+            <select className={inputCls} value={source}
+              onChange={(e) => { setSource(e.target.value); if (e.target.value !== 'upload') setFile(null) }}>
               <option value="">{t('admin.contracts.startBlank')}</option>
+              <option value="upload">{t('admin.contracts.uploadDoc')}</option>
               {templates.map((tm) => (
-                <option key={tm.id} value={tm.id}>{t('admin.contracts.copyFrom')} {tm.version}</option>
+                <option key={tm.id} value={String(tm.id)}>{t('admin.contracts.copyFrom')} {tm.version}</option>
               ))}
             </select>
             {isSuper && (
@@ -100,6 +116,13 @@ export default function ContractsListPage() {
                 value={org} onChange={(e) => setOrg(e.target.value)} />
             )}
           </div>
+          {source === 'upload' && (
+            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3">
+              <input type="file" accept=".docx" className="text-sm text-gray-700"
+                onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              <p className="text-xs text-gray-400 mt-1">{t('admin.contracts.uploadDocHint')}</p>
+            </div>
+          )}
           <div className="flex gap-3">
             <button type="submit" disabled={creating}
               className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">

@@ -6,17 +6,20 @@ import {
   putContractClauses, importContractDocx,
   type ContractTemplateDetail, type ContractClauseData,
 } from '@/lib/admin-api'
+import { clauseNumbers, normaliseLevels, canIndent, canOutdent } from '@/lib/clauseNumbering'
 import { CLocale, LangTabs, inputCls, btnPrimary, btnGhost } from './shared'
 
 type Draft = Partial<ContractClauseData>
 const EMPTY: Draft = {
-  heading_en: '', heading_ms: '', heading_ta: '', body_en: '', body_ms: '', body_ta: '',
+  level: 0, heading_en: '', heading_ms: '', heading_ta: '', body_en: '', body_ms: '', body_ta: '',
   is_quiz_candidate: false, quiz_en: {}, quiz_ms: {}, quiz_ta: {},
 }
 
-// The Clauses tab — ordered clause list (heading/body per language) + the Word import:
-// import-docx PROPOSES clauses, the author REVIEWS them, and only on Accept do they
-// replace the draft's clauses (the file is never retained).
+// The Clauses tab — a 3-level hierarchy (clause 1. / sub 1.1 / sub-sub i)) with Indent/Outdent,
+// move, and the Word import. Numbers are COMPUTED from the level run (clauseNumbers) — never typed.
+// Levels are kept normalised in state (no skipping) so what shows is what saves; only a top-level
+// clause carries a comprehension quiz. import-docx PROPOSES clauses (with levels) for review before
+// they replace the draft (the file is never retained).
 export default function ClauseEditor(
   { template, token, onChange }: {
     template: ContractTemplateDetail; token: string
@@ -32,12 +35,39 @@ export default function ClauseEditor(
   // Word import
   const fileRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
-  const [proposed, setProposed] = useState<Array<{ heading: string; body: string }> | null>(null)
+  const [proposed, setProposed] = useState<Array<{ heading: string; body: string; level: number }> | null>(null)
 
-  const set = (i: number, k: keyof ContractClauseData, v: unknown) =>
-    setClauses((prev) => prev.map((c, j) => (j === i ? { ...c, [k]: v } : c)))
   const hk = `heading_${lang}` as keyof ContractClauseData
   const bk = `body_${lang}` as keyof ContractClauseData
+
+  const levels = clauses.map((c) => c.level ?? 0)
+  const numbers = clauseNumbers(levels)
+
+  // Field edits don't touch structure.
+  const set = (i: number, k: keyof ContractClauseData, v: unknown) =>
+    setClauses((prev) => prev.map((c, j) => (j === i ? { ...c, [k]: v } : c)))
+
+  // Any STRUCTURAL change re-normalises the levels (no skipping) and clears the quiz flag on any
+  // clause that is no longer top-level — so the displayed numbers + quiz controls always match
+  // what will be saved.
+  const setStructural = (list: Draft[]) => {
+    const lv = normaliseLevels(list.map((c) => c.level ?? 0))
+    setClauses(list.map((c, i) => (lv[i] === 0
+      ? { ...c, level: 0 }
+      : { ...c, level: lv[i], is_quiz_candidate: false })))
+  }
+
+  const indent = (i: number) => { if (canIndent(levels, i)) setStructural(clauses.map((c, j) => j === i ? { ...c, level: (c.level ?? 0) + 1 } : c)) }
+  const outdent = (i: number) => { if (canOutdent(levels, i)) setStructural(clauses.map((c, j) => j === i ? { ...c, level: (c.level ?? 0) - 1 } : c)) }
+  const move = (i: number, d: -1 | 1) => {
+    const j = i + d
+    if (j < 0 || j >= clauses.length) return
+    const next = clauses.slice()
+    ;[next[i], next[j]] = [next[j], next[i]]
+    setStructural(next)
+  }
+  const remove = (i: number) => setStructural(clauses.filter((_, j) => j !== i))
+  const add = () => setStructural([...clauses, { ...EMPTY }])
 
   const persist = async (list: Draft[]) => {
     setSaving(true); setErr(null); setMsg(null)
@@ -64,10 +94,12 @@ export default function ClauseEditor(
 
   const acceptImport = async () => {
     if (!proposed) return
-    const list: Draft[] = proposed.map((c) => ({ ...EMPTY, heading_en: c.heading, body_en: c.body }))
+    const list: Draft[] = proposed.map((c) => ({ ...EMPTY, level: c.level ?? 0, heading_en: c.heading, body_en: c.body }))
     setProposed(null)
     await persist(list)
   }
+
+  const iconBtn = 'w-7 h-7 inline-flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-30 disabled:hover:bg-transparent'
 
   return (
     <div className="space-y-5">
@@ -86,21 +118,24 @@ export default function ClauseEditor(
           </div>
         </div>
       )}
-      {draft && <p className="text-xs text-gray-400">{t('admin.contracts.importHint')}</p>}
+      {draft && <p className="text-xs text-gray-400">{t('admin.contracts.hierarchyHint')}</p>}
 
-      {/* Word-import review-before-accept */}
+      {/* Word-import review-before-accept (indented to show the detected levels) */}
       {proposed && (
         <div className="rounded-xl border-2 border-blue-300 bg-blue-50/40 p-5 space-y-3">
           <div className="font-semibold text-gray-900">{t('admin.contracts.importReviewTitle')}</div>
           <p className="text-sm text-gray-600">{t('admin.contracts.importReviewHint')}</p>
-          <ol className="space-y-2 list-decimal pl-5 max-h-80 overflow-y-auto">
-            {proposed.map((c, i) => (
-              <li key={i} className="text-sm">
-                <span className="font-semibold">{c.heading || '—'}</span>
-                <div className="text-gray-600 whitespace-pre-wrap">{c.body}</div>
-              </li>
-            ))}
-          </ol>
+          {(() => { const pn = clauseNumbers(proposed.map((c) => c.level ?? 0)); return (
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {proposed.map((c, i) => (
+                <div key={i} className="text-sm" style={{ paddingLeft: `${(c.level ?? 0) * 22}px` }}>
+                  <span className="font-mono font-semibold text-blue-700 mr-2">{pn[i]}</span>
+                  <span className="font-semibold">{c.heading || '—'}</span>
+                  <div className="text-gray-600 whitespace-pre-wrap">{c.body}</div>
+                </div>
+              ))}
+            </div>
+          ) })()}
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={acceptImport} disabled={saving} className={btnPrimary}>
               {t('admin.contracts.importAccept')}</button>
@@ -110,31 +145,45 @@ export default function ClauseEditor(
         </div>
       )}
 
-      {clauses.map((c, i) => (
-        <div key={i} className="bg-white rounded-xl border p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-400">{i + 1}</span>
-            {draft && (
-              <button type="button" onClick={() => setClauses((prev) => prev.filter((_, j) => j !== i))}
-                className="text-xs text-red-600 hover:text-red-800">{t('admin.contracts.remove')}</button>
+      {clauses.map((c, i) => {
+        const level = c.level ?? 0
+        return (
+          <div key={i} className="bg-white rounded-xl border p-4 space-y-2"
+            style={{ marginLeft: `${level * 28}px` }}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-xs font-bold text-blue-700 tabular-nums">{numbers[i]}</span>
+              {draft && (
+                <div className="flex items-center gap-1">
+                  <button type="button" title={t('admin.contracts.outdent')} onClick={() => outdent(i)} disabled={!canOutdent(levels, i)} className={iconBtn}>←</button>
+                  <button type="button" title={t('admin.contracts.indent')} onClick={() => indent(i)} disabled={!canIndent(levels, i)} className={iconBtn}>→</button>
+                  <button type="button" title={t('admin.contracts.moveUp')} onClick={() => move(i, -1)} disabled={i === 0} className={iconBtn}>↑</button>
+                  <button type="button" title={t('admin.contracts.moveDown')} onClick={() => move(i, 1)} disabled={i === clauses.length - 1} className={iconBtn}>↓</button>
+                  <button type="button" title={t('admin.contracts.remove')} onClick={() => remove(i)}
+                    className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-transparent text-gray-400 hover:bg-red-50 hover:text-red-600">🗑</button>
+                </div>
+              )}
+            </div>
+            <input className={inputCls} disabled={!draft} placeholder={t('admin.contracts.heading')}
+              value={String(c[hk] || '')} onChange={(e) => set(i, hk, e.target.value)} />
+            <textarea rows={3} className={inputCls} disabled={!draft} placeholder={t('admin.contracts.body')}
+              value={String(c[bk] || '')} onChange={(e) => set(i, bk, e.target.value)} />
+            {level === 0 ? (
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" disabled={!draft} checked={!!c.is_quiz_candidate}
+                  onChange={(e) => set(i, 'is_quiz_candidate', e.target.checked)} />
+                {t('admin.contracts.useForQuiz')}
+              </label>
+            ) : (
+              <p className="text-xs text-gray-400">{t('admin.contracts.subclauseQuizNote')}</p>
             )}
           </div>
-          <input className={inputCls} disabled={!draft} placeholder={t('admin.contracts.heading')}
-            value={String(c[hk] || '')} onChange={(e) => set(i, hk, e.target.value)} />
-          <textarea rows={3} className={inputCls} disabled={!draft} placeholder={t('admin.contracts.body')}
-            value={String(c[bk] || '')} onChange={(e) => set(i, bk, e.target.value)} />
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" disabled={!draft} checked={!!c.is_quiz_candidate}
-              onChange={(e) => set(i, 'is_quiz_candidate', e.target.checked)} />
-            {t('admin.contracts.useForQuiz')}
-          </label>
-        </div>
-      ))}
+        )
+      })}
       {clauses.length === 0 && <p className="text-sm text-gray-400">{t('admin.contracts.noClauses')}</p>}
 
       {draft && (
         <div className="flex gap-3">
-          <button type="button" onClick={() => setClauses((prev) => [...prev, { ...EMPTY }])} className={btnGhost}>
+          <button type="button" onClick={add} className={btnGhost}>
             {t('admin.contracts.addClause')}</button>
           <button type="button" onClick={() => persist(clauses)} disabled={saving} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.saveClauses')}</button>

@@ -4389,7 +4389,16 @@
       "deploy": "Deploy",
       "deployArchives": "Deploying archives the current active version.",
       "superOnlyDeploy": "Only a super admin can deploy.",
-      "deployed": "Deployed — this version is now active."
+      "deployed": "Deployed — this version is now active.",
+      "hierarchyHint": "Use Indent (→) / Outdent (←) to nest a clause. Numbering (1 / 1.1 / i) is automatic; only a top-level clause carries a quiz.",
+      "outdent": "Outdent",
+      "indent": "Indent",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "subclauseQuizNote": "Part of the clause above — its quiz covers this.",
+      "uploadDoc": "Upload a document…",
+      "uploadDocHint": "We'll read the clauses (and their 1 / 1.1 / i) structure) from a .docx; you review and edit before deploying.",
+      "uploadNeedsFile": "Choose a .docx file to upload, or pick another option."
     }
   }
 }

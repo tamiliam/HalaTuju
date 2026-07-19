@@ -1547,6 +1547,7 @@ export interface ContractQuizPayload {
 
 export interface ContractClauseData {
   order: number
+  level: number   // 0 clause, 1 sub-clause, 2 sub-sub-clause (numbers computed from the level run)
   heading_en: string; heading_ms: string; heading_ta: string
   body_en: string; body_ms: string; body_ta: string
   is_quiz_candidate: boolean
@@ -1646,9 +1647,9 @@ export async function fetchContractPreviewHtml(id: number, locale: string, optio
   if (!res.ok) throw new Error(`Preview failed: ${res.status}`)
   return res.text()
 }
-/** Import a .docx → a PROPOSED [{heading, body}] clause list (nothing saved; file not retained). */
+/** Import a .docx → a PROPOSED [{heading, body, level}] clause list (nothing saved; file not retained). */
 export async function importContractDocx(
-  id: number, file: File, options?: ApiOptions): Promise<{ clauses: Array<{ heading: string; body: string }> }> {
+  id: number, file: File, options?: ApiOptions): Promise<{ clauses: Array<{ heading: string; body: string; level: number }> }> {
   const headers: Record<string, string> = {}
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
   const form = new FormData()

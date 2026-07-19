@@ -143,9 +143,11 @@ def render_agreement_html(application, particulars, *, student, guarantor,
     preamble = getattr(template, f'preamble_{lang}', '') or template.preamble_en
     clauses = [
         (getattr(c, f'heading_{lang}', '') or c.heading_en,
-         getattr(c, f'body_{lang}', '') or c.body_en)
+         getattr(c, f'body_{lang}', '') or c.body_en,
+         c.level)
         for c in template.clauses.all().order_by('order')
     ]
+    clause_numbers = contracts.clause_numbers([lv for _, _, lv in clauses])
     guarantor_role = _guarantor_role_label(template.parent_role)
     version = template.version
     vetted_line = (f'Vetted by {template.vetted_by_name}, {template.vetted_on}'
@@ -217,11 +219,14 @@ def render_agreement_html(application, particulars, *, student, guarantor,
 
     # Clauses.
     parts.append('<h2 style="font-size:13px; margin:16px 0 6px 0;">Terms / Terma</h2>')
-    parts.append('<ol style="padding-left:18px;">')
-    for heading, body in clauses:
+    # Computed hierarchical numbering (1. / 1.1 / i)) + per-level indent — NOT an <ol> (mixed
+    # decimal/roman numbering + depth is handled here, which xhtml2pdf renders reliably).
+    for (heading, body, level), number in zip(clauses, clause_numbers):
+        indent = 4 + level * 18
+        head = f'<b>{_esc(heading)}.</b> ' if heading else ''
         parts.append(
-            f'<li style="margin-bottom:8px;"><b>{_esc(heading)}.</b> {_clause_body_html(body)}</li>')
-    parts.append('</ol>')
+            f'<div style="margin:0 0 7px 0; padding-left:{indent}px;">'
+            f'<b>{_esc(number)}</b> {head}{_clause_body_html(body)}</div>')
 
     # Signature blocks.
     parts.append('<h2 style="font-size:13px; margin:16px 0 6px 0;">Signatures / Tandatangan</h2>')

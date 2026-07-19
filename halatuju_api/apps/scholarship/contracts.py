@@ -41,6 +41,60 @@ _CONFIG_FIELDS = (
     'witness_policy',
 )
 
+# Clause hierarchy (2026-07-19): three levels — 0 clause, 1 sub-clause, 2 sub-sub-clause.
+MAX_CLAUSE_LEVEL = 2
+_ROMAN = ((10, 'x'), (9, 'ix'), (5, 'v'), (4, 'iv'), (1, 'i'))
+
+
+def _roman(n):
+    """Lowercase roman numeral for n >= 1 (i, ii, iii, iv, v, …). Small n only (clause depth)."""
+    out = []
+    for value, sym in _ROMAN:
+        while n >= value:
+            out.append(sym)
+            n -= value
+    return ''.join(out)
+
+
+def normalise_levels(levels):
+    """Clamp each level to 0..MAX and forbid SKIPPING a level: a clause may be at most one level
+    deeper than the clause before it (the first is forced to 0); going shallower is unrestricted.
+    Returns the cleaned list — the single place the no-skip rule lives (both import and save use it)."""
+    out = []
+    prev = -1  # first allowed level is 0
+    for lv in levels:
+        try:
+            lv = int(lv)
+        except (TypeError, ValueError):
+            lv = 0
+        lv = max(0, min(MAX_CLAUSE_LEVEL, lv))
+        if lv > prev + 1:
+            lv = prev + 1
+        out.append(lv)
+        prev = lv
+    return out
+
+
+def clause_numbers(levels):
+    """Display label per clause from its level run: level 0 → '1.', '2.'; level 1 → '1.1', '1.2';
+    level 2 → 'i)', 'ii)'. Levels are assumed already valid (see normalise_levels). This is the
+    ONE numbering source of truth — the FE mirror in lib/clauseNumbering.ts must match it (paired
+    test). Numbers are computed, never stored, so reorder/insert always renumbers correctly."""
+    counters = [0, 0, 0]
+    labels = []
+    for lv in levels:
+        lv = max(0, min(MAX_CLAUSE_LEVEL, int(lv)))
+        counters[lv] += 1
+        for deeper in range(lv + 1, MAX_CLAUSE_LEVEL + 1):
+            counters[deeper] = 0
+        if lv == 0:
+            labels.append(f'{counters[0]}.')
+        elif lv == 1:
+            labels.append(f'{counters[0]}.{counters[1]}')
+        else:
+            labels.append(f'{_roman(counters[2])})')
+    return labels
+
 
 class ContractsError(Exception):
     """Raised by the service with a machine code for the view (e.g. 'not_draft',
@@ -100,13 +154,14 @@ def _clone_content(source, target):
     target.save()
     clauses = [
         {
+            'level': c.level,
             'heading_en': c.heading_en, 'heading_ms': c.heading_ms, 'heading_ta': c.heading_ta,
             'body_en': c.body_en, 'body_ms': c.body_ms, 'body_ta': c.body_ta,
             'is_quiz_candidate': c.is_quiz_candidate,
             'quiz_en': c.quiz_en, 'quiz_ms': c.quiz_ms, 'quiz_ta': c.quiz_ta,
             'quiz_generated_model': c.quiz_generated_model,
         }
-        for c in source.clauses.all()
+        for c in source.clauses.all().order_by('order')
     ]
     replace_clauses(target, clauses)
     rows = [
@@ -142,25 +197,30 @@ def replace_clauses(template, clauses):
     quiz payload must be a dict."""
     _require_draft(template)
     template.clauses.all().delete()
+    # Levels are normalised across the whole list (clamp 0..MAX, no skipping) — the tree is the
+    # (order, level) run. A quiz may only live on a level-0 clause; a sub-clause carrying a quiz
+    # flag/payload is dropped (its content is folded into its parent clause's quiz subtree).
+    levels = normalise_levels([item.get('level', 0) for item in clauses])
     created = []
-    for index, item in enumerate(clauses, start=1):
+    for index, (item, level) in enumerate(zip(clauses, levels), start=1):
         for lang in LANGUAGES:
             payload = item.get(f'quiz_{lang}') or {}
             if payload and not isinstance(payload, dict):
                 raise ContractsError('bad_quiz_payload', f'clause {index} quiz_{lang}')
+        is_l0 = level == 0
         created.append(ContractClause(
-            template=template, order=index,
+            template=template, order=index, level=level,
             heading_en=item.get('heading_en', '') or '',
             heading_ms=item.get('heading_ms', '') or '',
             heading_ta=item.get('heading_ta', '') or '',
             body_en=item.get('body_en', '') or '',
             body_ms=item.get('body_ms', '') or '',
             body_ta=item.get('body_ta', '') or '',
-            is_quiz_candidate=bool(item.get('is_quiz_candidate')),
-            quiz_en=item.get('quiz_en') or {},
-            quiz_ms=item.get('quiz_ms') or {},
-            quiz_ta=item.get('quiz_ta') or {},
-            quiz_generated_model=item.get('quiz_generated_model', '') or '',
+            is_quiz_candidate=bool(item.get('is_quiz_candidate')) and is_l0,
+            quiz_en=(item.get('quiz_en') or {}) if is_l0 else {},
+            quiz_ms=(item.get('quiz_ms') or {}) if is_l0 else {},
+            quiz_ta=(item.get('quiz_ta') or {}) if is_l0 else {},
+            quiz_generated_model=(item.get('quiz_generated_model', '') or '') if is_l0 else '',
         ))
     ContractClause.objects.bulk_create(created)
     return template.clauses.all()
@@ -232,13 +292,40 @@ def _gemini_generate(prompt, model):
     return response.text
 
 
+def _clause_and_descendants(clause):
+    """A clause plus its descendant sub-clauses: the following clauses whose level is DEEPER,
+    up to (but not including) the next clause at the same-or-shallower level. Lets a top-level
+    clause's comprehension quiz cover its entire subtree (sub- and sub-sub-clauses included)."""
+    ordered = list(clause.template.clauses.order_by('order'))
+    result = []
+    collecting = False
+    for c in ordered:
+        if c.pk == clause.pk:
+            collecting = True
+            result.append(c)
+        elif collecting:
+            if c.level > clause.level:
+                result.append(c)
+            else:
+                break
+    return result or [clause]
+
+
 def _build_quiz_prompt(clause):
-    """Strict-JSON prompt asking for a comprehension checkpoint in en/ms/ta,
-    built from the clause's own translations when present, else English."""
+    """Strict-JSON prompt asking for a comprehension checkpoint in en/ms/ta, built from the whole
+    clause SUBTREE (the clause + its sub-clauses) so the checkpoint covers the clause's key points,
+    using each language's translations when present, else English."""
+    subtree = _clause_and_descendants(clause)
+
     def block(lang):
-        heading = getattr(clause, f'heading_{lang}') or clause.heading_en
-        body = getattr(clause, f'body_{lang}') or clause.body_en
-        return f'[{lang}] {heading}\n{body}'
+        parts = []
+        for c in subtree:
+            heading = getattr(c, f'heading_{lang}') or c.heading_en
+            body = getattr(c, f'body_{lang}') or c.body_en
+            seg = f'{heading}\n{body}'.strip()
+            if seg:
+                parts.append(seg)
+        return f'[{lang}]\n' + '\n\n'.join(parts)
 
     clause_text = '\n\n'.join(block(lang) for lang in LANGUAGES)
     return (
@@ -282,8 +369,11 @@ def _quiz_payload_valid(payload):
 
 def generate_quiz(clause, *, model=None):
     """Generate the clause's en/ms/ta quiz via Gemini, validate the structure,
-    and save it to the (draft) clause. Billable → call on demand only."""
+    and save it to the (draft) clause. Billable → call on demand only. Only a top-level
+    (level 0) clause may carry a quiz; it covers the clause's whole subtree."""
     _require_draft(clause.template)
+    if clause.level != 0:
+        raise ContractsError('quiz_not_top_level')
     model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
     raw = _gemini_generate(_build_quiz_prompt(clause), model)
     data = _parse_quiz_json(raw)
@@ -336,11 +426,13 @@ def _build_segment_prompt(text):
     return (
         'You segment the plain text of a bursary-agreement document into its numbered '
         'clauses. Return STRICT JSON only, no prose: a list '
-        '[{"heading": str, "body": str}, ...] in document order. Each heading is the '
-        "clause's short title; each body is its plain-text content (keep paragraphs as "
-        'blank-line-separated text). Do NOT invent, summarise, or reword — copy the '
-        'wording. Drop page headers/footers, signature blocks and the title.\n\n'
-        'DOCUMENT:\n' + text
+        '[{"heading": str, "body": str, "level": 0|1|2}, ...] in document order. Each heading '
+        "is the clause's short title; each body is its plain-text content (keep paragraphs as "
+        'blank-line-separated text). "level" is the nesting depth read from the numbering: '
+        '0 for a main clause (1., 2., 3.), 1 for a sub-clause (1.1, 2.3), 2 for a sub-sub-clause '
+        '(i), (ii), (a), (b)). A sub-clause must follow its parent; never skip a level. '
+        'Do NOT invent, summarise, or reword — copy the wording. Drop page headers/footers, '
+        'signature blocks and the title.\n\nDOCUMENT:\n' + text
     )
 
 
@@ -363,9 +455,14 @@ def _parse_segments(raw):
         body = (item.get('body') or '').strip()
         if not (heading or body):
             continue
-        clauses.append({'heading': heading, 'body': body})
+        clauses.append({'heading': heading, 'body': body, 'level': item.get('level', 0)})
     if not clauses:
         raise ContractsError('segmentation_failed')
+    # Enforce the no-skip rule on the proposed levels (the model can drift); the author still
+    # reviews the result before it is saved.
+    levels = normalise_levels([c['level'] for c in clauses])
+    for c, lv in zip(clauses, levels):
+        c['level'] = lv
     return clauses
 
 

@@ -2295,6 +2295,7 @@ _CONTRACT_RULE_LABELS = {
 def _contract_clause_dict(c):
     return {
         'order': c.order,
+        'level': c.level,
         'heading_en': c.heading_en, 'heading_ms': c.heading_ms, 'heading_ta': c.heading_ta,
         'body_en': c.body_en, 'body_ms': c.body_ms, 'body_ta': c.body_ta,
         'is_quiz_candidate': c.is_quiz_candidate,

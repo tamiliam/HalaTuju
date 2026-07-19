@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract clauses — 3-level hierarchy + upload-a-document at create — 2026-07-19
+
+Owner-approved (design mockup signed off). Contract module stays behind the OFF flags.
+
+- **Added — 3-level clause hierarchy.** `ContractClause.level` (0 clause / 1 sub / 2 sub-sub;
+  migration `0105`). Numbering is **computed** from the `(order, level)` run — level 0 → `1.` `2.`,
+  level 1 → `1.1`, level 2 → `i)` `ii)` (lowercase roman) — never stored, so reorder/insert always
+  renumbers correctly. A clause may be at most one level deeper than the one before it (no skipping);
+  enforced in `contracts.replace_clauses` + the editor. `contracts.clause_numbers` is the single
+  source of truth, mirrored by `lib/clauseNumbering.ts` (paired test).
+- **Added — editor controls.** The Clauses tab gains Indent/Outdent (← →), move up/down, and a live
+  computed number per clause. Only **top-level** clauses carry a comprehension quiz, and the quiz now
+  covers the **whole subtree** (the clause + its sub-clauses) so it tests the clause's key points.
+- **Added — "Upload a document" at create.** The New-version form's third option imports a `.docx`
+  straight into the new draft — the importer (`segment_docx`) now detects each segment's **level**, so
+  an uploaded `1 / 1.1 / i)` comes in nested, not flattened. The author lands on the editor to review.
+- **Changed — the agreement render** (preview + signed PDF) uses the computed hierarchical numbering +
+  per-level indent instead of a flat `<ol>`.
+- Tests: numbering + normalise + subtree + segment-level + render (backend) and `clauseNumbering`
+  (jest). i18n `admin.contracts.*` additions en/ms/ta (Tamil first-draft).
+
 ## Admin module fonts — IBM Plex Sans + contract in IBM Plex Serif — 2026-07-19
 
 - **Changed** — the three ORGANISATION admin modules **Payments, Contracts, and Sources** now
