@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## QC decision gate — Decline routed through QC + QC outright reject — 2026-07-19
+
+Both reviewer outcomes now pass a second pair of eyes, and the QC can end a case itself.
+On branch `feat/decline-qc-gate`; api+web deploy (commit `899cb82e`). No migration; no new env
+var required (`DECLINE_QC_COOLOFF_HOURS` defaults to 24).
+
+- **Added — reviewer DECLINE routes through QC** (was: Decline → straight to reject). A decline
+  verdict now lands in AWAITING QC like a recommend; the QC card's primary button reads
+  **"Confirm decline"** (red) with **no gap floor** (a declined case is expected to have red facts)
+  and a **24h** cool-off (`DECLINE_QC_COOLOFF_HOURS`, vs the 7-day default) since it's already
+  two-person-vetted. New `AdminSubmitDeclineView` (`.../submit-decline/`); `admin_reject` gained an
+  optional `cooloff` timedelta override.
+- **Added — QC may REJECT a recommend outright** (was: only Accept / Reopen). A default-off toggle
+  inside the QC reopen box flips **"Reopen & notify reviewer"** → **"Reject & inform reviewer"**
+  (red). One click produces the SAME audited trail as the manual reopen→decline (a `DecisionReopen`
+  row carrying the QC's reason, closed as a real correction) then declines as `interview` with the
+  24h cool-off. Reason required. New `qc-decision` `decision:'reject'` branch + `send_qc_rejected_email`
+  ("Case rejected by QC", distinct from the "returned for revision" note).
+- **Added — i18n** `admin.scholarship.qcDecision.{confirmDecline,reject*}` +
+  `admin.scholarship.decision.declineSentToQc`, en/ms/ta (Tamil first-draft, pending owner review).
+- **Tests** — `TestDeclineToQc` (7) + `TestQcGate` reject cases (3); `test_org_fence` classifies
+  `AdminSubmitDeclineView`. Scholarship suite 2897 pass.
+
 ## Sources module — Admin role may manage (permission tweak) — 2026-07-19
 
 - **Changed** — the Sources module (registry endpoints + the witness-org dropdown, sharing

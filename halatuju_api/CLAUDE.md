@@ -524,7 +524,22 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-19)
 
-**▶ NEXT: Contract Go-Live Transition — Sprint T2 (Sources UI + witness dropdown + deploy).**
+**✅ SHIPPED + DEPLOYED 2026-07-19 — QC Decision Gate (Decline-to-QC + QC outright reject).**
+api+web, commit `899cb82e`; **no migration**; `DECLINE_QC_COOLOFF_HOURS` defaults to 24 (no env var
+needed). Both reviewer outcomes now pass QC: a DECLINE routes to AWAITING QC (card shows "Confirm
+decline", red, no gap floor, 24h cool-off) via new `AdminSubmitDeclineView`; and the QC can REJECT a
+recommend outright — a default-off toggle in the reopen box → "Reject & inform reviewer" (`qc-decision`
+`decision:'reject'`), which reuses `reopen_decision`+`close_reopen_with_change`+`admin_reject('interview',24h)`
+to reproduce the manual reopen→decline audit trail with no schema change, and emails the reviewer
+`send_qc_rejected_email`. Retro `docs/retrospective-2026-07-19-qc-decision-gate.md`; decision ×1.
+**Owner to-do:** Tamil review of `qcDecision.{confirmDecline,reject*}` + `decision.declineSentToQc`.
+
+**NOTE (was "NEXT" below):** Contract Go-Live **T2 has since SHIPPED + DEPLOYED 2026-07-19** (see
+CHANGELOG top; both flags remain OFF — the flip is the owner runbook). The T2 narrative below is kept
+for the contract agent's context; the real open item there is the **owner flag-flip runbook**, not a
+coding sprint.
+
+**▶ (historical) Contract Go-Live Transition — Sprint T2 (Sources UI + witness dropdown + deploy).**
 Plan `docs/plans/2026-07-19-contract-golive-transition-plan.md`. **T1 (backend) is DONE on branch
 `feat/contract-golive-transition` — NOT merged, NOT pushed, NOT deployed.** The single api+web
 deploy is T2. Both flags (`AWARD_ACCEPTANCE_ENABLED`, `BURSARY_AGREEMENT_ENABLED`) stay OFF; the
