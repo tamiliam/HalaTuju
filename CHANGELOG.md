@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor pool — just-funded students linger as "Funded" cards — 2026-07-21
+
+- **Changed** — a funded student no longer vanishes from the pool instantly. They stay for
+  `POOL_FUNDED_GRACE_HOURS` (default **48h**, env-tunable) as a **read-only "Funded" card** (funding
+  bar full, no fund button) — social proof of momentum — then drop off. New
+  `pool.display_pool_queryset` = `recommended` ∪ funded-within-the-window (awarded/active/maintenance,
+  keyed on `awarded_at`) drives the pool **list + detail** views. The strict `eligible_pool_queryset`
+  (recommended-only) still governs **fundability, the public waiting-count, auto-sponsor allocation and
+  notifications** — so a funded card can never be double-funded or inflate the counter. A `funded` flag
+  on the card serializer drives the frontend's greyed "Funded" state (the bar already fills to 100% on
+  its own). **No migration; no scheduled job** — the 2-day hide is a pure query-time window. Behind the
+  existing `SPONSOR_POOL_ENABLED` flag. i18n `sponsorPool.funded`/`fundedBody` en/ms/ta (Tamil first-draft).
+
 ## STPM route — unverifiable offer no longer blocks submission — 2026-07-20
 
 - **Changed** — a Form-Six (STPM) student is no longer trapped at the submission door when their

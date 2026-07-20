@@ -522,7 +522,15 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-20)
+## Next Sprint (as of 2026-07-21)
+
+**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `b0db516e`) — Sponsor-pool funded grace window.** A funded
+student lingers in the pool for `POOL_FUNDED_GRACE_HOURS` (default 48h) as a read-only "Funded" card
+(bar full, no fund button) then drops off. New `pool.display_pool_queryset` (recommended ∪ funded-within-
+window, keyed on `awarded_at`) drives the pool list+detail; strict `eligible_pool_queryset` still governs
+fundability/waiting-count/auto-sponsor/notifications (no double-funding, no counter inflation). `funded`
+card flag; greyed FE state; i18n funded/fundedBody. No migration; no cron (pure query window). Behind
+`SPONSOR_POOL_ENABLED`. Retro `docs/retrospective-2026-07-21-pool-funded-grace.md`; decision ×1.
 
 **✅ SHIPPED + DEPLOYED 2026-07-20 (api, `2acb84a3`) — STPM submission unblock.** `_offer_blocks`
 returns False for `chosen_pathway == 'stpm'`, so an STPM student whose school enrolment letter (Surat
