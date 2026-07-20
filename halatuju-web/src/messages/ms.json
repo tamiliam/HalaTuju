@@ -347,6 +347,8 @@
     "verified": "Disahkan",
     "enrolmentVerified": "Pendaftaran disahkan",
     "fullyFund": "Taja penuh pelajar ini",
+    "funded": "Telah ditaja",
+    "fundedBody": "Pelajar ini telah ditaja sepenuhnya.",
     "daysAway": "Bermula dalam {days} hari",
     "oneDayAway": "Bermula dalam 1 hari",
     "startsToday": "Bermula hari ini",

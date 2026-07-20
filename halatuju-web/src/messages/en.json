@@ -347,6 +347,8 @@
     "verified": "Verified",
     "enrolmentVerified": "Enrolment verified",
     "fullyFund": "Fully fund this student",
+    "funded": "Funded",
+    "fundedBody": "This student has been fully funded.",
     "daysAway": "Starts in {days} days",
     "oneDayAway": "Starts in 1 day",
     "startsToday": "Starts today",

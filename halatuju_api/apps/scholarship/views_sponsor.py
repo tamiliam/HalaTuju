@@ -228,9 +228,11 @@ class SponsorPoolListView(_PoolBase):
         _, err = self._gate(request)
         if err:
             return err
+        # The DISPLAY pool includes just-funded students (grace window) shown as read-only
+        # "Funded" cards — not the strict fundable set (see pool.display_pool_queryset).
         # Annotate the funded-so-far total (sum of HOLDING sponsorships) once per row so
         # the funding-bar field doesn't fire a per-card aggregate across the grid.
-        qs = pool.eligible_pool_queryset(ScholarshipApplication).annotate(
+        qs = pool.display_pool_queryset(ScholarshipApplication).annotate(
             funded_total=Sum('sponsorships__amount',
                              filter=Q(sponsorships__status__in=Sponsorship.HOLDING)),
         )
@@ -244,7 +246,9 @@ class SponsorPoolDetailView(_PoolBase):
         _, err = self._gate(request)
         if err:
             return err
-        app = pool.eligible_pool_queryset(ScholarshipApplication).filter(id=pk).first()
+        # Display pool (incl. just-funded grace-window cards) — a funded student's detail stays
+        # viewable (read-only) for the window; the fund action itself remains gated by is_fundable.
+        app = pool.display_pool_queryset(ScholarshipApplication).filter(id=pk).first()
         if not app:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(SponsorPoolDetailSerializer(app).data)

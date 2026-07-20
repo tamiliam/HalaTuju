@@ -154,7 +154,9 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
           <FundingBar funded={s.funded_amount} award={s.award_amount} />
           <div className="mt-3 flex items-center justify-between gap-2">
             {s.award_amount ? <span className="text-xl font-bold text-gray-900">RM{rmWhole(s.award_amount)}</span> : <span />}
-            <span className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>
+            {s.funded
+              ? <span className="rounded-md bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-500">✓ {t('sponsorPool.funded')}</span>
+              : <span className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>}
           </div>
         </div>
       </div>

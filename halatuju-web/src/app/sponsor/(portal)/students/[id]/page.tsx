@@ -162,6 +162,12 @@ export default function StudentDetailPage() {
                   <div className="rounded-md bg-green-50 border border-green-100 px-3 py-2.5 text-xs text-green-800">
                     ✅ {t('sponsorPortal.students.funded', { amount: rmWhole(detail.award_amount) })}
                   </div>
+                ) : detail.funded ? (
+                  // Funded by a sponsor within the grace window — read-only, no fund button (the
+                  // fund action is gated server-side too; this just reflects it).
+                  <div className="rounded-md bg-gray-50 border border-gray-200 px-3 py-2.5 text-xs font-medium text-gray-600">
+                    ✓ {t('sponsorPool.fundedBody')}
+                  </div>
                 ) : confirming ? (
                   <div className="space-y-2">
                     <p className="text-xs text-gray-700">{t('sponsorPortal.students.confirmBody', { amount: rmWhole(detail.award_amount) })}</p>

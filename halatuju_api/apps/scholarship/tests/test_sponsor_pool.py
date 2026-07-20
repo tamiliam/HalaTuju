@@ -6,6 +6,7 @@ eligibility rule, the SPONSOR_POOL_ENABLED gate, approved-sponsor gating, and th
 admin generate/publish flow. All on synthetic data; the AI call is mocked.
 """
 import json
+from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -129,6 +130,51 @@ class TestEligibility(TestCase):
         app = _make_eligible_app(self.cohort)
         app.consents.update(is_active=False)
         self.assertFalse(pool.is_pool_eligible(app))
+
+
+# ─── funded grace window (owner 2026-07-21) ──────────────────────────────────
+@override_settings(POOL_FUNDED_GRACE_HOURS=48)
+class TestFundedGraceWindow(TestCase):
+    """A just-funded student LINGERS in the DISPLAY pool for POOL_FUNDED_GRACE_HOURS as a
+    read-only "Funded" card, but is never in the FUNDABLE pool (no double-funding, not counted
+    as waiting), and drops off once the window passes."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='g', name='B40', year=2026)
+
+    def _ids(self, qs):
+        return list(qs.values_list('id', flat=True))
+
+    def _fund(self, app, *, hours_ago):
+        app.status = 'awarded'
+        app.awarded_at = timezone.now() - timedelta(hours=hours_ago)
+        app.save(update_fields=['status', 'awarded_at'])
+
+    def test_recommended_is_in_both_pools(self):
+        app = _make_eligible_app(self.cohort, suffix='rec')
+        self.assertIn(app.id, self._ids(pool.eligible_pool_queryset(ScholarshipApplication)))
+        self.assertIn(app.id, self._ids(pool.display_pool_queryset(ScholarshipApplication)))
+
+    def test_recently_funded_shows_in_display_but_is_not_fundable(self):
+        app = _make_eligible_app(self.cohort, suffix='fund')
+        self._fund(app, hours_ago=1)
+        # Visible to sponsors (grace window)…
+        self.assertIn(app.id, self._ids(pool.display_pool_queryset(ScholarshipApplication)))
+        # …but NOT fundable and NOT counted as still-waiting (the strict pool).
+        self.assertNotIn(app.id, self._ids(pool.eligible_pool_queryset(ScholarshipApplication)))
+        self.assertFalse(pool.is_pool_eligible(app))
+
+    def test_funded_past_the_window_drops_off(self):
+        app = _make_eligible_app(self.cohort, suffix='old')
+        self._fund(app, hours_ago=49)          # past the 48h grace window
+        self.assertNotIn(app.id, self._ids(pool.display_pool_queryset(ScholarshipApplication)))
+
+    def test_card_funded_flag(self):
+        rec = _make_eligible_app(self.cohort, suffix='cardrec')
+        fund = _make_eligible_app(self.cohort, suffix='cardfund')
+        self._fund(fund, hours_ago=2)
+        self.assertFalse(SponsorPoolCardSerializer(rec).data['funded'])
+        self.assertTrue(SponsorPoolCardSerializer(fund).data['funded'])
 
 
 # ─── allowlist: no identifying field may leak ────────────────────────────────
