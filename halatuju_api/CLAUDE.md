@@ -524,6 +524,20 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-21)
 
+**▶ NEXT (in design): My-students label rework + new sponsored-student detail page.** Refine the sponsor
+portfolio statuses — "Semester completed" = supported sems done + continuing (not graduated); split
+Needs-attention / Support-paused / add Discontinued (derived from on_hold/probation + closure_reason
+withdrawn/terminated); show the FULL anon profile (not the blurb) on a NEW clickable detail page (My-students
+cards are plain divs today), with reserved space for student SPENDING (Vircle, a later sprint). Mock approved
+in principle (artifact); pending final label wording + a Stitch sign-off before coding. This is a real sprint —
+write an implementation plan first.
+
+**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `93aa9c44`) — Pool sort + status filter + "Sponsored" wording.**
+Discovery pool orders unfunded (`recommended`) cards ahead of just-sponsored grace-window cards (server-side,
+newest-first within group; no timestamp on the card); a new filter dropdown All/Open-for-sponsorship/Sponsored
+(client-side on the `funded` flag); "Funded" wording → "Sponsored" (en/ms/ta). No migration. Behind
+`SPONSOR_POOL_ENABLED`. Retro `docs/retrospective-2026-07-21-pool-sort-filter.md`; decision ×1.
+
 **✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `b0db516e`) — Sponsor-pool funded grace window.** A funded
 student lingers in the pool for `POOL_FUNDED_GRACE_HOURS` (default 48h) as a read-only "Funded" card
 (bar full, no fund button) then drops off. New `pool.display_pool_queryset` (recommended ∪ funded-within-

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor pool — sort unfunded-first + status filter + "Sponsored" wording — 2026-07-21
+
+- **Changed** — the discovery pool now **orders unfunded (`recommended`) cards ahead of the
+  just-sponsored grace-window cards** (one list, no separator; newest-relevant-event first within each
+  group — `awarded_at` for sponsored, `recommended_at` for open). Ordering is server-side in
+  `SponsorPoolListView`, so no timestamp reaches the anonymised card.
+- **Added** — a **status filter dropdown** on the pool page: *All students / Open for sponsorship /
+  Sponsored*, client-side over the fetched cards via the `funded` flag (matches the field/state/amount
+  filters). i18n `sponsorPortal.students.{allStudents,openForSponsorship,sponsored}` en/ms/ta.
+- **Changed** — the sponsor-facing **"Funded" wording is now "Sponsored"** (`sponsorPool.funded`/
+  `fundedBody`, en/ms/ta) — the grace-window card chip + detail body.
+- No backend/model change; no migration. Behind `SPONSOR_POOL_ENABLED`. Test in `test_sponsor_pool.py`.
+
 ## Sponsor pool — just-funded students linger as "Funded" cards — 2026-07-21
 
 - **Changed** — a funded student no longer vanishes from the pool instantly. They stay for
