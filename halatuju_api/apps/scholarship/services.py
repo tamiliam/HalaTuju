@@ -1849,7 +1849,17 @@ def _offer_blocks(application):
     reporting-date bonus / genuineness ladder legitimately lifts to Certain is allowed even though
     ``offer_official_status`` still reads not_genuine (#56 tiled Certain yet was blocked). An offer
     that is missing / official / UNKNOWN (not yet genuineness-scored) still never blocks — we don't
-    gate on our own gap (unchanged)."""
+    gate on our own gap (unchanged).
+
+    STPM route (owner 2026-07-20): a Form-Six student has no university-style offer letter — their
+    pathway proof is school enrolment (a *Surat Pengesahan Pelajar*), which the offer-genuineness
+    model isn't trained to recognise, so it reads not_genuine and the pathway sits red. We never bar
+    an STPM student at the submission door on that gap: the reviewer audits the pathway by hand (the
+    verdict may legitimately stay red). Presence is still required (`offer_letter_missing` — they must
+    upload *something*); only the genuineness block is lifted, and only for STPM. Other routes —
+    incl. Matriculation, which DOES get a recognisable official offer — are unaffected."""
+    if (getattr(application, 'chosen_pathway', '') or '').strip().lower() == 'stpm':
+        return False
     from .pathway_engine import offer_official_status
     offer = (application.documents.filter(doc_type='offer_letter', superseded_at__isnull=True)
              .order_by('-uploaded_at').first())

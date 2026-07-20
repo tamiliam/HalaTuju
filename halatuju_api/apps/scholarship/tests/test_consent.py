@@ -633,6 +633,24 @@ class TestOfferValidityGate(TestCase):
                 {'fact': 'pathway', 'status': 'recommend', 'evidence': [], 'unresolved': []}]):
             self.assertIn('offer_not_official', consent_blockers(app))
 
+    def test_stpm_route_not_blocked_by_unverifiable_offer(self):
+        # STPM route (owner 2026-07-20): a Form-Six student's pathway proof is a school enrolment
+        # letter (Surat Pengesahan Pelajar) the genuineness model can't recognise — it reads
+        # not_genuine and the pathway sits red. The SAME setup that blocks a non-STPM student (above)
+        # must NOT block an STPM one at the submission door; the reviewer audits the pathway by hand.
+        from unittest.mock import patch
+        from apps.scholarship.services import consent_blockers
+        app = self._app()
+        app.chosen_pathway = 'stpm'
+        app.save(update_fields=['chosen_pathway'])
+        self._offer(app, 'suspect')
+        with patch('apps.scholarship.verdict_engine.build_verdict', return_value=[
+                {'fact': 'pathway', 'status': 'recommend', 'evidence': [], 'unresolved': []}]):
+            self.assertNotIn('offer_not_official', consent_blockers(app))
+        # …but PRESENCE is still required — an STPM student with NOTHING uploaded is still gated.
+        app.documents.all().delete()
+        self.assertIn('offer_letter_missing', consent_blockers(app))
+
     def test_offer_gate_allows_blue_and_above(self):
         from unittest.mock import patch
         from apps.scholarship.services import consent_blockers
