@@ -537,6 +537,25 @@ class TestSponsorBrowse(TestCase):
         self._auth('spon-ok')
         self.assertEqual(self.client.get(f'/api/v1/sponsor/pool/{ineligible.id}/').status_code, 404)
 
+    @override_settings(SPONSOR_POOL_ENABLED=True)
+    def test_pool_orders_unfunded_before_sponsored(self):
+        # Owner 2026-07-21: unfunded ('recommended') cards sort ahead of just-sponsored (grace-window)
+        # cards in the same list. Also verifies the card `funded` flag drives the FE "Sponsored" state.
+        funded = _make_eligible_app(self.cohort, suffix='funded')
+        funded.status = 'awarded'
+        funded.awarded_at = timezone.now()
+        funded.save(update_fields=['status', 'awarded_at'])
+        self._auth('spon-ok')
+        students = self.client.get('/api/v1/sponsor/pool/').json()['students']
+        refs = [s['ref'] for s in students]
+        open_ref, funded_ref = pool.pool_ref(self.app.id), pool.pool_ref(funded.id)
+        self.assertIn(open_ref, refs)
+        self.assertIn(funded_ref, refs)
+        self.assertLess(refs.index(open_ref), refs.index(funded_ref))   # unfunded first
+        by_ref = {s['ref']: s for s in students}
+        self.assertFalse(by_ref[open_ref]['funded'])
+        self.assertTrue(by_ref[funded_ref]['funded'])
+
     def _assert_clean(self, payload):
         blob = json.dumps(payload)
         for label, value in IDENTIFIERS.items():

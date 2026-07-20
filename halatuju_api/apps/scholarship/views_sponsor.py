@@ -9,7 +9,8 @@ whitelisted from the NRIC gate (sponsors have no NRIC).
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
-from django.db.models import Q, Sum
+from django.db.models import Case, IntegerField, Q, Sum, Value, When
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -229,13 +230,20 @@ class SponsorPoolListView(_PoolBase):
         if err:
             return err
         # The DISPLAY pool includes just-funded students (grace window) shown as read-only
-        # "Funded" cards — not the strict fundable set (see pool.display_pool_queryset).
+        # "Sponsored" cards — not the strict fundable set (see pool.display_pool_queryset).
         # Annotate the funded-so-far total (sum of HOLDING sponsorships) once per row so
         # the funding-bar field doesn't fire a per-card aggregate across the grid.
+        # ORDER (owner 2026-07-21): unfunded ('recommended') cards first, then the just-sponsored
+        # grace-window cards — one list, no separator. Within each group, newest-relevant-event
+        # first (a funded card by when it was sponsored = awarded_at; an open one by when it entered
+        # the pool = recommended_at). Sorting is server-side, so no timestamp leaks to the card.
         qs = pool.display_pool_queryset(ScholarshipApplication).annotate(
             funded_total=Sum('sponsorships__amount',
                              filter=Q(sponsorships__status__in=Sponsorship.HOLDING)),
-        )
+            _unfunded_first=Case(When(status='recommended', then=Value(0)),
+                                 default=Value(1), output_field=IntegerField()),
+            _pool_ts=Coalesce('awarded_at', 'recommended_at'),
+        ).order_by('_unfunded_first', '-_pool_ts')
         return Response({'students': SponsorPoolCardSerializer(qs, many=True).data})
 
 
