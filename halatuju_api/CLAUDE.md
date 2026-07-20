@@ -522,7 +522,14 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-19)
+## Next Sprint (as of 2026-07-20)
+
+**✅ SHIPPED + DEPLOYED 2026-07-20 (api, `2acb84a3`) — STPM submission unblock.** `_offer_blocks`
+returns False for `chosen_pathway == 'stpm'`, so an STPM student whose school enrolment letter (Surat
+Pengesahan Pelajar) can't be machine-verified is no longer barred at the submission door by
+`offer_not_official`; the reviewer audits the pathway by hand (verdict may stay red). Presence still
+required; only STPM exempt (Matriculation/university unaffected). No migration. Retro
+`docs/retrospective-2026-07-20-stpm-offer-submit.md`; decision ×1.
 
 **Status: the contract module + reviewer-QC flow are fully built out and DEPLOYED; both go-live flags
 stay OFF. No coding sprint is queued — the open item is the OWNER's flag-flip runbook.** Migrations

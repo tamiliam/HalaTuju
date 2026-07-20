@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## STPM route — unverifiable offer no longer blocks submission — 2026-07-20
+
+- **Changed** — a Form-Six (STPM) student is no longer trapped at the submission door when their
+  offer document can't be machine-verified. Their pathway proof is a **school enrolment letter**
+  (*Surat Pengesahan Pelajar*), which the offer-genuineness model isn't trained to recognise — so it
+  reads `not_genuine` and the pathway sits red, which tripped the `offer_not_official` submission
+  block. `_offer_blocks` now returns `False` for `chosen_pathway == 'stpm'`: the student **submits and
+  reaches a reviewer**, who audits the pathway by hand (the verdict may legitimately stay red — no
+  green/blue is manufactured). **Presence is still required** (`offer_letter_missing` unchanged — they
+  must upload *something*). **Only STPM** is exempt; university and Matriculation applicants (who do get
+  a recognisable official offer) are unaffected. Backend-only; no migration. Test in `test_consent.py`.
+
 ## Contract clauses — 3-level hierarchy + upload-a-document at create — 2026-07-19
 
 Owner-approved (design mockup signed off). Contract module stays behind the OFF flags.
