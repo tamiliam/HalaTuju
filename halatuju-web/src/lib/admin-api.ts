@@ -1402,6 +1402,11 @@ export async function listSponsors(status?: string, options?: ApiOptions): Promi
   return adminFetch(`/api/v1/admin/sponsors/${q}`, options)
 }
 
+/** Lean count of sponsor accounts awaiting vetting — drives the nav + Administration-hub badge. */
+export async function getPendingSponsorCount(options?: ApiOptions): Promise<{ count: number }> {
+  return adminFetch('/api/v1/admin/sponsors/pending-count/', options)
+}
+
 export async function reviewSponsor(
   id: number, action: 'approve' | 'reject' | 'suspend', options?: ApiOptions
 ): Promise<AdminSponsor> {

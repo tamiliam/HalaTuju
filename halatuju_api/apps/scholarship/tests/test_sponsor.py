@@ -147,6 +147,24 @@ class TestAdminSponsorVetting(TestCase):
             self._auth(uid)
             self.assertEqual(self.client.get('/api/v1/admin/sponsors/').status_code, 403, uid)
 
+    def test_pending_count(self):
+        # the nav + Administration-hub badge — super / org_admin / Admin-General see the count.
+        for uid in ('adm', 'oa', 'sup'):
+            self._auth(uid)
+            r = self.client.get('/api/v1/admin/sponsors/pending-count/')
+            self.assertEqual(r.status_code, 200, uid)
+            self.assertEqual(r.json()['count'], 1, uid)   # the one pending sponsor
+        # approving it drops the count to 0
+        self.s.status = 'approved'
+        self.s.save(update_fields=['status'])
+        self._auth('sup')
+        self.assertEqual(self.client.get('/api/v1/admin/sponsors/pending-count/').json()['count'], 0)
+
+    def test_pending_count_refused_for_reviewer_and_qc(self):
+        for uid in ('rev', 'qc'):
+            self._auth(uid)
+            self.assertEqual(self.client.get('/api/v1/admin/sponsors/pending-count/').status_code, 403, uid)
+
     def test_org_admin_approve(self):
         self._auth('oa')
         r = self.client.post(f'/api/v1/admin/sponsors/{self.s.id}/review/', {'action': 'approve'}, format='json')

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Admin — Sponsors moved into Administration, with a pending-approval badge — 2026-07-21
+
+- **Changed** — **Sponsors** is no longer a top-level admin nav item; it now lives inside the
+  **Administration** hub as a card (🎗️ → `/admin/sponsors`), shown to super / org_admin / Admin-General
+  (unchanged from the old nav visibility; qc & reviewer still don't see it).
+- **Added** — a **pending-approval count badge** (small red pill) on **both** the Administration nav
+  entry and the Sponsors card, whenever sponsor accounts await vetting. Driven by a new lean endpoint
+  `GET /api/v1/admin/sponsors/pending-count/` → `{count}` (`AdminSponsorPendingCountView`; same role-gate
+  as the list; cross-org by design), refetched on navigation so it stays fresh after vetting.
+- i18n `admin.administration.{sponsors,sponsorsSub,pendingApproval}` en/ms/ta. No migration. Tests:
+  pending count (roles + drops to 0 on approval) + org-fence classification.
+
 ## Vircle — 48-hour activation request to Vircle (dark) — 2026-07-22
 
 A scheduled reminder that emails Vircle the eWallet accounts a student has installed but that

@@ -4232,7 +4232,10 @@
       "contracts": "Kontrak",
       "contractsSub": "Karang dan lancarkan perjanjian biasiswa",
       "sources": "Sumber",
-      "sourcesSub": "Organisasi rujukan & senarai sumber borang permohonan"
+      "sourcesSub": "Organisasi rujukan & senarai sumber borang permohonan",
+      "sponsors": "Penaja",
+      "sponsorsSub": "Semak dan luluskan akaun penaja",
+      "pendingApproval": "{count} menunggu kelulusan"
     },
     "payments": {
       "title": "Pembayaran",

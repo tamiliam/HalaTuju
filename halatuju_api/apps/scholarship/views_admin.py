@@ -894,6 +894,20 @@ class AdminSponsorListView(_AdminBase):
         return Response({'sponsors': [_sponsor_dict(s) for s in qs]})
 
 
+class AdminSponsorPendingCountView(_AdminBase):
+    """GET .../admin/sponsors/pending-count/ — {count} of sponsor accounts awaiting vetting.
+    A lean COUNT for the nav + Administration-hub badges (so an always-loaded nav needn't fetch the
+    full sponsor list on every page). Same role-gate as the list (super / org_admin / Admin-General);
+    cross-org by design (a sponsor is a platform-level account)."""
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not (admin.is_super or admin.role in ('org_admin', 'admin')):
+            return self._deny_role()
+        return Response({'count': Sponsor.objects.filter(status='pending').count()})
+
+
 class AdminSponsorReviewView(_AdminBase):
     """Phase E: POST .../admin/sponsors/<pk>/review/ {action: approve|reject|suspend}
     — vet a sponsor account. Matrix (2026-07-15): sponsor vetting is a super or ORG_ADMIN
