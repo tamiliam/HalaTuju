@@ -2,7 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
-<<<<<<< HEAD
+## Sources — accurate student counts, standardised phone, inline-edit polish — 2026-07-21
+
+Sources registry (Administration → Organisation):
+
+- **Fixed — the "Students" count now counts bursary applicants, not the legacy course-selector
+  registry.** It was tallying hundreds of non-applicant `StudentProfile` rows via the drifted
+  `referred_by_org` FK (inflating CUMIG to 256). It now counts `ScholarshipApplication`s attributed by
+  referral chip (`profile.referral_source`) — the same signal the Applications-list Source filter uses.
+  Each external partner counts apps whose chip == its code; the house org **BrightPath** is the
+  residual (self-referred halatuju/other/social + unattributed). Now CUMIG=13, BrightPath=35, and the
+  rows reconcile to the 143 live applications. Global tally carries an `# org-fence:` pragma
+  (single-tenant by design). `_source_application_counts` replaces `_source_student_counts`.
+- **Changed — phone standardised** to the platform's shared `formatPhone`/`isValidPhone` (the apply
+  form's helpers): auto-formats on type in Add/Edit, blocks Save on an invalid Malaysian number, and
+  formats on display. Reuses the existing `profile.invalidPhone` message (no new keys).
+- **Changed — inline edit** reworked from a cramped row of narrow inputs (truncated name, misaligned
+  rows) into one full-width labelled panel spanning all columns, mirroring the Add-a-source form.
+- **Changed — copy:** the "Active in apply form" column + toggle label shortened to **"Active"**
+  (en/ms/ta); the help text still explains the apply-form meaning.
+- No migration. Tests: backend +2 (CUMIG-count / house-residual / FK-drift guard), 2966 pass; web
+  build + tsc + jest green.
+
+_Also resolved a stray merge-conflict marker left committed in this file between the two prior
+2026-07-21 entries (Contract authoring / Cockpit own-words) — both kept._
+
 ## Contract authoring — Word-style numbering + hanging indent, editor tidy-up — 2026-07-21
 
 Second owner-review pass (contract module stays behind the OFF flags):
@@ -20,7 +44,7 @@ Second owner-review pass (contract module stays behind the OFF flags):
   left of the clause controls with a separator; and an **empty heading or body box collapses to a
   "＋ Heading" / "＋ Body" chip** (shown again once it has content) so each card shows only what it uses.
 - No migration. Tests: Word numbering (py + jest), hanging-indent render, donor→variable on import.
-=======
+
 ## Cockpit — own-words toggle alternates Show/Hide; Vircle relay data ops — 2026-07-21
 
 - **Changed** — the officer cockpit "student's own words" reveal toggle now reads **"Hide the
@@ -43,7 +67,6 @@ Second owner-review pass (contract module stays behind the OFF flags):
   as the list; cross-org by design), refetched on navigation so it stays fresh after vetting.
 - i18n `admin.administration.{sponsors,sponsorsSub,pendingApproval}` en/ms/ta. No migration. Tests:
   pending count (roles + drops to 0 on approval) + org-fence classification.
->>>>>>> origin/main
 
 ## Vircle — 48-hour activation request to Vircle (dark) — 2026-07-22
 
