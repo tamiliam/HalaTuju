@@ -1,5 +1,38 @@
 # Architectural Decisions — HalaTuju
 
+## Contract .docx import reads Word's own numbering; AI is the fallback, not the parser — 2026-07-21
+**Decision:** A `.docx` upload is parsed **deterministically** from the document's heading styles + list
+levels (`contracts._docx_structure`), mapping them onto our 3-level clause hierarchy. Gemini
+segmentation is kept only as a **fallback** for a document with no usable styles. The detected title +
+preamble fill the draft's config **only when those fields are blank** (never overwrite).
+**Alternatives considered:** (a) Keep the text-only + Gemini path and improve the prompt; (b) parse
+deterministically AND overwrite title/preamble unconditionally.
+**Rationale:** Word GENERATES the visible `1.` / `1.1` / `i)` labels from the style/list definition —
+they are not in `paragraph.text`. The old path stripped exactly the structure it then asked an AI to
+reconstruct, which merged separate definition items into one clause body (the fidelity bug the owner
+hit). Reading the structure we already have is both more accurate and cheaper (no Gemini call on the
+common styled-doc path). Fill-if-blank protects an author who has already typed a title.
+**Trade-offs:** A doc that uses no heading styles (hand-typed numbers) still falls back to the AI guess.
+The parser trusts paragraph-level `numPr`; a doc whose numbering lives only in the linked style (no
+direct `ilvl`) degrades to the `Heading N` style-number, still correct for the standard case.
+**Revisit if:** authors routinely upload unstyled docs — then invest in the fallback prompt, or add a
+style-normalisation pre-pass.
+
+## Contract merge variables resolve at render time; the template keeps the token — 2026-07-21
+**Decision:** `{{variable}}` tokens (student name, amount, institution, …) are stored VERBATIM on the
+template and resolved to real values only inside `render_agreement_html` (`contracts.substitute_vars`).
+Bold is authored as markdown `**…**` and converted to `<b>` at render (on the ESCAPED string).
+**Alternatives considered:** Resolve variables at save/deploy time into the stored clause text; a
+rich-text editor storing HTML.
+**Rationale:** The immutable signed snapshot is the right place for resolved values — the template stays
+generic and reusable across students, and the signed `BursaryAgreement` still captures the exact
+rendered wording. An unknown token is left visible (obviously fixable) rather than becoming a silent
+blank. `**` on escaped text keeps the emphasis injection-safe without a rich-text field or sanitiser.
+**Trade-offs:** Authors see raw `{{tokens}}` / `**stars**` while editing (mitigated by the Insert-variable
+menu + Bold button). Variable descriptions in the menu are English-only (they describe the
+English-authoritative merge fields); the tokens themselves are language-neutral.
+**Revisit if:** authors need per-locale variable labels, or a token set large enough to warrant grouping.
+
 ## Private/IPTS offer arms disqualified via the genuineness scorer, not a read-time override — 2026-07-10
 **Decision:** A public university's PRIVATE continuing-education arm (UTM SPACE, UM CCE, …) is
 disqualified by a NEGATIVE marker in the genuineness offer scorer (`_private_arm_offer` in

@@ -21,6 +21,7 @@ import hashlib
 import io
 import logging
 import os
+import re
 from decimal import Decimal
 
 from django.conf import settings
@@ -118,9 +119,17 @@ def _guarantor_role_label(parent_role):
     return 'Guarantor / Penjamin (surety)'
 
 
+def _bold(escaped):
+    """Convert markdown-style ``**bold**`` in an ALREADY-ESCAPED string to ``<b>…</b>``.
+    Runs on escaped text so the emphasis markup can never inject HTML; non-greedy and
+    single-line, so an unmatched ``**`` is left literal."""
+    return re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', escaped)
+
+
 def _clause_body_html(body):
-    """Plain-text clause body → HTML, a blank line becoming a paragraph break."""
-    paras = [_esc(p) for p in (body or '').split('\n\n') if p.strip()]
+    """Plain-text clause body → HTML: a blank line becomes a paragraph break, and the
+    author's ``**bold**`` inline emphasis is honoured (escaped first, so it is safe)."""
+    paras = [_bold(_esc(p)) for p in (body or '').split('\n\n') if p.strip()]
     return '<br/><br/>'.join(paras)
 
 
@@ -139,11 +148,31 @@ def render_agreement_html(application, particulars, *, student, guarantor,
     name (+ nric/role/timestamp where applicable). The donor is NEVER rendered."""
     from . import contracts
     lang = _locale(locale)
-    title = getattr(template, f'title_{lang}', '') or template.title_en
-    preamble = getattr(template, f'preamble_{lang}', '') or template.preamble_en
+
+    # {{variable}} merge context — resolved into this signed snapshot only (the template
+    # keeps the generic tokens). A commencement date renders British-style; unknown tokens
+    # are left visible (see contracts.substitute_vars).
+    commencement = particulars.get('commencement_date')
+    ctx = {
+        'student_name': student.get('name', ''),
+        'student_nric': student.get('nric', ''),
+        'guarantor_name': guarantor.get('name', ''),
+        'guarantor_relationship': guarantor.get('relationship', ''),
+        'donor_name': getattr(template, 'counterparty_name', '') or '',
+        'amount': _fmt_amount(particulars.get('award_amount')),
+        'institution': particulars.get('institution_name', ''),
+        'course': particulars.get('course_name', ''),
+        'commencement_date': (commencement.strftime('%d %B %Y')
+                              if hasattr(commencement, 'strftime') else (commencement or '')),
+        'progress_standard': particulars.get('progress_standard', ''),
+    }
+    sub = lambda s: contracts.substitute_vars(s, ctx)
+
+    title = sub(getattr(template, f'title_{lang}', '') or template.title_en)
+    preamble = sub(getattr(template, f'preamble_{lang}', '') or template.preamble_en)
     clauses = [
-        (getattr(c, f'heading_{lang}', '') or c.heading_en,
-         getattr(c, f'body_{lang}', '') or c.body_en,
+        (sub(getattr(c, f'heading_{lang}', '') or c.heading_en),
+         sub(getattr(c, f'body_{lang}', '') or c.body_en),
          c.level)
         for c in template.clauses.all().order_by('order')
     ]
@@ -169,7 +198,7 @@ def render_agreement_html(application, particulars, *, student, guarantor,
         'The English version of this Agreement is authoritative; any other language '
         'is a courtesy translation.</div>',
         f'<h1 style="font-size:18px; text-align:center; margin:0 0 4px 0;">{_esc(title)}</h1>',
-        f'<p>{_esc(preamble)}</p>',
+        f'<p>{_bold(_esc(preamble))}</p>',
     ]
 
     # Particulars table.

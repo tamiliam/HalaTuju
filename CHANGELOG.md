@@ -9,6 +9,31 @@ All notable changes to this project will be documented in this file.
   defined INSIDE `AdministrationPage`, so each keystroke's re-render minted a new component identity and
   React remounted the whole subtree — including the inputs — losing focus. Hoisted `Section` to module
   scope (it uses only props), matching `IconCard`. Web-only, no migration.
+## Contract authoring — import fidelity + insert-between + bold/variables — 2026-07-21
+
+- **Changed (import fidelity)** — uploading a Word `.docx` now **reads the document's own heading /
+  list numbering deterministically** (`contracts._docx_structure`) instead of flattening it to text and
+  asking Gemini to guess the structure back. Word generates the `1.` / `1.1` / `i)` labels from the
+  style + list definition — they are **not** in `paragraph.text` — so the old path lost the hierarchy
+  and merged separate definition items into one clause body. The parser maps `Heading N`/`ilvl` → clause
+  levels, list items → the nested `i) ii)` level, the `Title` style → the agreement title, and the
+  paragraphs before clause 1 → the preamble/parties. Gemini remains the **fallback** for an unstyled doc.
+  The detected **title + preamble** are now captured and fill the draft's blank `title_en`/`preamble_en`
+  (**fill-if-blank — never overwrites** the author's own wording). Hand-typed `[Student Full Name & NRIC]`
+  → `{{student_name}} ({{student_nric}})` on import.
+- **Added (insert-between)** — a **"＋" (insert-below)** control on each clause row drops a blank clause
+  directly below, at the same level; numbering re-computes automatically. FE-only (`ClauseEditor`).
+- **Added (bold + variables)** — a clause body now supports **`**bold**`** (rendered as `<b>` in the
+  preview + PDF, escaped-first so it can't inject markup) and **`{{variable}}` merge tokens**
+  (`contracts.CONTRACT_VARS` + `substitute_vars`, resolved per student at render time — the template
+  keeps the generic token, the signed snapshot gets the value; an unknown token stays visible, never a
+  silent blank). Editor gets a **Bold** button + an **Insert-variable** menu. Variables: student
+  name/NRIC, guarantor name/relationship, donor, amount, institution, course, commencement date,
+  progress standard.
+- **No migration** (all three reuse existing fields). The contract module stays behind its OFF flags
+  (`BURSARY_AGREEMENT_ENABLED`, `AWARD_ACCEPTANCE_ENABLED`) throughout — authoring only, nothing live.
+- Tests: `test_contracts.py` (`TestDocxStructure`, `TestSubstituteVars`, `TestContractRenderRich`);
+  i18n parity for the new `admin.contracts.*` keys (Tamil first-draft, pending owner review).
 
 ## Officer cockpit — live-review copy & UX pass — 2026-07-21
 

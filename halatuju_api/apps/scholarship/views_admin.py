@@ -2652,10 +2652,11 @@ class AdminContractQuizPreviewView(_ContractsBase):
 
 
 class AdminContractImportDocxView(_ContractsBase):
-    """POST a .docx — extract its text + Gemini-segment it into a PROPOSED [{heading,
-    body}] clause list for the author to review (draft-only). Nothing is saved and the
-    uploaded file is NOT retained — on confirm the FE calls the clauses PUT with the
-    reviewed list. Segmentation failures return a code the FE degrades on."""
+    """POST a .docx — parse it (deterministically from the doc's own heading/list
+    numbering; Gemini only as a fallback for unstyled docs) into a PROPOSED clause list
+    plus a detected title/preamble, for the author to review (draft-only). Nothing is
+    saved and the uploaded file is NOT retained — on confirm the FE PUTs the reviewed
+    clauses and fills a blank title/preamble. Failures return a code the FE degrades on."""
     from rest_framework.parsers import MultiPartParser
     parser_classes = [MultiPartParser]
 
@@ -2672,7 +2673,12 @@ class AdminContractImportDocxView(_ContractsBase):
                             status=status.HTTP_400_BAD_REQUEST)
         from . import contracts
         try:
-            clauses = contracts.segment_docx(upload.read())   # bytes only; never stored
+            proposal = contracts.segment_docx(upload.read())   # bytes only; never stored
         except contracts.ContractsError as e:
             return _contracts_err(e)
-        return Response({'clauses': clauses})   # PROPOSED — the FE reviews, then PUTs clauses
+        # PROPOSED — the FE reviews, then PUTs clauses (+ fills a blank title/preamble).
+        return Response({
+            'clauses': proposal['clauses'],
+            'title': proposal.get('title', ''),
+            'preamble': proposal.get('preamble', ''),
+        })
