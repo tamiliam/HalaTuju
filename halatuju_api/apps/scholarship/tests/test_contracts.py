@@ -315,7 +315,7 @@ class TestClauseNumbering(TestCase):
     def test_clause_numbers_three_levels(self):
         self.assertEqual(
             contracts.clause_numbers([0, 1, 1, 2, 2, 0, 1, 2]),
-            ['1.', '1.1', '1.2', 'i)', 'ii)', '2.', '2.1', 'i)'])
+            ['1.', '1.1.', '1.2.', 'I.', 'II.', '2.', '2.1.', 'I.'])
 
     def test_normalise_forbids_skipping_and_forces_first_zero(self):
         self.assertEqual(contracts.normalise_levels([0, 2, 1, 3, 0, 2]), [0, 1, 1, 2, 0, 1])
@@ -416,9 +416,9 @@ class TestClauseHierarchy(TestCase):
             guarantor={'name': 'G', 'nric': 'y', 'relationship': 'father', 'signed_at': None},
             foundation={'name': 'F', 'title': 't', 'nric': '', 'signed_at': None},
             witness={'by': '', 'org': '', 'signed_at': None}, template=d)
-        self.assertIn('>1.<', html)     # top-level number
-        self.assertIn('>1.1<', html)    # sub-clause
-        self.assertIn('>i)<', html)     # sub-sub-clause (roman)
+        self.assertIn('>1.<', html)      # top-level number (bold)
+        self.assertIn('>1.1.<', html)    # sub-clause (Word style, trailing stop)
+        self.assertIn('>I.<', html)      # sub-sub-clause (uppercase roman)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -567,8 +567,8 @@ class TestPreviewRender(TestCase):
 
     def test_hierarchical_numbering(self):
         html = contracts.render_preview_html(self._draft(), 'en')
-        self.assertIn('1.', html)      # top-level
-        self.assertIn('1.1', html)     # sub-clause (NOT the old flat order '2.')
+        self.assertIn('>1.<', html)      # top-level
+        self.assertIn('>1.1.<', html)    # sub-clause (Word style, NOT the old flat order '2.')
 
     def test_bold_marker_rendered(self):
         html = contracts.render_preview_html(self._draft(), 'en')
@@ -613,8 +613,8 @@ class TestHeadingOverflow(TestCase):
 
 
 class TestSharedClauseRender(TestCase):
-    """render_clauses_html — inline layout + bold ONLY at level 0 (owner review 2026-07-21)."""
-    def test_inline_and_bold_rules(self):
+    """render_clauses_html — hanging-indent table, bold ONLY at level 0, Word numbering."""
+    def test_bold_rules_and_word_numbering(self):
         html = contracts.render_clauses_html([
             ('Definitions', '', 0),
             ('In this Agreement', '', 1),
@@ -623,12 +623,16 @@ class TestSharedClauseRender(TestCase):
         # level 0: bold number AND bold heading
         self.assertIn('<b>1.</b>', html)
         self.assertIn('<b>Definitions</b>', html)
-        # level 1: number in a plain span (NOT bold); heading not bold
-        self.assertIn('<span>1.1</span>', html)
-        self.assertNotIn('<b>1.1</b>', html)
+        # level 1: Word style number (NOT bold); heading not bold
+        self.assertIn('>1.1.</td>', html)
+        self.assertNotIn('<b>1.1.</b>', html)
         self.assertNotIn('<b>In this Agreement</b>', html)
-        # level 2: roman number not bold, body INLINE in the same div (not a separate line)
-        self.assertIn('<span>i)</span> Agreement means this document.', html)
+        # level 2: uppercase roman + full stop, not bold; body in the text cell (hanging indent)
+        self.assertIn('>I.</td>', html)
+        self.assertNotIn('<b>I.</b>', html)
+        self.assertIn('Agreement means this document.', html)
+        # a per-clause table drives the hanging indent
+        self.assertIn('<table', html)
 
     def test_escapes_and_honours_bold_marker(self):
         html = contracts.render_clauses_html([('R&D terms', 'a **strong** point', 0)])
@@ -655,3 +659,27 @@ class TestCounterpartyExtraction(TestCase):
         contracts.update_config(d, counterparty_address='12 Jalan Test, 50000 KL')
         d.refresh_from_db()
         self.assertEqual(d.counterparty_address, '12 Jalan Test, 50000 KL')
+
+
+class TestDonorNameToVariable(TestCase):
+    """Import replaces the donor's literal name with {{donor_name}} (defined once in Config)."""
+    def _bytes(self):
+        import io as _io
+        from docx import Document
+        doc = Document()
+        doc.add_paragraph('Bursary Agreement', style='Title')
+        doc.add_paragraph(
+            'This Agreement is made between John Smith, NRIC 900101-01-1234, of 5 Main St '
+            '("Donor"), and {{student_name}}.')
+        _list_para(doc.add_paragraph('Definitions', style='Heading 1'), 6, 0)
+        _list_para(doc.add_paragraph('"Donor" means John Smith.'), 4, 0)
+        buf = _io.BytesIO(); doc.save(buf)
+        return buf.getvalue()
+
+    def test_literal_donor_name_becomes_token(self):
+        got = contracts.segment_docx(self._bytes())
+        self.assertEqual(got['counterparty']['name'], 'John Smith')       # kept for the Config field
+        self.assertNotIn('John Smith', got['preamble'])                    # swapped out of the text
+        self.assertIn('{{donor_name}}', got['preamble'])
+        donor_clause = next(c for c in got['clauses'] if 'means' in c['body'])
+        self.assertEqual(donor_clause['body'], '"Donor" means {{donor_name}}.')

@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract authoring — Word-style numbering + hanging indent, editor tidy-up — 2026-07-21
+
+Second owner-review pass (contract module stays behind the OFF flags):
+
+- **Changed — numbering matches the Word document:** `1.` / `1.1.` / `I.` (uppercase roman, full
+  stops throughout), in both `contracts.clause_numbers` and its FE mirror `clauseNumbering.ts`.
+- **Changed — tidy alignment (hanging indent):** the shared clause renderer now lays each clause out
+  as a two-cell table (number gutter + text column), so a wrapped line aligns in the text column
+  instead of under the number — matching the Word layout, identical in the preview and the PDF.
+- **Changed — import defines the donor once:** the donor's literal name in the clauses + preamble is
+  replaced with `{{donor_name}}` on import (it already resolves to the Config counterparty name), so
+  editing it in one place updates everywhere.
+- **Changed — editor:** the "part of the clause above" note moved into the top hint (which now also
+  explains ＋ add-a-clause and quiz coverage); the **B / ＋Variable** buttons moved to the bottom row,
+  left of the clause controls with a separator; and an **empty heading or body box collapses to a
+  "＋ Heading" / "＋ Body" chip** (shown again once it has content) so each card shows only what it uses.
+- No migration. Tests: Word numbering (py + jest), hanging-indent render, donor→variable on import.
+
 ## Contract authoring — render polish, editor layout, counterparty auto-fill — 2026-07-21
 
 Owner-review refinements to the contract module (behind the OFF flags; authoring only).

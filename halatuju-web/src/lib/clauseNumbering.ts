@@ -1,12 +1,12 @@
 // Contract clause numbering — MIRROR of `contracts.clause_numbers` / `contracts.normalise_levels`
 // in the Django backend (apps/scholarship/contracts.py). The two must stay in lockstep; the paired
 // test (`__tests__/clauseNumbering.test.ts`) checks a shared fixture. 3 levels:
-//   0 -> "1.", "2."   1 -> "1.1", "1.2"   2 -> "i)", "ii)" (lowercase roman)
+//   0 -> "1.", "2."   1 -> "1.1.", "1.2."   2 -> "I.", "II." (uppercase roman) — Word-doc style.
 
 export const MAX_CLAUSE_LEVEL = 2
 
 function roman(n: number): string {
-  const map: Array<[number, string]> = [[10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']]
+  const map: Array<[number, string]> = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]
   let out = ''
   for (const [v, s] of map) { while (n >= v) { out += s; n -= v } }
   return out
@@ -34,8 +34,8 @@ export function clauseNumbers(levels: number[]): string[] {
     counters[lv] += 1
     for (let d = lv + 1; d <= MAX_CLAUSE_LEVEL; d += 1) counters[d] = 0
     if (lv === 0) return `${counters[0]}.`
-    if (lv === 1) return `${counters[0]}.${counters[1]}`
-    return `${roman(counters[2])})`
+    if (lv === 1) return `${counters[0]}.${counters[1]}.`
+    return `${roman(counters[2])}.`
   })
 }
 

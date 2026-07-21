@@ -95,10 +95,11 @@ def normalise_levels(levels):
 
 
 def clause_numbers(levels):
-    """Display label per clause from its level run: level 0 → '1.', '2.'; level 1 → '1.1', '1.2';
-    level 2 → 'i)', 'ii)'. Levels are assumed already valid (see normalise_levels). This is the
-    ONE numbering source of truth — the FE mirror in lib/clauseNumbering.ts must match it (paired
-    test). Numbers are computed, never stored, so reorder/insert always renumbers correctly."""
+    """Display label per clause from its level run (Word-document style): level 0 → '1.', '2.';
+    level 1 → '1.1.', '1.2.'; level 2 → 'I.', 'II.' (uppercase roman). Levels are assumed already
+    valid (see normalise_levels). This is the ONE numbering source of truth — the FE mirror in
+    lib/clauseNumbering.ts must match it (paired test). Numbers are computed, never stored, so
+    reorder/insert always renumbers correctly."""
     counters = [0, 0, 0]
     labels = []
     for lv in levels:
@@ -106,12 +107,14 @@ def clause_numbers(levels):
         counters[lv] += 1
         for deeper in range(lv + 1, MAX_CLAUSE_LEVEL + 1):
             counters[deeper] = 0
+        # Word-document style (owner choice 2026-07-21): 1.  /  1.1.  /  I.
+        # (uppercase roman for sub-sub-clauses, full stops throughout).
         if lv == 0:
             labels.append(f'{counters[0]}.')
         elif lv == 1:
-            labels.append(f'{counters[0]}.{counters[1]}')
+            labels.append(f'{counters[0]}.{counters[1]}.')
         else:
-            labels.append(f'{_roman(counters[2])})')
+            labels.append(f'{_roman(counters[2]).upper()}.')
     return labels
 
 
@@ -689,13 +692,23 @@ def segment_docx(data, *, model=None):
         model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
         raw = _gemini_generate(_build_segment_prompt(text), model)
         structured = {'title': '', 'preamble': '', 'clauses': _parse_segments(raw)}
-    # Pull the counterparty from the ORIGINAL recital (before bracket→token rewriting, which
-    # doesn't touch the Donor clause anyway), then convert the author's brackets to tokens.
-    structured['counterparty'] = _extract_counterparty(structured.get('preamble', ''))
-    structured['preamble'] = _brackets_to_vars(structured.get('preamble', ''))
+    # Pull the counterparty from the ORIGINAL recital (before rewriting), then tokenise: the
+    # author's brackets → {{tokens}}, AND the donor's literal name → {{donor_name}} so the name
+    # is defined ONCE in Config (counterparty_name) and referenced as a variable everywhere.
+    cp = _extract_counterparty(structured.get('preamble', ''))
+    structured['counterparty'] = cp
+    donor = (cp.get('name') or '').strip()
+
+    def _tokenise(text):
+        text = _brackets_to_vars(text)
+        if donor and len(donor) >= 3:
+            text = text.replace(donor, '{{donor_name}}')
+        return text
+
+    structured['preamble'] = _tokenise(structured.get('preamble', ''))
     for c in structured['clauses']:
-        c['heading'] = _brackets_to_vars(c['heading'])
-        c['body'] = _brackets_to_vars(c['body'])
+        c['heading'] = _tokenise(c['heading'])
+        c['body'] = _tokenise(c['body'])
     return structured
 
 
@@ -1013,16 +1026,22 @@ def render_clauses_html(clauses, *, base_indent=4):
     out = []
     for (heading, body, level), number in zip(clauses, numbers):
         top = level == 0
-        indent = base_indent + level * 18
-        num = f'<b>{escape(number)}</b>' if top else f'<span>{escape(number)}</span>'
+        indent = base_indent + level * 20
+        gutter = 34 if level < 2 else 26   # 'I.' needs less room than '1.1.'
+        num = f'<b>{escape(number)}</b>' if top else escape(number)
         head = ''
         if heading:
             h = _bold(escape(heading))
             head = f'<b>{h}</b> ' if top else f'{h} '
         paras = [_bold(escape(p)) for p in (body or '').split('\n\n') if p.strip()]
         body_html = '<br/><br/>'.join(paras)
+        # A per-clause 2-cell table gives a HANGING INDENT — a wrapped line aligns in the text
+        # column, not under the number (matches the Word doc). A table renders identically in
+        # the browser preview and in xhtml2pdf. The row's left margin grows with depth.
         out.append(
-            f'<div style="margin:0 0 7px 0; padding-left:{indent}px;">{num} {head}{body_html}</div>')
+            f'<table style="width:100%; border-collapse:collapse; margin:0 0 6px {indent}px;">'
+            f'<tr><td style="width:{gutter}px; vertical-align:top; white-space:nowrap;">{num}</td>'
+            f'<td style="vertical-align:top;">{head}{body_html}</td></tr></table>')
     return ''.join(out)
 
 
