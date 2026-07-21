@@ -343,3 +343,24 @@ class TestPreviewEndpoints(_Base):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data['checkpoints']), 8)
         self.assertEqual(r.data['template_version'], '2026-prev')
+
+    @patch('apps.scholarship.bursary.generate_pdf', return_value=b'%PDF-1.4 test')
+    def test_preview_pdf_uses_output_param(self, mock_pdf):
+        # The Open-PDF button hits ?output=pdf → the view generates and streams the PDF.
+        self._auth('ct-oa')
+        r = self.client.get(f'{BASE}{self.t.id}/preview/?locale=en&output=pdf')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r['Content-Type'], 'application/pdf')
+        self.assertTrue(r.content.startswith(b'%PDF'))
+        mock_pdf.assert_called_once()
+
+    @patch('apps.scholarship.bursary.generate_pdf', return_value=b'%PDF-1.4 test')
+    def test_preview_format_pdf_is_reserved_and_404s(self, mock_pdf):
+        # REGRESSION (TD-163): `format` is DRF's reserved content-negotiation param, so
+        # ?format=pdf raises Http404 (no 'pdf' renderer) BEFORE the view runs — the PDF is
+        # never generated. This is exactly why the selector is ?output=pdf. Do NOT "fix"
+        # the preview by switching back to ?format=pdf.
+        self._auth('ct-oa')
+        r = self.client.get(f'{BASE}{self.t.id}/preview/?locale=en&format=pdf')
+        self.assertEqual(r.status_code, 404)
+        mock_pdf.assert_not_called()

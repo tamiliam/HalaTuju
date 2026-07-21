@@ -4415,6 +4415,7 @@
       "previewLocale": "Bahasa",
       "openPdf": "Buka PDF",
       "previewFailed": "Tidak dapat memaparkan pratonton.",
+      "pdfFailed": "Tidak dapat membuka PDF. Sila muat semula dan cuba lagi.",
       "validationChecklist": "Senarai semak pengesahan",
       "allChecksPass": "Semua semakan lulus",
       "issuesFound": "{n} isu perlu diselesaikan",

@@ -935,28 +935,50 @@ def resolve_locale(locale, template):
     return locale if locale in template.languages_available else 'en'
 
 
+def _bold(escaped):
+    """Canonical markdown-``**bold**`` → ``<b>…</b>`` transform, run on an ALREADY-ESCAPED
+    string so the emphasis can never inject markup. Non-greedy, single-line: an unmatched
+    ``**`` is left literal. The single source of truth for bold — ``bursary._bold`` (the
+    signed-agreement render) delegates here so the preview and the PDF stay in step."""
+    return re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', escaped or '')
+
+
 def render_preview_html(template, locale='en'):
-    """A minimal standalone HTML preview (PREVIEW banner + English-authoritative
-    notice). Sample particulars only — never a real signed artefact."""
+    """A minimal standalone HTML preview (PREVIEW banner + English-authoritative notice).
+    Sample particulars only — never a real signed artefact. Author text is HTML-ESCAPED,
+    and the preview renders the SAME hierarchical numbering (1. / 1.1 / i)) and ``**bold**``
+    as the signed agreement; ``{{variable}}`` tokens are left visible (no student context in
+    a preview). Served as inline HTML and, via ``?output=pdf``, as the preview PDF."""
+    from django.utils.html import escape as _esc
     if template is None:
         return '<html><body><p>No template.</p></body></html>'
     loc = resolve_locale(locale, template)
+
+    def rich(text):
+        return _bold(_esc(text or ''))
+
     title = getattr(template, f'title_{loc}', '') or template.title_en
     preamble = getattr(template, f'preamble_{loc}', '') or template.preamble_en
     parts = [
         '<div style="background:#fde68a;padding:8px;text-align:center;">PREVIEW — not a signed agreement</div>',
         '<div style="background:#eff6ff;padding:6px;font-size:12px;">'
         'The English version is authoritative; other languages are courtesy translations.</div>',
-        f'<h1>{title}</h1>',
-        f'<p>{preamble}</p>',
+        f'<h1>{rich(title)}</h1>',
+        f'<p>{rich(preamble)}</p>',
     ]
-    for clause in template.clauses.all().order_by('order'):
+    clauses = list(template.clauses.all().order_by('order'))
+    numbers = clause_numbers([(getattr(c, 'level', 0) or 0) for c in clauses])
+    for clause, number in zip(clauses, numbers):
+        level = getattr(clause, 'level', 0) or 0
         heading = getattr(clause, f'heading_{loc}', '') or clause.heading_en
         body = getattr(clause, f'body_{loc}', '') or clause.body_en
-        paras = ''.join(f'<p>{p}</p>' for p in (body or '').split('\n\n') if p.strip())
-        parts.append(f'<h3>{clause.order}. {heading}</h3>{paras}')
-    footer = f'Version {template.version}'
+        paras = ''.join(f'<p>{rich(p)}</p>' for p in (body or '').split('\n\n') if p.strip())
+        head = f' <b>{rich(heading)}</b>' if heading else ''
+        parts.append(
+            f'<div style="margin-left:{level * 18}px;">'
+            f'<h3 style="margin:8px 0 2px 0;">{_esc(number)}{head}</h3>{paras}</div>')
+    footer = f'Version {_esc(template.version)}'
     if template.vetted_by_name and template.vetted_on:
-        footer += f' — Vetted by {template.vetted_by_name}, {template.vetted_on}'
+        footer += f' — Vetted by {_esc(template.vetted_by_name)}, {_esc(str(template.vetted_on))}'
     parts.append(f'<hr><p style="font-size:12px;color:#666;">{footer}</p>')
     return '<html><body>' + ''.join(parts) + '</body></html>'

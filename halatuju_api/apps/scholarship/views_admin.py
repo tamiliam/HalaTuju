@@ -2618,7 +2618,11 @@ class AdminContractDeployView(_ContractsBase):
 
 
 class AdminContractPreviewView(_ContractsBase):
-    """GET — a rendered preview (HTML, or ?format=pdf). Sample particulars only."""
+    """GET — a rendered preview (HTML, or ?output=pdf). Sample particulars only.
+
+    NOTE: the PDF selector is ``?output=pdf``, NOT ``?format=pdf`` — ``format`` is DRF's
+    RESERVED content-negotiation query param, and ``?format=pdf`` makes DRF raise Http404
+    (no 'pdf' renderer) during content negotiation, BEFORE this view runs (TD-163)."""
     def get(self, request, pk):
         template, admin, err = self._template_for(request, pk)
         if err:
@@ -2626,7 +2630,7 @@ class AdminContractPreviewView(_ContractsBase):
         from django.http import HttpResponse
         from . import contracts
         html = contracts.render_preview_html(template, request.query_params.get('locale', 'en'))
-        if request.query_params.get('format') == 'pdf':
+        if request.query_params.get('output') == 'pdf':
             from . import bursary
             try:
                 pdf = bursary.generate_pdf(html)

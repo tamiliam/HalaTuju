@@ -21,7 +21,6 @@ import hashlib
 import io
 import logging
 import os
-import re
 from decimal import Decimal
 
 from django.conf import settings
@@ -120,10 +119,11 @@ def _guarantor_role_label(parent_role):
 
 
 def _bold(escaped):
-    """Convert markdown-style ``**bold**`` in an ALREADY-ESCAPED string to ``<b>…</b>``.
-    Runs on escaped text so the emphasis markup can never inject HTML; non-greedy and
-    single-line, so an unmatched ``**`` is left literal."""
-    return re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', escaped)
+    """Markdown-``**bold**`` → ``<b>…</b>`` on an already-escaped string. Delegates to the
+    canonical ``contracts._bold`` so the signed agreement, the preview and the preview PDF
+    share ONE bold transform (no drift)."""
+    from . import contracts
+    return contracts._bold(escaped)
 
 
 def _clause_body_html(body):

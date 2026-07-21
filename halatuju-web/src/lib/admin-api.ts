@@ -1668,11 +1668,13 @@ export async function importContractDocx(
   return res.json()
 }
 
-/** The rendered preview PDF as a Blob (auth header required) — for a client-side open. */
+/** The rendered preview PDF as a Blob (auth header required) — for a client-side open.
+ *  Uses ?output=pdf, NOT ?format=pdf — `format` is DRF's reserved content-negotiation
+ *  param and `?format=pdf` 404s before the view runs (TD-163). */
 export async function fetchContractPreviewPdf(id: number, locale: string, options?: ApiOptions): Promise<Blob> {
   const headers: Record<string, string> = {}
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
-  const res = await fetch(`${API_BASE}${CT}/${id}/preview/?locale=${encodeURIComponent(locale)}&format=pdf`, { headers })
+  const res = await fetch(`${API_BASE}${CT}/${id}/preview/?locale=${encodeURIComponent(locale)}&output=pdf`, { headers })
   if (!res.ok) throw new Error(`Preview PDF failed: ${res.status}`)
   return res.blob()
 }

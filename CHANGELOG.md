@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract Preview — fix "Could not render" / Open-PDF (TD-163) — 2026-07-21
+
+- **Fixed** — the contract Preview tab's **Open PDF** button had never worked: it requested
+  `?format=pdf`, but `format` is **DRF's reserved content-negotiation query param**, so
+  `?format=pdf` made DRF raise `Http404` (no `pdf` renderer) DURING content negotiation —
+  *before* auth and before the view's `get()` ran. The view's PDF branch was dead code.
+  Confirmed against prod (`?format=pdf` → 404 in ~5 ms; `?format=json` → 401; the PDF content
+  itself renders fine). **Fix:** the PDF selector is now `?output=pdf` (view + FE fetcher).
+- **Fixed** — `TemplatePreview.openPdf` called `window.open()` *after* `await`, which browsers
+  block as an unsolicited popup. It now opens the tab **synchronously** in the click gesture,
+  then points it at the blob once ready (closes the tab + shows an error on failure).
+- **Changed** — `render_preview_html` now **HTML-escapes** all author text (was raw-interpolated
+  — a `&`/`<`/`>` corrupted the preview), renders the **same hierarchical numbering**
+  (`1.` / `1.1` / `i)`) and **`**bold**`** as the signed agreement, and leaves `{{variable}}`
+  tokens visible (no student in a preview). The bold transform now has ONE source of truth
+  (`contracts._bold`; `bursary._bold` delegates to it).
+- **Added** — a distinct `admin.contracts.pdfFailed` message (was reusing the HTML preview's
+  "Could not render the preview") + regression tests: the PDF endpoint returns a PDF via
+  `?output=pdf`, and `?format=pdf` is asserted to 404 (so no one reintroduces the collision);
+  preview escaping / hierarchical numbering / bold.
+- No migration. Contract module stays behind its OFF flags. Tamil string first-draft, pending review.
+
 ## Sponsor portfolio — clickable cards → a sponsored-student detail page (Sprint 2) — 2026-07-21
 
 - **Added — a detail page for a student you support.** The My-students cards were plain divs; each now

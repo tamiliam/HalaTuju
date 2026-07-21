@@ -546,3 +546,31 @@ class TestContractRenderRich(TestCase):
     def test_unknown_variable_left_visible(self):
         html = self._render('Ref {{not_a_real_var}} here.')
         self.assertIn('{{not_a_real_var}}', html)
+
+
+class TestPreviewRender(TestCase):
+    """render_preview_html — escaping, hierarchical numbering, and **bold** (TD-163: the
+    preview must match the signed agreement, and must not corrupt on HTML-special chars)."""
+    def _draft(self):
+        d = seed_draft('2027-prev-r')
+        contracts.replace_clauses(d, [
+            {'heading_en': 'Terms & Conditions', 'body_en': 'The **Bursary** is a gift.', 'level': 0},
+            {'heading_en': 'Sub-point', 'body_en': 'Amount < 3000 & > 0.', 'level': 1},
+        ])
+        return d
+
+    def test_escapes_html_special_chars(self):
+        html = contracts.render_preview_html(self._draft(), 'en')
+        self.assertIn('Terms &amp; Conditions', html)   # & escaped
+        self.assertIn('&lt; 3000 &amp; &gt; 0', html)   # < > & escaped in body
+        self.assertNotIn('Terms & Conditions', html)    # never the raw ampersand
+
+    def test_hierarchical_numbering(self):
+        html = contracts.render_preview_html(self._draft(), 'en')
+        self.assertIn('1.', html)      # top-level
+        self.assertIn('1.1', html)     # sub-clause (NOT the old flat order '2.')
+
+    def test_bold_marker_rendered(self):
+        html = contracts.render_preview_html(self._draft(), 'en')
+        self.assertIn('<b>Bursary</b>', html)
+        self.assertNotIn('**Bursary**', html)

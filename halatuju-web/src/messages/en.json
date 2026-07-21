@@ -4415,6 +4415,7 @@
       "previewLocale": "Language",
       "openPdf": "Open PDF",
       "previewFailed": "Could not render the preview.",
+      "pdfFailed": "Could not open the PDF. Please reload and try again.",
       "validationChecklist": "Validation checklist",
       "allChecksPass": "All checks pass",
       "issuesFound": "{n} issue(s) to resolve",
