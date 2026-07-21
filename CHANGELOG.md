@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract authoring — render polish, editor layout, counterparty auto-fill — 2026-07-21
+
+Owner-review refinements to the contract module (behind the OFF flags; authoring only).
+
+- **Changed — one shared clause renderer** (`contracts.render_clauses_html`) now drives BOTH the
+  signed agreement and the Preview tab, so they render identically. New rules: the number, heading
+  and body render **INLINE** (a sub-clause's number is no longer on its own line above the text);
+  **only a top-level (level-0) clause's number and heading are bold** — sub-clauses and sub-sub-clauses
+  (incl. their numbers) are normal weight. `bursary._clause_body_html` retired; escaping + `**bold**`
+  live in the shared renderer.
+- **Changed — clause editor layout:** the clause number now sits **to the left of the heading box**
+  (`1. [box]`), and the row controls (insert-below / indent / outdent / move / delete) moved from the
+  top-right to the **bottom-right, below the body**.
+- **Added — Save scrolls to the banner:** saving clauses (or config) scrolls the "Saved" confirmation
+  into view (the Save buttons sit well below the fold).
+- **Added — counterparty auto-fill on import:** the parties recital (`… between {Name}, NRIC {nric},
+  of {address} ("Donor") …`) is parsed and pre-fills the Config **counterparty name / NRIC / address**
+  (fill-if-blank; the author reviews before deploy). The counterparty is the party signing opposite the
+  student — the same one the agreement renders as the Foundation signatory + `{{donor_name}}`.
+- **Added — `counterparty_address`** (new `TextField`; migration `0107`) + a Config field for it.
+  MIGRATE-FIRST: the column is applied to prod before this deploys.
+- Tests: shared-render bold/inline rules, counterparty extraction (+ no-match), config accepts the
+  address. New Tamil/Malay strings are first-drafts pending owner review.
+
 ## Contract import — fix 500 / empty-upload on long clauses + org-code prefill — 2026-07-21
 
 - **Fixed** — importing a real `.docx` 500'd on **Accept and replace clauses** (and the

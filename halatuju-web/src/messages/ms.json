@@ -4358,6 +4358,7 @@
       "counterpartyName": "Nama pihak rakan kontrak",
       "counterpartyTitle": "Jawatan pihak rakan kontrak",
       "counterpartyNric": "NRIC pihak rakan kontrak",
+      "counterpartyAddress": "Alamat pihak rakan kontrak",
       "notifyEmails": "E-mel pemberitahuan tandatangan balas (dipisahkan koma)",
       "parentRole": "Peranan ibu bapa/penjaga",
       "coSignerAll": "Penandatangan bersama — semua pelajar",

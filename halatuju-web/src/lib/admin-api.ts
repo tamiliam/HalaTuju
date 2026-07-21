@@ -1575,6 +1575,7 @@ export interface ContractTemplateDetail extends ContractTemplateSummary {
   preamble_en: string; preamble_ms: string; preamble_ta: string
   progress_standard_en: string; progress_standard_ms: string; progress_standard_ta: string
   counterparty_name: string; counterparty_title: string; counterparty_nric: string
+  counterparty_address: string
   counterparty_notify_emails: string[]
   parent_role: 'co_signer_all' | 'minor_only'
   parent_pin_required: boolean
@@ -1652,6 +1653,7 @@ export async function importContractDocx(
   id: number, file: File, options?: ApiOptions): Promise<{
     clauses: Array<{ heading: string; body: string; level: number }>
     title: string; preamble: string
+    counterparty?: { name?: string; nric?: string; address?: string }
   }> {
   const headers: Record<string, string> = {}
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`

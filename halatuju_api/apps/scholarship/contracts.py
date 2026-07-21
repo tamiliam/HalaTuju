@@ -37,6 +37,7 @@ _CONFIG_FIELDS = (
     'preamble_en', 'preamble_ms', 'preamble_ta',
     'progress_standard_en', 'progress_standard_ms', 'progress_standard_ta',
     'counterparty_name', 'counterparty_title', 'counterparty_nric',
+    'counterparty_address',
     'counterparty_notify_emails', 'parent_role', 'parent_pin_required',
     'witness_policy',
 )
@@ -176,6 +177,32 @@ def _brackets_to_vars(text):
         return text
     return _BRACKET_RE.sub(
         lambda m: _BRACKET_VARS.get(m.group(1).strip().lower(), m.group(0)), text)
+
+
+# The counterparty (Donor) recital, shaped like:
+#   "… between {Name}, NRIC {nric}, of {address} ("Donor") …"
+# Best-effort — a preamble that doesn't match leaves the fields for the author to fill.
+_COUNTERPARTY_RE = re.compile(
+    r'between\s+(?P<name>.+?)\s*,\s*NRIC\s+(?P<nric>[\w/-]+)\s*,\s*of\s+(?P<address>.+?)'
+    r'\s*[(\[]\W{0,2}(?:the\s+)?Donor',
+    re.IGNORECASE)
+
+
+def _extract_counterparty(preamble):
+    """Pull the counterparty (Donor) name / NRIC / address from a parties recital.
+    Returns ``{'name', 'nric', 'address'}`` with '' for anything not found. The counterparty
+    is the party signing opposite the student — the same person the agreement renders as the
+    Foundation signatory + ``{{donor_name}}`` — so this pre-fills the Config party fields on
+    import (fill-if-blank; the author reviews before deploy)."""
+    out = {'name': '', 'nric': '', 'address': ''}
+    if not preamble:
+        return out
+    m = _COUNTERPARTY_RE.search(preamble)
+    if m:
+        out['name'] = m.group('name').strip()
+        out['nric'] = m.group('nric').strip()
+        out['address'] = m.group('address').strip().rstrip(',').strip()
+    return out
 
 
 class ContractsError(Exception):
@@ -662,6 +689,9 @@ def segment_docx(data, *, model=None):
         model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
         raw = _gemini_generate(_build_segment_prompt(text), model)
         structured = {'title': '', 'preamble': '', 'clauses': _parse_segments(raw)}
+    # Pull the counterparty from the ORIGINAL recital (before bracket→token rewriting, which
+    # doesn't touch the Donor clause anyway), then convert the author's brackets to tokens.
+    structured['counterparty'] = _extract_counterparty(structured.get('preamble', ''))
     structured['preamble'] = _brackets_to_vars(structured.get('preamble', ''))
     for c in structured['clauses']:
         c['heading'] = _brackets_to_vars(c['heading'])
@@ -967,12 +997,41 @@ def _bold(escaped):
     return re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', escaped or '')
 
 
+def render_clauses_html(clauses, *, base_indent=4):
+    """Shared clause-list → HTML for BOTH the signed agreement and the preview, so the two
+    always look identical. ``clauses`` is an iterable of ``(heading, body, level)`` whose text
+    is already localised / variable-substituted by the caller (RAW of markup — escaping and
+    ``**bold**`` happen here). Rendering rules (2026-07-21, owner review):
+      • the number, heading and body render INLINE — the number is never on its own line;
+      • only a TOP-LEVEL (level 0) clause's number + heading are BOLD (sub-clauses / sub-sub
+        are normal weight, numbers included);
+      • depth adds a left indent.
+    Body paragraphs (blank-line separated) render under the first line with a break."""
+    from django.utils.html import escape
+    clauses = list(clauses)
+    numbers = clause_numbers([lv for _, _, lv in clauses])
+    out = []
+    for (heading, body, level), number in zip(clauses, numbers):
+        top = level == 0
+        indent = base_indent + level * 18
+        num = f'<b>{escape(number)}</b>' if top else f'<span>{escape(number)}</span>'
+        head = ''
+        if heading:
+            h = _bold(escape(heading))
+            head = f'<b>{h}</b> ' if top else f'{h} '
+        paras = [_bold(escape(p)) for p in (body or '').split('\n\n') if p.strip()]
+        body_html = '<br/><br/>'.join(paras)
+        out.append(
+            f'<div style="margin:0 0 7px 0; padding-left:{indent}px;">{num} {head}{body_html}</div>')
+    return ''.join(out)
+
+
 def render_preview_html(template, locale='en'):
     """A minimal standalone HTML preview (PREVIEW banner + English-authoritative notice).
-    Sample particulars only — never a real signed artefact. Author text is HTML-ESCAPED,
-    and the preview renders the SAME hierarchical numbering (1. / 1.1 / i)) and ``**bold**``
-    as the signed agreement; ``{{variable}}`` tokens are left visible (no student context in
-    a preview). Served as inline HTML and, via ``?output=pdf``, as the preview PDF."""
+    Sample particulars only — never a real signed artefact. Uses the SHARED clause renderer
+    (render_clauses_html), so numbering (1. / 1.1 / i)), inline layout, bold rules and
+    ``**bold**`` match the signed agreement exactly; ``{{variable}}`` tokens are left visible
+    (no student context in a preview). Served as inline HTML and, via ``?output=pdf``, as PDF."""
     from django.utils.html import escape as _esc
     if template is None:
         return '<html><body><p>No template.</p></body></html>'
@@ -983,24 +1042,19 @@ def render_preview_html(template, locale='en'):
 
     title = getattr(template, f'title_{loc}', '') or template.title_en
     preamble = getattr(template, f'preamble_{loc}', '') or template.preamble_en
+    clauses = [
+        (getattr(c, f'heading_{loc}', '') or c.heading_en,
+         getattr(c, f'body_{loc}', '') or c.body_en, getattr(c, 'level', 0) or 0)
+        for c in template.clauses.all().order_by('order')
+    ]
     parts = [
         '<div style="background:#fde68a;padding:8px;text-align:center;">PREVIEW — not a signed agreement</div>',
         '<div style="background:#eff6ff;padding:6px;font-size:12px;">'
         'The English version is authoritative; other languages are courtesy translations.</div>',
         f'<h1>{rich(title)}</h1>',
         f'<p>{rich(preamble)}</p>',
+        render_clauses_html(clauses),
     ]
-    clauses = list(template.clauses.all().order_by('order'))
-    numbers = clause_numbers([(getattr(c, 'level', 0) or 0) for c in clauses])
-    for clause, number in zip(clauses, numbers):
-        level = getattr(clause, 'level', 0) or 0
-        heading = getattr(clause, f'heading_{loc}', '') or clause.heading_en
-        body = getattr(clause, f'body_{loc}', '') or clause.body_en
-        paras = ''.join(f'<p>{rich(p)}</p>' for p in (body or '').split('\n\n') if p.strip())
-        head = f' <b>{rich(heading)}</b>' if heading else ''
-        parts.append(
-            f'<div style="margin-left:{level * 18}px;">'
-            f'<h3 style="margin:8px 0 2px 0;">{_esc(number)}{head}</h3>{paras}</div>')
     footer = f'Version {_esc(template.version)}'
     if template.vetted_by_name and template.vetted_on:
         footer += f' — Vetted by {_esc(template.vetted_by_name)}, {_esc(str(template.vetted_on))}'

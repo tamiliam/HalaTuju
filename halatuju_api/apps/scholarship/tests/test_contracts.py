@@ -610,3 +610,48 @@ class TestHeadingOverflow(TestCase):
         c = d.clauses.first()
         self.assertEqual(c.heading_en, 'Definitions')
         self.assertEqual(c.body_en, 'x')
+
+
+class TestSharedClauseRender(TestCase):
+    """render_clauses_html — inline layout + bold ONLY at level 0 (owner review 2026-07-21)."""
+    def test_inline_and_bold_rules(self):
+        html = contracts.render_clauses_html([
+            ('Definitions', '', 0),
+            ('In this Agreement', '', 1),
+            ('', 'Agreement means this document.', 2),
+        ])
+        # level 0: bold number AND bold heading
+        self.assertIn('<b>1.</b>', html)
+        self.assertIn('<b>Definitions</b>', html)
+        # level 1: number in a plain span (NOT bold); heading not bold
+        self.assertIn('<span>1.1</span>', html)
+        self.assertNotIn('<b>1.1</b>', html)
+        self.assertNotIn('<b>In this Agreement</b>', html)
+        # level 2: roman number not bold, body INLINE in the same div (not a separate line)
+        self.assertIn('<span>i)</span> Agreement means this document.', html)
+
+    def test_escapes_and_honours_bold_marker(self):
+        html = contracts.render_clauses_html([('R&D terms', 'a **strong** point', 0)])
+        self.assertIn('R&amp;D terms', html)     # escaped
+        self.assertIn('<b>strong</b>', html)     # **..** honoured
+
+
+class TestCounterpartyExtraction(TestCase):
+    def test_extracts_name_nric_address(self):
+        preamble = ('This Agreement is made on [Date] between Jane Doe, NRIC 800101-01-1234, '
+                    'of 12 Jalan Test, 50000 KL ("Donor"), and {{student_name}}.')
+        cp = contracts._extract_counterparty(preamble)
+        self.assertEqual(cp['name'], 'Jane Doe')
+        self.assertEqual(cp['nric'], '800101-01-1234')
+        self.assertIn('12 Jalan Test', cp['address'])
+        self.assertNotIn('Donor', cp['address'])   # address stops before the ("Donor") marker
+
+    def test_no_match_returns_blanks(self):
+        self.assertEqual(contracts._extract_counterparty('No recital here.'),
+                         {'name': '', 'nric': '', 'address': ''})
+
+    def test_config_accepts_counterparty_address(self):
+        d = seed_draft('2027-cp-addr')
+        contracts.update_config(d, counterparty_address='12 Jalan Test, 50000 KL')
+        d.refresh_from_db()
+        self.assertEqual(d.counterparty_address, '12 Jalan Test, 50000 KL')

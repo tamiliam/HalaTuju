@@ -4358,6 +4358,7 @@
       "counterpartyName": "Counterparty name",
       "counterpartyTitle": "Counterparty title",
       "counterpartyNric": "Counterparty NRIC",
+      "counterpartyAddress": "Counterparty address",
       "notifyEmails": "Countersign notify emails (comma-separated)",
       "parentRole": "Parent/guardian role",
       "coSignerAll": "Co-signer — all students",
