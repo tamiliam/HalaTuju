@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Vircle — 48-hour activation request to Vircle (dark) — 2026-07-22
+
+A scheduled reminder that emails Vircle the eWallet accounts a student has installed but that
+Vircle hasn't switched on yet. **DARK behind `VIRCLE_ACTIVATION_ENABLED` (default OFF); no migration.**
+
+- **Added — `sheets.read_sheet_values(spreadsheet_id, range)`** — the first inbound Google-Sheet
+  READ helper (`spreadsheets().values().get`, reusing the SA's `spreadsheets` scope), plus
+  **`sheets.file_csv_to_folder(folder_path, filename, text)`** (generalises the payments CSV filer).
+- **Added — `vircle.pending_activation_rows()` / `activation_csv_text()`** — reads the relay sheet
+  and returns the accounts with an **eWallet ID present AND the owner's manual "Activated On"
+  column blank** (installed-but-not-activated); columns located by header name.
+- **Added — `emails.send_vircle_activation_email(rows)`** — to `VIRCLE_ACTIVATION_EMAIL` (else the
+  payments contact `gokula@vircle.com`), plain-text list + CSV attached, **Bcc a reference mailbox**
+  (`VIRCLE_ACTIVATION_BCC`, else `ADMIN_NOTIFY_EMAIL`).
+- **Added — `vircle_activation_request` command** (`--dry-run`) + cron slug
+  **`vircle-activation-request`**. Reads → filters → if any: emails Vircle + **files the CSV to
+  `01 BrightPath/03 Vircle/03 Activation`** for the record (owner's A+B). Empty set → sends nothing.
+- **Settings:** `VIRCLE_ACTIVATION_ENABLED` / `_EMAIL` / `_BCC` / `_FOLDER`. +7 tests.
+- **Verified** live via `--dry-run` against the sheet (found the 1 current pending account, sent
+  nothing). **▶ AT DEPLOY:** push (api rebuild; code-only, no migrate-first). **▶ OWNER to go live:**
+  create the Drive folder `01 BrightPath/03 Vircle/03 Activation`; create Cloud Scheduler
+  `halatuju-vircle-activation-request` (48h → `/cron/vircle-activation-request/`); set
+  `VIRCLE_ACTIVATION_ENABLED=1` after a real-send check.
+
 ## Fix — admin invite form lost input focus after each keystroke — 2026-07-21
 
 - **Fixed** — on `/admin/administration`, the invite form (Invite-as role / name / email) dropped focus
