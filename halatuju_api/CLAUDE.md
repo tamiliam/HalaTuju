@@ -529,6 +529,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 breakdown (a pie, or its own tab). Owner will say when. Also pending: Tamil review of the `myStudents.status.*`
 / `journey.withdrew` / `myStudents.detail.*` first-drafts.
 
+**✅ SHIPPED + LIVE + ACTIVATED 2026-07-21 — 48h Vircle activation request + 2 cockpit fixes.**
+NO migration; api+web; deployed and the flag is ON. Retro
+`docs/retrospective-2026-07-21-vircle-activation.md`; decisions ×2; lessons ×2.
+- **48h activation cron** (`vircle_activation_request`; cron slug `vircle-activation-request`; Cloud
+  Scheduler `halatuju-vircle-activation-request`, `0 9 */2 * *` Asia/KL): reads the `Vircle_account`
+  relay sheet and emails Vircle the accounts INSTALLED (eWallet ID present) but NOT activated (the
+  owner's MANUAL "Activated On" column blank), CSV attached; Bcc reference + CSV archived to
+  `01 BrightPath/03 Vircle/03 Activation`. NEW `sheets.read_sheet_values` (first inbound sheet READ) +
+  `file_csv_to_folder`; `vircle.pending_activation_rows`/`activation_csv_text`;
+  `emails.send_vircle_activation_email`. Behind `VIRCLE_ACTIVATION_ENABLED` (now `1`) — verified via
+  dry-run + a flag-off cron trigger + an owner preview email BEFORE flipping. +7 tests. Activation is
+  tracked ONLY in the manual sheet column (Vircle reports nothing back — see decisions).
+- **Invite form focus fix** (`Section` hoisted to module scope; it was remounting the inputs each
+  keystroke) + **own-words toggle Show/Hide** (`ownWords.hide`, en/ms/ta).
+- **Data ops (one-time):** 8 offline-onboarded students backfilled (Emailed 28/06 / Confirmed 29/06 /
+  Mobile) + all mobiles normalised to E.164 (matches the Action-Centre `normalise_msisdn`); RM10,000
+  credit to sponsor Goban Arasu (Donation id 6). **▶ CARRY:** Malay/Tamil first-drafts on the new
+  cockpit strings; the cron depends on the owner keeping "Activated On" current.
+
 **✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `ad52c799`) — Sponsored-student detail page (Sprint 2).** My-students
 cards now LINK to a read-only `/sponsor/my-students/[id]` — header, single status badge, journey (with a
 "Withdrew" stop for discontinued), your commitment, the FULL anon profile (react-markdown), and a reserved

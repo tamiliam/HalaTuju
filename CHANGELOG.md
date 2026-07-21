@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit — own-words toggle alternates Show/Hide; Vircle relay data ops — 2026-07-21
+
+- **Changed** — the officer cockpit "student's own words" reveal toggle now reads **"Hide the
+  student's own words"** when open and **"Show…"** when closed (new `ownWords.hide`, en/ms/ta),
+  instead of a static label. Web-only.
+- **Data ops (one-time, no code):** the Vircle relay sheet (`Vircle_account`) was reconciled for the
+  8 offline-onboarded activated students — a resolved `vircle_setup_pending` record per student
+  (Emailed 28/06, Confirmed 29/06, Mobile = system phone), then all 8 mobiles normalised to the
+  Action-Centre **E.164 (`+60…`)** form via `normalise_msisdn` so the column is uniform. Sponsor
+  **Goban Arasu** credited **RM10,000** (Donation id 6, manual-credit convention).
+
 ## Admin — Sponsors moved into Administration, with a pending-approval badge — 2026-07-21
 
 - **Changed** — **Sponsors** is no longer a top-level admin nav item; it now lives inside the
