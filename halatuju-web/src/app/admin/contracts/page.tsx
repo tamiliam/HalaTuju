@@ -6,6 +6,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import {
   getContractTemplates, createContractTemplate, importContractDocx, putContractClauses,
+  updateContractConfig,
   type ContractTemplateSummary, type ContractStatus,
 } from '@/lib/admin-api'
 
@@ -70,10 +71,15 @@ export default function ContractsListPage() {
       // failure still leaves a usable blank draft (the author imports/edits in the editor).
       if (source === 'upload' && file) {
         try {
-          const { clauses } = await importContractDocx(created.id, file, { token: token! })
+          const { clauses, title, preamble } = await importContractDocx(created.id, file, { token: token! })
           await putContractClauses(created.id, clauses.map((c) => ({
             level: c.level, heading_en: c.heading, body_en: c.body,
           })), { token: token! })
+          // A brand-new draft has a blank title/preamble, so fill them from the document.
+          const patch: Record<string, unknown> = {}
+          if (title) patch.title_en = title
+          if (preamble) patch.preamble_en = preamble
+          if (Object.keys(patch).length) await updateContractConfig(created.id, patch, { token: token! })
         } catch { /* soft-fail — blank draft created; author can import/hand-edit */ }
       }
       router.push(`/admin/contracts/${created.id}`)

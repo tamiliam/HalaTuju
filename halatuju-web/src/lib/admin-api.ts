@@ -1649,7 +1649,10 @@ export async function fetchContractPreviewHtml(id: number, locale: string, optio
 }
 /** Import a .docx → a PROPOSED [{heading, body, level}] clause list (nothing saved; file not retained). */
 export async function importContractDocx(
-  id: number, file: File, options?: ApiOptions): Promise<{ clauses: Array<{ heading: string; body: string; level: number }> }> {
+  id: number, file: File, options?: ApiOptions): Promise<{
+    clauses: Array<{ heading: string; body: string; level: number }>
+    title: string; preamble: string
+  }> {
   const headers: Record<string, string> = {}
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
   const form = new FormData()

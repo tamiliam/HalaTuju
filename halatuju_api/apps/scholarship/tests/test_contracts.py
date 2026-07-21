@@ -379,9 +379,13 @@ class TestClauseHierarchy(TestCase):
         self.assertIn('Eligibility', prompt)
         self.assertIn('Instalment', prompt)
 
+    @patch('apps.scholarship.contracts._docx_structure', return_value=None)
     @patch('apps.scholarship.contracts._extract_docx_text', return_value='doc text')
     @patch('google.genai.Client')
-    def test_segment_docx_returns_normalised_levels(self, mock_cls, _extract):
+    def test_segment_docx_gemini_fallback_returns_normalised_levels(
+            self, mock_cls, _extract, _struct):
+        # An unstyled doc (_docx_structure → None) falls back to Gemini; the proposed
+        # levels are still normalised (no skipping) and returned under 'clauses'.
         segments = json.dumps([
             {'heading': 'A', 'body': 'a', 'level': 0},
             {'heading': 'B', 'body': 'b', 'level': 2},   # skip → 1
@@ -390,7 +394,9 @@ class TestClauseHierarchy(TestCase):
         cls, _ = _mock_genai(segments)
         mock_cls.side_effect = cls
         got = contracts.segment_docx(b'x')
-        self.assertEqual([c['level'] for c in got], [0, 1, 1])
+        self.assertEqual([c['level'] for c in got['clauses']], [0, 1, 1])
+        self.assertEqual(got['title'], '')
+        self.assertEqual(got['preamble'], '')
 
     def test_render_shows_computed_numbers(self):
         from apps.scholarship import bursary
@@ -413,3 +419,130 @@ class TestClauseHierarchy(TestCase):
         self.assertIn('>1.<', html)     # top-level number
         self.assertIn('>1.1<', html)    # sub-clause
         self.assertIn('>i)<', html)     # sub-sub-clause (roman)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Word import — deterministic structural parse (2026-07-21)
+# ─────────────────────────────────────────────────────────────────────────────
+def _list_para(para, num_id, ilvl):
+    """Attach Word list numbering (numId/ilvl) to a paragraph — the numbering that
+    _docx_structure reads and that paragraph.text does NOT contain."""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    pPr = para._p.get_or_add_pPr()
+    numPr = OxmlElement('w:numPr')
+    ilvl_el = OxmlElement('w:ilvl'); ilvl_el.set(qn('w:val'), str(ilvl))
+    numId_el = OxmlElement('w:numId'); numId_el.set(qn('w:val'), str(num_id))
+    numPr.append(ilvl_el); numPr.append(numId_el)
+    pPr.append(numPr)
+    return para
+
+
+def _sample_agreement_bytes():
+    """A .docx mirroring the real 'Donor–Student Conditional Agreement' structure:
+    Title, a preamble with hand-typed brackets, two top clauses each with a full-sentence
+    sub-clause and a couple of roman list items."""
+    import io as _io
+    from docx import Document
+    doc = Document()
+    doc.add_paragraph('Donor–Student Conditional Agreement', style='Title')
+    doc.add_paragraph(
+        'This Agreement is made between [Student Full Name & NRIC] of [Student Address].')
+    _list_para(doc.add_paragraph('Definitions and Interpretation', style='Heading 1'), 6, 0)
+    _list_para(doc.add_paragraph(
+        'In this Agreement the following expressions have the meanings below.',
+        style='Heading 1'), 6, 1)
+    _list_para(doc.add_paragraph('"Agreement" means this agreement.'), 4, 0)
+    _list_para(doc.add_paragraph('"Bursary" means the sum awarded.'), 4, 0)
+    _list_para(doc.add_paragraph('Student Obligations', style='Heading 1'), 6, 0)
+    _list_para(doc.add_paragraph('The Student agrees to:', style='Heading 1'), 6, 1)
+    _list_para(doc.add_paragraph('attend all classes.'), 8, 0)
+    _list_para(doc.add_paragraph('maintain the progress standard.'), 8, 0)
+    buf = _io.BytesIO(); doc.save(buf)
+    return buf.getvalue()
+
+
+class TestDocxStructure(TestCase):
+    def test_parses_hierarchy_from_word_numbering(self):
+        got = contracts.segment_docx(_sample_agreement_bytes())
+        self.assertEqual([c['level'] for c in got['clauses']],
+                         [0, 1, 2, 2, 0, 1, 2, 2])
+        headings = [c['heading'] for c in got['clauses']]
+        self.assertEqual(headings[0], 'Definitions and Interpretation')
+        self.assertEqual(headings[4], 'Student Obligations')
+        # roman-level items carry the text in the body, not the heading
+        self.assertEqual(got['clauses'][2]['heading'], '')
+        self.assertIn('"Agreement" means', got['clauses'][2]['body'])
+
+    def test_captures_title_and_preamble(self):
+        got = contracts.segment_docx(_sample_agreement_bytes())
+        self.assertEqual(got['title'], 'Donor–Student Conditional Agreement')
+        self.assertIn('This Agreement is made', got['preamble'])
+
+    def test_converts_bracket_placeholders_to_tokens(self):
+        got = contracts.segment_docx(_sample_agreement_bytes())
+        # a recognised bracket → token; an unrecognised one is left verbatim
+        self.assertIn('{{student_name}} ({{student_nric}})', got['preamble'])
+        self.assertIn('[Student Address]', got['preamble'])
+
+    def test_unstyled_doc_yields_none_from_structure(self):
+        import io as _io
+        from docx import Document
+        doc = Document()
+        doc.add_paragraph('1. Some clause with a hand-typed number and no styles.')
+        doc.add_paragraph('2. Another one.')
+        buf = _io.BytesIO(); doc.save(buf)
+        self.assertIsNone(contracts._docx_structure(buf.getvalue()))
+
+
+class TestSubstituteVars(TestCase):
+    def test_fills_known_leaves_unknown(self):
+        ctx = {'student_name': 'Aisha', 'institution': ''}
+        out = contracts.substitute_vars(
+            'For {{student_name}} at {{institution}} — {{mystery}}.', ctx)
+        # known-with-value filled; known-but-empty → blank; unknown → verbatim
+        self.assertEqual(out, 'For Aisha at  — {{mystery}}.')
+
+    def test_tolerates_whitespace_and_empty(self):
+        self.assertEqual(contracts.substitute_vars('{{ student_name }}',
+                                                   {'student_name': 'B'}), 'B')
+        self.assertEqual(contracts.substitute_vars('', {'x': 'y'}), '')
+
+
+class TestContractRenderRich(TestCase):
+    """Bold (**…**) and {{variable}} substitution in the rendered agreement."""
+    def _render(self, body_en):
+        from apps.scholarship import bursary
+        d = seed_draft('2027-rich-d')
+        contracts.replace_clauses(d, [{'heading_en': 'Terms', 'body_en': body_en, 'level': 0}])
+        cohort = ScholarshipCohort.objects.create(
+            code='rc', name='B40', year=2026, owning_organisation=d.organisation)
+        prof = StudentProfile.objects.create(
+            supabase_user_id='rs', name='S', nric='000101-10-1233')
+        app = ScholarshipApplication.objects.create(
+            cohort=cohort, profile=prof, status='awarded',
+            notify_email='s@e.test', award_amount=3000)
+        p = {'award_amount': 3000, 'payment_schedule': 'x', 'institution_name': 'Universiti X',
+             'course_name': 'N', 'commencement_date': None, 'progress_standard': 'Pass',
+             'foundation_signatory_name': 'F', 'foundation_signatory_title': 't',
+             'foundation_signatory_nric': ''}
+        return bursary.render_agreement_html(
+            app, p, student={'name': 'Aisha Binti Ali', 'nric': 'x', 'signed_at': None},
+            guarantor={'name': 'G', 'nric': 'y', 'relationship': 'father', 'signed_at': None},
+            foundation={'name': 'F', 'title': 't', 'nric': '', 'signed_at': None},
+            witness={'by': '', 'org': '', 'signed_at': None}, template=d)
+
+    def test_bold_marker_becomes_b_tag(self):
+        html = self._render('The **Bursary** is conditional.')
+        self.assertIn('<b>Bursary</b>', html)
+        self.assertNotIn('**Bursary**', html)
+
+    def test_variable_is_substituted(self):
+        html = self._render('Awarded to {{student_name}} at {{institution}}.')
+        self.assertIn('Aisha Binti Ali', html)
+        self.assertIn('Universiti X', html)
+        self.assertNotIn('{{student_name}}', html)
+
+    def test_unknown_variable_left_visible(self):
+        html = self._render('Ref {{not_a_real_var}} here.')
+        self.assertIn('{{not_a_real_var}}', html)

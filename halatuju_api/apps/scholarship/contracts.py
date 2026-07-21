@@ -96,6 +96,70 @@ def clause_numbers(levels):
     return labels
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Merge variables (2026-07-21): {{token}} placeholders an author writes into a clause
+# / heading / preamble, resolved to the case's real values at RENDER time (never stored
+# resolved — the template keeps the generic token, the signed snapshot gets the value).
+# The registry is the single source of truth the editor's "Insert variable" menu reads.
+# ─────────────────────────────────────────────────────────────────────────────
+CONTRACT_VARS = (
+    ('student_name', "The student's full name"),
+    ('student_nric', "The student's NRIC"),
+    ('guarantor_name', "The guarantor / parent-guardian's name"),
+    ('guarantor_relationship', 'The guarantor relationship (e.g. father)'),
+    ('donor_name', 'The donor / sponsor name (from the template config)'),
+    ('amount', 'The bursary amount (e.g. RM3,000)'),
+    ('institution', 'The institution name'),
+    ('course', 'The course / programme name'),
+    ('commencement_date', 'The course commencement date'),
+    ('progress_standard', 'The academic progress standard'),
+)
+_VAR_RE = re.compile(r'\{\{\s*(\w+)\s*\}\}')
+
+
+def substitute_vars(text, context):
+    """Replace ``{{token}}`` placeholders with values from ``context``. A KNOWN token with
+    no value renders empty; an UNKNOWN token is left VERBATIM — a stray ``{{typo}}`` stays
+    visible in the document (obviously fixable) rather than becoming a silent blank."""
+    if not text:
+        return text
+
+    def _repl(m):
+        key = m.group(1)
+        if key in context:
+            val = context[key]
+            return '' if val is None else str(val)
+        return m.group(0)
+
+    return _VAR_RE.sub(_repl, text)
+
+
+# Bracket placeholders authors hand-type in Word (e.g. "[Student Full Name & NRIC]") →
+# our tokens, applied on import. Only mappings with reliable backing data are listed;
+# an unrecognised bracket (e.g. "[Date]", "[Student Address]") is left untouched for the
+# author to resolve, never converted into a dangling token.
+_BRACKET_VARS = {
+    'student full name & nric': '{{student_name}} ({{student_nric}})',
+    'student full name and nric': '{{student_name}} ({{student_nric}})',
+    'student name & nric': '{{student_name}} ({{student_nric}})',
+    'student full name': '{{student_name}}',
+    'student name': '{{student_name}}',
+    'student nric': '{{student_nric}}',
+    'institution': '{{institution}}',
+    'course': '{{course}}',
+}
+_BRACKET_RE = re.compile(r'\[([^\[\]]+)\]')
+
+
+def _brackets_to_vars(text):
+    """Convert an author's hand-typed ``[Bracket Placeholder]`` to the matching ``{{token}}``
+    (import-time sugar). Unrecognised brackets are preserved verbatim."""
+    if not text:
+        return text
+    return _BRACKET_RE.sub(
+        lambda m: _BRACKET_VARS.get(m.group(1).strip().lower(), m.group(0)), text)
+
+
 class ContractsError(Exception):
     """Raised by the service with a machine code for the view (e.g. 'not_draft',
     'version_exists', 'deploy_forbidden', 'not_deployable')."""
@@ -422,6 +486,97 @@ def _extract_docx_text(data):
     return text
 
 
+def _para_numbering(para):
+    """``(numId, ilvl)`` from a paragraph's direct list formatting, or ``(None, None)``.
+    Word's visible numbers (``1.``, ``1.1``, ``i)``) come from this list definition, NOT
+    from ``paragraph.text`` — so this is how the structure is actually read. A missing
+    ``ilvl`` element means level 0."""
+    try:
+        numPr = para._p.pPr.numPr
+    except AttributeError:
+        return None, None
+    if numPr is None:
+        return None, None
+    numId = numPr.numId.val if numPr.numId is not None else None
+    ilvl = numPr.ilvl.val if numPr.ilvl is not None else None
+    return numId, ilvl
+
+
+def _docx_structure(data):
+    """Deterministically parse a Word ``.docx`` into our clause hierarchy using the
+    document's OWN heading styles + list levels — no AI guess. Returns
+    ``{'title': str, 'preamble': str, 'clauses': [{heading, body, level}]}`` or ``None``
+    when the document has no usable heading structure (an unstyled / hand-numbered doc),
+    so the caller can fall back to Gemini segmentation.
+
+    The old text-only path lost structure because Word GENERATES the ``1.`` / ``1.1`` /
+    ``i)`` labels from the style + list definition — they are not in ``paragraph.text``.
+    Here we read that definition directly:
+
+    * ``Title`` style                     → the agreement title.
+    * a plain paragraph before clause 1   → preamble / parties recital.
+    * a ``Heading N`` paragraph           → a clause; its level is the paragraph's list
+      level (``ilvl``) when present, else ``N-1`` (Heading 1→0, Heading 2→1, Heading 3→2).
+    * a plain paragraph carrying a list    → an item nested one level UNDER the current
+      heading (so a definition/obligation list renders ``i) ii) …``).
+    * a plain un-numbered paragraph after a clause → continuation body of that clause.
+
+    Levels pass through :func:`normalise_levels` (the no-skip guard)."""
+    try:
+        import docx
+    except ImportError:
+        raise ContractsError('docx_unavailable')
+    import io as _io
+    try:
+        document = docx.Document(_io.BytesIO(data))
+    except Exception:
+        raise ContractsError('docx_unreadable')
+
+    title = ''
+    preamble = []
+    clauses = []
+    current_heading_level = 0
+    saw_clause = False
+    for para in document.paragraphs:
+        text = (para.text or '').strip()
+        if not text:
+            continue
+        style = (para.style.name if para.style else '') or ''
+        numId, ilvl = _para_numbering(para)
+        if style == 'Title':
+            if not title:
+                title = text
+            continue
+        if style.startswith('Heading'):
+            if ilvl is not None:
+                level = ilvl
+            else:
+                m = re.search(r'(\d+)', style)
+                level = (int(m.group(1)) - 1) if m else 0
+            level = max(0, min(MAX_CLAUSE_LEVEL, level))
+            clauses.append({'heading': text, 'body': '', 'level': level})
+            current_heading_level = level
+            saw_clause = True
+        elif numId is not None:
+            level = min(MAX_CLAUSE_LEVEL, current_heading_level + 1) if saw_clause else 0
+            clauses.append({'heading': '', 'body': text, 'level': level})
+            saw_clause = True
+        elif not saw_clause:
+            preamble.append(text)
+        elif clauses:
+            last = clauses[-1]
+            last['body'] = (last['body'] + '\n\n' + text) if last['body'] else text
+
+    # Only usable if the document actually carried headings; otherwise it is an unstyled
+    # doc and the AI fallback will read it better than this structural walk would.
+    if not clauses or not any(c['heading'] for c in clauses):
+        return None
+    levels = normalise_levels([c['level'] for c in clauses])
+    for c, lv in zip(clauses, levels):
+        c['level'] = lv
+    return {'title': title, 'preamble': '\n\n'.join(preamble).strip(), 'clauses': clauses}
+
+
 def _build_segment_prompt(text):
     return (
         'You segment the plain text of a bursary-agreement document into its numbered '
@@ -467,16 +622,27 @@ def _parse_segments(raw):
 
 
 def segment_docx(data, *, model=None):
-    """Extract a .docx's text and segment it into a proposed [{heading, body}] clause
-    list via Gemini (same seam + CONTRACT_QUIZ_MODEL as generate_quiz; mocked in tests,
-    never live in CI). Returns the PROPOSAL only — nothing is saved and the file is not
-    retained; the caller reviews it and, on confirm, calls replace_clauses. Raises
-    ContractsError (docx_unreadable / docx_empty / segmentation_failed / …) so the FE
-    can degrade to hand-editing."""
-    text = _extract_docx_text(data)
-    model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
-    raw = _gemini_generate(_build_segment_prompt(text), model)
-    return _parse_segments(raw)
+    """Propose a draft's structure from an author's ``.docx``. Tries the DETERMINISTIC
+    parse of the document's own heading/list numbering first (:func:`_docx_structure`) —
+    which reads the real ``1.`` / ``1.1`` / ``i)`` hierarchy Word generates — and only an
+    unstyled document falls back to Gemini segmentation of its flat text.
+
+    Returns ``{'title': str, 'preamble': str, 'clauses': [{heading, body, level}]}`` — the
+    PROPOSAL only; nothing is saved and the upload is not retained (the caller reviews it
+    and, on confirm, calls replace_clauses / update_config). Hand-typed bracket placeholders
+    are converted to ``{{tokens}}``. Raises ContractsError (docx_unreadable / docx_empty /
+    segmentation_failed / …) so the FE can degrade to hand-editing."""
+    structured = _docx_structure(data)
+    if structured is None:
+        text = _extract_docx_text(data)
+        model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+        raw = _gemini_generate(_build_segment_prompt(text), model)
+        structured = {'title': '', 'preamble': '', 'clauses': _parse_segments(raw)}
+    structured['preamble'] = _brackets_to_vars(structured.get('preamble', ''))
+    for c in structured['clauses']:
+        c['heading'] = _brackets_to_vars(c['heading'])
+        c['body'] = _brackets_to_vars(c['body'])
+    return structured
 
 
 # ─────────────────────────────────────────────────────────────────────────────
