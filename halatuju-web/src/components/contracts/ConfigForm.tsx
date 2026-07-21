@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { updateContractConfig, type ContractTemplateDetail } from '@/lib/admin-api'
 import { CLocale, LangTabs, inputCls, btnPrimary } from './shared'
@@ -19,6 +19,7 @@ export default function ConfigForm(
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const topRef = useRef<HTMLDivElement>(null)
 
   const set = (k: keyof ContractTemplateDetail, v: unknown) => setF((prev) => ({ ...prev, [k]: v }))
   const L = (base: string) => `${base}_${lang}` as keyof ContractTemplateDetail
@@ -32,7 +33,8 @@ export default function ConfigForm(
         progress_standard_en: f.progress_standard_en, progress_standard_ms: f.progress_standard_ms,
         progress_standard_ta: f.progress_standard_ta,
         counterparty_name: f.counterparty_name, counterparty_title: f.counterparty_title,
-        counterparty_nric: f.counterparty_nric, counterparty_notify_emails: f.counterparty_notify_emails,
+        counterparty_nric: f.counterparty_nric, counterparty_address: f.counterparty_address,
+        counterparty_notify_emails: f.counterparty_notify_emails,
         parent_role: f.parent_role, witness_policy: f.witness_policy,
       }
       const updated = await updateContractConfig(template.id, patch, { token })
@@ -41,10 +43,12 @@ export default function ConfigForm(
       setErr((e as Error)?.message || t('admin.contracts.actionFailed'))
     }
     setSaving(false)
+    requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   return (
     <div className="space-y-6">
+      <div ref={topRef} className="scroll-mt-4" />
       <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2">{t('admin.contracts.englishAuthoritative')}</p>
       {err && <div className="rounded-lg p-3 bg-red-50 border border-red-200 text-red-600 text-sm">{err}</div>}
       {msg && <div className="rounded-lg p-3 bg-green-50 border border-green-200 text-green-700 text-sm">{msg}</div>}
@@ -84,6 +88,11 @@ export default function ConfigForm(
           <span className="text-xs font-medium text-gray-600">{t('admin.contracts.counterpartyNric')}</span>
           <input className={inputCls} disabled={!draft} value={f.counterparty_nric}
             onChange={(e) => set('counterparty_nric', e.target.value)} />
+        </label>
+        <label className="block sm:col-span-2">
+          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.counterpartyAddress')}</span>
+          <textarea rows={2} className={inputCls} disabled={!draft} value={f.counterparty_address || ''}
+            onChange={(e) => set('counterparty_address', e.target.value)} />
         </label>
         <label className="block">
           <span className="text-xs font-medium text-gray-600">{t('admin.contracts.notifyEmails')}</span>

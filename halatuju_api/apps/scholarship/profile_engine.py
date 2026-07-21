@@ -73,7 +73,14 @@ DEFAULT_LANGUAGE = 'English'
 #                  fees (#110: "enabling her to secure a laptop"). (b) A below-B40-line case now gets a
 #                  positive B40-VERIFIED income context (_BELOW_LINE_AFFIRM) so the model can't invent
 #                  an "above the standard B40 threshold" claim (#20, RM4,064 < RM5,860 ceiling).
-PROMPT_VERSION = '2026-07-08.2'
+#   2026-07-21.1 — EVERGREEN + sense-of-time (both prompts). Gemini has no innate "now" and read
+#                  mid-2026 as the future, writing a live date countdown + wrong relative timing
+#                  ("is due to report on 12 July 2026"; "applications open only after her course
+#                  begins"). Now (a) TODAY'S date is passed in (`_today_str` → `_EVERGREEN`) so tense/
+#                  ordering is correct, and (b) a TIME & DATES rule requires date-proof phrasing — a
+#                  reporting/intake date stated as a plain fact of WHEN the place begins, never a
+#                  countdown or cross-event relative timing — so a profile doesn't age between reads.
+PROMPT_VERSION = '2026-07-21.1'
 
 # Shared narrative + privacy instructions (the same single profile for reviewer + sponsor).
 _STYLE = (
@@ -154,6 +161,33 @@ _ASSISTANCE_NATURE = (
     "the student's living costs, never as funding a specific purchase in full."
 )
 
+# Owner 2026-07-21 — the profile must not go STALE as months pass (a sponsor may read it long after
+# it was written). Gemini has no innate sense of "now" — it read mid-2026 as the future and wrote a
+# live countdown + wrong relative timing ("is due to report on 12 July 2026"; "applications open only
+# after her course begins"). So (a) we give it TODAY'S date to fix tense/ordering, and (b) require
+# evergreen phrasing. Templated on {today}.
+_EVERGREEN = (
+    "TIME & DATES — write so this profile does NOT age; a sponsor may read it months after it was "
+    "written. Today's date is {today}; use it ONLY to keep your tenses and any before/after reasoning "
+    "correct — never quote it, and never say how long until or since something happens. State a "
+    "confirmed reporting or intake date as a plain fact of WHEN the place begins (for example 'with a "
+    "confirmed place beginning in July 2026'), NOT as a live countdown ('is due to report on 12 July "
+    "2026') and NOT as still-upcoming or already-past. Do NOT reason about the timing of one event "
+    "relative to another (avoid 'applications open only after her course begins') — state each plainly "
+    "(for example 'plans to apply for a PTPTN loan once applications open'). Do NOT anchor the reader "
+    "to 'this year' or 'next month'. Prefer evergreen, tenseless phrasing that stays true whenever it "
+    "is read."
+)
+
+
+def _today_str():
+    """Today's date as a plain 'DD Month YYYY' string, fed to the prompt so the model reasons about
+    time correctly (it has no innate 'now'). UTC-based (approximate day is all the model needs);
+    Windows-safe (no %-d)."""
+    from django.utils import timezone
+    return timezone.now().strftime('%d %B %Y')
+
+
 PROFILE_PROMPT = """You are writing the profile of a B40 student applying for education \
 financial assistance in Malaysia. It is read first by the reviewer assessing the application, \
 and later by a prospective sponsor.
@@ -164,6 +198,8 @@ LANGUAGE — the student's own words below may be in Malay, English, or Tamil (o
 understand their meaning whichever language they are in, and write the profile in {target_language}.
 
 {style}
+
+{evergreen}
 
 {coverage}
 
@@ -206,7 +242,7 @@ Parents'/guardians' occupation: {parents_occupation}
 Siblings currently studying: {siblings_studying}
 
 Pathway / programme (use the confirmed place when present): {pathway}
-Reporting / enrolment date (when the student must report to begin; state it if given): {reporting_date}
+Reporting / enrolment date (WHEN the place begins — if given, state it as a plain fact per the TIME & DATES rule, never as a countdown): {reporting_date}
 Top course choices (student's ranking): {top_choices}
 While still deciding (student's words): {deliberation}
 Other scholarships applied for / held: {other_scholarships}
@@ -667,6 +703,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
     return PROFILE_PROMPT.format(
         redaction=_REDACTION.format(alias=alias),
         style=_STYLE,
+        evergreen=_EVERGREEN.format(today=_today_str()),
         coverage=_COVERAGE,
         assistance_nature=_ASSISTANCE_NATURE,
         target_language=target_language,
@@ -722,6 +759,8 @@ and write the profile in {target_language}.
 
 {style}
 
+{evergreen}
+
 {coverage}
 
 {assistance_nature}
@@ -745,7 +784,8 @@ Do NOT state any monetary amount or recommended sum — that figure is shown sep
 instead describe concretely what the support would help the student with. Do NOT advocate or use \
 recommendation language ("strongly recommended", "a deserving candidate"). Do NOT print a raw \
 pass/fail list and never contradict the verdict.
-- If the draft states a reporting / enrolment date, keep it in the pathway part of the narrative.
+- If the draft states a reporting / enrolment date, keep it in the pathway part — but as a plain \
+fact of when the place begins, per the TIME & DATES rule (never a live countdown or relative timing).
 - Use ONLY the inputs below; do not invent facts. It must read as one final profile, not a draft \
 with notes bolted on.
 
@@ -906,6 +946,7 @@ def refine_sponsor_profile(application, draft, session, language=None):
     prompt = REFINE_PROMPT.format(
         redaction=_REDACTION.format(alias=_alias(application)),
         style=_STYLE,
+        evergreen=_EVERGREEN.format(today=_today_str()),
         coverage=_COVERAGE,
         assistance_nature=_ASSISTANCE_NATURE,
         pronouns=_pronouns(application),

@@ -24,10 +24,19 @@ export default function TemplatePreview({ template, token }: { template: Contrac
   useEffect(() => { load(lang) }, [lang, load])
 
   const openPdf = async () => {
+    setErr(null)
+    // Open the tab SYNCHRONOUSLY inside the click gesture, then point it at the blob once
+    // it's ready — a window.open() after `await` is treated as an unsolicited popup and blocked.
+    const win = window.open('', '_blank')
     try {
       const blob = await fetchContractPreviewPdf(template.id, lang, { token })
-      window.open(URL.createObjectURL(blob), '_blank')
-    } catch { setErr(t('admin.contracts.previewFailed')) }
+      const url = URL.createObjectURL(blob)
+      if (win) win.location.href = url
+      else window.open(url, '_blank')   // popup blocked outright — best-effort retry
+    } catch {
+      if (win) win.close()
+      setErr(t('admin.contracts.pdfFailed'))
+    }
   }
 
   return (

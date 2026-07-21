@@ -143,7 +143,8 @@ export default function MyGivingPage() {
               const offered = sp.status === 'offered'
               const discontinued = st.portfolio_status === 'discontinued'
               return (
-                <div key={sp.id} className={`rounded-2xl border p-4 ${offered ? 'bg-gray-50' : 'bg-white'}`}>
+                <Link key={sp.id} href={`/sponsor/my-students/${st.id}`}
+                  className={`block rounded-2xl border p-4 transition-colors hover:border-blue-300 ${offered ? 'bg-gray-50' : 'bg-white'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-mono text-sm font-semibold text-gray-900">{st.ref}</span>
                     {offered
@@ -166,7 +167,7 @@ export default function MyGivingPage() {
                   {!offered && (
                     <JourneyTracker onboarded={sp.onboarded} state={st.progress_state} semesters={sp.semesters} discontinued={discontinued} t={t} />
                   )}
-                </div>
+                </Link>
               )
             })}
           </div>

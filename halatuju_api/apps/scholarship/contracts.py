@@ -37,6 +37,7 @@ _CONFIG_FIELDS = (
     'preamble_en', 'preamble_ms', 'preamble_ta',
     'progress_standard_en', 'progress_standard_ms', 'progress_standard_ta',
     'counterparty_name', 'counterparty_title', 'counterparty_nric',
+    'counterparty_address',
     'counterparty_notify_emails', 'parent_role', 'parent_pin_required',
     'witness_policy',
 )
@@ -44,6 +45,24 @@ _CONFIG_FIELDS = (
 # Clause hierarchy (2026-07-19): three levels — 0 clause, 1 sub-clause, 2 sub-sub-clause.
 MAX_CLAUSE_LEVEL = 2
 _ROMAN = ((10, 'x'), (9, 'ix'), (5, 'v'), (4, 'iv'), (1, 'i'))
+
+# ContractClause.heading_* is CharField(max_length=255); body_* is TextField (unlimited).
+# HEADING_MAX_LEN is the hard DB limit (the save guard); a "heading" longer than
+# HEADING_TITLE_MAX is treated as a SENTENCE (clause body), not a short title — real docs
+# style full sub-clauses as a Heading, which would otherwise overflow the column (TD, 2026-07-21).
+HEADING_MAX_LEN = 255
+HEADING_TITLE_MAX = 120
+
+
+def _fit_heading(heading, body):
+    """Keep a clause heading inside the varchar(255) column: a heading longer than the limit
+    is not a title — fold it into the body (lossless) so a save can NEVER overflow, whatever
+    the source (import, Gemini, hand-typed, copy-from). Returns (heading, body)."""
+    heading = (heading or '').strip()
+    body = body or ''
+    if len(heading) <= HEADING_MAX_LEN:
+        return heading, body
+    return '', (heading + '\n\n' + body).strip() if body else heading
 
 
 def _roman(n):
@@ -160,6 +179,32 @@ def _brackets_to_vars(text):
         lambda m: _BRACKET_VARS.get(m.group(1).strip().lower(), m.group(0)), text)
 
 
+# The counterparty (Donor) recital, shaped like:
+#   "… between {Name}, NRIC {nric}, of {address} ("Donor") …"
+# Best-effort — a preamble that doesn't match leaves the fields for the author to fill.
+_COUNTERPARTY_RE = re.compile(
+    r'between\s+(?P<name>.+?)\s*,\s*NRIC\s+(?P<nric>[\w/-]+)\s*,\s*of\s+(?P<address>.+?)'
+    r'\s*[(\[]\W{0,2}(?:the\s+)?Donor',
+    re.IGNORECASE)
+
+
+def _extract_counterparty(preamble):
+    """Pull the counterparty (Donor) name / NRIC / address from a parties recital.
+    Returns ``{'name', 'nric', 'address'}`` with '' for anything not found. The counterparty
+    is the party signing opposite the student — the same person the agreement renders as the
+    Foundation signatory + ``{{donor_name}}`` — so this pre-fills the Config party fields on
+    import (fill-if-blank; the author reviews before deploy)."""
+    out = {'name': '', 'nric': '', 'address': ''}
+    if not preamble:
+        return out
+    m = _COUNTERPARTY_RE.search(preamble)
+    if m:
+        out['name'] = m.group('name').strip()
+        out['nric'] = m.group('nric').strip()
+        out['address'] = m.group('address').strip().rstrip(',').strip()
+    return out
+
+
 class ContractsError(Exception):
     """Raised by the service with a machine code for the view (e.g. 'not_draft',
     'version_exists', 'deploy_forbidden', 'not_deployable')."""
@@ -272,14 +317,15 @@ def replace_clauses(template, clauses):
             if payload and not isinstance(payload, dict):
                 raise ContractsError('bad_quiz_payload', f'clause {index} quiz_{lang}')
         is_l0 = level == 0
+        # An over-long heading (any language) folds into its body so the save can never
+        # overflow heading_*'s varchar(255) — the guard for every write path (2026-07-21).
+        h_en, b_en = _fit_heading(item.get('heading_en', ''), item.get('body_en', ''))
+        h_ms, b_ms = _fit_heading(item.get('heading_ms', ''), item.get('body_ms', ''))
+        h_ta, b_ta = _fit_heading(item.get('heading_ta', ''), item.get('body_ta', ''))
         created.append(ContractClause(
             template=template, order=index, level=level,
-            heading_en=item.get('heading_en', '') or '',
-            heading_ms=item.get('heading_ms', '') or '',
-            heading_ta=item.get('heading_ta', '') or '',
-            body_en=item.get('body_en', '') or '',
-            body_ms=item.get('body_ms', '') or '',
-            body_ta=item.get('body_ta', '') or '',
+            heading_en=h_en, heading_ms=h_ms, heading_ta=h_ta,
+            body_en=b_en, body_ms=b_ms, body_ta=b_ta,
             is_quiz_candidate=bool(item.get('is_quiz_candidate')) and is_l0,
             quiz_en=(item.get('quiz_en') or {}) if is_l0 else {},
             quiz_ms=(item.get('quiz_ms') or {}) if is_l0 else {},
@@ -554,7 +600,12 @@ def _docx_structure(data):
                 m = re.search(r'(\d+)', style)
                 level = (int(m.group(1)) - 1) if m else 0
             level = max(0, min(MAX_CLAUSE_LEVEL, level))
-            clauses.append({'heading': text, 'body': '', 'level': level})
+            # A short Heading is a clause TITLE; a long one is a full sub-clause the author
+            # styled as a Heading (common) — that text is clause BODY, not a 255-char title.
+            if len(text) > HEADING_TITLE_MAX:
+                clauses.append({'heading': '', 'body': text, 'level': level})
+            else:
+                clauses.append({'heading': text, 'body': '', 'level': level})
             current_heading_level = level
             saw_clause = True
         elif numId is not None:
@@ -638,6 +689,9 @@ def segment_docx(data, *, model=None):
         model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
         raw = _gemini_generate(_build_segment_prompt(text), model)
         structured = {'title': '', 'preamble': '', 'clauses': _parse_segments(raw)}
+    # Pull the counterparty from the ORIGINAL recital (before bracket→token rewriting, which
+    # doesn't touch the Donor clause anyway), then convert the author's brackets to tokens.
+    structured['counterparty'] = _extract_counterparty(structured.get('preamble', ''))
     structured['preamble'] = _brackets_to_vars(structured.get('preamble', ''))
     for c in structured['clauses']:
         c['heading'] = _brackets_to_vars(c['heading'])
@@ -935,28 +989,74 @@ def resolve_locale(locale, template):
     return locale if locale in template.languages_available else 'en'
 
 
+def _bold(escaped):
+    """Canonical markdown-``**bold**`` → ``<b>…</b>`` transform, run on an ALREADY-ESCAPED
+    string so the emphasis can never inject markup. Non-greedy, single-line: an unmatched
+    ``**`` is left literal. The single source of truth for bold — ``bursary._bold`` (the
+    signed-agreement render) delegates here so the preview and the PDF stay in step."""
+    return re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', escaped or '')
+
+
+def render_clauses_html(clauses, *, base_indent=4):
+    """Shared clause-list → HTML for BOTH the signed agreement and the preview, so the two
+    always look identical. ``clauses`` is an iterable of ``(heading, body, level)`` whose text
+    is already localised / variable-substituted by the caller (RAW of markup — escaping and
+    ``**bold**`` happen here). Rendering rules (2026-07-21, owner review):
+      • the number, heading and body render INLINE — the number is never on its own line;
+      • only a TOP-LEVEL (level 0) clause's number + heading are BOLD (sub-clauses / sub-sub
+        are normal weight, numbers included);
+      • depth adds a left indent.
+    Body paragraphs (blank-line separated) render under the first line with a break."""
+    from django.utils.html import escape
+    clauses = list(clauses)
+    numbers = clause_numbers([lv for _, _, lv in clauses])
+    out = []
+    for (heading, body, level), number in zip(clauses, numbers):
+        top = level == 0
+        indent = base_indent + level * 18
+        num = f'<b>{escape(number)}</b>' if top else f'<span>{escape(number)}</span>'
+        head = ''
+        if heading:
+            h = _bold(escape(heading))
+            head = f'<b>{h}</b> ' if top else f'{h} '
+        paras = [_bold(escape(p)) for p in (body or '').split('\n\n') if p.strip()]
+        body_html = '<br/><br/>'.join(paras)
+        out.append(
+            f'<div style="margin:0 0 7px 0; padding-left:{indent}px;">{num} {head}{body_html}</div>')
+    return ''.join(out)
+
+
 def render_preview_html(template, locale='en'):
-    """A minimal standalone HTML preview (PREVIEW banner + English-authoritative
-    notice). Sample particulars only — never a real signed artefact."""
+    """A minimal standalone HTML preview (PREVIEW banner + English-authoritative notice).
+    Sample particulars only — never a real signed artefact. Uses the SHARED clause renderer
+    (render_clauses_html), so numbering (1. / 1.1 / i)), inline layout, bold rules and
+    ``**bold**`` match the signed agreement exactly; ``{{variable}}`` tokens are left visible
+    (no student context in a preview). Served as inline HTML and, via ``?output=pdf``, as PDF."""
+    from django.utils.html import escape as _esc
     if template is None:
         return '<html><body><p>No template.</p></body></html>'
     loc = resolve_locale(locale, template)
+
+    def rich(text):
+        return _bold(_esc(text or ''))
+
     title = getattr(template, f'title_{loc}', '') or template.title_en
     preamble = getattr(template, f'preamble_{loc}', '') or template.preamble_en
+    clauses = [
+        (getattr(c, f'heading_{loc}', '') or c.heading_en,
+         getattr(c, f'body_{loc}', '') or c.body_en, getattr(c, 'level', 0) or 0)
+        for c in template.clauses.all().order_by('order')
+    ]
     parts = [
         '<div style="background:#fde68a;padding:8px;text-align:center;">PREVIEW — not a signed agreement</div>',
         '<div style="background:#eff6ff;padding:6px;font-size:12px;">'
         'The English version is authoritative; other languages are courtesy translations.</div>',
-        f'<h1>{title}</h1>',
-        f'<p>{preamble}</p>',
+        f'<h1>{rich(title)}</h1>',
+        f'<p>{rich(preamble)}</p>',
+        render_clauses_html(clauses),
     ]
-    for clause in template.clauses.all().order_by('order'):
-        heading = getattr(clause, f'heading_{loc}', '') or clause.heading_en
-        body = getattr(clause, f'body_{loc}', '') or clause.body_en
-        paras = ''.join(f'<p>{p}</p>' for p in (body or '').split('\n\n') if p.strip())
-        parts.append(f'<h3>{clause.order}. {heading}</h3>{paras}')
-    footer = f'Version {template.version}'
+    footer = f'Version {_esc(template.version)}'
     if template.vetted_by_name and template.vetted_on:
-        footer += f' — Vetted by {template.vetted_by_name}, {template.vetted_on}'
+        footer += f' — Vetted by {_esc(template.vetted_by_name)}, {_esc(str(template.vetted_on))}'
     parts.append(f'<hr><p style="font-size:12px;color:#666;">{footer}</p>')
     return '<html><body>' + ''.join(parts) + '</body></html>'

@@ -46,6 +46,7 @@ from .views_sponsor import (
     SponsorMeView,
     SponsorNotificationsView,
     SponsorPoolCountView,
+    SponsorMyStudentDetailView,
     SponsorPoolDetailView,
     SponsorPoolListView,
     SponsorReferralView,
@@ -177,6 +178,7 @@ urlpatterns = [
     path('sponsor/pool/count/', SponsorPoolCountView.as_view()),  # F1: public landing counter
     path('sponsor/pool/', SponsorPoolListView.as_view()),
     path('sponsor/pool/<int:pk>/', SponsorPoolDetailView.as_view()),
+    path('sponsor/my-students/<int:pk>/', SponsorMyStudentDetailView.as_view()),  # portfolio detail (own)
     # Phase E3: wallet + funding (flag + approved-sponsor gated)
     path('sponsor/wallet/', SponsorWalletView.as_view()),
     path('sponsor/impact/', SponsorImpactView.as_view()),  # R2: My Giving dashboard aggregate

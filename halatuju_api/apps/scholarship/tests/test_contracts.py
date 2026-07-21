@@ -546,3 +546,112 @@ class TestContractRenderRich(TestCase):
     def test_unknown_variable_left_visible(self):
         html = self._render('Ref {{not_a_real_var}} here.')
         self.assertIn('{{not_a_real_var}}', html)
+
+
+class TestPreviewRender(TestCase):
+    """render_preview_html — escaping, hierarchical numbering, and **bold** (TD-163: the
+    preview must match the signed agreement, and must not corrupt on HTML-special chars)."""
+    def _draft(self):
+        d = seed_draft('2027-prev-r')
+        contracts.replace_clauses(d, [
+            {'heading_en': 'Terms & Conditions', 'body_en': 'The **Bursary** is a gift.', 'level': 0},
+            {'heading_en': 'Sub-point', 'body_en': 'Amount < 3000 & > 0.', 'level': 1},
+        ])
+        return d
+
+    def test_escapes_html_special_chars(self):
+        html = contracts.render_preview_html(self._draft(), 'en')
+        self.assertIn('Terms &amp; Conditions', html)   # & escaped
+        self.assertIn('&lt; 3000 &amp; &gt; 0', html)   # < > & escaped in body
+        self.assertNotIn('Terms & Conditions', html)    # never the raw ampersand
+
+    def test_hierarchical_numbering(self):
+        html = contracts.render_preview_html(self._draft(), 'en')
+        self.assertIn('1.', html)      # top-level
+        self.assertIn('1.1', html)     # sub-clause (NOT the old flat order '2.')
+
+    def test_bold_marker_rendered(self):
+        html = contracts.render_preview_html(self._draft(), 'en')
+        self.assertIn('<b>Bursary</b>', html)
+        self.assertNotIn('**Bursary**', html)
+
+
+class TestHeadingOverflow(TestCase):
+    """Guards for the varchar(255) heading column — a full sub-clause the author styled as a
+    Heading must not 500 the clause save (regression: import 500 / empty upload, 2026-07-21)."""
+    def test_long_heading_paragraph_parses_as_body(self):
+        import io as _io
+        from docx import Document
+        doc = Document()
+        _list_para(doc.add_paragraph('Definitions', style='Heading 1'), 6, 0)
+        long_sentence = 'The Donor agrees to provide the Student with a bursary ' + ('x ' * 200) + '.'
+        _list_para(doc.add_paragraph(long_sentence, style='Heading 1'), 6, 1)
+        buf = _io.BytesIO(); doc.save(buf)
+        got = contracts.segment_docx(buf.getvalue())
+        self.assertEqual(got['clauses'][0]['heading'], 'Definitions')   # short stays a title
+        self.assertEqual(got['clauses'][1]['heading'], '')              # long → body
+        self.assertIn('The Donor agrees', got['clauses'][1]['body'])
+        self.assertTrue(all(len(c['heading']) <= 255 for c in got['clauses']))
+
+    def test_replace_clauses_folds_overlong_heading_into_body(self):
+        # The hard save guard: even a hand-typed 300-char heading must not overflow the column.
+        d = seed_draft('2027-overflow')
+        longh = 'A very long clause heading that should live in the body instead ' + ('y ' * 150)
+        self.assertGreater(len(longh), 255)
+        contracts.replace_clauses(d, [{'heading_en': longh, 'body_en': 'tail.', 'level': 0}])
+        c = d.clauses.first()
+        self.assertEqual(c.heading_en, '')          # moved out of the 255 column
+        self.assertIn('A very long clause heading', c.body_en)
+        self.assertIn('tail.', c.body_en)           # original body preserved
+
+    def test_short_heading_unaffected(self):
+        d = seed_draft('2027-shorth')
+        contracts.replace_clauses(d, [{'heading_en': 'Definitions', 'body_en': 'x', 'level': 0}])
+        c = d.clauses.first()
+        self.assertEqual(c.heading_en, 'Definitions')
+        self.assertEqual(c.body_en, 'x')
+
+
+class TestSharedClauseRender(TestCase):
+    """render_clauses_html — inline layout + bold ONLY at level 0 (owner review 2026-07-21)."""
+    def test_inline_and_bold_rules(self):
+        html = contracts.render_clauses_html([
+            ('Definitions', '', 0),
+            ('In this Agreement', '', 1),
+            ('', 'Agreement means this document.', 2),
+        ])
+        # level 0: bold number AND bold heading
+        self.assertIn('<b>1.</b>', html)
+        self.assertIn('<b>Definitions</b>', html)
+        # level 1: number in a plain span (NOT bold); heading not bold
+        self.assertIn('<span>1.1</span>', html)
+        self.assertNotIn('<b>1.1</b>', html)
+        self.assertNotIn('<b>In this Agreement</b>', html)
+        # level 2: roman number not bold, body INLINE in the same div (not a separate line)
+        self.assertIn('<span>i)</span> Agreement means this document.', html)
+
+    def test_escapes_and_honours_bold_marker(self):
+        html = contracts.render_clauses_html([('R&D terms', 'a **strong** point', 0)])
+        self.assertIn('R&amp;D terms', html)     # escaped
+        self.assertIn('<b>strong</b>', html)     # **..** honoured
+
+
+class TestCounterpartyExtraction(TestCase):
+    def test_extracts_name_nric_address(self):
+        preamble = ('This Agreement is made on [Date] between Jane Doe, NRIC 800101-01-1234, '
+                    'of 12 Jalan Test, 50000 KL ("Donor"), and {{student_name}}.')
+        cp = contracts._extract_counterparty(preamble)
+        self.assertEqual(cp['name'], 'Jane Doe')
+        self.assertEqual(cp['nric'], '800101-01-1234')
+        self.assertIn('12 Jalan Test', cp['address'])
+        self.assertNotIn('Donor', cp['address'])   # address stops before the ("Donor") marker
+
+    def test_no_match_returns_blanks(self):
+        self.assertEqual(contracts._extract_counterparty('No recital here.'),
+                         {'name': '', 'nric': '', 'address': ''})
+
+    def test_config_accepts_counterparty_address(self):
+        d = seed_draft('2027-cp-addr')
+        contracts.update_config(d, counterparty_address='12 Jalan Test, 50000 KL')
+        d.refresh_from_db()
+        self.assertEqual(d.counterparty_address, '12 Jalan Test, 50000 KL')

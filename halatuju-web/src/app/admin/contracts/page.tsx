@@ -71,14 +71,17 @@ export default function ContractsListPage() {
       // failure still leaves a usable blank draft (the author imports/edits in the editor).
       if (source === 'upload' && file) {
         try {
-          const { clauses, title, preamble } = await importContractDocx(created.id, file, { token: token! })
+          const { clauses, title, preamble, counterparty } = await importContractDocx(created.id, file, { token: token! })
           await putContractClauses(created.id, clauses.map((c) => ({
             level: c.level, heading_en: c.heading, body_en: c.body,
           })), { token: token! })
-          // A brand-new draft has a blank title/preamble, so fill them from the document.
+          // A brand-new draft is blank, so fill title/preamble + the counterparty party fields.
           const patch: Record<string, unknown> = {}
           if (title) patch.title_en = title
           if (preamble) patch.preamble_en = preamble
+          if (counterparty?.name) patch.counterparty_name = counterparty.name
+          if (counterparty?.nric) patch.counterparty_nric = counterparty.nric
+          if (counterparty?.address) patch.counterparty_address = counterparty.address
           if (Object.keys(patch).length) await updateContractConfig(created.id, patch, { token: token! })
         } catch { /* soft-fail — blank draft created; author can import/hand-edit */ }
       }
@@ -117,9 +120,14 @@ export default function ContractsListPage() {
                 <option key={tm.id} value={String(tm.id)}>{t('admin.contracts.copyFrom')} {tm.version}</option>
               ))}
             </select>
-            {isSuper && (
+            {isSuper ? (
               <input className={inputCls} placeholder="Organisation code"
                 value={org} onChange={(e) => setOrg(e.target.value)} />
+            ) : (
+              // An org_admin has exactly one organisation (the server always uses their own),
+              // so show it prefilled + fixed rather than an empty box to fill in.
+              <input className={`${inputCls} bg-gray-50 text-gray-500`} disabled
+                value={role?.owning_org_name || ''} title="Your organisation" />
             )}
           </div>
           {source === 'upload' && (

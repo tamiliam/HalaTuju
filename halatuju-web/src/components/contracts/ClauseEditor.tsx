@@ -50,12 +50,14 @@ export default function ClauseEditor(
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const topRef = useRef<HTMLDivElement>(null)   // scroll target for the save banner
   // Word import
   const fileRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
   const [proposed, setProposed] = useState<Array<{ heading: string; body: string; level: number }> | null>(null)
   const [proposedTitle, setProposedTitle] = useState('')
   const [proposedPreamble, setProposedPreamble] = useState('')
+  const [proposedParty, setProposedParty] = useState<{ name?: string; nric?: string; address?: string }>({})
   // Body toolbar (bold / insert-variable) — operates on the focused clause's textarea.
   const bodyRefs = useRef<Record<number, HTMLTextAreaElement | null>>({})
   const [varMenu, setVarMenu] = useState<number | null>(null)
@@ -133,13 +135,16 @@ export default function ClauseEditor(
       setErr((e as Error)?.message || t('admin.contracts.actionFailed'))
     }
     setSaving(false)
+    // Scroll the "Saved" (or error) banner into view — the Save buttons sit far below the fold.
+    requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   const onImport = async (file: File) => {
     setImporting(true); setErr(null); setProposed(null)
     try {
-      const { clauses: got, title, preamble } = await importContractDocx(template.id, file, { token })
+      const { clauses: got, title, preamble, counterparty } = await importContractDocx(template.id, file, { token })
       setProposed(got); setProposedTitle(title || ''); setProposedPreamble(preamble || '')
+      setProposedParty(counterparty || {})
     } catch {
       setErr(t('admin.contracts.importFailed'))   // graceful degradation → edit by hand
     }
@@ -152,10 +157,13 @@ export default function ClauseEditor(
     const list: Draft[] = proposed.map((c) => ({ ...EMPTY, level: c.level ?? 0, heading_en: c.heading, body_en: c.body }))
     setProposed(null)
     await persist(list)
-    // Fill a BLANK title/preamble from the document — never overwrite the author's own wording.
+    // Fill BLANK title/preamble/party fields from the document — never overwrite the author's own.
     const patch: Record<string, unknown> = {}
     if (proposedTitle && !template.title_en) patch.title_en = proposedTitle
     if (proposedPreamble && !template.preamble_en) patch.preamble_en = proposedPreamble
+    if (proposedParty.name && !template.counterparty_name) patch.counterparty_name = proposedParty.name
+    if (proposedParty.nric && !template.counterparty_nric) patch.counterparty_nric = proposedParty.nric
+    if (proposedParty.address && !template.counterparty_address) patch.counterparty_address = proposedParty.address
     if (Object.keys(patch).length) {
       try { onChange(await updateContractConfig(template.id, patch, { token })) } catch { /* clauses already saved */ }
     }
@@ -166,6 +174,7 @@ export default function ClauseEditor(
 
   return (
     <div className="space-y-5">
+      <div ref={topRef} className="scroll-mt-4" />
       {err && <div className="rounded-lg p-3 bg-red-50 border border-red-200 text-red-600 text-sm">{err}</div>}
       {msg && <div className="rounded-lg p-3 bg-green-50 border border-green-200 text-green-700 text-sm">{msg}</div>}
 
@@ -224,10 +233,52 @@ export default function ClauseEditor(
         return (
           <div key={i} className="bg-white rounded-xl border p-4 space-y-2"
             style={{ marginLeft: `${level * 28}px` }}>
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-xs font-bold text-blue-700 tabular-nums">{numbers[i]}</span>
+            {/* Number sits to the LEFT of the heading box (1. [box]); the toolbar + body align under it. */}
+            <div className="flex gap-2">
+              <span className="font-mono text-xs font-bold text-blue-700 tabular-nums shrink-0 w-10 text-right pt-2.5">{numbers[i]}</span>
+              <div className="flex-1 min-w-0 space-y-2">
+                <input className={inputCls} disabled={!draft} placeholder={t('admin.contracts.heading')}
+                  value={String(c[hk] || '')} onChange={(e) => set(i, hk, e.target.value)} />
+                {draft && (
+                  <div className="flex items-center gap-2 relative">
+                    <button type="button" title={t('admin.contracts.bold')} onClick={() => wrapBold(i)}
+                      className={toolBtn}><span className="font-bold">B</span></button>
+                    <button type="button" onClick={() => setVarMenu(varMenu === i ? null : i)} className={toolBtn}>
+                      ＋ {t('admin.contracts.insertVariable')} <span className="text-[10px]">▾</span></button>
+                    {varMenu === i && (
+                      <div className="absolute z-10 top-8 left-14 w-80 max-h-56 overflow-auto rounded-lg border border-gray-300 bg-white shadow-xl p-1.5">
+                        <div className="px-2 py-1 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">{t('admin.contracts.variableMenuHint')}</div>
+                        {VARIABLES.map((v) => (
+                          <button key={v.token} type="button" onClick={() => insertVar(i, v.token)}
+                            className="w-full flex items-center justify-between gap-3 px-2 py-1.5 rounded-md hover:bg-blue-50 text-left">
+                            <code className="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 whitespace-nowrap">{v.token}</code>
+                            <span className="text-[11px] text-gray-500 text-right">{v.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <textarea rows={3} className={inputCls} disabled={!draft} placeholder={t('admin.contracts.body')}
+                  ref={(el) => { bodyRefs.current[i] = el }}
+                  value={String(c[bk] || '')} onChange={(e) => set(i, bk, e.target.value)} />
+              </div>
+            </div>
+            {/* Bottom row: quiz control on the left, the clause controls on the bottom-right. */}
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <div className="min-w-0">
+                {level === 0 ? (
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" disabled={!draft} checked={!!c.is_quiz_candidate}
+                      onChange={(e) => set(i, 'is_quiz_candidate', e.target.checked)} />
+                    {t('admin.contracts.useForQuiz')}
+                  </label>
+                ) : (
+                  <p className="text-xs text-gray-400">{t('admin.contracts.subclauseQuizNote')}</p>
+                )}
+              </div>
               {draft && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <button type="button" title={t('admin.contracts.insertBelow')} onClick={() => insertAfter(i)}
                     className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-emerald-200 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-bold">＋</button>
                   <button type="button" title={t('admin.contracts.outdent')} onClick={() => outdent(i)} disabled={!canOutdent(levels, i)} className={iconBtn}>←</button>
@@ -239,40 +290,6 @@ export default function ClauseEditor(
                 </div>
               )}
             </div>
-            <input className={inputCls} disabled={!draft} placeholder={t('admin.contracts.heading')}
-              value={String(c[hk] || '')} onChange={(e) => set(i, hk, e.target.value)} />
-            {draft && (
-              <div className="flex items-center gap-2 relative">
-                <button type="button" title={t('admin.contracts.bold')} onClick={() => wrapBold(i)}
-                  className={toolBtn}><span className="font-bold">B</span></button>
-                <button type="button" onClick={() => setVarMenu(varMenu === i ? null : i)} className={toolBtn}>
-                  ＋ {t('admin.contracts.insertVariable')} <span className="text-[10px]">▾</span></button>
-                {varMenu === i && (
-                  <div className="absolute z-10 top-8 left-14 w-80 max-h-56 overflow-auto rounded-lg border border-gray-300 bg-white shadow-xl p-1.5">
-                    <div className="px-2 py-1 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">{t('admin.contracts.variableMenuHint')}</div>
-                    {VARIABLES.map((v) => (
-                      <button key={v.token} type="button" onClick={() => insertVar(i, v.token)}
-                        className="w-full flex items-center justify-between gap-3 px-2 py-1.5 rounded-md hover:bg-blue-50 text-left">
-                        <code className="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 whitespace-nowrap">{v.token}</code>
-                        <span className="text-[11px] text-gray-500 text-right">{v.desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            <textarea rows={3} className={inputCls} disabled={!draft} placeholder={t('admin.contracts.body')}
-              ref={(el) => { bodyRefs.current[i] = el }}
-              value={String(c[bk] || '')} onChange={(e) => set(i, bk, e.target.value)} />
-            {level === 0 ? (
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" disabled={!draft} checked={!!c.is_quiz_candidate}
-                  onChange={(e) => set(i, 'is_quiz_candidate', e.target.checked)} />
-                {t('admin.contracts.useForQuiz')}
-              </label>
-            ) : (
-              <p className="text-xs text-gray-400">{t('admin.contracts.subclauseQuizNote')}</p>
-            )}
           </div>
         )
       })}

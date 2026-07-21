@@ -281,6 +281,17 @@ class SponsorSponsorshipSerializer(serializers.Serializer):
         return sponsorship.application.semester_results.count()
 
 
+class SponsorMyStudentDetailSerializer(SponsorSponsorshipSerializer):
+    """A student the sponsor OWNS, for their portfolio detail page: the sponsorship (amount /
+    status / journey signals) + the anonymised student card + the generated anon PROFILE markdown.
+    Still an allowlist — only the reviewed anon_markdown is added, never the named profile."""
+    anon_profile = serializers.SerializerMethodField()
+
+    def get_anon_profile(self, sponsorship):
+        sp = getattr(sponsorship.application, 'sponsor_profile', None)
+        return (sp.anon_markdown or '') if sp else ''
+
+
 class StudentAwardSerializer(serializers.Serializer):
     """Phase E3 — a student's award offer: amount + deadline + status only.
     Allowlist: NO sponsor field — the student never sees who the sponsor is."""

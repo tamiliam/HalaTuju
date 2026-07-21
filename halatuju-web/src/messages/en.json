@@ -173,7 +173,19 @@
       "fSupport": "Your support",
       "fAcademic": "Academic",
       "fSupports": "Supports",
-      "nSems": "{n} sems"
+      "nSems": "{n} sems",
+      "detail": {
+        "back": "Back to my students",
+        "unavailable": "This student isn't available.",
+        "supportLine": "You're supporting this student with RM {amount} — here's their journey, no action needed.",
+        "supportedSems": "Supported {n} sems",
+        "commitment": "Your commitment",
+        "overSems": "over {n} semesters",
+        "profile": "About this student",
+        "spending": "Spending overview",
+        "spendingSoon": "Coming soon — a breakdown of how the student uses their support (Vircle).",
+        "soon": "Soon"
+      }
     },
     "notify": {
       "title": "Email updates",
@@ -4346,6 +4358,7 @@
       "counterpartyName": "Counterparty name",
       "counterpartyTitle": "Counterparty title",
       "counterpartyNric": "Counterparty NRIC",
+      "counterpartyAddress": "Counterparty address",
       "notifyEmails": "Countersign notify emails (comma-separated)",
       "parentRole": "Parent/guardian role",
       "coSignerAll": "Co-signer — all students",
@@ -4403,6 +4416,7 @@
       "previewLocale": "Language",
       "openPdf": "Open PDF",
       "previewFailed": "Could not render the preview.",
+      "pdfFailed": "Could not open the PDF. Please reload and try again.",
       "validationChecklist": "Validation checklist",
       "allChecksPass": "All checks pass",
       "issuesFound": "{n} issue(s) to resolve",

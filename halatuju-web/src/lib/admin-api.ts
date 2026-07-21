@@ -1575,6 +1575,7 @@ export interface ContractTemplateDetail extends ContractTemplateSummary {
   preamble_en: string; preamble_ms: string; preamble_ta: string
   progress_standard_en: string; progress_standard_ms: string; progress_standard_ta: string
   counterparty_name: string; counterparty_title: string; counterparty_nric: string
+  counterparty_address: string
   counterparty_notify_emails: string[]
   parent_role: 'co_signer_all' | 'minor_only'
   parent_pin_required: boolean
@@ -1652,6 +1653,7 @@ export async function importContractDocx(
   id: number, file: File, options?: ApiOptions): Promise<{
     clauses: Array<{ heading: string; body: string; level: number }>
     title: string; preamble: string
+    counterparty?: { name?: string; nric?: string; address?: string }
   }> {
   const headers: Record<string, string> = {}
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
@@ -1668,11 +1670,13 @@ export async function importContractDocx(
   return res.json()
 }
 
-/** The rendered preview PDF as a Blob (auth header required) — for a client-side open. */
+/** The rendered preview PDF as a Blob (auth header required) — for a client-side open.
+ *  Uses ?output=pdf, NOT ?format=pdf — `format` is DRF's reserved content-negotiation
+ *  param and `?format=pdf` 404s before the view runs (TD-163). */
 export async function fetchContractPreviewPdf(id: number, locale: string, options?: ApiOptions): Promise<Blob> {
   const headers: Record<string, string> = {}
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
-  const res = await fetch(`${API_BASE}${CT}/${id}/preview/?locale=${encodeURIComponent(locale)}&format=pdf`, { headers })
+  const res = await fetch(`${API_BASE}${CT}/${id}/preview/?locale=${encodeURIComponent(locale)}&output=pdf`, { headers })
   if (!res.ok) throw new Error(`Preview PDF failed: ${res.status}`)
   return res.blob()
 }

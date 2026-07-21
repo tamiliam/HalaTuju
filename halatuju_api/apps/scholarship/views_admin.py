@@ -2332,7 +2332,7 @@ def _contract_template_detail(t):
         'progress_standard_en': t.progress_standard_en, 'progress_standard_ms': t.progress_standard_ms,
         'progress_standard_ta': t.progress_standard_ta,
         'counterparty_name': t.counterparty_name, 'counterparty_title': t.counterparty_title,
-        'counterparty_nric': t.counterparty_nric,
+        'counterparty_nric': t.counterparty_nric, 'counterparty_address': t.counterparty_address,
         'counterparty_notify_emails': t.counterparty_notify_emails or [],
         'parent_role': t.parent_role, 'parent_pin_required': t.parent_pin_required,
         'witness_policy': t.witness_policy,
@@ -2618,7 +2618,11 @@ class AdminContractDeployView(_ContractsBase):
 
 
 class AdminContractPreviewView(_ContractsBase):
-    """GET — a rendered preview (HTML, or ?format=pdf). Sample particulars only."""
+    """GET — a rendered preview (HTML, or ?output=pdf). Sample particulars only.
+
+    NOTE: the PDF selector is ``?output=pdf``, NOT ``?format=pdf`` — ``format`` is DRF's
+    RESERVED content-negotiation query param, and ``?format=pdf`` makes DRF raise Http404
+    (no 'pdf' renderer) during content negotiation, BEFORE this view runs (TD-163)."""
     def get(self, request, pk):
         template, admin, err = self._template_for(request, pk)
         if err:
@@ -2626,7 +2630,7 @@ class AdminContractPreviewView(_ContractsBase):
         from django.http import HttpResponse
         from . import contracts
         html = contracts.render_preview_html(template, request.query_params.get('locale', 'en'))
-        if request.query_params.get('format') == 'pdf':
+        if request.query_params.get('output') == 'pdf':
             from . import bursary
             try:
                 pdf = bursary.generate_pdf(html)
@@ -2676,9 +2680,10 @@ class AdminContractImportDocxView(_ContractsBase):
             proposal = contracts.segment_docx(upload.read())   # bytes only; never stored
         except contracts.ContractsError as e:
             return _contracts_err(e)
-        # PROPOSED — the FE reviews, then PUTs clauses (+ fills a blank title/preamble).
+        # PROPOSED — the FE reviews, then PUTs clauses (+ fills blank title/preamble/party fields).
         return Response({
             'clauses': proposal['clauses'],
             'title': proposal.get('title', ''),
             'preamble': proposal.get('preamble', ''),
+            'counterparty': proposal.get('counterparty', {}),
         })

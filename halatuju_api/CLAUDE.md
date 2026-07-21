@@ -524,13 +524,28 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-21)
 
-**▶ NEXT: My-students detail page (Sprint 2 of the portfolio rework).** Sprint 1 shipped (below). Now build
-the NEW clickable sponsored-student detail page — My-students cards are plain `<div>`s today (not links);
-frame it "you support this student" with the FULL anon profile (`anon_profile`, not the blurb), journey,
-commitment, thank-yous, and NO funding/"support needed" controls. RESERVE space for student SPENDING
-(Vircle — pie or a Spending tab; Sprint 3, deferred). **Stitch mock → owner sign-off → build** (UI rule).
-The discovery-pool detail endpoint won't serve a student past the grace window → add a sponsor-owned
-"my sponsored student" detail endpoint. Approved artifact mock is the design reference.
+**▶ NEXT (Sprint 3, deferred): student SPENDING panel on the detail page.** Space is RESERVED on
+`/sponsor/my-students/[id]` (a dashed "Spending overview — soon" card). Fill it with the Vircle spending
+breakdown (a pie, or its own tab). Owner will say when. Also pending: Tamil review of the `myStudents.status.*`
+/ `journey.withdrew` / `myStudents.detail.*` first-drafts.
+
+**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `ad52c799`) — Sponsored-student detail page (Sprint 2).** My-students
+cards now LINK to a read-only `/sponsor/my-students/[id]` — header, single status badge, journey (with a
+"Withdrew" stop for discontinued), your commitment, the FULL anon profile (react-markdown), and a reserved
+Spending panel. NO funding controls. NEW endpoint `GET /api/v1/sponsor/my-students/<pk>/`
+(`SponsorMyStudentDetailView`) — a student the caller sponsors at ANY status (incl. past the grace window;
+the discovery detail 404s those), gated to the caller's OWN sponsorship. No migration. Behind
+`SPONSOR_POOL_ENABLED`. Retro `docs/retrospective-2026-07-21-sponsored-detail.md`; decision ×1. (Stitch mock
+timed out / API wouldn't surface it — built from the approved artifact mock instead.)
+
+**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `1a9b7b89`) — Sponsor portfolio status taxonomy + card details
+(Sprint 1).** One priority-ordered `pool.sponsor_portfolio_status` badge per sponsored student (discontinued >
+graduated > paused > semester_completed > needs_attention > on_track; None on a discovery card; "Awaiting
+acceptance" stays FE-derived from sponsorship `offered`). New nullable `supported_semesters` (migration
+**0106**, applied migrate-first — owner-set, else heuristic `award_amount//1000`) drives "Semester completed"
+(results ≥ supported). My-students card now leads with full course → institution + key details (was the slug
+"perubatan") + a "Withdrew" journey stop. Behind `SPONSOR_POOL_ENABLED`. Retro
+`docs/retrospective-2026-07-21-portfolio-status.md`; decision ×1.
 
 **✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `1a9b7b89`) — Sponsor portfolio status taxonomy + card details
 (Sprint 1).** One priority-ordered `pool.sponsor_portfolio_status` badge per sponsored student (discontinued >

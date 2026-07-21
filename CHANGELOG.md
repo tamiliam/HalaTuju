@@ -25,6 +25,98 @@ Vircle hasn't switched on yet. **DARK behind `VIRCLE_ACTIVATION_ENABLED` (defaul
   create the Drive folder `01 BrightPath/03 Vircle/03 Activation`; create Cloud Scheduler
   `halatuju-vircle-activation-request` (48h → `/cron/vircle-activation-request/`); set
   `VIRCLE_ACTIVATION_ENABLED=1` after a real-send check.
+## Contract authoring — render polish, editor layout, counterparty auto-fill — 2026-07-21
+
+Owner-review refinements to the contract module (behind the OFF flags; authoring only).
+
+- **Changed — one shared clause renderer** (`contracts.render_clauses_html`) now drives BOTH the
+  signed agreement and the Preview tab, so they render identically. New rules: the number, heading
+  and body render **INLINE** (a sub-clause's number is no longer on its own line above the text);
+  **only a top-level (level-0) clause's number and heading are bold** — sub-clauses and sub-sub-clauses
+  (incl. their numbers) are normal weight. `bursary._clause_body_html` retired; escaping + `**bold**`
+  live in the shared renderer.
+- **Changed — clause editor layout:** the clause number now sits **to the left of the heading box**
+  (`1. [box]`), and the row controls (insert-below / indent / outdent / move / delete) moved from the
+  top-right to the **bottom-right, below the body**.
+- **Added — Save scrolls to the banner:** saving clauses (or config) scrolls the "Saved" confirmation
+  into view (the Save buttons sit well below the fold).
+- **Added — counterparty auto-fill on import:** the parties recital (`… between {Name}, NRIC {nric},
+  of {address} ("Donor") …`) is parsed and pre-fills the Config **counterparty name / NRIC / address**
+  (fill-if-blank; the author reviews before deploy). The counterparty is the party signing opposite the
+  student — the same one the agreement renders as the Foundation signatory + `{{donor_name}}`.
+- **Added — `counterparty_address`** (new `TextField`; migration `0107`) + a Config field for it.
+  MIGRATE-FIRST: the column is applied to prod before this deploys.
+- Tests: shared-render bold/inline rules, counterparty extraction (+ no-match), config accepts the
+  address. New Tamil/Malay strings are first-drafts pending owner review.
+
+## Sponsor profile — evergreen dates + give the model a sense of "now" — 2026-07-21
+
+- **Changed** — the AI-generated sponsor/reviewer profile (`profile_engine.py`) no longer writes text
+  that ages. Gemini has no innate sense of "now" — it read mid-2026 as the future and produced a live
+  date countdown + wrong relative timing (*"is due to report on 12 July 2026"*, *"applications open only
+  after her course begins"*). Both prompts (draft + refine) now (a) receive **today's date** (`_today_str`
+  → `_EVERGREEN`) so tenses/ordering are correct, and (b) carry a **TIME & DATES** rule requiring
+  date-proof phrasing — a reporting/intake date stated as a plain fact of *when the place begins*, never
+  a countdown or cross-event relative timing. `PROMPT_VERSION` → `2026-07-21.1` (existing profiles become
+  stale-by-version and pick up the new wording when regenerated; **no bulk regeneration** — that's
+  paid Gemini calls, owner's call). Test in `test_profile_engine.py`.
+
+## Contract import — fix 500 / empty-upload on long clauses + org-code prefill — 2026-07-21
+
+- **Fixed** — importing a real `.docx` 500'd on **Accept and replace clauses** (and the
+  create-form "Upload a document" silently produced an EMPTY draft, because that path
+  swallows the same error as a soft-fail). Root cause: `DataError: value too long for type
+  character varying(255)` in `replace_clauses`. `ContractClause.heading_*` is a
+  `varchar(255)`, but authors style full sub-clauses as a Word `Heading` — the real donor
+  agreement has 9 level-1 "headings" of 256–539 chars — and `_docx_structure` put every
+  heading-styled paragraph into `heading`. **Fix (two layers):** (1) `_docx_structure` now
+  treats a Heading paragraph longer than a title threshold as clause **body**, not a title
+  (short headings stay titles); (2) `replace_clauses` folds any heading still over 255 (any
+  language, any source — hand-typed, Gemini, copy-from) into its body, so a clause save can
+  **never** overflow the column. Verified end-to-end: the real 88-clause v3 doc now imports
+  and saves cleanly (was a hard 500).
+- **Changed** — the New-version form now shows an **org_admin their own organisation,
+  prefilled and disabled** (they have exactly one; the server always uses it), instead of an
+  empty box. Super still types/chooses the organisation code.
+- No migration. Contract module stays behind its OFF flags. Tests: long-heading→body parse,
+  the `replace_clauses` overflow guard, and a short-heading-unaffected guard.
+
+## Contract Preview — fix "Could not render" / Open-PDF (TD-163) — 2026-07-21
+
+- **Fixed** — the contract Preview tab's **Open PDF** button had never worked: it requested
+  `?format=pdf`, but `format` is **DRF's reserved content-negotiation query param**, so
+  `?format=pdf` made DRF raise `Http404` (no `pdf` renderer) DURING content negotiation —
+  *before* auth and before the view's `get()` ran. The view's PDF branch was dead code.
+  Confirmed against prod (`?format=pdf` → 404 in ~5 ms; `?format=json` → 401; the PDF content
+  itself renders fine). **Fix:** the PDF selector is now `?output=pdf` (view + FE fetcher).
+- **Fixed** — `TemplatePreview.openPdf` called `window.open()` *after* `await`, which browsers
+  block as an unsolicited popup. It now opens the tab **synchronously** in the click gesture,
+  then points it at the blob once ready (closes the tab + shows an error on failure).
+- **Changed** — `render_preview_html` now **HTML-escapes** all author text (was raw-interpolated
+  — a `&`/`<`/`>` corrupted the preview), renders the **same hierarchical numbering**
+  (`1.` / `1.1` / `i)`) and **`**bold**`** as the signed agreement, and leaves `{{variable}}`
+  tokens visible (no student in a preview). The bold transform now has ONE source of truth
+  (`contracts._bold`; `bursary._bold` delegates to it).
+- **Added** — a distinct `admin.contracts.pdfFailed` message (was reusing the HTML preview's
+  "Could not render the preview") + regression tests: the PDF endpoint returns a PDF via
+  `?output=pdf`, and `?format=pdf` is asserted to 404 (so no one reintroduces the collision);
+  preview escaping / hierarchical numbering / bold.
+- No migration. Contract module stays behind its OFF flags. Tamil string first-draft, pending review.
+
+## Sponsor portfolio — clickable cards → a sponsored-student detail page (Sprint 2) — 2026-07-21
+
+- **Added — a detail page for a student you support.** The My-students cards were plain divs; each now
+  links to `/sponsor/my-students/[id]` — a read-only page framed "the student you support": header,
+  the single status badge, the journey tracker (with a **"Withdrew"** stop for discontinued), **your
+  commitment**, the **full anonymised profile** (react-markdown), and a **reserved "Spending overview"**
+  panel (a later sprint). **No funding controls** — this is not the discovery page.
+- **Added — endpoint** `GET /api/v1/sponsor/my-students/<pk>/` (`SponsorMyStudentDetailView`): a student
+  the caller sponsors, at **any lifecycle status** (incl. past the grace window when they've dropped off
+  the pool — which the discovery-pool detail 404s). Gated to the caller's **own sponsorship** (404
+  otherwise); flag + approved-sponsor gated. Returns the sponsorship + student card + the reviewed anon
+  profile (`SponsorMyStudentDetailSerializer`). API client `getMyStudentDetail`.
+- **i18n** `sponsorPortal.myStudents.detail.*` (en/ms/ta; Tamil first-draft). No migration; behind
+  `SPONSOR_POOL_ENABLED`. Tests: 5 (own detail / non-owner 404 / flag-off / unapproved / no leak).
 
 ## Fix — admin invite form lost input focus after each keystroke — 2026-07-21
 

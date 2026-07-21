@@ -21,7 +21,6 @@ import hashlib
 import io
 import logging
 import os
-import re
 from decimal import Decimal
 
 from django.conf import settings
@@ -120,17 +119,11 @@ def _guarantor_role_label(parent_role):
 
 
 def _bold(escaped):
-    """Convert markdown-style ``**bold**`` in an ALREADY-ESCAPED string to ``<b>…</b>``.
-    Runs on escaped text so the emphasis markup can never inject HTML; non-greedy and
-    single-line, so an unmatched ``**`` is left literal."""
-    return re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', escaped)
-
-
-def _clause_body_html(body):
-    """Plain-text clause body → HTML: a blank line becomes a paragraph break, and the
-    author's ``**bold**`` inline emphasis is honoured (escaped first, so it is safe)."""
-    paras = [_bold(_esc(p)) for p in (body or '').split('\n\n') if p.strip()]
-    return '<br/><br/>'.join(paras)
+    """Markdown-``**bold**`` → ``<b>…</b>`` on an already-escaped string. Delegates to the
+    canonical ``contracts._bold`` so the signed agreement, the preview and the preview PDF
+    share ONE bold transform (no drift)."""
+    from . import contracts
+    return contracts._bold(escaped)
 
 
 def render_agreement_html(application, particulars, *, student, guarantor,
@@ -176,7 +169,6 @@ def render_agreement_html(application, particulars, *, student, guarantor,
          c.level)
         for c in template.clauses.all().order_by('order')
     ]
-    clause_numbers = contracts.clause_numbers([lv for _, _, lv in clauses])
     guarantor_role = _guarantor_role_label(template.parent_role)
     version = template.version
     vetted_line = (f'Vetted by {template.vetted_by_name}, {template.vetted_on}'
@@ -246,16 +238,11 @@ def render_agreement_html(application, particulars, *, student, guarantor,
                 '</tr>')
         parts.append('</table>')
 
-    # Clauses.
+    # Clauses — rendered by the SHARED renderer (contracts.render_clauses_html) so the signed
+    # document and the Preview tab look identical: inline number+heading+body, bold only at the
+    # top level, computed 1. / 1.1 / i) numbering + per-level indent (NOT an <ol>).
     parts.append('<h2 style="font-size:13px; margin:16px 0 6px 0;">Terms / Terma</h2>')
-    # Computed hierarchical numbering (1. / 1.1 / i)) + per-level indent — NOT an <ol> (mixed
-    # decimal/roman numbering + depth is handled here, which xhtml2pdf renders reliably).
-    for (heading, body, level), number in zip(clauses, clause_numbers):
-        indent = 4 + level * 18
-        head = f'<b>{_esc(heading)}.</b> ' if heading else ''
-        parts.append(
-            f'<div style="margin:0 0 7px 0; padding-left:{indent}px;">'
-            f'<b>{_esc(number)}</b> {head}{_clause_body_html(body)}</div>')
+    parts.append(contracts.render_clauses_html(clauses))
 
     # Signature blocks.
     parts.append('<h2 style="font-size:13px; margin:16px 0 6px 0;">Signatures / Tandatangan</h2>')

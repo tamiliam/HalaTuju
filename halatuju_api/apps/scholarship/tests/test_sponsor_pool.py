@@ -772,3 +772,66 @@ class TestAdminAnonProfile(TestCase):
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/publish/',
                              {'publish': True}, format='json')
         self.assertEqual(r.status_code, 403)
+
+
+# ─── sponsor "my students" detail endpoint (owner 2026-07-21, Sprint 2) ──────
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   SPONSOR_POOL_ENABLED=True)
+class TestMyStudentDetail(TestCase):
+    """GET /sponsor/my-students/<pk>/ — a sponsor's OWN sponsored student, any status, with the
+    full anon profile. Gated to the caller's own sponsorship; flag + approved-sponsor gated."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.app = _make_eligible_app(cls.cohort)
+        cls.app.status = 'maintenance'
+        cls.app.save(update_fields=['status'])
+        cls.mine = Sponsor.objects.create(supabase_user_id='mine-uid', email='m@x.com', name='M',
+                                          phone='0123', source='friend', consent_at=timezone.now(),
+                                          status='approved')
+        Sponsorship.objects.create(sponsor=cls.mine, application=cls.app,
+                                   amount=Decimal('2000'), status='active')
+        cls.other = Sponsor.objects.create(supabase_user_id='other-uid', email='o@x.com', name='O',
+                                           phone='0123', source='friend', consent_at=timezone.now(),
+                                           status='approved')
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, "x@x.com")}')
+
+    def _url(self, pk):
+        return f'/api/v1/sponsor/my-students/{pk}/'
+
+    def test_owner_sees_detail_with_profile_and_status(self):
+        self._auth('mine-uid')
+        r = self.client.get(self._url(self.app.id))
+        self.assertEqual(r.status_code, 200)
+        d = r.json()
+        self.assertEqual(Decimal(d['amount']), Decimal('2000'))
+        self.assertIn('anon_profile', d)
+        self.assertTrue(d['anon_profile'])                         # the reviewed markdown is present
+        self.assertEqual(d['student']['portfolio_status'], 'on_track')  # maintenance, no results yet
+
+    def test_non_owner_gets_404(self):
+        self._auth('other-uid')
+        self.assertEqual(self.client.get(self._url(self.app.id)).status_code, 404)
+
+    @override_settings(SPONSOR_POOL_ENABLED=False)
+    def test_flag_off_404(self):
+        self._auth('mine-uid')
+        self.assertEqual(self.client.get(self._url(self.app.id)).status_code, 404)
+
+    def test_unapproved_sponsor_403(self):
+        Sponsor.objects.filter(supabase_user_id='mine-uid').update(status='pending')
+        self._auth('mine-uid')
+        self.assertEqual(self.client.get(self._url(self.app.id)).status_code, 403)
+
+    def test_no_identifiers_leak(self):
+        self._auth('mine-uid')
+        blob = json.dumps(self.client.get(self._url(self.app.id)).json())
+        for label, value in IDENTIFIERS.items():
+            if label == 'school':
+                continue  # the secondary school IS shown to sponsors (owner 2026-07-18)
+            self.assertNotIn(value, blob)

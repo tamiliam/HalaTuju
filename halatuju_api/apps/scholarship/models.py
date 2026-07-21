@@ -2238,6 +2238,9 @@ class ContractTemplate(models.Model):
     counterparty_name = models.CharField(max_length=200, blank=True, default='')
     counterparty_title = models.CharField(max_length=255, blank=True, default='')
     counterparty_nric = models.CharField(max_length=20, blank=True, default='')
+    # Free-text (multi-line) address — TextField so a long address can't overflow (cf. the
+    # heading varchar(255) lesson). Pre-filled from the imported parties recital.
+    counterparty_address = models.TextField(blank=True, default='')
     counterparty_notify_emails = models.JSONField(default=list, blank=True)
     parent_role = models.CharField(
         max_length=20, choices=PARENT_ROLE_CHOICES, default='co_signer_all',
