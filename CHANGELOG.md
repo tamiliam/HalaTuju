@@ -26,6 +26,18 @@ Owner-review refinements to the contract module (behind the OFF flags; authoring
 - Tests: shared-render bold/inline rules, counterparty extraction (+ no-match), config accepts the
   address. New Tamil/Malay strings are first-drafts pending owner review.
 
+## Sponsor profile — evergreen dates + give the model a sense of "now" — 2026-07-21
+
+- **Changed** — the AI-generated sponsor/reviewer profile (`profile_engine.py`) no longer writes text
+  that ages. Gemini has no innate sense of "now" — it read mid-2026 as the future and produced a live
+  date countdown + wrong relative timing (*"is due to report on 12 July 2026"*, *"applications open only
+  after her course begins"*). Both prompts (draft + refine) now (a) receive **today's date** (`_today_str`
+  → `_EVERGREEN`) so tenses/ordering are correct, and (b) carry a **TIME & DATES** rule requiring
+  date-proof phrasing — a reporting/intake date stated as a plain fact of *when the place begins*, never
+  a countdown or cross-event relative timing. `PROMPT_VERSION` → `2026-07-21.1` (existing profiles become
+  stale-by-version and pick up the new wording when regenerated; **no bulk regeneration** — that's
+  paid Gemini calls, owner's call). Test in `test_profile_engine.py`.
+
 ## Contract import — fix 500 / empty-upload on long clauses + org-code prefill — 2026-07-21
 
 - **Fixed** — importing a real `.docx` 500'd on **Accept and replace clauses** (and the
