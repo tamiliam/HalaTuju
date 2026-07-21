@@ -524,6 +524,27 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-21)
 
+**✅ SHIPPED 2026-07-21 (api+web, migration 0108 APPLIED migrate-first) — org admin can reject a stuck
+shortlisted student.** At `shortlisted` a red **"Reject this student"** card takes the slot of **Assign a
+reviewer** (inert there — `is_assignable` forbids assignment before the student completes). Three steps:
+button → **mandatory** reason → in-page "Are you sure? … cannot be undone".
+- **`AdminOrgRejectView`** (`POST .../<pk>/org-reject/`) — **super/org_admin ONLY**, deliberately narrower
+  than `_require_app_write` (which also admits a `qc` + the assigned reviewer). 400 `comments_required` /
+  `bad_status`. `services.org_admin_reject()` + `ORG_REJECT_FROM`; FE mirror `officerCockpit.canOrgReject()`.
+- **IMMEDIATE + IRREVERSIBLE by owner decision** — no cool-off, no embargo, **no Cancel window**; the decline
+  email goes in the same call. The requested 48h delay was DROPPED once it was shown the lockout is free: every
+  student write path + the reminder cron gate on `POST_SHORTLIST_EDITABLE`, which the case leaves at once.
+  **There is no undo — recovery from a mis-click is a manual DB correction.**
+- New bucket **`incomplete`** + **`rejection_comments`** (TextField). Reason is verbatim but **INTERNAL** —
+  the student gets the generic warm decline (`emails.FAIL_*`); the `interview` copy would have lied ("thank you
+  for COMPLETING your application"). +17 pytest / +4 jest. Retro
+  `docs/retrospective-2026-07-21-org-admin-reject.md`; decisions ×2 (one REOPENS the 2026-07-19 "no
+  rejection-note field" entry under its own Revisit clause); lessons ×2.
+- **▶ CARRY:** Malay/Tamil `orgReject.*` + `reject.category.incomplete` first-drafts await owner review.
+- **▶ KNOWN GAP (not triggered today):** an embargoed decline masks the student's status as hardcoded
+  `'interviewed'` (`ApplicationReadSerializer.get_status`); it should mask to `pre_decline_status`. Inert while
+  `DECLINE_COOLOFF_DAYS=0`, but it would misreport a shortlisted student if any cool-off is ever switched on.
+
 **▶ CONTRACT MODULE — authoring polish arc (2026-07-21; behind both OFF flags).** 4 increments DEPLOYED:
 import fidelity (`_docx_structure` reads Word's numbering; Gemini fallback) + insert-between + bold/`{{vars}}`
 (`4aa67529`); **TD-163 RESOLVED** — Open-PDF used DRF's reserved `?format=` → 404, now `?output=pdf` — +
@@ -574,20 +595,8 @@ acceptance" stays FE-derived from sponsorship `offered`). New nullable `supporte
 **0106**, applied migrate-first — owner-set, else heuristic `award_amount//1000`) drives "Semester completed"
 (results ≥ supported). My-students card now leads with full course → institution + key details (was the slug
 "perubatan") + a "Withdrew" journey stop. Behind `SPONSOR_POOL_ENABLED`. Retro
-`docs/retrospective-2026-07-21-portfolio-status.md`; decision ×1.
-
-**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `1a9b7b89`) — Sponsor portfolio status taxonomy + card details
-(Sprint 1).** One priority-ordered `pool.sponsor_portfolio_status` badge per sponsored student (discontinued >
-graduated > paused > semester_completed > needs_attention > on_track; None on a discovery card; "Awaiting
-acceptance" stays FE-derived from sponsorship `offered`). New nullable `supported_semesters` (migration
-**0106**, applied migrate-first — owner-set, else heuristic `award_amount//1000`) drives "Semester completed"
-(results ≥ supported). My-students card now leads with full course → institution + key details (was the slug
-"perubatan") + a "Withdrew" journey stop. Behind `SPONSOR_POOL_ENABLED`. Retro
 `docs/retrospective-2026-07-21-portfolio-status.md`; decision ×1; plan `docs/plans/2026-07-21-portfolio-status-plan.md`.
 Owner: Tamil review of `myStudents.status.*` + `journey.withdrew` first-drafts.
-
-**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `93aa9c44`) — Pool sort + status filter + "Sponsored" wording.**
-Discovery pool orders unfunded (`recommended`) cards ahead of just-sponsored grace-window cards (server-side,
 
 **✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `93aa9c44`) — Pool sort + status filter + "Sponsored" wording.**
 Discovery pool orders unfunded (`recommended`) cards ahead of just-sponsored grace-window cards (server-side,

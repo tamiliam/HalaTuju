@@ -210,7 +210,10 @@ Sprints 1-3 done. Sprint 3 added `shortlisting.py` (pure rules engine → A/B/FA
 (`shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email`; migration 0002). (v2.19.0: the engine result
 now also carries a rejection `category` — merit/need/ineligible — which `score_application` persists to
 `rejection_category`; the admin buckets interview/contractual are set by `services.admin_reject`/`AdminRejectView`, and
-each bucket maps to its own decline email via `emails.send_decline_email(category=…)`.) Sprint 4a
+each bucket maps to its own decline email via `emails.send_decline_email(category=…)`. 2026-07-21 adds a THIRD admin
+bucket `incomplete` — `services.org_admin_reject`/`AdminOrgRejectView`, super/org_admin only, `shortlisted` only,
+IMMEDIATE and irreversible (no cool-off), reason stored verbatim in `rejection_comments` but never emailed; it has
+no template of its own so it falls through to the generic `FAIL_*` copy.) Sprint 4a
 added the `FundingNeed` model (OneToOne → application, `funding_needs`, computed `total`), deeper-info
 fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoint, and a
 `completeness` block on the read serializer (migration 0003). Sprint 5a added `ApplicantDocument`/
