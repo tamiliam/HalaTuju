@@ -28,6 +28,8 @@ const VARIABLES: Array<{ token: string; desc: string }> = [
   { token: '{{guarantor_name}}', desc: 'Parent / guardian name' },
   { token: '{{guarantor_relationship}}', desc: 'Guarantor relationship (e.g. father)' },
   { token: '{{donor_name}}', desc: 'Donor / sponsor name' },
+  { token: '{{donor_nric}}', desc: 'Donor / counterparty NRIC' },
+  { token: '{{donor_address}}', desc: 'Donor / counterparty address' },
   { token: '{{amount}}', desc: 'Bursary amount' },
   { token: '{{institution}}', desc: 'Institution name' },
   { token: '{{course}}', desc: 'Course / programme name' },
@@ -221,13 +223,18 @@ export default function ClauseEditor(
           )}
           {(() => { const pn = clauseNumbers(proposed.map((c) => c.level ?? 0)); return (
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {proposed.map((c, i) => (
-                <div key={i} className="text-sm" style={{ paddingLeft: `${(c.level ?? 0) * 22}px` }}>
-                  <span className="font-mono font-semibold text-blue-700 mr-2">{pn[i]}</span>
-                  <span className="font-semibold">{c.heading || '—'}</span>
-                  <div className="text-gray-600 whitespace-pre-wrap">{c.body}</div>
-                </div>
-              ))}
+              {proposed.map((c, i) => {
+                const top = (c.level ?? 0) === 0
+                // Mirror the rendered document: number + heading + body inline; bold ONLY the
+                // top level; no "—" placeholder when a clause legitimately has no heading.
+                return (
+                  <div key={i} className="text-sm" style={{ paddingLeft: `${(c.level ?? 0) * 22}px` }}>
+                    <span className={`font-mono text-blue-700 mr-2 ${top ? 'font-semibold' : ''}`}>{pn[i]}</span>
+                    {c.heading && <span className={top ? 'font-semibold' : ''}>{c.heading} </span>}
+                    <span className="text-gray-600 whitespace-pre-wrap">{c.body}</span>
+                  </div>
+                )
+              })}
             </div>
           ) })()}
           <div className="flex gap-3 pt-1">

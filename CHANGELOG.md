@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract authoring — outline alignment, donor variables, schedule copy, org dropdown — 2026-07-21
+
+Third owner-review pass (module behind the OFF flags):
+
+- **Changed — proper nested outline indent:** a sub-clause's number now aligns with where its
+  PARENT's text begins (`1.1.` under "Definitions", `I.` under "In this Agreement") — the shared
+  renderer indents each clause by the SUM of its ancestors' number-column widths (was a flat per-level
+  indent). Preview + PDF identical.
+- **Added — `{{donor_nric}}` + `{{donor_address}}` variables:** import now swaps the donor's literal
+  NRIC and address (as well as the name) to tokens, so all three are defined once in Config and
+  referenced as variables. Registered in `CONTRACT_VARS`, the render context, and the editor's
+  Insert-variable menu.
+- **Added — copy a schedule between versions:** the Schedule tab offers "Copy schedule from [version]"
+  (an uploaded `.docx` carries no structured schedule) — fetches that version's rows into the grid to
+  review + Save. FE-only (reuses get/put); an empty-schedule hint too.
+- **Fixed — import review panel:** the proposed-clauses list now bolds ONLY the top level (sub-clauses
+  were bold) and drops the "—" placeholder for a clause that legitimately has no heading (it was
+  implying a heading was expected); inline, mirroring the rendered document.
+- **Changed — org picker for super:** the New-version form offers the organisations that already have
+  templates as a **dropdown** (with "Other…" → free-text), instead of a blank code box.
+- No migration. Tests: NRIC/address tokenisation, cumulative-indent render (PDF verified). New
+  Tamil/Malay strings are first-drafts.
+
 <<<<<<< HEAD
 ## Contract authoring — Word-style numbering + hanging indent, editor tidy-up — 2026-07-21
 

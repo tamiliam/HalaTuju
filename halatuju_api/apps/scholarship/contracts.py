@@ -130,6 +130,8 @@ CONTRACT_VARS = (
     ('guarantor_name', "The guarantor / parent-guardian's name"),
     ('guarantor_relationship', 'The guarantor relationship (e.g. father)'),
     ('donor_name', 'The donor / sponsor name (from the template config)'),
+    ('donor_nric', "The donor / counterparty's NRIC (from config)"),
+    ('donor_address', "The donor / counterparty's address (from config)"),
     ('amount', 'The bursary amount (e.g. RM3,000)'),
     ('institution', 'The institution name'),
     ('course', 'The course / programme name'),
@@ -693,16 +695,22 @@ def segment_docx(data, *, model=None):
         raw = _gemini_generate(_build_segment_prompt(text), model)
         structured = {'title': '', 'preamble': '', 'clauses': _parse_segments(raw)}
     # Pull the counterparty from the ORIGINAL recital (before rewriting), then tokenise: the
-    # author's brackets → {{tokens}}, AND the donor's literal name → {{donor_name}} so the name
-    # is defined ONCE in Config (counterparty_name) and referenced as a variable everywhere.
+    # author's brackets → {{tokens}}, AND the donor's literal name / NRIC / address →
+    # {{donor_name}} / {{donor_nric}} / {{donor_address}} so each is defined ONCE in Config and
+    # referenced as a variable everywhere (edit in one place, updates the whole document).
     cp = _extract_counterparty(structured.get('preamble', ''))
     structured['counterparty'] = cp
-    donor = (cp.get('name') or '').strip()
+    # Address first (longest, contains the name-free street text) so it swaps before any substring.
+    donor_subs = [(v, tok) for v, tok in (
+        ((cp.get('address') or '').strip(), '{{donor_address}}'),
+        ((cp.get('name') or '').strip(), '{{donor_name}}'),
+        ((cp.get('nric') or '').strip(), '{{donor_nric}}'),
+    ) if len(v) >= 3]
 
     def _tokenise(text):
         text = _brackets_to_vars(text)
-        if donor and len(donor) >= 3:
-            text = text.replace(donor, '{{donor_name}}')
+        for value, token in donor_subs:
+            text = text.replace(value, token)
         return text
 
     structured['preamble'] = _tokenise(structured.get('preamble', ''))
@@ -1021,13 +1029,17 @@ def render_clauses_html(clauses, *, base_indent=4):
       • depth adds a left indent.
     Body paragraphs (blank-line separated) render under the first line with a break."""
     from django.utils.html import escape
+    # Number-column width per level (px). A clause is indented by the SUM of its ancestors'
+    # gutters, so a child's number lines up with where its parent's TEXT begins (the classic
+    # legal outline: '1.1.' aligns under 'Definitions', 'I.' under 'In this Agreement').
+    gutters = (22, 34, 30)
     clauses = list(clauses)
     numbers = clause_numbers([lv for _, _, lv in clauses])
     out = []
     for (heading, body, level), number in zip(clauses, numbers):
         top = level == 0
-        indent = base_indent + level * 20
-        gutter = 34 if level < 2 else 26   # 'I.' needs less room than '1.1.'
+        prefix = base_indent + sum(gutters[:level])
+        gutter = gutters[min(level, len(gutters) - 1)]
         num = f'<b>{escape(number)}</b>' if top else escape(number)
         head = ''
         if heading:
@@ -1035,11 +1047,12 @@ def render_clauses_html(clauses, *, base_indent=4):
             head = f'<b>{h}</b> ' if top else f'{h} '
         paras = [_bold(escape(p)) for p in (body or '').split('\n\n') if p.strip()]
         body_html = '<br/><br/>'.join(paras)
-        # A per-clause 2-cell table gives a HANGING INDENT — a wrapped line aligns in the text
-        # column, not under the number (matches the Word doc). A table renders identically in
-        # the browser preview and in xhtml2pdf. The row's left margin grows with depth.
+        # A per-clause 2-cell table gives the HANGING INDENT (a wrapped line aligns in the text
+        # column, not under the number); the table's left MARGIN does the per-depth nest.
+        # (xhtml2pdf reduces the available width by the margin, so width:100% never overflows —
+        # a wrapping div + width:100% table instead computes a NEGATIVE width and crashes.)
         out.append(
-            f'<table style="width:100%; border-collapse:collapse; margin:0 0 6px {indent}px;">'
+            f'<table style="width:100%; border-collapse:collapse; margin:0 0 6px {prefix}px;">'
             f'<tr><td style="width:{gutter}px; vertical-align:top; white-space:nowrap;">{num}</td>'
             f'<td style="vertical-align:top;">{head}{body_html}</td></tr></table>')
     return ''.join(out)

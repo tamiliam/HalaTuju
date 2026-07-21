@@ -683,3 +683,13 @@ class TestDonorNameToVariable(TestCase):
         self.assertIn('{{donor_name}}', got['preamble'])
         donor_clause = next(c for c in got['clauses'] if 'means' in c['body'])
         self.assertEqual(donor_clause['body'], '"Donor" means {{donor_name}}.')
+
+    def test_literal_donor_nric_and_address_become_tokens(self):
+        got = contracts.segment_docx(self._bytes())
+        self.assertEqual(got['counterparty']['nric'], '900101-01-1234')   # kept for Config
+        self.assertEqual(got['counterparty']['address'], '5 Main St')
+        # both the NRIC and the address are tokenised in the preamble text
+        self.assertIn('{{donor_nric}}', got['preamble'])
+        self.assertIn('{{donor_address}}', got['preamble'])
+        self.assertNotIn('900101-01-1234', got['preamble'])
+        self.assertNotIn('5 Main St', got['preamble'])
