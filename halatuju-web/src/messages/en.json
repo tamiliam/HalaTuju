@@ -3442,7 +3442,7 @@
         "contact": "About",
         "family": "Family & finances",
         "support": "Support Required",
-        "story": "Your story",
+        "story": "Student's Story",
         "funding": "Funding"
       },
       "spmGrades": "SPM grades",
@@ -3521,8 +3521,8 @@
         "empty": "No reviewed applications yet — the AI's reliability will appear here once reviewers record their verdicts."
       },
       "verdict": {
-        "title": "Verification verdict",
-        "intro": "What the checks confirm, and what still needs you. Audit it — don't rebuild it.",
+        "title": "AI Prediction",
+        "intro": "AI has attempted to check these details, but we need you to make the final judgement.",
         "fact": {
           "identity": "Identity",
           "academic": "Academic",
@@ -3695,14 +3695,14 @@
         "finaliseOk": "Verdict saved and final profile generated.",
         "finaliseNoDraft": "Verdict saved. Generate a draft profile first before finalising.",
         "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
-        "rateTitle": "Rate AI verification"
+        "rateTitle": "Rate AI Prediction"
       },
       "qcDecision": {
         "title": "Quality control",
-        "hint": "This case is awaiting QC. Accept to move it to Recommended, or Reopen to send it back to the reviewer with your comments.",
+        "hint": "This case is awaiting QC. Accept to move it to Recommended, or Reopen/Reject to send it back to the reviewer with your comments or Reject the student (and provide your comments).",
         "accept": "Accept",
         "confirmDecline": "Confirm decline",
-        "reopen": "Reopen",
+        "reopen": "Reopen/Reject",
         "reopenTitle": "What was missing? (shared with the reviewer)",
         "commentsPlaceholder": "Describe the gaps / what the reviewer must address",
         "reopenConfirm": "Reopen & notify reviewer",
@@ -3724,7 +3724,7 @@
       },
       "outstanding": {
         "title": "Check 2 — Outstanding",
-        "subtitle": "System assigned task(s) to student",
+        "subtitle": "Queries raised and/or documents requested by the system/reviewer",
         "questionLabel": "Question",
         "uploadLabel": "Upload",
         "locked": "Querying closed — the interview is concluded. This is now a read-only record.",

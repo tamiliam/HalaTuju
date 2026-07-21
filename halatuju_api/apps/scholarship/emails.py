@@ -879,12 +879,51 @@ _VIRCLE_GUIDE_FILENAME = 'BrightPath Bursary eWallet by Vircle - Installation Gu
 
 
 def vircle_guide_attachment():
-    """The guide as a ``(filename, content, mimetype)`` triple, or None if the asset is missing.
-    Best-effort by design: a missing file must NOT stop the email — the copy still carries every
-    step, and an email with no attachment beats no email at all."""
+    """The installation guide as a ``(filename, content, mimetype)`` triple, or None.
+
+    Source of truth is the LIVE copy in the owner's Drive (``VIRCLE_GUIDE_FOLDER``) so an edit to
+    the guide reflects in the next award email without a redeploy; the fetched bytes are cached
+    briefly (``VIRCLE_GUIDE_CACHE_SECONDS``) so a batch send doesn't re-download per email. Falls
+    back to the bundled repo asset when Drive is disabled/unreachable — a slightly-stale guide
+    beats no guide, and no attachment still beats no email at all."""
+    filename = getattr(settings, 'VIRCLE_GUIDE_FILENAME', '') or _VIRCLE_GUIDE_FILENAME
+    content = _vircle_guide_bytes_from_drive() or _vircle_guide_bytes_from_asset()
+    if content is None:
+        return None
+    return (filename, content, 'application/pdf')
+
+
+def _vircle_guide_bytes_from_drive():
+    """The live guide bytes from Drive, cached for ``VIRCLE_GUIDE_CACHE_SECONDS``. None when the
+    folder is unset, Drive is disabled, or the fetch fails (all handled in ``sheets``)."""
+    folder = getattr(settings, 'VIRCLE_GUIDE_FOLDER', '')
+    if not folder:
+        return None
+    filename = getattr(settings, 'VIRCLE_GUIDE_FILENAME', '') or _VIRCLE_GUIDE_FILENAME
+    ttl = int(getattr(settings, 'VIRCLE_GUIDE_CACHE_SECONDS', 0) or 0)
+    # Hash the folder+filename into the key so it's cache-backend-safe (no spaces/slashes) and a
+    # config change naturally lands on a fresh key instead of serving a stale cached copy.
+    import hashlib
+    digest = hashlib.sha1(f'{folder}\n{filename}'.encode('utf-8')).hexdigest()
+    cache_key = f'vircle_guide_pdf:{digest}'
+    if ttl > 0:
+        from django.core.cache import cache
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+    from . import sheets
+    content = sheets.fetch_drive_pdf(folder, filename)
+    if content and ttl > 0:
+        from django.core.cache import cache
+        cache.set(cache_key, content, ttl)
+    return content
+
+
+def _vircle_guide_bytes_from_asset():
+    """The bundled repo copy — the fallback when Drive is unavailable."""
     try:
         with open(_VIRCLE_GUIDE_PATH, 'rb') as fh:
-            return (_VIRCLE_GUIDE_FILENAME, fh.read(), 'application/pdf')
+            return fh.read()
     except OSError:
         logger.warning('Vircle installation guide missing at %s', _VIRCLE_GUIDE_PATH)
         return None

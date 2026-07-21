@@ -522,10 +522,26 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-19)
+## Next Sprint (as of 2026-07-21)
 
-**Status: the contract module + reviewer-QC flow are fully built out and DEPLOYED; both go-live flags
-stay OFF. No coding sprint is queued — the open item is the OWNER's flag-flip runbook.** Migrations
+**✅ SHIPPED (code — owner gates the deploy) 2026-07-21 — Award-email guide-from-Drive + cockpit
+copy/UX pass.** NO migration; api + web; push = deploy (held for owner). Retro
+`docs/retrospective-2026-07-21-cockpit-copy-award-guide.md`; decision ×1; lesson ×1.
+- **Award email sources its Vircle installation guide LIVE from Drive** (`03 Vircle/05 Student Guide/`)
+  via read-only `sheets.fetch_drive_pdf` (reuses the payments SA + full `drive` scope), cached
+  (`VIRCLE_GUIDE_CACHE_SECONDS`=600), falling back to the bundled repo asset. New settings
+  `VIRCLE_GUIDE_FOLDER`/`_FILENAME`/`_CACHE_SECONDS`. Verified live vs prod Drive (returned the 1.49 MB
+  Drive copy, newer than the stale bundle). +3 `test_vircle.py` tests.
+- **Cockpit copy (en/ms/ta, Malay/Tamil first-drafts):** "Verification verdict" → **AI Prediction**
+  + new subtitle; "Rate AI verification" → **Rate AI Prediction**; QC "Reopen" → **Reopen/Reject**;
+  Check-2 subtitle reworded; student's-own-words = one box, open by default; "Your story" →
+  **Student's Story**.
+- **▶ AT DEPLOY:** push (api rebuild = emails/sheets/settings; web rebuild); code-only, no
+  migrate-first, no new env vars. **▶ CARRY:** owner review of the Malay/Tamil first-draft strings.
+
+**Status (as of 2026-07-19): the contract module + reviewer-QC flow are fully built out and DEPLOYED;
+both go-live flags stay OFF. No coding sprint is queued — the open item is the OWNER's flag-flip
+runbook.** Migrations
 `courses/0065`, `scholarship/0104`, `scholarship/0105` are ALL APPLIED to prod (migrate-first). The
 older T1/T2 narrative further down is HISTORICAL — where it reads "not applied / not deployed", that
 is superseded (it is applied + deployed).

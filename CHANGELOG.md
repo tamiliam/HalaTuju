@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## Officer cockpit — live-review copy & UX pass — 2026-07-21
+
+Owner live-review tweaks to the reviewer cockpit (`admin/scholarship/[id]`). Web-only, no backend,
+no migration. All strings changed in en/ms/ta (Malay/Tamil are first-drafts pending owner review).
+
+- **Changed — "Verification verdict" card → "AI Prediction"** (`admin.scholarship.verdict.title`) with
+  a new subtitle: "AI has attempted to check these details, but we need you to make the final
+  judgement." (was "What the checks confirm, and what still needs you. Audit it — don't rebuild it.")
+- **Changed — "Rate AI verification" → "Rate AI Prediction"** (`admin.scholarship.recordVerdict.rateTitle`).
+- **Changed — QC decision button "Reopen" → "Reopen/Reject"** and its helper text
+  (`admin.scholarship.qcDecision.reopen`/`hint`) to spell out the reopen-or-reject choice.
+- **Changed — Check 2 subtitle** → "Queries raised and/or documents requested by the system/reviewer"
+  (`admin.scholarship.outstanding.subtitle`; was "System assigned task(s) to student").
+- **Changed — student's-own-words section**: the three separate cards (Student's note · Story ·
+  Funding) are now ONE box with three hairline-divided sections, **expanded by default** (the toggle
+  now closes/reopens it). "Your story" heading → **"Student's Story"** (`admin.scholarship.sec.story`).
+- Gates: i18n parity (jest) green; the edited page type-checks clean. **▶ AT DEPLOY (owner-gated):**
+  push (web rebuild; code-only).
+
+## Award email attaches the LIVE installation guide from Drive — 2026-07-21
+
+The award email's Vircle eWallet installation guide is now sourced from the owner's Drive at
+`03 Vircle/05 Student Guide/` instead of a snapshot frozen in the repo — so editing the guide in
+Drive reflects in the next award email with no redeploy. (Confirmed the bundled copy was already
+stale: Drive 1,494,191 B / 2026-07-18 vs repo 1,443,714 B / 2026-07-14.)
+
+- **Added — `sheets.fetch_drive_pdf(folder_path, filename)`:** best-effort read (list + `get_media`)
+  that downloads an exact-named PDF from a Drive folder. Reuses the SAME Workspace SA + full `drive`
+  scope the payments CSV filer already uses (`GOOGLE_MEET_SA_JSON` impersonating `MEET_ORGANISER_EMAIL`
+  = `admin@halatuju.xyz`); `drive.readonly` is deliberately NOT requested (not in the SA's DWD
+  allowlist → would fail `unauthorized_client`). Never raises — returns `None`, logged.
+- **Changed — `emails.vircle_guide_attachment()`:** now fetches the live Drive copy (cached briefly),
+  and **falls back to the bundled repo asset** when Drive is disabled/unreachable — a slightly-stale
+  guide beats no guide; no attachment still beats no email. The recipient-facing filename is unchanged.
+- **Added settings** (all env-overridable): `VIRCLE_GUIDE_FOLDER` (`03 Vircle/05 Student Guide`),
+  `VIRCLE_GUIDE_FILENAME` (the exact guide name — the folder holds several variants, so an exact-name
+  match picks the right one), `VIRCLE_GUIDE_CACHE_SECONDS` (600; a batch send downloads once, an owner
+  edit reflects within the window; 0 = always fresh).
+- **Verified live** against prod Drive (read-only): the real code returns the 1.49 MB Drive file, not
+  the bundled fallback. Tests: +3 in `test_vircle.py` (prefers Drive / falls back / caches). No
+  migration. The bundled asset stays as the offline fallback.
+- **▶ AT DEPLOY (owner-gated):** push (api rebuild; code-only, no migrate-first). No new env vars
+  required — the defaults point at the right folder/file and the SA already has access.
+
 ## Contract clauses — 3-level hierarchy + upload-a-document at create — 2026-07-19
 
 Owner-approved (design mockup signed off). Contract module stays behind the OFF flags.

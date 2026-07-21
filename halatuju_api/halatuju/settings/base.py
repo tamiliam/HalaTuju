@@ -238,6 +238,18 @@ VIRCLE_PAYMENTS_EMAIL = os.environ.get('VIRCLE_PAYMENTS_EMAIL', 'gokula@vircle.c
 # already exist; owner 2026-07-17 — 03 Vircle moved under 01 BrightPath). Needs the Drive scope
 # on the SA's domain-wide delegation.
 VIRCLE_PAYMENTS_FOLDER = os.environ.get('VIRCLE_PAYMENTS_FOLDER', '01 BrightPath/03 Vircle/01 Payment')
+# The student installation guide the award email attaches. Source of truth is the LIVE copy in
+# the organiser's Drive (so an owner edit reflects without a redeploy); a bundled repo asset is
+# the fallback when Drive is unreachable. Same SA + `drive` scope as the payments filer above.
+# '/'-separated path; the folder must already exist.
+VIRCLE_GUIDE_FOLDER = os.environ.get('VIRCLE_GUIDE_FOLDER', '03 Vircle/05 Student Guide')
+# Exact filename to fetch from that folder — the folder holds several guide variants, so an
+# exact-name match (not "any PDF") picks the right one. Also the name shown to the recipient.
+VIRCLE_GUIDE_FILENAME = os.environ.get(
+    'VIRCLE_GUIDE_FILENAME', 'BrightPath Bursary eWallet by Vircle - Installation Guide.pdf')
+# Cache the fetched bytes this long (seconds) so a batch send doesn't re-download per email; an
+# owner edit in Drive reflects within this window. 0 disables caching (always fetch fresh).
+VIRCLE_GUIDE_CACHE_SECONDS = int(os.environ.get('VIRCLE_GUIDE_CACHE_SECONDS', '600'))
 
 # Check 2 STEP 3: auto-draft the sponsor profile at the reviewer handoff (and the
 # backfill/sweep that share this gate). Billable Gemini, so off by default; flip via the
