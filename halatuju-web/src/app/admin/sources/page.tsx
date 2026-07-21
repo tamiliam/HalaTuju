@@ -6,14 +6,21 @@ import {
   getSources, createSource, updateSource, type SourceItem,
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
+import { formatPhone, isValidPhone } from '@/lib/scholarship'
 
 // Sources (referral organisations) registry — a card in Administration → ORGANISATION
 // (super/org_admin only). List + inline edit + add. Reuses PartnerOrganisation.phone /
 // contact_person / contact_email (NOT a separate contact_phone column). The active-in-apply
 // toggle governs the future apply-form source list; referral attribution is unaffected.
+// The "Students" count = bursary APPLICATIONS attributed to the org by referral chip
+// (backend _source_application_counts); the house org "BrightPath" gets the residual.
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+const inputBad = 'w-full px-3 py-2 border border-red-400 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500'
 const slugify = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, '')
+// Phone is optional; when present it must be a valid Malaysian number. Display + input both
+// run through the platform's shared formatPhone/isValidPhone (same helpers the apply form uses).
+const phoneInvalid = (v: string) => v.trim() !== '' && !isValidPhone(v)
 
 function Toggle({ on, onClick, disabled, label }: {
   on: boolean; onClick: () => void; disabled?: boolean; label: string
@@ -76,6 +83,7 @@ export default function SourcesPage() {
   }
 
   const saveEdit = async (id: number) => {
+    if (phoneInvalid(editForm.phone)) { setMessage({ type: 'error', text: t('profile.invalidPhone') }); return }
     setBusy(id); setMessage(null)
     try {
       const updated = await updateSource(id, editForm, { token: token! })
@@ -87,7 +95,9 @@ export default function SourcesPage() {
   }
 
   const submitAdd = async (e: React.FormEvent) => {
-    e.preventDefault(); setBusy('new'); setMessage(null)
+    e.preventDefault()
+    if (phoneInvalid(addForm.phone)) { setMessage({ type: 'error', text: t('profile.invalidPhone') }); return }
+    setBusy('new'); setMessage(null)
     try {
       await createSource(addForm, { token: token! })
       setAdding(false)
@@ -141,7 +151,9 @@ export default function SourcesPage() {
             </label>
             <label className="block">
               <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.phone')}</span>
-              <input className={inputCls} value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })} />
+              <input className={phoneInvalid(addForm.phone) ? inputBad : inputCls} inputMode="tel"
+                value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: formatPhone(e.target.value) })} />
+              {phoneInvalid(addForm.phone) && <span className="block text-xs text-red-500 mt-1">{t('profile.invalidPhone')}</span>}
             </label>
             <div className="flex items-center gap-3 pt-6">
               <Toggle on={addForm.show_in_apply} onClick={() => setAddForm({ ...addForm, show_in_apply: !addForm.show_in_apply })} label={t('admin.sources.activeInApply')} />
@@ -173,21 +185,45 @@ export default function SourcesPage() {
           </thead>
           <tbody className="divide-y">
             {sources.map((s) => editingId === s.id ? (
+              // Inline edit expands into a single full-width labelled panel (spanning all
+              // columns) rather than cramming inputs into narrow cells — no truncated text,
+              // no row-height misalignment. Mirrors the Add-a-source form layout.
               <tr key={s.id} className="bg-blue-50/40">
-                <td className="px-4 py-3">
-                  <input className={inputCls} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-                  <span className="block text-xs text-gray-400 mt-1">{s.code}</span>
-                </td>
-                <td className="px-4 py-3"><input className={inputCls} value={editForm.contact_person} onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })} /></td>
-                <td className="px-4 py-3"><input className={inputCls} type="email" value={editForm.contact_email} onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })} /></td>
-                <td className="px-4 py-3"><input className={inputCls} value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} /></td>
-                <td className="px-4 py-3"><Toggle on={s.show_in_apply} disabled={busy === s.id} onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} /></td>
-                <td className="px-4 py-3 text-gray-500">{s.student_count ?? 0}</td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <button disabled={busy === s.id} onClick={() => saveEdit(s.id)} className="text-xs font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50">
-                    {busy === s.id ? t('admin.sources.saving') : t('admin.sources.save')}
-                  </button>
-                  <button onClick={() => setEditingId(null)} className="ml-3 text-xs text-gray-500 hover:text-gray-700">{t('admin.sources.cancel')}</button>
+                <td colSpan={7} className="px-4 py-5">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <label className="block">
+                      <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.name')}</span>
+                      <input className={inputCls} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                      <span className="block text-xs text-gray-400 mt-1">{s.code}</span>
+                    </label>
+                    <label className="block">
+                      <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.contactPerson')}</span>
+                      <input className={inputCls} value={editForm.contact_person} onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })} />
+                    </label>
+                    <label className="block">
+                      <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.email')}</span>
+                      <input className={inputCls} type="email" value={editForm.contact_email} onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })} />
+                    </label>
+                    <label className="block">
+                      <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.phone')}</span>
+                      <input className={phoneInvalid(editForm.phone) ? inputBad : inputCls} inputMode="tel"
+                        value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: formatPhone(e.target.value) })} />
+                      {phoneInvalid(editForm.phone) && <span className="block text-xs text-red-500 mt-1">{t('profile.invalidPhone')}</span>}
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4">
+                    <div className="flex items-center gap-3">
+                      <Toggle on={s.show_in_apply} disabled={busy === s.id} onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} />
+                      <span className="text-sm text-gray-700">{t('admin.sources.activeInApply')}</span>
+                    </div>
+                    <div className="flex items-center gap-3 ml-auto">
+                      <button disabled={busy === s.id || phoneInvalid(editForm.phone)} onClick={() => saveEdit(s.id)}
+                        className="px-5 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                        {busy === s.id ? t('admin.sources.saving') : t('admin.sources.save')}
+                      </button>
+                      <button onClick={() => setEditingId(null)} className="text-sm text-gray-500 hover:text-gray-700">{t('admin.sources.cancel')}</button>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -198,7 +234,7 @@ export default function SourcesPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-600">{s.contact_person || t('admin.sources.empty')}</td>
                 <td className="px-4 py-3 text-gray-500">{s.contact_email || t('admin.sources.empty')}</td>
-                <td className="px-4 py-3 text-gray-500">{s.phone || t('admin.sources.empty')}</td>
+                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{s.phone ? formatPhone(s.phone) : t('admin.sources.empty')}</td>
                 <td className="px-4 py-3"><Toggle on={s.show_in_apply} disabled={busy === s.id} onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} /></td>
                 <td className="px-4 py-3">
                   <span className="inline-block min-w-[1.75rem] text-center px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{s.student_count ?? 0}</span>
