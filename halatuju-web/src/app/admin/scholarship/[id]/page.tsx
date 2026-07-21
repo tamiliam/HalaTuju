@@ -278,7 +278,7 @@ export default function AdminScholarshipDetailPage() {
   const [qcOverrideReason, setQcOverrideReason] = useState('')
   // Consolidation: the student's own words (note/story/funding) are collapsed by
   // default under the Sponsor profile — the reviewer checks the AI draft first.
-  const [showOwnWords, setShowOwnWords] = useState(false)
+  const [showOwnWords, setShowOwnWords] = useState(true)
   // Conditional Bursary Award Agreement (flag-gated, dark by default). The admin
   // detail GET does not carry the agreement, so the card's state is populated by
   // the countersign/witness action responses (each returns the full agreement).
@@ -1454,61 +1454,67 @@ export default function AdminScholarshipDetailPage() {
             <span aria-hidden>{showOwnWords ? '▾' : '▸'}</span>
             {t('admin.scholarship.ownWords.toggle')}
           </button>
-          {showOwnWords && (<>
-            {/* Student's note — both free-text memos in one box, each question labelled. */}
-            {(app.uncertainty_note || app.anything_else) && (
-              <Card title={t('admin.scholarship.studentNote')}>
-                <div className="space-y-3">
-                  {app.uncertainty_note && (
-                    <div>
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.plan.uncertainNoteLabel')}</dt>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
-                    </div>
-                  )}
-                  {app.anything_else && (
-                    <div>
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.anythingElseLabel')}</dt>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.anything_else}</p>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )}
-
-            {/* Your story — post-shortlist; hidden until the student fills it */}
-            {hasStory && (
-              <Card title={t('admin.scholarship.sec.story')}>
-                <div className="space-y-2">
-                  <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
-                  <Field label={t('admin.scholarship.plans')} value={app.plans} />
-                  <Field label={t('admin.scholarship.fears')} value={app.fears} />
-                  <Field label={t('admin.scholarship.dailyLife')} value={app.daily_life} />
-                  <Field label={t('admin.scholarship.justification')} value={app.justification} />
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-1 md:grid-cols-3">
-                    <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
-                    <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
-                    <Field label={t('admin.scholarship.siblingsInSchool')} value={app.siblings_in_school} />
-                    <Field label={t('admin.scholarship.siblingsInTertiary')} value={app.siblings_in_tertiary} />
-                    {showLegacySiblings && (
-                      <Field label={t('admin.scholarship.siblingsStudying')} value={`${app.siblings_studying_count} — ${t('admin.scholarship.siblingsLegacyNote')}`} />
+          {showOwnWords && (
+            /* One box, three labelled sections (note · story · funding), split by hairlines. */
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm divide-y divide-gray-100">
+              {/* Student's note — both free-text memos, each question labelled. */}
+              {(app.uncertainty_note || app.anything_else) && (
+                <div className="py-4 first:pt-0 last:pb-0">
+                  <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.scholarship.studentNote')}</h3>
+                  <div className="space-y-3">
+                    {app.uncertainty_note && (
+                      <div>
+                        <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.plan.uncertainNoteLabel')}</dt>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
+                      </div>
                     )}
-                  </dl>
-                  <Field label={t('admin.scholarship.familyContext')} value={app.family_context} />
+                    {app.anything_else && (
+                      <div>
+                        <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.anythingElseLabel')}</dt>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.anything_else}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </Card>
-            )}
+              )}
 
-            {/* Funding — hidden when empty */}
-            {app.funding_need && (
-              <Card title={t('admin.scholarship.sec.funding')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
-                  <Field label={t('admin.scholarship.funding')} value={joinOr(app.funding_need.categories)} />
-                  <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
-                </dl>
-                {app.funding_need.funding_note && <div className="mt-2"><Field label={t('admin.scholarship.fundingNote')} value={app.funding_need.funding_note} /></div>}
-              </Card>
-            )}
-          </>)}
+              {/* Student's Story — post-shortlist; hidden until the student fills it */}
+              {hasStory && (
+                <div className="py-4 first:pt-0 last:pb-0">
+                  <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.scholarship.sec.story')}</h3>
+                  <div className="space-y-2">
+                    <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
+                    <Field label={t('admin.scholarship.plans')} value={app.plans} />
+                    <Field label={t('admin.scholarship.fears')} value={app.fears} />
+                    <Field label={t('admin.scholarship.dailyLife')} value={app.daily_life} />
+                    <Field label={t('admin.scholarship.justification')} value={app.justification} />
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-1 md:grid-cols-3">
+                      <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
+                      <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
+                      <Field label={t('admin.scholarship.siblingsInSchool')} value={app.siblings_in_school} />
+                      <Field label={t('admin.scholarship.siblingsInTertiary')} value={app.siblings_in_tertiary} />
+                      {showLegacySiblings && (
+                        <Field label={t('admin.scholarship.siblingsStudying')} value={`${app.siblings_studying_count} — ${t('admin.scholarship.siblingsLegacyNote')}`} />
+                      )}
+                    </dl>
+                    <Field label={t('admin.scholarship.familyContext')} value={app.family_context} />
+                  </div>
+                </div>
+              )}
+
+              {/* Funding — hidden when empty */}
+              {app.funding_need && (
+                <div className="py-4 first:pt-0 last:pb-0">
+                  <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.scholarship.sec.funding')}</h3>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
+                    <Field label={t('admin.scholarship.funding')} value={joinOr(app.funding_need.categories)} />
+                    <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
+                  </dl>
+                  {app.funding_need.funding_note && <div className="mt-2"><Field label={t('admin.scholarship.fundingNote')} value={app.funding_need.funding_note} /></div>}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         )
       })()}

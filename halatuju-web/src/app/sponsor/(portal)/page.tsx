@@ -141,28 +141,30 @@ export default function MyGivingPage() {
             {wallet.sponsorships.map((sp) => {
               const st = sp.student
               const offered = sp.status === 'offered'
+              const discontinued = st.portfolio_status === 'discontinued'
               return (
                 <div key={sp.id} className={`rounded-2xl border p-4 ${offered ? 'bg-gray-50' : 'bg-white'}`}>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <span className="font-mono text-sm font-semibold text-gray-900">{st.ref}</span>
                     {offered
-                      ? <span className="text-xs rounded-full bg-gray-200 text-gray-600 px-2 py-0.5">⏳ {t('sponsorPortal.myStudents.awaiting')}</span>
-                      : <div className="flex items-center gap-1.5">
-                          {st.support_status && (
-                            <span className={`text-xs rounded-full px-2 py-0.5 ${
-                              st.support_status === 'paused' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                              {t(`sponsorPortal.myStudents.support.${st.support_status}`)}
-                            </span>
-                          )}
-                          <ProgressBadge state={st.progress_state} t={t} />
-                        </div>}
+                      ? <span className="text-xs rounded-full bg-gray-200 text-gray-600 px-2 py-0.5 whitespace-nowrap">⏳ {t('sponsorPortal.myStudents.awaiting')}</span>
+                      : <PortfolioBadge status={st.portfolio_status} t={t} />}
                   </div>
-                  <p className="text-sm text-gray-800 mt-2">{st.field || '—'}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {st.state ? `${st.state} · ` : ''}RM {sp.amount}{st.programme_months ? ` / ${st.programme_months} ${t('sponsorPortal.myStudents.months')}` : ''}
-                  </p>
+                  {/* Full course + institution (was the bare field slug). */}
+                  <p className="text-[15px] font-semibold text-gray-900 mt-2 leading-snug">{st.course || st.field || '—'}</p>
+                  {st.institution && <p className="text-xs text-gray-500 mt-0.5">{st.institution}</p>}
+                  {/* Key details */}
+                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-gray-100 pt-3">
+                    {st.state && <Fact k={t('sponsorPortal.myStudents.fRegion')} v={st.state} />}
+                    <Fact k={t('sponsorPortal.myStudents.fSupport')} v={`RM ${sp.amount}`} />
+                    {st.academic && <Fact k={t('sponsorPortal.myStudents.fAcademic')} v={st.academic} />}
+                    {st.supported_semesters ? (
+                      <Fact k={t('sponsorPortal.myStudents.fSupports')}
+                        v={t('sponsorPortal.myStudents.nSems').replace('{n}', String(st.supported_semesters))} />
+                    ) : null}
+                  </div>
                   {!offered && (
-                    <JourneyTracker onboarded={sp.onboarded} state={st.progress_state} semesters={sp.semesters} t={t} />
+                    <JourneyTracker onboarded={sp.onboarded} state={st.progress_state} semesters={sp.semesters} discontinued={discontinued} t={t} />
                   )}
                 </div>
               )
@@ -225,46 +227,65 @@ const DOT: Record<JourneyStatus, string> = {
   todo: 'bg-gray-200',
 }
 
-/** The Matched → Onboarded → Studying → Graduated tracker (R2). */
-function JourneyTracker({ onboarded, state, semesters, t }: {
+/** A labelled key-detail cell on the sponsored-student card. */
+function Fact({ k, v }: { k: string; v: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wide text-gray-400">{k}</div>
+      <div className="text-xs font-semibold text-gray-800">{v}</div>
+    </div>
+  )
+}
+
+/** The Matched → Onboarded → Studying → Graduated tracker (R2). A discontinued student shows the
+ *  'studying' stage as a red "Withdrew" stop. */
+function JourneyTracker({ onboarded, state, semesters, discontinued, t }: {
   onboarded: boolean
   state: SponsorPoolCard['progress_state']
   semesters: number
+  discontinued?: boolean
   t: (k: string) => string
 }) {
   const stages = journeyStages({ onboarded, progressState: state })
   return (
     <div className="mt-4">
       <div className="flex items-start text-center">
-        {stages.map((s, i) => (
-          <Fragment key={s.key}>
-            {i > 0 && <div className={`flex-1 h-px mt-1 ${stages[i - 1].status === 'done' ? 'bg-green-200' : 'bg-gray-200'}`} />}
-            <div className="flex flex-col items-center">
-              <span className={`w-2.5 h-2.5 rounded-full ${DOT[s.status]}`} />
-              <span className="text-[9px] text-gray-400 mt-1">{t(`sponsorPortal.journey.${s.key}`)}</span>
-            </div>
-          </Fragment>
-        ))}
+        {stages.map((s, i) => {
+          const withdrew = !!discontinued && s.key === 'studying'
+          return (
+            <Fragment key={s.key}>
+              {i > 0 && <div className={`flex-1 h-px mt-1 ${stages[i - 1].status === 'done' ? 'bg-green-200' : 'bg-gray-200'}`} />}
+              <div className="flex flex-col items-center">
+                <span className={`w-2.5 h-2.5 rounded-full ${withdrew ? 'bg-red-500' : DOT[s.status]}`} />
+                <span className={`text-[9px] mt-1 ${withdrew ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                  {t(withdrew ? 'sponsorPortal.journey.withdrew' : `sponsorPortal.journey.${s.key}`)}
+                </span>
+              </div>
+            </Fragment>
+          )
+        })}
       </div>
-      {semesters > 0 && (
+      {semesters > 0 && !discontinued && (
         <p className="text-[10px] text-gray-400 mt-1.5">{t('sponsorPortal.journey.semesters').replace('{n}', String(semesters))}</p>
       )}
     </div>
   )
 }
 
-/** The coarse, non-identifying progress badge on a sponsored-student card. */
-function ProgressBadge({ state, t }: { state: SponsorPoolCard['progress_state']; t: (k: string) => string }) {
-  if (!state) return null
+/** The single sponsor-facing lifecycle badge on a sponsored-student card (post-acceptance). */
+function PortfolioBadge({ status, t }: { status: SponsorPoolCard['portfolio_status']; t: (k: string) => string }) {
+  if (!status) return null
   const tone: Record<string, string> = {
-    on_track: 'bg-green-100 text-green-700',
-    semester_completed: 'bg-blue-100 text-blue-700',
+    on_track: 'bg-blue-100 text-blue-700',
+    semester_completed: 'bg-green-100 text-green-700',
     needs_attention: 'bg-amber-100 text-amber-700',
+    paused: 'bg-red-100 text-red-700',
+    discontinued: 'bg-red-100 text-red-700',
     graduated: 'bg-indigo-100 text-indigo-700',
   }
   return (
-    <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${tone[state] || 'bg-gray-100 text-gray-600'}`}>
-      {t(`sponsorPortal.myStudents.progress.${state}`)}
+    <span className={`inline-block px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${tone[status] || 'bg-gray-100 text-gray-600'}`}>
+      {t(`sponsorPortal.myStudents.status.${status}`)}
     </span>
   )
 }

@@ -28,6 +28,68 @@ All notable changes to this project will be documented in this file.
 - Tests: `test_contracts.py` (`TestDocxStructure`, `TestSubstituteVars`, `TestContractRenderRich`);
   i18n parity for the new `admin.contracts.*` keys (Tamil first-draft, pending owner review).
 
+## Officer cockpit — live-review copy & UX pass — 2026-07-21
+
+Owner live-review tweaks to the reviewer cockpit (`admin/scholarship/[id]`). Web-only, no backend,
+no migration. All strings changed in en/ms/ta (Malay/Tamil are first-drafts pending owner review).
+
+- **Changed — "Verification verdict" card → "AI Prediction"** (`admin.scholarship.verdict.title`) with
+  a new subtitle: "AI has attempted to check these details, but we need you to make the final
+  judgement." (was "What the checks confirm, and what still needs you. Audit it — don't rebuild it.")
+- **Changed — "Rate AI verification" → "Rate AI Prediction"** (`admin.scholarship.recordVerdict.rateTitle`).
+- **Changed — QC decision button "Reopen" → "Reopen/Reject"** and its helper text
+  (`admin.scholarship.qcDecision.reopen`/`hint`) to spell out the reopen-or-reject choice.
+- **Changed — Check 2 subtitle** → "Queries raised and/or documents requested by the system/reviewer"
+  (`admin.scholarship.outstanding.subtitle`; was "System assigned task(s) to student").
+- **Changed — student's-own-words section**: the three separate cards (Student's note · Story ·
+  Funding) are now ONE box with three hairline-divided sections, **expanded by default** (the toggle
+  now closes/reopens it). "Your story" heading → **"Student's Story"** (`admin.scholarship.sec.story`).
+- Gates: i18n parity (jest) green; the edited page type-checks clean. **▶ AT DEPLOY (owner-gated):**
+  push (web rebuild; code-only).
+
+## Award email attaches the LIVE installation guide from Drive — 2026-07-21
+
+The award email's Vircle eWallet installation guide is now sourced from the owner's Drive at
+`03 Vircle/05 Student Guide/` instead of a snapshot frozen in the repo — so editing the guide in
+Drive reflects in the next award email with no redeploy. (Confirmed the bundled copy was already
+stale: Drive 1,494,191 B / 2026-07-18 vs repo 1,443,714 B / 2026-07-14.)
+
+- **Added — `sheets.fetch_drive_pdf(folder_path, filename)`:** best-effort read (list + `get_media`)
+  that downloads an exact-named PDF from a Drive folder. Reuses the SAME Workspace SA + full `drive`
+  scope the payments CSV filer already uses (`GOOGLE_MEET_SA_JSON` impersonating `MEET_ORGANISER_EMAIL`
+  = `admin@halatuju.xyz`); `drive.readonly` is deliberately NOT requested (not in the SA's DWD
+  allowlist → would fail `unauthorized_client`). Never raises — returns `None`, logged.
+- **Changed — `emails.vircle_guide_attachment()`:** now fetches the live Drive copy (cached briefly),
+  and **falls back to the bundled repo asset** when Drive is disabled/unreachable — a slightly-stale
+  guide beats no guide; no attachment still beats no email. The recipient-facing filename is unchanged.
+- **Added settings** (all env-overridable): `VIRCLE_GUIDE_FOLDER` (`03 Vircle/05 Student Guide`),
+  `VIRCLE_GUIDE_FILENAME` (the exact guide name — the folder holds several variants, so an exact-name
+  match picks the right one), `VIRCLE_GUIDE_CACHE_SECONDS` (600; a batch send downloads once, an owner
+  edit reflects within the window; 0 = always fresh).
+- **Verified live** against prod Drive (read-only): the real code returns the 1.49 MB Drive file, not
+  the bundled fallback. Tests: +3 in `test_vircle.py` (prefers Drive / falls back / caches). No
+  migration. The bundled asset stays as the offline fallback.
+- **▶ AT DEPLOY (owner-gated):** push (api rebuild; code-only, no migrate-first). No new env vars
+  required — the defaults point at the right folder/file and the SA already has access.
+
+## Sponsor portfolio — refined per-student status + full course on the card — 2026-07-21
+
+- **Added — `supported_semesters`** (nullable smallint on the application; **migration 0106**, applied
+  migrate-first). How many semesters the bursary funds; owner-set per student over time, else the
+  heuristic `award_amount // 1000` (RM1,000 ≈ one semester: STPM 3 / continuing 1 / Matric-Asasi-others 2).
+- **Added — one lifecycle badge per sponsored student** (`pool.sponsor_portfolio_status`), priority-ordered
+  from existing state: **Discontinued** (withdrawn/terminated) → **Graduated** → **Support paused**
+  (maintenance on-hold) → **Semester completed** (results ≥ supported, or a `completed` close — the
+  supported period is fulfilled and they carry on) → **Needs attention** (a dip / probation) → **On track**.
+  None on a discovery card; **Awaiting acceptance** stays FE-derived from the sponsorship `offered` status.
+  Exposed as `portfolio_status` + `supported_semesters` on the student card serializer.
+- **Changed — My Students card** now leads with the **full course → institution** (was the bare field slug
+  "perubatan") + key details (region · your support · academic · supported sems), a single status badge,
+  and a **"Withdrew"** journey stop for a discontinued student.
+- **i18n** `myStudents.status.*` + key-detail labels + `journey.withdrew` (en/ms/ta; Tamil first-draft).
+- Behind `SPONSOR_POOL_ENABLED`. Test in `test_sponsor_pool.py` (12 new). Sprint 1 of 3 (detail page next;
+  spending deferred). Plan `docs/plans/2026-07-21-portfolio-status-plan.md`.
+
 ## Sponsor pool — sort unfunded-first + status filter + "Sponsored" wording — 2026-07-21
 
 - **Changed** — the discovery pool now **orders unfunded (`recommended`) cards ahead of the

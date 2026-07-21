@@ -262,6 +262,48 @@ def _drive_for_upload():
         return None
 
 
+def fetch_drive_pdf(folder_path, filename):
+    """Best-effort READ: download ``filename`` from the Drive ``folder_path`` (in the organiser's
+    Drive) and return its bytes — or None (logged, never raised) on disabled / not found / any
+    error. Read-only in effect: only ``files().list`` + ``get_media``. Reuses the same SA + full
+    ``drive`` scope the payments filer uses — ``drive.readonly`` is NOT in this SA's domain-wide-
+    delegation allowlist, so requesting it would fail ``unauthorized_client``; the already-granted
+    ``drive`` scope is what works (verified against the live folder)."""
+    if not sheets_enabled():
+        return None
+    try:
+        drive = _drive_for_upload()
+        if drive is None:
+            return None
+        folder_id = _find_folder_path(drive, folder_path)
+        if not folder_id:
+            logger.warning('Drive read: folder path %r not found in the Drive of %s',
+                           folder_path, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
+            return None
+        q = (f"name='{_escape_query(filename)}' and '{folder_id}' in parents "
+             f"and mimeType='application/pdf' and trashed=false")
+        # orderBy modifiedTime desc: if a duplicate name ever exists, take the newest.
+        files = drive.files().list(
+            q=q, fields='files(id,name,modifiedTime)',
+            orderBy='modifiedTime desc', pageSize=10,
+        ).execute().get('files', [])
+        if not files:
+            logger.warning('Drive read: file %r not found in %r', filename, folder_path)
+            return None
+        import io
+
+        from googleapiclient.http import MediaIoBaseDownload  # type: ignore
+        buf = io.BytesIO()
+        downloader = MediaIoBaseDownload(buf, drive.files().get_media(fileId=files[0]['id']))
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+        return buf.getvalue()
+    except Exception:
+        logger.warning('Drive read: fetch failed for %r/%r', folder_path, filename, exc_info=True)
+        return None
+
+
 def write_payment_csv(run):
     """Best-effort: write the run's payment CSV to the '03 Vircle' Drive folder and return its
     URL — or None (logged, never raised). A Drive failure leaves the run completed with a blank

@@ -104,6 +104,8 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
     funded_amount = serializers.SerializerMethodField()  # partial-funding seam: raised so far
     funded = serializers.SerializerMethodField()          # grace window: a just-funded read-only card
+    portfolio_status = serializers.SerializerMethodField()  # My-students: single lifecycle badge (post-accept)
+    supported_semesters = serializers.SerializerMethodField()  # how many semesters the bursary funds
     progress_state = serializers.SerializerMethodField()  # F2: coarse, non-identifying
     support_status = serializers.SerializerMethodField()  # S5: coarse operational signal
     enrolment_verified = serializers.SerializerMethodField()  # R5: bare boolean badge
@@ -165,6 +167,15 @@ class SponsorPoolCardSerializer(serializers.Serializer):
         # pool holds only fundable ('recommended') OR recently-funded students, so any non-recommended
         # card here is a funded one — a single, unambiguous signal for the frontend's "Funded" state.
         return app.status != 'recommended'
+
+    def get_portfolio_status(self, app):
+        # The single sponsor-facing lifecycle badge for a student in the My-students portfolio; None
+        # for a discovery-pool ('recommended') card. 'Awaiting acceptance' is FE-derived from the
+        # sponsorship 'offered' status, not here.
+        return pool.sponsor_portfolio_status(app)
+
+    def get_supported_semesters(self, app):
+        return pool.supported_semesters(app)
 
     def get_state(self, app):
         # State-level region only — street/postcode/city are never exposed.

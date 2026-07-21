@@ -192,6 +192,12 @@ class ScholarshipApplication(models.Model):
     # Phase E3: the admin-approved award amount a sponsor funds in full. Non-identifying;
     # shown on the anonymised pool card. Null until an admin sets it (gates fundability).
     award_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # How many SEMESTERS this bursary funds — drives the sponsor "Semester completed" badge
+    # (results uploaded >= this = the supported period is fulfilled). Owner-set per student over
+    # time (varies by pathway + offer: STPM 3 / continuing 1, Matric/Asasi 2, UA/Poly 5-6, PISMP 10).
+    # NULL → fall back to the heuristic award_amount/1000 (RM1,000 ≈ one semester); see
+    # pool.supported_semesters. Nullable, no backfill.
+    supported_semesters = models.PositiveSmallIntegerField(null=True, blank=True)
     # Payments module (D9): the student's Vircle eWallet account ID — 13 digits, prefix
     # VIRCLE_ID_PREFIX ('8000400175'). Arrives via the CSV import, the Action-Centre
     # confirmation, or an admin correction. Blank until captured; the payable fact for a run.

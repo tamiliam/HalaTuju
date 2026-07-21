@@ -160,7 +160,20 @@
         "semester_completed": "Semester selesai",
         "needs_attention": "Perlu perhatian",
         "graduated": "Bergraduat"
-      }
+      },
+      "status": {
+        "on_track": "Atas landasan",
+        "semester_completed": "Semester selesai",
+        "needs_attention": "Perlu perhatian",
+        "paused": "Tajaan digantung",
+        "discontinued": "Terhenti",
+        "graduated": "Bergraduat"
+      },
+      "fRegion": "Kawasan",
+      "fSupport": "Tajaan anda",
+      "fAcademic": "Akademik",
+      "fSupports": "Menaja",
+      "nSems": "{n} sem"
     },
     "notify": {
       "title": "Kemas kini e-mel",
@@ -220,6 +233,7 @@
       "onboarded": "Didaftarkan",
       "studying": "Belajar",
       "graduated": "Bergraduasi",
+      "withdrew": "Berhenti",
       "semesters": "{n} semester selesai"
     },
     "activity": {
@@ -3447,7 +3461,7 @@
         "contact": "Tentang",
         "family": "Keluarga & kewangan",
         "support": "Sokongan Diperlukan",
-        "story": "Kisah Anda",
+        "story": "Kisah Pelajar",
         "funding": "Pembiayaan"
       },
       "spmGrades": "Keputusan SPM",
@@ -3526,8 +3540,8 @@
         "empty": "Belum ada permohonan yang disemak — kebolehharapan AI akan dipaparkan di sini setelah penyemak merekod keputusan mereka."
       },
       "verdict": {
-        "title": "Keputusan pengesahan",
-        "intro": "Apa yang disahkan oleh semakan, dan apa yang masih memerlukan anda. Audit sahaja — jangan bina semula.",
+        "title": "Ramalan AI",
+        "intro": "AI telah cuba menyemak butiran ini, tetapi kami memerlukan anda untuk membuat pertimbangan akhir.",
         "fact": {
           "identity": "Identiti",
           "academic": "Akademik",
@@ -3700,14 +3714,14 @@
         "finaliseOk": "Keputusan disimpan dan profil akhir dijana.",
         "finaliseNoDraft": "Keputusan disimpan. Jana draf profil dahulu sebelum memuktamadkan.",
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
-        "rateTitle": "Nilai pengesahan AI"
+        "rateTitle": "Nilaikan Ramalan AI"
       },
       "qcDecision": {
         "title": "Kawalan mutu",
-        "hint": "Kes ini menunggu kawalan mutu (QC). Terima untuk memindahkannya ke Disyorkan, atau Buka semula untuk menghantarnya kembali kepada penyemak dengan komen anda.",
+        "hint": "Kes ini sedang menunggu QC. Terima untuk memindahkannya ke Disyorkan, atau Buka semula/Tolak untuk menghantarnya semula kepada penyemak dengan komen anda atau Tolak pelajar ini (dan berikan komen anda).",
         "accept": "Terima",
         "confirmDecline": "Sahkan penolakan",
-        "reopen": "Buka semula",
+        "reopen": "Buka semula/Tolak",
         "reopenTitle": "Apa yang kurang? (dikongsi dengan penyemak)",
         "commentsPlaceholder": "Nyatakan kekurangan / perkara yang perlu diperbaiki oleh penyemak",
         "reopenConfirm": "Buka semula & maklum penyemak",
@@ -3729,7 +3743,7 @@
       },
       "outstanding": {
         "title": "Semakan 2 — Belum selesai",
-        "subtitle": "Tugasan yang ditetapkan sistem kepada pelajar",
+        "subtitle": "Pertanyaan yang dibangkitkan dan/atau dokumen yang diminta oleh sistem/penyemak",
         "questionLabel": "Soalan",
         "uploadLabel": "Muat naik",
         "locked": "Pertanyaan ditutup — temu duga telah selesai. Ini kini rekod baca-sahaja.",

@@ -13,7 +13,10 @@ The load-bearing behaviours, in the order they can hurt someone:
 
 The confirmation is a CLAIM, never a verification — nothing here asserts otherwise.
 """
+from unittest import mock
+
 import jwt
+from django.conf import settings
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -360,6 +363,49 @@ class TestInstallEmail(TestCase):
         self.assertTrue(filename.endswith('.pdf'))
         self.assertEqual(mimetype, 'application/pdf')
         self.assertTrue(content.startswith(b'%PDF'))
+
+    @mock.patch('apps.scholarship.sheets.fetch_drive_pdf')
+    @override_settings(VIRCLE_GUIDE_CACHE_SECONDS=0)
+    def test_guide_prefers_the_live_drive_copy(self, fetch):
+        # When Drive returns the guide, the email attaches THOSE bytes (the owner's live copy),
+        # under the configured filename — not the bundled repo asset.
+        from apps.scholarship.emails import vircle_guide_attachment
+        fetch.return_value = b'%PDF-1.7 drive-live-copy'
+        filename, content, mimetype = vircle_guide_attachment()
+        self.assertEqual(content, b'%PDF-1.7 drive-live-copy')
+        self.assertEqual(mimetype, 'application/pdf')
+        self.assertEqual(filename, settings.VIRCLE_GUIDE_FILENAME)
+        fetch.assert_called_once_with(
+            settings.VIRCLE_GUIDE_FOLDER, settings.VIRCLE_GUIDE_FILENAME)
+
+    @mock.patch('apps.scholarship.sheets.fetch_drive_pdf', return_value=None)
+    @override_settings(VIRCLE_GUIDE_CACHE_SECONDS=0)
+    def test_guide_falls_back_to_bundled_asset_when_drive_unavailable(self, fetch):
+        # Drive down / disabled → the bundled repo PDF still goes out (an email with the guide
+        # beats no email). A real %PDF, and not the drive sentinel.
+        from apps.scholarship.emails import vircle_guide_attachment
+        att = vircle_guide_attachment()
+        self.assertIsNotNone(att)
+        _filename, content, _mimetype = att
+        self.assertTrue(content.startswith(b'%PDF'))
+        self.assertNotIn(b'drive-live-copy', content)
+
+    @mock.patch('apps.scholarship.sheets.fetch_drive_pdf')
+    @override_settings(VIRCLE_GUIDE_CACHE_SECONDS=600)
+    def test_live_guide_bytes_are_cached_between_sends(self, fetch):
+        # A batch send must not re-download 1.5 MB per email: the fetched bytes are cached.
+        from django.core.cache import cache
+
+        from apps.scholarship.emails import vircle_guide_attachment
+        cache.clear()
+        try:
+            fetch.return_value = b'%PDF-1.7 cached-once'
+            first = vircle_guide_attachment()
+            second = vircle_guide_attachment()
+            self.assertEqual(first, second)
+            fetch.assert_called_once()
+        finally:
+            cache.clear()
 
     def test_sends_in_each_language_with_the_guide_attached(self):
         from django.core import mail

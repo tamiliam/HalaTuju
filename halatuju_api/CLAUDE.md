@@ -524,13 +524,26 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-21)
 
-**▶ NEXT (in design): My-students label rework + new sponsored-student detail page.** Refine the sponsor
-portfolio statuses — "Semester completed" = supported sems done + continuing (not graduated); split
-Needs-attention / Support-paused / add Discontinued (derived from on_hold/probation + closure_reason
-withdrawn/terminated); show the FULL anon profile (not the blurb) on a NEW clickable detail page (My-students
-cards are plain divs today), with reserved space for student SPENDING (Vircle, a later sprint). Mock approved
-in principle (artifact); pending final label wording + a Stitch sign-off before coding. This is a real sprint —
-write an implementation plan first.
+**▶ NEXT: My-students detail page (Sprint 2 of the portfolio rework).** Sprint 1 shipped (below). Now build
+the NEW clickable sponsored-student detail page — My-students cards are plain `<div>`s today (not links);
+frame it "you support this student" with the FULL anon profile (`anon_profile`, not the blurb), journey,
+commitment, thank-yous, and NO funding/"support needed" controls. RESERVE space for student SPENDING
+(Vircle — pie or a Spending tab; Sprint 3, deferred). **Stitch mock → owner sign-off → build** (UI rule).
+The discovery-pool detail endpoint won't serve a student past the grace window → add a sponsor-owned
+"my sponsored student" detail endpoint. Approved artifact mock is the design reference.
+
+**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `1a9b7b89`) — Sponsor portfolio status taxonomy + card details
+(Sprint 1).** One priority-ordered `pool.sponsor_portfolio_status` badge per sponsored student (discontinued >
+graduated > paused > semester_completed > needs_attention > on_track; None on a discovery card; "Awaiting
+acceptance" stays FE-derived from sponsorship `offered`). New nullable `supported_semesters` (migration
+**0106**, applied migrate-first — owner-set, else heuristic `award_amount//1000`) drives "Semester completed"
+(results ≥ supported). My-students card now leads with full course → institution + key details (was the slug
+"perubatan") + a "Withdrew" journey stop. Behind `SPONSOR_POOL_ENABLED`. Retro
+`docs/retrospective-2026-07-21-portfolio-status.md`; decision ×1; plan `docs/plans/2026-07-21-portfolio-status-plan.md`.
+Owner: Tamil review of `myStudents.status.*` + `journey.withdrew` first-drafts.
+
+**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `93aa9c44`) — Pool sort + status filter + "Sponsored" wording.**
+Discovery pool orders unfunded (`recommended`) cards ahead of just-sponsored grace-window cards (server-side,
 
 **✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `93aa9c44`) — Pool sort + status filter + "Sponsored" wording.**
 Discovery pool orders unfunded (`recommended`) cards ahead of just-sponsored grace-window cards (server-side,
@@ -553,8 +566,24 @@ Pengesahan Pelajar) can't be machine-verified is no longer barred at the submiss
 required; only STPM exempt (Matriculation/university unaffected). No migration. Retro
 `docs/retrospective-2026-07-20-stpm-offer-submit.md`; decision ×1.
 
-**Status: the contract module + reviewer-QC flow are fully built out and DEPLOYED; both go-live flags
-stay OFF. No coding sprint is queued — the open item is the OWNER's flag-flip runbook.** Migrations
+**✅ SHIPPED (code — owner gates the deploy) 2026-07-21 — Award-email guide-from-Drive + cockpit
+copy/UX pass.** NO migration; api + web; push = deploy (held for owner). Retro
+`docs/retrospective-2026-07-21-cockpit-copy-award-guide.md`; decision ×1; lesson ×1.
+- **Award email sources its Vircle installation guide LIVE from Drive** (`03 Vircle/05 Student Guide/`)
+  via read-only `sheets.fetch_drive_pdf` (reuses the payments SA + full `drive` scope), cached
+  (`VIRCLE_GUIDE_CACHE_SECONDS`=600), falling back to the bundled repo asset. New settings
+  `VIRCLE_GUIDE_FOLDER`/`_FILENAME`/`_CACHE_SECONDS`. Verified live vs prod Drive (returned the 1.49 MB
+  Drive copy, newer than the stale bundle). +3 `test_vircle.py` tests.
+- **Cockpit copy (en/ms/ta, Malay/Tamil first-drafts):** "Verification verdict" → **AI Prediction**
+  + new subtitle; "Rate AI verification" → **Rate AI Prediction**; QC "Reopen" → **Reopen/Reject**;
+  Check-2 subtitle reworded; student's-own-words = one box, open by default; "Your story" →
+  **Student's Story**.
+- **▶ AT DEPLOY:** push (api rebuild = emails/sheets/settings; web rebuild); code-only, no
+  migrate-first, no new env vars. **▶ CARRY:** owner review of the Malay/Tamil first-draft strings.
+
+**Status (as of 2026-07-19): the contract module + reviewer-QC flow are fully built out and DEPLOYED;
+both go-live flags stay OFF. No coding sprint is queued — the open item is the OWNER's flag-flip
+runbook.** Migrations
 `courses/0065`, `scholarship/0104`, `scholarship/0105` are ALL APPLIED to prod (migrate-first). The
 older T1/T2 narrative further down is HISTORICAL — where it reads "not applied / not deployed", that
 is superseded (it is applied + deployed).
