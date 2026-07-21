@@ -1452,7 +1452,7 @@ export default function AdminScholarshipDetailPage() {
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:underline"
           >
             <span aria-hidden>{showOwnWords ? '▾' : '▸'}</span>
-            {t('admin.scholarship.ownWords.toggle')}
+            {t(showOwnWords ? 'admin.scholarship.ownWords.hide' : 'admin.scholarship.ownWords.toggle')}
           </button>
           {showOwnWords && (
             /* One box, three labelled sections (note · story · funding), split by hairlines. */

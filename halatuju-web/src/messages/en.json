@@ -3530,7 +3530,8 @@
       },
       "meritScore": "Merit score",
       "ownWords": {
-        "toggle": "Show the student's own words"
+        "toggle": "Show the student's own words",
+        "hide": "Hide the student's own words"
       },
       "studentNote": "Student's note",
       "reliability": {

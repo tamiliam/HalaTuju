@@ -3530,7 +3530,8 @@
       },
       "meritScore": "Skor merit",
       "ownWords": {
-        "toggle": "Tunjukkan kata-kata pelajar sendiri"
+        "toggle": "Tunjukkan kata-kata pelajar sendiri",
+        "hide": "Sembunyikan kata-kata pelajar sendiri"
       },
       "studentNote": "Nota pelajar",
       "reliability": {
