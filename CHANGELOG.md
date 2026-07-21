@@ -2,6 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
+<<<<<<< HEAD
 ## Contract authoring — Word-style numbering + hanging indent, editor tidy-up — 2026-07-21
 
 Second owner-review pass (contract module stays behind the OFF flags):
@@ -19,6 +20,30 @@ Second owner-review pass (contract module stays behind the OFF flags):
   left of the clause controls with a separator; and an **empty heading or body box collapses to a
   "＋ Heading" / "＋ Body" chip** (shown again once it has content) so each card shows only what it uses.
 - No migration. Tests: Word numbering (py + jest), hanging-indent render, donor→variable on import.
+=======
+## Cockpit — own-words toggle alternates Show/Hide; Vircle relay data ops — 2026-07-21
+
+- **Changed** — the officer cockpit "student's own words" reveal toggle now reads **"Hide the
+  student's own words"** when open and **"Show…"** when closed (new `ownWords.hide`, en/ms/ta),
+  instead of a static label. Web-only.
+- **Data ops (one-time, no code):** the Vircle relay sheet (`Vircle_account`) was reconciled for the
+  8 offline-onboarded activated students — a resolved `vircle_setup_pending` record per student
+  (Emailed 28/06, Confirmed 29/06, Mobile = system phone), then all 8 mobiles normalised to the
+  Action-Centre **E.164 (`+60…`)** form via `normalise_msisdn` so the column is uniform. Sponsor
+  **Goban Arasu** credited **RM10,000** (Donation id 6, manual-credit convention).
+
+## Admin — Sponsors moved into Administration, with a pending-approval badge — 2026-07-21
+
+- **Changed** — **Sponsors** is no longer a top-level admin nav item; it now lives inside the
+  **Administration** hub as a card (🎗️ → `/admin/sponsors`), shown to super / org_admin / Admin-General
+  (unchanged from the old nav visibility; qc & reviewer still don't see it).
+- **Added** — a **pending-approval count badge** (small red pill) on **both** the Administration nav
+  entry and the Sponsors card, whenever sponsor accounts await vetting. Driven by a new lean endpoint
+  `GET /api/v1/admin/sponsors/pending-count/` → `{count}` (`AdminSponsorPendingCountView`; same role-gate
+  as the list; cross-org by design), refetched on navigation so it stays fresh after vetting.
+- i18n `admin.administration.{sponsors,sponsorsSub,pendingApproval}` en/ms/ta. No migration. Tests:
+  pending count (roles + drops to 0 on approval) + org-fence classification.
+>>>>>>> origin/main
 
 ## Vircle — 48-hour activation request to Vircle (dark) — 2026-07-22
 

@@ -100,6 +100,7 @@ from .views_admin import (
     AdminVerdictMetricsView,
     ReviewerProfileView,
     AdminSponsorListView,
+    AdminSponsorPendingCountView,
     AdminSponsorReviewView,
     AdminSuggestGapsView,
     AdminVerifyAcceptView,
@@ -226,6 +227,7 @@ urlpatterns = [
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
     # Phase E: sponsor account vetting
     path('admin/sponsors/', AdminSponsorListView.as_view()),
+    path('admin/sponsors/pending-count/', AdminSponsorPendingCountView.as_view()),  # nav + hub badge
     path('admin/sponsors/<int:pk>/review/', AdminSponsorReviewView.as_view()),
     # Phase E3: match oversight + set the award amount
     path('admin/sponsorships/', AdminSponsorshipListView.as_view()),

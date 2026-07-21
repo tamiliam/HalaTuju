@@ -4232,7 +4232,10 @@
       "contracts": "Contracts",
       "contractsSub": "Author and deploy the bursary agreement",
       "sources": "Sources",
-      "sourcesSub": "Referral organisations & apply-form source list"
+      "sourcesSub": "Referral organisations & apply-form source list",
+      "sponsors": "Sponsors",
+      "sponsorsSub": "Vet and approve sponsor accounts",
+      "pendingApproval": "{count} pending approval"
     },
     "payments": {
       "title": "Payments",

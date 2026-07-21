@@ -243,6 +243,7 @@ class TestFenceCoverageCompleteness(TestCase):
         # cross-org by design (platform-level Sponsor account; not applicant data — D-1).
         # Role-gated to super/org_admin (review) and super/org_admin/admin (list) since 2026-07-15.
         'AdminSponsorListView': 'cross-org-by-design', 'AdminSponsorReviewView': 'cross-org-by-design',
+        'AdminSponsorPendingCountView': 'cross-org-by-design',
         # self-scoped (caller's own reviewer profile, no application)
         'ReviewerProfileView': 'self-scoped',
         # grandfathered referral-org authorisation (orthogonal to ownership; dark)

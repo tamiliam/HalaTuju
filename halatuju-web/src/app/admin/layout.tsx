@@ -6,13 +6,15 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { adminSignOut } from '@/lib/admin-supabase'
 import { mustCompleteProfile } from '@/lib/adminLanding'
+import { getPendingSponsorCount } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
-  const { isAdminAuthenticated, isLoading, role } = useAdminAuth()
+  const { isAdminAuthenticated, isLoading, role, token } = useAdminAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [pendingSponsors, setPendingSponsors] = useState(0)
   const { t } = useT()
 
   useEffect(() => {
@@ -34,6 +36,16 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMobileOpen(false)
   }, [pathname])
+
+  // Pending-sponsor count for the Administration badge — only the roles that can see Sponsors
+  // (super / org_admin / Admin-General). Refetched on navigation so it stays fresh after vetting.
+  useEffect(() => {
+    const canSee = !!(role?.is_super_admin || role?.role === 'admin' || role?.role === 'org_admin')
+    if (!isAdminAuthenticated || !token || !canSee) { setPendingSponsors(0); return }
+    getPendingSponsorCount({ token })
+      .then((d) => setPendingSponsors(d.count))
+      .catch(() => { /* a badge is a hint; never block the shell on it */ })
+  }, [isAdminAuthenticated, token, role, pathname])
 
   // Login and callback pages render without nav
   if (pathname === '/admin/login' || pathname.startsWith('/admin/auth/')) {
@@ -57,11 +69,12 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     router.replace('/admin/login')
   }
 
-  // Payments + Contracts are sub-pages of Administration (no top-level nav entry), so
-  // their pages highlight the Administration link as active (owner, 2026-07-16/18).
+  // Payments + Contracts + Sponsors are sub-pages of Administration (no top-level nav entry), so
+  // their pages highlight the Administration link as active (owner, 2026-07-16/18/21).
   const isActive = (href: string) =>
     pathname === href || (href === '/admin/administration'
-      && (pathname.startsWith('/admin/payments') || pathname.startsWith('/admin/contracts')))
+      && (pathname.startsWith('/admin/payments') || pathname.startsWith('/admin/contracts')
+          || pathname.startsWith('/admin/sponsors')))
 
   // Role-driven menu (2026-06): super/admin see everything; partner sees only
   // Dashboard + Students (own org) — no Guide/FAQ; reviewer + qc see only B40 Applications
@@ -78,7 +91,6 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const dashboard = { href: '/admin', label: t('common.dashboard') }
   const students = { href: '/admin/students', label: t('admin.students') }
   const scholarship = { href: '/admin/scholarship', label: t('admin.scholarship.nav') }
-  const sponsors = { href: '/admin/sponsors', label: t('admin.sponsors.nav') }
   const courseData = { href: '/admin/course-data', label: t('admin.courseData.nav') }
   const administration = { href: '/admin/administration', label: t('admin.administration.nav') }
   const profile = { href: '/admin/profile', label: t('admin.profile') }
@@ -88,14 +100,27 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     // BrightPath (bursary) roles — admin + qc + reviewer + org_admin — see the scholarship
     // side, NOT the HalaTuju course-selector pages (Dashboard/Students/Course Data), which
     // only super retains. Per the role matrix (2026-07-15): QC has NO Sponsors; Admin-General
-    // and org_admin keep Sponsors and get the Administration panel (org_admin manages staff,
-    // Admin-General views it read-only); super gets it as the platform console.
+    // and org_admin get the Administration panel (org_admin manages staff, Admin-General views it
+    // read-only); super gets it as the platform console. Sponsors is NO LONGER a top-level entry
+    // (owner 2026-07-21) — it lives inside Administration as a card, with the pending-approval badge.
     r === 'partner' ? [dashboard, students, profile]        // HalaTuju org rep
     : r === 'reviewer' ? [scholarship, profile, guide, faq]
     : r === 'qc' ? [scholarship, profile, guide, faq]        // QC: no Sponsors (matrix)
-    : r === 'admin' ? [scholarship, sponsors, administration, profile, guide, faq]
-    : r === 'org_admin' ? [scholarship, sponsors, administration, profile, guide, faq]
-    : [dashboard, students, scholarship, sponsors, courseData, administration, profile, guide, faq]  // super
+    : r === 'admin' ? [scholarship, administration, profile, guide, faq]
+    : r === 'org_admin' ? [scholarship, administration, profile, guide, faq]
+    : [dashboard, students, scholarship, courseData, administration, profile, guide, faq]  // super
+
+  // A small red count on the Administration entry when sponsor accounts await vetting.
+  const navBadge = (href: string) =>
+    href === '/admin/administration' && pendingSponsors > 0 ? (
+      <span
+        className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-none align-middle"
+        title={t('admin.administration.pendingApproval', { count: String(pendingSponsors) })}
+        aria-label={t('admin.administration.pendingApproval', { count: String(pendingSponsors) })}
+      >
+        {pendingSponsors}
+      </span>
+    ) : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,7 +136,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 href={link.href}
                 className={`text-sm font-medium ${isActive(link.href) ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
               >
-                {link.label}
+                {link.label}{navBadge(link.href)}
               </Link>
             ))}
           </div>
@@ -156,7 +181,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 href={link.href}
                 className={`block px-3 py-2.5 rounded-lg text-sm font-medium ${isActive(link.href) ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
               >
-                {link.label}
+                {link.label}{navBadge(link.href)}
               </Link>
             ))}
             <div className="border-t border-gray-100 pt-2 mt-2">

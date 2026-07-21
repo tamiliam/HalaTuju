@@ -4,7 +4,7 @@ import { useState, useEffect, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
-  getOrgs, inviteAdmin, getAdmins, revokeAdmin, resendAdminInvite,
+  getOrgs, inviteAdmin, getAdmins, revokeAdmin, resendAdminInvite, getPendingSponsorCount,
   type OrgItem, type AdminItem,
 } from '@/lib/admin-api'
 import { programmeStaff, referralPartners, tenantAdmins } from '@/lib/adminStaff'
@@ -23,9 +23,9 @@ const STAFF_ROLES: StaffRole[] = ['reviewer', 'admin', 'qc']
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
-function IconCard({ icon, title, subtitle, onClick, active, disabled, comingSoon }: {
+function IconCard({ icon, title, subtitle, onClick, active, disabled, comingSoon, badge }: {
   icon: string; title: string; subtitle: string
-  onClick?: () => void; active?: boolean; disabled?: boolean; comingSoon?: string
+  onClick?: () => void; active?: boolean; disabled?: boolean; comingSoon?: string; badge?: number
 }) {
   return (
     <button type="button" onClick={disabled ? undefined : onClick} disabled={disabled}
@@ -38,6 +38,9 @@ function IconCard({ icon, title, subtitle, onClick, active, disabled, comingSoon
         <span className="flex items-center gap-2">
           <span className="font-semibold text-gray-900">{title}</span>
           {comingSoon && <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-500">{comingSoon}</span>}
+          {badge != null && badge > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-none">{badge}</span>
+          )}
         </span>
         <span className="block text-sm text-gray-500 mt-0.5">{subtitle}</span>
       </span>
@@ -75,6 +78,7 @@ export default function AdministrationPage() {
   const [panel, setPanel] = useState<Panel>(null)
   const [admins, setAdmins] = useState<AdminItem[]>([])
   const [orgs, setOrgs] = useState<OrgItem[]>([])
+  const [pendingSponsors, setPendingSponsors] = useState(0)
   const [message, setMessage] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [revoking, setRevoking] = useState<number | null>(null)
@@ -97,6 +101,7 @@ export default function AdministrationPage() {
     if (!token) return
     loadAdmins()
     if (isSuper) getOrgs({ token }).then((d) => setOrgs(d.orgs)).catch(() => {})
+    getPendingSponsorCount({ token }).then((d) => setPendingSponsors(d.count)).catch(() => {})
   }, [token, isSuper])
 
   if (role && !isSuper && !isOrgAdmin && !isAdminGeneral) {
@@ -313,6 +318,8 @@ export default function AdministrationPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <IconCard icon="👥" title={t('admin.administration.inviteStaff')} subtitle={t('admin.administration.inviteStaffSub')}
               active={panel === 'staff'} onClick={() => setPanel(panel === 'staff' ? null : 'staff')} />
+            <IconCard icon="🎗️" title={t('admin.administration.sponsors')} subtitle={t('admin.administration.sponsorsSub')}
+              badge={pendingSponsors} onClick={() => router.push('/admin/sponsors')} />
             <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
               onClick={() => router.push('/admin/payments')} />
             <IconCard icon="📄" title={t('admin.administration.contracts')} subtitle={t('admin.administration.contractsSub')}
@@ -353,6 +360,8 @@ export default function AdministrationPage() {
           // Payments + Sources stay reachable — both are open to the admin role.
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
+              <IconCard icon="🎗️" title={t('admin.administration.sponsors')} subtitle={t('admin.administration.sponsorsSub')}
+                badge={pendingSponsors} onClick={() => router.push('/admin/sponsors')} />
               <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
                 onClick={() => router.push('/admin/payments')} />
               <IconCard icon="🏷️" title={t('admin.administration.sources')} subtitle={t('admin.administration.sourcesSub')}
