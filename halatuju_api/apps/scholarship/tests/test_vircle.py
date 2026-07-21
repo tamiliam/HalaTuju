@@ -431,3 +431,80 @@ class TestInstallEmail(TestCase):
         # imply we have checked it.
         from apps.scholarship.emails import VIRCLE_INSTALL_BODIES
         self.assertNotIn('verif', VIRCLE_INSTALL_BODIES['en'].lower())
+
+
+# ── 48h activation request (installed but not activated → email Vircle) ───────
+_ACT_HEADER = ['Application', 'Name', 'NRIC', 'Email', 'Emailed on', 'Confirmed on',
+               'Mobile registered with Vircle', 'eWallet ID', 'Activated On']
+
+
+class TestPendingActivation(TestCase):
+    def _sheet(self):
+        return [
+            _ACT_HEADER,
+            ['1', 'ALICE', 'a', 'e', '28/06/2026', '29/06/2026', '+60123', '8000400175001', '30/06/2026'],  # activated
+            ['2', 'BOB', 'b', 'e', '28/06/2026', '29/06/2026', '+60124', '8000400175002', ''],              # pending
+            ['3', 'CARA', 'c', 'e', '', '', '', '', ''],                                                     # not installed
+            ['4', 'DEE', 'd', 'e', '28/06/2026', '29/06/2026', '+60125', '8000400175003'],                  # pending (col I trimmed off)
+        ]
+
+    @mock.patch('apps.scholarship.sheets.read_sheet_values')
+    def test_only_installed_and_not_activated_rows_are_returned(self, read):
+        from apps.scholarship import vircle
+        read.return_value = self._sheet()
+        rows = vircle.pending_activation_rows()
+        self.assertEqual([r['name'] for r in rows], ['BOB', 'DEE'])   # ALICE activated, CARA not installed
+        bob = rows[0]
+        self.assertEqual(bob['ewallet'], '8000400175002')
+        self.assertEqual(bob['phone'], '+60124')
+        self.assertEqual(bob['installed_on'], '29/06/2026')          # Installed Date <- Confirmed on
+
+    @mock.patch('apps.scholarship.sheets.read_sheet_values', return_value=[])
+    def test_unreadable_sheet_returns_empty(self, _read):
+        from apps.scholarship import vircle
+        self.assertEqual(vircle.pending_activation_rows(), [])
+
+    def test_csv_has_owner_headers_and_excel_safe_ewallet(self):
+        from apps.scholarship import vircle
+        text = vircle.activation_csv_text([
+            {'name': 'BOB', 'nric': 'b', 'installed_on': '29/06/2026', 'phone': '+60124',
+             'ewallet': '8000400175002'}])
+        self.assertIn('Name,NRIC,Installed Date,Phone number,eWallet ID', text)
+        self.assertIn('8000400175002', text)          # the id survives
+        # csv quotes the ="…" field and doubles the inner quotes → Excel keeps it as text
+        self.assertIn('=""8000400175002""', text)
+
+
+class TestActivationEmail(TestCase):
+    ROWS = [{'name': 'BOB', 'nric': 'b', 'installed_on': '29/06/2026', 'phone': '+60124',
+             'ewallet': '8000400175002'}]
+
+    @override_settings(VIRCLE_ACTIVATION_EMAIL='vircle@example.com',
+                       VIRCLE_ACTIVATION_BCC='ref@example.com')
+    def test_sends_with_csv_and_bcc(self):
+        from django.core import mail
+        from apps.scholarship.emails import send_vircle_activation_email
+        mail.outbox = []
+        self.assertTrue(send_vircle_activation_email(self.ROWS))
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, ['vircle@example.com'])
+        self.assertEqual(msg.bcc, ['ref@example.com'])
+        self.assertIn('activation request', msg.subject.lower())
+        self.assertEqual(len(msg.attachments), 1)                    # the CSV
+        self.assertIn('8000400175002', msg.attachments[0][1])
+
+    @override_settings(VIRCLE_ACTIVATION_EMAIL='', VIRCLE_PAYMENTS_EMAIL='gokula@vircle.com')
+    def test_recipient_falls_back_to_payments_contact(self):
+        from django.core import mail
+        from apps.scholarship.emails import send_vircle_activation_email
+        mail.outbox = []
+        self.assertTrue(send_vircle_activation_email(self.ROWS))
+        self.assertEqual(mail.outbox[0].to, ['gokula@vircle.com'])
+
+    @override_settings(VIRCLE_ACTIVATION_EMAIL='vircle@example.com')
+    def test_empty_rows_send_nothing(self):
+        from django.core import mail
+        from apps.scholarship.emails import send_vircle_activation_email
+        mail.outbox = []
+        self.assertFalse(send_vircle_activation_email([]))
+        self.assertEqual(len(mail.outbox), 0)

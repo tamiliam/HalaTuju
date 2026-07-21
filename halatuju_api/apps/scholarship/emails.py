@@ -3239,6 +3239,53 @@ def send_payment_countersign_email(run):
     return sent
 
 
+def send_vircle_activation_email(rows, csv_text=None):
+    """The 48h activation request to Vircle: the accounts installed but not yet activated, with a
+    CSV attached and a Bcc reference copy. Recipient = VIRCLE_ACTIVATION_EMAIL, else the payments
+    contact. Best-effort; returns True on send, False if disabled / empty / send failed."""
+    recipient = ((getattr(settings, 'VIRCLE_ACTIVATION_EMAIL', '') or '').strip()
+                 or (getattr(settings, 'VIRCLE_PAYMENTS_EMAIL', '') or '').strip())
+    if not recipient or not rows:
+        return False
+    from django.utils import timezone
+
+    from . import vircle
+    if csv_text is None:
+        csv_text = vircle.activation_csv_text(rows)
+    today = timezone.localdate()
+    n = len(rows)
+    # Reference copy (owner A+B): Bcc a mailbox, and the command also files the CSV to Drive.
+    bcc = [e for e in [((getattr(settings, 'VIRCLE_ACTIVATION_BCC', '') or '')
+                        or (getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or '')).strip()] if e]
+    listing = '\n'.join(
+        f"  {i}. {r['name']} — NRIC {r['nric']} — eWallet ID {r['ewallet']} — "
+        f"mobile {r['phone']} — installed {r['installed_on']}"
+        for i, r in enumerate(rows, 1))
+    body = (
+        'Dear Vircle team,\n\n'
+        'The student(s) below have installed the BrightPath Bursary eWallet and completed their '
+        'account details, but their account(s) are not yet activated on your side. Please activate '
+        'them so we can proceed with disbursement.\n\n'
+        f'Awaiting activation: {n}  (full details in the attached CSV)\n\n'
+        f'{listing}\n\n'
+        'Once you activate an account we remove it from this list. This reminder is sent every '
+        '48 hours for any accounts still awaiting activation.\n\n'
+        'Thank you,\n'
+        'The BrightPath Bursary Team'
+    )
+    try:
+        msg = EmailMessage(
+            subject=(f'BrightPath Bursary — eWallet activation request '
+                     f'({n} account{"" if n == 1 else "s"}) — {today:%d %B %Y}'),
+            body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient], bcc=bcc)
+        msg.attach(f'vircle-activation-{today:%Y-%m-%d}.csv', csv_text, 'text/csv')
+        msg.send()
+        return True
+    except Exception:
+        logger.warning('Failed to send the Vircle activation email', exc_info=True)
+        return False
+
+
 def send_payment_run_email(run):
     """Payments D7 — on countersignature, email Vircle the payment instruction with the run's
     CSV attached. Enabled when ``VIRCLE_PAYMENTS_EMAIL`` is set (default gokula@vircle.com);

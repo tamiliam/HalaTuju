@@ -304,6 +304,57 @@ def fetch_drive_pdf(folder_path, filename):
         return None
 
 
+def read_sheet_values(spreadsheet_id, cell_range):
+    """Best-effort READ of a Google Sheet's cell range → a list of rows (each a list of strings),
+    or [] on disabled / error (logged, never raised). Uses the ``spreadsheets`` scope the SA
+    already holds. Trailing empty cells are trimmed by the API, so callers must index defensively."""
+    if not (sheets_enabled() and spreadsheet_id):
+        return []
+    try:
+        import json
+
+        from google.oauth2 import service_account  # type: ignore
+        from googleapiclient.discovery import build  # type: ignore
+        info = json.loads(settings.GOOGLE_MEET_SA_JSON)
+        creds = service_account.Credentials.from_service_account_info(
+            info, scopes=[_SHEETS_SCOPE],
+        ).with_subject(settings.MEET_ORGANISER_EMAIL)
+        svc = build('sheets', 'v4', credentials=creds, cache_discovery=False)
+        return svc.spreadsheets().values().get(
+            spreadsheetId=spreadsheet_id, range=cell_range).execute().get('values', [])
+    except Exception:
+        logger.warning('Sheet read failed for %r %r', spreadsheet_id, cell_range, exc_info=True)
+        return []
+
+
+def file_csv_to_folder(folder_path, filename, text):
+    """Best-effort: write a CSV file into the Drive ``folder_path`` (which must already exist) and
+    return its URL — or None (logged, never raised). Mirrors ``write_payment_csv``, generalised so
+    other flows (e.g. the activation-request archive) can file their own CSV for the record."""
+    if not sheets_enabled():
+        return None
+    try:
+        drive = _drive_for_upload()
+        if drive is None:
+            return None
+        folder_id = _find_folder_path(drive, folder_path)
+        if not folder_id:
+            logger.warning('Drive write: folder path %r not found in the Drive of %s',
+                           folder_path, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
+            return None
+        from googleapiclient.http import MediaInMemoryUpload  # type: ignore
+        media = MediaInMemoryUpload(text.encode('utf-8'), mimetype='text/csv')
+        created = drive.files().create(
+            body={'name': filename, 'parents': [folder_id]},
+            media_body=media, fields='id, webViewLink',
+        ).execute()
+        return (created.get('webViewLink')
+                or f"https://drive.google.com/file/d/{created['id']}/view")
+    except Exception:
+        logger.warning('Drive write failed for %r/%r', folder_path, filename, exc_info=True)
+        return None
+
+
 def write_payment_csv(run):
     """Best-effort: write the run's payment CSV to the '03 Vircle' Drive folder and return its
     URL — or None (logged, never raised). A Drive failure leaves the run completed with a blank

@@ -154,6 +154,67 @@ def relay_rows(applications):
     return [relay_row(app) for app in sorted(applications, key=key)]
 
 
+# ── 48h activation request ───────────────────────────────────────────────────
+# Reads the SAME relay sheet BACK (the one net-new inbound read) to find accounts the student has
+# installed (eWallet ID present) but that Vircle hasn't switched on yet — tracked by the owner's
+# MANUAL "Activated On" column (I). That column is the prune signal: once the owner fills it, the
+# account drops out of the request. Activation is never known to the app itself, so the sheet is
+# the only source of truth for it.
+
+def pending_activation_rows():
+    """Accounts INSTALLED but NOT yet activated, read from the relay sheet: rows with an eWallet ID
+    AND a blank 'Activated On'. Each → {name, nric, installed_on, phone, ewallet}. [] if unreadable.
+    Columns are located by header name (case-insensitive) so a reorder can't silently misread."""
+    from django.conf import settings
+    from . import sheets
+    values = sheets.read_sheet_values(getattr(settings, 'VIRCLE_SHEET_ID', ''), 'A1:I1000')
+    if not values:
+        return []
+    header = [str(h).strip().lower() for h in values[0]]
+
+    def idx(name):
+        try:
+            return header.index(name.lower())
+        except ValueError:
+            return None
+
+    i_name, i_nric = idx('name'), idx('nric')
+    i_installed = idx('confirmed on')                    # 'Installed Date' ← 'Confirmed on'
+    i_phone = idx('mobile registered with vircle')
+    i_ewallet, i_activated = idx('ewallet id'), idx('activated on')
+
+    def cell(row, i):
+        return (str(row[i]).strip() if (i is not None and i < len(row)) else '')
+
+    out = []
+    for row in values[1:]:
+        ewallet = cell(row, i_ewallet)
+        if ewallet and not cell(row, i_activated):       # installed, not activated
+            out.append({
+                'name': cell(row, i_name),
+                'nric': cell(row, i_nric),
+                'installed_on': cell(row, i_installed),
+                'phone': cell(row, i_phone),
+                'ewallet': ewallet,
+            })
+    return out
+
+
+def activation_csv_text(rows):
+    """The activation-request CSV — the owner's headers, one line per pending account."""
+    import csv
+    import io
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(['Name', 'NRIC', 'Installed Date', 'Phone number', 'eWallet ID'])
+    for r in rows:
+        # Excel-safe: a bare 13-digit id renders as 8.0004E+12; ="…" keeps it text.
+        ewallet = f'="{r["ewallet"]}"' if r.get('ewallet') else ''
+        w.writerow([r.get('name', ''), r.get('nric', ''), r.get('installed_on', ''),
+                    r.get('phone', ''), ewallet])
+    return buf.getvalue()
+
+
 def awarded_applications():
     """Every student the bursary is (or is about to be) paying — the relay sheet's population."""
     from .models import ScholarshipApplication
