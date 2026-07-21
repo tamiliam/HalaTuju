@@ -160,7 +160,20 @@
         "semester_completed": "Semester completed",
         "needs_attention": "Needs attention",
         "graduated": "Graduated"
-      }
+      },
+      "status": {
+        "on_track": "On track",
+        "semester_completed": "Semester completed",
+        "needs_attention": "Needs attention",
+        "paused": "Support paused",
+        "discontinued": "Discontinued",
+        "graduated": "Graduated"
+      },
+      "fRegion": "Region",
+      "fSupport": "Your support",
+      "fAcademic": "Academic",
+      "fSupports": "Supports",
+      "nSems": "{n} sems"
     },
     "notify": {
       "title": "Email updates",
@@ -220,6 +233,7 @@
       "onboarded": "Onboarded",
       "studying": "Studying",
       "graduated": "Graduated",
+      "withdrew": "Withdrew",
       "semesters": "{n} semesters done"
     },
     "activity": {

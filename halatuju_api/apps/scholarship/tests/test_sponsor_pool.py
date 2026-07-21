@@ -177,6 +177,80 @@ class TestFundedGraceWindow(TestCase):
         self.assertTrue(SponsorPoolCardSerializer(fund).data['funded'])
 
 
+# ─── portfolio status + supported semesters (owner 2026-07-21) ───────────────
+class TestPortfolioStatus(TestCase):
+    """The single sponsor-facing My-students lifecycle badge + the supported-semesters signal."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='pf', name='B40', year=2026)
+
+    def _app(self, suffix, **kw):
+        app = _make_eligible_app(self.cohort, suffix=suffix)
+        for k, v in kw.items():
+            setattr(app, k, v)
+        app.save()
+        return app
+
+    def _result(self, app, cgpa=Decimal('3.0'), graduated=False):
+        from apps.scholarship.models import SemesterResult
+        return SemesterResult.objects.create(application=app, cgpa=cgpa, graduated=graduated)
+
+    # --- supported_semesters ---
+    def test_supported_semesters_explicit_overrides_heuristic(self):
+        self.assertEqual(pool.supported_semesters(
+            self._app('sx', award_amount=Decimal('2000'), supported_semesters=6)), 6)
+
+    def test_supported_semesters_heuristic_is_amount_over_1000(self):
+        self.assertEqual(pool.supported_semesters(self._app('s3', award_amount=Decimal('3000'))), 3)
+        self.assertEqual(pool.supported_semesters(self._app('s2', award_amount=Decimal('2000'))), 2)
+        self.assertEqual(pool.supported_semesters(self._app('s1', award_amount=Decimal('1000'))), 1)
+        self.assertIsNone(pool.supported_semesters(self._app('s0', award_amount=None)))
+
+    # --- portfolio_status ---
+    def test_recommended_discovery_card_has_no_portfolio_status(self):
+        self.assertIsNone(pool.sponsor_portfolio_status(self._app('rec')))
+
+    def test_discontinued_from_withdrawn_status(self):
+        self.assertEqual(pool.sponsor_portfolio_status(self._app('w', status='withdrawn')), 'discontinued')
+
+    def test_discontinued_from_negative_closure(self):
+        self.assertEqual(pool.sponsor_portfolio_status(
+            self._app('t', status='closed', closure_reason='terminated')), 'discontinued')
+
+    def test_graduated_from_closure(self):
+        self.assertEqual(pool.sponsor_portfolio_status(
+            self._app('g', status='closed', closure_reason='graduated')), 'graduated')
+
+    def test_paused_from_on_hold(self):
+        self.assertEqual(pool.sponsor_portfolio_status(
+            self._app('p', status='maintenance', maintenance_substate='on_hold')), 'paused')
+
+    def test_semester_completed_when_results_reach_supported_count(self):
+        app = self._app('sc', status='maintenance', award_amount=Decimal('2000'))  # heuristic = 2 sems
+        self._result(app); self._result(app)
+        self.assertEqual(pool.sponsor_portfolio_status(app), 'semester_completed')
+
+    def test_semester_completed_from_completed_closure(self):
+        self.assertEqual(pool.sponsor_portfolio_status(
+            self._app('cc', status='closed', closure_reason='completed')), 'semester_completed')
+
+    def test_needs_attention_on_low_cgpa_before_supported_count(self):
+        app = self._app('na', status='maintenance', award_amount=Decimal('3000'))  # 3 sems, 1 result
+        self._result(app, cgpa=Decimal('1.8'))
+        self.assertEqual(pool.sponsor_portfolio_status(app), 'needs_attention')
+
+    def test_on_track_is_the_default(self):
+        self.assertEqual(pool.sponsor_portfolio_status(
+            self._app('ot', status='active', award_amount=Decimal('3000'))), 'on_track')
+
+    def test_card_serializer_surfaces_portfolio_status_and_supported(self):
+        app = self._app('ser', status='maintenance', award_amount=Decimal('2000'))
+        self._result(app); self._result(app)
+        data = SponsorPoolCardSerializer(app).data
+        self.assertEqual(data['portfolio_status'], 'semester_completed')
+        self.assertEqual(data['supported_semesters'], 2)
+
+
 # ─── allowlist: no identifying field may leak ────────────────────────────────
 
 class TestAllowlistNoLeak(TestCase):

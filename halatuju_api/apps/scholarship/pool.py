@@ -89,6 +89,66 @@ def derive_progress_state(application):
     return 'on_track'
 
 
+# Closure reasons that mean the student LEFT before finishing (vs 'graduated'/'completed' = positive).
+_NEGATIVE_CLOSURES = ('withdrawn', 'lapsed', 'terminated')
+# The application statuses a portfolio (post-acceptance) badge applies to. A 'recommended' discovery
+# card returns None immediately (no query), so this is safe to compute across the whole pool grid.
+_PORTFOLIO_STATES = ('awarded', 'active', 'maintenance', 'closed', 'withdrawn')
+
+
+def supported_semesters(application):
+    """How many SEMESTERS this bursary funds, or None when unknown. The owner-set
+    ``supported_semesters`` wins; otherwise the heuristic ``award_amount // 1000`` (RM1,000 ≈ one
+    semester — STPM 3 / continuing-STPM 1 / Matric-Asasi-others 2, for the amounts in use today).
+    Pure; used by the 'Semester completed' badge (results uploaded >= this)."""
+    if application is None:
+        return None
+    explicit = getattr(application, 'supported_semesters', None)
+    if explicit is not None:
+        return explicit
+    amt = getattr(application, 'award_amount', None)
+    if amt is None:
+        return None
+    try:
+        n = int(amt // 1000)
+    except (TypeError, ValueError):
+        return None
+    return n or None
+
+
+def sponsor_portfolio_status(application):
+    """The SINGLE sponsor-facing lifecycle badge for a student in the portfolio, priority-ordered so
+    exactly one shows (owner 2026-07-21). Distinct from the academic ``derive_progress_state``:
+      ``discontinued``       — dropped out / withdrew / terminated (a negative close, or status=withdrawn)
+      ``graduated``          — finished the whole programme
+      ``paused``             — support paused (maintenance on_hold; repeated shortfall → money held)
+      ``semester_completed`` — the SUPPORTED semesters are done (results >= supported_semesters, or a
+                               manual 'completed' close); the student carries on beyond the support
+      ``needs_attention``    — a dip below the academic line, or an admin at-risk (probation) flag
+      ``on_track``           — funded, in good standing (default)
+    Returns None for a not-yet-accepted / non-funded case (e.g. a 'recommended' discovery card, or a
+    rejected one) — 'Awaiting acceptance' is decided on the FRONTEND from the sponsorship 'offered'
+    status, not here. Pure; one status read + (only when it reaches the semester check) one count."""
+    if application is None or application.status not in _PORTFOLIO_STATES:
+        return None
+    from .maintenance import is_on_hold
+    status = application.status
+    reason = (getattr(application, 'closure_reason', '') or '')
+    if status == 'withdrawn' or (status == 'closed' and reason in _NEGATIVE_CLOSURES):
+        return 'discontinued'
+    if reason == 'graduated' or derive_progress_state(application) == 'graduated':
+        return 'graduated'
+    if is_on_hold(application):
+        return 'paused'
+    sup = supported_semesters(application)
+    if reason == 'completed' or (sup and application.semester_results.count() >= sup):
+        return 'semester_completed'
+    if (derive_progress_state(application) == 'needs_attention'
+            or getattr(application, 'maintenance_substate', '') == 'probation'):
+        return 'needs_attention'
+    return 'on_track'
+
+
 def is_pool_eligible(application):
     """A single application is poolable iff its SponsorProfile is anon-published, it is in
     the QC-cleared ``recommended`` stage, AND it has an active share_with_sponsors consent.

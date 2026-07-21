@@ -160,7 +160,20 @@
         "semester_completed": "Semester selesai",
         "needs_attention": "Perlu perhatian",
         "graduated": "Bergraduat"
-      }
+      },
+      "status": {
+        "on_track": "Atas landasan",
+        "semester_completed": "Semester selesai",
+        "needs_attention": "Perlu perhatian",
+        "paused": "Tajaan digantung",
+        "discontinued": "Terhenti",
+        "graduated": "Bergraduat"
+      },
+      "fRegion": "Kawasan",
+      "fSupport": "Tajaan anda",
+      "fAcademic": "Akademik",
+      "fSupports": "Menaja",
+      "nSems": "{n} sem"
     },
     "notify": {
       "title": "Kemas kini e-mel",
@@ -220,6 +233,7 @@
       "onboarded": "Didaftarkan",
       "studying": "Belajar",
       "graduated": "Bergraduasi",
+      "withdrew": "Berhenti",
       "semesters": "{n} semester selesai"
     },
     "activity": {
