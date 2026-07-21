@@ -541,9 +541,13 @@ button → **mandatory** reason → in-page "Are you sure? … cannot be undone"
   `docs/retrospective-2026-07-21-org-admin-reject.md`; decisions ×2 (one REOPENS the 2026-07-19 "no
   rejection-note field" entry under its own Revisit clause); lessons ×2.
 - **▶ CARRY:** Malay/Tamil `orgReject.*` + `reject.category.incomplete` first-drafts await owner review.
-- **▶ KNOWN GAP (not triggered today):** an embargoed decline masks the student's status as hardcoded
-  `'interviewed'` (`ApplicationReadSerializer.get_status`); it should mask to `pre_decline_status`. Inert while
-  `DECLINE_COOLOFF_DAYS=0`, but it would misreport a shortlisted student if any cool-off is ever switched on.
+- **▶ KNOWN GAP — TD-164, LIVE (owner parked it 2026-07-22, do not hotfix):** an embargoed decline masks the
+  student's status as hardcoded `'interviewed'` (`ApplicationReadSerializer.get_status`); it should mask to
+  `pre_decline_status`. **`DECLINE_COOLOFF_DAYS` is `7` in production** — this was first written here as "inert,
+  DECLINE_COOLOFF_DAYS=0", which was WRONG (read off the settings default, never off the running service). Bounded
+  in practice: the mask still hides the rejection, and it only misreports badly for a decline from `shortlisted`.
+  The org-admin reject is unaffected (never sets the pending markers). **Verify any flag claim with
+  `gcloud run services describe halatuju-api` before repeating it.**
 
 **▶ CONTRACT MODULE — authoring polish arc (2026-07-21; behind both OFF flags).** 4 increments DEPLOYED:
 import fidelity (`_docx_structure` reads Word's numbering; Gemini fallback) + insert-between + bold/`{{vars}}`
