@@ -524,6 +524,16 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-21)
 
+**▶ CONTRACT MODULE — authoring polish arc (2026-07-21; behind both OFF flags).** 4 increments DEPLOYED:
+import fidelity (`_docx_structure` reads Word's numbering; Gemini fallback) + insert-between + bold/`{{vars}}`
+(`4aa67529`); **TD-163 RESOLVED** — Open-PDF used DRF's reserved `?format=` → 404, now `?output=pdf` — +
+import-500 varchar(255) heading fix + org prefill (`95d3727b`); shared `render_clauses_html` + counterparty
+auto-fill + `counterparty_address` (migration **0107**, migrate-first) (`e9609e82`). **▶ HELD (owner deferred
+deploy): `fix/contract-authoring-polish2` (`9edaccca`, worktree `.worktrees/contract-polish2`)** — Word-style
+numbering `1.`/`1.1.`/`I.`, hanging-indent render, donor-name→`{{donor_name}}` on import, editor tidy (collapse
+empty heading/body to chips; toolbar moved). No migration. To ship: push `fix/contract-authoring-polish2:main`,
+verify builds, remove worktree (junction-first). Retro `docs/retrospective-2026-07-21-contract-authoring.md`.
+
 **▶ NEXT (Sprint 3, deferred): student SPENDING panel on the detail page.** Space is RESERVED on
 `/sponsor/my-students/[id]` (a dashed "Spending overview — soon" card). Fill it with the Vircle spending
 breakdown (a pie, or its own tab). Owner will say when. Also pending: Tamil review of the `myStudents.status.*`
