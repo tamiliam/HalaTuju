@@ -9,7 +9,10 @@ import {
 import { clauseNumbers, normaliseLevels, canIndent, canOutdent } from '@/lib/clauseNumbering'
 import { CLocale, LangTabs, inputCls, btnPrimary, btnGhost } from './shared'
 
-type Draft = Partial<ContractClauseData>
+// `_showH` / `_showB` are transient UI flags: force an empty heading/body box open (a field
+// with content shows automatically). They ride on the draft object so they survive reorder/indent,
+// and are stripped before save (never sent to the API).
+type Draft = Partial<ContractClauseData> & { _showH?: boolean; _showB?: boolean }
 const EMPTY: Draft = {
   level: 0, heading_en: '', heading_ms: '', heading_ta: '', body_en: '', body_ms: '', body_ta: '',
   is_quiz_candidate: false, quiz_en: {}, quiz_ms: {}, quiz_ta: {},
@@ -25,6 +28,8 @@ const VARIABLES: Array<{ token: string; desc: string }> = [
   { token: '{{guarantor_name}}', desc: 'Parent / guardian name' },
   { token: '{{guarantor_relationship}}', desc: 'Guarantor relationship (e.g. father)' },
   { token: '{{donor_name}}', desc: 'Donor / sponsor name' },
+  { token: '{{donor_nric}}', desc: 'Donor / counterparty NRIC' },
+  { token: '{{donor_address}}', desc: 'Donor / counterparty address' },
   { token: '{{amount}}', desc: 'Bursary amount' },
   { token: '{{institution}}', desc: 'Institution name' },
   { token: '{{course}}', desc: 'Course / programme name' },
@@ -71,6 +76,12 @@ export default function ClauseEditor(
   // Field edits don't touch structure.
   const set = (i: number, k: keyof ContractClauseData, v: unknown) =>
     setClauses((prev) => prev.map((c, j) => (j === i ? { ...c, [k]: v } : c)))
+
+  // A heading/body box shows when it has content in ANY language, or was opened via its "+" chip.
+  const hasHeading = (c: Draft) => !!(c.heading_en || c.heading_ms || c.heading_ta) || !!c._showH
+  const hasBody = (c: Draft) => !!(c.body_en || c.body_ms || c.body_ta) || !!c._showB
+  const showField = (i: number, key: '_showH' | '_showB') =>
+    setClauses((prev) => prev.map((c, j) => (j === i ? { ...c, [key]: true } : c)))
 
   // Rewrite a body field then restore the caret (so bold/insert feel in-place).
   const editBody = (i: number, value: string, caret: number) => {
@@ -129,7 +140,9 @@ export default function ClauseEditor(
   const persist = async (list: Draft[]) => {
     setSaving(true); setErr(null); setMsg(null)
     try {
-      const updated = await putContractClauses(template.id, list, { token })
+      // Strip the transient UI flags before the save (they are not model fields).
+      const clean = list.map(({ _showH, _showB, ...c }) => c)
+      const updated = await putContractClauses(template.id, clean, { token })
       onChange(updated); setClauses(updated.clauses.map((c) => ({ ...c }))); setMsg(t('admin.contracts.saved'))
     } catch (e) {
       setErr((e as Error)?.message || t('admin.contracts.actionFailed'))
@@ -210,13 +223,18 @@ export default function ClauseEditor(
           )}
           {(() => { const pn = clauseNumbers(proposed.map((c) => c.level ?? 0)); return (
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {proposed.map((c, i) => (
-                <div key={i} className="text-sm" style={{ paddingLeft: `${(c.level ?? 0) * 22}px` }}>
-                  <span className="font-mono font-semibold text-blue-700 mr-2">{pn[i]}</span>
-                  <span className="font-semibold">{c.heading || '—'}</span>
-                  <div className="text-gray-600 whitespace-pre-wrap">{c.body}</div>
-                </div>
-              ))}
+              {proposed.map((c, i) => {
+                const top = (c.level ?? 0) === 0
+                // Mirror the rendered document: number + heading + body inline; bold ONLY the
+                // top level; no "—" placeholder when a clause legitimately has no heading.
+                return (
+                  <div key={i} className="text-sm" style={{ paddingLeft: `${(c.level ?? 0) * 22}px` }}>
+                    <span className={`font-mono text-blue-700 mr-2 ${top ? 'font-semibold' : ''}`}>{pn[i]}</span>
+                    {c.heading && <span className={top ? 'font-semibold' : ''}>{c.heading} </span>}
+                    <span className="text-gray-600 whitespace-pre-wrap">{c.body}</span>
+                  </div>
+                )
+              })}
             </div>
           ) })()}
           <div className="flex gap-3 pt-1">
@@ -233,52 +251,68 @@ export default function ClauseEditor(
         return (
           <div key={i} className="bg-white rounded-xl border p-4 space-y-2"
             style={{ marginLeft: `${level * 28}px` }}>
-            {/* Number sits to the LEFT of the heading box (1. [box]); the toolbar + body align under it. */}
+            {/* Number sits to the LEFT of the boxes (1. [box]); only the fields in use are shown. */}
             <div className="flex gap-2">
-              <span className="font-mono text-xs font-bold text-blue-700 tabular-nums shrink-0 w-10 text-right pt-2.5">{numbers[i]}</span>
+              <span className="font-mono text-xs font-bold text-blue-700 tabular-nums shrink-0 w-12 text-right pt-2.5">{numbers[i]}</span>
               <div className="flex-1 min-w-0 space-y-2">
-                <input className={inputCls} disabled={!draft} placeholder={t('admin.contracts.heading')}
-                  value={String(c[hk] || '')} onChange={(e) => set(i, hk, e.target.value)} />
-                {draft && (
-                  <div className="flex items-center gap-2 relative">
-                    <button type="button" title={t('admin.contracts.bold')} onClick={() => wrapBold(i)}
-                      className={toolBtn}><span className="font-bold">B</span></button>
-                    <button type="button" onClick={() => setVarMenu(varMenu === i ? null : i)} className={toolBtn}>
-                      ＋ {t('admin.contracts.insertVariable')} <span className="text-[10px]">▾</span></button>
-                    {varMenu === i && (
-                      <div className="absolute z-10 top-8 left-14 w-80 max-h-56 overflow-auto rounded-lg border border-gray-300 bg-white shadow-xl p-1.5">
-                        <div className="px-2 py-1 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">{t('admin.contracts.variableMenuHint')}</div>
-                        {VARIABLES.map((v) => (
-                          <button key={v.token} type="button" onClick={() => insertVar(i, v.token)}
-                            className="w-full flex items-center justify-between gap-3 px-2 py-1.5 rounded-md hover:bg-blue-50 text-left">
-                            <code className="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 whitespace-nowrap">{v.token}</code>
-                            <span className="text-[11px] text-gray-500 text-right">{v.desc}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                {hasHeading(c) && (
+                  <input className={inputCls} disabled={!draft} placeholder={t('admin.contracts.heading')}
+                    value={String(c[hk] || '')} onChange={(e) => set(i, hk, e.target.value)} />
                 )}
-                <textarea rows={3} className={inputCls} disabled={!draft} placeholder={t('admin.contracts.body')}
-                  ref={(el) => { bodyRefs.current[i] = el }}
-                  value={String(c[bk] || '')} onChange={(e) => set(i, bk, e.target.value)} />
+                {hasBody(c) && (
+                  <textarea rows={3} className={inputCls} disabled={!draft} placeholder={t('admin.contracts.body')}
+                    ref={(el) => { bodyRefs.current[i] = el }}
+                    value={String(c[bk] || '')} onChange={(e) => set(i, bk, e.target.value)} />
+                )}
+                {!hasHeading(c) && !hasBody(c) && (
+                  <p className="text-xs text-gray-300 py-2">{t('admin.contracts.emptyClauseHint')}</p>
+                )}
               </div>
             </div>
-            {/* Bottom row: quiz control on the left, the clause controls on the bottom-right. */}
+            {/* Bottom row: quiz control (top-level only) on the left; field-adders, text tools and
+                the clause controls on the bottom-right, split by a separator. */}
             <div className="flex items-center justify-between gap-2 pt-1">
               <div className="min-w-0">
-                {level === 0 ? (
+                {level === 0 && (
                   <label className="flex items-center gap-2 text-sm text-gray-700">
                     <input type="checkbox" disabled={!draft} checked={!!c.is_quiz_candidate}
                       onChange={(e) => set(i, 'is_quiz_candidate', e.target.checked)} />
                     {t('admin.contracts.useForQuiz')}
                   </label>
-                ) : (
-                  <p className="text-xs text-gray-400">{t('admin.contracts.subclauseQuizNote')}</p>
                 )}
               </div>
               {draft && (
                 <div className="flex items-center gap-1 shrink-0">
+                  {!hasHeading(c) && (
+                    <button type="button" onClick={() => showField(i, '_showH')} className={toolBtn}>
+                      ＋ {t('admin.contracts.heading')}</button>
+                  )}
+                  {hasBody(c) ? (
+                    <>
+                      <button type="button" title={t('admin.contracts.bold')} onClick={() => wrapBold(i)}
+                        className={toolBtn}><span className="font-bold">B</span></button>
+                      <div className="relative">
+                        <button type="button" onClick={() => setVarMenu(varMenu === i ? null : i)} className={toolBtn}>
+                          ＋ {t('admin.contracts.insertVariable')} <span className="text-[10px]">▾</span></button>
+                        {varMenu === i && (
+                          <div className="absolute z-10 bottom-9 right-0 w-80 max-h-56 overflow-auto rounded-lg border border-gray-300 bg-white shadow-xl p-1.5">
+                            <div className="px-2 py-1 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">{t('admin.contracts.variableMenuHint')}</div>
+                            {VARIABLES.map((v) => (
+                              <button key={v.token} type="button" onClick={() => insertVar(i, v.token)}
+                                className="w-full flex items-center justify-between gap-3 px-2 py-1.5 rounded-md hover:bg-blue-50 text-left">
+                                <code className="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 whitespace-nowrap">{v.token}</code>
+                                <span className="text-[11px] text-gray-500 text-right">{v.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => showField(i, '_showB')} className={toolBtn}>
+                      ＋ {t('admin.contracts.body')}</button>
+                  )}
+                  <span className="w-px h-5 bg-gray-200 mx-1" aria-hidden="true" />
                   <button type="button" title={t('admin.contracts.insertBelow')} onClick={() => insertAfter(i)}
                     className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-emerald-200 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-bold">＋</button>
                   <button type="button" title={t('admin.contracts.outdent')} onClick={() => outdent(i)} disabled={!canOutdent(levels, i)} className={iconBtn}>←</button>

@@ -32,6 +32,71 @@ Lets the organisation's own super close out an applicant who stalled in the shor
   (**ms/ta are first-drafts pending owner review**). Tests: +17 pytest (roles incl. qc/reviewer
   refused, cross-org 404, blank reason, wrong status, no double-send, reason-never-emailed,
   lockout invariant) +4 jest; org-fence classification.
+## Contract authoring — outline alignment, donor variables, schedule copy, org dropdown — 2026-07-21
+
+Third owner-review pass (module behind the OFF flags):
+
+- **Changed — proper nested outline indent:** a sub-clause's number now aligns with where its
+  PARENT's text begins (`1.1.` under "Definitions", `I.` under "In this Agreement") — the shared
+  renderer indents each clause by the SUM of its ancestors' number-column widths (was a flat per-level
+  indent). Preview + PDF identical.
+- **Added — `{{donor_nric}}` + `{{donor_address}}` variables:** import now swaps the donor's literal
+  NRIC and address (as well as the name) to tokens, so all three are defined once in Config and
+  referenced as variables. Registered in `CONTRACT_VARS`, the render context, and the editor's
+  Insert-variable menu.
+- **Added — copy a schedule between versions:** the Schedule tab offers "Copy schedule from [version]"
+  (an uploaded `.docx` carries no structured schedule) — fetches that version's rows into the grid to
+  review + Save. FE-only (reuses get/put); an empty-schedule hint too.
+- **Fixed — import review panel:** the proposed-clauses list now bolds ONLY the top level (sub-clauses
+  were bold) and drops the "—" placeholder for a clause that legitimately has no heading (it was
+  implying a heading was expected); inline, mirroring the rendered document.
+- **Changed — org picker for super:** the New-version form offers the organisations that already have
+  templates as a **dropdown** (with "Other…" → free-text), instead of a blank code box.
+- No migration. Tests: NRIC/address tokenisation, cumulative-indent render (PDF verified). New
+  Tamil/Malay strings are first-drafts.
+
+## Sources — accurate student counts, standardised phone, inline-edit polish — 2026-07-21
+
+Sources registry (Administration → Organisation):
+
+- **Fixed — the "Students" count now counts bursary applicants, not the legacy course-selector
+  registry.** It was tallying hundreds of non-applicant `StudentProfile` rows via the drifted
+  `referred_by_org` FK (inflating CUMIG to 256). It now counts `ScholarshipApplication`s attributed by
+  referral chip (`profile.referral_source`) — the same signal the Applications-list Source filter uses.
+  Each external partner counts apps whose chip == its code; the house org **BrightPath** is the
+  residual (self-referred halatuju/other/social + unattributed). Now CUMIG=13, BrightPath=35, and the
+  rows reconcile to the 143 live applications. Global tally carries an `# org-fence:` pragma
+  (single-tenant by design). `_source_application_counts` replaces `_source_student_counts`.
+- **Changed — phone standardised** to the platform's shared `formatPhone`/`isValidPhone` (the apply
+  form's helpers): auto-formats on type in Add/Edit, blocks Save on an invalid Malaysian number, and
+  formats on display. Reuses the existing `profile.invalidPhone` message (no new keys).
+- **Changed — inline edit** reworked from a cramped row of narrow inputs (truncated name, misaligned
+  rows) into one full-width labelled panel spanning all columns, mirroring the Add-a-source form.
+- **Changed — copy:** the "Active in apply form" column + toggle label shortened to **"Active"**
+  (en/ms/ta); the help text still explains the apply-form meaning.
+- No migration. Tests: backend +2 (CUMIG-count / house-residual / FK-drift guard), 2966 pass; web
+  build + tsc + jest green.
+
+_Also resolved a stray merge-conflict marker left committed in this file between the two prior
+2026-07-21 entries (Contract authoring / Cockpit own-words) — both kept._
+
+## Contract authoring — Word-style numbering + hanging indent, editor tidy-up — 2026-07-21
+
+Second owner-review pass (contract module stays behind the OFF flags):
+
+- **Changed — numbering matches the Word document:** `1.` / `1.1.` / `I.` (uppercase roman, full
+  stops throughout), in both `contracts.clause_numbers` and its FE mirror `clauseNumbering.ts`.
+- **Changed — tidy alignment (hanging indent):** the shared clause renderer now lays each clause out
+  as a two-cell table (number gutter + text column), so a wrapped line aligns in the text column
+  instead of under the number — matching the Word layout, identical in the preview and the PDF.
+- **Changed — import defines the donor once:** the donor's literal name in the clauses + preamble is
+  replaced with `{{donor_name}}` on import (it already resolves to the Config counterparty name), so
+  editing it in one place updates everywhere.
+- **Changed — editor:** the "part of the clause above" note moved into the top hint (which now also
+  explains ＋ add-a-clause and quiz coverage); the **B / ＋Variable** buttons moved to the bottom row,
+  left of the clause controls with a separator; and an **empty heading or body box collapses to a
+  "＋ Heading" / "＋ Body" chip** (shown again once it has content) so each card shows only what it uses.
+- No migration. Tests: Word numbering (py + jest), hanging-indent render, donor→variable on import.
 
 ## Cockpit — own-words toggle alternates Show/Hide; Vircle relay data ops — 2026-07-21
 

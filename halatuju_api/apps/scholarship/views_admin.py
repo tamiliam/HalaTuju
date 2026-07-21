@@ -1048,13 +1048,54 @@ def _source_dict(org, student_count=None):
     }
 
 
-def _source_student_counts():
-    """{org_id: number of students who name it as referred_by_org}."""
-    from apps.courses.models import StudentProfile
+# The platform's own bursary programme — the "house" organisation. Applicants who did
+# not come through an external referral partner (self-referred via the apply form, or
+# unattributed) count as the house org's own students. Kept as a code (not an id) so it
+# survives reseeding; mirror of courses/views_admin.py owning-org default.
+HOUSE_ORG_CODE = 'brightpath'
+
+
+def _source_application_counts():
+    """{org_id: bursary-APPLICATION count attributed to that organisation}.
+
+    Counts scholarship *applications* (not the legacy course-selector referral
+    registry, which holds hundreds of non-applicant profiles) and attributes each
+    by the applicant's raw referral chip (`profile.referral_source`) — the SAME
+    signal the Applications-list Source filter uses, so a source's count here
+    equals its filtered applicant count. The stored `referred_by_org` FK is
+    deliberately NOT used: it can drift (a self-referral chip left pointing at an
+    old partner), which is what previously inflated CUMIG.
+
+    Each external partner counts the applications whose chip == its `code`. The
+    house org (`brightpath`) is the RESIDUAL: every application not claimed by an
+    external partner (self-referral chips halatuju/other/social, blanks, or any
+    unmapped chip). Single tenant today, so this is a global tally; revisit the
+    residual split if applications ever span multiple house tenants.
+    """
+    from apps.courses.models import PartnerOrganisation
     from django.db.models import Count
-    return {row['referred_by_org_id']: row['n']
-            for row in (StudentProfile.objects.filter(referred_by_org__isnull=False)
-                        .values('referred_by_org_id').annotate(n=Count('pk')))}
+    # chip -> number of applications carrying it (NULL/'' collapse to '')
+    # org-fence: intentionally GLOBAL — the sources registry lists every organisation and
+    # the house-org residual = (total apps − apps claimed by partners), so this tally must
+    # span all tenants, not one. Single tenant today; revisit the split if that changes.
+    tally = {
+        (row['profile__referral_source'] or ''): row['n']
+        # org-fence: GLOBAL by design (residual house-org tally spans all tenants; see above)
+        for row in (ScholarshipApplication.objects
+                    .values('profile__referral_source')
+                    .annotate(n=Count('pk')))
+    }
+    total = sum(tally.values())
+    orgs = list(PartnerOrganisation.objects.values('id', 'code'))
+    partner_codes = {o['code'] for o in orgs if o['code'] != HOUSE_ORG_CODE}
+    claimed = sum(tally.get(code, 0) for code in partner_codes)
+    counts = {}
+    for o in orgs:
+        if o['code'] == HOUSE_ORG_CODE:
+            counts[o['id']] = total - claimed          # residual → house org
+        else:
+            counts[o['id']] = tally.get(o['code'], 0)
+    return counts
 
 
 class _SourcesBase(_AdminBase):
@@ -1079,7 +1120,7 @@ class AdminSourcesView(_SourcesBase):
         if err:
             return err
         from apps.courses.models import PartnerOrganisation
-        counts = _source_student_counts()
+        counts = _source_application_counts()
         orgs = PartnerOrganisation.objects.order_by('name')
         return Response({'sources': [_source_dict(o, counts.get(o.id, 0)) for o in orgs]})
 
@@ -1139,7 +1180,7 @@ class AdminSourceDetailView(_SourcesBase):
             fields.append('is_active')
         if fields:
             org.save(update_fields=fields)
-        return Response(_source_dict(org, _source_student_counts().get(org.id, 0)))
+        return Response(_source_dict(org, _source_application_counts().get(org.id, 0)))
 
 
 class AdminApplicationWitnessView(_SourcesBase):

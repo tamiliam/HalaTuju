@@ -379,9 +379,14 @@ class TestSourcesAdminAPI(TestCase):
         cls.qc = PartnerAdmin.objects.create(
             supabase_user_id='gl-qc', role='qc', is_active=True,
             owning_organisation=cls.org, name='Qc', email='qc@x.com')
-        # a referred student → source A shows a student_count of 1
-        StudentProfile.objects.create(
-            supabase_user_id='gl-referred', name='Ref Stu', referred_by_org=cls.src)
+        # Counts come from bursary APPLICATIONS attributed by referral CHIP
+        # (profile.referral_source) — NOT the referred_by_org FK. One applicant via
+        # src-a → src-a's count is 1; two self-referred applicants (chips that name no
+        # partner) fall to the house org (brightpath) as its residual → count 2.
+        for suffix, chip in (('srca', 'src-a'), ('house1', 'halatuju'), ('house2', 'social')):
+            a = _fundable_app(cls.cohort, suffix=suffix)
+            a.profile.referral_source = chip
+            a.profile.save(update_fields=['referral_source'])
 
     def setUp(self):
         from rest_framework.test import APIClient
@@ -396,9 +401,26 @@ class TestSourcesAdminAPI(TestCase):
             self._auth(uid)
             r = self.client.get(self.SOURCES)
             self.assertEqual(r.status_code, 200, uid)
-            src = next(s for s in r.json()['sources'] if s['code'] == 'src-a')
-            self.assertEqual(src['student_count'], 1)
-            self.assertEqual(src['phone'], '0111')
+            rows = {s['code']: s for s in r.json()['sources']}
+            # External partner: application count by its own chip.
+            self.assertEqual(rows['src-a']['student_count'], 1, uid)
+            self.assertEqual(rows['src-a']['phone'], '0111', uid)
+            # House org: residual of every application not claimed by a partner
+            # (the two self-referred applicants above).
+            self.assertEqual(rows['brightpath']['student_count'], 2, uid)
+
+    def test_house_org_is_residual_not_fk(self):
+        # A drifted FK must NOT leak into a partner's count: an applicant whose chip is
+        # a self-referral ('other') but whose stale referred_by_org still points at
+        # src-a counts for the HOUSE org, never src-a. Guards the CUMIG-inflation bug.
+        drift = _fundable_app(self.cohort, suffix='drift')
+        drift.profile.referral_source = 'other'
+        drift.profile.referred_by_org = self.src
+        drift.profile.save(update_fields=['referral_source', 'referred_by_org'])
+        self._auth('gl-super')
+        rows = {s['code']: s for s in self.client.get(self.SOURCES).json()['sources']}
+        self.assertEqual(rows['src-a']['student_count'], 1)       # unchanged by the drift
+        self.assertEqual(rows['brightpath']['student_count'], 3)  # 2 residual + this one
 
     def test_admin_role_can_create(self):
         self._auth('gl-adm')

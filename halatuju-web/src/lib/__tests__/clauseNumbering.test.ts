@@ -6,16 +6,16 @@
 import { clauseNumbers, normaliseLevels, canIndent, canOutdent } from '@/lib/clauseNumbering'
 
 describe('clauseNumbers', () => {
-  test('three levels: 1. / 1.1 / i)', () => {
+  test('three levels: 1. / 1.1. / I. (Word style)', () => {
     expect(clauseNumbers([0, 1, 1, 2, 2, 0, 1, 2]))
-      .toEqual(['1.', '1.1', '1.2', 'i)', 'ii)', '2.', '2.1', 'i)'])
+      .toEqual(['1.', '1.1.', '1.2.', 'I.', 'II.', '2.', '2.1.', 'I.'])
   })
   test('roman resets under each new parent', () => {
-    expect(clauseNumbers([0, 2, 2, 0, 2])).toEqual(['1.', 'i)', 'ii)', '2.', 'i)'])
+    expect(clauseNumbers([0, 2, 2, 0, 2])).toEqual(['1.', 'I.', 'II.', '2.', 'I.'])
     // NB: [0,2] is only valid post-normalise as [0,1]; clauseNumbers assumes valid input.
   })
-  test('roman numerals i..v', () => {
-    expect(clauseNumbers([0, 2, 2, 2, 2, 2])).toEqual(['1.', 'i)', 'ii)', 'iii)', 'iv)', 'v)'])
+  test('roman numerals I..V (uppercase)', () => {
+    expect(clauseNumbers([0, 2, 2, 2, 2, 2])).toEqual(['1.', 'I.', 'II.', 'III.', 'IV.', 'V.'])
   })
 })
 

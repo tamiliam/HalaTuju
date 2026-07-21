@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
-import { putContractSchedule, type ContractTemplateDetail, type ContractScheduleRowData } from '@/lib/admin-api'
+import {
+  putContractSchedule, getContractTemplate, getContractTemplates,
+  type ContractTemplateDetail, type ContractScheduleRowData, type ContractTemplateSummary,
+} from '@/lib/admin-api'
 import { btnPrimary } from './shared'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -27,6 +30,26 @@ export default function ScheduleEditor(
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  // "Copy schedule from another version" — an uploaded doc carries no structured schedule.
+  const [others, setOthers] = useState<ContractTemplateSummary[]>([])
+  useEffect(() => {
+    if (!draft || !token) return
+    getContractTemplates(template.organisation, { token })
+      .then((d) => setOthers(d.templates.filter((t2) => t2.id !== template.id)))
+      .catch(() => { /* copy control just won't appear */ })
+  }, [draft, token, template.id, template.organisation])
+
+  const copyFrom = async (sourceId: number) => {
+    if (!sourceId) return
+    setErr(null); setMsg(null)
+    try {
+      const src = await getContractTemplate(sourceId, { token })
+      setRows(src.schedule.map((r) => ({ ...r })))
+      setMsg(t('admin.contracts.schedCopied'))
+    } catch (e) {
+      setErr((e as Error)?.message || t('admin.contracts.actionFailed'))
+    }
+  }
 
   const setRow = (i: number, patch: Partial<ContractScheduleRowData>) =>
     setRows((prev) => prev.map((r, j) => (j === i ? { ...r, ...patch } : r)))
@@ -54,6 +77,21 @@ export default function ScheduleEditor(
     <div className="space-y-5">
       {err && <div className="rounded-lg p-3 bg-red-50 border border-red-200 text-red-600 text-sm">{err}</div>}
       {msg && <div className="rounded-lg p-3 bg-green-50 border border-green-200 text-green-700 text-sm">{msg}</div>}
+
+      {draft && others.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-gray-500">{t('admin.contracts.schedCopyFrom')}</span>
+          <select className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm"
+            defaultValue="" onChange={(e) => { copyFrom(Number(e.target.value)); e.target.value = '' }}>
+            <option value="" disabled>{t('admin.contracts.schedCopyPick')}</option>
+            {others.map((o) => <option key={o.id} value={o.id}>{o.version}</option>)}
+          </select>
+          <span className="text-xs text-gray-400">{t('admin.contracts.schedCopyHint')}</span>
+        </div>
+      )}
+      {rows.length === 0 && (
+        <p className="text-sm text-gray-400">{t('admin.contracts.schedEmpty')}</p>
+      )}
 
       <div className="space-y-4">
         {rows.map((r, i) => {

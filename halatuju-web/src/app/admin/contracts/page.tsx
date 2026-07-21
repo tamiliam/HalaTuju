@@ -41,6 +41,7 @@ export default function ContractsListPage() {
   const [source, setSource] = useState<string>('')
   const [file, setFile] = useState<File | null>(null)
   const [org, setOrg] = useState('')   // super only (org_admin uses own org)
+  const [orgOther, setOrgOther] = useState(false)   // super picked "Other…" → free-text
   const [error, setError] = useState<string | null>(null)
 
   const load = () => {
@@ -52,6 +53,9 @@ export default function ContractsListPage() {
       .finally(() => setLoading(false))
   }
   useEffect(load, [token])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Distinct org codes across existing templates — the dropdown of choices for a super.
+  const knownOrgs = Array.from(new Set(templates.map((tm) => tm.organisation))).filter(Boolean).sort()
 
   if (role && !allowed) {
     return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
@@ -121,8 +125,20 @@ export default function ContractsListPage() {
               ))}
             </select>
             {isSuper ? (
-              <input className={inputCls} placeholder="Organisation code"
-                value={org} onChange={(e) => setOrg(e.target.value)} />
+              // Super picks the owning org. Offer the orgs that already have templates as a
+              // dropdown (with "Other…" → free-text for a brand-new org); fall back to a plain
+              // box when there are no templates yet.
+              (knownOrgs.length > 0 && !orgOther) ? (
+                <select className={inputCls} value={org}
+                  onChange={(e) => { if (e.target.value === '__other__') { setOrgOther(true); setOrg('') } else setOrg(e.target.value) }}>
+                  <option value="" disabled>{t('admin.contracts.orgPick')}</option>
+                  {knownOrgs.map((code) => <option key={code} value={code}>{code}</option>)}
+                  <option value="__other__">{t('admin.contracts.orgOther')}</option>
+                </select>
+              ) : (
+                <input className={inputCls} placeholder="Organisation code"
+                  value={org} onChange={(e) => setOrg(e.target.value)} />
+              )
             ) : (
               // An org_admin has exactly one organisation (the server always uses their own),
               // so show it prefilled + fixed rather than an empty box to fill in.
