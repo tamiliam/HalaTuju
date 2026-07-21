@@ -797,9 +797,14 @@ async function adminMutate<T>(path: string, method: string, body: unknown, optio
   })
   if (!res.ok) {
     const b = await res.json().catch(() => ({}))
-    const err = new Error(b.error || `Admin API error: ${res.status}`) as Error & { status?: number; code?: string }
+    const err = new Error(b.error || `Admin API error: ${res.status}`) as Error
+      & { status?: number; code?: string; body?: Record<string, unknown> }
     err.status = res.status
     err.code = b.code || b.error || ''
+    // Keep the whole error body: some codes carry a detail the UI needs to render a useful
+    // message rather than restate a rule (e.g. 'too_early' → `earliest`, the first date a run
+    // covering that month may be paid, computed by payments.earliest_payment_date).
+    err.body = b
     throw err
   }
   return res.json()

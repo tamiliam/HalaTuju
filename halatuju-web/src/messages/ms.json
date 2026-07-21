@@ -4267,6 +4267,7 @@
       "empty": "Belum ada larian pembayaran.",
       "loadFailed": "Tidak dapat memuatkan larian pembayaran.",
       "pastDate": "Tarikh itu telah berlalu — pilih hari ini atau tarikh akan datang.",
+      "tooEarly": "Terlalu awal untuk bulan itu — larian pendahuluan hanya boleh dibayar mulai {date}.",
       "noOrg": "Akaun anda tidak terikat dengan sesebuah organisasi, jadi ia tidak boleh mencipta larian pembayaran.",
       "studentsLabel": "pelajar",
       "totalLabel": "Jumlah",

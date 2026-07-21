@@ -2249,7 +2249,13 @@ class AdminPaymentRunListView(_PaymentsBase):
         try:
             run = payments.create_run(org, pd, pm, by_email=getattr(admin, 'email', '') or '')
         except payments.PaymentsError as e:
-            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+            body = {'error': e.code, 'code': e.code}
+            if e.code == 'too_early':
+                # Return the earliest valid pay date so the UI can name it in the message. The
+                # rule lives ONLY in payments.earliest_payment_date — deliberately not mirrored
+                # in the frontend, which would make it a keep-in-sync pair that drifts.
+                body['earliest'] = payments.earliest_payment_date(pm).isoformat()
+            return Response(body, status=status.HTTP_400_BAD_REQUEST)
         return Response(_payment_run_detail(run), status=status.HTTP_201_CREATED)
 
 

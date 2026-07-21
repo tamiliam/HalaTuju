@@ -522,7 +522,34 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-21)
+## Next Sprint (as of 2026-07-22)
+
+**✅ SHIPPED 2026-07-22 (api+web, NO migration) — payment back/advance-pay window rules.** Payment
+eligibility now asks "payable for the MONTH being paid for?", not "as at the run's payment date".
+Found while diagnosing why `PR-2026-07-26` (an August run) picked **19 of 43** payable students.
+- **`payments._has_started` compares the pathway floor AND `reporting_date` to `period_month`**,
+  never `payment_date`. The old form was wrong BOTH ways: an August run dated 26 July dropped every
+  Poly/UA-Diploma student (26 Jul precedes their 1 Aug floor), and a July run paid 15 Sep would have
+  let a PISMP student through for a July they never started. **Audited: no completed run ever did
+  this** — the one odd row is the hand-entered `backfill-2026-06-30`, not an engine pick.
+- **Reporting must be STRICTLY BEFORE the month begins** (owner: "a student who reports on 1 July
+  does not qualify for July pay"); reporting 5 Aug ⇒ first payable September. Pathway floors follow
+  from this and are KEPT as the backstop (both must pass). NULL reporting date → floor only (3 rows).
+- **`earliest_payment_date()` + `too_early`:** an advance run is paid no earlier than the **25th of
+  the preceding month**; `create_run` REFUSES otherwise (owner chose refusal over an empty run). One
+  condition covers backpay too (its 25th is long past). Constrains the PAY date, not the creation
+  date — prepare on the 15th, date the payment the 25th.
+- **API returns `earliest` with the error code; the FE renders that value** — the date rule is
+  deliberately NOT mirrored in TypeScript (no sixth keep-in-sync pair). `adminMutate` now keeps the
+  whole error body. i18n `admin.payments.tooEarly` en/ms/ta (**ms/ta first-drafts**).
+- +17 tests (owner's 3 cases verbatim + 24th/25th/26th boundary + year rollover + API contract),
+  **all verified to fail against the pre-fix code**. Retro
+  `docs/retrospective-2026-07-22-payment-window-rules.md`; decisions ×2; lesson ×1.
+- **▶ OWNER: `PR-2026-07-26` is still the OLD 19-student draft.** Regenerating it (unchanged 26 Jul
+  date) now yields **30**; remaining exclusions are correct (4 PISMP → September, 9 no confirmed
+  eWallet ID). Not regenerated automatically — it is a live money artefact.
+
+## Superseded — previous Next Sprint (as of 2026-07-21)
 
 **✅ SHIPPED 2026-07-21 (api+web, migration 0108 APPLIED migrate-first) — org admin can reject a stuck
 shortlisted student.** At `shortlisted` a red **"Reject this student"** card takes the slot of **Assign a

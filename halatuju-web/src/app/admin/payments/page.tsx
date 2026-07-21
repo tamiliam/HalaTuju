@@ -51,7 +51,12 @@ export default function PaymentsLandingPage() {
       router.push(`/admin/payments/${run.id}`)
     } catch (e) {
       const code = (e as { code?: string })?.code
+      // 'too_early' = advance pay before the 25th of the month preceding the covered month.
+      // The backend sends the earliest valid date with the error (the rule lives only in
+      // payments.earliest_payment_date), so we name it rather than restate the rule here.
+      const earliest = String((e as { body?: { earliest?: string } })?.body?.earliest ?? '')
       setError(code === 'past_date' ? t('admin.payments.pastDate')
+        : code === 'too_early' ? t('admin.payments.tooEarly', { date: earliest || '' })
         : code === 'no_org' ? t('admin.payments.noOrg')
         : (e instanceof Error ? e.message : t('admin.actionFailed')))
       setBusy(false)

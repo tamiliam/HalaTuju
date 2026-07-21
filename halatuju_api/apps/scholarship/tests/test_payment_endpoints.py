@@ -193,3 +193,39 @@ class TestRunLifecycle(_Base):
         self.assertIn('Wallet ID', body)
         self.assertNotIn('Phone', body)   # owner 2026-07-16: column dropped
         self.assertIn(self.app_a.vircle_id, r.content.decode())
+
+
+class TestAdvanceWindowEndpoint(_Base):
+    """The API contract for the 25th-of-the-previous-month rule (owner 2026-07-22).
+
+    The frontend deliberately does NOT reimplement the date rule — it renders the `earliest`
+    value this endpoint returns. That keeps one source of truth (payments.earliest_payment_date)
+    instead of a keep-in-sync pair, so this test guards the field the UI depends on.
+    """
+    def _post(self, pay_date, pay_month, today=date(2026, 7, 20)):
+        self._auth('pe-mk')
+        with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=today):
+            return self.client.post(
+                '/api/v1/admin/scholarship/payment-runs/',
+                {'payment_date': pay_date, 'payment_month': pay_month}, format='json')
+
+    def test_too_early_returns_400_with_the_earliest_valid_date(self):
+        r = self._post('2026-07-24', '2026-08')
+        self.assertEqual(r.status_code, 400)
+        body = r.json()
+        self.assertEqual(body['code'], 'too_early')
+        self.assertEqual(body['earliest'], '2026-07-25')   # the UI renders this verbatim
+
+    def test_the_25th_is_accepted(self):
+        self.assertEqual(self._post('2026-07-25', '2026-08').status_code, 201)
+
+    def test_backpay_is_accepted(self):
+        """Rule 1: a July run paid in September."""
+        r = self._post('2026-09-15', '2026-07', today=date(2026, 9, 1))
+        self.assertEqual(r.status_code, 201)
+
+    def test_past_date_still_wins_over_too_early(self):
+        """A date in the past is rejected as past_date, not as too_early — the clearer message."""
+        r = self._post('2026-07-01', '2026-08')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'past_date')

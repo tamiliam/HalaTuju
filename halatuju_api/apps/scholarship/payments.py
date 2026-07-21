@@ -20,7 +20,7 @@ NEVER flips application status** (the ``active → maintenance`` flip stays ``re
 business).
 """
 import logging
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
@@ -151,15 +151,36 @@ def _pathway_payment_start(application, row=None):
     return date(year, month, 1)
 
 
-def _has_started(application, payment_date, row=None):
-    """D4-3 (owner 2026-07-16): payable on this run only when BOTH hold — (1) the pathway's
-    payment window has opened (`payment_date >= the July/Aug/Sep floor`), applied even to a
-    continuing student; AND (2) the student has physically reported (`reporting_date <=
-    payment_date`, when set) so a late arrival is never paid early."""
-    if payment_date < _pathway_payment_start(application, row):
+def _has_started(application, period_month, row=None):
+    """D4-3 — is this student payable FOR THE MONTH ``period_month`` (the 1st of the covered
+    month)? Both must hold:
+
+      1. the pathway's payment window has opened by that month
+         (`period_month >= the July/Aug/Sep floor`), applied even to a continuing student; AND
+      2. the student had physically reported BEFORE the month began
+         (`reporting_date < period_month`, when set).
+
+    **Both tests are on the MONTH BEING PAID FOR, never on the run's payment date** (owner
+    2026-07-22). Until then this compared the floor and the reporting date against
+    ``payment_date``, which was wrong in both directions once back/advance pay is allowed:
+      - ADVANCE (rule 2): an August run legitimately dated 26 July dropped every Poly/UA-Diploma
+        student, because 26 July precedes their 1 August floor — exactly the students whose
+        August money is due. (This is why PR-2026-07-26 selected 19 of 43.)
+      - BACKPAY (rule 1): paying July on 15 September let a PISMP student through (15 Sep is past
+        their 1 Sep floor) and paid them for a July they had not started.
+
+    Owner's worked rule for (2): "a student who reports on 1 July does not qualify for July pay"
+    — hence a STRICT `<`, not `<=`. A student reporting 5 August is first payable for September.
+    The pathway floors are themselves a consequence of this (diploma students report in July so
+    are first paid in August; PISMP report in August so are first paid in September) — the floor
+    is kept as the pathway-level policy backstop and both conditions must pass.
+
+    A NULL ``reporting_date`` (3 live rows) leaves the pathway floor as the only gate — the
+    lenient reading, unchanged from before, since we have no arrival fact to test."""
+    if period_month < _pathway_payment_start(application, row):
         return False
     reporting = application.reporting_date
-    return reporting is None or reporting <= payment_date
+    return reporting is None or reporting < period_month
 
 
 def _schedule_status(row, application, period_month):
@@ -215,9 +236,14 @@ def eligibility(application, payment_date, period_month=None):
     """Per-student eligibility for a run on ``payment_date`` paying for ``period_month`` (the 1st
     of the covered month). Returns ``{eligible, reasons, remaining, vircle_ready, started}``.
     ``reasons`` names the D4-4/5/6 + already-paid failures (the greyed-out list); status/started
-    failures are handled by the caller (not listed at all)."""
+    failures are handled by the caller (not listed at all).
+
+    ``payment_date`` no longer gates eligibility (D4-3 became period-based, owner 2026-07-22) —
+    it is only the FALLBACK source of the period when ``period_month`` is omitted. Whether the
+    run may be dated that early is a separate question, enforced once in ``create_run``."""
     row = _schedule_row(application)
-    started = _has_started(application, payment_date, row)
+    period = period_month or payment_date.replace(day=1)
+    started = _has_started(application, period, row)
     reasons = []
     # Contract-schedule greying (D5): a template exam/skip month or a month past the
     # schedule end is greyed with a reason. None (no template) adds nothing → the legacy
@@ -281,6 +307,24 @@ def eligible_rows(organisation, payment_date, period_month=None):
 
 # ── run lifecycle ───────────────────────────────────────────────────────────────
 
+def earliest_payment_date(period_month):
+    """The earliest date a run covering ``period_month`` may be PAID (owner 2026-07-22, rule 2):
+    the **25th of the month before it**. An August run may be dated 25 July or later.
+
+    One condition covers both directions, with no special case for backpay: for a period in the
+    past that date is long gone, so any run that clears the `past_date` check satisfies it
+    automatically (rule 1 — "you can make July payment on, for example, 15 Sep"). For a period
+    further ahead it bites correctly — a December run may not be dated 26 July, because the 25th
+    of December's preceding month is 25 November.
+
+    Note this constrains the PAYMENT date, not the creation date: an admin may prepare next
+    month's run on the 15th as long as they date the payment the 25th or later (owner's case 3);
+    eligibility is snapshotted when the run is created, as it always was."""
+    pm = period_month.replace(day=1)
+    last_day_of_previous = pm - timedelta(days=1)     # handles the year rollover
+    return last_day_of_previous.replace(day=25)
+
+
 def _next_reference(payment_date):
     """A unique, human-readable run reference carrying the actual pay DATE, e.g.
     'PR-2026-07-17' (owner 2026-07-16: the old 'PR-2026-07-001' read like a date). A second run
@@ -305,6 +349,11 @@ def create_run(organisation, payment_date, period_month, by_email=''):
     if payment_date < timezone.localdate():
         raise PaymentsError('past_date')
     pm = period_month.replace(day=1)
+    # Rule 2 (owner 2026-07-22): advance pay is allowed, but no earlier than the 25th of the
+    # month before the covered one. Refused outright rather than producing a run in which no
+    # student qualifies — an empty draft explains nothing and leaves clutter (owner agreed).
+    if payment_date < earliest_payment_date(pm):
+        raise PaymentsError('too_early')
     run = PaymentRun.objects.create(
         organisation=organisation, payment_date=payment_date, period_month=pm,
         reference=_next_reference(payment_date),

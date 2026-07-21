@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## Payments — back/advance-pay window rules (owner-locked 2026-07-22) — 2026-07-22
+
+Payment eligibility now asks *"is this student payable for the MONTH being paid for?"* instead of
+*"…as at the run's payment date"*. **No migration.** Found while diagnosing why `PR-2026-07-26`
+(an August run) selected only **19 of 43** payable students.
+
+- **Fixed — pathway opening + reporting date are judged on the covered MONTH, not the pay date**
+  (`payments._has_started`). The old comparison was wrong in both directions once back- and
+  advance-pay are permitted:
+  - **Advance:** an August run legitimately dated 26 July dropped every Poly / UA-Diploma student,
+    because 26 July precedes their 1 August floor — exactly the students whose August money is
+    due. This is the whole of the 19-vs-43 gap alongside the eWallet rule.
+  - **Backpay:** paying July on 15 September let a PISMP student through (15 Sep clears their
+    1 Sep floor) and would have paid them for a July they had not started. Audited: **no
+    completed run ever did this** — the one anomalous row is the hand-entered
+    `backfill-2026-06-30`, not an engine selection.
+- **Changed — a student qualifies for a month only if they reported STRICTLY BEFORE it began**
+  (`reporting_date < period_month`; owner: *"a student who reports on 1 July does not qualify for
+  July pay"*). Reporting on 5 August ⇒ first payable in September. The pathway floors follow from
+  this and are retained as the pathway-level backstop — both conditions must pass. A NULL
+  reporting date (3 live rows) leaves the floor as the only gate, unchanged.
+- **Added — `payments.earliest_payment_date()` + the `too_early` guard.** An advance run may be
+  paid no earlier than the **25th of the month before** the covered one; `create_run` refuses
+  otherwise (owner chose a refusal over a silently empty run). One condition covers both rules —
+  backpay satisfies it automatically, and a December run dated in July is correctly refused. It
+  constrains the PAYMENT date, not the creation date: an admin may prepare next month's run on the
+  15th and date the payment the 25th.
+- **Changed — the API returns `earliest` alongside the `too_early` code**, and the cockpit renders
+  that value (`admin.payments.tooEarly`, en/ms/ta). The date rule is deliberately **not** mirrored
+  in the frontend — that would create the keep-in-sync pair this repo keeps getting bitten by;
+  `adminMutate` now preserves the whole error body so a code can carry a detail.
+- Tests: **+17** — the owner's three worked cases transcribed verbatim as named tests, boundary
+  cases at the 24th/25th/26th, the year rollover, two-months-ahead, backpay, and the API contract
+  for `earliest`. Verified they all FAIL against the pre-fix code.
+
 ## Cockpit — org admin can reject a stuck shortlisted student — 2026-07-21
 
 Lets the organisation's own super close out an applicant who stalled in the shortlisted stage.

@@ -659,3 +659,119 @@ class TestBackfillImport(TestCase):
         for s in self.specs:
             if s['pathway'] == 'pismp':
                 self.assertNotIn(s['app'].id, by_app)
+
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=False)
+class TestBackAndAdvancePay(TestCase):
+    """The owner's payment-window rules, locked 2026-07-22.
+
+      Rule 1  Backpay is allowed — July's payment may be made on, say, 15 Sep.
+      Rule 2  Advance pay is allowed, but only from the 25th of the month BEFORE the covered
+              month; every student who qualifies for that month may then be paid early.
+      Rule 3  A student qualifies for a month only if they reported BEFORE it began — "a student
+              who reports on 1 July does not qualify for July pay". The pathway floors follow
+              from this (diploma report in July → first paid August; PISMP report in August →
+              first paid September).
+
+    Every case below is one the owner worked through by hand; they are transcribed verbatim
+    because the examples ARE the acceptance criteria (lessons.md).
+    """
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = _make_org(code='win-bp')
+        cls.cohort = _make_cohort(cls.org, code='win-c')
+
+    JUL, AUG, SEP = date(2026, 7, 1), date(2026, 8, 1), date(2026, 9, 1)
+
+    # ── owner case 1 — a PISMP/diploma student never qualifies for July, even paid in Sep ──
+    def test_case1_pismp_and_diploma_never_qualify_for_july_even_when_paid_in_september(self):
+        for pathway in ('pismp', 'poly', 'university'):
+            with self.subTest(pathway=pathway):
+                app = _make_app(self.cohort, self.org, pathway=pathway, reporting=date(2026, 6, 1))
+                # Paid 15 Sep, but FOR July: the month is what counts, not the pay date.
+                elig = payments.eligibility(app, date(2026, 9, 15), period_month=self.JUL)
+                self.assertFalse(elig['started'], f'{pathway} must not be payable for July')
+
+    def test_case1_regression_the_pay_date_alone_must_not_open_the_window(self):
+        """Before 2026-07-22 this exact call returned started=True — the 15 Sep pay date cleared
+        the 1 Sep PISMP floor, paying a student for a July they had not started."""
+        app = _make_app(self.cohort, self.org, pathway='pismp', reporting=date(2026, 6, 1))
+        self.assertFalse(payments.eligibility(app, date(2026, 9, 15), period_month=self.JUL)['started'])
+        # ...but September itself is fine.
+        self.assertTrue(payments.eligibility(app, date(2026, 9, 15), period_month=self.SEP)['started'])
+
+    # ── owner case 2 — the 24th is too early for next month; the 25th is not ──────────
+    def test_case2_run_dated_the_24th_for_next_month_is_refused(self):
+        with self.assertRaises(payments.PaymentsError) as ctx:
+            payments.create_run(self.org, date(2026, 7, 24), self.AUG)
+        self.assertEqual(ctx.exception.code, 'too_early')
+        self.assertFalse(PaymentRun.objects.exists())     # nothing half-created
+
+    def test_case2_boundary_24th_refused_25th_and_26th_allowed(self):
+        self.assertEqual(payments.earliest_payment_date(self.AUG), date(2026, 7, 25))
+        with self.assertRaises(payments.PaymentsError):
+            payments.create_run(self.org, date(2026, 7, 24), self.AUG)
+        for day in (25, 26):
+            with self.subTest(day=day):
+                run = payments.create_run(self.org, date(2026, 7, day), self.AUG)
+                self.assertEqual(run.period_month, self.AUG)
+
+    def test_case2_earliest_pay_date_handles_the_year_rollover(self):
+        self.assertEqual(payments.earliest_payment_date(date(2026, 1, 1)), date(2025, 12, 25))
+
+    def test_case2_two_months_ahead_is_still_too_early(self):
+        """"25th of the previous month" is per-period: July cannot pay September's money."""
+        with self.assertRaises(payments.PaymentsError) as ctx:
+            payments.create_run(self.org, date(2026, 7, 26), self.SEP)
+        self.assertEqual(ctx.exception.code, 'too_early')
+
+    def test_rule1_backpay_is_never_blocked_by_the_advance_guard(self):
+        """A past period's "25th of the previous month" is long gone, so backpay needs no
+        special case — 15 Sep paying for July is fine."""
+        self.assertLess(payments.earliest_payment_date(self.JUL), date(2026, 9, 15))
+        run = payments.create_run(self.org, date(2026, 9, 15), self.JUL)
+        self.assertEqual(run.period_month, self.JUL)
+
+    # ── owner case 3 — prepare on the 15th, pay on the 25th, for the following month ──
+    def test_case3_created_on_the_15th_paid_on_the_25th_snapshots_everyone_eligible_then(self):
+        """The 25th rule constrains the PAYMENT date, not the creation date."""
+        ready = _make_app(self.cohort, self.org, pathway='poly', reporting=date(2026, 7, 10),
+                          vircle_suffix='0011')
+        # Same pathway, but reported *during* August → not payable for August (rule 3).
+        late = _make_app(self.cohort, self.org, pathway='poly', reporting=date(2026, 8, 5),
+                         vircle_suffix='0012')
+        with mock.patch('django.utils.timezone.localdate', return_value=date(2026, 7, 15)):
+            run = payments.create_run(self.org, date(2026, 7, 25), self.AUG)
+        picked = set(run.items.values_list('application_id', flat=True))
+        self.assertIn(ready.id, picked)
+        self.assertNotIn(late.id, picked)
+
+    def test_case3_diploma_students_are_in_an_august_run_dated_in_july(self):
+        """The PR-2026-07-26 bug: an August run dated 26 July dropped every Poly/UA-Diploma
+        student because 26 July precedes their 1 August floor."""
+        app = _make_app(self.cohort, self.org, pathway='university', reporting=date(2026, 7, 10))
+        run = payments.create_run(self.org, date(2026, 7, 26), self.AUG)
+        self.assertIn(app.id, set(run.items.values_list('application_id', flat=True)))
+
+    # ── rule 3 — reported BEFORE the month begins; the 1st does not count ─────────────
+    def test_rule3_reporting_on_the_first_of_the_month_does_not_qualify_for_that_month(self):
+        app = _make_app(self.cohort, self.org, pathway='matric', reporting=self.JUL)
+        self.assertFalse(payments.eligibility(app, self.JUL, period_month=self.JUL)['started'],
+                         'reporting on 1 July must NOT qualify for July')
+        self.assertTrue(payments.eligibility(app, self.AUG, period_month=self.AUG)['started'],
+                        'the same student qualifies for August')
+
+    def test_rule3_reporting_the_day_before_does_qualify(self):
+        app = _make_app(self.cohort, self.org, pathway='matric', reporting=date(2026, 6, 30))
+        self.assertTrue(payments.eligibility(app, self.JUL, period_month=self.JUL)['started'])
+
+    def test_rule3_reporting_on_5_august_is_first_payable_in_september(self):
+        app = _make_app(self.cohort, self.org, pathway='poly', reporting=date(2026, 8, 5))
+        self.assertFalse(payments.eligibility(app, date(2026, 7, 26), period_month=self.AUG)['started'])
+        self.assertTrue(payments.eligibility(app, date(2026, 8, 25), period_month=self.SEP)['started'])
+
+    def test_a_null_reporting_date_leaves_the_pathway_floor_as_the_only_gate(self):
+        """3 live rows have no reporting date; documented fallback, unchanged behaviour."""
+        app = _make_app(self.cohort, self.org, pathway='poly', reporting=None)
+        self.assertFalse(payments.eligibility(app, date(2026, 7, 26), period_month=self.JUL)['started'])
+        self.assertTrue(payments.eligibility(app, date(2026, 7, 26), period_month=self.AUG)['started'])
