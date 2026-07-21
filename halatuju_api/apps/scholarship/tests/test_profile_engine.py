@@ -111,6 +111,16 @@ class TestProfilePrompt(TestCase):
         self.assertIn('Reporting / enrolment date', prompt)   # the line is present
         self.assertNotIn('13 May 2026', prompt)               # value renders as not-provided
 
+    def test_prompt_is_evergreen_and_time_aware(self):
+        """Owner 2026-07-21: the prompt gives the model a sense of NOW and requires date-proof
+        phrasing so a profile doesn't age between reads (Gemini read mid-2026 as the future)."""
+        from apps.scholarship.profile_engine import _today_str
+        prompt = _build_prompt(self.app)
+        self.assertIn('TIME & DATES', prompt)                 # the evergreen rule
+        self.assertIn('does NOT age', prompt)
+        self.assertIn("Today's date is", prompt)              # a sense of now
+        self.assertIn(_today_str(), prompt)                   # …the actual current date
+
     def test_style_forbids_amount_and_advocacy(self):
         """S5.2: the shared style bans stating a monetary amount (shown separately) and
         any advocacy language — the sponsor skims many profiles."""
