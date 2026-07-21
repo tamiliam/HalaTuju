@@ -45,6 +45,21 @@ function IconCard({ icon, title, subtitle, onClick, active, disabled, comingSoon
   )
 }
 
+// Module-scope so its function identity is stable across renders. Defined inside the page
+// component it was recreated every keystroke, remounting the whole subtree (incl. the invite
+// inputs) and stealing focus after each character.
+function Section({ title, badge, badgeCls, children }: { title: string; badge: string; badgeCls: string; children: ReactNode }) {
+  return (
+    <section className="mb-8">
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badgeCls}`}>{badge}</span>
+      </div>
+      {children}
+    </section>
+  )
+}
+
 export default function AdministrationPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
@@ -226,16 +241,6 @@ export default function AdministrationPage() {
     </div>
     )
   }
-
-  const Section = ({ title, badge, badgeCls, children }: { title: string; badge: string; badgeCls: string; children: ReactNode }) => (
-    <section className="mb-8">
-      <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badgeCls}`}>{badge}</span>
-      </div>
-      {children}
-    </section>
-  )
 
   return (
     <div className="max-w-4xl">

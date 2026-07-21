@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix — admin invite form lost input focus after each keystroke — 2026-07-21
+
+- **Fixed** — on `/admin/administration`, the invite form (Invite-as role / name / email) dropped focus
+  after every typed character (cursor jumped out). Root cause: the `Section` wrapper was a component
+  defined INSIDE `AdministrationPage`, so each keystroke's re-render minted a new component identity and
+  React remounted the whole subtree — including the inputs — losing focus. Hoisted `Section` to module
+  scope (it uses only props), matching `IconCard`. Web-only, no migration.
+
 ## Officer cockpit — live-review copy & UX pass — 2026-07-21
 
 Owner live-review tweaks to the reviewer cockpit (`admin/scholarship/[id]`). Web-only, no backend,
