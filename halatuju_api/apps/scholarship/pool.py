@@ -229,14 +229,50 @@ def scan_profile_pii(text, profile):
 
 
 def eligible_pool_queryset(model):
-    """All applications currently visible in the pool (anon-published + active
-    share consent). ``model`` is ``ScholarshipApplication`` (passed in to avoid a
-    circular import). Caller adds any sponsor-facing filters."""
+    """The FUNDABLE pool — applications a sponsor may still fund (anon-published + active share
+    consent + at the QC-cleared ``recommended`` stage). ``model`` is ``ScholarshipApplication``
+    (passed in to avoid a circular import). This is the STRICT gate: the public waiting-count and
+    the fundability read both use it, so a funded student is never double-funded nor counted as
+    still-waiting. ``display_pool_queryset`` is the wider set the sponsor SEES."""
     return (
         model.objects
         .filter(
             sponsor_profile__anon_published=True,
             status='recommended',   # sponsor-visible ONLY at the QC-cleared stage (see is_pool_eligible)
+            consents__consent_type=SHARE_CONSENT_TYPE,
+            consents__is_active=True,
+        )
+        .select_related('sponsor_profile', 'profile')
+        .distinct()
+    )
+
+
+# A just-funded student LINGERS in the sponsor's view as a read-only "Funded" card for
+# POOL_FUNDED_GRACE_HOURS (owner 2026-07-21) — social proof of momentum — before dropping off.
+# These are the funded lifecycle states the grace window shows (keyed on awarded_at, stamped by
+# fund_student). 'closed' is excluded (a wrapped-up case, not a fresh win).
+RECENTLY_FUNDED_STATES = ('awarded', 'active', 'maintenance')
+
+
+def display_pool_queryset(model):
+    """The DISPLAY pool — what an approved sponsor SEES: every fundable (``recommended``) student
+    PLUS anyone funded within the last ``POOL_FUNDED_GRACE_HOURS`` (shown as a full-bar "Funded"
+    card, not fundable). Same anon-published + active-share-consent privacy gate as the fundable
+    set. The grace window is a pure query-time filter — a funded student simply falls out once the
+    window passes, so nothing schedules or writes to "hide" them. Used by the pool LIST + DETAIL
+    views only; fundability and the public count keep ``eligible_pool_queryset``."""
+    from datetime import timedelta
+    from django.conf import settings
+    from django.db.models import Q
+    from django.utils import timezone
+    grace = getattr(settings, 'POOL_FUNDED_GRACE_HOURS', 48)
+    cutoff = timezone.now() - timedelta(hours=grace)
+    return (
+        model.objects
+        .filter(
+            Q(status='recommended')
+            | Q(status__in=RECENTLY_FUNDED_STATES, awarded_at__gte=cutoff),
+            sponsor_profile__anon_published=True,
             consents__consent_type=SHARE_CONSENT_TYPE,
             consents__is_active=True,
         )

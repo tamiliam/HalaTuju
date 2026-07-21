@@ -46,6 +46,44 @@ stale: Drive 1,494,191 B / 2026-07-18 vs repo 1,443,714 B / 2026-07-14.)
 - **▶ AT DEPLOY (owner-gated):** push (api rebuild; code-only, no migrate-first). No new env vars
   required — the defaults point at the right folder/file and the SA already has access.
 
+## Sponsor pool — sort unfunded-first + status filter + "Sponsored" wording — 2026-07-21
+
+- **Changed** — the discovery pool now **orders unfunded (`recommended`) cards ahead of the
+  just-sponsored grace-window cards** (one list, no separator; newest-relevant-event first within each
+  group — `awarded_at` for sponsored, `recommended_at` for open). Ordering is server-side in
+  `SponsorPoolListView`, so no timestamp reaches the anonymised card.
+- **Added** — a **status filter dropdown** on the pool page: *All students / Open for sponsorship /
+  Sponsored*, client-side over the fetched cards via the `funded` flag (matches the field/state/amount
+  filters). i18n `sponsorPortal.students.{allStudents,openForSponsorship,sponsored}` en/ms/ta.
+- **Changed** — the sponsor-facing **"Funded" wording is now "Sponsored"** (`sponsorPool.funded`/
+  `fundedBody`, en/ms/ta) — the grace-window card chip + detail body.
+- No backend/model change; no migration. Behind `SPONSOR_POOL_ENABLED`. Test in `test_sponsor_pool.py`.
+
+## Sponsor pool — just-funded students linger as "Funded" cards — 2026-07-21
+
+- **Changed** — a funded student no longer vanishes from the pool instantly. They stay for
+  `POOL_FUNDED_GRACE_HOURS` (default **48h**, env-tunable) as a **read-only "Funded" card** (funding
+  bar full, no fund button) — social proof of momentum — then drop off. New
+  `pool.display_pool_queryset` = `recommended` ∪ funded-within-the-window (awarded/active/maintenance,
+  keyed on `awarded_at`) drives the pool **list + detail** views. The strict `eligible_pool_queryset`
+  (recommended-only) still governs **fundability, the public waiting-count, auto-sponsor allocation and
+  notifications** — so a funded card can never be double-funded or inflate the counter. A `funded` flag
+  on the card serializer drives the frontend's greyed "Funded" state (the bar already fills to 100% on
+  its own). **No migration; no scheduled job** — the 2-day hide is a pure query-time window. Behind the
+  existing `SPONSOR_POOL_ENABLED` flag. i18n `sponsorPool.funded`/`fundedBody` en/ms/ta (Tamil first-draft).
+
+## STPM route — unverifiable offer no longer blocks submission — 2026-07-20
+
+- **Changed** — a Form-Six (STPM) student is no longer trapped at the submission door when their
+  offer document can't be machine-verified. Their pathway proof is a **school enrolment letter**
+  (*Surat Pengesahan Pelajar*), which the offer-genuineness model isn't trained to recognise — so it
+  reads `not_genuine` and the pathway sits red, which tripped the `offer_not_official` submission
+  block. `_offer_blocks` now returns `False` for `chosen_pathway == 'stpm'`: the student **submits and
+  reaches a reviewer**, who audits the pathway by hand (the verdict may legitimately stay red — no
+  green/blue is manufactured). **Presence is still required** (`offer_letter_missing` unchanged — they
+  must upload *something*). **Only STPM** is exempt; university and Matriculation applicants (who do get
+  a recognisable official offer) are unaffected. Backend-only; no migration. Test in `test_consent.py`.
+
 ## Contract clauses — 3-level hierarchy + upload-a-document at create — 2026-07-19
 
 Owner-approved (design mockup signed off). Contract module stays behind the OFF flags.

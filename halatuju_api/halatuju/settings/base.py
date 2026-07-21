@@ -308,6 +308,11 @@ DECLINE_COOLOFF_DAYS = float(os.environ.get('DECLINE_COOLOFF_DAYS', '0'))
 # passed the two-person QC gate (reviewer verdict + QC confirmation), so the reconsideration window
 # is shorter. Hours (default 24). 0 = email immediately.
 DECLINE_QC_COOLOFF_HOURS = float(os.environ.get('DECLINE_QC_COOLOFF_HOURS', '24'))
+# Sponsor pool: after a student is funded they LINGER in the pool for this many hours as a
+# read-only "Funded" card (bar full, no fund button) before dropping off — social proof of
+# momentum. Display-only (a query-time window); fundability and the public waiting-count stay
+# strict (recommended-only), so a funded card can never be double-funded or inflate the counter.
+POOL_FUNDED_GRACE_HOURS = float(os.environ.get('POOL_FUNDED_GRACE_HOURS', '48'))
 AWARD_COOLOFF_DAYS = float(os.environ.get('AWARD_COOLOFF_DAYS', '0'))
 
 # Interview scheduling: the assigned reviewer proposes a few times, the student books

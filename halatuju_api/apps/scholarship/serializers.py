@@ -103,6 +103,7 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     programme_months = serializers.SerializerMethodField()
     award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
     funded_amount = serializers.SerializerMethodField()  # partial-funding seam: raised so far
+    funded = serializers.SerializerMethodField()          # grace window: a just-funded read-only card
     progress_state = serializers.SerializerMethodField()  # F2: coarse, non-identifying
     support_status = serializers.SerializerMethodField()  # S5: coarse operational signal
     enrolment_verified = serializers.SerializerMethodField()  # R5: bare boolean badge
@@ -158,6 +159,12 @@ class SponsorPoolCardSerializer(serializers.Serializer):
             total = (app.sponsorships.filter(status__in=Sponsorship.HOLDING)
                      .aggregate(t=Sum('amount'))['t'])
         return str(total or 0)
+
+    def get_funded(self, app):
+        # True for a just-funded card in the grace window (bar full, no fund button). The DISPLAY
+        # pool holds only fundable ('recommended') OR recently-funded students, so any non-recommended
+        # card here is a funded one — a single, unambiguous signal for the frontend's "Funded" state.
+        return app.status != 'recommended'
 
     def get_state(self, app):
         # State-level region only — street/postcode/city are never exposed.

@@ -27,6 +27,8 @@ export default function StudentsPage() {
   const [field, setField] = useState('')
   const [state, setState] = useState('')
   const [amount, setAmount] = useState('')
+  // '' = all; 'open' = still open for sponsorship (unfunded); 'sponsored' = just-sponsored cards.
+  const [status, setStatus] = useState('')
 
   const rows = pool || []
   const facets = useMemo(() => {
@@ -42,8 +44,9 @@ export default function StudentsPage() {
     () => rows.filter((r) =>
       (!field || r.field === field) &&
       (!state || r.state === state) &&
-      (!amount || amtKey(r.award_amount) === amount)),
-    [rows, field, state, amount],
+      (!amount || amtKey(r.award_amount) === amount) &&
+      (!status || (status === 'sponsored' ? r.funded : !r.funded))),
+    [rows, field, state, amount, status],
   )
 
   const selectCls = 'text-sm border border-gray-200 rounded-lg pl-3.5 pr-9 py-2.5 bg-white min-w-[10rem] cursor-pointer'
@@ -69,6 +72,11 @@ export default function StudentsPage() {
         <select value={amount} onChange={(e) => setAmount(e.target.value)} className={selectCls}>
           <option value="">{t('sponsorPool.allAmounts')}</option>
           {facets.amounts.map((a) => <option key={a} value={a}>RM{rmWhole(a)}</option>)}
+        </select>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectCls}>
+          <option value="">{t('sponsorPortal.students.allStudents')}</option>
+          <option value="open">{t('sponsorPortal.students.openForSponsorship')}</option>
+          <option value="sponsored">{t('sponsorPortal.students.sponsored')}</option>
         </select>
       </div>
 
@@ -154,7 +162,9 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
           <FundingBar funded={s.funded_amount} award={s.award_amount} />
           <div className="mt-3 flex items-center justify-between gap-2">
             {s.award_amount ? <span className="text-xl font-bold text-gray-900">RM{rmWhole(s.award_amount)}</span> : <span />}
-            <span className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>
+            {s.funded
+              ? <span className="rounded-md bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-500">✓ {t('sponsorPool.funded')}</span>
+              : <span className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>}
           </div>
         </div>
       </div>

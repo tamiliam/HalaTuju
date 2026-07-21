@@ -524,6 +524,35 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-21)
 
+**▶ NEXT (in design): My-students label rework + new sponsored-student detail page.** Refine the sponsor
+portfolio statuses — "Semester completed" = supported sems done + continuing (not graduated); split
+Needs-attention / Support-paused / add Discontinued (derived from on_hold/probation + closure_reason
+withdrawn/terminated); show the FULL anon profile (not the blurb) on a NEW clickable detail page (My-students
+cards are plain divs today), with reserved space for student SPENDING (Vircle, a later sprint). Mock approved
+in principle (artifact); pending final label wording + a Stitch sign-off before coding. This is a real sprint —
+write an implementation plan first.
+
+**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `93aa9c44`) — Pool sort + status filter + "Sponsored" wording.**
+Discovery pool orders unfunded (`recommended`) cards ahead of just-sponsored grace-window cards (server-side,
+newest-first within group; no timestamp on the card); a new filter dropdown All/Open-for-sponsorship/Sponsored
+(client-side on the `funded` flag); "Funded" wording → "Sponsored" (en/ms/ta). No migration. Behind
+`SPONSOR_POOL_ENABLED`. Retro `docs/retrospective-2026-07-21-pool-sort-filter.md`; decision ×1.
+
+**✅ SHIPPED + DEPLOYED 2026-07-21 (api+web, `b0db516e`) — Sponsor-pool funded grace window.** A funded
+student lingers in the pool for `POOL_FUNDED_GRACE_HOURS` (default 48h) as a read-only "Funded" card
+(bar full, no fund button) then drops off. New `pool.display_pool_queryset` (recommended ∪ funded-within-
+window, keyed on `awarded_at`) drives the pool list+detail; strict `eligible_pool_queryset` still governs
+fundability/waiting-count/auto-sponsor/notifications (no double-funding, no counter inflation). `funded`
+card flag; greyed FE state; i18n funded/fundedBody. No migration; no cron (pure query window). Behind
+`SPONSOR_POOL_ENABLED`. Retro `docs/retrospective-2026-07-21-pool-funded-grace.md`; decision ×1.
+
+**✅ SHIPPED + DEPLOYED 2026-07-20 (api, `2acb84a3`) — STPM submission unblock.** `_offer_blocks`
+returns False for `chosen_pathway == 'stpm'`, so an STPM student whose school enrolment letter (Surat
+Pengesahan Pelajar) can't be machine-verified is no longer barred at the submission door by
+`offer_not_official`; the reviewer audits the pathway by hand (verdict may stay red). Presence still
+required; only STPM exempt (Matriculation/university unaffected). No migration. Retro
+`docs/retrospective-2026-07-20-stpm-offer-submit.md`; decision ×1.
+
 **✅ SHIPPED (code — owner gates the deploy) 2026-07-21 — Award-email guide-from-Drive + cockpit
 copy/UX pass.** NO migration; api + web; push = deploy (held for owner). Retro
 `docs/retrospective-2026-07-21-cockpit-copy-award-guide.md`; decision ×1; lesson ×1.
