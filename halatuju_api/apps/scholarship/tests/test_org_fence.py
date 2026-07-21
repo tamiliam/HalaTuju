@@ -215,6 +215,8 @@ class TestFenceCoverageCompleteness(TestCase):
         # gate-fenced (via _scoped_application / _require_app_write / _require_qc)
         'AdminApplicationDetailView': 'gate', 'AdminVerdictSummaryView': 'gate',
         'AdminVerifyAcceptView': 'gate', 'AdminRejectView': 'gate',
+        # Fenced by _require_app_write, then narrowed again to super/org_admin (see the view).
+        'AdminOrgRejectView': 'gate',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',

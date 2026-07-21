@@ -584,10 +584,12 @@ export interface AdminScholarshipDetail {
   status: string
   bucket: string
   shortlist_reason: string
-  // Rejection bucket: '' | 'merit' | 'need' | 'ineligible' | 'interview' | 'contractual'
+  // Rejection bucket: '' | 'merit' | 'need' | 'ineligible' | 'interview' | 'contractual' | 'incomplete'
   rejection_category: string
   rejected_at: string | null
   rejected_by: string
+  // The org-admin's verbatim reason ('incomplete' bucket only). Internal — never emailed.
+  rejection_comments: string
   // Closure bucket: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
   closure_reason: string
   // Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation + its reveal date.
@@ -982,6 +984,19 @@ export async function rejectApplication(
 ) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/reject/`, 'POST', { category }, options
+  )
+}
+
+/** Org-admin reject of a stuck SHORTLISTED applicant (bucket 'incomplete'). super/org_admin ONLY
+ * — a qc or the assigned reviewer is refused 403 (unlike `rejectApplication`). IMMEDIATE and
+ * IRREVERSIBLE: no cool-off, the decline email goes at once and there is no cancel window.
+ * `comments` is required (400 comments_required) and stays internal — the student gets the
+ * generic warm decline, never this text. */
+export async function orgRejectApplication(
+  id: number, comments: string, options?: ApiOptions
+) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/org-reject/`, 'POST', { comments }, options
   )
 }
 

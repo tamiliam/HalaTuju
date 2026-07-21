@@ -859,10 +859,19 @@ def autogenerate_ready_profiles(now=None):
 # but is not yet accepted. Poor documentation is grounds — no formal interview needed.
 INTERVIEW_REJECT_FROM = ('shortlisted', 'profile_complete', 'interviewing', 'interviewed')
 
+# Statuses an ORG ADMIN may drop an applicant from (bucket 'incomplete', org_admin_reject).
+# Deliberately just 'shortlisted': the student has been offered a place in the funnel but has
+# not confirmed a complete profile, so nobody has reviewed them and there is no verdict to
+# overturn. Past that point the case belongs to the reviewer/QC track and declines go through
+# the recorded-verdict path instead. KEEP IN SYNC with the cockpit, which only renders the
+# Reject card at these statuses (lessons.md: offer-set and accept-set are one unit of change).
+ORG_REJECT_FROM = ('shortlisted',)
 
-def _record_reject(application, category, by_email, now=None):
+
+def _record_reject(application, category, by_email, now=None, comments=''):
     """Flip the application to rejected NOW (the decision is immediate) — status + bucket +
-    when/who. Does NOT send the student email (that may be embargoed; see admin_reject).
+    when/who (+ the admin's verbatim reason, bucket 'incomplete'). Does NOT send the student
+    email (that may be embargoed; see admin_reject).
     Snapshots the pre-decline status so cancel_pending_decline can restore it exactly."""
     now = now or timezone.now()
     application.pre_decline_status = application.status
@@ -870,8 +879,9 @@ def _record_reject(application, category, by_email, now=None):
     application.rejection_category = category
     application.rejected_at = now
     application.rejected_by = by_email or ''
+    application.rejection_comments = comments or ''
     application.save(update_fields=['pre_decline_status', 'status', 'rejection_category',
-                                    'rejected_at', 'rejected_by'])
+                                    'rejected_at', 'rejected_by', 'rejection_comments'])
 
 
 def _send_decline_for(application):
@@ -957,6 +967,35 @@ def admin_reject(application, admin, category, cooloff=None):
     return True
 
 
+def org_admin_reject(application, admin, comments):
+    """Org-admin drop of a STUCK SHORTLISTED applicant (bucket 'incomplete') — owner 2026-07-21.
+
+    Deliberately NOT a variant of the reviewer/QC decline:
+      - IMMEDIATE and IRREVERSIBLE. No cool-off, no embargo, no cancel window: the owner's
+        reason for the button is to STOP a stuck applicant adding documents or advancing their
+        own status, and the decline email goes in the same breath. `_record_reject` freezes the
+        case the instant it runs — every student write path (document upload, details PATCH,
+        income-route switch, confirm-profile) and the completion-reminder cron all gate on a
+        status this is no longer in, so the lockout needs no separate enforcement.
+      - The reason is REQUIRED and recorded verbatim on the application (there is no verdict at
+        'shortlisted', hence no DecisionReopen trail to hang it on — decisions.md 2026-07-19).
+        It is INTERNAL: the student gets the generic warm decline (emails.FAIL_*), never this text.
+
+    Callers must have already gated the ROLE (super/org_admin — views_admin.AdminOrgRejectView).
+    Raises ValueError('bad_status') outside ORG_REJECT_FROM, ValueError('comments_required')
+    on a blank reason. Returns True."""
+    if application.status not in ORG_REJECT_FROM:
+        raise ValueError('bad_status')
+    comments = (comments or '').strip()
+    if not comments:
+        raise ValueError('comments_required')
+    _record_reject(application, 'incomplete', getattr(admin, 'email', '') or '', comments=comments)
+    _send_decline_for(application)
+    logger.info('AUDIT org_admin_reject app_id=%s by=%s', application.id,
+                getattr(admin, 'email', '') or '?')
+    return True
+
+
 def cancel_pending_decline(application):
     """Undo a rejection whose student email is still EMBARGOED (the student was never told):
     clear the scheduled email AND reverse the rejection back to the status it was declined
@@ -996,8 +1035,9 @@ def cancel_pending_decline(application):
         application.rejection_category = ''
         application.rejected_at = None
         application.rejected_by = ''
+        application.rejection_comments = ''
         fields += ['status', 'pre_decline_status', 'rejection_category', 'rejected_at',
-                   'rejected_by']
+                   'rejected_by', 'rejection_comments']
     application.save(update_fields=fields)
     return True
 

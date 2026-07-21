@@ -3332,6 +3332,23 @@
         "holdConfirm": "Hold this award? The acceptance is reversed, the amount returns to the sponsor, and the student never saw a confirmation.",
         "error": "Couldn't update. Please try again."
       },
+      "orgReject": {
+        "title": "Reject this student",
+        "hint": "Ends this application now. The student is emailed straight away and can no longer add documents or change anything.",
+        "start": "Reject this student",
+        "whyLabel": "Why are you rejecting this student?",
+        "whyPlaceholder": "e.g. Did not complete the application after the full reminder sequence.",
+        "whyHint": "Recorded on the case for your records. The student never sees this — they receive our standard decline email.",
+        "cancel": "Cancel",
+        "submit": "Reject",
+        "confirmTitle": "Are you sure?",
+        "confirmBody": "The rejection email will be sent to the student immediately. This cannot be undone.",
+        "back": "Go back",
+        "confirmYes": "Yes, reject",
+        "running": "Rejecting…",
+        "error": "Couldn't reject this student. Please try again.",
+        "recordTitle": "Rejection reason"
+      },
       "reject": {
         "declineContractual": "Decline (contractual)",
         "confirmReview": "Decline this applicant? They were reviewed but not selected. A decline email will be sent to them (after a short cool-off, if one is set).",
@@ -3339,6 +3356,7 @@
         "running": "Declining…",
         "error": "Couldn't decline this applicant. Please try again.",
         "category": {
+          "incomplete": "Not completed",
           "merit": "Merit",
           "need": "Need",
           "ineligible": "Ineligible",

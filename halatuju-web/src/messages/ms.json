@@ -3332,6 +3332,23 @@
         "holdConfirm": "Tahan anugerah ini? Penerimaan dibatalkan, jumlahnya dikembalikan kepada penaja, dan pelajar tidak pernah melihat pengesahan.",
         "error": "Tidak dapat mengemas kini. Sila cuba lagi."
       },
+      "orgReject": {
+        "title": "Tolak pelajar ini",
+        "hint": "Menamatkan permohonan ini sekarang. Pelajar akan menerima e-mel serta-merta dan tidak lagi boleh menambah dokumen atau mengubah apa-apa.",
+        "start": "Tolak pelajar ini",
+        "whyLabel": "Mengapa anda menolak pelajar ini?",
+        "whyPlaceholder": "cth. Tidak melengkapkan permohonan selepas keseluruhan urutan peringatan.",
+        "whyHint": "Direkodkan pada kes ini untuk rujukan anda. Pelajar tidak akan melihatnya — mereka menerima e-mel penolakan standard kami.",
+        "cancel": "Batal",
+        "submit": "Tolak",
+        "confirmTitle": "Adakah anda pasti?",
+        "confirmBody": "E-mel penolakan akan dihantar kepada pelajar serta-merta. Tindakan ini tidak boleh dibatalkan.",
+        "back": "Kembali",
+        "confirmYes": "Ya, tolak",
+        "running": "Menolak…",
+        "error": "Tidak dapat menolak pelajar ini. Sila cuba lagi.",
+        "recordTitle": "Sebab penolakan"
+      },
       "reject": {
         "declineContractual": "Tolak (kontrak)",
         "confirmReview": "Tolak pemohon ini? Mereka telah disemak tetapi tidak terpilih. E-mel penolakan akan dihantar kepada mereka (selepas tempoh bertenang ringkas, jika ada).",
@@ -3339,6 +3356,7 @@
         "running": "Menolak…",
         "error": "Tidak dapat menolak pemohon ini. Sila cuba lagi.",
         "category": {
+          "incomplete": "Tidak lengkap",
           "merit": "Merit",
           "need": "Keperluan",
           "ineligible": "Tidak layak",

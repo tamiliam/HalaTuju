@@ -46,7 +46,7 @@ from .serializers_admin import (
 )
 from .services import (
     AssignmentError, admin_reject, application_completeness, assign_reviewer,
-    cancel_pending_decline, submit_interview,
+    cancel_pending_decline, org_admin_reject, submit_interview,
 )
 from .sponsorship import hold_pending_award
 
@@ -464,6 +464,37 @@ class AdminRejectView(_AdminBase):
             return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
         # Declining a REOPENED decision is a real correction (counting model B).
         reopen_service.close_reopen_with_change(app)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminOrgRejectView(_AdminBase):
+    """POST .../<pk>/org-reject/ {comments} — the ORG ADMIN's drop of a stuck SHORTLISTED
+    applicant (bucket 'incomplete'). Owner 2026-07-21: "rejection is a super feature; the org
+    admin is the super of the organisation", so this is gated tighter than every other
+    per-application write — `super` or `org_admin` ONLY. A `qc` or the assigned reviewer, both
+    of whom `_require_app_write` would let through, are deliberately refused: this action is
+    immediate and irreversible (no cool-off, no cancel window), and it belongs to whoever owns
+    the programme, not to whoever is reviewing the case.
+
+    `comments` is REQUIRED (400 comments_required) — a blank reason on an unrecoverable action
+    would leave no record of why. Status must be 'shortlisted' (400 bad_status); the cockpit
+    renders the card under the same rule (services.ORG_REJECT_FROM)."""
+    def post(self, request, pk):
+        app, admin, err = self._require_app_write(request, pk)
+        if err:
+            return err
+        # Narrow _require_app_write's set (super/org_admin/qc/assignee) to the two org-super
+        # roles. Mirrors the vircle_id correction guard in AdminApplicationFlagsView.
+        if not (admin.is_super or admin.role == 'org_admin'):
+            return self._deny_role()
+        try:
+            org_admin_reject(app, admin, request.data.get('comments'))
+        except ValueError as e:
+            code = str(e)   # 'bad_status' | 'comments_required'
+            msg = ('Say why you are rejecting — the reason is recorded on the case.'
+                   if code == 'comments_required'
+                   else 'Only a shortlisted applicant can be rejected here.')
+            return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

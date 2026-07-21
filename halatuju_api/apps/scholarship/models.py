@@ -466,15 +466,20 @@ class ScholarshipApplication(models.Model):
 
     # Rejection bucket — WHY/WHEN an application ended at status='rejected'. Pre-shortlist
     # rejections (merit/need/ineligible) are set automatically by the engine at submit; the
-    # post-shortlist ones (interview/contractual) are set by an admin action. Drives which
-    # decline email is sent and whether the Review & actions panel stays visible (only the
-    # pre-shortlist buckets hide it — those applicants were never reviewed).
+    # post-shortlist ones (interview/contractual/incomplete) are set by an admin action. Drives
+    # which decline email is sent and whether the Review & actions panel stays visible (only the
+    # pre-shortlist buckets hide it — those applicants were never reviewed; 'incomplete' KEEPS the
+    # panel so the recorded reason/who/when of an irreversible reject stays auditable on the case).
+    # Anything NOT in emails._DECLINE_TEMPLATES (ineligible, contractual, incomplete) gets the
+    # generic warm decline (FAIL_*) — deliberate for 'incomplete': the 'interview' copy opens
+    # "thank you for COMPLETING your application", which is false for a student who never did.
     REJECTION_CATEGORIES = [
         ('merit', 'Did not meet the academic/merit floor'),       # engine: academic floor
         ('need', 'Did not meet the financial-need criteria'),     # engine: income test
         ('ineligible', 'Out of scope / ineligible'),              # engine: consent/intent/IPTS gate
         ('interview', 'Reviewed but not selected'),               # admin: post-shortlist decline
         ('contractual', 'Failed post-award contractual steps'),   # admin: post-accept decline
+        ('incomplete', 'Did not complete the application'),       # org_admin: drop a stuck shortlisted applicant
     ]
     rejection_category = models.CharField(
         max_length=20, choices=REJECTION_CATEGORIES, blank=True, default='',
@@ -484,6 +489,15 @@ class ScholarshipApplication(models.Model):
     rejected_by = models.CharField(
         max_length=254, blank=True, default='',
         help_text="Email of the PartnerAdmin who rejected (post-shortlist buckets only); blank for engine rejections",
+    )
+    # The org_admin's WHY, in their own words (bucket 'incomplete' — see services.org_admin_reject).
+    # INTERNAL ONLY: never rendered into the student's decline email (a free-typed, single-language
+    # note must not reach a trilingual student mail); it is the audit record of an irreversible act.
+    # The QC decline keeps hanging its reason on the DecisionReopen trail instead (decisions.md
+    # 2026-07-19) — that trail does not exist at 'shortlisted', which is why this field exists.
+    rejection_comments = models.TextField(
+        blank=True, default='',
+        help_text="The rejecting admin's reason, recorded verbatim (bucket 'incomplete'); internal, never emailed",
     )
 
     # Closure bucket — WHY a funded application reached status='closed' (post-award lifecycle).

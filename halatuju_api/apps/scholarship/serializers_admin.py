@@ -377,8 +377,11 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # Standardised assistance (2026-06-29): pathway-derived proposed amount + the
             # confident-disqualifier code (null = none; drives the cockpit "no amount" reason).
             'proposed_award_amount', 'award_disqualifier',
-            # Rejection bucket (merit/need/ineligible/interview/contractual) + stamps
+            # Rejection bucket (merit/need/ineligible/interview/contractual/incomplete) + stamps.
+            # rejection_comments = the org-admin's verbatim reason ('incomplete' only). ADMIN
+            # SERIALIZER ONLY — it must never reach the student-facing ApplicationReadSerializer.
             'rejection_category', 'rejected_at', 'rejected_by', 'rejected_by_name',
+            'rejection_comments',
             # Closure bucket (post-award lifecycle): graduated/completed/withdrawn/lapsed/terminated
             'closure_reason', 'closed_at', 'closed_by',
             # Lifecycle transition stamps — the DATE first reached each milestone; drive the

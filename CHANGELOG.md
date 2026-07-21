@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit — org admin can reject a stuck shortlisted student — 2026-07-21
+
+Lets the organisation's own super close out an applicant who stalled in the shortlisted stage.
+**Migration 0108.**
+
+- **Added — `POST .../applications/<pk>/org-reject/` (`AdminOrgRejectView`)** — gated to
+  **super / org_admin ONLY**. Deliberately narrower than `_require_app_write`, which also admits a
+  `qc` and the assigned reviewer: "rejection is a super feature; the org admin is the super of the
+  organisation" (owner). Requires `comments` (400 `comments_required`) and status `shortlisted`
+  (400 `bad_status`).
+- **Added — `services.org_admin_reject()` + `ORG_REJECT_FROM`** — **immediate and irreversible**:
+  no cool-off, no embargo, no cancel window; the decline email goes in the same call. This is the
+  point of the feature — `_record_reject` freezes the case instantly, so the applicant can no
+  longer upload a document, edit details, switch income route, or confirm their profile (every
+  student write path gates on `POST_SHORTLIST_EDITABLE`), and the completion-reminder cron stops
+  that minute.
+- **Added — rejection bucket `incomplete`** ("Did not complete the application") + **new field
+  `rejection_comments`** (TextField). The reason is recorded **verbatim but INTERNAL** — the
+  student receives the generic warm decline (`emails.FAIL_*`), never the admin's words. The
+  `interview` bucket's copy was wrong for these students (it opens *"thank you for **completing**
+  your application"*), so `incomplete` deliberately falls through to the generic template.
+- **Changed — cockpit** — at `shortlisted` a red **"Reject this student"** card takes the slot of
+  **Assign a reviewer**, which is inert there anyway (a reviewer cannot be assigned at
+  `shortlisted` — `services.is_assignable`). Three steps: button → mandatory reason → in-page
+  "Are you sure? … cannot be undone" confirm. Once rejected, the recorded reason + who + when
+  render as the case's audit surface. New `officerCockpit.canOrgReject()` mirrors the server gate.
+- i18n `admin.scholarship.orgReject.*` (15 keys) + `reject.category.incomplete`, en/ms/ta
+  (**ms/ta are first-drafts pending owner review**). Tests: +17 pytest (roles incl. qc/reviewer
+  refused, cross-org 404, blank reason, wrong status, no double-send, reason-never-emailed,
+  lockout invariant) +4 jest; org-fence classification.
+
 ## Cockpit — own-words toggle alternates Show/Hide; Vircle relay data ops — 2026-07-21
 
 - **Changed** — the officer cockpit "student's own words" reveal toggle now reads **"Hide the

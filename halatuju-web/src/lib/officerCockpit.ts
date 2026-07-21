@@ -1015,3 +1015,31 @@ export function headerTimeline(app: TimelineSource): HeaderTimelineStep[] | null
   }
   return null
 }
+
+// ── Org-admin reject gate (owner 2026-07-21) ─────────────────────────────────
+
+/**
+ * Statuses an org admin may reject a student FROM.
+ *
+ * MIRRORS `services.ORG_REJECT_FROM` in the API — keep the two in step. The reject
+ * action is immediate and irreversible, so a card rendered outside this set is not a
+ * cosmetic bug: it is a button that looks live and answers 400 (lessons.md 2026-07-16 —
+ * the offer-set and the accept-set are one unit of change).
+ */
+export const ORG_REJECT_FROM = new Set<string>(['shortlisted'])
+
+/**
+ * May this admin reject this application outright?
+ *
+ * Deliberately NARROWER than every other per-application write. The API's
+ * `_require_app_write` also admits a `qc` and the ASSIGNED reviewer, but
+ * `AdminOrgRejectView` then narrows to super/org_admin — "rejection is a super feature;
+ * the org admin is the super of the organisation" (owner). Mirror that narrowing here so
+ * the card never offers what the endpoint refuses.
+ */
+export function canOrgReject(
+  opts: { isSuper: boolean; role: string | null | undefined; status: string }
+): boolean {
+  const roleAllowed = opts.isSuper || opts.role === 'org_admin'
+  return roleAllowed && ORG_REJECT_FROM.has(opts.status)
+}
