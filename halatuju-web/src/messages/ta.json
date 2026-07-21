@@ -160,7 +160,20 @@
         "semester_completed": "செமஸ்டர் முடிந்தது",
         "needs_attention": "கவனம் தேவை",
         "graduated": "பட்டம் பெற்றார்"
-      }
+      },
+      "status": {
+        "on_track": "சரியான பாதையில்",
+        "semester_completed": "செமஸ்டர் முடிந்தது",
+        "needs_attention": "கவனம் தேவை",
+        "paused": "ஆதரவு இடைநிறுத்தப்பட்டது",
+        "discontinued": "நிறுத்தப்பட்டது",
+        "graduated": "பட்டம் பெற்றார்"
+      },
+      "fRegion": "பகுதி",
+      "fSupport": "உங்கள் ஆதரவு",
+      "fAcademic": "கல்வி",
+      "fSupports": "ஆதரிக்கிறது",
+      "nSems": "{n} செமஸ்டர்"
     },
     "notify": {
       "title": "மின்னஞ்சல் புதுப்பிப்புகள்",
@@ -220,6 +233,7 @@
       "onboarded": "சேர்க்கப்பட்டது",
       "studying": "படிக்கிறார்",
       "graduated": "பட்டம் பெற்றார்",
+      "withdrew": "விலகினார்",
       "semesters": "{n} செமஸ்டர்கள் முடிந்தன"
     },
     "activity": {

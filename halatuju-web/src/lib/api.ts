@@ -718,6 +718,10 @@ export interface SponsorPoolCard {
   award_amount: string | null   // E3: admin-set; non-identifying
   funded_amount: string | null  // raised so far (sum of holding sponsorships); '0' until partial funding ships → drives the funding bar
   funded: boolean               // just-funded grace-window card: bar full, no fund button (read-only)
+  // My-students single lifecycle badge (post-acceptance); null on a discovery card. 'Awaiting
+  // acceptance' is derived separately from the sponsorship 'offered' status.
+  portfolio_status: 'discontinued' | 'graduated' | 'paused' | 'semester_completed' | 'needs_attention' | 'on_track' | null
+  supported_semesters: number | null   // how many semesters the bursary funds (owner-set or heuristic)
   // F2: coarse, non-identifying progress band — null until the student is sponsored.
   progress_state: 'on_track' | 'semester_completed' | 'needs_attention' | 'graduated' | null
   // S5: coarse operational signal, distinct from the academic band — 'paused' (on hold)
