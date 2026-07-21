@@ -173,7 +173,19 @@
       "fSupport": "Tajaan anda",
       "fAcademic": "Akademik",
       "fSupports": "Menaja",
-      "nSems": "{n} sem"
+      "nSems": "{n} sem",
+      "detail": {
+        "back": "Kembali ke pelajar saya",
+        "unavailable": "Pelajar ini tidak tersedia.",
+        "supportLine": "Anda menaja pelajar ini dengan RM {amount} — inilah perjalanan mereka, tiada tindakan diperlukan.",
+        "supportedSems": "Ditaja {n} sem",
+        "commitment": "Komitmen anda",
+        "overSems": "selama {n} semester",
+        "profile": "Tentang pelajar ini",
+        "spending": "Ringkasan perbelanjaan",
+        "spendingSoon": "Akan datang — pecahan cara pelajar menggunakan tajaan (Vircle).",
+        "soon": "Akan datang"
+      }
     },
     "notify": {
       "title": "Kemas kini e-mel",

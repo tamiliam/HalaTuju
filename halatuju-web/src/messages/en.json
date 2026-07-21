@@ -173,7 +173,19 @@
       "fSupport": "Your support",
       "fAcademic": "Academic",
       "fSupports": "Supports",
-      "nSems": "{n} sems"
+      "nSems": "{n} sems",
+      "detail": {
+        "back": "Back to my students",
+        "unavailable": "This student isn't available.",
+        "supportLine": "You're supporting this student with RM {amount} — here's their journey, no action needed.",
+        "supportedSems": "Supported {n} sems",
+        "commitment": "Your commitment",
+        "overSems": "over {n} semesters",
+        "profile": "About this student",
+        "spending": "Spending overview",
+        "spendingSoon": "Coming soon — a breakdown of how the student uses their support (Vircle).",
+        "soon": "Soon"
+      }
     },
     "notify": {
       "title": "Email updates",

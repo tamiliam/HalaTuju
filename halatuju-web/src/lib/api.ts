@@ -762,6 +762,17 @@ export interface SponsorSponsorship {
   semesters: number    // R2: count of recorded semester results
 }
 
+// A student the sponsor OWNS — the portfolio detail page (any lifecycle status), with the full
+// generated anon profile. Reached by clicking a My-students card; read-only, no funding controls.
+export interface SponsorMyStudentDetail extends SponsorSponsorship {
+  anon_profile: string  // the reviewed anonymous profile (markdown)
+}
+
+/** A student the caller sponsors (by application id). 404 if the caller doesn't sponsor them. */
+export async function getMyStudentDetail(id: number, options?: ApiOptions): Promise<SponsorMyStudentDetail> {
+  return apiRequest(`/api/v1/sponsor/my-students/${id}/`, options)
+}
+
 export interface SponsorWallet {
   balance: string
   donations: Array<{ amount: string; reference: string; created_at: string }>

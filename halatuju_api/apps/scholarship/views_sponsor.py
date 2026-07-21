@@ -31,6 +31,7 @@ from .models import Donation, ScholarshipApplication, Sponsor, Sponsorship, Stan
 from .serializers import (
     GraduationRelaySerializer,
     SponsorPoolCardSerializer, SponsorPoolDetailSerializer,
+    SponsorMyStudentDetailSerializer,
     SponsorReferralSerializer,
     SponsorSerializer, SponsorSponsorshipSerializer,
     StandingGiftSerializer,
@@ -260,6 +261,27 @@ class SponsorPoolDetailView(_PoolBase):
         if not app:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(SponsorPoolDetailSerializer(app).data)
+
+
+class SponsorMyStudentDetailView(_PoolBase):
+    """GET /api/v1/sponsor/my-students/<pk>/ — the detail of a student the CALLER sponsors
+    (``pk`` = application id), at ANY lifecycle status. Unlike the discovery-pool detail this serves
+    a student the sponsor has already funded — including past the grace window when they've dropped
+    off the pool. Gated to the caller's OWN sponsorship (404 otherwise, so it can't be used to probe
+    other students); read-only — no funding controls. Returns the sponsorship + student card + the
+    generated anon PROFILE."""
+    def get(self, request, pk):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        sponsorship = (sponsor.sponsorships
+                       .filter(application_id=pk)
+                       .select_related('application', 'application__sponsor_profile', 'application__profile')
+                       .order_by('-offered_at')
+                       .first())
+        if sponsorship is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(SponsorMyStudentDetailSerializer(sponsorship).data)
 
 
 class SponsorWalletView(_PoolBase):
