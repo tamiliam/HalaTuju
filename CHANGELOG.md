@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor portfolio — refined per-student status + full course on the card — 2026-07-21
+
+- **Added — `supported_semesters`** (nullable smallint on the application; **migration 0106**, applied
+  migrate-first). How many semesters the bursary funds; owner-set per student over time, else the
+  heuristic `award_amount // 1000` (RM1,000 ≈ one semester: STPM 3 / continuing 1 / Matric-Asasi-others 2).
+- **Added — one lifecycle badge per sponsored student** (`pool.sponsor_portfolio_status`), priority-ordered
+  from existing state: **Discontinued** (withdrawn/terminated) → **Graduated** → **Support paused**
+  (maintenance on-hold) → **Semester completed** (results ≥ supported, or a `completed` close — the
+  supported period is fulfilled and they carry on) → **Needs attention** (a dip / probation) → **On track**.
+  None on a discovery card; **Awaiting acceptance** stays FE-derived from the sponsorship `offered` status.
+  Exposed as `portfolio_status` + `supported_semesters` on the student card serializer.
+- **Changed — My Students card** now leads with the **full course → institution** (was the bare field slug
+  "perubatan") + key details (region · your support · academic · supported sems), a single status badge,
+  and a **"Withdrew"** journey stop for a discontinued student.
+- **i18n** `myStudents.status.*` + key-detail labels + `journey.withdrew` (en/ms/ta; Tamil first-draft).
+- Behind `SPONSOR_POOL_ENABLED`. Test in `test_sponsor_pool.py` (12 new). Sprint 1 of 3 (detail page next;
+  spending deferred). Plan `docs/plans/2026-07-21-portfolio-status-plan.md`.
+
 ## Sponsor pool — sort unfunded-first + status filter + "Sponsored" wording — 2026-07-21
 
 - **Changed** — the discovery pool now **orders unfunded (`recommended`) cards ahead of the
