@@ -117,9 +117,14 @@ export default function ContractsListPage() {
                 <option key={tm.id} value={String(tm.id)}>{t('admin.contracts.copyFrom')} {tm.version}</option>
               ))}
             </select>
-            {isSuper && (
+            {isSuper ? (
               <input className={inputCls} placeholder="Organisation code"
                 value={org} onChange={(e) => setOrg(e.target.value)} />
+            ) : (
+              // An org_admin has exactly one organisation (the server always uses their own),
+              // so show it prefilled + fixed rather than an empty box to fill in.
+              <input className={`${inputCls} bg-gray-50 text-gray-500`} disabled
+                value={role?.owning_org_name || ''} title="Your organisation" />
             )}
           </div>
           {source === 'upload' && (

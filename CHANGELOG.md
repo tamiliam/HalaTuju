@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Contract import — fix 500 / empty-upload on long clauses + org-code prefill — 2026-07-21
+
+- **Fixed** — importing a real `.docx` 500'd on **Accept and replace clauses** (and the
+  create-form "Upload a document" silently produced an EMPTY draft, because that path
+  swallows the same error as a soft-fail). Root cause: `DataError: value too long for type
+  character varying(255)` in `replace_clauses`. `ContractClause.heading_*` is a
+  `varchar(255)`, but authors style full sub-clauses as a Word `Heading` — the real donor
+  agreement has 9 level-1 "headings" of 256–539 chars — and `_docx_structure` put every
+  heading-styled paragraph into `heading`. **Fix (two layers):** (1) `_docx_structure` now
+  treats a Heading paragraph longer than a title threshold as clause **body**, not a title
+  (short headings stay titles); (2) `replace_clauses` folds any heading still over 255 (any
+  language, any source — hand-typed, Gemini, copy-from) into its body, so a clause save can
+  **never** overflow the column. Verified end-to-end: the real 88-clause v3 doc now imports
+  and saves cleanly (was a hard 500).
+- **Changed** — the New-version form now shows an **org_admin their own organisation,
+  prefilled and disabled** (they have exactly one; the server always uses it), instead of an
+  empty box. Super still types/chooses the organisation code.
+- No migration. Contract module stays behind its OFF flags. Tests: long-heading→body parse,
+  the `replace_clauses` overflow guard, and a short-heading-unaffected guard.
+
 ## Contract Preview — fix "Could not render" / Open-PDF (TD-163) — 2026-07-21
 
 - **Fixed** — the contract Preview tab's **Open PDF** button had never worked: it requested

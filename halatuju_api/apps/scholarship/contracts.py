@@ -45,6 +45,24 @@ _CONFIG_FIELDS = (
 MAX_CLAUSE_LEVEL = 2
 _ROMAN = ((10, 'x'), (9, 'ix'), (5, 'v'), (4, 'iv'), (1, 'i'))
 
+# ContractClause.heading_* is CharField(max_length=255); body_* is TextField (unlimited).
+# HEADING_MAX_LEN is the hard DB limit (the save guard); a "heading" longer than
+# HEADING_TITLE_MAX is treated as a SENTENCE (clause body), not a short title — real docs
+# style full sub-clauses as a Heading, which would otherwise overflow the column (TD, 2026-07-21).
+HEADING_MAX_LEN = 255
+HEADING_TITLE_MAX = 120
+
+
+def _fit_heading(heading, body):
+    """Keep a clause heading inside the varchar(255) column: a heading longer than the limit
+    is not a title — fold it into the body (lossless) so a save can NEVER overflow, whatever
+    the source (import, Gemini, hand-typed, copy-from). Returns (heading, body)."""
+    heading = (heading or '').strip()
+    body = body or ''
+    if len(heading) <= HEADING_MAX_LEN:
+        return heading, body
+    return '', (heading + '\n\n' + body).strip() if body else heading
+
 
 def _roman(n):
     """Lowercase roman numeral for n >= 1 (i, ii, iii, iv, v, …). Small n only (clause depth)."""
@@ -272,14 +290,15 @@ def replace_clauses(template, clauses):
             if payload and not isinstance(payload, dict):
                 raise ContractsError('bad_quiz_payload', f'clause {index} quiz_{lang}')
         is_l0 = level == 0
+        # An over-long heading (any language) folds into its body so the save can never
+        # overflow heading_*'s varchar(255) — the guard for every write path (2026-07-21).
+        h_en, b_en = _fit_heading(item.get('heading_en', ''), item.get('body_en', ''))
+        h_ms, b_ms = _fit_heading(item.get('heading_ms', ''), item.get('body_ms', ''))
+        h_ta, b_ta = _fit_heading(item.get('heading_ta', ''), item.get('body_ta', ''))
         created.append(ContractClause(
             template=template, order=index, level=level,
-            heading_en=item.get('heading_en', '') or '',
-            heading_ms=item.get('heading_ms', '') or '',
-            heading_ta=item.get('heading_ta', '') or '',
-            body_en=item.get('body_en', '') or '',
-            body_ms=item.get('body_ms', '') or '',
-            body_ta=item.get('body_ta', '') or '',
+            heading_en=h_en, heading_ms=h_ms, heading_ta=h_ta,
+            body_en=b_en, body_ms=b_ms, body_ta=b_ta,
             is_quiz_candidate=bool(item.get('is_quiz_candidate')) and is_l0,
             quiz_en=(item.get('quiz_en') or {}) if is_l0 else {},
             quiz_ms=(item.get('quiz_ms') or {}) if is_l0 else {},
@@ -554,7 +573,12 @@ def _docx_structure(data):
                 m = re.search(r'(\d+)', style)
                 level = (int(m.group(1)) - 1) if m else 0
             level = max(0, min(MAX_CLAUSE_LEVEL, level))
-            clauses.append({'heading': text, 'body': '', 'level': level})
+            # A short Heading is a clause TITLE; a long one is a full sub-clause the author
+            # styled as a Heading (common) — that text is clause BODY, not a 255-char title.
+            if len(text) > HEADING_TITLE_MAX:
+                clauses.append({'heading': '', 'body': text, 'level': level})
+            else:
+                clauses.append({'heading': text, 'body': '', 'level': level})
             current_heading_level = level
             saw_clause = True
         elif numId is not None:

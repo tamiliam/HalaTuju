@@ -574,3 +574,39 @@ class TestPreviewRender(TestCase):
         html = contracts.render_preview_html(self._draft(), 'en')
         self.assertIn('<b>Bursary</b>', html)
         self.assertNotIn('**Bursary**', html)
+
+
+class TestHeadingOverflow(TestCase):
+    """Guards for the varchar(255) heading column — a full sub-clause the author styled as a
+    Heading must not 500 the clause save (regression: import 500 / empty upload, 2026-07-21)."""
+    def test_long_heading_paragraph_parses_as_body(self):
+        import io as _io
+        from docx import Document
+        doc = Document()
+        _list_para(doc.add_paragraph('Definitions', style='Heading 1'), 6, 0)
+        long_sentence = 'The Donor agrees to provide the Student with a bursary ' + ('x ' * 200) + '.'
+        _list_para(doc.add_paragraph(long_sentence, style='Heading 1'), 6, 1)
+        buf = _io.BytesIO(); doc.save(buf)
+        got = contracts.segment_docx(buf.getvalue())
+        self.assertEqual(got['clauses'][0]['heading'], 'Definitions')   # short stays a title
+        self.assertEqual(got['clauses'][1]['heading'], '')              # long → body
+        self.assertIn('The Donor agrees', got['clauses'][1]['body'])
+        self.assertTrue(all(len(c['heading']) <= 255 for c in got['clauses']))
+
+    def test_replace_clauses_folds_overlong_heading_into_body(self):
+        # The hard save guard: even a hand-typed 300-char heading must not overflow the column.
+        d = seed_draft('2027-overflow')
+        longh = 'A very long clause heading that should live in the body instead ' + ('y ' * 150)
+        self.assertGreater(len(longh), 255)
+        contracts.replace_clauses(d, [{'heading_en': longh, 'body_en': 'tail.', 'level': 0}])
+        c = d.clauses.first()
+        self.assertEqual(c.heading_en, '')          # moved out of the 255 column
+        self.assertIn('A very long clause heading', c.body_en)
+        self.assertIn('tail.', c.body_en)           # original body preserved
+
+    def test_short_heading_unaffected(self):
+        d = seed_draft('2027-shorth')
+        contracts.replace_clauses(d, [{'heading_en': 'Definitions', 'body_en': 'x', 'level': 0}])
+        c = d.clauses.first()
+        self.assertEqual(c.heading_en, 'Definitions')
+        self.assertEqual(c.body_en, 'x')
