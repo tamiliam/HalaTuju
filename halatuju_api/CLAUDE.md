@@ -545,9 +545,13 @@ Found while diagnosing why `PR-2026-07-26` (an August run) picked **19 of 43** p
 - +17 tests (owner's 3 cases verbatim + 24th/25th/26th boundary + year rollover + API contract),
   **all verified to fail against the pre-fix code**. Retro
   `docs/retrospective-2026-07-22-payment-window-rules.md`; decisions ×2; lesson ×1.
-- **▶ OWNER: `PR-2026-07-26` is still the OLD 19-student draft.** Regenerating it (unchanged 26 Jul
-  date) now yields **30**; remaining exclusions are correct (4 PISMP → September, 9 no confirmed
-  eWallet ID). Not regenerated automatically — it is a live money artefact.
+- **✅ VERIFIED END-TO-END on prod 2026-07-22.** The owner cancelled `PR-2026-07-26` (19 students,
+  RM3,600) and regenerated it as **`PR-2026-07-26-02` — 30 students, RM5,600**, matching both the
+  tests and an independent SQL model of the rules. Composition confirms the fix rather than just
+  the count: **Poly 0→6, University 0→3** (the students the bug dropped), STPM 5→7 (two eWallets
+  confirmed after the original draft), **PISMP correctly 0** (opens September). The 13 exclusions =
+  4 pathway-not-open + 9 no confirmed eWallet; 30+13 = 43 payable. Old run CANCELLED, not deleted,
+  so the audit trail shows the supersession. The new run is a DRAFT awaiting maker→checker sign-off.
 
 ## Superseded — previous Next Sprint (as of 2026-07-21)
 
