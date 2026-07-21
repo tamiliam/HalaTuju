@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor portfolio — clickable cards → a sponsored-student detail page (Sprint 2) — 2026-07-21
+
+- **Added — a detail page for a student you support.** The My-students cards were plain divs; each now
+  links to `/sponsor/my-students/[id]` — a read-only page framed "the student you support": header,
+  the single status badge, the journey tracker (with a **"Withdrew"** stop for discontinued), **your
+  commitment**, the **full anonymised profile** (react-markdown), and a **reserved "Spending overview"**
+  panel (a later sprint). **No funding controls** — this is not the discovery page.
+- **Added — endpoint** `GET /api/v1/sponsor/my-students/<pk>/` (`SponsorMyStudentDetailView`): a student
+  the caller sponsors, at **any lifecycle status** (incl. past the grace window when they've dropped off
+  the pool — which the discovery-pool detail 404s). Gated to the caller's **own sponsorship** (404
+  otherwise); flag + approved-sponsor gated. Returns the sponsorship + student card + the reviewed anon
+  profile (`SponsorMyStudentDetailSerializer`). API client `getMyStudentDetail`.
+- **i18n** `sponsorPortal.myStudents.detail.*` (en/ms/ta; Tamil first-draft). No migration; behind
+  `SPONSOR_POOL_ENABLED`. Tests: 5 (own detail / non-owner 404 / flag-off / unapproved / no leak).
+
 ## Fix — admin invite form lost input focus after each keystroke — 2026-07-21
 
 - **Fixed** — on `/admin/administration`, the invite form (Invite-as role / name / email) dropped focus
