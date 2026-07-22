@@ -21,7 +21,8 @@ HalaTuju is becoming a multi-tenant platform (plan of record: `docs/plans/2026-0
 
 5. **New document types extend `ApplicantDocument.DOC_TYPES`** (the master catalogue) — never a parallel enum or an ad-hoc doc store. New storage writes go through `scholarship/storage.py` helpers, never a hand-built bucket path.
 
-6. **New billable calls (AI, SMS, email) go through the existing seams** — `vision.py` / `profile_engine.py` for Gemini, the `emails.py` `_send*` helpers, `whatsapp.py` for Twilio — never a fresh client instantiation elsewhere. (The per-tenant usage meter will wrap those seams; a stray call site escapes metering.)
+6. **New billable calls (AI, SMS, email) go through the existing seams** — `vision.py` / `profile_engine.py` / `contracts.py` `_gemini_generate` for Gemini, the `emails.py` `_send*` helpers, `whatsapp.py` for Twilio — never a fresh client instantiation elsewhere. (The per-tenant usage meter will wrap those seams; a stray call site escapes metering.)
+   *Sanctioned Gemini seams, in full:* `vision._call_gemini_json` (structured document reads), `profile_engine._call_gemini_text` (prose), and `contracts._gemini_generate` (contract-quiz generation). The third was added to this list on 2026-07-23 — it was already the single mockable call site for its feature, so this records the fact rather than changing anything.
 
 7. **Referrer ≠ owner.** `PartnerAdmin.org` / `referred_by_org` mean *the organisation that referred* a student — an attribution marker, not a security boundary. Never use them for access control. The future tenant boundary is a separate `owning_organisation` concept (roadmap Sprint 1); don't name anything new plain `org`.
 
