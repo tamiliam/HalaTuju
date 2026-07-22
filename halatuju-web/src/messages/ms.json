@@ -3171,7 +3171,6 @@
           "not_assignable": "Penyemak hanya boleh ditugaskan semasa permohonan sedang disemak (Selesai atau Temu Duga). Ia sama ada belum bersedia, atau semakan sudah tamat."
         }
       },
-      "incompleteTitle": "Belum boleh diterima — pemohon masih perlu:",
       "requestInfoError": "Tidak dapat menghantar permintaan.",
       "requestDocTitle": "Minta dokumen",
       "requestDocNotePlaceholder": "Terangkan apa yang diperlukan (telah diisi — sunting ikut keperluan)",
@@ -3226,16 +3225,6 @@
       "requestDocSend": "Minta dokumen",
       "requestDocPrompt": "Sila muat naik {doc} anda.",
       "requestDocPromptMember": "Sila muat naik {doc} {member}.",
-      "completeness": {
-        "quiz_done": "Kuiz kerjaya",
-        "details_done": "Kisah anda (aspirasi + rancangan)",
-        "funding_done": "Keperluan pembiayaan",
-        "documents_done": "Dokumen diperlukan",
-        "consent_done": "Persetujuan",
-        "address_done": "Alamat rumah",
-        "guardian_docs_done": "Dokumen penjaga",
-        "family_done": "Butiran keluarga"
-      },
       "interview": {
         "title": "Peringkat Temu Duga",
         "intro": "Jurang yang ditemui AI untuk ditanya secara langsung — gunakannya, tanya soalan anda sendiri, atau jana lagi. Kemudian rekod penemuan dan kesimpulan anda di bawah.",
@@ -3704,6 +3693,56 @@
           "pension_amount_unknown": "Ibu/bapa yang bersara atau tidak berupaya bekerja mungkin menerima pencen atau bantuan yang belum dikira — pelajar telah ditanya sama ada mereka menerimanya dan, jika ya, lebih kurang berapa (tiada dokumen diminta sehingga disahkan).",
           "father_pension_proof_missing": "Bapa bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah).",
           "mother_pension_proof_missing": "Ibu bersara/tidak berupaya dan pelajar mengesahkan beliau menerima pencen — diminta memuat naik penyata (dikira sebagai pendapatan isi rumah)."
+        }
+      },
+      "blockers": {
+        "title": "Halangan",
+        "owes": "Pelajar ini masih perlu menyediakan:",
+        "stuck": "Pelajar ini kini tersekat pada langkah {step}.",
+        "awaitingConsent": "Semuanya lengkap — pelajar hanya perlu memberi persetujuan, langkah terakhir.",
+        "none": "Tiada perkara tertunggak.",
+        "step": {
+          "quiz": "Kuiz",
+          "story": "Kisah Anda",
+          "funding": "Pembiayaan",
+          "documents": "Dokumen"
+        },
+        "item": {
+          "quiz_incomplete": "Langkah Kuiz (belum selesai)",
+          "story_incomplete": "Langkah Kisah Anda (belum selesai)",
+          "family_incomplete": "Butiran keluarga — nama dan pekerjaan ibu bapa (langkah Kisah Anda)",
+          "address_incomplete": "Alamat rumah mereka (langkah Kisah Anda)",
+          "funding_incomplete": "Langkah Pembiayaan (belum selesai)",
+          "ic_missing": "Kad pengenalan (IC) mereka",
+          "results_slip_missing": "Slip keputusan mereka",
+          "offer_letter_missing": "Surat tawaran mereka",
+          "offer_not_official": "Surat tawaran rasmi — tawaran tanpa syarat daripada universiti awam. Tawaran bersyarat, tawaran universiti swasta (IPTS) atau notis kemasukan tidak boleh disokong.",
+          "str_missing": "Dokumen STR mereka",
+          "income_proof_missing": "Dokumen STR (Sumbangan Tunai Rahmah) mereka",
+          "parent_ic_missing": "IC ibu bapa atau penjaga mereka",
+          "parent_ic_missing_member": "IC {member}",
+          "salary_slip_missing": "Slip gaji bagi setiap ahli keluarga yang bekerja",
+          "salary_slip_missing_member": "Slip gaji {member}",
+          "birth_certificate_missing": "Sijil kelahiran mereka — untuk mengesahkan ibu mereka ialah ibu kandung",
+          "guardianship_letter_missing": "Surat penjagaan",
+          "income_incomplete": "Bahagian Pendapatan isi rumah (langkah Dokumen)",
+          "results_slip_name_mismatch": "Slip keputusan atas nama mereka sendiri — yang dimuat naik menunjukkan nama orang lain",
+          "results_slip_grades_mismatch": "Slip keputusan yang betul — ia tidak sepadan dengan gred yang dimasukkan",
+          "offer_letter_mismatch": "Surat tawaran atas nama dan IC mereka sendiri — yang dimuat naik atas nama lain",
+          "income_document_mismatch": "Dokumen pendapatan yang betul — salah satu tidak sepadan (ditanda merah dalam Dokumen)",
+          "salary_slip_person_mismatch": "Slip gaji atas nama pencari nafkah itu sendiri — ia tidak sepadan dengan IC orang tersebut",
+          "str_person_mismatch": "STR yang betul dan terkini — nama/NRIC berbeza, atau ia bukan yang terkini",
+          "birth_cert_person_mismatch": "Sijil kelahiran yang betul — nama padanya tidak sepadan",
+          "guardianship_person_mismatch": "Surat penjagaan yang betul — nama padanya tidak sepadan",
+          "parent_ic_person_mismatch": "IC ibu bapa atau penjaga yang sepadan — ia tidak sepadan dengan dokumen pendapatan mereka",
+          "results_slip_unreadable": "Slip keputusan yang lebih jelas — kami tidak dapat membaca yang dimuat naik",
+          "offer_letter_unreadable": "Surat tawaran yang lebih jelas — kami tidak dapat membaca yang dimuat naik",
+          "income_document_unreadable": "Dokumen pendapatan yang lebih jelas — kami tidak dapat membaca yang dimuat naik",
+          "ic_unreadable": "Gambar IC yang lebih jelas — kami tidak dapat membaca yang dimuat naik",
+          "ic_nric_mismatch": "IC yang sepadan dengan profil mereka — NRIC pada IC yang dimuat naik berbeza",
+          "ic_name_mismatch": "IC yang sepadan dengan profil mereka — nama pada IC yang dimuat naik berbeza",
+          "ic_service_down": "Tiada daripada pelajar — perkhidmatan semakan dokumen kami tidak tersedia buat sementara waktu. Cuba lagi kemudian.",
+          "no_application": "Tiada permohonan dijumpai."
         }
       },
       "decision": {

@@ -3171,7 +3171,6 @@
           "not_assignable": "A reviewer can only be assigned while the application is being reviewed (Completed or Interviewing). It's either not ready yet, or the review is already over."
         }
       },
-      "incompleteTitle": "Cannot accept yet — the applicant still owes:",
       "requestInfoError": "Could not send the request.",
       "requestDocTitle": "Request a document",
       "requestDocNotePlaceholder": "Explain what's needed (prefilled — edit as you like)",
@@ -3226,16 +3225,6 @@
       "requestDocSend": "Request document",
       "requestDocPrompt": "Please upload your {doc}.",
       "requestDocPromptMember": "Please upload {member}'s {doc}.",
-      "completeness": {
-        "quiz_done": "Career quiz",
-        "details_done": "Your story (aspirations + plans)",
-        "funding_done": "Funding need",
-        "documents_done": "Required documents",
-        "consent_done": "Consent",
-        "address_done": "Home address",
-        "guardian_docs_done": "Guardian documents",
-        "family_done": "Family details"
-      },
       "interview": {
         "title": "Interview Stage",
         "intro": "AI-found gaps to raise live — use them, ask your own, or generate more. Then record your findings and conclusions below.",
@@ -3704,6 +3693,56 @@
           "pension_amount_unknown": "A retired / unable-to-work parent may draw a pension or benefit that isn't yet counted — the student has been asked whether they receive one and, if so, roughly how much (no document demanded until they confirm).",
           "father_pension_proof_missing": "Father is retired/unable and the student confirmed he draws a pension — asked to upload the statement (counts as household income).",
           "mother_pension_proof_missing": "Mother is retired/unable and the student confirmed she draws a pension — asked to upload the statement (counts as household income)."
+        }
+      },
+      "blockers": {
+        "title": "Blockers",
+        "owes": "The student still owes:",
+        "stuck": "The student is currently stuck at the {step} step.",
+        "awaitingConsent": "Everything's in — the student only needs to give consent, the final step.",
+        "none": "Nothing outstanding.",
+        "step": {
+          "quiz": "Quiz",
+          "story": "Your Story",
+          "funding": "Funding",
+          "documents": "Documents"
+        },
+        "item": {
+          "quiz_incomplete": "The Quiz step (not finished)",
+          "story_incomplete": "The Your Story step (not finished)",
+          "family_incomplete": "Family details — parents' names and professions (Your Story step)",
+          "address_incomplete": "Their home address (Your Story step)",
+          "funding_incomplete": "The Funding step (not finished)",
+          "ic_missing": "Their IC",
+          "results_slip_missing": "Their results slip",
+          "offer_letter_missing": "Their offer letter",
+          "offer_not_official": "An official offer letter — an unconditional offer from a public university. A conditional offer, a private-university (IPTS) offer or an admission notice cannot be supported.",
+          "str_missing": "Their STR document",
+          "income_proof_missing": "Their STR (Sumbangan Tunai Rahmah) document",
+          "parent_ic_missing": "Their parent's or guardian's IC",
+          "parent_ic_missing_member": "{member}'s IC",
+          "salary_slip_missing": "A salary slip for each working family member",
+          "salary_slip_missing_member": "{member}'s salary slip",
+          "birth_certificate_missing": "Their birth certificate — to confirm the mother is their parent",
+          "guardianship_letter_missing": "The guardianship letter",
+          "income_incomplete": "The Household income section (Documents step)",
+          "results_slip_name_mismatch": "A results slip in their own name — the one uploaded shows someone else's name",
+          "results_slip_grades_mismatch": "A corrected results slip — it doesn't match the grades they entered",
+          "offer_letter_mismatch": "An offer letter in their own name and IC — the one uploaded is in a different name",
+          "income_document_mismatch": "A corrected income document — one of them doesn't match (shown in red in Documents)",
+          "salary_slip_person_mismatch": "A salary slip in the earner's own name — it doesn't match that person's IC",
+          "str_person_mismatch": "A correct, current STR — the name/NRIC differs, or it isn't current",
+          "birth_cert_person_mismatch": "A corrected birth certificate — the names on it don't match",
+          "guardianship_person_mismatch": "A corrected guardianship letter — the names on it don't match",
+          "parent_ic_person_mismatch": "A matching parent's or guardian's IC — it doesn't match their income documents",
+          "results_slip_unreadable": "A clearer results slip — we couldn't read the one uploaded",
+          "offer_letter_unreadable": "A clearer offer letter — we couldn't read the one uploaded",
+          "income_document_unreadable": "A clearer income document — we couldn't read the one uploaded",
+          "ic_unreadable": "A clearer photo of their IC — we couldn't read the one uploaded",
+          "ic_nric_mismatch": "An IC matching their profile — the NRIC on the uploaded IC differs",
+          "ic_name_mismatch": "An IC matching their profile — the name on the uploaded IC differs",
+          "ic_service_down": "Nothing from the student — our document-check service is temporarily unavailable. Try again later.",
+          "no_application": "No application found."
         }
       },
       "decision": {

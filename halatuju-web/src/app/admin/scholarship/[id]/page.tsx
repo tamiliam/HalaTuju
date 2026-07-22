@@ -84,9 +84,8 @@ import { formatDate } from '@/lib/formatDate'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
 import { isFunded, disbursementTone, actionsFor, nextSequence, totalReleased } from '@/lib/disbursement'
+import { showsBlockerBox, parseBlocker, stuckStep, blockerLabelKey, memberLabelKey } from '@/lib/blockers'
 import type { BursaryAgreement } from '@/lib/api'
-
-const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done', 'family_done'] as const
 
 // Officer doc-request control: a friendly CATEGORY + a mandatory QUALIFIER that resolves to a
 // concrete (doc_type, household_member). Every request is tagged at source — a "Whose?" category
@@ -2545,16 +2544,9 @@ export default function AdminScholarshipDetailPage() {
         ) : (decisionReopened || ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status)) ? (
           canWrite && (
             <div className="space-y-2">
-              {!app.completeness.complete && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
-                  <p className="font-medium text-amber-900">{t('admin.scholarship.incompleteTitle')}</p>
-                  <ul className="mt-1 list-disc ml-5 text-amber-800">
-                    {COMPLETENESS_PARTS.filter((p) => !app.completeness[p]).map((p) => (
-                      <li key={p}>{t(`admin.scholarship.completeness.${p}`)}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {/* The old coarse "still owes: documents / consent" banner moved OUT to its own
+                  Blockers card below this one (owner 2026-07-22) — it now names each item
+                  from the consent gate instead of two categories. */}
               {/* Reversible outcome selection. Approve needs an amount; Decline doesn't (and clears it). */}
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={selectApprove} disabled={!!busy || !approveReady}
@@ -2602,6 +2594,60 @@ export default function AdminScholarshipDetailPage() {
 
         {error && <p className="text-red-600 text-xs">{error}</p>}
       </div>
+
+      {/* ── Blockers — exactly what this student still owes, in the OFFICER's voice, so they can
+            advise the student directly instead of asking for screenshots (owner 2026-07-22).
+            Source: `consent_blockers` — the SAME gate the student's own submission enforces, so
+            the officer and the student can never be told different things. Read-only (no write
+            gate): a reviewer/QC needs the answer too. Shown for shortlisted + profile_complete
+            (BLOCKER_BOX_STATUSES — drop `profile_complete` there to retire it). ── */}
+      {showsBlockerBox(app.status) && (() => {
+        const codes = app.consent_blockers || []
+        const step = stuckStep(codes)
+        return (
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+            <h2 className="text-base font-semibold tracking-tight text-gray-900">
+              {t('admin.scholarship.blockers.title')}
+            </h2>
+            {codes.length > 0 ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+                <p className="font-medium text-amber-900">{t('admin.scholarship.blockers.owes')}</p>
+                <ul className="mt-1.5 ml-5 list-disc space-y-1 text-amber-800">
+                  {codes.map((raw) => {
+                    // Income codes are member-qualified ("parent_ic_missing:mother") so the line
+                    // names the person; everything else is a plain code.
+                    const { member } = parseBlocker(raw)
+                    return (
+                      <li key={raw}>
+                        {member
+                          ? t(blockerLabelKey(raw), { member: t(memberLabelKey(member)) })
+                          : t(blockerLabelKey(raw))}
+                      </li>
+                    )
+                  })}
+                </ul>
+                {step && (
+                  <p className="mt-2.5 text-amber-900">
+                    {t('admin.scholarship.blockers.stuck', {
+                      step: t(`admin.scholarship.blockers.step.${step}`),
+                    })}
+                  </p>
+                )}
+              </div>
+            ) : !app.completeness.consent_done ? (
+              /* Nothing outstanding but consent not yet given — the gate never emits a
+                 "consent missing" code (it IS the gate to consent), so say it plainly. */
+              <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                {t('admin.scholarship.blockers.awaitingConsent')}
+              </p>
+            ) : (
+              <p className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                {t('admin.scholarship.blockers.none')}
+              </p>
+            )}
+          </div>
+        )
+      })()}
 
       {/* ── Quality Control — the QC gate on an AWAITING-QC ('interviewed') case (a `qc` role or
             super). Accept → Recommended; Reopen → back to the reviewer with a gaps note (emailed).

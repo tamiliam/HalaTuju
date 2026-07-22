@@ -633,6 +633,11 @@ export interface AdminScholarshipDetail {
   // Phase C
   profile_completed_at: string | null
   completeness: AdminCompleteness
+  // The exact consent gate (services.consent_blockers) — the SAME list the student's
+  // submission enforces, so the officer's Blockers card and the student can never
+  // disagree. Income codes are member-qualified ("parent_ic_missing:mother").
+  // Empty = nothing outstanding.
+  consent_blockers: string[]
   interview_session: AdminInterviewSession | null
   assigned_to_id: number | null
   assigned_to_name: string | null
