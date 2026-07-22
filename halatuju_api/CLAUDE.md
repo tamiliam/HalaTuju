@@ -524,6 +524,42 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-23)
 
+**✅ SHIPPED 2026-07-22/23 (api+web, NO migration) — the cockpit and the consent form now say what
+is actually true.** Five changes, each triggered by the owner reading a screen that lied or wasted
+space.
+- **Sources counts** — `_source_application_counts` (replacing `_source_student_counts`) counts
+  bursary APPLICATIONS by referral chip (the same signal the Applications-list Source filter uses),
+  with the house org taking the residual: **CUMIG 256→13, BrightPath 0→35**, reconciling to the 143
+  live applications. It had been counting the legacy course-selector registry through a drifted FK.
+  Phone now reuses the apply form's `formatPhone`/`isValidPhone`; inline edit is one labelled panel.
+- **Blockers card** (`lib/blockers.ts` + cockpit) — names every outstanding item from
+  `consent_blockers`, the SAME gate the student's own submission enforces, so the two can never
+  disagree. **Zero backend**: the field was already on the admin payload and had never been
+  rendered. Shown at `shortlisted` + `profile_complete` (`BLOCKER_BOX_STATUSES` — delete one entry
+  to retire `profile_complete`).
+- **Five dead cards hidden at `shortlisted`** (Recommendation, Rate AI, Interview Stage, Estimated
+  need, Final profile) behind `officerCockpit.isPreSubmissionStage` — a shortlisted app is
+  pre-submission by definition, so `isDecisionReady` can never be true there.
+- **Income: STR *or* salary satisfies** — `salary_income_satisfied` is now EVIDENCE-based, not
+  route-declared; earners resolve via the opt-in `effective_working_members(app, any_route=True)`.
+  The default is unchanged **on purpose** (verdict + profile engines use it) — which is why no
+  verdict/band moved and **no MODEL_VERSION bump**. Guard-rail test: with no complete cluster a
+  failed STR still blocks. Unblocked #116.
+- **Consent wording corrected** to what sponsors actually receive (anonymised summary; documents
+  NEVER shared); **`CONSENT_VERSION` → 2026-draft-6**. No re-consent — draft-6 is narrower, so
+  prior consenters permitted more than we do.
+- **⛔ STR recognition is CLOSED — do not re-propose.** SARA ranks below STR and correctly reads
+  `unknown`; payment receipts are REFUSED (owner: "we don't know if it is a typed doc"). Genuine
+  cases carry via the salary route or officer judgement. See decisions 2026-07-23.
+- **▶ CARRY:** ms/ta first-drafts (blockers ×35 + the consent text); **TD-166** (consent panel
+  renders CURRENT wording, not the version agreed) and **TD-167** (nothing pins the sponsor
+  allowlist against the consent copy); #9's mother's-IC slot holds the FATHER's IC (awarded file,
+  records-integrity only).
+- Retro `docs/retrospective-2026-07-23-cockpit-and-consent.md`; decisions ×6; lessons ×3.
+  **4280 pytest / 648 jest.**
+
+## Superseded — previous Next Sprint (as of 2026-07-23)
+
 **✅ SHIPPED 2026-07-23 (api+web, NO migration) — the reporting date is a first-class fact.**
 From "#123's recommended amount is wrong". `reporting_date` drives the bursary SIZE, payment
 eligibility and the semester-result request, and was NULL for **45% of applications whose pathway
