@@ -1833,6 +1833,11 @@ def income_doc_blockers(application):
                   .values_list('doc_type', flat=True))
     out = []
     if route == 'str':
+        # EITHER route satisfies (owner 2026-07-22): a fully documented earner settles income on
+        # its own, so don't go on to demand the STR triplet from a student whose STR is missing or
+        # failed the format gate. Mirrors the salary branch's identical early-return below.
+        if salary_income_satisfied(application):
+            return []
         earner = (getattr(application, 'income_earner', '') or '').strip()
         if not earner:
             return ['income_incomplete']

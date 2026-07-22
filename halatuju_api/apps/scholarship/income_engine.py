@@ -189,8 +189,15 @@ def working_members(application) -> list:
     return [m for m in _MEMBER_ORDER if m in chosen]
 
 
-def effective_working_members(application) -> list:
+def effective_working_members(application, any_route: bool = False) -> list:
     """The salary-route working members, with a fallback for the prefill-not-saved gap.
+
+    ``any_route=True`` lifts the salary-route restriction and reconstructs the earners on EITHER
+    route — needed because income is satisfied by STR **or** salary (owner 2026-07-22), so a
+    student who declared the STR route can still have fully documented an earner while never
+    touching the salary checkboxes. OPT-IN on purpose: the default keeps the historical
+    salary-route-only behaviour for the verdict engine and the profile generator, so widening the
+    submission gate cannot move a verdict, a band or a generated profile.
 
     ``working_members`` reads ONLY the persisted ``income_working_members`` list. The income
     wizard pre-ticks earners from the family roster and tags uploaded income docs to them, but
@@ -207,7 +214,7 @@ def effective_working_members(application) -> list:
     explicit = working_members(application)
     if explicit:
         return explicit
-    if (getattr(application, 'income_route', '') or '').strip() != 'salary':
+    if not any_route and (getattr(application, 'income_route', '') or '').strip() != 'salary':
         return []
     # (1) Members the uploaded income docs are tagged to — what the student actually did.
     found: set = set()
@@ -1079,15 +1086,25 @@ def member_cluster_complete(application, member):
 
 
 def salary_income_satisfied(application):
-    """Salary route: True when AT LEAST ONE selected working member has a complete, clean cluster
+    """True when AT LEAST ONE working member has a complete, clean cluster
     (`member_cluster_complete`). This is the "one clean cluster is enough to submit" gate (owner
     2026-07-08): once one earner is fully and coherently documented, every OTHER member's missing
     docs AND document errors (e.g. an extraneous, misread second-parent IC) become soft Check-2
-    follow-ups, never submission blockers. False off the salary route — the STR route has its own
-    precedence rule (`household_str_status` / `str_not_breached`)."""
-    if (getattr(application, 'income_route', '') or '').strip() != 'salary':
-        return False
-    return any(member_cluster_complete(application, m) for m in working_members(application))
+    follow-ups, never submission blockers.
+
+    ROUTE-AGNOSTIC since 2026-07-22 (owner: "it is either STR or salary — either one is fine;
+    students may fulfil both but are not required to"). It used to return False off the declared
+    salary route, which asked *which radio button did they tick?* instead of *what did they
+    actually prove* — so a student who declared STR, had the STR fail the format gate, yet fully
+    documented an earner (#116: mother's IC + genuine payslip + a birth certificate linking her to
+    the student) was trapped with her salary evidence never even inspected. Earners are resolved
+    with ``any_route=True`` because such a student never touches the salary checkboxes.
+
+    Confined to the SUBMISSION GATE: this and `income_established` are used only by
+    `services.income_doc_blockers` / `document_red_blockers`, never by the verdict or profile
+    engines — so widening it moves no verdict and no band."""
+    return any(member_cluster_complete(application, m)
+               for m in effective_working_members(application, any_route=True))
 
 
 def income_established(application):
@@ -1098,7 +1115,11 @@ def income_established(application):
     submission — it becomes a soft Check-2 follow-up. This is the route-agnostic form of "one clean
     cluster is enough"; it also covers the STR twin where the OTHER parent's IC is cross-checked
     against a single-recipient STR and 'mismatches' meaninglessly (a valid father's STR + an
-    extraneous mother IC, #28)."""
+    extraneous mother IC, #28).
+
+    Genuinely route-agnostic since 2026-07-22: `salary_income_satisfied` no longer returns False
+    off the declared salary route, so a FAILED STR plus a complete salary cluster now establishes
+    income (#116) — which is what this docstring promised all along."""
     if salary_income_satisfied(application):
         return True
     grade, _member = household_str_status(application)

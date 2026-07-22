@@ -66,9 +66,77 @@ class TestMemberClusterComplete(_Base):
                         return_value={'readable': True, 'name_status': 'mismatch'}):
             self.assertFalse(income_engine.member_cluster_complete(app, 'father'))
 
-    def test_off_salary_route_is_not_satisfied(self):
+    def test_no_cluster_is_not_satisfied_whatever_the_route(self):
+        # Replaces the old `test_off_salary_route_is_not_satisfied` (owner 2026-07-22): it is the
+        # EVIDENCE that decides now, not the declared route — but with no documents on file there
+        # is still nothing to satisfy.
         app = self._app('d', income_route='str', income_earner='mother')
         self.assertFalse(income_engine.salary_income_satisfied(app))
+        self.assertFalse(income_engine.income_established(app))
+
+
+class TestEitherRouteSatisfies(_Base):
+    """Owner 2026-07-22 — "it is either STR or salary; students may fulfil both but are not
+    required to". #116: the STR failed the FORMAT gate (a BSN payment receipt classified
+    source_type='unknown' → wrong_type → RED) while the mother was fully documented, and the
+    salary evidence was never even inspected because `salary_income_satisfied` early-returned off
+    the declared route. The complete cluster must carry the application through."""
+
+    def _shape_116(self, suffix):
+        """#116: declared the STR route, so never touched the salary checkboxes — the earners are
+        discoverable only from the tags on the documents she actually uploaded."""
+        app = self._app(suffix, income_route='str', income_earner='mother',
+                        income_working_members=[])
+        self._doc(app, 'parent_ic', 'mother', vision_name='VIGINESWARY A/P BATUMALAI')
+        self._doc(app, 'salary_slip', 'mother', vision_name='VIGINESWARY A/P BATUMALAI')
+        self._doc(app, 'birth_certificate')      # mother → birth certificate links her to the student
+        return app
+
+    def _clean_checks(self):
+        return (mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+                           return_value={'readable': True, 'name_status': 'match'}),
+                mock.patch('apps.scholarship.income_engine.student_income_proof_check',
+                           return_value={'name_status': 'match', 'nric_status': 'match'}))
+
+    def _failed_str(self, app):
+        """A genuine bank STR receipt the format gate can't place → wrong_type (RED)."""
+        return self._doc(app, 'str', 'mother', vision_fields={
+            'fields': {'recipient_name': '', 'recipient_nric': '791128-08-6530',
+                       'status': '', 'year': '2026', 'source_type': 'unknown'},
+            'authenticity': {'status': 'genuine'},
+        })
+
+    def test_complete_salary_cluster_satisfies_on_the_str_route(self):
+        app = self._shape_116('e116a')
+        ic, proof = self._clean_checks()
+        with ic, proof:
+            self.assertTrue(income_engine.salary_income_satisfied(app))
+            self.assertTrue(income_engine.income_established(app))
+
+    def test_str_triplet_not_demanded_when_salary_is_complete(self):
+        # No STR on file at all: the STR branch falls through instead of asking for str_missing.
+        app = self._shape_116('e116b')
+        ic, proof = self._clean_checks()
+        with ic, proof:
+            self.assertEqual(services.income_doc_blockers(app), [])
+
+    def test_failed_str_does_not_block_when_salary_is_complete(self):
+        # The #116 regression: the wrong_type STR must not hard-block submission.
+        app = self._shape_116('e116c')
+        self._failed_str(app)
+        ic, proof = self._clean_checks()
+        with ic, proof:
+            self.assertNotIn('str_person_mismatch', services.document_red_blockers(app))
+            self.assertEqual(services.income_doc_blockers(app), [])
+
+    def test_failed_str_still_blocks_when_there_is_no_salary_cluster(self):
+        # The guard-rail: without a complete cluster the failed STR must STILL block, else the
+        # relaxation would wave through a student with no income evidence at all.
+        app = self._app('e116d', income_route='str', income_earner='mother',
+                        income_working_members=[])
+        self._failed_str(app)
+        self.assertFalse(income_engine.income_established(app))
+        self.assertIn('str_person_mismatch', services.document_red_blockers(app))
 
 
 class TestGateSuppression(_Base):

@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## Income gate — STR *or* salary genuinely satisfies (either one is enough) — 2026-07-22
+
+Owner policy (2026-07-22): *"it is either STR or salary — students may fulfil both but they are
+not required to; either one is fine."* The submission gate did not honour it. `document_red_blockers`
+already skips every income-cluster red (including `str`) once `income_established` is true — but
+`salary_income_satisfied` opened with `if income_route != 'salary': return False`, so a student who
+declared the STR route had her salary evidence **never inspected**.
+
+- **Fixed — #116**: her STR was a genuine BSN payment receipt whose recipient NRIC matched her
+  mother's IC exactly, but the format gate only recognises three MySTR proofs, so it classified
+  `source_type='unknown'` → `wrong_type` → RED → hard block. Meanwhile her mother was *fully*
+  documented (IC + genuine payslip + a birth certificate naming child and mother with matching
+  NRICs). One failed document trapped an application that a complete, clean earner cluster
+  already settled. (Perverse detail: an *unclassified* STR scores `unreadable` = amber and does
+  NOT block — being confidently labelled "not a recognised format" was punished harder.)
+- **Changed — `salary_income_satisfied` is now route-agnostic**: it asks what the household
+  actually PROVED, not which radio button was ticked. Earners are resolved with a new opt-in
+  `effective_working_members(app, any_route=True)`, because a student on the STR route never
+  touches the salary checkboxes (#116 had `income_working_members = []` with everything tagged
+  to the mother).
+- **Changed — `income_doc_blockers` (STR branch)** returns `[]` when the salary side is satisfied,
+  mirroring the salary branch's identical early-return: a student is no longer *asked* for the STR
+  triplet when a fully documented earner already settles income.
+- **Guard-rail kept:** with no complete cluster, a failed STR still blocks — the relaxation can
+  never wave through an application with no income evidence (locked by test).
+- **Blast radius contained by design:** `salary_income_satisfied` / `income_established` are used
+  only by the submission gate, never by the verdict or profile engines, and
+  `effective_working_members` keeps its old default for those engines — **no verdict, band or
+  generated-profile change; no MODEL_VERSION bump.** The change only ever REMOVES blocks.
+- Backend-only, no migration. Tests: the old `test_off_salary_route_is_not_satisfied` (which
+  encoded the retired policy) rewritten, +5 covering the #116 shape end-to-end. 3005 scholarship
+  + 1206 courses pass.
+
+**Not fixed here (separate follow-up):** the STR *classifier* — a bank payment receipt reads as
+"not an STR", and two genuine MySTR screenshots (#9, #115) also landed in `unknown`.
+
 ## Cockpit — hide the five dead cards at the shortlisted stage — 2026-07-22
 
 A `shortlisted` application is PRE-SUBMISSION by definition (submitting Step 2 is exactly what
