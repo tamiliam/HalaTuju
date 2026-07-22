@@ -969,6 +969,31 @@ export function isApproveReady(decisionReady: boolean, hasAssistance: boolean): 
   return decisionReady && hasAssistance
 }
 
+/**
+ * A `shortlisted` application is PRE-SUBMISSION by definition — submitting Step 2 is exactly
+ * what moves it out of 'shortlisted' — so it can never have a submitted interview, and
+ * `isDecisionReady` above can never be true there.
+ *
+ * That makes a whole group of cards dead weight at this stage: Rate AI Prediction, the
+ * Interview Stage capture, Recommendation (buttons permanently greyed), the funding
+ * projection (no award decided yet) and the generated Final profile (only produced at the
+ * verdict). Hidden rather than disabled — a disabled card still eats the screen and invites
+ * clicking. Mirrors the Assignment card's long-standing `status !== 'shortlisted'` guard.
+ * Owner decision 2026-07-22.
+ *
+ * What DOES stay at shortlisted: Blockers, Check 2 (chasing the student), Documents,
+ * AI Prediction (the verification read as documents arrive) and Reject-this-student
+ * (`ORG_REJECT_FROM = ('shortlisted',)` — it exists only there).
+ */
+export function isPreSubmissionStage(status: string | null | undefined): boolean {
+  return (status || '') === 'shortlisted'
+}
+
+/** Show the verdict-flow / funding-projection / generated-profile cards? Hidden pre-submission. */
+export function showsPostSubmissionCards(status: string | null | undefined): boolean {
+  return !isPreSubmissionStage(status)
+}
+
 // ── Header lifecycle timeline ─────────────────────────────────────────────────
 
 /** One chip in the cockpit header timeline. `labelKey` is the suffix under

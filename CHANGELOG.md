@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit — hide the five dead cards at the shortlisted stage — 2026-07-22
+
+A `shortlisted` application is PRE-SUBMISSION by definition (submitting Step 2 is exactly what
+moves it out of 'shortlisted'), so it can never have a submitted interview — `isDecisionReady`
+can never be true there. Five cards were therefore permanently inert on the platform's
+**biggest bucket** (48 of 143 applications, none with Step 2 submitted).
+
+- **Changed — hidden at shortlisted:** **Recommendation** (Approve/Decline permanently greyed),
+  **Rate AI Prediction** (its rating only persists via the same verdict Save), **Interview
+  Stage** (an *editable* interview capture before the student has submitted anything or a
+  reviewer is assigned), **Estimated need & proposed bursary** (a projection with no decision
+  attached — `award_amount` is null for every shortlisted app) and **Final profile** (only
+  generated at the verdict; 0 exist across shortlisted). Hidden, not disabled — a disabled card
+  still eats the screen and invites clicking.
+- **Kept at shortlisted:** Blockers, Check 2 — Outstanding (chasing the student), Documents
+  (22 of the 48 are actively uploading), AI Prediction (the verification read as documents
+  arrive) and Reject this student (`ORG_REJECT_FROM = ('shortlisted',)` — it exists only there).
+  A shortlisted file now reads: who they are → what's verified → what they owe → chase or reject.
+- **Added — `isPreSubmissionStage` / `showsPostSubmissionCards`** in `lib/officerCockpit.ts`:
+  one tested rule instead of five scattered conditions. Mirrors the Assignment card's
+  long-standing `status !== 'shortlisted'` guard (the same pattern; the interview *scheduler*
+  was already gated correctly — only its capture box had been missed).
+- Web-only; no backend change, no migration. Tests +3 (632 jest); build + tsc green.
+
 ## Cockpit — a Blockers card that names exactly what a student still owes — 2026-07-22
 
 The Recommendation card carried a vague banner ("still owes: Required documents / Consent")

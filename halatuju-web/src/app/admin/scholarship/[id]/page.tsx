@@ -77,6 +77,7 @@ import {
   verdictItemKey,
   headerTimeline,
   canOrgReject,
+  showsPostSubmissionCards,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
@@ -1413,6 +1414,8 @@ export default function AdminScholarshipDetailPage() {
       </div>
 
       {/* ── Student profile (system-generated: draft at handoff → final at verdict) ── */}
+      {/* Hidden at shortlisted (pre-submission): Final profile — only generated at the verdict. */}
+      {showsPostSubmissionCards(app.status) && (
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight text-gray-900">
@@ -1449,6 +1452,7 @@ export default function AdminScholarshipDetailPage() {
         )}
         {error && <p className="text-red-600 text-sm">{error}</p>}
       </div>
+      )}
 
       {/* ── The student's own words — collapsed by default. The reviewer's job is to
            check & sign off the AI profile above; the raw note/story/funding is the
@@ -1784,6 +1788,8 @@ export default function AdminScholarshipDetailPage() {
       )}
 
       {/* Phase C: interview capture */}
+      {/* Hidden at shortlisted (pre-submission): Interview Stage — no interview can exist pre-submission. */}
+      {showsPostSubmissionCards(app.status) && (
       <div id="interview-section" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -1952,6 +1958,7 @@ export default function AdminScholarshipDetailPage() {
           </>
         )}
       </div>
+      )}
 
 
       {/* ── Documents drawer — grouped by fact ────────────────────────────────── */}
@@ -2247,6 +2254,8 @@ export default function AdminScholarshipDetailPage() {
       {/* ── Rate AI verification — the officer's Pass/Fail over the AI's four-fact read +
            the AI's suggested verdict. Split out of the old Decision card (2026-07-04) into its
            own topmost box. Both modes: buttons while deciding, badges once recorded. ───────── */}
+      {/* Hidden at shortlisted (pre-submission): Rate AI Prediction — its rating can only be saved with the verdict. */}
+      {showsPostSubmissionCards(app.status) && (
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.recordVerdict.rateTitle')}</h2>
         <div className="space-y-2">
@@ -2316,12 +2325,16 @@ export default function AdminScholarshipDetailPage() {
           )
         })()}
       </div>
+      )}
 
       {/* ── Estimated need & proposed bursary — per-pathway estimated GAP after government
            coverage, PLUS the proposed bursary amount (moved out of the old Decision card). ── */}
       {(() => {
         const fe = app.funding_estimate
         const showBursary = app.award_amount != null || app.proposed_award_amount != null
+        // Hidden at shortlisted (pre-submission): a projection with no decision attached —
+        // the bursary figure is set at the verdict.
+        if (!showsPostSubmissionCards(app.status)) return null
         if (!fe && !showBursary) return null
         return (
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
@@ -2375,6 +2388,8 @@ export default function AdminScholarshipDetailPage() {
       {/* ── Decision — audit the four facts (records the verdict) → verify identity →
            accept. The audit→accept gate is preserved (accept stays gated on a complete
            profile + every checklist box). ──────────────────────────────────────────── */}
+      {/* Hidden at shortlisted (pre-submission): Recommendation — Approve/Decline need a submitted interview. */}
+      {showsPostSubmissionCards(app.status) && (
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.decision.title')}</h2>
@@ -2594,6 +2609,7 @@ export default function AdminScholarshipDetailPage() {
 
         {error && <p className="text-red-600 text-xs">{error}</p>}
       </div>
+      )}
 
       {/* ── Blockers — exactly what this student still owes, in the OFFICER's voice, so they can
             advise the student directly instead of asking for screenshots (owner 2026-07-22).

@@ -18,6 +18,8 @@ import {
   isApproveReady,
   verdictItemKey,
   headerTimeline,
+  isPreSubmissionStage,
+  showsPostSubmissionCards,
   type TimelineSource,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument } from '@/lib/admin-api'
@@ -1154,5 +1156,32 @@ describe('headerTimeline — the cockpit header lifecycle chips', () => {
   it('leaves a not-yet-reached step pending (null date → the header renders "—")', () => {
     const steps = headerTimeline(src({ status: 'recommended', awarded_at: null }))
     expect(steps?.find((s) => s.labelKey === 'awarded')?.at).toBeNull()
+  })
+})
+
+describe('pre-submission stage gate (shortlisted card hiding)', () => {
+  it('only shortlisted counts as pre-submission', () => {
+    expect(isPreSubmissionStage('shortlisted')).toBe(true)
+    for (const s of ['profile_complete', 'interviewing', 'interviewed', 'recommended',
+      'awarded', 'active', 'maintenance', 'closed', 'rejected', '']) {
+      expect(isPreSubmissionStage(s)).toBe(false)
+    }
+    expect(isPreSubmissionStage(null)).toBe(false)
+    expect(isPreSubmissionStage(undefined)).toBe(false)
+  })
+
+  it('hides the verdict-flow / projection / profile cards at shortlisted only', () => {
+    expect(showsPostSubmissionCards('shortlisted')).toBe(false)
+    expect(showsPostSubmissionCards('profile_complete')).toBe(true)
+    expect(showsPostSubmissionCards('interviewed')).toBe(true)
+    expect(showsPostSubmissionCards('active')).toBe(true)
+  })
+
+  it('is consistent with isDecisionReady: a shortlisted app can never be decision-ready', () => {
+    // Submitting Step 2 is what leaves 'shortlisted', so there is no submitted interview —
+    // the Recommendation buttons could never enable, which is why the card is hidden.
+    const allPass = { identity: 'pass', academic: 'pass', pathway: 'pass', need: 'pass' } as never
+    expect(isDecisionReady(undefined, allPass, 'a reason')).toBe(false)
+    expect(showsPostSubmissionCards('shortlisted')).toBe(false)
   })
 })
