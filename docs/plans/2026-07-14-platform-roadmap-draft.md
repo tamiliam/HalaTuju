@@ -2,13 +2,14 @@
 
 **Date:** 2026-07-14
 **Author:** Research analyst (drafting engineer) — for architect + owner review
-**Status:** **PLAN OF RECORD (revised 2026-07-15).** Owner accepted all decisions D-1…D-10; architect amendments folded in (Sprints 3 and 8 pre-split → **15 sprints** + one conditional off-boarding sprint; no bulk document re-key; Sprint-0 verification done — see the closing note). Nothing has been built. Follows `Settings/_workflows/implementation-planning.md` conventions.
+**Status:** **PLAN OF RECORD v3 (2026-07-22).** Phase 1 ✅ COMPLETE + LIVE (S1–S4, 2026-07-15). Sprint 12 + the Add-tenant slice of Sprint 10 were **delivered early** via the agreed gate-split (Administration panel + `org_admin` role + role matrix + org-admin powers v1 — briefs `2026-07-15-admin-panel-org-admin-brief.md`, `2026-07-15-org-admin-powers-v1-brief.md`) and are battle-tested by BrightPath daily. **Compliance check-up 2026-07-22: ALIGNED** — 175 post-pause commits audited, all new admin endpoints CI-classified, no referral-field auth, fence suites green; three named fix-forwards (see Phase 5 prerequisite). The feature lane additionally delivered the **payments module** (maker-checker monthly Vircle runs) and **contract module** (per-template amounts) — the payout rails, org-scoped by convention — so the **Finance-role trigger has FIRED**. v1 decisions D-1…D-10 stand. Original v2 status (2026-07-15) preserved in git history.
 
-**Sequencing triggers (owner-agreed 2026-07-15, while BrightPath is still actively evolving):**
-- **Now, continuously:** the build-for-tenancy conventions (`docs/build-for-tenancy-conventions.md`) apply to ALL ongoing BrightPath work, so current development stops deepening the coupling.
-- **Phase 1** starts in a quiet window (additive + centralised; safe under active development; closes a real security gap that exists today).
-- **Phase 2** is gated on rule stability: start only after ~a month passes without a `MODEL_VERSION` bump or a new document family — extracting config while the rules churn means extracting a moving target.
-- **Phases 3–4** are gated on a credible second-tenant prospect. No portal for a tenant that doesn't exist.
+**Sequencing triggers (v3, 2026-07-22):**
+- **Continuously:** the build-for-tenancy conventions (`docs/build-for-tenancy-conventions.md`) bind ALL work — audited 2026-07-22 and holding.
+- **Phase 2** gated on rule stability: the clock RESTARTED 2026-07-21 (school-leaving genuineness family 15 Jul; offer-parser 1.2.0 17 Jul; prompt bump 21 Jul) → earliest gate ≈ **21 Aug 2026**. **Owner option on record:** split the gate — S5–S6 (branding/email extraction) is NOT rule-dependent and may be pulled earlier (its payload keeps growing: +22 hard-coded email literals since the pause); S8–S9 stay strictly gated.
+- **Phases 3–4** gated on a credible second-tenant prospect (S12 already largely live shrinks the remaining gap to S10–11 + 13a/13b + E + DPA).
+- **Phase 5** (below) is owner-triggered, independent of tenant #2: S14 Finance role = trigger FIRED, awaiting owner scheduling; S15 Requests space = owner go.
+- **Phase 6** (below) rungs trigger on external-developer reality (A, B) and a real handover decision (C).
 **Reads with:** `2026-07-14-tenancy-audit.md` (evidence) and `2026-07-14-platform-prd-draft.md` (requirements).
 
 ---
@@ -156,7 +157,8 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 - **How we know BrightPath still works:** the existing admin surfaces are untouched; the new section is additive and superadmin-gated.
 - **Complexity:** Medium.
 
-### Sprint 12 — Org-admin scoped portal
+### Sprint 12 — ✅ LARGELY DELIVERED EARLY 2026-07-15/16 (gate-split pull-forward) — Org-admin scoped portal
+> Shipped ahead of phase via the Administration panel + `org_admin` role + powers-v1 + role-matrix work: org-scoped staff invites/resend/revoke, assignment, review/QC powers, sponsor vetting, nav partition, guards. **Residual scope only:** the per-org CONFIG-EDITING UI (branding request, eligibility, funding, documents, timing) — which naturally lands with Phase 2's extraction sprints. The Add-tenant slice of Sprint 10 also shipped (super invites an `org_admin` with a new org).
 - **Goal:** The organisation admin's own dashboard — sees only their programme, edits their own config, invites their own staff (PRD §1, the central new persona).
 - **Scope:** org-admin landing + scoped applicant list (reuses the Sprint-3 fenced queries), the org-scoped config editing UI (branding request, eligibility, funding, documents, timing), org-scoped invite. Nav split so an org admin never sees platform/course-data surfaces.
 - **Migrations expected:** 0.
@@ -194,6 +196,50 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 - **Test plan:** erase a fixture org end-to-end; assert zero residual rows/objects for that org AND zero impact on org #1's data; the students' platform accounts survive.
 - **Main risk + mitigation:** *Risk:* over-deletion (shared student data) or under-deletion (orphaned bucket objects). *Mitigation:* the erasure walks FKs from the org root, never from the student; a post-erasure sweep asserts both directions.
 - **Complexity:** Medium.
+
+---
+
+## Phase 5 — Organisation self-service & commercial governance (v3, 2026-07-22; owner-triggered, independent of tenant #2)
+
+### Sprint 14 — Finance role (**trigger FIRED 2026-07-22**: the payments + contract modules are the payout rails the role-matrix Finance row was waiting for)
+- **Prerequisite batch (small-change lane, before or with this sprint) — the 2026-07-22 check-up fix-forwards:** annotate/move the three programme-tunable module constants (`payments.py:55` `PATHWAY_PAYMENT_START_MONTH` + `:60` default; `income_engine.py:135-136` income-match tolerance) toward cohort fields or documented template-superseded defaults; register `contracts.py`'s Gemini call in the sanctioned billable seams (conventions doc + future metering map).
+- **Goal:** Implement the role-matrix Finance row: `finance` role via the established add-a-role wiring checklist; a seat in the payments-run maker→checker chain (payer ≠ decider made real); funding-relevant LIMITED B40 view (data minimisation per the matrix — awarded/funding data, not full applicant files); **Billing & usage panel v1** (own-org payments history + bursary-spend aggregates — fed by the payments module and the spend-reporting ingest), replacing the "coming soon" card. Rollout = Sam's onboarding (Suresh's original ask, answered properly).
+- **Tests:** role wiring matrix (fence/gates/completeness map), maker-checker role constraints, limited-view allowlist, panel rendering. **Complexity:** Medium–High.
+
+### Sprint 15 — Requests space v1 (owner go; damping the feature-ask firehose commercially)
+- **Goal:** An org-section "Requests" icon: bug-report + feature-request forms; status flow `submitted → triaged → quoted → approved → scheduled → done/declined`; the **published rate card** (bugs FREE; features priced — the third revenue line beside the platform fee and metered costs); the adjudication rule in writing: *behaviour contradicting the role matrix / manual = bug (free); working-as-documented-but-wanted-different = feature (priced)*.
+- **Triage:** v1 = owner-run with an AI-drafted evaluation (classification, lane sizing small-change vs sprint, effort, price from the rate card) — **an AI verdict is always a DRAFT; a quote reaches the organisation only after owner approval.** Automated Claude triage = v2, gated on request volume.
+- **Tests:** status-flow + org-scoping + role gating (org_admin submits/views; reviewers don't), rate-card rendering. **Complexity:** Medium.
+
+---
+
+## Phase 6 — Independence ladder (v3, 2026-07-22; option-preserving — each rung explicitly gated, none built speculatively)
+
+### Rung A — Staging environment (trigger: external developers become real; MAY be pulled earlier for general utility)
+A staging deployment (api + web) with **seeded fake data only — prod PII never leaves production**. Prerequisite for Rung B; independently useful for pre-deploy verification. **Complexity:** Medium (infra).
+
+### Rung B — External-contributor model (trigger: BrightPath signs developers; prerequisite: Rung A)
+Fork/PR on `halatuju-web`; owner-only merge (push-to-main = deploy stays owner-gated); the existing CI guard suites (org-fence, anonymity, i18n) as the mechanical merge gate; confidentiality agreement for source visibility; zero credential/dashboard/prod access for external developers. **Complexity:** Low (process + docs).
+
+### Rung C — Versioned tenant API + machine auth (trigger: a REAL handover decision — the recognised end-state, deliberately preserved by the current architecture)
+A formal versioned contract over the already-org-fenced endpoints; per-tenant service credentials (machine-to-machine, not user JWTs); rate limits, audit, breaking-change policy. Student identity, the verification engine and the document vault stay platform-side — that is the service being sold. DPA re-scoped: the tenant becomes an independent controller. **Complexity:** High; unsized until triggered — the permanent cost is versioning discipline, not the first build.
+
+---
+
+## Gates summary (v3 — every live trigger in one place)
+
+| Work | Gate / trigger | State (2026-07-22) |
+|---|---|---|
+| Phase 2 S5–S6 (branding extraction) | Rule-stability clock OR owner pulls the split-gate option | Clock restarted 21 Jul → ≈21 Aug; split option open |
+| Phase 2 S8–S9 (rules extraction) | Strict rule stability | Gated |
+| Phase 3 S10–S11 (platform console) | Credible second-tenant prospect | Gated (Add-tenant slice + S12 already live) |
+| Phase 4 13a/13b (metering, rehearsal) | Second-tenant prospect | Gated |
+| Sprint E (erasure) | Before any REAL tenant-#2 DPA | Gated |
+| **Sprint 14 (Finance role)** | Payout rails live | **FIRED — awaiting owner scheduling** |
+| Sprint 15 (Requests space) | Owner go | Open |
+| Rung A (staging) | External devs real (or owner pulls early) | Gated |
+| Rung B (external PRs) | Devs signed; Rung A done | Gated |
+| Rung C (tenant API) | Real handover decision | Gated (end-state) |
 
 ---
 
@@ -268,5 +314,10 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 | 4 | 13a | Per-org cost metering (tagging) | 1 | Med |
 | 4 | 13b | Second-tenant rehearsal + rollback drill | 0 | Med |
 | 4 | E *(conditional)* | Off-boarding & erasure routine — before any real tenant #2 DPA | 0–1 | Med |
+| 5 | 14 | Finance role + Billing & usage v1 (trigger FIRED) | 1 (choices) | Med–High |
+| 5 | 15 | Requests space v1 + rate card | 1 | Med |
+| 6 | A | Staging environment (seeded fake data) | 0 | Med (infra) |
+| 6 | B | External-contributor model | 0 | Low (process) |
+| 6 | C | Versioned tenant API + machine auth | TBD | High (unsized until triggered) |
 
 **Sprint-0 verification — DONE 2026-07-15 (architect):** the three "confirm before Sprint 1" unknowns are resolved. (1) `_AdminBase` subclasses = **43** (not ~25) → Sprint 3 pre-split stands. (2) The gate bodies (`application_completeness`, `document_red_blockers`) were read: grandfathering of already-submitted apps, results-slip name-mismatch blocks, and the income-cluster softening rule are the behaviours Sprint 8a's snapshots must protect. (3) The audit's billable-call-site list is **complete** — a repo-wide sweep found no missed paid-API call site (the `bursary.py`/`emails.py` grep hits are the Malay word *mengenai*); the two courses-side management commands (`generate_stpm_headlines`, `map_course_careers`) are platform-level one-off costs, correctly outside tenant metering.
