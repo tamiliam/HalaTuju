@@ -4,6 +4,7 @@ Tracks one-off small-lane changes between full sprints. Every ~10 pending entrie
 Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
+- 2026-07-22 fix(web): hide cancelled payment runs behind a toggle (admin/payments/page.tsx, i18n x3) — chosen by the owner INSTEAD of deleting a cancelled run; `payments.cancel` has no delete counterpart by design
 - 2026-07-15 fix(admin): platform panels show per-panel lists (administration/page.tsx, adminStaff.ts, AdminListView payload, i18n x3)
 - 2026-07-15 fix(admin): administration staff-table world split (administration/page.tsx, lib/adminStaff.ts, i18n x3)
 

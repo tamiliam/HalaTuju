@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Payments — cancelled runs hidden behind a toggle (small change) — 2026-07-22
+
+- **Changed** — the payment-run list hides **cancelled** runs by default; a `Show N cancelled
+  run(s)` / `Hide cancelled runs` toggle appears **only when there is one to reveal**. Client-side
+  (the list is one run per month per org and is fetched whole — a query param would split
+  filtering across two layers, same call as the sponsor pool's status filter).
+- **Why:** the owner asked to delete the superseded `PR-2026-07-26`. `payments.cancel` has no
+  delete counterpart by design — a run is a money record and stays on file — and that row is the
+  only thing explaining why the live run is referenced `PR-2026-07-26-02`. Hiding solves the
+  clutter for every future cancelled run without destroying the record. Nothing was deleted.
+- i18n `admin.payments.{showCancelled,hideCancelled}` en/ms/ta (**ms/ta first-drafts**). No
+  migration, no backend change. The toggle itself is not component-tested (see TD-165).
+
 ## Payments — back/advance-pay window rules (owner-locked 2026-07-22) — 2026-07-22
 
 Payment eligibility now asks *"is this student payable for the MONTH being paid for?"* instead of

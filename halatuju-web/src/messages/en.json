@@ -4268,6 +4268,8 @@
       "loadFailed": "Could not load payment runs.",
       "pastDate": "That date has passed — pick today or a future date.",
       "tooEarly": "Too early for that month — an advance run can only be paid from {date} onwards.",
+      "showCancelled": "Show {count} cancelled run(s)",
+      "hideCancelled": "Hide cancelled runs",
       "noOrg": "Your account is not tied to an organisation, so it cannot create a payment run.",
       "studentsLabel": "students",
       "totalLabel": "Total",

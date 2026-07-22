@@ -31,6 +31,13 @@ export default function PaymentsLandingPage() {
   const [payDate, setPayDate] = useState('')
   const [payMonth, setPayMonth] = useState('')   // 'YYYY-MM'; defaults to the pay date's month
   const [busy, setBusy] = useState(false)
+  // A cancelled run is never deleted (the service has no delete — `payments.cancel` only flips
+  // the status, so a superseded run stays on the record). It is still clutter on the list, so
+  // hide it behind a toggle rather than dropping it: the row explains, e.g., why a re-created
+  // run is referenced `PR-2026-07-26-02`. Client-side — the list is one run per month per org
+  // and is fetched whole, so a query param would split filtering across two layers for nothing
+  // (same call as the sponsor pool's status filter, decisions.md 2026-07-21).
+  const [showCancelled, setShowCancelled] = useState(false)
 
   useEffect(() => {
     if (!token || !allowed) { setLoading(false); return }
@@ -42,6 +49,9 @@ export default function PaymentsLandingPage() {
   }, [token, allowed])
 
   if (role && !allowed) return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
+
+  const cancelledCount = runs.filter((r) => r.status === 'cancelled').length
+  const visibleRuns = showCancelled ? runs : runs.filter((r) => r.status !== 'cancelled')
 
   const create = async () => {
     if (!token || !payDate) return
@@ -94,7 +104,7 @@ export default function PaymentsLandingPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {runs.map((r) => (
+            {visibleRuns.map((r) => (
               <tr key={r.id} className="hover:bg-blue-50/40">
                 <td className="px-4 py-3">
                   <Link href={`/admin/payments/${r.id}`} className="font-medium text-blue-600 hover:underline">{r.reference}</Link>
@@ -113,7 +123,7 @@ export default function PaymentsLandingPage() {
                 </td>
               </tr>
             ))}
-            {!loading && runs.length === 0 && (
+            {!loading && visibleRuns.length === 0 && (
               <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{t('admin.payments.empty')}</td></tr>
             )}
             {loading && (
@@ -122,6 +132,16 @@ export default function PaymentsLandingPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Only offered when there is something to reveal — no dead control on a clean list. */}
+      {!loading && cancelledCount > 0 && (
+        <button type="button" onClick={() => setShowCancelled((v) => !v)}
+          className="mt-3 text-xs font-medium text-gray-500 hover:text-gray-700">
+          {showCancelled
+            ? t('admin.payments.hideCancelled')
+            : t('admin.payments.showCancelled', { count: String(cancelledCount) })}
+        </button>
+      )}
 
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"

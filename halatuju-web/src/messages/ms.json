@@ -4268,6 +4268,8 @@
       "loadFailed": "Tidak dapat memuatkan larian pembayaran.",
       "pastDate": "Tarikh itu telah berlalu — pilih hari ini atau tarikh akan datang.",
       "tooEarly": "Terlalu awal untuk bulan itu — larian pendahuluan hanya boleh dibayar mulai {date}.",
+      "showCancelled": "Tunjukkan {count} larian dibatalkan",
+      "hideCancelled": "Sembunyikan larian dibatalkan",
       "noOrg": "Akaun anda tidak terikat dengan sesebuah organisasi, jadi ia tidak boleh mencipta larian pembayaran.",
       "studentsLabel": "pelajar",
       "totalLabel": "Jumlah",
