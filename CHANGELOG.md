@@ -49,6 +49,31 @@ Owner request. Web-only, no migration, no new i18n (the witness card reuses `adm
   (it previously loaded for every sourceless student, most of whom are at `shortlisted`).
 - Tests: **+11** asserting both rules across **every** status in the lifecycle, so a status added
   later surfaces as a decision rather than a card appearing in the wrong place.
+## Consent — the share-with-sponsors wording now matches what we actually do — 2026-07-22
+
+The consent form promised away MORE than the platform does. It said we share the student's
+"profile and supporting information" (adult) / "profile and documents" (guardian) with sponsors.
+Neither is true: **no document is ever exposed on the sponsor path** (`pool.py` contains not one
+document reference, and no sponsor serializer carries one), and the profile sponsors see is an
+**anonymised allowlist** — `SponsorPoolCardSerializer` is allowlist-by-construction, with tests
+asserting no name / NRIC / address / phone / email appears for the student *or* their parents.
+The public landing FAQ already described this correctly; only the legally operative text was wrong.
+
+- **Changed — `scholarship.consent.text` + `.textMinor` (en/ms/ta)** now state plainly that
+  sponsors receive an **anonymised summary**, are **not** shown name, NRIC, photograph, address or
+  contact details (nor the parents'), and that **documents are never shared with them** — followed
+  by what they DO see: state, school, course, study plans and financial need.
+- **Deliberately says "anonymised summary", not "anonymous":** sponsors do see the secondary
+  school, course and institution (owner decision 2026-07-18). Better the consent state that than
+  promise a total anonymity we don't deliver.
+- **`CONSENT_VERSION` 2026-draft-5 → 2026-draft-6**, so each record shows which wording was agreed.
+- **No re-consent needed** for the consents already given: the new text is NARROWER — those
+  students permitted MORE than we do, and we are reducing the promise, not widening it. Note the
+  "What you agreed to" panel renders the CURRENT wording, so they will see the corrected, narrower
+  text; accepted deliberately as it reflects reality (per-version rendering was the alternative).
+- Web + api (the version constant), no migration. Tests: 3005 scholarship + 632 jest pass; all
+  consent tests reference `CONSENT_VERSION` symbolically, so the bump is inert to them.
+  **Malay/Tamil are first drafts pending owner review.**
 
 ## Income gate — STR *or* salary genuinely satisfies (either one is enough) — 2026-07-22
 

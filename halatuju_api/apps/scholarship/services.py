@@ -2183,7 +2183,12 @@ def save_application_details(application, data):
 # NRIC, hard-gates on name+NRIC match against parent_ic OCR, and refines the
 # relationship list (older_sibling → brother+sister; other_relative → relative).
 # 0 existing consents on prod at bump time, so this is purely forward-looking.
-CONSENT_VERSION = '2026-draft-5'  # bumped for the F9a promotional_use consent (18+ only)
+# 2026-draft-6 (2026-07-22): the share-with-sponsors wording was CORRECTED — it promised away more
+# than the platform does. Sponsors never receive documents, and what they see is an anonymised
+# allowlist (no name/NRIC/photo/address/contact, for the student or the parents). The new text says
+# so plainly. NARROWER than draft-5, so consents already given under the old wording permitted MORE
+# than we do and need no re-consent; the version on each record still shows which wording was agreed.
+CONSENT_VERSION = '2026-draft-6'  # draft-5 was bumped for the F9a promotional_use consent (18+ only)
 
 
 # S17/S19 — structured guardian relationship codes. Father/mother only need
