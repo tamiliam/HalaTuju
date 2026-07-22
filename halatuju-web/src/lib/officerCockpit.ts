@@ -1068,3 +1068,55 @@ export function canOrgReject(
   const roleAllowed = opts.isSuper || opts.role === 'org_admin'
   return roleAllowed && ORG_REJECT_FROM.has(opts.status)
 }
+
+// ── Right-column card stages (owner 2026-07-22) ──────────────────────────────
+
+/**
+ * Statuses at which the REVIEWER ASSIGNED card is hidden because the reviewer is settled and
+ * already named in the Recommendation box ("Recommended by … · date", plus "QC accepted by …").
+ * Keeping a locked, greyed dropdown next to that is duplicate information.
+ *
+ * Terminal off-ramps are included: `rejected` shows the reviewer in the decline trail, and a
+ * withdrawn/expired case has no reviewer decision left to change (owner: "Yes, rejected as well").
+ */
+const REVIEWER_CARD_HIDDEN_FROM = new Set<string>([
+  'recommended', 'awarded', 'active', 'maintenance', 'closed',
+  'rejected', 'withdrawn', 'expired',
+])
+
+/**
+ * Show the "Reviewer assigned" card? Visible only across the window where the assignment can
+ * still change: `profile_complete` → `interviewed`.
+ *
+ * A super REOPEN needs no special case here, because `reopen.reopen_decision` walks the status
+ * back — `recommended → interviewed`, `interviewed → interviewing` — and both land below this
+ * threshold, so the card returns by itself (owner: "should that happen, the reviewer box may
+ * reappear at Awaiting QC and below"). The one exception is a FUNDED case (awarded/active/
+ * maintenance), which reopen deliberately leaves in place: the card stays hidden there and the
+ * reviewer can't be swapped from this screen. Accepted — rarer than a reopen, and the reviewer
+ * is still named in the Recommendation box.
+ */
+export function showsReviewerAssignedCard(status: string | null | undefined): boolean {
+  if (isPreSubmissionStage(status)) return false     // shortlisted — the Reject card takes this slot
+  return !REVIEWER_CARD_HIDDEN_FROM.has(status || '')
+}
+
+/**
+ * Statuses at which the WITNESS ORGANISATION card is offered.
+ *
+ * Only a student who will SIGN an agreement needs a witness org, i.e. an AWARDED one — but the
+ * card is surfaced one stage earlier, from AWAITING QC, so an org_admin can assign ahead of the
+ * award rather than scrambling at signing time (owner 2026-07-22). Deliberately excludes
+ * `rejected`/`withdrawn`/`expired`: those students never sign, so the control is noise there.
+ *
+ * This is the STAGE gate only — the card is additionally limited to SOURCELESS students (no
+ * `referred_by_org`, who would otherwise witness the agreement themselves) and to
+ * super/admin/org_admin, both of which the cockpit already applies.
+ */
+const WITNESS_CARD_FROM = new Set<string>([
+  'interviewed', 'recommended', 'awarded', 'active', 'maintenance', 'closed',
+])
+
+export function showsWitnessCard(status: string | null | undefined): boolean {
+  return WITNESS_CARD_FROM.has(status || '')
+}

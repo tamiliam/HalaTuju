@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit — Witness organisation moved into the right column; both cards stage-gated — 2026-07-22
+
+Owner request. Web-only, no migration, no new i18n (the witness card reuses `admin.sources.witness.*`).
+
+- **Moved** — **Witness organisation** now sits in the right column **directly below Reviewer
+  assigned**, instead of full-width below the entire cockpit grid, far from the related controls.
+  Restyled for the narrow column (select + button stack full-width; card chrome matches siblings).
+- **Added — `officerCockpit.showsWitnessCard()`** — the card appears from **Awaiting QC onward**.
+  Only an *awarded* student signs an agreement and so needs a witness, but it surfaces one stage
+  early so an org_admin can assign ahead of the award rather than at signing time. Excludes
+  `rejected`/`withdrawn`/`expired` — those students never sign. (The existing sourceless-only and
+  super/admin/org_admin gates are unchanged; requirement "visible only for students without a
+  referring organisation" was already satisfied by `sourceless`.)
+- **Added — `officerCockpit.showsReviewerAssignedCard()`** — **Reviewer assigned** is now hidden
+  from `recommended` onward **and** on the terminal off-ramps, where the Recommendation box
+  already names the reviewer ("Recommended by … · date", plus "QC accepted by …") and this card
+  only added a locked, greyed duplicate. Visible window: `profile_complete` → `interviewed`.
+  No special case is needed for a super REOPEN: `reopen.reopen_decision` walks the status back
+  (`recommended → interviewed`, `interviewed → interviewing`), so the card returns by itself.
+  Known limit: reopening an already-FUNDED case leaves its status in place, so the card stays
+  hidden there — accepted by the owner as rarer than a reopen.
+- **Changed** — the sources list is now fetched only when the witness card can actually render
+  (it previously loaded for every sourceless student, most of whom are at `shortlisted`).
+- Tests: **+11** asserting both rules across **every** status in the lifecycle, so a status added
+  later surfaces as a decision rather than a card appearing in the wrong place.
+
 ## Income gate — STR *or* salary genuinely satisfies (either one is enough) — 2026-07-22
 
 Owner policy (2026-07-22): *"it is either STR or salary — students may fulfil both but they are

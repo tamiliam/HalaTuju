@@ -77,6 +77,8 @@ import {
   verdictItemKey,
   headerTimeline,
   canOrgReject,
+  showsReviewerAssignedCard,
+  showsWitnessCard,
   showsPostSubmissionCards,
   type FactStatus,
   type IncomeSlot,
@@ -295,10 +297,14 @@ export default function AdminScholarshipDetailPage() {
   const [witnessBusy, setWitnessBusy] = useState(false)
   const [witnessMsg, setWitnessMsg] = useState('')
   const sourceless = !!app && !app.referred_by_org
+  // Only fetch the organisation list when the witness card can actually render — same three
+  // gates as the card itself, so a pre-QC or off-ramp case makes no needless request (most
+  // sourceless students today are at 'shortlisted', where the card never appears).
+  const witnessCardVisible = canManageSources && sourceless && showsWitnessCard(app?.status)
   useEffect(() => {
-    if (!token || !canManageSources || !sourceless) return
+    if (!token || !witnessCardVisible) return
     getSources({ token }).then((d) => setActiveSources(d.sources.filter((s) => s.show_in_apply && s.is_active))).catch(() => {})
-  }, [token, canManageSources, sourceless])
+  }, [token, witnessCardVisible])
   useEffect(() => { setWitnessSel(app?.witness_org?.code || '') }, [app?.witness_org?.code])
 
   const doAssignWitness = async () => {
@@ -2852,9 +2858,11 @@ export default function AdminScholarshipDetailPage() {
 
       {/* ── Assign a reviewer (F7) — SUPER or org_admin + audited. First assignment is gated on
             readiness (no open queries OR the SLA lapsed); reassign is allowed any time.
-            Hidden at 'shortlisted', where the Reject card above takes this slot and assignment
-            is impossible anyway (services.is_assignable). ─── */}
-      {canAssign && app.status !== 'shortlisted' && (() => {
+            Stage window (`showsReviewerAssignedCard`): hidden at 'shortlisted', where the Reject
+            card above takes this slot and assignment is impossible anyway (services.is_assignable),
+            and hidden again from 'recommended' onward, where the Recommendation box already names
+            the reviewer and this would only add a locked, greyed duplicate. ─── */}
+      {canAssign && showsReviewerAssignedCard(app.status) && (() => {
         const ready = app.query_sla?.ready_for_assignment ?? false
         const firstAssignBlocked = !app.assigned_to_id && !ready
         // Once a decision is recorded the reviewer is fixed (it's a finished case) — the
@@ -2897,38 +2905,47 @@ export default function AdminScholarshipDetailPage() {
         )
       })()}
 
-      </div>{/* end RIGHT column */}
-
-      </div>{/* end cockpit grid */}
-
-      {/* ── Witness organisation (go-live transition) — for a SOURCELESS student only.
-          Un-gated by the agreement flag: the owner assigns witnesses during go-live prep,
-          before the flags flip (runbook step 2 precedes step 3). super/admin/org_admin. */}
-      {canManageSources && sourceless && (
-        <div className="mt-6 bg-white rounded-xl border shadow-sm p-5 max-w-2xl">
-          <h3 className="font-semibold text-gray-900">{t('admin.sources.witness.title')}</h3>
-          <p className="mt-1 text-sm text-gray-500">{t('admin.sources.witness.help')}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <select
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={witnessSel} onChange={(e) => setWitnessSel(e.target.value)}>
-              <option value="">{t('admin.sources.witness.none')}</option>
-              {activeSources.map((s) => <option key={s.id} value={s.code}>{s.name}</option>)}
-            </select>
-            <button type="button" onClick={doAssignWitness}
-              disabled={witnessBusy || witnessSel === (app.witness_org?.code || '')}
-              className="px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-              {witnessBusy ? t('admin.sources.witness.assigning') : t('admin.sources.witness.assign')}
-            </button>
-            {app.witness_org && (
-              <span className="text-xs text-gray-500">{t('admin.sources.witness.current', { org: app.witness_org.name })}</span>
-            )}
-          </div>
+      {/* ── Witness organisation — directly below Reviewer assigned (owner 2026-07-22; it used
+            to sit full-width BELOW the whole cockpit grid, far from the related controls).
+            Three gates, all required:
+              • role      — super/admin/org_admin (`canManageSources`; the Admin role manages
+                            sources + witnesses, unlike reviewer assignment)
+              • sourceless — a student WITH a referring org is witnessed by that org, so the
+                            control would be meaningless for them
+              • stage     — `showsWitnessCard`: from AWAITING QC onward. Only an AWARDED student
+                            signs, but it appears a stage early so the org admin can assign ahead
+                            of the award. Never on the off-ramps (rejected/withdrawn/expired).
+            Restyled from the old wide card: the column is narrow, so the select + button stack
+            full-width instead of sitting side by side, and the chrome matches its siblings. ─── */}
+      {witnessCardVisible && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-2">
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+            {t('admin.sources.witness.title')}
+          </h2>
+          <p className="text-xs text-gray-500">{t('admin.sources.witness.help')}</p>
+          <select
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+            value={witnessSel} onChange={(e) => setWitnessSel(e.target.value)}>
+            <option value="">{t('admin.sources.witness.none')}</option>
+            {activeSources.map((s) => <option key={s.id} value={s.code}>{s.name}</option>)}
+          </select>
+          <button type="button" onClick={doAssignWitness}
+            disabled={witnessBusy || witnessSel === (app.witness_org?.code || '')}
+            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+            {witnessBusy ? t('admin.sources.witness.assigning') : t('admin.sources.witness.assign')}
+          </button>
+          {app.witness_org && (
+            <p className="text-xs text-gray-500">{t('admin.sources.witness.current', { org: app.witness_org.name })}</p>
+          )}
           {witnessMsg && (
-            <p className={`mt-2 text-sm ${witnessMsg === t('admin.sources.witness.assigned') ? 'text-green-700' : 'text-red-600'}`}>{witnessMsg}</p>
+            <p className={`text-sm ${witnessMsg === t('admin.sources.witness.assigned') ? 'text-green-700' : 'text-red-600'}`}>{witnessMsg}</p>
           )}
         </div>
       )}
+
+      </div>{/* end RIGHT column */}
+
+      </div>{/* end cockpit grid */}
 
       {/* ── Conditional Bursary Award Agreement (flag-gated; dark by default) ──
           Shown once the award has been accepted (the student + guarantor have
