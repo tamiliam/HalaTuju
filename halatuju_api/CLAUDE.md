@@ -549,6 +549,17 @@ query) took the date with it.
 - **▶ CARRY:** ms/ta first-drafts (`reportingDateEntry.*`); #107 has a superseded duplicate offer
   letter to archive (owner: separate exercise).
 
+**✅ SHIPPED 2026-07-23 (api, small change) — a pathway SWITCH promotes over a worse-reading letter.**
+`promotion.should_promote` compared quality on every new offer letter, which assumes both describe the
+SAME fact. #13 switched Asasi Teknologi → Diploma Sains Komputer and the new letter read WORSE
+(institution extracted as bare "KUALA LUMPUR"); it promoted only because it still cleared the bar.
+New `promotion.is_pathway_switch()` — a differing **PROGRAMME** bypasses the comparison (`usable`
+stays a floor). Programme, NOT institution: #107's single PISMP letter extracted its institution two
+ways on two passes. +9 tests. Archived 3 pre-4-July duplicate live docs; **zero duplicates remain**.
+**▶ A broader "generalise dedup" sprint was scoped and DROPPED** — the machinery already exists
+(slot replace, officer-re-request supersede since 2026-07-04, stage→judge→promote,
+`_collapse_duplicate_docs`, `dedupe_income_proof`) and `_is_single_instance()` covers every type.
+
 ## Superseded — previous Next Sprint
 
 **✅ SHIPPED 2026-07-22 (api+web, NO migration) — payment back/advance-pay window rules.** Payment
