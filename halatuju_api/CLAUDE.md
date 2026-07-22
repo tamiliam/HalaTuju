@@ -522,7 +522,34 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-22)
+## Next Sprint (as of 2026-07-23)
+
+**✅ SHIPPED 2026-07-23 (api+web, NO migration) — the reporting date is a first-class fact.**
+From "#123's recommended amount is wrong". `reporting_date` drives the bursary SIZE, payment
+eligibility and the semester-result request, and was NULL for **45% of applications whose pathway
+needed confirming** (vs 3.8% of the rest) — the copy sat BELOW four pathway guards in
+`autofill_pathway_from_offer`, so a programme disagreement (the very case that raises the confirm
+query) took the date with it.
+- **`services.sync_reporting_date_from_offer()`** now owns the copy and runs FIRST.
+- **`pathway_engine.course_start_year()` / `started_before_cohort()`** answer continuing-vs-fresh,
+  reading the offer's INTAKE YEAR first (a Form 6 letter carries a range, `6 / 2025 – 12 / 2026`,
+  and often no date at all). Shared by `award._stpm_continuing` AND
+  `income_engine.semester_result_gap` — the same rule had been hand-rolled twice.
+- **QC cannot accept without a date** (`reporting_date_required`) — ABSOLUTE, no override. Cleared
+  via the new box above Recommendation (`AdminReportingDateView`), shown only when the letter has
+  no readable date and only at `interviewing` / on a reopen. QC reopens; the reviewer fills it.
+- **The Reporting Date surface reads the STORED value**, not the document string — that decoupling
+  is why #120 showed a ticked date while the column was empty. A typed date renders WITHOUT the
+  verified tick (that tick means "Matches the offer letter" and comes from document corroboration).
+- **NO provenance columns** (owner: over-engineering for a rare one-off; the UI already
+  distinguishes the two cases for free). Attribution is in the `AUDIT reporting_date_set` log.
+- Data: **#120 + #123 corrected to RM1,000**; **12 dates backfilled** (7 NULLs + 5 stale) — no
+  amount changed. +17 pytest / +5 jest, all verified to fail pre-fix. Retro
+  `docs/retrospective-2026-07-23-reporting-date.md`; decisions ×3; lessons ×2.
+- **▶ CARRY:** ms/ta first-drafts (`reportingDateEntry.*`); #107 has a superseded duplicate offer
+  letter to archive (owner: separate exercise).
+
+## Superseded — previous Next Sprint
 
 **✅ SHIPPED 2026-07-22 (api+web, NO migration) — payment back/advance-pay window rules.** Payment
 eligibility now asks "payable for the MONTH being paid for?", not "as at the run's payment date".
