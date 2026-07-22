@@ -2,6 +2,68 @@
 
 All notable changes to this project will be documented in this file.
 
+## Payments — the Finance role: a dormant payment-run checker + funding summary — 2026-07-23
+
+Sprint 14 (brief `docs/plans/2026-07-22-sprint14-finance-role-brief.md`, owner-approved).
+**Shipped DARK** — with no active finance admin the production chain is byte-identical, and all
+82 pre-existing payments tests pass UNMODIFIED, which is the regression guard rather than a
+claim.
+
+- **Added — the `finance` organisation role.** The CHECKER between the maker and the approver.
+  The chain becomes `draft → admin_signed → [finance_checked] → completed`.
+- **The middle step is CONDITIONAL and never stored.** `payments.finance_check_required(org)` is
+  an EXISTS on active `finance` staff, evaluated LIVE at every sign attempt. Deliberately not a
+  column, because the owner's rule runs both ways: activating finance ARMS the check for a run
+  already sitting at `admin_signed` (the approver is refused with `finance_check_required`), and
+  revoking the last finance admin degrades the chain back to two steps without invalidating a
+  signature already collected. A stored flag would freeze the run's shape at creation and get the
+  first case wrong.
+- **Changed — `same_signer` generalised** from maker-vs-approver to PAIRWISE distinctness across
+  every collected signature. That is also what confines a `super` to one slot per run, with no
+  special case for supers. Editing an item now clears BOTH signature triples — a finance check
+  attests to the list it was shown.
+- **Added — the funding summary** (`GET /api/v1/admin/scholarship/payments/funding-summary/`,
+  plus a section on the Payments landing): award / paid / remaining / eWallet / last-paid per
+  student, with org totals. Serialised by `FundingSummaryRowSerializer`, a plain `Serializer`
+  with ZERO model passthrough, pinned by an exact key-set snapshot test so a well-meant field
+  addition fails loudly. Org-fenced and classified in `test_org_fence.py`.
+- **Finance has NO B40 scope** (`_b40_scope` → `'none'`): no applicant list, no cockpit, no
+  documents, income or verdicts. The funding summary is its only student data. It is deliberately
+  absent from `services.REVIEW_ROLES` and the assignable-admins dropdown; each denial is proven
+  by an actual refusal, not by a missing nav link. `org_admin` may invite and revoke a finance
+  admin (owner D5) — safe because finance grants strictly LESS than the roles org_admin could
+  already invite, and cannot manage staff itself.
+- **Read/write split on `_PaymentsBase`** — list / detail / CSV / sign admit finance; create,
+  edit-item and cancel do not. CSV now readable at `finance_checked` (the checker must be able to
+  read the file it is checking).
+- **Frontend** — the shipped two-card signature row becomes three ("Authorised by (maker)" →
+  "Checked by (finance)" → "Approved by (approver)"), driven ONLY by payload fields; the
+  activation rule is never mirrored in TypeScript. A dormant org sees today's two columns with no
+  empty placeholder, and a historical completed run with a null finance triple renders the
+  two-card layout — keyed on the SIGNATURE, not the org's current setting, so it never implies a
+  step was skipped. The decision is one pure `paymentStatus.signOffView()` covering the sign-off
+  block, the completed seals and the finance viewer's read-only controls at once.
+- **Manual/FAQ currency** — a new Finance chapter, plus the Payments coverage the module never
+  had (it shipped 2026-07-16 with no Manual chapter — the carry recorded in `role-matrix.md`,
+  now cleared). Four screenshot placeholders added to the manifest.
+- **Billing & usage is explicitly OUT** and stays "Coming soon". It means HalaTuju invoicing the
+  organisation for metered service usage and needs a billing-sources investigation that has not
+  happened.
+- Migrations **`scholarship/0109`** (3 columns + status choices) and **`courses/0066`**
+  (choices-only), both applied migrate-first via Supabase MCP before the single deploy.
+  **4346 pytest (+57) / 662 jest (+14).** Verified live: `funding-summary` answers 401 while a
+  nonexistent sibling route answers 404.
+- **Also in this sprint (Phase 0, small-change lane, no behaviour change):** three tenancy
+  fix-forwards — `PATHWAY_PAYMENT_START_MONTH` and `_INCOME_MATCH_TOL_*` documented as rule-1
+  exemptions (the first is superseded by `ContractScheduleRow.start_month`; the second is an
+  advisory display tolerance that never gates), and `contracts._gemini_generate` recorded as a
+  sanctioned Gemini seam.
+- **▶ CARRY:** ms/ta first drafts for the finance strings (`financeStep`, `financeSign`,
+  `checkedBy`, `awaitingFinanceCheck`, `finance_check_required`, the reworded `signNote`, the
+  whole `admin.payments.funding.*` block, `admin.role.finance`,
+  `administration.staffRole.finance`) await the owner's Tamil review. Rollout is an OWNER step:
+  invite Sam via Administration → Invite staff → Finance.
+
 ## Documents — a pathway SWITCH promotes even when the new letter reads worse — 2026-07-23
 
 - **Fixed** — `promotion.should_promote` compared quality on every new offer letter, which assumes

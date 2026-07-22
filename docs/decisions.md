@@ -1,5 +1,80 @@
 # Architectural Decisions — HalaTuju
 
+## The finance-check requirement is COMPUTED at every sign attempt, never stored on the run — 2026-07-23
+**Decision:** Whether a payment run's chain includes the middle finance CHECK is decided by
+`payments.finance_check_required(organisation)` — an EXISTS on active `finance` PartnerAdmins —
+evaluated live inside `sign()` and re-sent on every detail payload. `PaymentRun` gained the
+signature triple (`finance_signed_name/_email/_at`) but **no requirement flag**.
+**Alternatives considered:** (a) a `PaymentRun.requires_finance_check` boolean snapshotted at
+creation, the obvious modelling and cheaper to read; (b) a per-organisation config column read at
+creation; (c) deriving it from the presence of `finance_signed_at`.
+**Rationale:** The owner's rule runs in BOTH directions and (a)/(b) can only express one of them.
+Appointing a finance admin must arm the check for a run **already sitting at `admin_signed`** —
+a flag written at creation cannot do that. Revoking the last finance admin must degrade the chain
+back to two steps *without* invalidating a signature already collected — which (c) cannot express,
+because an unsigned armed run and an unsigned dormant run are indistinguishable by that field. One
+live predicate gives both directions from a single expression, with nothing to reconcile.
+**Trade-offs:** One indexed EXISTS per sign attempt and per run-detail GET. Both are rare
+operations (a handful per month), so the cost is immaterial; the read is not cached deliberately,
+because a cache would reintroduce the staleness the column was rejected for. It also means a
+run's shape is not reconstructible from the row alone — you must know who was active at the time.
+That is acceptable because the *signatures* are the audit record, and they are stored.
+**Revisit if:** the funding summary or run list ever needs the predicate per-row at scale (it
+would become an N+1), or if an organisation needs a run to be exempt from a check its org
+otherwise requires — that would be a genuine per-run fact and would justify a column.
+
+## A completed run's layout keys on the SIGNATURE, not on the organisation's current setting — 2026-07-23
+**Decision:** The completed run's seal cards render three-up only when `finance_signed` is
+present, never when `finance_check_required` is true.
+**Alternatives considered:** rendering three cards (one empty/"skipped") whenever the org's chain
+includes the check, for visual consistency across a month's runs.
+**Rationale:** Every run completed before this sprint has an empty finance triple. In an
+organisation that later appoints a finance admin, keying on the requirement would retroactively
+render those runs as though a required step had been skipped — accusing a clean historical record
+of a control failure that never applied to it. The signature is the fact; the setting is not.
+**Trade-offs:** Two runs in the same month can render differently (one two-card, one three-card)
+if finance was activated between them. That is truthful — they really were approved under
+different controls.
+**Revisit if:** an auditor asks for an explicit "no finance check applied at this date" marker on
+historical runs; that would be a display addition, not a change to this rule.
+
+## `finance` gets NO B40 scope; its student data is one allowlist serializer — 2026-07-23
+**Decision:** `_b40_scope('finance')` returns `'none'`. The role sees student data ONLY through
+`FundingSummaryRowSerializer` — application id, name, pool ref, coarse status, pathway, award,
+paid, remaining, eWallet ID, last run. NRIC, contact details, documents, income and verdicts are
+excluded, and an exact key-set snapshot test fails if the set grows.
+**Alternatives considered:** (a) read-only B40 access "limited to funding-relevant data", as the
+pre-2026-07-23 matrix row speculated; (b) full read like Admin-General, relying on the UI to hide
+what finance shouldn't see.
+**Rationale:** (b) is the pattern this codebase has already been burned by — a capability is the
+intersection of the endpoint gate and the UI affordance, and a nav link is not a boundary.
+(a) sounds principled but has no natural boundary: "funding-relevant" is a judgement that drifts
+field by field. Checking a payment genuinely does not require knowing a family's circumstances, so
+the honest scope is none, with one deliberately-constructed exception. A plain `Serializer` with
+zero model passthrough means a new column on `ScholarshipApplication` can never reach the payload
+by accident — the same hard-boundary technique as `SponsorPoolCardSerializer`.
+**Trade-offs:** A finance admin cannot self-serve a question about a student and must ask the
+organisation admin. Accepted, and stated plainly in the Manual chapter so it reads as design
+rather than as a missing feature.
+**Revisit if:** the owner wants finance to reconcile something the summary cannot answer — extend
+the allowlist by explicit decision (and update the key-set snapshot), never by widening the scope.
+
+## `org_admin` may appoint a finance admin — 2026-07-23
+**Decision:** `finance` joins `_ORG_ADMIN_MANAGEABLE_ROLES`, so an organisation admin invites,
+resends and revokes their own finance checker without the platform team.
+**Alternatives considered:** super-only appointment, consistent with how `org_admin` itself is
+appointed.
+**Rationale:** (Owner decision D5.) The check exists to serve the organisation's own control
+needs, so gating it on the platform team would make the control harder to adopt than to skip.
+Escalation-safe by construction: `finance` grants strictly LESS than the roles `org_admin` could
+already invite (no B40 scope at all) and cannot manage staff itself, so it can never appoint
+anyone — there is no path from this grant to a wider one.
+**Trade-offs:** An org admin can arm a control that then blocks their own countersignature, and
+can revoke it to unblock themselves. That is inherent to self-managed separation of duties; the
+signatures remain the audit trail either way.
+**Revisit if:** a tenant needs the finance check to be non-revocable by the org admin — that is a
+governance requirement, and would mean moving appointment to super for that org.
+
 ## Contract .docx import reads Word's own numbering; AI is the fallback, not the parser — 2026-07-21
 **Decision:** A `.docx` upload is parsed **deterministically** from the document's heading styles + list
 levels (`contracts._docx_structure`), mapping them onto our 3-level clause hierarchy. Gemini

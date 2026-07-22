@@ -524,6 +524,50 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-23)
 
+**✅ SHIPPED + LIVE 2026-07-23 (api+web, migrations 0109 + courses/0066 APPLIED migrate-first)
+— Sprint 14: the FINANCE role, a dormant payment-run checker + funding summary.** Brief
+`docs/plans/2026-07-22-sprint14-finance-role-brief.md`; retro
+`docs/retrospective-2026-07-23-sprint14-finance-role.md`; decisions ×4; lesson ×1.
+- **The chain is now `draft → admin_signed → [finance_checked] → completed`.** The middle step
+  is required **iff the org has ≥1 ACTIVE `finance` PartnerAdmin** —
+  `payments.finance_check_required(org)`, evaluated LIVE at every sign attempt and **never stored
+  on the run**. Both directions are deliberate: activating finance ARMS the check for a run
+  already at `admin_signed` (the approver gets `finance_check_required`); revoking the last
+  finance admin degrades to 2 steps and never invalidates a signature already collected.
+- **⚠ SHIPPED DARK — prod has 0 finance admins**, so every existing run's chain is unchanged.
+  All **82 pre-existing payments tests pass UNMODIFIED** — that is the regression guard.
+- **`same_signer` is now PAIRWISE distinctness** across every collected signature (which is also
+  what stops a `super` filling two slots — no super special case). **Editing an item clears BOTH
+  signature triples**: a finance check attests to the list it was shown.
+- **Finance has NO B40 scope** (`_b40_scope` → `'none'`). Its ONLY student data is
+  `FundingSummaryRowSerializer` (award/paid/remaining/eWallet/last-run), an allowlist with zero
+  model passthrough, pinned by an **exact key-set snapshot test** — adding a field there fails
+  loudly. Absent from `services.REVIEW_ROLES` + assignable-admins by decision, proven by refusal
+  tests. `org_admin` may invite/revoke a finance admin (D5).
+- **New endpoint** `GET /api/v1/admin/scholarship/payments/funding-summary/` — NB the brief said
+  `admin/payments/…`; it is registered under the module's `admin/scholarship/` prefix so every
+  payments route stays siblings. Org-fenced, classified in `test_org_fence.py`.
+- **FE reads the payload, never the rule** (`finance_check_required` / `finance_signed`);
+  `paymentStatus.signOffView()` is the one pure decision behind the 3-card sign-off, the completed
+  seals and finance's read-only controls. A historical completed run with a null finance triple
+  renders the 2-card layout — keyed on the SIGNATURE, so it never implies a step was skipped.
+- Manual gains a **Finance chapter** + the **Payments coverage the module never had** (the
+  2026-07-16 carry, now cleared). 4 screenshot placeholders added — `finance-signature.png` must
+  be captured with an ACTIVE finance admin or it shows the dormant layout.
+- **⛔ Billing & usage stays "Coming soon"** — it means HalaTuju invoicing the ORG for metered
+  usage (Gemini/Vision/GCP/Supabase/Twilio at cost + 15–30%) and needs a billing-sources
+  investigation that has not happened. Do not build it off the back of this sprint.
+- **▶ OWNER ROLLOUT (not performed):** Administration → Invite staff → Finance. The moment that
+  account is active the check ARMS for BrightPath — **including the draft `PR-2026-08-01` if it
+  has reached `admin_signed` by then** (deliberate; the FAQ explains the notice).
+- **▶ CARRY:** ms/ta first drafts for every new finance string (`financeStep`, `financeSign`,
+  `checkedBy`, `awaitingFinanceCheck`, `error.finance_check_required`, the reworded `signNote`,
+  the whole `admin.payments.funding.*` block, `admin.role.finance`,
+  `administration.staffRole.finance`). **TD-168** logged (manual test's hand-written
+  `ROLE_CHAPTERS`). **4346 pytest / 662 jest.**
+
+## Superseded — previous Next Sprint (as of 2026-07-23)
+
 **✅ SHIPPED 2026-07-22/23 (api+web, NO migration) — the cockpit and the consent form now say what
 is actually true.** Five changes, each triggered by the owner reading a screen that lied or wasted
 space.
