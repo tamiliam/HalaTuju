@@ -2109,6 +2109,14 @@ def household_size_shortfall(application):
 # income "matches" the documents only when every working member's income was read AND the
 # document-derived total is within tolerance (payslips wander month-to-month with OT/allowances,
 # so a small band, not an exact equality).
+#
+# tenancy: rule-1 exemption — advisory display tolerance, not a programme rule.
+# Conventions rule 1 sends new tunables to `ScholarshipCohort`. These two stay module-level
+# deliberately: they are NEVER a gate. They decide only whether the cockpit paints a small
+# verified tick beside the stated income, and the reconciliation that reads them is
+# non-mutating — no band, no verdict, no blocker and no amount depends on either number, so a
+# second programme wanting a different band changes nothing but a tick. Promote them to
+# `ScholarshipCohort` fields (today's values as defaults) the moment one actually asks.
 _INCOME_MATCH_TOL_FRAC = 0.10     # ±10% of the stated figure …
 _INCOME_MATCH_TOL_MIN = 300.0     # … but at least ±RM300 grace for small incomes.
 
