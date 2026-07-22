@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit — raw i18n key on the Pathway card; guard added for the whole class — 2026-07-23
+
+- **Fixed** — the AI Prediction Pathway card rendered a literal
+  `admin.scholarship.verdict.item.pathway_type_switch`. The code is real and tested (TD-161: the
+  offer is a different pathway *family* from the one declared) — it simply had no translation in
+  any locale. Added in en/ms/ta (**ms/ta first-drafts**).
+  - The copy uses only `{programme}` / `{institution}`. The item also carries
+    `declared_pathway` / `offer_pathway`, but those are raw slugs (`stpm`, `pismp`) and the
+    verdict renderer interpolates params verbatim, so naming them would print lowercase codes.
+- **Audited the whole class** — every verdict-item code the engine can emit, across
+  `verdict_engine` and the 8 modules importing its `_item` helper, checked against all three
+  locales. `pathway_type_switch` was **the only** missing key; en/ms/ta parity is otherwise
+  intact (112 keys each). Both dynamic `_item(code, …)` call sites pick between literal pairs
+  that are all present.
+- **Added — `test_verdict_item_i18n.py`** (4 tests), the guard that would have caught this.
+  Nothing existing could: i18n parity only proves en == ms == ta (all three were equally
+  missing it), and the web static-`t()` scanner cannot see a key assembled at runtime from
+  `item.code`. The test AST-scans the emitting modules and asserts every code resolves in all
+  three locales; it **fails loudly rather than skipping** if the web tree moves, sanity-checks
+  its own scanner (so renaming `_item` can't turn it into a silent no-op), and fails if a NEW
+  dynamic call site appears, since those escape the check. Verified to fail without the fix.
+
 ## Cockpit — Witness organisation moved into the right column; both cards stage-gated — 2026-07-22
 
 Owner request. Web-only, no migration, no new i18n (the witness card reuses `admin.sources.witness.*`).

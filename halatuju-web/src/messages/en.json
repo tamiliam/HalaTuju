@@ -3643,6 +3643,7 @@
           "offer_no_identity": "This letter has no student name or IC on it — it looks like a general notice, not the personal offer letter. Ask for the actual offer letter addressed to the student.",
           "pathway_undeclared": "No pathway chosen yet.",
           "pathway_confirm": "Offer for {programme} at {institution} differs from the declared pathway — awaiting the student's confirmation of which is final.",
+          "pathway_type_switch": "The offer is for a different type of pathway than the student declared — {programme} at {institution}. Awaiting the student's confirmation of which is final.",
           "pathway_confirmed": "Final pathway confirmed by the student: {programme} at {institution}.",
           "pathway_switched": "Course switched — was {from_programme} ({from_institution}), now {to_programme} ({to_institution}).",
           "academic_missing_subjects": "Entered {entered} of {total} subjects on the slip — missing: {subjects}. Ask the student to add them.",

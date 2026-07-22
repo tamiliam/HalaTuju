@@ -3643,6 +3643,7 @@
           "offer_no_identity": "Surat ini tiada nama atau KP pelajar — ia nampak seperti makluman umum, bukan surat tawaran peribadi. Minta surat tawaran sebenar yang dialamatkan kepada pelajar.",
           "pathway_undeclared": "Belum memilih laluan.",
           "pathway_confirm": "Tawaran untuk {programme} di {institution} berbeza daripada laluan yang diisytiharkan — menunggu pengesahan pelajar yang mana satu akhir.",
+          "pathway_type_switch": "Tawaran ini untuk jenis laluan yang berbeza daripada yang diisytiharkan pelajar — {programme} di {institution}. Menunggu pengesahan pelajar yang mana satu akhir.",
           "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",
           "pathway_switched": "Kursus ditukar — dahulu {from_programme} ({from_institution}), kini {to_programme} ({to_institution}).",
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
