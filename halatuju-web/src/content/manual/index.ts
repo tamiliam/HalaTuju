@@ -8,6 +8,7 @@ import { roleReviewer } from './role-reviewer'
 import { roleQc } from './role-qc'
 import { roleOrgAdmin } from './role-org-admin'
 import { roleAdminGeneral } from './role-admin-general'
+import { roleFinance } from './role-finance'
 import { helpChapter } from './help'
 
 export type { ManualChapter, ManualSection, ManualRole, Audience } from './types'
@@ -15,7 +16,7 @@ export type { ManualChapter, ManualSection, ManualRole, Audience } from './types
 /** Ordered — this is the sidebar order (Basics → role chapters → Help). */
 export const CHAPTERS: ManualChapter[] = [
   basicsProgramme, basicsFourChecks, basicsStatuses, basicsConfidentiality,
-  roleReviewer, roleQc, roleOrgAdmin, roleAdminGeneral,
+  roleReviewer, roleQc, roleOrgAdmin, roleAdminGeneral, roleFinance,
   helpChapter,
 ]
 
@@ -24,7 +25,8 @@ export const CHAPTERS: ManualChapter[] = [
 export function manualRole(role: { role?: string; is_super_admin?: boolean } | null | undefined): ManualRole | undefined {
   if (!role) return undefined
   if (role.is_super_admin || role.role === 'super') return 'super'
-  if (role.role === 'reviewer' || role.role === 'qc' || role.role === 'org_admin' || role.role === 'admin') {
+  if (role.role === 'reviewer' || role.role === 'qc' || role.role === 'org_admin'
+      || role.role === 'admin' || role.role === 'finance') {
     return role.role
   }
   return undefined   // partner / anything else

@@ -87,6 +87,33 @@ export const roleOrgAdmin: ManualChapter = {
       alt: 'The Administration panel organisation section (placeholder)',
     },
     {
+      anchor: 'org-admin-payments',
+      title: 'Payment runs',
+      body: (
+        <>Each month a payment run is built in <strong>Administration → Payments</strong>. It lists the students
+        who qualify for that month, with the amount each is due, and greys out the rest with the reason (no
+        eWallet confirmed yet, already paid this month, no balance left, and so on). Somebody prepares and signs
+        it, then <strong>you countersign</strong>. Only at your countersignature is the payment instruction
+        emailed to Vircle with the file attached — nothing moves before that.</>
+      ),
+      img: '/manual/org-admin-payments.png',
+      alt: 'A payment run awaiting countersignature (placeholder)',
+    },
+    {
+      anchor: 'org-admin-payments-signing',
+      title: 'Who signs, and what breaks a signature',
+      body: (
+        <>Every signature on a run must belong to a <strong>different person</strong>, and each typed name must
+        match that account&rsquo;s name exactly. If your organisation has a <strong>finance admin</strong>, there
+        is a middle step: the run must be <em>checked</em> by finance before you can countersign, and until then
+        you&rsquo;ll see &ldquo;waiting for the finance check&rdquo;. You can appoint one yourself from
+        <strong> Invite staff → Finance</strong>; the moment their account is active the step applies, including
+        to a run already sitting in front of you. If you have no finance admin, the chain is just the two
+        signatures. <strong>Editing a run after any signature returns it to draft and clears every signature
+        collected so far</strong> — deliberately, so nobody signs one list and a different one goes out.</>
+      ),
+    },
+    {
       anchor: 'org-admin-what-stays-platform',
       title: 'What stays with the platform',
       body: (
@@ -95,7 +122,8 @@ export const roleOrgAdmin: ManualChapter = {
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li><strong>Reopening a recorded decision</strong> (and cancelling a reopen).</li>
             <li><strong>Setting the award amount</strong> — a reviewer recommends; the amount is fixed by
-            pathway. (A dedicated Finance role will take money powers when payouts go live.)</li>
+            pathway. (The <strong>Finance</strong> role, which you can appoint yourself, checks payment runs —
+            it does not set award amounts.)</li>
             <li><strong>Countersigning the bursary agreement.</strong></li>
             <li><strong>Appointing another organisation admin, or adding an organisation</strong> — ask the
             platform team and they&rsquo;ll set it up.</li>

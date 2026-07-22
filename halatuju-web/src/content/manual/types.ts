@@ -11,10 +11,10 @@
 import type { ReactNode } from 'react'
 
 /** The concrete staff roles a chapter can be scoped to. `super` sees everything. */
-export type ManualRole = 'reviewer' | 'qc' | 'org_admin' | 'admin' | 'super'
+export type ManualRole = 'reviewer' | 'qc' | 'org_admin' | 'admin' | 'finance' | 'super'
 
 /** FAQ audiences (also the role-chapter audiences). `everyone` = shown to all roles. */
-export type Audience = 'everyone' | 'reviewer' | 'qc' | 'org_admin' | 'admin'
+export type Audience = 'everyone' | 'reviewer' | 'qc' | 'org_admin' | 'admin' | 'finance'
 
 export interface ManualSection {
   /** Stable, unique anchor for deep links, e.g. `org-admin-assigning`

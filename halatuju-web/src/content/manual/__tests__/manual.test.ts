@@ -11,12 +11,13 @@ import {
 } from '../faq'
 import type { Audience } from '../types'
 
-const ROLE_CHAPTERS = ['role-reviewer', 'role-qc', 'role-org-admin', 'role-admin-general']
+const ROLE_CHAPTERS = ['role-reviewer', 'role-qc', 'role-org-admin', 'role-admin-general',
+                       'role-finance']
 const slugs = (role: ManualRole | undefined) => visibleChapters(role).map((c) => c.slug)
 
 describe('chapter visibility per role', () => {
   test('basics + help are always visible', () => {
-    for (const r of [undefined, 'reviewer', 'qc', 'org_admin', 'admin', 'super'] as (ManualRole | undefined)[]) {
+    for (const r of [undefined, 'reviewer', 'qc', 'org_admin', 'admin', 'finance', 'super'] as (ManualRole | undefined)[]) {
       const s = slugs(r)
       expect(s).toEqual(expect.arrayContaining([
         'basics-programme', 'basics-four-checks', 'basics-statuses', 'basics-confidentiality', 'help-getting-help',
@@ -32,6 +33,11 @@ describe('chapter visibility per role', () => {
     expect(slugs('qc')).not.toContain('role-reviewer')
     expect(slugs('admin')).toContain('role-admin-general')
     expect(slugs('admin')).not.toContain('role-qc')
+    // Finance is a single-role staff member like the rest — its chapter and nobody else's.
+    expect(slugs('finance')).toContain('role-finance')
+    expect(slugs('finance')).not.toContain('role-reviewer')
+    expect(slugs('finance')).not.toContain('role-org-admin')
+    expect(slugs('reviewer')).not.toContain('role-finance')
   })
 
   test('org_admin and super see ALL role chapters', () => {

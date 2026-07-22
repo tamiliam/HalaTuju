@@ -167,6 +167,28 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   org_admin: [
     {
+      q: <>Why can&rsquo;t I countersign this payment run yet?</>,
+      a: <>Because your organisation has a <strong>finance admin</strong>, and the run hasn&rsquo;t been checked
+        yet. The chain is: someone prepares and signs it, finance checks it, then you countersign and the money
+        goes. You&rsquo;ll see &ldquo;waiting for the finance check&rdquo; until that middle step is done. If you
+        have no finance admin, this step doesn&rsquo;t exist and you countersign straight after the first
+        signature.</>,
+    },
+    {
+      q: <>How does a payment run work?</>,
+      a: <>Open <strong>Administration → Payments</strong> and create a run for the month. The system lists the
+        students who qualify and skips the rest with a reason. Someone signs it as the preparer, and you
+        countersign &mdash; and only then is the instruction emailed to Vircle with the payment file. Every
+        signature must be a different person, and editing the list after any signature returns the run to
+        <strong> draft</strong> and clears the signatures collected so far.</>,
+    },
+    {
+      q: <>Can I appoint a finance admin myself?</>,
+      a: <>Yes. <strong>Administration → Invite staff → Finance</strong>. The moment their account is active, the
+        finance check becomes part of your payment chain &mdash; including for a run that is already waiting for
+        your countersignature.</>,
+    },
+    {
       q: <>Why can&rsquo;t I revoke my other organisation admin?</>,
       a: <>You can&rsquo;t revoke the <strong>last</strong> organisation admin — the Revoke option isn&rsquo;t
         offered on the sole admin, so your organisation is never left without one. Invite or appoint another admin
@@ -201,10 +223,43 @@ export const FAQ: Record<Audience, QA[]> = {
         you. Ask your organisation admin to make a change.</>,
     },
   ],
+  finance: [
+    {
+      q: <>What can I do as a finance admin?</>,
+      a: <>You <strong>check</strong> payment runs. Somebody prepares the month&rsquo;s list and signs it, you
+        check it, then your organisation admin countersigns and the money is released. You can also read the
+        <strong> funding summary</strong> &mdash; what each student was awarded, paid and still has left. You
+        cannot create, edit or cancel a run.</>,
+    },
+    {
+      q: <>Why can&rsquo;t I open a student&rsquo;s application?</>,
+      a: <>Because checking a payment doesn&rsquo;t require it. Your role deliberately has no access to applicant
+        files, documents, income details or verdicts &mdash; only the payment figures. If you need something
+        about a student explained, ask your organisation admin.</>,
+    },
+    {
+      q: <>I found a mistake on a run. What do I do?</>,
+      a: <>Don&rsquo;t sign it. Tell whoever prepared it. When they correct it the run goes back to
+        <strong> draft</strong> and every signature so far is cleared &mdash; including yours &mdash; so
+        you&rsquo;ll check the corrected list again before it can move on.</>,
+    },
+    {
+      q: <>It won&rsquo;t accept my signature. Why?</>,
+      a: <>Two common reasons. Your typed name must match the name on your account <strong>exactly</strong>. And
+        every signature on a run must be a <strong>different person</strong> &mdash; you can&rsquo;t check a run
+        you prepared yourself.</>,
+    },
+    {
+      q: <>Where is Payments? I don&rsquo;t see it in the menu.</>,
+      a: <>It&rsquo;s inside <strong>Administration</strong> &mdash; open that, then the <strong>Payments</strong>
+        card. There is no separate menu entry for it.</>,
+    },
+  ],
 }
 
 const ROLE_TO_AUDIENCE: Record<ManualRole, Audience | null> = {
-  reviewer: 'reviewer', qc: 'qc', org_admin: 'org_admin', admin: 'admin', super: null,
+  reviewer: 'reviewer', qc: 'qc', org_admin: 'org_admin', admin: 'admin',
+  finance: 'finance', super: null,
 }
 
 /** Which audience sections a caller sees by default (Everyone + their own role). super/org_admin
@@ -212,7 +267,7 @@ const ROLE_TO_AUDIENCE: Record<ManualRole, Audience | null> = {
 export function defaultFaqAudiences(role: ManualRole | undefined): Audience[] {
   const own = role ? ROLE_TO_AUDIENCE[role] : null
   // super has no own section → default to everything so it isn't an empty page.
-  if (role === 'super') return ['everyone', 'reviewer', 'qc', 'org_admin', 'admin']
+  if (role === 'super') return ['everyone', 'reviewer', 'qc', 'org_admin', 'admin', 'finance']
   return own ? ['everyone', own] : ['everyone']
 }
 
@@ -221,8 +276,9 @@ export function canSeeAllFaq(role: ManualRole | undefined): boolean {
   return role === 'super' || role === 'org_admin'
 }
 
-export const ALL_FAQ_AUDIENCES: Audience[] = ['everyone', 'reviewer', 'qc', 'org_admin', 'admin']
+export const ALL_FAQ_AUDIENCES: Audience[] = ['everyone', 'reviewer', 'qc', 'org_admin', 'admin', 'finance']
 
 export const AUDIENCE_LABEL: Record<Audience, string> = {
-  everyone: 'Everyone', reviewer: 'Reviewer', qc: 'QC', org_admin: 'Org admin', admin: 'General admin',
+  everyone: 'Everyone', reviewer: 'Reviewer', qc: 'QC', org_admin: 'Org admin',
+  admin: 'General admin', finance: 'Finance',
 }

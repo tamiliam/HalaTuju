@@ -18,9 +18,13 @@ const roleBadgeCls = (r: ManualRole) =>
   : r === 'org_admin' ? 'bg-amber-100 text-amber-700'
   : r === 'admin' ? 'bg-indigo-100 text-indigo-700'
   : r === 'qc' ? 'bg-orange-100 text-orange-700'
+  : r === 'finance' ? 'bg-emerald-100 text-emerald-700'
   : 'bg-blue-100 text-blue-700'   // reviewer
+// Record<ManualRole, string> on purpose: adding a role to the union fails the build here until
+// its label exists, rather than rendering an undefined badge.
 const roleLabel: Record<ManualRole, string> = {
-  super: 'Super admin', org_admin: 'Org admin', admin: 'General admin', qc: 'QC', reviewer: 'Reviewer',
+  super: 'Super admin', org_admin: 'Org admin', admin: 'General admin', qc: 'QC',
+  reviewer: 'Reviewer', finance: 'Finance',
 }
 const GROUP_LABEL: Record<ManualChapter['group'], string> = {
   basics: 'Basics', role: 'Your role', help: 'Help',
