@@ -11,7 +11,7 @@ const row = (over: Partial<AdminItem>): AdminItem => ({
 } as AdminItem)
 
 describe('isProgrammeStaff', () => {
-  it.each(['reviewer', 'admin', 'qc', 'org_admin'])('includes programme role %s', (r) => {
+  it.each(['reviewer', 'admin', 'qc', 'org_admin', 'finance'])('includes programme role %s', (r) => {
     expect(isProgrammeStaff(r)).toBe(true)
   })
   it.each(['super', 'partner', ''])('excludes platform-world role %s', (r) => {
@@ -28,8 +28,9 @@ describe('programmeStaff', () => {
       row({ id: 4, role: 'admin' }),
       row({ id: 5, role: 'partner' }),
       row({ id: 6, role: 'super' }),
+      row({ id: 7, role: 'finance' }),
     ]
-    expect(programmeStaff(list).map((a) => a.id)).toEqual([1, 2, 3, 4])
+    expect(programmeStaff(list).map((a) => a.id)).toEqual([1, 2, 3, 4, 7])
   })
 
   it('drops a legacy-flag super even if its role string is not "super"', () => {

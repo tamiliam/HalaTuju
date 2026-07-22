@@ -171,7 +171,7 @@ export interface AdminItem {
   name: string
   email: string
   is_super_admin: boolean
-  role: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc'
+  role: 'super' | 'admin' | 'org_admin' | 'partner' | 'reviewer' | 'qc' | 'finance'
   is_active: boolean
   org_name: string | null
   owning_org_id?: number | null
@@ -382,7 +382,7 @@ export async function inviteAdmin(
   data: {
     email: string
     name: string
-    role?: 'admin' | 'partner' | 'reviewer' | 'qc' | 'org_admin'
+    role?: 'admin' | 'partner' | 'reviewer' | 'qc' | 'org_admin' | 'finance'
     org_id?: number
     new_org_name?: string
     new_org_code?: string
@@ -1502,7 +1502,7 @@ export interface PaymentRunSummary {
   payment_date: string
   /** The month this run pays for (1st of month, ISO); dedup key — a student is paid once per month. */
   period_month: string | null
-  status: 'draft' | 'admin_signed' | 'completed' | 'cancelled'
+  status: 'draft' | 'admin_signed' | 'finance_checked' | 'completed' | 'cancelled'
   students: number
   total: string
   created_at: string
@@ -1535,17 +1535,48 @@ export interface PaymentRunDetail {
   payment_date: string
   /** The month this run pays for (1st of month, ISO); dedup key — a student is paid once per month. */
   period_month: string | null
-  status: 'draft' | 'admin_signed' | 'completed' | 'cancelled'
+  status: 'draft' | 'admin_signed' | 'finance_checked' | 'completed' | 'cancelled'
   note: string
   drive_file_url: string
   created_by: string
   created_at: string
   admin_signed: PaymentSignature | null
+  /** The middle CHECKER signature. Null on every run made before the finance role existed and
+   *  on every run in an org with no active finance admin — render those as the 2-card layout. */
+  finance_signed: PaymentSignature | null
+  /** Whether THIS org's chain includes the finance check. Computed by the server
+   *  (payments.finance_check_required) and read verbatim — NEVER re-derive it here from the
+   *  staff list, or the activation rule becomes a keep-in-sync pair that drifts. */
+  finance_check_required: boolean
   org_admin_signed: PaymentSignature | null
   items: PaymentRunItem[]
   skipped: PaymentRunSkipped[]
   students: number
   total: string
+}
+
+/** One student's line in the Payments funding summary. Mirrors the backend's
+ *  FundingSummaryRowSerializer, which is an explicit allowlist — the only student data a
+ *  `finance` admin can reach. Nothing identifying beyond the name, and no documents, income
+ *  or verdicts; the backend pins the exact key set with a snapshot test. */
+export interface FundingSummaryRow {
+  application_id: number
+  name: string
+  ref: string
+  status: string
+  pathway: string
+  award_amount: string
+  paid_to_date: string
+  remaining: string
+  vircle_id: string
+  last_run: { reference: string; payment_date: string } | null
+}
+export interface FundingSummary {
+  rows: FundingSummaryRow[]
+  totals: { students: number; award_total: string; paid_total: string; remaining_total: string }
+}
+export async function getFundingSummary(options?: ApiOptions) {
+  return adminFetch<FundingSummary>('/api/v1/admin/scholarship/payments/funding-summary/', options)
 }
 
 export async function getPaymentRuns(options?: ApiOptions) {

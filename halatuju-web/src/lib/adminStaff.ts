@@ -4,7 +4,7 @@
 // programme staff) are PLATFORM-world rows and must never appear in the org table.
 import type { AdminItem } from './admin-api'
 
-export const PROGRAMME_STAFF_ROLES = ['reviewer', 'admin', 'qc', 'org_admin'] as const
+export const PROGRAMME_STAFF_ROLES = ['reviewer', 'admin', 'qc', 'org_admin', 'finance'] as const
 
 export function isProgrammeStaff(role: string): boolean {
   return (PROGRAMME_STAFF_ROLES as readonly string[]).includes(role)

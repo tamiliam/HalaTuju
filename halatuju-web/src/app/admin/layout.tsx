@@ -108,6 +108,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     : r === 'qc' ? [scholarship, profile, guide, faq]        // QC: no Sponsors (matrix)
     : r === 'admin' ? [scholarship, administration, profile, guide, faq]
     : r === 'org_admin' ? [scholarship, administration, profile, guide, faq]
+    // Finance has NO B40 scope, so NO Scholarship link -- it would 403. It reaches Payments
+    // through the Administration card, exactly as admin/org_admin do.
+    : r === 'finance' ? [administration, profile, guide, faq]
     : [dashboard, students, scholarship, courseData, administration, profile, guide, faq]  // super
 
   // A small red count on the Administration entry when sponsor accounts await vetting.

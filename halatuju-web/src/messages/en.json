@@ -4016,7 +4016,8 @@
       "admin": "Admin",
       "partner": "Partner",
       "qc": "Quality control",
-      "org_admin": "Organisation admin"
+      "org_admin": "Organisation admin",
+      "finance": "Finance admin"
     },
     "roleHint": {
       "super": "Full access, including inviting and managing other admins.",
@@ -4289,7 +4290,8 @@
       "staffRole": {
         "reviewer": "Reviewer",
         "admin": "View-only admin",
-        "qc": "QC"
+        "qc": "QC",
+        "finance": "Finance"
       },
       "payments": "Payments",
       "paymentsSub": "Create and send monthly Vircle payment runs",
@@ -4334,7 +4336,7 @@
       "sign": "Sign",
       "countersign": "Countersign & send to Vircle",
       "afterMaker": "Available after the admin has signed.",
-      "signNote": "The two signers must be different people. Editing the list after signing returns the run to draft.",
+      "signNote": "Every signer must be a different person. Editing the list after signing returns the run to draft and clears the signatures collected so far.",
       "declaration": "I confirm that the students listed above are those qualified to receive the bursary payment for {month}, and that this payment instruction will be sent to {email}.",
       "cancelRun": "Cancel this run",
       "completedOn": "Completed on {date}",
@@ -4364,7 +4366,8 @@
         "draft": "Draft",
         "admin_signed": "Admin signed",
         "completed": "Completed",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "finance_checked": "Finance checked"
       },
       "reason": {
         "no_vircle_id": "No eWallet ID",
@@ -4384,7 +4387,31 @@
         "not_draft": "This run can no longer be edited.",
         "not_editable": "This run can no longer be edited.",
         "bad_state": "That action isn't allowed in this run's current state.",
-        "not_ready": "The CSV is available once the run is signed."
+        "not_ready": "The CSV is available once the run is signed.",
+        "finance_check_required": "This run needs the finance check before it can be countersigned."
+      },
+      "financeStep": "Finance check",
+      "financeSign": "Check",
+      "checkedBy": "Checked by (finance)",
+      "awaitingFinanceCheck": "Waiting for the finance check before you can countersign.",
+      "funding": {
+        "title": "Funding summary",
+        "subtitle": "What each student was awarded, what has been paid, and what remains.",
+        "totals": "{count} students",
+        "col": {
+          "student": "Student",
+          "status": "Status",
+          "award": "Award",
+          "paid": "Paid",
+          "remaining": "Remaining",
+          "wallet": "eWallet ID",
+          "lastRun": "Last paid"
+        },
+        "state": {
+          "awarded": "Awarded",
+          "active": "Active",
+          "maintenance": "In programme"
+        }
       }
     },
     "contracts": {

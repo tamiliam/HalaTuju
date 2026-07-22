@@ -1,7 +1,11 @@
 'use client'
-// Payment run detail (P2) — eligibility table (editable in draft), greyed skipped list,
-// two-stage maker→approver sign-off, and the completed state (Drive link + CSV download).
-// Access: admin / org_admin / super. Entered from the Payments landing.
+// Payment run detail (P2) — eligibility table (editable in draft), greyed skipped list, the
+// maker→[finance]→approver sign-off, and the completed state (Drive link + CSV download).
+// Access: admin / org_admin / finance / super. Entered from the Payments landing.
+//
+// The middle FINANCE CHECK is conditional. Every branch below reads it from the PAYLOAD
+// (`finance_check_required`, `finance_signed`, `status`) and never re-derives it — the
+// activation rule lives once, in payments.finance_check_required on the server.
 
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -12,7 +16,7 @@ import {
   getPaymentRun, updatePaymentRunItem, signPaymentRun, cancelPaymentRun, fetchPaymentRunCsv,
   type PaymentRunDetail,
 } from '@/lib/admin-api'
-import { statusPill, monthLabel, monthLabelFull } from '@/lib/paymentStatus'
+import { statusPill, monthLabel, monthLabelFull, signOffView } from '@/lib/paymentStatus'
 import Toggle from '@/components/Toggle'
 
 // Amounts are whole ringgit with thousands grouping — "RM 2,200", never "RM 200.00"
@@ -43,7 +47,8 @@ type SortKey = 'name' | 'nric' | 'vircle_id' | 'paid_to_date'
 const errText = (e: unknown, t: (k: string) => string) => {
   const code = (e as { code?: string })?.code
   const known = ['name_mismatch', 'same_signer', 'wrong_role', 'past_date', 'amount_over_cap',
-                 'reason_required', 'not_draft', 'not_editable', 'bad_state', 'not_ready']
+                 'reason_required', 'not_draft', 'not_editable', 'bad_state', 'not_ready',
+                 'finance_check_required']
   return code && known.includes(code) ? t(`admin.payments.error.${code}`)
     : e instanceof Error ? e.message : t('admin.actionFailed')
 }
@@ -54,12 +59,17 @@ export default function PaymentRunDetailPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = !!(role?.is_super_admin || role?.role === 'super'
-    || role?.role === 'admin' || role?.role === 'org_admin')
+    || role?.role === 'admin' || role?.role === 'org_admin' || role?.role === 'finance')
+  // Finance reads and signs the check; it never creates, edits or cancels a run (the backend
+  // refuses those with 403 regardless — hiding the controls just keeps dead affordances off
+  // the screen). It also has no B40 route, so applicant links must not render for it.
+  const isFinanceViewer = role?.role === 'finance'
 
   const [run, setRun] = useState<PaymentRunDetail | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState('')
   const [makerName, setMakerName] = useState('')
+  const [financeName, setFinanceName] = useState('')
   const [approverName, setApproverName] = useState('')
   const [signError, setSignError] = useState('')   // shown inside the sign-off card, beside the action
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' } | null>(null)
@@ -74,8 +84,12 @@ export default function PaymentRunDetailPage() {
   if (role && !allowed) return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
   if (!run) return <p className="text-gray-400">{t('common.loading')}</p>
 
-  const isDraft = run.status === 'draft'
   const isCompleted = run.status === 'completed'
+  // One pure decision for the whole conditional chain (lib/paymentStatus.signOffView), so the
+  // in-progress block and the completed block can't disagree and the rules are unit-tested.
+  const view = signOffView(run, role?.role)
+  const { needsFinance, awaitingFinance } = view
+  const isDraft = view.canEditItems
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s?.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
@@ -106,7 +120,7 @@ export default function PaymentRunDetailPage() {
   const sign = async (typed: string) => {
     if (!token || !typed.trim()) return
     setBusy('sign'); setSignError('')
-    try { setRun(await signPaymentRun(id, typed.trim(), { token })); setMakerName(''); setApproverName('') }
+    try { setRun(await signPaymentRun(id, typed.trim(), { token })); setMakerName(''); setFinanceName(''); setApproverName('') }
     catch (e) { setSignError(errText(e, t)) } finally { setBusy('') }
   }
 
@@ -179,7 +193,12 @@ export default function PaymentRunDetailPage() {
             {sortedItems.map((it) => (
               <tr key={it.id} className={it.included ? 'hover:bg-primary-50/40' : 'bg-gray-50/60 text-gray-400'}>
                 <td className="px-4 py-3.5">
-                  <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">{it.name || '—'} ↗</a>
+                  {isFinanceViewer ? (
+                    // Finance has no B40 route — a link here would 403. Plain text instead.
+                    <span className="font-medium text-gray-900">{it.name || '—'}</span>
+                  ) : (
+                    <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">{it.name || '—'} ↗</a>
+                  )}
                 </td>
                 <td className="px-4 py-3.5">{it.nric || '—'}</td>
                 <td className="px-4 py-3.5">
@@ -256,7 +275,7 @@ export default function PaymentRunDetailPage() {
             {t('admin.payments.declaration', { month: monthLabelFull(run.period_month), email: run.vircle_email || '—' })}
           </p>
           {signError && <div className="mt-3 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{signError}</div>}
-          <div className="mt-3 grid gap-6 sm:grid-cols-2">
+          <div className={`mt-3 grid gap-6 ${needsFinance ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
             <div>
               <p className="text-sm font-semibold text-gray-900">1 · {t('admin.payments.makerStep')}</p>
               {run.admin_signed ? (
@@ -269,10 +288,32 @@ export default function PaymentRunDetailPage() {
                 </div>
               </>)}
             </div>
+            {/* The finance step renders ONLY when this org's chain includes it — a dormant org
+                sees exactly the original two columns, never an empty placeholder. */}
+            {needsFinance && (
+              <div>
+                <p className="text-sm font-semibold text-gray-900">2 · {t('admin.payments.financeStep')}</p>
+                {run.finance_signed ? (
+                  <p className="mt-1 text-sm text-green-700">✓ {run.finance_signed.name}</p>
+                ) : run.status === 'draft' ? (
+                  <p className="mt-1 text-xs text-gray-400">{t('admin.payments.afterMaker')}</p>
+                ) : (<>
+                  <p className="mt-1 text-xs text-gray-500">{t('admin.payments.typedNameHint')}</p>
+                  <div className="mt-2 flex gap-2">
+                    <input value={financeName} onChange={(e) => setFinanceName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
+                    <button onClick={() => sign(financeName)} disabled={!!busy || !financeName.trim()} className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{t('admin.payments.financeSign')}</button>
+                  </div>
+                </>)}
+              </div>
+            )}
             <div>
-              <p className="text-sm font-semibold text-gray-900">2 · {t('admin.payments.approverStep')}</p>
+              <p className="text-sm font-semibold text-gray-900">{view.approverStepNumber} · {t('admin.payments.approverStep')}</p>
               {run.status === 'draft' ? (
                 <p className="mt-1 text-xs text-gray-400">{t('admin.payments.afterMaker')}</p>
+              ) : awaitingFinance ? (
+                // The server refuses a countersignature here (finance_check_required), so say
+                // so plainly rather than offering a control that can only fail.
+                <p className="mt-1 text-xs text-amber-700">{t('admin.payments.awaitingFinanceCheck')}</p>
               ) : (<>
                 <p className="mt-1 text-xs text-gray-500">{t('admin.payments.typedNameHint')}</p>
                 <div className="mt-2 flex gap-2">
@@ -283,7 +324,9 @@ export default function PaymentRunDetailPage() {
             </div>
           </div>
           <p className="mt-3 text-xs text-gray-500">{t('admin.payments.signNote')}</p>
-          <button onClick={doCancel} disabled={!!busy} className="mt-3 text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50">{t('admin.payments.cancelRun')}</button>
+          {view.canCancel && (
+            <button onClick={doCancel} disabled={!!busy} className="mt-3 text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50">{t('admin.payments.cancelRun')}</button>
+          )}
         </div>
       )}
 
@@ -299,13 +342,25 @@ export default function PaymentRunDetailPage() {
             <p className="text-[11px] font-medium uppercase tracking-wider text-green-100">{t('admin.payments.referenceCopy')}</p>
           </div>
           <div className="space-y-4 bg-white p-5">
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* A historical run has a null finance triple → the original 2-card layout, with no
+                "skipped" step implied. */}
+            <div className={`grid gap-4 ${view.completedColumns === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               {run.admin_signed && (
                 <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 p-4">
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-green-700/70">{t('admin.payments.authorisedBy')}</p>
                     <p className="mt-1 truncate font-serif text-lg italic text-gray-900">{run.admin_signed.name}</p>
                     <p className="mt-0.5 text-xs text-gray-500">{dateTime(run.admin_signed.at)}</p>
+                  </div>
+                  <Rosette />
+                </div>
+              )}
+              {run.finance_signed && (
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 p-4">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-green-700/70">{t('admin.payments.checkedBy')}</p>
+                    <p className="mt-1 truncate font-serif text-lg italic text-gray-900">{run.finance_signed.name}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{dateTime(run.finance_signed.at)}</p>
                   </div>
                   <Rosette />
                 </div>

@@ -4016,7 +4016,8 @@
       "admin": "Pentadbir",
       "partner": "Rakan kongsi",
       "qc": "Kawalan mutu",
-      "org_admin": "Pentadbir organisasi"
+      "org_admin": "Pentadbir organisasi",
+      "finance": "Pentadbir kewangan"
     },
     "roleHint": {
       "super": "Akses penuh, termasuk menjemput dan mengurus pentadbir lain.",
@@ -4289,7 +4290,8 @@
       "staffRole": {
         "reviewer": "Penilai",
         "admin": "Pentadbir lihat sahaja",
-        "qc": "Kawalan mutu"
+        "qc": "Kawalan mutu",
+        "finance": "Kewangan"
       },
       "payments": "Pembayaran",
       "paymentsSub": "Cipta dan hantar larian pembayaran Vircle bulanan",
@@ -4334,7 +4336,7 @@
       "sign": "Tandatangan",
       "countersign": "Tandatangan balas & hantar ke Vircle",
       "afterMaker": "Tersedia selepas pentadbir menandatangani.",
-      "signNote": "Kedua-dua penandatangan mestilah orang yang berbeza. Menyunting senarai selepas menandatangani mengembalikan larian kepada draf.",
+      "signNote": "Setiap penandatangan mestilah orang yang berbeza. Mengubah senarai selepas tandatangan akan mengembalikan larian ini kepada draf dan memadam tandatangan yang telah dikumpul.",
       "declaration": "Saya mengesahkan bahawa pelajar yang tersenarai di atas ialah mereka yang layak menerima bayaran biasiswa bagi {month}, dan arahan pembayaran ini akan dihantar ke {email}.",
       "cancelRun": "Batalkan larian ini",
       "completedOn": "Selesai pada {date}",
@@ -4364,7 +4366,8 @@
         "draft": "Draf",
         "admin_signed": "Ditandatangani pentadbir",
         "completed": "Selesai",
-        "cancelled": "Dibatalkan"
+        "cancelled": "Dibatalkan",
+        "finance_checked": "Disemak kewangan"
       },
       "reason": {
         "no_vircle_id": "Tiada ID eWallet",
@@ -4384,7 +4387,31 @@
         "not_draft": "Larian ini tidak boleh disunting lagi.",
         "not_editable": "Larian ini tidak boleh disunting lagi.",
         "bad_state": "Tindakan itu tidak dibenarkan dalam keadaan larian semasa.",
-        "not_ready": "CSV tersedia setelah larian ditandatangani."
+        "not_ready": "CSV tersedia setelah larian ditandatangani.",
+        "finance_check_required": "Larian ini memerlukan semakan kewangan sebelum boleh ditandatangani bersama."
+      },
+      "financeStep": "Semakan kewangan",
+      "financeSign": "Semak",
+      "checkedBy": "Disemak oleh (kewangan)",
+      "awaitingFinanceCheck": "Menunggu semakan kewangan sebelum anda boleh menandatangani.",
+      "funding": {
+        "title": "Ringkasan pembiayaan",
+        "subtitle": "Jumlah yang dianugerahkan kepada setiap pelajar, yang telah dibayar, dan bakinya.",
+        "totals": "{count} pelajar",
+        "col": {
+          "student": "Pelajar",
+          "status": "Status",
+          "award": "Anugerah",
+          "paid": "Dibayar",
+          "remaining": "Baki",
+          "wallet": "ID eWallet",
+          "lastRun": "Bayaran terakhir"
+        },
+        "state": {
+          "awarded": "Dianugerahkan",
+          "active": "Aktif",
+          "maintenance": "Dalam program"
+        }
       }
     },
     "contracts": {

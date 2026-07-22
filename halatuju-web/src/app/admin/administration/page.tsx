@@ -18,8 +18,8 @@ import { useT } from '@/lib/i18n'
 // appear inside an organisation's staff list.
 
 type Panel = null | 'partner' | 'tenant' | 'staff'
-type StaffRole = 'reviewer' | 'admin' | 'qc'
-const STAFF_ROLES: StaffRole[] = ['reviewer', 'admin', 'qc']
+type StaffRole = 'reviewer' | 'admin' | 'qc' | 'finance'
+const STAFF_ROLES: StaffRole[] = ['reviewer', 'admin', 'qc', 'finance']
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
@@ -73,6 +73,9 @@ export default function AdministrationPage() {
   // Admin-General (matrix 2026-07-15): READ-ONLY view of the org staff table — no invite
   // forms, no resend/revoke, no acting icon-cards. Only super + org_admin may manage.
   const isAdminGeneral = role?.role === 'admin'
+  // Finance (matrix 2026-07-23): same read-only Administration branch as Admin-General, but
+  // its cards are Sponsors / Payments / Billing -- no Sources, no Contracts, no Invite.
+  const isFinance = role?.role === 'finance'
   const canManage = isSuper || isOrgAdmin
 
   const [panel, setPanel] = useState<Panel>(null)
@@ -104,7 +107,7 @@ export default function AdministrationPage() {
     getPendingSponsorCount({ token }).then((d) => setPendingSponsors(d.count)).catch(() => {})
   }, [token, isSuper])
 
-  if (role && !isSuper && !isOrgAdmin && !isAdminGeneral) {
+  if (role && !isSuper && !isOrgAdmin && !isAdminGeneral && !isFinance) {
     return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
   }
 
@@ -119,6 +122,7 @@ export default function AdministrationPage() {
     : rl === 'org_admin' ? 'bg-amber-100 text-amber-700'
     : rl === 'admin' ? 'bg-indigo-100 text-indigo-700'
     : rl === 'qc' ? 'bg-orange-100 text-orange-700'
+    : rl === 'finance' ? 'bg-emerald-100 text-emerald-700'
     : rl === 'partner' ? 'bg-teal-100 text-teal-700'
     : rl === 'reviewer' ? 'bg-blue-100 text-blue-700'
     : 'bg-gray-100 text-gray-600'
@@ -335,7 +339,7 @@ export default function AdministrationPage() {
               <form onSubmit={submitStaff} className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
                 <div>
                   <p className="text-sm font-semibold text-gray-900 mb-2">{t('admin.inviteAs')}</p>
-                  <div className="grid grid-cols-3 gap-2 max-w-md">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-md">
                     {STAFF_ROLES.map((rl) => (
                       <button key={rl} type="button" onClick={() => setSRole(rl)}
                         className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
@@ -356,16 +360,23 @@ export default function AdministrationPage() {
             </div>
           )}
         </>) : (
-          // Admin-General (matrix): read-only staff table, no invite / resend / revoke.
-          // Payments + Sources stay reachable — both are open to the admin role.
+          // Admin-General + Finance (matrix): read-only staff table, no invite / resend / revoke.
+          // Admin-General keeps Sources (open to the admin role); Finance does NOT -- referral
+          // sources are not its business -- and instead sees the disabled Billing placeholder.
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <IconCard icon="🎗️" title={t('admin.administration.sponsors')} subtitle={t('admin.administration.sponsorsSub')}
                 badge={pendingSponsors} onClick={() => router.push('/admin/sponsors')} />
               <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
                 onClick={() => router.push('/admin/payments')} />
-              <IconCard icon="🏷️" title={t('admin.administration.sources')} subtitle={t('admin.administration.sourcesSub')}
-                onClick={() => router.push('/admin/sources')} />
+              {!isFinance && (
+                <IconCard icon="🏷️" title={t('admin.administration.sources')} subtitle={t('admin.administration.sourcesSub')}
+                  onClick={() => router.push('/admin/sources')} />
+              )}
+              {isFinance && (
+                <IconCard icon="💳" title={t('admin.administration.billing')} subtitle={t('admin.administration.billingSub')}
+                  disabled comingSoon={t('admin.administration.comingSoon')} />
+              )}
             </div>
             <p className="text-sm text-gray-500">{t('admin.administration.viewOnlyNote')}</p>
             {staffTable(programmeStaff(admins), false, false)}
