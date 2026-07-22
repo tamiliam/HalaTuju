@@ -590,6 +590,10 @@ export interface AdminScholarshipDetail {
   rejected_by: string
   // The org-admin's verbatim reason ('incomplete' bucket only). Internal — never emailed.
   rejection_comments: string
+  // The stored reporting date (ISO). Read the COLUMN, not the offer document's raw string —
+  // the two used to be able to disagree, which is how a case displayed a ticked date while the
+  // field driving its bursary was empty. Null when neither the letter nor an officer supplied it.
+  reporting_date: string | null
   // Closure bucket: '' | 'graduated' | 'completed' | 'withdrawn' | 'lapsed' | 'terminated'
   closure_reason: string
   // Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation + its reveal date.
@@ -1007,6 +1011,17 @@ export async function orgRejectApplication(
 ) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/org-reject/`, 'POST', { comments }, options
+  )
+}
+
+/** Record the date a student reports to their institution, when the offer letter carries no
+ * readable one. Not cosmetic: it sizes the bursary (a course begun before the cohort year = a
+ * continuing student), gates payment eligibility, and triggers the semester-result request —
+ * which is why QC refuses to accept a case without it. super / org_admin / qc / assigned
+ * reviewer. `date` is ISO 'YYYY-MM-DD'. */
+export async function setReportingDate(id: number, date: string, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/reporting-date/`, 'POST', { date }, options
   )
 }
 

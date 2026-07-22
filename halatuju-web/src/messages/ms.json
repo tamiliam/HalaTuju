@@ -3497,6 +3497,12 @@
       "siblingsLegacyNote": "jumlah lama — pecahan tidak diketahui, sahkan semasa temu duga",
       "chosenProgramme": "Program dipilih",
       "reportingDate": "Tarikh lapor diri",
+      "reportingDateEntry": {
+        "title": "Tarikh pendaftaran",
+        "help": "Surat tawaran pelajar ini tidak menyatakan tarikh mereka mendaftar. Rekodkan tarikh itu — ia menetapkan jumlah biasiswa, jadi kes ini tidak boleh diluluskan tanpanya.",
+        "save": "Simpan tarikh pendaftaran",
+        "current": "Direkodkan sekarang: {date}"
+      },
       "verified": {
         "tooltip": "Sepadan dengan {source}",
         "source": {

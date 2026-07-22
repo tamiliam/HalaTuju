@@ -5,7 +5,7 @@
  * two or three that motivated the change — a status added later shows up here as a decision to
  * make, not as a card that silently appears in the wrong place.
  */
-import { showsReviewerAssignedCard, showsWitnessCard } from '@/lib/officerCockpit'
+import { showsReportingDateBox, showsReviewerAssignedCard, showsWitnessCard } from '@/lib/officerCockpit'
 
 /** Every ScholarshipApplication.STATUS_CHOICES value, in lifecycle order. */
 const ALL = [
@@ -79,5 +79,34 @@ describe('the two cards never both occupy the slot pointlessly', () => {
   it('overlap only at interviewed, where a reviewer may still change AND a witness can be set', () => {
     const both = ALL.filter((s) => showsReviewerAssignedCard(s) && showsWitnessCard(s))
     expect(both).toEqual(['interviewed'])
+  })
+})
+
+describe('showsReportingDateBox', () => {
+  const base = { status: 'interviewing', decisionReopened: false, letterHasDate: false }
+
+  it('shows while a reviewer is working the case', () => {
+    expect(showsReportingDateBox(base)).toBe(true)
+  })
+
+  it('stays hidden when the offer letter already carries a date', () => {
+    expect(showsReportingDateBox({ ...base, letterHasDate: true })).toBe(false)
+  })
+
+  it('is hidden at every stage outside the reviewer window', () => {
+    const shown = ALL.filter((status) => showsReportingDateBox({ ...base, status }))
+    expect(shown).toEqual(['interviewing'])
+  })
+
+  it('returns on a reopen, wherever the reopen landed', () => {
+    // reopen_decision: recommended -> interviewed, interviewed -> interviewing. Keying on
+    // status alone would miss a case bounced back from Recommended.
+    for (const status of ['interviewed', 'interviewing']) {
+      expect(showsReportingDateBox({ ...base, status, decisionReopened: true })).toBe(true)
+    }
+  })
+
+  it('is hidden at Awaiting QC when NOT reopened — QC bounces it back instead', () => {
+    expect(showsReportingDateBox({ ...base, status: 'interviewed' })).toBe(false)
   })
 })

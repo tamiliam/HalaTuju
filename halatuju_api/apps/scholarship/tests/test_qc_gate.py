@@ -4,6 +4,7 @@ A reviewer's verify-accept lands a case in `interviewed` = AWAITING QC. A `qc`-r
 then Accepts (→ recommended) or Reopens (→ back to the reviewer at `interviewing`, with the gaps
 comments emailed to the assigned reviewer). Reviewers/admins/partners cannot QC.
 """
+import datetime
 from unittest import mock
 
 import jwt
@@ -21,6 +22,12 @@ from apps.scholarship.models import (
 from apps.scholarship.sponsorship import is_fundable
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
+
+
+# QC refuses to accept a case with no reporting date (owner 2026-07-23) - it sizes the
+# bursary, so a missing one is no longer acceptable at the gate. A fresh-entrant date,
+# matching the cohort year, so these suites' existing amount assertions are unchanged.
+_QC_REPORTING_DATE = datetime.date(2026, 6, 8)
 
 
 def _token(uid):
@@ -53,7 +60,7 @@ class TestQcGate(TestCase):
         self.client = APIClient()
         p = StudentProfile.objects.create(supabase_user_id='s1', nric='030101-14-0001', name='Aisha')
         # An AWAITING-QC case: reviewer submitted the verdict (verdict_decided_at set), assigned to them.
-        self.app = ScholarshipApplication.objects.create(
+        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=self.cohort, profile=p, status='interviewed',
             profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
             assigned_to=self.reviewer)
@@ -190,7 +197,7 @@ class TestQcGate(TestCase):
     def test_qc_can_review_its_assigned_case(self):
         # A senior qc assigned a case can act on it (reviewer write) — e.g. the mentoring flag.
         p = StudentProfile.objects.create(supabase_user_id='s-qc-rev', nric='030101-14-0007', name='Q')
-        app = ScholarshipApplication.objects.create(
+        app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=self.cohort, profile=p, status='interviewing',
             profile_completed_at=timezone.now(), assigned_to=self.qc)
         self._auth('qc-uid')
@@ -201,7 +208,7 @@ class TestQcGate(TestCase):
     def test_qc_cannot_qc_its_own_reviewed_case(self):
         # An awaiting-QC case the qc themselves reviewed → self-QC guard blocks it (403).
         p = StudentProfile.objects.create(supabase_user_id='s-qc-own', nric='030101-14-0008', name='O')
-        app = ScholarshipApplication.objects.create(
+        app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=self.cohort, profile=p, status='interviewed',
             profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
             assigned_to=self.qc)
@@ -245,7 +252,7 @@ class TestPublishBoundToQc(TestCase):
         self.client = APIClient()
         p = StudentProfile.objects.create(supabase_user_id='pq1', nric='030101-14-0003', name='Devi')
         # A case awaiting QC whose profile the reviewer PREPARED but did not publish.
-        self.app = ScholarshipApplication.objects.create(
+        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=self.cohort, profile=p, status='interviewed',
             profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
             assigned_to=self.reviewer, award_amount=3000)
@@ -326,7 +333,7 @@ class TestDeclineToQc(TestCase):
     def setUp(self):
         self.client = APIClient()
         p = StudentProfile.objects.create(supabase_user_id='sd1', nric='030101-14-0009', name='Nila')
-        self.app = ScholarshipApplication.objects.create(
+        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=self.cohort, profile=p, status='interviewing', notify_email='nila@example.com',
             profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
             verdict_decided_by='reviewer@example.com', assigned_to=self.reviewer,
@@ -426,7 +433,7 @@ class TestQcGapFloor(TestCase):
     def setUp(self):
         self.client = APIClient()
         p = StudentProfile.objects.create(supabase_user_id='sgf', nric='030101-14-0005', name='Mala')
-        self.app = ScholarshipApplication.objects.create(
+        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=self.cohort, profile=p, status='interviewed',
             profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
             assigned_to=self.reviewer)

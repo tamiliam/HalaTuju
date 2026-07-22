@@ -25,6 +25,7 @@ import {
   reRunVision,
   assignApplication,
   orgRejectApplication,
+  setReportingDate,
   getInterview,
   saveInterview,
   submitInterview,
@@ -77,6 +78,7 @@ import {
   verdictItemKey,
   headerTimeline,
   canOrgReject,
+  showsReportingDateBox,
   showsReviewerAssignedCard,
   showsWitnessCard,
   showsPostSubmissionCards,
@@ -483,6 +485,21 @@ export default function AdminScholarshipDetailPage() {
     } catch (e) {
       // Stay on the confirm step so the typed reason isn't lost on a transient failure.
       setRejectErr(e instanceof Error ? e.message : t('admin.scholarship.orgReject.error'))
+    } finally { setBusy('') }
+  }
+
+  // Reporting date — recorded by hand when the offer letter carries no readable one. QC refuses
+  // to accept without it, so this is how a blocked case gets cleared (owner 2026-07-23).
+  const [reportingDateInput, setReportingDateInput] = useState('')
+  const [reportingDateMsg, setReportingDateMsg] = useState('')
+  const doSetReportingDate = async () => {
+    if (!token || !reportingDateInput) return
+    setBusy('reportingDate'); setReportingDateMsg('')
+    try {
+      setApp(await setReportingDate(id, reportingDateInput, { token }))
+      setReportingDateInput('')
+    } catch (e) {
+      setReportingDateMsg(e instanceof Error ? e.message : t('admin.actionFailed'))
     } finally { setBusy('') }
   }
 
@@ -1091,7 +1108,15 @@ export default function AdminScholarshipDetailPage() {
         // offers separately — that's history, not the current pathway.)
         const _offers = (app.documents || []).filter((d) => d.doc_type === 'offer_letter' && !d.superseded_at)
         const _offer = _offers.find((d) => d.pathway_check?.reporting_date) || _offers[0]
-        const reportingDate = _offer?.pathway_check?.reporting_date || ''
+        // Show the STORED date, falling back to the letter's raw string. This surface used to
+        // read ONLY the document — which is how #120 displayed a ticked "10 Jun 2025" while the
+        // column driving his bursary was empty. The two must not be able to disagree again.
+        // An officer-entered date therefore appears here too; it renders WITHOUT the verified
+        // tick, because that tick means "Matches the offer letter" and is derived from document
+        // corroboration (lib/fieldVerification), so a typed date never borrows it.
+        const reportingDate = app.reporting_date
+          ? formatDate(app.reporting_date)
+          : (_offer?.pathway_check?.reporting_date || '')
         const hasPlans = !!(app.chosen_pathway || app.chosen_programme?.course_name || reportingDate
           || app.top_choices?.length || app.pathways_considered?.length || app.uncertainty_reasons?.length)
         const addr = formatAddress([
@@ -2390,6 +2415,42 @@ export default function AdminScholarshipDetailPage() {
           </div>
         )
       })()}
+
+      {/* ── Reporting date — directly ABOVE Recommendation (owner 2026-07-23) so the reviewer
+            meets the empty field while deciding, and most cases are settled before they ever
+            reach QC. QC's refusal is the backstop, not the normal route.
+            Shown only when the offer letter carries NO readable date, and only in the reviewer's
+            window (interviewing, or a reopened case) — `showsReportingDateBox`. ─────────────── */}
+      {showsReportingDateBox({
+        status: app.status,
+        decisionReopened,
+        letterHasDate: (app.documents || []).some(
+          (d) => d.doc_type === 'offer_letter' && !d.superseded_at && !!d.pathway_check?.reporting_date),
+      }) && (
+        <div className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm space-y-2">
+          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+            {t('admin.scholarship.reportingDateEntry.title')}
+          </h2>
+          <p className="text-xs text-gray-500">{t('admin.scholarship.reportingDateEntry.help')}</p>
+          <input
+            type="date" value={reportingDateInput}
+            onChange={(e) => setReportingDateInput(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <button type="button" onClick={doSetReportingDate}
+            disabled={!!busy || !reportingDateInput}
+            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white
+                       hover:bg-blue-700 disabled:opacity-50">
+            {busy === 'reportingDate' ? t('common.loading') : t('admin.scholarship.reportingDateEntry.save')}
+          </button>
+          {app.reporting_date && (
+            <p className="text-xs text-gray-500">
+              {t('admin.scholarship.reportingDateEntry.current', { date: formatDate(app.reporting_date) })}
+            </p>
+          )}
+          {reportingDateMsg && <p className="text-sm text-red-600">{reportingDateMsg}</p>}
+        </div>
+      )}
 
       {/* ── Decision — audit the four facts (records the verdict) → verify identity →
            accept. The audit→accept gate is preserved (accept stays gated on a complete

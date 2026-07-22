@@ -3497,6 +3497,12 @@
       "siblingsLegacyNote": "legacy total — split unknown, confirm at interview",
       "chosenProgramme": "Chosen programme",
       "reportingDate": "Reporting date",
+      "reportingDateEntry": {
+        "title": "Reporting date",
+        "help": "This student's offer letter does not state when they report. Record the date — it sets the bursary amount, so the case cannot be approved without it.",
+        "save": "Save reporting date",
+        "current": "Currently recorded: {date}"
+      },
       "verified": {
         "tooltip": "Matches {source}",
         "source": {

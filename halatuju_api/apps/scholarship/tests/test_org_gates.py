@@ -6,6 +6,7 @@ real org this is invisible (same-org everywhere); these tests stand up a SECOND 
 to prove the wall. Super is global; partner has no B40 access; a NULL owning_org is a
 safe degenerate bucket.
 """
+import datetime
 from unittest import mock
 
 import jwt
@@ -18,6 +19,12 @@ from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.views_admin import _AdminBase
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
+
+
+# QC refuses to accept a case with no reporting date (owner 2026-07-23) - it sizes the
+# bursary, so a missing one is no longer acceptable at the gate. A fresh-entrant date,
+# matching the cohort year, so these suites' existing amount assertions are unchanged.
+_QC_REPORTING_DATE = datetime.date(2026, 6, 8)
 
 
 def _token(uid):
@@ -39,8 +46,8 @@ class OrgFenceMixin:
             code='cb', name='B', year=2026, owning_organisation=cls.org_b)
         cls.prof_a = StudentProfile.objects.create(supabase_user_id='sa', nric='010101-14-0001', name='Anwar')
         cls.prof_b = StudentProfile.objects.create(supabase_user_id='sb', nric='020202-14-0002', name='Bala')
-        cls.app_a = ScholarshipApplication.objects.create(cohort=cls.cohort_a, profile=cls.prof_a)
-        cls.app_b = ScholarshipApplication.objects.create(cohort=cls.cohort_b, profile=cls.prof_b)
+        cls.app_a = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, cohort=cls.cohort_a, profile=cls.prof_a)
+        cls.app_b = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, cohort=cls.cohort_b, profile=cls.prof_b)
         cls.super = PartnerAdmin.objects.create(
             supabase_user_id='super-uid', is_super_admin=True, is_active=True,
             name='Super', email='super@x.com')

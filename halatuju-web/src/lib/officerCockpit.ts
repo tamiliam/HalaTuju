@@ -1120,3 +1120,31 @@ const WITNESS_CARD_FROM = new Set<string>([
 export function showsWitnessCard(status: string | null | undefined): boolean {
   return WITNESS_CARD_FROM.has(status || '')
 }
+
+// ── Reporting-date entry (owner 2026-07-23) ─────────────────────────────────
+
+/**
+ * Show the "record the reporting date" box?
+ *
+ * The date is not cosmetic: it sizes the bursary (a course begun before the cohort year = a
+ * continuing student, one year of funding left), gates payment eligibility, and triggers the
+ * semester-result request. QC now REFUSES to accept a case without one, so a case whose offer
+ * letter carries no readable date needs a human to record it — this is where.
+ *
+ * Deliberately scoped to the reviewer's working window (owner): `interviewing`, or any case whose
+ * decision has been REOPENED. A reopen is checked explicitly rather than by status because it
+ * lands in two different places — `recommended → interviewed`, `interviewed → interviewing` — so
+ * a case bounced back from Recommended would otherwise miss the box. QC cannot fill it in place:
+ * they reopen, which returns the case to the reviewer who owns the case's facts.
+ *
+ * Hidden when the LETTER already carries a date — then the value syncs itself and a manual box
+ * would only invite contradicting the document.
+ */
+export function showsReportingDateBox(opts: {
+  status: string | null | undefined
+  decisionReopened?: boolean | null
+  letterHasDate?: boolean | null
+}): boolean {
+  if (opts.letterHasDate) return false
+  return (opts.status || '') === 'interviewing' || !!opts.decisionReopened
+}

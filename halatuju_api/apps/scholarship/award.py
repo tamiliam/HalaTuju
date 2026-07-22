@@ -37,13 +37,33 @@ _DEFAULT_AMOUNT = Decimal('2000')
 
 
 def _stpm_continuing(application):
-    """True iff an STPM student started in an intake YEAR before this cohort's — i.e. their
-    offer's reporting date predates the cohort year, so they have already completed a year
-    (one year of support remaining). Needs both a reporting date and a cohort year; unknown
-    → False (treat as a fresh entrant, the full amount)."""
-    rd = getattr(application, 'reporting_date', None)
-    cohort_year = getattr(getattr(application, 'cohort', None), 'year', None)
-    return bool(rd and cohort_year and rd.year < cohort_year)
+    """True iff an STPM student's course started in a YEAR before this cohort's — they have
+    already completed a year, so one year of support remains.
+
+    Delegates to ``pathway_engine.started_before_cohort``, the single source of truth shared with
+    the semester-result request. It reads the offer's INTAKE year first and the stored
+    ``reporting_date`` second (owner 2026-07-23).
+
+    Previously this read ``application.reporting_date`` alone, which was silently wrong twice
+    over: the column was NULL for ~45% of applications whose pathway needed confirming (the sync
+    bailed out on an unrelated guard), and a Form 6 letter often carries an intake RANGE
+    ("6 / 2025 – 12 / 2026") with no reporting date at all — so a continuing student read as a
+    fresh entrant and was committed RM3,000 instead of RM1,000. See
+    docs/retrospective-2026-07-23-reporting-date.md.
+    """
+    from .pathway_engine import started_before_cohort
+    return started_before_cohort(application)
+
+
+def course_start_unknown(application):
+    """True when the course-start year cannot be established at all — neither an intake year on
+    the offer nor a stored reporting date. The bursary CANNOT be sized honestly here: the rule
+    would silently fall through to the fresh-entrant (larger) amount. QC refuses to accept such a
+    case (owner 2026-07-23: an absolute stop, no override — the officer records the date instead).
+    Only meaningful for STPM, the one pathway whose amount depends on the start year."""
+    from .pathway_engine import course_start_year
+    pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
+    return pathway == 'stpm' and course_start_year(application) is None
 
 # Verdict codes that DEFAULT the proposal to "no amount". Confident negatives only —
 # a clear, evidence-backed reason this pathway/income is outside the accepted criteria.

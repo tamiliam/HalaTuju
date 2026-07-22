@@ -5,6 +5,7 @@ row; cancel restores the prior published state with NO reviewer correction;
 re-recording (record-verdict / reject) closes the reopen as a real correction
 (counting model B) and the corrections count surfaces internally.
 """
+import datetime
 from unittest.mock import patch
 
 import jwt
@@ -20,6 +21,12 @@ from apps.scholarship.models import (
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 SUPER, REVIEWER, STUDENT = 'reopen-super', 'reopen-reviewer', 'reopen-student'
+
+
+# QC refuses to accept a case with no reporting date (owner 2026-07-23) - it sizes the
+# bursary, so a missing one is no longer acceptable at the gate. A fresh-entrant date,
+# matching the cohort year, so these suites' existing amount assertions are unchanged.
+_QC_REPORTING_DATE = datetime.date(2026, 6, 8)
 
 
 def _token(uid):
@@ -39,7 +46,7 @@ class TestDecisionReopen(TestCase):
         self.superadmin = PartnerAdmin.objects.create(
             supabase_user_id=SUPER, is_super_admin=True, is_active=True, name='Boss', email='s@x.com')
         # A decided, accepted application with a PUBLISHED sponsor profile.
-        self.app = ScholarshipApplication.objects.create(
+        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=self.cohort, profile=self.profile, status='recommended',
             assigned_to=self.reviewer, verdict_decided_at=timezone.now(),
             officer_verdict={'identity': 'pass', 'academic': 'pass',
@@ -271,7 +278,7 @@ class TestDecisionTrailSerializer(TestCase):
         self.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='trail-rev', role='reviewer', is_active=True,
             name='Kaneswaran Sinakalai', email='kaneswaran@x.com')
-        self.app = ScholarshipApplication.objects.create(
+        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=self.cohort, profile=self.profile, status='rejected',
             assigned_to=self.reviewer, rejection_category='interview',
             rejected_by='qc@x.com', rejected_at=timezone.now())

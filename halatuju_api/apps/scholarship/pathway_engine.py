@@ -495,3 +495,49 @@ def offer_reporting_date_unknown(application):
     if not sv or sv == 'review_manually':          # not extracted yet → not this gap
         return False
     return parse_reporting_date(student_offer_check(offer).get('reporting_date')) is None
+
+
+# ── Course-start year: the ONE "is this a continuing student?" signal ────────────
+
+def course_start_year(application):
+    """The calendar year this student's course STARTED, or None if it can't be established.
+
+    Two sources, best first (owner 2026-07-23):
+
+      1. the offer letter's INTAKE year (``student_offer_check`` → ``intake_year``, which already
+         prefers the intake/session line and falls back to the reporting date's year). This is the
+         authoritative statement of when the cohort began, and it survives the common Form 6 case
+         where the letter carries an intake RANGE ("6 / 2025 – 12 / 2026") and NO reporting date;
+      2. the stored ``reporting_date`` — which may itself have been typed by an officer when the
+         letter had no readable date.
+
+    Deliberately NOT a third source: the student's free-text answer to the
+    ``reporting_date_unknown`` clarify. #123 answered "16 july 2026" meaning the date he collected
+    a confirmation letter, not the date he started — parsing that would have sized his bursary at
+    RM3,000 instead of RM1,000, confidently and wrongly. A student can misread the question; the
+    letter cannot.
+    """
+    offer = _latest_offer(application)
+    if offer is not None:
+        iy = (student_offer_check(offer).get('intake_year') or '').strip()
+        if iy.isdigit():
+            return int(iy)
+    rd = getattr(application, 'reporting_date', None)
+    return rd.year if rd else None
+
+
+def started_before_cohort(application):
+    """True iff the course demonstrably began in a year BEFORE the cohort's — a CONTINUING
+    student. False when it started in/after the cohort year OR when the start year cannot be
+    established at all, so callers that treat False as "fresh entrant" must ALSO check
+    ``course_start_year`` is not None before committing money (see award.proposed_award_amount
+    and the QC reporting-date gate).
+
+    The single source of truth for a signal that was previously implemented twice — the STPM
+    award size (award._stpm_continuing) and the semester-result request
+    (income_engine.semester_result_gap) — each reading ``reporting_date`` directly and each
+    silently wrong for the same students when it was NULL.
+    """
+    cohort_year = getattr(getattr(application, 'cohort', None), 'year', None)
+    start = course_start_year(application)
+    return bool(start and cohort_year and start < cohort_year)

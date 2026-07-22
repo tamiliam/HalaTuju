@@ -7,6 +7,7 @@ import logging
 from datetime import timedelta
 
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 logger = logging.getLogger(__name__)
 
@@ -1258,6 +1259,60 @@ def confirm_pathway(application):
     return True
 
 
+def sync_reporting_date_from_offer(application, offer=None):
+    """Copy the offer letter's reporting date into ``ScholarshipApplication.reporting_date``.
+
+    THE single owner of that copy (owner 2026-07-23). It exists as its own function because the
+    date is an independent fact — when the student starts — that has nothing to do with settling
+    which PATHWAY they are on, yet it used to be written at the bottom of
+    ``autofill_pathway_from_offer``, below four guards that abandon on a pathway disagreement.
+    Result: the students whose offer disagreed with their declaration (exactly the ones sent a
+    "please confirm" query) silently lost their date, and with it the correct bursary size and
+    their semester-result request.
+
+    A later re-extraction that yields a date DOES overwrite an officer-entered one, deliberately:
+    the officer only typed a value because the letter had none, so a letter we can now read is
+    better evidence than a human's inference. Returns True when it wrote.
+    """
+    from .models import ApplicantDocument
+    from .pathway_engine import student_offer_check, parse_reporting_date
+    if offer is None:
+        offer = (ApplicantDocument.objects.filter(
+                    application=application, doc_type='offer_letter', superseded_at__isnull=True)
+                 .order_by('-uploaded_at').first())
+    if offer is None:
+        return False
+    rd = parse_reporting_date(student_offer_check(offer).get('reporting_date'))
+    if rd is None or application.reporting_date == rd:
+        return False
+    application.reporting_date = rd
+    application.save(update_fields=['reporting_date'])
+    return True
+
+
+def set_reporting_date_by_officer(application, admin, value):
+    """Record a reporting date an officer established by hand — the fallback for a letter that
+    carries no readable date (owner 2026-07-23).
+
+    No provenance columns by owner decision: this is a rare one-off, and the cockpit already
+    distinguishes a typed date from a documented one for free (its verified tick reads DOCUMENT
+    corroboration, so a hand-typed date renders without one). WHO typed it is captured by the
+    AUDIT log line below — the same treatment other one-off admin corrections get.
+
+    Raises ValueError('date_required') on a blank/unparseable value."""
+    if value is None or str(value).strip() == '':
+        raise ValueError('date_required')
+    if isinstance(value, str):
+        value = parse_date(value.strip())
+        if value is None:
+            raise ValueError('date_required')
+    application.reporting_date = value
+    application.save(update_fields=['reporting_date'])
+    logger.info('AUDIT reporting_date_set app_id=%s by=%s value=%s',
+                application.id, (getattr(admin, 'email', '') or '?'), value)
+    return True
+
+
 def autofill_pathway_from_offer(application):
     """Silently settle a pathway the student had NOT yet locked, from a verified offer
     letter — no student query (the undecided→decided case the ``pathway_confirm`` query
@@ -1277,7 +1332,7 @@ def autofill_pathway_from_offer(application):
     NOT a genuine clash with an already-specific declared programme (that stays the
     ``pathway_confirm`` query's job). No-op (returns False) otherwise. Idempotent."""
     from .models import ApplicantDocument
-    from .pathway_engine import student_offer_check, parse_reporting_date
+    from .pathway_engine import student_offer_check
     from . import offer_pathway as op
 
     offer = (ApplicantDocument.objects.filter(
@@ -1285,10 +1340,19 @@ def autofill_pathway_from_offer(application):
              .order_by('-uploaded_at').first())
     if offer is None:
         return False
+    # FIRST, unconditionally: the reporting date is an independent fact about WHEN the student
+    # starts. It used to be written at the BOTTOM of this function, below four `return False`
+    # guards about the PATHWAY — so a letter whose programme disagreed with the declaration (the
+    # very case that raises the confirm query) lost its date as collateral damage. 45% of
+    # applications that needed a pathway confirm had a NULL date against 3.8% of the rest.
+    # Its result is folded into this function's return value, which means "did I write
+    # anything" (backfill_offer_pathways counts on it) — so moving the write out must not
+    # silently turn a real update into a reported no-op.
+    date_written = sync_reporting_date_from_offer(application, offer=offer)
     chk = student_offer_check(offer)
     # Wrong-person letter (name OR IC clash) → never adopt.
     if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
-        return False
+        return date_written
     prog = (chk['programme'] or '').strip()
     inst = (chk['institution'] or '').strip()
     # A bare numbered-clause header ("2.4."/"2.5.") leaked from an offer's section numbering (#47)
@@ -1300,11 +1364,11 @@ def autofill_pathway_from_offer(application):
     if inst and card_display.looks_like_clause_number(inst):
         inst = ''
     if not prog and not inst:
-        return False  # nothing readable to settle
+        return date_written  # nothing readable to SETTLE — but the date may still have landed
     # A genuine clash with a SPECIFIC declared programme is the confirm query's job, not a
     # silent overwrite.
     if chk['pathway'] == 'mismatch':
-        return False
+        return date_written
 
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     locked = bool(cp.get('course_id')) and application.pathway_certainty == 'sure'
@@ -1418,15 +1482,11 @@ def autofill_pathway_from_offer(application):
             if 'chosen_programme' not in fields:
                 fields.append('chosen_programme')
 
-    # Reviewer-query S3: persist the normalised, sortable reporting date from the offer.
-    # Always evaluated — a locked pathway doesn't change when the student reports.
-    rd = parse_reporting_date(chk.get('reporting_date'))
-    if rd is not None and application.reporting_date != rd:
-        application.reporting_date = rd
-        fields.append('reporting_date')
+    # The reporting date is NOT synced here any more — sync_reporting_date_from_offer() runs at
+    # the top of this function, before the guards below could skip it. See its docstring.
 
     if not fields:
-        return False
+        return date_written
     application.save(update_fields=fields)
     return True
 

@@ -10,6 +10,7 @@ Three durable guards protecting the owner's feature-work period after Phase 1:
 3. Static source guard — a raw watched-model query in views_admin.py outside the shared
    helpers, with no `# org-fence:` pragma, fails CI (mirrors the superseded-docs guard).
 """
+import datetime
 import os
 import re
 from unittest import mock
@@ -30,6 +31,12 @@ from apps.scholarship.views_admin import _AdminBase
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
 
+# QC refuses to accept a case with no reporting date (owner 2026-07-23) - it sizes the
+# bursary, so a missing one is no longer acceptable at the gate. A fresh-entrant date,
+# matching the cohort year, so these suites' existing amount assertions are unchanged.
+_QC_REPORTING_DATE = datetime.date(2026, 6, 8)
+
+
 def _token(uid):
     return jwt.encode({'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
                       TEST_JWT_SECRET, algorithm='HS256')
@@ -46,7 +53,7 @@ class TestOrgFenceProof(TestCase):
                 code=f'pc-{code}', name=code, year=2026, owning_organisation=org)
             prof = StudentProfile.objects.create(
                 supabase_user_id=f'{uid_ns}-stud', nric=f'0101{uid_ns}-14-0001', name=f'Stud {code}')
-            app = ScholarshipApplication.objects.create(
+            app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
                 cohort=cohort, profile=prof, status='interviewed',
                 verdict_decided_at=timezone.now(),
                 ai_verdict_snapshot=[], officer_verdict={})
@@ -217,6 +224,8 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminVerifyAcceptView': 'gate', 'AdminRejectView': 'gate',
         # Fenced by _require_app_write, then narrowed again to super/org_admin (see the view).
         'AdminOrgRejectView': 'gate',
+        # Fenced by _require_app_write; records the officer-entered reporting date.
+        'AdminReportingDateView': 'gate',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',

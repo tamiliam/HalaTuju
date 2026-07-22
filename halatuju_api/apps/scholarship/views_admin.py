@@ -46,7 +46,8 @@ from .serializers_admin import (
 )
 from .services import (
     AssignmentError, admin_reject, application_completeness, assign_reviewer,
-    cancel_pending_decline, org_admin_reject, submit_interview,
+    cancel_pending_decline, org_admin_reject, set_reporting_date_by_officer,
+    submit_interview,
 )
 from .sponsorship import hold_pending_award
 
@@ -495,6 +496,35 @@ class AdminOrgRejectView(_AdminBase):
                    if code == 'comments_required'
                    else 'Only a shortlisted applicant can be rejected here.')
             return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminReportingDateView(_AdminBase):
+    """POST .../<pk>/reporting-date/ {date: 'YYYY-MM-DD'} — record the date a student reports to
+    their institution, when the offer letter carries no readable one (owner 2026-07-23).
+
+    Exists because the date is NOT display-only: `award` sizes the bursary off the course-start
+    year derived from it, `payments` gates eligibility on it, and `income_engine` asks a
+    continuing student for their semester result off the same signal. A letter without a readable
+    date used to leave all three silently defaulting; QC now refuses to accept such a case, and
+    this is how the officer clears it.
+
+    Gated by `_require_app_write` — super / org_admin / qc / the assigned reviewer, i.e. whoever
+    can already act on the case. Narrower would recreate the deadlock the QC stop is meant to
+    resolve: QC bounces the case back precisely so the REVIEWER can fill this in.
+
+    No provenance is stored (owner: a rare one-off, not worth a column). The cockpit distinguishes
+    a typed date from a documented one for free — its verified tick reads document corroboration,
+    so a hand-typed date renders untick_ed — and WHO typed it is in the AUDIT log."""
+    def post(self, request, pk):
+        app, admin, err = self._require_app_write(request, pk)
+        if err:
+            return err
+        try:
+            set_reporting_date_by_officer(app, admin, request.data.get('date'))
+        except ValueError:
+            return Response({'error': 'Enter the date the student reports to their institution.',
+                             'code': 'date_required'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
@@ -1701,6 +1731,20 @@ class AdminQcDecisionView(_AdminBase):
                 app.refresh_from_db()
                 logger.info('AUDIT qc_confirm_decline admin_id=%s app_id=%s', admin.id, pk)
                 return Response(AdminApplicationDetailSerializer(app).data)
+            # Reporting-date stop (owner 2026-07-23): a case cannot be accepted without a settled
+            # reporting date. Deliberately an ABSOLUTE stop, unlike the red-fact floor below —
+            # there is no override, because the honest remedy is to record the date, not to wave
+            # the case through. Three things silently default off a missing date: the bursary
+            # SIZE (a continuing student is committed RM3,000 instead of RM1,000), payment
+            # eligibility, and the semester-result request. QC clears it by reopening the case so
+            # the reviewer can enter the date (AdminReportingDateView) — hence the box shows at
+            # 'interviewing' / on a reopen, not here.
+            if app.reporting_date is None:
+                return Response(
+                    {'error': 'This student has no reporting date. Reopen the case so the '
+                              'reviewer can record it, then accept.',
+                     'code': 'reporting_date_required'},
+                    status=status.HTTP_400_BAD_REQUEST)
             gap_facts = [f['fact'] for f in build_verdict(app) if f['status'] == 'gap']
             update_fields = ['status']
             if gap_facts:

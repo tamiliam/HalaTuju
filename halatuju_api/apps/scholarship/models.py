@@ -270,9 +270,17 @@ class ScholarshipApplication(models.Model):
         default=dict, blank=True,
         help_text="Single chosen programme when sure: {course_id, course_name, institution, source}.")
     # Reviewer-query S3: the normalised (sortable) date the student must report to their
-    # institution, parsed from the offer letter's free-text reporting date by
-    # pathway_engine.parse_reporting_date + stored by autofill_pathway_from_offer. Null when
-    # the offer carries no readable date (then a reporting_date_unknown clarify is raised).
+    # institution. Normally parsed from the offer letter by pathway_engine.parse_reporting_date +
+    # stored by services.sync_reporting_date_from_offer; when the letter carries no readable date
+    # a reporting_date_unknown clarify is raised AND an officer may record it by hand.
+    #
+    # NOT display-only: `award` sizes the bursary off the course-start year derived from it, and
+    # `payments` gates eligibility on it — a wrong or absent value moves money.
+    # NO provenance columns by design (owner 2026-07-23: an officer-entered date is a rare
+    # one-off, not worth three columns). The cockpit already distinguishes the two cases for
+    # free: its verified tick reads DOCUMENT corroboration (lib/fieldVerification), so a
+    # hand-typed date simply renders without a tick. Who typed it lives in the AUDIT log line in
+    # services.set_reporting_date_by_officer.
     reporting_date = models.DateField(null=True, blank=True)
     uncertainty_reasons = models.JSONField(
         default=list, blank=True,

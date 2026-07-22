@@ -2542,9 +2542,11 @@ def semester_result_gap(application):
     pathway = (getattr(application, 'chosen_pathway', '') or '').strip().lower()
     if pathway not in _MULTI_YEAR_PATHWAYS:
         return False
-    rd = getattr(application, 'reporting_date', None)
-    cy = getattr(getattr(application, 'cohort', None), 'year', None)
-    return bool(rd and cy and rd.year < cy)
+    # Shared with the award rule (pathway_engine.started_before_cohort) — this used to read
+    # `reporting_date` directly, the same duplicated test, and so was silently wrong for the same
+    # students: #123 (continuing STPM, NULL date) was never asked for his semester result.
+    from .pathway_engine import started_before_cohort
+    return started_before_cohort(application)
 
 
 def _doc_authenticity(doc):

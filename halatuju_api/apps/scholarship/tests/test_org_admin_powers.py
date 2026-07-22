@@ -7,6 +7,7 @@ Proves the matrix (docs/scholarship/role-matrix.md) for the broadened organisati
   - sponsor-vetting migrated off the reviewer gate onto super/org_admin, and the
     sponsor LIST tightened to super/org_admin/admin (qc + reviewer refused).
 """
+import datetime
 import jwt
 from unittest import mock
 
@@ -23,6 +24,12 @@ TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
 _VERDICT_OK = {'identity': 'pass', 'academic': 'pass', 'income': 'pass',
                'pathway': 'pass', 'overall': 'accept'}
+
+
+# QC refuses to accept a case with no reporting date (owner 2026-07-23) - it sizes the
+# bursary, so a missing one is no longer acceptable at the gate. A fresh-entrant date,
+# matching the cohort year, so these suites' existing amount assertions are unchanged.
+_QC_REPORTING_DATE = datetime.date(2026, 6, 8)
 
 
 def _token(uid):
@@ -49,10 +56,10 @@ class _Base(TestCase):
         cls.rev = PartnerAdmin.objects.create(
             supabase_user_id='pow-rev', role='reviewer', is_active=True,
             owning_organisation=cls.org_a, name='Rev', email='prev@x.com')
-        cls.app = ScholarshipApplication.objects.create(
+        cls.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=cls.cohort_a, profile=prof_a, status='interviewed', assigned_to=cls.rev,
             ai_verdict_snapshot=[], officer_verdict={})
-        cls.app_b = ScholarshipApplication.objects.create(
+        cls.app_b = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
             cohort=cls.cohort_b, profile=prof_b, status='interviewed',
             ai_verdict_snapshot=[], officer_verdict={})
         cls.super = PartnerAdmin.objects.create(

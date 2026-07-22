@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## Payments/award — the reporting date becomes a first-class fact — 2026-07-23
+
+Found from a wrong recommended amount on #123. `reporting_date` drives three things — the bursary
+SIZE, payment eligibility, and the semester-result request — and was silently absent for a
+predictable class of students. **No migration.**
+
+- **Fixed — the date sync no longer dies on an unrelated guard.** The copy from the offer letter
+  sat at the BOTTOM of `autofill_pathway_from_offer`, below four `return False` guards about the
+  PATHWAY. A letter whose programme disagreed with the declaration — exactly what raises the
+  "please confirm" query — abandoned the function and took the date with it. **45% of applications
+  that needed a pathway confirm had a NULL date, against 3.8% of the rest.** Now
+  `services.sync_reporting_date_from_offer()` owns the copy and runs first. (The same bug was
+  found and fixed once before for the *lock* guard, and tested — the four guards above it were
+  never covered.)
+- **Fixed — the bursary is sized off the COURSE-START YEAR, not one field.** New
+  `pathway_engine.course_start_year()` reads the offer's **intake year** first (a Form 6 letter
+  often carries a range, `6 / 2025 – 12 / 2026`, and no reporting date at all), then the stored
+  date. #123 was committed **RM3,000 instead of RM1,000** as a result.
+- **Fixed — one rule, not two.** `award._stpm_continuing` and `income_engine.semester_result_gap`
+  each implemented the same "started before the cohort year" test against the same unreliable
+  field, so both were wrong for the same students: #123 was **never asked for his semester
+  result**. Both now call `pathway_engine.started_before_cohort()`.
+- **Added — QC cannot accept a case with no reporting date** (`reporting_date_required`).
+  Deliberately an **absolute stop, no override**, unlike the red-fact floor: the remedy is to
+  record the date, not to wave the case through. QC reopens; the reviewer fills it in.
+- **Added — a reporting-date box** directly above Recommendation, shown only when the letter
+  carries no readable date and only in the reviewer's window (`interviewing`, or a reopened case
+  — a reopen lands in two different statuses, so it's checked explicitly).
+  `POST .../<pk>/reporting-date/`.
+- **Fixed — the Reporting Date surface now reads the stored value**, not the offer document's raw
+  string. That decoupling is why #120 displayed a ticked "10 Jun 2025" while the column driving
+  his bursary was empty. An officer-entered date shows here too and renders **without** the
+  verified tick — that tick means "Matches the offer letter" and is derived from document
+  corroboration, so a typed date can never borrow it.
+- **No provenance columns** (owner: an officer-entered date is a rare one-off, not worth three
+  columns). Who typed it is in the `AUDIT reporting_date_set` log line; the screen distinguishes
+  the two cases for free via the tick above.
+- Tests: **+17 backend, +5 jest**, all verified to fail against the pre-fix code — including a
+  case pinning that a student's *free-text* answer must never size the bursary (#123 answered the
+  "when do you report?" clarify with the date he collected a confirmation letter; parsing it would
+  have made him a fresh entrant and committed RM3,000). Five QC fixtures updated: they were valid
+  under the old contract and violate the new gate.
+
 ## Cockpit — raw i18n key on the Pathway card; guard added for the whole class — 2026-07-23
 
 - **Fixed** — the AI Prediction Pathway card rendered a literal
