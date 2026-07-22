@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit — a Blockers card that names exactly what a student still owes — 2026-07-22
+
+The Recommendation card carried a vague banner ("still owes: Required documents / Consent")
+built from 8 coarse completeness booleans, so an officer had to dig — or ask — to find out
+*which* documents. Now its own card, itemised.
+
+- **Added — `Blockers` card** below Recommendation, driven by `consent_blockers`: a field the
+  admin payload **already exposed but the frontend never rendered**. It is the SAME gate the
+  student's own submission enforces, so the officer and the student can never be told different
+  things. Three states: the itemised list + *"currently stuck at the X step"*; *"everything's in,
+  only consent left"* (the gate never emits a consent code — it IS the gate to consent); and
+  *"nothing outstanding"*.
+- **Added — `lib/blockers.ts`** (pure): the status gate, member-qualified code parsing
+  (`parent_ic_missing:mother` → "Mother's IC"), the code→wizard-step map and the earliest
+  "stuck at" step. An unknown/future code falls to Documents rather than breaking the line.
+- **Scope** — shortlisted + profile_complete only, via `BLOCKER_BOX_STATUSES`; drop the one
+  entry to retire `profile_complete`. Read-only (no write gate) — a reviewer/QC needs it too.
+  No decision behaviour changed: the old banner never gated Recommend/Decline.
+- **i18n** `admin.scholarship.blockers.*` en/ms/ta in the OFFICER's voice, 35 items covering
+  every code the gate emits (missing, name-mismatch, unreadable, offer-not-official, IC
+  identity). Retired the orphaned `incompleteTitle` + `completeness.*` keys (hygiene test).
+- Web-only; no backend change, no migration. Tests: +12 (629 jest); build + tsc green.
+  **Malay/Tamil are first drafts pending owner review.**
+
 ## Payments — cancelled runs hidden behind a toggle (small change) — 2026-07-22
 
 - **Changed** — the payment-run list hides **cancelled** runs by default; a `Show N cancelled
