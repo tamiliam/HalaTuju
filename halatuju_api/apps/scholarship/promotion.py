@@ -98,6 +98,33 @@ def doc_quality(doc):
     return (usable, genuine, recency, getattr(doc, 'id', 0) or 0)
 
 
+def _offer_programme(doc):
+    """The programme named on an offer letter, normalised for comparison (blank when unread)."""
+    vf = getattr(doc, 'vision_fields', None)
+    fields = vf.get('fields') if isinstance(vf, dict) else None
+    raw = (fields or {}).get('programme') if isinstance(fields, dict) else ''
+    return ' '.join((raw or '').strip().lower().split())
+
+
+def is_pathway_switch(new_doc, existing_doc):
+    """Do these two offer letters describe DIFFERENT programmes — i.e. the student switched?
+
+    The discriminator is the PROGRAMME, deliberately not the institution. Both real cases prove
+    why: #13 (a genuine switch) reads "FTV - ASASI TEKNOLOGI KEJURUTERAAN" against "DSPD - DIPLOMA
+    SAINS KOMPUTER" — clearly different. #107 (a re-scan of ONE letter) extracted the institution
+    as "INSTITUT PENDIDIKAN GURU MALAYSIA" on one pass and "INSTITUT PENDIDIKAN GURU KAMPUS KOTA
+    BHARU" on the other — the letterhead body vs the campus, from the same document — so comparing
+    institutions would have called that a switch. Its programme string is identical on both passes.
+
+    Returns False unless BOTH programmes read: an unread programme is not evidence of a switch, and
+    defaulting to False keeps the ordinary quality comparison in charge.
+    """
+    if getattr(new_doc, 'doc_type', '') != 'offer_letter':
+        return False
+    new_prog, old_prog = _offer_programme(new_doc), _offer_programme(existing_doc)
+    return bool(new_prog and old_prog and new_prog != old_prog)
+
+
 def should_promote(new_doc, existing_doc, *, usable):
     """Should ``new_doc`` take the live slot from ``existing_doc``?
       * empty slot → promote.
@@ -118,5 +145,15 @@ def should_promote(new_doc, existing_doc, *, usable):
         return False
     qe = doc_quality(existing_doc)
     if qe is None:
+        return True
+    # A PATHWAY SWITCH is news, not a better copy of the same news (owner 2026-07-23). The
+    # quality bar below assumes both documents describe the SAME fact — true for a re-scan of one
+    # offer, false when the student has changed course. #13 switched from Asasi Teknologi
+    # (Politeknik Nilai) to Diploma Sains Komputer and the new letter READ WORSE (its institution
+    # extracted as bare "KUALA LUMPUR"); it promoted only because it still cleared the bar. Had it
+    # not, the old letter would have kept the live slot and every downstream verdict would have
+    # described a course the student had left. `usable` above still applies — an unreadable upload
+    # can never displace a good one; this bypasses the COMPARISON, not the floor.
+    if is_pathway_switch(new_doc, existing_doc):
         return True
     return qn >= qe

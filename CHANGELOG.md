@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## Documents — a pathway SWITCH promotes even when the new letter reads worse — 2026-07-23
+
+- **Fixed** — `promotion.should_promote` compared quality on every new offer letter, which assumes
+  both documents describe the SAME fact. True for a re-scan; false when the student has changed
+  course. **#13** switched from Asasi Teknologi (Politeknik Nilai) to Diploma Sains Komputer and
+  the new letter read WORSE (institution extracted as bare "KUALA LUMPUR") — it promoted only
+  because it still cleared the bar. Had it not, the old letter would have kept the live slot and
+  every downstream verdict would have described a course the student had left.
+- **Added — `promotion.is_pathway_switch()`** — a differing PROGRAMME bypasses the quality
+  comparison, the same shape as the existing "news, always replace" rule for a rejected STR.
+  `usable` remains a floor: an unreadable upload still cannot displace a good letter.
+- **The discriminator is the programme, deliberately not the institution.** #107 uploaded one
+  PISMP letter twice and the institution extracted as "…GURU MALAYSIA" on one pass and "…GURU
+  KAMPUS KOTA BHARU" on the other — letterhead vs campus, from the same page — so an
+  institution comparison would have called that a switch. The programme string was identical.
+- **Data tidy** — archived 3 stale duplicate live documents (#107 offer letter, #86 and #115
+  mother's IC). All three predate the 4 July fix that makes an officer re-request supersede the
+  apply-form copy, so they were artifacts, not a live defect. Soft archive; blobs retained.
+- Tests: +9. No migration. **Investigation note:** the broader "generalise dedup across key
+  documents" sprint was scoped and then dropped — the machinery already exists (slot replace,
+  officer-re-request supersede, stage→judge→promote, `_collapse_duplicate_docs`,
+  `dedupe_income_proof`) and `_is_single_instance()` already covers every type.
+
 ## Payments/award — the reporting date becomes a first-class fact — 2026-07-23
 
 Found from a wrong recommended amount on #123. `reporting_date` drives three things — the bursary
