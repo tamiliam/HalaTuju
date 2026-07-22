@@ -203,8 +203,9 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 ### Sprint 14 — Finance role (**trigger FIRED 2026-07-22**: the payments + contract modules are the payout rails the role-matrix Finance row was waiting for)
 - **Prerequisite batch (small-change lane, before or with this sprint) — the 2026-07-22 check-up fix-forwards:** annotate/move the three programme-tunable module constants (`payments.py:55` `PATHWAY_PAYMENT_START_MONTH` + `:60` default; `income_engine.py:135-136` income-match tolerance) toward cohort fields or documented template-superseded defaults; register `contracts.py`'s Gemini call in the sanctioned billable seams (conventions doc + future metering map).
-- **Goal:** Implement the role-matrix Finance row: `finance` role via the established add-a-role wiring checklist; a seat in the payments-run maker→checker chain (payer ≠ decider made real); funding-relevant LIMITED B40 view (data minimisation per the matrix — awarded/funding data, not full applicant files); **Billing & usage panel v1** (own-org payments history + bursary-spend aggregates — fed by the payments module and the spend-reporting ingest), replacing the "coming soon" card. Rollout = Sam's onboarding (Suresh's original ask, answered properly).
-- **Tests:** role wiring matrix (fence/gates/completeness map), maker-checker role constraints, limited-view allowlist, panel rendering. **Complexity:** Medium–High.
+- **Goal (v2 scope, owner-corrected 2026-07-23 — brief: `2026-07-22-sprint14-finance-role-brief.md`):** Implement the role-matrix Finance row: `finance` role via the established add-a-role wiring checklist; a **DORMANT CHECKER seat inside the existing payments chain** (`draft → admin_signed → [finance_checked] → completed`; the middle step arms only once the org has an active finance admin — third signature card in the shipped run-detail design, never a parallel surface); funding-relevant LIMITED student view as a **funding summary INSIDE the Payments module** (allowlist: award/paid/remaining/Vircle — no applicant files). Rollout = Sam's onboarding (Suresh's original ask, answered properly).
+- **Billing & usage is OUT of this sprint** (owner 2026-07-23): it means HalaTuju invoicing the org for metered service usage (Gemini/Vision/GCP/Supabase/Twilio/change requests at cost + 15–30%), auto-extracted from real provider billing and honestly apportioned. That needs a **billing-sources investigation first** (inventory the services BrightPath consumes; what each provider's billing API exposes; apportionment model) — a new gated pre-step to Sprint 13a's metering. The Administration card stays "Coming soon".
+- **Tests:** role wiring matrix (fence/gates/completeness map), conditional maker→checker→approver constraints (dormant chain byte-identical), funding-summary allowlist snapshot. **Complexity:** Medium.
 
 ### Sprint 15 — Requests space v1 (owner go; damping the feature-ask firehose commercially)
 - **Goal:** An org-section "Requests" icon: bug-report + feature-request forms; status flow `submitted → triaged → quoted → approved → scheduled → done/declined`; the **published rate card** (bugs FREE; features priced — the third revenue line beside the platform fee and metered costs); the adjudication rule in writing: *behaviour contradicting the role matrix / manual = bug (free); working-as-documented-but-wanted-different = feature (priced)*.
@@ -235,7 +236,8 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 | Phase 3 S10–S11 (platform console) | Credible second-tenant prospect | Gated (Add-tenant slice + S12 already live) |
 | Phase 4 13a/13b (metering, rehearsal) | Second-tenant prospect | Gated |
 | Sprint E (erasure) | Before any REAL tenant-#2 DPA | Gated |
-| **Sprint 14 (Finance role)** | Payout rails live | **FIRED — awaiting owner scheduling** |
+| **Sprint 14 (Finance role)** | Payout rails live | **FIRED — brief committed 2026-07-23, awaiting Opus run** |
+| Billing & usage (platform invoicing v1) | Billing-sources investigation done (service inventory + provider billing APIs + apportionment model) | Gated — investigation not started |
 | Sprint 15 (Requests space) | Owner go | Open |
 | Rung A (staging) | External devs real (or owner pulls early) | Gated |
 | Rung B (external PRs) | Devs signed; Rung A done | Gated |
@@ -314,7 +316,7 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 | 4 | 13a | Per-org cost metering (tagging) | 1 | Med |
 | 4 | 13b | Second-tenant rehearsal + rollback drill | 0 | Med |
 | 4 | E *(conditional)* | Off-boarding & erasure routine — before any real tenant #2 DPA | 0–1 | Med |
-| 5 | 14 | Finance role + Billing & usage v1 (trigger FIRED) | 1 (choices) | Med–High |
+| 5 | 14 | Finance role: dormant checker + payments funding summary (v2 scope; Billing & usage split out, gated on billing-sources investigation) | 2 (1 choices-only + 1 additive DDL on payment_runs) | Med |
 | 5 | 15 | Requests space v1 + rate card | 1 | Med |
 | 6 | A | Staging environment (seeded fake data) | 0 | Med (infra) |
 | 6 | B | External-contributor model | 0 | Low (process) |
