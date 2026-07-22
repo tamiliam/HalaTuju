@@ -4,6 +4,9 @@ Tracks one-off small-lane changes between full sprints. Every ~10 pending entrie
 Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
+- 2026-07-23 docs(tenancy): `contracts._gemini_generate` recorded as a sanctioned Gemini seam (build-for-tenancy-conventions.md rule 6) — doc-only, records existing fact
+- 2026-07-23 docs(tenancy): `_INCOME_MATCH_TOL_FRAC`/`_MIN` marked a rule-1 exemption (income_engine.py) — advisory display tolerance, never a gate; no behaviour change
+- 2026-07-23 docs(tenancy): `PATHWAY_PAYMENT_START_MONTH` marked a rule-1 exemption (payments.py) — the org tunable already lives on `ContractScheduleRow.start_month`; these are the pre-template fallback; no behaviour change
 - 2026-07-23 fix(documents): a pathway switch promotes over a worse-reading letter (promotion.py, +9 tests) + archived 3 pre-4-July duplicate live docs
 - 2026-07-23 fix(cockpit): missing i18n string for verdict item `pathway_type_switch` (messages en/ms/ta) + new backend guard test_verdict_item_i18n.py covering the whole class
 - 2026-07-22 fix(web): witness card moved into the right column + both right-column cards stage-gated (admin/scholarship/[id]/page.tsx, officerCockpit.ts, +11 tests)

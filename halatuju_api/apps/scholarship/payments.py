@@ -40,6 +40,14 @@ MONTHLY_RATE = Decimal('200')
 # pool.FUNDED_STATES because the cohort is paid while at 'awarded'.
 PAYABLE_STATUSES = ('awarded', 'active', 'maintenance')
 
+# tenancy: rule-1 exemption — template-superseded fallback.
+# Conventions rule 1 says a new tunable belongs on the cohort, not a module constant. These two
+# are NOT a violation and must not be "fixed" by moving them: the org-owned tunable ALREADY
+# exists as `ContractScheduleRow.start_month`, read through `_schedule_row` below, and every
+# lookup here is guarded by `if row is not None`. What survives in this dict is the fallback for
+# PRE-TEMPLATE applications only — the constants mirror the seeded BrightPath rows exactly, so
+# the two paths agree by construction and a legacy run stays byte-identical. Delete them once no
+# live application predates a contract template.
 # D4-3 (owner 2026-07-16) — the MONTH a pathway's payments FIRST open, as a HARD floor applied
 # even to continuing students: STPM/Matric/Asasi → July, Poly/UA Diploma (`university`) →
 # August, PISMP → September. (There is no UA degree — every BrightPath student is post-SPM, so
