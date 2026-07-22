@@ -200,3 +200,74 @@ class TestQcGateOrg(OrgFenceMixin, TestCase):
         self.assertEqual(r.status_code, 200)
         self.app_a.refresh_from_db()
         self.assertEqual(self.app_a.status, 'recommended')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestFinanceHasNoB40Scope(OrgFenceMixin, TestCase):
+    """Sprint 14 — the `finance` role's DENIALS, which are the load-bearing half of the role.
+
+    Finance signs payment runs and reads the funding summary. Everything below is what it must
+    NOT be able to reach, and each is proven by an actual refusal rather than by the absence of
+    a nav link: `_b40_scope` returns 'none', so the applicant list, the cockpit, the QC gate and
+    every per-application write are closed, and it is deliberately absent from
+    `services.REVIEW_ROLES` so it can never be handed a case to review.
+    """
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.finance_a = PartnerAdmin.objects.create(
+            supabase_user_id='fin-a', role='finance', is_active=True,
+            owning_organisation=cls.org_a, name='Fin A', email='fina@x.com')
+
+    def test_b40_scope_is_none(self):
+        self.assertEqual(_AdminBase()._b40_scope(self.finance_a), 'none')
+
+    def test_cannot_review_any_application_even_own_org(self):
+        self.assertFalse(_AdminBase()._can_review_app(self.finance_a, self.app_a))
+
+    def test_is_not_a_valid_assignment_target(self):
+        from apps.scholarship.services import _can_review
+        self.assertFalse(_can_review(self.finance_a))
+
+    def test_finance_is_absent_from_review_roles(self):
+        from apps.scholarship.services import REVIEW_ROLES
+        self.assertNotIn('finance', REVIEW_ROLES)
+
+    def test_applications_list_denied(self):
+        self._auth('fin-a')
+        self.assertEqual(
+            self.client.get('/api/v1/admin/scholarship/applications/').status_code, 403)
+
+    def test_application_detail_denied(self):
+        self._auth('fin-a')
+        r = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app_a.id}/')
+        self.assertIn(r.status_code, (403, 404))
+
+    def test_qc_decision_denied(self):
+        self._auth('fin-a')
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app_a.id}/qc-decision/',
+            {'action': 'accept'}, format='json')
+        self.assertEqual(r.status_code, 403)
+
+    def test_record_verdict_denied(self):
+        self._auth('fin-a')
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app_a.id}/record-verdict/',
+            {'decision': 'approve'}, format='json')
+        self.assertIn(r.status_code, (403, 404))
+
+    def test_does_not_appear_in_the_assignable_admins_dropdown(self):
+        self._auth('oa-a')     # the org admin who does the assigning
+        r = self.client.get('/api/v1/admin/scholarship/assignable-admins/')
+        self.assertEqual(r.status_code, 200)
+        body = str(r.json())
+        self.assertNotIn('fina@x.com', body)
+        self.assertIn('reva@x.com', body)      # the real reviewer IS offered — guards the assert
+
+    def test_may_read_sponsors_but_not_vet_them(self):
+        self._auth('fin-a')
+        self.assertEqual(self.client.get('/api/v1/admin/sponsors/').status_code, 200)
+        r = self.client.post('/api/v1/admin/sponsors/1/review/', {'action': 'approve'},
+                             format='json')
+        self.assertEqual(r.status_code, 403)   # refused on the ROLE, before any 404 lookup

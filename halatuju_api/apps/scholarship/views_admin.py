@@ -93,12 +93,17 @@ class _AdminBase(PartnerAdminMixin, APIView):
         """B40 Applications access by role:
           'all'      — super + admin + qc + org_admin (see every application in scope, read)
           'assigned' — reviewer (only the applicants assigned to them)
-          'none'     — partner / anyone else (B40 is not their page)
+          'none'     — partner / finance / anyone else (B40 is not their page)
         'all' is org-fenced downstream by _org_scoped/_org_allows (super global; the rest
         see only their own org). qc + org_admin are org-wide WRITERS via _can_review_app
         (review-all within their org); a plain 'admin' stays assigned-only for writes.
+
+        `finance` is 'none' BY DECISION (role matrix 2026-07-23), not by omission: it never
+        sees an applicant file, document, income figure or verdict. Its only student data is
+        the award/paid/remaining/eWallet allowlist served by the Payments funding summary,
+        which is a Payments endpoint and does not read this scope.
         """
-        if admin is None or admin.role == 'partner':
+        if admin is None or admin.role in ('partner', 'finance'):
             return 'none'
         if self.has_role(admin, 'admin') or admin.role in ('qc', 'org_admin'):  # super + admin + qc + org_admin
             return 'all'
@@ -160,7 +165,8 @@ class _AdminBase(PartnerAdminMixin, APIView):
         (Assignment-based review permission, 2026-07 — a plain 'admin' has full READ scope
         via _b40_scope='all' but assigned-only WRITE, so a view-all admin can be given a
         selective review remit. org_admin/qc write across the org is safe because the QC
-        recorder guard in _require_qc stops anyone QC-ing a verdict they themselves recorded.)"""
+        recorder guard in _require_qc stops anyone QC-ing a verdict they themselves recorded.
+        `finance` never reaches here: its _b40_scope is 'none', so the first test refuses it.)"""
         if admin is None or app is None:
             return False
         if self._b40_scope(admin) == 'none':          # partner / non-B40
@@ -201,7 +207,10 @@ class _AdminBase(PartnerAdminMixin, APIView):
 
         Self-QC guard: the senior `qc`/`org_admin` roles can also REVIEW their assigned cases, so
         they must NOT QC a case they were the assigned reviewer of — that routes to another QC /
-        super. (Super is the owner override and is exempt.)"""
+        super. (Super is the owner override and is exempt.)
+
+        `finance` is refused by the role list below — it is a money checker, not a case checker,
+        and has no B40 scope to QC with."""
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
@@ -937,9 +946,11 @@ class AdminSponsorListView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        # Matrix (2026-07-15): the Sponsors surface is visible to super / org_admin /
-        # Admin-General only. qc + reviewer are refused (nav + endpoint).
-        if not (admin.is_super or admin.role in ('org_admin', 'admin')):
+        # Matrix (2026-07-23): the Sponsors surface is visible to super / org_admin /
+        # Admin-General / finance. qc + reviewer are refused (nav + endpoint). Finance sees
+        # sponsors READ-ONLY — who funds the programme is finance's business; approving them
+        # is not, so the review gate (AdminSponsorReviewView) stays super/org_admin.
+        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
             return self._deny_role()
         # Deterministic ordering (TD audit 2026-06-14) — without it the row order was
         # undefined. Full pagination is deferred: these are low-cardinality admin tables and
@@ -958,13 +969,14 @@ class AdminSponsorListView(_AdminBase):
 class AdminSponsorPendingCountView(_AdminBase):
     """GET .../admin/sponsors/pending-count/ — {count} of sponsor accounts awaiting vetting.
     A lean COUNT for the nav + Administration-hub badges (so an always-loaded nav needn't fetch the
-    full sponsor list on every page). Same role-gate as the list (super / org_admin / Admin-General);
-    cross-org by design (a sponsor is a platform-level account)."""
+    full sponsor list on every page). Same role-gate as the list (super / org_admin /
+    Admin-General / finance) — kept deliberately in lockstep so a role that can open the list
+    never 403s on its badge; cross-org by design (a sponsor is a platform-level account)."""
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        if not (admin.is_super or admin.role in ('org_admin', 'admin')):
+        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
             return self._deny_role()
         return Response({'count': Sponsor.objects.filter(status='pending').count()})
 
@@ -1341,8 +1353,8 @@ class AdminAssignableAdminsView(_AdminBase):
     dropdown. Only roles that can be assigned an applicant appear (mirrors services._can_review):
     a view-all 'admin' and the senior 'qc' role can be assigned selective review work (assignment
     grants WRITE on the assigned application while their read stays all), so admins + qc are listed;
-    'partner' has no review role and is excluded. (A qc's own reviewed case is QC'd by someone else
-    — the self-QC guard in _require_qc.)"""
+    'partner' and 'finance' have no review role and are excluded. (A qc's own reviewed case is QC'd
+    by someone else — the self-QC guard in _require_qc.)"""
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
@@ -2226,6 +2238,12 @@ def _payment_run_detail(run):
         'status': run.status, 'note': run.note, 'drive_file_url': run.drive_file_url,
         'created_by': run.created_by, 'created_at': run.created_at,
         'admin_signed': _sig(run.admin_signed_name, run.admin_signed_email, run.admin_signed_at),
+        'finance_signed': _sig(run.finance_signed_name, run.finance_signed_email, run.finance_signed_at),
+        # Whether THIS org's chain includes the finance check, computed server-side and read
+        # verbatim by the frontend. The activation rule lives in exactly one place
+        # (payments.finance_check_required); mirroring it in TypeScript would make it the sixth
+        # keep-in-sync pair this codebase has had to un-drift (see docs/lessons.md).
+        'finance_check_required': payments.finance_check_required(run.organisation),
         'org_admin_signed': _sig(run.org_admin_signed_name, run.org_admin_signed_email, run.org_admin_signed_at),
         'items': [_payment_item_dict(i) for i in items],
         'skipped': skipped,
@@ -2233,13 +2251,22 @@ def _payment_run_detail(run):
     }
 
 
+_PAYMENTS_READ_ROLES = ('admin', 'org_admin', 'finance')
+_PAYMENTS_WRITE_ROLES = ('admin', 'org_admin')
+
+
 class _PaymentsBase(_AdminBase):
     """Shared gate + org-fenced run lookup for the Payments endpoints."""
-    def _payments_admin(self, request):
+    def _payments_admin(self, request, roles=_PAYMENTS_READ_ROLES):
+        """Gate a Payments endpoint. The default admits `finance` — correct for the READ
+        endpoints (list, detail, CSV) and for Sign, whose per-step role logic lives in
+        `payments.sign`. The MUTATING endpoints (create a run, edit an item, cancel) pass
+        ``roles=_PAYMENTS_WRITE_ROLES`` explicitly: finance checks a run, it never authors one.
+        `payments.sign`'s `wrong_role` remains the backstop on the signing step."""
         admin = self.get_admin(request)
         if not admin:
             return None, self._deny()
-        if not (admin.is_super or admin.role in ('admin', 'org_admin')):
+        if not (admin.is_super or admin.role in roles):
             return None, self._deny_role()
         return admin, None
 
@@ -2269,7 +2296,7 @@ class AdminPaymentRunListView(_PaymentsBase):
         return Response({'runs': [_payment_run_summary(r) for r in qs]})
 
     def post(self, request):
-        admin, err = self._payments_admin(request)
+        admin, err = self._payments_admin(request, roles=_PAYMENTS_WRITE_ROLES)
         if err:
             return err
         org = admin.owning_organisation
@@ -2318,7 +2345,7 @@ class AdminPaymentRunDetailView(_PaymentsBase):
 class AdminPaymentRunItemView(_PaymentsBase):
     """PATCH a run item -- toggle include/exclude(+reason), edit amount (draft only)."""
     def patch(self, request, pk, item_id):
-        admin, err = self._payments_admin(request)
+        admin, err = self._payments_admin(request, roles=_PAYMENTS_WRITE_ROLES)
         if err:
             return err
         run = self._run_for(admin, pk)
@@ -2346,9 +2373,10 @@ class AdminPaymentRunItemView(_PaymentsBase):
 
 
 class AdminPaymentRunSignView(_PaymentsBase):
-    """POST {typed_name} -- admin (maker) sign, or org_admin (approver) countersign (which
-    completes the run). The maker/approver role logic + name/same-signer checks live in
-    payments.sign."""
+    """POST {typed_name} -- admin (maker) sign, finance (checker) sign when the org's chain
+    includes that step, or org_admin (approver) countersign (which completes the run). The
+    per-step role logic + name/pairwise-distinctness checks live in payments.sign; this view
+    admits every payments role and lets the service refuse the wrong step."""
     def post(self, request, pk):
         admin, err = self._payments_admin(request)
         if err:
@@ -2366,9 +2394,9 @@ class AdminPaymentRunSignView(_PaymentsBase):
 
 
 class AdminPaymentRunCancelView(_PaymentsBase):
-    """POST -- cancel a draft or admin_signed run."""
+    """POST -- cancel a run at any pre-completion status. admin/org_admin only."""
     def post(self, request, pk):
-        admin, err = self._payments_admin(request)
+        admin, err = self._payments_admin(request, roles=_PAYMENTS_WRITE_ROLES)
         if err:
             return err
         run = self._run_for(admin, pk)
@@ -2392,7 +2420,9 @@ class AdminPaymentRunCsvView(_PaymentsBase):
         run = self._run_for(admin, pk)
         if run is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if run.status not in ('admin_signed', 'completed'):
+        # finance_checked included: the checker must be able to READ the payment file to check
+        # it, and a run stays at that status while awaiting countersignature.
+        if run.status not in ('admin_signed', 'finance_checked', 'completed'):
             return Response({'error': 'not_ready', 'code': 'not_ready'},
                             status=status.HTTP_400_BAD_REQUEST)
         from django.http import HttpResponse
@@ -2400,6 +2430,47 @@ class AdminPaymentRunCsvView(_PaymentsBase):
         resp = HttpResponse(sheets.payment_csv_text(run), content_type='text/csv')
         resp['Content-Disposition'] = f'attachment; filename="{run.reference}.csv"'
         return resp
+
+
+class AdminPaymentFundingSummaryView(_PaymentsBase):
+    """GET /api/v1/admin/payments/funding-summary/ — the org's payable students with award /
+    paid / remaining / eWallet, plus org totals for the footer (Sprint 14).
+
+    Rides `_PaymentsBase` with the DEFAULT read gate, so it is visible to super / admin /
+    org_admin / finance and refused to reviewer / qc / partner. It lives inside the Payments
+    module by design: it is the funding-side view of the same cohort the runs pay, and it is the
+    only student data a `finance` admin can reach (`_b40_scope` = 'none').
+
+    Serialised by `FundingSummaryRowSerializer` — an explicit allowlist, NOT a model dump.
+
+    tenancy: org-fenced on `owning_organisation`, the same fence `payments.eligible_rows` uses;
+    a super with no org context gets `no_org` (there is no "every tenant's students" reading of
+    this page). Classified in test_org_fence.py.
+    """
+    def get(self, request):
+        admin, err = self._payments_admin(request)
+        if err:
+            return err
+        org = admin.owning_organisation
+        if org is None:
+            return Response({'error': 'no_org', 'code': 'no_org'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        from . import payments
+        from .serializers_admin import FundingSummaryRowSerializer
+        # A caller with no org context was refused with `no_org` above, so the filter below
+        # can never be a no-op and this can never run unfenced.
+        # org-fence: owning_organisation=org (the fence payments.eligible_rows uses).
+        qs = (ScholarshipApplication.objects
+              .filter(owning_organisation=org, status__in=payments.PAYABLE_STATUSES)
+              .select_related('profile').order_by('id'))
+        rows = FundingSummaryRowSerializer(qs, many=True).data
+        totals = {
+            'students': len(rows),
+            'award_total': str(sum(_Decimal(r['award_amount']) for r in rows)),
+            'paid_total': str(sum(_Decimal(r['paid_to_date']) for r in rows)),
+            'remaining_total': str(sum(_Decimal(r['remaining']) for r in rows)),
+        }
+        return Response({'rows': rows, 'totals': totals})
 
 
 # ── Contract module (org-owned versioned bursary templates) — S3 admin API ────────

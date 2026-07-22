@@ -112,6 +112,7 @@ from .views_admin import (
     AdminPaymentRunSignView,
     AdminPaymentRunCancelView,
     AdminPaymentRunCsvView,
+    AdminPaymentFundingSummaryView,
     AdminContractTemplateListView,
     AdminContractTemplateDetailView,
     AdminContractClausesView,
@@ -201,7 +202,12 @@ urlpatterns = [
     # secret header (X-Cron-Secret). Inert without the secret.
     path('internal/cron/<str:job>/', CronRunView.as_view()),
 
-    # Payments module (P2): monthly Vircle payment runs. Admin/org_admin, org-fenced.
+    # Payments module (P2): monthly Vircle payment runs. Admin/org_admin (+ finance for read
+    # and the finance-check signature, Sprint 14), org-fenced.
+    # NB the Sprint-14 brief wrote this path as 'admin/payments/funding-summary/'; it is
+    # registered under the module's established 'admin/scholarship/' prefix instead, so every
+    # payments route stays siblings. No external contract depends on the brief's spelling.
+    path('admin/scholarship/payments/funding-summary/', AdminPaymentFundingSummaryView.as_view()),
     path('admin/scholarship/payment-runs/', AdminPaymentRunListView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/', AdminPaymentRunDetailView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/items/<int:item_id>/', AdminPaymentRunItemView.as_view()),

@@ -3239,6 +3239,53 @@ def send_payment_countersign_email(run):
     return sent
 
 
+def send_payment_finance_check_email(run):
+    """Payments / Sprint 14: when the maker signs a run in an organisation that HAS an active
+    finance admin, the run goes to finance for the check before the approver ever sees it — so
+    this email replaces the countersign one at that moment (``payments.sign`` picks). Internal
+    officer email (English); best-effort — never raises, a failure never blocks the signature.
+
+    Deliberately carries NO programme-name literal (conventions rule 2): it is addressed to the
+    organisation's own finance staff about their own run, so the reference and the month say
+    everything the recipient needs. (The sibling countersign email predates that rule.)"""
+    from apps.courses.models import PartnerAdmin
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/admin/payments/{run.id}'
+    month = _run_month_label(run)
+    n, total = _run_totals(run)
+    subject = f'Payment run {run.reference} awaits your finance check'
+    sent = False
+    checkers = PartnerAdmin.objects.filter(
+        owning_organisation=run.organisation, role='finance', is_active=True)
+    for checker in checkers:
+        if not (checker.email or '').strip():
+            continue
+        body = (
+            f'Dear {(checker.name or "").strip() or "Finance Admin"},\n\n'
+            f'{run.admin_signed_name} has signed payment run {run.reference}, covering '
+            f'{month}:\n\n'
+            f'    Students:      {n}\n'
+            f'    Total:         RM{_rm_amount(total)}\n'
+            f'    Payment date:  {run.payment_date:%d/%m/%Y}\n\n'
+            f'It now needs your finance check. The run cannot be countersigned — and no money '
+            f'moves — until you have checked it.\n\n'
+            f'Review the list and the payment file, then sign here: {link}\n\n'
+            f'If anything looks wrong, do not sign. Ask {run.admin_signed_name} to correct it; '
+            f'editing the run returns it to draft and clears every signature collected so far, '
+            f'including yours.\n\n'
+            f'The HalaTuju Team'
+        )
+        try:
+            EmailMessage(subject=subject, body=body,
+                         from_email=settings.DEFAULT_FROM_EMAIL,
+                         to=[checker.email]).send()
+            sent = True
+        except Exception:
+            logger.warning('Failed to send finance-check notification for run %s to %s',
+                           run.reference, checker.email, exc_info=True)
+    return sent
+
+
 def send_vircle_activation_email(rows, csv_text=None):
     """The 48h activation request to Vircle: the accounts installed but not yet activated, with a
     CSV attached and a Bcc reference copy. Recipient = VIRCLE_ACTIVATION_EMAIL, else the payments

@@ -731,3 +731,80 @@ class AdminGraduationMessageSerializer(serializers.ModelSerializer):
 
     def get_ref(self, obj):
         return pool.pool_ref(obj.application_id)
+
+
+class FundingSummaryRowSerializer(serializers.Serializer):
+    """Sprint 14 — one student's line in the Payments FUNDING SUMMARY.
+
+    **Allowlist by construction** (the `SponsorPoolCardSerializer` pattern): a plain
+    ``Serializer`` where every field is explicit and derived, with ZERO model passthrough — so
+    a new column on `ScholarshipApplication` can never reach this payload by accident. Input is
+    a `ScholarshipApplication`.
+
+    This is the ONLY student data the `finance` role ever sees, so the boundary is drawn at
+    "what do you need to reconcile a payment run": who, how much was awarded, how much has been
+    paid, what is left, which eWallet it goes to, and when they were last paid. Deliberately
+    EXCLUDED and not to be added without a role-matrix change: NRIC, contact details, address,
+    documents, income figures, verdicts, academic results, narrative — none of it is needed to
+    check a payment, and finance has no B40 scope to see it through. A snapshot test pins the
+    exact key set so a well-meant addition fails loudly.
+
+    ``name`` is included on purpose: a payment file is made of named people, and finance must be
+    able to match a line to the Vircle CSV. It is NOT a link — the frontend renders it as plain
+    text, because finance has no applicant route to link to.
+    """
+    application_id = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    ref = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    pathway = serializers.SerializerMethodField()
+    award_amount = serializers.SerializerMethodField()
+    paid_to_date = serializers.SerializerMethodField()
+    remaining = serializers.SerializerMethodField()
+    vircle_id = serializers.SerializerMethodField()
+    last_run = serializers.SerializerMethodField()
+
+    # Coarse funding status — the three payable states, nothing finer. A finance admin needs to
+    # know a student is in the paying loop, not where they sit in the review funnel.
+    _STATUS = {'awarded': 'awarded', 'active': 'active', 'maintenance': 'maintenance'}
+
+    def get_application_id(self, obj):
+        return obj.id
+
+    def get_name(self, obj):
+        return (getattr(getattr(obj, 'profile', None), 'name', '') or '').strip()
+
+    def get_ref(self, obj):
+        return pool.pool_ref(obj.id) or ''
+
+    def get_status(self, obj):
+        return self._STATUS.get(obj.status, '')
+
+    def get_pathway(self, obj):
+        return (obj.chosen_pathway or '').strip()
+
+    def get_award_amount(self, obj):
+        return str(obj.award_amount or 0)
+
+    def get_paid_to_date(self, obj):
+        from . import payments
+        return str(payments.paid_to_date(obj))
+
+    def get_remaining(self, obj):
+        from . import payments
+        award = obj.award_amount or 0
+        rem = award - payments.paid_to_date(obj)
+        return str(rem if rem > 0 else 0)
+
+    def get_vircle_id(self, obj):
+        return (obj.vircle_id or '').strip()
+
+    def get_last_run(self, obj):
+        """The newest COMPLETED run this student was paid in — {reference, payment_date}, or
+        None. Answers "when did we last pay them?" without exposing the run's other students."""
+        item = (obj.payment_run_items
+                .filter(included=True, run__status='completed')
+                .select_related('run').order_by('-run__payment_date', '-run_id').first())
+        if item is None:
+            return None
+        return {'reference': item.run.reference, 'payment_date': item.run.payment_date}

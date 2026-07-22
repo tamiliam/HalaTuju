@@ -775,3 +775,269 @@ class TestBackAndAdvancePay(TestCase):
         app = _make_app(self.cohort, self.org, pathway='poly', reporting=None)
         self.assertFalse(payments.eligibility(app, date(2026, 7, 26), period_month=self.JUL)['started'])
         self.assertTrue(payments.eligibility(app, date(2026, 7, 26), period_month=self.AUG)['started'])
+
+
+# ── Sprint 14: the conditional finance CHECK step ──────────────────────────────
+# The chain is draft → admin_signed → [finance_checked] → completed, where the middle step is
+# required iff the org has ≥1 ACTIVE finance PartnerAdmin, evaluated live at every sign attempt.
+# The dormant path is covered by TestSignOff above, UNMODIFIED — that is the regression guard
+# proving this feature ships dark.
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=False)
+class TestFinanceCheck(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = _make_org(code='fin-bp')
+        cls.cohort = _make_cohort(cls.org, code='fin-c')
+        cls.maker = PartnerAdmin.objects.create(
+            supabase_user_id='fin-mk', role='admin', is_active=True, owning_organisation=cls.org,
+            name='Maker One', email='maker@x.com')
+        cls.finance = PartnerAdmin.objects.create(
+            supabase_user_id='fin-fi', role='finance', is_active=True, owning_organisation=cls.org,
+            name='Finance One', email='finance@x.com')
+        cls.approver = PartnerAdmin.objects.create(
+            supabase_user_id='fin-ap', role='org_admin', is_active=True, owning_organisation=cls.org,
+            name='Approver One', email='approver@x.com')
+        cls.superadmin = PartnerAdmin.objects.create(
+            supabase_user_id='fin-su', is_super_admin=True, is_active=True,
+            name='Super One', email='super@x.com')
+
+    def _run(self):
+        _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
+        with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
+            return payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1))
+
+    def _deactivate_finance(self):
+        PartnerAdmin.objects.filter(pk=self.finance.pk).update(is_active=False)
+
+    # ── the predicate itself ──
+    def test_required_only_with_an_active_finance_admin(self):
+        self.assertTrue(payments.finance_check_required(self.org))
+        self._deactivate_finance()
+        self.assertFalse(payments.finance_check_required(self.org))
+
+    def test_inactive_finance_admin_is_still_dormant(self):
+        """A revoked finance account must not arm the check — it cannot block the money."""
+        self._deactivate_finance()
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        payments.sign(run, self.approver, 'Approver One')     # straight through, 2-step
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'completed')
+        self.assertIsNone(run.finance_signed_at)
+
+    def test_another_orgs_finance_admin_does_not_arm_this_org(self):
+        other = _make_org(code='fin-other', name='Other Org')
+        PartnerAdmin.objects.create(
+            supabase_user_id='fin-other-fi', role='finance', is_active=True,
+            owning_organisation=other, name='Other Fin', email='otherfin@x.com')
+        self._deactivate_finance()
+        self.assertFalse(payments.finance_check_required(self.org))
+        self.assertTrue(payments.finance_check_required(other))
+
+    def test_no_organisation_is_dormant(self):
+        self.assertFalse(payments.finance_check_required(None))
+
+    # ── the three-step happy path ──
+    def test_three_step_chain_completes_and_writes_disbursements(self):
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'admin_signed')
+
+        payments.sign(run, self.finance, 'Finance One')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'finance_checked')
+        self.assertEqual(run.finance_signed_name, 'Finance One')
+        self.assertEqual(run.finance_signed_email, 'finance@x.com')
+        self.assertIsNotNone(run.finance_signed_at)
+        self.assertEqual(Disbursement.objects.filter(status='released').count(), 0)
+
+        payments.sign(run, self.approver, 'Approver One')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'completed')
+        self.assertEqual(Disbursement.objects.filter(status='released').count(), 1)
+
+    def test_maker_sign_emails_finance_not_the_approver(self):
+        from django.core import mail
+        mail.outbox = []
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        subjects = [m.subject for m in mail.outbox]
+        self.assertEqual(len(subjects), 1, subjects)
+        self.assertIn('finance check', subjects[0])
+        self.assertEqual(mail.outbox[0].to, ['finance@x.com'])
+
+    def test_finance_sign_then_emails_the_approver(self):
+        from django.core import mail
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        mail.outbox = []
+        payments.sign(run, self.finance, 'Finance One')
+        notes = [m for m in mail.outbox if 'countersignature' in m.subject]
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].to, ['approver@x.com'])
+
+    # ── wrong role / wrong step ──
+    def test_org_admin_blocked_at_admin_signed_with_finance_check_required(self):
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, self.approver, 'Approver One')
+        self.assertEqual(cm.exception.code, 'finance_check_required')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'admin_signed')          # unchanged
+
+    def test_finance_cannot_sign_a_draft(self):
+        run = self._run()
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, self.finance, 'Finance One')
+        self.assertEqual(cm.exception.code, 'wrong_role')
+
+    def test_finance_cannot_sign_when_dormant(self):
+        """With no ACTIVE finance admin the chain has no middle step, so a finance caller at
+        admin_signed is simply the wrong role for the countersignature."""
+        self._deactivate_finance()
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, self.finance, 'Finance One')
+        self.assertEqual(cm.exception.code, 'wrong_role')
+
+    def test_finance_cannot_sign_twice(self):
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        payments.sign(run, self.finance, 'Finance One')
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, self.finance, 'Finance One')
+        self.assertEqual(cm.exception.code, 'wrong_role')     # finance_checked → approver's step
+
+    def test_name_mismatch_on_the_finance_slot(self):
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, self.finance, 'Finance Uno')
+        self.assertEqual(cm.exception.code, 'name_mismatch')
+        run.refresh_from_db()
+        self.assertEqual(run.finance_signed_name, '')
+
+    # ── live evaluation, both directions ──
+    def test_activation_mid_run_arms_the_check(self):
+        """A run already at admin_signed when finance is activated needs the check before it can
+        be countersigned (owner: deliberate)."""
+        self._deactivate_finance()
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')           # dormant at this moment
+        PartnerAdmin.objects.filter(pk=self.finance.pk).update(is_active=True)
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, self.approver, 'Approver One')
+        self.assertEqual(cm.exception.code, 'finance_check_required')
+        payments.sign(run, self.finance, 'Finance One')
+        payments.sign(run, self.approver, 'Approver One')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'completed')
+
+    def test_deactivation_at_admin_signed_degrades_to_two_steps(self):
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        self._deactivate_finance()
+        payments.sign(run, self.approver, 'Approver One')     # no longer blocked
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'completed')
+        self.assertIsNone(run.finance_signed_at)
+
+    def test_deactivation_after_the_check_keeps_the_signature_and_completes(self):
+        """A collected finance signature is never a blocker — and revoking the checker
+        afterwards must not erase what they attested to."""
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        payments.sign(run, self.finance, 'Finance One')
+        self._deactivate_finance()
+        payments.sign(run, self.approver, 'Approver One')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'completed')
+        self.assertEqual(run.finance_signed_name, 'Finance One')
+
+    # ── three distinct signers (pairwise) ──
+    # NB `PartnerAdmin.email` is UNIQUE, so two accounts can never share an email exactly —
+    # the realistic collision is a second account registered with different CASING, which is
+    # precisely what the casefolded comparison defends against. Each of these fixtures is
+    # therefore a case variant, not a literal duplicate.
+    def test_maker_may_not_also_be_the_finance_checker(self):
+        maker_fin = PartnerAdmin.objects.create(
+            supabase_user_id='fin-mf', role='finance', is_active=True,
+            owning_organisation=self.org, name='Maker One', email='MAKER@X.COM')
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, maker_fin, 'Maker One')        # same email, different case
+        self.assertEqual(cm.exception.code, 'same_signer')
+
+    def test_finance_may_not_also_be_the_approver(self):
+        fin_appr = PartnerAdmin.objects.create(
+            supabase_user_id='fin-fa', role='org_admin', is_active=True,
+            owning_organisation=self.org, name='Finance One', email='Finance@X.com')
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        payments.sign(run, self.finance, 'Finance One')
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, fin_appr, 'Finance One')
+        self.assertEqual(cm.exception.code, 'same_signer')
+
+    def test_maker_may_not_also_be_the_approver_in_the_three_step_chain(self):
+        maker_appr = PartnerAdmin.objects.create(
+            supabase_user_id='fin-ma', role='org_admin', is_active=True,
+            owning_organisation=self.org, name='Maker One', email='Maker@X.com')
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        payments.sign(run, self.finance, 'Finance One')
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, maker_appr, 'Maker One')
+        self.assertEqual(cm.exception.code, 'same_signer')
+
+    def test_super_fills_exactly_one_slot_never_two(self):
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        payments.sign(run, self.superadmin, 'Super One')      # super stands in for finance
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'finance_checked')
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.sign(run, self.superadmin, 'Super One')  # …but not again as approver
+        self.assertEqual(cm.exception.code, 'same_signer')
+
+    # ── edit + cancel at the new status ──
+    def test_edit_at_finance_checked_reverts_to_draft_and_clears_both_triples(self):
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        payments.sign(run, self.finance, 'Finance One')
+        payments.set_item(run.items.first(), included=False, exclude_reason='withdrew')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'draft')
+        self.assertEqual(run.admin_signed_name, '')
+        self.assertIsNone(run.admin_signed_at)
+        self.assertEqual(run.finance_signed_name, '')
+        self.assertIsNone(run.finance_signed_at)
+
+    def test_edit_at_admin_signed_also_clears_the_empty_finance_triple(self):
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        payments.set_item(run.items.first(), amount='150')
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'draft')
+        self.assertEqual(run.finance_signed_name, '')
+
+    def test_cancel_allowed_at_finance_checked_but_not_completed(self):
+        run = self._run()
+        payments.sign(run, self.maker, 'Maker One')
+        payments.sign(run, self.finance, 'Finance One')
+        payments.cancel(run)
+        run.refresh_from_db()
+        self.assertEqual(run.status, 'cancelled')
+
+        run2 = self._run()
+        payments.sign(run2, self.maker, 'Maker One')
+        payments.sign(run2, self.finance, 'Finance One')
+        payments.sign(run2, self.approver, 'Approver One')
+        with self.assertRaises(payments.PaymentsError) as cm:
+            payments.cancel(run2)
+        self.assertEqual(cm.exception.code, 'bad_state')

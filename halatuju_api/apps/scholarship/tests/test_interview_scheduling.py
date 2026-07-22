@@ -276,7 +276,7 @@ class SchedulingServiceTests(TestCase):
         # Guard against the two _can_review copies drifting again: the interview surface must accept
         # exactly the same review roles as the rest of the review/assignment surface.
         from apps.scholarship import services
-        for role in ('reviewer', 'super', 'admin', 'qc', 'org_admin', 'partner', ''):
+        for role in ('reviewer', 'super', 'admin', 'qc', 'org_admin', 'partner', 'finance', ''):
             a = PartnerAdmin(role=role, is_active=True)
             self.assertEqual(scheduling._can_review(a), services._can_review(a),
                              f'role {role!r} disagrees between scheduling and services')

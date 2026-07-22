@@ -9,9 +9,17 @@ amounts, per-student exclusions, the two typed signatures) on top of the immutab
 (``complete``), so **"paid to date" is always SUM(released disbursements)** — one source of
 truth shared by history, the backfill, and future runs.
 
-Sign-off (D2) is a maker→checker chain: ``draft → admin_signed → completed`` (+ ``cancelled``).
-The two signers must be different people; the typed name must match the signer's
-``PartnerAdmin.name`` (trimmed, case-insensitive), mirroring the bursary agreement.
+Sign-off (D2) is a maker→checker chain: ``draft → admin_signed → [finance_checked] →
+completed`` (+ ``cancelled``). Every signature collected on a run must be a DIFFERENT person
+(pairwise-distinct emails, case-insensitive — which is also what stops a ``super`` filling two
+slots); the typed name must match the signer's ``PartnerAdmin.name`` (trimmed, case-insensitive),
+mirroring the bursary agreement.
+
+The middle FINANCE CHECK (Sprint 14, 2026-07-23) is **conditional and dormant by default**:
+required iff the organisation has ≥1 active ``finance`` PartnerAdmin, per
+``finance_check_required`` below. With none — which is every organisation on prod the day this
+ships — ``sign`` follows exactly the original two-step path.
+
 
 Deliberately WIDER than ``disbursement.release_tranche`` (D3): ``complete`` writes ``released``
 rows for an application in ``('awarded','active','maintenance')`` — the real cohort is paid
@@ -39,6 +47,10 @@ MONTHLY_RATE = Decimal('200')
 # Application statuses that may appear in / be paid by a run (D3/D4-2). Wider than
 # pool.FUNDED_STATES because the cohort is paid while at 'awarded'.
 PAYABLE_STATUSES = ('awarded', 'active', 'maintenance')
+
+# Run statuses that may still be edited / cancelled — i.e. everything before completion. An edit
+# from any of them reverts to draft and clears the signatures collected so far (_revert_to_draft).
+EDITABLE_STATUSES = ('draft', 'admin_signed', 'finance_checked')
 
 # tenancy: rule-1 exemption — template-superseded fallback.
 # Conventions rule 1 says a new tunable belongs on the cohort, not a module constant. These two
@@ -384,24 +396,29 @@ def create_run(organisation, payment_date, period_month, by_email=''):
 
 
 def _revert_to_draft(run):
-    """Editing an admin_signed run reverts it to draft and clears the maker signature (D2 —
-    'nobody signs one list and sends another')."""
+    """Editing a signed run reverts it to draft and clears EVERY collected signature (D2 —
+    'nobody signs one list and sends another'). Both the maker and the finance triple go: a
+    finance check attests to the list it was shown, so an edited list needs checking again."""
     run.status = 'draft'
     run.admin_signed_name = ''
     run.admin_signed_email = ''
     run.admin_signed_at = None
+    run.finance_signed_name = ''
+    run.finance_signed_email = ''
+    run.finance_signed_at = None
     run.save(update_fields=[
-        'status', 'admin_signed_name', 'admin_signed_email', 'admin_signed_at', 'updated_at'])
+        'status', 'admin_signed_name', 'admin_signed_email', 'admin_signed_at',
+        'finance_signed_name', 'finance_signed_email', 'finance_signed_at', 'updated_at'])
 
 
 def set_item(run_item, *, included=None, exclude_reason=None, amount=None):
-    """Edit a run item (draft only, or admin_signed → reverts to draft). Enforces: an excluded
-    item needs a reason (``reason_required``); the amount is floored at 0 and capped at the
-    snapshotted remaining award (``amount_over_cap``). Returns the item."""
+    """Edit a run item (draft only, or admin_signed / finance_checked → reverts to draft).
+    Enforces: an excluded item needs a reason (``reason_required``); the amount is floored at 0
+    and capped at the snapshotted remaining award (``amount_over_cap``). Returns the item."""
     run = run_item.run
-    if run.status not in ('draft', 'admin_signed'):
+    if run.status not in EDITABLE_STATUSES:
         raise PaymentsError('not_editable')
-    if run.status == 'admin_signed':
+    if run.status != 'draft':
         _revert_to_draft(run)
 
     if included is not None:
@@ -430,19 +447,62 @@ def _name_matches(admin, typed_name):
         (typed_name or '').strip().casefold() == (admin.name or '').strip().casefold()
 
 
+def finance_check_required(organisation):
+    """Does this organisation's payment chain include the finance CHECK step?
+
+    True iff it has at least one ACTIVE ``finance`` PartnerAdmin. Evaluated LIVE at every sign
+    attempt and **never persisted on the run** — deliberately, because the owner's rule runs in
+    both directions:
+
+      * activating a finance admin while a run sits at ``admin_signed`` DOES arm the check for
+        that run (the approver is blocked with ``finance_check_required`` until finance signs);
+      * revoking the last finance admin mid-run degrades the chain back to two steps, and an
+        already-collected finance signature is never treated as a blocker.
+
+    A stored flag would freeze the shape at creation and get the first case wrong. The cost is
+    one cheap indexed EXISTS per sign attempt, which is a rare operation.
+    """
+    if organisation is None:
+        return False
+    from apps.courses.models import PartnerAdmin
+    return PartnerAdmin.objects.filter(
+        owning_organisation=organisation, role='finance', is_active=True).exists()
+
+
+def _collected_signer_emails(run):
+    """Every email that has already signed this run, casefolded — the basis of the
+    three-distinct-signers rule (generalised from the old maker-vs-approver `same_signer`)."""
+    return {
+        (e or '').strip().casefold()
+        for e in (run.admin_signed_email, run.finance_signed_email, run.org_admin_signed_email)
+        if (e or '').strip()
+    }
+
+
 @transaction.atomic
 def sign(run, admin, typed_name):
-    """The maker→checker sign-off (D2). On a DRAFT run: the MAKER (role ``admin``, or super)
-    signs → ``admin_signed``. On an ADMIN_SIGNED run: the APPROVER (role ``org_admin``, or
-    super) countersigns → ``complete(run)`` → ``completed``. The two signers must be different
-    people (``same_signer``); the typed name must match the signer's PartnerAdmin.name
-    (``name_mismatch``); a wrong role → ``wrong_role``. Returns the run."""
-    if run.status not in ('draft', 'admin_signed'):
+    """The maker→[finance]→approver sign-off (D2 + Sprint 14).
+
+      * DRAFT → the MAKER (role ``admin``, or super) signs → ``admin_signed``.
+      * ADMIN_SIGNED, finance ACTIVE → only the CHECKER (role ``finance``, or super) may sign
+        → ``finance_checked``. An org_admin trying to countersign here gets
+        ``finance_check_required``.
+      * ADMIN_SIGNED, finance DORMANT → the APPROVER (``org_admin``, or super) countersigns →
+        ``complete(run)`` → ``completed``. This is the original path, unchanged.
+      * FINANCE_CHECKED → the APPROVER countersigns → ``complete(run)`` → ``completed``.
+
+    Guards: ``bad_state``; ``name_mismatch`` (typed name vs PartnerAdmin.name); ``wrong_role``;
+    and ``same_signer`` — now PAIRWISE distinctness across every signature already collected,
+    which is what confines a ``super`` to one slot per run without a special case for supers.
+    Returns the run."""
+    if run.status not in ('draft', 'admin_signed', 'finance_checked'):
         raise PaymentsError('bad_state')
     if not _name_matches(admin, typed_name):
         raise PaymentsError('name_mismatch')
     is_super = bool(getattr(admin, 'is_super', False))
+    email = (admin.email or '').strip().casefold()
     now = timezone.now()
+    needs_finance = finance_check_required(run.organisation)
 
     if run.status == 'draft':
         if not (is_super or admin.role == 'admin'):
@@ -453,16 +513,41 @@ def sign(run, admin, typed_name):
         run.status = 'admin_signed'
         run.save(update_fields=[
             'admin_signed_name', 'admin_signed_email', 'admin_signed_at', 'status', 'updated_at'])
-        # Tell the organisation admin(s) the run awaits their countersignature (owner
-        # 2026-07-16). Best-effort — the function never raises.
+        # Route the "your turn" email to whoever is actually next: the finance checker when the
+        # org has one, else the org admins who countersign. Best-effort — neither raises.
+        from . import emails
+        if needs_finance:
+            emails.send_payment_finance_check_email(run)
+        else:
+            emails.send_payment_countersign_email(run)
+        return run
+
+    if run.status == 'admin_signed' and needs_finance:
+        # The check is armed. Only finance (or super) passes here — an org_admin is told WHY
+        # rather than getting a bare wrong_role, because from their seat nothing looks amiss.
+        if not (is_super or admin.role == 'finance'):
+            if admin.role == 'org_admin':
+                raise PaymentsError('finance_check_required')
+            raise PaymentsError('wrong_role')
+        if email in _collected_signer_emails(run):
+            raise PaymentsError('same_signer')
+        run.finance_signed_name = (admin.name or '').strip()[:200]
+        run.finance_signed_email = (admin.email or '')[:254]
+        run.finance_signed_at = now
+        run.status = 'finance_checked'
+        run.save(update_fields=[
+            'finance_signed_name', 'finance_signed_email', 'finance_signed_at',
+            'status', 'updated_at'])
         from . import emails
         emails.send_payment_countersign_email(run)
         return run
 
-    # admin_signed → countersign
+    # admin_signed (finance dormant) or finance_checked → the approver countersigns.
+    # A `finance` caller reaching here means the org has no active finance admin (dormant) or the
+    # check is already done — either way countersigning is not their step: wrong_role.
     if not (is_super or admin.role == 'org_admin'):
         raise PaymentsError('wrong_role')
-    if (admin.email or '').strip().casefold() == (run.admin_signed_email or '').strip().casefold():
+    if email in _collected_signer_emails(run):
         raise PaymentsError('same_signer')
     run.org_admin_signed_name = (admin.name or '').strip()[:200]
     run.org_admin_signed_email = (admin.email or '')[:254]
@@ -536,8 +621,9 @@ def complete(run):
 
 
 def cancel(run, by=''):
-    """Cancel a draft or admin_signed run (never a completed one)."""
-    if run.status not in ('draft', 'admin_signed'):
+    """Cancel a run at any pre-completion status (never a completed one). Cancelling stays an
+    admin / org_admin power — finance checks a run, it does not withdraw one."""
+    if run.status not in EDITABLE_STATUSES:
         raise PaymentsError('bad_state')
     run.status = 'cancelled'
     run.note = (run.note or '')

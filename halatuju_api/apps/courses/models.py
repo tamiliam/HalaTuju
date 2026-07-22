@@ -485,6 +485,14 @@ class PartnerAdmin(models.Model):
     #   qc       — quality control: reads its org's B40 applications but its only WRITE is the
     #              QC gate on an 'interviewed' case — Accept (→ recommended) or Reopen (→ back to
     #              the reviewer with comments). Cannot record verdicts / verify / interview.
+    #   finance  — org FINANCE admin: the payment-run CHECKER (the middle signature between the
+    #              maker and the approver), plus Payments read and the funding summary. NO B40
+    #              scope at all (`_b40_scope` → 'none'): no applicant list, no cockpit, no
+    #              documents, no income, no verdicts — its only student data is the
+    #              award/paid/remaining/eWallet allowlist inside the Payments module. Sponsors
+    #              view-only; Administration view-only. Never reviews, QCs or takes an
+    #              assignment. **The chain's finance step is DORMANT until the organisation has
+    #              ≥1 active finance admin** — evaluated live, never stored on the run.
     # ('viewer' retired 2026-06-09 → folded into 'admin'; 0 viewers existed on prod.)
     ROLE_CHOICES = [
         ('super', 'Super admin'),
@@ -493,6 +501,7 @@ class PartnerAdmin(models.Model):
         ('partner', 'Partner'),
         ('reviewer', 'Reviewer'),
         ('qc', 'Quality control'),
+        ('finance', 'Finance admin'),
     ]
     supabase_user_id = models.CharField(
         max_length=100, unique=True, null=True, blank=True,

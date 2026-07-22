@@ -201,6 +201,9 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminPaymentRunListView': 'payments-org-fenced', 'AdminPaymentRunDetailView': 'payments-org-fenced',
         'AdminPaymentRunItemView': 'payments-org-fenced', 'AdminPaymentRunSignView': 'payments-org-fenced',
         'AdminPaymentRunCancelView': 'payments-org-fenced', 'AdminPaymentRunCsvView': 'payments-org-fenced',
+        # Sprint 14 — filters applications on owning_organisation; a super with no org context
+        # gets `no_org` rather than every tenant's students.
+        'AdminPaymentFundingSummaryView': 'payments-org-fenced',
         # Contract module (S3) — org-fenced via _ContractsBase._template_for (cross-org 404)
         # + super/org_admin role gate; the list filters to the caller's org; deploy is
         # super-only. ContractTemplate is not a watched applicant model → no static pragma.

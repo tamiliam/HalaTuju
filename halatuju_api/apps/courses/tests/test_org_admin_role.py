@@ -288,3 +288,69 @@ class TestRolePayload(_Base):
         self.assertEqual(d['owning_org_id'], self.bp.id)
         self.assertEqual(d['owning_org_name'], self.bp.name)
         self.assertIsNone(d['org_name'])   # referral org is None for an org_admin
+
+
+class TestFinanceRoleInvites(_Base):
+    """Sprint 14 (owner decision D5) — the org lead appoints their own finance checker.
+
+    Safe against privilege escalation because `finance` grants strictly LESS than the roles
+    org_admin could already invite (no B40 scope at all) and cannot manage staff itself, so a
+    finance admin can never appoint anyone."""
+    def _invite(self, uid, payload):
+        with patch('apps.courses.views_admin.http_requests.post') as mp:
+            mp.return_value = MagicMock(status_code=200, text='ok', json=lambda: {'id': 'new-uid'})
+            self._auth(uid)
+            return self.client.post('/api/v1/admin/invite/', payload, format='json')
+
+    def test_org_admin_invites_finance_bound_to_own_org(self):
+        r = self._invite('oa-uid', {'email': 'sam@x.com', 'name': 'Sam', 'role': 'finance'})
+        self.assertEqual(r.status_code, 201)
+        a = PartnerAdmin.objects.get(email='sam@x.com')
+        self.assertEqual(a.role, 'finance')
+        self.assertEqual(a.owning_organisation_id, self.bp.id)   # caller's org, forced
+
+    def test_super_invites_finance(self):
+        r = self._invite('super-uid', {'email': 'sfin@x.com', 'name': 'S Fin', 'role': 'finance',
+                                       'org_id': self.bp.id})
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(PartnerAdmin.objects.get(email='sfin@x.com').role, 'finance')
+
+    def test_a_finance_admin_cannot_invite_anyone(self):
+        PartnerAdmin.objects.create(
+            supabase_user_id='fin-uid', role='finance', is_active=True,
+            owning_organisation=self.bp, name='Fin', email='fin@x.com')
+        r = self._invite('fin-uid', {'email': 'nope@x.com', 'name': 'Nope', 'role': 'reviewer'})
+        self.assertEqual(r.status_code, 403)
+        self.assertFalse(PartnerAdmin.objects.filter(email='nope@x.com').exists())
+
+    def test_reviewer_and_partner_cannot_invite_finance(self):
+        PartnerAdmin.objects.create(
+            supabase_user_id='rev-uid', role='reviewer', is_active=True,
+            owning_organisation=self.bp, name='Rev', email='rev@x.com')
+        for uid in ('rev-uid', 'partner-uid'):
+            email = f'fin-by-{uid}@x.com'
+            r = self._invite(uid, {'email': email, 'name': 'X', 'role': 'finance'})
+            self.assertEqual(r.status_code, 403, uid)
+            self.assertFalse(PartnerAdmin.objects.filter(email=email).exists(), uid)
+
+    def test_org_admin_may_revoke_a_finance_admin_in_its_own_org(self):
+        fin = PartnerAdmin.objects.create(
+            supabase_user_id='fin-rv', role='finance', is_active=True,
+            owning_organisation=self.bp, name='Fin Rv', email='finrv@x.com')
+        self._auth('oa-uid')
+        r = self.client.patch(f'/api/v1/admin/admins/{fin.id}/revoke/',
+                              {'action': 'revoke'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        fin.refresh_from_db()
+        self.assertFalse(fin.is_active)
+
+    def test_org_admin_cannot_revoke_another_orgs_finance_admin(self):
+        fin_other = PartnerAdmin.objects.create(
+            supabase_user_id='fin-other', role='finance', is_active=True,
+            owning_organisation=self.other, name='Fin Other', email='finother@x.com')
+        self._auth('oa-uid')
+        r = self.client.patch(f'/api/v1/admin/admins/{fin_other.id}/revoke/',
+                              {'action': 'revoke'}, format='json')
+        self.assertEqual(r.status_code, 404)     # cross-org → no existence leak
+        fin_other.refresh_from_db()
+        self.assertTrue(fin_other.is_active)

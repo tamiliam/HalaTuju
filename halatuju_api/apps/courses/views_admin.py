@@ -451,7 +451,10 @@ def _fmt_json(value):
 
 # Programme-staff roles an org_admin may manage (invite / list / resend / revoke). Never
 # partner (referral), never super, never org_admin — no privilege escalation.
-_ORG_ADMIN_MANAGEABLE_ROLES = {'reviewer', 'admin', 'qc'}
+# `finance` joined 2026-07-23 (owner decision D5): the org lead appoints their own finance
+# checker. Safe against escalation because finance grants LESS than the roles already here —
+# it has no B40 scope at all — and it cannot manage staff, so it can never appoint anyone.
+_ORG_ADMIN_MANAGEABLE_ROLES = {'reviewer', 'admin', 'qc', 'finance'}
 
 
 def _staff_target_manageable(caller, target):
@@ -474,7 +477,7 @@ def _staff_target_manageable(caller, target):
 class AdminInviteView(PartnerAdminMixin, APIView):
     """POST /api/v1/admin/invite/ — invite staff. A platform super may add any staff role
     (incl. a new organisation admin = add-tenant); an org_admin may add programme staff
-    (reviewer/admin/qc) to their OWN organisation only."""
+    (reviewer/admin/qc/finance) to their OWN organisation only."""
 
     def post(self, request):
         admin = self.get_admin(request)
@@ -497,9 +500,9 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         # ORGANISATION admin (add-tenant); an org_admin may add only programme staff to
         # their own org (never partner/super/org_admin — no privilege escalation).
         if caller_super:
-            invitable = {'admin', 'partner', 'reviewer', 'qc', 'org_admin'}
+            invitable = {'admin', 'partner', 'reviewer', 'qc', 'org_admin', 'finance'}
         else:
-            invitable = {'reviewer', 'admin', 'qc'}
+            invitable = _ORG_ADMIN_MANAGEABLE_ROLES
         role = request.data.get('role', 'reviewer')
         if role not in invitable:
             if caller_super:

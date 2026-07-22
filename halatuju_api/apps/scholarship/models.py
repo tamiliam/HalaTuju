@@ -1611,16 +1611,26 @@ class PaymentRun(models.Model):
     ``SUM(released disbursements)`` — one source of truth for history, the backfill, and
     future runs alike (D1).
 
-    Sign-off is a maker→checker chain (D2): ``draft → admin_signed → completed`` (+
-    ``cancelled``). The status field + a per-step signature TRIPLE (name/email/at) — not a
-    boolean pair — so the parked finance 'checker' step can be inserted as an additive
-    middle state later (``draft → admin_signed → finance_checked → completed``).
+    Sign-off is a maker→checker chain (D2): ``draft → admin_signed → [finance_checked] →
+    completed`` (+ ``cancelled``). The status field + a per-step signature TRIPLE
+    (name/email/at) — not a boolean pair — is what let the finance 'checker' step land
+    additively (Sprint 14, 2026-07-23) exactly where this docstring parked it.
+
+    **The finance step is CONDITIONAL and its requirement is never stored here.**
+    ``payments.finance_check_required(organisation)`` is evaluated LIVE at each sign attempt
+    (the org has ≥1 active ``finance`` PartnerAdmin). With none, the chain runs as the
+    original two steps, byte-identical. Deliberately not a column: storing it would freeze a
+    run's shape at creation, and the owner's rule is that activating finance DOES arm the
+    check for a run already sitting at ``admin_signed``. A historical ``completed`` run
+    simply carries an empty finance triple — read it as "no finance admin existed", not as
+    "the step was skipped".
 
     Backfill runs (D8) are first-class ``completed`` runs with no signatures (the signature
     fields are nullable/blank)."""
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('admin_signed', 'Admin signed'),
+        ('finance_checked', 'Finance checked'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
@@ -1642,6 +1652,11 @@ class PaymentRun(models.Model):
     admin_signed_name = models.CharField(max_length=200, blank=True, default='')
     admin_signed_email = models.CharField(max_length=254, blank=True, default='')
     admin_signed_at = models.DateTimeField(null=True, blank=True)
+    # Finance checker (middle signature, role finance) — Sprint 14. Empty on every run made
+    # before the role existed, and on every run in an org with no active finance admin.
+    finance_signed_name = models.CharField(max_length=200, blank=True, default='')
+    finance_signed_email = models.CharField(max_length=254, blank=True, default='')
+    finance_signed_at = models.DateTimeField(null=True, blank=True)
     org_admin_signed_name = models.CharField(max_length=200, blank=True, default='')
     org_admin_signed_email = models.CharField(max_length=254, blank=True, default='')
     org_admin_signed_at = models.DateTimeField(null=True, blank=True)

@@ -488,7 +488,11 @@ class AssignmentError(Exception):
 # verdict, propose interview times, etc.). SINGLE SOURCE OF TRUTH: scheduling._can_review imports
 # this so the interview surface can never drift out of step with the rest of the review surface
 # again (a stale copy here silently blocked a 'qc' reviewer from proposing interview times —
-# 2026-07-10). A 'partner' (org rep) is never a review target.
+# 2026-07-10). A 'partner' (org rep) is never a review target — and neither is a 'finance' admin
+# (Sprint 14, 2026-07-23): finance has NO B40 scope at all, so assigning it a case would hand a
+# write on an application it cannot even read. Its absence here is a decision, not an oversight;
+# tests in test_org_gates.py assert finance is refused review and never appears in the
+# assignable-admins dropdown.
 REVIEW_ROLES = ('reviewer', 'super', 'admin', 'qc', 'org_admin')
 
 

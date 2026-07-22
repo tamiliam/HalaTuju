@@ -229,3 +229,182 @@ class TestAdvanceWindowEndpoint(_Base):
         r = self._post('2026-07-01', '2026-08')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'past_date')
+
+
+# ── Sprint 14: finance over the wire ───────────────────────────────────────────
+
+class _FinanceBase(_Base):
+    """_Base plus an ACTIVE finance admin in org A, so the three-step chain is armed."""
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.finance = PartnerAdmin.objects.create(
+            supabase_user_id='pe-fi', role='finance', is_active=True,
+            owning_organisation=cls.org_a, name='Fin One', email='fin@x.com')
+        cls.finance_b = PartnerAdmin.objects.create(
+            supabase_user_id='pe-fib', role='finance', is_active=True,
+            owning_organisation=cls.org_b, name='Fin B', email='finb@x.com')
+
+    def _sign(self, uid, typed_name, run_id):
+        self._auth(uid)
+        return self.client.post(f'/api/v1/admin/scholarship/payment-runs/{run_id}/sign/',
+                                {'typed_name': typed_name}, format='json')
+
+
+class TestFinanceAccessControl(_FinanceBase):
+    def test_finance_may_read_the_list_and_a_run(self):
+        run_id = self._create_run('pe-mk').json()['id']
+        self._auth('pe-fi')
+        self.assertEqual(self.client.get('/api/v1/admin/scholarship/payment-runs/').status_code, 200)
+        self.assertEqual(
+            self.client.get(f'/api/v1/admin/scholarship/payment-runs/{run_id}/').status_code, 200)
+
+    def test_finance_may_not_create_a_run(self):
+        self.assertEqual(self._create_run('pe-fi').status_code, 403)
+
+    def test_finance_may_not_edit_an_item(self):
+        r = self._create_run('pe-mk').json()
+        item_id = r['items'][0]['id']
+        self._auth('pe-fi')
+        resp = self.client.patch(
+            f"/api/v1/admin/scholarship/payment-runs/{r['id']}/items/{item_id}/",
+            {'amount': '50'}, format='json')
+        self.assertEqual(resp.status_code, 403)
+
+    def test_finance_may_not_cancel_a_run(self):
+        run_id = self._create_run('pe-mk').json()['id']
+        self._auth('pe-fi')
+        self.assertEqual(
+            self.client.post(f'/api/v1/admin/scholarship/payment-runs/{run_id}/cancel/',
+                             {}, format='json').status_code, 403)
+
+    def test_cross_org_run_is_404_for_finance(self):
+        run_id = self._create_run('pe-mk').json()['id']
+        self._auth('pe-fib')      # org B finance
+        self.assertEqual(
+            self.client.get(f'/api/v1/admin/scholarship/payment-runs/{run_id}/').status_code, 404)
+
+    def test_finance_may_download_the_csv_at_finance_checked(self):
+        run_id = self._create_run('pe-mk').json()['id']
+        self._sign('pe-mk', 'Maker One', run_id)
+        self._sign('pe-fi', 'Fin One', run_id)
+        self._auth('pe-fi')
+        resp = self.client.get(f'/api/v1/admin/scholarship/payment-runs/{run_id}/csv/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'text/csv')
+
+
+class TestFinanceSignEndpoint(_FinanceBase):
+    def test_detail_payload_carries_the_finance_fields(self):
+        body = self._create_run('pe-mk').json()
+        self.assertIsNone(body['finance_signed'])
+        self.assertTrue(body['finance_check_required'])
+
+        self._sign('pe-mk', 'Maker One', body['id'])
+        signed = self._sign('pe-fi', 'Fin One', body['id']).json()
+        self.assertEqual(signed['status'], 'finance_checked')
+        self.assertEqual(signed['finance_signed']['name'], 'Fin One')
+        self.assertEqual(signed['finance_signed']['email'], 'fin@x.com')
+        self.assertIsNotNone(signed['finance_signed']['at'])
+
+    def test_finance_check_required_is_false_when_dormant(self):
+        PartnerAdmin.objects.filter(pk=self.finance.pk).update(is_active=False)
+        body = self._create_run('pe-mk').json()
+        self.assertFalse(body['finance_check_required'])
+
+    def test_org_admin_countersign_surfaces_the_error_code(self):
+        run_id = self._create_run('pe-mk').json()['id']
+        self._sign('pe-mk', 'Maker One', run_id)
+        resp = self._sign('pe-ap', 'Approver One', run_id)
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['code'], 'finance_check_required')
+
+    def test_full_three_step_chain_over_the_wire(self):
+        run_id = self._create_run('pe-mk').json()['id']
+        self.assertEqual(self._sign('pe-mk', 'Maker One', run_id).json()['status'], 'admin_signed')
+        self.assertEqual(self._sign('pe-fi', 'Fin One', run_id).json()['status'], 'finance_checked')
+        with mock.patch('apps.scholarship.sheets.write_payment_csv', return_value=''):
+            done = self._sign('pe-ap', 'Approver One', run_id)
+        self.assertEqual(done.json()['status'], 'completed')
+
+    def test_reviewer_still_refused_on_sign(self):
+        run_id = self._create_run('pe-mk').json()['id']
+        self.assertEqual(self._sign('pe-rv', 'Rev', run_id).status_code, 403)
+
+
+class TestFundingSummaryEndpoint(_FinanceBase):
+    URL = '/api/v1/admin/scholarship/payments/funding-summary/'
+
+    # The exact key set finance is allowed to see. A snapshot, so ADDING a field to the
+    # serializer fails here and becomes a deliberate role-matrix decision rather than a
+    # quiet widening of what a no-B40-scope role can read.
+    KEYS = {'application_id', 'name', 'ref', 'status', 'pathway', 'award_amount',
+            'paid_to_date', 'remaining', 'vircle_id', 'last_run'}
+
+    def test_role_gate(self):
+        for uid in ('pe-mk', 'pe-ap', 'pe-fi'):
+            self._auth(uid)
+            self.assertEqual(self.client.get(self.URL).status_code, 200, uid)
+        for uid in ('pe-rv', 'pe-qc', 'pe-pt'):
+            self._auth(uid)
+            self.assertEqual(self.client.get(self.URL).status_code, 403, uid)
+
+    def test_allowlist_key_set_is_exact(self):
+        self._auth('pe-fi')
+        rows = self.client.get(self.URL).json()['rows']
+        self.assertTrue(rows)
+        for row in rows:
+            self.assertEqual(set(row), self.KEYS)
+
+    def test_no_identifying_or_assessment_fields_leak(self):
+        """Belt-and-braces on top of the key snapshot: none of the words that would indicate a
+        document / income / verdict / contact leak appear anywhere in the payload."""
+        self._auth('pe-fi')
+        body = str(self.client.get(self.URL).json()).lower()
+        for banned in ('nric', 'verdict', 'income', 'document', 'phone', 'email', 'address'):
+            self.assertNotIn(banned, body, banned)
+
+    def test_is_org_fenced(self):
+        self._auth('pe-fi')
+        ids_a = {r['application_id'] for r in self.client.get(self.URL).json()['rows']}
+        self.assertIn(self.app_a.id, ids_a)
+        self.assertNotIn(self.app_b.id, ids_a)
+        self._auth('pe-fib')      # org B finance sees only org B
+        ids_b = {r['application_id'] for r in self.client.get(self.URL).json()['rows']}
+        self.assertEqual(ids_b, {self.app_b.id})
+
+    def test_super_without_an_org_gets_no_org(self):
+        self._auth('pe-su')
+        resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['code'], 'no_org')
+
+    def test_totals_reconcile_with_the_rows(self):
+        self._auth('pe-fi')
+        body = self.client.get(self.URL).json()
+        rows, totals = body['rows'], body['totals']
+        self.assertEqual(totals['students'], len(rows))
+        self.assertEqual(Decimal(totals['award_total']),
+                         sum(Decimal(r['award_amount']) for r in rows))
+        self.assertEqual(Decimal(totals['remaining_total']),
+                         sum(Decimal(r['remaining']) for r in rows))
+
+    def test_paid_and_remaining_follow_the_ledger(self):
+        created = self._create_run('pe-mk').json()
+        run_id, reference = created['id'], created['reference']
+        self._sign('pe-mk', 'Maker One', run_id)
+        self._sign('pe-fi', 'Fin One', run_id)
+        with mock.patch('apps.scholarship.sheets.write_payment_csv', return_value=''):
+            self._sign('pe-ap', 'Approver One', run_id)
+        self._auth('pe-fi')
+        row = next(r for r in self.client.get(self.URL).json()['rows']
+                   if r['application_id'] == self.app_a.id)
+        self.assertEqual(Decimal(row['paid_to_date']), Decimal('200'))
+        self.assertEqual(Decimal(row['remaining']), Decimal('1800'))   # 2000 award - 200 paid
+        self.assertEqual(row['last_run']['reference'], reference)
+
+    def test_last_run_is_null_before_any_completed_run(self):
+        self._auth('pe-fi')
+        row = next(r for r in self.client.get(self.URL).json()['rows']
+                   if r['application_id'] == self.app_a.id)
+        self.assertIsNone(row['last_run'])
