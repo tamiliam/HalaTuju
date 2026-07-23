@@ -427,7 +427,7 @@ def send_award_confirmed_email(to_email, applicant_name, programme_name, lang='e
 # From info@, reply-to help@. Guide PDF attached. Good-news wording owner-cleared 2026-06-30.
 AWARD_OFFER_SUBJECTS = {
     'en': 'Good news about your BrightPath Bursary application 🎓',
-    'ms': 'Berita baik tentang permohonan Biasiswa BrightPath anda 🎓',
+    'ms': 'Berita baik tentang permohonan Bursari BrightPath anda 🎓',
     'ta': 'உங்கள் BrightPath Bursary விண்ணப்பம் பற்றிய நல்ல செய்தி 🎓',
 }
 AWARD_OFFER_BODIES = {
@@ -465,7 +465,7 @@ AWARD_OFFER_BODIES = {
     ),
     'ms': (
         "Salam {name},\n\n"
-        "Kami gembira berkongsi berita baik. Permohonan anda ke Program Biasiswa BrightPath telah "
+        "Kami gembira berkongsi berita baik. Permohonan anda ke Program Bursari BrightPath telah "
         "berjaya — anda telah dipilih untuk menerima bantuan kewangan bagi pengajian anda.\n\n"
         "Bantuan anda dibayar setiap bulan melalui Vircle, sebuah aplikasi eWallet Malaysia. "
         "Terdapat DUA langkah untuk mula menerimanya, dan pembayaran hanya boleh bermula setelah "
@@ -494,7 +494,7 @@ AWARD_OFFER_BODIES = {
         "untuk menerimanya.\n\n"
         "Jika anda menghadapi sebarang masalah semasa pendaftaran atau pengaktifan, atau ada "
         "pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
-        "Tahniah,\nPasukan Biasiswa BrightPath"
+        "Tahniah,\nPasukan Program Bursari BrightPath"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
@@ -655,7 +655,7 @@ def send_award_offer_email(to_email, applicant_name, lang='en', guardian_note=Fa
 # Still: NO amount, NO sponsor identity. First-draft trilingual copy — owner to review.
 AWARD_OFFER_SIGN_SUBJECTS = {
     'en': 'Good news about your BrightPath Bursary application 🎓',
-    'ms': 'Berita baik tentang permohonan Biasiswa BrightPath anda 🎓',
+    'ms': 'Berita baik tentang permohonan Bursari BrightPath anda 🎓',
     'ta': 'உங்கள் BrightPath Bursary விண்ணப்பம் பற்றிய நல்ல செய்தி 🎓',
 }
 AWARD_OFFER_SIGN_BODIES = {
@@ -677,7 +677,7 @@ AWARD_OFFER_SIGN_BODIES = {
     ),
     'ms': (
         "Salam {name},\n\n"
-        "Kami gembira berkongsi berita baik. Permohonan anda ke Program Biasiswa BrightPath telah "
+        "Kami gembira berkongsi berita baik. Permohonan anda ke Program Bursari BrightPath telah "
         "berjaya — anda telah dipilih untuk menerima bantuan kewangan bagi pengajian anda.\n\n"
         "Langkah seterusnya ialah menyemak dan menandatangani perjanjian biasiswa anda. Sila log "
         "masuk dan buka halaman permohonan anda. Anda akan melalui semakan ringkas dan mesra "
@@ -689,7 +689,7 @@ AWARD_OFFER_SIGN_BODIES = {
         "Setelah semuanya ditandatangani, kami akan menghubungi anda dengan langkah mudah untuk "
         "mula menerima bantuan bulanan anda.\n\n"
         "Jika ada sebarang pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
-        "Tahniah,\nPasukan Biasiswa BrightPath"
+        "Tahniah,\nPasukan Program Bursari BrightPath"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
@@ -755,7 +755,7 @@ def send_award_offer_sign_email(to_email, applicant_name, lang='en'):
 
 VIRCLE_INSTALL_SUBJECTS = {
     'en': 'Set up your Vircle eWallet to receive your BrightPath Bursary 💳',
-    'ms': 'Sediakan eWallet Vircle anda untuk menerima Biasiswa BrightPath 💳',
+    'ms': 'Sediakan eWallet Vircle anda untuk menerima Bursari BrightPath 💳',
     'ta': 'உங்கள் BrightPath Bursary-ஐப் பெற Vircle eWallet-ஐ அமைக்கவும் 💳',
 }
 VIRCLE_INSTALL_BODIES = {
@@ -786,7 +786,7 @@ VIRCLE_INSTALL_BODIES = {
     ),
     'ms': (
         "Salam {name},\n\n"
-        "Kami sudah bersedia untuk mula membayar Biasiswa BrightPath anda. Wang anda akan sampai "
+        "Kami sudah bersedia untuk mula membayar Bursari BrightPath anda. Wang anda akan sampai "
         "melalui Vircle, sebuah aplikasi eWallet Malaysia — jadi langkah seterusnya ialah menyediakan "
         "akaun Vircle anda.\n\n"
         "Pasang aplikasi Vircle dari Apple App Store, Google Play Store atau Huawei AppGallery. Anda "
@@ -811,7 +811,7 @@ VIRCLE_INSTALL_BODIES = {
         "wajib. Memberitahu kami sudah memadai.)\n\n"
         "Jika anda menghadapi sebarang masalah semasa pendaftaran atau pengaktifan, balas e-mel ini "
         "atau hubungi kami di {support}.\n\n"
-        "Salam hormat,\nPasukan Biasiswa BrightPath"
+        "Salam hormat,\nPasukan Program Bursari BrightPath"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
@@ -992,7 +992,7 @@ def send_vircle_install_email(to_email, applicant_name, lang='en'):
 
 SIGN_INVITE_SUBJECTS = {
     'en': 'Your BrightPath Bursary agreement is ready to sign ✍️',
-    'ms': 'Perjanjian Biasiswa BrightPath anda sedia untuk ditandatangani ✍️',
+    'ms': 'Perjanjian Bursari BrightPath anda sedia untuk ditandatangani ✍️',
     'ta': 'உங்கள் BrightPath Bursary ஒப்பந்தம் கையொப்பமிடத் தயாராக உள்ளது ✍️',
 }
 SIGN_INVITE_BODIES = {
@@ -1017,7 +1017,7 @@ SIGN_INVITE_BODIES = {
         "menandatangani sebagai penjamin anda, dan kami akan menghantar PIN sekali guna ke "
         "telefon mereka untuk mengesahkannya.\n\n"
         "Jika ada sebarang pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
-        "Salam mesra,\nPasukan Biasiswa BrightPath"
+        "Salam mesra,\nPasukan Program Bursari BrightPath"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
@@ -1049,7 +1049,7 @@ def send_sign_invitation_email(to_email, applicant_name, lang='en'):
 
 AGREEMENT_EXECUTED_SUBJECTS = {
     'en': 'Your BrightPath Bursary agreement is now in effect 🎓',
-    'ms': 'Perjanjian Biasiswa BrightPath anda kini berkuat kuasa 🎓',
+    'ms': 'Perjanjian Bursari BrightPath anda kini berkuat kuasa 🎓',
     'ta': 'உங்கள் BrightPath Bursary ஒப்பந்தம் இப்போது அமலுக்கு வந்துள்ளது 🎓',
 }
 AGREEMENT_EXECUTED_BODIES = {
@@ -1070,7 +1070,7 @@ AGREEMENT_EXECUTED_BODIES = {
         "Anda boleh melihat permohonan dan perjanjian anda yang ditandatangani di sini:\n{link}\n\n"
         "Kami akan menghubungi anda dengan langkah seterusnya. Jika ada sebarang pertanyaan, "
         "balas e-mel ini atau hubungi kami di {support}.\n\n"
-        "Tahniah,\nPasukan Biasiswa BrightPath"
+        "Tahniah,\nPasukan Program Bursari BrightPath"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
@@ -1265,9 +1265,9 @@ _SPONSOR_FOOTER = {
 }
 _SPONSOR_ACCOUNT = {'en': 'sponsor account', 'ms': 'akaun penaja', 'ta': 'நிதியுதவியாளர் கணக்கு'}
 _SPONSOR_SIGNOFF = {
-    'en': 'Warm regards,\nThe BrightPath Bursary Programme Team',
+    'en': 'Warm regards,\nThe BrightPath Bursary Team',
     'ms': 'Salam hormat,\nPasukan Program Bursari BrightPath',
-    'ta': 'அன்புடன்,\nBrightPath Bursary திட்டக் குழு',
+    'ta': 'அன்புடன்,\nBrightPath Bursary குழு',
 }
 _SPONSOR_FREQ_WORD = {
     'realtime': {'en': 'real-time', 'ms': 'masa nyata', 'ta': 'நிகழ்நேரம்'},
@@ -2201,7 +2201,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     en_text = text_block(
         f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
         en_safety, 'We look forward to speaking with you.',
-        'Warm regards,\nThe BrightPath Bursary Programme team')
+        'Warm regards,\nThe BrightPath Bursary Team')
     bm_text = text_block(
         f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
         bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
@@ -2224,7 +2224,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     en_html = html_block(
         f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
         en_safety, 'We look forward to speaking with you.',
-        'Warm regards,<br>The BrightPath Bursary Programme team')
+        'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = html_block(
         f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
         bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
@@ -2315,7 +2315,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
                 f'{after}\n\n{safety}\n\n{signoff}')
     en_text = text_block(
         f'Hi {en_name},', en_intro, en_lead, en_steps, f'View my application: {link}', en_after,
-        en_safety, 'Warm regards,\nThe BrightPath Bursary Programme Team')
+        en_safety, 'Warm regards,\nThe BrightPath Bursary Team')
     bm_text = text_block(
         f'Salam {bm_name},', bm_intro, bm_lead, bm_steps, f'Lihat permohonan saya: {link}', bm_after,
         bm_safety, 'Salam hormat,\nPasukan Program Bursari BrightPath')
@@ -2337,7 +2337,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
         )
     en_html = html_block(
         f'Hi {en_name},', en_intro, en_lead, en_steps, 'View my application', en_after,
-        en_safety, 'Warm regards,<br>The BrightPath Bursary Programme Team')
+        en_safety, 'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = html_block(
         f'Salam {bm_name},', bm_intro, bm_lead, bm_steps, 'Lihat permohonan saya', bm_after,
         bm_safety, 'Salam hormat,<br>Pasukan Program Bursari BrightPath')
@@ -2597,7 +2597,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {SUPPORT_EMAIL}.\n\n'
         f'We look forward to speaking with you.\n\n'
-        f'Warm regards,\nThe BrightPath Bursary Programme team'
+        f'Warm regards,\nThe BrightPath Bursary Team'
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
@@ -2653,7 +2653,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {SUPPORT_EMAIL}.',
         'We look forward to speaking with you.',
-        'Warm regards,<br>The BrightPath Bursary Programme team')
+        'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = section(
         f'Salam {bm_name},',
         'Temu duga Program Bursari BrightPath anda telah disahkan. Berikut butirannya:',
@@ -2719,7 +2719,7 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         f'For your peace of mind: we’ll only ever ask about you and your studies. We will never '
         f'ask you for money, your password, or an OTP or PIN. If anyone claiming to represent the '
         f'BrightPath Bursary Programme does, it isn’t us.\n\n'
-        f'Warm regards,\nThe BrightPath Bursary Programme Team'
+        f'Warm regards,\nThe BrightPath Bursary Team'
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
@@ -2760,7 +2760,7 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         'For your peace of mind: we’ll only ever ask about you and your studies. We will never ask '
         'you for money, your password, or an OTP or PIN. If anyone claiming to represent the B40 '
         'Assistance Programme does, it isn’t us.',
-        'Warm regards,<br>The BrightPath Bursary Programme Team')
+        'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = section(
         f'Salam {bm_name},',
         intro_bm,
@@ -2797,7 +2797,7 @@ def send_interview_reminder_email(to_email, *, student_name, start, meeting_url=
         f'• {whenfmt}\n'
         f'{_join_line(meeting_url, "en")}\n'
         f'Please be on camera and ready a few minutes early. See you soon.\n\n'
-        f'Warm regards,\nThe BrightPath Bursary Programme Team'
+        f'Warm regards,\nThe BrightPath Bursary Team'
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
@@ -2831,7 +2831,7 @@ def send_interview_reminder_email(to_email, *, student_name, start, meeting_url=
         f'A reminder that your BrightPath Bursary Programme interview is {soon_en}:',
         join_en_html,
         'Please be on camera and ready a few minutes early. See you soon.',
-        'Warm regards,<br>The BrightPath Bursary Programme Team')
+        'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = section(
         f'Salam {bm_name},',
         f'Peringatan bahawa temu duga Program Bursari BrightPath anda adalah {soon_bm}:',
@@ -2867,7 +2867,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'One note for your peace of mind: we\'ll only ever ask about you and your studies. We '
         f'will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it\'s '
         f'not us — please tell us at {SUPPORT_EMAIL}.\n\n'
-        f'Warm regards,\nThe BrightPath Bursary Programme Team'
+        f'Warm regards,\nThe BrightPath Bursary Team'
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
@@ -2907,7 +2907,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will never '
         f'ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — please tell '
         f'us at {SUPPORT_EMAIL}.',
-        'Warm regards,<br>The BrightPath Bursary Programme Team')
+        'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = section(
         f'Salam {bm_name},',
         'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bursari BrightPath anda, jadi '
@@ -2948,7 +2948,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         f"One note for your peace of mind: we'll only ever ask about you and your studies. We "
         f"will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it's "
         f"not us — please tell us at {SUPPORT_EMAIL}.\n\n"
-        f'Warm regards,\nThe BrightPath Bursary Programme Team'
+        f'Warm regards,\nThe BrightPath Bursary Team'
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
@@ -2985,7 +2985,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {SUPPORT_EMAIL}.',
-        'Warm regards,<br>The BrightPath Bursary Programme Team')
+        'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = section(
         f'Salam {bm_name},',
         'Terdapat perubahan pada penemu duga yang akan menemu duga anda untuk Program Bursari '
