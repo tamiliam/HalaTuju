@@ -23,6 +23,14 @@ _P = _branding.platform()
 # Kept because it is a documented public name of this module (imported by tests / callers).
 SUPPORT_EMAIL = _P.email_support
 
+# Platform brand tokens, resolved from the seam (NOT string literals) — the readable form used in
+# the internal/ops + bilingual interview mail, which is platform-branded English/BM and takes no
+# tenant ``branding``. _PROG_* is the programme name; _TEAM_* the full team sign-off line.
+_PROG_EN = _P.programme_name('en')   # 'BrightPath Bursary'
+_PROG_MS = _P.programme_name('ms')   # 'Bursari BrightPath'
+_TEAM_EN = _P.team_signoff('en')     # 'The BrightPath Bursary Team'
+_TEAM_MS = _P.team_signoff('ms')     # 'Pasukan Program Bursari BrightPath'
+
 logger = logging.getLogger(__name__)
 
 _DEFAULT_NAME = {'en': 'applicant', 'ms': 'pemohon', 'ta': 'விண்ணப்பதாரர்'}
@@ -341,27 +349,32 @@ def normalise_lang(lang):
     return lang if lang in ('en', 'ms', 'ta') else 'en'
 
 
-def _send(to_email, subjects, bodies, applicant_name, programme_name, lang, extra=None):
+def _send(to_email, subjects, bodies, applicant_name, programme_name, lang, extra=None,
+          branding=None):
     """
     Best-effort send: a mail failure is logged and swallowed so it never blocks
     the surrounding workflow. Returns True if the send succeeded. ``extra`` supplies
     any additional, already-language-resolved body placeholders (e.g. {help}); a
-    template that doesn't reference them ignores the extras harmlessly.
+    template that doesn't reference them ignores the extras harmlessly. ``branding``
+    (default = the platform seam) supplies the sender identity + frontend URL; the
+    caller passes ``programme_name`` (the {programme} placeholder) and any brand
+    tokens ({signoff}, …) through ``extra`` so a tenant renders its own copy.
     """
     if not to_email:
         return False
+    b = branding or _P
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
     # Link to the complete-your-profile page (the shortlist body uses {link}; the
     # ack/decline bodies don't reference it, so the kwarg is harmlessly ignored).
-    frontend = _P.frontend_url
+    frontend = b.frontend_url
     link = f"{frontend}/scholarship/application"
     fmt = {'name': name, 'programme': programme_name, 'link': link, **(extra or {})}
     try:
         send_mail(
             subject=subjects[lang].format(programme=programme_name),
             message=bodies[lang].format(**fmt),
-            from_email=_P.email_from,
+            from_email=b.email_from,
             recipient_list=[to_email],
         )
         return True
@@ -430,14 +443,14 @@ def send_award_confirmed_email(to_email, applicant_name, programme_name, lang='e
 # bursary contract still follow as their own step — the contract is being finalised.
 # From info@, reply-to help@. Guide PDF attached. Good-news wording owner-cleared 2026-06-30.
 AWARD_OFFER_SUBJECTS = {
-    'en': 'Good news about your BrightPath Bursary application 🎓',
-    'ms': 'Berita baik tentang permohonan Bursari BrightPath anda 🎓',
-    'ta': 'உங்கள் BrightPath Bursary விண்ணப்பம் பற்றிய நல்ல செய்தி 🎓',
+    'en': 'Good news about your {programme} application 🎓',
+    'ms': 'Berita baik tentang permohonan {programme} anda 🎓',
+    'ta': 'உங்கள் {programme} விண்ணப்பம் பற்றிய நல்ல செய்தி 🎓',
 }
 AWARD_OFFER_BODIES = {
     'en': (
         "Dear {name},\n\n"
-        "We're delighted to share some good news. Your application to the BrightPath Bursary "
+        "We're delighted to share some good news. Your application to the {programme} "
         "Programme has been successful — you have been selected to receive financial support for "
         "your studies.\n\n"
         "Your support is paid monthly through Vircle, a Malaysian eWallet app. There are TWO "
@@ -453,7 +466,7 @@ AWARD_OFFER_BODIES = {
         "email.\n\n"
         "{guardian_note}"
         "STEP 2 — Tell us in the Action Centre.\n"
-        "Once your account is active, sign in at halatuju.xyz and open your application page. In "
+        "Once your account is active, sign in at {domain} and open your application page. In "
         "the Action Centre, enter the mobile number you registered with Vircle AND your "
         "eWallet ID. To find your eWallet ID: open the Vircle app, tap the gear icon at the top "
         "right of the home screen, then scroll to the bottom of the Settings page — it reads "
@@ -465,11 +478,11 @@ AWARD_OFFER_BODIES = {
         "accept it.\n\n"
         "If you faced any trouble during registration or activation, or have any questions, reply "
         "to this email or contact us at {support}.\n\n"
-        "Warm congratulations,\nThe BrightPath Bursary Team"
+        "Warm congratulations,\n{signoff}"
     ),
     'ms': (
         "Salam {name},\n\n"
-        "Kami gembira berkongsi berita baik. Permohonan anda ke Program Bursari BrightPath telah "
+        "Kami gembira berkongsi berita baik. Permohonan anda ke Program {programme} telah "
         "berjaya — anda telah dipilih untuk menerima bantuan kewangan bagi pengajian anda.\n\n"
         "Bantuan anda dibayar setiap bulan melalui Vircle, sebuah aplikasi eWallet Malaysia. "
         "Terdapat DUA langkah untuk mula menerimanya, dan pembayaran hanya boleh bermula setelah "
@@ -485,7 +498,7 @@ AWARD_OFFER_BODIES = {
         "lain akan ditolak. Panduan langkah demi langkah disertakan bersama e-mel ini.\n\n"
         "{guardian_note}"
         "LANGKAH 2 — Beritahu kami di Pusat Tindakan.\n"
-        "Sebaik sahaja akaun anda aktif, log masuk di halatuju.xyz dan buka halaman permohonan "
+        "Sebaik sahaja akaun anda aktif, log masuk di {domain} dan buka halaman permohonan "
         "anda. Di Pusat Tindakan, masukkan nombor telefon bimbit yang anda daftarkan dengan "
         "Vircle DAN ID eWallet anda. Untuk mencari ID eWallet anda: buka aplikasi Vircle, tekan "
         "ikon gear di penjuru kanan atas skrin utama, kemudian skrol ke bahagian bawah halaman "
@@ -498,11 +511,11 @@ AWARD_OFFER_BODIES = {
         "untuk menerimanya.\n\n"
         "Jika anda menghadapi sebarang masalah semasa pendaftaran atau pengaktifan, atau ada "
         "pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
-        "Tahniah,\nPasukan Program Bursari BrightPath"
+        "Tahniah,\n{signoff}"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
-        "ஒரு நல்ல செய்தியைப் பகிர்வதில் மகிழ்ச்சி அடைகிறோம். BrightPath Bursary திட்டத்திற்கான உங்கள் "
+        "ஒரு நல்ல செய்தியைப் பகிர்வதில் மகிழ்ச்சி அடைகிறோம். {programme} திட்டத்திற்கான உங்கள் "
         "விண்ணப்பம் வெற்றிபெற்றுள்ளது — உங்கள் படிப்பிற்கான நிதியுதவியைப் பெற நீங்கள் தேர்ந்தெடுக்கப்பட்டுள்ளீர்கள்.\n\n"
         "உங்கள் உதவி Vircle என்ற மலேசிய eWallet செயலி வழியாக மாதந்தோறும் வழங்கப்படும். அதைப் பெறத் "
         "தொடங்க இரண்டு படிகள் உள்ளன; இரண்டையும் முடித்த பிறகே கட்டணங்கள் தொடங்க முடியும்.\n\n"
@@ -517,7 +530,7 @@ AWARD_OFFER_BODIES = {
         "நிராகரிக்கப்படும். படிப்படியான வழிகாட்டி இந்த மின்னஞ்சலுடன் இணைக்கப்பட்டுள்ளது.\n\n"
         "{guardian_note}"
         "படி 2 — Action Centre-இல் எங்களிடம் தெரிவியுங்கள்.\n"
-        "உங்கள் கணக்கு செயல்பட்டவுடன், halatuju.xyz-இல் உள்நுழைந்து உங்கள் விண்ணப்பப் பக்கத்தைத் "
+        "உங்கள் கணக்கு செயல்பட்டவுடன், {domain}-இல் உள்நுழைந்து உங்கள் விண்ணப்பப் பக்கத்தைத் "
         "திறக்கவும். Action Centre-இல், Vircle-இல் நீங்கள் பதிவு செய்த கைபேசி எண்ணையும் உங்கள் "
         "eWallet ID-யையும் உள்ளிடவும். உங்கள் eWallet ID-ஐக் கண்டறிய: Vircle செயலியைத் திறந்து, "
         "முகப்புத் திரையின் மேல் வலது மூலையில் உள்ள gear ஐகானை அழுத்தி, Settings பக்கத்தின் "
@@ -530,7 +543,7 @@ AWARD_OFFER_BODIES = {
         "படிகளுடன், தனியாக அனுப்பப்படும்.\n\n"
         "பதிவு அல்லது செயல்படுத்தும் போது ஏதேனும் சிக்கல் ஏற்பட்டால், அல்லது ஏதேனும் கேள்விகள் இருந்தால், "
         "இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் எங்களைத் தொடர்புகொள்ளவும்.\n\n"
-        "இதயப்பூர்வ வாழ்த்துகள்,\nBrightPath Bursary குழு"
+        "இதயப்பூர்வ வாழ்த்துகள்,\n{signoff}"
     ),
 }
 
@@ -578,14 +591,14 @@ _BOLD_PHRASES = {
 }
 
 
-def _award_offer_html(text_body, lang):
+def _award_offer_html(text_body, lang, branding=None):
     """HTML for the award email: paragraphs, key phrases BOLD, the sign-off team name bolded,
     "the Action Centre" as an inline LINK where the ask is made, and a call-to-action button under
     the sign-off. Since the merge this email DOES ask something of the student (set up Vircle), so
     it carries both routes to /scholarship/application. Falls back gracefully: a phrase that isn't
     found is left un-bolded/un-linked."""
     import html as _h
-    frontend = _P.frontend_url
+    frontend = (branding or _P).frontend_url
     link_phrase = _VIRCLE_LINK_PHRASES.get(lang, _VIRCLE_LINK_PHRASES['en'])
     phrases = _BOLD_PHRASES.get(lang, [])
 
@@ -619,7 +632,7 @@ def _award_offer_html(text_body, lang):
     return _html_email_shell(''.join(blocks))
 
 
-def send_award_offer_email(to_email, applicant_name, lang='en', guardian_note=False):
+def send_award_offer_email(to_email, applicant_name, lang='en', guardian_note=False, branding=None):
     """Award email: a sponsor has committed (status 'awarded'). Since the 2026-07-12 merge this is
     ONE email carrying the good news AND the Vircle setup, restructured 2026-07-17 (owner) as TWO
     explicit steps — STEP 1 install/activate, STEP 2 confirm in the Action Centre (students were
@@ -634,18 +647,21 @@ def send_award_offer_email(to_email, applicant_name, lang='en', guardian_note=Fa
     must never appear for a student who didn't get the email."""
     if not to_email:
         return False
+    b = branding or _P
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    note = (AWARD_OFFER_GUARDIAN_NOTES[lang].format(support=_P.email_support) + '\n\n'
+    note = (AWARD_OFFER_GUARDIAN_NOTES[lang].format(support=b.email_support) + '\n\n'
             if guardian_note else '')
-    fmt = {'name': name, 'support': _P.email_support, 'guardian_note': note}
-    subject = AWARD_OFFER_SUBJECTS[lang]
+    fmt = {'name': name, 'support': b.email_support, 'guardian_note': note,
+           'programme': b.programme_name(lang), 'signoff': b.team_signoff(lang),
+           'domain': b.frontend_domain}
+    subject = AWARD_OFFER_SUBJECTS[lang].format(**fmt)
     text_body = AWARD_OFFER_BODIES[lang].format(**fmt)
     guide = vircle_guide_attachment()
     return _send_html(
-        to_email, subject, text_body, _award_offer_html(text_body, lang),
-        from_email=_P.email_from,
-        reply_to=[_P.email_support],
+        to_email, subject, text_body, _award_offer_html(text_body, lang, b),
+        from_email=b.email_from,
+        reply_to=[b.email_support],
         attachments=[guide] if guide else None,
     )
 
@@ -658,14 +674,14 @@ def send_award_offer_email(to_email, applicant_name, lang='en', guardian_note=Fa
 # carries NO Vircle content and NO guide attachment, and its caller raises NO setup task.
 # Still: NO amount, NO sponsor identity. First-draft trilingual copy — owner to review.
 AWARD_OFFER_SIGN_SUBJECTS = {
-    'en': 'Good news about your BrightPath Bursary application 🎓',
-    'ms': 'Berita baik tentang permohonan Bursari BrightPath anda 🎓',
-    'ta': 'உங்கள் BrightPath Bursary விண்ணப்பம் பற்றிய நல்ல செய்தி 🎓',
+    'en': 'Good news about your {programme} application 🎓',
+    'ms': 'Berita baik tentang permohonan {programme} anda 🎓',
+    'ta': 'உங்கள் {programme} விண்ணப்பம் பற்றிய நல்ல செய்தி 🎓',
 }
 AWARD_OFFER_SIGN_BODIES = {
     'en': (
         "Dear {name},\n\n"
-        "We're delighted to share some good news. Your application to the BrightPath Bursary "
+        "We're delighted to share some good news. Your application to the {programme} "
         "Programme has been successful — you have been selected to receive financial support for "
         "your studies.\n\n"
         "The next step is to review and sign your bursary agreement. Please log in and open your "
@@ -677,11 +693,11 @@ AWARD_OFFER_SIGN_BODIES = {
         "Once everything is signed, we'll be in touch with the simple steps to start receiving your "
         "monthly support.\n\n"
         "If you have any questions, reply to this email or contact us at {support}.\n\n"
-        "Warm congratulations,\nThe BrightPath Bursary Team"
+        "Warm congratulations,\n{signoff}"
     ),
     'ms': (
         "Salam {name},\n\n"
-        "Kami gembira berkongsi berita baik. Permohonan anda ke Program Bursari BrightPath telah "
+        "Kami gembira berkongsi berita baik. Permohonan anda ke Program {programme} telah "
         "berjaya — anda telah dipilih untuk menerima bantuan kewangan bagi pengajian anda.\n\n"
         "Langkah seterusnya ialah menyemak dan menandatangani perjanjian biasiswa anda. Sila log "
         "masuk dan buka halaman permohonan anda. Anda akan melalui semakan ringkas dan mesra "
@@ -693,11 +709,11 @@ AWARD_OFFER_SIGN_BODIES = {
         "Setelah semuanya ditandatangani, kami akan menghubungi anda dengan langkah mudah untuk "
         "mula menerima bantuan bulanan anda.\n\n"
         "Jika ada sebarang pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
-        "Tahniah,\nPasukan Program Bursari BrightPath"
+        "Tahniah,\n{signoff}"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
-        "ஒரு நல்ல செய்தியைப் பகிர்வதில் மகிழ்ச்சி அடைகிறோம். BrightPath Bursary திட்டத்திற்கான உங்கள் "
+        "ஒரு நல்ல செய்தியைப் பகிர்வதில் மகிழ்ச்சி அடைகிறோம். {programme} திட்டத்திற்கான உங்கள் "
         "விண்ணப்பம் வெற்றிபெற்றுள்ளது — உங்கள் படிப்பிற்கான நிதியுதவியைப் பெற நீங்கள் தேர்ந்தெடுக்கப்பட்டுள்ளீர்கள்.\n\n"
         "அடுத்த படி, உங்கள் உதவித்தொகை ஒப்பந்தத்தை மதிப்பாய்வு செய்து கையொப்பமிடுவதாகும். உள்நுழைந்து உங்கள் "
         "விண்ணப்பப் பக்கத்தைத் திறக்கவும். முதலில் விதிமுறைகள் தெளிவாக இருப்பதை உறுதிசெய்ய ஒரு சிறிய, நட்பான "
@@ -710,12 +726,12 @@ AWARD_OFFER_SIGN_BODIES = {
         "தொடர்புகொள்வோம்.\n\n"
         "ஏதேனும் கேள்விகள் இருந்தால், இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் எங்களைத் "
         "தொடர்புகொள்ளவும்.\n\n"
-        "இதயப்பூர்வ வாழ்த்துகள்,\nBrightPath Bursary குழு"
+        "இதயப்பூர்வ வாழ்த்துகள்,\n{signoff}"
     ),
 }
 
 
-def send_award_offer_sign_email(to_email, applicant_name, lang='en'):
+def send_award_offer_sign_email(to_email, applicant_name, lang='en', branding=None):
     """Contract-mode (BURSARY_AGREEMENT_ENABLED) award email: the same good news, but the
     next step is to REVIEW AND SIGN the bursary agreement — NOT Vircle setup (which now
     follows at agreement execution). Points to /scholarship/award. NO amount, NO sponsor
@@ -725,18 +741,21 @@ def send_award_offer_sign_email(to_email, applicant_name, lang='en'):
     task on this path — the task is raised at execution instead."""
     if not to_email:
         return False
+    b = branding or _P
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    frontend = _P.frontend_url
+    frontend = b.frontend_url
     link = f'{frontend}/scholarship/award'
-    body = AWARD_OFFER_SIGN_BODIES[lang].format(name=name, link=link, support=_P.email_support)
+    fmt = {'name': name, 'link': link, 'support': b.email_support,
+           'programme': b.programme_name(lang), 'signoff': b.team_signoff(lang)}
+    body = AWARD_OFFER_SIGN_BODIES[lang].format(**fmt)
     html = _html_email_shell('<p style="margin:0 0 14px;">'
                              + body.replace('\n\n', '</p><p style="margin:0 0 14px;">').replace('\n', '<br>')
                              + '</p>')
     return _send_html(
-        to_email, AWARD_OFFER_SIGN_SUBJECTS[lang], body, html,
-        from_email=_P.email_from,
-        reply_to=[_P.email_support],
+        to_email, AWARD_OFFER_SIGN_SUBJECTS[lang].format(**fmt), body, html,
+        from_email=b.email_from,
+        reply_to=[b.email_support],
     )
 
 
@@ -758,14 +777,14 @@ def send_award_offer_sign_email(to_email, applicant_name, lang='en'):
 #     own support number is still in the attached guide, and on the Action-Centre card.)
 
 VIRCLE_INSTALL_SUBJECTS = {
-    'en': 'Set up your Vircle eWallet to receive your BrightPath Bursary 💳',
-    'ms': 'Sediakan eWallet Vircle anda untuk menerima Bursari BrightPath 💳',
-    'ta': 'உங்கள் BrightPath Bursary-ஐப் பெற Vircle eWallet-ஐ அமைக்கவும் 💳',
+    'en': 'Set up your Vircle eWallet to receive your {programme} 💳',
+    'ms': 'Sediakan eWallet Vircle anda untuk menerima {programme} 💳',
+    'ta': 'உங்கள் {programme}-ஐப் பெற Vircle eWallet-ஐ அமைக்கவும் 💳',
 }
 VIRCLE_INSTALL_BODIES = {
     'en': (
         "Dear {name},\n\n"
-        "We're ready to start paying your BrightPath Bursary. Your money will reach you through "
+        "We're ready to start paying your {programme}. Your money will reach you through "
         "Vircle, a Malaysian eWallet app — so the next step is to set up your Vircle account.\n\n"
         "Install the Vircle app from the Apple App Store, Google Play Store or Huawei AppGallery. "
         "You'll need iOS 16 or above, or Android 10 or above. Note that a very old phone can fail "
@@ -786,11 +805,11 @@ VIRCLE_INSTALL_BODIES = {
         "you may do so, but you don't have to. Telling us is what we need.)\n\n"
         "If you faced any trouble during registration or activation, reply to this email or "
         "contact us at {support}.\n\n"
-        "Warm regards,\nThe BrightPath Bursary Team"
+        "Warm regards,\n{signoff}"
     ),
     'ms': (
         "Salam {name},\n\n"
-        "Kami sudah bersedia untuk mula membayar Bursari BrightPath anda. Wang anda akan sampai "
+        "Kami sudah bersedia untuk mula membayar {programme} anda. Wang anda akan sampai "
         "melalui Vircle, sebuah aplikasi eWallet Malaysia — jadi langkah seterusnya ialah menyediakan "
         "akaun Vircle anda.\n\n"
         "Pasang aplikasi Vircle dari Apple App Store, Google Play Store atau Huawei AppGallery. Anda "
@@ -815,11 +834,11 @@ VIRCLE_INSTALL_BODIES = {
         "wajib. Memberitahu kami sudah memadai.)\n\n"
         "Jika anda menghadapi sebarang masalah semasa pendaftaran atau pengaktifan, balas e-mel ini "
         "atau hubungi kami di {support}.\n\n"
-        "Salam hormat,\nPasukan Program Bursari BrightPath"
+        "Salam hormat,\n{signoff}"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
-        "உங்கள் BrightPath Bursary-ஐ வழங்கத் தொடங்க நாங்கள் தயாராக உள்ளோம். உங்கள் பணம் Vircle என்ற "
+        "உங்கள் {programme}-ஐ வழங்கத் தொடங்க நாங்கள் தயாராக உள்ளோம். உங்கள் பணம் Vircle என்ற "
         "மலேசிய eWallet செயலி வழியாக உங்களைச் சென்றடையும் — எனவே அடுத்த படி உங்கள் Vircle கணக்கை "
         "அமைப்பதாகும்.\n\n"
         "Apple App Store, Google Play Store அல்லது Huawei AppGallery-இலிருந்து Vircle செயலியை "
@@ -844,7 +863,7 @@ VIRCLE_INSTALL_BODIES = {
         "தேவை.)\n\n"
         "பதிவு அல்லது செயல்படுத்தும் போது ஏதேனும் சிக்கல் ஏற்பட்டால், இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் "
         "அல்லது {support} இல் எங்களைத் தொடர்புகொள்ளவும்.\n\n"
-        "அன்புடன்,\nBrightPath Bursary குழு"
+        "அன்புடன்,\n{signoff}"
     ),
 }
 
@@ -879,7 +898,7 @@ VIRCLE_CTA_LABELS = {
 _VIRCLE_GUIDE_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'assets', 'vircle-installation-guide.pdf',
 )
-_VIRCLE_GUIDE_FILENAME = 'BrightPath Bursary eWallet by Vircle - Installation Guide.pdf'
+_VIRCLE_GUIDE_FILENAME = f'{_P.programme_name("en")} eWallet by Vircle - Installation Guide.pdf'
 
 
 def vircle_guide_attachment():
@@ -933,12 +952,12 @@ def _vircle_guide_bytes_from_asset():
         return None
 
 
-def _vircle_install_html(text_body, lang):
+def _vircle_install_html(text_body, lang, branding=None):
     """HTML for the Vircle setup email: paragraphs, key phrases BOLD, the sign-off team name
     bolded, "the Action Centre" as an inline LINK where the ask is made, AND a call-to-action
     button under the sign-off. Both routes lead to /scholarship/application."""
     import html as _h
-    frontend = _P.frontend_url
+    frontend = (branding or _P).frontend_url
     link_phrase = _VIRCLE_LINK_PHRASES.get(lang, _VIRCLE_LINK_PHRASES['en'])
     phrases = _VIRCLE_BOLD_PHRASES.get(lang, [])
 
@@ -969,22 +988,24 @@ def _vircle_install_html(text_body, lang):
     return _html_email_shell(''.join(blocks))
 
 
-def send_vircle_install_email(to_email, applicant_name, lang='en'):
+def send_vircle_install_email(to_email, applicant_name, lang='en', branding=None):
     """Vircle setup email: install the app, then confirm in the Action Centre. The installation
     guide PDF is attached. HTML (key phrases BOLD + one CTA button) + plain-text fallback, from
     info@, reply-to help@."""
     if not to_email:
         return False
+    b = branding or _P
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    fmt = {'name': name, 'support': _P.email_support}
-    subject = VIRCLE_INSTALL_SUBJECTS[lang]
+    fmt = {'name': name, 'support': b.email_support,
+           'programme': b.programme_name(lang), 'signoff': b.team_signoff(lang)}
+    subject = VIRCLE_INSTALL_SUBJECTS[lang].format(**fmt)
     text_body = VIRCLE_INSTALL_BODIES[lang].format(**fmt)
     guide = vircle_guide_attachment()
     return _send_html(
-        to_email, subject, text_body, _vircle_install_html(text_body, lang),
-        from_email=_P.email_from,
-        reply_to=[_P.email_support],
+        to_email, subject, text_body, _vircle_install_html(text_body, lang, b),
+        from_email=b.email_from,
+        reply_to=[b.email_support],
         attachments=[guide] if guide else None,
     )
 
@@ -995,9 +1016,9 @@ def send_vircle_install_email(to_email, applicant_name, lang='en'):
 # Foundation countersign-pending). No donor is ever named in any of them.
 
 SIGN_INVITE_SUBJECTS = {
-    'en': 'Your BrightPath Bursary agreement is ready to sign ✍️',
-    'ms': 'Perjanjian Bursari BrightPath anda sedia untuk ditandatangani ✍️',
-    'ta': 'உங்கள் BrightPath Bursary ஒப்பந்தம் கையொப்பமிடத் தயாராக உள்ளது ✍️',
+    'en': 'Your {programme} agreement is ready to sign ✍️',
+    'ms': 'Perjanjian {programme} anda sedia untuk ditandatangani ✍️',
+    'ta': 'உங்கள் {programme} ஒப்பந்தம் கையொப்பமிடத் தயாராக உள்ளது ✍️',
 }
 SIGN_INVITE_BODIES = {
     'en': (
@@ -1009,7 +1030,7 @@ SIGN_INVITE_BODIES = {
         "Please have your parent or guardian with you when you sign: they sign as your "
         "guarantor, and we'll send a one-time PIN to their phone to confirm it's them.\n\n"
         "If you have any questions, reply to this email or contact us at {support}.\n\n"
-        "Warm wishes,\nThe BrightPath Bursary Team"
+        "Warm wishes,\n{signoff}"
     ),
     'ms': (
         "Salam {name},\n\n"
@@ -1021,7 +1042,7 @@ SIGN_INVITE_BODIES = {
         "menandatangani sebagai penjamin anda, dan kami akan menghantar PIN sekali guna ke "
         "telefon mereka untuk mengesahkannya.\n\n"
         "Jika ada sebarang pertanyaan, balas e-mel ini atau hubungi kami di {support}.\n\n"
-        "Salam mesra,\nPasukan Program Bursari BrightPath"
+        "Salam mesra,\n{signoff}"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
@@ -1034,27 +1055,30 @@ SIGN_INVITE_BODIES = {
         "தொலைபேசிக்கு ஒரு முறை PIN அனுப்புவோம்.\n\n"
         "ஏதேனும் கேள்விகள் இருந்தால், இந்த மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் "
         "எங்களைத் தொடர்புகொள்ளவும்.\n\n"
-        "அன்புடன்,\nBrightPath Bursary குழு"
+        "அன்புடன்,\n{signoff}"
     ),
 }
 
 
-def send_sign_invitation_email(to_email, applicant_name, lang='en'):
+def send_sign_invitation_email(to_email, applicant_name, lang='en', branding=None):
     """The follow-up "your agreement is ready to sign" email (owner-sent, after the
     bank-details email). Points to /scholarship/application → Action Centre → the
     comprehension quiz → signing. NO amount, NO sponsor identity. Plain text + info@."""
     if not to_email:
         return False
+    b = branding or _P
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    return _send(to_email, SIGN_INVITE_SUBJECTS, SIGN_INVITE_BODIES, name, '', lang,
-                 extra={'support': _P.email_support})
+    return _send(to_email, SIGN_INVITE_SUBJECTS, SIGN_INVITE_BODIES, name,
+                 b.programme_name(lang), lang,
+                 extra={'support': b.email_support, 'signoff': b.team_signoff(lang)},
+                 branding=b)
 
 
 AGREEMENT_EXECUTED_SUBJECTS = {
-    'en': 'Your BrightPath Bursary agreement is now in effect 🎓',
-    'ms': 'Perjanjian Bursari BrightPath anda kini berkuat kuasa 🎓',
-    'ta': 'உங்கள் BrightPath Bursary ஒப்பந்தம் இப்போது அமலுக்கு வந்துள்ளது 🎓',
+    'en': 'Your {programme} agreement is now in effect 🎓',
+    'ms': 'Perjanjian {programme} anda kini berkuat kuasa 🎓',
+    'ta': 'உங்கள் {programme} ஒப்பந்தம் இப்போது அமலுக்கு வந்துள்ளது 🎓',
 }
 AGREEMENT_EXECUTED_BODIES = {
     'en': (
@@ -1064,7 +1088,7 @@ AGREEMENT_EXECUTED_BODIES = {
         "You can view your application and your signed agreement here:\n{link}\n\n"
         "We'll be in touch with the next steps. If you have any questions, reply to this email "
         "or contact us at {support}.\n\n"
-        "Warm congratulations,\nThe BrightPath Bursary Team"
+        "Warm congratulations,\n{signoff}"
     ),
     'ms': (
         "Salam {name},\n\n"
@@ -1074,7 +1098,7 @@ AGREEMENT_EXECUTED_BODIES = {
         "Anda boleh melihat permohonan dan perjanjian anda yang ditandatangani di sini:\n{link}\n\n"
         "Kami akan menghubungi anda dengan langkah seterusnya. Jika ada sebarang pertanyaan, "
         "balas e-mel ini atau hubungi kami di {support}.\n\n"
-        "Tahniah,\nPasukan Program Bursari BrightPath"
+        "Tahniah,\n{signoff}"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
@@ -1084,33 +1108,40 @@ AGREEMENT_EXECUTED_BODIES = {
         "உங்கள் விண்ணப்பத்தையும் கையொப்பமிடப்பட்ட ஒப்பந்தத்தையும் இங்கே காணலாம்:\n{link}\n\n"
         "அடுத்த படிகளுடன் நாங்கள் உங்களைத் தொடர்புகொள்வோம். ஏதேனும் கேள்விகள் இருந்தால், இந்த "
         "மின்னஞ்சலுக்குப் பதிலளிக்கவும் அல்லது {support} இல் எங்களைத் தொடர்புகொள்ளவும்.\n\n"
-        "இதயப்பூர்வ வாழ்த்துகள்,\nBrightPath Bursary குழு"
+        "இதயப்பூர்வ வாழ்த்துகள்,\n{signoff}"
     ),
 }
 
 
 def send_agreement_executed_email(to_email, applicant_name, programme_name='', lang='en',
-                                  link='', pdf=None):
+                                  link='', pdf=None, branding=None):
     """Sent when the bursary agreement is fully executed (student + guarantor + Foundation
     signed → application 'active'). Confirms the bursary is in effect. NO sponsor identity.
     From info@. When ``pdf`` (the signed-agreement bytes) is given, it is ATTACHED and the
     mail goes HTML via ``_send_html``; otherwise the plain ``_send`` path (backward-compat)."""
     if not to_email:
         return False
+    b = branding or _P
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
+    # The brand name is language-specific and read from the seam (the {programme} placeholder);
+    # the caller's ``programme_name`` (the EN cohort name) is not the per-language brand form.
+    signoff = b.team_signoff(lang)
     if pdf is None:
         return _send(to_email, AGREEMENT_EXECUTED_SUBJECTS, AGREEMENT_EXECUTED_BODIES,
-                     name, programme_name, lang, extra={'support': _P.email_support})
-    subject = AGREEMENT_EXECUTED_SUBJECTS[lang]
-    text = AGREEMENT_EXECUTED_BODIES[lang].format(name=name, link=link or '', support=_P.email_support)
+                     name, b.programme_name(lang), lang,
+                     extra={'support': b.email_support, 'signoff': signoff}, branding=b)
+    subject = AGREEMENT_EXECUTED_SUBJECTS[lang].format(programme=b.programme_name(lang))
+    text = AGREEMENT_EXECUTED_BODIES[lang].format(
+        name=name, link=link or '', support=b.email_support,
+        programme=b.programme_name(lang), signoff=signoff)
     html = _html_email_shell('<p style="margin:0 0 14px;">'
                              + text.replace('\n\n', '</p><p style="margin:0 0 14px;">').replace('\n', '<br>')
                              + '</p>')
     return _send_html(
         to_email, subject, text, html,
-        from_email=_P.email_from,
-        reply_to=[_P.email_support],
+        from_email=b.email_from,
+        reply_to=[b.email_support],
         attachments=[('bursary_agreement.pdf', pdf, 'application/pdf')])
 
 
@@ -1125,13 +1156,13 @@ def send_executed_copy_email(to_email, *, applicant_name='', programme_name='', 
     text = (f"Hello,\n\nThe bursary agreement for {who} is now fully signed and in effect. "
             f"A copy of the signed agreement is attached for your records.\n\n"
             + (f"View the application:\n{link}\n\n" if link else "")
-            + "The BrightPath Bursary Team")
+            + _TEAM_EN)
     html = _html_email_shell(
         '<p style="margin:0 0 14px;">Hello,</p>'
         f'<p style="margin:0 0 14px;">The bursary agreement for <strong>{who}</strong> is now '
         'fully signed and in effect. A copy of the signed agreement is attached for your records.</p>'
         + (f'<p style="margin:0 0 6px;">{_email_button(link, "Open the application")}</p>' if link else '')
-        + '<p style="margin:18px 0 0;">The BrightPath Bursary Team</p>')
+        + f'<p style="margin:18px 0 0;">{_TEAM_EN}</p>')
     attachments = [('bursary_agreement.pdf', pdf, 'application/pdf')] if pdf else None
     return _send_html(
         to_email, subject, text, html,
@@ -1150,22 +1181,22 @@ def send_witness_pending_email(to_email, *, contact_person='', applicant_name=''
     who = f'<strong>{applicant_name}</strong>' if applicant_name else 'a student you referred'
     text = (
         f"{greeting}\n\n"
-        f"A BrightPath Bursary agreement for {applicant_name or 'a student you referred'} is "
+        f"A {_PROG_EN} agreement for {applicant_name or 'a student you referred'} is "
         f"ready for your organisation's witness signature. The student and their parent/guardian "
         f"have signed; you are recorded as the witnessing partner.\n\n"
         f"Please log in to the partner console to review and add your witness signature:\n{link}\n\n"
-        f"Thank you,\nThe BrightPath Bursary Team"
+        f"Thank you,\n{_TEAM_EN}"
     )
     html = _html_email_shell(
         f'<p style="margin:0 0 14px;">{greeting}</p>'
-        f'<p style="margin:0 0 14px;">A BrightPath Bursary agreement for {who} is ready for '
+        f'<p style="margin:0 0 14px;">A {_PROG_EN} agreement for {who} is ready for '
         f'your organisation’s <strong>witness signature</strong>. The student and their '
         f'parent or guardian have signed; you are recorded as the witnessing partner'
         f'{(" for " + org_name) if org_name else ""}.</p>'
         f'<p style="margin:0 0 18px;">Please log in to the partner console to review and add '
         f'your witness signature.</p>'
         f'<p style="margin:0 0 6px;">{_email_button(link, "Open the partner console")}</p>'
-        f'<p style="margin:18px 0 0;">Thank you,<br><strong>The BrightPath Bursary Team</strong></p>'
+        f'<p style="margin:18px 0 0;">Thank you,<br><strong>{_TEAM_EN}</strong></p>'
     )
     return _send_html(
         to_email, 'A bursary agreement is awaiting your witness signature', text, html,
@@ -1183,20 +1214,20 @@ def send_countersign_pending_email(to_email, *, applicant_name='', link=''):
     who = f'<strong>{applicant_name}</strong>' if applicant_name else 'a student'
     text = (
         "Hello,\n\n"
-        f"A BrightPath Bursary agreement for {applicant_name or 'a student'} is awaiting the "
+        f"A {_PROG_EN} agreement for {applicant_name or 'a student'} is awaiting the "
         f"Foundation's countersignature. The student, their guarantor"
         f"{' and the witnessing partner' if link else ''} have signed; the Foundation's "
         f"signature is the final, binding step that activates the bursary.\n\n"
         f"Please log in to the console to review and countersign:\n{link}\n\n"
-        f"Thank you,\nThe BrightPath Bursary Team"
+        f"Thank you,\n{_TEAM_EN}"
     )
     html = _html_email_shell(
         f'<p style="margin:0 0 14px;">Hello,</p>'
-        f'<p style="margin:0 0 14px;">A BrightPath Bursary agreement for {who} is awaiting the '
+        f'<p style="margin:0 0 14px;">A {_PROG_EN} agreement for {who} is awaiting the '
         f'<strong>Foundation’s countersignature</strong> — the final, binding step '
         f'that activates the bursary.</p>'
         f'<p style="margin:0 0 6px;">{_email_button(link, "Open the console")}</p>'
-        f'<p style="margin:18px 0 0;">Thank you,<br><strong>The BrightPath Bursary Team</strong></p>'
+        f'<p style="margin:18px 0 0;">Thank you,<br><strong>{_TEAM_EN}</strong></p>'
     )
     return _send_html(
         to_email, 'A bursary agreement is awaiting the Foundation countersignature', text, html,
@@ -1268,10 +1299,12 @@ _SPONSOR_FOOTER = {
     'ta': "உங்கள் அறிவிப்புகள் {freq} என அமைக்கப்பட்டுள்ளதால் இதைப் பெறுகிறீர்கள். எப்போது வேண்டுமானாலும் உங்கள் {account} இல் இதை மாற்றலாம்.",
 }
 _SPONSOR_ACCOUNT = {'en': 'sponsor account', 'ms': 'akaun penaja', 'ta': 'நிதியுதவியாளர் கணக்கு'}
+# The team sign-off (from the seam) with a per-language "regards," prefix. Sponsor mail is
+# platform-branded (see _send_sponsor_notify) so it reads from _P.
 _SPONSOR_SIGNOFF = {
-    'en': 'Warm regards,\nThe BrightPath Bursary Team',
-    'ms': 'Salam hormat,\nPasukan Program Bursari BrightPath',
-    'ta': 'அன்புடன்,\nBrightPath Bursary குழு',
+    'en': f'Warm regards,\n{_P.team_signoff("en")}',
+    'ms': f'Salam hormat,\n{_P.team_signoff("ms")}',
+    'ta': f'அன்புடன்,\n{_P.team_signoff("ta")}',
 }
 _SPONSOR_FREQ_WORD = {
     'realtime': {'en': 'real-time', 'ms': 'masa nyata', 'ta': 'நிகழ்நேரம்'},
@@ -1547,25 +1580,33 @@ def send_decline_email(to_email, applicant_name, programme_name, category='', la
 # to the application page (the {link} kwarg is filled by _send). Keyed by stage 1–4.
 # Shared help line — built-in AI helper (Cikgu Gopal) + a human fallback. Filled into
 # the {help} placeholder of each reminder; the closure email uses CLOSURE_HELP.
+# {persona} = the coach's rendered name (per language) and {support} = the support address, both
+# filled from the branding seam at send time (send_reminder_email / send_application_closed_email).
 HELP_LINE = {
-    'en': ("As you go, our friendly AI helper, Cikgu Gopal, will guide you through anything "
-           f"on your documents that needs attention. If you're still unsure, email us at "
-           f"{_P.email_support} — we're glad to help."),
-    'ms': ("Sepanjang proses, pembantu AI mesra kami, Cikgu Gopal, akan membimbing anda dalam "
-           f"apa-apa pada dokumen anda yang memerlukan perhatian. Jika anda masih tidak pasti, "
-           f"e-mel kami di {_P.email_support} — kami sedia membantu."),
-    'ta': ("இந்தச் செயல்பாட்டின்போது, எங்கள் நட்பான AI உதவியாளர் சிக்கு கோபால், உங்கள் ஆவணங்களில் "
+    'en': ("As you go, our friendly AI helper, {persona}, will guide you through anything "
+           "on your documents that needs attention. If you're still unsure, email us at "
+           "{support} — we're glad to help."),
+    'ms': ("Sepanjang proses, pembantu AI mesra kami, {persona}, akan membimbing anda dalam "
+           "apa-apa pada dokumen anda yang memerlukan perhatian. Jika anda masih tidak pasti, "
+           "e-mel kami di {support} — kami sedia membantu."),
+    'ta': ("இந்தச் செயல்பாட்டின்போது, எங்கள் நட்பான AI உதவியாளர் {persona}, உங்கள் ஆவணங்களில் "
            "கவனம் தேவைப்படும் எதையும் வழிநடத்துவார். இன்னும் உறுதியில்லை எனில், "
-           f"{_P.email_support}-ல் எங்களுக்கு மின்னஞ்சல் அனுப்பவும் — உதவ நாங்கள் தயாராக இருக்கிறோம்."),
+           "{support}-ல் எங்களுக்கு மின்னஞ்சல் அனுப்பவும் — உதவ நாங்கள் தயாராக இருக்கிறோம்."),
 }
 CLOSURE_HELP = {
-    'en': (f"If you'd like to restart and have any questions, our AI helper Cikgu Gopal can "
-           f"guide you, or email us at {_P.email_support}."),
-    'ms': (f"Jika anda ingin memulakan semula dan mempunyai sebarang pertanyaan, pembantu AI "
-           f"kami Cikgu Gopal boleh membimbing anda, atau e-mel kami di {_P.email_support}."),
-    'ta': ("மீண்டும் தொடங்க விரும்பினால், ஏதேனும் கேள்விகள் இருந்தால், எங்கள் AI உதவியாளர் சிக்கு "
-           f"கோபால் வழிநடத்துவார், அல்லது {_P.email_support}-ல் எங்களுக்கு மின்னஞ்சல் அனுப்பவும்."),
+    'en': ("If you'd like to restart and have any questions, our AI helper {persona} can "
+           "guide you, or email us at {support}."),
+    'ms': ("Jika anda ingin memulakan semula dan mempunyai sebarang pertanyaan, pembantu AI "
+           "kami {persona} boleh membimbing anda, atau e-mel kami di {support}."),
+    'ta': ("மீண்டும் தொடங்க விரும்பினால், ஏதேனும் கேள்விகள் இருந்தால், எங்கள் AI உதவியாளர் "
+           "{persona} வழிநடத்துவார், அல்லது {support}-ல் எங்களுக்கு மின்னஞ்சல் அனுப்பவும்."),
 }
+
+
+def _help_line(mapping, lang, branding):
+    """Render a persona help line ({persona}/{support}) from the branding seam."""
+    b = branding or _P
+    return mapping[lang].format(persona=b.persona_name(lang), support=b.email_support)
 
 REMINDER_SUBJECTS = {
     1: {'en': 'Complete your {programme} application',
@@ -1696,20 +1737,22 @@ CLOSED_BODIES = {
 }
 
 
-def send_reminder_email(to_email, applicant_name, programme_name, stage, lang='en'):
+def send_reminder_email(to_email, applicant_name, programme_name, stage, lang='en', branding=None):
     """Send completion reminder ``stage`` (1–4). Stage 4 is the final 'complete within
     5 days or we close it' warning. No-op for an unknown stage."""
     if stage not in REMINDER_SUBJECTS:
         return False
     return _send(to_email, REMINDER_SUBJECTS[stage], REMINDER_BODIES[stage],
                  applicant_name, programme_name, lang,
-                 extra={'help': HELP_LINE[normalise_lang(lang)]})
+                 extra={'help': _help_line(HELP_LINE, normalise_lang(lang), branding)},
+                 branding=branding)
 
 
-def send_application_closed_email(to_email, applicant_name, programme_name, lang='en'):
+def send_application_closed_email(to_email, applicant_name, programme_name, lang='en', branding=None):
     """Confirm an application was auto-closed for non-completion, inviting a fresh start."""
     return _send(to_email, CLOSED_SUBJECTS, CLOSED_BODIES, applicant_name, programme_name, lang,
-                 extra={'help': CLOSURE_HELP[normalise_lang(lang)]})
+                 extra={'help': _help_line(CLOSURE_HELP, normalise_lang(lang), branding)},
+                 branding=branding)
 
 
 REQUEST_INFO_SUBJECTS = {
@@ -1983,7 +2026,7 @@ def send_profile_complete_admin_email(application_id, applicant_name, programme_
 # All reviewer mail goes out via _send_plain → from the monitored interview@ alias with a
 # working reply-to, so "reply to reassign" / replies actually reach a person. The subject
 # carries the Scholar-code so a reviewer juggling several applicants can triage at a glance.
-_REVIEWER_SIGNOFF = 'Thanks,\nThe BrightPath Bursary Team'
+_REVIEWER_SIGNOFF = f'Thanks,\n{_P.team_signoff("en")}'
 
 
 def _reviewer_dashboard_cta():
@@ -2152,9 +2195,9 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     en_name = first or 'there'
     bm_name = first or 'di sana'
     reviewer = (reviewer_name or '').strip()
-    subject = 'Your BrightPath Bursary Programme interview — what happens next'
+    subject = 'Your ' + _PROG_EN + ' Programme interview — what happens next'
 
-    en_intro = ('Your application has reached the interview stage of the BrightPath Bursary Programme, '
+    en_intro = ('Your application has reached the interview stage of the ' + _PROG_EN + ' Programme, '
                 + (f'and your interview will be with {reviewer}, one of our programme’s interviewers.'
                    if reviewer else 'and an interviewer from our team has now been assigned to you.'))
     en_what = ('The interview is a short video call, about 30 minutes, to understand your '
@@ -2173,7 +2216,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
                  f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
                  f'does, it’s not us — please tell us at {_P.email_support}.')
 
-    bm_intro = ('Permohonan anda telah sampai ke peringkat temu duga Program Bursari BrightPath, '
+    bm_intro = ('Permohonan anda telah sampai ke peringkat temu duga Program ' + _PROG_MS + ', '
                 + (f'dan temu duga anda akan bersama {reviewer}, salah seorang penemu duga program kami.'
                    if reviewer else 'dan seorang penemu duga daripada pasukan kami kini telah ditugaskan kepada anda.'))
     bm_what = ('Temu duga ialah panggilan video ringkas, kira-kira 30 minit, untuk memahami '
@@ -2204,11 +2247,11 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     en_text = text_block(
         f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
         en_safety, 'We look forward to speaking with you.',
-        'Warm regards,\nThe BrightPath Bursary Team')
+        'Warm regards,\n' + _TEAM_EN)
     bm_text = text_block(
         f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
         bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
-        'Salam hormat,\nPasukan Program Bursari BrightPath')
+        'Salam hormat,\n' + _TEAM_MS)
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
     # ── HTML ──────────────────────────────────────────────────────────────────
@@ -2227,11 +2270,11 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     en_html = html_block(
         f'Hi {en_name},', en_intro, en_what, 'A few things to know beforehand:', en_points,
         en_safety, 'We look forward to speaking with you.',
-        'Warm regards,<br>The BrightPath Bursary Team')
+        'Warm regards,<br>' + _TEAM_EN)
     bm_html = html_block(
         f'Salam {bm_name},', bm_intro, bm_what, 'Beberapa perkara untuk diketahui:', bm_points,
         bm_safety, 'Kami menantikan untuk bercakap dengan anda.',
-        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
+        'Salam hormat,<br>' + _TEAM_MS)
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
     return _send_html(to_email, subject, text_body, html_body)
@@ -2252,7 +2295,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
     link = f'{frontend}/scholarship/application'
     subject = 'Your B40 application is in — here’s what happens next'
 
-    en_intro = ('Thank you — your application and documents for the BrightPath Bursary Programme are '
+    en_intro = ('Thank you — your application and documents for the ' + _PROG_EN + ' Programme are '
                 'safely in. Pulling everything together takes real effort, so well done for getting '
                 'it done.')
     en_lead = ('Your application is now with our team. Here’s exactly what happens next, so there '
@@ -2279,7 +2322,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
                  f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
                  f'does, it isn’t us — please tell us straight away at {_P.email_support}.')
 
-    bm_intro = ('Terima kasih — permohonan dan dokumen anda untuk Program Bursari BrightPath telah selamat '
+    bm_intro = ('Terima kasih — permohonan dan dokumen anda untuk Program ' + _PROG_MS + ' telah selamat '
                 'diterima. Mengumpulkan semuanya memerlukan usaha yang sungguh-sungguh, jadi syabas '
                 'kerana menyelesaikannya.')
     bm_lead = ('Permohonan anda kini bersama pasukan kami. Berikut ialah perkara yang akan berlaku '
@@ -2318,10 +2361,10 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
                 f'{after}\n\n{safety}\n\n{signoff}')
     en_text = text_block(
         f'Hi {en_name},', en_intro, en_lead, en_steps, f'View my application: {link}', en_after,
-        en_safety, 'Warm regards,\nThe BrightPath Bursary Team')
+        en_safety, 'Warm regards,\n' + _TEAM_EN)
     bm_text = text_block(
         f'Salam {bm_name},', bm_intro, bm_lead, bm_steps, f'Lihat permohonan saya: {link}', bm_after,
-        bm_safety, 'Salam hormat,\nPasukan Program Bursari BrightPath')
+        bm_safety, 'Salam hormat,\n' + _TEAM_MS)
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
     # ── HTML ──────────────────────────────────────────────────────────────────
@@ -2340,10 +2383,10 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
         )
     en_html = html_block(
         f'Hi {en_name},', en_intro, en_lead, en_steps, 'View my application', en_after,
-        en_safety, 'Warm regards,<br>The BrightPath Bursary Team')
+        en_safety, 'Warm regards,<br>' + _TEAM_EN)
     bm_html = html_block(
         f'Salam {bm_name},', bm_intro, bm_lead, bm_steps, 'Lihat permohonan saya', bm_after,
-        bm_safety, 'Salam hormat,<br>Pasukan Program Bursari BrightPath')
+        bm_safety, 'Salam hormat,<br>' + _TEAM_MS)
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
     # General programme email → from info@ (DEFAULT_FROM_EMAIL), reply to support; NOT interview@.
@@ -2573,7 +2616,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
     cutoff = getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
     duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
     app_link = f"{_P.frontend_url}/scholarship/application"
-    summary = 'BrightPath Bursary Programme interview'
+    summary = '' + _PROG_EN + ' Programme interview'
     details = f'Join: {meeting_url}' if meeting_url else 'Your interviewer will share the video-call link.'
     gcal = _gcal_url(start=start, duration_min=duration_min, text=summary,
                      details=details, location=meeting_url or 'Video call')
@@ -2586,7 +2629,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
 
     en_text = (
         f'Hi {en_name},\n\n'
-        f'Your BrightPath Bursary Programme interview is confirmed. Here are the details:\n\n'
+        f'Your ' + _PROG_EN + ' Programme interview is confirmed. Here are the details:\n\n'
         f'Date & time: {when}\n'
         f'Interviewer: {rev_en}\n'
         f'{join_en}\n\n'
@@ -2600,11 +2643,11 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {_P.email_support}.\n\n'
         f'We look forward to speaking with you.\n\n'
-        f'Warm regards,\nThe BrightPath Bursary Team'
+        f'Warm regards,\n' + _TEAM_EN
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
-        f'Temu duga Program Bursari BrightPath anda telah disahkan. Berikut butirannya:\n\n'
+        f'Temu duga Program ' + _PROG_MS + ' anda telah disahkan. Berikut butirannya:\n\n'
         f'Tarikh & masa: {when}\n'
         f'Penemu duga: {rev_bm}\n'
         f'{join_bm}\n\n'
@@ -2618,7 +2661,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
         f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.\n\n'
         f'Kami menantikan untuk bercakap dengan anda.\n\n'
-        f'Salam hormat,\nPasukan Program Bursari BrightPath'
+        f'Salam hormat,\n' + _TEAM_MS
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
@@ -2644,7 +2687,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
                     else 'Penemu duga anda akan berkongsi pautan sebelum temu duga.')
     en_html = section(
         f'Hi {en_name},',
-        'Your BrightPath Bursary Programme interview is confirmed. Here are the details:',
+        'Your ' + _PROG_EN + ' Programme interview is confirmed. Here are the details:',
         [('Date &amp; time', when), ('Interviewer', rev_en)], ('Join here', join_cell_en),
         'Add to calendar',
         'The interview is a video call and takes about 30 minutes. Please join with your camera on. '
@@ -2656,10 +2699,10 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {_P.email_support}.',
         'We look forward to speaking with you.',
-        'Warm regards,<br>The BrightPath Bursary Team')
+        'Warm regards,<br>' + _TEAM_EN)
     bm_html = section(
         f'Salam {bm_name},',
-        'Temu duga Program Bursari BrightPath anda telah disahkan. Berikut butirannya:',
+        'Temu duga Program ' + _PROG_MS + ' anda telah disahkan. Berikut butirannya:',
         [('Tarikh &amp; masa', when), ('Penemu duga', rev_bm)], ('Sertai di sini', join_cell_bm),
         'Tambah ke kalendar',
         'Temu duga ialah panggilan video dan mengambil masa kira-kira 30 minit. Sila sertai dengan '
@@ -2671,10 +2714,10 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika sesiapa '
         f'berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.',
         'Kami menantikan untuk bercakap dengan anda.',
-        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
+        'Salam hormat,<br>' + _TEAM_MS)
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
-    return _send_html(to_email, 'Your BrightPath Bursary Programme interview is booked',
+    return _send_html(to_email, 'Your ' + _PROG_EN + ' Programme interview is booked',
                       text_body, html_body, ics=ics)
 
 
@@ -2693,20 +2736,20 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
     bm_name = first or 'di sana'
     frontend = _P.frontend_url
     link = f'{frontend}/scholarship/application'
-    subject = ('Your BrightPath Bursary Programme interview time has changed — pick a new slot'
+    subject = ('Your ' + _PROG_EN + ' Programme interview time has changed — pick a new slot'
                if rescheduled
-               else 'Pick a time slot for your BrightPath Bursary Programme interview')
+               else 'Pick a time slot for your ' + _PROG_EN + ' Programme interview')
     intro_en = (
         'Your interviewer has had to move your interview, so the time you had booked has been '
         'released. Please choose a new date and time that suits you best.'
         if rescheduled else
-        'The next step in your BrightPath Bursary Programme application is a short interview, and '
+        'The next step in your ' + _PROG_EN + ' Programme application is a short interview, and '
         'you can choose the date and time that suits you best.')
     intro_bm = (
         'Penemu duga anda terpaksa menukar temu duga anda, jadi masa yang anda tempah sebelum ini '
         'telah dilepaskan. Sila pilih tarikh dan masa baharu yang paling sesuai untuk anda.'
         if rescheduled else
-        'Langkah seterusnya dalam permohonan Program Bursari BrightPath anda ialah temu duga ringkas, '
+        'Langkah seterusnya dalam permohonan Program ' + _PROG_MS + ' anda ialah temu duga ringkas, '
         'dan anda boleh memilih tarikh dan masa yang paling sesuai.')
 
     # ── Plain-text fallback ───────────────────────────────────────────────────
@@ -2721,8 +2764,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         f'interviewer will then suggest new ones.\n\n'
         f'For your peace of mind: we’ll only ever ask about you and your studies. We will never '
         f'ask you for money, your password, or an OTP or PIN. If anyone claiming to represent the '
-        f'BrightPath Bursary Programme does, it isn’t us.\n\n'
-        f'Warm regards,\nThe BrightPath Bursary Team'
+        f'' + _PROG_EN + ' Programme does, it isn’t us.\n\n'
+        f'Warm regards,\n' + _TEAM_EN
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
@@ -2735,8 +2778,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         f'duga anda kemudian akan mencadangkan masa baharu.\n\n'
         f'Untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. Kami '
         f'tidak sekali-kali akan meminta wang, kata laluan, atau OTP atau PIN. Jika sesiapa yang '
-        f'mendakwa mewakili Program Bursari BrightPath berbuat demikian, itu bukan kami.\n\n'
-        f'Salam hormat,\nPasukan Program Bursari BrightPath'
+        f'mendakwa mewakili Program ' + _PROG_MS + ' berbuat demikian, itu bukan kami.\n\n'
+        f'Salam hormat,\n' + _TEAM_MS
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
@@ -2763,7 +2806,7 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         'For your peace of mind: we’ll only ever ask about you and your studies. We will never ask '
         'you for money, your password, or an OTP or PIN. If anyone claiming to represent the B40 '
         'Assistance Programme does, it isn’t us.',
-        'Warm regards,<br>The BrightPath Bursary Team')
+        'Warm regards,<br>' + _TEAM_EN)
     bm_html = section(
         f'Salam {bm_name},',
         intro_bm,
@@ -2775,8 +2818,8 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
         'anda kemudian akan mencadangkan masa baharu.',
         'Untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. Kami '
         'tidak sekali-kali akan meminta wang, kata laluan, atau OTP atau PIN. Jika sesiapa yang '
-        'mendakwa mewakili Program Bursari BrightPath berbuat demikian, itu bukan kami.',
-        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
+        'mendakwa mewakili Program ' + _PROG_MS + ' berbuat demikian, itu bukan kami.',
+        'Salam hormat,<br>' + _TEAM_MS)
 
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
     return _send_html(to_email, subject, text_body, html_body)
@@ -2796,19 +2839,19 @@ def send_interview_reminder_email(to_email, *, student_name, start, meeting_url=
     # ── Plain-text fallback ───────────────────────────────────────────────────
     en_text = (
         f'Hi {en_name},\n\n'
-        f'A reminder that your BrightPath Bursary Programme interview is {soon_en}:\n\n'
+        f'A reminder that your {_PROG_EN} Programme interview is {soon_en}:\n\n'
         f'• {whenfmt}\n'
         f'{_join_line(meeting_url, "en")}\n'
         f'Please be on camera and ready a few minutes early. See you soon.\n\n'
-        f'Warm regards,\nThe BrightPath Bursary Team'
+        f'Warm regards,\n' + _TEAM_EN
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
-        f'Peringatan bahawa temu duga Program Bursari BrightPath anda adalah {soon_bm}:\n\n'
+        f'Peringatan bahawa temu duga Program {_PROG_MS} anda adalah {soon_bm}:\n\n'
         f'• {whenfmt}\n'
         f'{_join_line(meeting_url, "bm")}\n'
         f'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.\n\n'
-        f'Salam hormat,\nPasukan Program Bursari BrightPath'
+        f'Salam hormat,\n' + _TEAM_MS
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
@@ -2831,16 +2874,16 @@ def send_interview_reminder_email(to_email, *, student_name, start, meeting_url=
         )
     en_html = section(
         f'Hi {en_name},',
-        f'A reminder that your BrightPath Bursary Programme interview is {soon_en}:',
+        f'A reminder that your {_PROG_EN} Programme interview is {soon_en}:',
         join_en_html,
         'Please be on camera and ready a few minutes early. See you soon.',
-        'Warm regards,<br>The BrightPath Bursary Team')
+        'Warm regards,<br>' + _TEAM_EN)
     bm_html = section(
         f'Salam {bm_name},',
-        f'Peringatan bahawa temu duga Program Bursari BrightPath anda adalah {soon_bm}:',
+        f'Peringatan bahawa temu duga Program {_PROG_MS} anda adalah {soon_bm}:',
         join_bm_html,
         'Sila buka kamera dan bersedia beberapa minit lebih awal. Jumpa tidak lama lagi.',
-        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
+        'Salam hormat,<br>' + _TEAM_MS)
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
     subj = ('Reminder: your B40 interview is tomorrow' if when == '1day'
@@ -2860,7 +2903,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
     # ── Plain-text fallback (the owner-approved copy) ─────────────────────────
     en_text = (
         f'Hi {en_name},\n\n'
-        f"This confirms that you've cancelled your interview for the BrightPath Bursary Programme, so "
+        f"This confirms that you've cancelled your interview for the {_PROG_EN} Programme, so "
         f'the time you had booked is now released.\n\n'
         f'Your application is still active — cancelling the interview doesn\'t affect it. Your '
         f"interviewer will propose some alternative times, and you're welcome to choose one "
@@ -2870,11 +2913,11 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'One note for your peace of mind: we\'ll only ever ask about you and your studies. We '
         f'will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it\'s '
         f'not us — please tell us at {_P.email_support}.\n\n'
-        f'Warm regards,\nThe BrightPath Bursary Team'
+        f'Warm regards,\n' + _TEAM_EN
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
-        f'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bursari BrightPath anda, '
+        f'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program ' + _PROG_MS + ' anda, '
         f'jadi masa yang anda tempah sebelum ini kini dilepaskan.\n\n'
         f'Permohonan anda masih aktif — membatalkan temu duga tidak menjejaskannya. Penemu duga '
         f'anda akan mencadangkan beberapa masa alternatif, dan anda dialu-alukan untuk memilih satu '
@@ -2884,7 +2927,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
         f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
         f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.\n\n'
-        f'Salam hormat,\nPasukan Program Bursari BrightPath'
+        f'Salam hormat,\n' + _TEAM_MS
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
@@ -2900,7 +2943,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         )
     en_html = section(
         f'Hi {en_name},',
-        "This confirms that you've cancelled your interview for the BrightPath Bursary Programme, so the "
+        f"This confirms that you've cancelled your interview for the {_PROG_EN} Programme, so the "
         'time you had booked is now released.',
         "Your application is still active — cancelling the interview doesn’t affect it. Your interviewer "
         "will propose some alternative times, and you’re welcome to choose one whenever you’re ready, if "
@@ -2910,10 +2953,10 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will never '
         f'ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — please tell '
         f'us at {_P.email_support}.',
-        'Warm regards,<br>The BrightPath Bursary Team')
+        'Warm regards,<br>' + _TEAM_EN)
     bm_html = section(
         f'Salam {bm_name},',
-        'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program Bursari BrightPath anda, jadi '
+        'E-mel ini mengesahkan bahawa anda telah membatalkan temu duga Program ' + _PROG_MS + ' anda, jadi '
         'masa yang anda tempah sebelum ini kini dilepaskan.',
         'Permohonan anda masih aktif — membatalkan temu duga tidak menjejaskannya. Penemu duga anda akan '
         'mencadangkan beberapa masa alternatif, dan anda dialu-alukan untuk memilih satu bila-bila masa '
@@ -2923,10 +2966,10 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan pengajian '
         f'anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
         f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.',
-        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
+        'Salam hormat,<br>' + _TEAM_MS)
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
-    return _send_html(to_email, "You've cancelled your BrightPath Bursary Programme interview",
+    return _send_html(to_email, f"You've cancelled your {_PROG_EN} Programme interview",
                       text_body, html_body)
 
 
@@ -2942,7 +2985,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
 
     en_text = (
         f'Hi {en_name},\n\n'
-        f"There's been a change to who will be interviewing you for the BrightPath Bursary "
+        f"There's been a change to who will be interviewing you for the {_PROG_EN} "
         f"Programme, so the interview time you'd booked has been released.\n\n"
         f"Your application is still active and this doesn't affect it. A new interviewer will "
         f"be assigned and will propose fresh times for you to choose from — there's nothing you "
@@ -2951,12 +2994,12 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         f"One note for your peace of mind: we'll only ever ask about you and your studies. We "
         f"will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it's "
         f"not us — please tell us at {_P.email_support}.\n\n"
-        f'Warm regards,\nThe BrightPath Bursary Team'
+        f'Warm regards,\n' + _TEAM_EN
     )
     bm_text = (
         f'Salam {bm_name},\n\n'
-        f'Terdapat perubahan pada penemu duga yang akan menemu duga anda untuk Program Bursari '
-        f'BrightPath, jadi masa temu duga yang anda tempah sebelum ini kini dilepaskan.\n\n'
+        f'Terdapat perubahan pada penemu duga yang akan menemu duga anda untuk Program {_PROG_MS}, '
+        f'jadi masa temu duga yang anda tempah sebelum ini kini dilepaskan.\n\n'
         f'Permohonan anda masih aktif dan perkara ini tidak menjejaskannya. Seorang penemu duga '
         f'baharu akan ditugaskan dan akan mencadangkan masa baharu untuk anda pilih — tiada apa '
         f'yang perlu anda lakukan sekarang.\n\n'
@@ -2964,7 +3007,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
         f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
         f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.\n\n'
-        f'Salam hormat,\nPasukan Program Bursari BrightPath'
+        f'Salam hormat,\n' + _TEAM_MS
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
 
@@ -2979,7 +3022,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         )
     en_html = section(
         f'Hi {en_name},',
-        "There’s been a change to who will be interviewing you for the BrightPath Bursary "
+        f"There’s been a change to who will be interviewing you for the {_PROG_EN} "
         "Programme, so the interview time you’d booked has been released.",
         "Your application is still active and this doesn’t affect it. A new interviewer will be "
         "assigned and will propose fresh times for you to choose from — there’s nothing you need "
@@ -2988,11 +3031,11 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
         f'please tell us at {_P.email_support}.',
-        'Warm regards,<br>The BrightPath Bursary Team')
+        'Warm regards,<br>' + _TEAM_EN)
     bm_html = section(
         f'Salam {bm_name},',
-        'Terdapat perubahan pada penemu duga yang akan menemu duga anda untuk Program Bursari '
-        'BrightPath, jadi masa temu duga yang anda tempah sebelum ini kini dilepaskan.',
+        f'Terdapat perubahan pada penemu duga yang akan menemu duga anda untuk Program {_PROG_MS}, '
+        'jadi masa temu duga yang anda tempah sebelum ini kini dilepaskan.',
         'Permohonan anda masih aktif dan perkara ini tidak menjejaskannya. Seorang penemu duga '
         'baharu akan ditugaskan dan akan mencadangkan masa baharu untuk anda pilih — tiada apa yang '
         'perlu anda lakukan sekarang.',
@@ -3000,10 +3043,10 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
         f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
         f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.',
-        'Salam hormat,<br>Pasukan Program Bursari BrightPath')
+        'Salam hormat,<br>' + _TEAM_MS)
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
-    return _send_html(to_email, 'Your BrightPath Bursary Programme interview time has been released',
+    return _send_html(to_email, 'Your ' + _PROG_EN + ' Programme interview time has been released',
                       text_body, html_body)
 
 
@@ -3039,7 +3082,7 @@ def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_n
     else:
         gcal = _gcal_url(start=start, duration_min=duration_min or 30,
                          text=f'B40 interview — {applicant}',
-                         details='BrightPath Bursary Programme interview.', location=meeting_url or '')
+                         details='' + _PROG_EN + ' Programme interview.', location=meeting_url or '')
         calendar_line = (
             "The booking is in their record. Add it to your calendar so you don't lose the time:\n"
             f'Add to your calendar:\n{gcal}')
@@ -3218,7 +3261,7 @@ def send_payment_countersign_email(run):
         body = (
             f'Dear {(approver.name or "").strip() or "Organisation Admin"},\n\n'
             f'{run.admin_signed_name} has signed payment run {run.reference}, paying the '
-            f'BrightPath Bursary for {month}:\n\n'
+            f'{_PROG_EN} for {month}:\n\n'
             f'    Students:      {n}\n'
             f'    Total:         RM{_rm_amount(total)}\n'
             f'    Payment date:  {run.payment_date:%d/%m/%Y}\n\n'
@@ -3313,7 +3356,7 @@ def send_vircle_activation_email(rows, csv_text=None):
         for i, r in enumerate(rows, 1))
     body = (
         'Dear Vircle team,\n\n'
-        'The student(s) below have installed the BrightPath Bursary eWallet and completed their '
+        'The student(s) below have installed the ' + _PROG_EN + ' eWallet and completed their '
         'account details, but their account(s) are not yet activated on your side. Please activate '
         'them so we can proceed with disbursement.\n\n'
         f'Awaiting activation: {n}  (full details in the attached CSV)\n\n'
@@ -3321,11 +3364,11 @@ def send_vircle_activation_email(rows, csv_text=None):
         'Once you activate an account we remove it from this list. This reminder is sent every '
         '48 hours for any accounts still awaiting activation.\n\n'
         'Thank you,\n'
-        'The BrightPath Bursary Team'
+        + _TEAM_EN
     )
     try:
         msg = EmailMessage(
-            subject=(f'BrightPath Bursary — eWallet activation request '
+            subject=(f'' + _PROG_EN + ' — eWallet activation request '
                      f'({n} account{"" if n == 1 else "s"}) — {today:%d %B %Y}'),
             body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient], bcc=bcc)
         msg.attach(f'vircle-activation-{today:%Y-%m-%d}.csv', csv_text, 'text/csv')
@@ -3348,7 +3391,7 @@ def send_payment_run_email(run):
     n, total = _run_totals(run)
     body = (
         'Dear Vircle team,\n\n'
-        f'Please find attached the payment instruction for the BrightPath Bursary '
+        f'Please find attached the payment instruction for the ' + _PROG_EN + ' '
         f'for {month}.\n\n'
         f'    Run reference:  {run.reference}\n'
         f'    Payment date:   {run.payment_date:%d/%m/%Y}\n'
@@ -3358,16 +3401,16 @@ def send_payment_run_email(run):
         "credit. Kindly credit each student's Vircle wallet on the payment date, and reply "
         'to this email to confirm once the payments have been processed.\n\n'
         f'This run was signed by {run.admin_signed_name} and countersigned by '
-        f'{run.org_admin_signed_name} of the BrightPath Bursary programme.\n\n'
+        f'{run.org_admin_signed_name} of the ' + _PROG_EN + ' programme.\n\n'
         'Thank you,\n'
-        'The BrightPath Bursary Team'
+        + _TEAM_EN
     )
     # Owner 2026-07-17 (approver's ask): CC the countersigning org admin so the
     # organisation holds its own copy of exactly what was sent to Vircle.
     cc = [e for e in [(run.org_admin_signed_email or '').strip()] if e]
     try:
         msg = EmailMessage(
-            subject=f'BrightPath Bursary — payment instruction {run.reference} ({month})',
+            subject=f'{_PROG_EN} — payment instruction {run.reference} ({month})',
             body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient], cc=cc)
         msg.attach(f'{run.reference}.csv', sheets.payment_csv_text(run), 'text/csv')
         msg.send()
