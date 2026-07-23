@@ -10,14 +10,18 @@ import os
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives, send_mail
 
-# Topical reply-to aliases (all land in the same Workspace inbox; they just route
-# replies to a sensible address and keep things filterable). From-address is the
-# global DEFAULT_FROM_EMAIL (info@halatuju.xyz) so every reply is deliverable.
-INTERVIEW_REPLY_TO = 'interview@halatuju.xyz'
-SPONSOR_REPLY_TO = 'sponsor@halatuju.xyz'
-# All interview comms send FROM (and reply to) the interview alias, so the whole thread is
-# self-contained on interview@ rather than the global info@ sender.
-INTERVIEW_FROM_EMAIL = 'interview@halatuju.xyz'
+from . import branding as _branding
+
+# Per-org branding is read ONLY through the branding seam (decision D1). Sender identity,
+# sign-off, programme name, persona, support/reply-to, topical aliases (interview@ / sponsor@)
+# and the display domain all resolve there. ``_P`` is the platform branding (BrightPath / today's
+# constants) — the default for internal/ops mail and the byte-identical fallback for every
+# student-facing send that isn't handed a tenant ``branding``.
+_P = _branding.platform()
+
+# Back-compat alias for the platform support address (derived from the seam, not a literal).
+# Kept because it is a documented public name of this module (imported by tests / callers).
+SUPPORT_EMAIL = _P.email_support
 
 logger = logging.getLogger(__name__)
 
@@ -350,14 +354,14 @@ def _send(to_email, subjects, bodies, applicant_name, programme_name, lang, extr
     name = applicant_name or _DEFAULT_NAME[lang]
     # Link to the complete-your-profile page (the shortlist body uses {link}; the
     # ack/decline bodies don't reference it, so the kwarg is harmlessly ignored).
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f"{frontend}/scholarship/application"
     fmt = {'name': name, 'programme': programme_name, 'link': link, **(extra or {})}
     try:
         send_mail(
             subject=subjects[lang].format(programme=programme_name),
             message=bodies[lang].format(**fmt),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             recipient_list=[to_email],
         )
         return True
@@ -581,7 +585,7 @@ def _award_offer_html(text_body, lang):
     it carries both routes to /scholarship/application. Falls back gracefully: a phrase that isn't
     found is left un-bolded/un-linked."""
     import html as _h
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link_phrase = _VIRCLE_LINK_PHRASES.get(lang, _VIRCLE_LINK_PHRASES['en'])
     phrases = _BOLD_PHRASES.get(lang, [])
 
@@ -632,16 +636,16 @@ def send_award_offer_email(to_email, applicant_name, lang='en', guardian_note=Fa
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    note = (AWARD_OFFER_GUARDIAN_NOTES[lang].format(support=SUPPORT_EMAIL) + '\n\n'
+    note = (AWARD_OFFER_GUARDIAN_NOTES[lang].format(support=_P.email_support) + '\n\n'
             if guardian_note else '')
-    fmt = {'name': name, 'support': SUPPORT_EMAIL, 'guardian_note': note}
+    fmt = {'name': name, 'support': _P.email_support, 'guardian_note': note}
     subject = AWARD_OFFER_SUBJECTS[lang]
     text_body = AWARD_OFFER_BODIES[lang].format(**fmt)
     guide = vircle_guide_attachment()
     return _send_html(
         to_email, subject, text_body, _award_offer_html(text_body, lang),
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-        reply_to=[SUPPORT_EMAIL],
+        from_email=_P.email_from,
+        reply_to=[_P.email_support],
         attachments=[guide] if guide else None,
     )
 
@@ -723,16 +727,16 @@ def send_award_offer_sign_email(to_email, applicant_name, lang='en'):
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f'{frontend}/scholarship/award'
-    body = AWARD_OFFER_SIGN_BODIES[lang].format(name=name, link=link, support=SUPPORT_EMAIL)
+    body = AWARD_OFFER_SIGN_BODIES[lang].format(name=name, link=link, support=_P.email_support)
     html = _html_email_shell('<p style="margin:0 0 14px;">'
                              + body.replace('\n\n', '</p><p style="margin:0 0 14px;">').replace('\n', '<br>')
                              + '</p>')
     return _send_html(
         to_email, AWARD_OFFER_SIGN_SUBJECTS[lang], body, html,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-        reply_to=[SUPPORT_EMAIL],
+        from_email=_P.email_from,
+        reply_to=[_P.email_support],
     )
 
 
@@ -934,7 +938,7 @@ def _vircle_install_html(text_body, lang):
     bolded, "the Action Centre" as an inline LINK where the ask is made, AND a call-to-action
     button under the sign-off. Both routes lead to /scholarship/application."""
     import html as _h
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link_phrase = _VIRCLE_LINK_PHRASES.get(lang, _VIRCLE_LINK_PHRASES['en'])
     phrases = _VIRCLE_BOLD_PHRASES.get(lang, [])
 
@@ -973,14 +977,14 @@ def send_vircle_install_email(to_email, applicant_name, lang='en'):
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    fmt = {'name': name, 'support': SUPPORT_EMAIL}
+    fmt = {'name': name, 'support': _P.email_support}
     subject = VIRCLE_INSTALL_SUBJECTS[lang]
     text_body = VIRCLE_INSTALL_BODIES[lang].format(**fmt)
     guide = vircle_guide_attachment()
     return _send_html(
         to_email, subject, text_body, _vircle_install_html(text_body, lang),
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-        reply_to=[SUPPORT_EMAIL],
+        from_email=_P.email_from,
+        reply_to=[_P.email_support],
         attachments=[guide] if guide else None,
     )
 
@@ -1044,7 +1048,7 @@ def send_sign_invitation_email(to_email, applicant_name, lang='en'):
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
     return _send(to_email, SIGN_INVITE_SUBJECTS, SIGN_INVITE_BODIES, name, '', lang,
-                 extra={'support': SUPPORT_EMAIL})
+                 extra={'support': _P.email_support})
 
 
 AGREEMENT_EXECUTED_SUBJECTS = {
@@ -1097,16 +1101,16 @@ def send_agreement_executed_email(to_email, applicant_name, programme_name='', l
     name = applicant_name or _DEFAULT_NAME[lang]
     if pdf is None:
         return _send(to_email, AGREEMENT_EXECUTED_SUBJECTS, AGREEMENT_EXECUTED_BODIES,
-                     name, programme_name, lang, extra={'support': SUPPORT_EMAIL})
+                     name, programme_name, lang, extra={'support': _P.email_support})
     subject = AGREEMENT_EXECUTED_SUBJECTS[lang]
-    text = AGREEMENT_EXECUTED_BODIES[lang].format(name=name, link=link or '', support=SUPPORT_EMAIL)
+    text = AGREEMENT_EXECUTED_BODIES[lang].format(name=name, link=link or '', support=_P.email_support)
     html = _html_email_shell('<p style="margin:0 0 14px;">'
                              + text.replace('\n\n', '</p><p style="margin:0 0 14px;">').replace('\n', '<br>')
                              + '</p>')
     return _send_html(
         to_email, subject, text, html,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-        reply_to=[SUPPORT_EMAIL],
+        from_email=_P.email_from,
+        reply_to=[_P.email_support],
         attachments=[('bursary_agreement.pdf', pdf, 'application/pdf')])
 
 
@@ -1131,8 +1135,8 @@ def send_executed_copy_email(to_email, *, applicant_name='', programme_name='', 
     attachments = [('bursary_agreement.pdf', pdf, 'application/pdf')] if pdf else None
     return _send_html(
         to_email, subject, text, html,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-        reply_to=[SUPPORT_EMAIL], attachments=attachments)
+        from_email=_P.email_from,
+        reply_to=[_P.email_support], attachments=attachments)
 
 
 def send_witness_pending_email(to_email, *, contact_person='', applicant_name='',
@@ -1165,8 +1169,8 @@ def send_witness_pending_email(to_email, *, contact_person='', applicant_name=''
     )
     return _send_html(
         to_email, 'A bursary agreement is awaiting your witness signature', text, html,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-        reply_to=[SUPPORT_EMAIL],
+        from_email=_P.email_from,
+        reply_to=[_P.email_support],
     )
 
 
@@ -1196,8 +1200,8 @@ def send_countersign_pending_email(to_email, *, applicant_name='', link=''):
     )
     return _send_html(
         to_email, 'A bursary agreement is awaiting the Foundation countersignature', text, html,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-        reply_to=[SUPPORT_EMAIL],
+        from_email=_P.email_from,
+        reply_to=[_P.email_support],
     )
 
 
@@ -1442,7 +1446,7 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=
         return False
     import html as _h
     lang = normalise_lang(lang)
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     freq_word = _SPONSOR_FREQ_WORD.get(freq, {}).get(lang, freq)
     tax = _tax_name_map()
     all_cards = list(cards)
@@ -1479,8 +1483,8 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=
     )
     return _send_html(
         to_email, subject, text_body, html_body,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-        reply_to=[SPONSOR_REPLY_TO],
+        from_email=_P.email_from,
+        reply_to=[_P.sponsor_reply_to],
     )
 
 
@@ -1526,15 +1530,15 @@ def send_decline_email(to_email, applicant_name, programme_name, category='', la
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
     subjects, bodies = _DECLINE_TEMPLATES.get(category, (FAIL_SUBJECTS, FAIL_BODIES))
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     fmt = {'name': name, 'programme': programme_name,
            'link': f'{frontend}/scholarship/application'}
     subject = subjects[lang].format(programme=programme_name)
     text_body = bodies[lang].format(**fmt)
     return _send_html(
         to_email, subject, text_body, _decline_html(text_body),
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
-        reply_to=[SUPPORT_EMAIL],
+        from_email=_P.email_from,
+        reply_to=[_P.email_support],
     )
 
 
@@ -1543,25 +1547,24 @@ def send_decline_email(to_email, applicant_name, programme_name, category='', la
 # to the application page (the {link} kwarg is filled by _send). Keyed by stage 1–4.
 # Shared help line — built-in AI helper (Cikgu Gopal) + a human fallback. Filled into
 # the {help} placeholder of each reminder; the closure email uses CLOSURE_HELP.
-SUPPORT_EMAIL = 'help@halatuju.xyz'
 HELP_LINE = {
     'en': ("As you go, our friendly AI helper, Cikgu Gopal, will guide you through anything "
            f"on your documents that needs attention. If you're still unsure, email us at "
-           f"{SUPPORT_EMAIL} — we're glad to help."),
+           f"{_P.email_support} — we're glad to help."),
     'ms': ("Sepanjang proses, pembantu AI mesra kami, Cikgu Gopal, akan membimbing anda dalam "
            f"apa-apa pada dokumen anda yang memerlukan perhatian. Jika anda masih tidak pasti, "
-           f"e-mel kami di {SUPPORT_EMAIL} — kami sedia membantu."),
+           f"e-mel kami di {_P.email_support} — kami sedia membantu."),
     'ta': ("இந்தச் செயல்பாட்டின்போது, எங்கள் நட்பான AI உதவியாளர் சிக்கு கோபால், உங்கள் ஆவணங்களில் "
            "கவனம் தேவைப்படும் எதையும் வழிநடத்துவார். இன்னும் உறுதியில்லை எனில், "
-           f"{SUPPORT_EMAIL}-ல் எங்களுக்கு மின்னஞ்சல் அனுப்பவும் — உதவ நாங்கள் தயாராக இருக்கிறோம்."),
+           f"{_P.email_support}-ல் எங்களுக்கு மின்னஞ்சல் அனுப்பவும் — உதவ நாங்கள் தயாராக இருக்கிறோம்."),
 }
 CLOSURE_HELP = {
     'en': (f"If you'd like to restart and have any questions, our AI helper Cikgu Gopal can "
-           f"guide you, or email us at {SUPPORT_EMAIL}."),
+           f"guide you, or email us at {_P.email_support}."),
     'ms': (f"Jika anda ingin memulakan semula dan mempunyai sebarang pertanyaan, pembantu AI "
-           f"kami Cikgu Gopal boleh membimbing anda, atau e-mel kami di {SUPPORT_EMAIL}."),
+           f"kami Cikgu Gopal boleh membimbing anda, atau e-mel kami di {_P.email_support}."),
     'ta': ("மீண்டும் தொடங்க விரும்பினால், ஏதேனும் கேள்விகள் இருந்தால், எங்கள் AI உதவியாளர் சிக்கு "
-           f"கோபால் வழிநடத்துவார், அல்லது {SUPPORT_EMAIL}-ல் எங்களுக்கு மின்னஞ்சல் அனுப்பவும்."),
+           f"கோபால் வழிநடத்துவார், அல்லது {_P.email_support}-ல் எங்களுக்கு மின்னஞ்சல் அனுப்பவும்."),
 }
 
 REMINDER_SUBJECTS = {
@@ -1733,14 +1736,14 @@ def send_request_info_email(to_email, applicant_name, programme_name, note, lang
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f'{frontend}/scholarship/application'
     try:
         send_mail(
             subject=REQUEST_INFO_SUBJECTS[lang].format(programme=programme_name),
             message=REQUEST_INFO_BODIES[lang].format(
                 name=name, programme=programme_name, note=note, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             recipient_list=[to_email],
         )
         return True
@@ -1781,14 +1784,14 @@ def send_query_reminder_email(to_email, applicant_name, programme_name, n_querie
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f'{frontend}/scholarship/application'
     try:
         send_mail(
             subject=QUERY_REMINDER_SUBJECTS[lang].format(programme=programme_name),
             message=QUERY_REMINDER_BODIES[lang].format(
                 name=name, programme=programme_name, n=n_queries, days=days_left, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             recipient_list=[to_email],
         )
         return True
@@ -1828,14 +1831,14 @@ def send_query_raised_email(to_email, applicant_name, programme_name, n_queries,
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f'{frontend}/scholarship/application'
     try:
         send_mail(
             subject=QUERY_RAISED_SUBJECTS[lang].format(programme=programme_name),
             message=QUERY_RAISED_BODIES[lang].format(
                 name=name, programme=programme_name, n=n_queries, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             recipient_list=[to_email],
         )
         return True
@@ -1858,7 +1861,7 @@ def send_sponsor_interest_admin_email(name, email, organisation, message):
                 f'Organisation: {organisation or "—"}\n\n'
                 f'Message:\n{message or "—"}'
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             recipient_list=[to_email],
         )
         return True
@@ -1902,16 +1905,16 @@ def send_sponsor_referral_invite(to_email, inviter_name, note, code, lang='en'):
         return False
     lang = normalise_lang(lang)
     inviter = inviter_name or 'A HalaTuju sponsor'
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f"{frontend}/sponsor?ref={code}"
     note_block = _REFERRAL_NOTE_PREFIX[lang].format(note=note) if (note or '').strip() else ''
     try:
         EmailMessage(
             subject=REFERRAL_INVITE_SUBJECTS[lang].format(inviter=inviter),
             body=REFERRAL_INVITE_BODIES[lang].format(inviter=inviter, note=note_block, link=link),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             to=[to_email],
-            reply_to=[SPONSOR_REPLY_TO],
+            reply_to=[_P.sponsor_reply_to],
         ).send()
         return True
     except Exception:
@@ -1939,7 +1942,7 @@ def send_vision_outage_alert_email(stats):
                 'Google Vision API status, quota and billing for the HalaTuju project.\n\n'
                 'This is an automated alert and will repeat daily until OCR recovers.'
             ).format(**stats),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             recipient_list=[to_email],
         )
         return True
@@ -1956,7 +1959,7 @@ def send_profile_complete_admin_email(application_id, applicant_name, programme_
     to_email = getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or ''
     if not to_email:
         return False
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     name = applicant_name or 'An applicant'
     try:
         send_mail(
@@ -1966,7 +1969,7 @@ def send_profile_complete_admin_email(application_id, applicant_name, programme_
                 f'(application #{application_id}) and is ready for review.\n\n'
                 f'Review it: {frontend}/admin/scholarship/{application_id}'
             ),
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             recipient_list=[to_email],
         )
         return True
@@ -1985,7 +1988,7 @@ _REVIEWER_SIGNOFF = 'Thanks,\nThe BrightPath Bursary Team'
 
 def _reviewer_dashboard_cta():
     """The single CTA every reviewer email shares — one name ('reviewer dashboard'), one link."""
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     return f'Open in your reviewer dashboard:\n{frontend}/admin/login'
 
 
@@ -2048,7 +2051,7 @@ def send_partner_welcome_email(to_email, name, role, temp_password=None, google=
         return False
     who = name or 'there'
     role_label = _PARTNER_ROLE_LABELS.get(role, 'a team member')
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f'{frontend}/admin/login'
 
     if google:
@@ -2083,9 +2086,9 @@ def send_partner_welcome_email(to_email, name, role, temp_password=None, google=
         EmailMessage(
             subject='Your HalaTuju partner access',
             body=body,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             to=[to_email],
-            reply_to=[SUPPORT_EMAIL],
+            reply_to=[_P.email_support],
         ).send()
         return True
     except Exception:
@@ -2168,7 +2171,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     ]
     en_safety = (f'One note for your peace of mind: we’ll only ever ask about you and your studies. '
                  f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
-                 f'does, it’s not us — please tell us at {SUPPORT_EMAIL}.')
+                 f'does, it’s not us — please tell us at {_P.email_support}.')
 
     bm_intro = ('Permohonan anda telah sampai ke peringkat temu duga Program Bursari BrightPath, '
                 + (f'dan temu duga anda akan bersama {reviewer}, salah seorang penemu duga program kami.'
@@ -2191,7 +2194,7 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     bm_safety = (f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan '
                  f'pengajian anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, '
                  f'atau OTP atau PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila '
-                 f'beritahu kami di {SUPPORT_EMAIL}.')
+                 f'beritahu kami di {_P.email_support}.')
 
     # ── Plain text ────────────────────────────────────────────────────────────
     def text_block(greeting, intro, what, points_label, points, safety, closing, signoff):
@@ -2245,7 +2248,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
     first = (student_name or '').strip().split(' ')[0]
     en_name = first or 'there'
     bm_name = first or 'di sana'
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f'{frontend}/scholarship/application'
     subject = 'Your B40 application is in — here’s what happens next'
 
@@ -2274,7 +2277,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
                 'that’s a quick question or your invitation to interview.')
     en_safety = (f'One note for your peace of mind: we’ll only ever ask about you and your studies. '
                  f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
-                 f'does, it isn’t us — please tell us straight away at {SUPPORT_EMAIL}.')
+                 f'does, it isn’t us — please tell us straight away at {_P.email_support}.')
 
     bm_intro = ('Terima kasih — permohonan dan dokumen anda untuk Program Bursari BrightPath telah selamat '
                 'diterima. Mengumpulkan semuanya memerlukan usaha yang sungguh-sungguh, jadi syabas '
@@ -2306,7 +2309,7 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
     bm_safety = (f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan '
                  f'pengajian anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
                  f'OTP atau PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami '
-                 f'dengan segera di {SUPPORT_EMAIL}.')
+                 f'dengan segera di {_P.email_support}.')
 
     # ── Plain text ────────────────────────────────────────────────────────────
     def text_block(greeting, intro, lead, steps, btn_line, after, safety, signoff):
@@ -2345,8 +2348,8 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
 
     # General programme email → from info@ (DEFAULT_FROM_EMAIL), reply to support; NOT interview@.
     return _send_html(to_email, subject, text_body, html_body,
-                      from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'info@halatuju.xyz'),
-                      reply_to=[SUPPORT_EMAIL])
+                      from_email=_P.email_from,
+                      reply_to=[_P.email_support])
 
 
 def send_contact_submission_admin_email(*, to_email, name, contact, category, message, created_at):
@@ -2367,7 +2370,7 @@ def send_contact_submission_admin_email(*, to_email, name, contact, category, me
         EmailMessage(
             subject=f'[HalaTuju contact] {category} — {name}'[:120],
             body=body,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.xyz'),
+            from_email=_P.email_from,
             to=[to_email],
             reply_to=reply_to,
         ).send()
@@ -2417,7 +2420,7 @@ def _interview_unsub_headers():
     of triggering the ESP's auto-suppression that would silently stop us reaching the student
     about reminders or their decision. No one-click POST header, so nothing auto-fires. (The
     definitive fix is a Brevo-side List-Help on transactional mail.)"""
-    return {'List-Unsubscribe': f'<mailto:{SUPPORT_EMAIL}?subject=Unsubscribe%20from%20B40%20emails>'}
+    return {'List-Unsubscribe': f'<mailto:{_P.email_support}?subject=Unsubscribe%20from%20B40%20emails>'}
 
 
 def _send_bilingual(to_email, subject, en, bm):
@@ -2429,9 +2432,9 @@ def _send_bilingual(to_email, subject, en, bm):
         EmailMessage(
             subject=subject,
             body=en + '\n\n———\n\n' + bm,
-            from_email=INTERVIEW_FROM_EMAIL,
+            from_email=_P.interview_from,
             to=[to_email],
-            reply_to=[INTERVIEW_REPLY_TO],
+            reply_to=[_P.interview_reply_to],
             headers=_interview_unsub_headers(),
         ).send()
         return True
@@ -2470,9 +2473,9 @@ def _send_html(to_email, subject, text_body, html_body, reply_to=None, ics=None,
         msg = EmailMultiAlternatives(
             subject=subject,
             body=text_body,
-            from_email=from_email or INTERVIEW_FROM_EMAIL,
+            from_email=from_email or _P.interview_from,
             to=[to_email],
-            reply_to=reply_to or [INTERVIEW_REPLY_TO],
+            reply_to=reply_to or [_P.interview_reply_to],
             headers=_interview_unsub_headers(),
         )
         msg.attach_alternative(html_body, 'text/html')
@@ -2499,7 +2502,7 @@ def _interview_ics(*, start, duration_min, summary, description='', location='')
     end = start + timedelta(minutes=duration_min)
     lines = [
         'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//HalaTuju//B40//EN', 'METHOD:PUBLISH',
-        'BEGIN:VEVENT', f'UID:b40-interview-{int(start.timestamp())}@halatuju.xyz',
+        'BEGIN:VEVENT', f'UID:b40-interview-{int(start.timestamp())}@{_P.ics_uid_domain}',
         f'DTSTAMP:{datetime.now(dtz.utc).strftime("%Y%m%dT%H%M%SZ")}', f'DTSTART:{z(start)}', f'DTEND:{z(end)}',
         f'SUMMARY:{esc(summary)}', f'DESCRIPTION:{esc(description)}', f'LOCATION:{esc(location)}',
         'END:VEVENT', 'END:VCALENDAR',
@@ -2569,7 +2572,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
     when = _fmt_myt(start)
     cutoff = getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
     duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
-    app_link = f"{getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')}/scholarship/application"
+    app_link = f"{_P.frontend_url}/scholarship/application"
     summary = 'BrightPath Bursary Programme interview'
     details = f'Join: {meeting_url}' if meeting_url else 'Your interviewer will share the video-call link.'
     gcal = _gcal_url(start=start, duration_min=duration_min, text=summary,
@@ -2595,7 +2598,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'HalaTuju ({app_link}) up to {cutoff} hours before the interview.\n\n'
         f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
-        f'please tell us at {SUPPORT_EMAIL}.\n\n'
+        f'please tell us at {_P.email_support}.\n\n'
         f'We look forward to speaking with you.\n\n'
         f'Warm regards,\nThe BrightPath Bursary Team'
     )
@@ -2613,7 +2616,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'anda di HalaTuju ({app_link}) sehingga {cutoff} jam sebelum temu duga.\n\n'
         f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian '
         f'anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
-        f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
+        f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.\n\n'
         f'Kami menantikan untuk bercakap dengan anda.\n\n'
         f'Salam hormat,\nPasukan Program Bursari BrightPath'
     )
@@ -2651,7 +2654,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         'interview.',
         'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
-        f'please tell us at {SUPPORT_EMAIL}.',
+        f'please tell us at {_P.email_support}.',
         'We look forward to speaking with you.',
         'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = section(
@@ -2666,7 +2669,7 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
         f'anda</a> sehingga {cutoff} jam sebelum temu duga.',
         'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan pengajian anda. '
         f'Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau OTP atau PIN. Jika sesiapa '
-        f'berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
+        f'berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.',
         'Kami menantikan untuk bercakap dengan anda.',
         'Salam hormat,<br>Pasukan Program Bursari BrightPath')
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
@@ -2688,7 +2691,7 @@ def send_interview_slots_proposed_email(to_email, *, student_name, english_only=
     first = (student_name or '').strip().split(' ')[0]
     en_name = first or 'there'
     bm_name = first or 'di sana'
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f'{frontend}/scholarship/application'
     subject = ('Your BrightPath Bursary Programme interview time has changed — pick a new slot'
                if rescheduled
@@ -2866,7 +2869,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f"we'll help you sort it out.\n\n"
         f'One note for your peace of mind: we\'ll only ever ask about you and your studies. We '
         f'will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it\'s '
-        f'not us — please tell us at {SUPPORT_EMAIL}.\n\n'
+        f'not us — please tell us at {_P.email_support}.\n\n'
         f'Warm regards,\nThe BrightPath Bursary Team'
     )
     bm_text = (
@@ -2880,7 +2883,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         f'balas sahaja e-mel ini dan kami akan membantu anda.\n\n'
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
         f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
-        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
+        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.\n\n'
         f'Salam hormat,\nPasukan Program Bursari BrightPath'
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
@@ -2906,7 +2909,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         "you sort it out.",
         f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will never '
         f'ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — please tell '
-        f'us at {SUPPORT_EMAIL}.',
+        f'us at {_P.email_support}.',
         'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = section(
         f'Salam {bm_name},',
@@ -2919,7 +2922,7 @@ def send_interview_cancelled_email(to_email, *, student_name, english_only=False
         'sahaja e-mel ini dan kami akan membantu anda.',
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan pengajian '
         f'anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau PIN. Jika '
-        f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
+        f'sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.',
         'Salam hormat,<br>Pasukan Program Bursari BrightPath')
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
@@ -2947,7 +2950,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         f"If you have any questions, just reply to this email and we'll help.\n\n"
         f"One note for your peace of mind: we'll only ever ask about you and your studies. We "
         f"will never ask you for money, a bank password, or an OTP or PIN. If anyone does, it's "
-        f"not us — please tell us at {SUPPORT_EMAIL}.\n\n"
+        f"not us — please tell us at {_P.email_support}.\n\n"
         f'Warm regards,\nThe BrightPath Bursary Team'
     )
     bm_text = (
@@ -2960,7 +2963,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         f'Jika anda mempunyai sebarang pertanyaan, balas sahaja e-mel ini dan kami akan membantu.\n\n'
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
         f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
-        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.\n\n'
+        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.\n\n'
         f'Salam hormat,\nPasukan Program Bursari BrightPath'
     )
     text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
@@ -2984,7 +2987,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         "If you have any questions, just reply to this email and we’ll help.",
         f'One note for your peace of mind: we’ll only ever ask about you and your studies. We will '
         f'never ask you for money, a bank password, or an OTP or PIN. If anyone does, it’s not us — '
-        f'please tell us at {SUPPORT_EMAIL}.',
+        f'please tell us at {_P.email_support}.',
         'Warm regards,<br>The BrightPath Bursary Team')
     bm_html = section(
         f'Salam {bm_name},',
@@ -2996,7 +2999,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
         'Jika anda mempunyai sebarang pertanyaan, balas sahaja e-mel ini dan kami akan membantu.',
         f'Satu perkara untuk ketenangan fikiran anda: kami hanya akan bertanya tentang anda dan '
         f'pengajian anda. Kami tidak akan sekali-kali meminta wang, kata laluan bank, atau OTP atau '
-        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {SUPPORT_EMAIL}.',
+        f'PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.',
         'Salam hormat,<br>Pasukan Program Bursari BrightPath')
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
@@ -3009,8 +3012,8 @@ def _send_plain(to_email, subject, body):
         return False
     try:
         EmailMessage(subject=subject, body=body,
-                     from_email=INTERVIEW_FROM_EMAIL,
-                     to=[to_email], reply_to=[INTERVIEW_REPLY_TO],
+                     from_email=_P.interview_from,
+                     to=[to_email], reply_to=[_P.interview_reply_to],
                      headers=_interview_unsub_headers()).send()
         return True
     except Exception:
@@ -3200,7 +3203,7 @@ def send_payment_countersign_email(run):
     it awaits their countersignature. Internal officer email (English); best-effort — never
     raises, a failure never blocks the signature."""
     from apps.courses.models import PartnerAdmin
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f'{frontend}/admin/payments/{run.id}'
     month = _run_month_label(run)
     n, total = _run_totals(run)
@@ -3249,7 +3252,7 @@ def send_payment_finance_check_email(run):
     organisation's own finance staff about their own run, so the reference and the month say
     everything the recipient needs. (The sibling countersign email predates that rule.)"""
     from apps.courses.models import PartnerAdmin
-    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    frontend = _P.frontend_url
     link = f'{frontend}/admin/payments/{run.id}'
     month = _run_month_label(run)
     n, total = _run_totals(run)
