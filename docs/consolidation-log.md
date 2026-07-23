@@ -4,24 +4,49 @@ Tracks one-off small-lane changes between full sprints. Every ~10 pending entrie
 Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
-- 2026-07-23 docs(tenancy): `contracts._gemini_generate` recorded as a sanctioned Gemini seam (build-for-tenancy-conventions.md rule 6) — doc-only, records existing fact
-- 2026-07-23 docs(tenancy): `_INCOME_MATCH_TOL_FRAC`/`_MIN` marked a rule-1 exemption (income_engine.py) — advisory display tolerance, never a gate; no behaviour change
-- 2026-07-23 docs(tenancy): `PATHWAY_PAYMENT_START_MONTH` marked a rule-1 exemption (payments.py) — the org tunable already lives on `ContractScheduleRow.start_month`; these are the pre-template fallback; no behaviour change
-- 2026-07-23 fix(documents): a pathway switch promotes over a worse-reading letter (promotion.py, +9 tests) + archived 3 pre-4-July duplicate live docs
-- 2026-07-23 fix(cockpit): missing i18n string for verdict item `pathway_type_switch` (messages en/ms/ta) + new backend guard test_verdict_item_i18n.py covering the whole class
-- 2026-07-22 fix(web): witness card moved into the right column + both right-column cards stage-gated (admin/scholarship/[id]/page.tsx, officerCockpit.ts, +11 tests)
-- 2026-07-22 fix(web): hide cancelled payment runs behind a toggle (admin/payments/page.tsx, i18n x3) — chosen by the owner INSTEAD of deleting a cancelled run; `payments.cancel` has no delete counterpart by design
-- 2026-07-15 fix(admin): platform panels show per-panel lists (administration/page.tsx, adminStaff.ts, AdminListView payload, i18n x3)
-- 2026-07-15 fix(admin): administration staff-table world split (administration/page.tsx, lib/adminStaff.ts, i18n x3)
-
-- 2026-07-01 fix(web): STR-not-current verdict copy rendered raw ICU `select` — replaced with flat per-status keys (`halatuju-web` messages en/ms/ta, `officerCockpit.verdictItemKey`, cockpit `[id]/page.tsx`, +test)
-- 2026-07-01 feat/fix(web): STR Status (Lulus) chip + verdict detail leads with the finding (`officerCockpit` strStatusFactStatus, `docsDrawer.fact.status` en/ms/ta, cockpit `[id]/page.tsx` render order, +tests)
-- 2026-07-01 STR-proof refinement — **MEANS-TEST logic** (payment guard + band matrix + date-only Current chip; MODEL_VERSION→1.2.1; `income_engine`/`verdict_engine`/`officerCockpit`/spec/en·ms·ta; revises over-B40→red). Cluster of STR-proof changes (S1/S2 + copy fix + this) → **candidate to promote to a consolidated STR-proof sprint retro** at the next review.
-- 2026-07-01 feat(web): prescriptive Check-2 verdict copy — lean + action, never "can't tell"; "Unsure" reads as "asked the student" (Action-Centre query). Officer-only (verdict.item en·ms·ta + spec §4); Gopal/help_engine untouched (stays tolerant). Part of the STR-proof cluster above.
+_(cleared at the 2026-07-23 review — counter reset; the 13 reviewed entries are listed in that review)_
 
 _(Not logged here as a small change: the **Check-2 case summary** LLM feature — `verdict_narrative.py` + `AdminVerdictSummaryView` + FE lead paragraph, DARK behind `VERDICT_CASE_SUMMARY_ENABLED`. It's a feature, tracked as STR-proof S4 (dark) in CHANGELOG + halatuju.md + CLAUDE.md Next-Sprint; retro to follow after the owner live-validates the voice and flips the flag.)_
 
 ## Reviews
+
+### 2026-07-23 — Consolidation review (13 small changes, 1 Jul → 23 Jul)
+
+**Reflect.** The 13 entries fall into four groups: the **STR-proof verdict/copy stream** (4 ×
+2026-07-01: means-test refinement to MODEL_VERSION 1.2.1, Lulus chip, prescriptive Check-2 copy,
+the raw-ICU rendering fix); the **Administration-panel world split** (2 × 2026-07-15: per-panel
+lists, staff-table split); the **tenancy fix-forward annotations** (3 × 2026-07-23, from the
+compliance check-up — deliberate rule-1 exemptions recorded in place, not fixes); and four
+genuine one-offs (pathway-switch promotion engine fix +9 tests; verdict-item i18n gap + class
+guard; witness-card stage-gating +11 tests; cancelled-runs hide-toggle, which records the design
+decision that `payments.cancel` deliberately has no delete).
+
+**Cohere.**
+- **PROMOTED: the STR-proof cluster** → `docs/retrospective-2026-07-23-str-proof-cluster.md`,
+  the consolidated retro the 2026-07-01 entry called for. Honest finding recorded there: the
+  1.2.1 means-test refinement rode the small lane but bumped a verification model and touched
+  money-adjacent verdicts — by the lane's own boundary that was sprint-grade work. The retro is
+  the repayment; the boundary reminder stands: **a MODEL_VERSION bump is never a small change.**
+- The Administration-panel pair needed no promotion: coherence was restored by the per-panel
+  design + `lib/adminStaff.ts` helpers with regression tests (the guardrail landed with the fix).
+  Any further panel polish batches with the next real admin work (deploy cap rule).
+- The three tenancy annotations are not drift — they are the 2026-07-22 audit's fix-forwards,
+  and their real home (extraction to cohort fields) remains Phase-2 S5–S9.
+
+**Anticipate.**
+- **Recurring class (×2): a backend enum value reaches the officer UI without its i18n key**
+  (2026-07-01 raw ICU render; 2026-07-23 missing `pathway_type_switch`). The guardrail landed
+  with the second fix — `test_verdict_item_i18n.py` covers the WHOLE verdict-item class, so the
+  next new verdict item fails CI until its en/ms/ta keys exist. Generalised into
+  `docs/lessons.md`: when backend enum values feed frontend i18n keys, ship a class-covering
+  parity guard with the first fix, not a per-value patch.
+- No other class recurred; 4 of the 13 entries carried their own regression tests — the lane
+  working as designed.
+
+**Close-out.** Pending cleared (13 → 0; counter reset). Promoted: 1 consolidated retro.
+Guardrails: verdict-item i18n class guard (landed with the 2026-07-23 fix, credited here) +
+the lessons.md line. Boundary reminder recorded: MODEL_VERSION bumps and money/consent-adjacent
+verdict changes take the sprint lane.
 
 ### 2026-06-16 — Live-review round (9 small changes)
 **Reflect.** The 9 changes touched three surfaces: the **AI profile generator** (5: distil-all-inputs,
