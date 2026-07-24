@@ -276,6 +276,26 @@ BrightPath is pinned by a pre-edit consent-snapshot test + a leaf-map diff (en 1
 changed, 0 keys added/removed). Decisions: `docs/decisions.md` ("Per-org branding — frontend seam",
 2026-07-24); retrospective: `docs/retrospective-2026-07-24-sprint6-branding-frontend.md`.
 
+**Requests space — org-fenced work-request tracker (Platform Sprint 15, 2026-07-24, LIVE behind
+`REQUESTS_ENABLED=1`).** `models.py` gains **`OrgRequest`** (table `org_requests`, migrations
+`0111`+`0112`): org FK `PartnerOrganisation` PROTECT, `submitted_by` FK `PartnerAdmin` PROTECT, an
+8-status flow (`submitted → triaged → quoted → approved → deferred → scheduled → done →
+declined`), a `clarifications` JSON thread, owner-only `ai_draft_*`/`triage_note`, hours-only quote
+fields (`quote_hours`/`quote_margin_pct`), and three optional Bugzilla-style scoping fields
+(`component`/`urgency`/`steps_to_reproduce`, migration `0112`). **`org_requests.py`** is the service
+layer — a `TRANSITIONS` table (single source of truth for the flow) + every transition action +
+`run_ai_review` (through the sanctioned `contracts._gemini_generate` seam only, defensive JSON
+parse, auto-run best-effort capped at 3; AI clarifying questions go straight to the requestee, the
+hours estimate stays owner-gated). **Endpoints** under `admin/scholarship/requests/…` via
+`_OrgRequestsBase` (16 endpoints, all classified in `test_org_fence.py`, `OrgRequest` in WATCHED);
+**two allowlist serializers** with an exact-key-set snapshot test — the org-visible payload (19
+keys) never carries `ai_*`/`triage_*`. **Frontend:** `src/lib/requestStatus.ts` (pure
+statuses/tones/labels + `requestActionsFor`), `app/admin/requests/page.tsx` (rate-card panel +
+submit form + list) and `app/admin/requests/[id]/page.tsx` (Q&A thread + owner triage/quote
+controls), an Administration hub card + badge (hidden while the count probe 404s), i18n
+`admin.requests.*` en/ms/ta. Decisions: `docs/decisions.md` ("Requests space", Sprint 15,
+2026-07-24); retrospective: `docs/retrospective-2026-07-24-sprint15-requests-space.md`.
+
 **Verification verdict (the synthesis layer, branch `feature/verification-verdict`, S1–S2):** `verdict_engine.py`
 (`build_verdict` → four facts Identity/Academic/Income/Pathway, each `{status, evidence[], unresolved[]}`; pure +
 deterministic, **no LLM** — composes `_ic_identity_blockers`, `application_completeness`, the Vision matchers, doc-assist

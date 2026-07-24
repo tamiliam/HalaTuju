@@ -524,6 +524,43 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-24)
 
+**✅ SHIPPED + LIVE 2026-07-24 (api+web, core `a8bbefc6`..`ed3efeec` [5 commits] + increment
+`d8e34931`, migrations scholarship/0111+0112 APPLIED migrate-first) — Platform Sprint 15:
+Requests space v1.** Brief `docs/plans/2026-07-24-sprint15-requests-space-brief.md`; retro
+`docs/retrospective-2026-07-24-sprint15-requests-space.md`; decisions ×5; TD-172 logged.
+- **An org-section "Requests" area** turning ad-hoc feature/bug asks into managed, priced work:
+  org_admin submits a bug/feature form (optional Bugzilla-style component/urgency/steps-to-reproduce
+  scoping, added same-day as an owner-approved increment) → an AI reviewer
+  (`contracts._gemini_generate` seam only) classifies + estimates in **HOURS** (no RM figure — the
+  rate card becomes real data later) and may ask clarifying questions that flow **directly to the
+  requestee** → the **owner** triages (authoritative, may reclassify) and sends an **owner-gated**
+  hours quote (`≈N hours, includes M% margin`, `REQUESTS_QUOTE_MARGIN_PCT=50`) → the requestee
+  accepts/defers/modifies/withdraws (withdraw only until quoted).
+- **`OrgRequest`** (table `org_requests`) carries an **8-status flow** (`submitted → triaged →
+  quoted → approved → deferred → scheduled → done → declined` — the roadmap's 7 + the new
+  `deferred` status, owner decision). Two allowlist serializers with an **exact-key snapshot** —
+  the org-visible payload (19 keys after the increment) never carries `ai_*`/`triage_*`; that is
+  the sprint's single tested invariant. 16 endpoints org-fenced/classified in `test_org_fence.py`.
+- **Flag `REQUESTS_ENABLED=1`** (was OFF/dark at Phase-5 commit) — flipped 2026-07-24 after the
+  owner reviewed the rate-card copy + a UI mock (claude.ai artifact); verified live via `gcloud run
+  services describe`. The Administration hub card + badge are visible; 5 best-effort emails wired
+  (submit/AI-questions/answer/quote/accept).
+- **4363→4458 pytest** (0 fail 0 skip), **688→712 jest** (711 pass + the known pre-existing
+  `scholarship.test.ts` local-Node-26 failure, TD-171); exactly 2 migrations (0111 model + 0112
+  additive scoping fields), no courses migration.
+- **⚠ Process note (retro):** the flag was briefly ON (~2 min) before the owner's UI-review request
+  arrived mid-turn — caught and flipped back off; root cause was asking for flag-on approval before
+  the owner had seen a visual. For any owner-facing feature, present the UI artifact BEFORE the
+  first flag-on ask.
+- **▶ CARRY (owner):** brief BrightPath org admins on the new Requests space + rate card; monitor
+  the first real requests as they arrive; ms/ta deep review of `admin.requests.*` is optional (the
+  first-drafts were already reviewed against the rate-card extract).
+- **▶ NEXT — Sprint 7** (per-org timing/reminders/consent version) stays **GATED to ≈21 Aug 2026**
+  by the Phase-2 rule-stability clock (unchanged by this sprint) — do NOT start it before the gate
+  opens.
+
+## Superseded — previous Next Sprint (as of 2026-07-24)
+
 **✅ SHIPPED + LIVE 2026-07-24 (api+web, commits `d900cbc7`..`7038c37b`, 5 commits) — Platform
 Sprint 6: per-org branding (frontend).** Brief
 `docs/plans/2026-07-24-sprint6-branding-frontend-brief.md`; retro

@@ -22,44 +22,59 @@ which reads the declared route, flags INCOME red for a document that isn't actua
   relationship doc up-front (a missing BC surfaces as a soft Check-2 item post-switch, per the
   "enough to submit, officer verifies" rule).
 
-## Sprint 15 — Requests space v1 (SHIPPED DARK behind `REQUESTS_ENABLED`) — 2026-07-24
+## Platform Sprint 15 — Requests space v1 (SHIPPED + LIVE, `REQUESTS_ENABLED=1`) — 2026-07-24
 
 An org-section "Requests" area that turns the feature-ask firehose into managed, priced work:
 bug/feature forms → an AI reviewer that classifies + estimates in HOURS + asks clarifying questions
-→ a status flow → owner-gated hours quotes. Ships DARK — with `REQUESTS_ENABLED` off every route
-404s and the Administration hub card is hidden (no client flag). Brief
+→ a status flow → owner-gated hours quotes. Shipped dark, then verified live and flipped ON the
+same day after the owner reviewed the rate-card copy + UI mock (claude.ai artifact). Brief
 `docs/plans/2026-07-24-sprint15-requests-space-brief.md`; retro
-`docs/retrospective-2026-07-24-sprint15-requests-space.md`.
+`docs/retrospective-2026-07-24-sprint15-requests-space.md`; decisions ×5; TD-172 logged.
 
-- **Model — `OrgRequest`** (`apps/scholarship`, table `org_requests`, migration **scholarship/0111**,
-  the only one): org FK `PartnerOrganisation` PROTECT, `submitted_by` FK `PartnerAdmin` PROTECT;
-  8-status flow `submitted → triaged → quoted → approved → deferred → scheduled → done → declined`
-  (the roadmap's 7 + `deferred`, owner decision 2026-07-24); a `clarifications` JSON thread; the
-  owner-only `ai_draft_*` + `triage_note`; hours-only quote fields (`quote_hours`,
-  `quote_margin_pct`). Settings `REQUESTS_ENABLED` (OFF), `REQUESTS_TRIAGE_MODEL` (gemini-2.5-pro),
+Core (5 commits, `a8bbefc6`..`ed3efeec`) + a same-day owner-approved increment (`d8e34931`):
+
+- **Model — `OrgRequest`** (`apps/scholarship`, table `org_requests`, migrations
+  **scholarship/0111 + 0112**, both applied migrate-first): org FK `PartnerOrganisation` PROTECT,
+  `submitted_by` FK `PartnerAdmin` PROTECT; **8-status flow** `submitted → triaged → quoted →
+  approved → deferred → scheduled → done → declined` (the roadmap's 7 + `deferred`, owner decision
+  2026-07-24); a `clarifications` JSON thread; the owner-only `ai_draft_*` + `triage_note`;
+  hours-only quote fields (`quote_hours`, `quote_margin_pct` — no RM figure; the rate card becomes
+  real data later). **Increment (0112, additive):** three OPTIONAL Bugzilla-style scoping fields —
+  `component` (10 choices derived from the admin nav's real modules), `urgency`
+  (blocking/important/nice_to_have), `steps_to_reproduce` (bug-only) — all blank-default, never a
+  400 on omission. Settings `REQUESTS_ENABLED` (now `1`), `REQUESTS_TRIAGE_MODEL` (gemini-2.5-pro),
   `REQUESTS_QUOTE_MARGIN_PCT` (50).
 - **Service `org_requests.py`** — a `TRANSITIONS` table (the single source of truth for the flow) +
   every action; `run_ai_review` through the sanctioned `contracts._gemini_generate` seam ONLY,
   defensive JSON parse (fenced/garbage/bad-enum → never a 500), auto-run best-effort + capped at 3;
-  clarifying questions flow to the requestee directly, the hours estimate stays owner-gated.
-- **Endpoints** under `admin/scholarship/requests/…` via `_OrgRequestsBase` — 404-first dark ship;
-  org-fenced (cross-org 404); org_admin + super open list/detail/count; requestee actions
-  (answer/defer/modify org_admin, approve/decline +super) vs owner actions (triage/quote/requote/
-  schedule/done/ai-rerun super-only). Two allowlist serializers — the ORG payload NEVER carries the
-  AI draft (`ai_*`) or triage (exact-key snapshot pins it). All 14 view classes classified in
-  `test_org_fence.py`; `OrgRequest` added to WATCHED.
-- **Emails** (best-effort, English, seam-compliant, zero brand literals): submit→owner,
+  **AI clarifying questions flow to the requestee directly** (owner decision — refines the
+  roadmap's draft-only rule), while the **hours quote stays owner-gated**.
+- **Endpoints** under `admin/scholarship/requests/…` via `_OrgRequestsBase` — 16 endpoints
+  org-fenced/classified in `test_org_fence.py` (`OrgRequest` added to WATCHED); org_admin + super
+  open list/detail/count; requestee actions (answer/defer/modify org_admin, approve/decline +super,
+  withdraw until quoted) vs owner actions (triage/quote/requote/schedule/done/ai-rerun super-only).
+  **Two allowlist serializers with an exact-key snapshot** — the ORG payload (19 keys after the
+  increment, deliberately widened from 16) NEVER carries `ai_*`/`triage_*`; that is the sprint's
+  single tested invariant.
+- **Emails** (5, best-effort, English, seam-compliant, zero brand literals): submit→owner,
   AI-questions→submitter, answer→owner, quote→submitter (hours-denominated), accept→owner.
 - **Frontend** — `src/lib/requestStatus.ts` (pure: statuses/tones/labels + `requestActionsFor`),
-  `/admin/requests` (rate card + submit form + list) and `/admin/requests/[id]` (thread + requestee
-  + owner controls), the 🎫 Administration hub card (hidden when the count probe 404s), i18n
-  `admin.requests.*` en/ms/ta (ms/ta first-drafts for owner review).
-- Tests: pytest **4380 → 4445** (0 fail 0 skip); jest **688 → 712** (711 pass + the 1 known
-  pre-existing `scholarship.test.ts` localStorage fail under local Node 26); `next build` + lint
-  clean; `makemigrations --check` clean (one new migration, no courses migration).
-- **▶ COORDINATOR (deploy):** migrate-first apply 0111 via Supabase MCP (table DDL + RLS + deny
-  policies + TD-058 contenttypes workaround, Security Advisor → 0) BEFORE the push; then flip
-  `REQUESTS_ENABLED=1` after prod smoke + owner review of the rate-card copy and ms/ta drafts.
+  `/admin/requests` (rate-card panel + submit form with optional component/urgency selects +
+  bug-only steps-to-reproduce + list) and `/admin/requests/[id]` (Q&A thread, quote actions
+  accept/defer/modify/withdraw, owner triage/quote controls, component/urgency chips + steps
+  block), the Administration hub card + badge (hidden when the count probe 404s), i18n
+  `admin.requests.*` en/ms/ta (102 leaves, parity-tested; ms/ta first-drafts reviewed by the owner
+  via the rate-card extract).
+- Tests: pytest **4363 → 4458** (0 fail 0 skip; includes the concurrent income-route session's
+  tests); jest **688 → 712** (711 pass + the 1 known pre-existing `scholarship.test.ts`
+  localStorage fail under local Node 26 — TD-171); `next build` + lint clean; `makemigrations
+  --check` clean — exactly 2 migrations (0111, 0112), no courses migration.
+- **Deployed:** both Cloud Builds SUCCESS for `ed3efee` and `d8e3493`; migrations 0111+0112 applied
+  migrate-first via Supabase MCP (RLS deny-by-default, TD-058 contenttypes workaround, Security
+  Advisor → 0 errors). `REQUESTS_ENABLED=1` flipped 2026-07-24 after the owner approved the
+  rate-card copy + UI mock — verified live via `gcloud run services describe`.
+- **Deferred:** screenshots/attachments on a request — pending org-fenced file storage design
+  (TD-172). Quote email goes to the submitting `org_admin` only.
 
 ## "You haven't submitted yet" nudge — auto + org-admin manual reminder — 2026-07-24
 

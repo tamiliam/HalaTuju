@@ -236,10 +236,32 @@ as three small-lane commits. **▶ Remaining is an OWNER step: invite the financ
 **Billing & usage was explicitly OUT** (owner 2026-07-23) and remains gated on the
 billing-sources investigation below.
 
-### Sprint 15 — Requests space v1 (owner go; damping the feature-ask firehose commercially)
-- **Goal:** An org-section "Requests" icon: bug-report + feature-request forms; status flow `submitted → triaged → quoted → approved → scheduled → done/declined`; the **published rate card** (bugs FREE; features priced — the third revenue line beside the platform fee and metered costs); the adjudication rule in writing: *behaviour contradicting the role matrix / manual = bug (free); working-as-documented-but-wanted-different = feature (priced)*.
-- **Triage:** v1 = owner-run with an AI-drafted evaluation (classification, lane sizing small-change vs sprint, effort, price from the rate card) — **an AI verdict is always a DRAFT; a quote reaches the organisation only after owner approval.** Automated Claude triage = v2, gated on request volume.
-- **Tests:** status-flow + org-scoping + role gating (org_admin submits/views; reviewers don't), rate-card rendering. **Complexity:** Medium.
+### Sprint 15 — Requests space v1 — ✅ **SHIPPED + LIVE 2026-07-24**
+Delivered as an **AI-reviewer flow, not the static published rate card originally scoped below**
+(owner decision, locked at brief stage before code — see "Original scope" and
+`docs/decisions.md` "Requests space v1 — hours-only quotes"). Brief
+`docs/plans/2026-07-24-sprint15-requests-space-brief.md`; retro
+`docs/retrospective-2026-07-24-sprint15-requests-space.md`. An org-section "Requests" area:
+bug/feature forms (with optional Bugzilla-style component/urgency/steps-to-reproduce scoping,
+added same-day as an owner-approved increment) → an AI reviewer
+(`contracts._gemini_generate` seam) classifies + estimates **HOURS** (no RM — no rate exists yet)
++ may ask clarifying questions that flow **directly to the requestee** → the owner triages
+(authoritative) and sends an **owner-gated** hours quote → the requestee
+accepts/defers/modifies/withdraws (withdraw until quoted). An 8th status, `deferred`, was added
+to the roadmap's 7-status flow. Migrations `scholarship/0111` (model) +
+`scholarship/0112` (additive: optional component/urgency/steps fields, same-day increment).
+`REQUESTS_ENABLED=1` flipped live after owner review of the rate-card copy + a UI mock. pytest
+4363→4458, jest 688→712. **Follow-up (TD-172):** screenshots/attachments on a request are
+deferred pending an org-fenced file-storage design — the applicant-document vault isn't a general
+attachment store and wasn't extended for this.
+
+**Original scope (superseded — kept for record):** the roadmap originally called for a
+**published rate card** (bugs FREE; features priced in RM off a fixed table — the third revenue
+line beside the platform fee and metered costs) with the adjudication rule in writing: *behaviour
+contradicting the role matrix / manual = bug (free); working-as-documented-but-wanted-different =
+feature (priced)*, and triage as "v1 = owner-run with an AI-drafted evaluation … price from the
+rate card". The rate-card pricing step is now future work once enough quoted hours accumulate to
+derive a real rate; v1 ships hours-only.
 
 ---
 
@@ -267,7 +289,7 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 | Sprint E (erasure) | Before any REAL tenant-#2 DPA | Gated |
 | **Sprint 14 (Finance role)** | Payout rails live | ✅ **SHIPPED + LIVE 2026-07-23** (dark; owner invites the finance admin) |
 | Billing & usage (platform invoicing v1) | Billing-sources investigation done (service inventory + provider billing APIs + apportionment model) | Gated — investigation not started |
-| Sprint 15 (Requests space) | Owner go | Open |
+| Sprint 15 (Requests space) | Owner go | ✅ **SHIPPED + LIVE 2026-07-24** (hours-only v1; `REQUESTS_ENABLED=1`) |
 | Rung A (staging) | External devs real (or owner pulls early) | Gated |
 | Rung B (external PRs) | Devs signed; Rung A done | Gated |
 | Rung C (tenant API) | Real handover decision | Gated (end-state) |
@@ -346,7 +368,7 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 | 4 | 13b | Second-tenant rehearsal + rollback drill | 0 | Med |
 | 4 | E *(conditional)* | Off-boarding & erasure routine — before any real tenant #2 DPA | 0–1 | Med |
 | 5 | 14 | Finance role: dormant checker + payments funding summary (v2 scope; Billing & usage split out, gated on billing-sources investigation) | 2 (1 choices-only + 1 additive DDL on payment_runs) | Med |
-| 5 | 15 | Requests space v1 + rate card | 1 | Med |
+| 5 | 15 | ✅ Requests space v1 (hours-only quotes; rate card deferred to v2) — shipped 2026-07-24 | 2 | Med |
 | 6 | A | Staging environment (seeded fake data) | 0 | Med (infra) |
 | 6 | B | External-contributor model | 0 | Low (process) |
 | 6 | C | Versioned tenant API + machine auth | TBD | High (unsized until triggered) |
