@@ -1474,6 +1474,133 @@ export async function reviewSponsor(
   return adminMutate(`/api/v1/admin/sponsors/${id}/review/`, 'POST', { action }, options)
 }
 
+// ---- Requests space (Sprint 15) ----
+// Bug/feature requests → AI reviewer → owner-gated hours quotes. Dark behind REQUESTS_ENABLED:
+// every route 404s while off, which is how the Administration hub card ships dark (the count
+// probe 404s → the card is hidden; no client flag).
+
+export interface OrgRequestClarification {
+  question?: string | null
+  asked_at?: string | null
+  answer?: string | null
+  answered_at?: string | null
+  // A modify() history entry carries these instead of question/answer.
+  history?: string
+  previous_description?: string
+  at?: string
+}
+
+/** The ORG-facing payload (what a submitting org_admin sees) — the allowlist. NEVER carries the
+ *  AI draft (ai_*) or the owner's triage. The owner (super) additionally receives the owner
+ *  fields below (all optional here). */
+export interface OrgRequestDetail {
+  id: number
+  kind: string
+  title: string
+  description: string
+  status: string
+  clarifications: OrgRequestClarification[]
+  quote_hours: string | null
+  quote_margin_pct: number | null
+  quote_note: string
+  quoted_at: string | null
+  approved_at: string | null
+  scheduled_for: string | null
+  decline_reason: string
+  created_at: string
+  updated_at: string
+  submitted_by_name: string
+  // Owner-only (super payload) — undefined in the org payload by construction.
+  organisation_id?: number
+  organisation_name?: string
+  ai_run_count?: number
+  ai_draft_kind?: string
+  ai_draft_lane?: string
+  ai_draft_hours?: string | null
+  ai_draft_note?: string
+  ai_draft_model?: string
+  ai_draft_at?: string | null
+  triaged_kind?: string
+  lane?: string
+  triage_note?: string
+  triaged_at?: string | null
+  declined_by_role?: string
+}
+
+export async function getOrgRequests(
+  filters?: { status?: string }, options?: ApiOptions
+): Promise<{ requests: OrgRequestDetail[] }> {
+  const qs = filters?.status ? `?status=${encodeURIComponent(filters.status)}` : ''
+  return adminFetch(`/api/v1/admin/scholarship/requests/${qs}`, options)
+}
+
+export async function getOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
+  return adminFetch(`/api/v1/admin/scholarship/requests/${id}/`, options)
+}
+
+/** The lean badge probe. 404s while REQUESTS_ENABLED is off → callers hide the hub card. */
+export async function getOrgRequestCount(options?: ApiOptions): Promise<{ count: number }> {
+  return adminFetch('/api/v1/admin/scholarship/requests/count/', options)
+}
+
+export async function createOrgRequest(
+  data: { kind: string; title: string; description: string; organisation_id?: number },
+  options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate('/api/v1/admin/scholarship/requests/', 'POST', data, options)
+}
+
+// Requestee (org_admin) actions
+export async function answerOrgRequest(
+  id: number, data: { answer: string; index?: number }, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/answer/`, 'POST', data, options)
+}
+export async function approveOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/approve/`, 'POST', {}, options)
+}
+export async function deferOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/defer/`, 'POST', {}, options)
+}
+export async function modifyOrgRequest(
+  id: number, data: { description: string }, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/modify/`, 'POST', data, options)
+}
+export async function declineOrgRequest(
+  id: number, data: { reason?: string }, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/decline/`, 'POST', data, options)
+}
+
+// Owner (super) actions
+export async function triageOrgRequest(
+  id: number, data: { triaged_kind: string; lane: string; note?: string }, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/triage/`, 'POST', data, options)
+}
+export async function quoteOrgRequest(
+  id: number, data: { hours: number; margin_pct?: number; note?: string }, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/quote/`, 'POST', data, options)
+}
+export async function requoteOrgRequest(
+  id: number, data: { hours: number; margin_pct?: number; note?: string }, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/requote/`, 'POST', data, options)
+}
+export async function scheduleOrgRequest(
+  id: number, data: { scheduled_for?: string }, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/schedule/`, 'POST', data, options)
+}
+export async function doneOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/done/`, 'POST', {}, options)
+}
+export async function aiRerunOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/ai-rerun/`, 'POST', {}, options)
+}
+
 // ---- Course Data dashboard (read-only) ----
 
 export interface LinkFailure {

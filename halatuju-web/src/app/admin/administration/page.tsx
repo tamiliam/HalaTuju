@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
   getOrgs, inviteAdmin, getAdmins, revokeAdmin, resendAdminInvite, getPendingSponsorCount,
-  type OrgItem, type AdminItem,
+  getOrgRequestCount, type OrgItem, type AdminItem,
 } from '@/lib/admin-api'
 import { programmeStaff, referralPartners, tenantAdmins } from '@/lib/adminStaff'
 import { useT } from '@/lib/i18n'
@@ -82,6 +82,10 @@ export default function AdministrationPage() {
   const [admins, setAdmins] = useState<AdminItem[]>([])
   const [orgs, setOrgs] = useState<OrgItem[]>([])
   const [pendingSponsors, setPendingSponsors] = useState(0)
+  // Requests-space badge probe. null = the feature is dark (the count endpoint 404s while
+  // REQUESTS_ENABLED is off) OR not yet loaded → the Requests hub card is HIDDEN (dark ship,
+  // no client flag). A number (incl. 0) means the feature is live → show the card.
+  const [requestsCount, setRequestsCount] = useState<number | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [revoking, setRevoking] = useState<number | null>(null)
@@ -105,6 +109,8 @@ export default function AdministrationPage() {
     loadAdmins()
     if (isSuper) getOrgs({ token }).then((d) => setOrgs(d.orgs)).catch(() => {})
     getPendingSponsorCount({ token }).then((d) => setPendingSponsors(d.count)).catch(() => {})
+    // Dark-ship probe: a 404 (flag off) leaves requestsCount null → the card stays hidden.
+    getOrgRequestCount({ token }).then((d) => setRequestsCount(d.count)).catch(() => setRequestsCount(null))
   }, [token, isSuper])
 
   if (role && !isSuper && !isOrgAdmin && !isAdminGeneral && !isFinance) {
@@ -324,6 +330,11 @@ export default function AdministrationPage() {
               active={panel === 'staff'} onClick={() => setPanel(panel === 'staff' ? null : 'staff')} />
             <IconCard icon="🎗️" title={t('admin.administration.sponsors')} subtitle={t('admin.administration.sponsorsSub')}
               badge={pendingSponsors} onClick={() => router.push('/admin/sponsors')} />
+            {/* Requests — hidden until the count probe succeeds (dark ship, no client flag). */}
+            {requestsCount != null && (
+              <IconCard icon="🎫" title={t('admin.administration.requests')} subtitle={t('admin.administration.requestsSub')}
+                badge={requestsCount} onClick={() => router.push('/admin/requests')} />
+            )}
             <IconCard icon="💸" title={t('admin.administration.payments')} subtitle={t('admin.administration.paymentsSub')}
               onClick={() => router.push('/admin/payments')} />
             <IconCard icon="📄" title={t('admin.administration.contracts')} subtitle={t('admin.administration.contractsSub')}

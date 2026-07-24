@@ -4312,7 +4312,115 @@
       "sourcesSub": "Organisasi rujukan & senarai sumber borang permohonan",
       "sponsors": "Penaja",
       "sponsorsSub": "Semak dan luluskan akaun penaja",
+      "requests": "Permintaan",
+      "requestsSub": "Laporkan pepijat atau minta ciri baharu",
       "pendingApproval": "{count} menunggu kelulusan"
+    },
+    "requests": {
+      "nav": "Permintaan",
+      "title": "Permintaan",
+      "subtitle": "Laporkan pepijat atau minta ciri baharu. Kami menyemak setiap satu dan memberi sebut harga ciri dalam jam.",
+      "rateCard": {
+        "title": "Cara permintaan berfungsi",
+        "bugsFree": "Laporan pepijat adalah percuma.",
+        "rule": "Pepijat ialah tingkah laku yang bercanggah dengan manual atau matriks peranan. Ciri pula ialah sesuatu yang berfungsi seperti didokumenkan tetapi anda mahu ia berfungsi secara berbeza.",
+        "features": "Ciri dianggarkan dalam jam oleh penyemak AI dan disebut harga dengan kelulusan pemilik. Sebut harga menyatakan bilangan jam, termasuk margin."
+      },
+      "form": {
+        "title": "Permintaan baharu",
+        "kind": "Apakah jenis permintaan ini?",
+        "titleLabel": "Tajuk",
+        "titlePlaceholder": "Ringkasan pendek",
+        "descriptionLabel": "Terangkannya",
+        "descriptionPlaceholder": "Apa yang berlaku, atau apa yang anda mahukan?",
+        "submit": "Hantar permintaan",
+        "submitting": "Menghantar…"
+      },
+      "kind": {
+        "bug": "Laporan pepijat",
+        "feature": "Permintaan ciri"
+      },
+      "lane": {
+        "small_change": "Perubahan kecil",
+        "sprint": "Sprint"
+      },
+      "status": {
+        "submitted": "Dihantar",
+        "triaged": "Dinilai",
+        "quoted": "Disebut harga",
+        "approved": "Diluluskan",
+        "deferred": "Ditangguh",
+        "scheduled": "Dijadualkan",
+        "done": "Selesai",
+        "declined": "Ditolak"
+      },
+      "list": {
+        "filterAll": "Semua",
+        "empty": "Tiada permintaan lagi.",
+        "answerNeeded": "Jawapan diperlukan",
+        "submittedBy": "oleh {name}"
+      },
+      "detail": {
+        "back": "Kembali ke permintaan",
+        "description": "Penerangan",
+        "thread": "Soalan & jawapan",
+        "noQuestions": "Belum ada soalan.",
+        "asked": "Ditanya",
+        "answered": "Dijawab",
+        "answerLabel": "Jawapan anda",
+        "answerPlaceholder": "Taip jawapan anda",
+        "answerSend": "Hantar jawapan",
+        "historyModified": "Permintaan telah dipinda.",
+        "quote": "Sebut harga",
+        "quoteValue": "≈{hours} jam · termasuk margin {margin}%",
+        "quoteNote": "Nota",
+        "declinedReason": "Sebab",
+        "scheduledFor": "Dijadualkan untuk"
+      },
+      "action": {
+        "accept": "Terima sebut harga",
+        "defer": "Tangguh dahulu",
+        "modify": "Ubah permintaan saya",
+        "withdraw": "Tarik balik",
+        "triage": "Nilai",
+        "quote": "Hantar sebut harga",
+        "requote": "Sebut harga semula",
+        "schedule": "Jadualkan",
+        "done": "Tandakan selesai",
+        "decline": "Tolak",
+        "aiRerun": "Jalankan semula semakan AI",
+        "working": "Memproses…"
+      },
+      "owner": {
+        "aiDraft": "Draf penyemak AI",
+        "aiDraftKind": "Pengelasan",
+        "aiDraftLane": "Laluan",
+        "aiDraftHours": "Anggaran jam",
+        "aiDraftNone": "Belum ada draf AI.",
+        "aiDraftRuns": "Larian AI digunakan",
+        "triageTitle": "Penilaian",
+        "triageKind": "Pengelasan",
+        "triageLane": "Laluan",
+        "triageNote": "Nota penilaian (dalaman)",
+        "quoteTitle": "Sebut harga (jam)",
+        "quoteHours": "Jam",
+        "quoteMargin": "Margin (%)",
+        "quoteNote": "Nota kepada organisasi",
+        "scheduleDate": "Tarikh dijadualkan (pilihan)",
+        "declineReason": "Sebab",
+        "modifyLabel": "Pinda permintaan anda",
+        "declineConfirm": "Tolak permintaan ini? Tindakan ini tidak boleh dibatalkan.",
+        "withdrawConfirm": "Tarik balik permintaan ini? Tindakan ini tidak boleh dibatalkan."
+      },
+      "error": {
+        "bug_is_free": "Laporan pepijat adalah percuma — jadualkannya, bukan disebut harga.",
+        "bad_hours": "Masukkan bilangan jam yang sah.",
+        "reason_required": "Sebab diperlukan.",
+        "triage_ai_unconfigured": "Penyemak AI belum dikonfigurasikan.",
+        "triage_ai_unavailable": "Penyemak AI tidak tersedia buat masa ini.",
+        "ai_limit_reached": "Penyemak AI telah dijalankan bilangan maksimum kali.",
+        "generic": "Sesuatu tidak kena. Sila cuba lagi."
+      }
     },
     "payments": {
       "title": "Pembayaran",

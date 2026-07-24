@@ -4312,7 +4312,115 @@
       "sourcesSub": "Referral organisations & apply-form source list",
       "sponsors": "Sponsors",
       "sponsorsSub": "Vet and approve sponsor accounts",
+      "requests": "Requests",
+      "requestsSub": "Report a bug or request a feature",
       "pendingApproval": "{count} pending approval"
+    },
+    "requests": {
+      "nav": "Requests",
+      "title": "Requests",
+      "subtitle": "Report a bug or request a feature. We review each one and quote features in hours.",
+      "rateCard": {
+        "title": "How requests work",
+        "bugsFree": "Bug reports are free.",
+        "rule": "A bug is behaviour that contradicts the manual or role matrix. A feature is something that works as documented but you would like it to work differently.",
+        "features": "Features are estimated in hours by an AI reviewer and quoted with the owner's approval. A quote states the hours, including a margin."
+      },
+      "form": {
+        "title": "New request",
+        "kind": "What kind of request is this?",
+        "titleLabel": "Title",
+        "titlePlaceholder": "A short summary",
+        "descriptionLabel": "Describe it",
+        "descriptionPlaceholder": "What happened, or what would you like?",
+        "submit": "Submit request",
+        "submitting": "Submitting…"
+      },
+      "kind": {
+        "bug": "Bug report",
+        "feature": "Feature request"
+      },
+      "lane": {
+        "small_change": "Small change",
+        "sprint": "Sprint"
+      },
+      "status": {
+        "submitted": "Submitted",
+        "triaged": "Triaged",
+        "quoted": "Quoted",
+        "approved": "Approved",
+        "deferred": "Deferred",
+        "scheduled": "Scheduled",
+        "done": "Done",
+        "declined": "Declined"
+      },
+      "list": {
+        "filterAll": "All",
+        "empty": "No requests yet.",
+        "answerNeeded": "Answer needed",
+        "submittedBy": "by {name}"
+      },
+      "detail": {
+        "back": "Back to requests",
+        "description": "Description",
+        "thread": "Questions & answers",
+        "noQuestions": "No questions yet.",
+        "asked": "Asked",
+        "answered": "Answered",
+        "answerLabel": "Your answer",
+        "answerPlaceholder": "Type your answer",
+        "answerSend": "Send answer",
+        "historyModified": "The request was amended.",
+        "quote": "Quote",
+        "quoteValue": "≈{hours} hours · includes {margin}% margin",
+        "quoteNote": "Note",
+        "declinedReason": "Reason",
+        "scheduledFor": "Scheduled for"
+      },
+      "action": {
+        "accept": "Accept quote",
+        "defer": "Defer for later",
+        "modify": "Change my request",
+        "withdraw": "Withdraw",
+        "triage": "Triage",
+        "quote": "Send quote",
+        "requote": "Re-quote",
+        "schedule": "Schedule",
+        "done": "Mark done",
+        "decline": "Decline",
+        "aiRerun": "Re-run AI review",
+        "working": "Working…"
+      },
+      "owner": {
+        "aiDraft": "AI reviewer draft",
+        "aiDraftKind": "Classification",
+        "aiDraftLane": "Lane",
+        "aiDraftHours": "Estimated hours",
+        "aiDraftNone": "No AI draft yet.",
+        "aiDraftRuns": "AI runs used",
+        "triageTitle": "Triage",
+        "triageKind": "Classification",
+        "triageLane": "Lane",
+        "triageNote": "Triage note (internal)",
+        "quoteTitle": "Quote (hours)",
+        "quoteHours": "Hours",
+        "quoteMargin": "Margin (%)",
+        "quoteNote": "Note to the organisation",
+        "scheduleDate": "Scheduled date (optional)",
+        "declineReason": "Reason",
+        "modifyLabel": "Amend your request",
+        "declineConfirm": "Decline this request? This cannot be undone.",
+        "withdrawConfirm": "Withdraw this request? This cannot be undone."
+      },
+      "error": {
+        "bug_is_free": "A bug report is free — schedule it instead of quoting.",
+        "bad_hours": "Enter a valid number of hours.",
+        "reason_required": "A reason is required.",
+        "triage_ai_unconfigured": "The AI reviewer is not configured yet.",
+        "triage_ai_unavailable": "The AI reviewer is unavailable right now.",
+        "ai_limit_reached": "The AI reviewer has already run the maximum number of times.",
+        "generic": "Something went wrong. Please try again."
+      }
     },
     "payments": {
       "title": "Payments",
