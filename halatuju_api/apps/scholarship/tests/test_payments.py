@@ -702,34 +702,40 @@ class TestBackAndAdvancePay(TestCase):
 
     # ── owner case 2 — the 24th is too early for next month; the 25th is not ──────────
     def test_case2_run_dated_the_24th_for_next_month_is_refused(self):
-        with self.assertRaises(payments.PaymentsError) as ctx:
-            payments.create_run(self.org, date(2026, 7, 24), self.AUG)
+        # Frozen clock: these owner cases are pinned to July 2026 — without the freeze the
+        # past_date guard fires first once the real date passes the literals (broke 2026-07-25).
+        with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
+            with self.assertRaises(payments.PaymentsError) as ctx:
+                payments.create_run(self.org, date(2026, 7, 24), self.AUG)
         self.assertEqual(ctx.exception.code, 'too_early')
         self.assertFalse(PaymentRun.objects.exists())     # nothing half-created
 
     def test_case2_boundary_24th_refused_25th_and_26th_allowed(self):
         self.assertEqual(payments.earliest_payment_date(self.AUG), date(2026, 7, 25))
-        with self.assertRaises(payments.PaymentsError):
-            payments.create_run(self.org, date(2026, 7, 24), self.AUG)
-        for day in (25, 26):
-            with self.subTest(day=day):
-                run = payments.create_run(self.org, date(2026, 7, day), self.AUG)
-                self.assertEqual(run.period_month, self.AUG)
+        with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
+            with self.assertRaises(payments.PaymentsError):
+                payments.create_run(self.org, date(2026, 7, 24), self.AUG)
+            for day in (25, 26):
+                with self.subTest(day=day):
+                    run = payments.create_run(self.org, date(2026, 7, day), self.AUG)
+                    self.assertEqual(run.period_month, self.AUG)
 
     def test_case2_earliest_pay_date_handles_the_year_rollover(self):
         self.assertEqual(payments.earliest_payment_date(date(2026, 1, 1)), date(2025, 12, 25))
 
     def test_case2_two_months_ahead_is_still_too_early(self):
         """"25th of the previous month" is per-period: July cannot pay September's money."""
-        with self.assertRaises(payments.PaymentsError) as ctx:
-            payments.create_run(self.org, date(2026, 7, 26), self.SEP)
+        with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
+            with self.assertRaises(payments.PaymentsError) as ctx:
+                payments.create_run(self.org, date(2026, 7, 26), self.SEP)
         self.assertEqual(ctx.exception.code, 'too_early')
 
     def test_rule1_backpay_is_never_blocked_by_the_advance_guard(self):
         """A past period's "25th of the previous month" is long gone, so backpay needs no
         special case — 15 Sep paying for July is fine."""
         self.assertLess(payments.earliest_payment_date(self.JUL), date(2026, 9, 15))
-        run = payments.create_run(self.org, date(2026, 9, 15), self.JUL)
+        with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
+            run = payments.create_run(self.org, date(2026, 9, 15), self.JUL)
         self.assertEqual(run.period_month, self.JUL)
 
     # ── owner case 3 — prepare on the 15th, pay on the 25th, for the following month ──
@@ -750,7 +756,8 @@ class TestBackAndAdvancePay(TestCase):
         """The PR-2026-07-26 bug: an August run dated 26 July dropped every Poly/UA-Diploma
         student because 26 July precedes their 1 August floor."""
         app = _make_app(self.cohort, self.org, pathway='university', reporting=date(2026, 7, 10))
-        run = payments.create_run(self.org, date(2026, 7, 26), self.AUG)
+        with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
+            run = payments.create_run(self.org, date(2026, 7, 26), self.AUG)
         self.assertIn(app.id, set(run.items.values_list('application_id', flat=True)))
 
     # ── rule 3 — reported BEFORE the month begins; the 1st does not count ─────────────
