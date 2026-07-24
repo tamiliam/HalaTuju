@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## Income-route reconciliation: symmetric gate + silent switch at consent — 2026-07-24
+**Decision:** A dispositive STR (`household_str_status`) clears the income gate on EITHER route — the
+salary branch of `income_doc_blockers` now early-returns like the STR branch already does for a
+complete salary cluster — AND at consent the route is silently relabelled (`reconcile_income_route`)
+to whichever evidence actually settled income. The salary gate honours the STR WITHOUT also requiring
+the relationship doc (BC) that the STR route asks for up-front.
+**Alternatives considered:** (a) auto-switch at consent ALONE — rejected: a genuinely-STR student who
+picked "salary" is blocked by the salary gate's member-IC demand and never REACHES consent, so the
+switch can't rescue them; the gate change is what unblocks them. (b) make the salary gate require the
+FULL STR bundle (STR + recipient IC + BC) before clearing — rejected: reintroduces the friction the
+"enough to submit, officer verifies" rule exists to avoid.
+**Rationale:** the two changes are one fix — the gate lets the right people through, the reconcile
+labels them correctly so the officer's AI Prediction reads the right route. A genuine, non-breached,
+member-matched STR is the government means-test, strong enough to submit on.
+**Trade-offs:** a mother-recipient STR clears the salary route without a BC, slightly looser than the
+STR route; the missing BC surfaces as a soft Check-2 item after the switch, never a block.
+**Revisit if:** a real case shows the BC-less salary→STR path admitting an unrelated recipient (the
+`household_str_status` name/NRIC match is the guard) — then require the BC before the gate clears.
+
+## Nudge eligibility + manual-button availability — 2026-07-24
+**Decision:** The "you haven't submitted yet" nudge fires ONLY for a shortlisted, consented,
+unsubmitted student whose `consent_blockers` is empty. The automatic email is one-time (~30 min after
+consent); the manual org-admin button is visible-but-blocked until the auto has fired, then live with
+a 24h cooldown. All button state is server-computed (`nudge.nudge_state`).
+**Alternatives considered:** nudging any unsubmitted student — rejected: a stuck student would get a
+false "you're one press away" message. Hiding the manual button until the auto fires — rejected: an
+org admin seeing no button wonders why; visible-but-blocked-with-status is clearer.
+**Rationale:** the nudge's whole value is "you're basically done", only true when nothing is
+outstanding; the generic completion reminders own the stuck case.
+**Trade-offs:** a student who slips back into a blocked state after consenting loses the nudge until
+they fix it (correct — they're no longer one press away).
+**Revisit if:** the 30-min delay / 24h cooldown mis-tune against real response data — both are env
+tunables (`NUDGE_AUTO_DELAY_MINUTES`, `NUDGE_COOLDOWN_HOURS`).
+
 ## Per-org branding seam: fallback chain, alias rule, and canonical wording — 2026-07-24
 **Context:** Sprint 5 extracted every rendered brand literal (programme name, sign-off, coach
 persona, sender identity, display domain) behind one read seam, `apps/scholarship/branding.py`, so a

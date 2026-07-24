@@ -524,6 +524,31 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-24)
 
+**✅ SHIPPED + LIVE 2026-07-24 (api+web, commits `e7fdc879` / `1c515954` / `b8bf2311`; migration
+`scholarship/0110` APPLIED migrate-first; Cloud Scheduler `halatuju-application-nudges`) — "Almost
+done" nudge + income-route reconciliation.** Retro
+`docs/retrospective-2026-07-24-nudge-income-route.md`; decisions ×2; lessons ×2.
+- **"You haven't submitted yet" nudge** — one-time auto email ~30 min after consent (cron
+  `application-nudges`, ~15 min) + a manual org-admin button in the cockpit Blockers box
+  (`AdminNudgeStudentView`, super/org_admin; visible-but-blocked until the auto fires, then live with
+  a 24h cooldown). Fires ONLY when `consent_blockers` is empty (`nudge.is_applicable`) — a stuck
+  student is excluded (the generic completion reminders own that case).
+  `ScholarshipApplication.nudge_sent_at` (0110); button state server-computed (`nudge.nudge_state`).
+  Proven live: nudged #114, correctly skipped a stuck one; #101 submitted after her nudge.
+- **Income-route symmetric gate + silent reconcile at consent** — the salary branch of
+  `income_doc_blockers` now clears on a dispositive STR (`household_str_status`), exactly as the STR
+  branch already clears on a complete salary cluster; `services.reconcile_income_route` (called from
+  `ConsentView`) relabels the route to whichever evidence settled income (reuses `switch_income_route`;
+  audit-logged; never re-blocks). Fixes the #114 false-income-red class at the source. #114 manually
+  switched to salary (his consent predated the deploy).
+- **Warmer nudge email** (`send_application_nudge_email`) — leads with what the student has completed;
+  drops the "reminder" framing.
+- **▶ CARRY:** a SHORTER, distinct MANUAL follow-up email (so the human re-nudge isn't an identical
+  re-send) — draft presented, **AWAITING OWNER APPROVAL, not built**. Tamil first-drafts for
+  `admin.scholarship.blockers.nudge.*`. Tunables `NUDGE_AUTO_DELAY_MINUTES` (30) /
+  `NUDGE_COOLDOWN_HOURS` (24).
+- **4458 pytest + 712 jest.**
+
 **✅ SHIPPED + LIVE 2026-07-24 (api+web, core `a8bbefc6`..`ed3efeec` [5 commits] + increment
 `d8e34931`, migrations scholarship/0111+0112 APPLIED migrate-first) — Platform Sprint 15:
 Requests space v1.** Brief `docs/plans/2026-07-24-sprint15-requests-space-brief.md`; retro
