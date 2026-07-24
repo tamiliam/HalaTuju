@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## Platform Sprint 15.1 — Requests v1.1: role-correct components, B40 sub-components, screenshot attachments — 2026-07-24
+
+Three additive extensions to the live Requests space (`REQUESTS_ENABLED=1`); everything is additive
+and pre-existing Sprint 15 tests pass unmodified except the two deliberate widenings noted. Brief
+`docs/plans/2026-07-24-sprint15-1-requests-v11-brief.md`. Closes TD-172.
+
+- **Role-correct component choices.** Removed the super-only surfaces `students` + `course_data` from
+  the component set (an org_admin can't reach them). Values now derive from ONE source of truth,
+  `models.REQUEST_COMPONENT_TREE`: `org_requests.VALID_COMPONENTS` + the model choices derive from
+  it; the FE mirror (`requestStatus.REQUEST_COMPONENT_TREE`) + the i18n keys are pinned to it by a
+  consistency test (FE ↔ i18n ↔ VALID_COMPONENTS tied through the shared en/ms/ta key set — never
+  hand-enumerate, per lessons.md).
+- **Two-level B40 sub-component selector.** `applications` gains 8 pipeline sub-components
+  (`applications_student_details` / `_documents` / `_ai_prediction` / `_queries` / `_interview` /
+  `_decision` / `_agreement` / `_student_profile`). Stored in the SAME `component` column with an
+  UNDERSCORE separator (a dot breaks the nested i18n lookup); all ≤30 chars (varchar(30), no DB
+  CHECK — `_clean_choice`/`VALID_COMPONENTS` carry every value). The FE submit form is a dependent
+  select (PathwayPicker pattern: child keyed by parent, cleared on parent change, shown only when
+  parent = applications). **Migration 0113** is choices-only (`sqlmigrate` = no-op, no Postgres DDL).
+- **Screenshot attachments (images only, ≤5/request, org-fenced).** New `OrgRequestAttachment` model
+  (**migration 0114**, table `org_request_attachments`); bytes go browser→Supabase via a signed URL,
+  never through Django (Rule 5). Storage key `requests/<org_id>/<request_id>/<uuid>`
+  (`storage.build_request_attachment_key`); `resolve_org_for_path` reads the org off that scheme for
+  the download fence. Three endpoints on `_OrgRequestsBase` (org_admin own org + super): sign-upload
+  (count cap before signing, non-terminal), record (non-terminal, image allowlist — no pdf, size ≤
+  `MAX_DOC_SIZE_BYTES`, count cap, storage_path prefix must match THIS request), delete (non-terminal,
+  reached only through the org-fenced request). Both request serializers gain an allowlist
+  `attachments` list; `download_url` signs to None when the key-org ≠ the request org. Org-payload
+  exact-key snapshot **19 → 20**. FE: staged picker on the submit form (upload after create;
+  post-create failure is a non-blocking warning) + inline thumbnails with add/remove on the detail
+  page while non-terminal. AI prompt notes "ATTACHMENTS: N image(s)" when present (v1 stays
+  text-only; Gemini-vision on screenshots is a future TD). Security invariants each proven by a test
+  (foreign-path, cap at sign AND record, no-pdf, cross-org download None, cross-org 404, flag-off
+  404 on every new route).
+- **Gates:** 4458 → 4486 pytest (0 fail 0 skip); 712 → 719 jest pass (+ the known Node-26
+  `scholarship.test.ts` fail held constant, TD-171); `next build` + lint clean; `makemigrations
+  --check` clean — exactly TWO new migrations (0113 + 0114). i18n en/ms/ta (ms/ta first-drafts).
+- **▶ COORDINATOR (migrate-first):** apply 0113 (choices-only — `django_migrations` INSERT only, no
+  DDL) and 0114 (CREATE TABLE + indexes + FKs; then `ENABLE ROW LEVEL SECURITY` on
+  `org_request_attachments`). DDL blocks handed over in the sprint report.
+
 ## Requests rate-card copy rewrite (owner wording) — 2026-07-24 (small change)
 
 Owner-supplied copy for the live Requests page: subtitle plus a restructured four-bullet
