@@ -2799,7 +2799,7 @@ export default function AdminScholarshipDetailPage() {
         return (
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
           <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.qcDecision.title')}</h2>
-          <p className="text-xs text-gray-600">{t('admin.scholarship.qcDecision.hint')}</p>
+          <p className="text-xs text-gray-600">{t(isDeclineVerdict ? 'admin.scholarship.qcDecision.hintDecline' : 'admin.scholarship.qcDecision.hint')}</p>
           {floorBlocked && (
             <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-800">
               {t('admin.scholarship.qcDecision.gapFloor', { facts: qcGapLabels })}
@@ -2820,7 +2820,7 @@ export default function AdminScholarshipDetailPage() {
               </button>
               <button onClick={() => { setQcReopenOpen(true); setQcComments('') }} disabled={!!busy}
                 className="rounded-lg border border-amber-600 bg-white px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50">
-                {t('admin.scholarship.qcDecision.reopen')}
+                {t(isDeclineVerdict ? 'admin.scholarship.qcDecision.reopenOnly' : 'admin.scholarship.qcDecision.reopen')}
               </button>
             </div>
           ) : qcOverrideOpen ? (
@@ -2842,18 +2842,24 @@ export default function AdminScholarshipDetailPage() {
           ) : (
             <div className={`rounded-lg border p-3 space-y-2 ${qcRejectMode ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
               <p className={`text-xs font-medium ${qcRejectMode ? 'text-red-900' : 'text-amber-900'}`}>
-                {t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectTitle' : 'admin.scholarship.qcDecision.reopenTitle')}
+                {t(isDeclineVerdict ? 'admin.scholarship.qcDecision.reopenTitleDecline'
+                  : qcRejectMode ? 'admin.scholarship.qcDecision.rejectTitle' : 'admin.scholarship.qcDecision.reopenTitle')}
               </p>
               <textarea value={qcComments} rows={3} onChange={(e) => setQcComments(e.target.value)}
-                placeholder={t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectPlaceholder' : 'admin.scholarship.qcDecision.commentsPlaceholder')}
+                placeholder={t(isDeclineVerdict ? 'admin.scholarship.qcDecision.commentsPlaceholderDecline'
+                  : qcRejectMode ? 'admin.scholarship.qcDecision.rejectPlaceholder' : 'admin.scholarship.qcDecision.commentsPlaceholder')}
                 className={`w-full rounded border px-2 py-1.5 text-sm ${qcRejectMode ? 'border-red-300' : 'border-amber-300'}`} />
-              {/* Reject toggle (default off): flip the reopen box into an outright rejection. */}
+              {/* Reject toggle (default off): flip the reopen box into an outright rejection.
+                  Hidden on the decline route — reject is already the primary "Confirm decline" button,
+                  so offering it again here is redundant; the secondary path is reopen-only. */}
+              {!isDeclineVerdict && (
               <label className="flex items-center gap-2 text-xs text-gray-700 select-none cursor-pointer">
                 <input type="checkbox" checked={qcRejectMode} disabled={!!busy}
                   onChange={(e) => setQcRejectMode(e.target.checked)}
                   className="h-3.5 w-3.5 rounded border-gray-300 text-red-600 focus:ring-red-500" />
                 {t('admin.scholarship.qcDecision.rejectToggle')}
               </label>
+              )}
               <div className="flex items-center gap-2">
                 <button onClick={() => doQcDecision(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 ${qcRejectMode ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
