@@ -1239,8 +1239,8 @@
         "noteTip3": "Anything we'd want to know that the categories above don't capture",
         "noteHelper": "For example, how you're planning to fund your studies, or how you'd manage if this assistance doesn't come through."
       },
-      "allSetTitle": "You're all set!",
-      "allSetIntro": "You've completed every step. Click below to look over everything one last time, then submit your final application.",
+      "allSetTitle": "Almost there — not submitted yet",
+      "allSetIntro": "You've completed every step, but we haven't received your application yet. Press Review & submit below to send it in — it isn't submitted until you do.",
       "confirmCta": "Confirm & submit my application",
       "confirming": "Submitting…",
       "confirmError": "Could not submit. Please try again.",
@@ -1276,7 +1276,8 @@
         "guardianship_letter": "Guardianship letter",
         "birth_certificate": "Birth certificate",
         "income_support_doc": "Income support document",
-        "school_leaving_cert": "School-leaving certificate"
+        "school_leaving_cert": "School-leaving certificate",
+        "bank_statement": "Bank statement"
       },
       "help": {
         "ic": "A photo of the front of your MyKad. We'll use it to verify your identity and confirm that your name and IC number match your application and supporting documents.",

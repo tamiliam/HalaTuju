@@ -680,12 +680,17 @@ export default function ScholarshipNextSteps({
         </div>
       )}
 
-      {/* Intro banner — switches to a success state once everything is done */}
-      <div className="bg-green-50 border border-green-200 rounded-xl p-5 mb-6">
+      {/* Intro banner. Once everything is done but NOT yet submitted we deliberately use an
+          ACTION (amber) state, not a success one — a green "all set" tick reads as "finished" and
+          students stop before pressing Submit (the silent-limbo case the nudge chases). Only the
+          confirmed (actually-submitted) state is a green success. */}
+      <div className={`rounded-xl p-5 mb-6 border ${
+        c.complete && !confirmed ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
         {c.complete ? (
           <>
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-white text-sm">✓</span>
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold ${
+                confirmed ? 'bg-green-600' : 'bg-amber-500'}`}>{confirmed ? '✓' : '!'}</span>
               <h2 className="font-semibold text-gray-900">
                 {confirmed ? t('scholarship.nextSteps.confirmedTitle') : t('scholarship.nextSteps.allSetTitle')}
               </h2>

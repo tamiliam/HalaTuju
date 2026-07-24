@@ -1239,8 +1239,8 @@
         "noteTip3": "Apa-apa yang ingin kami tahu yang tidak diliputi oleh kategori di atas",
         "noteHelper": "Contohnya, bagaimana anda merancang untuk membiayai pengajian anda, atau bagaimana anda akan mengurus jika bantuan ini tidak diterima."
       },
-      "allSetTitle": "Semuanya selesai!",
-      "allSetIntro": "Anda telah melengkapkan setiap langkah. Klik di bawah untuk menyemak semuanya sekali lagi, kemudian hantar permohonan muktamad anda.",
+      "allSetTitle": "Hampir selesai — belum dihantar",
+      "allSetIntro": "Anda telah melengkapkan setiap langkah, tetapi kami belum menerima permohonan anda. Tekan Semak & hantar di bawah untuk menghantarnya — ia belum dihantar sehingga anda berbuat demikian.",
       "confirmCta": "Sahkan & hantar permohonan saya",
       "confirming": "Menghantar…",
       "confirmError": "Tidak dapat menghantar. Sila cuba lagi.",
@@ -1276,7 +1276,8 @@
         "guardianship_letter": "Surat penjagaan",
         "birth_certificate": "Sijil kelahiran",
         "income_support_doc": "Dokumen sokongan pendapatan",
-        "school_leaving_cert": "Sijil berhenti sekolah"
+        "school_leaving_cert": "Sijil berhenti sekolah",
+        "bank_statement": "Penyata bank"
       },
       "help": {
         "ic": "Gambar bahagian depan MyKad anda. Kami akan menggunakannya untuk mengesahkan identiti anda dan memastikan nama serta nombor KP anda sepadan dengan permohonan dan dokumen sokongan anda.",
