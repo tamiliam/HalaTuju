@@ -296,6 +296,32 @@ controls), an Administration hub card + badge (hidden while the count probe 404s
 `admin.requests.*` en/ms/ta. Decisions: `docs/decisions.md` ("Requests space", Sprint 15,
 2026-07-24); retrospective: `docs/retrospective-2026-07-24-sprint15-requests-space.md`.
 
+**Requests v1.1 — role-correct components, B40 sub-components, attachments (Sprint 15.1,
+2026-07-24, LIVE, additive to Sprint 15 above; resolves TD-172).** `component` choices now derive
+from a single tree, **`models.REQUEST_COMPONENT_TREE`** — `org_requests.VALID_COMPONENTS` and the
+model's own choices are both built off it, and a consistency test ties the FE mirror
+(`requestStatus.REQUEST_COMPONENT_TREE`) and the en/ms/ta i18n keys to the same tree (no
+hand-enumeration anywhere). Super-only surfaces `students`/`course_data` were removed from the
+choice set (role-verified against the submitter's own nav + backend 403s). `applications` gains an
+optional **second-level sub-component** — 8 `applications_*` values (`_student_details`,
+`_documents`, `_ai_prediction`, `_queries`, `_interview`, `_decision`, `_agreement`,
+`_student_profile`) stored in the SAME `component` varchar(30) column with an **underscore**
+separator (a dot breaks the nested i18n lookup); migration `0113` is choices-only, no DDL. New
+model **`OrgRequestAttachment`** (migration `0114`, table `org_request_attachments`, RLS enabled)
+lets a submitter attach up to 5 images (≤8MB each) to a request. Reuses the Requests space's
+signed-URL pattern under a **NEW namespace** rather than the scholarship applicant-document vault
+— storage key `requests/<org_id>/<request_id>/<uuid>` (`storage.build_request_attachment_key`;
+`resolve_org_for_path` extended to resolve the org off this scheme for the download fence). Bytes
+go browser→Supabase directly (never through Django, Rule 5); three endpoints on
+`_OrgRequestsBase` (sign-upload/record/delete, org-fenced, classified in `test_org_fence.py`) with
+every invariant test-proven (foreign-path rejection, count cap at sign AND record, images-only —
+no pdf, cross-org signed URL → None, cross-org delete 404, flag-off 404). Org-payload allowlist
+snapshot widened 19 → 20 keys (`attachments`); `ai_*`/`triage_*` leak tests still green. FE:
+dependent-select sub-component picker (PathwayPicker pattern) + staged attachment upload on the
+submit form and add/remove on the detail page while non-terminal. Decisions: `docs/decisions.md`
+("Requests v1.1", Sprint 15.1, 2026-07-24); retrospective:
+`docs/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
+
 **Verification verdict (the synthesis layer, branch `feature/verification-verdict`, S1–S2):** `verdict_engine.py`
 (`build_verdict` → four facts Identity/Academic/Income/Pathway, each `{status, evidence[], unresolved[]}`; pure +
 deterministic, **no LLM** — composes `_ic_identity_blockers`, `application_completeness`, the Vision matchers, doc-assist

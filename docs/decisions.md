@@ -1,5 +1,80 @@
 # Architectural Decisions — HalaTuju
 
+## Requests v1.1 — underscore-separator hierarchical component values — Sprint 15.1, 2026-07-24
+**Decision:** The new `applications_*` sub-component values (8 of them) use an UNDERSCORE to join
+parent and child (`applications_documents`, not `applications.documents`), stored in the same
+`component` varchar(30) column as the flat Sprint 15 values.
+**Alternatives considered:** (a) a dot separator (`applications.documents`), the more conventional
+hierarchical-key notation — rejected: the i18n lookup helper resolves nested keys by SPLITTING on
+`.`, so a dotted component value would be misread as a nested i18n path lookup rather than a literal
+choice value, silently breaking label resolution. (b) a second DB column (`sub_component`) —
+rejected: doubles the migration surface (choices AND schema) for a same-day, low-risk addition, and
+every consumer (serializers, FE select, tests) would need to handle two fields instead of one.
+**Rationale:** reusing the single `component` column keeps the change choices-only (migration 0113
+has no DDL) and every existing consumer that already reads `component` as a flat string keeps
+working; the underscore avoids the one real collision (the i18n splitter) without adding a column.
+**Trade-offs:** the column now mixes two conceptual levels (top-level surface vs pipeline stage) in
+one string, and a future third level would need another separator convention decided fresh.
+**Revisit if:** a component ever needs a third nesting level, or a value legitimately needs an
+underscore as part of its own name (would collide with the parent/child split).
+
+## Requests v1.1 — `REQUEST_COMPONENT_TREE` as the single source of truth, with derivation tests — Sprint 15.1, 2026-07-24
+**Decision:** `models.REQUEST_COMPONENT_TREE` is the ONE place the component/sub-component set is
+authored; `org_requests.VALID_COMPONENTS` and the model field's `choices` are both derived from it
+in code (not hand-copied), and new consistency tests assert the FE mirror
+(`requestStatus.REQUEST_COMPONENT_TREE`) and the en/ms/ta i18n key sets are each a match against the
+same tree.
+**Alternatives considered:** Hand-enumerate the choice list in each of the four places it's needed
+(model, service layer, FE, i18n) as Sprint 15 originally did — rejected: this is the exact shape of
+bug Sprint 15.1 was fixing (the Sprint 15 dropdown shipped with `students`/`course_data` options an
+org_admin could select but never reach, because the choices were copied from the full admin nav
+rather than derived from the submitter's actual role view).
+**Rationale:** a single authored tree with tests that WALK from it to every consumer converts "did
+someone remember to update all four places" into a CI failure instead of a silent drift; this is the
+direct system-level fix for the root cause identified in the retrospective.
+**Trade-offs:** one more layer of indirection to read when tracing "where do these choices come
+from" — acceptable given the tree is a single, short, well-commented module-level constant.
+**Revisit if:** the component set needs to vary per-org (today it's platform-wide) — the tree would
+need an org-aware variant, not just a flat constant.
+
+## Requests v1.1 — attachments as a NEW `requests/` storage namespace, not the applicant-document vault — Sprint 15.1, 2026-07-24 (resolves TD-172)
+**Decision:** `OrgRequestAttachment` gets its own storage-key scheme, `requests/<org_id>/<request_id>/<uuid>`
+(`storage.build_request_attachment_key`), with `resolve_org_for_path` extended to recognise the new
+prefix for the org-fenced download check — rather than storing request screenshots inside the
+existing `ApplicantDocument`/scholarship-applicant vault.
+**Alternatives considered:** (a) Reuse `ApplicantDocument` directly (add an `org_request` nullable
+FK) — rejected: that model and its storage key scheme (`students/<student_id>/...`) are shaped
+around a single applicant's own signed-URL vault; forcing an org-level request into it would mean
+either a fake "applicant" or a schema that has to special-case a non-applicant owner everywhere the
+model is queried. (b) Build a fully general, model-agnostic attachment store (any model, any owner)
+— rejected as premature: TD-172 flagged this as the eventual right answer, but v1.1 has exactly one
+new attaching model; generalising now would be speculative design for a second use case that doesn't
+exist yet.
+**Rationale:** the signed-URL PATTERN (browser→Supabase directly, bytes never through Django, Rule
+5) is exactly right and worth reusing; what needed to be new was the NAMESPACE and the org-resolution
+rule, not the whole mechanism. This is the narrowest correct resolution of TD-172 — reuse the proven
+pattern, isolate the new use case in its own key prefix and table.
+**Trade-offs:** two parallel signed-URL vaults now exist (`students/...` and `requests/...`) with
+near-identical mechanics but separate models/endpoints/tests — some duplication versus a single
+generalised store.
+**Revisit if:** a third attaching model appears — at that point the case for extracting a genuinely
+general org-fenced attachment primitive (TD-172's original framing) gets much stronger.
+
+## Requests v1.1 — attachments are images-only, capped at 5 — Sprint 15.1, 2026-07-24
+**Decision:** `OrgRequestAttachment` accepts only image content-types/extensions (jpg/jpeg/png/gif/
+bmp/webp/tif/tiff/heic/heif — explicitly no pdf), capped at 5 per request, ≤8MB each, enforced at
+BOTH sign-upload time and record time (a second attachment could land between the two calls).
+**Alternatives considered:** Allow pdf alongside images (matching the scholarship document
+allowlist's broader set) — rejected for v1: the stated use case is "a screenshot would resolve
+ambiguity in one glance"; a pdf attachment reintroduces the doc-review surface area (virus/format
+handling, no inline preview) for a feature scoped narrowly at visual bug/feature evidence.
+**Rationale:** the narrowest allowlist that serves the actual use case (screenshots) keeps the
+review surface small and matches how the feature was pitched to the owner.
+**Trade-offs:** a submitter who wants to attach a PDF spec or log file has no path in v1; they still
+have the free-text description field.
+**Revisit if:** real usage shows requesters routinely want non-image evidence (e.g. a log file or a
+PDF export) — widen the allowlist rather than build a second attachment type.
+
 ## Income-route reconciliation: symmetric gate + silent switch at consent — 2026-07-24
 **Decision:** A dispositive STR (`household_str_status`) clears the income gate on EITHER route — the
 salary branch of `income_doc_blockers` now early-returns like the STR branch already does for a

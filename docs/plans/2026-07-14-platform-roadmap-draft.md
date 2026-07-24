@@ -255,6 +255,14 @@ to the roadmap's 7-status flow. Migrations `scholarship/0111` (model) +
 deferred pending an org-fenced file-storage design — the applicant-document vault isn't a general
 attachment store and wasn't extended for this.
 
+**✅ 15.1 SHIPPED + LIVE 2026-07-24** (commits `b2a842cd`..`54b5fbbf`, migrations `0113`+`0114`
+migrate-first with RLS) — role-correct components (super-only `students`/`course_data` removed,
+single-source `REQUEST_COMPONENT_TREE`), a two-level B40 sub-component selector (8
+`applications_*` values), and org-fenced screenshot attachments (`OrgRequestAttachment`,
+images-only x5, signed-URL Supabase upload). **TD-172 closed.** pytest 4458→4486, jest 712→719.
+Brief `docs/plans/2026-07-24-sprint15-1-requests-v11-brief.md`; retro
+`docs/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
+
 **Original scope (superseded — kept for record):** the roadmap originally called for a
 **published rate card** (bugs FREE; features priced in RM off a fixed table — the third revenue
 line beside the platform fee and metered costs) with the adjudication rule in writing: *behaviour

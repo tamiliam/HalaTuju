@@ -584,6 +584,31 @@ Requests space v1.** Brief `docs/plans/2026-07-24-sprint15-requests-space-brief.
   by the Phase-2 rule-stability clock (unchanged by this sprint) — do NOT start it before the gate
   opens.
 
+**✅ SHIPPED + LIVE 2026-07-24 (commits `b2a842cd`..`54b5fbbf`; both Cloud Builds SUCCESS for
+`54b5fbb`; migrations `scholarship/0113`+`0114` APPLIED migrate-first with RLS; smoke green;
+`REQUESTS_ENABLED=1` throughout — additive to the already-live Sprint 15 feature) — Sprint 15.1:
+Requests v1.1.** Brief `docs/plans/2026-07-24-sprint15-1-requests-v11-brief.md`; retro
+`docs/retrospective-2026-07-24-sprint15-1-requests-v11.md`; decisions ×4. **Closes TD-172.**
+- **Role-correct components** — `students`/`course_data` (super-only surfaces) removed from the
+  request-component choices; single source of truth `models.REQUEST_COMPONENT_TREE` drives
+  `VALID_COMPONENTS`, model choices, and the FE mirror, tied together by consistency tests.
+- **Two-level B40 sub-component selector** — `applications` gains 8 `applications_*`
+  sub-components (underscore separator; dots break the nested i18n lookup), same varchar(30)
+  column; FE dependent-select mirrors the PathwayPicker pattern. Migration `0113` choices-only
+  (no DDL).
+- **Org-fenced screenshot attachments (resolves TD-172)** — new `OrgRequestAttachment` (migration
+  `0114`, table `org_request_attachments`, RLS enabled); signed-URL browser→Supabase upload (bytes
+  never through Django, Rule 5); storage key `requests/<org_id>/<request_id>/<uuid>`
+  (`storage.build_request_attachment_key` + extended `resolve_org_for_path`); images-only ×5 ×8MB;
+  every security invariant test-proven (foreign-path, cap at sign+record, no-pdf, cross-org
+  download→None, cross-org delete 404, flag-off 404).
+- **4458→4486 pytest** (0 fail/skip); **712→719 jest** (+1 known pre-existing local-Node-26 fail,
+  TD-171). Exactly two migrations.
+- **▶ OWNER carries (unchanged):** brief BrightPath org admins on Requests + rate card; monitor
+  first real requests; ms/ta first-drafts to review, **now including the new
+  component/sub-component/attachment strings**.
+- **▶ NEXT — Sprint 7** stays GATED to ≈21 Aug 2026 (unchanged by this sprint).
+
 ## Superseded — previous Next Sprint (as of 2026-07-24)
 
 **✅ SHIPPED + LIVE 2026-07-24 (api+web, commits `d900cbc7`..`7038c37b`, 5 commits) — Platform

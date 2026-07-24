@@ -42,6 +42,10 @@ and pre-existing Sprint 15 tests pass unmodified except the two deliberate widen
 - **▶ COORDINATOR (migrate-first):** apply 0113 (choices-only — `django_migrations` INSERT only, no
   DDL) and 0114 (CREATE TABLE + indexes + FKs; then `ENABLE ROW LEVEL SECURITY` on
   `org_request_attachments`). DDL blocks handed over in the sprint report.
+- **✅ DEPLOYED + LIVE 2026-07-24** (commits `b2a842cd`..`54b5fbbf`; both Cloud Builds SUCCESS for
+  `54b5fbb`). Migrations 0113+0114 applied migrate-first with RLS; smoke green;
+  `REQUESTS_ENABLED=1` held throughout (additive to the already-live Sprint 15 feature, no dark
+  period).
 
 ## Requests rate-card copy rewrite (owner wording) — 2026-07-24 (small change)
 
