@@ -2539,46 +2539,51 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
 
 
 def send_application_nudge_email(to_email, *, student_name, english_only=False):
-    """A short, warm reminder to a SHORTLISTED student who has given consent but not pressed the
-    final "Review & submit" (so their application is still a draft with us). Sent on demand by an
-    org admin from the cockpit Blockers box. HTML primary + plain-text fallback; bilingual (EN + BM)
-    unless ``english_only``. Best-effort → bool. Deliberately simple — one message, one action."""
+    """A short, warm note (deliberately NOT a nagging reminder) to a SHORTLISTED student who has
+    finished everything but not pressed the final "Review & submit" (so their application is still
+    a draft with us). It leads with what they've DONE — the nudge only fires when nothing is
+    outstanding — and points at the single last action. Sent by the auto sweep AND the org-admin
+    Blockers-box button (one shared template). HTML primary + plain-text fallback; bilingual
+    (EN + BM) unless ``english_only``. Best-effort → bool."""
     if not to_email:
         return False
     first = (student_name or '').strip().split(' ')[0]
     en_name = first or 'there'
     bm_name = first or 'di sana'
     link = f'{_P.frontend_url}/scholarship/application'
-    subject = f'A quick reminder to finish your {_PROG_EN} application'
+    subject = f'One last step to finish your {_PROG_EN} application'
 
-    en_intro = (f'We noticed you started your {_PROG_EN} application but haven’t sent it to us '
-                'yet — you’re almost there!')
-    en_body = ('Your application is still saved as a draft. To finish, please log in, complete any '
-               'remaining steps, and press the "Review &amp; submit" button. That final step is what '
-               'actually sends your application to us for review — until you press it, we can’t begin '
-               'looking at it.')
-    en_after = ('It only takes a minute. If you get stuck or something doesn’t look right, just reply '
-                'to this email and we’ll help you.')
+    en_intro = (f'<strong>You’re almost there!</strong> You have completed all the groundwork for '
+                f'your {_PROG_EN} application: your details, your documents, and your consent are '
+                'all in place.')
+    en_body = ('There’s just <strong>one final step</strong> left, and it takes less than a minute: '
+               'log in, open your application, and press the "Review &amp; submit" button. That '
+               'final press is what sends your application to us for review — until you press it, it '
+               'stays a draft with us, so please do it when you have a moment.')
+    en_after = ('If you have any trouble, just reply to this email and we’ll help you.')
     en_safety = (f'One note for your peace of mind: we’ll only ever ask about you and your studies. '
                  f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
                  f'does, it isn’t us — please tell us straight away at {_P.email_support}.')
 
-    bm_intro = (f'Kami perasan anda telah memulakan permohonan {_PROG_MS} tetapi belum menghantarnya '
-                'kepada kami — anda hampir selesai!')
-    bm_body = ('Permohonan anda masih disimpan sebagai draf. Untuk menyelesaikannya, sila log masuk, '
-               'lengkapkan mana-mana langkah yang tinggal, dan tekan butang "Semak &amp; hantar". '
-               'Langkah terakhir itulah yang benar-benar menghantar permohonan anda kepada kami untuk '
-               'semakan — selagi anda tidak menekannya, kami tidak dapat mula menyemaknya.')
-    bm_after = ('Ia hanya mengambil masa seminit. Jika anda tersekat atau ada sesuatu yang tidak kena, '
-                'balas sahaja e-mel ini dan kami akan membantu anda.')
+    bm_intro = (f'<strong>Anda hampir selesai!</strong> Anda telah melengkapkan semua asas untuk '
+                f'permohonan {_PROG_MS} anda: butiran anda, dokumen anda, dan persetujuan anda '
+                'semuanya sudah ada.')
+    bm_body = ('Tinggal <strong>satu langkah terakhir</strong> sahaja, dan ia mengambil masa kurang '
+               'seminit: log masuk, buka permohonan anda, dan tekan butang "Semak &amp; hantar". '
+               'Tekanan terakhir itulah yang menghantar permohonan anda kepada kami untuk semakan — '
+               'selagi anda tidak menekannya, ia kekal sebagai draf dengan kami, jadi sila lakukannya '
+               'apabila anda ada masa.')
+    bm_after = ('Jika anda menghadapi sebarang masalah, balas sahaja e-mel ini dan kami akan '
+                'membantu anda.')
     bm_safety = (f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan '
                  f'pengajian anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
                  f'OTP atau PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami '
                  f'dengan segera di {_P.email_support}.')
 
     def text_block(greeting, intro, body, btn_line, after, safety, signoff):
-        # Plain-text: strip the HTML entity we use for the ampersand in the button label.
-        body = body.replace('&amp;', '&')
+        # Plain-text: drop the HTML emphasis tags + the ampersand entity used in the HTML.
+        intro = intro.replace('<strong>', '').replace('</strong>', '')
+        body = body.replace('<strong>', '').replace('</strong>', '').replace('&amp;', '&')
         return f'{greeting}\n\n{intro}\n\n{body}\n\n{btn_line}\n\n{after}\n\n{safety}\n\n{signoff}'
     en_text = text_block(f'Hi {en_name},', en_intro, en_body, f'Open my application: {link}',
                          en_after, en_safety, 'Warm regards,\n' + _TEAM_EN)
