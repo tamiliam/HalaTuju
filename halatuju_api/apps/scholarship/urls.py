@@ -1,6 +1,7 @@
 """URL routing for the B40 Assistance Programme API."""
 from django.urls import path
 
+from .views_branding import BrandingView
 from .views import (
     ApplicationConfirmView,
     ApplicationOnboardingCompleteView,
@@ -180,6 +181,7 @@ urlpatterns = [
     path('sponsor/me/', SponsorMeView.as_view()),
     path('sponsor/notifications/', SponsorNotificationsView.as_view()),  # F3: notify preference
     path('sponsor/pool/count/', SponsorPoolCountView.as_view()),  # F1: public landing counter
+    path('branding/<slug:code>/', BrandingView.as_view()),  # Sprint 6: public per-org branding
     path('sponsor/pool/', SponsorPoolListView.as_view()),
     path('sponsor/pool/<int:pk>/', SponsorPoolDetailView.as_view()),
     path('sponsor/my-students/<int:pk>/', SponsorMyStudentDetailView.as_view()),  # portfolio detail (own)

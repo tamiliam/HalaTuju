@@ -74,6 +74,12 @@ PLATFORM = {
     # .ics UID additionally stays on the fixed platform domain so calendar identities are stable.
     'frontend_domain': 'halatuju.xyz',
     'ics_uid_domain': 'halatuju.xyz',
+    # ── FE visual identity (platform Sprint 6) — served by the public /branding/<code>/ endpoint ──
+    # brand_colour + logo_url map to real tenant columns; org_short_name has no dedicated column,
+    # so a tenant's accessor derives it from `name` (see org_short_name below).
+    'brand_colour': '#137fec',
+    'logo_url': '',
+    'org_short_name': 'BrightPath',
 }
 
 
@@ -188,6 +194,33 @@ class Branding:
     def ics_uid_domain(self):
         # Calendar UIDs stay on the fixed platform domain for identity stability across tenants.
         return PLATFORM['ics_uid_domain']
+
+    # ── FE visual identity (platform Sprint 6) ───────────────────────────────────────────────
+    # Read by the public /branding/<code>/ endpoint (views_branding.py) so the web app can render
+    # a tenant's colour, logo and short name. Total (never raise), like every accessor above.
+    @property
+    def brand_colour(self):
+        """Hex brand colour. Platform = '#137fec'; a tenant with a seeded ``brand_colour`` uses it."""
+        if not self._is_platform and self._org is not None and (self._org.brand_colour or '').strip():
+            return self._org.brand_colour.strip()
+        return PLATFORM['brand_colour']
+
+    @property
+    def logo_url(self):
+        """Logo URL. Platform = '' (the web app serves its own bundled /logo-icon.png); a tenant
+        with a seeded ``logo_url`` uses that (the FE renders an external URL unoptimised)."""
+        if not self._is_platform and self._org is not None and (self._org.logo_url or '').strip():
+            return self._org.logo_url.strip()
+        return PLATFORM['logo_url']
+
+    @property
+    def org_short_name(self):
+        """Short brand name for bare-brand UI ("Verified by <short>", "<short> balance"). Platform
+        = 'BrightPath'. A tenant has NO dedicated short-name column (no migration this sprint), so
+        it derives from the org ``name`` — the closest existing field."""
+        if not self._is_platform and self._org is not None and (getattr(self._org, 'name', '') or '').strip():
+            return self._org.name.strip()
+        return PLATFORM['org_short_name']
 
 
 # The single platform Branding instance (BrightPath / no org).
