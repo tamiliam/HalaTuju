@@ -740,6 +740,101 @@ function SupportingDocChip({ doc, t }: { doc: ApplicantDocument; t: (key: string
     t(`scholarship.docs.match.${variant}`))
 }
 
+// ── "Done" collapse ───────────────────────────────────────────────────────
+// A finished document folds to a calm green summary (title + a word of reassurance),
+// re-openable on tap. It collapses ONLY when genuinely finished: a verified doc reads
+// all-green, or an unverifiable optional (photo / statement of intent) is simply
+// uploaded. Anything amber / red / pending / suspect stays OPEN so the student still
+// sees what needs doing. Income-cluster docs are excluded at the call site (the shared
+// cluster coach speaks across them) via `suppressCoach`.
+
+function docIsGenuine(doc: ApplicantDocument): boolean {
+  const s = doc.authenticity?.status
+  return !s || s === 'genuine'   // canonical: '' / 'genuine' vs suspect / not_<type>
+}
+
+function docDone(docType: string, doc: ApplicantDocument | undefined): boolean {
+  if (!doc) return false
+  switch (docType) {
+    case 'ic':
+      return !!doc.vision_run_at
+        && doc.vision_name_verdict === 'match'
+        && doc.vision_nric_verdict === 'match'
+        && docIsGenuine(doc)
+    case 'results_slip': {
+      const c = doc.academic_check
+      return !!c && c.name === 'match' && c.subjects === 'match' && c.results === 'match'
+        && docIsGenuine(doc)
+    }
+    // Nothing to verify — uploaded IS finished.
+    case 'photo':
+    case 'statement_of_intent':
+      return true
+    default:
+      return false   // everything else keeps today's always-open card
+  }
+}
+
+// ── Collapsible section ───────────────────────────────────────────────────
+// Folds a whole stage behind a summary so the Documents tab never reads as a wall of
+// uploads. `tone='done'` = a green, reassuring header (a finished stage); `tone='optional'`
+// = a quiet dashed shell the student opens only if they have more to add. Nothing REQUIRED
+// and unmet is ever put behind one — only finished or genuinely-optional stages.
+
+function CollapsibleSection({
+  tone,
+  title,
+  summary,
+  defaultOpen = false,
+  openLabel,
+  hideLabel,
+  children,
+}: {
+  tone: 'done' | 'optional'
+  title: ReactNode
+  summary: string
+  defaultOpen?: boolean
+  openLabel: string
+  hideLabel: string
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  const done = tone === 'done'
+  return (
+    <div className={`rounded-lg border overflow-hidden ${done ? 'border-green-200' : 'border-dashed border-gray-200'}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
+          done ? (open ? 'bg-green-50' : 'bg-green-50/70') : 'bg-gray-50/60'}`}
+      >
+        <span aria-hidden className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${
+          done ? 'bg-green-600 text-white' : 'border border-gray-200 bg-gray-100 text-gray-400'}`}>
+          {done ? (
+            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+            </svg>
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium text-gray-800">{title}</span>
+          <span className={`mt-0.5 block text-xs ${done ? 'text-green-700' : 'text-gray-500'}`}>{summary}</span>
+        </span>
+        <span className="shrink-0 text-xs font-medium text-gray-400">{open ? hideLabel : openLabel}</span>
+        <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && <div className={`border-t p-3 ${done ? 'border-green-100' : 'border-gray-100'}`}>{children}</div>}
+    </div>
+  )
+}
+
 // ── Single-type upload card ───────────────────────────────────────────────
 
 function SingleDocCard({
@@ -778,6 +873,7 @@ function SingleDocCard({
   // Income cluster docs suppress their per-file coach — one cluster coach speaks for them.
   suppressCoach?: boolean
 }) {
+  const [open, setOpen] = useState(false)
   const busy = busyType === docKey(docType, member)
   // Member-scoped income docs match on the (type, member) pair so each earner's card shows only
   // their file; STR cards also accept the legacy untagged copy during the slot backfill.
@@ -786,33 +882,22 @@ function SingleDocCard({
   const visionDoc = showVisionChip ? existing.find((d) => d.vision_run_at) : null
   const onPick = (dt: string, f: File) => onUpload(dt, f, member)
 
-  return (
-    <div className="border rounded-lg p-3">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <span className="text-sm font-medium text-gray-800">
-            {titleOverride ?? t(`scholarship.docs.type.${docType}`)}
-            {required && <span className="text-red-500"> *</span>}
-          </span>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {helpOverride ?? t(`scholarship.docs.help.${docType}`)}
-          </p>
-        </div>
-        <UploadTrigger
-          docType={docType}
-          busy={busy}
-          onUpload={onPick}
-          label={
-            busy
-              ? t('scholarship.docs.uploading')
-              : existing.length > 0
-              // Single-instance doc types replace on re-upload (backend
-              // sweeps the old file + Storage blob). Be honest about it.
-              ? t('scholarship.docs.replace')
-              : t('scholarship.docs.choose')
-          }
-        />
-      </div>
+  // Collapse to a green "done" summary once finished — but never mid-upload (show the
+  // full card so the "Uploading…" state is visible), and never for income-cluster docs.
+  const doneDoc = docType === 'ic' ? (visionDoc ?? existing[0]) : existing[0]
+  const done = !suppressCoach && existing.length > 0 && !busy && docDone(docType, doneDoc)
+
+  const title = (
+    <>
+      {titleOverride ?? t(`scholarship.docs.type.${docType}`)}
+      {required && <span className="text-red-500"> *</span>}
+    </>
+  )
+
+  // The file list + per-type fact checklists + coach — the card's detail, shared by the
+  // open state of both the normal and the collapsed-"done" layouts.
+  const details = (
+    <>
       {existing.length > 0 && (
         <ul className="mt-2 space-y-1">
           {existing.map((d) => (
@@ -853,6 +938,73 @@ function SingleDocCard({
           {!suppressCoach && <DocumentHelpCoach doc={d} token={token} t={t} lang={lang} />}
         </div>
       ))}
+    </>
+  )
+
+  // ── Collapsed "done" card: green summary, tap to reveal the detail. ──
+  if (done) {
+    return (
+      <div className="rounded-lg border border-green-200 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${open ? 'bg-green-50' : 'bg-green-50/70'} focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500`}
+        >
+          <span aria-hidden className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-green-600 text-white">
+            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-gray-800">{title}</span>
+            <span className="mt-0.5 block text-xs text-green-700">{t(`scholarship.docs.done.${docType}`)}</span>
+          </span>
+          <span className="shrink-0 text-xs font-medium text-gray-400">
+            {open ? t('scholarship.docs.hide') : t('scholarship.docs.view')}
+          </span>
+          <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        {open && (
+          <div className="border-t border-green-100 p-3">
+            <p className="text-xs text-gray-500">{helpOverride ?? t(`scholarship.docs.help.${docType}`)}</p>
+            <div className="mt-2 flex justify-end">
+              <UploadTrigger docType={docType} busy={busy} onUpload={onPick} label={t('scholarship.docs.replace')} />
+            </div>
+            {details}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="border rounded-lg p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <span className="text-sm font-medium text-gray-800">{title}</span>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {helpOverride ?? t(`scholarship.docs.help.${docType}`)}
+          </p>
+        </div>
+        <UploadTrigger
+          docType={docType}
+          busy={busy}
+          onUpload={onPick}
+          label={
+            busy
+              ? t('scholarship.docs.uploading')
+              : existing.length > 0
+              // Single-instance doc types replace on re-upload (backend
+              // sweeps the old file + Storage blob). Be honest about it.
+              ? t('scholarship.docs.replace')
+              : t('scholarship.docs.choose')
+          }
+        />
+      </div>
+      {details}
     </div>
   )
 }
@@ -1161,9 +1313,8 @@ function IncomeWizard({
     const a = String(d.authenticity?.status || '')
     return a === '' || a === 'genuine' || a === 'likely_genuine'
   }
-  const slotDone = (dt: string): boolean => {
+  const slotVerified = (dt: string, slotMember: string): boolean => {
     const isEarnerDoc = STR_EARNER_DOCS.has(dt)
-    const slotMember = isEarnerDoc ? strEarner : ''
     const inSlot = docs.filter((d) => d.doc_type === dt
       && ((d.household_member || '') === slotMember || (isEarnerDoc && !(d.household_member || ''))))
     if (!inSlot.length) return false
@@ -1188,7 +1339,16 @@ function IncomeWizard({
     })
     return inSlot.some(notFlaggedFake)   // any other compulsory doc: present + not flagged non-genuine
   }
-  const strComplete = ans.income_route === 'str' && !!strEarner && reqs.compulsory.every(slotDone)
+  const strComplete = ans.income_route === 'str' && !!strEarner
+    && reqs.compulsory.every((dt) => slotVerified(dt, STR_EARNER_DOCS.has(dt) ? strEarner : ''))
+  // Salary route is "satisfied" once AT LEAST ONE ticked earner's compulsory docs are verified
+  // (owner 2026-07-24) — the rest may come now or at Check 2, and other earners stay optional.
+  const salaryComplete = ans.income_route === 'salary'
+    && reqs.members.some((block) => block.compulsory.length > 0
+         && block.compulsory.every(({ docType, member }) => slotVerified(docType, member)))
+  // Once the chosen route is satisfied, fold the whole income block into a calm green summary
+  // that INVITES more evidence rather than demanding it — so the tab never reads as a wall.
+  const incomeSatisfied = strComplete || salaryComplete
 
   // Salary route — toggle a working household member in/out of the multi-select.
   const MEMBER_OPTIONS: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
@@ -1246,7 +1406,7 @@ function IncomeWizard({
   // "Utilities" block below both route branches — Electricity first, then Water.
   const UTILITY_DOCS = ['electricity_bill', 'water_bill']
 
-  return (
+  const body = (
     <div className="space-y-4">
       {/* Encouraging, never-punitive intro (blue = info). */}
       <div className="rounded-xl bg-blue-50 ring-1 ring-blue-100 p-3 text-sm text-blue-900/90">
@@ -1410,17 +1570,24 @@ function IncomeWizard({
       )}
 
       {/* Utilities + closing note — SHARED across BOTH income routes (household-level docs are the
-          same regardless of STR vs salary). Rendered once, after whichever route branch showed:
-          Electricity first, then Water. */}
+          same regardless of STR vs salary). Household-level and always optional, so it folds into
+          a quiet collapsible (default closed) — never a wall. Electricity first, then Water. */}
       {ready && (() => {
         const utils = UTILITY_DOCS.filter((dt) => reqs.optional.includes(dt))
         return (
           <div className="space-y-3 pt-1">
             {utils.length > 0 && (
-              <>
-                <h4 className="text-sm font-semibold text-gray-700">{iq('utilities')}</h4>
-                {utils.map((dt) => (<div key={dt}>{renderCard(dt, { required: false })}</div>))}
-              </>
+              <CollapsibleSection
+                tone="optional"
+                title={iq('utilities')}
+                summary={iq('utilitiesNote')}
+                openLabel={t('scholarship.docs.add')}
+                hideLabel={t('scholarship.docs.hide')}
+              >
+                <div className="space-y-3">
+                  {utils.map((dt) => (<div key={dt}>{renderCard(dt, { required: false })}</div>))}
+                </div>
+              </CollapsibleSection>
             )}
             <p className="text-xs text-gray-400">{iq('footer')}</p>
           </div>
@@ -1428,6 +1595,22 @@ function IncomeWizard({
       })()}
     </div>
   )
+
+  // Satisfied → the whole block folds behind a green, inviting summary (add-more, not done-forever).
+  if (incomeSatisfied) {
+    return (
+      <CollapsibleSection
+        tone="done"
+        title={iq('satisfiedTitle')}
+        summary={iq('satisfiedNote')}
+        openLabel={t('scholarship.docs.view')}
+        hideLabel={t('scholarship.docs.hide')}
+      >
+        {body}
+      </CollapsibleSection>
+    )
+  }
+  return body
 }
 
 
@@ -1618,12 +1801,21 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       </section>
 
       <section>
-        {sectionHead('other', null, true)}
-        <div className="space-y-3">
-          {card('school_leaving_cert')}
-          {card('statement_of_intent')}
-          {card('photo')}
-        </div>
+        {/* Additional documents are all optional — folded by default so they never read as a
+            wall of extra tasks; the student opens it only if they have more to add. */}
+        <CollapsibleSection
+          tone="optional"
+          title={t('scholarship.docs.section.other.title')}
+          summary={t('scholarship.docs.section.other.note')}
+          openLabel={t('scholarship.docs.add')}
+          hideLabel={t('scholarship.docs.hide')}
+        >
+          <div className="space-y-3">
+            {card('school_leaving_cert')}
+            {card('statement_of_intent')}
+            {card('photo')}
+          </div>
+        </CollapsibleSection>
       </section>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}

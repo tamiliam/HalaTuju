@@ -1420,7 +1420,10 @@
             "brother": "Elder brother's EPF statement",
             "sister": "Elder sister's EPF statement"
           },
-          "utilities": "Utilities"
+          "utilities": "Utilities",
+          "utilitiesNote": "Optional — a recent electricity or water bill helps show your household situation. Add one if you have it.",
+          "satisfiedTitle": "Your income is documented",
+          "satisfiedNote": "Your evidence is in and checks out. You're welcome to add more — a payslip, EPF statement, or a bill — to strengthen your case, but nothing more is required."
         }
       },
       "requiredPill": "Required",
@@ -1459,6 +1462,15 @@
       "replace": "Replace",
       "uploading": "Uploading…",
       "remove": "Remove",
+      "view": "View",
+      "hide": "Hide",
+      "add": "Add",
+      "done": {
+        "ic": "All done — your MyKad matches your application.",
+        "results_slip": "All done — your name and grades were read cleanly.",
+        "photo": "All done — your photo's uploaded.",
+        "statement_of_intent": "All done — your statement's uploaded."
+      },
       "uploadError": "Upload failed. Please try again.",
       "uploadIncomplete": "The file didn't finish uploading. Please try again.",
       "deleteError": "Could not remove the document.",

@@ -1420,7 +1420,10 @@
             "brother": "Penyata KWSP Abang",
             "sister": "Penyata KWSP Kakak"
           },
-          "utilities": "Utiliti"
+          "utilities": "Utiliti",
+          "utilitiesNote": "Pilihan — bil elektrik atau air terkini membantu menunjukkan keadaan isi rumah anda. Tambah satu jika ada.",
+          "satisfiedTitle": "Pendapatan anda telah didokumenkan",
+          "satisfiedNote": "Bukti anda telah diterima dan disahkan. Anda dialu-alukan untuk menambah lagi — slip gaji, penyata KWSP, atau bil — bagi menguatkan kes anda, tetapi tiada apa-apa lagi yang diperlukan."
         }
       },
       "requiredPill": "Wajib",
@@ -1459,6 +1462,15 @@
       "replace": "Gantikan",
       "uploading": "Memuat naik…",
       "remove": "Buang",
+      "view": "Lihat",
+      "hide": "Sembunyi",
+      "add": "Tambah",
+      "done": {
+        "ic": "Selesai — MyKad anda sepadan dengan permohonan anda.",
+        "results_slip": "Selesai — nama dan keputusan anda dibaca dengan jelas.",
+        "photo": "Selesai — gambar anda telah dimuat naik.",
+        "statement_of_intent": "Selesai — pernyataan anda telah dimuat naik."
+      },
       "uploadError": "Muat naik gagal. Sila cuba lagi.",
       "uploadIncomplete": "Fail tidak selesai dimuat naik. Sila cuba lagi.",
       "deleteError": "Tidak dapat membuang dokumen.",
