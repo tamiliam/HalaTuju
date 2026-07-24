@@ -1533,9 +1533,11 @@ class DocumentHelpView(APIView):
 
         from .profile_engine import _resolve_language
         language = _resolve_language(doc.application, request.query_params.get('lang'))
+        from . import branding as _branding
         result = help_engine.generate_document_help(
             doc.doc_type, verdict,
             first_name=help_engine.first_name_of(doc), target_language=language,
+            branding=_branding.for_application(doc.application),
         )
         result['verdict'] = verdict
         result['grade_diffs'] = grade_diffs
@@ -1619,9 +1621,10 @@ class IncomeClusterHelpView(APIView):
             'income_proof_optional': (_route == 'str'
                                       and verdict == 'income_proof_person_mismatch'),
         }
+        from . import branding as _branding
         result = help_engine.generate_document_help(
             'income_cluster', verdict, first_name=first_name, target_language=language,
-            context=context,
+            context=context, branding=_branding.for_application(app),
         )
         result['verdict'] = verdict
         _log_coach_serve('income_cluster', app.id, result.get('source', 'none'), verdict)

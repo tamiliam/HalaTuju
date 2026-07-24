@@ -20,11 +20,16 @@ patches that one function, so CI runs with zero billable calls.
 """
 import logging
 
+from . import branding as _branding
 from .profile_engine import DEFAULT_LANGUAGE  # noqa: F401  (re-exported for callers/tests)
 
 logger = logging.getLogger(__name__)
 
-PERSONA = 'Cikgu Gopal'
+# The coach's proper-noun name, read from the branding seam (platform default = 'Cikgu Gopal').
+# The prompt uses the Latin ``persona_name('en')`` form (the coach signs the PROMPT in Latin even
+# in Tamil replies — the email BODIES render the Tamil-script form; see branding.py). A tenant
+# passes its own branding to ``generate_document_help`` and this constant is the fallback.
+PERSONA = _branding.platform().persona_name('en')
 
 # The factual cause hint fed to the model per verdict code. The verdict itself is decided
 # upstream (deterministic); this only tells Cikgu Gopal what to talk about. The set of keys
@@ -267,8 +272,8 @@ READABLE_DOC = {
 # Plain-language briefing so Cikgu Gopal "knows the programme" — the same public information
 # already on the page. NO admin/reviewer detail (deliberately — see the structural firewall).
 PROGRAMME_BRIEFING = """ABOUT THE PROGRAMME (so you can explain it kindly):
-- The programme is the **BrightPath Bursary Programme** — a financial-assistance scheme for Malaysian \
-school-leavers. Always call it the "BrightPath Bursary Programme"; never call it "HalaTuju" or a "scholarship".
+- The programme is the **{programme} Programme** — a financial-assistance scheme for Malaysian \
+school-leavers. Always call it the "{programme} Programme"; never call it "HalaTuju" or a "scholarship".
 - The student's journey: apply -> they may be shortlisted -> they complete their profile, upload \
 documents, and give consent -> a person reviews it -> a decision is sent by email.
 - Why documents are needed: the identity card (IC) proves who the student is; the results slip \
@@ -281,7 +286,7 @@ application is completed once those are in, so for a missing required document s
 is needed, not that it is optional."""
 
 HELP_PROMPT = """You are {persona}, a clear, practical Malaysian teacher ("cikgu") helping a \
-student fix a document for their BrightPath Bursary Programme application. A good cikgu reads the \
+student fix a document for their {programme} Programme application. A good cikgu reads the \
 situation, names the problem, and says exactly what to do — briefly. Warm in wording, but you \
 spend your words on the diagnosis and the fix, NOT on motivation.
 
@@ -511,13 +516,19 @@ def _specifics_block(context):
             'document):\n' + '\n'.join(lines) + '\n')
 
 
-def _build_help_prompt(doc_type, verdict, first_name, target_language=DEFAULT_LANGUAGE, context=None):
+def _build_help_prompt(doc_type, verdict, first_name, target_language=DEFAULT_LANGUAGE, context=None,
+                       branding=None):
     """Pure prompt builder — unit-tested directly (the guardrail/firewall assertions read this
     string). ``context`` carries only non-sensitive household specifics (member + document
-    names) so no admin/score data can appear in it."""
+    names) so no admin/score data can appear in it. ``branding`` (default = the platform seam)
+    supplies the coach persona + programme name; a tenant renders its own."""
+    b = branding or _branding.platform()
+    persona = b.persona_name('en')
+    programme = b.programme_name('en')
     return HELP_PROMPT.format(
-        persona=PERSONA,
-        programme_briefing=PROGRAMME_BRIEFING,
+        persona=persona,
+        programme=programme,
+        programme_briefing=PROGRAMME_BRIEFING.format(programme=programme),
         doc_label=_doc_label(doc_type),
         cause=VERDICT_GUIDANCE.get(verdict, ''),
         fix_hint=VERDICT_FIX_HINT.get(verdict, DEFAULT_FIX_HINT),
@@ -527,19 +538,21 @@ def _build_help_prompt(doc_type, verdict, first_name, target_language=DEFAULT_LA
     )
 
 
-def generate_document_help(doc_type, verdict, *, first_name='', target_language=DEFAULT_LANGUAGE, context=None):
+def generate_document_help(doc_type, verdict, *, first_name='', target_language=DEFAULT_LANGUAGE,
+                           context=None, branding=None):
     """Return {'message', 'source', ...}. ``source`` is:
     - 'none'     — nothing to help with (good/absent verdict); no Gemini call made.
     - 'ai'       — a warm message from Gemini (also returns 'model_used').
     - 'fallback' — Gemini was unavailable/empty; caller should use pre-written i18n copy.
 
     ``context`` (optional) supplies non-sensitive household specifics so the message names the
-    right family member + document. Never raises. Soft by construction."""
+    right family member + document. ``branding`` (default = the platform seam) supplies the coach
+    persona + programme name. Never raises. Soft by construction."""
     verdict = (verdict or '').strip()
     if verdict not in VERDICT_GUIDANCE:
         return {'message': '', 'source': 'none'}
 
-    prompt = _build_help_prompt(doc_type, verdict, first_name, target_language, context)
+    prompt = _build_help_prompt(doc_type, verdict, first_name, target_language, context, branding)
     from .profile_engine import _call_gemini_text  # shared, mockable Gemini prose seam
     data = _call_gemini_text(prompt, target_language)
     if 'error' in data:

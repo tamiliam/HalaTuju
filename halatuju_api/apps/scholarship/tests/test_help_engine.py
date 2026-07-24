@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from apps.scholarship import help_engine
+from apps.scholarship import branding, help_engine
 
 SEAM = 'apps.scholarship.profile_engine._call_gemini_text'
 
@@ -287,13 +287,19 @@ class TestGuardrails(TestCase):
         self.assertIn('Cikgu Gopal', p)
 
     def test_engine_signature_is_structurally_firewalled(self):
-        """The engine can ONLY be passed doc_type/verdict/first_name/target_language/context —
-        there is no parameter through which an application, profile, sponsor profile,
+        """The engine can ONLY be passed doc_type/verdict/first_name/target_language/context/
+        branding — there is no parameter through which an application, profile, sponsor profile,
         interview or score could reach it. ``context`` is a flat dict of NON-sensitive
-        household specifics (member + document labels) — never a model object. The firewall
-        is structural, not prompt-trust."""
+        household specifics (member + document labels); ``branding`` is the per-org brand value
+        object (programme name / persona / addresses) — neither is a student-data model object.
+        The firewall is structural, not prompt-trust."""
         params = set(inspect.signature(help_engine.generate_document_help).parameters)
-        self.assertEqual(params, {'doc_type', 'verdict', 'first_name', 'target_language', 'context'})
+        self.assertEqual(
+            params, {'doc_type', 'verdict', 'first_name', 'target_language', 'context', 'branding'})
+        # ``branding`` carries NO student data: a resolved Branding exposes only org-branding
+        # accessors (programme name, persona, sender identity) — never a score/profile/application.
+        b = branding.for_organisation(None)
+        self.assertFalse(any(a in dir(b) for a in ('application', 'profile', 'score', 'verdict')))
 
     def test_specifics_block_names_the_right_member_and_document(self):
         # The cluster coach supplies non-sensitive specifics so the message names the actual
