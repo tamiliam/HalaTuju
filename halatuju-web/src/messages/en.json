@@ -4391,6 +4391,19 @@
         "important": "Important",
         "nice_to_have": "Nice to have"
       },
+      "attachments": {
+        "label": "Screenshots (optional)",
+        "title": "Screenshots",
+        "add": "Add screenshot",
+        "hint": "Up to 5 images. A screenshot helps us understand the issue.",
+        "remove": "Remove",
+        "uploading": "Uploading…",
+        "limitReached": "You can attach up to 5 screenshots.",
+        "uploadFailed": "Couldn’t upload that image. Please try again.",
+        "createdButFailed": "Request created, but a screenshot didn’t upload — add it from the request page.",
+        "none": "No screenshots.",
+        "image": "Image"
+      },
       "lane": {
         "small_change": "Small change",
         "sprint": "Sprint"

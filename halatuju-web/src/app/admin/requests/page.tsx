@@ -6,8 +6,9 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import {
-  getOrgRequests, createOrgRequest, type OrgRequestDetail,
+  getOrgRequests, createOrgRequest, uploadOrgRequestAttachment, type OrgRequestDetail,
 } from '@/lib/admin-api'
+import { formatFileSize } from '@/lib/scholarship'
 import {
   REQUEST_STATUSES, statusLabelKey, statusTone, kindLabelKey, hasUnansweredQuestions,
   REQUEST_COMPONENT_PARENTS, requestSubComponents, componentLabelKey,
@@ -52,6 +53,9 @@ export default function AdminRequestsPage() {
   const [urgency, setUrgency] = useState('')
   const [steps, setSteps] = useState('')
   const [busy, setBusy] = useState(false)
+  // Staged screenshots (up to 5) — uploaded AFTER the request is created (the chain needs its id).
+  const [files, setFiles] = useState<File[]>([])
+  const [warn, setWarn] = useState('')
 
   const load = useCallback(() => {
     if (!token) return
@@ -69,21 +73,43 @@ export default function AdminRequestsPage() {
 
   useEffect(() => { load() }, [load])
 
+  const MAX_ATTACHMENTS = 5
+  const stageFiles = (list: FileList | null) => {
+    if (!list) return
+    setWarn('')
+    const room = MAX_ATTACHMENTS - files.length
+    const picked = Array.from(list).filter((f) => f.type.startsWith('image/')).slice(0, Math.max(0, room))
+    if (picked.length < list.length) setWarn(t('admin.requests.attachments.limitReached'))
+    setFiles((prev) => [...prev, ...picked])
+  }
+  const unstage = (idx: number) => setFiles((prev) => prev.filter((_, i) => i !== idx))
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!token) return
-    setBusy(true); setError('')
+    setBusy(true); setError(''); setWarn('')
     try {
       // The effective component: a chosen B40 sub-component wins over the bare parent.
       const effectiveComponent = component === 'applications' && subComponent ? subComponent : component
-      await createOrgRequest({
+      const created = await createOrgRequest({
         kind, title, description,
         component: effectiveComponent, urgency,
         // Steps only make sense for a bug — never send them for a feature.
         steps_to_reproduce: kind === 'bug' ? steps : '',
       }, { token })
+      // Upload staged screenshots via the sign → PUT → record chain. A failure here is
+      // NON-BLOCKING — the request already exists; the owner tells the user to add it later.
+      let attachFailed = false
+      for (const f of files) {
+        try {
+          await uploadOrgRequestAttachment(created.id, f, { token })
+        } catch {
+          attachFailed = true
+        }
+      }
       setTitle(''); setDescription(''); setKind('bug')
-      setComponent(''); setSubComponent(''); setUrgency(''); setSteps('')
+      setComponent(''); setSubComponent(''); setUrgency(''); setSteps(''); setFiles([])
+      if (attachFailed) setWarn(t('admin.requests.attachments.createdButFailed'))
       load()
     } catch (err) {
       setError(errText(t, (err as { code?: string })?.code))
@@ -183,6 +209,36 @@ export default function AdminRequestsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
             </div>
           )}
+
+          {/* Screenshots (optional) — staged locally, uploaded after the request is created. */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.attachments.label')}</label>
+            {files.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
+                {files.map((f, i) => (
+                  <figure key={i} className="border rounded-lg overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-20 object-cover bg-gray-50" />
+                    <figcaption className="px-1 py-0.5 text-[10px] text-gray-500 truncate" title={f.name}>{f.name} · {formatFileSize(f.size)}</figcaption>
+                    <button type="button" onClick={() => unstage(i)}
+                      className="w-full text-[11px] text-red-600 hover:text-red-800 py-0.5 border-t">
+                      {t('admin.requests.attachments.remove')}
+                    </button>
+                  </figure>
+                ))}
+              </div>
+            )}
+            {files.length < MAX_ATTACHMENTS && (
+              <label className="inline-block text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+                + {t('admin.requests.attachments.add')}
+                <input type="file" accept="image/*" multiple className="hidden"
+                  onChange={(e) => { stageFiles(e.target.files); e.target.value = '' }} />
+              </label>
+            )}
+            <p className="text-xs text-gray-400 mt-1">{t('admin.requests.attachments.hint')}</p>
+          </div>
+
+          {warn && <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-700 p-3 text-sm">{warn}</div>}
           <button type="submit" disabled={busy || !title.trim() || !description.trim()}
             className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
             {busy ? t('admin.requests.form.submitting') : t('admin.requests.form.submit')}

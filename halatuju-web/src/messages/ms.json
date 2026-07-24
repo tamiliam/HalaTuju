@@ -4391,6 +4391,19 @@
         "important": "Penting",
         "nice_to_have": "Baik jika ada"
       },
+      "attachments": {
+        "label": "Tangkap skrin (pilihan)",
+        "title": "Tangkap skrin",
+        "add": "Tambah tangkap skrin",
+        "hint": "Sehingga 5 imej. Tangkap skrin membantu kami memahami isu ini.",
+        "remove": "Buang",
+        "uploading": "Memuat naik…",
+        "limitReached": "Anda boleh lampirkan sehingga 5 tangkap skrin.",
+        "uploadFailed": "Imej itu gagal dimuat naik. Sila cuba lagi.",
+        "createdButFailed": "Permintaan dicipta, tetapi satu tangkap skrin gagal dimuat naik — tambahkannya dari halaman permintaan.",
+        "none": "Tiada tangkap skrin.",
+        "image": "Imej"
+      },
       "lane": {
         "small_change": "Perubahan kecil",
         "sprint": "Sprint"

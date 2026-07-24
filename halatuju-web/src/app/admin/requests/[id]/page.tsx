@@ -15,6 +15,7 @@ import {
   statusLabelKey, statusTone, kindLabelKey, laneLabelKey, requestActionsFor,
   hasUnansweredQuestions, type RequestAction,
 } from '@/lib/requestStatus'
+import OrgRequestAttachments from '@/components/OrgRequestAttachments'
 
 // The Requests detail: the clarification thread + the org's requestee actions (accept / defer /
 // modify / withdraw) and the owner's controls (triage / quote / requote / schedule / done /
@@ -125,6 +126,15 @@ export default function AdminRequestDetailPage() {
           <p className="text-gray-800 whitespace-pre-wrap">{req.steps_to_reproduce}</p>
         </div>
       )}
+
+      {/* Screenshots — add/remove while the request is non-terminal (submitter org + super). */}
+      <OrgRequestAttachments
+        requestId={id}
+        attachments={req.attachments || []}
+        editable={!['done', 'declined'].includes(req.status) && (isSuper || reqRole === 'org_admin')}
+        token={token}
+        onChange={setReq}
+      />
 
       {/* Quote (org-facing) */}
       {req.quote_hours != null && (

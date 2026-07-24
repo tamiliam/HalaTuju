@@ -1490,6 +1490,17 @@ export interface OrgRequestClarification {
   at?: string
 }
 
+/** A screenshot attached to a request (Sprint 15.1). download_url is a signed Supabase URL or
+ *  null (denied when the blob's key-org disagrees with the request's org). */
+export interface OrgRequestAttachment {
+  id: number
+  original_filename: string
+  content_type: string
+  size: number
+  created_at: string
+  download_url: string | null
+}
+
 /** The ORG-facing payload (what a submitting org_admin sees) — the allowlist. NEVER carries the
  *  AI draft (ai_*) or the owner's triage. The owner (super) additionally receives the owner
  *  fields below (all optional here). */
@@ -1504,6 +1515,7 @@ export interface OrgRequestDetail {
   steps_to_reproduce: string
   status: string
   clarifications: OrgRequestClarification[]
+  attachments: OrgRequestAttachment[]
   quote_hours: string | null
   quote_margin_pct: number | null
   quote_note: string
@@ -1606,6 +1618,49 @@ export async function doneOrgRequest(id: number, options?: ApiOptions): Promise<
 }
 export async function aiRerunOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/ai-rerun/`, 'POST', {}, options)
+}
+
+// ---- Screenshot attachments (Sprint 15.1) ----
+// The upload is the sign -> PUT bytes to Supabase -> record chain (ActionCentre.tsx:187 pattern);
+// see uploadOrgRequestAttachment for the whole flow.
+async function signOrgRequestAttachment(
+  id: number, options?: ApiOptions
+): Promise<{ upload_url: string; storage_path: string }> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/attachments/sign-upload/`, 'POST', {}, options)
+}
+
+async function recordOrgRequestAttachment(
+  id: number,
+  payload: { storage_path: string; original_filename: string; content_type: string; size: number },
+  options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/attachments/`, 'POST', payload, options)
+}
+
+export async function deleteOrgRequestAttachment(
+  id: number, attId: number, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/attachments/${attId}/`, 'DELETE', null, options)
+}
+
+/** The whole upload chain: sign → PUT the bytes straight to Supabase → record the row. Returns the
+ *  refreshed request (with the new attachment). Throws on any step (caller shows a warning). */
+export async function uploadOrgRequestAttachment(
+  id: number, file: File, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  const { upload_url, storage_path } = await signOrgRequestAttachment(id, options)
+  const resp = await fetch(upload_url, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+  })
+  if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`)
+  return recordOrgRequestAttachment(id, {
+    storage_path,
+    original_filename: file.name,
+    content_type: file.type || 'application/octet-stream',
+    size: file.size,
+  }, options)
 }
 
 // ---- Course Data dashboard (read-only) ----
