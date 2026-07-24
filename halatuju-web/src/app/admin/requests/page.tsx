@@ -10,6 +10,7 @@ import {
 } from '@/lib/admin-api'
 import {
   REQUEST_STATUSES, statusLabelKey, statusTone, kindLabelKey, hasUnansweredQuestions,
+  REQUEST_COMPONENT_PARENTS, requestSubComponents, componentLabelKey,
 } from '@/lib/requestStatus'
 
 // The Requests-space landing: a rate-card panel (bugs free · the adjudication rule · features
@@ -23,9 +24,8 @@ const errText = (t: (k: string) => string, code?: string) => {
   return code && known.includes(code) ? t(`admin.requests.error.${code}`) : t('admin.requests.error.generic')
 }
 
-// Optional scoping option keys (mirror org_requests.VALID_COMPONENTS / VALID_URGENCIES).
-const COMPONENT_OPTIONS = ['applications', 'students', 'sponsors', 'payments', 'contracts',
-  'sources', 'course_data', 'administration', 'access', 'other']
+// Optional urgency keys (mirror org_requests.VALID_URGENCIES). Components come from the
+// two-level REQUEST_COMPONENT_TREE (parent surface → optional B40 sub-component).
 const URGENCY_OPTIONS = ['blocking', 'important', 'nice_to_have']
 
 export default function AdminRequestsPage() {
@@ -44,7 +44,11 @@ export default function AdminRequestsPage() {
   const [kind, setKind] = useState<'bug' | 'feature'>('bug')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  // Two-level component: `component` is the parent surface; `subComponent` is the optional
+  // B40 sub-component VALUE (only when parent = applications). The stored value is the sub when
+  // one is picked, else the parent (PathwayPicker's parent→child pattern; child cleared on change).
   const [component, setComponent] = useState('')
+  const [subComponent, setSubComponent] = useState('')
   const [urgency, setUrgency] = useState('')
   const [steps, setSteps] = useState('')
   const [busy, setBusy] = useState(false)
@@ -70,14 +74,16 @@ export default function AdminRequestsPage() {
     if (!token) return
     setBusy(true); setError('')
     try {
+      // The effective component: a chosen B40 sub-component wins over the bare parent.
+      const effectiveComponent = component === 'applications' && subComponent ? subComponent : component
       await createOrgRequest({
         kind, title, description,
-        component, urgency,
+        component: effectiveComponent, urgency,
         // Steps only make sense for a bug — never send them for a feature.
         steps_to_reproduce: kind === 'bug' ? steps : '',
       }, { token })
       setTitle(''); setDescription(''); setKind('bug')
-      setComponent(''); setUrgency(''); setSteps('')
+      setComponent(''); setSubComponent(''); setUrgency(''); setSteps('')
       load()
     } catch (err) {
       setError(errText(t, (err as { code?: string })?.code))
@@ -142,11 +148,22 @@ export default function AdminRequestsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.component')}</label>
-              <select value={component} onChange={(e) => setComponent(e.target.value)}
+              <select value={component}
+                onChange={(e) => { setComponent(e.target.value); setSubComponent('') }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 <option value="">—</option>
-                {COMPONENT_OPTIONS.map((c) => <option key={c} value={c}>{t(`admin.requests.component.${c}`)}</option>)}
+                {REQUEST_COMPONENT_PARENTS.map((c) => <option key={c} value={c}>{t(componentLabelKey(c))}</option>)}
               </select>
+              {/* B40 sub-component — only when the parent surface has children (applications). */}
+              {requestSubComponents(component).length > 0 && (
+                <select key={component} value={subComponent} onChange={(e) => setSubComponent(e.target.value)}
+                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  <option value="">{t('admin.requests.form.subComponentAll')}</option>
+                  {requestSubComponents(component).map((c) => (
+                    <option key={c} value={c}>{t(componentLabelKey(c))}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.urgency')}</label>

@@ -1714,6 +1714,60 @@ class PaymentRunItem(models.Model):
         return f'PaymentRunItem run={self.run_id} app={self.application_id} {self.amount}'
 
 
+# ── Requests component tree (Sprint 15.1) — the SINGLE source of truth ─────────────────
+# A request's COMPONENT is the admin surface it is about. Parents are the org_admin-reachable
+# surfaces (super-only Students + Course Data were REMOVED in 15.1); the only parent with
+# sub-components is ``applications`` (the B40 pipeline stages). A sub-component's stored value is
+# ``f'{parent}_{suffix}'`` (UNDERSCORE separator — a dot breaks the nested i18n lookup); every value
+# is ≤30 chars (the column is varchar(30) with NO DB CHECK, so the app-level clamp
+# ``org_requests.VALID_COMPONENTS`` — derived from this tree — MUST carry every value).
+# ``org_requests.VALID_COMPONENTS`` and the model ``COMPONENT_CHOICES`` both derive from this map;
+# the FE mirror + the i18n keys are pinned to it by ``test_org_requests`` so the three can never
+# drift (never hand-enumerate — lessons.md).
+REQUEST_COMPONENT_TREE = {
+    'applications': (
+        'student_details', 'documents', 'ai_prediction', 'queries', 'interview',
+        'decision', 'agreement', 'student_profile',
+    ),
+    'sponsors': (),
+    'payments': (),
+    'contracts': (),
+    'sources': (),
+    'administration': (),
+    'access': (),
+    'other': (),
+}
+
+# English labels (human text — the VALUES derive from the tree, the labels are looked up here).
+_REQUEST_COMPONENT_LABELS = {
+    'applications': 'B40 Applications',
+    'applications_student_details': 'Student details',
+    'applications_documents': 'Documents',
+    'applications_ai_prediction': 'AI Prediction & verdicts',
+    'applications_queries': 'Queries & blockers',
+    'applications_interview': 'Interview',
+    'applications_decision': 'Recommendation & QC',
+    'applications_agreement': 'Bursary agreement',
+    'applications_student_profile': 'Student profile (sponsor-facing)',
+    'sponsors': 'Sponsors',
+    'payments': 'Payments',
+    'contracts': 'Contracts',
+    'sources': 'Sources',
+    'administration': 'Administration',
+    'access': 'Sign-in & access',
+    'other': 'Other',
+}
+
+
+def flatten_component_tree(tree):
+    """Ordered (value, ...) for the tree: each parent, followed by its ``parent_sub`` children."""
+    out = []
+    for parent, subs in tree.items():
+        out.append(parent)
+        out.extend(f'{parent}_{sub}' for sub in subs)
+    return tuple(out)
+
+
 class OrgRequest(models.Model):
     """An organisation's bug report / feature request, managed through the Requests space
     (Sprint 15). Named ``OrgRequest`` (not ``Request``) to stay grep-unambiguous against the
@@ -1739,17 +1793,11 @@ class OrgRequest(models.Model):
     # the admin surface the request is about — the user-facing MODULE names the admin nav uses
     # (halatuju-web/src/app/admin/layout.tsx + the Administration hub). URGENCY is the ORG's own
     # signal (the owner still adjudicates). All three are OPTIONAL ('' allowed).
+    # Derived from REQUEST_COMPONENT_TREE (single source of truth, Sprint 15.1). Students +
+    # Course Data removed (super-only surfaces); the 8 ``applications_*`` sub-components added.
     COMPONENT_CHOICES = [
-        ('applications', 'B40 Applications'),
-        ('students', 'Students'),
-        ('sponsors', 'Sponsors'),
-        ('payments', 'Payments'),
-        ('contracts', 'Contracts'),
-        ('sources', 'Sources'),
-        ('course_data', 'Course Data'),
-        ('administration', 'Administration'),
-        ('access', 'Sign-in & access'),
-        ('other', 'Other'),
+        (value, _REQUEST_COMPONENT_LABELS.get(value, value))
+        for value in flatten_component_tree(REQUEST_COMPONENT_TREE)
     ]
     URGENCY_CHOICES = [
         ('blocking', 'Blocking'),

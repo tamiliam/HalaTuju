@@ -393,3 +393,64 @@ class TestRunAiReview(_Base):
         qs = [c for c in r.clarifications if c.get('question')]
         self.assertEqual(len(qs), 1)
         self.assertEqual(r.ai_run_count, 2)
+
+
+class TestComponentTreeConsistency(TestCase):
+    """The Requests COMPONENT tree is ONE source of truth (Sprint 15.1). This pins the derived
+    surfaces so they can never drift: VALID_COMPONENTS ← the tree, the model choices ← the tree,
+    and the i18n keys (all three locales) ← the same value set. FE ↔ i18n ↔ VALID_COMPONENTS are
+    tied transitively through the shared en/ms/ta key set (the jest side pins FE ↔ i18n). Never
+    hand-enumerate a component list anywhere else (lessons.md — the subject-map drift)."""
+
+    def test_valid_components_derive_from_tree(self):
+        from apps.scholarship.models import REQUEST_COMPONENT_TREE, flatten_component_tree
+        self.assertEqual(svc.VALID_COMPONENTS, flatten_component_tree(REQUEST_COMPONENT_TREE))
+
+    def test_super_only_surfaces_removed(self):
+        # students + course_data are super-only surfaces — gone from the component set in 15.1.
+        self.assertNotIn('students', svc.VALID_COMPONENTS)
+        self.assertNotIn('course_data', svc.VALID_COMPONENTS)
+
+    def test_b40_sub_components_present(self):
+        expected = {
+            'applications', 'applications_student_details', 'applications_documents',
+            'applications_ai_prediction', 'applications_queries', 'applications_interview',
+            'applications_decision', 'applications_agreement', 'applications_student_profile',
+        }
+        self.assertTrue(expected.issubset(set(svc.VALID_COMPONENTS)))
+
+    def test_sub_values_use_underscore_and_fit_column(self):
+        # Underscore separator (a dot breaks the nested i18n lookup) + ≤30 chars (varchar(30),
+        # no DB CHECK — _clean_choice silently drops anything longer to '').
+        for value in svc.VALID_COMPONENTS:
+            if value.startswith('applications_'):
+                self.assertNotIn('.', value)
+                self.assertLessEqual(len(value), 30, value)
+
+    def test_clean_choice_keeps_sub_values(self):
+        # A sub-component must survive the clamp (it is in VALID_COMPONENTS) — else it drops to ''.
+        self.assertEqual(svc._clean_choice('applications_documents', svc.VALID_COMPONENTS),
+                         'applications_documents')
+        self.assertEqual(svc._clean_choice('students', svc.VALID_COMPONENTS), '')
+
+    def test_model_choices_match_valid_components(self):
+        values = [v for v, _label in OrgRequest.COMPONENT_CHOICES]
+        self.assertEqual(set(values), set(svc.VALID_COMPONENTS))
+        self.assertEqual(len(values), len(set(values)))
+
+    def test_i18n_keys_match_valid_components(self):
+        # Ties the i18n key set (each locale) to VALID_COMPONENTS. The FE mirror is tied to the
+        # SAME i18n keys on the jest side, so FE ↔ i18n ↔ VALID_COMPONENTS all agree.
+        import json
+        import os
+        here = os.path.dirname(__file__)
+        for locale in ('en', 'ms', 'ta'):
+            path = os.path.normpath(os.path.join(
+                here, '..', '..', '..', '..', 'halatuju-web', 'src', 'messages', f'{locale}.json'))
+            if not os.path.exists(path):
+                self.skipTest(f'{path} not present (api-only checkout)')
+            with open(path, encoding='utf-8') as fh:
+                data = json.load(fh)
+            keys = set(data['admin']['requests']['component'].keys())
+            self.assertEqual(keys, set(svc.VALID_COMPONENTS),
+                             f'{locale}.json component keys drifted from VALID_COMPONENTS')

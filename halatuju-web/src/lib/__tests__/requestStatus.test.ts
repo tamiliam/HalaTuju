@@ -17,6 +17,8 @@ import ta from '@/messages/ta.json'
 import {
   REQUEST_STATUSES, statusLabelKey, statusTone, hasStatusTone,
   kindLabelKey, laneLabelKey, requestActionsFor, hasUnansweredQuestions,
+  REQUEST_COMPONENT_TREE, REQUEST_COMPONENT_PARENTS, REQUEST_COMPONENT_VALUES,
+  requestSubComponents, componentLabelKey,
 } from '@/lib/requestStatus'
 
 const DEFAULT_TONE = 'bg-gray-100 text-gray-600'
@@ -113,5 +115,40 @@ describe('hasUnansweredQuestions', () => {
     expect(hasUnansweredQuestions([{ question: 'Q?', answer: 'A' }])).toBe(false)
     expect(hasUnansweredQuestions([{ history: 'x' }])).toBe(false)
     expect(hasUnansweredQuestions(null)).toBe(false)
+  })
+})
+
+describe('component tree (Sprint 15.1)', () => {
+  test('only applications carries sub-components; super-only surfaces absent', () => {
+    // Students + Course Data removed (super-only). applications is the only parent with children.
+    expect(REQUEST_COMPONENT_PARENTS).not.toContain('students')
+    expect(REQUEST_COMPONENT_PARENTS).not.toContain('course_data')
+    for (const parent of REQUEST_COMPONENT_PARENTS) {
+      if (parent !== 'applications') expect(REQUEST_COMPONENT_TREE[parent]).toEqual([])
+    }
+    expect(REQUEST_COMPONENT_TREE.applications.length).toBe(8)
+  })
+
+  test('sub-component VALUES use the underscore separator and stay ≤30 chars', () => {
+    for (const value of requestSubComponents('applications')) {
+      expect(value.startsWith('applications_')).toBe(true)
+      expect(value).not.toContain('.')       // a dot would break the nested i18n lookup
+      expect(value.length).toBeLessThanOrEqual(30)   // varchar(30), no DB CHECK
+    }
+    expect(requestSubComponents('payments')).toEqual([])
+  })
+
+  // Ties the FE component VALUES to the i18n keys in EVERY locale. The pytest side ties the SAME
+  // i18n key set to the backend VALID_COMPONENTS, so FE ↔ i18n ↔ VALID_COMPONENTS all agree.
+  describe.each([['en', en], ['ms', ms], ['ta', ta]])('%s component labels', (_lang, m) => {
+    const comp = block(m, 'admin.requests.component')
+    test('FE values ↔ i18n keys, exactly', () => {
+      expect(new Set(Object.keys(comp))).toEqual(new Set(REQUEST_COMPONENT_VALUES))
+    })
+    test('every value resolves to a non-empty label via componentLabelKey', () => {
+      for (const value of REQUEST_COMPONENT_VALUES) {
+        expect(block(m, componentLabelKey(value)) as unknown as string).toBeTruthy()
+      }
+    })
   })
 })

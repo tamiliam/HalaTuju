@@ -29,7 +29,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from .models import OrgRequest
+from .models import OrgRequest, REQUEST_COMPONENT_TREE, flatten_component_tree
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +47,11 @@ _MAX_HOURS = Decimal('100000')   # sanity ceiling on a parsed AI estimate
 
 VALID_KINDS = ('bug', 'feature')
 VALID_LANES = ('small_change', 'sprint')
-# Optional Bugzilla-style scoping (Sprint 15 increment) — the machine keys derived from the admin
-# nav's real modules; '' always allowed (the field is optional).
-VALID_COMPONENTS = (
-    'applications', 'students', 'sponsors', 'payments', 'contracts', 'sources',
-    'course_data', 'administration', 'access', 'other',
-)
+# Optional Bugzilla-style scoping — the machine keys DERIVED from the component tree (Sprint 15.1;
+# the single source of truth lives on the model). Includes the parent surfaces AND the two-level
+# ``applications_<sub>`` values; '' always allowed (the field is optional). ``_clean_choice`` clamps
+# anything outside this set to '' (there is no DB CHECK), so every FE-selectable value MUST be here.
+VALID_COMPONENTS = flatten_component_tree(REQUEST_COMPONENT_TREE)
 VALID_URGENCIES = ('blocking', 'important', 'nice_to_have')
 
 # action -> (valid_from_statuses, to_status | None). No-transition actions (answer, ai_rerun) map

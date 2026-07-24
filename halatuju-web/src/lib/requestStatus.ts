@@ -116,6 +116,45 @@ export function requestActionsFor(
   return out
 }
 
+/**
+ * The Requests COMPONENT tree (Sprint 15.1) — the FE mirror of models.REQUEST_COMPONENT_TREE.
+ * A parent is a top-level admin surface; the only parent carrying sub-components is `applications`
+ * (the B40 pipeline stages). A sub-component's stored VALUE is `${parent}_${sub}` (underscore — a
+ * dot breaks the nested i18n lookup). Students + Course Data are deliberately ABSENT (super-only
+ * surfaces, removed in 15.1). test_org_requests pins this against VALID_COMPONENTS + the i18n keys.
+ */
+export const REQUEST_COMPONENT_TREE: Record<string, readonly string[]> = {
+  applications: [
+    'student_details', 'documents', 'ai_prediction', 'queries', 'interview',
+    'decision', 'agreement', 'student_profile',
+  ],
+  sponsors: [],
+  payments: [],
+  contracts: [],
+  sources: [],
+  administration: [],
+  access: [],
+  other: [],
+}
+
+/** The parent surfaces, in display order (the top-level select options). */
+export const REQUEST_COMPONENT_PARENTS = Object.keys(REQUEST_COMPONENT_TREE)
+
+/** The child sub-component VALUES (`${parent}_${sub}`) for a parent — [] when it has no children. */
+export function requestSubComponents(parent: string): string[] {
+  return (REQUEST_COMPONENT_TREE[parent] || []).map((sub) => `${parent}_${sub}`)
+}
+
+/** i18n key for a component value (parent OR `${parent}_${sub}` — the nested lookup works for both). */
+export function componentLabelKey(value: string): string {
+  return `admin.requests.component.${value}`
+}
+
+/** Every valid component VALUE (parents + `${parent}_${sub}` children). Mirrors VALID_COMPONENTS. */
+export const REQUEST_COMPONENT_VALUES = REQUEST_COMPONENT_PARENTS.flatMap(
+  (parent) => [parent, ...requestSubComponents(parent)],
+)
+
 /** True if the request carries an unanswered clarifying question (a clarification with a
  *  question and no answer). Used by the list badge + the detail answer box. */
 export function hasUnansweredQuestions(
