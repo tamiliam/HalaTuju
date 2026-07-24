@@ -7,6 +7,7 @@ PartnerAdminMixin does the real authorisation.
 """
 import logging
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
@@ -29,7 +30,8 @@ from .emails import send_request_info_email
 from .verdict_engine import build_verdict
 from .models import (
     ApplicantDocument, Disbursement, GraduationMessage, InterviewSession, InterviewSlot,
-    Referee, ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
+    OrgRequest, Referee, ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile,
+    Sponsorship,
 )
 from . import scheduling
 from .profile_engine import generate_anon_blurb, refine_sponsor_profile
@@ -41,6 +43,8 @@ from .serializers_admin import (
     AdminGraduationMessageSerializer,
     InterviewSessionSerializer,
     interview_schedule_payload,
+    OrgRequestOrgSerializer,
+    OrgRequestOwnerSerializer,
     ReviewerProfileSerializer,
     SponsorProfileSerializer,
 )
@@ -2928,3 +2932,442 @@ class AdminContractImportDocxView(_ContractsBase):
             'preamble': proposal.get('preamble', ''),
             'counterparty': proposal.get('counterparty', {}),
         })
+
+
+# ── Requests space (Sprint 15) ─────────────────────────────────────────────────────
+# The org-section "Requests" area: bug/feature forms → AI reviewer → owner-gated hours
+# quotes. Ships DARK behind REQUESTS_ENABLED — every route 404s while the flag is off
+# (the FE hub card is hidden by the same 404-probe, so there is no client flag). Service =
+# apps.scholarship.org_requests; org-fenced via _org_request_for (cross-org 404), role-gated
+# per the endpoint table (org-side vs super-only). All classes classified in
+# test_org_fence.py FENCED_OR_EXEMPT and the OrgRequest model is WATCHED (its raw admin
+# queries below all carry an # org-fence pragma).
+
+def _org_request_err(e):
+    """Map an OrgRequestError code to a 4xx. bad_transition/bug_is_free/... are 4xx; the two
+    AI-availability codes are 503 (the model is unconfigured/unavailable, not the caller's fault)."""
+    if e.code in ('triage_ai_unconfigured', 'triage_ai_unavailable'):
+        return Response({'error': e.code, 'code': e.code},
+                        status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class _OrgRequestsBase(_AdminBase):
+    """Shared flag/role/org gate for the Requests-space endpoints.
+
+    404-FIRST dark ship: with ``REQUESTS_ENABLED`` off, ``_flag`` short-circuits every handler to
+    404 BEFORE any auth/role work — the same shape as the sponsor-pool flag gate — so the feature
+    leaks no existence signal while dark. When the flag is on, role denials are REAL 403s and a
+    cross-org id is 404 (no existence leak)."""
+
+    def _flag(self):
+        """Returns an error Response (404) when the feature is dark, else None."""
+        if not getattr(settings, 'REQUESTS_ENABLED', False):
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        return None
+
+    def _not_found(self):
+        return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def _org_request_for(self, admin, pk):
+        # org-fence: fetch then re-gate to the caller's organisation (super global); a cross-org
+        # id returns None -> 404 (no existence leak). This is the ONLY OrgRequest.objects read.
+        req = (OrgRequest.objects
+               .select_related('organisation', 'submitted_by').filter(pk=pk).first())
+        if req is None:
+            return None
+        if self.has_role(admin, 'super'):
+            return req
+        if req.organisation_id != admin.owning_organisation_id:
+            return None
+        return req
+
+    # ── role prologues (flag already assumed checked by the caller) ──────────────
+    def _org_side(self, request):
+        """Caller must be an org_admin or super (the roles that OPEN the Requests area)."""
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not (admin.is_super or admin.role == 'org_admin'):
+            return None, self._deny_role()
+        return admin, None
+
+    def _requestee(self, request, pk, *, allow_super=False):
+        """A requestee WRITE (answer/defer/modify → org_admin only; approve/decline → +super).
+        Returns (admin, req, None) or (None, None, err)."""
+        admin = self.get_admin(request)
+        if not admin:
+            return None, None, self._deny()
+        if not ((admin.role == 'org_admin') or (allow_super and admin.is_super)):
+            return None, None, self._deny_role()
+        req = self._org_request_for(admin, pk)
+        if req is None:
+            return None, None, self._not_found()
+        return admin, req, None
+
+    def _super_side(self, request, pk):
+        """A super-only WRITE (triage/quote/requote/schedule/done/ai-rerun)."""
+        admin = self.get_admin(request)
+        if not admin:
+            return None, None, self._deny()
+        if not admin.is_super:
+            return None, None, self._deny_role()
+        req = self._org_request_for(admin, pk)
+        if req is None:
+            return None, None, self._not_found()
+        return admin, req, None
+
+    def _serialize(self, admin, req):
+        """Super sees the OWNER payload (incl. the AI draft + triage); everyone else the
+        allowlist ORG payload (no ai_* / triage ever)."""
+        if self.has_role(admin, 'super'):
+            return OrgRequestOwnerSerializer(req).data
+        return OrgRequestOrgSerializer(req).data
+
+
+class AdminOrgRequestListView(_OrgRequestsBase):
+    """GET list (org-fenced) . POST create a request. org_admin + super."""
+
+    def get(self, request):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, err = self._org_side(request)
+        if err:
+            return err
+        # org-fence: list scoped to the caller's organisation (super global) via _org_scoped.
+        qs = self._org_scoped(
+            OrgRequest.objects.select_related('organisation', 'submitted_by'),
+            admin, field='organisation_id')
+        return Response({'requests': [self._serialize(admin, r) for r in qs]})
+
+    def post(self, request):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, err = self._org_side(request)
+        if err:
+            return err
+        from . import org_requests
+        # Whose org the request belongs to: the org_admin's own; a super must name organisation_id.
+        if admin.is_super:
+            org_id = request.data.get('organisation_id')
+            from apps.courses.models import PartnerOrganisation
+            org = PartnerOrganisation.objects.filter(pk=org_id).first() if org_id else None
+            if org is None:
+                return Response({'error': 'org_required', 'code': 'org_required'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            org = admin.owning_organisation
+            if org is None:
+                return Response({'error': 'no_org', 'code': 'no_org'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        try:
+            req = org_requests.create_request(
+                org, admin, kind=(request.data.get('kind') or '').strip(),
+                title=request.data.get('title') or '',
+                description=request.data.get('description') or '')
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        # Best-effort post-commit: notify the owner + auto-run the AI reviewer (never fails create).
+        try:
+            from . import emails
+            emails.send_org_request_submitted_email(req)
+        except Exception:
+            logger.warning('Requests: submit-notify failed for OrgRequest %s', req.pk, exc_info=True)
+        org_requests.auto_run_ai_review(req)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req), status=status.HTTP_201_CREATED)
+
+
+class AdminOrgRequestCountView(_OrgRequestsBase):
+    """GET {count} for the nav / Administration-hub badge. Super: global count of SUBMITTED
+    (awaiting triage). org_admin: own org's requests that need THEIR attention — quoted (awaiting
+    accept) OR carrying an unanswered clarifying question. org_admin + super."""
+
+    def get(self, request):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, err = self._org_side(request)
+        if err:
+            return err
+        if self.has_role(admin, 'super'):
+            # org-fence: super is global by design for the triage badge.
+            return Response({'count': OrgRequest.objects.filter(status='submitted').count()})
+        # org-fence: own org only (org_admin).
+        qs = OrgRequest.objects.filter(
+            organisation_id=admin.owning_organisation_id,
+        ).exclude(status__in=('done', 'declined')).only('status', 'clarifications')
+        count = 0
+        for r in qs:
+            if r.status == 'quoted' or any(
+                    not c.get('answer') and c.get('question') for c in (r.clarifications or [])):
+                count += 1
+        return Response({'count': count})
+
+
+class AdminOrgRequestDetailView(_OrgRequestsBase):
+    """GET one request (org_admin own else 404; super). org_admin + super."""
+
+    def get(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, err = self._org_side(request)
+        if err:
+            return err
+        req = self._org_request_for(admin, pk)
+        if req is None:
+            return self._not_found()
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestAnswerView(_OrgRequestsBase):
+    """POST answer a clarifying question (org_admin own org). No status transition."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._requestee(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            req = org_requests.answer_clarification(
+                req, request.data.get('answer') or '',
+                index=request.data.get('index'))
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        # Best-effort: notify the owner + re-run the AI reviewer on the new answer.
+        try:
+            from . import emails
+            emails.send_org_request_answered_email(req)
+        except Exception:
+            logger.warning('Requests: answer-notify failed for OrgRequest %s', req.pk, exc_info=True)
+        org_requests.auto_run_ai_review(req)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestApproveView(_OrgRequestsBase):
+    """POST accept a quote (quoted/deferred → approved). org_admin own org, or super."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._requestee(request, pk, allow_super=True)
+        if err:
+            return err
+        from . import org_requests
+        by_role = 'super' if admin.is_super else 'org_admin'
+        try:
+            req = org_requests.approve(req, admin, by_role=by_role)
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        try:
+            from . import emails
+            emails.send_org_request_accepted_email(req)
+        except Exception:
+            logger.warning('Requests: accept-notify failed for OrgRequest %s', req.pk, exc_info=True)
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestDeferView(_OrgRequestsBase):
+    """POST defer a quote (quoted → deferred). org_admin own org."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._requestee(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            req = org_requests.defer(req, admin)
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestModifyView(_OrgRequestsBase):
+    """POST modify (amend the description; quoted/deferred → submitted). org_admin own org."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._requestee(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            req = org_requests.modify(req, admin, description=request.data.get('description') or '')
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        org_requests.auto_run_ai_review(req)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestDeclineView(_OrgRequestsBase):
+    """POST decline/withdraw (→ declined, terminal). org_admin own org (withdraw, reason
+    optional), or super (decline, reason required)."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._requestee(request, pk, allow_super=True)
+        if err:
+            return err
+        from . import org_requests
+        by_role = 'super' if admin.is_super else 'org_admin'
+        try:
+            req = org_requests.decline(req, admin, by_role=by_role,
+                                       reason=request.data.get('reason') or '')
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestTriageView(_OrgRequestsBase):
+    """POST triage (submitted → triaged). Super only."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            req = org_requests.triage(
+                req, admin, triaged_kind=(request.data.get('triaged_kind') or '').strip(),
+                lane=(request.data.get('lane') or '').strip(),
+                note=request.data.get('note') or '')
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestQuoteView(_OrgRequestsBase):
+    """POST send a quote (triaged → quoted; feature only). Super only. Emails the submitter."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            req = org_requests.quote(
+                req, admin, hours=request.data.get('hours'),
+                margin_pct=request.data.get('margin_pct'),
+                note=request.data.get('note') or '')
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        try:
+            from . import emails
+            emails.send_org_request_quote_email(req)
+        except Exception:
+            logger.warning('Requests: quote email failed for OrgRequest %s', req.pk, exc_info=True)
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestRequoteView(_OrgRequestsBase):
+    """POST re-quote a deferred request (deferred → quoted). Super only. Emails the submitter."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            req = org_requests.requote(
+                req, admin, hours=request.data.get('hours'),
+                margin_pct=request.data.get('margin_pct'),
+                note=request.data.get('note') or '')
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        try:
+            from . import emails
+            emails.send_org_request_quote_email(req)
+        except Exception:
+            logger.warning('Requests: re-quote email failed for OrgRequest %s', req.pk, exc_info=True)
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestScheduleView(_OrgRequestsBase):
+    """POST schedule (triaged-bug or approved → scheduled). Super only. Optional date."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        from django.utils.dateparse import parse_date
+        from . import org_requests
+        raw = (request.data.get('scheduled_for') or '').strip()
+        sched = parse_date(raw) if raw else None
+        try:
+            req = org_requests.schedule(req, admin, scheduled_for=sched)
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestDoneView(_OrgRequestsBase):
+    """POST mark done (scheduled → done, terminal). Super only."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            req = org_requests.done(req, admin)
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestAiRerunView(_OrgRequestsBase):
+    """POST re-run the AI reviewer manually (no transition; submitted/triaged). Super only.
+    Unlike the auto-run this surfaces the ContractsError as a 503 so the owner sees WHY."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            result = org_requests.run_ai_review(req)
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        if result['new_questions']:
+            try:
+                from . import emails
+                emails.send_org_request_questions_email(req, result['new_questions'])
+            except Exception:
+                logger.warning('Requests: questions email failed for OrgRequest %s', req.pk,
+                               exc_info=True)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))

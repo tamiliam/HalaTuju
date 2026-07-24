@@ -115,6 +115,20 @@ from .views_admin import (
     AdminPaymentRunCancelView,
     AdminPaymentRunCsvView,
     AdminPaymentFundingSummaryView,
+    AdminOrgRequestListView,
+    AdminOrgRequestCountView,
+    AdminOrgRequestDetailView,
+    AdminOrgRequestAnswerView,
+    AdminOrgRequestApproveView,
+    AdminOrgRequestDeferView,
+    AdminOrgRequestModifyView,
+    AdminOrgRequestDeclineView,
+    AdminOrgRequestTriageView,
+    AdminOrgRequestQuoteView,
+    AdminOrgRequestRequoteView,
+    AdminOrgRequestScheduleView,
+    AdminOrgRequestDoneView,
+    AdminOrgRequestAiRerunView,
     AdminContractTemplateListView,
     AdminContractTemplateDetailView,
     AdminContractClausesView,
@@ -217,6 +231,26 @@ urlpatterns = [
     path('admin/scholarship/payment-runs/<int:pk>/sign/', AdminPaymentRunSignView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/cancel/', AdminPaymentRunCancelView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/csv/', AdminPaymentRunCsvView.as_view()),
+
+    # Requests space (Sprint 15): the org-section "Requests" area (bug/feature → AI reviewer →
+    # owner-gated hours quotes). Ships DARK behind REQUESTS_ENABLED (every route 404s while off).
+    # Org-fenced; org_admin + super open the list/detail/count; the requestee actions
+    # (answer/defer/modify) are org_admin, approve/decline add super; the owner actions
+    # (triage/quote/requote/schedule/done/ai-rerun) are super-only. Service = org_requests.
+    path('admin/scholarship/requests/', AdminOrgRequestListView.as_view()),
+    path('admin/scholarship/requests/count/', AdminOrgRequestCountView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/', AdminOrgRequestDetailView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/answer/', AdminOrgRequestAnswerView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/approve/', AdminOrgRequestApproveView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/defer/', AdminOrgRequestDeferView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/modify/', AdminOrgRequestModifyView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/decline/', AdminOrgRequestDeclineView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/triage/', AdminOrgRequestTriageView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/quote/', AdminOrgRequestQuoteView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/requote/', AdminOrgRequestRequoteView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/schedule/', AdminOrgRequestScheduleView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/done/', AdminOrgRequestDoneView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/ai-rerun/', AdminOrgRequestAiRerunView.as_view()),
 
     # Contract module (S3): org-owned versioned bursary templates. Super/org_admin,
     # org-fenced (cross-org 404); deploy super-only. Service = apps.scholarship.contracts.

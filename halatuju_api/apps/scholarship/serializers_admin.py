@@ -818,3 +818,92 @@ class FundingSummaryRowSerializer(serializers.Serializer):
         if item is None:
             return None
         return {'reference': item.run.reference, 'payment_date': item.run.payment_date}
+
+
+# ── Requests space (Sprint 15) ────────────────────────────────────────────────────
+
+class OrgRequestOrgSerializer(serializers.Serializer):
+    """The ORG-FACING view of an OrgRequest (what a submitting org_admin sees).
+
+    **Allowlist by construction** — a plain ``Serializer`` with every field explicit and ZERO
+    model passthrough, so the AI DRAFT (``ai_draft_*``) and the owner's private triage
+    (``triaged_kind``/``lane``/``triage_note``) can NEVER reach the org. The org sees only the
+    outcome the owner deliberately sends: the QUOTE (hours + margin + note), the schedule/approval
+    stamps, and the clarification thread (the questions the AI/owner chose to flow to them). The
+    single worst failure this class prevents is the AI's hours estimate leaking to the org before
+    the owner has approved a quote — an exact-key snapshot test pins the key set so a new field
+    can't slip in.
+
+    Input is an ``OrgRequest``.
+    """
+    id = serializers.IntegerField()
+    kind = serializers.CharField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    status = serializers.CharField()
+    clarifications = serializers.JSONField()
+    quote_hours = serializers.SerializerMethodField()
+    quote_margin_pct = serializers.IntegerField()
+    quote_note = serializers.CharField()
+    quoted_at = serializers.DateTimeField()
+    approved_at = serializers.DateTimeField()
+    scheduled_for = serializers.DateField()
+    decline_reason = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+    submitted_by_name = serializers.SerializerMethodField()
+
+    def get_quote_hours(self, obj):
+        return str(obj.quote_hours) if obj.quote_hours is not None else None
+
+    def get_submitted_by_name(self, obj):
+        return (getattr(obj.submitted_by, 'name', '') or '').strip()
+
+
+class OrgRequestOwnerSerializer(serializers.Serializer):
+    """The OWNER-FACING view (super) — every field incl. the AI draft + triage, plus the org
+    id/name. Deliberately a SEPARATE serializer from the org one (never a shared serializer with a
+    role-conditional field): the two payloads share no code, so a change to the owner view can't
+    accidentally widen the org view. Input is an ``OrgRequest``."""
+    id = serializers.IntegerField()
+    organisation_id = serializers.IntegerField()
+    organisation_name = serializers.SerializerMethodField()
+    submitted_by_name = serializers.SerializerMethodField()
+    kind = serializers.CharField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    status = serializers.CharField()
+    clarifications = serializers.JSONField()
+    ai_run_count = serializers.IntegerField()
+    ai_draft_kind = serializers.CharField()
+    ai_draft_lane = serializers.CharField()
+    ai_draft_hours = serializers.SerializerMethodField()
+    ai_draft_note = serializers.CharField()
+    ai_draft_model = serializers.CharField()
+    ai_draft_at = serializers.DateTimeField()
+    triaged_kind = serializers.CharField()
+    lane = serializers.CharField()
+    triage_note = serializers.CharField()
+    triaged_at = serializers.DateTimeField()
+    quote_hours = serializers.SerializerMethodField()
+    quote_margin_pct = serializers.IntegerField()
+    quote_note = serializers.CharField()
+    quoted_at = serializers.DateTimeField()
+    approved_at = serializers.DateTimeField()
+    scheduled_for = serializers.DateField()
+    decline_reason = serializers.CharField()
+    declined_by_role = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+    def get_organisation_name(self, obj):
+        return (getattr(obj.organisation, 'name', '') or '').strip()
+
+    def get_submitted_by_name(self, obj):
+        return (getattr(obj.submitted_by, 'name', '') or '').strip()
+
+    def get_ai_draft_hours(self, obj):
+        return str(obj.ai_draft_hours) if obj.ai_draft_hours is not None else None
+
+    def get_quote_hours(self, obj):
+        return str(obj.quote_hours) if obj.quote_hours is not None else None

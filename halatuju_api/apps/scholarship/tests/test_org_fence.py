@@ -215,6 +215,23 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminContractRevertView': 'contract-org-fenced', 'AdminContractDeployView': 'contract-org-fenced+super-deploy',
         'AdminContractPreviewView': 'contract-org-fenced', 'AdminContractQuizPreviewView': 'contract-org-fenced',
         'AdminContractImportDocxView': 'contract-org-fenced',
+        # Requests space (Sprint 15) — org-fenced via _OrgRequestsBase._org_request_for
+        # (cross-org 404); list/count/detail scoped to the caller's org (super global). The
+        # requestee actions (answer/defer/modify) are org_admin; approve/decline add super; the
+        # owner actions (triage/quote/requote/schedule/done/ai-rerun) are super-only. OrgRequest
+        # IS a watched model (added to WATCHED below) so its raw queries carry # org-fence pragmas.
+        # Every route 404s while REQUESTS_ENABLED is off (dark ship).
+        '_OrgRequestsBase': 'base — requests flag/role/org gate + org-fenced request lookup',
+        'AdminOrgRequestListView': 'requests-org-fenced', 'AdminOrgRequestCountView': 'requests-org-fenced',
+        'AdminOrgRequestDetailView': 'requests-org-fenced', 'AdminOrgRequestAnswerView': 'requests-org-fenced',
+        'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
+        'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
+        'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',
+        'AdminOrgRequestQuoteView': 'requests-org-fenced+super-only',
+        'AdminOrgRequestRequoteView': 'requests-org-fenced+super-only',
+        'AdminOrgRequestScheduleView': 'requests-org-fenced+super-only',
+        'AdminOrgRequestDoneView': 'requests-org-fenced+super-only',
+        'AdminOrgRequestAiRerunView': 'requests-org-fenced+super-only',
         # Sources module (go-live transition, T1) — super/org_admin role gate via _SourcesBase.
         # Source rows (PartnerOrganisation) are a SHARED single-tenant registry, deliberately NOT
         # org-fenced (multi-tenant fencing of shared source rows is out of scope — see the plan).
@@ -301,6 +318,7 @@ class TestOrgFenceStaticGuard(TestCase):
     WATCHED = (
         'ScholarshipApplication.objects', 'Sponsorship.objects',
         'GraduationMessage.objects', 'ApplicantDocument.objects',
+        'OrgRequest.objects',
     )
 
     def test_raw_admin_queries_are_fenced(self):
