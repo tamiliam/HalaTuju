@@ -127,6 +127,57 @@ function UploadTrigger({
   )
 }
 
+// Doc types that keep MULTIPLE files (a household may have several); everything else is a
+// single replaceable file. A single-file card shows the tidy one-row FileChip below.
+const MULTI_INSTANCE_UPLOADS = new Set(['str', 'salary_slip', 'epf'])
+
+// A single uploaded file as one tidy bordered row: name + size on the left, Replace and
+// Remove grouped on the right — so the two actions line up instead of stacking on separate
+// lines. Used for single-instance docs; multi-file lists keep the plain rows.
+function FileChip({
+  doc,
+  docType,
+  busy,
+  onUpload,
+  onDelete,
+  t,
+}: {
+  doc: ApplicantDocument
+  docType: string
+  busy: boolean
+  onUpload: (docType: string, file: File) => void
+  onDelete: (id: number) => void
+  t: (key: string) => string
+}) {
+  return (
+    <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-2.5">
+      <span className="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-primary-500" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14 3v5h5" />
+        </svg>
+        <span className="truncate">
+          {doc.download_url ? (
+            <a href={doc.download_url} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
+              {doc.original_filename || doc.doc_type}
+            </a>
+          ) : (
+            doc.original_filename || doc.doc_type
+          )}
+          {doc.size ? <span className="text-gray-400"> · {formatFileSize(doc.size)}</span> : null}
+        </span>
+      </span>
+      <span className="flex shrink-0 items-center gap-4">
+        <UploadTrigger docType={docType} busy={busy} onUpload={onUpload}
+          label={busy ? t('scholarship.docs.uploading') : t('scholarship.docs.replace')} />
+        <button onClick={() => onDelete(doc.id)} className="text-sm text-red-500 hover:underline">
+          {t('scholarship.docs.remove')}
+        </button>
+      </span>
+    </div>
+  )
+}
+
 // ── Vision OCR chip (S13 — soft signal under the IC upload) ──────────────
 
 type ICCheckKind = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'none'
@@ -886,6 +937,9 @@ function SingleDocCard({
   // full card so the "Uploading…" state is visible), and never for income-cluster docs.
   const doneDoc = docType === 'ic' ? (visionDoc ?? existing[0]) : existing[0]
   const done = !suppressCoach && existing.length > 0 && !busy && docDone(docType, doneDoc)
+  // One replaceable file → the tidy FileChip (Replace + Remove grouped on the right); a
+  // multi-file type (str / salary / EPF) keeps the plain list with an "Add more" trigger.
+  const singleFile = existing.length === 1 && !MULTI_INSTANCE_UPLOADS.has(docType)
 
   const title = (
     <>
@@ -894,17 +948,21 @@ function SingleDocCard({
     </>
   )
 
-  // The file list + per-type fact checklists + coach — the card's detail, shared by the
-  // open state of both the normal and the collapsed-"done" layouts.
-  const details = (
+  // The uploaded file(s): one tidy row for a single-instance doc, else the plain list.
+  const fileBlock = singleFile ? (
+    <FileChip doc={existing[0]} docType={docType} busy={busy} onUpload={onPick} onDelete={onDelete} t={t} />
+  ) : existing.length > 0 ? (
+    <ul className="mt-2 space-y-1">
+      {existing.map((d) => (
+        <UploadedFileRow key={d.id} doc={d} onDelete={onDelete} t={t} />
+      ))}
+    </ul>
+  ) : null
+
+  // The per-type fact checklists + coach — everything below the file row. Shared by both
+  // the normal and the collapsed-"done" layouts.
+  const checks = (
     <>
-      {existing.length > 0 && (
-        <ul className="mt-2 space-y-1">
-          {existing.map((d) => (
-            <UploadedFileRow key={d.id} doc={d} onDelete={onDelete} t={t} />
-          ))}
-        </ul>
-      )}
       {visionDoc && (
         <>
           <ICChecklist doc={visionDoc} t={t} />
@@ -970,10 +1028,8 @@ function SingleDocCard({
         {open && (
           <div className="border-t border-green-100 p-3">
             <p className="text-xs text-gray-500">{helpOverride ?? t(`scholarship.docs.help.${docType}`)}</p>
-            <div className="mt-2 flex justify-end">
-              <UploadTrigger docType={docType} busy={busy} onUpload={onPick} label={t('scholarship.docs.replace')} />
-            </div>
-            {details}
+            {fileBlock}
+            {checks}
           </div>
         )}
       </div>
@@ -982,29 +1038,33 @@ function SingleDocCard({
 
   return (
     <div className="border rounded-lg p-3">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-start justify-between gap-2">
         <div>
           <span className="text-sm font-medium text-gray-800">{title}</span>
           <p className="text-xs text-gray-500 mt-0.5">
             {helpOverride ?? t(`scholarship.docs.help.${docType}`)}
           </p>
         </div>
-        <UploadTrigger
-          docType={docType}
-          busy={busy}
-          onUpload={onPick}
-          label={
-            busy
-              ? t('scholarship.docs.uploading')
-              : existing.length > 0
-              // Single-instance doc types replace on re-upload (backend
-              // sweeps the old file + Storage blob). Be honest about it.
-              ? t('scholarship.docs.replace')
-              : t('scholarship.docs.choose')
-          }
-        />
+        {/* When there's a single file, Replace lives in the FileChip below (grouped with
+            Remove); the header trigger shows only to CHOOSE a first file or ADD to a
+            multi-file list. */}
+        {!singleFile && (
+          <UploadTrigger
+            docType={docType}
+            busy={busy}
+            onUpload={onPick}
+            label={
+              busy
+                ? t('scholarship.docs.uploading')
+                : existing.length > 0
+                ? t('scholarship.docs.replace')
+                : t('scholarship.docs.choose')
+            }
+          />
+        )}
       </div>
-      {details}
+      {fileBlock}
+      {checks}
     </div>
   )
 }
@@ -1480,19 +1540,35 @@ function IncomeWizard({
               </div>
             ))}
           </div>
-          {/* Supplementary income evidence (salary slip / EPF) — optional, outside the group box.
-              Utilities are NOT rendered here: they're household-level and show once in the shared
-              "Utilities" block below (so both routes present them identically). */}
-          {ordered(reqs.optional).filter((dt) => !UTILITY_DOCS.includes(dt)).map((dt) => (
-            <div key={dt}>
-              {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
-                ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
-                suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
-              {e && clusterDocKey(dt, '') === strAnchor && (
-                <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
-              )}
-            </div>
-          ))}
+          {/* Supplementary income evidence (salary slip / EPF) — optional on the STR route (the STR
+              already evidences income), so it folds into a quiet collapsible (default closed) like
+              Utilities, so it never adds to the wall. Utilities render once in the shared block below. */}
+          {(() => {
+            const supp = ordered(reqs.optional).filter((dt) => !UTILITY_DOCS.includes(dt))
+            if (supp.length === 0) return null
+            return (
+              <CollapsibleSection
+                tone="optional"
+                title={iq('supplementaryTitle')}
+                summary={iq('supplementaryNote')}
+                openLabel={t('scholarship.docs.add')}
+                hideLabel={t('scholarship.docs.hide')}
+              >
+                <div className="space-y-3">
+                  {supp.map((dt) => (
+                    <div key={dt}>
+                      {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt),
+                        ...(STR_EARNER_DOCS.has(dt) ? { member: e, legacyBlank: true } : {}),
+                        suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
+                      {e && clusterDocKey(dt, '') === strAnchor && (
+                        <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            )
+          })()}
         </div>
       )}
 

@@ -1422,6 +1422,8 @@
           },
           "utilities": "Utiliti",
           "utilitiesNote": "Pilihan — bil elektrik atau air terkini membantu menunjukkan keadaan isi rumah anda. Tambah satu jika ada.",
+          "supplementaryTitle": "Dokumen pendapatan tambahan",
+          "supplementaryNote": "Pilihan — slip gaji atau penyata KWSP menambah butiran pada gambaran pendapatan. Tambah jika ada.",
           "satisfiedTitle": "Pendapatan anda telah didokumenkan",
           "satisfiedNote": "Bukti anda telah diterima dan disahkan. Anda dialu-alukan untuk menambah lagi — slip gaji, penyata KWSP, atau bil — bagi menguatkan kes anda, tetapi tiada apa-apa lagi yang diperlukan."
         }

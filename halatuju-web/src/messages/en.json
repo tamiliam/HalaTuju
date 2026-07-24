@@ -1422,6 +1422,8 @@
           },
           "utilities": "Utilities",
           "utilitiesNote": "Optional — a recent electricity or water bill helps show your household situation. Add one if you have it.",
+          "supplementaryTitle": "More income documents",
+          "supplementaryNote": "Optional — a salary slip or EPF statement adds detail to the income picture. Add them if you have them.",
           "satisfiedTitle": "Your income is documented",
           "satisfiedNote": "Your evidence is in and checks out. You're welcome to add more — a payslip, EPF statement, or a bill — to strengthen your case, but nothing more is required."
         }
