@@ -1019,9 +1019,9 @@
     "reply_to": [],
     "subject": "உங்கள் நிறைவு செய்யப்பட்ட BrightPath Bursary விண்ணப்பத்தைப் பெற்றோம்"
   },
-  "super_verdict_escalation": {
+  "verdict_escalation": {
     "attachments": [],
-    "body": "Hi,\n\nA B40 verdict is overdue and needs attention.\n\nReference: BP-001\nApplicant: Aisyah\nAssigned reviewer: Kalai\nWas due: 2026-08-25\n\nKalai has not recorded a verdict past the review deadline. You may want to follow up, or reassign the case from the admin console.\n\nOpen in your reviewer dashboard:\nhttp://localhost:3000/admin/login\n\nThanks,\nThe BrightPath Bursary Team",
+    "body": "Hi,\n\nA B40 verdict is overdue and has been escalated.\n\nReference: BP-001\nApplicant: Aisyah\nAssigned reviewer: Kalai\nWas due: 2026-08-25\n\nIt has passed the review deadline without a recorded verdict. Please record the verdict, or reassign the case from the admin console.\n\nOpen in your reviewer dashboard:\nhttp://localhost:3000/admin/login\n\nThanks,\nThe BrightPath Bursary Team",
     "from_email": "interview@halatuju.xyz",
     "html": "",
     "reply_to": [

@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## Review-SLA escalation is an ORG function, not a super function — 2026-07-24
+**Decision:** The verdict-overdue escalation goes to the application's owning-org org_admin(s) + the
+assigned reviewer, never platform super-admins (fallback = `ADMIN_NOTIFY_EMAIL` when an org has no
+active org_admin).
+**Why:** a super is the platform owner (HalaTuju), not an operator inside a tenant org like
+BrightPath. A full audit of super-admin usage found this the ONLY super-as-org-operator case;
+break-glass overrides (super filling a missing payment-signer slot once, the QC self-check
+exemption, witness-in-a-pinch) and platform-level gates (add-tenant, org fence, Foundation
+countersign) stay super deliberately — they are owner safety-valves / platform roles, not routine
+org operations.
+
 ## Requests v1.1 — underscore-separator hierarchical component values — Sprint 15.1, 2026-07-24
 **Decision:** The new `applications_*` sub-component values (8 of them) use an UNDERSCORE to join
 parent and child (`applications_documents`, not `applications.documents`), stored in the same

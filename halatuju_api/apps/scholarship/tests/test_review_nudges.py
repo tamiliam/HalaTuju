@@ -6,7 +6,7 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from apps.courses.models import PartnerAdmin, StudentProfile
+from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.pool import pool_ref
 
@@ -16,13 +16,18 @@ from apps.scholarship.pool import pool_ref
 class ReviewNudgeTests(TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='nudge-test-org', name='Nudge Test Org')
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='rev-uid', role='reviewer', is_active=True,
-            name='Rohini', email='rohini@example.com')
+            owning_organisation=cls.org, name='Rohini', email='rohini@example.com')
+        cls.org_admin = PartnerAdmin.objects.create(
+            supabase_user_id='orgadmin-uid', role='org_admin', is_active=True,
+            owning_organisation=cls.org, name='Suresh', email='orgadmin@example.com')
         cls.super = PartnerAdmin.objects.create(
             supabase_user_id='sup-uid', is_super_admin=True, is_active=True,
             name='Super', email='super@example.com')
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = ScholarshipCohort.objects.create(
+            code='c', name='B40', year=2026, owning_organisation=cls.org)
         cls.profile = StudentProfile.objects.create(
             supabase_user_id='stud', nric='030101-14-1234', name='Priya')
 
@@ -61,12 +66,28 @@ class ReviewNudgeTests(TestCase):
         self.assertTrue(any('Verdict overdue' in s for s in subjects))
         self.assertFalse(any('needs attention' in s for s in subjects))  # no escalation yet
 
-    def test_escalation_to_super_admins(self):
+    def test_escalation_to_org_admin_and_reviewer_not_super(self):
         self._app(assigned_days_ago=14)    # due 4 days ago → past the +3 grace
         call_command('send_review_nudges')
         esc = [m for m in mail.outbox if 'needs attention' in m.subject]
-        self.assertEqual(len(esc), 1)
-        self.assertEqual(esc[0].to, ['super@example.com'])
+        recipients = {addr for m in esc for addr in m.to}
+        # Escalation goes to the org's own admin + the assigned reviewer — never the super-admin.
+        self.assertIn('orgadmin@example.com', recipients)
+        self.assertIn('rohini@example.com', recipients)
+        self.assertNotIn('super@example.com', recipients)
+
+    def test_escalation_falls_back_to_admin_notify_when_no_org_admin(self):
+        # An org with no active org_admin must NOT escalate to a super — a platform mailbox instead.
+        self.org_admin.is_active = False
+        self.org_admin.save(update_fields=['is_active'])
+        self.addCleanup(lambda: PartnerAdmin.objects.filter(pk=self.org_admin.pk).update(is_active=True))
+        self._app(assigned_days_ago=14)
+        with override_settings(ADMIN_NOTIFY_EMAIL='ops@example.com'):
+            call_command('send_review_nudges')
+        recipients = {addr for m in mail.outbox if 'needs attention' in m.subject for addr in m.to}
+        self.assertIn('ops@example.com', recipients)
+        self.assertIn('rohini@example.com', recipients)
+        self.assertNotIn('super@example.com', recipients)
 
     def test_recorded_verdict_cancels_nudge(self):
         self._app(assigned_days_ago=20, verdict_decided_at=timezone.now())

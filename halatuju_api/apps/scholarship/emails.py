@@ -3418,20 +3418,21 @@ def send_reviewer_verdict_due_email(to_email, *, reviewer_name, applicant_name, 
     return _send_plain(to_email, _reviewer_subject(base, ref), body)
 
 
-def send_super_verdict_escalation_email(to_email, *, applicant_name, ref='', reviewer_name='',
-                                        due_by=''):
-    """TD-131: escalate an overdue verdict to a super-admin — the assigned reviewer hasn't recorded
-    a verdict well past the SLA. Plain EN."""
+def send_verdict_escalation_email(to_email, *, applicant_name, ref='', reviewer_name='',
+                                  due_by=''):
+    """TD-131: escalate an overdue verdict — a verdict is well past the SLA with none recorded.
+    Sent to the ORGANISATION's admin(s) and the assigned reviewer (NOT platform super-admins — a
+    super is not an operator inside a tenant org). Recipient-neutral wording. Plain EN."""
     who = reviewer_name or 'the assigned reviewer'
     body = (
         f'Hi,\n\n'
-        f'A B40 verdict is overdue and needs attention.\n\n'
+        f'A B40 verdict is overdue and has been escalated.\n\n'
         f'Reference: {ref or "—"}\n'
         f'Applicant: {applicant_name or "—"}\n'
         f'Assigned reviewer: {who}\n'
         + (f'Was due: {due_by}\n' if due_by else '')
-        + f'\n{who} has not recorded a verdict past the review deadline. You may want to follow up, '
-        f'or reassign the case from the admin console.\n\n'
+        + f'\nIt has passed the review deadline without a recorded verdict. Please record the '
+        f'verdict, or reassign the case from the admin console.\n\n'
         f'{_reviewer_dashboard_cta()}\n\n'
         f'{_REVIEWER_SIGNOFF}'
     )

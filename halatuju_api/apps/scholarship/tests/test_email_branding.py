@@ -175,7 +175,7 @@ def _specs():
     add('reviewer_verdict_due', emails.send_reviewer_verdict_due_email,
         to_email='r@x.test', reviewer_name='Kalai', applicant_name='Aisyah',
         ref='BP-001', due_by='2026-08-25', overdue=False)
-    add('super_verdict_escalation', emails.send_super_verdict_escalation_email,
+    add('verdict_escalation', emails.send_verdict_escalation_email,
         to_email='a@x.test', applicant_name='Aisyah', ref='BP-001',
         reviewer_name='Kalai', due_by='2026-08-25')
     return s

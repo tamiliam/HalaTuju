@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Review-nudge escalation → org_admin + reviewer, not super — 2026-07-24
+
+The verdict-overdue escalation (day 14) no longer emails platform super-admins. It now escalates to
+the application's OWNING ORGANISATION admin(s) + the assigned reviewer — org-scoped via
+`owning_organisation`, so it stays correct for a second tenant. If an org has no active org_admin it
+falls back to `ADMIN_NOTIFY_EMAIL` (a monitored platform mailbox), never a super fan-out. Principle:
+a super is the platform owner, not an operator inside a tenant org. A full super-usage audit
+confirmed this was the ONLY case of super acting as an org operator (payment alerts already go to
+org_admin/finance; the remaining super uses are break-glass access or platform-level and stay).
+Renamed `send_super_verdict_escalation_email` → `send_verdict_escalation_email` (recipient-neutral
+copy; one-entry email-branding golden regen). Tests updated. No migration.
+
 ## Platform Sprint 15.1 — Requests v1.1: role-correct components, B40 sub-components, screenshot attachments — 2026-07-24
 
 Three additive extensions to the live Requests space (`REQUESTS_ENABLED=1`); everything is additive
