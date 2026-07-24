@@ -343,6 +343,17 @@ REVIEW_ESCALATE_GRACE_DAYS = int(os.environ.get('REVIEW_ESCALATE_GRACE_DAYS', '4
 # Partner onboarding: an UNCHANGED temp password is rotated dead this many days after it was issued
 # (the expire-temp-passwords daily cron + the login gate). A Resend re-issues a fresh one + clock.
 PARTNER_TEMP_PASSWORD_TTL_DAYS = int(os.environ.get('PARTNER_TEMP_PASSWORD_TTL_DAYS', '7'))
+
+# Requests space (Sprint 15): the org-section "Requests" area (bug/feature forms → AI reviewer →
+# owner-gated hours quotes). Ships DARK — with the flag OFF every requests endpoint 404s and the
+# Administration hub card is hidden, so the whole feature is invisible until flipped after prod
+# smoke + owner review of the rate-card copy and ms/ta first-drafts.
+REQUESTS_ENABLED = os.environ.get('REQUESTS_ENABLED', '').lower() in ('1', 'true', 'yes')
+# The Gemini model the AI reviewer triages a request with, through contracts._gemini_generate.
+REQUESTS_TRIAGE_MODEL = os.environ.get('REQUESTS_TRIAGE_MODEL', 'gemini-2.5-pro')
+# The preset margin (%) a feature quote carries, owner-adjustable per quote. A quote in hours
+# reads "≈N hours, includes M% margin".
+REQUESTS_QUOTE_MARGIN_PCT = int(os.environ.get('REQUESTS_QUOTE_MARGIN_PCT', '50'))
 # Auto-generate a Google Meet link (+ calendar event) on booking. Separate flag so the
 # scheduling surface can go live BEFORE the Google Workspace organiser account is wired.
 # When off (or creds missing / API error), booking still succeeds — the email simply has

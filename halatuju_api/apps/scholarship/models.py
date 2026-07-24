@@ -1714,6 +1714,93 @@ class PaymentRunItem(models.Model):
         return f'PaymentRunItem run={self.run_id} app={self.application_id} {self.amount}'
 
 
+class OrgRequest(models.Model):
+    """An organisation's bug report / feature request, managed through the Requests space
+    (Sprint 15). Named ``OrgRequest`` (not ``Request``) to stay grep-unambiguous against the
+    HTTP request; the service module is ``org_requests.py`` (not ``requests.py``, which collides
+    with the live HTTP library import).
+
+    Flow: an org_admin submits → the AI reviewer (``org_requests.run_ai_review``, via the
+    ``contracts._gemini_generate`` seam) classifies bug/feature, estimates work in HOURS, and may
+    ask the requestee clarifying questions (which flow to the submitter DIRECTLY — no owner gate);
+    the owner triages (authoritative, may reclassify per the adjudication rule) and sends an
+    owner-gated quote in hours. The requestee accepts / rejects / defers / modifies.
+
+    The AI DRAFT (``ai_draft_*`` + ``triage_note``) is NEVER in the org-facing serializer — only
+    the owner sees it. The org sees the QUOTE the owner sends, not the AI's estimate.
+
+    Adjudication rule (published verbatim, owner 2026-07-24): behaviour contradicting the role
+    matrix / manual = bug (free); working-as-documented-but-wanted-different = feature (priced).
+    Quotes are hours-only in v1 (no money — no hourly rate exists yet).
+    """
+    KIND_CHOICES = [('bug', 'Bug report'), ('feature', 'Feature request')]
+    LANE_CHOICES = [('small_change', 'Small change'), ('sprint', 'Sprint')]
+    STATUS_CHOICES = [
+        ('submitted', 'Submitted'),
+        ('triaged', 'Triaged'),
+        ('quoted', 'Quoted'),
+        ('approved', 'Approved'),
+        ('deferred', 'Deferred'),
+        ('scheduled', 'Scheduled'),
+        ('done', 'Done'),
+        ('declined', 'Declined'),
+    ]
+
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT, related_name='org_requests',
+    )
+    submitted_by = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.PROTECT, related_name='submitted_org_requests',
+    )
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES)
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
+
+    # Clarification thread (AI ↔ requestee — flows FREE, no owner gate; owner CC'd by email).
+    # Each entry: {question, asked_at, answer|null, answered_at|null}. modify() appends an old
+    # description here as history too.
+    clarifications = models.JSONField(default=list, blank=True)
+    ai_run_count = models.PositiveSmallIntegerField(default=0)   # auto-run cap = 3
+
+    # AI draft — NEVER in the org-facing payload (owner-only). The hours estimate stays here
+    # until the owner sends a quote.
+    ai_draft_kind = models.CharField(max_length=10, blank=True, default='')
+    ai_draft_lane = models.CharField(max_length=20, blank=True, default='')
+    ai_draft_hours = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True)
+    ai_draft_note = models.TextField(blank=True, default='')
+    ai_draft_model = models.CharField(max_length=50, blank=True, default='')
+    ai_draft_at = models.DateTimeField(null=True, blank=True)
+
+    # Owner triage (authoritative — may reclassify kind per the adjudication rule).
+    triaged_kind = models.CharField(max_length=10, blank=True, default='')
+    lane = models.CharField(max_length=20, blank=True, default='')
+    triage_note = models.TextField(blank=True, default='')
+    triaged_at = models.DateTimeField(null=True, blank=True)
+
+    # Owner quote (hours only, v1).
+    quote_hours = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True)
+    quote_margin_pct = models.PositiveSmallIntegerField(null=True, blank=True)
+    quote_note = models.TextField(blank=True, default='')
+    quoted_at = models.DateTimeField(null=True, blank=True)
+
+    approved_at = models.DateTimeField(null=True, blank=True)
+    scheduled_for = models.DateField(null=True, blank=True)
+    decline_reason = models.TextField(blank=True, default='')
+    # Who ended it at 'declined': 'super' (decline) or 'org_admin' (withdraw) — audit.
+    declined_by_role = models.CharField(max_length=20, blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'org_requests'
+        ordering = ('-created_at',)
+
+    def __str__(self):
+        return f'OrgRequest #{self.pk} [{self.status}] {self.title[:40]}'
+
+
 class ResolutionItem(models.Model):
     """A discrete, independently-resolvable action raised against an application
     (the IBKR model — see docs/scholarship/verification-verdict-plan.md, S3).
