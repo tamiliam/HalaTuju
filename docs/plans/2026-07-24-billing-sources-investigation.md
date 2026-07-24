@@ -16,7 +16,7 @@
 | Google Workspace SA | Meet/Calendar interviews; Vircle relay Sheet/Drive/CSV; guide PDF | Free-tier API usage | Nil |
 | Sentry, domain, GCS backup bucket | Monitoring, halatuju.xyz, doc backup mirror | Fixed / tiny | Nil–small |
 
-Not billable to HalaTuju: Vircle (manual relay, no fee in any code path); Cloudflare/Turnstile (not used in this project). NOTE: the GCP **billing account is shared across five unrelated projects** — every cost query must filter `project.id`.
+Not billable to HalaTuju: Vircle (manual relay, no fee in any code path); Cloudflare Turnstile (IS used — the public contact form, verified in the Supabase edge function; FREE, so listed-not-metered. Corrected 2026-07-25: the original sweep missed it because the check lives outside Django); Google Workspace APIs. NOTE: the GCP **billing account is shared across five unrelated projects** — every cost query must filter `project.id`.
 
 ## 2. What each provider can report programmatically (July 2026)
 
