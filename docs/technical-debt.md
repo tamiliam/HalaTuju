@@ -1292,3 +1292,37 @@ gate (assignment-surfaces round, 2026-07-16).
 - TD-171: **`scholarship.test.ts` fails locally under Node 26's experimental global `localStorage`, though it is green on CI (low, environment-only).** Sprint 6 added no code to this test; it began failing in the LOCAL dev sandbox once Node 26 shipped a native global `localStorage` shim that shadows the jsdom one the suite expects, producing a assertion mismatch that has nothing to do with application logic. Verified NOT a regression: the identical failure reproduces on an unmodified checkout of `origin/main` (pre-Sprint-6) run under the same local Node 26, and the suite passes clean on CI (pinned Node version, no such global). **To resolve:** pin the local dev Node version in `.nvmrc`/`engines` to match CI, or add an explicit jsdom `localStorage` override in the test's setup so it no longer depends on which global wins. Not urgent — CI is authoritative and green; this only bites a contributor running jest locally on a very new Node. (Logged 2026-07-24, Sprint 6.)
 - TD-172: **Requests can't carry screenshots or attachments — deferred pending org-fenced file storage design (low).** Platform Sprint 15's `OrgRequest` (bug/feature requests) has no attachment field or upload endpoint; a submitter describes an issue in text only, even when a screenshot would resolve ambiguity in one glance (especially for bug reports, where "steps to reproduce" is already optional free text). Deliberately scoped out of Sprint 15 — the existing document-upload machinery (`ApplicantDocument`, `storage.py`) is shaped for the scholarship applicant's own signed-URL vault and isn't yet a general org-fenced file-storage primitive; bolting requests onto it without that design step risks either leaking across orgs or duplicating the vault pattern ad hoc. **To resolve:** design a general org-fenced attachment store (or generalise `storage.py`'s signed-URL pattern) before adding an `attachments` relation to `OrgRequest` + an upload endpoint under the existing `_OrgRequestsBase` org-fence. Low priority — text-only requests are functional; this is a quality-of-life gap, not a blocker. (Logged 2026-07-24, Sprint 15.) **✅ RESOLVED (Sprint 15.1, 2026-07-24).** New `OrgRequestAttachment` model (migration `0114`, table `org_request_attachments`, RLS enabled) generalises the signed-URL vault under a NEW `requests/<org_id>/<request_id>/<uuid>` storage-key namespace (`storage.build_request_attachment_key`, `resolve_org_for_path` extended) rather than reusing the applicant-document vault directly — a deliberate namespace split, not a shared table (see `docs/decisions.md`). Images-only ×5 ×8MB, bytes never through Django (Rule 5), every cross-org/foreign-path/cap invariant test-proven. See `docs/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
 - TD-173: **Requests screenshot attachments accept HEIC/HEIF but never convert them to JPEG (low).** `org_requests.ALLOWED_IMAGE_EXTENSIONS` (Sprint 15.1) includes `.heic`/`.heif` — an iPhone screenshot or photo uploads fine — but the existing `imaging.convert_heic_to_jpeg` conversion path only runs inside `DocumentListCreateView` for `ApplicantDocument`, a Django-mediated upload. `OrgRequestAttachment` uploads go browser→Supabase directly via a signed URL (bytes never reach Django, by design — Rule 5), so there is no server-side hook to convert at upload time; a HEIC attachment is stored and served as-is, which some browsers/admin contexts won't render inline. **To resolve:** either (a) convert client-side before upload (FE, `heic2any` or similar, adds a JS dependency), or (b) add a best-effort async conversion step (e.g. a signed-URL-triggered Cloud Function or a periodic sweep) that fetches, converts, and replaces the stored object — more moving parts, matches the existing `convert_heic_documents` management-command pattern. Low priority — HEIC is a minority of screenshot uploads (most are PNG/JPEG from a browser DevTools capture) and the record still displays/downloads correctly as a file, just not always as an inline image preview. (Logged 2026-07-24, Sprint 15.1.)
+
+### [TD-174] Billing usage: email `UsageEvent` rows are mostly org-NULL — senders aren't threaded to an org (low, v1-permitted)
+Sprint 13a's meter tags every logged usage row with the calling organisation where the seam already
+carries one (Gemini/Vision/WhatsApp calls run inside an application context). Email is different:
+most of `emails.py`'s `_send*` primitives fire from contexts that were never built to know which
+tenant they're serving (a cron job, a platform-wide notification, a sender that predates
+multi-tenancy) — so the large majority of email `UsageEvent` rows land with `organisation=NULL`
+(the platform-base bucket), not attributed to the org whose applicant triggered the send. This was
+an explicit, documented v1 deviation (not an oversight) — see the brief and CHANGELOG "Known v1
+limits" — because threading org context through every email call site was out of scope for a
+same-day investigation→build sprint. **Impact:** the org-facing usage screen under-reports a
+tenant's true email volume (it shows on the platform row instead); harmless while BrightPath is the
+only real tenant (nothing to compare it against) but becomes a real billing-accuracy gap the moment
+a second tenant's invoicing depends on this screen. **To resolve:** thread `usage_context`'s org tag
+through the email call sites the same way the Gemini/Vision/WhatsApp seams already do (org is
+usually derivable from the application/cohort each email closes over) — a mechanical but
+wide-surface-area change, best done as its own small sprint once real per-org invoicing is on the
+table. (Logged 2026-07-25, Sprint 13a — Billing & usage v1.)
+
+### [TD-175] Test-date-rot: 5 owner-case tests carried literal near-future dates that expired on the calendar (low, pattern note)
+Five payment-window tests (from the 2026-07-22 payment back/advance-pay sprint) pinned owner-verified
+cases to literal dates like `date(2026, 7, 26)` — correct and meaningful the day they were written,
+but silently became "today or the past" the moment the real calendar caught up (2026-07-25), turning
+"an August run priced from a future date" into "an August run priced from today", which no longer
+exercises the intended edge case and in this instance flipped from green to red. Fixed same-day
+(`27562de0`) using the codebase's own existing localdate-freeze convention (already used elsewhere in
+the suite) — no test logic changed, only the clock. **Considered and declined:** a repo-wide lint/CI
+guard flagging unfrozen `date(202X, ...)` literals near `create_run`-style calls. Declined for now —
+this is the first occurrence in the codebase's history, the fix pattern (freeze the clock) already
+exists as convention, and a bespoke AST-scanning guard is disproportionate machinery for one incident.
+**Revisit if it recurs:** if a second unrelated test rots on a literal near-future date, promote this
+from a note to an actual guard (either a pytest fixture that fails loudly on an un-frozen literal date
+within N days of "now" near known date-sensitive call sites, or a lint rule). (Logged 2026-07-25,
+Sprint 13a — Billing & usage v1.)

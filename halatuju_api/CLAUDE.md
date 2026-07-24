@@ -522,7 +522,53 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-24)
+## Next Sprint (as of 2026-07-25)
+
+**✅ SHIPPED + DEPLOYED 2026-07-25 (api+web, commits `be06153c`..`27562de0` — 4 feature commits +
+a test-clock fix; migration `scholarship/0116` APPLIED migrate-first with RLS; both Cloud Builds
+SUCCESS for `27562de`; smoke green) — Billing & usage v1 (Sprint 13a — the usage meter + org-facing
+usage screen).** Brief `docs/plans/2026-07-25-billing-usage-v1-brief.md`; design source
+`docs/plans/2026-07-24-billing-sources-investigation.md`; retro
+`docs/retrospective-2026-07-25-billing-usage-v1.md`; decisions logged; roadmap Sprint 13a marked
+✅ shipped.
+- **▶ TOP CARRY (owner): FLIP `BILLING_USAGE_ENABLED=1` ON 1 AUGUST 2026** (owner-approved date;
+  `--update-env-vars`, NOT a deploy). The meter is already live and recording — the flip only turns
+  on the org-facing usage screen.
+- **The meter — unconditional, no flag, LIVE from this deploy.** New `UsageEvent` (table
+  `usage_events`, migration `0116`, additive, org FK PROTECT null=platform-base work, application FK
+  SET_NULL, service/model/source/quantity/tokens, index (organisation, created_at)).
+  `apps/scholarship/usage.py` logs ONE best-effort row per billable provider call at the sanctioned
+  seams — Gemini (`vision._call_gemini_json`, `profile_engine._call_gemini_text`,
+  `contracts._gemini_generate`, `report_engine`), Cloud Vision OCR, OpenAI fallback, every `_send*`
+  email primitive, and WhatsApp — with per-path source tags threaded via a `usage_context`
+  contextvar. **Metering is unconditional; a failing log write can never break the user-facing
+  call** (fault-injection tests prove it). `BILLING_USAGE_ENABLED` (default OFF) gates ONLY the
+  endpoint/UI, never the meter itself.
+- **The screen — dark until the 1 Aug flip.** `GET /api/v1/admin/scholarship/billing/usage/`
+  (`AdminBillingUsageView`, 404-first while dark). org_admin sees ONLY its own organisation
+  (fenced by construction); super sees every organisation PLUS a platform (NULL-org)
+  reconciliation row. Plain allowlist dict, units + tokens only — NO prices in v1. A live
+  document-storage snapshot (Supabase) per org rides alongside. Classified in
+  `test_org_fence.py`. FE `/admin/billing` (org view + super view), Administration hub card
+  live-when-flagged for org_admin+super (Admin-General/Finance stay "Coming soon"); i18n
+  `admin.billing.*` en/ms/ta (ms/ta first-drafts).
+- **Mid-sprint owner redesign** (implemented, not just proposed): the screen became org-facing
+  transparency (org_admin sees its own usage), not super-only as first scoped — see decisions.md.
+- **Test-clock fix (`27562de0`):** five payment-window owner-case tests carried literal near-future
+  July dates that rotted the day the calendar caught up (2026-07-25); fixed with the codebase's own
+  localdate-freeze pattern. **4496 → 4523 pytest** all green; **719 → 738 jest** (+1 known Node-26
+  local fail, TD-171 unchanged). Exactly one migration.
+- **Known v1 limits (documented, not bugs):** email usage rows mostly org-NULL (senders not
+  threaded through org — permitted for v1); `doc_help`/`answer_relevance` org-NULL (help-engine
+  firewall, by design); `docx_segment` org-NULL (pre-template); Twilio Verify not metered (paused
+  service).
+- **▶ NEXT — Sprint 7** (per-org timing/reminders/consent version) stays **GATED to ≈21 Aug 2026**
+  by the Phase-2 rule-stability clock, unchanged by this sprint.
+- **▶ WATCH: second-tenant meeting week-of 28 Jul 2026** — the Phase 3–4 gate trigger (superadmin
+  portal, per-org verification-fact selection, second-tenant rehearsal) to watch for; nothing to
+  build until it lands.
+
+## Superseded — previous Next Sprint (as of 2026-07-24)
 
 **✅ SHIPPED + LIVE 2026-07-24 (api+web, commits `e7fdc879` / `1c515954` / `b8bf2311`; migration
 `scholarship/0110` APPLIED migrate-first; Cloud Scheduler `halatuju-application-nudges`) — "Almost

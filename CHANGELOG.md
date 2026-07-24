@@ -37,6 +37,16 @@ The per-tenant usage meter (roadmap Sprint 13a) plus a dark, super/org_admin usa
   to this work is red on 2026-07-25 (see below). Frontend **719 → 738 jest** (+19; the 1 known
   Node-26 `scholarship.test.ts` local failure held constant). `next build` compiles `/admin/billing`;
   lint + `makemigrations --check` clean; exactly one new migration (`scholarship/0116`).
+- **Test-clock fix (`27562de0`).** Five payment-window owner-case tests pinned to literal near-future
+  July dates began rotting the moment the calendar caught up to them on 2026-07-25 (a `date(2026, 7,
+  ...)` literal stopped being "the future" the day this closed). Fixed with the codebase's own
+  localdate-freeze pattern (matches the existing frozen-clock convention elsewhere in the suite) — all
+  5 back to green, no behavioural change. **4523 pytest all green.**
+- **DEPLOYED 2026-07-25** — commits `be06153c`..`27562de0` (4 feature commits + the test-clock fix).
+  Both Cloud Builds SUCCESS for `27562de`; migration `0116` applied **migrate-first with RLS**; smoke
+  green. **The meter is LIVE and recording** from this deploy (unconditional, no flag). **The screen
+  stays DARK** (`BILLING_USAGE_ENABLED` unset/off) — the owner approved the UI (artifact v2) with a
+  **scheduled flag-on of 1 August 2026** (`--update-env-vars`, not a deploy).
 
 ## eWallet-activation visibility on payment runs (advisory) — 2026-07-24
 

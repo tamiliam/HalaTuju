@@ -5202,3 +5202,38 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** each rule keeps v1's blast radius small — no new storage primitive, no broadcast-email surface, and no effort-losing silent state change — while leaving an explicit, logged TD (attachments) or a working alternative (decline-with-reason) for the gap.
 **Trade-offs:** a bug report that would be clearer with a screenshot must be described in text only; a submitting org_admin who leaves the org mid-request could leave a quote email unread until someone else notices.
 **Revisit if:** the org-fenced file-storage design (TD-172) lands, or the owner finds withdrawal-after-quote is needed in practice.
+
+## Billing & usage v1 — metering is unconditional, the flag gates only the UI — Sprint 13a, 2026-07-25
+**Decision:** `UsageEvent` logging (`apps/scholarship/usage.py`) runs from deploy with NO feature flag and no gate of any kind. `BILLING_USAGE_ENABLED` (default OFF) controls only the read endpoint/UI — never whether a usage row gets written.
+**Alternatives considered:** Gate the meter itself behind the same flag as the screen (the standard dark-deploy idiom used everywhere else in this codebase, e.g. Requests/Payments) — rejected: usage data is retrospective by nature (a month's invoice needs the whole month's events), so turning the meter on the same day as the screen would mean the screen's first live month is incomplete. Metering early and revealing late is the only way an org's first visible month is a COMPLETE one.
+**Rationale:** the meter and the screen answer different questions — "did this happen" vs "can you see it happened" — and only the second one carries any owner-approval risk (a half-built UI, unreviewed copy). The first should simply always be true once the write-safe wrapper exists.
+**Trade-offs:** roughly a week of usage data accrues completely unobserved before the screen can ever show it (deploy 2026-07-25 → flag-on 1 Aug); acceptable since nothing consumes that data until the screen exists anyway.
+**Revisit if:** a future metered service needs its OWN start date distinct from the org-usage screen's — the pattern (meter first, reveal later) generalises, but each new service should still be evaluated for whether unconditional-from-deploy is safe for it.
+
+## Billing & usage v1 — org-facing transparency, not super-only (mid-sprint redesign) — Sprint 13a, 2026-07-25
+**Decision:** The usage screen shows an org_admin their OWN organisation's usage (`GET .../billing/usage/` fenced so an org payload can never contain another org or the platform row); super additionally sees every organisation plus a super-only platform (NULL-org) section.
+**Alternatives considered:** Ship as originally briefed — super-only, with org-facing usage deferred to a later sprint. This was the ACTUAL starting scope; the owner reviewed the artifact-v2 UI mock and changed it mid-sprint.
+**Rationale:** the eventual point of metering is per-org invoicing; an org that can already see the numbers behind a future bill is far less likely to be surprised or dispute it than one seeing an invoice for the first time with no prior visibility. Transparency now is cheap (the data already exists) and builds the trust the billing relationship will need later.
+**Trade-offs:** the org fence had to prove a stronger property than a super-only screen would have needed (no org can ever see another org's numbers, not just "no org can see this screen at all") — a heavier test bar, done via the dual exact-key-set snapshot + explicit leak test.
+**Revisit if:** an org's usage screen ever needs to be selectively hidden per-org (e.g. before a commercial relationship is agreed) — today it is all-or-nothing via the one flag.
+
+## Billing & usage v1 — document storage is a live snapshot, not a `usage_events` row — Sprint 13a, 2026-07-25
+**Decision:** Per-org document storage (Supabase) is queried live at request time for the usage screen, rather than being logged as discrete `UsageEvent` rows on upload/delete.
+**Alternatives considered:** Log a `UsageEvent` per document upload/delete, mirroring the AI/email/WhatsApp pattern — rejected: storage is a STATE (bytes currently held), not a metered EVENT stream; logging every upload/delete would double-book the same fact (an upload event plus a delete event should net to zero, which an events table doesn't guarantee against drift) when a direct query against the current state is both simpler and always correct.
+**Rationale:** events suit things that happened once and are gone (an API call); a live snapshot suits things that persist and change (storage). Using the right shape for each avoids a reconciliation problem that a naive "everything is an event" approach would have created.
+**Trade-offs:** storage numbers reflect "right now", not "as of the selected month" — a month picker showing March storage actually shows today's storage. Acceptable for v1 (units only, no historical storage billing); flagged as a known limit, not hidden.
+**Revisit if:** historical (point-in-time) storage figures are ever needed for a past month's invoice — would require either periodic snapshotting or an events-based storage ledger.
+
+## Billing & usage v1 — units only, no prices, in v1 — Sprint 13a, 2026-07-25
+**Decision:** The usage screen shows event counts, quantities, and token sums — never a ringgit figure. No price list exists anywhere in the codebase.
+**Alternatives considered:** Price each unit against a rough internal estimate to give the owner a cost preview — rejected per the billing-sources investigation's own conclusion (§4): pricing must be versioned and set against Gemini 3.x rates (the forced October migration), not today's 2.5 rates, or the numbers go stale/underwater within months; inventing a placeholder price risks it being mistaken for a real one.
+**Rationale:** same principle as the Requests space's hours-only v1 quotes (Sprint 15) — don't fabricate a number the business hasn't actually set. Units are the fact; price is a business decision for a later, deliberate step.
+**Trade-offs:** the screen answers "how much was used" but not yet "what would this cost" — the natural next question an org_admin will ask, unanswered in v1.
+**Revisit if:** the owner publishes a versioned internal price table (per the investigation's §4 model) — at that point the screen should multiply units × price, the same shape as the Requests rate-card evolution.
+
+## Billing & usage v1 — flag-on date fixed to 1 August 2026 — Sprint 13a, 2026-07-25
+**Decision:** `BILLING_USAGE_ENABLED` is scheduled to flip ON 1 August 2026, not immediately after the artifact review or on the next deploy.
+**Alternatives considered:** Flip immediately once the owner approved the artifact — rejected: the deploy landed mid-July, so an immediate flip would show org admins a partial month (some days metered, most not), which reads as a data gap rather than the deliberate scoping it actually is. Waiting for the next calendar-month boundary means every org's FIRST visible month is complete from day one.
+**Rationale:** a billing/usage surface's credibility depends on its numbers looking complete and self-explanatory the first time anyone sees them; a month starting mid-stream invites exactly the kind of "is this right?" question the tool exists to prevent.
+**Trade-offs:** roughly a week of metering happens invisibly before anyone can see it (see the "metering is unconditional" decision above) — accepted as the cost of a clean first month.
+**Revisit if:** an org asks to see partial-month data anyway, or the owner wants to demo the screen before 1 Aug (the endpoint/UI can be smoke-tested with the flag on temporarily without committing to the public reveal date).

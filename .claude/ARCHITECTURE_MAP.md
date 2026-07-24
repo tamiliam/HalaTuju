@@ -322,6 +322,33 @@ submit form and add/remove on the detail page while non-terminal. Decisions: `do
 ("Requests v1.1", Sprint 15.1, 2026-07-24); retrospective:
 `docs/retrospective-2026-07-24-sprint15-1-requests-v11.md`.
 
+**Billing & usage v1 — per-tenant usage meter + org-facing usage screen (Sprint 13a, 2026-07-25,
+meter LIVE / screen flag-dark til 1 Aug 2026).** New **`UsageEvent`** (table `usage_events`,
+migration `0116`, additive, org FK `PartnerOrganisation` PROTECT null=platform-base work,
+application FK SET_NULL, service/model/source/quantity/tokens, index (organisation, created_at)).
+**`usage.py`** is the metering seam — `log_usage(...)` writes ONE best-effort row per billable
+provider call, wired into the sanctioned call sites: Gemini (`vision._call_gemini_json`,
+`profile_engine._call_gemini_text`, `contracts._gemini_generate`, `report_engine`), Cloud Vision
+OCR, OpenAI fallback, every `emails._send*` primitive, and `whatsapp.send_whatsapp`. A
+`usage_context` contextvar threads the org/application/source tag (`doc_extract`, `ic_fallback`,
+`genuineness`, `gap_spotter`, `answer_relevance`, `doc_help`, `profile_draft`/`refine`,
+`anon_blurb`, `verdict_summary`, `contract_quiz`, `docx_segment`, `requests_triage`, `report`,
+email/whatsapp function tags) down to the log call without changing any seam's public signature.
+**Metering-is-unconditional principle:** the meter runs from deploy with NO flag and is
+absolutely best-effort — a failing `UsageEvent.create` can never break the user-facing call
+(fault-injection-tested). `settings.BILLING_USAGE_ENABLED` (default OFF) gates ONLY the read
+endpoint/UI, never the write path. **The screen:** `GET
+/api/v1/admin/scholarship/billing/usage/?month=YYYY-MM` (`AdminBillingUsageView`, 404-first while
+dark) — org_admin sees ONLY its own organisation (fenced by construction, no platform/other-org
+row can appear); super sees every organisation plus a platform (NULL-org) reconciliation row.
+Plain allowlist dict, units + tokens only, no prices in v1. Adds a live Supabase document-storage
+snapshot per org. Classified in `test_org_fence.py`. **FE (dark):** `/admin/billing` — month
+picker, per-org cards (+ platform section for super), stat tiles + service breakdown table,
+storage, and a non-metered free-services footnote (Google Workspace + Cloudflare Turnstile).
+Administration hub Billing card goes live for super + org_admin when the flag is on (same probe
+as Requests); Finance stays "Coming soon". Decisions: `docs/decisions.md` ("Billing & usage v1",
+Sprint 13a, 2026-07-25); retrospective: `docs/retrospective-2026-07-25-billing-usage-v1.md`.
+
 **Verification verdict (the synthesis layer, branch `feature/verification-verdict`, S1–S2):** `verdict_engine.py`
 (`build_verdict` → four facts Identity/Academic/Income/Pathway, each `{status, evidence[], unresolved[]}`; pure +
 deterministic, **no LLM** — composes `_ic_identity_blockers`, `application_completeness`, the Vision matchers, doc-assist

@@ -192,14 +192,32 @@ the Phase-2 rule-stability clock.
 
 ## Phase 4 — Second-tenant onboarding rehearsal
 
-### Sprint 13a — Per-org cost metering (tagging)
-- **Goal:** Tag every billable call with its organisation so per-tenant costs can be metered (PRD §5 Option A; audit §5 cost-attribution points).
-- **Scope:** a usage-log wrapper at the billable seams — `vision._call_gemini_json` (`vision.py:1490`), `profile_engine._call_gemini_text` (`:261`), `report_engine` (`:331,367`), Twilio (`whatsapp.py:224,112`), Brevo (`emails.py` `_send*`) — recording `(organisation, service, model, units)`; a simple per-org usage report.
-- **Migrations expected:** 1 (a `usage_event` table, additive + RLS).
-- **Test plan:** each billable path writes a tenant-tagged usage row; a per-org total reconciles against a scripted run; no double-count.
-- **Main risk + mitigation:** *Risk:* the wrapper adds latency/cost to hot paths. *Mitigation:* fire-and-forget logging, no blocking; measure the added latency.
-- **How we know BrightPath still works:** all BrightPath calls succeed and are now tagged to org #1; no behaviour change.
-- **Complexity:** Medium.
+### Sprint 13a — Per-org cost metering (tagging) — ✅ **SHIPPED 2026-07-25 (as "Billing & usage v1")**
+Delivered ahead of the Phase-4 sequence once the billing-sources investigation gate was MET
+(2026-07-24) — owner-triggered, not tied to a second-tenant prospect. Brief
+`docs/plans/2026-07-25-billing-usage-v1-brief.md`; retro
+`docs/retrospective-2026-07-25-billing-usage-v1.md`. Shipped BEYOND the original scope below: not
+just a tagging wrapper, but a full `UsageEvent` model + a super/org_admin-facing usage screen.
+- **The meter (unconditional, no flag):** `UsageEvent` (migration `0116`, table `usage_events`,
+  additive + RLS) + `apps/scholarship/usage.py` logs one best-effort row per billable call at the
+  sanctioned seams — Gemini (`vision._call_gemini_json`, `profile_engine._call_gemini_text`,
+  `contracts._gemini_generate`, `report_engine`), Cloud Vision OCR, OpenAI fallback, Brevo email
+  (`emails._send*`), Twilio WhatsApp. Fault-injection-proven: a failing log write can never break
+  the user-facing call. Meter is LIVE and recording from deploy.
+- **The screen (flag-gated, dark until 1 Aug 2026):** `GET
+  /api/v1/admin/scholarship/billing/usage/` (org_admin = own org only; super = every org + a
+  platform reconciliation row), `/admin/billing` FE. `BILLING_USAGE_ENABLED` (default OFF) gates
+  ONLY the endpoint/UI, never the meter. Owner approved the UI (artifact v2); scheduled flag-on **1
+  August 2026**.
+- Deployed `be06153c`..`27562de0` (4 feature commits + a test-clock fix); migration 0116 applied
+  migrate-first with RLS; both Cloud Builds SUCCESS; smoke green. pytest 4496→4523, jest 719→738.
+- **Original scope (below, superseded by the above):** a simple usage-log wrapper at the billable
+  seams — `vision._call_gemini_json` (`vision.py:1490`), `profile_engine._call_gemini_text` (`:261`),
+  `report_engine` (`:331,367`), Twilio (`whatsapp.py:224,112`), Brevo (`emails.py` `_send*`) —
+  recording `(organisation, service, model, units)`; a simple per-org usage report. 1 migration
+  expected (additive + RLS). Test plan: each billable path writes a tenant-tagged usage row; a
+  per-org total reconciles; no double-count. Risk: wrapper latency on hot paths, mitigated by
+  fire-and-forget logging.
 
 ### Sprint 13b — Second-tenant ("Inspire") rehearsal + rollback drill
 - **Goal:** Prove the whole thing end-to-end by onboarding a *rehearsal* organisation with dummy data, and validate the migration/rollback story.
@@ -293,10 +311,11 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 | Phase 2 S5–S6 (branding extraction) | Rule-stability clock OR owner pulls the split-gate option | S5 (backend) ✅ **SHIPPED 2026-07-24**; S6 (frontend) ✅ **SHIPPED 2026-07-24** |
 | Phase 2 S8–S9 (rules extraction) | Strict rule stability | Gated |
 | Phase 3 S10–S11 (platform console) | Credible second-tenant prospect | Gated (Add-tenant slice + S12 already live) |
-| Phase 4 13a/13b (metering, rehearsal) | Second-tenant prospect | Gated |
+| Phase 4 13a (metering) | Billing-sources investigation | ✅ **SHIPPED 2026-07-25** (as "Billing & usage v1" — meter live, screen dark til 1 Aug 2026) |
+| Phase 4 13b (second-tenant rehearsal) | Second-tenant prospect | Gated |
 | Sprint E (erasure) | Before any REAL tenant-#2 DPA | Gated |
 | **Sprint 14 (Finance role)** | Payout rails live | ✅ **SHIPPED + LIVE 2026-07-23** (dark; owner invites the finance admin) |
-| Billing & usage (platform invoicing v1) | Billing-sources investigation done (service inventory + provider billing APIs + apportionment model) | **Gate MET 2026-07-24** — `docs/plans/2026-07-24-billing-sources-investigation.md` (meter internally via usage_events at the Rule-6 seams; 3-line invoice; price vs Gemini 3.x). Build = owner-triggered (13a + Billing card) |
+| Billing & usage (platform invoicing v1) | Billing-sources investigation done (service inventory + provider billing APIs + apportionment model) | **Gate MET 2026-07-24, ✅ SHIPPED 2026-07-25** — the meter is LIVE and recording; the org-facing usage screen stays flag-dark until owner-scheduled **1 Aug 2026**. See Phase 4 Sprint 13a above. |
 | Sprint 15 (Requests space) | Owner go | ✅ **SHIPPED + LIVE 2026-07-24** (hours-only v1; `REQUESTS_ENABLED=1`) |
 | Rung A (staging) | External devs real (or owner pulls early) | Gated |
 | Rung B (external PRs) | Devs signed; Rung A done | Gated |
@@ -372,7 +391,7 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 | 3 | 10 | Superadmin org management (backend) | 0–1 | Med–High |
 | 3 | 11 | Superadmin portal UI | 0 | Med |
 | 3 | 12 | Org-admin scoped portal | 0 | Med–High |
-| 4 | 13a | Per-org cost metering (tagging) | 1 | Med |
+| 4 | 13a | ✅ Per-org cost metering + billing screen ("Billing & usage v1") — shipped 2026-07-25, screen dark til 1 Aug | 1 | Med |
 | 4 | 13b | Second-tenant rehearsal + rollback drill | 0 | Med |
 | 4 | E *(conditional)* | Off-boarding & erasure routine — before any real tenant #2 DPA | 0–1 | Med |
 | 5 | 14 | Finance role: dormant checker + payments funding summary (v2 scope; Billing & usage split out, gated on billing-sources investigation) | 2 (1 choices-only + 1 additive DDL on payment_runs) | Med |
