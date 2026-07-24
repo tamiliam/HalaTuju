@@ -1,5 +1,48 @@
 # Changelog
 
+## Sprint 5 — Per-org branding & email (backend) — 2026-07-24
+
+Backend-only. Extracts every rendered brand literal in the email + coach layer behind one read
+seam so a second tenant renders its own identity, while BrightPath output stays byte-identical.
+No migration, no model change, `halatuju-web/` untouched.
+
+### Added
+- **`apps/scholarship/branding.py`** — the single read seam for org branding columns (D1). A
+  `PLATFORM` block holds today's brand constants verbatim (the one sanctioned home); a tenant
+  resolves per the D3 fallback chain `org.col(lang) → PLATFORM.default(lang) → PLATFORM.default('en')`.
+  Topical aliases (`interview@`/`sponsor@`) are platform-domain-only (D4). Sender identity + frontend
+  URL read live from settings so output is identical in every environment. *(seam landed in the
+  prior executor's commit `f41951e1`; completed this sprint.)*
+- **Golden snapshot suite** `tests/test_email_branding.py` + `fixtures/email_branding_golden.json`
+  — 113 frozen snapshots (subject + text + from + reply_to + HTML + attachment names, en/ms/ta): the
+  byte-identity contract, kept green UNMODIFIED through the extraction.
+- **Org-2 leak test** — a fixture tenant ("inspire") proves every branding-accepting `send_*`
+  renders the tenant's programme/sign-off/persona/sender and leaks NO platform token.
+- **AST brand-guard** `tests/test_branding_guard.py` — scans string constants (not comments/
+  docstrings) of `emails.py` + `help_engine.py` for the platform brand literals + MS/TA canonicals,
+  allowing only `branding.py`. Self-checking: `send_*` set derived via `inspect`, minimum scanned
+  send/constant counts asserted so a broken scan fails loudly (D6).
+
+### Changed
+- **Phase 0 (copy normalisation)** — drifted BrightPath sign-offs unified to one canonical form per
+  language (owner rulings): EN `The BrightPath Bursary Team`; MS `Pasukan Program Bursari BrightPath`
+  + programme `Bursari BrightPath`; TA `BrightPath Bursary குழு`. *(prior executor commits
+  `8f65fe56` + `6511b0df`.)*
+- **`emails.py`** — all ~126 `BrightPath`, 5 `Cikgu Gopal`, 4 `halatuju.xyz` string-constant
+  literals routed through the seam. The 5 core `.format` families (award / award-sign / vircle /
+  sign / agreement) take an optional `branding=None` (default platform) and fill
+  `{programme}`/`{signoff}`/`{domain}` at send time (the per-language brand form comes from the seam,
+  not the caller's cohort name); `_send`, `_award_offer_html`, `_vircle_install_html` thread branding.
+  Reminder/closure persona reads `branding.persona_name(lang)`. Tail (interview ×5, reviewer,
+  executed/witness/countersign, sponsor, payment + vircle-activation) route through the platform seam.
+- **`help_engine.py`** — coach prompt persona + programme name read from the seam
+  (`persona_name('en')` for the prompt; platform default `Cikgu Gopal`), resolved from the
+  application both help views hold. Only docstrings/comments now name the brand.
+- **`tests/test_help_engine.py`** — firewall guardrail updated: `branding` is an allowed
+  non-student-data param. **`tests/test_vircle.py`** — one manual-render test supplied the two new
+  `{programme}`/`{signoff}` placeholders from the seam (behaviour unchanged).
+- Test count: 4346 → **4350** (0 failures, 0 skips). SPM/STPM golden masters intact.
+
 ## W8 Part 1: Institution Modifiers Sprint — 2026-03-20
 
 ### Added

@@ -420,9 +420,14 @@ class TestInstallEmail(TestCase):
     def test_every_language_tells_an_under_18_to_use_a_parent_account(self):
         # A student born after 2008 can't hold their own account. The email must say so and point
         # them at help@ — otherwise they hit a wall in the app and go quiet.
+        from apps.scholarship import branding as _branding
         from apps.scholarship.emails import SUPPORT_EMAIL, VIRCLE_INSTALL_BODIES
+        _P = _branding.platform()
         for lang, body in VIRCLE_INSTALL_BODIES.items():
-            text = body.format(name='X', support=SUPPORT_EMAIL)
+            # The body now carries {programme}/{signoff} placeholders (per-org branding seam),
+            # filled from the platform seam here exactly as send_vircle_install_email does.
+            text = body.format(name='X', support=SUPPORT_EMAIL,
+                               programme=_P.programme_name(lang), signoff=_P.team_signoff(lang))
             self.assertIn('2008', text)
             self.assertIn(SUPPORT_EMAIL, text, f'{lang}: no help@ route for an under-18')
 

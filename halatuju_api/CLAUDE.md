@@ -522,7 +522,38 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-23)
+## Next Sprint (as of 2026-07-24)
+
+**✅ SHIPPED — NOT PUSHED (owner gates the deploy) 2026-07-24 — Platform Sprint 5: per-org
+branding & email sender identity (BACKEND ONLY, NO migration, `halatuju-web/` zero diffs).**
+Brief `docs/plans/2026-07-23-sprint5-branding-email-brief.md`; retro
+`docs/retrospective-2026-07-23-sprint5-branding-email.md`; decisions (D3/D4 + wording rulings);
+lesson ×1. Two-agent handoff (seam + goldens + Phase-0 by the first executor; Phase-2 remainder →
+close by the second).
+- **One read seam `apps/scholarship/branding.py`** now owns every rendered brand value (programme
+  name / sign-off / persona / sender identity / display domain). A `PLATFORM` block holds today's
+  constants verbatim (the one sanctioned home); a TENANT resolves per D3 `org.col(lang) →
+  PLATFORM.default(lang) → PLATFORM.default('en')`. Topical aliases (`interview@`/`sponsor@`) are
+  platform-domain-only (D4). The platform tenant renders from `PLATFORM`, NOT its own seeded
+  columns, because three seeded columns intentionally disagree with runtime output (settings-driven
+  `email_from`, Latin-vs-Tamil-script persona, bare display domain) — see the retro.
+- **`emails.py` + `help_engine.py` carry NO brand string literal** outside `branding.py` (only
+  docstrings/comments do). The 5 core `.format` families take `branding=None`; the coach prompt
+  reads `branding.persona_name('en')`. **113 golden snapshots pass UNMODIFIED** (byte-identity
+  contract); an org-2 leak test + a self-checking AST brand-guard prove the extraction.
+- **4350 pytest, 0 failures, 0 skips** (baseline 4346; +4 new tests). `python-docx` was missing
+  from the local venv though declared in `requirements.txt` — installed via `uv pip` so the full
+  suite (incl. the 11 `test_contracts` cases) runs green. `makemigrations --check` clean.
+- **▶ AT DEPLOY:** push (api rebuild — emails/help_engine/branding + CLAUDE.md edit; NO web rebuild
+  expected but the trigger may rebuild both; NO migrate-first, NO new env vars). Byte-identical for
+  BrightPath, so no student-visible change.
+- **▶ NEXT — Sprint 6 (frontend / i18n / legal pages):** the web app's `{programmeName}`
+  interpolation, tenant-aware i18n strings, and the legal/consent pages. Gated per the platform
+  roadmap; branding-only S5–S6 are covered by the owner's on-record split option.
+- **▶ CARRY:** the Vircle guide ATTACHMENT filename still derives from the platform seam even on a
+  tenant send (deliberate — the PDF is a BrightPath-specific asset); the `{programme}`-parameterised
+  student mail (ack/pass/…) still sends from the platform sender identity (no `branding` param) —
+  wire tenant branding into those callers when a second tenant onboards.
 
 **✅ SHIPPED + LIVE 2026-07-23 (api+web, migrations 0109 + courses/0066 APPLIED migrate-first)
 — Sprint 14: the FINANCE role, a dormant payment-run checker + funding summary.** Brief

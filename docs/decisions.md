@@ -1,5 +1,49 @@
 # Architectural Decisions — HalaTuju
 
+## Per-org branding seam: fallback chain, alias rule, and canonical wording — 2026-07-24
+**Context:** Sprint 5 extracted every rendered brand literal (programme name, sign-off, coach
+persona, sender identity, display domain) behind one read seam, `apps/scholarship/branding.py`, so a
+second tenant renders its own identity while BrightPath stays byte-identical.
+
+**D3 — the fallback chain is per-language, not English-only (owner-approved refinement).** A tenant
+value resolves `org.col(lang) → PLATFORM.default(lang) → PLATFORM.default('en')`. The original spec
+fell straight from a missing tenant `_lang` to the tenant's own `_en` column then the platform
+English default; the refinement inserts the platform's PER-LANGUAGE default before the English
+last-resort, so an org that fills only its English columns still gets a Malay platform sign-off in a
+Malay email rather than an English one. `''` always means "fall through"; a missing/None org falls
+through entirely, so best-effort mail never raises.
+*Alternatives:* fall straight to English (rejected — degrades a multilingual send for a
+partially-configured tenant); require every org to fill all three languages (rejected — makes the
+common "English-only tenant" case a hard error instead of a graceful default).
+
+**D4 — topical aliases are a platform-domain feature.** `interview@` / `sponsor@` apply ONLY while
+the sender identity is on the platform domain (the platform tenant). A tenant with its OWN
+`email_from` domain gets that single address for all mail — no per-topic aliases invented until a
+tenant asks for them (we cannot fabricate `interview@<their-domain>` and assume it routes). Encoded
+in the seam (`interview_from`/`sponsor_reply_to` return the tenant's own address when not platform)
+and commented at the property.
+
+**Canonical brand wording (Phase 0 rulings, owner-settled).** The live copy had drifted to several
+sign-off variants; the owner fixed one canonical form per language BEFORE snapshotting, so the
+goldens pin the intended copy, not the drift:
+- EN sign-off `The BrightPath Bursary Team`; EN/TA programme name `BrightPath Bursary` (unchanged).
+- MS sign-off `Pasukan Program Bursari BrightPath`; MS programme name `Bursari BrightPath`.
+- TA sign-off `BrightPath Bursary குழு`.
+- The coach persona renders in Tamil SCRIPT (`சிக்கு கோபால்`) in email bodies but LATIN
+  (`Cikgu Gopal`) in the coach prompt — `persona_name('ta')` vs `persona_name('en')`; the seam
+  documents the split and the platform tenant renders from the byte-exact PLATFORM block (its seeded
+  columns intentionally differ: settings-driven `email_from`, Latin `persona_name_ta`, bare display
+  domain), so BrightPath stays byte-identical to the pre-extraction output.
+
+**D6 — the brand-guard is AST-based and self-checking** (unchanged from spec, recorded for
+completeness): it scans string constants (never comments/docstrings) of `emails.py` + `help_engine.py`,
+derives the `send_*` set via `inspect` (never a hand list), and asserts minimum scanned counts so a
+broken scanner fails loudly instead of passing a real leak.
+
+**Revisit if:** a real second tenant onboards with its own domain (verify `interview@` degradation
+reads well), or a tenant needs per-topic aliases on its own domain (D4 would gain an opt-in map).
+
+
 ## The finance-check requirement is COMPUTED at every sign attempt, never stored on the run — 2026-07-23
 **Decision:** Whether a payment run's chain includes the middle finance CHECK is decided by
 `payments.finance_check_required(organisation)` — an EXISTS on active `finance` PartnerAdmins —
