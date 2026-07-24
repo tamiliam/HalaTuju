@@ -6,6 +6,7 @@ import Link from 'next/link'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
+import { useBranding } from '@/lib/branding-context'
 
 // Promise-card icons (lock / shield-check / people) — inline SVG to match the app.
 const PROMISE_ICONS: Record<string, string> = {
@@ -23,6 +24,7 @@ const FAQS = [1, 2, 3, 4, 5, 6] as const
  *  waiting in the anonymised pool — shown as a live counter in the hero. */
 export default function SponsorLanding({ count }: { count: number }) {
   const { t } = useT()
+  const b = useBranding()
   const [openFaq, setOpenFaq] = useState<number | null>(1)
 
   return (
@@ -146,7 +148,7 @@ export default function SponsorLanding({ count }: { count: number }) {
             </Link>
             <p className="text-xs text-gray-500 mt-4">
               {t('sponsorLanding.cta.questions')}{' '}
-              <a href="mailto:sponsor@halatuju.xyz" className="text-blue-600 underline">sponsor@halatuju.xyz</a>
+              <a href={`mailto:${b.sponsorEmail}`} className="text-blue-600 underline">{b.sponsorEmail}</a>
             </p>
           </div>
         </section>

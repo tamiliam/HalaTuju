@@ -7,21 +7,24 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // HalaTuju brand colors from Stitch design
+      // Brand colours are RGB-CHANNEL CSS vars (platform Sprint 6, decision D3) so the opacity
+      // modifiers in use (/40, /20) work. The channels are defined in globals.css :root as the
+      // exact platform hexes; a tenant overrides them at runtime (branding-context). '<alpha-value>'
+      // is Tailwind's placeholder for the utility's opacity.
       colors: {
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#137fec', // Main brand color from Stitch
-          600: '#1066c2',
-          700: '#0d4f99',
-          800: '#0a3970',
-          900: '#072347',
+          50: 'rgb(var(--brand-50) / <alpha-value>)',
+          100: 'rgb(var(--brand-100) / <alpha-value>)',
+          200: 'rgb(var(--brand-200) / <alpha-value>)',
+          300: 'rgb(var(--brand-300) / <alpha-value>)',
+          400: 'rgb(var(--brand-400) / <alpha-value>)',
+          500: 'rgb(var(--brand-500) / <alpha-value>)',
+          600: 'rgb(var(--brand-600) / <alpha-value>)',
+          700: 'rgb(var(--brand-700) / <alpha-value>)',
+          800: 'rgb(var(--brand-800) / <alpha-value>)',
+          900: 'rgb(var(--brand-900) / <alpha-value>)',
         },
-        // Semantic colors
+        // Semantic colors (stay literal — not brand-themed)
         success: '#22c55e',
         warning: '#f59e0b',
         error: '#ef4444',

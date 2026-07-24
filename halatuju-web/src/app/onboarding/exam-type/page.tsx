@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import ProgressStepper from '@/components/ProgressStepper'
@@ -28,7 +28,7 @@ export default function ExamTypePage() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/logo-icon.png" alt="HalaTuju" width={120} height={40} />
+              <BrandLogo width={120} height={40} />
             </Link>
             <ProgressStepper currentStep={1} />
           </div>

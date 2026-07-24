@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
@@ -18,7 +18,7 @@ export default function AppFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="sm:col-span-2">
-            <Image src="/logo-icon.png" alt="HalaTuju" width={120} height={40} />
+            <BrandLogo width={120} height={40} />
             <p className="mt-3 text-sm text-gray-500 max-w-xs">
               {t('footer.tagline')}
             </p>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import BrandLogo from '@/components/BrandLogo'
 import { usePathname, useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
@@ -141,7 +141,7 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
       <header className="bg-white border-b sticky top-0 z-20">
         <div className="container mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/sponsor" className="flex items-center gap-2 shrink-0">
-            <Image src="/logo-icon.png" alt="HalaTuju" width={100} height={36} />
+            <BrandLogo width={100} height={36} />
             <span className="text-sm font-semibold text-blue-600">{t('sponsorAuth.badge')}</span>
           </Link>
           <div className="flex items-center gap-0.5 sm:gap-1">

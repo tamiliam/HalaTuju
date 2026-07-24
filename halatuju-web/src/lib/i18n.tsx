@@ -12,6 +12,8 @@ import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 import { KEY_LOCALE } from '@/lib/storage'
+import { brandingParams, interpolateMessage } from '@/lib/branding'
+import { useBranding } from '@/lib/branding-context'
 
 export type Locale = 'en' | 'ms' | 'ta'
 
@@ -53,6 +55,9 @@ function getInitialLocale(): Locale {
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(getInitialLocale)
+  // Branding lives in the OUTER BrandingProvider (see providers.tsx). Its five AUTO_TOKENS are
+  // auto-injected into every render, BENEATH the explicit call-site params (which always win).
+  const branding = useBranding()
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale)
@@ -61,15 +66,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback(
     (key: string, params?: Record<string, string>) => {
-      let value = getNestedValue(messages[locale], key)
-      if (params) {
-        for (const [k, v] of Object.entries(params)) {
-          value = value.replace(new RegExp(`\\{${k}\\}`, 'g'), v)
-        }
-      }
-      return value
+      const value = getNestedValue(messages[locale], key)
+      // Branding tokens first, explicit params override them. interpolateMessage has a
+      // '{'-absent fast path, so a plain string is returned untouched (byte-identical to before).
+      return interpolateMessage(value, { ...brandingParams(branding, locale), ...params })
     },
-    [locale]
+    [locale, branding]
   )
 
   return (

@@ -5,6 +5,22 @@
 /* Import Lexend font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
 
+/* Brand colour channels (platform Sprint 6, decision D3). Space-separated RGB triplets converted
+   from today's EXACT platform hexes — static CSS so first paint is correct + SSR-safe. A tenant
+   overrides these on :root at runtime (branding-context); BrightPath uses these verbatim. */
+:root {
+  --brand-50: 239 246 255;   /* #eff6ff */
+  --brand-100: 219 234 254;  /* #dbeafe */
+  --brand-200: 191 219 254;  /* #bfdbfe */
+  --brand-300: 147 197 253;  /* #93c5fd */
+  --brand-400: 96 165 250;   /* #60a5fa */
+  --brand-500: 19 127 236;   /* #137fec */
+  --brand-600: 16 102 194;   /* #1066c2 */
+  --brand-700: 13 79 153;    /* #0d4f99 */
+  --brand-800: 10 57 112;    /* #0a3970 */
+  --brand-900: 7 35 71;      /* #072347 */
+}
+
 /* Base styles */
 @layer base {
   html {

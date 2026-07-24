@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { sponsorSignUpWithPassword, sponsorSignInWithGoogle } from '@/lib/sponsor-supabase'
@@ -93,7 +93,7 @@ export default function SponsorRegisterPage() {
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center py-12">
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Image src="/logo-icon.png" alt="HalaTuju" width={90} height={48} />
+          <BrandLogo width={90} height={48} />
           <span className="text-lg font-bold text-blue-600">{t('sponsorAuth.badge')}</span>
         </div>
 

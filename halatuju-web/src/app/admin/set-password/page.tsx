@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+import BrandLogo from '@/components/BrandLogo'
 import { getAdminSupabase } from '@/lib/admin-supabase'
 import { adminSetPassword } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
@@ -76,7 +76,7 @@ export default function AdminSetPasswordPage() {
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Image src="/logo-icon.png" alt="HalaTuju" width={90} height={48} />
+          <BrandLogo width={90} height={48} />
           <span className="text-lg font-bold text-blue-600">Partner</span>
         </div>
 

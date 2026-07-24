@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import Image from 'next/image'
+import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
@@ -75,7 +75,7 @@ export default function AppHeader() {
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center shrink-0">
-          <Image src="/logo-icon.png" alt="HalaTuju" width={120} height={40} priority />
+          <BrandLogo width={120} height={40} priority />
         </Link>
 
         {/* Desktop nav */}

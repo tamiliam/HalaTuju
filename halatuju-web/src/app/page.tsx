@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from '@/components/LanguageSelector'
@@ -15,7 +15,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Image src="/logo-icon.png" alt="HalaTuju" width={120} height={40} />
+          <BrandLogo width={120} height={40} />
         </div>
         <div className="flex items-center gap-4">
           <LanguageSelector />

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
+import { useBranding } from '@/lib/branding-context'
 import { getScholarshipIntake } from '@/lib/api'
 
 // Value-card icons (seedling / people / lock) — inline SVG to match the app.
@@ -28,6 +29,10 @@ const CheckIcon = () => (
 
 export default function ScholarshipLandingPage() {
   const { t } = useT()
+  const b = useBranding()
+  // General contact address for this programme — the "info@" convention on the branded display
+  // domain (platform → info@halatuju.xyz, byte-identical).
+  const contactEmail = `info@${b.frontendDomain}`
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   // Intake open? Assume open until we hear otherwise, so the button never flickers
   // closed for a genuine applicant on a slow network.
@@ -205,7 +210,7 @@ export default function ScholarshipLandingPage() {
           <p className="text-gray-700 lg:text-lg">{t('scholarship.landing.about.body')}</p>
           <p className="text-sm text-gray-500 mt-3">
             {t('scholarship.landing.about.contact')}{' '}
-            <a href="mailto:info@halatuju.xyz" className="text-primary-600 underline">info@halatuju.xyz</a>
+            <a href={`mailto:${contactEmail}`} className="text-primary-600 underline">{contactEmail}</a>
           </p>
         </section>
 
@@ -224,7 +229,7 @@ export default function ScholarshipLandingPage() {
               {closedNote}
               <p className="text-xs text-gray-400 mt-3">
                 {t('scholarship.landing.cta.questions')}{' '}
-                <a href="mailto:info@halatuju.xyz" className="text-primary-600 underline">info@halatuju.xyz</a>
+                <a href={`mailto:${contactEmail}`} className="text-primary-600 underline">{contactEmail}</a>
               </p>
             </div>
           </div>

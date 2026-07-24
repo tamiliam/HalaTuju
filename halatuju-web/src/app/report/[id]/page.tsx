@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import Image from 'next/image'
+import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import Markdown from 'react-markdown'
 import { getReport, type ReportDetail } from '@/lib/api'
@@ -95,9 +95,7 @@ export default function ReportPage() {
         {/* Report Header */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 print:border-0 print:p-0 print:mb-4">
           <div className="flex items-center gap-3 mb-4 print:mb-2">
-            <Image
-              src="/logo-icon.png"
-              alt="HalaTuju"
+            <BrandLogo
               width={75}
               height={40}
               className="hidden print:block"
