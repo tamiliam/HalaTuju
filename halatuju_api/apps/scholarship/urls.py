@@ -115,6 +115,7 @@ from .views_admin import (
     AdminPaymentRunCancelView,
     AdminPaymentRunCsvView,
     AdminPaymentFundingSummaryView,
+    AdminBillingUsageView,
     AdminOrgRequestListView,
     AdminOrgRequestCountView,
     AdminOrgRequestDetailView,
@@ -228,6 +229,8 @@ urlpatterns = [
     # registered under the module's established 'admin/scholarship/' prefix instead, so every
     # payments route stays siblings. No external contract depends on the brief's spelling.
     path('admin/scholarship/payments/funding-summary/', AdminPaymentFundingSummaryView.as_view()),
+    # Billing & usage v1 (Sprint 13a) — super/org_admin usage screen, flag-gated 404-first.
+    path('admin/scholarship/billing/usage/', AdminBillingUsageView.as_view()),
     path('admin/scholarship/payment-runs/', AdminPaymentRunListView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/', AdminPaymentRunDetailView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/items/<int:item_id>/', AdminPaymentRunItemView.as_view()),

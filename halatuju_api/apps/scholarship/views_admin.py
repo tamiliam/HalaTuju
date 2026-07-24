@@ -6,6 +6,7 @@ Reuses the existing PartnerAdmin auth (super admin sees all). Routes live under
 PartnerAdminMixin does the real authorisation.
 """
 import logging
+import re
 
 from django.conf import settings
 from django.db import transaction
@@ -2512,6 +2513,53 @@ class AdminPaymentFundingSummaryView(_PaymentsBase):
             'remaining_total': str(sum(_Decimal(r['remaining']) for r in rows)),
         }
         return Response({'rows': rows, 'totals': totals})
+
+
+# ── Billing & usage v1 (Sprint 13a) — the super/org_admin usage screen ────────────
+# GET /api/v1/admin/scholarship/billing/usage/?month=YYYY-MM. Dual audience:
+#   * org_admin — its OWN organisation's metered usage + document-storage snapshot,
+#     org-fenced BY CONSTRUCTION (usage.monthly_usage(restrict_org_id=own org) can build
+#     no other org and no platform/NULL row);
+#   * super — every organisation PLUS the platform (NULL-org) reconciliation row.
+# The platform section is SUPER-ONLY (never in an org_admin payload). Ships DARK behind
+# BILLING_USAGE_ENABLED — 404-FIRST while the flag is off (no existence leak, same shape
+# as the Requests dark ship). Reads through the plain allowlist dict in
+# apps.scholarship.usage (no model passthrough); units/tokens ONLY, NO prices in v1.
+# The aggregate is deliberately super-global (no tenant scope for a super) — the metering
+# UsageEvent.objects query lives in usage.py, not in a raw views_admin query, so the
+# org-fence static guard has nothing to police here. Classified in test_org_fence.py.
+_MONTH_RE = re.compile(r'^\d{4}-\d{2}$')
+
+
+class AdminBillingUsageView(_AdminBase):
+    """Super + org_admin usage readout (flag-gated, 404-first)."""
+
+    def get(self, request):
+        if not getattr(settings, 'BILLING_USAGE_ENABLED', False):
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        is_super = self.has_role(admin, 'super')
+        if not (is_super or admin.role == 'org_admin'):
+            return self._deny_role()
+
+        month = (request.query_params.get('month') or '').strip()
+        if month and not _MONTH_RE.match(month):
+            return Response({'error': 'bad_month', 'code': 'bad_month'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not month:
+            month = timezone.now().strftime('%Y-%m')
+
+        from . import usage
+        if is_super:
+            # super: every organisation + the platform (NULL-org) reconciliation row.
+            payload = usage.monthly_usage(month, include_platform=True)
+        else:
+            # org_admin: its OWN organisation only — fenced by construction (no platform,
+            # no other org can appear). A misconfigured org_admin with no org sees nothing.
+            payload = usage.monthly_usage(month, restrict_org_id=admin.owning_organisation_id)
+        return Response(payload)
 
 
 # ── Contract module (org-owned versioned bursary templates) — S3 admin API ────────

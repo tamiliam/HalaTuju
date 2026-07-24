@@ -244,6 +244,12 @@ class TestFenceCoverageCompleteness(TestCase):
         '_SourcesBase': 'base — super/org_admin gate for sources + witness assignment',
         'AdminSourcesView': 'shared-registry-single-tenant', 'AdminSourceDetailView': 'shared-registry-single-tenant',
         'AdminApplicationWitnessView': 'super/org_admin — witness assignment (single-tenant)',
+        # Billing & usage (Sprint 13a) — dual-audience, flag-gated 404-first. org_admin is
+        # org-fenced BY CONSTRUCTION (usage.monthly_usage(restrict_org_id=own org) can build no
+        # other org and no platform/NULL row — proven by the leak test in test_billing_usage.py);
+        # super sees all orgs + the platform (NULL) reconciliation row. The aggregate query lives
+        # in usage.py, not a raw views_admin query, so no static-guard pragma applies.
+        'AdminBillingUsageView': 'billing-org-fenced (org_admin own org; super all+platform)',
         # gate-fenced (via _scoped_application / _require_app_write / _require_qc)
         'AdminApplicationDetailView': 'gate', 'AdminVerdictSummaryView': 'gate',
         'AdminVerifyAcceptView': 'gate', 'AdminRejectView': 'gate',
