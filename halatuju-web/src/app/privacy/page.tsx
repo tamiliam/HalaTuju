@@ -3,9 +3,11 @@
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
+import { useBranding } from '@/lib/branding-context'
 
 export default function PrivacyPage() {
   const { t } = useT()
+  const b = useBranding()
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -18,7 +20,7 @@ export default function PrivacyPage() {
 
           <p className="text-gray-600">
             HalaTuju provides two things: a free <strong>course-matching tool</strong> for
-            SPM/STPM students, and the <strong>BrightPath Bursary Programme</strong>, which
+            SPM/STPM students, and the <strong>{b.programmeName.en} Programme</strong>, which
             connects verified low-income students with sponsors who support their public
             tertiary studies. This policy covers both.
           </p>
@@ -26,7 +28,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-gray-900">Data we collect</h2>
           <ul className="list-disc pl-6 text-gray-600 space-y-1">
             <li><em>Course tool:</em> your IC number (NRIC, stored securely and shown only masked, e.g. ****-**-1234), SPM/STPM grades, optional profile details (name, gender, nationality, state, contact details, family background), optional quiz answers, and your sign-in identifier (phone number or Google account).</li>
-            <li><em>BrightPath Bursary Programme (only if you apply):</em> household and family income details, and <strong>documents you upload</strong> to verify your application &mdash; your IC, results slip, university/college offer letter, a parent/guardian IC, and proof of household income or aid (e.g. an STR letter, EPF statement, payslip, or utility bill).</li>
+            <li><em>{b.programmeName.en} Programme (only if you apply):</em> household and family income details, and <strong>documents you upload</strong> to verify your application &mdash; your IC, results slip, university/college offer letter, a parent/guardian IC, and proof of household income or aid (e.g. an STR letter, EPF statement, payslip, or utility bill).</li>
           </ul>
 
           <h2 className="text-lg font-semibold text-gray-900">How we use and process your data</h2>
@@ -39,7 +41,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-gray-900">Who we share it with</h2>
           <ul className="list-disc pl-6 text-gray-600 space-y-1">
             <li><strong>Service providers that process data on our behalf:</strong> Supabase (secure database hosting, Singapore region) and Google (the text-recognition and AI services above). They process your data only to provide these services to us.</li>
-            <li><strong>The administering trust foundation</strong> &mdash; for applicants accepted into the BrightPath Bursary Programme, to administer the support. <em>(Currently being established.)</em></li>
+            <li><strong>The administering trust foundation</strong> &mdash; for applicants accepted into the {b.programmeName.en} Programme, to administer the support. <em>(Currently being established.)</em></li>
             <li><strong>Sponsors</strong> &mdash; only an <strong>anonymised profile</strong> (e.g. field of study, region, academic band), and only <strong>after you give explicit consent</strong> (for applicants under 18, a parent or guardian must consent). Sponsors <strong>never</strong> see your name, IC, address, phone, email, photo, or your parents&rsquo; details.</li>
             <li>We <strong>do not</strong> sell your data or share it for unrelated third-party marketing.</li>
           </ul>

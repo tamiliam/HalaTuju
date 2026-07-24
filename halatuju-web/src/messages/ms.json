@@ -284,7 +284,7 @@
       "shown": "{count} dipaparkan",
       "filteredEmpty": "Tiada pelajar sepadan dengan tapisan ini.",
       "support": "Sokong",
-      "balanceLabel": "Baki BrightPath anda",
+      "balanceLabel": "Baki {orgShortName} anda",
       "confirmBody": "Ini mengikat RM {amount} daripada baki anda dan mengeluarkan tawaran bantuan. Pelajar akan dimaklumkan untuk melengkapkan butiran mereka.",
       "confirmAward": "Sahkan bantuan",
       "funded": "Telah diberikan — RM {amount} dikomit. Pelajar akan dimaklumkan untuk melengkapkan butiran mereka.",
@@ -316,7 +316,7 @@
       },
       "whoWeAre": {
         "title": "Siapa kami",
-        "body": "Program Bursari BrightPath dikendalikan oleh pasukan di sebalik HalaTuju. Latar belakang penuh, entiti undang-undang dan butiran pendaftaran kami akan diterbitkan di sini apabila organisasi diformalkan.",
+        "body": "Program {programmeName} dikendalikan oleh pasukan di sebalik HalaTuju. Latar belakang penuh, entiti undang-undang dan butiran pendaftaran kami akan diterbitkan di sini apabila organisasi diformalkan.",
         "legalLabel": "Entiti undang-undang & pendaftaran",
         "storyLabel": "Kisah & misi kami",
         "contactLabel": "Hubungan & aduan"
@@ -381,7 +381,7 @@
     "daysAway": "Bermula dalam {days} hari",
     "oneDayAway": "Bermula dalam 1 hari",
     "startsToday": "Bermula hari ini",
-    "verifiedByBrightPath": "Disahkan oleh BrightPath",
+    "verifiedByBrightPath": "Disahkan oleh {orgShortName}",
     "verifyCaption": "Setiap pelajar dalam kumpulan ini telah lulus semakan kami sebelum anda melihatnya.",
     "checkIdentity": "Identiti",
     "checkAcademic": "Rekod akademik",
@@ -450,7 +450,7 @@
       "q5": "Berapa kos untuk menaja seseorang?",
       "a5": "Ia bergantung pada program dan keperluan pelajar. Setiap profil menunjukkan bantuan yang diperlukan supaya anda boleh menentukan apa yang sesuai.",
       "q6": "Siapa yang mengendalikan program ini?",
-      "a6": "HalaTuju mengendalikan Program Bursari BrightPath; sebuah yayasan amanah bebas akan memegang dan menyalurkan dana (yayasan ini sedang ditubuhkan)."
+      "a6": "HalaTuju mengendalikan Program {programmeName}; sebuah yayasan amanah bebas akan memegang dan menyalurkan dana (yayasan ini sedang ditubuhkan)."
     },
     "cta": {
       "heading": "Bersedia untuk mengubah hidup?",
@@ -463,7 +463,7 @@
     "quickLinks": "Pautan Pantas",
     "legal": "Undang-undang",
     "startHere": "Mula Di Sini",
-    "b40Heading": "Bursari BrightPath",
+    "b40Heading": "{programmeName}",
     "applyAssistance": "Mohon bantuan",
     "becomeSponsor": "Jadi penaja"
   },
@@ -769,7 +769,7 @@
     "noStpm": "Tiada kursus STPM disimpan lagi."
   },
   "scholarship": {
-    "nav": "Bursari BrightPath",
+    "nav": "{programmeName}",
     "apply": {
       "title": "Mohon Bantuan Pendidikan B40",
       "intro": "Bantuan kewangan untuk pelajar B40 yang melanjutkan ke IPTA/ILKA. Baca kriteria, kemudian lengkapkan borang ringkas di bawah.",
@@ -1071,7 +1071,7 @@
       "tooLong": "Jawapan anda untuk “{field}” terlalu panjang. Sila pendekkan dan cuba lagi.",
       "step4Title": "4. Muat naik dokumen anda",
       "step4Body": "Sila muat naik dokumen wajib di bawah — IC anda, slip keputusan terkini anda, dan IC ibu bapa atau penjaga anda. Dokumen pilihan di bawah membantu menguatkan permohonan anda.",
-      "techSupport": "Menghadapi masalah teknikal dengan permohonan ini? E-mel help@halatuju.xyz atau hubungi 012-337 5709 dan terangkan masalah anda — kami sedia membantu.",
+      "techSupport": "Menghadapi masalah teknikal dengan permohonan ini? E-mel {supportEmail} atau hubungi 012-337 5709 dan terangkan masalah anda — kami sedia membantu.",
       "step5Title": "5. Tambah perujuk",
       "step5Body": "Seseorang yang boleh menjamin anda — guru, kaunselor, atau kenalan komuniti.",
       "step6Title": "6. Berikan persetujuan anda",
@@ -1294,7 +1294,7 @@
         "guardianship_letter": "Gambar atau PDF perintah penjagaan dari mahkamah atau surat kebenaran bertulis daripada ibu bapa anda, menunjukkan bahawa anda berada di bawah jagaan mereka.",
         "birth_certificate": "Gambar/PDF sijil kelahiran anda, mengaitkan ibu anda dengan anda.",
         "photo": "Gambar terkini anda.",
-        "coachLabel": "Cikgu Gopal · Pembantu",
+        "coachLabel": "{personaName} · Pembantu",
         "editProfileName": "Betulkan nama anda dalam profil",
         "adjustGrades": "Laraskan gred saya",
         "gradeDiff": "{subject}: anda masukkan {typed}, tetapi slip anda menunjukkan {slip}.",
@@ -1611,8 +1611,8 @@
     "consent": {
       "subtitle": "Sila semak dan bersetuju di bawah untuk berkongsi profil anda dengan bakal penaja.",
       "minorInfoNotice": "Sila minta ibu bapa atau penjaga anda membaca bahagian berikut dengan teliti dan memberikan persetujuan mereka untuk berkongsi butiran anda dengan bakal penaja.",
-      "text": "Saya, pemohon yang dinamakan (**{student_name}**, NRIC **{student_nric}**), bersetuju **Program Bursari BrightPath** berkongsi **ringkasan tanpa nama** mengenai permohonan saya dengan bakal penaja, supaya mereka boleh mempertimbangkan saya untuk bantuan kewangan.\n\nPenaja **tidak** ditunjukkan nama, NRIC, gambar, alamat atau butiran perhubungan saya — mahupun ibu bapa saya — dan **dokumen saya tidak pernah dikongsi dengan mereka**. Mereka hanya melihat negeri, sekolah, kursus, rancangan pengajian dan keperluan kewangan saya.\n\nSaya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
-      "textMinor": "Saya mengesahkan bahawa saya adalah ibu bapa atau penjaga **{student_name}** (NRIC: **{student_nric}**), yang berumur di bawah 18 tahun.\n\nSaya memberi kebenaran kepada **Program Bursari BrightPath** untuk berkongsi **ringkasan tanpa nama** mengenai permohonan {his_or_her} dengan penaja, bagi membantu {him_or_her} mendapat bantuan kewangan.\n\nPenaja **tidak** ditunjukkan nama, NRIC, gambar, alamat atau butiran perhubungan {his_or_her} — mahupun kami — dan **dokumen {his_or_her} tidak pernah dikongsi dengan mereka**. Mereka hanya melihat negeri, sekolah, kursus, rancangan pengajian dan keperluan kewangan {his_or_her}.\n\nSaya faham saya boleh membatalkan kebenaran ini pada bila-bila masa.",
+      "text": "Saya, pemohon yang dinamakan (**{student_name}**, NRIC **{student_nric}**), bersetuju **Program {programmeName}** berkongsi **ringkasan tanpa nama** mengenai permohonan saya dengan bakal penaja, supaya mereka boleh mempertimbangkan saya untuk bantuan kewangan.\n\nPenaja **tidak** ditunjukkan nama, NRIC, gambar, alamat atau butiran perhubungan saya — mahupun ibu bapa saya — dan **dokumen saya tidak pernah dikongsi dengan mereka**. Mereka hanya melihat negeri, sekolah, kursus, rancangan pengajian dan keperluan kewangan saya.\n\nSaya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
+      "textMinor": "Saya mengesahkan bahawa saya adalah ibu bapa atau penjaga **{student_name}** (NRIC: **{student_nric}**), yang berumur di bawah 18 tahun.\n\nSaya memberi kebenaran kepada **Program {programmeName}** untuk berkongsi **ringkasan tanpa nama** mengenai permohonan {his_or_her} dengan penaja, bagi membantu {him_or_her} mendapat bantuan kewangan.\n\nPenaja **tidak** ditunjukkan nama, NRIC, gambar, alamat atau butiran perhubungan {his_or_her} — mahupun kami — dan **dokumen {his_or_her} tidak pernah dikongsi dengan mereka**. Mereka hanya melihat negeri, sekolah, kursus, rancangan pengajian dan keperluan kewangan {his_or_her}.\n\nSaya faham saya boleh membatalkan kebenaran ini pada bila-bila masa.",
       "fallback": {
         "student": "pemohon"
       },
@@ -1797,7 +1797,7 @@
       },
       "about": {
         "title": "Tentang program ini",
-        "body": "Program Bursari BrightPath diselaraskan oleh HalaTuju, dengan sebuah yayasan amanah bebas dijangka mentadbir dana (yayasan ini sedang ditubuhkan), serta rangkaian pertubuhan komuniti — termasuk Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) dan lain-lain — yang merujuk dan menyokong pelajar.",
+        "body": "Program {programmeName} diselaraskan oleh HalaTuju, dengan sebuah yayasan amanah bebas dijangka mentadbir dana (yayasan ini sedang ditubuhkan), serta rangkaian pertubuhan komuniti — termasuk Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) dan lain-lain — yang merujuk dan menyokong pelajar.",
         "contact": "Soalan atau maklum balas? E-mel"
       },
       "cta": {
@@ -1923,7 +1923,7 @@
       "relevanceNudge": "Itu nampaknya tidak menjawab soalan — boleh anda lihat semula apa yang ditanya?",
       "explanationPlaceholder": "Taip jawapan anda di sini…",
       "allDone": "Semua selesai — permohonan anda lengkap!",
-      "coach": "Saya Cikgu Gopal, di sini untuk membantu anda menyiapkannya. Setiap kad di atas ialah satu perkara untuk dilakukan — muat naik dokumen atau jawab soalan. Ikut senarai dari atas; nota di bawah setiap kad menerangkan dengan tepat apa yang diperlukan.",
+      "coach": "Saya {personaName}, di sini untuk membantu anda menyiapkannya. Setiap kad di atas ialah satu perkara untuk dilakukan — muat naik dokumen atau jawab soalan. Ikut senarai dari atas; nota di bawah setiap kad menerangkan dengan tepat apa yang diperlukan.",
       "coachLabel": "Cikgu Guna · Semak butiran",
       "item": {
         "ic_missing": {
@@ -1960,15 +1960,15 @@
         },
         "academic_missing_subjects": {
           "title": "Tambah mata pelajaran yang tiada: {subjects}",
-          "desc": "Slip keputusan anda menyenaraikan {total} mata pelajaran, tetapi hanya {entered} ada dalam profil anda. Sila tambah yang tiada — {subjects} — di halaman keputusan anda (halatuju.xyz/onboarding/grades), kemudian kembali dan tandakan ini selesai."
+          "desc": "Slip keputusan anda menyenaraikan {total} mata pelajaran, tetapi hanya {entered} ada dalam profil anda. Sila tambah yang tiada — {subjects} — di halaman keputusan anda ({displayDomain}/onboarding/grades), kemudian kembali dan tandakan ini selesai."
         },
         "academic_grade_mismatch": {
           "title": "Semak gred anda untuk {subject}",
-          "desc": "Slip keputusan anda menunjukkan {subject} sebagai {slip}, tetapi profil anda menyatakan {typed}. Sila betulkan di halaman keputusan anda (halatuju.xyz/onboarding/grades), kemudian kembali dan tandakan ini selesai."
+          "desc": "Slip keputusan anda menunjukkan {subject} sebagai {slip}, tetapi profil anda menyatakan {typed}. Sila betulkan di halaman keputusan anda ({displayDomain}/onboarding/grades), kemudian kembali dan tandakan ini selesai."
         },
         "academic_grade_band_mismatch": {
           "title": "Betulkan gred anda untuk {subject}",
-          "desc": "Slip keputusan anda jelas menunjukkan {subject} sebagai {slip} (huruf dan band sepadan), tetapi profil anda menyatakan {typed}. Sila betulkan di halaman keputusan anda (halatuju.xyz/onboarding/grades), kemudian kembali dan tandakan ini selesai."
+          "desc": "Slip keputusan anda jelas menunjukkan {subject} sebagai {slip} (huruf dan band sepadan), tetapi profil anda menyatakan {typed}. Sila betulkan di halaman keputusan anda ({displayDomain}/onboarding/grades), kemudian kembali dan tandakan ini selesai."
         },
         "income_proof_missing": {
           "title": "Muat naik dokumen STR anda",
@@ -3122,7 +3122,7 @@
     },
     "scholarship": {
       "nav": "Permohonan B40",
-      "title": "Pemohon Bursari BrightPath",
+      "title": "Pemohon {programmeName}",
       "countSubtitle": "{count} pemohon",
       "loadFailed": "Tidak dapat memuatkan permohonan.",
       "showingRange": "Papar {start}–{end} daripada {total} permohonan",
@@ -3767,7 +3767,7 @@
         "approveNeedsReview": "Sistem mengesyorkan tiada jumlah. Selesaikan laluan/pendapatan, atau tetapkan jumlah ganti, sebelum mengesyorkan.",
         "chooseOutcome": "Pilih Syorkan atau Tolak.",
         "saveNeedsReady": "Hantar penemuan anda, nilai AI dan tambah kesimpulan anda.",
-        "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau TIDAK memenuhi syarat Bursari BrightPath.",
+        "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau TIDAK memenuhi syarat {programmeName}.",
         "save": "Simpan & jana profil akhir",
         "approve": "Syorkan",
         "decline": "Tolak",
@@ -4305,7 +4305,7 @@
     },
     "payments": {
       "title": "Pembayaran",
-      "subtitle": "Biasiswa BrightPath — larian pembayaran Vircle bulanan kepada pelajar",
+      "subtitle": "Biasiswa {orgShortName} — larian pembayaran Vircle bulanan kepada pelajar",
       "newRun": "Larian pembayaran baharu",
       "paymentDate": "Tarikh pembayaran",
       "pastDateHint": "Larian tidak boleh ditarikh ke belakang (tarikh lalu dilumpuhkan).",

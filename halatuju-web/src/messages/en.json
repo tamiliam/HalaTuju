@@ -284,7 +284,7 @@
       "shown": "{count} shown",
       "filteredEmpty": "No students match these filters.",
       "support": "Support",
-      "balanceLabel": "Your BrightPath balance",
+      "balanceLabel": "Your {orgShortName} balance",
       "confirmBody": "This commits RM {amount} from your balance and issues an award offer. The student will be notified to complete their details.",
       "confirmAward": "Confirm award",
       "funded": "Awarded — RM {amount} committed. The student will be notified to complete their details.",
@@ -316,7 +316,7 @@
       },
       "whoWeAre": {
         "title": "Who we are",
-        "body": "The BrightPath Bursary Programme is run by the team behind HalaTuju. Our full background, legal entity and registration details will be published here as the organisation is formalised.",
+        "body": "The {programmeName} Programme is run by the team behind HalaTuju. Our full background, legal entity and registration details will be published here as the organisation is formalised.",
         "legalLabel": "Legal entity & registration",
         "storyLabel": "Our story & mission",
         "contactLabel": "Contact & complaints"
@@ -381,7 +381,7 @@
     "daysAway": "Starts in {days} days",
     "oneDayAway": "Starts in 1 day",
     "startsToday": "Starts today",
-    "verifiedByBrightPath": "Verified by BrightPath",
+    "verifiedByBrightPath": "Verified by {orgShortName}",
     "verifyCaption": "Every student in the pool has passed our checks before you ever see them.",
     "checkIdentity": "Identity",
     "checkAcademic": "Academic record",
@@ -450,7 +450,7 @@
       "q5": "How much does it cost to sponsor someone?",
       "a5": "It depends on the student's programme and needs. Each profile shows the support required so you can decide what works for you.",
       "q6": "Who runs this programme?",
-      "a6": "HalaTuju runs the BrightPath Bursary Programme; an independent trust foundation will hold and disburse the funds (currently being established)."
+      "a6": "HalaTuju runs the {programmeName} Programme; an independent trust foundation will hold and disburse the funds (currently being established)."
     },
     "cta": {
       "heading": "Ready to change a life?",
@@ -463,7 +463,7 @@
     "quickLinks": "Quick Links",
     "legal": "Legal",
     "startHere": "Start Here",
-    "b40Heading": "BrightPath Bursary",
+    "b40Heading": "{programmeName}",
     "applyAssistance": "Apply for assistance",
     "becomeSponsor": "Become a sponsor"
   },
@@ -769,7 +769,7 @@
     "noStpm": "No STPM courses saved yet."
   },
   "scholarship": {
-    "nav": "BrightPath Bursary",
+    "nav": "{programmeName}",
     "apply": {
       "title": "Apply for B40 Education Assistance",
       "intro": "Financial assistance for B40 students continuing to IPTA/ILKA. Read the criteria, then complete the short form below.",
@@ -1071,7 +1071,7 @@
       "tooLong": "Your answer to “{field}” is too long. Please shorten it and try again.",
       "step4Title": "4. Upload your documents",
       "step4Body": "Please upload the required documents below — your IC, your latest results slip, and your parent or guardian's IC. The optional documents help strengthen your application.",
-      "techSupport": "Having technical trouble with this application? Email help@halatuju.xyz or call 012-337 5709 and describe the problem — we'll be glad to help.",
+      "techSupport": "Having technical trouble with this application? Email {supportEmail} or call 012-337 5709 and describe the problem — we'll be glad to help.",
       "step5Title": "5. Add a referee",
       "step5Body": "Someone who can vouch for you — a teacher, counsellor, or community contact.",
       "step6Title": "6. Give your consent",
@@ -1294,7 +1294,7 @@
         "parent_ic": "A photo of your father/mother/guardian's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name.",
         "guardianship_letter": "A photo or PDF of a court-issued guardianship order or a written authorisation letter from your parent, showing that you are under their care.",
         "birth_certificate": "A photo/PDF of your birth certificate, linking your mother to you.",
-        "coachLabel": "Cikgu Gopal · Helper",
+        "coachLabel": "{personaName} · Helper",
         "editProfileName": "Edit your name in your profile",
         "adjustGrades": "Adjust my grades",
         "gradeDiff": "{subject}: you entered {typed}, but your slip shows {slip}.",
@@ -1611,8 +1611,8 @@
     "consent": {
       "subtitle": "Please review and agree below to share your profile with potential sponsors.",
       "minorInfoNotice": "Please ask your parent or guardian to read the following section carefully and give their consent to share your particulars with potential sponsors.",
-      "text": "I, the named applicant (**{student_name}**, NRIC **{student_nric}**), consent to the **BrightPath Bursary Programme** sharing an **anonymised summary** of my application with potential sponsors, so they can consider me for financial assistance.\n\nSponsors are **not** shown my name, NRIC, photograph, address or contact details — nor my parents' — and **my documents are never shared with them**. They see only my state, school, course, study plans and financial need.\n\nI understand I can withdraw this consent at any time.",
-      "textMinor": "I confirm that I am the parent or guardian of **{student_name}** (NRIC: **{student_nric}**), who is under 18 years old.\n\nI give permission for the **BrightPath Bursary Programme** to share an **anonymised summary** of {his_or_her} application with sponsors, to help {him_or_her} get financial aid.\n\nSponsors are **not** shown {his_or_her} name, NRIC, photograph, address or contact details — nor ours — and {his_or_her} **documents are never shared with them**. They see only {his_or_her} state, school, course, study plans and financial need.\n\nI understand that I can cancel this permission at any time.",
+      "text": "I, the named applicant (**{student_name}**, NRIC **{student_nric}**), consent to the **{programmeName} Programme** sharing an **anonymised summary** of my application with potential sponsors, so they can consider me for financial assistance.\n\nSponsors are **not** shown my name, NRIC, photograph, address or contact details — nor my parents' — and **my documents are never shared with them**. They see only my state, school, course, study plans and financial need.\n\nI understand I can withdraw this consent at any time.",
+      "textMinor": "I confirm that I am the parent or guardian of **{student_name}** (NRIC: **{student_nric}**), who is under 18 years old.\n\nI give permission for the **{programmeName} Programme** to share an **anonymised summary** of {his_or_her} application with sponsors, to help {him_or_her} get financial aid.\n\nSponsors are **not** shown {his_or_her} name, NRIC, photograph, address or contact details — nor ours — and {his_or_her} **documents are never shared with them**. They see only {his_or_her} state, school, course, study plans and financial need.\n\nI understand that I can cancel this permission at any time.",
       "fallback": {
         "student": "the applicant"
       },
@@ -1797,7 +1797,7 @@
       },
       "about": {
         "title": "About this programme",
-        "body": "The BrightPath Bursary Programme is coordinated by HalaTuju, with an independent trust foundation expected to administer the funds (currently being established), and a network of community organisations — including Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) and others — that refer and support students.",
+        "body": "The {programmeName} Programme is coordinated by HalaTuju, with an independent trust foundation expected to administer the funds (currently being established), and a network of community organisations — including Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) and others — that refer and support students.",
         "contact": "Questions or feedback? Email"
       },
       "cta": {
@@ -1923,7 +1923,7 @@
       "relevanceNudge": "That doesn't seem to answer the question — could you take another look at what's being asked?",
       "explanationPlaceholder": "Type your answer here…",
       "allDone": "All done — your application is complete!",
-      "coach": "I'm Cikgu Gopal, here to help you finish. Each card above is one thing to do — upload a document or answer a question. Work down the list; the note under a card tells you exactly what's needed.",
+      "coach": "I'm {personaName}, here to help you finish. Each card above is one thing to do — upload a document or answer a question. Work down the list; the note under a card tells you exactly what's needed.",
       "coachLabel": "Cikgu Guna · Details check",
       "item": {
         "ic_missing": {
@@ -1960,15 +1960,15 @@
         },
         "academic_missing_subjects": {
           "title": "Add your missing subjects: {subjects}",
-          "desc": "Your results slip lists {total} subjects, but only {entered} are on your profile. Please add the missing ones — {subjects} — on your results page (halatuju.xyz/onboarding/grades), then come back and mark this done."
+          "desc": "Your results slip lists {total} subjects, but only {entered} are on your profile. Please add the missing ones — {subjects} — on your results page ({displayDomain}/onboarding/grades), then come back and mark this done."
         },
         "academic_grade_mismatch": {
           "title": "Check your grade for {subject}",
-          "desc": "Your results slip shows {subject} as {slip}, but your profile says {typed}. Please fix it on your results page (halatuju.xyz/onboarding/grades), then come back and mark this done."
+          "desc": "Your results slip shows {subject} as {slip}, but your profile says {typed}. Please fix it on your results page ({displayDomain}/onboarding/grades), then come back and mark this done."
         },
         "academic_grade_band_mismatch": {
           "title": "Fix your grade for {subject}",
-          "desc": "Your results slip clearly shows {subject} as {slip} (the letter and the band agree), but your profile says {typed}. Please fix it on your results page (halatuju.xyz/onboarding/grades), then come back and mark this done."
+          "desc": "Your results slip clearly shows {subject} as {slip} (the letter and the band agree), but your profile says {typed}. Please fix it on your results page ({displayDomain}/onboarding/grades), then come back and mark this done."
         },
         "income_proof_missing": {
           "title": "Upload your STR document",
@@ -3122,7 +3122,7 @@
     },
     "scholarship": {
       "nav": "B40 Applications",
-      "title": "BrightPath Bursary Applicants",
+      "title": "{programmeName} Applicants",
       "countSubtitle": "{count} applicants",
       "loadFailed": "Could not load applications.",
       "showingRange": "Showing {start}–{end} of {total} applications",
@@ -3767,7 +3767,7 @@
         "approveNeedsReview": "The system recommends no amount. Settle the pathway/income, or override the amount, before recommending.",
         "chooseOutcome": "Choose Recommend or Decline.",
         "saveNeedsReady": "Submit your findings, rate the AI and add your conclusion.",
-        "reasonPlaceholder": "Make your case: why this student deserves to be sponsored — or does NOT meet the BrightPath Bursary requirements.",
+        "reasonPlaceholder": "Make your case: why this student deserves to be sponsored — or does NOT meet the {programmeName} requirements.",
         "save": "Save & generate final profile",
         "approve": "Recommend",
         "decline": "Decline",
@@ -4305,7 +4305,7 @@
     },
     "payments": {
       "title": "Payments",
-      "subtitle": "BrightPath Bursary — monthly Vircle payment runs to students",
+      "subtitle": "{programmeName} — monthly Vircle payment runs to students",
       "newRun": "New payment run",
       "paymentDate": "Payment date",
       "pastDateHint": "Runs cannot be back-dated (past dates are disabled).",
