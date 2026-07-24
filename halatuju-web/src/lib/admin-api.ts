@@ -496,6 +496,16 @@ export interface AdminSponsorProfile {
   anon_published_at: string | null
 }
 
+/** The "you haven't submitted yet" nudge state (server-computed). `applicable` = the student is
+ *  shortlisted + consented + unsubmitted; `available` = a manual reminder may be sent right now;
+ *  `available_at` = when it next becomes available (auto-due time, or cooldown end). */
+export interface AdminNudge {
+  applicable: boolean
+  sent_at: string | null
+  available: boolean
+  available_at: string | null
+}
+
 export interface AdminScholarshipDetail {
   id: number
   name: string
@@ -642,6 +652,9 @@ export interface AdminScholarshipDetail {
   // disagree. Income codes are member-qualified ("parent_ic_missing:mother").
   // Empty = nothing outstanding.
   consent_blockers: string[]
+  // The "you haven't submitted yet" reminder state (server-computed — see nudge.nudge_state).
+  // Drives the Blockers-box reminder button; null-safe.
+  nudge: AdminNudge
   interview_session: AdminInterviewSession | null
   assigned_to_id: number | null
   assigned_to_name: string | null
@@ -1011,6 +1024,14 @@ export async function orgRejectApplication(
 ) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/org-reject/`, 'POST', { comments }, options
+  )
+}
+
+/** Org-admin manual re-send of the "you haven't submitted yet" reminder to a shortlisted,
+ * consented-but-unsubmitted student (the manual counterpart to the one-time auto nudge). */
+export async function nudgeStudent(id: number, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/nudge/`, 'POST', {}, options
   )
 }
 

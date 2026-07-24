@@ -25,6 +25,7 @@ import {
   reRunVision,
   assignApplication,
   orgRejectApplication,
+  nudgeStudent,
   setReportingDate,
   getInterview,
   saveInterview,
@@ -89,7 +90,7 @@ import { formatDate } from '@/lib/formatDate'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
 import { localiseParams, titleSourceFor } from '@/lib/actionCentre'
 import { isFunded, disbursementTone, actionsFor, nextSequence, totalReleased } from '@/lib/disbursement'
-import { showsBlockerBox, parseBlocker, stuckStep, blockerLabelKey, memberLabelKey } from '@/lib/blockers'
+import { showsBlockerBox, parseBlocker, stuckStep, blockerLabelKey, memberLabelKey, nudgeButton } from '@/lib/blockers'
 import type { BursaryAgreement } from '@/lib/api'
 
 // Officer doc-request control: a friendly CATEGORY + a mandatory QUALIFIER that resolves to a
@@ -485,6 +486,21 @@ export default function AdminScholarshipDetailPage() {
     } catch (e) {
       // Stay on the confirm step so the typed reason isn't lost on a transient failure.
       setRejectErr(e instanceof Error ? e.message : t('admin.scholarship.orgReject.error'))
+    } finally { setBusy('') }
+  }
+
+  // "You haven't submitted yet" reminder — org-admin manual re-send (the auto nudge fires once,
+  // ~30 min after consent; this is the human follow-up). Confirms first, then refreshes the
+  // nudge state (new sent_at + cooldown) from the returned detail.
+  const [nudgeMsg, setNudgeMsg] = useState('')
+  const doNudge = async () => {
+    if (!token || !window.confirm(t('admin.scholarship.blockers.nudge.confirm'))) return
+    setBusy('nudge'); setNudgeMsg('')
+    try {
+      setApp(await nudgeStudent(id, { token }))
+      setNudgeMsg(t('admin.scholarship.blockers.nudge.done'))
+    } catch (e) {
+      setNudgeMsg(e instanceof Error ? e.message : t('admin.scholarship.blockers.nudge.error'))
     } finally { setBusy('') }
   }
 
@@ -2728,6 +2744,40 @@ export default function AdminScholarshipDetailPage() {
                 {t('admin.scholarship.blockers.none')}
               </p>
             )}
+            {/* ── Reminder: org-admin manual nudge for a consented-but-unsubmitted student. The
+                 auto nudge fires once ~30 min after consent; this is the human follow-up. The
+                 whole state (show / enabled / label / note) is server-computed (app.nudge). ── */}
+            {(() => {
+              const nb = nudgeButton(app.nudge, isSuper || role?.role === 'org_admin')
+              if (!nb.show) return null
+              const at = app.nudge.available_at ? formatDate(app.nudge.available_at) : ''
+              const sent = app.nudge.sent_at ? formatDate(app.nudge.sent_at) : ''
+              return (
+                <div className="space-y-2 border-t border-gray-100 pt-3">
+                  <button type="button" onClick={doNudge} disabled={!nb.enabled || !!busy}
+                    className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium
+                               text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:hover:bg-transparent">
+                    {busy === 'nudge'
+                      ? t('admin.scholarship.blockers.nudge.sending')
+                      : t(`admin.scholarship.blockers.nudge.${nb.label}`)}
+                  </button>
+                  {nb.note === 'pending' && (
+                    <p className="text-xs text-gray-500">{t('admin.scholarship.blockers.nudge.pending')}</p>
+                  )}
+                  {nb.note === 'cooldown' && (
+                    <p className="text-xs text-gray-500">
+                      {t('admin.scholarship.blockers.nudge.cooldown', { date: sent, next: at })}
+                    </p>
+                  )}
+                  {nb.note === 'sent' && (
+                    <p className="text-xs text-gray-500">
+                      {t('admin.scholarship.blockers.nudge.sent', { date: sent })}
+                    </p>
+                  )}
+                  {nudgeMsg && <p className="text-xs text-gray-600">{nudgeMsg}</p>}
+                </div>
+              )
+            })()}
           </div>
         )
       })()}

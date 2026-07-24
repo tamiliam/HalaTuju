@@ -3708,6 +3708,17 @@
         "stuck": "Pelajar ini kini tersekat pada langkah {step}.",
         "awaitingConsent": "Semuanya lengkap — pelajar hanya perlu memberi persetujuan, langkah terakhir.",
         "none": "Tiada perkara tertunggak.",
+        "nudge": {
+          "send": "Hantar e-mel peringatan",
+          "again": "Hantar peringatan lagi",
+          "sending": "Menghantar…",
+          "confirm": "Hantar e-mel peringatan kepada pelajar ini untuk melengkapkan dan menghantar permohonan mereka?",
+          "done": "Peringatan dihantar.",
+          "error": "Peringatan tidak dapat dihantar — sila cuba lagi.",
+          "pending": "Peringatan automatik sedang dalam perjalanan — anda boleh menghantar yang manual setelah ia dihantar.",
+          "cooldown": "Peringatan dihantar {date}. Anda boleh menghantar satu lagi selepas {next}.",
+          "sent": "Peringatan terakhir dihantar {date}."
+        },
         "step": {
           "quiz": "Kuiz",
           "story": "Kisah Anda",

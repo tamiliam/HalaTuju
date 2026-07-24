@@ -1785,6 +1785,7 @@ class CronRunView(APIView):
         'vision-outage': 'alert_vision_outage',
         'decision-emails': 'send_pending_decision_emails',
         'application-reminders': 'send_application_reminders',
+        'application-nudges': 'send_application_nudges',  # frequent (~15 min): one-time auto "you haven't submitted yet" nudge (shortlisted, consented, unsubmitted)
         'query-emails': 'send_due_query_emails',
         'query-reminders': 'send_query_reminders',
         'autogenerate-profiles': 'autogenerate_profiles',

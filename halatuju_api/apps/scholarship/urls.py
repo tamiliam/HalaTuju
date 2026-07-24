@@ -84,6 +84,7 @@ from .views_admin import (
     AdminPublishProfileView,
     AdminOrgRejectView,
     AdminReportingDateView,
+    AdminNudgeStudentView,
     AdminRejectView,
     AdminCancelDeclineView,
     AdminHoldAwardView,
@@ -265,6 +266,7 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/reject/', AdminRejectView.as_view()),
     path('admin/scholarship/applications/<int:pk>/org-reject/', AdminOrgRejectView.as_view()),
     path('admin/scholarship/applications/<int:pk>/reporting-date/', AdminReportingDateView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/nudge/', AdminNudgeStudentView.as_view()),
     # Conditional Bursary Award Agreement — Foundation countersignature (super-only) +
     # partner-org witness attestation (referring-org admin or super; non-blocking).
     path('admin/scholarship/applications/<int:pk>/bursary-agreement/countersign/',

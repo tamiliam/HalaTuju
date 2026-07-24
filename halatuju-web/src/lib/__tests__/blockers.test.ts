@@ -4,6 +4,7 @@
  */
 import {
   BLOCKER_BOX_STATUSES, showsBlockerBox, parseBlocker, stepOf, stuckStep, blockerLabelKey,
+  nudgeButton, NudgeState,
 } from '@/lib/blockers'
 
 describe('showsBlockerBox', () => {
@@ -75,5 +76,31 @@ describe('stuckStep', () => {
   })
   test('no blockers → null', () => {
     expect(stuckStep([])).toBeNull()
+  })
+})
+
+describe('nudgeButton', () => {
+  const base: NudgeState = { applicable: true, sent_at: null, available: false, available_at: null }
+
+  test('hidden unless the caller can manage AND the state is applicable', () => {
+    expect(nudgeButton(base, false).show).toBe(false)              // not org-admin/super
+    expect(nudgeButton({ ...base, applicable: false }, true).show).toBe(false)
+    expect(nudgeButton(null, true).show).toBe(false)               // null-safe
+  })
+
+  test('before the auto nudge: shown, blocked, "send", pending note', () => {
+    const v = nudgeButton({ ...base, available_at: '2026-07-24T10:30:00Z' }, true)
+    expect(v).toEqual({ show: true, enabled: false, label: 'send', note: 'pending' })
+  })
+
+  test('sent but inside cooldown: blocked, "again", cooldown note', () => {
+    const v = nudgeButton({ ...base, sent_at: '2026-07-24T10:00:00Z', available: false,
+      available_at: '2026-07-25T10:00:00Z' }, true)
+    expect(v).toEqual({ show: true, enabled: false, label: 'again', note: 'cooldown' })
+  })
+
+  test('available again: enabled, "again", sent note', () => {
+    const v = nudgeButton({ ...base, sent_at: '2026-07-23T10:00:00Z', available: true }, true)
+    expect(v).toEqual({ show: true, enabled: true, label: 'again', note: 'sent' })
   })
 })

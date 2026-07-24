@@ -2395,6 +2395,76 @@ def send_profile_complete_student_email(to_email, *, student_name, english_only=
                       reply_to=[_P.email_support])
 
 
+def send_application_nudge_email(to_email, *, student_name, english_only=False):
+    """A short, warm reminder to a SHORTLISTED student who has given consent but not pressed the
+    final "Review & submit" (so their application is still a draft with us). Sent on demand by an
+    org admin from the cockpit Blockers box. HTML primary + plain-text fallback; bilingual (EN + BM)
+    unless ``english_only``. Best-effort → bool. Deliberately simple — one message, one action."""
+    if not to_email:
+        return False
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
+    link = f'{_P.frontend_url}/scholarship/application'
+    subject = f'A quick reminder to finish your {_PROG_EN} application'
+
+    en_intro = (f'We noticed you started your {_PROG_EN} application but haven’t sent it to us '
+                'yet — you’re almost there!')
+    en_body = ('Your application is still saved as a draft. To finish, please log in, complete any '
+               'remaining steps, and press the "Review &amp; submit" button. That final step is what '
+               'actually sends your application to us for review — until you press it, we can’t begin '
+               'looking at it.')
+    en_after = ('It only takes a minute. If you get stuck or something doesn’t look right, just reply '
+                'to this email and we’ll help you.')
+    en_safety = (f'One note for your peace of mind: we’ll only ever ask about you and your studies. '
+                 f'We will never ask you for money, a bank password, or an OTP or PIN. If anyone '
+                 f'does, it isn’t us — please tell us straight away at {_P.email_support}.')
+
+    bm_intro = (f'Kami perasan anda telah memulakan permohonan {_PROG_MS} tetapi belum menghantarnya '
+                'kepada kami — anda hampir selesai!')
+    bm_body = ('Permohonan anda masih disimpan sebagai draf. Untuk menyelesaikannya, sila log masuk, '
+               'lengkapkan mana-mana langkah yang tinggal, dan tekan butang "Semak &amp; hantar". '
+               'Langkah terakhir itulah yang benar-benar menghantar permohonan anda kepada kami untuk '
+               'semakan — selagi anda tidak menekannya, kami tidak dapat mula menyemaknya.')
+    bm_after = ('Ia hanya mengambil masa seminit. Jika anda tersekat atau ada sesuatu yang tidak kena, '
+                'balas sahaja e-mel ini dan kami akan membantu anda.')
+    bm_safety = (f'Satu nota untuk ketenangan anda: kami hanya akan bertanya tentang diri dan '
+                 f'pengajian anda. Kami tidak sekali-kali akan meminta wang, kata laluan bank, atau '
+                 f'OTP atau PIN. Jika sesiapa berbuat demikian, itu bukan kami — sila beritahu kami '
+                 f'dengan segera di {_P.email_support}.')
+
+    def text_block(greeting, intro, body, btn_line, after, safety, signoff):
+        # Plain-text: strip the HTML entity we use for the ampersand in the button label.
+        body = body.replace('&amp;', '&')
+        return f'{greeting}\n\n{intro}\n\n{body}\n\n{btn_line}\n\n{after}\n\n{safety}\n\n{signoff}'
+    en_text = text_block(f'Hi {en_name},', en_intro, en_body, f'Open my application: {link}',
+                         en_after, en_safety, 'Warm regards,\n' + _TEAM_EN)
+    bm_text = text_block(f'Salam {bm_name},', bm_intro, bm_body, f'Buka permohonan saya: {link}',
+                         bm_after, bm_safety, 'Salam hormat,\n' + _TEAM_MS)
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    def html_block(greeting, intro, body, btn_label, after, safety, signoff):
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 14px;">{intro}</p>'
+            f'<p style="margin:0 0 18px;">{body}</p>'
+            f'<p style="margin:0 0 18px;">{_email_button(link, btn_label)}</p>'
+            f'<p style="margin:0 0 14px;">{after}</p>'
+            f'<p style="margin:0 0 16px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    en_html = html_block(f'Hi {en_name},', en_intro, en_body, 'Open my application', en_after,
+                         en_safety, 'Warm regards,<br>' + _TEAM_EN)
+    bm_html = html_block(f'Salam {bm_name},', bm_intro, bm_body, 'Buka permohonan saya', bm_after,
+                         bm_safety, 'Salam hormat,<br>' + _TEAM_MS)
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
+    # General programme email → from info@ (DEFAULT_FROM_EMAIL), reply to support; NOT interview@.
+    return _send_html(to_email, subject, text_body, html_body,
+                      from_email=_P.email_from,
+                      reply_to=[_P.email_support])
+
+
 def send_contact_submission_admin_email(*, to_email, name, contact, category, message, created_at):
     """Internal: email a public contact-form submission to the team (contact@ via
     ADMIN_NOTIFY_EMAIL). Reply-To is set to the submitter's contact when it looks like

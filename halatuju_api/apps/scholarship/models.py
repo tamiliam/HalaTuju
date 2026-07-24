@@ -447,6 +447,11 @@ class ScholarshipApplication(models.Model):
     last_reminder_at = models.DateTimeField(null=True, blank=True)
     # When the application was auto-closed for non-completion (status → 'expired').
     expired_at = models.DateTimeField(null=True, blank=True)
+    # "You haven't submitted yet" nudge for a shortlisted student who gave consent but never
+    # pressed the final Review & submit. Stamped with the time of the MOST RECENT nudge (the
+    # one-time auto sweep, then any manual org-admin re-nudges); NULL = never nudged, so the
+    # auto sweep fires exactly once. Drives the cockpit button's availability + cooldown.
+    nudge_sent_at = models.DateTimeField(null=True, blank=True)
     # Check 2 STEP 2: when the single 'answer your queries' reminder was sent (idempotent).
     query_reminder_at = models.DateTimeField(null=True, blank=True)
     # Check 2 STEP 2: when the student was first notified that clarify queries were raised

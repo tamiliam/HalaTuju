@@ -70,3 +70,36 @@ export function blockerLabelKey(raw: string): string {
 export function memberLabelKey(member: string): string {
   return `scholarship.docs.income.wizard.member.${member}`
 }
+
+// ── "You haven't submitted yet" reminder button ──────────────────────────────
+// The server computes the whole state (nudge.nudge_state); the button only renders it.
+export interface NudgeState {
+  applicable: boolean
+  sent_at: string | null
+  available: boolean
+  available_at: string | null
+}
+
+/**
+ * What the Blockers-box reminder button should show, from the server-computed nudge state.
+ * Pure (the component formats the dates). `canManage` = the caller is org_admin/super.
+ *   show    — render the button at all
+ *   enabled — clickable now (else greyed with a note)
+ *   label   — 'send' (never nudged) | 'again' (a nudge has gone out)
+ *   note    — which status line to show under the button:
+ *             'pending'  = before the one-time auto nudge (manual unlocks after it fires)
+ *             'cooldown' = a nudge was sent recently; wait before another
+ *             'sent'     = available again, showing when the last one went out
+ *             null       = nothing to add
+ */
+export function nudgeButton(
+  nudge: NudgeState | null | undefined,
+  canManage: boolean,
+): { show: boolean; enabled: boolean; label: 'send' | 'again'; note: 'pending' | 'cooldown' | 'sent' | null } {
+  if (!canManage || !nudge?.applicable) {
+    return { show: false, enabled: false, label: 'send', note: null }
+  }
+  const label: 'send' | 'again' = nudge.sent_at ? 'again' : 'send'
+  if (nudge.available) return { show: true, enabled: true, label, note: nudge.sent_at ? 'sent' : null }
+  return { show: true, enabled: false, label, note: nudge.sent_at ? 'cooldown' : 'pending' }
+}

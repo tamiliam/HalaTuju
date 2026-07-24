@@ -3708,6 +3708,17 @@
         "stuck": "The student is currently stuck at the {step} step.",
         "awaitingConsent": "Everything's in — the student only needs to give consent, the final step.",
         "none": "Nothing outstanding.",
+        "nudge": {
+          "send": "Send reminder email",
+          "again": "Send another reminder",
+          "sending": "Sending…",
+          "confirm": "Send a reminder email to this student to finish and submit their application?",
+          "done": "Reminder sent.",
+          "error": "Couldn't send the reminder — please try again.",
+          "pending": "An automatic reminder is on its way — you'll be able to send a manual one once it has gone out.",
+          "cooldown": "Reminder sent {date}. You can send another after {next}.",
+          "sent": "Last reminder sent {date}."
+        },
         "step": {
           "quiz": "Quiz",
           "story": "Your Story",

@@ -537,6 +537,40 @@ class AdminReportingDateView(_AdminBase):
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
+class AdminNudgeStudentView(_AdminBase):
+    """POST .../<pk>/nudge/ — an org admin manually re-sends the "you haven't submitted yet"
+    reminder to a SHORTLISTED student who has consented but not pressed the final Review &
+    submit. The manual counterpart to the one-time auto nudge (send_application_nudges cron).
+
+    Gated to super / org_admin ONLY — mirrors AdminOrgRejectView: this belongs to whoever owns
+    the programme, not to a reviewer/qc whom `_require_app_write` would also admit. Refuses when
+    the student isn't in the consented-but-unsubmitted state (400 not_applicable), or during the
+    pre-auto window / cooldown (400 nudge_unavailable). Returns the refreshed detail so the
+    cockpit re-reads `nudge` (new sent_at + cooldown)."""
+    def post(self, request, pk):
+        app, admin, err = self._require_app_write(request, pk)
+        if err:
+            return err
+        if not (admin.is_super or admin.role == 'org_admin'):
+            return self._deny_role()
+        from .nudge import is_applicable, nudge_state, send_nudge
+        if not is_applicable(app):
+            return Response(
+                {'error': 'This reminder only applies to a shortlisted student who has given '
+                          'consent but not yet submitted.', 'code': 'not_applicable'},
+                status=status.HTTP_400_BAD_REQUEST)
+        if not nudge_state(app)['available']:
+            return Response(
+                {'error': 'A reminder was sent recently — please wait before sending another.',
+                 'code': 'nudge_unavailable'}, status=status.HTTP_400_BAD_REQUEST)
+        if not send_nudge(app, manual=True):
+            return Response(
+                {'error': 'The reminder could not be sent — please try again.',
+                 'code': 'send_failed'}, status=status.HTTP_502_BAD_GATEWAY)
+        logger.info('AUDIT student_nudge app_id=%s by=%s', app.id, getattr(admin, 'email', ''))
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
 class AdminCancelDeclineView(_AdminBase):
     """POST .../<pk>/cancel-decline/ — abort a scheduled-but-unrevealed decline within the
     decline cool-off (the student never saw it). Reviewer-gated. Idempotent."""

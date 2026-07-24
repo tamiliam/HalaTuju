@@ -229,6 +229,8 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminOrgRejectView': 'gate',
         # Fenced by _require_app_write; records the officer-entered reporting date.
         'AdminReportingDateView': 'gate',
+        # Fenced by _require_app_write, then narrowed to super/org_admin (manual nudge send).
+        'AdminNudgeStudentView': 'gate',
         'AdminCancelDeclineView': 'gate', 'AdminHoldAwardView': 'gate',
         'AdminApplicationRefereeView': 'gate', 'AdminRefereeDetailView': 'gate',
         'AdminRunVisionView': 'gate', 'AdminGenerateProfileView': 'gate',

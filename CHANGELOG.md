@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## "You haven't submitted yet" nudge — auto + org-admin manual reminder — 2026-07-24
+
+A shortlisted student who gives consent but never presses the final Review & submit sits in a
+silent limbo — everything is done, the guardian has consented, but the application is still a
+draft with us. This recovers them.
+
+- **Added — a one-time automatic reminder** (`nudge.send_application_nudges`, cron
+  `application-nudges`), sent ~30 min after consent while the student is likely still at their
+  device. Fires exactly once per student (`ScholarshipApplication.nudge_sent_at`, migration
+  `0110`), and sits ALONGSIDE the existing generic completion reminders (R1–R4), not replacing
+  them.
+- **Added — a manual reminder button** in the cockpit Blockers box (`AdminNudgeStudentView`,
+  `POST .../applications/<pk>/nudge/`). super / org_admin ONLY. Visible but blocked before the
+  auto nudge fires, then live with a 24h cooldown between sends — the whole state (visible /
+  enabled / label / note) is server-computed (`nudge.nudge_state`) so the officer and the system
+  can never disagree.
+- **Scope — only when nothing is outstanding.** The nudge applies only to a shortlisted, consented,
+  unsubmitted student with an EMPTY `consent_blockers`. A student who slipped back into an
+  incomplete/blocked state is genuinely stuck, not one-press-from-submit, so the button disappears
+  and the generic reminders own that case.
+- **Added — the branded reminder email** (`emails.send_application_nudge_email`), bilingual EN+BM
+  (english-only where appropriate), from info@ with reply-to support. Reused by both paths.
+- Tunables: `NUDGE_AUTO_DELAY_MINUTES` (30), `NUDGE_COOLDOWN_HOURS` (24). +19 pytest, +4 jest.
+
 ## Payments — the Finance role: a dormant payment-run checker + funding summary — 2026-07-23
 
 Sprint 14 (brief `docs/plans/2026-07-22-sprint14-finance-role-brief.md`, owner-approved).

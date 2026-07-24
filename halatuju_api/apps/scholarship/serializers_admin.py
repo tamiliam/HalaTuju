@@ -279,6 +279,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     resolution_items = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     consent_blockers = serializers.SerializerMethodField()
+    # The "you haven't submitted yet" nudge state (drives the Blockers-box reminder button):
+    # applicable / sent_at / available / available_at. Server-computed — the FE only renders it.
+    nudge = serializers.SerializerMethodField()
     interview_session = serializers.SerializerMethodField()
     # Phase B: Gemini interview gaps — a PLAIN read-only field (the GET never calls
     # Gemini; gaps are produced + stored by the admin-on-demand suggest-gaps endpoint).
@@ -394,7 +397,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # its reveal date — drives the cockpit "scheduled — cancel/hold" banners.
             'pending_rejection_category', 'decline_due_at', 'award_due_at',
             # Phase C handoff + interview funnel
-            'profile_completed_at', 'completeness', 'consent_blockers', 'interview_session',
+            'profile_completed_at', 'completeness', 'consent_blockers', 'nudge', 'interview_session',
             'interview_gaps', 'interview_gaps_run_at', 'interview_schedule',
             'assigned_to_id', 'assigned_to_name', 'assigned_at',
             'info_request_note', 'info_requested_at',
@@ -680,6 +683,13 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         student submit yet?" instead of the owner guessing. Empty = ready to submit."""
         from .services import consent_blockers
         return consent_blockers(obj)
+
+    def get_nudge(self, obj):
+        """The "you haven't submitted yet" reminder state for the cockpit button — applicable /
+        sent_at / available / available_at (see nudge.nudge_state). Server is the single source
+        of truth; the FE only renders it."""
+        from .nudge import nudge_state
+        return nudge_state(obj)
 
     def get_interview_session(self, obj):
         """Phase C: the latest interview session (draft or submitted), or None."""
