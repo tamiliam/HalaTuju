@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing & usage v1 — the per-tenant usage meter + super/org_admin usage screen (Sprint 13a) — 2026-07-25
+
+The per-tenant usage meter (roadmap Sprint 13a) plus a dark, super/org_admin usage screen. Brief
+`docs/plans/2026-07-25-billing-usage-v1-brief.md`; design source `docs/plans/2026-07-24-billing-sources-investigation.md`.
+
+- **The meter.** New `UsageEvent` model (table `usage_events`, migration `0116`, additive; org FK
+  PROTECT null = platform-base work, application FK SET_NULL, service/model/source/quantity/tokens,
+  index (organisation, created_at)). `apps/scholarship/usage.py` logs ONE best-effort row per
+  billable provider call at the sanctioned seams — Gemini (`vision._call_gemini_json`,
+  `profile_engine._call_gemini_text`, `contracts._gemini_generate`, `report_engine`), Cloud Vision
+  (`vision._vision_document_text` + `_vision_words`), OpenAI (report fallback), Brevo email
+  (`emails._send`/`_send_html`/`_send_plain`/`_send_bilingual`) and Twilio WhatsApp
+  (`whatsapp.send_whatsapp`). AI token counts read from each provider response's own usage metadata;
+  public seam return shapes unchanged. A `usage_context` (contextvar) threads the org / application /
+  source tag from each call path (doc_extract, ic_fallback, genuineness, gap_spotter, answer_relevance,
+  doc_help, profile_draft/refine, anon_blurb, verdict_summary, contract_quiz, docx_segment,
+  requests_triage, report, email/whatsapp function tags).
+- **Unconditional + absolutely best-effort.** Metering runs from deploy with NO flag; a failing log
+  write can never break the user-facing call (fault-injection tests prove a send / AI call succeeds
+  while `UsageEvent.create` raises). `BILLING_USAGE_ENABLED` (default OFF) gates ONLY the endpoint/UI.
+- **The screen (dark).** `GET /api/v1/admin/scholarship/billing/usage/?month=YYYY-MM`
+  (`AdminBillingUsageView`), 404-first while dark. Dual audience: org_admin sees ONLY its own
+  organisation (fenced by construction — no platform, no other org can appear); super sees every
+  organisation PLUS the platform (NULL-org) reconciliation row. Plain allowlist dict, units + tokens
+  only — NO prices in v1. Adds a live document-storage snapshot (Supabase) per org from our own
+  metadata. Classified in `test_org_fence.py`.
+- **FE (dark).** `/admin/billing` — month picker, per-org cards (+ platform section for super), stat
+  tiles + service breakdown table, storage, and a non-metered free-services footnote (Google
+  Workspace + Cloudflare Turnstile). Administration hub Billing card goes live for super + org_admin
+  when the flag is on (same probe as Requests), else "Coming soon"; Finance stays "Coming soon".
+  `admin.billing.*` i18n en/ms/ta (ms/ta first-drafts) + namespace parity guard.
+- Backend **4496 → 4523 pytest** (+27: meter + endpoint), one date-dependent payments test unrelated
+  to this work is red on 2026-07-25 (see below). Frontend **719 → 738 jest** (+19; the 1 known
+  Node-26 `scholarship.test.ts` local failure held constant). `next build` compiles `/admin/billing`;
+  lint + `makemigrations --check` clean; exactly one new migration (`scholarship/0116`).
+
 ## eWallet-activation visibility on payment runs (advisory) — 2026-07-24
 
 Brings Vircle activation into the system of record and surfaces it where payments are decided,
