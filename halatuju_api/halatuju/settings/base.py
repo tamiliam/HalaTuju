@@ -349,6 +349,10 @@ PARTNER_TEMP_PASSWORD_TTL_DAYS = int(os.environ.get('PARTNER_TEMP_PASSWORD_TTL_D
 # Administration hub card is hidden, so the whole feature is invisible until flipped after prod
 # smoke + owner review of the rate-card copy and ms/ta first-drafts.
 REQUESTS_ENABLED = os.environ.get('REQUESTS_ENABLED', '').lower() in ('1', 'true', 'yes')
+# Billing & usage v1 (Sprint 13a). Gates ONLY the super/org_admin usage endpoint + UI (404-first,
+# default OFF — dark until the owner approves the usage-screen artifact). It NEVER gates the meter:
+# UsageEvent rows accrue unconditionally from deploy (best-effort) regardless of this flag.
+BILLING_USAGE_ENABLED = os.environ.get('BILLING_USAGE_ENABLED', '').lower() in ('1', 'true', 'yes')
 # The Gemini model the AI reviewer triages a request with, through contracts._gemini_generate.
 REQUESTS_TRIAGE_MODEL = os.environ.get('REQUESTS_TRIAGE_MODEL', 'gemini-2.5-pro')
 # The preset margin (%) a feature quote carries, owner-adjustable per quote. A quote in hours

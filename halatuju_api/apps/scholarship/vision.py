@@ -645,6 +645,8 @@ def _vision_document_text(image_bytes: bytes) -> dict:
         client = (vision.ImageAnnotatorClient(client_options={'api_key': api_key})
                   if api_key else vision.ImageAnnotatorClient())
         resp = client.document_text_detection(image=vision.Image(content=image_bytes))
+        from . import usage
+        usage.record_usage(usage.VISION_OCR)   # billable Cloud Vision call — best-effort meter
         if resp.error and resp.error.message:
             return {'text': '', 'error': resp.error.message[:200]}
         return {'text': resp.full_text_annotation.text if resp.full_text_annotation else '', 'error': None}
@@ -671,6 +673,8 @@ def _vision_words(data: bytes, content_type: str = '') -> dict:
         client = (vision.ImageAnnotatorClient(client_options={'api_key': api_key})
                   if api_key else vision.ImageAnnotatorClient())
         resp = client.document_text_detection(image=vision.Image(content=img))
+        from . import usage
+        usage.record_usage(usage.VISION_OCR)   # billable Cloud Vision call — best-effort meter
         if resp.error and resp.error.message:
             return {'words': [], 'text': '', 'error': resp.error.message[:200]}
         # The SAME response carries the flattened text (full_text_annotation) — return it
@@ -862,19 +866,23 @@ def run_vision_for_document(doc) -> dict:
     "does this look like a real MyKad?" multimodal read, stored in
     ``vision_fields['authenticity']`` (no migration). Never blocks.
     """
+    from . import usage
+    _ctx = _doc_usage_ctx(doc)
     image = _fetch_image_bytes(doc.storage_path)
     used_gemini = False
-    if image is None:
-        result = {'nric': '', 'name': '', 'address': '', 'error': 'could not fetch image'}
-    else:
-        result = extract_mykad(image, doc.content_type)
-        if not result.get('error'):
-            profile = getattr(doc.application, 'profile', None)
-            if _should_gemini_ic(result, profile):
-                g = _gemini_ic_second_opinion(image, doc.content_type)
-                if not g.get('_error'):
-                    result = _merge_ic_reads(result, g, profile)
-                    used_gemini = True
+    with _ctx:
+        if image is None:
+            result = {'nric': '', 'name': '', 'address': '', 'error': 'could not fetch image'}
+        else:
+            result = extract_mykad(image, doc.content_type)   # Cloud Vision OCR (doc_extract)
+            if not result.get('error'):
+                profile = getattr(doc.application, 'profile', None)
+                if _should_gemini_ic(result, profile):
+                    with usage.usage_context(source='ic_fallback'):  # inherits org/app
+                        g = _gemini_ic_second_opinion(image, doc.content_type)
+                    if not g.get('_error'):
+                        result = _merge_ic_reads(result, g, profile)
+                        used_gemini = True
     doc.vision_nric = result['nric'] or ''
     doc.vision_name = result['name'] or ''
     doc.vision_address = result.get('address', '') or ''
@@ -889,7 +897,8 @@ def run_vision_for_document(doc) -> dict:
         vf['capture'] = 'ai' if used_gemini else 'deterministic'
         vf_changed = True
     if image is not None and getattr(settings, 'DOC_GENUINENESS_CHECK_ENABLED', False):
-        auth = ic_genuineness(image, doc.content_type)
+        with usage.usage_context(application=getattr(doc, 'application', None), source='genuineness'):
+            auth = ic_genuineness(image, doc.content_type)
         if auth:
             vf['authenticity'] = auth
             vf_changed = True
@@ -1039,12 +1048,20 @@ def address_present(text: str, *, postcode: str = '', city: str = '', street: st
     return address_match(text, postcode=postcode, city=city, street=street) == 'found'
 
 
+def _doc_usage_ctx(doc, source='doc_extract'):
+    """Billing attribution for a doc-driven Vision/Gemini pipeline: org + application come
+    from the document's application; every billable seam called within is tagged ``source``."""
+    from . import usage
+    return usage.usage_context(application=getattr(doc, 'application', None), source=source)
+
+
 def ocr_document(doc) -> dict:
     """Fetch + OCR a document once. Returns {text, error}. Pass the result to
     run_vision_match_for_document / run_field_extraction_for_document as ``ocr=``
     so the same upload OCRs only once."""
-    image = _fetch_image_bytes(doc.storage_path)
-    return {'text': '', 'error': 'could not fetch image'} if image is None else extract_text(image, doc.content_type)
+    with _doc_usage_ctx(doc):
+        image = _fetch_image_bytes(doc.storage_path)
+        return {'text': '', 'error': 'could not fetch image'} if image is None else extract_text(image, doc.content_type)
 
 
 def ocr_document_full(doc) -> dict:
@@ -1062,16 +1079,17 @@ def ocr_document_full(doc) -> dict:
     behaviour of ``ocr_document``); one Vision ``document_text_detection`` response
     otherwise carries both the text and the word boxes (previously two identical
     billable calls per slip/BC upload — code-health S2 #22)."""
-    image = _fetch_image_bytes(doc.storage_path)
-    if image is None:
-        return {'text': '', 'words': None, 'image': None, 'error': 'could not fetch image'}
-    if _is_pdf(doc.content_type, image):
-        text = _pdf_text_layer(image)
-        if len(text) >= _MIN_PDF_TEXT:
-            return {'text': text, 'words': None, 'image': image, 'error': None}
-    r = _vision_words(image, doc.content_type)
-    return {'text': r.get('text') or '', 'words': r.get('words'), 'image': image,
-            'error': r.get('error')}
+    with _doc_usage_ctx(doc):
+        image = _fetch_image_bytes(doc.storage_path)
+        if image is None:
+            return {'text': '', 'words': None, 'image': None, 'error': 'could not fetch image'}
+        if _is_pdf(doc.content_type, image):
+            text = _pdf_text_layer(image)
+            if len(text) >= _MIN_PDF_TEXT:
+                return {'text': text, 'words': None, 'image': image, 'error': None}
+        r = _vision_words(image, doc.content_type)
+        return {'text': r.get('text') or '', 'words': r.get('words'), 'image': image,
+                'error': r.get('error')}
 
 
 def read_text_document(doc, *, ocr=None) -> dict:
@@ -1504,6 +1522,9 @@ def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = Non
                 config=types.GenerateContentConfig(
                     response_mime_type='application/json', response_schema=schema, temperature=0.1),
             )
+            from . import usage   # billable Gemini call — best-effort meter (tokens from usage_metadata)
+            _it, _ot = usage.gemini_tokens(resp)
+            usage.record_usage(usage.GEMINI, model=model_name, input_tokens=_it, output_tokens=_ot)
             return json.loads(resp.text)
         except Exception as e:  # noqa: BLE001 — graceful: never propagate to a 500
             last_error = str(e)
@@ -1842,6 +1863,15 @@ def _extract_slip_deterministic(doc, image, words=None):
 
 
 def run_field_extraction_for_document(doc, *, names, postcode='', city='', street='', check_address=False, ocr=None) -> dict:
+    """Billing-metered wrapper: every Vision/Gemini seam called during field extraction is
+    attributed to the document's organisation + application (source=doc_extract)."""
+    with _doc_usage_ctx(doc):
+        return _run_field_extraction_impl(
+            doc, names=names, postcode=postcode, city=city, street=street,
+            check_address=check_address, ocr=ocr)
+
+
+def _run_field_extraction_impl(doc, *, names, postcode='', city='', street='', check_address=False, ocr=None) -> dict:
     """Extract fields + a deterministic student-facing verdict, store on the doc.
     Never blocks, never raises. Pass ``ocr`` to reuse a prior OCR pass.
 

@@ -334,6 +334,11 @@ def generate_report(grades, eligible_courses, insights,
             elapsed_ms = int((time.time() - start_ms) * 1000)
 
             text = response.text
+            # Course-selector report = platform-base work (org=NULL); billable Gemini call.
+            from apps.scholarship import usage
+            _it, _ot = usage.gemini_tokens(response)
+            usage.record_usage(usage.GEMINI, model=model_name, source='report',
+                               input_tokens=_it, output_tokens=_ot, organisation_id=None)
             logger.info(
                 f'Report generated with {model_name} in {elapsed_ms}ms '
                 f'({len(text)} chars)'
@@ -372,6 +377,11 @@ def generate_report(grades, eligible_courses, insights,
             )
             elapsed_ms = int((time.time() - start_ms) * 1000)
             text = completion.choices[0].message.content
+            # OpenAI fallback for the course-selector report = platform-base (org=NULL).
+            from apps.scholarship import usage
+            _it, _ot = usage.openai_tokens(completion)
+            usage.record_usage(usage.OPENAI, model='gpt-4o-mini', source='report',
+                               input_tokens=_it, output_tokens=_ot, organisation_id=None)
             logger.info(
                 f'Report generated with gpt-4o-mini (OpenAI fallback) '
                 f'in {elapsed_ms}ms ({len(text)} chars)'

@@ -155,7 +155,9 @@ def verdict_case_summary(application):
     hit = cache.get(key)
     if hit is not None:
         return {'summary': hit, 'cached': True, 'enabled': True}
-    res = _call_gemini_text(_PROMPT_HEAD + context, 'English')
+    from . import usage
+    with usage.usage_context(application=application, source='verdict_summary'):
+        res = _call_gemini_text(_PROMPT_HEAD + context, 'English')
     if res.get('error'):
         logger.warning('verdict_case_summary gemini error app=%s: %s', application.id, res['error'])
         return {'error': res['error'], 'enabled': True}

@@ -220,6 +220,13 @@ def send_whatsapp(to, body='', *, application=None, kind='', content_sid='', con
         row = WhatsAppMessage.objects.create(
             application=application, kind=kind, to_number=to_e164,
             body=log_body, status='queued')
+    # Billable Twilio send (valid number + configured) — best-effort meter, org from the
+    # passed application (NULL when none). NEVER breaks the send.
+    from . import usage
+    usage.record_usage(
+        usage.WHATSAPP, source=kind or 'whatsapp', quantity=1,
+        organisation_id=getattr(application, 'owning_organisation_id', None),
+        application_id=getattr(application, 'id', None))
     try:
         msg_sid, status, err = _post_to_twilio(sid, token, sender, to_e164, body, content_sid, content_variables)
         if row:

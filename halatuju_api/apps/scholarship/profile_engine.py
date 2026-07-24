@@ -296,6 +296,9 @@ def _call_gemini_text(prompt, target_language, models=None):
             start = time.time()
             response = client.models.generate_content(model=model_name, contents=prompt)
             elapsed = int((time.time() - start) * 1000)
+            from . import usage   # billable Gemini prose call — best-effort meter
+            _it, _ot = usage.gemini_tokens(response)
+            usage.record_usage(usage.GEMINI, model=model_name, input_tokens=_it, output_tokens=_ot)
             return {
                 'markdown': response.text, 'model_used': model_name,
                 'language': target_language, 'generation_time_ms': elapsed,
@@ -957,7 +960,9 @@ def refine_sponsor_profile(application, draft, session, language=None):
         officer_decision=_render_officer_decision(application),
         income_context=_income_context(application),
     )
-    return _with_version(_call_gemini_text(prompt, target_language, models=PRO_CASCADE))
+    from . import usage
+    with usage.usage_context(application=application, source='profile_refine'):
+        return _with_version(_call_gemini_text(prompt, target_language, models=PRO_CASCADE))
 
 
 def generate_sponsor_profile(application, language=None):
@@ -966,7 +971,9 @@ def generate_sponsor_profile(application, language=None):
     defaults to the applicant's locale."""
     target_language = _resolve_language(application, language)
     prompt = _build_prompt(application, target_language=target_language)
-    return _with_version(_call_gemini_text(prompt, target_language))
+    from . import usage
+    with usage.usage_context(application=application, source='profile_draft'):
+        return _with_version(_call_gemini_text(prompt, target_language))
 
 
 # ── Sponsor-pool CARD blurb (card-strict: stricter than the profile) ──────────
@@ -1005,7 +1012,9 @@ def generate_anon_blurb(application, anon_markdown=''):
     source = (anon_markdown or '').strip()
     if not source:
         return ''
-    res = _call_gemini_text(_build_anon_blurb_prompt(source), 'English')
+    from . import usage
+    with usage.usage_context(application=application, source='anon_blurb'):
+        res = _call_gemini_text(_build_anon_blurb_prompt(source), 'English')
     if not isinstance(res, dict) or res.get('error'):
         return ''
     return _clip_words((res.get('markdown') or '').strip(), ANON_BLURB_MAX_WORDS)

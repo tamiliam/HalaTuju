@@ -6,11 +6,34 @@ WhatsApp is a Phase 2 enhancement.
 """
 import logging
 import os
+import sys
 
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives, send_mail
 
 from . import branding as _branding
+
+
+def _meter_email():
+    """Best-effort billing meter for ONE Brevo send. Source = the nearest ``send_*``
+    caller (so the row names the mail kind, no signature changes); org is inherited from
+    any surrounding usage_context (else NULL — acceptable for v1 per the brief). NEVER
+    raises: metering can't break a send."""
+    try:
+        from . import usage
+        source = 'email'
+        f = sys._getframe(2)   # skip _meter_email + the calling _send primitive
+        for _ in range(8):
+            if f is None:
+                break
+            name = f.f_code.co_name
+            if name.startswith('send_'):
+                source = name
+                break
+            f = f.f_back
+        usage.record_usage(usage.EMAIL, source=source, quantity=1)
+    except Exception:  # noqa: BLE001
+        pass
 
 # Per-org branding is read ONLY through the branding seam (decision D1). Sender identity,
 # sign-off, programme name, persona, support/reply-to, topical aliases (interview@ / sponsor@)
@@ -370,6 +393,7 @@ def _send(to_email, subjects, bodies, applicant_name, programme_name, lang, extr
     frontend = b.frontend_url
     link = f"{frontend}/scholarship/application"
     fmt = {'name': name, 'programme': programme_name, 'link': link, **(extra or {})}
+    _meter_email()
     try:
         send_mail(
             subject=subjects[lang].format(programme=programme_name),
@@ -2689,6 +2713,7 @@ def _send_bilingual(to_email, subject, en, bm):
     alias so replies route there. Best-effort → bool."""
     if not to_email:
         return False
+    _meter_email()
     try:
         EmailMessage(
             subject=subject,
@@ -2730,6 +2755,7 @@ def _send_html(to_email, subject, text_body, html_body, reply_to=None, ics=None,
     installation-guide PDF. Best-effort → bool."""
     if not to_email:
         return False
+    _meter_email()
     try:
         msg = EmailMultiAlternatives(
             subject=subject,
@@ -3271,6 +3297,7 @@ def send_interview_released_email(to_email, *, student_name, english_only=False)
 def _send_plain(to_email, subject, body):
     if not to_email:
         return False
+    _meter_email()
     try:
         EmailMessage(subject=subject, body=body,
                      from_email=_P.interview_from,

@@ -468,8 +468,11 @@ def run_ai_review(req):
         raise OrgRequestError('ai_limit_reached')
 
     model = getattr(settings, 'REQUESTS_TRIAGE_MODEL', 'gemini-2.5-pro')
+    from . import usage
     try:
-        raw = contracts._gemini_generate(_build_review_prompt(req), model)
+        with usage.usage_context(organisation_id=getattr(req, 'organisation_id', None),
+                                 source='requests_triage'):
+            raw = contracts._gemini_generate(_build_review_prompt(req), model)
     except contracts.ContractsError as e:
         # Map the seam's codes to the requests-space vocabulary. 'quiz_ai_unconfigured' (no key)
         # and 'quiz_ai_unavailable' (SDK missing) are the two the seam raises; anything else is

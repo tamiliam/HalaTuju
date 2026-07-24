@@ -2620,3 +2620,59 @@ class PaymentScheduleRow(models.Model):
     def total(self):
         from decimal import Decimal
         return (self.monthly_amount or Decimal('0')) * len(self.paid_offsets or [])
+
+
+class UsageEvent(models.Model):
+    """Per-tenant usage meter (Billing & usage v1 — Sprint 13a).
+
+    ONE row per billable provider call at a sanctioned seam (Gemini / Cloud Vision /
+    OpenAI / Brevo email / Twilio WhatsApp). Written UNCONDITIONALLY from deploy, ABSOLUTELY
+    best-effort (see ``apps.scholarship.usage.record_usage`` — a metering failure can never
+    break the user-facing call). Read only by the super/org_admin usage screen. Units and
+    token counts ONLY — v1 carries NO prices (there is no price table yet).
+
+    ``organisation`` is NULL for platform-base work (course-selector reports, ops mail) — the
+    tenancy attribution kept for reconciliation, per the billing-sources investigation.
+    """
+    SERVICE_CHOICES = [
+        ('gemini', 'Gemini'),
+        ('vision_ocr', 'Cloud Vision OCR'),
+        ('openai', 'OpenAI'),
+        ('email', 'Email'),
+        ('whatsapp', 'WhatsApp'),
+    ]
+
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='usage_events',
+        help_text='The tenant this billable call is attributed to. NULL = platform-base '
+                  'work (course-selector reports, ops mail), kept for reconciliation.')
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='usage_events',
+        help_text='The application in hand when known (SET_NULL so purging a case never '
+                  'deletes its billing history).')
+    service = models.CharField(max_length=20, choices=SERVICE_CHOICES)
+    model = models.CharField(max_length=80, blank=True, default='',
+                             help_text='The provider model name (AI only), e.g. gemini-2.5-flash.')
+    source = models.CharField(max_length=40, blank=True, default='',
+                              help_text='The call-path tag, e.g. doc_extract, ic_fallback, '
+                                        'profile_draft, report, or an email/whatsapp function tag.')
+    quantity = models.IntegerField(default=1)
+    input_tokens = models.IntegerField(null=True, blank=True,
+                                       help_text='Prompt token count (AI only), from the '
+                                                 "provider response's usage metadata.")
+    output_tokens = models.IntegerField(null=True, blank=True,
+                                        help_text='Completion token count (AI only).')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'usage_events'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['organisation', 'created_at'], name='usage_org_created_idx'),
+        ]
+
+    def __str__(self):
+        who = self.organisation_id or 'platform'
+        return f'{self.service}:{self.source or "-"} org={who} @ {self.created_at:%Y-%m-%d}'

@@ -404,6 +404,9 @@ def _gemini_generate(prompt, model):
         raise ContractsError('quiz_ai_unavailable')
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(model=model, contents=prompt)
+    from . import usage   # billable Gemini call — best-effort meter
+    _it, _ot = usage.gemini_tokens(response)
+    usage.record_usage(usage.GEMINI, model=model, input_tokens=_it, output_tokens=_ot)
     return response.text
 
 
@@ -490,7 +493,10 @@ def generate_quiz(clause, *, model=None):
     if clause.level != 0:
         raise ContractsError('quiz_not_top_level')
     model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
-    raw = _gemini_generate(_build_quiz_prompt(clause), model)
+    from . import usage
+    with usage.usage_context(organisation_id=getattr(clause.template, 'organisation_id', None),
+                             source='contract_quiz'):
+        raw = _gemini_generate(_build_quiz_prompt(clause), model)
     data = _parse_quiz_json(raw)
     payloads = {}
     for lang in LANGUAGES:
@@ -692,7 +698,9 @@ def segment_docx(data, *, model=None):
     if structured is None:
         text = _extract_docx_text(data)
         model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
-        raw = _gemini_generate(_build_segment_prompt(text), model)
+        from . import usage  # import proposal: no template yet → org NULL, source docx_segment
+        with usage.usage_context(source='docx_segment'):
+            raw = _gemini_generate(_build_segment_prompt(text), model)
         structured = {'title': '', 'preamble': '', 'clauses': _parse_segments(raw)}
     # Pull the counterparty from the ORIGINAL recital (before rewriting), then tokenise: the
     # author's brackets → {{tokens}}, AND the donor's literal name / NRIC / address →

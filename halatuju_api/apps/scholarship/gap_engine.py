@@ -265,7 +265,9 @@ def generate_interview_gaps(application, language=None, existing=None):
     existing_codes = {g.get('code', '') for g in existing if isinstance(g, dict)}
     prompt = _build_gap_prompt(application, target_language, existing=existing_qs)
     from .vision import _call_gemini_json   # shared structured-output Gemini seam
-    data = _call_gemini_json(prompt, GAP_SCHEMA)
+    from . import usage
+    with usage.usage_context(application=application, source='gap_spotter'):
+        data = _call_gemini_json(prompt, GAP_SCHEMA)
     if '_error' in data:
         return {'error': data['_error']}
     return {'gaps': _normalise_gaps(data.get('gaps'), seen_codes=existing_codes,

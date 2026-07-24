@@ -554,7 +554,9 @@ def generate_document_help(doc_type, verdict, *, first_name='', target_language=
 
     prompt = _build_help_prompt(doc_type, verdict, first_name, target_language, context, branding)
     from .profile_engine import _call_gemini_text  # shared, mockable Gemini prose seam
-    data = _call_gemini_text(prompt, target_language)
+    from . import usage  # firewalled coach: no application in scope → org NULL, source doc_help
+    with usage.usage_context(source='doc_help'):
+        data = _call_gemini_text(prompt, target_language)
     if 'error' in data:
         return {'message': '', 'source': 'fallback', 'error': data['error']}
     message = (data.get('markdown') or '').strip()
@@ -607,7 +609,9 @@ def judge_answer_relevance(question, answer):
     if not q or not a:
         return {'on_topic': True, 'nudge': ''}
     from .vision import _call_gemini_json  # shared, mockable Gemini JSON seam
-    data = _call_gemini_json(_build_relevance_prompt(q, a), _RELEVANCE_SCHEMA)
+    from . import usage  # firewalled to Q+A only → org NULL, source answer_relevance
+    with usage.usage_context(source='answer_relevance'):
+        data = _call_gemini_json(_build_relevance_prompt(q, a), _RELEVANCE_SCHEMA)
     if not isinstance(data, dict) or data.get('_error') or 'on_topic' not in data:
         return {'on_topic': True, 'nudge': ''}   # AI off / failed → accept
     return {'on_topic': bool(data.get('on_topic', True)),
