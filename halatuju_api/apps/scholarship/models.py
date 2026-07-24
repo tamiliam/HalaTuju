@@ -204,6 +204,14 @@ class ScholarshipApplication(models.Model):
     vircle_id = models.CharField(
         max_length=30, blank=True, default='',
         help_text="Vircle eWallet account ID (13 digits, prefix 8000400175).")
+    # Payments module: when Vircle actually ACTIVATED (switched on) this eWallet. Vircle reports
+    # nothing back to us, so the ONLY activation signal is the owner's MANUAL 'Activated On' column
+    # in the relay sheet; `vircle.sync_activation_status` mirrors that column into this field (the
+    # sheet stays the source of truth). ADVISORY only — the payment run surfaces a "not yet
+    # activated" flag off this, but it does NOT gate eligibility (owner: don't block payouts on the
+    # manual step; a payment to a non-activated wallet bounces, it isn't lost). NULL = not (yet)
+    # recorded as activated. See docs/decisions.md.
+    vircle_activated_at = models.DateTimeField(null=True, blank=True)
     # Payments module (D6): a per-application "paid ahead of schedule" balance that the NEXT
     # payment run absorbs (rate − credit), then decrements at completion. How the July
     # regularisation is encoded once and consumed automatically. Default 0.

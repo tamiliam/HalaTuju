@@ -2227,6 +2227,9 @@ def _payment_item_dict(item):
         'name': getattr(profile, 'name', '') or '',
         'nric': getattr(profile, 'nric', '') or '',
         'vircle_id': item.vircle_id_snapshot or (app.vircle_id or ''),
+        # Advisory: has Vircle activated this eWallet? (mirrored from the relay sheet). Shown as a
+        # "not yet activated" chip on the run; never blocks — a run item stays payable regardless.
+        'activated': app.vircle_activated_at is not None,
         'award_amount': str(item.award_amount_snapshot),
         'paid_to_date': str(item.paid_to_date_snapshot),
         'amount': str(item.amount),

@@ -26,6 +26,12 @@ class Command(BaseCommand):
                             help='Read + print the pending set; send nothing, write nothing.')
 
     def handle(self, *args, **opts):
+        # Mirror the sheet's manual 'Activated On' column into the DB first (one-way sheet→DB), so
+        # the payment surface can see activation. Harmless additive stamp; skipped on --dry-run.
+        if not opts['dry_run']:
+            stamped = vircle.sync_activation_status()
+            self.stdout.write(f'Activation sync: stamped {stamped} newly-activated account(s).')
+
         rows = vircle.pending_activation_rows()
         if not rows:
             self.stdout.write('0 accounts awaiting activation — nothing sent.')

@@ -200,6 +200,83 @@ def pending_activation_rows():
     return out
 
 
+def _activation_sheet():
+    """(header list lower-cased, data rows) from the relay sheet, or (None, []) if unreadable.
+    Shared by pending_activation_rows and activated_rows so both locate columns identically."""
+    from django.conf import settings
+    from . import sheets
+    values = sheets.read_sheet_values(getattr(settings, 'VIRCLE_SHEET_ID', ''), 'A1:I1000')
+    if not values:
+        return None, []
+    return [str(h).strip().lower() for h in values[0]], values[1:]
+
+
+def activated_rows():
+    """Accounts the owner has marked ACTIVATED in the relay sheet: rows with an eWallet ID AND a
+    non-blank 'Activated On'. The complement of pending_activation_rows. Each →
+    {ewallet, activated_raw}. [] if the sheet is unreadable. Column located by header name."""
+    header, data = _activation_sheet()
+    if header is None:
+        return []
+
+    def idx(name):
+        try:
+            return header.index(name.lower())
+        except ValueError:
+            return None
+
+    i_ewallet, i_activated = idx('ewallet id'), idx('activated on')
+    if i_ewallet is None or i_activated is None:
+        return []
+
+    def cell(row, i):
+        return (str(row[i]).strip() if (i is not None and i < len(row)) else '')
+
+    out = []
+    for row in data:
+        ewallet, activated = cell(row, i_ewallet), cell(row, i_activated)
+        if ewallet and activated:
+            out.append({'ewallet': ewallet, 'activated_raw': activated})
+    return out
+
+
+def _parse_activated_date(raw):
+    """Best-effort parse of the owner-typed 'Activated On' cell into an aware datetime, else None.
+    Presence is the signal that matters — the date is advisory only, never gates money, so an
+    unparseable-but-present value still counts as activated (the caller falls back to now())."""
+    from datetime import datetime
+    from django.utils import timezone
+    for fmt in ('%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y', '%d/%m/%y', '%d %b %Y', '%d %B %Y', '%d.%m.%Y'):
+        try:
+            naive = datetime.strptime(raw.strip(), fmt)
+            return timezone.make_aware(naive, timezone.get_current_timezone())
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
+def sync_activation_status():
+    """Mirror the relay sheet's manual 'Activated On' column into ScholarshipApplication.
+    vircle_activated_at (the system-of-record fact the payment surface reads). One-way sheet→DB:
+    the owner's sheet stays the source of truth; we only STAMP set-if-null (never clear, never
+    overwrite) so a manual DB correction is respected. Join on the eWallet ID (the sheet is
+    generated from the DB, so its 'eWallet ID' column IS vircle_id). Returns the count stamped.
+    """
+    from django.utils import timezone
+    from .models import ScholarshipApplication
+    now = timezone.now()
+    stamped = 0
+    for row in activated_rows():
+        ewallet = (row.get('ewallet') or '').strip()
+        if not ewallet:
+            continue
+        when = _parse_activated_date(row.get('activated_raw') or '') or now
+        stamped += (ScholarshipApplication.objects
+                    .filter(vircle_id=ewallet, vircle_activated_at__isnull=True)
+                    .update(vircle_activated_at=when))
+    return stamped
+
+
 def activation_csv_text(rows):
     """The activation-request CSV — the owner's headers, one line per pending account."""
     import csv

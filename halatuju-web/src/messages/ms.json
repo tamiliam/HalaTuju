@@ -4508,6 +4508,8 @@
       "studentsHeading": "Pelajar",
       "totalAmountHeading": "Jumlah keseluruhan",
       "creditApplied": "Kredit RM{amount} digunakan",
+      "notActivated": "Belum diaktifkan",
+      "notActivatedHint": "eWallet ini belum ditanda sebagai diaktifkan dalam helaian Vircle. Pelajar masih boleh dibayar — bayaran ke dompet yang belum diaktifkan akan dipulangkan, bukan hilang. Sahkan pengaktifan sebelum melepaskan jika tidak pasti.",
       "defaultReason": "Dikecualikan",
       "reasonPlaceholder": "Sebab (cth. cuti semester)",
       "totalToPay": "Jumlah untuk dibayar dalam larian ini",

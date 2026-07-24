@@ -203,6 +203,12 @@ export default function PaymentRunDetailPage() {
                 <td className="px-4 py-3.5">{it.nric || '—'}</td>
                 <td className="px-4 py-3.5">
                   <div className="tabular-nums">{it.vircle_id || '—'}</div>
+                  {!it.activated && (
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800"
+                      title={t('admin.payments.notActivatedHint')}>
+                      ⚠ {t('admin.payments.notActivated')}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3.5 tabular-nums">RM {rm(it.award_amount)}</td>
                 <td className="px-4 py-3.5 tabular-nums">RM {rm(it.paid_to_date)}</td>

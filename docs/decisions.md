@@ -1,5 +1,16 @@
 # Architectural Decisions — HalaTuju
 
+## eWallet activation is ADVISORY on payment runs, not a gate — 2026-07-24
+**Decision:** A payable student's eWallet activation status is surfaced (a "not yet activated" chip
+on the payment run) but never blocks the run. Activation lives only in the owner's manual relay-sheet
+'Activated On' column, mirrored one-way (set-if-null) into `vircle_activated_at`.
+**Why:** the owner deliberately keeps payouts off the manual activation step — a payment to a
+non-activated wallet is bounced by Vircle (rework), not lost, so visibility for the maker/checker
+beats a hard gate that would couple every payout to the manual sheet's freshness. The DB mirror makes
+activation an auditable fact (it previously existed only in the sheet, invisible to the payment code
+and unreadable even with full DB + owner-Drive access). A hard gate can follow later if the sync
+proves reliable.
+
 ## Review-SLA escalation is an ORG function, not a super function — 2026-07-24
 **Decision:** The verdict-overdue escalation goes to the application's owning-org org_admin(s) + the
 assigned reviewer, never platform super-admins (fallback = `ADMIN_NOTIFY_EMAIL` when an org has no

@@ -297,6 +297,11 @@ def eligibility(application, payment_date, period_month=None):
         'reasons': reasons,
         'remaining': remaining,
         'vircle_ready': vircle_ready,
+        # ADVISORY only (not a reason, never affects `eligible`): whether Vircle has ACTIVATED this
+        # eWallet, mirrored from the relay sheet into `vircle_activated_at`. The run surfaces a
+        # "not yet activated" flag off this so the maker/checker can see it; a payment to a
+        # non-activated wallet bounces (it isn't lost), so the owner chose visibility over a gate.
+        'activated': application.vircle_activated_at is not None,
         'started': started,
     }
 
@@ -321,6 +326,7 @@ def eligible_rows(organisation, payment_date, period_month=None):
             'reasons': elig['reasons'],
             'remaining': elig['remaining'],
             'vircle_ready': elig['vircle_ready'],
+            'activated': elig['activated'],
         })
     return rows
 

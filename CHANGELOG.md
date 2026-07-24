@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## eWallet-activation visibility on payment runs (advisory) — 2026-07-24
+
+Brings Vircle activation into the system of record and surfaces it where payments are decided,
+without gating payouts. New `ScholarshipApplication.vircle_activated_at` (migration `0115`, additive,
+migrate-first). `vircle.sync_activation_status()` mirrors the relay sheet's manual 'Activated On'
+column into that field (join on eWallet ID, set-if-null, date best-effort) — folded into the 48h
+`vircle_activation_request` cron + a standalone `sync_vircle_activation` command for the first
+backfill (cron slug `vircle-activation-sync`). `payments.eligibility()` now returns an `activated`
+flag; `eligible` is UNCHANGED — advisory only. The payment-run detail shows an amber "Not yet
+activated" chip beside a payable student (a payment to a non-activated wallet bounces, it isn't
+lost). +9 backend tests; 4496 pytest. EN + BM/TA first-drafts. Closes the gap where a student was
+payable with no system-of-record proof their wallet was switched on.
+
 ## Review-nudge escalation → org_admin + reviewer, not super — 2026-07-24
 
 The verdict-overdue escalation (day 14) no longer emails platform super-admins. It now escalates to

@@ -4508,6 +4508,8 @@
       "studentsHeading": "Students",
       "totalAmountHeading": "Total amount",
       "creditApplied": "RM{amount} credit applied",
+      "notActivated": "Not yet activated",
+      "notActivatedHint": "This eWallet has not been marked activated in the Vircle sheet. The student is still payable — a payment to a non-activated wallet is bounced back, not lost. Confirm activation before releasing if unsure.",
       "defaultReason": "Excluded",
       "reasonPlaceholder": "Reason (e.g. semester break)",
       "totalToPay": "Total to pay in this run",

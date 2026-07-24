@@ -513,3 +513,87 @@ class TestActivationEmail(TestCase):
         mail.outbox = []
         self.assertFalse(send_vircle_activation_email([]))
         self.assertEqual(len(mail.outbox), 0)
+
+
+# ── Activation sync: relay-sheet 'Activated On' → vircle_activated_at (advisory) ──
+# The relay sheet is the ONLY activation signal (Vircle reports nothing back). This mirrors its
+# manual 'Activated On' column into the DB so the payment surface can see it. One-way, set-if-null.
+_ACT_HEADER = ['Application', 'Name', 'NRIC', 'Email', 'Emailed on', 'Confirmed on',
+               'Mobile registered with Vircle', 'eWallet ID', 'Activated On']
+
+
+def _act_sheet(rows):
+    return [_ACT_HEADER] + rows
+
+
+class TestActivationSync(_Base):
+    def _app(self, uid, vircle_id):
+        app = self._make(uid)
+        app.vircle_id = vircle_id
+        app.save(update_fields=['vircle_id'])
+        return app
+
+    @mock.patch('apps.scholarship.sheets.read_sheet_values')
+    def test_activated_rows_only_returns_rows_with_activated_on(self, m):
+        m.return_value = _act_sheet([
+            ['1', 'A', '', '', '', '', '', '8000400175001', '05/07/2026'],  # activated
+            ['2', 'B', '', '', '', '', '', '8000400175002', ''],            # installed, not activated
+            ['3', 'C', '', '', '', '', '', '', '05/07/2026'],               # no eWallet id → skipped
+        ])
+        from apps.scholarship import vircle
+        rows = vircle.activated_rows()
+        self.assertEqual([r['ewallet'] for r in rows], ['8000400175001'])
+        self.assertEqual(rows[0]['activated_raw'], '05/07/2026')
+
+    @mock.patch('apps.scholarship.sheets.read_sheet_values')
+    def test_sync_stamps_the_matching_application_with_the_parsed_date(self, m):
+        app = self._app('u1', '8000400175001')
+        m.return_value = _act_sheet([['1', 'A', '', '', '', '', '', '8000400175001', '05/07/2026']])
+        from apps.scholarship import vircle
+        self.assertEqual(vircle.sync_activation_status(), 1)
+        app.refresh_from_db()
+        self.assertIsNotNone(app.vircle_activated_at)
+        self.assertEqual(timezone.localtime(app.vircle_activated_at).strftime('%Y-%m-%d'), '2026-07-05')
+
+    @mock.patch('apps.scholarship.sheets.read_sheet_values')
+    def test_sync_is_set_if_null_never_overwrites(self, m):
+        app = self._app('u1', '8000400175001')
+        m.return_value = _act_sheet([['1', 'A', '', '', '', '', '', '8000400175001', '05/07/2026']])
+        from apps.scholarship import vircle
+        self.assertEqual(vircle.sync_activation_status(), 1)
+        app.refresh_from_db()
+        first = app.vircle_activated_at
+        # A later sheet edit shows a different date; set-if-null must NOT overwrite, and re-run is a no-op.
+        m.return_value = _act_sheet([['1', 'A', '', '', '', '', '', '8000400175001', '09/09/2026']])
+        self.assertEqual(vircle.sync_activation_status(), 0)
+        app.refresh_from_db()
+        self.assertEqual(app.vircle_activated_at, first)
+
+    @mock.patch('apps.scholarship.sheets.read_sheet_values')
+    def test_not_yet_activated_stays_null(self, m):
+        app = self._app('u1', '8000400175002')
+        m.return_value = _act_sheet([['2', 'B', '', '', '', '', '', '8000400175002', '']])
+        from apps.scholarship import vircle
+        self.assertEqual(vircle.sync_activation_status(), 0)
+        app.refresh_from_db()
+        self.assertIsNone(app.vircle_activated_at)
+
+    @mock.patch('apps.scholarship.sheets.read_sheet_values')
+    def test_unparseable_date_still_counts_as_activated(self, m):
+        # Presence is the signal; an owner-typed value we can't parse still means "activated".
+        app = self._app('u1', '8000400175003')
+        m.return_value = _act_sheet([['3', 'C', '', '', '', '', '', '8000400175003', 'done ✔']])
+        from apps.scholarship import vircle
+        self.assertEqual(vircle.sync_activation_status(), 1)
+        app.refresh_from_db()
+        self.assertIsNotNone(app.vircle_activated_at)
+
+    @mock.patch('apps.scholarship.sheets.read_sheet_values')
+    def test_unreadable_sheet_is_a_safe_no_op(self, m):
+        app = self._app('u1', '8000400175004')
+        m.return_value = []
+        from apps.scholarship import vircle
+        self.assertEqual(vircle.activated_rows(), [])
+        self.assertEqual(vircle.sync_activation_status(), 0)
+        app.refresh_from_db()
+        self.assertIsNone(app.vircle_activated_at)

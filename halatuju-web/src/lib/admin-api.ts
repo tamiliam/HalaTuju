@@ -1723,6 +1723,9 @@ export interface PaymentRunItem {
   name: string
   nric: string
   vircle_id: string
+  /** Advisory: has Vircle activated this eWallet (mirrored from the relay sheet)? A false value
+   *  shows a "not yet activated" chip — it never blocks; the student stays payable regardless. */
+  activated: boolean
   award_amount: string
   paid_to_date: string
   amount: string

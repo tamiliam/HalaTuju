@@ -1041,3 +1041,45 @@ class TestFinanceCheck(TestCase):
         with self.assertRaises(payments.PaymentsError) as cm:
             payments.cancel(run2)
         self.assertEqual(cm.exception.code, 'bad_state')
+
+
+@override_settings(BURSARY_AGREEMENT_ENABLED=False)
+class TestActivationAdvisory(TestCase):
+    """The eWallet-activation flag is ADVISORY — it is reported on eligibility but never gates it
+    (owner: don't block payouts on the manual activation step; a payment to a non-activated wallet
+    bounces, it isn't lost)."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = _make_org(code='pay-act')
+        cls.cohort = _make_cohort(cls.org, code='pay-act-c')
+
+    def _app(self):
+        return _make_app(self.cohort, self.org, pathway='matric', award='2000',
+                         reporting=date(2026, 6, 1), status='awarded')
+
+    def _elig(self, app):
+        return payments.eligibility(app, date(2026, 8, 1), period_month=date(2026, 8, 1))
+
+    def test_not_activated_is_advisory_never_a_gate(self):
+        app = self._app()   # vircle_activated_at is None
+        e = self._elig(app)
+        self.assertFalse(e['activated'])
+        self.assertTrue(e['eligible'])                  # not activated does NOT block
+        self.assertNotIn('vircle_not_activated', e['reasons'])
+
+    def test_activated_flag_is_true_once_stamped(self):
+        app = self._app()
+        app.vircle_activated_at = timezone.now()
+        app.save(update_fields=['vircle_activated_at'])
+        e = self._elig(app)
+        self.assertTrue(e['activated'])
+        self.assertTrue(e['eligible'])
+
+    def test_activated_flows_through_eligible_rows(self):
+        app = self._app()
+        app.vircle_activated_at = timezone.now()
+        app.save(update_fields=['vircle_activated_at'])
+        rows = payments.eligible_rows(self.org, date(2026, 8, 1), period_month=date(2026, 8, 1))
+        mine = [r for r in rows if r['application'].id == app.id]
+        self.assertEqual(len(mine), 1)
+        self.assertTrue(mine[0]['activated'])
