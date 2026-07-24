@@ -7,6 +7,7 @@ import {
   type ContractTemplateDetail, type ContractClauseData, type ContractQuizPayload,
 } from '@/lib/admin-api'
 import { CLocale, LangTabs, inputCls, btnPrimary, btnGhost } from './shared'
+import { clauseNumbers } from '@/lib/clauseNumbering'
 
 // The Quiz tab — for each clause flagged a quiz candidate: "Generate with Gemini" drafts a
 // question in en/ms/ta (draft-only, on-demand, billable); the author reviews/edits/regenerates,
@@ -26,7 +27,14 @@ export default function QuizEditor(
   const [msg, setMsg] = useState<string | null>(null)
 
   const qk = `quiz_${lang}` as 'quiz_en' | 'quiz_ms' | 'quiz_ta'
-  const candidates = clauses.filter((c) => c.is_quiz_candidate)
+  // Label each candidate with its OUTLINE number (4., 4.1, I.) — the same scheme the Clauses tab
+  // and the PDF use — NOT the raw `order` (its flat 1..N row position across every clause, which
+  // reads as arbitrary here). Numbers are computed over the whole clause run, then filtered to the
+  // flagged clauses so each keeps its true outline number.
+  const numbers = clauseNumbers(clauses.map((c) => c.level ?? 0))
+  const candidates = clauses
+    .map((c, i) => ({ c, number: numbers[i] }))
+    .filter((x) => x.c.is_quiz_candidate)
 
   const patchQuiz = (order: number, next: ContractQuizPayload) =>
     setClauses((prev) => prev.map((c) => (c.order === order ? { ...c, [qk]: next } : c)))
@@ -63,14 +71,14 @@ export default function QuizEditor(
       {msg && <div className="rounded-lg p-3 bg-green-50 border border-green-200 text-green-700 text-sm">{msg}</div>}
       <div className="flex justify-end"><LangTabs value={lang} onChange={setLang} /></div>
 
-      {candidates.map((c) => {
+      {candidates.map(({ c, number }) => {
         const q = (c[qk] || {}) as ContractQuizPayload
         const opts = q.options || ['', '', '']
         const has = !!q.question
         return (
           <div key={c.order} className="bg-white rounded-xl border p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-900">{c.order}. {c.heading_en}</span>
+              <span className="font-semibold text-gray-900">{number} {c.heading_en}</span>
               {draft && (
                 <button type="button" onClick={() => generate(c.order)} disabled={busy === c.order} className={btnGhost}>
                   {busy === c.order ? t('admin.contracts.generating')
