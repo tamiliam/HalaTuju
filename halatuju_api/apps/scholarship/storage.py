@@ -33,14 +33,29 @@ def build_doc_key(app, *segments):
     return f'{org_id}/{tail}' if org_id else tail
 
 
+def build_request_attachment_key(org_id, request_id, uuid_hex):
+    """The storage-key scheme for a Requests-space screenshot attachment (Sprint 15.1):
+    ``requests/<org_id>/<request_id>/<uuid>``. The ``requests/`` prefix keeps it in its own
+    namespace (never collides with a doc key, which starts with a bare org id) and lets
+    ``resolve_org_for_path`` read the owning org straight off the key for the download fence."""
+    return f'requests/{org_id}/{request_id}/{uuid_hex}'
+
+
 def resolve_org_for_path(path):
-    """The owning-organisation id encoded in a document storage key, or None when it
-    can't be read from the path alone. Only a 4-segment DOC key
-    (``<org>/<app>/<doc_type>/<uuid>``) unambiguously carries the org prefix; legacy
-    3-segment doc keys and 2/3-segment bursary keys return None, so the caller falls
-    back to the row's application FK (the real fence). Belt-and-braces for the two
-    signing seams — a doc whose key-org disagrees with its row-org is not signed."""
+    """The owning-organisation id encoded in a storage key, or None when it can't be read from the
+    path alone. Two schemes carry the org: a Requests attachment key
+    (``requests/<org>/<request>/<uuid>`` → ``parts[1]``) and a 4-segment DOC key
+    (``<org>/<app>/<doc_type>/<uuid>`` → ``parts[0]``). Legacy 3-segment doc keys and 2/3-segment
+    bursary keys return None, so the caller falls back to the row's FK (the real fence).
+    Belt-and-braces for the signing seams — a blob whose key-org disagrees with its row-org is not
+    signed."""
     parts = [p for p in (path or '').strip('/').split('/') if p]
+    # Requests-space attachment: requests/<org_id>/<request_id>/<uuid>.
+    if len(parts) >= 3 and parts[0] == 'requests':
+        try:
+            return int(parts[1])
+        except (TypeError, ValueError):
+            return None
     if len(parts) >= 4:
         try:
             return int(parts[0])

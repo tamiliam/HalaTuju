@@ -42,6 +42,28 @@ AI_RUN_CAP = 3
 # we never let the open queue grow past this (a re-run appends only genuinely new questions).
 MAX_OPEN_QUESTIONS = 3
 
+# Screenshot attachments (Sprint 15.1, TD-172): images ONLY, at most this many per request. The cap
+# is enforced at BOTH the sign-upload (before we mint a URL) and the record (after the PUT) seams.
+MAX_ATTACHMENTS = 5
+
+# The IMAGE subset of the upload allowlist (jpg/jpeg/png/gif/bmp/webp/tif/tiff/heic/heif) — NO pdf.
+# A screenshot is always an image; a PDF is rejected so the inline thumbnail render is always valid.
+ATTACHMENT_IMAGE_EXTENSIONS = frozenset({
+    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tif', '.tiff', '.heic', '.heif',
+})
+
+
+def is_allowed_attachment(content_type, filename):
+    """True iff the upload is an IMAGE (by MIME type or file extension) — NOT a PDF or anything
+    else. Mirrors views._is_allowed_upload's image arm without the ``application/pdf`` branch."""
+    import os
+    ct = (content_type or '').lower().split(';')[0].strip()
+    if ct == 'application/pdf':
+        return False
+    if ct.startswith('image/'):
+        return True
+    return os.path.splitext(filename or '')[1].lower() in ATTACHMENT_IMAGE_EXTENSIONS
+
 _ZERO = Decimal('0')
 _MAX_HOURS = Decimal('100000')   # sanity ceiling on a parsed AI estimate
 
@@ -346,6 +368,13 @@ def _build_review_prompt(req):
     answered = [c for c in (req.clarifications or [])
                 if c.get('answer') and c.get('question')]
     qa = '\n'.join(f'Q: {c["question"]}\nA: {c["answer"]}' for c in answered)
+    # v1 stays text-only — Gemini-vision on the screenshots is a future TD. We only NOTE their
+    # presence so the reviewer knows the submitter attached evidence. Guard the count read: a
+    # brand-new unsaved request has no pk yet (the auto-run fires post-commit, so it does).
+    try:
+        n_attachments = req.attachments.count() if req.pk else 0
+    except Exception:
+        n_attachments = 0
     return (
         'You are the AI reviewer triaging an organisation request for a software team. '
         'Return STRICT JSON ONLY, no prose, shaped as '
@@ -362,6 +391,8 @@ def _build_review_prompt(req):
         + (f'URGENCY (the org\'s own signal): {req.urgency}\n' if req.urgency else '')
         + f'DESCRIPTION:\n{req.description}\n'
         + (f'\nSTEPS TO REPRODUCE:\n{req.steps_to_reproduce}\n' if req.steps_to_reproduce else '')
+        + (f'\nATTACHMENTS: {n_attachments} image(s) attached by the submitter.\n'
+           if n_attachments else '')
         + (f'\nANSWERED CLARIFICATIONS:\n{qa}\n' if qa else '')
     )
 

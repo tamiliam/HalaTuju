@@ -30,8 +30,8 @@ from .emails import send_request_info_email
 from .verdict_engine import build_verdict
 from .models import (
     ApplicantDocument, Disbursement, GraduationMessage, InterviewSession, InterviewSlot,
-    OrgRequest, Referee, ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile,
-    Sponsorship,
+    OrgRequest, OrgRequestAttachment, Referee, ReviewerProfile, ScholarshipApplication, Sponsor,
+    SponsorProfile, Sponsorship,
 )
 from . import scheduling
 from .profile_engine import generate_anon_blurb, refine_sponsor_profile
@@ -3372,5 +3372,124 @@ class AdminOrgRequestAiRerunView(_OrgRequestsBase):
             except Exception:
                 logger.warning('Requests: questions email failed for OrgRequest %s', req.pk,
                                exc_info=True)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))
+
+
+# ── Screenshot attachments (Sprint 15.1, TD-172) ────────────────────────────────────
+# Images ONLY, ≤5 per request, org-fenced. Every read/write reaches an attachment ONLY through the
+# org-fenced request lookup (_requestee → _org_request_for → cross-org 404), and the storage key is
+# requests/<org_id>/<request_id>/<uuid> so the download-URL org assertion (serializers_admin +
+# storage.resolve_org_for_path) refuses a foreign blob. Attachments are queried via the request's
+# related manager (req.attachments) — never a raw OrgRequestAttachment.objects query — so the fence
+# rides on the already-fenced request (no separate pragma needed).
+
+
+class AdminOrgRequestAttachmentSignUploadView(_OrgRequestsBase):
+    """POST <pk>/attachments/sign-upload/ — a signed URL to PUT a screenshot. org_admin (own org) +
+    super. The request must be non-terminal, and the count cap is enforced BEFORE we mint a URL."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._requestee(request, pk, allow_super=True)
+        if err:
+            return err
+        from . import org_requests
+        if req.status in org_requests.TERMINAL_STATUSES:
+            return Response({'error': 'request_terminal', 'code': 'request_terminal'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # Count cap BEFORE signing (≤5 recorded attachments).
+        if req.attachments.count() >= org_requests.MAX_ATTACHMENTS:
+            return Response({'error': 'attachment_limit', 'code': 'attachment_limit',
+                             'max': org_requests.MAX_ATTACHMENTS},
+                            status=status.HTTP_400_BAD_REQUEST)
+        import uuid
+        from .storage import create_signed_upload_url, build_request_attachment_key
+        path = build_request_attachment_key(req.organisation_id, req.id, uuid.uuid4().hex)
+        url = create_signed_upload_url(path)
+        if not url:
+            return Response({'error': 'storage_unavailable', 'code': 'storage_unavailable'},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({'upload_url': url, 'storage_path': path})
+
+
+class AdminOrgRequestAttachmentCreateView(_OrgRequestsBase):
+    """POST <pk>/attachments/ — record an attachment row after the PUT. org_admin (own org) + super.
+    Validates: non-terminal request, IMAGE allowlist (no pdf), size ≤ MAX_DOC_SIZE_BYTES, count cap,
+    and the storage_path prefix must match THIS request (a foreign path is rejected)."""
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._requestee(request, pk, allow_super=True)
+        if err:
+            return err
+        from . import org_requests
+        if req.status in org_requests.TERMINAL_STATUSES:
+            return Response({'error': 'request_terminal', 'code': 'request_terminal'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        storage_path = (request.data.get('storage_path') or '').strip()
+        content_type = (request.data.get('content_type') or '').strip()
+        original_filename = (request.data.get('original_filename') or '').strip()
+        try:
+            size = int(request.data.get('size') or 0)
+        except (TypeError, ValueError):
+            size = 0
+        # Path prefix must belong to THIS request (foreign-path rejection).
+        from .storage import build_request_attachment_key
+        expected_prefix = build_request_attachment_key(req.organisation_id, req.id, '')
+        if not storage_path.startswith(expected_prefix) or storage_path == expected_prefix:
+            return Response({'error': 'bad_path', 'code': 'bad_path'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # IMAGE allowlist only (no pdf).
+        if not org_requests.is_allowed_attachment(content_type, original_filename):
+            return Response({'error': 'unsupported_format', 'code': 'unsupported_format'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if size > settings.MAX_DOC_SIZE_BYTES:
+            return Response({'error': 'file_too_large', 'code': 'file_too_large',
+                             'max_mb': settings.MAX_DOC_SIZE_BYTES // (1024 * 1024)},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # Count cap at record too (another attachment may have landed since sign).
+        if req.attachments.count() >= org_requests.MAX_ATTACHMENTS:
+            return Response({'error': 'attachment_limit', 'code': 'attachment_limit',
+                             'max': org_requests.MAX_ATTACHMENTS},
+                            status=status.HTTP_400_BAD_REQUEST)
+        req.attachments.create(
+            storage_path=storage_path, original_filename=original_filename[:255],
+            content_type=content_type[:100], size=size, uploaded_by=admin)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req), status=status.HTTP_201_CREATED)
+
+
+class AdminOrgRequestAttachmentDeleteView(_OrgRequestsBase):
+    """DELETE <pk>/attachments/<att_id>/ — remove an attachment while the request is non-terminal.
+    org_admin (own org) + super; the attachment is reached through the org-fenced request, so
+    another org's attachment is 404. Deletes the row + best-effort blob sweep."""
+
+    def delete(self, request, pk, att_id):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._requestee(request, pk, allow_super=True)
+        if err:
+            return err
+        from . import org_requests
+        if req.status in org_requests.TERMINAL_STATUSES:
+            return Response({'error': 'request_terminal', 'code': 'request_terminal'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # Scoped to THIS (already org-fenced) request — a foreign attachment id is 404.
+        att = req.attachments.filter(pk=att_id).first()
+        if att is None:
+            return self._not_found()
+        path = att.storage_path
+        att.delete()
+        try:
+            from .storage import delete_objects
+            delete_objects([path])
+        except Exception:
+            logger.warning('Requests: attachment blob sweep failed for %s', path, exc_info=True)
         req.refresh_from_db()
         return Response(self._serialize(admin, req))

@@ -1875,6 +1875,36 @@ class OrgRequest(models.Model):
         return f'OrgRequest #{self.pk} [{self.status}] {self.title[:40]}'
 
 
+class OrgRequestAttachment(models.Model):
+    """A screenshot attached to an OrgRequest (Sprint 15.1, closes TD-172). Images ONLY, ≤5 per
+    request. Mirrors ``ApplicantDocument``'s metadata shape — only the storage path + metadata live
+    here; the file bytes go browser→Supabase via a signed URL and never pass through Django.
+
+    Org-fenced by construction: the storage key is ``requests/<org_id>/<request_id>/<uuid>`` (via
+    ``storage.build_request_attachment_key``); the signed download URL is refused when the key's org
+    disagrees with the request's org (``storage.resolve_org_for_path``), and every endpoint reaches
+    an attachment only through the org-fenced request lookup (a cross-org request id is 404).
+    """
+    org_request = models.ForeignKey(
+        OrgRequest, on_delete=models.CASCADE, related_name='attachments',
+    )
+    storage_path = models.CharField(max_length=500)
+    original_filename = models.CharField(max_length=255, blank=True, default='')
+    content_type = models.CharField(max_length=100, blank=True, default='')
+    size = models.IntegerField(default=0)
+    uploaded_by = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.PROTECT, related_name='org_request_attachments',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'org_request_attachments'
+        ordering = ['id']
+
+    def __str__(self):
+        return f'OrgRequestAttachment #{self.pk} for OrgRequest #{self.org_request_id}'
+
+
 class ResolutionItem(models.Model):
     """A discrete, independently-resolvable action raised against an application
     (the IBKR model — see docs/scholarship/verification-verdict-plan.md, S3).

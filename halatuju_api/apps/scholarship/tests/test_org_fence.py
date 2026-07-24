@@ -232,6 +232,11 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminOrgRequestScheduleView': 'requests-org-fenced+super-only',
         'AdminOrgRequestDoneView': 'requests-org-fenced+super-only',
         'AdminOrgRequestAiRerunView': 'requests-org-fenced+super-only',
+        # Sprint 15.1 — screenshot attachments (org_admin own org + super); reached only through the
+        # org-fenced request lookup, so a cross-org attachment is 404.
+        'AdminOrgRequestAttachmentSignUploadView': 'requests-org-fenced',
+        'AdminOrgRequestAttachmentCreateView': 'requests-org-fenced',
+        'AdminOrgRequestAttachmentDeleteView': 'requests-org-fenced',
         # Sources module (go-live transition, T1) — super/org_admin role gate via _SourcesBase.
         # Source rows (PartnerOrganisation) are a SHARED single-tenant registry, deliberately NOT
         # org-fenced (multi-tenant fencing of shared source rows is out of scope — see the plan).

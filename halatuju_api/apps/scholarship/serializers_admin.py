@@ -822,6 +822,30 @@ class FundingSummaryRowSerializer(serializers.Serializer):
 
 # ── Requests space (Sprint 15) ────────────────────────────────────────────────────
 
+def _serialize_org_request_attachments(org_request):
+    """The attachment list carried by BOTH request serializers (Sprint 15.1). Each entry is a
+    minimal allowlist — {id, original_filename, content_type, size, created_at, download_url}. The
+    ``download_url`` is a signed URL with the SAME org assertion as ``ApplicantDocumentSerializer``:
+    a blob whose key-org disagrees with the request's org signs to None (belt-and-braces cross-org
+    guard on top of the org-fenced endpoint reads)."""
+    from .storage import create_signed_download_url, resolve_org_for_path
+    org_id = getattr(org_request, 'organisation_id', None)
+    out = []
+    for att in org_request.attachments.all():
+        path_org = resolve_org_for_path(att.storage_path)
+        download_url = (None if (path_org is not None and org_id is not None and path_org != org_id)
+                        else create_signed_download_url(att.storage_path))
+        out.append({
+            'id': att.id,
+            'original_filename': att.original_filename,
+            'content_type': att.content_type,
+            'size': att.size,
+            'created_at': att.created_at,
+            'download_url': download_url,
+        })
+    return out
+
+
 class OrgRequestOrgSerializer(serializers.Serializer):
     """The ORG-FACING view of an OrgRequest (what a submitting org_admin sees).
 
@@ -856,12 +880,18 @@ class OrgRequestOrgSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
     submitted_by_name = serializers.SerializerMethodField()
+    # Screenshot attachments (Sprint 15.1) — org-SUBMITTED evidence, so org-visible. Adds ONE key
+    # to the exact-key snapshot (19 → 20); still no ai_* / triage key.
+    attachments = serializers.SerializerMethodField()
 
     def get_quote_hours(self, obj):
         return str(obj.quote_hours) if obj.quote_hours is not None else None
 
     def get_submitted_by_name(self, obj):
         return (getattr(obj.submitted_by, 'name', '') or '').strip()
+
+    def get_attachments(self, obj):
+        return _serialize_org_request_attachments(obj)
 
 
 class OrgRequestOwnerSerializer(serializers.Serializer):
@@ -902,6 +932,10 @@ class OrgRequestOwnerSerializer(serializers.Serializer):
     declined_by_role = serializers.CharField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+    attachments = serializers.SerializerMethodField()
+
+    def get_attachments(self, obj):
+        return _serialize_org_request_attachments(obj)
 
     def get_organisation_name(self, obj):
         return (getattr(obj.organisation, 'name', '') or '').strip()

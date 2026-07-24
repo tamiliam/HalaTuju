@@ -129,6 +129,9 @@ from .views_admin import (
     AdminOrgRequestScheduleView,
     AdminOrgRequestDoneView,
     AdminOrgRequestAiRerunView,
+    AdminOrgRequestAttachmentSignUploadView,
+    AdminOrgRequestAttachmentCreateView,
+    AdminOrgRequestAttachmentDeleteView,
     AdminContractTemplateListView,
     AdminContractTemplateDetailView,
     AdminContractClausesView,
@@ -251,6 +254,12 @@ urlpatterns = [
     path('admin/scholarship/requests/<int:pk>/schedule/', AdminOrgRequestScheduleView.as_view()),
     path('admin/scholarship/requests/<int:pk>/done/', AdminOrgRequestDoneView.as_view()),
     path('admin/scholarship/requests/<int:pk>/ai-rerun/', AdminOrgRequestAiRerunView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/attachments/sign-upload/',
+         AdminOrgRequestAttachmentSignUploadView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/attachments/',
+         AdminOrgRequestAttachmentCreateView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/attachments/<int:att_id>/',
+         AdminOrgRequestAttachmentDeleteView.as_view()),
 
     # Contract module (S3): org-owned versioned bursary templates. Super/org_admin,
     # org-fenced (cross-org 404); deploy super-only. Service = apps.scholarship.contracts.
