@@ -1735,6 +1735,27 @@ class OrgRequest(models.Model):
     """
     KIND_CHOICES = [('bug', 'Bug report'), ('feature', 'Feature request')]
     LANE_CHOICES = [('small_change', 'Small change'), ('sprint', 'Sprint')]
+    # Bugzilla-style optional scoping fields (Sprint 15 increment, owner 2026-07-24). COMPONENT is
+    # the admin surface the request is about — the user-facing MODULE names the admin nav uses
+    # (halatuju-web/src/app/admin/layout.tsx + the Administration hub). URGENCY is the ORG's own
+    # signal (the owner still adjudicates). All three are OPTIONAL ('' allowed).
+    COMPONENT_CHOICES = [
+        ('applications', 'B40 Applications'),
+        ('students', 'Students'),
+        ('sponsors', 'Sponsors'),
+        ('payments', 'Payments'),
+        ('contracts', 'Contracts'),
+        ('sources', 'Sources'),
+        ('course_data', 'Course Data'),
+        ('administration', 'Administration'),
+        ('access', 'Sign-in & access'),
+        ('other', 'Other'),
+    ]
+    URGENCY_CHOICES = [
+        ('blocking', 'Blocking'),
+        ('important', 'Important'),
+        ('nice_to_have', 'Nice to have'),
+    ]
     STATUS_CHOICES = [
         ('submitted', 'Submitted'),
         ('triaged', 'Triaged'),
@@ -1756,6 +1777,11 @@ class OrgRequest(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
+
+    # Optional scoping (Sprint 15 increment) — org-submitted, org-visible.
+    component = models.CharField(max_length=30, choices=COMPONENT_CHOICES, blank=True, default='')
+    urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, blank=True, default='')
+    steps_to_reproduce = models.TextField(blank=True, default='')
 
     # Clarification thread (AI ↔ requestee — flows FREE, no owner gate; owner CC'd by email).
     # Each entry: {question, asked_at, answer|null, answered_at|null}. modify() appends an old

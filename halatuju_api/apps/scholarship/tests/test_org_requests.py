@@ -69,6 +69,27 @@ class TestCreate(_Base):
             with self.assertRaises(svc.OrgRequestError):
                 svc.create_request(self.org, self.org_admin, kind='bug', **kw)
 
+    def test_scoping_fields_optional_default_blank(self):
+        r = svc.create_request(self.org, self.org_admin, kind='bug', title='X', description='y')
+        self.assertEqual(r.component, '')
+        self.assertEqual(r.urgency, '')
+        self.assertEqual(r.steps_to_reproduce, '')
+
+    def test_scoping_fields_stored(self):
+        r = svc.create_request(self.org, self.org_admin, kind='bug', title='X', description='y',
+                               component='payments', urgency='blocking',
+                               steps_to_reproduce='1. open 2. click 3. boom')
+        self.assertEqual(r.component, 'payments')
+        self.assertEqual(r.urgency, 'blocking')
+        self.assertEqual(r.steps_to_reproduce, '1. open 2. click 3. boom')
+
+    def test_bad_choices_clamped_to_blank(self):
+        # An unknown component/urgency is dropped to '' (optional field), never a 400.
+        r = svc.create_request(self.org, self.org_admin, kind='bug', title='X', description='y',
+                               component='nonsense', urgency='whenever')
+        self.assertEqual(r.component, '')
+        self.assertEqual(r.urgency, '')
+
 
 class TestTransitionMatrix(_Base):
     """Every action refuses (`bad_transition`) from any status NOT in its TRANSITIONS from-set —
@@ -279,6 +300,24 @@ class TestParseDraft(_Base):
         d = svc._parse_draft('Sure! ' + _GOOD + ' Hope that helps.')
         self.assertTrue(d['ok'])
         self.assertEqual(d['kind'], 'feature')
+
+
+class TestReviewPrompt(_Base):
+    def test_prompt_includes_scoping_when_present(self):
+        r = self._req(component='payments', urgency='blocking',
+                      steps_to_reproduce='1. open 2. boom')
+        prompt = svc._build_review_prompt(r)
+        self.assertIn('payments', prompt)
+        self.assertIn('blocking', prompt)
+        self.assertIn('STEPS TO REPRODUCE', prompt)
+        self.assertIn('1. open 2. boom', prompt)
+
+    def test_prompt_omits_empty_scoping(self):
+        r = self._req()  # no component/urgency/steps
+        prompt = svc._build_review_prompt(r)
+        self.assertNotIn('COMPONENT', prompt)
+        self.assertNotIn('URGENCY', prompt)
+        self.assertNotIn('STEPS TO REPRODUCE', prompt)
 
 
 class TestRunAiReview(_Base):

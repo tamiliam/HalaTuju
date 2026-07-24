@@ -4337,12 +4337,33 @@
         "titlePlaceholder": "A short summary",
         "descriptionLabel": "Describe it",
         "descriptionPlaceholder": "What happened, or what would you like?",
+        "component": "Area (optional)",
+        "urgency": "Urgency (optional)",
+        "stepsLabel": "Steps to reproduce (optional)",
+        "stepsPlaceholder": "What you did → what you expected → what happened",
         "submit": "Submit request",
         "submitting": "Submitting…"
       },
       "kind": {
         "bug": "Bug report",
         "feature": "Feature request"
+      },
+      "component": {
+        "applications": "B40 Applications",
+        "students": "Students",
+        "sponsors": "Sponsors",
+        "payments": "Payments",
+        "contracts": "Contracts",
+        "sources": "Sources",
+        "course_data": "Course Data",
+        "administration": "Administration",
+        "access": "Sign-in & access",
+        "other": "Other"
+      },
+      "urgency": {
+        "blocking": "Blocking",
+        "important": "Important",
+        "nice_to_have": "Nice to have"
       },
       "lane": {
         "small_change": "Small change",
@@ -4367,6 +4388,7 @@
       "detail": {
         "back": "Back to requests",
         "description": "Description",
+        "steps": "Steps to reproduce",
         "thread": "Questions & answers",
         "noQuestions": "No questions yet.",
         "asked": "Asked",

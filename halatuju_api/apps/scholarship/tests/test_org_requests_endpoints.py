@@ -175,8 +175,12 @@ class TestDarkByDefault(TestCase):
 class TestOrgPayloadAllowlist(_Base):
     """The exact ORG-facing key set — the AI draft + triage must NEVER be in it (the single worst
     leak). A snapshot, so a new field becomes a deliberate decision, not a quiet widening."""
+    # 19 keys: the original 16 + the three OWNER-APPROVED Bugzilla-style scoping fields
+    # (component / urgency / steps_to_reproduce), which the ORG submitted and so may see. The AI
+    # draft (ai_*) + triage still MUST NOT appear — that is the invariant this snapshot guards.
     ORG_KEYS = {
-        'id', 'kind', 'title', 'description', 'status', 'clarifications',
+        'id', 'kind', 'title', 'description', 'component', 'urgency', 'steps_to_reproduce',
+        'status', 'clarifications',
         'quote_hours', 'quote_margin_pct', 'quote_note', 'quoted_at', 'approved_at',
         'scheduled_for', 'decline_reason', 'created_at', 'updated_at', 'submitted_by_name',
     }

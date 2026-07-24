@@ -94,6 +94,12 @@ export default function AdminRequestDetailPage() {
           <h1 className="text-2xl font-bold text-gray-900">{req.title}</h1>
           <div className="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
             <span className="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">{t(kindLabelKey(req.kind))}</span>
+            {req.component && (
+              <span className="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{t(`admin.requests.component.${req.component}`)}</span>
+            )}
+            {req.urgency && (
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700">{t(`admin.requests.urgency.${req.urgency}`)}</span>
+            )}
             {isSuper && req.organisation_name && <span>{req.organisation_name}</span>}
             <span>{t('admin.requests.list.submittedBy', { name: req.submitted_by_name })}</span>
             <span>{formatDate(req.created_at)}</span>
@@ -111,6 +117,14 @@ export default function AdminRequestDetailPage() {
         <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.detail.description')}</h2>
         <p className="text-gray-800 whitespace-pre-wrap">{req.description}</p>
       </div>
+
+      {/* Steps to reproduce (bug scoping) */}
+      {req.steps_to_reproduce && (
+        <div className="bg-white rounded-xl border p-5 mb-4">
+          <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.detail.steps')}</h2>
+          <p className="text-gray-800 whitespace-pre-wrap">{req.steps_to_reproduce}</p>
+        </div>
+      )}
 
       {/* Quote (org-facing) */}
       {req.quote_hours != null && (

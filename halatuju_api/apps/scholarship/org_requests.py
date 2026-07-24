@@ -47,6 +47,13 @@ _MAX_HOURS = Decimal('100000')   # sanity ceiling on a parsed AI estimate
 
 VALID_KINDS = ('bug', 'feature')
 VALID_LANES = ('small_change', 'sprint')
+# Optional Bugzilla-style scoping (Sprint 15 increment) — the machine keys derived from the admin
+# nav's real modules; '' always allowed (the field is optional).
+VALID_COMPONENTS = (
+    'applications', 'students', 'sponsors', 'payments', 'contracts', 'sources',
+    'course_data', 'administration', 'access', 'other',
+)
+VALID_URGENCIES = ('blocking', 'important', 'nice_to_have')
 
 # action -> (valid_from_statuses, to_status | None). No-transition actions (answer, ai_rerun) map
 # to None. The test derives its terminal-refusal matrix from this table, so it stays authoritative.
@@ -93,11 +100,21 @@ def _effective_kind(req):
 
 # ── create ──────────────────────────────────────────────────────────────────────
 
+def _clean_choice(value, valid):
+    """Clamp an optional choice to the valid set; anything unknown (incl. None) → '' (the field is
+    optional, so a bad value is dropped rather than raising)."""
+    v = (value or '').strip()
+    return v if v in valid else ''
+
+
 @transaction.atomic
-def create_request(organisation, submitted_by, *, kind, title, description):
+def create_request(organisation, submitted_by, *, kind, title, description,
+                   component='', urgency='', steps_to_reproduce=''):
     """Create a SUBMITTED request for ``organisation`` by ``submitted_by`` (a PartnerAdmin).
-    Validates kind/title. The caller (view) has already fenced the organisation to the actor.
-    AI auto-run + the owner-notify email are the caller's best-effort post-commit steps."""
+    Validates kind/title; the three Bugzilla-style scoping fields (component/urgency/steps) are
+    OPTIONAL — component/urgency clamp to their choice sets ('' allowed), steps is free text. The
+    caller (view) has already fenced the organisation to the actor. AI auto-run + the owner-notify
+    email are the caller's best-effort post-commit steps."""
     if kind not in VALID_KINDS:
         raise OrgRequestError('bad_kind')
     title = (title or '').strip()
@@ -109,6 +126,9 @@ def create_request(organisation, submitted_by, *, kind, title, description):
     return OrgRequest.objects.create(
         organisation=organisation, submitted_by=submitted_by,
         kind=kind, title=title[:200], description=description,
+        component=_clean_choice(component, VALID_COMPONENTS),
+        urgency=_clean_choice(urgency, VALID_URGENCIES),
+        steps_to_reproduce=(steps_to_reproduce or '').strip(),
     )
 
 
@@ -339,7 +359,10 @@ def _build_review_prompt(req):
         + _ADJUDICATION_RULE + '\n' + _LANE_DEFINITIONS + '\n\n'
         f'KIND (as declared): {req.kind}\n'
         f'TITLE: {req.title}\n'
-        f'DESCRIPTION:\n{req.description}\n'
+        + (f'COMPONENT (area of the app): {req.component}\n' if req.component else '')
+        + (f'URGENCY (the org\'s own signal): {req.urgency}\n' if req.urgency else '')
+        + f'DESCRIPTION:\n{req.description}\n'
+        + (f'\nSTEPS TO REPRODUCE:\n{req.steps_to_reproduce}\n' if req.steps_to_reproduce else '')
         + (f'\nANSWERED CLARIFICATIONS:\n{qa}\n' if qa else '')
     )
 

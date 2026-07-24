@@ -3066,7 +3066,10 @@ class AdminOrgRequestListView(_OrgRequestsBase):
             req = org_requests.create_request(
                 org, admin, kind=(request.data.get('kind') or '').strip(),
                 title=request.data.get('title') or '',
-                description=request.data.get('description') or '')
+                description=request.data.get('description') or '',
+                component=request.data.get('component') or '',
+                urgency=request.data.get('urgency') or '',
+                steps_to_reproduce=request.data.get('steps_to_reproduce') or '')
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
         # Best-effort post-commit: notify the owner + auto-run the AI reviewer (never fails create).

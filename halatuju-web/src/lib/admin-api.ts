@@ -1498,6 +1498,10 @@ export interface OrgRequestDetail {
   kind: string
   title: string
   description: string
+  // Optional Bugzilla-style scoping (owner-approved Sprint 15 increment); '' when unset.
+  component: string
+  urgency: string
+  steps_to_reproduce: string
   status: string
   clarifications: OrgRequestClarification[]
   quote_hours: string | null
@@ -1544,7 +1548,10 @@ export async function getOrgRequestCount(options?: ApiOptions): Promise<{ count:
 }
 
 export async function createOrgRequest(
-  data: { kind: string; title: string; description: string; organisation_id?: number },
+  data: {
+    kind: string; title: string; description: string; organisation_id?: number
+    component?: string; urgency?: string; steps_to_reproduce?: string
+  },
   options?: ApiOptions
 ): Promise<OrgRequestDetail> {
   return adminMutate('/api/v1/admin/scholarship/requests/', 'POST', data, options)

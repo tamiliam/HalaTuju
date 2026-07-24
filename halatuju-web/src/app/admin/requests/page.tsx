@@ -23,6 +23,11 @@ const errText = (t: (k: string) => string, code?: string) => {
   return code && known.includes(code) ? t(`admin.requests.error.${code}`) : t('admin.requests.error.generic')
 }
 
+// Optional scoping option keys (mirror org_requests.VALID_COMPONENTS / VALID_URGENCIES).
+const COMPONENT_OPTIONS = ['applications', 'students', 'sponsors', 'payments', 'contracts',
+  'sources', 'course_data', 'administration', 'access', 'other']
+const URGENCY_OPTIONS = ['blocking', 'important', 'nice_to_have']
+
 export default function AdminRequestsPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
@@ -39,6 +44,9 @@ export default function AdminRequestsPage() {
   const [kind, setKind] = useState<'bug' | 'feature'>('bug')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [component, setComponent] = useState('')
+  const [urgency, setUrgency] = useState('')
+  const [steps, setSteps] = useState('')
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(() => {
@@ -62,8 +70,14 @@ export default function AdminRequestsPage() {
     if (!token) return
     setBusy(true); setError('')
     try {
-      await createOrgRequest({ kind, title, description }, { token })
+      await createOrgRequest({
+        kind, title, description,
+        component, urgency,
+        // Steps only make sense for a bug — never send them for a feature.
+        steps_to_reproduce: kind === 'bug' ? steps : '',
+      }, { token })
       setTitle(''); setDescription(''); setKind('bug')
+      setComponent(''); setUrgency(''); setSteps('')
       load()
     } catch (err) {
       setError(errText(t, (err as { code?: string })?.code))
@@ -122,6 +136,33 @@ export default function AdminRequestsPage() {
               placeholder={t('admin.requests.form.descriptionPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
           </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.component')}</label>
+              <select value={component} onChange={(e) => setComponent(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="">—</option>
+                {COMPONENT_OPTIONS.map((c) => <option key={c} value={c}>{t(`admin.requests.component.${c}`)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.urgency')}</label>
+              <select value={urgency} onChange={(e) => setUrgency(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="">—</option>
+                {URGENCY_OPTIONS.map((u) => <option key={u} value={u}>{t(`admin.requests.urgency.${u}`)}</option>)}
+              </select>
+            </div>
+          </div>
+          {/* Steps to reproduce — only meaningful for a bug. */}
+          {kind === 'bug' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.stepsLabel')}</label>
+              <textarea value={steps} onChange={(e) => setSteps(e.target.value)} rows={3}
+                placeholder={t('admin.requests.form.stepsPlaceholder')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+            </div>
+          )}
           <button type="submit" disabled={busy || !title.trim() || !description.trim()}
             className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
             {busy ? t('admin.requests.form.submitting') : t('admin.requests.form.submit')}
