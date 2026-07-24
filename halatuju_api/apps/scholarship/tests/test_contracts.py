@@ -51,6 +51,18 @@ class TestCreateTemplate(TestCase):
             contracts.create_template(brightpath_org(), 'dup')
         self.assertEqual(cm.exception.code, 'version_exists')
 
+    def test_over_long_version_refused_cleanly(self):
+        # A version past the column length returns a clean ContractsError (→ 400), not a raw
+        # Postgres DataError (→ 500). Guards the "ugly error on a long version name" report.
+        from apps.scholarship.models import ContractTemplate
+        max_len = ContractTemplate._meta.get_field('version').max_length
+        with self.assertRaises(ContractsError) as cm:
+            contracts.create_template(brightpath_org(), 'x' * (max_len + 1))
+        self.assertEqual(cm.exception.code, 'version_too_long')
+        # Exactly at the limit is fine.
+        ok = contracts.create_template(brightpath_org(), 'y' * max_len)
+        self.assertEqual(ok.version, 'y' * max_len)
+
     def test_copy_from_clones_content(self):
         src = seed_draft('2026-v1')
         clone = contracts.create_template(brightpath_org(), '2027-v1', copy_from=src)
@@ -336,12 +348,39 @@ class TestClauseHierarchy(TestCase):
         ])
         return list(template.clauses.order_by('order'))
 
-    def test_replace_clauses_stores_level_and_restricts_quiz_to_top_level(self):
+    def test_replace_clauses_stores_level_and_drops_quiz_under_flagged_ancestor(self):
+        # _hierarchy flags BOTH the level-0 'Purpose' AND its level-1 child 'Eligibility'. A clause
+        # and its own descendant are mutually exclusive → the ancestor wins, the child's flag drops.
         clauses = self._hierarchy(seed_draft())
         self.assertEqual([c.level for c in clauses], [0, 1, 2, 0])
-        # the level-1 clause's quiz flag was dropped (only level-0 carries a quiz)
         self.assertTrue(clauses[0].is_quiz_candidate)
-        self.assertFalse(clauses[1].is_quiz_candidate)
+        self.assertFalse(clauses[1].is_quiz_candidate)   # dropped — parent already quizzes the subtree
+
+    def test_replace_clauses_keeps_sub_clause_quiz_when_parent_unflagged(self):
+        d = seed_draft()
+        contracts.replace_clauses(d, [
+            {'heading_en': 'Purpose', 'body_en': 'A', 'level': 0},                          # NOT flagged
+            {'heading_en': 'Eligibility', 'body_en': 'B', 'level': 1, 'is_quiz_candidate': True},
+            {'heading_en': 'Repayment', 'body_en': 'C', 'level': 1, 'is_quiz_candidate': True},
+        ])
+        clauses = list(d.clauses.order_by('order'))
+        # A sub-clause quiz is now allowed, and two sibling sub-clauses may both carry one.
+        self.assertFalse(clauses[0].is_quiz_candidate)
+        self.assertTrue(clauses[1].is_quiz_candidate)
+        self.assertTrue(clauses[2].is_quiz_candidate)
+
+    def test_replace_clauses_drops_quiz_on_sub_sub_clause(self):
+        d = seed_draft()
+        contracts.replace_clauses(d, [
+            {'heading_en': 'Purpose', 'body_en': 'A', 'level': 0},
+            {'heading_en': 'Eligibility', 'body_en': 'B', 'level': 1},
+            {'heading_en': 'Item', 'body_en': 'C', 'level': 2, 'is_quiz_candidate': True,
+             'quiz_en': {'question': 'x'}},
+        ])
+        clauses = list(d.clauses.order_by('order'))
+        # Level 2 is never quiz-eligible; the flag AND its stray payload are dropped.
+        self.assertFalse(clauses[2].is_quiz_candidate)
+        self.assertEqual(clauses[2].quiz_en, {})
 
     def test_replace_clauses_normalises_a_skip(self):
         d = seed_draft()
@@ -359,13 +398,28 @@ class TestClauseHierarchy(TestCase):
         self.assertEqual([c.pk for c in contracts._clause_and_descendants(other)], [other.pk])
 
     @patch('google.genai.Client')
-    def test_generate_quiz_refuses_non_top_level(self, mock_cls):
+    def test_generate_quiz_refuses_sub_sub_clause(self, mock_cls):
         cls, _ = _mock_genai(json.dumps({'en': VALID_QUIZ, 'ms': VALID_QUIZ, 'ta': VALID_QUIZ}))
         mock_cls.side_effect = cls
-        sub = self._hierarchy(seed_draft())[1]   # level 1
+        subsub = self._hierarchy(seed_draft())[2]   # level 2 — never quiz-eligible
         with self.assertRaises(ContractsError) as cm:
-            contracts.generate_quiz(sub)
+            contracts.generate_quiz(subsub)
         self.assertEqual(cm.exception.code, 'quiz_not_top_level')
+
+    @patch('google.genai.Client')
+    def test_generate_quiz_allowed_on_sub_clause(self, mock_cls):
+        cls, _ = _mock_genai(json.dumps({'en': VALID_QUIZ, 'ms': VALID_QUIZ, 'ta': VALID_QUIZ}))
+        mock_cls.side_effect = cls
+        d = seed_draft()
+        contracts.replace_clauses(d, [
+            {'heading_en': 'Purpose', 'body_en': 'A', 'level': 0},
+            {'heading_en': 'Eligibility', 'body_en': 'B', 'level': 1},
+        ])
+        sub = list(d.clauses.order_by('order'))[1]   # level 1 — now allowed
+        contracts.generate_quiz(sub)
+        sub.refresh_from_db()
+        self.assertTrue(sub.is_quiz_candidate)
+        self.assertTrue(sub.quiz_en)
 
     @patch('google.genai.Client')
     def test_quiz_prompt_includes_subtree_text(self, mock_cls):

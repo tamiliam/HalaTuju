@@ -44,6 +44,12 @@ _CONFIG_FIELDS = (
 
 # Clause hierarchy (2026-07-19): three levels — 0 clause, 1 sub-clause, 2 sub-sub-clause.
 MAX_CLAUSE_LEVEL = 2
+# The comprehension quiz may be attached at a CLAUSE (0) or SUB-CLAUSE (1), not a sub-sub-clause (2)
+# — owner 2026-07-25. A flagged clause's quiz covers its whole subtree, so a clause and any of its
+# own descendants are MUTUALLY EXCLUSIVE (never both flagged); overlap is prevented at save
+# (`replace_clauses`) and in the editor. The individual level-2 items are too granular for a
+# checkpoint and stay ineligible.
+MAX_QUIZ_LEVEL = 1
 _ROMAN = ((10, 'x'), (9, 'ix'), (5, 'v'), (4, 'iv'), (1, 'i'))
 
 # ContractClause.heading_* is CharField(max_length=255); body_* is TextField (unlimited).
@@ -251,6 +257,11 @@ def create_template(organisation, version, *, created_by_email='', copy_from=Non
     version = (version or '').strip()
     if not version:
         raise ContractsError('version_required')
+    # Guard the column length here so an over-long version returns a clean 400 (version_too_long)
+    # instead of hitting Postgres and surfacing as a raw 500 (.create() doesn't run full_clean()).
+    max_len = ContractTemplate._meta.get_field('version').max_length
+    if len(version) > max_len:
+        raise ContractsError('version_too_long')
     if ContractTemplate.objects.filter(organisation=organisation, version=version).exists():
         raise ContractsError('version_exists')
     template = ContractTemplate.objects.create(
@@ -304,6 +315,28 @@ def update_config(template, **fields):
     return template
 
 
+def _resolve_quiz_flags(clauses, levels):
+    """Which clauses keep the comprehension-quiz flag: an ELIGIBLE level (0 clause or 1 sub-clause)
+    that is flagged AND has NO flagged ancestor. A clause and its own descendants are mutually
+    exclusive — the ancestor's quiz already covers the subtree, so a flagged descendant under a
+    flagged ancestor is dropped (ancestor wins). Level-2 (sub-sub-clause) is never eligible.
+    Returns a list[bool] aligned to ``clauses`` (walks the normalised (order, level) run)."""
+    keep = []
+    open_flagged_levels = []   # levels of the currently-open flagged ancestors, shallow → deep
+    for item, level in zip(clauses, levels):
+        # Drop any open flagged clause that is not a strict ancestor of this position (a
+        # same-or-shallower level means we've left its subtree).
+        while open_flagged_levels and open_flagged_levels[-1] >= level:
+            open_flagged_levels.pop()
+        flagged = bool(item.get('is_quiz_candidate')) and level <= MAX_QUIZ_LEVEL
+        if flagged and open_flagged_levels:
+            flagged = False   # covered by a flagged ancestor's quiz → drop
+        keep.append(flagged)
+        if flagged:
+            open_flagged_levels.append(level)
+    return keep
+
+
 @transaction.atomic
 def replace_clauses(template, clauses):
     """Atomic PUT of the clause list. Order is assigned by position (contiguous
@@ -312,16 +345,20 @@ def replace_clauses(template, clauses):
     _require_draft(template)
     template.clauses.all().delete()
     # Levels are normalised across the whole list (clamp 0..MAX, no skipping) — the tree is the
-    # (order, level) run. A quiz may only live on a level-0 clause; a sub-clause carrying a quiz
-    # flag/payload is dropped (its content is folded into its parent clause's quiz subtree).
+    # (order, level) run. A quiz may live on a CLAUSE (0) or SUB-CLAUSE (1), never a sub-sub-clause
+    # (2). A clause and any of its own descendants are MUTUALLY EXCLUSIVE: a flagged clause's quiz
+    # already covers its subtree, so a descendant flagged under a flagged ancestor is dropped here
+    # (the ancestor wins — a safety net; the editor prevents overlap in the first place). A dropped
+    # or ineligible clause also loses any quiz payload (a question can't outlive its flag).
     levels = normalise_levels([item.get('level', 0) for item in clauses])
+    keep_quiz = _resolve_quiz_flags(clauses, levels)
     created = []
     for index, (item, level) in enumerate(zip(clauses, levels), start=1):
         for lang in LANGUAGES:
             payload = item.get(f'quiz_{lang}') or {}
             if payload and not isinstance(payload, dict):
                 raise ContractsError('bad_quiz_payload', f'clause {index} quiz_{lang}')
-        is_l0 = level == 0
+        keep = keep_quiz[index - 1]
         # An over-long heading (any language) folds into its body so the save can never
         # overflow heading_*'s varchar(255) — the guard for every write path (2026-07-21).
         h_en, b_en = _fit_heading(item.get('heading_en', ''), item.get('body_en', ''))
@@ -331,11 +368,11 @@ def replace_clauses(template, clauses):
             template=template, order=index, level=level,
             heading_en=h_en, heading_ms=h_ms, heading_ta=h_ta,
             body_en=b_en, body_ms=b_ms, body_ta=b_ta,
-            is_quiz_candidate=bool(item.get('is_quiz_candidate')) and is_l0,
-            quiz_en=(item.get('quiz_en') or {}) if is_l0 else {},
-            quiz_ms=(item.get('quiz_ms') or {}) if is_l0 else {},
-            quiz_ta=(item.get('quiz_ta') or {}) if is_l0 else {},
-            quiz_generated_model=(item.get('quiz_generated_model', '') or '') if is_l0 else '',
+            is_quiz_candidate=keep,
+            quiz_en=(item.get('quiz_en') or {}) if keep else {},
+            quiz_ms=(item.get('quiz_ms') or {}) if keep else {},
+            quiz_ta=(item.get('quiz_ta') or {}) if keep else {},
+            quiz_generated_model=(item.get('quiz_generated_model', '') or '') if keep else '',
         ))
     ContractClause.objects.bulk_create(created)
     return template.clauses.all()
@@ -487,10 +524,10 @@ def _quiz_payload_valid(payload):
 
 def generate_quiz(clause, *, model=None):
     """Generate the clause's en/ms/ta quiz via Gemini, validate the structure,
-    and save it to the (draft) clause. Billable → call on demand only. Only a top-level
-    (level 0) clause may carry a quiz; it covers the clause's whole subtree."""
+    and save it to the (draft) clause. Billable → call on demand only. A CLAUSE (0) or SUB-CLAUSE
+    (1) may carry a quiz; it covers that clause's whole subtree. A sub-sub-clause (2) may not."""
     _require_draft(clause.template)
-    if clause.level != 0:
+    if clause.level > MAX_QUIZ_LEVEL:
         raise ContractsError('quiz_not_top_level')
     model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
     from . import usage

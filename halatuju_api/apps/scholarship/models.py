@@ -2551,7 +2551,9 @@ class ContractClause(models.Model):
     # Hierarchy depth (2026-07-19): 0 = clause (1., 2.), 1 = sub-clause (1.1), 2 = sub-sub-clause
     # (i), ii)). The flat `order` sequence + `level` encodes the tree; numbers are COMPUTED from the
     # (order, level) run (contracts.clause_numbers), never stored. A clause may only be one level
-    # deeper than the one before it (no skipping); only level-0 clauses carry a comprehension quiz.
+    # deeper than the one before it (no skipping). A comprehension quiz may sit on a clause (0) or
+    # sub-clause (1) — never a sub-sub-clause (2) — and a clause + its own descendants are mutually
+    # exclusive (contracts.MAX_QUIZ_LEVEL / _resolve_quiz_flags).
     level = models.PositiveSmallIntegerField(default=0)
     heading_en = models.CharField(max_length=255, blank=True, default='')
     heading_ms = models.CharField(max_length=255, blank=True, default='')

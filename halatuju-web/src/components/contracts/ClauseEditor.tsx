@@ -8,6 +8,7 @@ import {
 } from '@/lib/admin-api'
 import { clauseNumbers, normaliseLevels, canIndent, canOutdent } from '@/lib/clauseNumbering'
 import { CLocale, LangTabs, inputCls, btnPrimary, btnGhost } from './shared'
+import Toggle from '@/components/Toggle'
 
 // `_showH` / `_showB` are transient UI flags: force an empty heading/body box open (a field
 // with content shows automatically). They ride on the draft object so they survive reorder/indent,
@@ -16,6 +17,41 @@ type Draft = Partial<ContractClauseData> & { _showH?: boolean; _showB?: boolean 
 const EMPTY: Draft = {
   level: 0, heading_en: '', heading_ms: '', heading_ta: '', body_en: '', body_ms: '', body_ta: '',
   is_quiz_candidate: false, quiz_en: {}, quiz_ms: {}, quiz_ta: {},
+}
+
+// The comprehension quiz may sit on a CLAUSE (0) or SUB-CLAUSE (1), never a sub-sub-clause (2)
+// — mirrors contracts.MAX_QUIZ_LEVEL. A flagged clause's quiz covers its whole subtree, so a
+// clause and any of its own descendants are mutually exclusive (enforced here + on the backend).
+const QUIZ_MAX_LEVEL = 1
+
+// Indices of clause i's ANCESTORS (nearest shallower clause, then ITS parent, …) in the level run.
+function ancestorsOf(i: number, levels: number[]): number[] {
+  const out: number[] = []
+  let cur = levels[i]
+  for (let j = i - 1; j >= 0 && cur > 0; j--) {
+    if (levels[j] < cur) { out.push(j); cur = levels[j] }
+  }
+  return out
+}
+// Indices of clause i's DESCENDANTS: the contiguous run of deeper clauses after it.
+function descendantsOf(i: number, levels: number[]): number[] {
+  const out: number[] = []
+  for (let j = i + 1; j < levels.length && levels[j] > levels[i]; j++) out.push(j)
+  return out
+}
+// Re-resolve quiz flags after a STRUCTURAL change: keep a flag only on an eligible level (0/1)
+// with no flagged ancestor (ancestor wins). Mirrors contracts._resolve_quiz_flags.
+function resolveQuizFlags(levels: number[], flags: boolean[]): boolean[] {
+  const keep: boolean[] = []
+  const openLevels: number[] = []
+  levels.forEach((level, i) => {
+    while (openLevels.length && openLevels[openLevels.length - 1] >= level) openLevels.pop()
+    let flagged = !!flags[i] && level <= QUIZ_MAX_LEVEL
+    if (flagged && openLevels.length) flagged = false
+    keep.push(flagged)
+    if (flagged) openLevels.push(level)
+  })
+  return keep
 }
 
 // Merge variables the "Insert variable" menu offers — mirrors contracts.CONTRACT_VARS on the
@@ -40,7 +76,8 @@ const VARIABLES: Array<{ token: string; desc: string }> = [
 // The Clauses tab — a 3-level hierarchy (clause 1. / sub 1.1 / sub-sub i)) with Indent/Outdent,
 // move, insert-between, and the Word import. Numbers are COMPUTED from the level run
 // (clauseNumbers) — never typed. Levels are kept normalised in state (no skipping) so what shows
-// is what saves; only a top-level clause carries a comprehension quiz. A clause body supports
+// is what saves; a comprehension quiz sits on a clause or sub-clause (mutually exclusive within a
+// subtree — see QUIZ_MAX_LEVEL / toggleQuiz / resolveQuizFlags). A clause body supports
 // **bold** and {{variable}} tokens (resolved in the rendered agreement). import-docx PROPOSES
 // clauses + a title/preamble for review before they replace the draft (the file is never retained).
 export default function ClauseEditor(
@@ -77,6 +114,20 @@ export default function ClauseEditor(
   const set = (i: number, k: keyof ContractClauseData, v: unknown) =>
     setClauses((prev) => prev.map((c, j) => (j === i ? { ...c, [k]: v } : c)))
 
+  // Toggle the quiz flag with subtree mutual-exclusivity: turning a clause ON clears the flag on
+  // every ancestor AND descendant, so a clause and its own sub-clauses are never both flagged (the
+  // explicitly-toggled clause wins). Turning OFF just clears it.
+  const toggleQuiz = (i: number, v: boolean) => setClauses((prev) => {
+    if (!v) return prev.map((c, j) => (j === i ? { ...c, is_quiz_candidate: false } : c))
+    const lv = prev.map((c) => c.level ?? 0)
+    const clear = new Set([...ancestorsOf(i, lv), ...descendantsOf(i, lv)])
+    return prev.map((c, j) => {
+      if (j === i) return { ...c, is_quiz_candidate: true }
+      if (clear.has(j)) return { ...c, is_quiz_candidate: false }
+      return c
+    })
+  })
+
   // A heading/body box shows when it has content in ANY language, or was opened via its "+" chip.
   const hasHeading = (c: Draft) => !!(c.heading_en || c.heading_ms || c.heading_ta) || !!c._showH
   const hasBody = (c: Draft) => !!(c.body_en || c.body_ms || c.body_ta) || !!c._showB
@@ -111,14 +162,13 @@ export default function ClauseEditor(
     setVarMenu(null)
   }
 
-  // Any STRUCTURAL change re-normalises the levels (no skipping) and clears the quiz flag on any
-  // clause that is no longer top-level — so the displayed numbers + quiz controls always match
-  // what will be saved.
+  // Any STRUCTURAL change re-normalises the levels (no skipping) and re-resolves the quiz flags
+  // (drop any now-ineligible level-2 flag, and drop a flag now sitting under a flagged ancestor) —
+  // so the displayed numbers + quiz controls always match what will be saved.
   const setStructural = (list: Draft[]) => {
     const lv = normaliseLevels(list.map((c) => c.level ?? 0))
-    setClauses(list.map((c, i) => (lv[i] === 0
-      ? { ...c, level: 0 }
-      : { ...c, level: lv[i], is_quiz_candidate: false })))
+    const keep = resolveQuizFlags(lv, list.map((c) => !!c.is_quiz_candidate))
+    setClauses(list.map((c, i) => ({ ...c, level: lv[i], is_quiz_candidate: keep[i] })))
   }
 
   const indent = (i: number) => { if (canIndent(levels, i)) setStructural(clauses.map((c, j) => j === i ? { ...c, level: (c.level ?? 0) + 1 } : c)) }
@@ -270,13 +320,17 @@ export default function ClauseEditor(
               </div>
             </div>
             {/* Bottom row: quiz control (top-level only) on the left; field-adders, text tools and
-                the clause controls on the bottom-right, split by a separator. */}
-            <div className="flex items-center justify-between gap-2 pt-1">
+                the clause controls on the bottom-right, split by a separator. A w-12 spacer mirrors
+                the number column above so the quiz toggle lines up with the heading/body box. */}
+            <div className="flex gap-2 pt-1">
+              <span className="w-12 shrink-0" aria-hidden="true" />
+              <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
               <div className="min-w-0">
-                {level === 0 && (
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input type="checkbox" disabled={!draft} checked={!!c.is_quiz_candidate}
-                      onChange={(e) => set(i, 'is_quiz_candidate', e.target.checked)} />
+                {level <= QUIZ_MAX_LEVEL && (
+                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <Toggle on={!!c.is_quiz_candidate} disabled={!draft}
+                      onChange={(v) => toggleQuiz(i, v)}
+                      label={t('admin.contracts.useForQuiz')} />
                     {t('admin.contracts.useForQuiz')}
                   </label>
                 )}
@@ -323,6 +377,7 @@ export default function ClauseEditor(
                     className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-transparent text-gray-400 hover:bg-red-50 hover:text-red-600">🗑</button>
                 </div>
               )}
+              </div>
             </div>
           </div>
         )
