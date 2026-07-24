@@ -1397,12 +1397,16 @@
             "guardian": "Guardian's STR document"
           },
           "declared": {
-            "cantGet": "Can't get a payslip or EPF for them?",
-            "prompt": "Tell us their average monthly income and we'll ask for one supporting document.",
+            "cantGet": "Paid in cash or works informally?",
+            "prompt": "That's completely fine. Tell us roughly how much they earn each month, and add one simple letter that supports it.",
             "placeholder": "e.g. 1500",
             "perMonth": "per month",
-            "needsDoc": "We'll ask for one supporting document below — any one of an employer/wage letter, recent bank statements, or a community (penghulu) letter is enough."
+            "needsDoc": "One simple letter that supports it — from your school, your ketua kampung or penghulu, or employer."
           },
+          "incomeGroupTitle": "Income",
+          "incomeAnyOne": "Show it any one way — a payslip, an EPF (KWSP) statement, or (if paid in cash) tell us the amount and add one simple letter.",
+          "incomeShown": "You've shown this — nothing more needed here.",
+          "supportLetterTitle": "Supporting letter",
           "badge": {
             "required": "Required",
             "optional": "Optional"
@@ -1688,6 +1692,8 @@
         "offer_letter_missing": "Upload your offer letter in the Documents step.",
         "offer_not_official": "Upload your official offer letter — an unconditional offer from a public university — in the Documents step. A conditional offer, a private-university (IPTS) offer, or an admission notification can't be supported.",
         "str_missing": "Upload your STR document in the Documents step.",
+        "income_evidence_missing": "Show each working family member's income in the Documents step — a payslip, EPF statement, or a declared amount with a supporting letter.",
+        "income_evidence_missing_member": "Show {member}'s income in the Documents step — a payslip, EPF, or an amount with a supporting letter.",
         "salary_slip_missing": "Upload a salary slip for each working family member in the Documents step.",
         "parent_ic_missing_member": "Upload {member}'s IC in the Documents step.",
         "salary_slip_missing_member": "Upload {member}'s salary slip in the Documents step.",
@@ -3754,6 +3760,8 @@
           "income_proof_missing": "Their STR (Sumbangan Tunai Rahmah) document",
           "parent_ic_missing": "Their parent's or guardian's IC",
           "parent_ic_missing_member": "{member}'s IC",
+          "income_evidence_missing": "Income for each working family member (payslip, EPF, or an amount with a letter)",
+          "income_evidence_missing_member": "{member}'s income (payslip, EPF, or an amount with a letter)",
           "salary_slip_missing": "A salary slip for each working family member",
           "salary_slip_missing_member": "{member}'s salary slip",
           "birth_certificate_missing": "Their birth certificate — to confirm the mother is their parent",

@@ -436,27 +436,71 @@ class TestIncomeGateV2(TestCase):
         self._doc(app, 'birth_certificate')
         self.assertEqual(self._blockers(app), [])
 
-    def test_salary_mother_needs_ic_slip_and_bc(self):
+    def test_salary_mother_needs_ic_income_and_bc(self):
         app = self._app(route='salary', members=['mother'])
+        # Income shown ANY ONE way (owner 2026-07-25) → the code is income_evidence_missing, not a
+        # lonely salary_slip. A payslip is one way to satisfy it.
         self.assertEqual(set(self._blockers(app)),
-                         {'parent_ic_missing:mother', 'salary_slip_missing:mother', 'birth_certificate_missing'})
+                         {'parent_ic_missing:mother', 'income_evidence_missing:mother', 'birth_certificate_missing'})
         self._doc(app, 'parent_ic', member='mother')
         self._doc(app, 'salary_slip', member='mother')
         self._doc(app, 'birth_certificate')   # single household doc, untagged
         self.assertEqual(self._blockers(app), [])
 
-    def test_salary_epf_does_not_substitute_salary_slip(self):
+    def _epf_with_value(self, app, member, contribution='200'):
+        d = self._doc(app, 'epf', member=member)
+        d.vision_fields = {'fields': {'avg_monthly_contribution': contribution}}  # → a monthly figure
+        d.save()
+        return d
+
+    def test_salary_epf_with_value_satisfies_income(self):
+        # Owner 2026-07-25 (decision #2): a readable EPF (a monthly figure derivable) counts as
+        # income evidence on its own — no separate payslip required.
         app = self._app(route='salary', members=['father'])
         self._doc(app, 'parent_ic', member='father')
-        self._doc(app, 'epf', member='father')           # EPF present...
-        self.assertEqual(self._blockers(app), ['salary_slip_missing:father'])  # ...slip still required
+        self._epf_with_value(app, 'father')
+        self.assertEqual(self._blockers(app), [])   # father → patronymic, no BC; income shown via EPF
+
+    def test_salary_bare_epf_without_value_does_not_satisfy(self):
+        # A blank/unreadable EPF (no derivable figure) is NOT income evidence.
+        app = self._app(route='salary', members=['father'])
+        self._doc(app, 'parent_ic', member='father')
+        self._doc(app, 'epf', member='father')      # present but no readable value
+        self.assertEqual(self._blockers(app), ['income_evidence_missing:father'])
+
+    def _support_letter(self, app, member):
+        d = self._doc(app, 'income_support_doc', member=member)
+        d.vision_fields = {'student_verdict': 'ok'}   # a real, readable supporting letter
+        d.save()
+        return d
+
+    def test_declared_plus_support_letter_satisfies_income(self):
+        # Janani (owner 2026-07-25): father deceased, mother earns informally, no STR. A declared
+        # amount + a supporting letter (a ketua-kampung / school / employer letter) clears the
+        # income gate — no payslip needed.
+        app = self._app(route='salary', members=['mother'])
+        app.income_declared = {'mother': 800}
+        app.save()
+        self._doc(app, 'parent_ic', member='mother')
+        self._doc(app, 'birth_certificate')
+        # A declared amount ALONE (no letter yet) does NOT satisfy — stays blocked.
+        self.assertEqual(set(self._blockers(app)), {'income_evidence_missing:mother'})
+        self._support_letter(app, 'mother')
+        self.assertEqual(self._blockers(app), [])
+
+    def test_declared_amount_alone_without_letter_does_not_satisfy(self):
+        app = self._app(route='salary', members=['father'])
+        app.income_declared = {'father': 1500}
+        app.save()
+        self._doc(app, 'parent_ic', member='father')
+        self.assertEqual(self._blockers(app), ['income_evidence_missing:father'])
 
     def test_salary_multi_member_each_member_checked(self):
         app = self._app(route='salary', members=['father', 'mother'])
         self._doc(app, 'parent_ic', member='father')
         self._doc(app, 'salary_slip', member='father')   # father complete; mother's missing
         b = set(self._blockers(app))
-        self.assertEqual(b, {'parent_ic_missing:mother', 'salary_slip_missing:mother', 'birth_certificate_missing'})
+        self.assertEqual(b, {'parent_ic_missing:mother', 'income_evidence_missing:mother', 'birth_certificate_missing'})
 
     def test_salary_tagging_is_member_scoped(self):
         # Father's slip must NOT satisfy the mother's requirement (tag-scoped).
@@ -464,7 +508,7 @@ class TestIncomeGateV2(TestCase):
         self._doc(app, 'parent_ic', member='father')     # wrong member
         self._doc(app, 'salary_slip', member='father')
         self.assertEqual(set(self._blockers(app)),
-                         {'parent_ic_missing:mother', 'salary_slip_missing:mother', 'birth_certificate_missing'})
+                         {'parent_ic_missing:mother', 'income_evidence_missing:mother', 'birth_certificate_missing'})
 
     # ── STR-as-means-test: a non-breached STR makes the salary SLIP supportive (P3, #45) ─────
     def _str_doc(self, app, *, member='', auth='genuine', **fields):
@@ -487,19 +531,20 @@ class TestIncomeGateV2(TestCase):
         self._str_doc(app, member='father')                # a valid, non-breached STR (the father's)
         self.assertEqual(self._blockers(app), [])          # no salary_slip_missing:father
 
-    def test_salary_slip_still_required_when_str_breached(self):
-        # A wrong-type STR (a non-STR in the slot) does NOT make salary supportive — full docs required.
+    def test_income_evidence_still_required_when_str_breached(self):
+        # A wrong-type STR (a non-STR in the slot) does NOT stand in for income — the member still
+        # needs SOME income evidence (a payslip / EPF / declared+letter).
         app = self._app(route='salary', members=['father'])
         self._doc(app, 'parent_ic', member='father')
         self._str_doc(app, member='father', status='approved', source_type='unknown')   # → wrong_type
-        self.assertIn('salary_slip_missing:father', self._blockers(app))
+        self.assertIn('income_evidence_missing:father', self._blockers(app))
 
     def test_member_ic_still_required_even_with_non_breached_str(self):
-        # The STR relaxes the SLIP, not identity: the member IC is still compulsory.
+        # The STR stands in for INCOME, not identity: the member IC is still compulsory.
         app = self._app(route='salary', members=['father'])
         self._str_doc(app, member='father')                # valid STR but no father IC on file
         self.assertIn('parent_ic_missing:father', self._blockers(app))
-        self.assertNotIn('salary_slip_missing:father', self._blockers(app))
+        self.assertNotIn('income_evidence_missing:father', self._blockers(app))
 
     # ── #4 (2026-06-11): an OPTIONAL wrong-person income proof must not hard-block ─────
     def test_str_route_optional_salary_slip_mismatch_does_not_block(self):

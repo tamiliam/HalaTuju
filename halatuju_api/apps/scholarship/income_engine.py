@@ -1049,6 +1049,38 @@ def usable_salary_slip(application, member) -> bool:
                for d in _cluster_docs(application, member, 'salary_slip'))
 
 
+def _member_has_epf_value(application, member) -> bool:
+    """A readable EPF statement tagged to *member* — a monthly-salary figure could be derived
+    (including 0.0 for an all-zeros / lapsed account). It documents the member's income situation,
+    so it counts as income evidence for the gate (owner 2026-07-25)."""
+    return any(_epf_monthly_salary(_doc_fields(e)) is not None
+               for e in _cluster_docs(application, member, 'epf'))
+
+
+def member_income_evidenced(application, member) -> bool:
+    """True when a working member's income is SHOWN — ANY ONE way (owner 2026-07-25):
+      - a usable salary slip (not a wrong-type doc), OR
+      - a readable EPF (KWSP) statement, OR
+      - a DECLARED average amount backed by a supporting letter (``income_support_doc`` — a school /
+        ketua-kampung / penghulu / employer letter), OR
+      - a non-breached household STR (the government means-test standing in, P3 precedence).
+
+    The SINGLE source for the salary-route "income proof" requirement — read by both
+    ``member_cluster_complete`` and ``services.income_doc_blockers`` so the gate and the wizard
+    can never disagree. A declared amount ALONE (no letter) does NOT count: it stays 'unproven'
+    (Unsure) until the letter lands (owner decision, mirroring ``earner_monthly_income``'s
+    ``declared_unproven``) — the assessment never inflates income on an unbacked self-report."""
+    if usable_salary_slip(application, member):
+        return True
+    if _member_has_epf_value(application, member):
+        return True
+    if declared_amount(application, member) is not None and has_income_support_doc(application, member):
+        return True
+    if str_not_breached(application):
+        return True
+    return False
+
+
 def member_cluster_complete(application, member):
     """True when this working member's salary-route income cluster is COMPLETE and COHERENT on its
     own — the unit behind the "one complete, clean earner cluster is enough to submit" gate (owner
@@ -1056,8 +1088,8 @@ def member_cluster_complete(application, member):
       - the earner's IC present, readable, and LINKING to the student (name_status 'match' — the
         shared patronymic for a father/sibling, the birth certificate for a mother, the letter for
         a guardian);
-      - this earner's income PROOF present (their salary slip, OR a non-breached household STR
-        standing in per the P3 STR-precedence rule);
+      - this earner's income SHOWN any one way (``member_income_evidenced``: a usable salary slip,
+        a readable EPF, a declared amount + a supporting letter, OR a non-breached household STR);
       - the relationship doc present where required (mother -> birth certificate, guardian ->
         letter; father/sibling need none);
       - NO person-mismatch between the IC and the salary slip.
@@ -1072,7 +1104,7 @@ def member_cluster_complete(application, member):
     icc = student_income_ic_check(ic)
     if not icc or not icc.get('readable') or icc.get('name_status') != 'match':
         return False
-    if not (usable_salary_slip(application, member) or str_not_breached(application)):
+    if not member_income_evidenced(application, member):
         return False
     for p in _cluster_docs(application, member, 'salary_slip'):
         pc = student_income_proof_check(p)
@@ -1887,14 +1919,15 @@ def salary_member_blocks(members) -> list:
     for m in _MEMBER_ORDER:
         if m not in chosen:
             continue
-        # Compulsory order (drives both the gate and the cockpit panel): the member's
-        # IC → their salary slip → the relationship doc (mother/guardian only). The
-        # salary slip is COMPULSORY (gate v2, 2026-06-05) — EPF does not substitute it.
-        compulsory = [('parent_ic', m), ('salary_slip', m)]
+        # Compulsory: the member's IC → the relationship doc (mother/guardian only). Income
+        # itself is shown ANY ONE way (owner 2026-07-25: payslip / EPF / declared+letter / STR —
+        # see member_income_evidenced), so the salary slip is OPTIONAL, not a lonely red-* box a
+        # cash/informal earner can never fill. The gate enforces the "any one" via income_doc_blockers.
+        compulsory = [('parent_ic', m)]
         rel = relationship_doc_for(m)
         if rel:
             compulsory.append((rel, ''))            # birth cert / letter — single, untagged
-        optional = [('epf', m)]
+        optional = [('salary_slip', m), ('epf', m)]
         blocks.append({'member': m, 'compulsory': compulsory,
                        'optional': optional, 'rel_doc': rel})
     return blocks

@@ -1397,12 +1397,16 @@
             "guardian": "Dokumen STR Penjaga"
           },
           "declared": {
-            "cantGet": "Tidak dapat slip gaji atau KWSP untuk mereka?",
-            "prompt": "Beritahu kami pendapatan bulanan purata mereka dan kami akan meminta satu dokumen sokongan.",
+            "cantGet": "Dibayar secara tunai atau bekerja tidak formal?",
+            "prompt": "Itu tidak mengapa. Beritahu kami lebih kurang berapa pendapatan mereka sebulan, dan tambah satu surat ringkas yang menyokongnya.",
             "placeholder": "cth. 1500",
             "perMonth": "sebulan",
-            "needsDoc": "Kami akan meminta satu dokumen sokongan di bawah — mana-mana satu daripada surat majikan/gaji, penyata bank terkini, atau surat komuniti (penghulu) sudah memadai."
+            "needsDoc": "Satu surat ringkas yang menyokongnya — daripada sekolah anda, ketua kampung atau penghulu anda, atau majikan."
           },
+          "incomeGroupTitle": "Pendapatan",
+          "incomeAnyOne": "Tunjukkan dengan mana-mana satu cara — slip gaji, penyata KWSP, atau (jika dibayar tunai) beritahu kami jumlahnya dan tambah satu surat ringkas.",
+          "incomeShown": "Anda telah menunjukkannya — tiada apa-apa lagi diperlukan di sini.",
+          "supportLetterTitle": "Surat sokongan",
           "badge": {
             "required": "Wajib",
             "optional": "Pilihan"
@@ -1688,6 +1692,8 @@
         "offer_letter_missing": "Muat naik surat tawaran anda dalam langkah Dokumen.",
         "offer_not_official": "Muat naik surat tawaran rasmi anda — tawaran tanpa syarat daripada universiti awam — dalam langkah Dokumen. Tawaran bersyarat, tawaran universiti swasta (IPTS), atau pemakluman kemasukan tidak boleh disokong.",
         "str_missing": "Muat naik dokumen STR anda dalam langkah Dokumen.",
+        "income_evidence_missing": "Tunjukkan pendapatan setiap ahli keluarga yang bekerja dalam langkah Dokumen — slip gaji, penyata KWSP, atau jumlah yang diisytiharkan dengan surat sokongan.",
+        "income_evidence_missing_member": "Tunjukkan pendapatan {member} dalam langkah Dokumen — slip gaji, KWSP, atau jumlah dengan surat sokongan.",
         "salary_slip_missing": "Muat naik slip gaji bagi setiap ahli keluarga yang bekerja dalam langkah Dokumen.",
         "parent_ic_missing_member": "Muat naik IC {member} dalam langkah Dokumen.",
         "salary_slip_missing_member": "Muat naik slip gaji {member} dalam langkah Dokumen.",
@@ -3754,6 +3760,8 @@
           "income_proof_missing": "Dokumen STR (Sumbangan Tunai Rahmah) mereka",
           "parent_ic_missing": "IC ibu bapa atau penjaga mereka",
           "parent_ic_missing_member": "IC {member}",
+          "income_evidence_missing": "Pendapatan bagi setiap ahli keluarga yang bekerja (slip gaji, KWSP, atau jumlah dengan surat)",
+          "income_evidence_missing_member": "Pendapatan {member} (slip gaji, KWSP, atau jumlah dengan surat)",
           "salary_slip_missing": "Slip gaji bagi setiap ahli keluarga yang bekerja",
           "salary_slip_missing_member": "Slip gaji {member}",
           "birth_certificate_missing": "Sijil kelahiran mereka — untuk mengesahkan ibu mereka ialah ibu kandung",

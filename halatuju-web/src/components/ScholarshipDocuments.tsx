@@ -1401,11 +1401,23 @@ function IncomeWizard({
   }
   const strComplete = ans.income_route === 'str' && !!strEarner
     && reqs.compulsory.every((dt) => slotVerified(dt, STR_EARNER_DOCS.has(dt) ? strEarner : ''))
-  // Salary route is "satisfied" once AT LEAST ONE ticked earner's compulsory docs are verified
-  // (owner 2026-07-24) — the rest may come now or at Check 2, and other earners stay optional.
+  // A member's income is SHOWN any one way (mirrors income_engine.member_income_evidenced — the
+  // backend gate is authoritative; this drives the green cue + the income-collapse trigger): a
+  // salary slip, an EPF, or a declared amount + a supporting letter. (STR would satisfy too, but
+  // an STR household is on the STR route, not here.)
+  const memberIncomeShown = (m: WorkingMember): boolean =>
+    slotVerified('salary_slip', m)
+    || slotVerified('epf', m)
+    || (declaredAmount(ans.income_declared, m) > 0
+        && docs.some((d) => d.doc_type === 'income_support_doc'
+             && (d.household_member || '') === m && notFlaggedFake(d)))
+  // Salary route is "satisfied" once AT LEAST ONE ticked earner is complete: their IC (+ any
+  // relationship doc) verified AND their income shown (owner 2026-07-24/25). The rest may come now
+  // or at Check 2, and other earners stay optional.
   const salaryComplete = ans.income_route === 'salary'
-    && reqs.members.some((block) => block.compulsory.length > 0
-         && block.compulsory.every(({ docType, member }) => slotVerified(docType, member)))
+    && reqs.members.some((block) =>
+         block.compulsory.every(({ docType, member }) => slotVerified(docType, member))
+         && memberIncomeShown(block.member))
   // Once the chosen route is satisfied, fold the whole income block into a calm green summary
   // that INVITES more evidence rather than demanding it — so the tab never reads as a wall.
   const incomeSatisfied = strComplete || salaryComplete
@@ -1593,53 +1605,73 @@ function IncomeWizard({
                   {clusterDocKey(docType, member) === salAnchor && coach}
                 </div>
               ))}
-              {block.optional.map(({ docType, member }) => (
-                <div key={docKey(docType, member)}>
-                  {renderCard(docType, { required: false, member,
-                    helpOverride: memberHelp(docType, block.member),
-                    titleOverride: memberTitle(docType, block.member),
-                    suppressCoach: CLUSTER_COACH_DOCS.has(docType) })}
-                  {clusterDocKey(docType, member) === salAnchor && coach}
-                </div>
-              ))}
-              {/* Phase 2A — declared income is a FALLBACK: keep the payslip/EPF cards above as the
-                  primary path, and only reveal the RM field on an explicit "can't get a payslip?"
-                  opt-in (or when a figure is already saved). A positive figure surfaces the
-                  flexible supporting-doc upload below. */}
-              {!memberHasProof(block.member) && !(openDeclared.has(block.member)
-                  || declaredAmount(ans.income_declared, block.member) > 0) && (
-                <button
-                  type="button"
-                  onClick={() => setOpenDeclared((s) => new Set(s).add(block.member))}
-                  className="text-xs text-primary-600 hover:underline"
-                >
-                  {iq('declared.cantGet')} →
-                </button>
-              )}
-              {!memberHasProof(block.member) && (openDeclared.has(block.member)
-                  || declaredAmount(ans.income_declared, block.member) > 0) && (
-                <div className="rounded-md bg-white ring-1 ring-gray-100 p-2.5 space-y-2">
-                  <p className="text-xs font-medium text-gray-700">{iq('declared.prompt')}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">RM</span>
-                    <input
-                      type="number" inputMode="numeric" min={0} step={50}
-                      defaultValue={declaredAmount(ans.income_declared, block.member) || ''}
-                      placeholder={iq('declared.placeholder')}
-                      onBlur={(e) => saveDeclared(block.member, e.target.value)}
-                      className="w-28 text-sm rounded border border-gray-300 px-2 py-1
-                                 focus:border-primary-400 focus:outline-none"
-                    />
-                    <span className="text-xs text-gray-400">{iq('declared.perMonth')}</span>
+              {/* Income — shown ANY ONE way (owner 2026-07-25): the payslip / EPF are OPTIONAL
+                  cards, and a cash / informal earner (Janani's mother) can instead declare an
+                  amount + add one simple letter. No lonely red-* box. Green once any one is shown. */}
+              {(() => {
+                const shown = memberIncomeShown(block.member)
+                return (
+                <div className={`rounded-lg border p-2.5 space-y-2 ${
+                  shown ? 'border-green-200 bg-green-50/40' : 'border-dashed border-gray-200 bg-white'}`}>
+                  <div className="flex items-start gap-2">
+                    <span aria-hidden className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full ${
+                      shown ? 'bg-green-600 text-white' : 'border border-gray-300 text-gray-400'}`}>
+                      {shown ? (
+                        <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" /></svg>
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-700">{iq('incomeGroupTitle')}</p>
+                      <p className={`text-xs ${shown ? 'text-green-700' : 'text-gray-500'}`}>
+                        {shown ? iq('incomeShown') : iq('incomeAnyOne')}
+                      </p>
+                    </div>
                   </div>
-                  {declaredAmount(ans.income_declared, block.member) > 0 && (
-                    <>
-                      <p className="text-xs text-amber-700">{iq('declared.needsDoc')}</p>
-                      {renderCard('income_support_doc', { required: false, member: block.member })}
-                    </>
+                  {block.optional.map(({ docType, member }) => (
+                    <div key={docKey(docType, member)}>
+                      {renderCard(docType, { required: false, member,
+                        helpOverride: memberHelp(docType, block.member),
+                        titleOverride: memberTitle(docType, block.member),
+                        suppressCoach: CLUSTER_COACH_DOCS.has(docType) })}
+                      {clusterDocKey(docType, member) === salAnchor && coach}
+                    </div>
+                  ))}
+                  {/* Cash / informal path — a warm, equal option (no "can't get" failure tone). */}
+                  {!memberHasProof(block.member) && !(openDeclared.has(block.member)
+                      || declaredAmount(ans.income_declared, block.member) > 0) && (
+                    <button
+                      type="button"
+                      onClick={() => setOpenDeclared((s) => new Set(s).add(block.member))}
+                      className="text-xs font-medium text-primary-600 hover:underline"
+                    >
+                      {iq('declared.cantGet')} →
+                    </button>
+                  )}
+                  {!memberHasProof(block.member) && (openDeclared.has(block.member)
+                      || declaredAmount(ans.income_declared, block.member) > 0) && (
+                    <div className="rounded-md bg-blue-50 ring-1 ring-blue-100 p-2.5 space-y-2">
+                      <p className="text-xs text-blue-900/90">{iq('declared.prompt')}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">RM</span>
+                        <input
+                          type="number" inputMode="numeric" min={0} step={50}
+                          defaultValue={declaredAmount(ans.income_declared, block.member) || ''}
+                          placeholder={iq('declared.placeholder')}
+                          onBlur={(e) => saveDeclared(block.member, e.target.value)}
+                          className="w-28 text-sm rounded border border-gray-300 px-2 py-1 focus:border-primary-400 focus:outline-none"
+                        />
+                        <span className="text-xs text-gray-400">{iq('declared.perMonth')}</span>
+                      </div>
+                      {declaredAmount(ans.income_declared, block.member) > 0 &&
+                        renderCard('income_support_doc', { required: false, member: block.member,
+                          titleOverride: iq('supportLetterTitle'), helpOverride: iq('declared.needsDoc') })}
+                    </div>
                   )}
                 </div>
-              )}
+                )
+              })()}
             </div>
           )})}
         </div>

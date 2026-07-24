@@ -1909,10 +1909,10 @@ def income_doc_blockers(application):
     the student's wizard checklist can never disagree (one source of truth).
       - blank route / no earner-or-member chosen → ``income_incomplete`` (walk the wizard);
       - STR route → STR doc + the earner IC + relationship doc (mother→BC, guardian→letter);
-      - salary route → for EVERY selected member: their IC + their salary slip (EPF does
-        NOT substitute) + the relationship doc.
+      - salary route → for EVERY selected member: their IC + income shown any one way
+        (payslip / EPF / declared+letter / STR — ``member_income_evidenced``) + the relationship doc.
     The per-PERSON codes are member-qualified — ``parent_ic_missing:<member>`` and
-    ``salary_slip_missing:<member>`` (member = father/mother/guardian/brother/sister) — so
+    ``income_evidence_missing:<member>`` (member = father/mother/guardian/brother/sister) — so
     the consent checklist names each person ("Upload Father's IC"). The frontend splits on
     ``:`` and renders the member name; the household relationship docs (BC / guardianship
     letter) stay un-suffixed. The POST gate only cares that the list is non-empty.
@@ -1920,7 +1920,7 @@ def income_doc_blockers(application):
     from .income_engine import (working_members, relationship_doc_for,
                                 _member_ic_doc, _cluster_docs, str_not_breached,
                                 salary_income_satisfied, usable_salary_slip,
-                                household_str_status)
+                                member_income_evidenced, household_str_status)
     route = (getattr(application, 'income_route', '') or '').strip()
     if not route:
         return ['income_incomplete']
@@ -1964,20 +1964,20 @@ def income_doc_blockers(application):
     if salary_income_satisfied(application):
         return []
     # No cluster complete yet — list what's still needed so the student can finish at least one.
-    # STR-as-means-test (the P3 principle, owner 2026-07-05): a non-breached STR on file makes the
-    # per-member SALARY SLIP supportive rather than compulsory — so an informal earner (an e-hailing
-    # father with no payslip) no longer traps a genuinely-B40 family at submission (#45), and the gate
-    # matches what the docs box SHOWS ('supportive', not a red "Missing"). The IC + relationship docs
-    # stay required (identity/link). A BREACHED STR (rejected/wrong-type/not-genuine) → full salary docs.
-    salary_slip_supportive = str_not_breached(application)
+    # Income is shown ANY ONE way (owner 2026-07-25): a payslip, an EPF statement, a declared amount
+    # backed by a supporting letter, OR a non-breached household STR (means-test, P3). So a cash /
+    # informal earner (an e-hailing father, or Janani's mother with a ketua-kampung letter) is never
+    # trapped behind a salary slip they can't produce. `member_income_evidenced` is the single source,
+    # shared with `member_cluster_complete`, so the gate and the wizard agree. IC + relationship docs
+    # stay required (identity/link).
     need_bc = need_guard = False
     for m in members:
-        # Member-qualified codes so the checklist names each person — IC then salary slip,
+        # Member-qualified codes so the checklist names each person — IC then income evidence,
         # grouped per member to match the Documents-UI member blocks.
         if _member_ic_doc(application, m) is None:
             out.append(f'parent_ic_missing:{m}')
-        if not salary_slip_supportive and not usable_salary_slip(application, m):
-            out.append(f'salary_slip_missing:{m}')
+        if not member_income_evidenced(application, m):
+            out.append(f'income_evidence_missing:{m}')
         rel = relationship_doc_for(m)
         if rel == 'birth_certificate' and 'birth_certificate' not in present:
             need_bc = True
