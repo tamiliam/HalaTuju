@@ -45,6 +45,7 @@ from .services import (
     consent_blockers,
     create_application,
     is_minor,
+    reconcile_income_route,
     record_consent,
     resolve_open_cohort,
     revert_if_profile_incomplete,
@@ -1770,6 +1771,10 @@ class ConsentView(APIView):
             guardian_nric=d.get('guardian_nric', ''),
             ip=request.META.get('REMOTE_ADDR'),
         )
+        # Silently align the income route with whichever evidence actually cleared the gate (a
+        # valid dispositive STR vs a complete salary cluster), so the officer's verdict reads the
+        # correct route rather than a false route-mismatch red. Audit-logged, never re-blocks.
+        reconcile_income_route(app, by='auto_consent')
         return Response(ConsentSerializer(consent).data, status=status.HTTP_201_CREATED)
 
 

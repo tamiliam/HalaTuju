@@ -702,6 +702,36 @@ def switch_income_route(application, *, route, earner='', members=None, by='stud
     return application
 
 
+def reconcile_income_route(application, *, by='auto'):
+    """Silently align ``income_route`` with whichever evidence ACTUALLY cleared the income gate,
+    called at consent (income is established by then, or consent would have been blocked). Fixes
+    the route-vs-evidence mismatch at the source so the officer's verdict reads the correct route
+    — a student who declared STR but documented salary (or vice versa) is relabelled here instead
+    of surfacing a red route-mismatch downstream.
+
+      STR route  + no valid STR + a complete salary cluster → switch to 'salary'.
+      salary route + no complete salary cluster + a valid STR → switch to 'str'.
+      both hold, or the declared route already matches the evidence → no change.
+
+    Reuses ``switch_income_route`` (which audit-logs and recomputes the resolution queue without
+    ever re-blocking a submission). Idempotent + no-op-safe. Returns the resulting route."""
+    from .income_engine import (household_str_status, salary_income_satisfied,
+                                 effective_working_members, member_cluster_complete)
+    route = (getattr(application, 'income_route', '') or '').strip()
+    str_grade, str_member = household_str_status(application)
+    str_ok = str_grade is not None
+    salary_ok = salary_income_satisfied(application)
+    if route == 'str' and not str_ok and salary_ok:
+        members = [m for m in effective_working_members(application, any_route=True)
+                   if member_cluster_complete(application, m)]
+        switch_income_route(application, route='salary', members=members, by=by)
+        return 'salary'
+    if route == 'salary' and not salary_ok and str_ok:
+        switch_income_route(application, route='str', earner=str_member or '', by=by)
+        return 'str'
+    return route
+
+
 # How long after submission to hold the "we have a few questions" email, so it reads as
 # a human review rather than an instant bot reply (the owner's call).
 QUERY_EMAIL_DELAY_HOURS = 2
@@ -1889,7 +1919,8 @@ def income_doc_blockers(application):
     """
     from .income_engine import (working_members, relationship_doc_for,
                                 _member_ic_doc, _cluster_docs, str_not_breached,
-                                salary_income_satisfied, usable_salary_slip)
+                                salary_income_satisfied, usable_salary_slip,
+                                household_str_status)
     route = (getattr(application, 'income_route', '') or '').strip()
     if not route:
         return ['income_incomplete']
@@ -1915,7 +1946,15 @@ def income_doc_blockers(application):
         if rel and rel not in present:
             out.append(f'{rel}_missing')            # birth_certificate_missing / guardianship_letter_missing
         return out
-    # Salary route — ONE complete, clean earner cluster is enough to submit (owner 2026-07-08).
+    # Salary route. A dispositive STR settles income on EITHER route (household_str_status is the
+    # government means-test, matched to a household member), so honour it here exactly as the STR
+    # branch above honours a complete salary cluster. Without this, a genuinely-STR student who
+    # picked 'salary' was trapped behind salary-route demands (a ticked worker + that member's IC)
+    # their STR should have cleared — and the consent-time route reconcile could never rescue them,
+    # because they'd never reach consent. Route-symmetry: either evidence clears either route.
+    if household_str_status(application)[0] is not None:
+        return []
+    # ONE complete, clean earner cluster is enough to submit (owner 2026-07-08).
     members = working_members(application)
     if not members:
         return ['income_incomplete']

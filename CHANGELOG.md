@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Income route: symmetric gate + silent reconcile at consent — 2026-07-24
+
+Fixes the class of case where a student declares one income route (e.g. STR) but documents the
+other (salary) — the submission gate lets them through (route-agnostic) while the AI Prediction,
+which reads the declared route, flags INCOME red for a document that isn't actually missing (#114).
+
+- **Symmetric gate** — `services.income_doc_blockers` salary branch now clears on a dispositive STR
+  (`income_engine.household_str_status`), exactly as the STR branch already clears on a complete
+  salary cluster. Without it, a genuinely-STR student who picked "salary" was trapped behind
+  salary-route demands (a ticked worker + that member's IC) their STR should have cleared — and the
+  consent reconcile below could never rescue them, because they'd never reach consent.
+- **Silent reconcile at consent** — new `services.reconcile_income_route`, called from `ConsentView`
+  once the gate passes: STR route + no valid STR + a complete salary cluster → switch to salary;
+  salary route + no cluster + a valid STR → switch to STR; both/neither → no change. Reuses
+  `switch_income_route` (audit-logged, never re-blocks a submission), so the officer's verdict reads
+  the correct route with no false route-mismatch red.
+- Backend-only, no migration. +8 pytest; salary gate honours an STR without also demanding the
+  relationship doc up-front (a missing BC surfaces as a soft Check-2 item post-switch, per the
+  "enough to submit, officer verifies" rule).
+
 ## Sprint 15 — Requests space v1 (SHIPPED DARK behind `REQUESTS_ENABLED`) — 2026-07-24
 
 An org-section "Requests" area that turns the feature-ask firehose into managed, priced work:
