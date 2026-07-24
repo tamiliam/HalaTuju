@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sprint 15 — Requests space v1 (SHIPPED DARK behind `REQUESTS_ENABLED`) — 2026-07-24
+
+An org-section "Requests" area that turns the feature-ask firehose into managed, priced work:
+bug/feature forms → an AI reviewer that classifies + estimates in HOURS + asks clarifying questions
+→ a status flow → owner-gated hours quotes. Ships DARK — with `REQUESTS_ENABLED` off every route
+404s and the Administration hub card is hidden (no client flag). Brief
+`docs/plans/2026-07-24-sprint15-requests-space-brief.md`; retro
+`docs/retrospective-2026-07-24-sprint15-requests-space.md`.
+
+- **Model — `OrgRequest`** (`apps/scholarship`, table `org_requests`, migration **scholarship/0111**,
+  the only one): org FK `PartnerOrganisation` PROTECT, `submitted_by` FK `PartnerAdmin` PROTECT;
+  8-status flow `submitted → triaged → quoted → approved → deferred → scheduled → done → declined`
+  (the roadmap's 7 + `deferred`, owner decision 2026-07-24); a `clarifications` JSON thread; the
+  owner-only `ai_draft_*` + `triage_note`; hours-only quote fields (`quote_hours`,
+  `quote_margin_pct`). Settings `REQUESTS_ENABLED` (OFF), `REQUESTS_TRIAGE_MODEL` (gemini-2.5-pro),
+  `REQUESTS_QUOTE_MARGIN_PCT` (50).
+- **Service `org_requests.py`** — a `TRANSITIONS` table (the single source of truth for the flow) +
+  every action; `run_ai_review` through the sanctioned `contracts._gemini_generate` seam ONLY,
+  defensive JSON parse (fenced/garbage/bad-enum → never a 500), auto-run best-effort + capped at 3;
+  clarifying questions flow to the requestee directly, the hours estimate stays owner-gated.
+- **Endpoints** under `admin/scholarship/requests/…` via `_OrgRequestsBase` — 404-first dark ship;
+  org-fenced (cross-org 404); org_admin + super open list/detail/count; requestee actions
+  (answer/defer/modify org_admin, approve/decline +super) vs owner actions (triage/quote/requote/
+  schedule/done/ai-rerun super-only). Two allowlist serializers — the ORG payload NEVER carries the
+  AI draft (`ai_*`) or triage (exact-key snapshot pins it). All 14 view classes classified in
+  `test_org_fence.py`; `OrgRequest` added to WATCHED.
+- **Emails** (best-effort, English, seam-compliant, zero brand literals): submit→owner,
+  AI-questions→submitter, answer→owner, quote→submitter (hours-denominated), accept→owner.
+- **Frontend** — `src/lib/requestStatus.ts` (pure: statuses/tones/labels + `requestActionsFor`),
+  `/admin/requests` (rate card + submit form + list) and `/admin/requests/[id]` (thread + requestee
+  + owner controls), the 🎫 Administration hub card (hidden when the count probe 404s), i18n
+  `admin.requests.*` en/ms/ta (ms/ta first-drafts for owner review).
+- Tests: pytest **4380 → 4445** (0 fail 0 skip); jest **688 → 712** (711 pass + the 1 known
+  pre-existing `scholarship.test.ts` localStorage fail under local Node 26); `next build` + lint
+  clean; `makemigrations --check` clean (one new migration, no courses migration).
+- **▶ COORDINATOR (deploy):** migrate-first apply 0111 via Supabase MCP (table DDL + RLS + deny
+  policies + TD-058 contenttypes workaround, Security Advisor → 0) BEFORE the push; then flip
+  `REQUESTS_ENABLED=1` after prod smoke + owner review of the rate-card copy and ms/ta drafts.
+
 ## "You haven't submitted yet" nudge — auto + org-admin manual reminder — 2026-07-24
 
 A shortlisted student who gives consent but never presses the final Review & submit sits in a

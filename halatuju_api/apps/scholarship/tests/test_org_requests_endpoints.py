@@ -154,6 +154,24 @@ class TestFlagOff(TestCase):
                                  f'{uid} POST {url}')
 
 
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestDarkByDefault(TestCase):
+    """Dark-ship proof: with NO REQUESTS_ENABLED override the feature is off by the settings
+    default, so a super still 404s on the list. This is the zero-config production state — the
+    coordinator flips the flag only after prod smoke + owner copy review."""
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_default_is_dark(self):
+        from django.conf import settings
+        self.assertFalse(getattr(settings, 'REQUESTS_ENABLED', False))
+        PartnerAdmin.objects.create(
+            supabase_user_id='dbd-su', is_super_admin=True, is_active=True,
+            name='S', email='s@dbd.com')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("dbd-su")}')
+        self.assertEqual(self.client.get(BASE).status_code, 404)
+
+
 class TestOrgPayloadAllowlist(_Base):
     """The exact ORG-facing key set — the AI draft + triage must NEVER be in it (the single worst
     leak). A snapshot, so a new field becomes a deliberate decision, not a quiet widening."""
