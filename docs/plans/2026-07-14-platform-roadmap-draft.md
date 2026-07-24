@@ -296,7 +296,7 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 | Phase 4 13a/13b (metering, rehearsal) | Second-tenant prospect | Gated |
 | Sprint E (erasure) | Before any REAL tenant-#2 DPA | Gated |
 | **Sprint 14 (Finance role)** | Payout rails live | ✅ **SHIPPED + LIVE 2026-07-23** (dark; owner invites the finance admin) |
-| Billing & usage (platform invoicing v1) | Billing-sources investigation done (service inventory + provider billing APIs + apportionment model) | Gated — investigation not started |
+| Billing & usage (platform invoicing v1) | Billing-sources investigation done (service inventory + provider billing APIs + apportionment model) | **Gate MET 2026-07-24** — `docs/plans/2026-07-24-billing-sources-investigation.md` (meter internally via usage_events at the Rule-6 seams; 3-line invoice; price vs Gemini 3.x). Build = owner-triggered (13a + Billing card) |
 | Sprint 15 (Requests space) | Owner go | ✅ **SHIPPED + LIVE 2026-07-24** (hours-only v1; `REQUESTS_ENABLED=1`) |
 | Rung A (staging) | External devs real (or owner pulls early) | Gated |
 | Rung B (external PRs) | Devs signed; Rung A done | Gated |
