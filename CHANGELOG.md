@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## Documents tab — calmer, kinder progressive disclosure + income shown "any one way" — 2026-07-25
+
+A live-review UX arc on the student **Documents** tab, plus one QC copy fix. Through-line: a wall of
+upload boxes intimidates B40 applicants — show only what must be acted on, fold what's finished, and
+never demand proof a genuine family can't produce. Retro
+`docs/retrospective-2026-07-25-documents-tab-kinder.md`; decisions ×3.
+
+- **Changed — QC decline-route copy** (`311bc956`): an awaiting-QC card with an officer **decline**
+  verdict no longer contradicts itself ("Accept to Recommended" under a "Confirm decline" button). The
+  hint + secondary action are verdict-aware (`hintDecline`, secondary = **Reopen**, fitted reopen
+  panel copy); redundant reject toggle hidden. i18n en/ms/ta.
+- **Added — one reusable `CollapsibleSection`, three uses** (`fc3529df`): a verified doc (IC / results
+  slip, via `docDone`) folds to a green "all done" summary; the **income** block folds once the route is
+  *satisfied* (`strComplete` / new `salaryComplete`) with an inviting "add more to strengthen your case"
+  line; **Utilities** + **Additional documents** collapse by default. Nothing required-but-unmet ever
+  collapses.
+- **Added — `FileChip` + STR-route optional fold** (`35034192`): a single uploaded file renders as one
+  bordered row (filename left, **Replace + Remove grouped right**) instead of stacking; STR-route
+  salary/EPF optional cards fold under a "More income documents" collapsible.
+- **Changed — income shown "any one way"** (`f37db48d`): salary-route income is satisfied by a payslip,
+  a readable EPF, **or a declared amount + a supporting letter** (or a non-breached STR). New single
+  source `income_engine.member_income_evidenced` drives both `member_cluster_complete` and the
+  submission gate; salary slip no longer compulsory; gate emits `income_evidence_missing`. A declared
+  amount alone stays blocked until the letter lands. **Submission-gate only, no verdict/band moves.** FE:
+  an "Income — show it any one way" group, warm cash path (the orange "we'll ask for a document" tone
+  removed). i18n en/ms/ta (Tamil first-draft). No migration.
+- Data op: test app **#16 reset awarded → shortlisted** (holding sponsorship #36 cancelled to restore
+  the sponsor balance; award fields cleared). **4523 pytest + 738 jest.**
+
 ## Billing & usage v1 — the per-tenant usage meter + super/org_admin usage screen (Sprint 13a) — 2026-07-25
 
 The per-tenant usage meter (roadmap Sprint 13a) plus a dark, super/org_admin usage screen. Brief

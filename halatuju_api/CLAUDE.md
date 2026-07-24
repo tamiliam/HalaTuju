@@ -524,6 +524,29 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-25)
 
+**✅ SHIPPED 2026-07-25 (web + one api-logic change, NO migration; commits `311bc956`, `fc3529df`,
+`35034192`, `f37db48d`) — Documents-tab kinder progressive disclosure + income shown "any one way".**
+Live-review UX arc (retro `docs/retrospective-2026-07-25-documents-tab-kinder.md`; decisions ×3). The
+first three deployed via web builds; `f37db48d` (the income redesign) committed + pushed via this
+session's deploy handoff.
+- **QC decline-route copy** (`311bc956`): a decline-verdict awaiting-QC card no longer contradicts
+  itself; hint + secondary action are verdict-aware (`hintDecline`, secondary = **Reopen**), redundant
+  reject toggle hidden.
+- **One reusable `CollapsibleSection`** (`fc3529df`): a verified doc (IC/results slip, `docDone`) folds
+  green; **income** folds once the route is satisfied (`strComplete`/new `salaryComplete`, inviting
+  copy); **Utilities** + **Additional documents** collapse by default. Required-but-unmet never collapses.
+- **`FileChip`** (`35034192`): a single file = one bordered row (filename left, Replace + Remove grouped
+  right); STR-route salary/EPF fold under a "More income documents" collapsible.
+- **Income shown "any one way"** (`f37db48d`): salary-route income satisfied by a payslip, a readable EPF,
+  OR a declared amount + a supporting letter (or a non-breached STR). New single source
+  `income_engine.member_income_evidenced` drives `member_cluster_complete` + `services.income_doc_blockers`
+  (now `income_evidence_missing:<member>`, salary slip no longer compulsory); declared-alone stays blocked.
+  **Submission-gate only, no verdict/band moves; no migration.** FE: "Income — show it any one way" group,
+  warm cash path (orange "error" tone removed). **4523 pytest + 738 jest.**
+- **▶ CARRY:** Tamil first-drafts across the arc (`docs.done.*`, `docs.add`, `income.wizard.*` incl.
+  `incomeAnyOne`/`incomeShown`/`supportLetterTitle`/`satisfiedNote`/`utilitiesNote`/`supplementaryNote`,
+  reworded `declared.*`, both `income_evidence_missing` variants). Data op: test app **#16 → shortlisted**.
+
 **✅ SHIPPED + DEPLOYED 2026-07-25 (api+web, commits `be06153c`..`27562de0` — 4 feature commits +
 a test-clock fix; migration `scholarship/0116` APPLIED migrate-first with RLS; both Cloud Builds
 SUCCESS for `27562de`; smoke green) — Billing & usage v1 (Sprint 13a — the usage meter + org-facing

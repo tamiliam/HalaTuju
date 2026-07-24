@@ -5237,3 +5237,24 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** a billing/usage surface's credibility depends on its numbers looking complete and self-explanatory the first time anyone sees them; a month starting mid-stream invites exactly the kind of "is this right?" question the tool exists to prevent.
 **Trade-offs:** roughly a week of metering happens invisibly before anyone can see it (see the "metering is unconditional" decision above) — accepted as the cost of a clean first month.
 **Revisit if:** an org asks to see partial-month data anyway, or the owner wants to demo the screen before 1 Aug (the endpoint/UI can be smoke-tested with the flag on temporarily without committing to the public reveal date).
+
+## Income shown "any one way" — declared amount + a letter satisfies the income gate — 2026-07-25
+**Decision:** On the salary route, a working member's income is satisfied by ANY ONE of: a usable salary slip, a readable EPF, a **declared amount backed by a supporting `income_support_doc`** (school / ketua-kampung / penghulu / employer letter), or a non-breached household STR. The salary slip is no longer a compulsory doc; `income_engine.member_income_evidenced` is the single source read by both `member_cluster_complete` and `services.income_doc_blockers`, which now emits `income_evidence_missing:<member>` instead of `salary_slip_missing:<member>`.
+**Alternatives considered:** (a) leave the gate as-is and only reword the "can't get a payslip?" copy — rejected: the declared+letter path fed the *assessment* but never the *submission gate*, so a cash/informal earner with no STR (Janani: father deceased, mother informal) was still trapped behind a red-* slip she could not produce. (b) Count a bare declared amount alone — rejected: an unbacked self-report stays 'unproven'/Unsure (mirrors `earner_monthly_income`'s `declared_unproven`); it must carry a letter to clear the gate.
+**Rationale:** the gate must accept the same evidence the assessment already honours; a genuine B40 family should never be blocked from *submitting for review* because a formal payslip is impossible. Means-test rigor is preserved downstream — the figure still feeds per-capita and the reviewer/interview still decides; nothing auto-approves.
+**Trade-offs:** the submission bar is more permissive (a declared figure + any qualifying letter clears it), shifting more judgement to the reviewer. Accepted — the gate's job is to admit for review, not to adjudicate need. No in-flight applicant is newly blocked (strictly more permissive).
+**Revisit if:** abuse appears (low declared figures + weak letters clearing the gate at volume), or the owner wants the letter contents machine-validated rather than reviewer-judged.
+
+## Income shown "any one way" — EPF-with-a-value counts; a bare EPF does not — 2026-07-25
+**Decision:** A readable EPF statement (a monthly figure derivable via `_epf_monthly_salary`, including 0.0 for an all-zeros account) counts as income evidence for the gate; a blank/unreadable EPF does not.
+**Alternatives considered:** keep EPF as never-sufficient (pre-2026-07-25, only a payslip/STR cleared the slip) — rejected as inconsistent, since `earner_monthly_income` already reads income off an EPF (`epf_estimate`).
+**Rationale:** align the gate with the assessment; an EPF documents the member's income situation as well as a payslip does.
+**Trade-offs:** a "working" member with an all-zeros EPF (0.0) technically clears the income requirement — harmless (income counted as 0 is B40-favourable and the reviewer sees the statement).
+**Revisit if:** an all-zeros EPF on a ticked working member proves misleading in practice.
+
+## Documents tab — collapse only a finished or genuinely-optional stage — 2026-07-25
+**Decision:** A document/section collapses by default only when it is (a) a required doc that is *verified* (`docDone`), (b) an income route that is *satisfied*, or (c) a genuinely-optional stage (Utilities, Additional documents, STR-route salary/EPF). A required-but-unmet item is never hidden.
+**Alternatives considered:** collapse optional stages only after the required set is complete — rejected: the anti-intimidation goal is served best by decluttering optional stages *always* (they carry no obligation), while never hiding a real to-do.
+**Rationale:** progressive disclosure to reduce the "wall of uploads" that discourages B40 applicants, without ever masking something the student still must do.
+**Trade-offs:** a student must expand an optional stage to add a bonus document — accepted (it reads as a bonus, not a task).
+**Revisit if:** applicants miss optional stages they would have benefited from adding.
