@@ -1559,6 +1559,40 @@ export async function getOrgRequestCount(options?: ApiOptions): Promise<{ count:
   return adminFetch('/api/v1/admin/scholarship/requests/count/', options)
 }
 
+// ── Billing & usage v1 (Sprint 13a) ──────────────────────────────────────────
+export interface BillingServiceRow {
+  service: string
+  events: number
+  quantity: number
+  input_tokens: number
+  output_tokens: number
+}
+
+export interface BillingOrgBlock {
+  organisation_id: number | null
+  organisation: string
+  is_platform: boolean
+  services: BillingServiceRow[]
+  totals: { events: number; quantity: number; input_tokens: number; output_tokens: number }
+  storage_bytes: number
+}
+
+export interface BillingUsagePayload {
+  month: string
+  months: string[]
+  can_see_platform: boolean
+  organisations: BillingOrgBlock[]
+}
+
+/** The super/org_admin usage readout. 404s while BILLING_USAGE_ENABLED is off (dark ship) →
+ * callers show a "coming soon" placeholder rather than the live card. `month` = 'YYYY-MM'. */
+export async function getBillingUsage(
+  options?: ApiOptions & { month?: string }
+): Promise<BillingUsagePayload> {
+  const q = options?.month ? `?month=${encodeURIComponent(options.month)}` : ''
+  return adminFetch(`/api/v1/admin/scholarship/billing/usage/${q}`, options)
+}
+
 export async function createOrgRequest(
   data: {
     kind: string; title: string; description: string; organisation_id?: number

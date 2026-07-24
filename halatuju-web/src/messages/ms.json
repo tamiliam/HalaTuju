@@ -1363,11 +1363,11 @@
             "sister": "Gambar/PDF slip gaji terkini kakak anda."
           },
           "epfHelp": {
-            "father": "Gambar/PDF penyata KWSP bapa anda.",
-            "mother": "Gambar/PDF penyata KWSP ibu anda.",
-            "guardian": "Gambar/PDF penyata KWSP penjaga anda.",
-            "brother": "Gambar/PDF penyata KWSP abang anda.",
-            "sister": "Gambar/PDF penyata KWSP kakak anda."
+            "father": "Pilihan — gambar/PDF penyata KWSP bapa anda.",
+            "mother": "Pilihan — gambar/PDF penyata KWSP ibu anda.",
+            "guardian": "Pilihan — gambar/PDF penyata KWSP penjaga anda.",
+            "brother": "Pilihan — gambar/PDF penyata KWSP abang anda.",
+            "sister": "Pilihan — gambar/PDF penyata KWSP kakak anda."
           },
           "q3": "Adakah pencari nafkah utama anda sedang bekerja?",
           "q4": "Adakah sesiapa lagi dalam isi rumah anda memperoleh pendapatan (contohnya abang atau kakak yang bekerja)?",
@@ -4334,6 +4334,40 @@
       "requestsSub": "Laporkan pepijat atau minta ciri baharu",
       "pendingApproval": "{count} menunggu kelulusan"
     },
+    "billing": {
+      "title": "Pengebilan & penggunaan",
+      "subtitleSuper": "Penggunaan bermeter merentas setiap organisasi, serta asas platform yang dikongsi. Unit dan token sahaja — tiada caj dipaparkan.",
+      "subtitleOrg": "Penggunaan bermeter organisasi anda bagi bulan ini. Unit dan token sahaja — tiada caj dipaparkan.",
+      "loading": "Memuatkan penggunaan…",
+      "comingSoon": "Pengebilan & penggunaan akan datang tidak lama lagi.",
+      "month": "Bulan",
+      "platform": "Platform (asas dikongsi)",
+      "platformBadge": "Super sahaja",
+      "platformSub": "Kerja dikongsi yang tidak dibilkan kepada mana-mana organisasi tunggal — laporan pemilih kursus dan mel operasi — disimpan untuk penyesuaian.",
+      "noUsage": "Tiada penggunaan direkodkan untuk bulan ini.",
+      "paused": "Dijeda",
+      "freeNote": "Tidak bermeter (perkhidmatan percuma):",
+      "tokensLine": "{in} masuk / {out} keluar token",
+      "service": {
+        "gemini": "Panggilan AI (Gemini)",
+        "vision_ocr": "OCR dokumen (Cloud Vision)",
+        "openai": "AI sandaran (OpenAI)",
+        "email": "E-mel (Brevo)",
+        "whatsapp": "WhatsApp (Twilio)",
+        "sms_verify": "Pengesahan SMS (Twilio)",
+        "storage": "Storan dokumen (Supabase)"
+      },
+      "col": {
+        "service": "Perkhidmatan",
+        "calls": "Panggilan",
+        "tokensIn": "Token masuk",
+        "tokensOut": "Token keluar"
+      },
+      "free": {
+        "workspace": "Google Workspace (Meet, Kalendar, Drive, Sheets)",
+        "turnstile": "Cloudflare Turnstile (pengesahan borang hubungi)"
+      }
+    },
     "requests": {
       "nav": "Permintaan",
       "title": "Permintaan",
@@ -4619,6 +4653,11 @@
       "backToList": "← Semua templat",
       "loading": "Memuatkan…",
       "actionFailed": "Sesuatu tidak kena. Sila cuba lagi.",
+      "error": {
+        "versionTooLong": "Nama versi itu terlalu panjang (maksimum 40 aksara). Sila pendekkan.",
+        "versionExists": "Versi dengan nama itu sudah wujud. Pilih nama lain.",
+        "versionRequired": "Sila masukkan nama versi."
+      },
       "notDraftMsg": "Versi ini bukan lagi draf dan tidak boleh disunting.",
       "status": {
         "draft": "Draf",

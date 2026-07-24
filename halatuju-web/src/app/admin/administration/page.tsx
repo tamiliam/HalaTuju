@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
   getOrgs, inviteAdmin, getAdmins, revokeAdmin, resendAdminInvite, getPendingSponsorCount,
-  getOrgRequestCount, type OrgItem, type AdminItem,
+  getOrgRequestCount, getBillingUsage, type OrgItem, type AdminItem,
 } from '@/lib/admin-api'
 import { programmeStaff, referralPartners, tenantAdmins } from '@/lib/adminStaff'
 import { useT } from '@/lib/i18n'
@@ -86,6 +86,10 @@ export default function AdministrationPage() {
   // REQUESTS_ENABLED is off) OR not yet loaded → the Requests hub card is HIDDEN (dark ship,
   // no client flag). A number (incl. 0) means the feature is live → show the card.
   const [requestsCount, setRequestsCount] = useState<number | null>(null)
+  // Billing-usage probe (Sprint 13a). false = dark (the usage endpoint 404s while
+  // BILLING_USAGE_ENABLED is off) → the Billing card stays "Coming soon". true = live → the
+  // card links to /admin/billing. Mirrors the Requests dark-ship probe (no client flag).
+  const [billingLive, setBillingLive] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [revoking, setRevoking] = useState<number | null>(null)
@@ -111,6 +115,8 @@ export default function AdministrationPage() {
     getPendingSponsorCount({ token }).then((d) => setPendingSponsors(d.count)).catch(() => {})
     // Dark-ship probe: a 404 (flag off) leaves requestsCount null → the card stays hidden.
     getOrgRequestCount({ token }).then((d) => setRequestsCount(d.count)).catch(() => setRequestsCount(null))
+    // Dark-ship probe: a 404 (flag off) leaves billingLive false → the card stays "Coming soon".
+    getBillingUsage({ token }).then(() => setBillingLive(true)).catch(() => setBillingLive(false))
   }, [token, isSuper])
 
   if (role && !isSuper && !isOrgAdmin && !isAdminGeneral && !isFinance) {
@@ -341,8 +347,15 @@ export default function AdministrationPage() {
               onClick={() => router.push('/admin/contracts')} />
             <IconCard icon="🏷️" title={t('admin.administration.sources')} subtitle={t('admin.administration.sourcesSub')}
               onClick={() => router.push('/admin/sources')} />
-            <IconCard icon="💳" title={t('admin.administration.billing')} subtitle={t('admin.administration.billingSub')}
-              disabled comingSoon={t('admin.administration.comingSoon')} />
+            {/* Billing — live for super + org_admin once the usage endpoint answers (flag on);
+                "Coming soon" while dark (BILLING_USAGE_ENABLED off), same probe as Requests. */}
+            {billingLive ? (
+              <IconCard icon="💳" title={t('admin.administration.billing')} subtitle={t('admin.administration.billingSub')}
+                onClick={() => router.push('/admin/billing')} />
+            ) : (
+              <IconCard icon="💳" title={t('admin.administration.billing')} subtitle={t('admin.administration.billingSub')}
+                disabled comingSoon={t('admin.administration.comingSoon')} />
+            )}
           </div>
 
           {panel === 'staff' && (

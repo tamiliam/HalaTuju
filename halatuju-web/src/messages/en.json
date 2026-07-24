@@ -1363,11 +1363,11 @@
             "sister": "A photo/PDF of your elder sister's latest salary slip."
           },
           "epfHelp": {
-            "father": "A photo/PDF of your father's EPF (KWSP) statement.",
-            "mother": "A photo/PDF of your mother's EPF (KWSP) statement.",
-            "guardian": "A photo/PDF of your guardian's EPF (KWSP) statement.",
-            "brother": "A photo/PDF of your elder brother's EPF (KWSP) statement.",
-            "sister": "A photo/PDF of your elder sister's EPF (KWSP) statement."
+            "father": "Optional — a photo/PDF of your father's EPF (KWSP) statement.",
+            "mother": "Optional — a photo/PDF of your mother's EPF (KWSP) statement.",
+            "guardian": "Optional — a photo/PDF of your guardian's EPF (KWSP) statement.",
+            "brother": "Optional — a photo/PDF of your elder brother's EPF (KWSP) statement.",
+            "sister": "Optional — a photo/PDF of your elder sister's EPF (KWSP) statement."
           },
           "q3": "Is your main earner currently working?",
           "q4": "Does anyone else in your household earn an income (for example a working brother or sister)?",
@@ -4334,6 +4334,40 @@
       "requestsSub": "Report a bug or request a feature",
       "pendingApproval": "{count} pending approval"
     },
+    "billing": {
+      "title": "Billing & usage",
+      "subtitleSuper": "Metered usage across every organisation, plus the shared platform base. Units and tokens only — no charges are shown.",
+      "subtitleOrg": "Your organisation's metered usage for the month. Units and tokens only — no charges are shown.",
+      "loading": "Loading usage…",
+      "comingSoon": "Billing & usage is coming soon.",
+      "month": "Month",
+      "platform": "Platform (shared base)",
+      "platformBadge": "Super only",
+      "platformSub": "Shared work not billed to any single organisation — course-selector reports and operational mail — kept for reconciliation.",
+      "noUsage": "No usage recorded for this month.",
+      "paused": "Paused",
+      "freeNote": "Not metered (free services):",
+      "tokensLine": "{in} in / {out} out tokens",
+      "service": {
+        "gemini": "AI calls (Gemini)",
+        "vision_ocr": "Document OCR (Cloud Vision)",
+        "openai": "AI fallback (OpenAI)",
+        "email": "Emails (Brevo)",
+        "whatsapp": "WhatsApp (Twilio)",
+        "sms_verify": "SMS verification (Twilio)",
+        "storage": "Document storage (Supabase)"
+      },
+      "col": {
+        "service": "Service",
+        "calls": "Calls",
+        "tokensIn": "Tokens in",
+        "tokensOut": "Tokens out"
+      },
+      "free": {
+        "workspace": "Google Workspace (Meet, Calendar, Drive, Sheets)",
+        "turnstile": "Cloudflare Turnstile (contact-form verification)"
+      }
+    },
     "requests": {
       "nav": "Requests",
       "title": "Requests",
@@ -4619,6 +4653,11 @@
       "backToList": "← All templates",
       "loading": "Loading…",
       "actionFailed": "Something went wrong. Please try again.",
+      "error": {
+        "versionTooLong": "That version name is too long (40 characters max). Please shorten it.",
+        "versionExists": "A version with that name already exists. Choose a different name.",
+        "versionRequired": "Please enter a version name."
+      },
       "notDraftMsg": "This version is no longer a draft and can’t be edited.",
       "status": {
         "draft": "Draft",
