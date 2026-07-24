@@ -229,3 +229,101 @@ def test_email_branding_golden():
     assert not mismatches, (
         'byte-identity broken for: ' + ', '.join(sorted(mismatches)) +
         ' — the branding extraction changed rendered output; STOP and reconcile.')
+
+
+# ── Phase 4: the org-2 LEAK test ─────────────────────────────────────────────
+# A second tenant ("inspire") with its OWN programme name, sign-off, persona, sender identity
+# and frontend URL. Every branding-accepting send_* must render THAT tenant's brand and leak
+# NONE of the platform's — the proof that the seam actually swaps per org.
+from types import SimpleNamespace  # noqa: E402
+
+from apps.scholarship import branding as _branding  # noqa: E402
+
+_INSPIRE_ORG = SimpleNamespace(
+    code='inspire',
+    programme_name_en='Inspire Grant',
+    programme_name_ms='Geran Inspire',
+    programme_name_ta='இன்ஸ்பயர் மானியம்',
+    team_signoff_en='The Inspire Grant Team',
+    team_signoff_ms='Pasukan Geran Inspire',
+    team_signoff_ta='இன்ஸ்பயர் மானியக் குழு',
+    persona_name_en='Cikgu Aishah',
+    persona_name_ms='Cikgu Aishah',
+    persona_name_ta='சிக்கு ஐஷா',
+    email_from='hello@inspire.example',
+    email_reply_to='help@inspire.example',
+    email_support='help@inspire.example',
+    frontend_url='https://inspire.example',
+)
+
+# Byte-for-byte the platform brand tokens that must NEVER leak into a tenant's mail. 'BrightPath'
+# subsumes every EN/MS form ("BrightPath Bursary", "Bursari BrightPath", "Pasukan Program Bursari
+# BrightPath", "BrightPath Bursary குழு"); the two personas + the domain are named explicitly.
+_PLATFORM_LEAK_TOKENS = ('BrightPath', 'halatuju.xyz', 'Cikgu Gopal', 'சிக்கு கோபால்')
+
+
+def _inspire_specs(B):
+    """name -> (callable, kwargs) for every send_* that accepts ``branding``, wired to the tenant."""
+    s = {}
+    for lang in LANGS:
+        prog = B.programme_name(lang)
+        s[f'award_offer.{lang}'] = (emails.send_award_offer_email, dict(
+            to_email='s@x.test', applicant_name='Arefin', lang=lang, branding=B))
+        s[f'award_offer_guardian.{lang}'] = (emails.send_award_offer_email, dict(
+            to_email='s@x.test', applicant_name='Arefin', lang=lang, guardian_note=True, branding=B))
+        s[f'award_offer_sign.{lang}'] = (emails.send_award_offer_sign_email, dict(
+            to_email='s@x.test', applicant_name='Arefin', lang=lang, branding=B))
+        s[f'vircle_install.{lang}'] = (emails.send_vircle_install_email, dict(
+            to_email='s@x.test', applicant_name='Arefin', lang=lang, branding=B))
+        s[f'sign_invitation.{lang}'] = (emails.send_sign_invitation_email, dict(
+            to_email='s@x.test', applicant_name='Aefin', lang=lang, branding=B))
+        s[f'agreement_executed.{lang}'] = (emails.send_agreement_executed_email, dict(
+            to_email='s@x.test', applicant_name='Aefin', programme_name=prog, lang=lang, branding=B))
+        s[f'agreement_executed_pdf.{lang}'] = (emails.send_agreement_executed_email, dict(
+            to_email='s@x.test', applicant_name='Aefin', programme_name=prog, lang=lang,
+            link='https://inspire.example/scholarship/application', pdf=b'%PDF-1.4 t', branding=B))
+        for stage in (1, 2, 3, 4):
+            s[f'reminder_s{stage}.{lang}'] = (emails.send_reminder_email, dict(
+                to_email='s@x.test', applicant_name='Aefin', programme_name=prog,
+                stage=stage, lang=lang, branding=B))
+        s[f'application_closed.{lang}'] = (emails.send_application_closed_email, dict(
+            to_email='s@x.test', applicant_name='Aefin', programme_name=prog, lang=lang, branding=B))
+    return s
+
+
+@pytest.mark.django_db
+def test_org2_branding_appears_and_platform_never_leaks():
+    B = _branding.for_organisation(_INSPIRE_ORG)
+    assert B.email_from == 'hello@inspire.example'   # a real tenant sender, not the platform default
+
+    specs = _inspire_specs(B)
+    assert len(specs) >= 21, 'the leak test must exercise every branding-accepting send_*'
+
+    for name, (fn, kw) in specs.items():
+        lang = name.rsplit('.', 1)[-1]
+        lang = lang if lang in LANGS else 'en'
+        mail.outbox.clear()
+        assert fn(**kw) is not False, f'{name}: send returned False'
+        assert mail.outbox, f'{name}: nothing landed in the outbox'
+        cap = _capture(mail.outbox[-1])
+        # The rendered surfaces the brief names: subject, body, html, from, reply_to.
+        blob = '\n'.join([cap['subject'], cap['body'], cap['html'], cap['from_email'],
+                          ' '.join(cap['reply_to'])])
+
+        # (1) the tenant's own brand is what actually renders.
+        assert B.programme_name(lang) in blob, f'{name}: tenant programme name missing'
+        assert cap['from_email'] == 'hello@inspire.example', f'{name}: sender not the tenant'
+        # HTML sends set an explicit reply-to; the plain send_mail path (sign/agreement/reminder/
+        # closed) sets none — either way it must never be a platform address.
+        assert cap['reply_to'] in ([], ['help@inspire.example']), f'{name}: reply-to not the tenant'
+
+        # (2) NOTHING of the platform's brand leaks through.
+        for tok in _PLATFORM_LEAK_TOKENS:
+            assert tok not in blob, f'{name}: platform token {tok!r} leaked into tenant mail'
+
+    # The coach persona also swaps: the prompt names the tenant coach, never the platform one.
+    from apps.scholarship import help_engine
+    prompt = help_engine._build_help_prompt('ic', 'nric_mismatch', 'Aefin', 'English', branding=B)
+    assert 'Cikgu Aishah' in prompt and 'Inspire Grant' in prompt
+    for tok in ('Cikgu Gopal', 'BrightPath'):
+        assert tok not in prompt, f'coach prompt leaked platform token {tok!r}'
