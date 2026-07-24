@@ -81,7 +81,15 @@ Sprints live *inside* these phases. Each sprint is sized to be **reviewable** �
 
 ## Phase 2 — Extract hard-coded rules into per-org settings (branding/email first, eligibility last)
 
-### Sprint 5 — Per-org branding & email sender identity (backend)
+### Sprint 5 — Per-org branding & email sender identity (backend) — ✅ **SHIPPED 2026-07-24** (commit `e188ad42`; retro `docs/retrospective-2026-07-23-sprint5-branding-email.md`)
+Delivered as scoped: every rendered brand literal (programme name, sign-off, coach persona, sender
+identity, display domain) now reads through one seam, `apps/scholarship/branding.py`, D3 per-language
+fallback chain + D4 platform-domain-only aliases (decisions in `docs/decisions.md`, "Per-org branding
+seam", 2026-07-24). BrightPath output is byte-identical (113 golden snapshots, `test_email_branding.py`)
+and an AST brand-guard (`test_branding_guard.py`) stops a future literal leaking outside the seam. Test
+count 4346 → 4350. Backend only — no migration, `halatuju-web/` untouched. **Carry:** the Vircle guide
+attachment filename still derives from the platform seam even on a tenant send (TD-169) — Sprint 6
+(frontend branding) is next.
 - **Goal:** Move the hard-coded programme name, team sign-off, personas, and sender/reply-to identities off code constants onto the organisation record (audit §2d).
 - **Scope:** `apps/scholarship/emails.py` (replace the `_REVIEWER_SIGNOFF`, alias constants `:16-20`, programme-name literals `:429-1035`, HTML shell `:2032-2060` with per-org lookups), the Organisation config read seam, "Cikgu Gopal" persona name (`help_engine.py`, `verdict_narrative.py`).
 - **Migrations expected:** 0 (columns landed in Sprint 1) — this sprint *reads* them.
@@ -239,7 +247,7 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 
 | Work | Gate / trigger | State (2026-07-22) |
 |---|---|---|
-| Phase 2 S5–S6 (branding extraction) | Rule-stability clock OR owner pulls the split-gate option | Clock restarted 21 Jul → ≈21 Aug; split option open |
+| Phase 2 S5–S6 (branding extraction) | Rule-stability clock OR owner pulls the split-gate option | S5 (backend) ✅ **SHIPPED 2026-07-24**; S6 (frontend) — split option open, not yet gated-in |
 | Phase 2 S8–S9 (rules extraction) | Strict rule stability | Gated |
 | Phase 3 S10–S11 (platform console) | Credible second-tenant prospect | Gated (Add-tenant slice + S12 already live) |
 | Phase 4 13a/13b (metering, rehearsal) | Second-tenant prospect | Gated |
@@ -312,7 +320,7 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 | 1 | 3a | Org-scoped gates + manager (43-endpoint audit) | 0 | **High** |
 | 1 | 3b | Fence-proof test + CI static guard | 0 | Med |
 | 1 | 4 | Document org-prefix, new uploads only (legacy = org #1) | 0 | Med |
-| 2 | 5 | Per-org branding + email identity (backend) | 0 | Med |
+| 2 | 5 | ✅ Per-org branding + email identity (backend) — shipped 2026-07-24 | 0 | Med |
 | 2 | 6 | Per-org branding (frontend) | 0 | Med |
 | 2 | 7 | Per-org timing/reminders/consent version | 1 | Low–Med |
 | 2 | 8a | Per-org document/route selection | 1 | **High** |

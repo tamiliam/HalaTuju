@@ -241,6 +241,17 @@ soft signals to the verdict, mirroring the FE chip precedence. Served by `Docume
 (`GET …/documents/<pk>/help/`, own-doc scoped). **Structurally firewalled** — the engine receives only primitives,
 never an application/profile/score object (signature-asserted); it is the inverse wall to the admin-only gap-spotter.
 
+**Per-org branding seam (Sprint 5, 2026-07-24):** `branding.py` is the single read seam for every rendered
+brand literal — programme name, team sign-off, coach persona, sender identity, display domain — used by
+`emails.py` and `help_engine.py`. A `PLATFORM` block holds today's BrightPath constants verbatim (byte-identical
+output, enforced by 113 golden snapshots in `tests/test_email_branding.py`); a tenant resolves per the D3
+fallback chain `org.col(lang) → PLATFORM.default(lang) → PLATFORM.default('en')` against the `PartnerOrganisation`
+branding columns (line above). Topical aliases (`interview@`/`sponsor@`) stay platform-domain-only (D4). An
+AST brand-guard (`tests/test_branding_guard.py`) scans `emails.py`/`help_engine.py` string constants for the
+platform brand literals, allowing only `branding.py` to hold them. Decisions D3/D4/D6:
+`docs/decisions.md` ("Per-org branding seam", 2026-07-24); retrospective:
+`docs/retrospective-2026-07-23-sprint5-branding-email.md`. Backend only — no migration, `halatuju-web/` untouched.
+
 **Verification verdict (the synthesis layer, branch `feature/verification-verdict`, S1–S2):** `verdict_engine.py`
 (`build_verdict` → four facts Identity/Academic/Income/Pathway, each `{status, evidence[], unresolved[]}`; pure +
 deterministic, **no LLM** — composes `_ic_identity_blockers`, `application_completeness`, the Vision matchers, doc-assist
